@@ -19,7 +19,7 @@ import {
 import { showConfirm } from '../lib/confirm'
 import { formatDateTime } from '../lib/formatters'
 import { createProductSchema, zodErrors, COLOR_ATTRIBUTE_KEYS, normalizeVariantToken, isColorAttributeName } from '../lib/schemas'
-import { Modal } from '../components/layout'
+import { Modal, Tabs } from '../components/layout'
 import { StatePanel } from '../components/StatePanel'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { MediaPickerModal } from '../components/MediaPickerModal'
@@ -202,6 +202,22 @@ function buildEmptyForm() {
     variants: [],
     relatedProductIds: [],
     relatedProductChips: [],
+    // Optional English content (V136). Vietnamese above stays canonical.
+    translations: { en: buildEmptyTranslation() },
+  }
+}
+
+// English product-level content — eight optional translatable text fields.
+function buildEmptyTranslation() {
+  return {
+    name: '',
+    shortDescription: '',
+    description: '',
+    contentBottom: '',
+    promotionContent: '',
+    installationGuide: '',
+    seoTitle: '',
+    seoDescription: '',
   }
 }
 
@@ -266,11 +282,16 @@ function buildFormFromItem(item) {
       name: s.name || '',
       value: s.value || '',
       groupName: s.group || '',
+      nameEn: s.nameEn || '',
+      valueEn: s.valueEn || '',
+      groupNameEn: s.groupEn || '',
     })),
     faqs: (item.faqs || []).map((f) => ({
       _key: crypto.randomUUID(),
       question: f.question || '',
       answer: f.answer || '',
+      questionEn: f.questionEn || '',
+      answerEn: f.answerEn || '',
     })),
     variants,
     relatedProductIds: (item.relatedProducts || []).map((p) => p.id).filter(Boolean),
@@ -282,7 +303,18 @@ function buildFormFromItem(item) {
         slug: p.slug || '',
         imageUrl: p.image?.url || '',
       })),
+    translations: { en: translationFormFromItem(item.translations?.en) },
   }
+}
+
+// Map a normalized `translations.en` block to the form shape — every field a
+// controlled string ('' when not translated), never undefined.
+function translationFormFromItem(en) {
+  const source = en && typeof en === 'object' ? en : {}
+  const empty = buildEmptyTranslation()
+  return Object.fromEntries(
+    Object.keys(empty).map((key) => [key, source[key] || '']),
+  )
 }
 
 // Like toIntegerOrUndefined but sends null for empty so the backend can
@@ -293,6 +325,18 @@ function toIntegerOrNull(value) {
   const parsed = Number(normalized)
   if (!Number.isInteger(parsed)) return Number.NaN
   return parsed
+}
+
+// English product-level content → upsert payload. Blank fields become undefined
+// so the backend stores null. English is optional (PRODUCT_RULE_001).
+function translationToPayload(en) {
+  const source = en && typeof en === 'object' ? en : {}
+  const out = {}
+  for (const key of Object.keys(buildEmptyTranslation())) {
+    const trimmed = String(source[key] || '').trim()
+    out[key] = trimmed || undefined
+  }
+  return out
 }
 
 function toPayload(form) {
@@ -340,6 +384,9 @@ function toPayload(form) {
     image: form.imageUrl.trim()
       ? { url: form.imageUrl.trim(), alt: form.imageAlt.trim() || undefined }
       : null,
+    // Optional English content (V136). Always sent so the backend full-replaces
+    // the English columns; empty fields clear them. English is never required.
+    translations: { en: translationToPayload(form.translations?.en) },
   }
 
   payload.gallery = form.gallery
@@ -362,6 +409,10 @@ function toPayload(form) {
       name: s.name.trim(),
       value: s.value.trim(),
       groupName: s.groupName.trim() || undefined,
+      // Optional English content (V136) — rides on the same row as Vietnamese.
+      nameEn: (s.nameEn || '').trim() || undefined,
+      valueEn: (s.valueEn || '').trim() || undefined,
+      groupNameEn: (s.groupNameEn || '').trim() || undefined,
       sortOrder: i,
     }))
 
@@ -370,6 +421,8 @@ function toPayload(form) {
     .map((f, i) => ({
       question: f.question.trim(),
       answer: f.answer.trim(),
+      questionEn: (f.questionEn || '').trim() || undefined,
+      answerEn: (f.answerEn || '').trim() || undefined,
       sortOrder: i,
     }))
 
@@ -700,14 +753,23 @@ function VideoEditor({ items, onChange, disabled, validationErrors = {} }) {
   )
 }
 
-function SpecificationsEditor({ items, onChange, disabled, validationErrors }) {
+function SpecificationsEditor({ items, onChange, disabled, validationErrors, contentLang = 'vi' }) {
   const { t } = useTranslation()
+  // Which field each input binds to depends on the active content language (V136).
+  const isEn = contentLang === 'en'
+  const fName = isEn ? 'nameEn' : 'name'
+  const fValue = isEn ? 'valueEn' : 'value'
+  const fGroup = isEn ? 'groupNameEn' : 'groupName'
   function updateItem(index, field, value) {
     const next = items.map((item, i) => i === index ? { ...item, [field]: value } : item)
     onChange(next)
   }
   function addItem() {
-    onChange([...items, { _key: crypto.randomUUID(), name: '', value: '', groupName: '' }])
+    onChange([...items, {
+      _key: crypto.randomUUID(),
+      name: '', value: '', groupName: '',
+      nameEn: '', valueEn: '', groupNameEn: '',
+    }])
   }
   function removeItem(index) {
     onChange(items.filter((_, i) => i !== index))
@@ -740,8 +802,8 @@ function SpecificationsEditor({ items, onChange, disabled, validationErrors }) {
                 <Input className={errGroup  ? 'border-danger' : undefined}
                   placeholder={t('products.detail.specs.groupPlaceholder')}
                   title={t('products.detail.specs.groupTitle')}
-                  value={item.groupName}
-                  onChange={(e) => updateItem(index, 'groupName', e.target.value)}
+                  value={item[fGroup] || ''}
+                  onChange={(e) => updateItem(index, fGroup, e.target.value)}
                   disabled={disabled}
                   maxLength={100}
                  />
@@ -750,8 +812,8 @@ function SpecificationsEditor({ items, onChange, disabled, validationErrors }) {
               <div>
                 <Input className={errName  ? 'border-danger' : undefined}
                   placeholder={t('products.detail.specs.namePlaceholder')}
-                  value={item.name}
-                  onChange={(e) => updateItem(index, 'name', e.target.value)}
+                  value={item[fName] || ''}
+                  onChange={(e) => updateItem(index, fName, e.target.value)}
                   disabled={disabled}
                   maxLength={255}
                  />
@@ -760,8 +822,8 @@ function SpecificationsEditor({ items, onChange, disabled, validationErrors }) {
               <div>
                 <Input className={errValue  ? 'border-danger' : undefined}
                   placeholder={t('products.detail.specs.valuePlaceholder')}
-                  value={item.value}
-                  onChange={(e) => updateItem(index, 'value', e.target.value)}
+                  value={item[fValue] || ''}
+                  onChange={(e) => updateItem(index, fValue, e.target.value)}
                   disabled={disabled}
                   maxLength={2000}
                  />
@@ -788,14 +850,17 @@ function SpecificationsEditor({ items, onChange, disabled, validationErrors }) {
   )
 }
 
-function FaqEditor({ items, onChange, disabled, validationErrors }) {
+function FaqEditor({ items, onChange, disabled, validationErrors, contentLang = 'vi' }) {
   const { t } = useTranslation()
+  const isEn = contentLang === 'en'
+  const fQuestion = isEn ? 'questionEn' : 'question'
+  const fAnswer = isEn ? 'answerEn' : 'answer'
   function updateItem(index, field, value) {
     const next = items.map((item, i) => i === index ? { ...item, [field]: value } : item)
     onChange(next)
   }
   function addItem() {
-    onChange([...items, { _key: crypto.randomUUID(), question: '', answer: '' }])
+    onChange([...items, { _key: crypto.randomUUID(), question: '', answer: '', questionEn: '', answerEn: '' }])
   }
   function removeItem(index) {
     onChange(items.filter((_, i) => i !== index))
@@ -826,8 +891,8 @@ function FaqEditor({ items, onChange, disabled, validationErrors }) {
               <div>
                 <Input className={errQuestion ? 'border-danger' : undefined}
                   placeholder={t('products.detail.faqs.questionPlaceholder')}
-                  value={item.question}
-                  onChange={(e) => updateItem(index, 'question', e.target.value)}
+                  value={item[fQuestion] || ''}
+                  onChange={(e) => updateItem(index, fQuestion, e.target.value)}
                   disabled={disabled}
                   maxLength={500}
                 />
@@ -836,8 +901,8 @@ function FaqEditor({ items, onChange, disabled, validationErrors }) {
               <div>
                 <Textarea className={errAnswer ? 'border-danger' : undefined}
                   placeholder={t('products.detail.faqs.answerPlaceholder')}
-                  value={item.answer}
-                  onChange={(e) => updateItem(index, 'answer', e.target.value)}
+                  value={item[fAnswer] || ''}
+                  onChange={(e) => updateItem(index, fAnswer, e.target.value)}
                   disabled={disabled}
                   rows={3}
                   maxLength={20000}
@@ -1725,6 +1790,9 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   const [isDirty, setIsDirty] = useState(false)
   const [validationErrors, setValidationErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  // Content language being edited (V136). Independent of the admin UI language
+  // (i18n) — it only switches which language the text fields read/write.
+  const [contentLang, setContentLang] = useState('vi')
   const slugEditedByUser = useRef(false)
   const [originalPublishStatus, setOriginalPublishStatus] = useState(null)
 
@@ -1867,6 +1935,31 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
       delete next[field]
       return next
     })
+  }
+
+  // Write one English product-level field (V136). Vietnamese stays on form[field].
+  function updateTranslation(field, value) {
+    setForm((previous) => ({
+      ...previous,
+      translations: {
+        ...previous.translations,
+        en: { ...(previous.translations?.en || {}), [field]: value },
+      },
+    }))
+    setIsDirty(true)
+  }
+
+  const isEnLang = contentLang === 'en'
+
+  // Value of a translatable product-level text field for the active language.
+  function langValue(field) {
+    return isEnLang ? (form.translations?.en?.[field] ?? '') : (form[field] ?? '')
+  }
+
+  // Write a translatable product-level text field into the active language.
+  function langChange(field, value) {
+    if (isEnLang) updateTranslation(field, value)
+    else updateField(field, value)
   }
 
   function addRelatedProduct(product) {
@@ -2249,6 +2342,29 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
             }
           }}
         >
+          {/* ── Content language toggle (V136) — VI canonical, EN optional ── */}
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            <span className="text-sm font-medium">
+              {t('products.detail.contentLanguage', { defaultValue: 'Ngôn ngữ nội dung' })}
+            </span>
+            <Tabs
+              ariaLabel={t('products.detail.contentLanguage', { defaultValue: 'Ngôn ngữ nội dung' })}
+              value={contentLang}
+              onChange={setContentLang}
+              items={[
+                { key: 'vi', label: t('products.detail.langVi', { defaultValue: 'Tiếng Việt' }) },
+                { key: 'en', label: t('products.detail.langEn', { defaultValue: 'English' }) },
+              ]}
+            />
+            {isEnLang && (
+              <span className="pf-field-msg pf-field-hint">
+                {t('products.detail.langEnHint', {
+                  defaultValue: 'Bản tiếng Anh không bắt buộc — để trống sẽ tự hiển thị bản tiếng Việt.',
+                })}
+              </span>
+            )}
+          </div>
+
           {/* ── Section 1: Thông tin cơ bản ── */}
           <PfSection
             def={SECTION_DEFS[0]}
@@ -2262,9 +2378,14 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               <div className="pf-field full">
                 <div className="pf-field-label">
                   <span>{t('products.detail.name')}</span>
-                  <span className={`pf-field-count${form.name.length > 230 ? ' warn' : ''}`}>{form.name.length} / 255</span>
+                  <span className={`pf-field-count${langValue('name').length > 230 ? ' warn' : ''}`}>{langValue('name').length} / 255</span>
                 </div>
-                <Input value={form.name} onChange={(e) => handleNameChange(e.target.value)} disabled={isReadOnly} maxLength={255} />
+                <Input
+                  value={langValue('name')}
+                  onChange={(e) => (isEnLang ? updateTranslation('name', e.target.value) : handleNameChange(e.target.value))}
+                  disabled={isReadOnly}
+                  maxLength={255}
+                />
                 {validationErrors.name && <span className="pf-field-msg pf-field-msg-error">{validationErrors.name}</span>}
               </div>
 
@@ -2275,13 +2396,17 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   placeholder="vd: mu-bao-hiem-fullface-agv-k1s"
                   onChange={(e) => handleSlugChange(e.target.value)}
                   onBlur={(e) => handleSlugBlur(e.target.value)}
-                  disabled={isReadOnly}
+                  disabled={isReadOnly || isEnLang}
                   maxLength={200}
                   style={{ fontFamily: 'var(--admin-font-mono)' }}
                 />
                 {validationErrors.slug
                   ? <span className="pf-field-msg pf-field-msg-error">{validationErrors.slug}</span>
-                  : <span className="pf-field-msg pf-field-hint">{t('products.detail.slugHint')}</span>}
+                  : <span className="pf-field-msg pf-field-hint">
+                      {isEnLang
+                        ? t('products.detail.slugSharedHint', { defaultValue: 'Đường dẫn dùng chung cho cả hai ngôn ngữ — chỉ sửa được ở tab Tiếng Việt.' })
+                        : t('products.detail.slugHint')}
+                    </span>}
               </div>
 
               <div className="pf-field">
@@ -2323,12 +2448,12 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               <div className="pf-field full">
                 <div className="pf-field-label">
                   <span>{t('products.detail.shortDescription')}</span>
-                  <span className={`pf-field-count${form.shortDescription.length > 450 ? ' warn' : ''}`}>{form.shortDescription.length} / 500</span>
+                  <span className={`pf-field-count${langValue('shortDescription').length > 450 ? ' warn' : ''}`}>{langValue('shortDescription').length} / 500</span>
                 </div>
                 <Textarea
                   className={validationErrors.shortDescription ? 'border-danger' : undefined}
-                  value={form.shortDescription}
-                  onChange={(e) => updateField('shortDescription', e.target.value)}
+                  value={langValue('shortDescription')}
+                  onChange={(e) => langChange('shortDescription', e.target.value)}
                   maxLength={500}
                   placeholder={t('products.detail.shortDescriptionPlaceholder')}
                   disabled={isReadOnly}
@@ -2340,8 +2465,9 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               <div className="pf-field full">
                 <div className="pf-field-label"><span>{t('products.detail.description')}</span></div>
                 <RichTextEditor
-                  value={form.description}
-                  onChange={(html) => updateField('description', html)}
+                  key={`description-${contentLang}`}
+                  value={langValue('description')}
+                  onChange={(html) => langChange('description', html)}
                   placeholder={t('products.detail.descriptionPlaceholder')}
                   disabled={isReadOnly}
                   hasError={Boolean(validationErrors.description)}
@@ -2353,8 +2479,9 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               <div className="pf-field full">
                 <div className="pf-field-label"><span>{t('products.detail.promotionContent')}</span></div>
                 <RichTextEditor
-                  value={form.promotionContent}
-                  onChange={(html) => updateField('promotionContent', html)}
+                  key={`promotionContent-${contentLang}`}
+                  value={langValue('promotionContent')}
+                  onChange={(html) => langChange('promotionContent', html)}
                   placeholder={t('products.detail.promotionContentPlaceholder')}
                   disabled={isReadOnly}
                   hasError={Boolean(validationErrors.promotionContent)}
@@ -2594,11 +2721,11 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               <div className="pf-field full">
                 <div className="pf-field-label">
                   <span>{t('products.detail.seoTitle')}</span>
-                  <span className={`pf-field-count${(form.seoTitle?.length ?? 0) > 230 ? ' warn' : ''}`}>{form.seoTitle?.length ?? 0} / 255</span>
+                  <span className={`pf-field-count${langValue('seoTitle').length > 230 ? ' warn' : ''}`}>{langValue('seoTitle').length} / 255</span>
                 </div>
                 <Input
-                  value={form.seoTitle}
-                  onChange={(e) => updateField('seoTitle', e.target.value)}
+                  value={langValue('seoTitle')}
+                  onChange={(e) => langChange('seoTitle', e.target.value)}
                   disabled={isReadOnly}
                   maxLength={255}
                   placeholder={t('products.detail.seoTitle')}
@@ -2609,11 +2736,11 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               <div className="pf-field full">
                 <div className="pf-field-label">
                   <span>{t('products.detail.seoDescription')}</span>
-                  <span className={`pf-field-count${(form.seoDescription?.length ?? 0) > 4500 ? ' warn' : ''}`}>{form.seoDescription?.length ?? 0} / 5000</span>
+                  <span className={`pf-field-count${langValue('seoDescription').length > 4500 ? ' warn' : ''}`}>{langValue('seoDescription').length} / 5000</span>
                 </div>
                 <Textarea
-                  value={form.seoDescription}
-                  onChange={(e) => updateField('seoDescription', e.target.value)}
+                  value={langValue('seoDescription')}
+                  onChange={(e) => langChange('seoDescription', e.target.value)}
                   disabled={isReadOnly}
                   maxLength={5000}
                   placeholder={t('products.detail.seoDescription')}
@@ -2685,8 +2812,9 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
           >
             <div style={{ paddingTop: 12 }}>
               <RichTextEditor
-                value={form.contentBottom}
-                onChange={(html) => updateField('contentBottom', html)}
+                key={`contentBottom-${contentLang}`}
+                value={langValue('contentBottom')}
+                onChange={(html) => langChange('contentBottom', html)}
                 placeholder={t('products.detail.contentBottom')}
                 disabled={isReadOnly}
                 hasError={Boolean(validationErrors.contentBottom)}
@@ -2752,6 +2880,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 onChange={(next) => updateField('specifications', next)}
                 disabled={isReadOnly}
                 validationErrors={validationErrors}
+                contentLang={contentLang}
               />
             </div>
           </PfSection>
@@ -2768,8 +2897,9 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
             <div style={{ paddingTop: 12 }}>
               <p className="pf-field-msg pf-field-hint">{t('products.detail.installationHint')}</p>
               <RichTextEditor
-                value={form.installationGuide}
-                onChange={(html) => updateField('installationGuide', html)}
+                key={`installationGuide-${contentLang}`}
+                value={langValue('installationGuide')}
+                onChange={(html) => langChange('installationGuide', html)}
                 placeholder={t('products.detail.installationPlaceholder')}
                 disabled={isReadOnly}
                 hasError={Boolean(validationErrors.installationGuide)}
@@ -2796,6 +2926,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 onChange={(next) => updateField('faqs', next)}
                 disabled={isReadOnly}
                 validationErrors={validationErrors}
+                contentLang={contentLang}
               />
             </div>
           </PfSection>

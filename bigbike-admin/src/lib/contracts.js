@@ -224,6 +224,10 @@ function normalizeSpecification(input) {
     name,
     value,
     group: toTrimmedString(input.group || input.groupName) || undefined,
+    // Optional English content (V136) — admin product read carries both languages.
+    nameEn: toTrimmedString(input.nameEn) || undefined,
+    valueEn: toTrimmedString(input.valueEn) || undefined,
+    groupEn: toTrimmedString(input.groupEn || input.groupNameEn) || undefined,
   }
 }
 
@@ -232,7 +236,31 @@ function normalizeFaq(input) {
   const question = toTrimmedString(input.question)
   const answer = toTrimmedString(input.answer)
   if (!question || !answer) return undefined
-  return { question, answer }
+  return {
+    question,
+    answer,
+    questionEn: toTrimmedString(input.questionEn) || undefined,
+    answerEn: toTrimmedString(input.answerEn) || undefined,
+  }
+}
+
+/**
+ * Optional English product-level content (V136). The admin product read returns
+ * `translations.en`; null/absent means no English version exists yet.
+ */
+function normalizeProductTranslations(input) {
+  const en = input && typeof input === 'object' ? input.en : undefined
+  const source = en && typeof en === 'object' ? en : {}
+  return {
+    name: toTrimmedString(source.name) || undefined,
+    shortDescription: toTrimmedString(source.shortDescription) || undefined,
+    description: toTrimmedString(source.description) || undefined,
+    contentBottom: toTrimmedString(source.contentBottom) || undefined,
+    promotionContent: toTrimmedString(source.promotionContent) || undefined,
+    installationGuide: toTrimmedString(source.installationGuide) || undefined,
+    seoTitle: toTrimmedString(source.seoTitle) || undefined,
+    seoDescription: toTrimmedString(source.seoDescription) || undefined,
+  }
 }
 
 export function normalizeProduct(input) {
@@ -299,6 +327,9 @@ export function normalizeProduct(input) {
     homepageBlock: normalizeHomepageBlock(source.homepageBlock),
     homepageOrder: Number.isFinite(source.homepageOrder) ? Number(source.homepageOrder) : null,
     seo: normalizeSeoMeta(source.seo),
+    // Optional English content (V136). Always an object so the form can bind
+    // the EN language tab; individual fields are undefined when not translated.
+    translations: { en: normalizeProductTranslations(source.translations) },
     createdAt: toTrimmedString(source.createdAt) || undefined,
     updatedAt: toTrimmedString(source.updatedAt) || undefined,
   }

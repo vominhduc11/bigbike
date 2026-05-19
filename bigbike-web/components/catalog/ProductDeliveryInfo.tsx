@@ -5,16 +5,16 @@ type DeliveryItem = {
 };
 
 const ITEMS: DeliveryItem[] = [
-  { icon: "truck", title: "Giao nhanh nội thành HCM", detail: "Giao trong ngày với đơn khu vực trung tâm" },
-  { icon: "box", title: "Giao toàn quốc", detail: "Nhận hàng sau 2–4 ngày làm việc" },
-  { icon: "shield", title: "Bảo hành chính hãng", detail: "Hỗ trợ kỹ thuật trọn đời sản phẩm" },
-  { icon: "return", title: "Đổi trả trong 7 ngày", detail: "Khi sản phẩm lỗi do nhà sản xuất" },
+  { icon: "truck", title: "Giao nhanh nội thành", detail: "Trong ngày tại TP.HCM" },
+  { icon: "box", title: "Giao hàng toàn quốc", detail: "Nhận sau 2–4 ngày" },
+  { icon: "shield", title: "Bảo hành chính hãng", detail: "Theo nhà sản xuất" },
+  { icon: "return", title: "Đổi trả trong 7 ngày", detail: "Khi lỗi nhà sản xuất" },
 ];
 
 function DeliveryIcon({ name }: { name: DeliveryItem["icon"] }) {
   const common = {
-    width: 18,
-    height: 18,
+    width: 20,
+    height: 20,
     viewBox: "0 0 24 24",
     fill: "none",
     stroke: "currentColor",
@@ -53,18 +53,28 @@ function DeliveryIcon({ name }: { name: DeliveryItem["icon"] }) {
   }
 }
 
-/** Static delivery / warranty / return trust band shown under the buy box. */
+/** Static delivery / warranty / return trust grid shown under the buy box. */
 export function ProductDeliveryInfo() {
   return (
-    <ul className="mt-4 flex flex-col gap-3 border-t border-border pt-4">
+    <ul className="grid grid-cols-2 gap-3">
       {ITEMS.map((item) => (
-        <li key={item.title} className="flex items-start gap-3">
-          <span className="mt-0.5 flex shrink-0 text-brand" aria-hidden="true">
+        <li
+          key={item.title}
+          className="flex items-center gap-3 border border-border bg-muted/40 p-3"
+        >
+          <span
+            className="flex h-9 w-9 shrink-0 items-center justify-center bg-brand-soft text-brand"
+            aria-hidden="true"
+          >
             <DeliveryIcon name={item.icon} />
           </span>
-          <span className="min-w-0 text-sm leading-snug">
-            <b className="font-semibold text-foreground">{item.title}</b>
-            <span className="text-muted-foreground"> — {item.detail}</span>
+          <span className="min-w-0 leading-snug">
+            <b className="block text-sm font-semibold text-foreground">
+              {item.title}
+            </b>
+            <span className="block text-xs text-muted-foreground">
+              {item.detail}
+            </span>
           </span>
         </li>
       ))}

@@ -239,25 +239,24 @@ export function PdpSkeleton() {
 
       {/* Two-col PDP */}
       <div className="bb-pdp">
-        {/* Gallery */}
+        {/* Gallery — cover image with a thumbnail row below */}
         <div>
-          <div style={{ display: "flex", gap: 12 }}>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 6,
-                width: 82,
-                flexShrink: 0,
-              }}
-            >
-              {Array.from({ length: 4 }).map((_, i) => (
-                <SkelBlock key={i} w={82} h={82} />
-              ))}
-            </div>
-            <div style={{ flex: 1, aspectRatio: "1", minWidth: 0 }}>
-              <SkelBlock w="100%" h="100%" />
-            </div>
+          <div style={{ aspectRatio: "1", minWidth: 0 }}>
+            <SkelBlock w="100%" h="100%" />
+          </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(5, 1fr)",
+              gap: 10,
+              marginTop: 12,
+            }}
+          >
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} style={{ aspectRatio: "1" }}>
+                <SkelBlock w="100%" h="100%" />
+              </div>
+            ))}
           </div>
         </div>
 

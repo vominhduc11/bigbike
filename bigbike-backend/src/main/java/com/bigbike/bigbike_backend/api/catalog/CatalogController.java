@@ -41,6 +41,9 @@ public class CatalogController {
     private static final String ID_OR_SLUG_REGEX = "^[a-z0-9][a-z0-9_-]*$";
     private static final String HOMEPAGE_BLOCK_REGEX =
             "^(NONE|FEATURED_GRID|RECOMMENDED_CAROUSEL)$";
+    // Storefront content language. Vietnamese is canonical; English falls back
+    // field-by-field (see BUSINESS_RULES.md PRODUCT_RULE_002).
+    private static final String LANG_REGEX = "^(vi|en)$";
 
     private static final Map<ProductStockState, String> STOCK_LABELS = Map.of(
             ProductStockState.IN_STOCK, "Còn hàng",
@@ -65,6 +68,7 @@ public class CatalogController {
             @RequestParam(name = "homepage_block", required = false)
                 @Pattern(regexp = HOMEPAGE_BLOCK_REGEX, message = "Invalid homepage_block.")
                 String homepageBlock,
+            @RequestParam(defaultValue = "vi") @Pattern(regexp = LANG_REGEX, message = "Invalid lang.") String lang,
             HttpServletRequest request
     ) {
         if (minPrice != null && maxPrice != null && minPrice > maxPrice) {
@@ -78,7 +82,7 @@ public class CatalogController {
         return apiResponseFactory.list(
                 catalogReadService.listProducts(
                         page, size, sort, category, brand, q, filterColor,
-                        minPrice, maxPrice, block),
+                        minPrice, maxPrice, block, lang),
                 request
         );
     }
@@ -86,9 +90,10 @@ public class CatalogController {
     @GetMapping("/products/{slug}")
     public ApiDataResponse<Product> getProductBySlug(
             @PathVariable @Pattern(regexp = SLUG_REGEX, message = "Invalid slug.") String slug,
+            @RequestParam(defaultValue = "vi") @Pattern(regexp = LANG_REGEX, message = "Invalid lang.") String lang,
             HttpServletRequest request
     ) {
-        return apiResponseFactory.data(catalogReadService.getProductBySlug(slug), request);
+        return apiResponseFactory.data(catalogReadService.getProductBySlug(slug, lang), request);
     }
 
     /**
@@ -100,7 +105,8 @@ public class CatalogController {
             @PathVariable @Pattern(regexp = ID_OR_SLUG_REGEX, message = "Invalid product key.") String idOrSlug,
             HttpServletRequest request
     ) {
-        Product product = catalogReadService.getProductByIdOrSlug(idOrSlug);
+        // Snapshot carries only pricing/stock (no translatable text), so locale is irrelevant here.
+        Product product = catalogReadService.getProductByIdOrSlug(idOrSlug, "vi");
         return apiResponseFactory.data(toSnapshot(product), request);
     }
 

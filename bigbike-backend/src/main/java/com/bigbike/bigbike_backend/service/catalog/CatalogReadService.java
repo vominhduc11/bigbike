@@ -89,7 +89,8 @@ public class CatalogReadService {
             String filterColor,
             Long minPrice,
             Long maxPrice,
-            HomepageBlock homepageBlock
+            HomepageBlock homepageBlock,
+            String lang
     ) {
         SortSpec sortSpec = sortParser.parse(sort, "createdAt", SortDirection.DESC, PRODUCT_SORT_FIELDS);
 
@@ -97,7 +98,7 @@ public class CatalogReadService {
         // explicit predicate below is kept as a defensive guard and is a no-op.
         // Filtering runs on the full domain object — matchesColor() needs the
         // variant options, which the list-view projection below strips out.
-        List<Product> result = catalogReadRepository.findAllPublishedProducts().stream()
+        List<Product> result = catalogReadRepository.findAllPublishedProducts(lang).stream()
                 .filter(product -> product.publishStatus() == PublishStatus.PUBLISHED)
                 .filter(product -> matchesCategory(product, category))
                 .filter(product -> matchesBrand(product, brand))
@@ -167,6 +168,7 @@ public class CatalogReadService {
                 List.of(),                  // faqs — detail only
                 List.of(),                  // relatedProducts — detail only
                 null,                       // seo — detail only
+                null,                       // translations — admin detail read only
                 p.createdAt(),
                 p.updatedAt()
         );
@@ -195,8 +197,8 @@ public class CatalogReadService {
         );
     }
 
-    public Product getProductBySlug(String slug) {
-        Product product = catalogReadRepository.findProductBySlug(slug)
+    public Product getProductBySlug(String slug, String lang) {
+        Product product = catalogReadRepository.findProductBySlug(slug, lang)
                 .filter(item -> item.publishStatus() == PublishStatus.PUBLISHED)
                 .orElseThrow(() -> new NotFoundException("Product not found."));
         return product;
@@ -207,17 +209,17 @@ public class CatalogReadService {
      * The storefront uses slugs for SEO URLs; the mobile app stores the id with cart entries
      * and refreshes pricing via {@code /products/{id}/snapshot}.
      */
-    public Product getProductByIdOrSlug(String key) {
-        return catalogReadRepository.findProductBySlug(key)
-                .or(() -> catalogReadRepository.findProductByIdPublicView(key))
+    public Product getProductByIdOrSlug(String key, String lang) {
+        return catalogReadRepository.findProductBySlug(key, lang)
+                .or(() -> catalogReadRepository.findProductByIdPublicView(key, lang))
                 .filter(item -> item.publishStatus() == PublishStatus.PUBLISHED)
                 .orElseThrow(() -> new NotFoundException("Product not found."));
     }
 
-    public PageResult<Product> getWishlistProducts(List<String> productIds, int page, int size) {
+    public PageResult<Product> getWishlistProducts(List<String> productIds, int page, int size, String lang) {
         // One batch query instead of one per wishlist id; re-order by the input
         // id list so the storefront keeps the same display order as before.
-        Map<String, Product> publishedById = catalogReadRepository.findProductsByIdsPublicView(productIds).stream()
+        Map<String, Product> publishedById = catalogReadRepository.findProductsByIdsPublicView(productIds, lang).stream()
                 .filter(p -> p.publishStatus() == PublishStatus.PUBLISHED)
                 .collect(Collectors.toMap(Product::id, p -> p, (a, b) -> a));
         List<Product> products = productIds.stream()
@@ -284,7 +286,9 @@ public class CatalogReadService {
     public CatalogFacets computeFacets(String categorySlug, String q) {
         // findAllPublishedProducts() applies the PUBLISHED filter in SQL; the
         // explicit predicate below is kept as a defensive guard and is a no-op.
-        List<Product> publishedMatchingQuery = catalogReadRepository.findAllPublishedProducts().stream()
+        // Facet labels are taxonomy-driven (not product text), so Vietnamese
+        // content is fine here regardless of the storefront's display language.
+        List<Product> publishedMatchingQuery = catalogReadRepository.findAllPublishedProducts("vi").stream()
                 .filter(product -> product.publishStatus() == PublishStatus.PUBLISHED)
                 .filter(product -> matchesQuery(product, q))
                 .toList();

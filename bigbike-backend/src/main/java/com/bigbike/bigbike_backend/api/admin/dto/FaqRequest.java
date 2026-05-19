@@ -22,4 +22,11 @@ public class FaqRequest {
     private String answer;
 
     private Integer sortOrder;
+
+    // Optional English content (V136). Not required — English is optional per PRODUCT_RULE_001.
+    @Size(max = 500, message = "FAQ English question is too long.")
+    private String questionEn;
+
+    @Size(max = 20000, message = "FAQ English answer is too long.")
+    private String answerEn;
 }

@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
 import { PurchaseSectionClient } from "@/components/catalog/PurchaseSectionClient";
-import { ProductAnchorNav } from "@/components/catalog/ProductAnchorNav";
-import { ProductSection } from "@/components/catalog/ProductSection";
+import { ProductTabs } from "@/components/catalog/ProductTabs";
 import { ProductSpecTable } from "@/components/catalog/ProductSpecTable";
 import { ProductFaqSection } from "@/components/catalog/ProductFaqSection";
 import { ProductContactCta } from "@/components/catalog/ProductContactCta";
@@ -187,18 +186,18 @@ export default async function ProductDetailPage({
   // Each section that has content becomes an anchor-nav entry; reviews are
   // always shown (the section owns its own empty state).
 
+  const reviewCount = product.ratingCount ?? 0;
+
   const sections: {
     id: string;
-    navLabel: string;
-    title: string;
+    label: string;
     content: ReactNode;
   }[] = [];
 
   if (richHasContent(sanitizedDescription)) {
     sections.push({
       id: "mo-ta",
-      navLabel: "Mô tả",
-      title: "Mô tả sản phẩm",
+      label: "Mô tả sản phẩm",
       content: (
         <article
           className="bb-richtext"
@@ -210,8 +209,7 @@ export default async function ProductDetailPage({
   if (richHasContent(sanitizedPromotion)) {
     sections.push({
       id: "uu-dai",
-      navLabel: "Ưu đãi",
-      title: "Ưu đãi & khuyến mãi",
+      label: "Ưu đãi & khuyến mãi",
       content: (
         <article
           className="bb-richtext"
@@ -223,16 +221,14 @@ export default async function ProductDetailPage({
   if (specs.length > 0) {
     sections.push({
       id: "thong-so",
-      navLabel: "Thông số",
-      title: "Thông số kỹ thuật",
+      label: "Thông số kỹ thuật",
       content: <ProductSpecTable specifications={specs} />,
     });
   }
   if (richHasContent(sanitizedInstallation)) {
     sections.push({
       id: "lap-dat",
-      navLabel: "Lắp đặt",
-      title: "Hướng dẫn lắp đặt",
+      label: "Hướng dẫn lắp đặt",
       content: (
         <article
           className="bb-richtext"
@@ -243,15 +239,13 @@ export default async function ProductDetailPage({
   }
   sections.push({
     id: "danh-gia",
-    navLabel: "Đánh giá",
-    title: "Đánh giá khách hàng",
+    label: reviewCount > 0 ? `Đánh giá (${reviewCount})` : "Đánh giá khách hàng",
     content: <ReviewsSection productId={product.id} />,
   });
   if (faqs.length > 0) {
     sections.push({
       id: "faq",
-      navLabel: "FAQ",
-      title: "Câu hỏi thường gặp",
+      label: "Câu hỏi thường gặp",
       content: <ProductFaqSection faqs={faqs} />,
     });
   }
@@ -297,7 +291,7 @@ export default async function ProductDetailPage({
        * PurchaseSectionClient owns the gallery (+ optional featured video) on
        * the left and the dynamic purchase controls on the right.
        */}
-      <div className="bb-pdp">
+      <div className="mx-auto mt-5 grid max-w-[1440px] grid-cols-1 items-start gap-6 px-4 sm:gap-8 sm:px-6 lg:grid-cols-[7fr_5fr] lg:gap-12 [&>*]:min-w-0">
         <PurchaseSectionClient
           productId={product.id}
           productSlug={product.slug}
@@ -305,6 +299,7 @@ export default async function ProductDetailPage({
           brandName={safeText(product.brand?.name, "BigBike")}
           categoryName={safeText(effectiveCategory?.name, "")}
           categoryId={product.category?.id ?? ""}
+          sku={product.sku}
           shortDescription={product.shortDescription}
           initialRating={product.rating ?? null}
           initialRatingCount={product.ratingCount ?? null}
@@ -312,6 +307,7 @@ export default async function ProductDetailPage({
           gallery={gallery}
           videos={videos}
           zaloUrl={shopZalo || undefined}
+          hotline={shopHotline || undefined}
           fallbackPrice={product.price}
           fallbackStockState={product.stockState}
           fallbackVariants={product.variants ?? []}
@@ -319,34 +315,11 @@ export default async function ProductDetailPage({
         />
       </div>
 
-      {/*
-       * Sticky in-page navigation + the numbered bands it links to.
-       * The nav and the bands share THIS wrapper on purpose: `position: sticky`
-       * only holds while the sticky element's parent is in view, so the nav
-       * stays pinned for the full scroll through the sections and releases
-       * once the last band ends.
-       */}
-      <div className="mt-12">
-        <ProductAnchorNav
-          sections={sections.map((s) => ({ id: s.id, label: s.navLabel }))}
-        />
-
-        <div className="mx-auto mt-10 flex max-w-[1120px] flex-col px-6">
-          {sections.map((section, index) => (
-            <ProductSection
-              key={section.id}
-              id={section.id}
-              index={index + 1}
-              title={section.title}
-            >
-              {section.content}
-            </ProductSection>
-          ))}
-        </div>
-      </div>
+      {/* Tabbed product content — Mô tả / Thông số / Đánh giá … */}
+      <ProductTabs sections={sections} />
 
       {/* Local-SEO shop contact band */}
-      <div className="mx-auto mt-12 max-w-[1120px] px-6">
+      <div className="mx-auto mt-12 max-w-[1440px] px-4 sm:px-6">
         <ProductContactCta
           productName={productName}
           siteName={siteName}

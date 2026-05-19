@@ -15,6 +15,11 @@ type StockStatusProps = {
   data: StockData | null;
   fallbackState?: string;
   isLoading?: boolean;
+  /**
+   * "badge"  — black skewed parallelogram badge (legacy WP product page).
+   * "inline" — coloured status dot + label, sits inline above the buy row.
+   */
+  variant?: "badge" | "inline";
 };
 
 // At/under this threshold the badge swaps from generic "Còn ít" to a
@@ -22,7 +27,12 @@ type StockStatusProps = {
 // returns 18 for a LOW_STOCK product, "Chỉ còn 18" undermines urgency.
 const LOW_STOCK_URGENCY_THRESHOLD = 10;
 
-export function StockStatus({ data, fallbackState, isLoading }: StockStatusProps) {
+export function StockStatus({
+  data,
+  fallbackState,
+  isLoading,
+  variant = "badge",
+}: StockStatusProps) {
   if (isLoading && !fallbackState) return null;
 
   const rawState = data?.forceOutOfStock
@@ -39,6 +49,39 @@ export function StockStatus({ data, fallbackState, isLoading }: StockStatusProps
     rawState === "LOW_STOCK" && qty != null && qty > 0 && qty <= LOW_STOCK_URGENCY_THRESHOLD
       ? `Chỉ còn ${qty} sản phẩm`
       : baseLabel;
+
+  // Inline status line — coloured dot + label (mockup buy-box style).
+  if (variant === "inline") {
+    const dotColor =
+      rawState === "OUT_OF_STOCK"
+        ? "var(--bb-brand-primary)"
+        : rawState === "LOW_STOCK"
+          ? "var(--bb-color-warning)"
+          : rawState === "IN_STOCK"
+            ? "var(--bb-state-success)"
+            : "var(--bb-text-muted)";
+    const isOut = rawState === "OUT_OF_STOCK";
+    return (
+      <span className="inline-flex items-center gap-2 text-sm">
+        <span
+          className={cn(
+            "h-2 w-2 shrink-0 rounded-full",
+            rawState === "IN_STOCK" && "animate-pulse",
+          )}
+          style={{ background: dotColor }}
+          aria-hidden="true"
+        />
+        <span
+          className={cn(
+            "font-semibold",
+            isOut ? "text-muted-foreground" : "text-foreground",
+          )}
+        >
+          {label}
+        </span>
+      </span>
+    );
+  }
 
   // Black, skewed parallelogram badge — matches the legacy WP product page.
   return (

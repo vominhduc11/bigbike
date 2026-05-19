@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { ProductGallery } from "./ProductGallery";
 import { PricingPanel } from "./PricingPanel";
@@ -14,6 +15,7 @@ import { useCart } from "@/lib/cart-context";
 import { CompareButton } from "./CompareButton";
 import { Button } from "@/components/ui/button";
 import { QuantityStepper } from "@/components/ui/QuantityStepper";
+import { toCheckoutPath } from "@/lib/utils/routes";
 import {
   collectAttributeNames,
   findColorPreviewVariant,
@@ -47,6 +49,8 @@ export type PurchaseSectionClientProps = {
   categoryName: string;
   /** Primary category id — drives the "same category" rule of the comparison feature. */
   categoryId: string;
+  /** Product code shown in the brand/SKU row above the title. */
+  sku?: string;
   shortDescription: string | null | undefined;
   initialRating: number | null;
   initialRatingCount: number | null;
@@ -56,6 +60,8 @@ export type PurchaseSectionClientProps = {
   videos?: VideoAsset[];
   /** Shop Zalo link (raw phone or URL) from system settings — drives the consult button. */
   zaloUrl?: string;
+  /** Shop hotline from system settings — drives the phone consult button. */
+  hotline?: string;
   fallbackPrice: ProductPrice | null | undefined;
   fallbackStockState: string;
   fallbackVariants: ProductVariant[];
@@ -74,6 +80,7 @@ export function PurchaseSectionClient({
   brandName,
   categoryId,
   categoryName,
+  sku,
   shortDescription,
   initialRating,
   initialRatingCount,
@@ -81,12 +88,14 @@ export function PurchaseSectionClient({
   gallery,
   videos,
   zaloUrl,
+  hotline,
   fallbackPrice,
   fallbackStockState,
   fallbackVariants,
   canonicalUrl,
 }: PurchaseSectionClientProps) {
   const { addToCart } = useCart();
+  const router = useRouter();
 
   // Track the customer's progressively-built attribute selection. Empty
   // map = no attributes picked yet. Drives:
@@ -96,6 +105,7 @@ export function PurchaseSectionClient({
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [quantity, setQuantity] = useState(1);
   const [addLoading, setAddLoading] = useState(false);
+  const [buyLoading, setBuyLoading] = useState(false);
   const [addError, setAddError] = useState("");
 
   // ── Dynamic fetch — one round-trip for pricing + stock + variants ──────────
@@ -149,13 +159,21 @@ export function PurchaseSectionClient({
   // legacy reasons but are intentionally ignored.
   const effectivePricing: PricingData | null = snapshot?.pricing ?? null;
 
-  // Current price for the mobile sticky bar — mirrors PricingPanel's rule
-  // (sale price wins when present, else retail).
-  const stickyPrice = (() => {
-    const retail = effectivePricing?.retailPrice ?? fallbackPrice?.retailPrice ?? 0;
-    const sale = effectivePricing?.salePrice ?? fallbackPrice?.salePrice ?? null;
-    return sale && sale > 0 ? sale : retail;
-  })();
+  // Sale percent for the gallery corner badge — snapshot first, else derive
+  // from the ISR-cached fallback price.
+  const galleryDiscount = useMemo(() => {
+    const fromSnapshot = effectivePricing?.discountPercent ?? 0;
+    if (fromSnapshot > 0) return Math.round(fromSnapshot);
+    const compare = fallbackPrice?.compareAtPrice ?? 0;
+    const current =
+      fallbackPrice?.salePrice && fallbackPrice.salePrice > 0
+        ? fallbackPrice.salePrice
+        : (fallbackPrice?.retailPrice ?? 0);
+    if (compare > current && compare > 0 && current > 0) {
+      return Math.round(((compare - current) / compare) * 100);
+    }
+    return 0;
+  }, [effectivePricing, fallbackPrice]);
 
   const effectiveStockState =
     selectedVariant?.stockState ?? snapshot?.stock?.stockState ?? fallbackStockState;
@@ -177,6 +195,21 @@ export function PurchaseSectionClient({
         quantity: selectedVariant.stockQuantity ?? null,
       }
     : (snapshot?.stock ?? null);
+
+  // Single phone/Zalo consult CTA below the buy buttons — hotline wins.
+  const contact = (() => {
+    if (hotline && hotline.trim()) {
+      return {
+        href: `tel:${hotline.replace(/[^\d+]/g, "")}`,
+        label: `Liên hệ tư vấn: ${hotline.trim()}`,
+        external: false,
+      };
+    }
+    if (zaloUrl && zaloUrl.trim()) {
+      return { href: toZaloHref(zaloUrl), label: "Tư vấn qua Zalo ngay", external: true };
+    }
+    return null;
+  })();
 
   // ── Handlers ───────────────────────────────────────────────────────────────
 
@@ -215,6 +248,21 @@ export function PurchaseSectionClient({
     }
   }
 
+  async function handleBuyNow() {
+    setBuyLoading(true);
+    setAddError("");
+    try {
+      await addToCart(productId, quantity, selectedVariant?.id || undefined);
+      // Straight to checkout — keep the loading state so the button stays
+      // disabled through the navigation.
+      router.push(toCheckoutPath());
+    } catch (err) {
+      setAddError(err instanceof Error ? err.message : "Không thể mua sản phẩm này.");
+      setBuyLoading(false);
+    }
+  }
+
+  const busy = addLoading || buyLoading;
   const showRating = typeof initialRating === "number" && initialRating > 0;
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -232,6 +280,7 @@ export function PurchaseSectionClient({
           variantImage={previewVariant?.image ?? null}
           variantGallery={previewVariant?.gallery ?? undefined}
           variantKey={previewVariant?.id ?? null}
+          discountBadge={galleryDiscount}
         />
         {videos && videos.length > 0 && (
           <ProductVideoCarousel videos={videos} productName={productName} />
@@ -239,130 +288,173 @@ export function PurchaseSectionClient({
       </div>
 
       {/* Right: Info + Purchase controls */}
-      <div className="bb-pdp-info">
-        {/* Brand + category tag row above the title (mirrors the mockup's
-            brand chip row). */}
-        {(brandName || categoryName) && (
-          <div className="mb-3 flex flex-wrap gap-2">
-            {brandName && (
-              <span className="inline-flex items-center bg-muted px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                {brandName}
-              </span>
-            )}
-            {categoryName && (
-              <span className="inline-flex items-center border border-border px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                {categoryName}
-              </span>
-            )}
-          </div>
-        )}
-        <h1 className="bb-pdp-info-title">{productName}</h1>
-
-        {/* Price + rating (left) and stock badge (right) — one row. */}
-        <div className="bb-pdp-price-row">
-          <div className="bb-pdp-price-main">
-            <PricingPanel
-              data={effectivePricing}
-              fallback={fallbackPrice}
-              isLoading={snapshotLoading && !fallbackPrice}
-            />
-            {showRating ? (
-              <div className="bb-pdp-rating">
-                <span className="stars" aria-label={`${initialRating.toFixed(1)} sao`}>
-                  {Array.from({ length: 5 }, (_, i) => (
-                    <svg
-                      key={i}
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      aria-hidden="true"
-                      fill={i < Math.round(initialRating) ? "currentColor" : "none"}
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      className="text-brand"
-                    >
-                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                    </svg>
-                  ))}
+      <div className="flex min-w-0 flex-col gap-5">
+        {/* Brand · SKU · title · subtitle · rating */}
+        <div>
+          {(brandName || sku) && (
+            <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+              {brandName && (
+                <span className="font-cta text-sm font-bold uppercase tracking-wider text-brand">
+                  {brandName}
                 </span>
-                {typeof initialRatingCount === "number" && initialRatingCount > 0 && (
-                  <span className="bb-pdp-rating-count">({initialRatingCount} đánh giá)</span>
-                )}
-              </div>
-            ) : null}
-          </div>
-          <div className="bb-stock-wrap">
-            <StockStatus
-              data={effectiveStockData}
-              fallbackState={fallbackStockState}
-              isLoading={snapshotLoading && !fallbackStockState}
-            />
-          </div>
+              )}
+              {brandName && sku && (
+                <span className="h-1 w-1 shrink-0 rounded-full bg-border" aria-hidden="true" />
+              )}
+              {sku && (
+                <span className="text-sm text-muted-foreground">Mã SP: {sku}</span>
+              )}
+            </div>
+          )}
+          <h1 className="font-display text-[clamp(1.5rem,4vw,2.25rem)] font-semibold uppercase leading-[1.15] tracking-tight text-foreground">
+            {productName}
+          </h1>
+          {shortDescription && (
+            <p className="mt-2 text-base leading-relaxed text-muted-foreground">
+              {shortDescription}
+            </p>
+          )}
+          {showRating && (
+            <div className="mt-3 flex flex-wrap items-center gap-x-2.5 gap-y-1">
+              <span
+                className="flex items-center gap-0.5 text-brand"
+                aria-label={`${initialRating.toFixed(1)} sao`}
+              >
+                {Array.from({ length: 5 }, (_, i) => (
+                  <svg
+                    key={i}
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                    fill={i < Math.round(initialRating) ? "currentColor" : "none"}
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                  >
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                  </svg>
+                ))}
+              </span>
+              <span className="text-sm font-bold text-foreground">
+                {initialRating.toFixed(1)}
+              </span>
+              {typeof initialRatingCount === "number" && initialRatingCount > 0 && (
+                <span className="text-sm text-muted-foreground">
+                  ({initialRatingCount} đánh giá)
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
-        {shortDescription && (
-          <p className="bb-pdp-short-desc">{shortDescription}</p>
-        )}
+        {/* Price card */}
+        <div className="border border-border bg-muted/40 p-5">
+          <PricingPanel
+            data={effectivePricing}
+            fallback={fallbackPrice}
+            isLoading={snapshotLoading && !fallbackPrice}
+          />
+        </div>
 
         {/* "Please pick variant" prompt — only when product has variants the user
             hasn't fully picked AND product is not actually sold out. */}
         {requiresVariantSelection && effectiveStockState !== "OUT_OF_STOCK" && (
-          <div className="bb-pdp-variant-prompt" role="status">
-            Vui lòng chọn size/màu sắc để mua hàng:
+          <div
+            className="border border-brand/30 bg-accent px-3.5 py-2.5 text-sm font-semibold text-brand"
+            role="status"
+          >
+            Vui lòng chọn size/màu sắc để mua hàng.
           </div>
         )}
 
-        {/* Variant chip selectors (fresh data, fallback to ISR while loading) */}
-        <VariantSelector
-          variants={variants}
-          selectedOptions={selectedOptions}
-          onSelectOption={handleSelectOption}
-          isLoading={snapshotLoading && !fallbackVariants.length}
-        />
+        {/* Variant chip selectors — wrapper zeroes the last group's margin so
+            the flex-gap rhythm stays even. */}
+        {hasVariants && (
+          <div className="[&>div:last-child]:mb-0">
+            <VariantSelector
+              variants={variants}
+              selectedOptions={selectedOptions}
+              onSelectOption={handleSelectOption}
+              isLoading={snapshotLoading && !fallbackVariants.length}
+            />
+          </div>
+        )}
 
-        {/* Quantity stepper + single add-to-cart button — one row. */}
-        <div className="bb-pdp-buy-row">
-          <QuantityStepper
-            value={quantity}
-            onChange={setQuantity}
-            min={1}
-            max={effectiveStockData?.quantity ?? undefined}
-            ariaLabel="Số lượng sản phẩm"
+        {/* Stock line + quantity + purchase CTAs */}
+        <div className="flex flex-col gap-3">
+          <StockStatus
+            variant="inline"
+            data={effectiveStockData}
+            fallbackState={fallbackStockState}
+            isLoading={snapshotLoading && !fallbackStockState}
           />
+
+          <div className="flex flex-wrap items-stretch gap-3">
+            <QuantityStepper
+              value={quantity}
+              onChange={setQuantity}
+              min={1}
+              max={effectiveStockData?.quantity ?? undefined}
+              ariaLabel="Số lượng sản phẩm"
+            />
+            <Button
+              type="button"
+              variant="dark"
+              onClick={handleAddToCart}
+              disabled={busy || !isAvailable}
+              className="min-w-[180px] flex-1"
+            >
+              {addLoading
+                ? "Đang thêm..."
+                : requiresVariantSelection
+                  ? "Vui lòng chọn biến thể"
+                  : isAvailable
+                    ? "Thêm vào giỏ hàng"
+                    : "Tạm hết hàng"}
+            </Button>
+          </div>
+
           <Button
             type="button"
             variant="primary"
-            onClick={handleAddToCart}
-            disabled={addLoading || !isAvailable}
+            onClick={handleBuyNow}
+            disabled={busy || !isAvailable}
+            className="w-full"
           >
-            {addLoading
-              ? "Đang thêm..."
-              : requiresVariantSelection
-                ? "Vui lòng chọn biến thể"
-                : isAvailable
-                  ? "Thêm vào giỏ hàng"
-                  : "Tạm hết hàng"}
+            {buyLoading ? "Đang xử lý..." : "Mua ngay"}
           </Button>
+
+          {contact && (
+            <a
+              href={contact.href}
+              {...(contact.external
+                ? { target: "_blank", rel: "noopener noreferrer" }
+                : {})}
+              className="flex min-h-[44px] items-center justify-center gap-2 border-2 border-border px-4 py-3 font-cta text-sm font-semibold uppercase tracking-wide text-foreground transition-colors hover:border-brand hover:text-brand"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z" />
+              </svg>
+              {contact.label}
+            </a>
+          )}
+
+          {addError && (
+            <p className="bb-error-text mt-1" role="alert">
+              {addError}
+            </p>
+          )}
         </div>
-
-        {addError && (
-          <p className="bb-error-text bb-pdp-error">{addError}</p>
-        )}
-
-        {/* Zalo consult — secondary CTA for shoppers who want advice before buying. */}
-        {zaloUrl && (
-          <a
-            href={toZaloHref(zaloUrl)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-2 flex items-center justify-center gap-2 border-2 border-border px-4 py-3 font-heading text-sm font-semibold uppercase tracking-wide text-foreground transition-colors hover:border-brand hover:text-brand"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8A8.5 8.5 0 0 1 12.5 3 8.38 8.38 0 0 1 21 11.5z" />
-            </svg>
-            Tư vấn qua Zalo ngay
-          </a>
-        )}
 
         {/* Add this product to the comparison list (browser-local, max 3, same category). */}
         <CompareButton
@@ -372,7 +464,14 @@ export function PurchaseSectionClient({
             slug: productSlug,
             name: productName,
             imageUrl: mainImage?.url ?? null,
-            price: stickyPrice > 0 ? stickyPrice : null,
+            price:
+              (effectivePricing?.salePrice && effectivePricing.salePrice > 0
+                ? effectivePricing.salePrice
+                : effectivePricing?.retailPrice) ??
+              (fallbackPrice?.salePrice && fallbackPrice.salePrice > 0
+                ? fallbackPrice.salePrice
+                : fallbackPrice?.retailPrice) ??
+              null,
             categoryId,
             categoryName,
           }}
@@ -430,7 +529,7 @@ export function PurchaseSectionClient({
           </a>
         </div>
 
-        {/* Delivery / warranty / return trust band. */}
+        {/* Delivery / warranty / return trust grid. */}
         <ProductDeliveryInfo />
       </div>
 
@@ -441,10 +540,10 @@ export function PurchaseSectionClient({
       <div className="md:hidden fixed inset-x-0 bottom-0 z-[var(--bb-z-overlay)] flex items-center gap-2 border-t border-border bg-white px-4 py-2.5 pr-20 pb-[max(10px,env(safe-area-inset-bottom))] shadow-[0_-4px_14px_rgba(0,0,0,0.1)]">
         <Button
           type="button"
-          variant="primary"
+          variant="dark"
           onClick={handleAddToCart}
-          disabled={addLoading || !isAvailable}
-          className="flex-[2]"
+          disabled={busy || !isAvailable}
+          className="flex-1"
         >
           {addLoading
             ? "Đang thêm..."
@@ -454,20 +553,15 @@ export function PurchaseSectionClient({
                 ? "Thêm vào giỏ"
                 : "Tạm hết hàng"}
         </Button>
-        {zaloUrl && (
-          <a
-            href={toZaloHref(zaloUrl)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex flex-1 items-center justify-center gap-1.5 border-2 border-border px-3 py-3 font-heading text-xs font-semibold uppercase tracking-wide text-foreground transition-colors hover:border-brand hover:text-brand"
-            aria-label="Tư vấn qua Zalo"
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8A8.5 8.5 0 0 1 12.5 3 8.38 8.38 0 0 1 21 11.5z" />
-            </svg>
-            Zalo
-          </a>
-        )}
+        <Button
+          type="button"
+          variant="primary"
+          onClick={handleBuyNow}
+          disabled={busy || !isAvailable}
+          className="flex-1"
+        >
+          {buyLoading ? "Đang xử lý..." : "Mua ngay"}
+        </Button>
       </div>
     </>
   );

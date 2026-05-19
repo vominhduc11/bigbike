@@ -22,9 +22,10 @@ type ProductGalleryProps = {
    * image, not whatever index they were viewing on the previous variant.
    */
   variantKey?: string | null;
+  /** Sale percentage shown as a corner badge over the cover image; 0 hides it. */
+  discountBadge?: number;
 };
 
-const THUMB_VISIBLE = 4;
 const ZOOM_FACTOR = 2.5;
 const LENS_SIZE_PCT = 100 / ZOOM_FACTOR;
 
@@ -43,6 +44,7 @@ export function ProductGallery({
   variantImage,
   variantGallery,
   variantKey,
+  discountBadge = 0,
 }: ProductGalleryProps) {
   // Color isolation rules:
   //   cover  = variantImage (if set)        ELSE product.mainImage
@@ -56,7 +58,6 @@ export function ProductGallery({
     : stripBody;
 
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [stripStart, setStripStart] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [zoomActive, setZoomActive] = useState(false);
   const [zoomPos, setZoomPos] = useState({ x: 0.5, y: 0.5 });
@@ -65,45 +66,23 @@ export function ProductGallery({
 
   // ── Reset to first thumb when the active variant changes ───────────────
   // Using "adjusting state during render" pattern instead of useEffect.
-  // Tracks the variant identity (or "no variant" sentinel) so we reset
-  // exactly once per transition.
   const variantToken = variantKey ?? "__no_variant__";
   const [prevVariantToken, setPrevVariantToken] = useState(variantToken);
   if (variantToken !== prevVariantToken) {
     setPrevVariantToken(variantToken);
     setSelectedIndex(0);
-    setStripStart(0);
   }
 
   const count = allImages.length;
   const selectedImage = allImages[selectedIndex] ?? coverImage ?? mainImage;
 
   const prev = useCallback(() => {
-    setSelectedIndex((i) => {
-      const next = (i - 1 + count) % count;
-      setStripStart((s) => (next < s ? next : next >= s + THUMB_VISIBLE ? next - THUMB_VISIBLE + 1 : s));
-      return next;
-    });
+    setSelectedIndex((i) => (i - 1 + count) % count);
   }, [count]);
 
   const next = useCallback(() => {
-    setSelectedIndex((i) => {
-      const n = (i + 1) % count;
-      setStripStart((s) => (n >= s + THUMB_VISIBLE ? s + 1 : n < s ? 0 : s));
-      return n;
-    });
+    setSelectedIndex((i) => (i + 1) % count);
   }, [count]);
-
-  const selectThumb = (i: number) => {
-    setSelectedIndex(i);
-  };
-
-  const stripUp = () => setStripStart((s) => Math.max(0, s - 1));
-  const stripDown = () => setStripStart((s) => Math.min(count - THUMB_VISIBLE, s + 1));
-
-  const canStripUp = stripStart > 0;
-  const canStripDown = stripStart + THUMB_VISIBLE < count;
-  const visibleThumbs = allImages.slice(stripStart, stripStart + THUMB_VISIBLE);
 
   // Keyboard navigation
   useEffect(() => {
@@ -162,80 +141,14 @@ export function ProductGallery({
 
   return (
     <>
-      <div className="flex min-w-0 flex-row gap-3 max-[769px]:flex-col">
-        {/* Left: vertical thumbnail strip */}
-        {count > 1 && (
-          <div className="flex w-[82px] shrink-0 flex-col items-center gap-1.5 max-[769px]:order-2 max-[769px]:h-auto max-[769px]:w-full max-[769px]:flex-row max-[769px]:overflow-x-auto max-[769px]:overflow-y-hidden max-[769px]:[scroll-snap-type:x_mandatory] max-[769px]:[-webkit-overflow-scrolling:touch] max-[769px]:[scrollbar-width:thin]">
-            <button
-              type="button"
-              className={cn(
-                "flex h-11 w-full shrink-0 items-center justify-center border border-[color:var(--bb-border-default)] bg-white text-muted-foreground transition-all enabled:hover:border-brand enabled:hover:bg-[#f4f4f4] enabled:hover:text-foreground disabled:cursor-default disabled:opacity-50 max-[769px]:h-[82px] max-[769px]:w-7 pointer-coarse:min-h-11 pointer-coarse:min-w-11 max-[769px]:min-w-11",
-                FOCUS_RING,
-              )}
-              onClick={stripUp}
-              disabled={!canStripUp}
-              aria-label="Cuộn lên"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
-                <path d="M18 15l-6-6-6 6" />
-              </svg>
-            </button>
-
-            <div className="flex flex-col gap-1.5 max-[769px]:flex-row max-[769px]:flex-nowrap">
-              {visibleThumbs.map((image, vi) => {
-                const i = stripStart + vi;
-                const active = i === selectedIndex;
-                return (
-                  <button
-                    key={image.id ?? image.url ?? i}
-                    type="button"
-                    className={cn(
-                      "flex h-[82px] w-[82px] min-h-0 shrink-0 items-center justify-center overflow-hidden border bg-white p-2 transition-[border-color] max-[769px]:[scroll-snap-align:start]",
-                      active
-                        ? "border-brand"
-                        : "border-[color:var(--bb-border-default)] hover:border-[color:var(--bb-text-secondary)]",
-                      FOCUS_RING,
-                    )}
-                    onClick={() => selectThumb(i)}
-                    aria-label={`Xem ảnh ${i + 1}`}
-                    aria-pressed={active}
-                  >
-                    <MediaImage
-                      image={image}
-                      altFallback={altFallback}
-                      width={160}
-                      height={160}
-                      className="h-full w-full object-contain"
-                    />
-                  </button>
-                );
-              })}
-            </div>
-
-            <button
-              type="button"
-              className={cn(
-                "flex h-11 w-full shrink-0 items-center justify-center border border-[color:var(--bb-border-default)] bg-white text-muted-foreground transition-all enabled:hover:border-brand enabled:hover:bg-[#f4f4f4] enabled:hover:text-foreground disabled:cursor-default disabled:opacity-50 max-[769px]:h-[82px] max-[769px]:w-7 pointer-coarse:min-h-11 pointer-coarse:min-w-11 max-[769px]:min-w-11",
-                FOCUS_RING,
-              )}
-              onClick={stripDown}
-              disabled={!canStripDown}
-              aria-label="Cuộn xuống"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
-                <path d="M6 9l6 6 6-6" />
-              </svg>
-            </button>
-          </div>
-        )}
-
-        {/* Right: main image (with elevateZoom-style hover lens + zoom window) */}
-        <div className="relative min-w-0 flex-1">
+      <div className="flex min-w-0 flex-col gap-3">
+        {/* Cover image — square frame with hover lens + badge overlay */}
+        <div className="relative min-w-0">
           <button
             ref={mainRef}
             type="button"
             className={cn(
-              "group relative flex aspect-square w-full min-w-0 cursor-zoom-in items-center justify-center overflow-hidden border-0 bg-transparent p-0 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.04),inset_0_-24px_48px_rgba(0,0,0,0.06)]",
+              "group relative flex aspect-square w-full min-w-0 cursor-zoom-in items-center justify-center overflow-hidden border border-border bg-white p-0",
               FOCUS_RING,
             )}
             onClick={() => setLightboxOpen(true)}
@@ -254,7 +167,7 @@ export function ProductGallery({
             />
             <span
               className={cn(
-                "pointer-events-none absolute bottom-2.5 right-3 flex items-center border border-white/[0.12] bg-black/55 px-[7px] py-[5px] text-white/85 transition-opacity",
+                "pointer-events-none absolute bottom-3 right-3 flex items-center border border-border bg-white/90 p-2 text-foreground transition-opacity",
                 zoomActive ? "opacity-0" : "opacity-0 group-hover:opacity-100",
               )}
               aria-hidden="true"
@@ -266,7 +179,7 @@ export function ProductGallery({
             </span>
             {zoomActive && (
               <span
-                className="pointer-events-none absolute z-[2] box-border border border-white/55 bg-black/50 max-[1180px]:hidden"
+                className="pointer-events-none absolute z-[2] box-border border border-brand/70 bg-brand/10 max-[1180px]:hidden"
                 style={{
                   width: `${LENS_SIZE_PCT}%`,
                   height: `${LENS_SIZE_PCT}%`,
@@ -276,37 +189,21 @@ export function ProductGallery({
                 aria-hidden="true"
               />
             )}
-            {/* Mobile-only image position indicators: dot strip + "n / N"
-                counter. Hidden on desktop where the thumbnail strip and the
-                hover-zoom affordance already convey position. */}
-            {count > 1 && (
-              <>
-                <span
-                  className="pointer-events-none absolute bottom-2.5 left-1/2 hidden -translate-x-1/2 items-center gap-1.5 max-[769px]:flex"
-                  aria-hidden="true"
-                >
-                  {allImages.map((image, i) => (
-                    <span
-                      key={image.id ?? image.url ?? i}
-                      className={cn(
-                        "h-1.5 rounded-full transition-all",
-                        i === selectedIndex ? "w-4 bg-brand" : "w-1.5 bg-black/25",
-                      )}
-                    />
-                  ))}
-                </span>
-                <span
-                  className="pointer-events-none absolute bottom-2.5 right-3 hidden items-center bg-black/55 px-2 py-0.5 text-xs font-semibold text-white max-[769px]:flex"
-                  aria-hidden="true"
-                >
-                  {selectedIndex + 1} / {count}
-                </span>
-              </>
-            )}
           </button>
+
+          {/* Sale badge — top-left corner over the cover image. */}
+          {discountBadge > 0 && (
+            <span
+              className="pointer-events-none absolute left-3 top-3 z-[2] bg-brand px-2.5 py-1 font-body text-xs font-bold uppercase tracking-wide text-white"
+              aria-hidden="true"
+            >
+              -{discountBadge}%
+            </span>
+          )}
+
           {zoomActive && zoomImageUrl && (
             <div
-              className="pointer-events-none absolute top-0 left-[calc(100%+12px)] z-30 aspect-square w-[min(520px,90vw)] border border-black/12 bg-white bg-no-repeat shadow-[0_18px_36px_rgba(0,0,0,0.35)] max-[1180px]:hidden"
+              className="pointer-events-none absolute top-0 left-[calc(100%+12px)] z-30 aspect-square w-[min(520px,90vw)] border border-border bg-white bg-no-repeat shadow-[0_18px_36px_rgba(0,0,0,0.25)] max-[1180px]:hidden"
               style={{
                 backgroundImage: `url("${zoomImageUrl.replaceAll('"', '%22')}")`,
                 backgroundPosition: `${zoomPos.x * 100}% ${zoomPos.y * 100}%`,
@@ -316,6 +213,39 @@ export function ProductGallery({
             />
           )}
         </div>
+
+        {/* Thumbnail grid — sits below the cover image (5 per row). */}
+        {count > 1 && (
+          <div className="grid grid-cols-5 gap-2.5">
+            {allImages.map((image, i) => {
+              const active = i === selectedIndex;
+              return (
+                <button
+                  key={image.id ?? image.url ?? i}
+                  type="button"
+                  className={cn(
+                    "flex aspect-square min-h-0 w-full items-center justify-center overflow-hidden bg-white p-1.5 transition-[border-color]",
+                    active
+                      ? "border-2 border-brand"
+                      : "border border-border hover:border-foreground",
+                    FOCUS_RING,
+                  )}
+                  onClick={() => setSelectedIndex(i)}
+                  aria-label={`Xem ảnh ${i + 1}`}
+                  aria-pressed={active}
+                >
+                  <MediaImage
+                    image={image}
+                    altFallback={altFallback}
+                    width={200}
+                    height={200}
+                    className="h-full w-full object-contain"
+                  />
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Lightbox */}

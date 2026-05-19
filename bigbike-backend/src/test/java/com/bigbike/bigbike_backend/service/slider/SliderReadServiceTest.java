@@ -71,6 +71,7 @@ class SliderReadServiceTest {
                         List.of(),
                         List.of(),
                         null,
+                        null,
                         Instant.now(),
                         Instant.now()
                 )));

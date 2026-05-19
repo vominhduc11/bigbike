@@ -47,6 +47,11 @@ public record Product(
          */
         List<Product> relatedProducts,
         SeoMeta seo,
+        /**
+         * Raw English content (V136). Populated only on admin product detail reads
+         * so the editor can show both languages; {@code null} on public reads.
+         */
+        ProductTranslations translations,
         Instant createdAt,
         Instant updatedAt
 ) {

@@ -35,4 +35,11 @@ public class ProductFaqEntity {
     @Column(nullable = false, columnDefinition = "text")
     private String answer;
 
+    // Optional English content (V136). Null = falls back to the Vietnamese field.
+    @Column(name = "question_en", length = 500)
+    private String questionEn;
+
+    @Column(name = "answer_en", columnDefinition = "text")
+    private String answerEn;
+
 }

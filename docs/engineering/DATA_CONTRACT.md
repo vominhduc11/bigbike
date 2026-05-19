@@ -269,6 +269,44 @@ Status: `CONFIRMED_FROM_CODE` — `ProductEntity.relatedProducts`,
 `UpsertProductRequest.relatedProductIds`, `AdminCatalogMutationService.resolveRelatedProducts`,
 `JpaCatalogReadRepository.toRelatedProducts`, migration `V135`.
 
+### Product bilingual content — English columns (V136)
+
+BigBike sản phẩm có 2 bản nội dung: **tiếng Việt** (canonical, bắt buộc) và
+**tiếng Anh** (tùy chọn). Bản tiếng Việt vẫn nằm ở các cột gốc như cũ; bản tiếng
+Anh được lưu trên **các cột `_en` nullable cùng dòng** — không có bảng dịch riêng.
+Lý do: chỉ có đúng 2 ngôn ngữ cố định, và các bảng con `product_specifications` /
+`product_faqs` bị xóa-tạo-lại toàn bộ mỗi lần lưu (id con đổi liên tục) nên bảng
+dịch khóa theo id con sẽ bị mồ côi.
+
+**Cột `_en` trên `products`** (đều nullable, kiểu khớp cột gốc):
+
+| Cột tiếng Việt (gốc) | Cột tiếng Anh | Kiểu |
+|---|---|---|
+| `name` | `name_en` | `VARCHAR(255)` |
+| `short_description` | `short_description_en` | `TEXT` |
+| `description` | `description_en` | `TEXT` |
+| `content_bottom` | `content_bottom_en` | `TEXT` |
+| `promotion_content` | `promotion_content_en` | `TEXT` |
+| `installation_guide` | `installation_guide_en` | `TEXT` |
+| `seo_title` | `seo_title_en` | `VARCHAR(255)` |
+| `seo_description` | `seo_description_en` | `TEXT` |
+
+**Cột `_en` trên `product_specifications`:** `name_en VARCHAR(255)`, `value_en TEXT`,
+`group_name_en VARCHAR(255)`.
+**Cột `_en` trên `product_faqs`:** `question_en VARCHAR(500)`, `answer_en TEXT`.
+
+**Fallback theo từng trường:** khi đọc bản tiếng Anh, mỗi trường lấy
+`COALESCE(<field>_en, <field>)` — sản phẩm có thể có tên tiếng Anh nhưng mô tả
+vẫn lùi về tiếng Việt. Bản tiếng Việt không bao giờ bị thiếu (xem
+`BUSINESS_RULES.md` `PRODUCT_RULE_001`, `PRODUCT_RULE_002`).
+
+**Không dịch ở đợt này:** `slug` (URL dùng chung 1 bản), alt ảnh, tên video,
+tên biến thể, `seo_canonical_url`.
+
+Status: `CONFIRMED_FROM_CODE` — `ProductEntity`, `ProductSpecificationEntity`,
+`ProductFaqEntity` (các trường `*En`), `ProductTranslations` domain record,
+`JpaCatalogReadRepository` (resolve locale), migration `V136`.
+
 ### Product homepage placement (V111+)
 
 Two columns on the `products` table control homepage surface placement. The legacy boolean pair (`is_featured`, `show_on_homepage`) was **dropped in migration `V111__refactor_product_homepage_block.sql` (2026-05-14)** and must not be referenced in any new code or query.

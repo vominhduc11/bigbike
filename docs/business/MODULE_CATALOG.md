@@ -4,7 +4,7 @@
 
 | Module | Surface | Current implementation | Status | Evidence |
 |---|---|---|---|---|
-| Catalog browse | web, backend, mobile | Products, categories, brands, articles, pages, settings, menus, sliders, home videos | `CONFIRMED_FROM_CODE` | public controllers, `public-api.ts`, `api_endpoints.dart` |
+| Catalog browse | web, backend, mobile | Products, categories, brands, articles, pages, settings, menus, sliders, home videos. Nội dung sản phẩm song ngữ Việt/Anh (V136) — đọc theo `lang`, tiếng Anh tùy chọn, fallback về tiếng Việt theo từng trường. | `CONFIRMED_FROM_CODE` | public controllers, `public-api.ts`, `api_endpoints.dart`, `V136__add_product_bilingual_content.sql` |
 | Page hero banners | web, backend, admin | Admin-managed hero (image + title + description + kicker) on every public content page. Backed by `PageEntity` for CMS pages and by `public_hero` settings group for listing pages (`/san-pham`, `/brands`, `/tin-tuc`). | `CONFIRMED_FROM_CODE` | `PageEntity.java` hero fields (V98), `SettingDefinitionRegistry` `hero_*` keys, `bigbike-web/components/layout/PageHero.tsx` |
 | Search | web, backend, mobile | `GET /api/v1/search` and `GET /api/v1/search-suggest` | `CONFIRMED_FROM_CODE` | `PublicSearchController.java`, `SecurityConfig.java`, clients |
 | Cart | web, backend, mobile | Guest/customer cart with CSRF-protected mutations | `CONFIRMED_FROM_CODE` | `CartController.java`, `CartService.java`, tests |

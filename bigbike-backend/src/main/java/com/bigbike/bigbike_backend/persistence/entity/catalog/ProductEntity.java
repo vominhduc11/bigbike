@@ -169,6 +169,32 @@ public class ProductEntity {
     private String seoOgImageMimeType;
     private Boolean seoNoIndex;
 
+    // Optional English content (V136). Vietnamese stays on the columns above (canonical).
+    // Null = no English; reads fall back to the Vietnamese column field-by-field.
+    @Column(name = "name_en")
+    private String nameEn;
+
+    @Column(name = "short_description_en", columnDefinition = "text")
+    private String shortDescriptionEn;
+
+    @Column(name = "description_en", columnDefinition = "text")
+    private String descriptionEn;
+
+    @Column(name = "content_bottom_en", columnDefinition = "text")
+    private String contentBottomEn;
+
+    @Column(name = "promotion_content_en", columnDefinition = "text")
+    private String promotionContentEn;
+
+    @Column(name = "installation_guide_en", columnDefinition = "text")
+    private String installationGuideEn;
+
+    @Column(name = "seo_title_en")
+    private String seoTitleEn;
+
+    @Column(name = "seo_description_en", columnDefinition = "text")
+    private String seoDescriptionEn;
+
     @Column(nullable = false)
     private Instant createdAt;
 

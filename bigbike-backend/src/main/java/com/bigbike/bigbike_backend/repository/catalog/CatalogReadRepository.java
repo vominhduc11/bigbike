@@ -16,19 +16,22 @@ public interface CatalogReadRepository {
      * status filter is pushed to SQL here — the result is identical to
      * {@code findAllProducts()} filtered to PUBLISHED, but the deep entity
      * graph of DRAFT/TRASH products is never materialised.
+     *
+     * @param locale {@code "vi"} or {@code "en"}; English content falls back
+     *               to Vietnamese field-by-field (see {@code PRODUCT_RULE_002}).
      */
-    List<Product> findAllPublishedProducts();
+    List<Product> findAllPublishedProducts(String locale);
 
     List<Product> findProductsFiltered(String query, String publishStatus, String stockState, String brandId, String categoryId);
 
-    Optional<Product> findProductBySlug(String slug);
+    Optional<Product> findProductBySlug(String slug, String locale);
 
     Optional<Product> findProductById(String id);
 
-    Optional<Product> findProductByIdPublicView(String id);
+    Optional<Product> findProductByIdPublicView(String id, String locale);
 
     /** Batch public-view lookup by id. Order of the result is not guaranteed; callers re-order. */
-    List<Product> findProductsByIdsPublicView(List<String> ids);
+    List<Product> findProductsByIdsPublicView(List<String> ids, String locale);
 
     List<Category> findAllCategories();
 

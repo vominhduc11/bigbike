@@ -58,7 +58,7 @@ public class CustomerWishlistController {
                 .stream()
                 .map(WishlistItemEntity::getProductId)
                 .toList();
-        PageResult<Product> result = catalogReadService.getWishlistProducts(productIds, page, size);
+        PageResult<Product> result = catalogReadService.getWishlistProducts(productIds, page, size, "vi");
         return apiResponseFactory.list(result, request);
     }
 

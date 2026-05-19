@@ -37,4 +37,14 @@ public class ProductSpecificationEntity {
 
     private String groupName;
 
+    // Optional English content (V136). Null = falls back to the Vietnamese field.
+    @Column(name = "name_en")
+    private String nameEn;
+
+    @Column(name = "spec_value_en", columnDefinition = "text")
+    private String valueEn;
+
+    @Column(name = "group_name_en")
+    private String groupNameEn;
+
 }

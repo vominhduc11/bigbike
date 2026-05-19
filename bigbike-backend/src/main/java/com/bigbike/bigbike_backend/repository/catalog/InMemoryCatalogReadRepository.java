@@ -230,8 +230,8 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                         )
                 ),
                 List.of(
-                        new ProductSpecification("Chuẩn an toàn", "ECE 22.06", "An toàn"),
-                        new ProductSpecification("Trọng lượng", "1500g ± 50g", "Thông số")
+                        new ProductSpecification("Chuẩn an toàn", "ECE 22.06", "An toàn", null, null, null),
+                        new ProductSpecification("Trọng lượng", "1500g ± 50g", "Thông số", null, null, null)
                 ),
                 ProductStockState.IN_STOCK,
                 15,
@@ -253,6 +253,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                         null,
                         false
                 ),
+                null,
                 Instant.parse("2026-04-01T05:00:00Z"),
                 Instant.parse("2026-04-18T06:30:00Z")
         );
@@ -279,7 +280,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 List.of(),
                 new ProductPrice(BigDecimal.valueOf(2890000), null, null, "VND"),
                 List.of(),
-                List.of(new ProductSpecification("Vỏ mũ", "Composite", "Thông số")),
+                List.of(new ProductSpecification("Vỏ mũ", "Composite", "Thông số", null, null, null)),
                 ProductStockState.IN_STOCK,
                 null,
                 false,
@@ -300,6 +301,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                         null,
                         false
                 ),
+                null,
                 Instant.parse("2026-04-02T05:00:00Z"),
                 Instant.parse("2026-04-19T07:30:00Z")
         );
@@ -326,7 +328,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 List.of(),
                 new ProductPrice(BigDecimal.valueOf(2450000), BigDecimal.valueOf(2790000), BigDecimal.valueOf(2450000), "VND"),
                 List.of(),
-                List.of(new ProductSpecification("Chất liệu", "Lưới + chống mài mòn", "Thông số")),
+                List.of(new ProductSpecification("Chất liệu", "Lưới + chống mài mòn", "Thông số", null, null, null)),
                 ProductStockState.LOW_STOCK,
                 4,
                 false,
@@ -347,6 +349,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                         null,
                         false
                 ),
+                null,
                 Instant.parse("2026-04-05T05:00:00Z"),
                 Instant.parse("2026-04-18T09:10:00Z")
         );
@@ -360,7 +363,9 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
     }
 
     @Override
-    public List<Product> findAllPublishedProducts() {
+    public List<Product> findAllPublishedProducts(String locale) {
+        // Mock backend serves Vietnamese seed content only; locale is accepted
+        // for interface parity but not resolved (no _en data in the fixtures).
         return products.stream()
                 .filter(p -> p.publishStatus() == PublishStatus.PUBLISHED)
                 .toList();
@@ -387,7 +392,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
     }
 
     @Override
-    public Optional<Product> findProductBySlug(String slug) {
+    public Optional<Product> findProductBySlug(String slug, String locale) {
         return products.stream().filter(product -> product.slug().equals(slug)).findFirst();
     }
 
@@ -397,12 +402,12 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
     }
 
     @Override
-    public Optional<Product> findProductByIdPublicView(String id) {
+    public Optional<Product> findProductByIdPublicView(String id, String locale) {
         return products.stream().filter(product -> product.id().equals(id)).findFirst();
     }
 
     @Override
-    public List<Product> findProductsByIdsPublicView(List<String> ids) {
+    public List<Product> findProductsByIdsPublicView(List<String> ids, String locale) {
         if (ids == null || ids.isEmpty()) {
             return List.of();
         }

@@ -9,6 +9,7 @@ import com.bigbike.bigbike_backend.domain.catalog.Product;
 import com.bigbike.bigbike_backend.domain.catalog.ProductFaq;
 import com.bigbike.bigbike_backend.domain.catalog.ProductPrice;
 import com.bigbike.bigbike_backend.domain.catalog.ProductSpecification;
+import com.bigbike.bigbike_backend.domain.catalog.ProductTranslations;
 import com.bigbike.bigbike_backend.domain.catalog.ProductVariant;
 import com.bigbike.bigbike_backend.domain.catalog.ProductVariantOption;
 import com.bigbike.bigbike_backend.domain.catalog.SeoMeta;
@@ -70,6 +71,21 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     private static final Comparator<ProductVariantEntity> VARIANT_ORDER = Comparator.comparingInt(ProductVariantEntity::getSortOrder);
     private static final Comparator<ProductVariantOptionEntity> VARIANT_OPTION_ORDER = Comparator.comparingInt(ProductVariantOptionEntity::getSortOrder);
 
+    private static final String LOCALE_VI = "vi";
+    private static final String LOCALE_EN = "en";
+
+    /**
+     * Resolve one translatable field for the requested locale. English content
+     * falls back to Vietnamese field-by-field when the {@code _en} column is
+     * blank (see {@code BUSINESS_RULES.md PRODUCT_RULE_002}).
+     */
+    private static String pick(String base, String en, String locale) {
+        if (LOCALE_EN.equals(locale) && en != null && !en.isBlank()) {
+            return en;
+        }
+        return base;
+    }
+
     private final ProductJpaRepository productJpaRepository;
     private final CategoryJpaRepository categoryJpaRepository;
     private final BrandJpaRepository brandJpaRepository;
@@ -79,13 +95,15 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
 
     @Override
     public List<Product> findAllProducts() {
-        return productJpaRepository.findAll().stream().map(this::toDomainPublicView).toList();
+        return productJpaRepository.findAll().stream()
+                .map(entity -> toDomainPublicView(entity, LOCALE_VI))
+                .toList();
     }
 
     @Override
-    public List<Product> findAllPublishedProducts() {
+    public List<Product> findAllPublishedProducts(String locale) {
         return productJpaRepository.findByPublishStatus(PublishStatus.PUBLISHED).stream()
-                .map(this::toDomainPublicView)
+                .map(entity -> toDomainPublicView(entity, locale))
                 .toList();
     }
 
@@ -93,11 +111,11 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     public List<Product> findProductsFiltered(String query, String publishStatus, String stockState, String brandId, String categoryId) {
         Specification<ProductEntity> spec = buildProductSpec(query, publishStatus, stockState, brandId, categoryId);
         return productJpaRepository.findAll(spec).stream()
-                .map(this::toDomainListItem)
+                .map(entity -> toDomainListItem(entity, LOCALE_VI))
                 .toList();
     }
 
-    private Product toDomainListItem(ProductEntity entity) {
+    private Product toDomainListItem(ProductEntity entity, String locale) {
         CategorySummary primaryCategory = toCategorySummary(entity.getCategory());
         List<CategorySummary> categories = primaryCategory == null
                 ? List.of()
@@ -106,7 +124,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 entity.getId(),
                 entity.getSku(),
                 entity.getSlug(),
-                entity.getName(),
+                pick(entity.getName(), entity.getNameEn(), locale),
                 null,
                 null,
                 toBrandSummary(entity.getBrand()),
@@ -144,6 +162,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 List.of(),                  // faqs — detail only
                 List.of(),                  // relatedProducts — detail only
                 null,
+                null,                       // translations — detail only (admin detail read)
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
         );
@@ -181,8 +200,8 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     }
 
     @Override
-    public Optional<Product> findProductBySlug(String slug) {
-        return productJpaRepository.findBySlug(slug).map(this::toDomainPublicView);
+    public Optional<Product> findProductBySlug(String slug, String locale) {
+        return productJpaRepository.findBySlug(slug).map(entity -> toDomainPublicView(entity, locale));
     }
 
     @Override
@@ -191,17 +210,17 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     }
 
     @Override
-    public Optional<Product> findProductByIdPublicView(String id) {
-        return productJpaRepository.findById(id).map(this::toDomainPublicView);
+    public Optional<Product> findProductByIdPublicView(String id, String locale) {
+        return productJpaRepository.findById(id).map(entity -> toDomainPublicView(entity, locale));
     }
 
     @Override
-    public List<Product> findProductsByIdsPublicView(List<String> ids) {
+    public List<Product> findProductsByIdsPublicView(List<String> ids, String locale) {
         if (ids == null || ids.isEmpty()) {
             return List.of();
         }
         return productJpaRepository.findAllById(ids).stream()
-                .map(this::toDomainPublicView)
+                .map(entity -> toDomainPublicView(entity, locale))
                 .toList();
     }
 
@@ -291,12 +310,17 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         return brandJpaRepository.findById(id).map(this::toDomain);
     }
 
-    private Product toDomainPublicView(ProductEntity entity) {
-        return toDomain(entity, true);
+    private Product toDomainPublicView(ProductEntity entity, String locale) {
+        return toDomain(entity, true, locale);
     }
 
+    /**
+     * Admin detail read: main fields stay Vietnamese (canonical); the raw English
+     * content is carried separately in {@code translations} / the {@code *En}
+     * spec/FAQ fields so the editor can show both languages.
+     */
     private Product toDomain(ProductEntity entity) {
-        return toDomain(entity, false);
+        return toDomain(entity, false, LOCALE_VI);
     }
 
     /**
@@ -311,7 +335,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         return raw;
     }
 
-    private Product toDomain(ProductEntity entity, boolean publicView) {
+    private Product toDomain(ProductEntity entity, boolean publicView, String locale) {
         CategorySummary primaryCategory = toCategorySummary(entity.getCategory());
         List<CategorySummary> categories = primaryCategory == null
                 ? List.of()
@@ -325,9 +349,9 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 entity.getId(),
                 entity.getSku(),
                 entity.getSlug(),
-                entity.getName(),
-                entity.getShortDescription(),
-                entity.getDescription(),
+                pick(entity.getName(), entity.getNameEn(), locale),
+                pick(entity.getShortDescription(), entity.getShortDescriptionEn(), locale),
+                pick(entity.getDescription(), entity.getDescriptionEn(), locale),
                 toBrandSummary(entity.getBrand(), publicView),
                 primaryCategory,
                 categories,
@@ -348,7 +372,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         entity.getCurrency()
                 ),
                 toVariants(entity, publicView),
-                toSpecifications(entity),
+                toSpecifications(entity, publicView, locale),
                 entity.getStockState(),
                 productStockQty,
                 entity.getForceOutOfStock(),
@@ -357,14 +381,14 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 entity.getHomepageOrder(),
                 entity.getRating(),
                 entity.getRatingCount(),
-                entity.getContentBottom(),
-                entity.getPromotionContent(),
-                entity.getInstallationGuide(),
-                toFaqs(entity),
-                toRelatedProducts(entity, publicView),
+                pick(entity.getContentBottom(), entity.getContentBottomEn(), locale),
+                pick(entity.getPromotionContent(), entity.getPromotionContentEn(), locale),
+                pick(entity.getInstallationGuide(), entity.getInstallationGuideEn(), locale),
+                toFaqs(entity, publicView, locale),
+                toRelatedProducts(entity, publicView, locale),
                 toSeoMeta(
-                        entity.getSeoTitle(),
-                        entity.getSeoDescription(),
+                        pick(entity.getSeoTitle(), entity.getSeoTitleEn(), locale),
+                        pick(entity.getSeoDescription(), entity.getSeoDescriptionEn(), locale),
                         entity.getSeoCanonicalUrl(),
                         entity.getSeoOgImageId(),
                         entity.getSeoOgImageUrl(),
@@ -374,6 +398,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         entity.getSeoOgImageMimeType(),
                         entity.getSeoNoIndex()
                 ),
+                publicView ? null : toTranslations(entity),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
         );
@@ -496,24 +521,74 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 .toList();
     }
 
-    private List<ProductSpecification> toSpecifications(ProductEntity entity) {
+    /**
+     * Resolved spec content for the requested locale. On admin reads
+     * ({@code publicView == false}) the raw English values ride along in the
+     * {@code *En} fields so the editor can show both languages.
+     */
+    private List<ProductSpecification> toSpecifications(ProductEntity entity, boolean publicView, String locale) {
         if (entity.getSpecifications() == null) {
             return List.of();
         }
         return entity.getSpecifications().stream()
                 .sorted(SPEC_ORDER)
-                .map(item -> new ProductSpecification(item.getName(), item.getValue(), item.getGroupName()))
+                .map(item -> new ProductSpecification(
+                        pick(item.getName(), item.getNameEn(), locale),
+                        pick(item.getValue(), item.getValueEn(), locale),
+                        pick(item.getGroupName(), item.getGroupNameEn(), locale),
+                        publicView ? null : item.getNameEn(),
+                        publicView ? null : item.getValueEn(),
+                        publicView ? null : item.getGroupNameEn()
+                ))
                 .toList();
     }
 
-    private List<ProductFaq> toFaqs(ProductEntity entity) {
+    private List<ProductFaq> toFaqs(ProductEntity entity, boolean publicView, String locale) {
         if (entity.getFaqs() == null) {
             return List.of();
         }
         return entity.getFaqs().stream()
                 .sorted(FAQ_ORDER)
-                .map(item -> new ProductFaq(item.getQuestion(), item.getAnswer()))
+                .map(item -> new ProductFaq(
+                        pick(item.getQuestion(), item.getQuestionEn(), locale),
+                        pick(item.getAnswer(), item.getAnswerEn(), locale),
+                        publicView ? null : item.getQuestionEn(),
+                        publicView ? null : item.getAnswerEn()
+                ))
                 .toList();
+    }
+
+    /**
+     * Raw English product-level content for admin detail reads. Returns
+     * {@code null} when no English content exists at all, so the public response
+     * shape is unchanged and the admin editor can detect "no translation yet".
+     */
+    private static ProductTranslations toTranslations(ProductEntity entity) {
+        boolean anyEnglish = isPresent(entity.getNameEn())
+                || isPresent(entity.getShortDescriptionEn())
+                || isPresent(entity.getDescriptionEn())
+                || isPresent(entity.getContentBottomEn())
+                || isPresent(entity.getPromotionContentEn())
+                || isPresent(entity.getInstallationGuideEn())
+                || isPresent(entity.getSeoTitleEn())
+                || isPresent(entity.getSeoDescriptionEn());
+        if (!anyEnglish) {
+            return null;
+        }
+        return new ProductTranslations(new ProductTranslations.ProductContent(
+                entity.getNameEn(),
+                entity.getShortDescriptionEn(),
+                entity.getDescriptionEn(),
+                entity.getContentBottomEn(),
+                entity.getPromotionContentEn(),
+                entity.getInstallationGuideEn(),
+                entity.getSeoTitleEn(),
+                entity.getSeoDescriptionEn()
+        ));
+    }
+
+    private static boolean isPresent(String value) {
+        return value != null && !value.isBlank();
     }
 
     /**
@@ -521,13 +596,13 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
      * relatedProducts). Public reads drop non-PUBLISHED and trashed entries so the
      * PDP never links to hidden products; admin reads keep everything for the editor.
      */
-    private List<Product> toRelatedProducts(ProductEntity entity, boolean publicView) {
+    private List<Product> toRelatedProducts(ProductEntity entity, boolean publicView, String locale) {
         if (entity.getRelatedProducts() == null || entity.getRelatedProducts().isEmpty()) {
             return List.of();
         }
         return entity.getRelatedProducts().stream()
                 .filter(rp -> !publicView || rp.getPublishStatus() == PublishStatus.PUBLISHED)
-                .map(this::toDomainListItem)
+                .map(rp -> toDomainListItem(rp, locale))
                 .toList();
     }
 

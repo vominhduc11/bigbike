@@ -153,6 +153,21 @@ Evidence:
 - `V108__backfill_stock_state_from_quantity.sql`
 - `V120__drop_stock_receipt_tables.sql`
 
+## Product Catalog Rules
+
+- `PRODUCT_RULE_001`: Mỗi sản phẩm bắt buộc có **bản nội dung tiếng Việt** (canonical). **Bản tiếng Anh là tùy chọn** — admin có thể tạo/sửa sản phẩm mà không nhập bản tiếng Anh. `CONFIRMED_FROM_CODE`
+- `PRODUCT_RULE_002`: Khi đọc nội dung sản phẩm bằng tiếng Anh (`lang=en`), mỗi trường text thiếu bản tiếng Anh sẽ **tự lùi về bản tiếng Việt theo từng trường** (`COALESCE`). Một sản phẩm có thể có tên tiếng Anh nhưng mô tả vẫn hiển thị tiếng Việt. `CONFIRMED_FROM_CODE`
+- `PRODUCT_RULE_003`: `slug` của sản phẩm dùng chung 1 bản (không dịch theo ngôn ngữ). `CONFIRMED_FROM_CODE`
+
+Evidence:
+
+- `ProductEntity.java`, `ProductSpecificationEntity.java`, `ProductFaqEntity.java` (các cột `*_en`)
+- `JpaCatalogReadRepository.java` (resolve locale + fallback)
+- `CatalogController.java` (`lang` param)
+- `AdminCatalogMutationService.java` (`applyProductPatch` ghi cột `_en`)
+- `V136__add_product_bilingual_content.sql`
+- `DATA_CONTRACT.md` — "Product bilingual content"
+
 ## WebSocket Rules
 
 - WebSocket STOMP connect must include native header `Authorization: Bearer <token>`. `CONFIRMED_FROM_CODE`

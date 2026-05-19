@@ -38,7 +38,7 @@ public class GlobalSearchService {
         // findAllPublishedProducts() applies the PUBLISHED filter in SQL; the
         // explicit predicate below is kept as a defensive guard and is a no-op.
         List<Product> products = wantProducts
-                ? catalogReadRepository.findAllPublishedProducts().stream()
+                ? catalogReadRepository.findAllPublishedProducts("vi").stream()
                         .filter(p -> p.publishStatus() == PublishStatus.PUBLISHED)
                         .filter(p -> matchesProduct(p, term))
                         .limit(limit)

@@ -77,6 +77,14 @@ public class UpsertProductRequest {
     private SeoMetaRequest seo;
     private boolean seoPresent = false;
 
+    /**
+     * Optional English content (V136). Presence-flag pattern: omitting the
+     * {@code translations} key on PATCH leaves the English columns untouched.
+     */
+    @Valid
+    private ProductTranslationRequest translations;
+    private boolean translationsPresent = false;
+
     @Valid
     @Size(max = 50, message = "Gallery may not have more than 50 images.")
     private List<GalleryImageRequest> gallery;
@@ -313,6 +321,19 @@ public class UpsertProductRequest {
 
     public boolean isSeoPresent() {
         return seoPresent;
+    }
+
+    public ProductTranslationRequest getTranslations() {
+        return translations;
+    }
+
+    public void setTranslations(ProductTranslationRequest translations) {
+        this.translations = translations;
+        this.translationsPresent = true;
+    }
+
+    public boolean isTranslationsPresent() {
+        return translationsPresent;
     }
 
     public List<GalleryImageRequest> getGallery() { return gallery; }

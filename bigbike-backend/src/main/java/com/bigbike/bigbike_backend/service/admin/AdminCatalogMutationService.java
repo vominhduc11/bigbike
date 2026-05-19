@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.bigbike.bigbike_backend.api.admin.dto.GalleryImageRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.ImageAssetRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.ProductTranslationRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.SeoMetaRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.SpecificationRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.FaqRequest;
@@ -791,6 +792,10 @@ public class AdminCatalogMutationService {
             }
         }
 
+        if (create || request.isTranslationsPresent()) {
+            applyTranslations(entity, request.getTranslations());
+        }
+
         if (request.getGallery() != null) {
             applyGallery(entity, request.getGallery());
         } else if (create) {
@@ -890,6 +895,24 @@ public class AdminCatalogMutationService {
         }
     }
 
+    /**
+     * Full-replace the eight optional English product-level columns (V136).
+     * A {@code null} translations object — or a missing {@code en} block —
+     * clears every column; English is optional (PRODUCT_RULE_001).
+     */
+    private static void applyTranslations(ProductEntity entity, ProductTranslationRequest translations) {
+        ProductTranslationRequest.ProductContentRequest en =
+                translations == null ? null : translations.getEn();
+        entity.setNameEn(en == null ? null : AdminMutationValidators.trimToNull(en.getName()));
+        entity.setShortDescriptionEn(en == null ? null : AdminMutationValidators.trimToNull(en.getShortDescription()));
+        entity.setDescriptionEn(en == null ? null : AdminMutationValidators.trimToNull(en.getDescription()));
+        entity.setContentBottomEn(en == null ? null : AdminMutationValidators.trimToNull(en.getContentBottom()));
+        entity.setPromotionContentEn(en == null ? null : AdminMutationValidators.trimToNull(en.getPromotionContent()));
+        entity.setInstallationGuideEn(en == null ? null : AdminMutationValidators.trimToNull(en.getInstallationGuide()));
+        entity.setSeoTitleEn(en == null ? null : AdminMutationValidators.trimToNull(en.getSeoTitle()));
+        entity.setSeoDescriptionEn(en == null ? null : AdminMutationValidators.trimToNull(en.getSeoDescription()));
+    }
+
     private static void applySpecifications(ProductEntity entity, List<SpecificationRequest> requests) {
         List<ProductSpecificationEntity> existing = entity.getSpecifications();
         if (existing == null) {
@@ -908,6 +931,9 @@ public class AdminCatalogMutationService {
             spec.setName(name);
             spec.setValue(value);
             spec.setGroupName(AdminMutationValidators.trimToNull(req.getGroupName()));
+            spec.setNameEn(AdminMutationValidators.trimToNull(req.getNameEn()));
+            spec.setValueEn(AdminMutationValidators.trimToNull(req.getValueEn()));
+            spec.setGroupNameEn(AdminMutationValidators.trimToNull(req.getGroupNameEn()));
             existing.add(spec);
         }
     }
@@ -929,6 +955,8 @@ public class AdminCatalogMutationService {
             faq.setSortOrder(req.getSortOrder() != null ? req.getSortOrder() : i);
             faq.setQuestion(question);
             faq.setAnswer(answer);
+            faq.setQuestionEn(AdminMutationValidators.trimToNull(req.getQuestionEn()));
+            faq.setAnswerEn(AdminMutationValidators.trimToNull(req.getAnswerEn()));
             existing.add(faq);
         }
     }

@@ -137,10 +137,22 @@ export function VariantSelector({
         {groups.map((group) => {
           const currentValue = selectedOptions[group.name] ?? "";
           const isColorGroup = isColorAttribute(group.name);
+          const isSizeGroup = isSizeAttribute(group.name);
           return (
             <div key={group.name} className="mb-5">
-              <h6 className={OPT_GROUP_HEADING}>Chọn {group.name.toLowerCase()}</h6>
-              <div className="flex flex-wrap gap-2">
+              <h6 className={OPT_GROUP_HEADING}>
+                {group.name}:{" "}
+                <span className="font-bold text-brand">
+                  {currentValue || "Chưa chọn"}
+                </span>
+              </h6>
+              <div
+                className={cn(
+                  isSizeGroup && !isColorGroup
+                    ? "grid grid-cols-5 gap-2"
+                    : "flex flex-wrap gap-2",
+                )}
+              >
                 {group.values.map((info) => {
                   const { value, colorHex, swatchImageUrl } = info;
                   // For OOS detection: see whether picking this chip on top
@@ -228,6 +240,7 @@ export function VariantSelector({
                       type="button"
                       className={cn(
                         "inline-flex h-11 min-w-11 cursor-pointer items-center justify-center gap-2 rounded-none border border-[color:var(--bb-border-default)] bg-white px-4 text-sm font-bold uppercase tracking-[0.06em] text-foreground transition-all hover:border-foreground",
+                        isSizeGroup && !isColorGroup && "w-full px-2",
                         isActive && "border-black bg-black text-white hover:border-black",
                         !isAvailable && !isActive && "cursor-not-allowed line-through opacity-50",
                       )}

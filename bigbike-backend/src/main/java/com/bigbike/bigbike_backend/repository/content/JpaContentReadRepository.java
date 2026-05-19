@@ -271,6 +271,7 @@ public class JpaContentReadRepository implements ContentReadRepository {
                 List.of(),                  // faqs — detail only
                 List.of(),                  // relatedProducts — detail only
                 null,
+                null,                       // translations — detail only (admin product read)
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
         );

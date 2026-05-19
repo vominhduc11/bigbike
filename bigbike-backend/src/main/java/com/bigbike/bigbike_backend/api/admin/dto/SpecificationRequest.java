@@ -24,4 +24,14 @@ public class SpecificationRequest {
     private String groupName;
 
     private Integer sortOrder;
+
+    // Optional English content (V136). Not required — English is optional per PRODUCT_RULE_001.
+    @Size(max = 255, message = "Specification English name is too long.")
+    private String nameEn;
+
+    @Size(max = 2000, message = "Specification English value is too long.")
+    private String valueEn;
+
+    @Size(max = 100, message = "Specification English group name is too long.")
+    private String groupNameEn;
 }

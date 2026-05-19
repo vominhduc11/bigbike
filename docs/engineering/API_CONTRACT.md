@@ -296,6 +296,40 @@ Status: `CONFIRMED_FROM_CODE`
 
 Evidence: `UpsertProductRequest.java` (`relatedProductIds`), `AdminCatalogMutationService.resolveRelatedProducts`, `Product.java` domain record (`relatedProducts`), `ProductEntity.relatedProducts`, `JpaCatalogReadRepository.toRelatedProducts` (detail mapper; list mapper passes `[]`), `V135__add_product_related_product_map.sql`.
 
+### Product bilingual content — `lang` param & `translations` (V136)
+
+Sản phẩm có 2 bản nội dung: tiếng Việt (canonical) và tiếng Anh (tùy chọn).
+
+**Đọc public — query param `lang`:** `GET /api/v1/products` và
+`GET /api/v1/products/{slug}` nhận `lang` = `vi` (mặc định) hoặc `en`. Khi
+`lang=en`, mỗi trường text trả về bản tiếng Anh, **lùi về tiếng Việt theo từng
+trường** khi cột `_en` rỗng (`COALESCE`). Các trường được dịch: `name`,
+`shortDescription`, `description`, `contentBottom`, `promotionContent`,
+`installationGuide`, `seo.title`, `seo.description`, và `specifications[]`
+(`name`/`value`/`group`), `faqs[]` (`question`/`answer`). Response public **giữ
+nguyên shape** — không thêm khối `translations`.
+
+**Đọc admin — cả 2 bản:** `GET /api/v1/admin/products/{id}` trả các trường chính
+ở bản tiếng Việt **và** thêm:
+- `translations.en` — object `{ name, shortDescription, description, contentBottom,
+  promotionContent, installationGuide, seoTitle, seoDescription }` chứa bản tiếng
+  Anh thô (giá trị thật của các cột `_en`, không fallback). `null` nếu chưa có bản
+  tiếng Anh nào.
+- `specifications[].nameEn / valueEn / groupEn` và `faqs[].questionEn / answerEn`
+  — bản tiếng Anh thô của từng dòng con.
+
+**Ghi — `POST/PATCH /api/v1/admin/products`:** nhận thêm:
+- `translations.en` — object 8 trường text như trên. Toàn bộ tùy chọn (không bắt
+  buộc); chỉ giới hạn độ dài như bản tiếng Việt. Theo presence-flag pattern: bỏ
+  khóa `translations` thì giữ nguyên trên PATCH.
+- `specifications[]` nhận thêm `nameEn`, `valueEn`, `groupNameEn`; `faqs[]` nhận
+  thêm `questionEn`, `answerEn`. Đi cùng dòng tiếng Việt (full-replace như cũ).
+
+Status: `CONFIRMED_FROM_CODE` — `CatalogController` (`lang` param),
+`UpsertProductRequest.translations` / `ProductTranslationRequest`,
+`AdminCatalogMutationService.applyProductPatch`, `JpaCatalogReadRepository`,
+migration `V136`.
+
 ## POS Contract
 
 | Endpoint | Permission | Current behavior | Status | Evidence |

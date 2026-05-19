@@ -86,6 +86,19 @@ export function createProductSchema(t, isCreate = false) {
         gallery: z.array(z.object({ url: z.string(), alt: z.string().optional() })).optional(),
       })).optional(),
       relatedProductIds: z.array(z.string()).optional(),
+      // Optional English content (V136) — never required, length-checked only.
+      translations: z.object({
+        en: z.object({
+          name: z.string().optional(),
+          shortDescription: z.string().optional(),
+          description: z.string().optional(),
+          contentBottom: z.string().optional(),
+          promotionContent: z.string().optional(),
+          installationGuide: z.string().optional(),
+          seoTitle: z.string().optional(),
+          seoDescription: z.string().optional(),
+        }).optional(),
+      }).optional(),
     })
     .superRefine((data, ctx) => {
       const retail = toInt(data.retailPrice)
@@ -163,6 +176,24 @@ export function createProductSchema(t, isCreate = false) {
           message: t('products.detail.errSeoOgImageAltTooLong'),
           path: ['seoOgImageAlt'],
         })
+      }
+
+      // English content (V136): optional, length-checked only. Plain inputs are
+      // already capped by maxLength; this guards the rich-text fields.
+      const en = data.translations?.en ?? {}
+      const enLimits = [
+        ['name', 255], ['shortDescription', 2000], ['description', 20000],
+        ['contentBottom', 50000], ['promotionContent', 50000],
+        ['installationGuide', 50000], ['seoTitle', 255], ['seoDescription', 5000],
+      ]
+      for (const [field, max] of enLimits) {
+        if (String(en[field] ?? '').length > max) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: t('products.detail.errEnglishTooLong', { defaultValue: 'Nội dung tiếng Anh quá dài.' }),
+            path: ['translations', 'en', field],
+          })
+        }
       }
 
       // Specifications: rows that have any content must have both name and value.
