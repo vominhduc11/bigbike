@@ -156,6 +156,79 @@ export function ProductListScreen({ navigate, canUpdate }) {
         description: t('products.emptyDesc'),
       }
 
+  // Row actions — shared by the desktop table column and the mobile card so
+  // both keep identical behaviour. "Sửa" stays inline as the safe primary
+  // action; secondary and destructive actions sit in an overflow menu so the
+  // red "Xoá" button no longer invites misclicks on every row.
+  const renderRowActions = useCallback((product) => {
+    const isDeleting = deletingId === product.id
+    const isRestoring = restoringId === product.id
+    const isTrashed = product.publishStatus === 'TRASH'
+    const isBusy = isDeleting || isRestoring
+    return (
+      <div className="row-actions">
+        <Button variant="outline" onClick={() => navigate(`/admin/products/${product.id}`)}>
+          {t('common.edit')}
+        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label={t('common.actions')}
+              title={t('common.actions')}
+            >
+              <MoreHorizontal size={16} />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {canUpdate && (
+              <DropdownMenuItem onSelect={() => handleDuplicate(product)}>
+                {t('products.duplicate')}
+              </DropdownMenuItem>
+            )}
+            {canUpdate && isTrashed && (
+              <DropdownMenuItem
+                disabled={isBusy}
+                onSelect={() => handleRestore(product)}
+              >
+                {isRestoring ? t('products.restoringLabel') : t('products.restore')}
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem
+              disabled={!canUpdate || isBusy || isTrashed}
+              onSelect={() => handleDelete(product)}
+              className="text-destructive focus:text-destructive"
+            >
+              {isDeleting ? t('products.deletingLabel') : t('common.delete')}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    )
+  }, [navigate, handleDelete, handleDuplicate, handleRestore, deletingId, restoringId, canUpdate, t])
+
+  // Mobile card mapping — same data as a table row, laid out for <640px.
+  const productCard = useCallback((product) => {
+    const block = product.homepageBlock
+    const homepageValue = !block || block === 'NONE'
+      ? '—'
+      : (block === 'FEATURED_GRID' ? t('products.homepageFeatured') : t('products.homepageRecommended'))
+        + (Number.isFinite(product.homepageOrder) ? ` · #${product.homepageOrder}` : '')
+    return {
+      title: formatText(product.name),
+      subtitle: formatText(product.sku, 'SKU TBD'),
+      status: <PublishStatusBadge value={product.publishStatus} />,
+      meta: [
+        { label: t('products.colPrice'), value: formatCurrencyVnd(product.price?.retailPrice), tone: 'strong' },
+        { label: t('products.colStock'), value: <StockStatusBadge value={product.stockState} /> },
+        { label: t('products.colHomepage'), value: homepageValue },
+        { label: t('products.colUpdated'), value: formatDateTime(product.updatedAt) },
+      ],
+      actions: renderRowActions(product),
+    }
+  }, [renderRowActions, t])
+
   const columns = useMemo(
     () => [
       {
@@ -228,59 +301,10 @@ export function ProductListScreen({ navigate, canUpdate }) {
           key: 'actions',
           label: t('common.actions'),
           align: 'right',
-          render: (product) => {
-            const isDeleting = deletingId === product.id
-            const isRestoring = restoringId === product.id
-            const isTrashed = product.publishStatus === 'TRASH'
-            const isBusy = isDeleting || isRestoring
-            // "Sửa" stays inline as the safe primary action; secondary and
-            // destructive actions move into an overflow menu so the red
-            // "Xoá" button no longer sits on every row inviting misclicks.
-            return (
-              <div className="row-actions">
-                <Button variant="outline" onClick={() => navigate(`/admin/products/${product.id}`)}>
-                  {t('common.edit')}
-                </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      aria-label={t('common.actions')}
-                      title={t('common.actions')}
-                    >
-                      <MoreHorizontal size={16} />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {canUpdate && (
-                      <DropdownMenuItem onSelect={() => handleDuplicate(product)}>
-                        {t('products.duplicate')}
-                      </DropdownMenuItem>
-                    )}
-                    {canUpdate && isTrashed && (
-                      <DropdownMenuItem
-                        disabled={isBusy}
-                        onSelect={() => handleRestore(product)}
-                      >
-                        {isRestoring ? t('products.restoringLabel') : t('products.restore')}
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem
-                      disabled={!canUpdate || isBusy || isTrashed}
-                      onSelect={() => handleDelete(product)}
-                      className="text-destructive focus:text-destructive"
-                    >
-                      {isDeleting ? t('products.deletingLabel') : t('common.delete')}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            )
-          },
+          render: renderRowActions,
         },
       ],
-    [navigate, handleDelete, handleDuplicate, handleRestore, deletingId, restoringId, canUpdate, t],
+    [renderRowActions, t],
   )
 
   function updateQuery(partial, options = { resetPage: false }) {
@@ -508,6 +532,7 @@ export function ProductListScreen({ navigate, canUpdate }) {
             rows={state.items}
             loading={state.status === 'loading'}
             pageSize={query.pageSize}
+            mobileCard={productCard}
           />
           {state.status === 'success' && (
             <PaginationControls

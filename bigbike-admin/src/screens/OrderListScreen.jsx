@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import { AdminTable } from '../components/AdminTable'
@@ -96,6 +96,28 @@ export function OrderListScreen({ navigate }) {
       ),
     },
   ], [navigate, t])
+
+  // Mobile card mapping — same data as the table row, laid out for <640px.
+  const orderCard = useCallback((order) => ({
+    title: (
+      <span className="flex items-center gap-1.5">
+        {formatText(order.orderNumber)}
+        {order.source === 'pos' && <span className="badge-pos">POS</span>}
+      </span>
+    ),
+    subtitle: formatText(order.customerName) || formatText(order.customerEmail),
+    status: <StatusBadge type="order" status={order.orderStatus} />,
+    meta: [
+      { label: t('orders.colPaymentStatus'), value: <StatusBadge type="payment" status={order.paymentStatus} /> },
+      { label: t('orders.colTotal'), value: formatCurrencyVnd(order.total), tone: 'strong' },
+      { label: t('orders.colDate'), value: formatDateTime(order.createdAt) },
+    ],
+    actions: (
+      <Button variant="outline" onClick={() => navigate(`/admin/orders/${order.id}`)}>
+        {t('orders.viewDetail')}
+      </Button>
+    ),
+  }), [navigate, t])
 
   function updateQuery(partial, options = { resetPage: false }) {
     setQuery((prev) => {
@@ -203,6 +225,7 @@ export function OrderListScreen({ navigate }) {
             rows={state.items}
             loading={state.status === 'loading'}
             pageSize={query.pageSize}
+            mobileCard={orderCard}
           />
           {state.status === 'success' && (
             <PaginationControls pagination={state.pagination} onPageChange={(p) => updateQuery({ page: p })} />

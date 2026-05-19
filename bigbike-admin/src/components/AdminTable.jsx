@@ -3,16 +3,25 @@ import { Checkbox } from '@/components/ui/checkbox'
 import {
   Table, TableHeader, TableBody, TableHead, TableRow, TableCell,
 } from '@/components/ui/table'
+import { MobileCardList, MobileCard } from '@/components/layout/MobileCardList'
 import { cn } from '@/lib/utils'
 
 const ALIGN_CLASS = { right: 'text-right', center: 'text-center', left: 'text-left' }
 
+/**
+ * AdminTable — shared data table.
+ *
+ * `mobileCard` (optional): `(row) => ({ title, subtitle, status, meta, actions, onClick })`.
+ * When provided, narrow screens (<640px) render the rows as cards via
+ * MobileCardList instead of a horizontally-scrolling table. When omitted,
+ * the table renders exactly as before — existing screens are unaffected.
+ */
 export function AdminTable({
   columns, rows, caption,
   loading = false, pageSize = 8,
   onSortChange, sortKey, sortDir,
   selectable = false, selectedIds = [], onSelectionChange,
-  onRowClick, rowClassName,
+  onRowClick, rowClassName, mobileCard,
 }) {
   const allSelected = rows.length > 0 && rows.every((r) => selectedIds.includes(r.id))
   const someSelected = !allSelected && rows.some((r) => selectedIds.includes(r.id))
@@ -39,7 +48,7 @@ export function AdminTable({
     }
   }
 
-  return (
+  const tableView = (
     <Table>
       {caption ? <caption className="mb-2 text-sm text-muted-foreground text-left">{caption}</caption> : null}
       <TableHeader>
@@ -136,5 +145,41 @@ export function AdminTable({
             })}
       </TableBody>
     </Table>
+  )
+
+  // No mobile mapping supplied — render the table exactly as before.
+  if (typeof mobileCard !== 'function') {
+    return tableView
+  }
+
+  return (
+    <>
+      {/* hide-on-mobile only — no extra table chrome, so screens that pass
+          mobileCard keep the same desktop look as those that don't. */}
+      <div className="hide-on-mobile">{tableView}</div>
+      <MobileCardList>
+        {loading
+          ? Array.from({ length: Math.min(pageSize, 4) }, (_, i) => (
+              <div key={i} className="mobile-card animate-pulse">
+                <div className="h-4 w-1/2 rounded-xs bg-surface-muted" />
+                <div className="h-3 w-3/4 rounded-xs bg-surface-muted" />
+              </div>
+            ))
+          : rows.map((row) => {
+              const card = mobileCard(row) || {}
+              return (
+                <MobileCard
+                  key={row.id}
+                  title={card.title}
+                  subtitle={card.subtitle}
+                  status={card.status}
+                  meta={card.meta}
+                  actions={card.actions}
+                  onClick={card.onClick}
+                />
+              )
+            })}
+      </MobileCardList>
+    </>
   )
 }
