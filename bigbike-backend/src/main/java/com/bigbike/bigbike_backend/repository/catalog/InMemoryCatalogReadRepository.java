@@ -351,6 +351,13 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
     }
 
     @Override
+    public List<Product> findAllPublishedProducts() {
+        return products.stream()
+                .filter(p -> p.publishStatus() == PublishStatus.PUBLISHED)
+                .toList();
+    }
+
+    @Override
     public List<Product> findProductsFiltered(String query, String publishStatus, String stockState, String brandId, String categoryId) {
         boolean trashFilter = publishStatus != null && publishStatus.equalsIgnoreCase("TRASH");
         boolean defaultList = publishStatus == null || publishStatus.isBlank() || publishStatus.equalsIgnoreCase("ALL");

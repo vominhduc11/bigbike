@@ -241,12 +241,14 @@ public class AdminMediaService {
 
     // ── List ──────────────────────────────────────────────────────────────────
 
+    @Transactional(readOnly = true)
     public List<MediaReferenceItem> getMediaReferences(UUID mediaId) {
         MediaEntity media = mediaRepo.findById(mediaId)
                 .orElseThrow(() -> new NotFoundException("Media not found."));
         return mediaReferenceService.getReferences(media);
     }
 
+    @Transactional(readOnly = true)
     public PageResult<AdminMediaListItemResponse> listMedia(MediaListQuery query) {
         int normalizedPage = Math.max(1, query.page());
         int normalizedSize = (query.size() <= 0) ? DEFAULT_SIZE : Math.min(query.size(), MAX_SIZE);
@@ -327,6 +329,7 @@ public class AdminMediaService {
                 dbPage.getTotalPages() == 0 ? 1 : dbPage.getTotalPages());
     }
 
+    @Transactional(readOnly = true)
     public AdminMediaStatsResponse getStats(MediaListQuery query) {
         // Stats are computed against the same filters as listMedia minus usageFilter and
         // pagination — we want totals across all matching items.
@@ -422,6 +425,7 @@ public class AdminMediaService {
 
     // ── Detail ────────────────────────────────────────────────────────────────
 
+    @Transactional(readOnly = true)
     public AdminMediaDetailResponse getMediaDetail(UUID mediaId) {
         MediaEntity media = mediaRepo.findById(mediaId)
                 .orElseThrow(() -> new NotFoundException("Media not found."));

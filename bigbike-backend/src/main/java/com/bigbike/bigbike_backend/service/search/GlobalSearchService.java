@@ -35,8 +35,10 @@ public class GlobalSearchService {
         boolean wantProducts = types == null || types.isEmpty() || types.contains("product");
         boolean wantArticles = types == null || types.isEmpty() || types.contains("article");
 
+        // findAllPublishedProducts() applies the PUBLISHED filter in SQL; the
+        // explicit predicate below is kept as a defensive guard and is a no-op.
         List<Product> products = wantProducts
-                ? catalogReadRepository.findAllProducts().stream()
+                ? catalogReadRepository.findAllPublishedProducts().stream()
                         .filter(p -> p.publishStatus() == PublishStatus.PUBLISHED)
                         .filter(p -> matchesProduct(p, term))
                         .limit(limit)

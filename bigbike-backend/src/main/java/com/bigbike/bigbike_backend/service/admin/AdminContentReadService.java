@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +32,7 @@ public class AdminContentReadService {
     private final SortParser sortParser;
     private final PaginationService paginationService;
 
+    @Transactional(readOnly = true)
     public PageResult<AdminContentItem> listContent(
             int page, int size, String sort, String q, String search, String type, String publishStatus) {
         SortSpec sortSpec = sortParser.parse(sort, "updatedAt", SortDirection.DESC, CONTENT_SORT_FIELDS);
@@ -64,6 +66,7 @@ public class AdminContentReadService {
         return paginationService.paginate(merged, page, size);
     }
 
+    @Transactional(readOnly = true)
     public AdminContentItem getContentByTypeAndId(String type, String id) {
         String normalizedType = normalizeType(type);
         return switch (normalizedType) {

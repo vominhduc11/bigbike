@@ -5,11 +5,8 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { AlertTriangle, CheckCircle2, Link2Off, LoaderCircle, MailCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { resendEmailVerification } from "@/lib/api/client-api";
+import { resendEmailVerification, verifyEmail } from "@/lib/api/client-api";
 import { useAuth } from "@/lib/auth/auth-store";
-import { env } from "@/env";
-
-const API_BASE_URL = env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
 
 type Status = "idle" | "loading" | "success" | "error" | "missing";
 type ResendStatus = "idle" | "sending" | "sent" | "error";
@@ -27,21 +24,8 @@ export default function VerifyEmailPage() {
   useEffect(() => {
     if (!token) return;
 
-    fetch(`${API_BASE_URL}/api/v1/customer/auth/verify-email?token=${encodeURIComponent(token)}`, {
-      method: "POST",
-      credentials: "include",
-      headers: { Accept: "application/json" },
-    })
-      .then(async (res) => {
-        const payload = await res.json().catch(() => null);
-        if (!res.ok) {
-          const msg =
-            (payload as { error?: { message?: string } } | null)?.error?.message ??
-            "Xác thực thất bại.";
-          throw new Error(msg);
-        }
-        setStatus("success");
-      })
+    verifyEmail(token)
+      .then(() => setStatus("success"))
       .catch((e: Error) => {
         setErrorMsg(e.message ?? "Đã xảy ra lỗi.");
         setStatus("error");

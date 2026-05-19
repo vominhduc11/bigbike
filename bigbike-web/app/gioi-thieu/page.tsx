@@ -1,15 +1,17 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AudioLines, BadgeCheck, BarChart3, Crown, Share2, Gem, Phone, Store } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { PageHero } from "@/components/layout/PageHero";
+import { ContactInfoList } from "@/components/ui/ContactInfoList";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { getPageBySlug, listBrands, listPublicSettings } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { resolveMediaUrl } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import { toBrandPath, toPagePath } from "@/lib/utils/routes";
+import { pickSettingByPattern } from "@/lib/utils/settings";
 
 export const metadata: Metadata = buildPublicMetadata({
   title: "Giới thiệu",
@@ -59,45 +61,6 @@ const SERVICE_TILES: ServiceTile[] = [
   },
 ];
 
-function AboutHero({ imageUrl, imageAlt }: { imageUrl?: string | null; imageAlt?: string | null }) {
-  // Ảnh áo giáp ghép vào hero — dùng heroImageUrl của trang nếu có (PNG nền trong).
-  const illustration = imageUrl?.trim() ? resolveMediaUrl(imageUrl.trim()) : null;
-  return (
-    <header className="relative isolate overflow-hidden bg-brand">
-      {/* Nền núi + lát cắt chéo trắng nằm sẵn trong PNG — neo đáy để cạnh dưới hero là trắng */}
-      <Image
-        src="/wp/page-title-bg.png"
-        alt=""
-        fill
-        priority
-        sizes="100vw"
-        aria-hidden="true"
-        className="object-cover object-bottom"
-      />
-      {/* Chữ BIGBIKE mờ làm watermark phía sau tiêu đề */}
-      <span
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-[6%] select-none text-center font-display font-bold uppercase leading-none tracking-[0.08em] text-white/[0.08] text-[clamp(72px,15vw,220px)]"
-      >
-        BigBike
-      </span>
-      <div className="relative z-10 bb-container flex flex-col items-center text-center pt-14 pb-16 sm:pt-20 sm:pb-20">
-        <h1 className="m-0 font-display font-bold uppercase tracking-wide leading-tight !text-white text-3xl sm:text-4xl md:text-5xl">
-          Chào mừng đến với BigBike
-        </h1>
-        {illustration ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={illustration}
-            alt={imageAlt ?? "BigBike"}
-            className="mt-8 w-auto object-contain drop-shadow-2xl max-h-[260px] sm:max-h-[340px] md:max-h-[400px]"
-          />
-        ) : null}
-      </div>
-    </header>
-  );
-}
-
 function ServiceTileCard({ tile }: { tile: ServiceTile }) {
   const Icon = tile.icon;
   return (
@@ -131,14 +94,6 @@ function ServiceTileCard({ tile }: { tile: ServiceTile }) {
   );
 }
 
-function pickSetting(
-  settings: Array<{ settingKey: string; settingValue: string }>,
-  patterns: RegExp[],
-): string {
-  const match = settings.find((s) => patterns.some((p) => p.test(s.settingKey)));
-  return match?.settingValue?.trim() ?? "";
-}
-
 export default async function AboutPage() {
   const [pageResult, brandsResult, settingsResult] = await Promise.all([
     getPageBySlug("gioi-thieu"),
@@ -161,16 +116,23 @@ export default async function AboutPage() {
   const page = pageResult.data;
   const brands = brandsResult.data ?? [];
   const settings = settingsResult.data ?? [];
-  const address = pickSetting(settings, [/address/i, /diachi/i, /dia_chi/i]) || "79/30/52 Âu Cơ, P.4, Q.11, Tp.HCM";
-  const facebookUrl = pickSetting(settings, [/facebook/i]) || "https://www.facebook.com/bigbikegear";
+  const address = pickSettingByPattern(settings, [/address/i, /diachi/i, /dia_chi/i]) || "79/30/52 Âu Cơ, P.4, Q.11, Tp.HCM";
+  const facebookUrl = pickSettingByPattern(settings, [/facebook/i]) || "https://www.facebook.com/bigbikegear";
   const facebookHandle = facebookUrl.replace(/^https?:\/\/(www\.)?/, "");
 
   return (
-    <section className="bb-page">
-      <AboutHero imageUrl={page.heroImageUrl} imageAlt={page.heroImageAlt} />
+    <>
+      {/* Hero render ngoài .bb-page để nằm sát header và không bị rule `.bb-page h1` ghi đè. */}
+      <PageHero
+        variant="welcome"
+        title="Chào mừng đến với BigBike"
+        watermark="BigBike"
+        illustration={{ src: page.heroImageUrl, alt: page.heroImageAlt }}
+      />
+      <section className="bb-page">
       <div className="bb-container">
         {/* Row 1: intro text + richtext + brand logos */}
-        <div className="grid grid-cols-1 gap-6 py-10 items-start lg:grid-cols-[4fr_5fr_3fr] lg:gap-[30px]">
+        <div className="grid grid-cols-1 gap-6 pb-10 items-start lg:grid-cols-[4fr_5fr_3fr] lg:gap-[30px]">
           <div>
             <h3 className="font-display text-26 font-semibold uppercase text-foreground mb-4">Bigbike</h3>
             <p className="text-muted-foreground text-base leading-snug m-0">Cửa hàng chuyên phân phối phụ kiện bảo hộ moto chính hãng uy tín tại TP HCM</p>
@@ -237,39 +199,43 @@ export default async function AboutPage() {
             Hãy liên hệ với chúng tôi để được tư vấn thêm về các thông tin chi tiết sản phẩm và để
             nhận được giá ưu đãi tốt nhất.
           </p>
-          <div className="grid grid-cols-1 mt-8 divide-y divide-border md:grid-cols-3 md:divide-y-0 md:divide-x">
-            <div className="py-6 first:pt-0 md:py-0 md:px-6 md:first:pl-0">
-              <div className="flex items-center gap-2 mb-2">
-                <Store className="w-[22px] h-[22px] text-brand" strokeWidth={1.5} aria-hidden="true" />
-                <span className="font-display text-base font-semibold uppercase text-foreground">Cửa hàng chính</span>
-              </div>
-              <p className="text-muted-foreground text-sm leading-snug m-0">{address}</p>
-            </div>
-            <div className="py-6 md:py-0 md:px-6">
-              <div className="flex items-center gap-2 mb-2">
-                <Phone className="w-[22px] h-[22px] text-brand" strokeWidth={1.5} aria-hidden="true" />
-                <span className="font-display text-base font-semibold uppercase text-foreground">Hotline</span>
-              </div>
-              <p className="text-muted-foreground text-sm leading-snug m-0">028.62797251</p>
-              <p className="text-muted-foreground text-sm leading-snug m-0">0784.640.679 - Mrs. Thư / ZALO</p>
-              <p className="text-muted-foreground text-sm leading-snug m-0">090.690.2404 - Mr. Trí</p>
-              <p className="text-muted-foreground text-sm leading-snug mt-2 mb-0">Thứ 2 - Thứ 6: 09:00 - 21:00</p>
-              <p className="text-muted-foreground text-sm leading-snug m-0">Thứ 7, Chủ Nhật: 09:00 - 18:00</p>
-            </div>
-            <div className="py-6 md:py-0 md:px-6 md:last:pr-0">
-              <div className="flex items-center gap-2 mb-2">
-                <Share2 className="w-[22px] h-[22px] text-brand" strokeWidth={1.5} aria-hidden="true" />
-                <span className="font-display text-base font-semibold uppercase text-foreground">Facebook</span>
-              </div>
-              <p className="text-muted-foreground text-sm leading-snug m-0">
-                <a href={facebookUrl} target="_blank" rel="noopener noreferrer" className="bb-link">
-                  {facebookHandle || "facebook.com/bigbikegear"}
-                </a>
-              </p>
-            </div>
-          </div>
+          <ContactInfoList
+            className="mt-8"
+            entries={[
+              {
+                icon: <Store className="w-[22px] h-[22px]" strokeWidth={1.5} />,
+                label: "Cửa hàng chính",
+                content: <p className="text-muted-foreground text-sm leading-snug m-0">{address}</p>,
+              },
+              {
+                icon: <Phone className="w-[22px] h-[22px]" strokeWidth={1.5} />,
+                label: "Hotline",
+                content: (
+                  <>
+                    <p className="text-muted-foreground text-sm leading-snug m-0">028.62797251</p>
+                    <p className="text-muted-foreground text-sm leading-snug m-0">0784.640.679 - Mrs. Thư / ZALO</p>
+                    <p className="text-muted-foreground text-sm leading-snug m-0">090.690.2404 - Mr. Trí</p>
+                    <p className="text-muted-foreground text-sm leading-snug mt-2 mb-0">Thứ 2 - Thứ 6: 09:00 - 21:00</p>
+                    <p className="text-muted-foreground text-sm leading-snug m-0">Thứ 7, Chủ Nhật: 09:00 - 18:00</p>
+                  </>
+                ),
+              },
+              {
+                icon: <Share2 className="w-[22px] h-[22px]" strokeWidth={1.5} />,
+                label: "Facebook",
+                content: (
+                  <p className="text-muted-foreground text-sm leading-snug m-0">
+                    <a href={facebookUrl} target="_blank" rel="noopener noreferrer" className="bb-link">
+                      {facebookHandle || "facebook.com/bigbikegear"}
+                    </a>
+                  </p>
+                ),
+              },
+            ]}
+          />
         </div>
       </div>
-    </section>
+      </section>
+    </>
   );
 }

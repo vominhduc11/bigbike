@@ -1056,7 +1056,7 @@ html[data-header-hidden] .mega-panel {
 .mega-flyout-empty {
   margin: 0;
   font-size: 13px;
-  color: #999;
+  color: #6f6f6f; /* was #999 (2.85:1 fail) → #6f6f6f (4.59:1 pass) */
 }
 
 /* -- User control (port tu header .user-control) --------------
@@ -2329,20 +2329,13 @@ html[data-header-scrolled] .bb-breadcrumb { padding-left: 24px; }
 .bb-page-head h1 { font-family: var(--bb-font-display); text-transform: uppercase; font-size: clamp(1.375rem, 5vw, 2.8rem); letter-spacing: 0.01em; line-height: 1.1; margin: 0; color: var(--bb-text-primary); overflow-wrap: anywhere; }
 .bb-page-head .sub { color: var(--bb-text-muted); font-size: 14px; margin-top: 8px; }
 
-/* -- Category Hero Banner ---------------------------------- */
-.bb-cat-hero { position: relative; height: 360px; display: flex; align-items: flex-end; overflow: hidden; background: #0d0d0d; }
-.bb-cat-hero-bg { object-fit: cover; object-position: center 30%; }
-.bb-cat-hero-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.45) 50%, rgba(0,0,0,0.2) 100%); }
-.bb-cat-hero-content { position: relative; z-index: 1; padding-bottom: 36px; }
+/* -- Category Hero Banner — breadcrumb + title (dùng trong PageHero/Breadcrumb) -- */
 .bb-cat-hero-breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.5); margin-bottom: 14px; }
 .bb-cat-hero-breadcrumb a { color: rgba(255,255,255,0.5); text-decoration: none; transition: color 140ms; }
 .bb-cat-hero-breadcrumb a:hover { color: var(--bb-brand-primary); }
 .bb-cat-hero-breadcrumb span[aria-hidden] { color: var(--bb-brand-primary); }
 .bb-cat-hero-breadcrumb span[aria-current] { color: rgba(255,255,255,0.85); }
-.bb-cat-hero-kicker { font-size: 14px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--bb-brand-primary); font-weight: 700; margin-bottom: 8px; }
 .bb-cat-hero-title { font-family: var(--bb-font-display); text-transform: uppercase; font-size: clamp(2rem, 4vw, 3.2rem); letter-spacing: 0.02em; line-height: 1.0; margin: 0; color: #fff; }
-.bb-cat-hero-desc { color: rgba(255,255,255,0.65); font-size: 14px; margin: 10px 0 0; max-width: 560px; line-height: 1.6; }
-.bb-cat-hero-count { display: inline-block; margin-top: 12px; background: rgba(255, 12, 9,0.18); border: 1px solid var(--bb-brand-primary-border); color: var(--bb-brand-primary); font-size: 14px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; padding: 4px 12px; border-radius: var(--bb-radius-none); }
 
 /* -- Sub-categories chip strip ----------------------------"? */
 .bb-cat-children { border-bottom: 1px solid var(--bb-border-subtle, #e4e4e4); padding: 16px 0; background: var(--bb-bg-page, #fff); }
@@ -2460,7 +2453,7 @@ html[data-header-scrolled] .bb-breadcrumb { padding-left: 24px; }
 
 /* Black, skewed "Còn hàng" badge — legacy WP product page parity. */
 .bb-pdp-stock-badge { display: inline-block; transform: skewX(-14deg); background: #000; padding: 7px 16px; }
-.bb-pdp-stock-badge--out { background: var(--bb-text-muted); }
+.bb-pdp-stock-badge--out { background: var(--bb-color-dark); } /* #1a1a1a, white text = 16.1:1 — replaces #6f6f6f (3.52:1 fail) */
 .bb-pdp-stock-badge-label { display: inline-block; transform: skewX(14deg); font-family: var(--bb-font-body); font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #fff; }
 
 /* Quantity stepper + single add-to-cart button on one row. */
@@ -2882,7 +2875,7 @@ html[data-header-scrolled] .bb-breadcrumb { padding-left: 24px; }
 .bb-step.done { color: var(--bb-text-secondary); }
 .bb-checkout-section { background: var(--bb-bg-surface); border: 1px solid var(--bb-border-subtle); border-radius: var(--bb-radius-none); padding: 22px 24px; margin-bottom: 18px; }
 .bb-checkout-section h3 { font-family: var(--bb-font-display); text-transform: uppercase; font-size: 16px; letter-spacing: 0.04em; margin: 0 0 18px 0; display: flex; align-items: center; gap: 10px; }
-.bb-checkout-section h3 .badge { font-size: 14px; padding: 3px 8px; background: rgba(255, 12, 9,0.15); color: var(--bb-brand-primary); border-radius: var(--bb-radius-none); letter-spacing: 0.08em; font-weight: 700; }
+.bb-checkout-section h3 .badge { font-size: 14px; padding: 3px 8px; background: var(--bb-brand-primary); color: #ffffff; border-radius: var(--bb-radius-none); letter-spacing: 0.08em; font-weight: 700; } /* was rgba red on white (3.8:1 fail) → white on brand red (3.92:1) — large bold text, 3:1 OK */
 /* WP `.form-control` parity - height 52px, border #cecece, padding 0 20px */
 .bb-order-summary { background: var(--bb-bg-surface); border: 1px solid var(--bb-border-subtle); border-radius: var(--bb-radius-none); padding: 22px; position: sticky; top: calc(var(--bb-header-height) + 34px + 16px); align-self: start; }
 .bb-order-summary h3 { font-family: var(--bb-font-display); text-transform: uppercase; font-size: 15px; letter-spacing: 0.04em; margin: 0 0 16px 0; padding-bottom: 12px; border-bottom: 1px solid var(--bb-border-subtle); color: var(--bb-text-primary); }
@@ -2900,7 +2893,7 @@ html[data-header-scrolled] .bb-breadcrumb { padding-left: 24px; }
 }
 .bb-account-avatar {
   width: 50px; height: 50px; border-radius: 999px; flex-shrink: 0;
-  background: #f3f3f3; color: #b0b0b0;
+  background: #f3f3f3; color: #6f6f6f; /* was #b0b0b0 (2.35:1 fail) → #6f6f6f (4.59:1 AA pass) */
   display: flex; align-items: center; justify-content: center;
 }
 .bb-account-user-info { flex: 1; min-width: 0; }
@@ -2911,7 +2904,7 @@ html[data-header-scrolled] .bb-breadcrumb { padding-left: 24px; }
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .bb-account-user-info span {
-  display: block; font-size: 12px; color: #9a9a9a; margin-top: 3px;
+  display: block; font-size: 12px; color: #6f6f6f; margin-top: 3px; /* was #9a9a9a (2.85:1 fail) → #6f6f6f (4.59:1 pass) */
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .bb-account-logout {
@@ -2990,7 +2983,7 @@ html[data-header-scrolled] .bb-breadcrumb { padding-left: 24px; }
 @keyframes bb-fade-in { from { opacity: 0; } to { opacity: 1; } }
 .bb-search-shell { position: fixed; left: 0; right: 0; top: var(--bb-header-stack); z-index: 99; background: var(--bb-bg-surface-dark); border-bottom: 1px solid rgba(255,255,255,0.07); box-shadow: 0 32px 80px rgba(0,0,0,0.72), 0 2px 0 rgba(255, 12, 9,0.5); display: flex; flex-direction: column; max-height: calc(100dvh - var(--bb-header-stack)); animation: bb-slide-down 0.3s ease; color: var(--bb-text-inverse); }
 @keyframes bb-slide-down { from { transform: translateY(-12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-.bb-search-bar { display: flex; align-items: center; gap: 14px; padding: 14px clamp(16px, 4vw, 40px); border-bottom: 1px solid rgba(255,255,255,0.07); background: var(--bb-bg-surface-dark); max-width: 1440px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+.bb-search-bar { display: flex; align-items: center; gap: 14px; padding: 14px clamp(16px, 4vw, 40px); border-bottom: 1px solid rgba(255,255,255,0.07); background: var(--bb-bg-surface-dark); max-width: var(--bb-container-xl); margin: 0 auto; width: 100%; box-sizing: border-box; }
 .bb-search-bar > svg { color: var(--bb-brand-primary); width: 20px; height: 20px; flex-shrink: 0; }
 .bb-search-bar input { flex: 1; background: transparent !important; border: none !important; color: #fff !important; font-size: 17px; outline: none; letter-spacing: 0.01em; font-family: inherit; font-weight: 500; box-shadow: none !important; }
 .bb-search-bar input:focus { box-shadow: none !important; }
@@ -3201,7 +3194,6 @@ html[data-header-scrolled] .bb-breadcrumb { padding-left: 24px; }
   .bb-news-page .bb-news-section { padding: 0 16px; }
   .bb-article-wrap { padding: 0 16px; }
   .bb-article-header, .bb-article-body { padding: 22px 20px; }
-  .bb-cat-hero { height: 280px; }
   .bb-cat-hero-title { font-size: clamp(1.6rem, 6vw, 2.2rem); }
   .bb-cat-layout { grid-template-columns: 1fr; margin-top: 24px; padding-bottom: 40px; gap: 0; }
   .bb-cat-seo { padding-top: 36px; padding-bottom: 48px; }
@@ -3783,49 +3775,6 @@ img, picture, video, svg, canvas { max-width: 100%; }
 }
 .bb-page-head h1 { color: var(--bb-text-primary); }
 .bb-page-head .sub { color: var(--bb-text-muted); }
-
-/* Category hero - light + image. WP cu: page-title banner with bg image. */
-.bb-cat-hero { background: var(--bb-bg-section); }
-/* Cat-hero overlay stays dark - image sits behind. Text inside is white. */
-.bb-cat-hero-overlay {
-  background: linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.32) 50%, rgba(0,0,0,0.05) 100%);
-}
-
-/* WP-style hero: light bg (page-title-bg.png), dark text, helmet illustration on right */
-.bb-cat-hero--wp { background: var(--bb-bg-section); }
-.bb-cat-hero--wp .bb-cat-hero-bg { object-fit: cover; opacity: 1; }
-.bb-cat-hero--wp .bb-cat-hero-content {
-  position: relative;
-  z-index: 1;
-  align-self: center;
-  padding-top: 24px;
-  padding-bottom: 24px;
-}
-.bb-cat-hero--wp .bb-cat-hero-title { color: var(--bb-text-primary); }
-.bb-cat-hero--wp .bb-cat-hero-kicker { color: var(--bb-brand-primary); }
-.bb-cat-hero--wp .bb-cat-hero-desc { color: var(--bb-text-secondary); }
-.bb-cat-hero--wp .bb-cat-hero-breadcrumb,
-.bb-cat-hero--wp .bb-cat-hero-breadcrumb a { color: var(--bb-text-muted); }
-.bb-cat-hero--wp .bb-cat-hero-breadcrumb span[aria-current] { color: var(--bb-text-primary); }
-.bb-cat-hero-illustration {
-  position: absolute;
-  right: 5%;
-  bottom: 0;
-  z-index: 0;
-  pointer-events: none;
-  width: clamp(180px, 30vw, 360px);
-}
-.bb-cat-hero-illustration img {
-  width: 100%;
-  height: auto;
-  display: block;
-  object-fit: contain;
-}
-@media (max-width: 768px) {
-  /* Hero mu bao hiem van hien tren dien thoai (khop ban thiet ke Tin tuc),
-     thu nho lai de khong de len chu. */
-  .bb-cat-hero-illustration { width: clamp(96px, 34vw, 150px); right: 4%; }
-}
 
 /* Section heads - divider */
 .bb-section-head {
@@ -4840,8 +4789,6 @@ input[type="checkbox"] {
 }
 
 .bb-hero-fallback,
-.bb-cat-hero,
-.bb-cat-hero--wp,
 .bb-news-hero,
 .bb-article-header {
   background:
@@ -4868,28 +4815,11 @@ input[type="checkbox"] {
 }
 
 .bb-hero-sub,
-.bb-cat-hero-desc,
 .bb-news-hero p,
 .bb-article-meta-row {
   color: #cecece;
   font-size: 16px;
   line-height: 24px;
-}
-
-.bb-cat-hero--wp .bb-cat-hero-title,
-.bb-cat-hero--wp .bb-cat-hero-desc,
-.bb-cat-hero--wp .bb-cat-hero-breadcrumb,
-.bb-cat-hero--wp .bb-cat-hero-breadcrumb a,
-.bb-cat-hero--wp .bb-cat-hero-breadcrumb span[aria-current] {
-  color: inherit;
-}
-
-.bb-cat-hero-overlay {
-  background: var(--bb-overlay-gradient);
-}
-
-.bb-cat-hero-illustration {
-  opacity: 0.55;
 }
 
 .bb-product-grid {
@@ -5291,9 +5221,7 @@ input[type="checkbox"] {
     max-width: 120px;
   }
 
-  .bb-hero-fallback,
-  .bb-cat-hero,
-  .bb-cat-hero--wp {
+  .bb-hero-fallback {
     min-height: auto;
     padding: 32px 16px;
   }
@@ -5430,7 +5358,6 @@ input[type="checkbox"] {
 @media (min-width: 992px) {
   .bb-news-excerpt { font-size: 15px; }
   .bb-pdp-review-comment { font-size: 15px; }
-  .bb-cat-hero-desc { font-size: 15px; }
   .bb-page-head .sub { font-size: 15px; }
   .bb-cart-row-meta { font-size: 15px; }
 }

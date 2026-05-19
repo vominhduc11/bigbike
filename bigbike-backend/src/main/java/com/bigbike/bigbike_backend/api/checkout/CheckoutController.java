@@ -7,6 +7,8 @@ import com.bigbike.bigbike_backend.api.checkout.dto.OrderSummaryResponse;
 import com.bigbike.bigbike_backend.api.checkout.dto.QuickBuyRequest;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
+import com.bigbike.bigbike_backend.api.error.ValidationException;
+import com.bigbike.bigbike_backend.config.ClientIpResolver;
 import com.bigbike.bigbike_backend.config.CustomerSessionFilter;
 import com.bigbike.bigbike_backend.domain.customer.CustomerPrincipal;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartEntity;
@@ -18,6 +20,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -37,12 +40,14 @@ public class CheckoutController {
 
     private static final String IDEMPOTENCY_HEADER = "Idempotency-Key";
     private static final int GUEST_TTL = 60 * 60 * 24 * 30; // 30 days
+    private static final Pattern IDEMPOTENCY_KEY_PATTERN = Pattern.compile("^[a-zA-Z0-9\\-]{1,128}$");
 
     @Value("${bigbike.cookies.secure:false}")
     private boolean secureCookies;
 
     private final CheckoutService checkoutService;
     private final CartService cartService;
+    private final ClientIpResolver clientIpResolver;
     private final ApiResponseFactory apiResponseFactory;
 
     @PostMapping("/checkout")
@@ -55,8 +60,8 @@ public class CheckoutController {
         List<CartItemEntity> items = cartService.getItems(cart);
         UUID customerId = cp != null ? cp.customerId() : null;
         String guestSessionId = cp == null ? cart.getSessionId() : null;
-        String idempotencyKey = request.getHeader(IDEMPOTENCY_HEADER);
-        String clientIp = extractClientIp(request);
+        String idempotencyKey = validateIdempotencyKey(request.getHeader(IDEMPOTENCY_HEADER));
+        String clientIp = clientIpResolver.resolve(request);
         String userAgent = request.getHeader("User-Agent");
         OrderSummaryResponse result = checkoutService.checkoutFromCart(
                 cart, items, req, customerId, guestSessionId, idempotencyKey, clientIp, userAgent);
@@ -72,8 +77,8 @@ public class CheckoutController {
         CustomerPrincipal cp = resolveCustomerPrincipal();
         UUID customerId = cp != null ? cp.customerId() : null;
         String guestSessionId = cp == null ? resolveOrCreateGuestId(request, response) : null;
-        String idempotencyKey = request.getHeader(IDEMPOTENCY_HEADER);
-        String clientIp = extractClientIp(request);
+        String idempotencyKey = validateIdempotencyKey(request.getHeader(IDEMPOTENCY_HEADER));
+        String clientIp = clientIpResolver.resolve(request);
         String userAgent = request.getHeader("User-Agent");
         OrderSummaryResponse result = checkoutService.quickBuy(
                 req, customerId, guestSessionId, idempotencyKey, clientIp, userAgent);
@@ -123,11 +128,14 @@ public class CheckoutController {
         return guestId;
     }
 
-    private String extractClientIp(HttpServletRequest request) {
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            return forwarded.split(",")[0].trim();
+    private String validateIdempotencyKey(String key) {
+        if (key == null || key.isBlank()) {
+            return null; // optional — CheckoutService handles null via IdempotencyReservation.none()
         }
-        return request.getRemoteAddr();
+        if (!IDEMPOTENCY_KEY_PATTERN.matcher(key).matches()) {
+            throw ValidationException.fromField("idempotencyKey", "INVALID_FORMAT",
+                    "Idempotency-Key must be 1-128 alphanumeric or hyphen characters");
+        }
+        return key;
     }
 }

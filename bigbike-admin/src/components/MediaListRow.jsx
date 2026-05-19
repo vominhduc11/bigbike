@@ -59,9 +59,9 @@ export function MediaListRow({
         <span className="medialib-list-name-secondary">{media.altText || media.title || '—'}</span>
       </div>
 
-      <span className="text-[0.78rem]">{formatSize(media.fileSize)}</span>
-      <span className="text-[0.78rem] text-muted-foreground">{dimensions}</span>
-      <span className="text-[0.78rem] text-muted-foreground">{dateStr}</span>
+      <span className="text-xs">{formatSize(media.fileSize)}</span>
+      <span className="text-xs text-muted-foreground">{dimensions}</span>
+      <span className="text-xs text-muted-foreground">{dateStr}</span>
 
       <span>
         {media.usageCount > 0 ? (

@@ -1,18 +1,6 @@
 import { listPublicSettings } from "@/lib/api/public-api";
 import { FloatingChat } from "@/components/home/FloatingChat";
-
-function pickSetting(
-  settings: Array<{ settingKey: string; settingValue: string }>,
-  keys: string[],
-): string {
-  for (const key of keys) {
-    const found = settings.find((s) => s.settingKey === key);
-    if (found && found.settingValue.trim().length > 0) {
-      return found.settingValue.trim();
-    }
-  }
-  return "";
-}
+import { pickSetting } from "@/lib/utils/settings";
 
 export async function FloatingChatLoader() {
   const settingsResult = await listPublicSettings();

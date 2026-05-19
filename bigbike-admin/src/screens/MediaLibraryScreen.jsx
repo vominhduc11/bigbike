@@ -526,7 +526,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
           className="fixed inset-0 bg-black/40 z-[60] flex items-center justify-center">
           <div onClick={(e) => e.stopPropagation()}
             className="bg-surface border border-border rounded-md p-5 min-w-[320px] max-w-[90vw] shadow-xl">
-            <h3 className="m-0 mb-3 text-[0.95rem]">
+            <h3 className="m-0 mb-3 text-base">
               {t('media.bulkMoveTitle', { count: selectedIds.size })}
             </h3>
             <div className="flex flex-col gap-1 max-h-80 overflow-y-auto">
@@ -537,7 +537,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
               {folders.map((f) => (
                 <Button key={f.id} variant="outline" onClick={() => handleBulkMove(f.id)}
                   disabled={bulkBusy} className="justify-start text-left">
-                  {f.name} <span className="ml-auto text-[0.7rem] text-muted-foreground">{f.mediaCount}</span>
+                  {f.name} <span className="ml-auto text-xs text-muted-foreground">{f.mediaCount}</span>
                 </Button>
               ))}
             </div>
@@ -641,7 +641,7 @@ function UploadQueue({ queue, onDismiss, t }) {
         {pending > 0 ? t('media.uploading') + ` (${pending})` : t('media.uploadComplete', { count: queue.length })}
       </div>
       {queue.map((u) => (
-        <div key={u.id} className="px-3 py-2 border-b border-border text-[0.78rem]">
+        <div key={u.id} className="px-3 py-2 border-b border-border text-xs">
           <div className="flex justify-between items-center gap-1.5">
             <span className="truncate flex-1" title={u.name}>{u.name}</span>
             <button type="button" onClick={() => onDismiss(u.id)} aria-label="Dismiss"
@@ -650,7 +650,7 @@ function UploadQueue({ queue, onDismiss, t }) {
             </button>
           </div>
           {u.status === 'error' ? (
-            <p className="text-danger mt-1 mb-0 text-[0.72rem]">{u.error}</p>
+            <p className="text-danger mt-1 mb-0 text-xs">{u.error}</p>
           ) : (
             <div className="h-1 bg-surface-muted rounded-full mt-1 overflow-hidden">
               <div

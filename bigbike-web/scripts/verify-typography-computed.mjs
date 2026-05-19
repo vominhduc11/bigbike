@@ -742,7 +742,7 @@ async function main() {
   try {
     const res = await fetch(`${BASE_URL}/`);
     console.log(`[typography-verify] Server reachable → HTTP ${res.status}`);
-  } catch (err) {
+  } catch {
     console.error(`[typography-verify] ERROR: Server not reachable at ${BASE_URL}`);
     console.error(`  Start it with: npm start  (production)  or  npm run dev  (development)`);
     process.exit(1);

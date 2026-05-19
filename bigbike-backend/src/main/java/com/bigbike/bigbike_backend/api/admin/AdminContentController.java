@@ -45,7 +45,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/admin/content")
 @RequiredArgsConstructor
-public class AdminContentController {
+public class AdminContentController extends AdminControllerSupport {
 
     private static final String ID_REGEX = "^[A-Za-z0-9_-]+$";
     private static final String CONTENT_TYPE_REGEX = "^(?i)(ARTICLE|PAGE)$";
@@ -67,9 +67,6 @@ public class AdminContentController {
      */
     @Value("${bigbike.auth.dev-header-enabled:false}")
     private boolean devHeaderEnabled;
-
-    /** Sentinel UUID used for audit attribution when dev-header auth is active. */
-    private static final UUID DEV_ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
     @GetMapping
     public ApiListResponse<AdminContentItem> listContent(
@@ -173,7 +170,8 @@ public class AdminContentController {
      * If dev-header auth is disabled and no principal is present, we throw
      * {@link UnauthorizedException} — this is the secure default for production.
      */
-    private UUID resolveAdminId() {
+    @Override
+    protected UUID resolveAdminId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getPrincipal() instanceof AdminPrincipal principal) {
             try { return UUID.fromString(principal.id()); } catch (IllegalArgumentException ignored) {}

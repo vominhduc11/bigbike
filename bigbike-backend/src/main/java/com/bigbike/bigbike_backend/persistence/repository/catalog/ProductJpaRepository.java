@@ -19,6 +19,15 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Strin
     long countByPublishStatus(PublishStatus publishStatus);
     long countByCategory_Id(String categoryId);
 
+    /**
+     * Products in a given publish status. The public catalog read path
+     * (listing, facets, global search) only ever needs PUBLISHED rows, so
+     * filtering in SQL here avoids materialising the deep entity graph
+     * (variants, gallery, videos, specs) of every DRAFT/TRASH product just
+     * to discard it in a downstream Java filter.
+     */
+    List<ProductEntity> findByPublishStatus(PublishStatus publishStatus);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT p FROM ProductEntity p WHERE p.id = :id")
     Optional<ProductEntity> findByIdForUpdate(@Param("id") String id);

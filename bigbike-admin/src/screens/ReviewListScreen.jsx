@@ -9,6 +9,7 @@ import { deleteReview, fetchReviews, updateReviewStatus } from '../lib/adminApi'
 import { formatDateTime, formatText } from '../lib/formatters'
 import { useDebounce } from '../lib/useDebounce'
 import { Badge } from '@/components/ui/badge'
+import { Alert } from '@/components/ui/alert'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -196,10 +197,9 @@ export function ReviewListScreen({ navigate, canUpdate }) {
       </header>
 
       {actionError ? (
-        <p className="inline-error">
+        <Alert tone="danger" dismissible onDismiss={() => setActionError('')}>
           {actionError}
-          <button type="button" onClick={() => setActionError('')}>x</button>
-        </p>
+        </Alert>
       ) : null}
 
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -36,6 +36,7 @@ import { extractAllowedYouTubeId, validateHomeVideoUrl } from '../lib/urlPolicie
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
@@ -68,7 +69,7 @@ function VideoPreviewModal({ video, onClose }) {
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/[0.82]"
+      className="fixed inset-0 z-modal flex items-center justify-center bg-black/80"
     >
       <div
         onClick={(e) => e.stopPropagation()}
@@ -77,7 +78,7 @@ function VideoPreviewModal({ video, onClose }) {
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-2.5 right-3 z-[1] rounded-xs border-none bg-black/60 text-[22px] leading-none cursor-pointer px-2 py-0.5 text-white"
+          className="absolute top-2.5 right-3 z-[1] rounded-xs border-none bg-black/60 text-2xl leading-none cursor-pointer px-2 py-0.5 text-white"
           aria-label="Đóng"
         >×</button>
 
@@ -101,7 +102,7 @@ function VideoPreviewModal({ video, onClose }) {
         </div>
 
         {video.title && (
-          <p className="m-0 px-4 py-2.5 text-xs font-semibold text-white bg-[#111]">
+          <p className="m-0 px-4 py-2.5 text-xs font-semibold text-white bg-black">
             {video.title}
           </p>
         )}
@@ -159,14 +160,14 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPrevi
       <button
         type="button"
         onClick={onPreview}
-        className="shrink-0 w-24 h-[58px] rounded-sm overflow-hidden bg-[#111] border-none p-0 cursor-pointer relative"
+        className="shrink-0 w-24 h-[58px] rounded-sm overflow-hidden bg-black border-none p-0 cursor-pointer relative"
         aria-label={`Xem trước: ${video.title}`}
       >
         {thumbSrc
           ? <img src={thumbSrc} alt={video.title} className="w-full h-full object-cover block" />
           : video.videoUrl
             ? <video src={video.videoUrl} preload="metadata" muted className="w-full h-full object-cover block pointer-events-none" />
-            : <div className="w-full h-full bg-[#222]" />
+            : <div className="w-full h-full bg-black" />
         }
         <div className="absolute inset-0 flex items-center justify-center bg-black/30">
           <svg viewBox="0 0 40 40" width={28} height={28} fill="none">
@@ -225,7 +226,6 @@ export function HomeVideoListScreen({ canUpdate }) {
   const [isBulkBusy, setIsBulkBusy] = useState(false)
   const [searchText, setSearchText] = useState('')
   const [statusFilter, setStatusFilter] = useState('ALL')
-  const selectAllRef = useRef(null)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -407,10 +407,6 @@ export function HomeVideoListScreen({ canUpdate }) {
   const allSelected = filteredItems.length > 0 && filteredItems.every((v) => selectedIds.has(v.id))
   const someSelected = selectionMode && !allSelected
 
-  useEffect(() => {
-    if (selectAllRef.current) selectAllRef.current.indeterminate = someSelected
-  }, [someSelected])
-
   function handleSelect(id, checked) {
     setSelectedIds((prev) => {
       const next = new Set(prev)
@@ -499,8 +495,7 @@ export function HomeVideoListScreen({ canUpdate }) {
       {canUpdate && (
         <div className="flex items-center gap-2.5 px-1 py-1.5">
           <Checkbox
-            ref={selectAllRef}
-            checked={allSelected}
+            checked={allSelected ? true : someSelected ? 'indeterminate' : false}
             onCheckedChange={(checked) => handleSelectAll(checked)}
             aria-label="Chọn tất cả"
            />
@@ -573,7 +568,7 @@ export function HomeVideoListScreen({ canUpdate }) {
           onSubmit={handleSubmit}
           className="flex flex-col gap-3.5 rounded-md border border-border bg-surface p-5 mb-6"
         >
-          <h3 className="m-0 text-[15px] font-bold">
+          <h3 className="m-0 text-base font-bold">
             {editingVideo ? t('homeVideos.editTitle') : t('homeVideos.createTitle')}
           </h3>
 
@@ -593,28 +588,20 @@ export function HomeVideoListScreen({ canUpdate }) {
 
           <div className="flex flex-col gap-1.5 text-sm font-semibold">
             {t('homeVideos.formSource')}
-            <div className="flex gap-5 font-normal">
+            <RadioGroup
+              value={form.videoType}
+              onValueChange={(value) => setForm((prev) => ({ ...prev, videoType: value, videoUrl: '' }))}
+              className="flex gap-5 font-normal"
+            >
               <label className="flex items-center gap-1.5 cursor-pointer">
-                <input
-                  type="radio"
-                  name="videoType"
-                  value="youtube"
-                  checked={form.videoType === 'youtube'}
-                  onChange={() => setForm((prev) => ({ ...prev, videoType: 'youtube', videoUrl: '' }))}
-                />
+                <RadioGroupItem value="youtube" />
                 {t('homeVideos.sourceYoutube')}
               </label>
               <label className="flex items-center gap-1.5 cursor-pointer">
-                <input
-                  type="radio"
-                  name="videoType"
-                  value="upload"
-                  checked={form.videoType === 'upload'}
-                  onChange={() => setForm((prev) => ({ ...prev, videoType: 'upload', videoUrl: '' }))}
-                />
+                <RadioGroupItem value="upload" />
                 {t('homeVideos.sourceUpload')}
               </label>
-            </div>
+            </RadioGroup>
           </div>
 
           {form.videoType === 'youtube' ? (
@@ -627,7 +614,7 @@ export function HomeVideoListScreen({ canUpdate }) {
                 onChange={(event) => setForm((prev) => ({ ...prev, videoUrl: event.target.value }))}
                 placeholder="https://www.youtube.com/watch?v=..."
               />
-              <span className="text-[11px] text-muted-foreground font-normal">
+              <span className="text-xs text-muted-foreground font-normal">
                 {t('homeVideos.youtubeHint')}
               </span>
               {youtubePreviewId && (
@@ -661,11 +648,11 @@ export function HomeVideoListScreen({ canUpdate }) {
                 )}
               </div>
               {form.videoUrl ? (
-                <span className="text-[11px] text-success font-normal">
+                <span className="text-xs text-success font-normal">
                   ✓ {form.videoUrl.split('/').pop()}
                 </span>
               ) : (
-                <span className="text-[11px] text-muted-foreground font-normal">
+                <span className="text-xs text-muted-foreground font-normal">
                   {t('homeVideos.uploadHint')}
                 </span>
               )}

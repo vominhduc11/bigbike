@@ -3,7 +3,7 @@ import { loginSchema, registerSchema, resetPasswordSchema } from "@/lib/schemas/
 
 describe("loginSchema", () => {
   it("validates a correct payload", () => {
-    const result = loginSchema.safeParse({ login: "user@example.com", password: "secret" });
+    const result = loginSchema.safeParse({ login: "user@example.com", password: "secret", remember: false });
     expect(result.success).toBe(true);
   });
 

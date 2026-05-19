@@ -14,6 +14,7 @@ import {
   fetchMyOrder,
   fetchMyOrders,
   fetchPublicSettings,
+  fetchWishlistProducts,
   removeCartItem,
   removeCoupon,
   updateAddress,
@@ -173,5 +174,15 @@ export function useOrder(id: string) {
     queryKey: queryKeys.order(id),
     queryFn: () => fetchMyOrder(id),
     enabled: Boolean(id),
+  });
+}
+
+// ── Wishlist ─────────────────────────────────────────────────────────────────
+
+export function useWishlistProducts(page = 1) {
+  return useQuery({
+    queryKey: queryKeys.wishlistProducts(page),
+    queryFn: () => fetchWishlistProducts(page),
+    retry: false,
   });
 }

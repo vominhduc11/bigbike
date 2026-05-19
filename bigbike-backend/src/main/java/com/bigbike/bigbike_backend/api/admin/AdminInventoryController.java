@@ -10,7 +10,6 @@ import com.bigbike.bigbike_backend.api.admin.dto.inventory.SerialImportRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.inventory.SerialImportResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.inventory.StockMovementResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.inventory.UpdateSerialStatusRequest;
-import com.bigbike.bigbike_backend.domain.auth.AdminPrincipal;
 import com.bigbike.bigbike_backend.service.admin.AdminInventoryService;
 import com.bigbike.bigbike_backend.service.admin.AdminSerialImportService;
 import com.bigbike.bigbike_backend.service.admin.AdminSerialService;
@@ -23,8 +22,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -37,9 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/admin/inventory")
 @RequiredArgsConstructor
-public class AdminInventoryController {
-
-    private static final UUID DEV_ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+public class AdminInventoryController extends AdminControllerSupport {
 
     private final AdminInventoryService inventoryService;
     private final AdminSerialService serialService;
@@ -230,11 +225,4 @@ public class AdminInventoryController {
         return serialImportService.importSerials(req, resolveAdminId());
     }
 
-    private UUID resolveAdminId() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.getPrincipal() instanceof AdminPrincipal principal) {
-            try { return UUID.fromString(principal.id()); } catch (Exception ignored) {}
-        }
-        return DEV_ADMIN_ID;
-    }
 }

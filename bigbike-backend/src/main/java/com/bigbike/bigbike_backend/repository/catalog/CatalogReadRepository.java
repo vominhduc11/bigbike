@@ -10,6 +10,15 @@ public interface CatalogReadRepository {
 
     List<Product> findAllProducts();
 
+    /**
+     * PUBLISHED products only, in public view. The public catalog endpoints
+     * (listing, facets, global search) all discard non-PUBLISHED rows, so the
+     * status filter is pushed to SQL here — the result is identical to
+     * {@code findAllProducts()} filtered to PUBLISHED, but the deep entity
+     * graph of DRAFT/TRASH products is never materialised.
+     */
+    List<Product> findAllPublishedProducts();
+
     List<Product> findProductsFiltered(String query, String publishStatus, String stockState, String brandId, String categoryId);
 
     Optional<Product> findProductBySlug(String slug);

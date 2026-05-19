@@ -71,16 +71,11 @@ export default async function BrandListPage({ searchParams }: BrandListPageProps
       <PageHero
         imageUrl={heroSettings.imageUrl}
         imageAlt={heroSettings.imageAlt}
-        kicker={heroSettings.kicker ?? "BRAND"}
         title={heroSettings.title ?? "Thương hiệu"}
-        description={
-          heroSettings.description ?? "Tất cả thương hiệu đồ bảo hộ biker tại BigBike."
-        }
         breadcrumb={[
           { label: "Trang chủ", href: toHomePath() },
           { label: "Thương hiệu" },
         ]}
-        meta={result.pagination ? `${result.pagination.totalItems} thương hiệu` : undefined}
       />
       <div className="bb-container">
 

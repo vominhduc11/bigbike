@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { Alert } from '@/components/ui/alert'
 
 const PAYMENT_METHODS = ['CASH', 'CARD_TERMINAL', 'CREDIT']
 
@@ -521,9 +522,9 @@ function RefundDialog({ order, maxRefundable, hasSerialItems, onClose, onSuccess
         </p>
 
         {hasSerialItems && (
-          <div role="note" className="px-2.5 py-2 mb-3 text-[0.8rem] bg-warning-bg text-warning border-l-[3px] border-warning-border border-l-warning">
+          <Alert tone="warning" size="sm" role="note" className="mb-3">
             {t('pos.refundSerialWarning')}
-          </div>
+          </Alert>
         )}
 
         <form onSubmit={handleSubmit}>
@@ -531,7 +532,7 @@ function RefundDialog({ order, maxRefundable, hasSerialItems, onClose, onSuccess
             <p className="m-0 text-sm text-muted-foreground">
               {t('pos.refundLabelAmount')}: <strong className="text-base text-foreground">{formatCurrencyVnd(maxRefundable)}</strong>
             </p>
-            <p className="m-0 mt-1 text-[0.78rem] text-muted-foreground">
+            <p className="m-0 mt-1 text-xs text-muted-foreground">
               {t('pos.refundFullOnly')}
             </p>
           </div>
@@ -629,13 +630,13 @@ function ReceiptModal({ order, paymentMethod, cart, canRefund, onClose }) {
                 <tr key={item.cartKey}>
                   <td className="px-1.5 py-1">
                     <div>{item.productName}</div>
-                    {item.variantName && <div className="text-[0.75rem] text-muted-foreground">{item.variantName}</div>}
+                    {item.variantName && <div className="text-xs text-muted-foreground">{item.variantName}</div>}
                   </td>
                   <td className="text-right px-1.5 py-1">{item.qty}</td>
                   <td className="text-right px-1.5 py-1 whitespace-nowrap">
                     {formatCurrencyVnd(effectivePrice(item))}
                     {item.overriddenPrice != null && (
-                      <div className="text-[0.7rem] text-muted-foreground line-through">
+                      <div className="text-xs text-muted-foreground line-through">
                         {formatCurrencyVnd(item.price)}
                       </div>
                     )}
@@ -688,7 +689,7 @@ function ReceiptModal({ order, paymentMethod, cart, canRefund, onClose }) {
             </Button>
           )}
           {!canHaveRefund && isCreditOrder && (
-            <span className="shrink-0 px-3 py-2 text-[0.78rem] text-muted-foreground self-center">
+            <span className="shrink-0 px-3 py-2 text-xs text-muted-foreground self-center">
               {t('pos.refundUnavailableCredit')}
             </span>
           )}
@@ -942,7 +943,7 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit, canOverri
                         <span className="pos-cart-item-price">
                           {formatCurrencyVnd(effectivePrice(item))}
                           {item.overriddenPrice != null && (
-                            <span className="text-[0.7rem] text-muted-foreground line-through ml-1">
+                            <span className="text-xs text-muted-foreground line-through ml-1">
                               {formatCurrencyVnd(item.price)}
                             </span>
                           )}

@@ -53,7 +53,7 @@ export function ShopInfoDrawer({
       <SheetTrigger asChild>
         <Button
           variant="ghost"
-          className="bb-icon-btn max-[1199px]:hidden"
+          className="bb-icon-btn max-[1199px]:!hidden"
           aria-label={`Thông tin về ${siteName}`}
         >
           <Menu className="h-5 w-5" aria-hidden="true" />

@@ -492,9 +492,14 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
           {canUpdate && transitionsError && (
             <p className="text-sm text-danger mb-3">
               {t('orders.detail.transitionsLoadError')}{' '}
-              <button type="button" className="bb-link" onClick={() => setTransitionsKey((k) => k + 1)}>
+              <Button
+                variant="link"
+                size="sm"
+                className="h-auto p-0 align-baseline"
+                onClick={() => setTransitionsKey((k) => k + 1)}
+              >
                 {t('common.retry')}
-              </button>
+              </Button>
             </p>
           )}
           {canUpdate && !transitionsError && allowedTransitions.length === 0 && (
@@ -623,7 +628,10 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
               </div>
 
               {showShipForm && (
-                <div className="flex flex-col gap-2 max-w-[400px] mt-1">
+                <form
+                  className="flex flex-col gap-2 max-w-[400px] mt-1"
+                  onSubmit={(e) => { e.preventDefault(); handleFulfillmentUpdate('SHIPPED') }}
+                >
                   <Input type="text"
                     placeholder={t('orders.detail.trackingPlaceholder')}
                     value={trackingNumber}
@@ -639,16 +647,15 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                     onChange={(e) => setShippingCarrier(e.target.value)}
                     disabled={fulfillmentSaving}  />
                   <div className="flex gap-2">
-                    <Button disabled={fulfillmentSaving}
-                      onClick={() => handleFulfillmentUpdate('SHIPPED')}>
+                    <Button type="submit" disabled={fulfillmentSaving}>
                       {fulfillmentSaving ? t('orders.detail.savingShort') : t('orders.detail.ffConfirmShip')}
                     </Button>
-                    <Button variant="outline" disabled={fulfillmentSaving}
+                    <Button type="button" variant="outline" disabled={fulfillmentSaving}
                       onClick={() => { setShowShipForm(false); setTrackingNumber(''); setShippingCarrier('') }}>
                       {t('common.cancel')}
                     </Button>
                   </div>
-                </div>
+                </form>
               )}
             </>
           )}

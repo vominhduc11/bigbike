@@ -2,8 +2,9 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { Metadata } from "next";
 import Image from "next/image";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { PageHero } from "@/components/layout/PageHero";
+import { ContactInfoList } from "@/components/ui/ContactInfoList";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { getPageBySlug, listPublicSettings } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
@@ -64,46 +65,18 @@ export default async function ContactPage() {
 
   return (
     <>
-      {/* Hero — red banner with a diagonal cut + phone illustration straddling it.
-          Rendered outside .bb-page so the global `.bb-page h1` rule does not fight it. */}
-      <div className="relative h-[300px] md:h-[560px]">
-        <div className="absolute inset-x-0 top-0 h-[300px] overflow-hidden bg-black md:h-[430px] [clip-path:polygon(0_0,100%_0,100%_75%,0_100%)]">
-          {heroImageUrl ? (
-            <Image
-              src={heroImageUrl}
-              alt={page.heroImageAlt?.trim() || "Cửa hàng BigBike"}
-              fill
-              priority
-              sizes="100vw"
-              className="object-cover"
-            />
-          ) : null}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/35 to-transparent" />
-        </div>
-
-        <div className="absolute inset-x-0 top-0 flex h-[300px] items-center md:h-[430px]">
-          <div className="bb-container">
-            <h1 className="bb-cat-hero-title" style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)", lineHeight: 1.05 }}>
-              Liên hệ
-            </h1>
-            {/* Color sits on the <nav>, not the <a>: the global `a { color: inherit }`
-                rule overrides any text-* class placed directly on a link. */}
-            <nav className="mt-4 flex items-center gap-2 text-sm font-medium text-white/85" aria-label="Điều hướng">
-              <Link href={toHomePath()} className="transition-colors hover:text-brand">
-                Trang chủ
-              </Link>
-              <span aria-hidden="true" className="text-white/45">/</span>
-              <span aria-current="page" className="text-white">Liên hệ</span>
-            </nav>
-          </div>
-        </div>
-
-        {hasPhoneAsset ? (
-          <div className="absolute right-[4%] top-[34px] z-10 hidden w-[340px] md:block" aria-hidden="true">
-            <Image src={PHONE_ASSET} alt="" width={1024} height={1536} className="h-auto w-full" priority />
-          </div>
-        ) : null}
-      </div>
+      {/* Hero render ngoài .bb-page để rule global `.bb-page h1` không ghi đè tiêu đề. */}
+      <PageHero
+        variant="contact"
+        title="Liên hệ"
+        imageUrl={heroImageUrl}
+        imageAlt={page.heroImageAlt}
+        breadcrumb={[
+          { label: "Trang chủ", href: toHomePath() },
+          { label: "Liên hệ" },
+        ]}
+        illustration={hasPhoneAsset ? { src: PHONE_ASSET } : null}
+      />
 
       <section className="bb-page">
         <div className="bb-container">
@@ -113,57 +86,60 @@ export default async function ContactPage() {
               <h2 className="font-display text-[26px] font-semibold text-foreground mb-6">
                 Thông tin liên hệ
               </h2>
-              <ul className="list-none p-0 m-0">
-                <li className="flex gap-4 items-start py-5 border-b border-border first:pt-0">
-                  <span className="shrink-0 text-brand mt-1" aria-hidden="true">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><path d="M9 9v.01"/><path d="M9 12v.01"/><path d="M9 15v.01"/><path d="M9 18v.01"/></svg>
-                  </span>
-                  <div className="min-w-0">
-                    <p className="font-display text-lg font-semibold text-foreground mb-1">Cửa hàng chính</p>
-                    <p className="text-muted-foreground leading-relaxed">{address}</p>
-                  </div>
-                </li>
-
-                <li className="flex gap-4 items-start py-5 border-b border-border">
-                  <span className="shrink-0 text-brand mt-1" aria-hidden="true">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.86 19.86 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.86 19.86 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                  </span>
-                  <div className="min-w-0">
-                    <p className="font-display text-lg font-semibold text-foreground mb-1">Hotline</p>
-                    <p className="text-muted-foreground leading-relaxed">
-                      <a href={tel(hotline)} className="bb-link">{hotline}</a>
-                    </p>
-                    {hotline2 ? (
-                      <p className="text-muted-foreground leading-relaxed">
-                        <a href={tel(hotline2)} className="bb-link">{hotline2}</a>
-                      </p>
-                    ) : null}
-                    {zaloUrl ? (
-                      <p className="text-muted-foreground leading-relaxed">
-                        <a href={zaloUrl} target="_blank" rel="noopener noreferrer" className="bb-link">
-                          Nhắn tin qua Zalo
-                        </a>
-                      </p>
-                    ) : null}
-                  </div>
-                </li>
-
-                {facebookUrl ? (
-                  <li className="flex gap-4 items-start py-5 border-b border-border">
-                    <span className="shrink-0 text-brand mt-1" aria-hidden="true">
-                      <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M22 12a10 10 0 1 0-11.56 9.88v-6.99H7.9V12h2.54V9.8c0-2.5 1.49-3.89 3.77-3.89 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.78l-.44 2.89h-2.34v6.99A10 10 0 0 0 22 12z"/></svg>
-                    </span>
-                    <div className="min-w-0">
-                      <p className="font-display text-lg font-semibold text-foreground mb-1">Facebook</p>
-                      <p className="text-muted-foreground leading-relaxed break-words">
-                        <a href={facebookUrl} target="_blank" rel="noopener noreferrer" className="bb-link">
-                          {facebookUrl.replace(/^https?:\/\/(www\.)?/, "")}
-                        </a>
-                      </p>
-                    </div>
-                  </li>
-                ) : null}
-              </ul>
+              <ContactInfoList
+                variant="list"
+                entries={[
+                  {
+                    icon: (
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><path d="M9 9v.01"/><path d="M9 12v.01"/><path d="M9 15v.01"/><path d="M9 18v.01"/></svg>
+                    ),
+                    label: "Cửa hàng chính",
+                    content: <p className="text-muted-foreground leading-relaxed">{address}</p>,
+                  },
+                  {
+                    icon: (
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.86 19.86 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.86 19.86 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                    ),
+                    label: "Hotline",
+                    content: (
+                      <>
+                        <p className="text-muted-foreground leading-relaxed">
+                          <a href={tel(hotline)} className="bb-link">{hotline}</a>
+                        </p>
+                        {hotline2 ? (
+                          <p className="text-muted-foreground leading-relaxed">
+                            <a href={tel(hotline2)} className="bb-link">{hotline2}</a>
+                          </p>
+                        ) : null}
+                        {zaloUrl ? (
+                          <p className="text-muted-foreground leading-relaxed">
+                            <a href={zaloUrl} target="_blank" rel="noopener noreferrer" className="bb-link">
+                              Nhắn tin qua Zalo
+                            </a>
+                          </p>
+                        ) : null}
+                      </>
+                    ),
+                  },
+                  ...(facebookUrl
+                    ? [
+                        {
+                          icon: (
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M22 12a10 10 0 1 0-11.56 9.88v-6.99H7.9V12h2.54V9.8c0-2.5 1.49-3.89 3.77-3.89 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.78l-.44 2.89h-2.34v6.99A10 10 0 0 0 22 12z"/></svg>
+                          ),
+                          label: "Facebook",
+                          content: (
+                            <p className="text-muted-foreground leading-relaxed break-words">
+                              <a href={facebookUrl} target="_blank" rel="noopener noreferrer" className="bb-link">
+                                {facebookUrl.replace(/^https?:\/\/(www\.)?/, "")}
+                              </a>
+                            </p>
+                          ),
+                        },
+                      ]
+                    : []),
+                ]}
+              />
             </div>
 
             {/* Hệ thống cửa hàng */}

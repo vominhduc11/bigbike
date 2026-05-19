@@ -25,8 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -40,7 +38,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Validated
 @RequestMapping("/api/v1/admin/pos")
 @RequiredArgsConstructor
-public class AdminPosController {
+public class AdminPosController extends AdminControllerSupport {
 
     private final PosOrderService posOrderService;
     private final AdminCatalogReadService catalogReadService;
@@ -151,20 +149,6 @@ public class AdminPosController {
             String reason,
             String note
     ) {}
-
-    private static final UUID DEV_ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
-
-    private UUID resolveAdminId() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.getPrincipal() instanceof com.bigbike.bigbike_backend.domain.auth.AdminPrincipal principal) {
-            try {
-                return UUID.fromString(principal.id());
-            } catch (IllegalArgumentException ignored) {
-                // non-UUID dev id — fall through
-            }
-        }
-        return DEV_ADMIN_ID;
-    }
 
     private String extractClientIp(HttpServletRequest request) {
         String forwarded = request.getHeader("X-Forwarded-For");

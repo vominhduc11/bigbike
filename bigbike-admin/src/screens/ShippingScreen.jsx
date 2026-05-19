@@ -12,6 +12,7 @@ import { showConfirm } from '../lib/confirm'
 import { formatCurrencyVnd } from '../lib/formatters'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { Alert } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 
@@ -137,10 +138,9 @@ export function ShippingScreen({ canUpdate }) {
       {zonesWarning ? <ReadOnlyBanner warning={zonesWarning} /> : null}
 
       {actionError && (
-        <p className="inline-error">
+        <Alert tone="danger" dismissible onDismiss={() => setActionError('')}>
           {actionError}
-          <button type="button" onClick={() => setActionError('')}>✕</button>
-        </p>
+        </Alert>
       )}
 
       {zonesStatus === 'loading' && <StatePanel tone="info" title={t('shipping.loading')} description={t('common.pleaseWait')} />}

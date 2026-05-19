@@ -140,7 +140,7 @@ export function ProductCard({ product, variant = "compact" }: ProductCardProps) 
             {name}
           </h3>
           <span className="mt-3.5 inline-flex items-center gap-1.5 bg-brand px-4 py-2 font-display text-xs font-medium uppercase tracking-[0.1em] text-white transition-colors group-hover:bg-brand-hover">
-            Mua ngay
+            Xem sản phẩm
             <span aria-hidden="true" className="text-sm leading-none">›</span>
           </span>
         </div>

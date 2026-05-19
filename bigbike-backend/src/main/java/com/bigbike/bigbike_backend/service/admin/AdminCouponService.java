@@ -47,6 +47,7 @@ public class AdminCouponService {
 
     // ── List ──────────────────────────────────────────────────────────────────
 
+    @Transactional(readOnly = true)
     public PageResult<AdminCouponListItemResponse> listCoupons(
             int page, int size, String q, String code, String status,
             String discountType, Boolean expired
@@ -76,6 +77,7 @@ public class AdminCouponService {
 
     // ── Detail ────────────────────────────────────────────────────────────────
 
+    @Transactional(readOnly = true)
     public AdminCouponDetailResponse getCouponById(UUID couponId) {
         CouponEntity entity = couponRepo.findById(couponId)
                 .orElseThrow(() -> new NotFoundException("Coupon not found."));

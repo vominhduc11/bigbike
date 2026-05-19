@@ -181,14 +181,11 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
       <PageHero
         imageUrl={heroSettings.imageUrl}
         imageAlt={heroSettings.imageAlt}
-        kicker={heroSettings.kicker ?? "SHOP GEAR BIKER"}
         title={heroSettings.title ?? pageTitle}
-        description={heroSettings.description}
         breadcrumb={[
           { label: "Trang chủ", href: toHomePath() },
           { label: "Sản phẩm" },
         ]}
-        meta={pagination ? `${pagination.totalItems} sản phẩm` : undefined}
       />
 
       <div className="bb-cat-layout">

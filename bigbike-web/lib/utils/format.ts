@@ -163,8 +163,13 @@ export function orderStatusLabel(status: string | null | undefined): string {
   }
 }
 
+export function formatAddress(parts: (string | null | undefined)[]): string {
+  return parts.filter(Boolean).join(", ");
+}
+
 export function isValidVnPhone(phone: string): boolean {
-  return /^0[3-9]\d{8}$/.test(phone.trim());
+  // Re-uses the same regex as checkoutAddressSchema (supports both local 0x and +84x forms)
+  return /^(0[3-9][0-9]{8}|\+84[3-9][0-9]{8})$/.test(phone.trim());
 }
 
 export function paymentStatusLabel(status: string | null | undefined): string {

@@ -12,7 +12,7 @@ import {
 } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import { formatDateTime } from '../lib/formatters'
-import { createProductSchema, zodErrors } from '../lib/schemas'
+import { createProductSchema, zodErrors, COLOR_ATTRIBUTE_KEYS, normalizeVariantToken, isColorAttributeName } from '../lib/schemas'
 import { Modal } from '../components/layout'
 import { StatePanel } from '../components/StatePanel'
 import { ImageUrlInput } from '../components/ImageUrlInput'
@@ -82,74 +82,6 @@ function CollapsibleSection({ id, title, description, children, forceOpen = fals
         </div>
       </div>
     </section>
-  )
-}
-
-// ── Section navigation ─────────────────────────────────────────────────────────
-
-const SECTION_ITEMS = [
-  { id: 'section-basic', labelKey: 'products.detail.navBasic' },
-  { id: 'section-pricing', labelKey: 'products.detail.navPricing' },
-  { id: 'section-media', labelKey: 'products.detail.navMedia' },
-  { id: 'section-gallery', labelKey: 'products.detail.navGallery' },
-  { id: 'section-videos', labelKey: 'products.detail.navVideos' },
-  { id: 'section-specs', labelKey: 'products.detail.navSpecs' },
-  { id: 'section-variants', labelKey: 'products.detail.navVariants' },
-]
-
-function SectionNav() {
-  const { t } = useTranslation()
-  const [active, setActive] = useState(SECTION_ITEMS[0].id)
-
-  useEffect(() => {
-    const scrollEl = document.querySelector('.page-content')
-    if (!scrollEl) return
-
-    let rafId = null
-
-    function update() {
-      rafId = null
-      const containerTop = scrollEl.getBoundingClientRect().top
-      let current = SECTION_ITEMS[0].id
-      for (const { id } of SECTION_ITEMS) {
-        const el = document.getElementById(id)
-        if (!el) continue
-        const top = el.getBoundingClientRect().top - containerTop
-        if (top <= 64) current = id
-      }
-      setActive(current)
-    }
-
-    function onScroll() {
-      if (rafId) return
-      rafId = requestAnimationFrame(update)
-    }
-
-    scrollEl.addEventListener('scroll', onScroll, { passive: true })
-    update()
-    return () => {
-      scrollEl.removeEventListener('scroll', onScroll)
-      if (rafId) cancelAnimationFrame(rafId)
-    }
-  }, [])
-
-  function scrollToSection(id) {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
-
-  return (
-    <nav className="section-nav" aria-label={t('products.detail.sectionNavAria')}>
-      {SECTION_ITEMS.map(({ id, labelKey }) => (
-        <button
-          key={id}
-          type="button"
-          className={`section-nav-pill${active === id ? ' is-active' : ''}`}
-          onClick={() => scrollToSection(id)}
-        >
-          {t(labelKey)}
-        </button>
-      ))}
-    </nav>
   )
 }
 
@@ -236,31 +168,6 @@ function getPublishReadiness(form, t) {
 }
 
 // ── Empty form builders ────────────────────────────────────────────────────────
-
-const COLOR_ATTRIBUTE_KEYS = new Set([
-  'color',
-  'colour',
-  'mau',
-  'mau sac',
-  'pa color',
-  'pa mau',
-  'pa mau sac',
-])
-
-function normalizeVariantToken(value) {
-  return String(value || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/\u0110/g, 'D')
-    .replace(/\u0111/g, 'd')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim()
-}
-
-function isColorAttributeName(name) {
-  return COLOR_ATTRIBUTE_KEYS.has(normalizeVariantToken(name))
-}
 
 function getVariantColorValue(variant) {
   return (variant.options || []).find((option) => isColorAttributeName(option.name))?.value?.trim() || ''
@@ -613,7 +520,7 @@ function GalleryEditor({ items, onChange, disabled, validationErrors = {} }) {
       <div className="gallery-grid">
         {items.map((item, index) => (
           <GalleryCard
-            key={index}
+            key={item.url || `gallery-${index}`}
             item={item}
             onUpdate={(field, value) => updateItem(index, field, value)}
             onRemove={() => removeItem(index)}
@@ -677,7 +584,7 @@ function VideoEditor({ items, onChange, disabled, validationErrors = {} }) {
         const urlError = validationErrors[`videos.${index}.url`]
         const ytId = type === 'youtube' ? extractYouTubeId(item.url) : null
         return (
-          <div key={index} className="list-editor-row">
+          <div key={item.url || `video-${index}`} className="list-editor-row">
             <div className="list-editor-fields">
               <div className="flex gap-1 p-1 bg-muted w-fit">
                 <Button
@@ -963,18 +870,27 @@ function VariantCard({
 
   return (
     <div className={`variant-card${hasErrors ? ' variant-card--error' : ''}`}>
-      <div className="variant-card-header" onClick={() => onToggle(variant._key)}>
-        <div className="variant-card-title">
-          <span className="variant-card-index">#{index + 1}</span>
-          <span>{label}</span>
-          {optionSummary && <span className="variant-card-summary">{optionSummary}</span>}
-          {hasErrors && <span className="variant-card-error-badge" title={t('products.detail.variant.hasError')}>!</span>}
-        </div>
+      <div className="variant-card-header">
+        {/* Vùng click/Enter/Space để toggle — không bao bọc các nút action */}
+        <button
+          type="button"
+          className="variant-card-toggle-area"
+          onClick={() => onToggle(variant._key)}
+          aria-expanded={expanded}
+        >
+          <div className="variant-card-title">
+            <span className="variant-card-index">#{index + 1}</span>
+            <span>{label}</span>
+            {optionSummary && <span className="variant-card-summary">{optionSummary}</span>}
+            {hasErrors && <span className="variant-card-error-badge" title={t('products.detail.variant.hasError')}>!</span>}
+          </div>
+          <span className="variant-card-toggle" aria-hidden="true">{expanded ? <IconChevronUp /> : <IconChevronDown />}</span>
+        </button>
         <div className="variant-card-actions">
           <Button
             variant="ghost"
             size="icon"
-            onClick={(e) => { e.stopPropagation(); onDuplicate(variant._key) }}
+            onClick={() => onDuplicate(variant._key)}
             disabled={disabled}
             aria-label={t('products.detail.variant.duplicate')}
             title={t('products.detail.variant.duplicate')}
@@ -985,13 +901,12 @@ function VariantCard({
             variant="ghost"
             size="icon"
             className="text-destructive hover:text-destructive"
-            onClick={(e) => { e.stopPropagation(); onRemove(variant._key) }}
+            onClick={() => onRemove(variant._key)}
             disabled={disabled}
             aria-label={t('products.detail.variant.remove')}
           >
             ✕
           </Button>
-          <span className="variant-card-toggle">{expanded ? <IconChevronUp /> : <IconChevronDown />}</span>
         </div>
       </div>
 
@@ -1429,8 +1344,11 @@ function VariantMatrixWizard({ onGenerate, onClose }) {
     return arrays.reduce((acc, arr) => acc.flatMap((x) => arr.map((y) => [...x, y])), [[]])
   }
 
+  const MATRIX_HARD_CAP = 200
+
   function generate() {
     if (!parsed.length) return
+    if (estimatedCount > MATRIX_HARD_CAP) return
     const combos = cartesian(parsed.map((a) => a.values.map((v) => ({ name: a.name, value: v }))))
     const newVariants = combos.map((combo) => ({
       _key: crypto.randomUUID(),
@@ -1455,7 +1373,7 @@ function VariantMatrixWizard({ onGenerate, onClose }) {
       actions={
         <>
           <Button type="button" variant="outline" size="sm" onClick={onClose}>{t('common.cancel')}</Button>
-          <Button type="button" size="sm" onClick={generate} disabled={estimatedCount === 0}>
+          <Button type="button" size="sm" onClick={generate} disabled={estimatedCount === 0 || estimatedCount > MATRIX_HARD_CAP}>
             {t('products.detail.matrix.generateButton', { count: estimatedCount })}
           </Button>
         </>
@@ -1503,10 +1421,12 @@ function VariantMatrixWizard({ onGenerate, onClose }) {
         </Button>
 
         {estimatedCount > 0 && (
-          <p className={`wizard-estimate${estimatedCount > 50 ? ' wizard-estimate--warn' : ''}`}>
-            {estimatedCount > 50
-              ? t('products.detail.matrix.estimateWarn', { count: estimatedCount })
-              : t('products.detail.matrix.estimate', { count: estimatedCount })}
+          <p className={`wizard-estimate${estimatedCount > MATRIX_HARD_CAP ? ' wizard-estimate--error' : estimatedCount > 50 ? ' wizard-estimate--warn' : ''}`}>
+            {estimatedCount > MATRIX_HARD_CAP
+              ? t('products.detail.matrix.estimateHardCap', { count: estimatedCount, cap: MATRIX_HARD_CAP })
+              : estimatedCount > 50
+                ? t('products.detail.matrix.estimateWarn', { count: estimatedCount })
+                : t('products.detail.matrix.estimate', { count: estimatedCount })}
           </p>
         )}
 
@@ -1704,10 +1624,20 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     // Use double-rAF so we run AFTER React's commit phase, including the
     // adjust-state-during-render pass that auto-expands a variant card.
     requestAnimationFrame(() => requestAnimationFrame(() => {
-      formRef.current?.querySelector('.field-error')
-        ?.closest('label, .form-field')
-        ?.querySelector('input, select, textarea')
-        ?.focus()
+      const errorEl = formRef.current?.querySelector('.field-error')
+      if (!errorEl) return
+      const container = errorEl.closest('label, .form-field')
+      // Try native focusable inputs first, then fall back to combobox (shadcn
+      // Select) or contenteditable (RichTextEditor) — both of which querySelector
+      // 'input, select, textarea' misses.
+      const focusTarget =
+        container?.querySelector('input, textarea, [contenteditable="true"], [role="combobox"]') ??
+        errorEl
+      if (typeof focusTarget.focus === 'function') {
+        focusTarget.focus()
+      } else {
+        errorEl.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      }
     }))
   }
 
@@ -1727,8 +1657,10 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
       return
     }
 
-    // Show quality checklist when publishing for first time
-    if (overridePublishStatus === 'PUBLISHED' && form.publishStatus !== 'PUBLISHED') {
+    // Show quality checklist whenever the resulting status would be PUBLISHED
+    // but the saved-on-server status is not — covers both the "Save & Publish"
+    // button path AND the dropdown-then-save path.
+    if (originalPublishStatus !== 'PUBLISHED' && formToSave.publishStatus === 'PUBLISHED') {
       setPendingPublish({ formToSave, payload: toPayload(formToSave) })
       setShowPublishChecklist(true)
       return
@@ -1785,13 +1717,15 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   const errKeys = Object.keys(validationErrors)
   const se = (prefixes) => prefixes.some((p) => errKeys.some((k) => k === p || k.startsWith(p + '.')))
   const sectionErrors = {
-    basic:    se(['name','slug','sku','shortDescription','description','brandId','categoryId','publishStatus']),
-    pricing:  se(['retailPrice','compareAtPrice','salePrice']),
-    media:    se(['imageUrl']),
-    gallery:  se(['gallery']),
-    videos:   se(['videos']),
-    specs:    se(['specifications']),
-    variants: se(['variants']),
+    basic:         se(['name','slug','sku','shortDescription','description','brandId','categoryId','publishStatus']),
+    pricing:       se(['retailPrice','compareAtPrice','salePrice']),
+    media:         se(['imageUrl']),
+    seo:           se(['seoTitle','seoDescription','seoCanonicalUrl','seoOgImageUrl','seoOgImageAlt']),
+    contentBottom: se(['contentBottom']),
+    gallery:       se(['gallery']),
+    videos:        se(['videos']),
+    specs:         se(['specifications']),
+    variants:      se(['variants']),
   }
 
   return (
@@ -1803,18 +1737,30 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
           <p>{isCreate ? t('products.detail.createDesc') : t('products.detail.editDesc')}</p>
         </div>
         <div className="screen-actions">
-          <Button variant="outline" onClick={() => navigate('/admin/products')}>
+          <Button
+            variant="outline"
+            onClick={async () => {
+              if (isDirty) {
+                const confirmed = await showConfirm(
+                  t('products.detail.unsavedChangesConfirm'),
+                  t('products.detail.unsavedChangesTitle'),
+                )
+                if (!confirmed) return
+              }
+              navigate('/admin/products')
+            }}
+          >
             {t('products.detail.backToList')}
           </Button>
-          {!isCreate && state.item?.publishStatus !== 'PUBLISHED' ? (
+          {!isCreate && state.item?.publishStatus === 'PUBLISHED' && state.item?.slug ? (
             <Button asChild variant="outline">
               <a
-                href={`/product/${form.slug}/`}
+                href={`/product/${state.item.slug}/`}
                 target="_blank"
                 rel="noopener noreferrer"
-                title={t('products.detail.previewTitle')}
+                title={t('products.detail.viewLiveTitle')}
               >
-                {t('products.detail.preview')}
+                {t('products.detail.viewLive')}
               </a>
             </Button>
           ) : null}
@@ -1863,8 +1809,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
           onClose={() => setShowMatrixWizard(false)}
         />
       )}
-
-      <SectionNav />
 
       <form
         ref={formRef}
@@ -2236,6 +2180,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               <ImageUrlInput
                 value={form.imageUrl}
                 onChange={(url) => updateField('imageUrl', url)}
+                alt={form.imageAlt}
+                onAltChange={(v) => updateField('imageAlt', v)}
                 disabled={isReadOnly}
                 error={validationErrors.imageUrl}
               />
@@ -2244,6 +2190,102 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
         </CollapsibleSection>
 
         {/* ── SEO ── */}
+        <CollapsibleSection id="section-seo" title={t('products.detail.sectionSeo')} forceOpen={sectionErrors.seo}>
+          <div className="detail-section-content form-grid">
+            <label className="form-field form-field-wide">
+              <div className="form-field-label-row">
+                <span>{t('products.detail.seoTitle')}</span>
+                <span className={`char-counter${(form.seoTitle?.length ?? 0) > 230 ? ' char-counter-warn' : ''}`}>
+                  {form.seoTitle?.length ?? 0} / 255
+                </span>
+              </div>
+              <Input
+                value={form.seoTitle}
+                onChange={(e) => updateField('seoTitle', e.target.value)}
+                disabled={isReadOnly}
+                maxLength={255}
+                placeholder={t('products.detail.seoTitle')}
+              />
+              {validationErrors.seoTitle && <small className="field-error">{validationErrors.seoTitle}</small>}
+            </label>
+
+            <div className="form-field form-field-wide">
+              <div className="form-field-label-row">
+                <span>{t('products.detail.seoDescription')}</span>
+                <span className={`char-counter${(form.seoDescription?.length ?? 0) > 4500 ? ' char-counter-warn' : ''}`}>
+                  {form.seoDescription?.length ?? 0} / 5000
+                </span>
+              </div>
+              <Textarea
+                value={form.seoDescription}
+                onChange={(e) => updateField('seoDescription', e.target.value)}
+                disabled={isReadOnly}
+                maxLength={5000}
+                placeholder={t('products.detail.seoDescription')}
+                className={validationErrors.seoDescription ? 'border-danger' : undefined}
+              />
+              {validationErrors.seoDescription && <small className="field-error">{validationErrors.seoDescription}</small>}
+            </div>
+
+            <label className="form-field form-field-wide">
+              <span>{t('products.detail.seoCanonicalUrl')}</span>
+              <Input
+                value={form.seoCanonicalUrl}
+                onChange={(e) => updateField('seoCanonicalUrl', e.target.value)}
+                disabled={isReadOnly}
+                placeholder="https://..."
+                className={validationErrors.seoCanonicalUrl ? 'border-danger' : undefined}
+              />
+              {validationErrors.seoCanonicalUrl && <small className="field-error">{validationErrors.seoCanonicalUrl}</small>}
+            </label>
+
+            <div className="form-field form-field-wide">
+              <span className="form-field-label">{t('products.detail.seoOgImageUrl')}</span>
+              <ImageUrlInput
+                value={form.seoOgImageUrl}
+                onChange={(url) => updateField('seoOgImageUrl', url)}
+                alt={form.seoOgImageAlt}
+                onAltChange={(v) => updateField('seoOgImageAlt', v)}
+                disabled={isReadOnly}
+                error={validationErrors.seoOgImageUrl}
+              />
+              {validationErrors.seoOgImageAlt && <small className="field-error">{validationErrors.seoOgImageAlt}</small>}
+            </div>
+
+            <label className="form-checkbox form-field-wide">
+              <Checkbox
+                checked={form.seoNoIndex}
+                onCheckedChange={(checked) => updateField('seoNoIndex', checked)}
+                disabled={isReadOnly}
+              />
+              <span>{t('products.detail.seoNoIndex')}</span>
+            </label>
+          </div>
+        </CollapsibleSection>
+
+        {/* ── Nội dung SEO dài (contentBottom) ── */}
+        <CollapsibleSection id="section-content-bottom" title={t('products.detail.sectionContentBottom')} forceOpen={sectionErrors.contentBottom}>
+          <div className="detail-section-content">
+            <div className="form-field">
+              {form.contentBottom.length > 40000 && (
+                <div className="form-field-label-row">
+                  <span className={`char-counter${form.contentBottom.length > 49000 ? ' char-counter-warn' : ''}`}>
+                    {form.contentBottom.length.toLocaleString()} / 50 000
+                  </span>
+                </div>
+              )}
+              <RichTextEditor
+                value={form.contentBottom}
+                onChange={(html) => updateField('contentBottom', html)}
+                placeholder={t('products.detail.contentBottom')}
+                disabled={isReadOnly}
+                hasError={Boolean(validationErrors.contentBottom)}
+                enableImagePicker
+              />
+              {validationErrors.contentBottom && <small className="field-error">{validationErrors.contentBottom}</small>}
+            </div>
+          </div>
+        </CollapsibleSection>
 
         {/* ── Gallery ── */}
         <CollapsibleSection id="section-gallery" title={t('products.detail.gallerySectionTitle')} description={t('products.detail.gallerySectionDescription')} forceOpen={sectionErrors.gallery}>
@@ -2294,7 +2336,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
           </div>
         </CollapsibleSection>
 
-        <div className="form-footer">
+        <div className={`form-footer${isDirty ? ' form-footer--dirty' : ''}`}>
           <div className="form-status">
             <span className={`status-pill ${isDirty ? 'is-dirty' : 'is-clean'}`}>
               {isDirty ? t('common.dirty') : t('common.clean')}
@@ -2304,7 +2346,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
             ) : null}
           </div>
           <div className="screen-actions">
-            {form.publishStatus !== 'PUBLISHED' && (
+            {/* DRAFT: "Lưu nháp" — ép giữ DRAFT */}
+            {form.publishStatus === 'DRAFT' && (
               <Button
                 variant="outline"
                 loading={isSubmitting}
@@ -2315,10 +2358,24 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 {t('products.detail.saveDraft')}
               </Button>
             )}
+            {/* HIDDEN: "Lưu (ẩn)" — giữ nguyên HIDDEN, không ép về DRAFT */}
+            {form.publishStatus === 'HIDDEN' && (
+              <Button
+                variant="outline"
+                loading={isSubmitting}
+                disabled={isReadOnly || !isDirty}
+                title={t('products.detail.saveHiddenTitle')}
+                onClick={() => handleSave()}
+              >
+                {t('products.detail.saveHidden')}
+              </Button>
+            )}
+            {/* Nút chính: "Lưu thay đổi" khi đã published, "Lưu & Đăng bán" khi chưa published.
+                Cho phép publish kể cả khi !isDirty (publish = thay đổi trạng thái, không cần dirty). */}
             <Button
               variant={form.publishStatus === 'PUBLISHED' ? 'default' : 'success'}
               loading={isSubmitting}
-              disabled={isReadOnly || !isDirty}
+              disabled={isReadOnly || (form.publishStatus === 'PUBLISHED' ? !isDirty : false)}
               title={form.publishStatus === 'PUBLISHED' ? t('products.detail.saveShortcutTitle') : t('products.detail.publishTitle')}
               onClick={() => handleSave(form.publishStatus === 'PUBLISHED' ? undefined : 'PUBLISHED')}
             >

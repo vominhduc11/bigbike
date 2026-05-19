@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 // Match backend regex in CheckoutService.validateAddress
-const VN_PHONE_RE = /^(0[3-9][0-9]{8}|\+84[3-9][0-9]{8})$/;
+export const VN_PHONE_RE = /^(0[3-9][0-9]{8}|\+84[3-9][0-9]{8})$/;
 
 export const checkoutAddressSchema = z.object({
   fullName: z.string().min(1, "Vui lòng nhập họ và tên"),

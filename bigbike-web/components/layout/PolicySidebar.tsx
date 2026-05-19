@@ -7,7 +7,7 @@ export type PolicySidebarItem = {
 
 export const POLICY_LINKS: PolicySidebarItem[] = [
   { label: "Chính sách bảo mật thông tin", href: "/chinh-sach/bao-mat" },
-  { label: "Chính sách bảo hành", href: "/bao-hanh" },
+  { label: "Chính sách bảo hành", href: "/chinh-sach/bao-hanh" },
   { label: "Chính sách đổi trả hàng", href: "/chinh-sach/doi-tra" },
   { label: "Điều khoản sử dụng", href: "/chinh-sach/dieu-khoan" },
   { label: "Hướng dẫn mua hàng", href: "/huong-dan-mua-hang" },

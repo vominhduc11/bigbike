@@ -6,8 +6,6 @@ type HeroPropsFromSettings = {
   imageUrl: string | null;
   imageAlt: string | null;
   title: string | null;
-  description: string | null;
-  kicker: string | null;
 };
 
 function findValue(settings: PublicSiteSetting[], key: string): string | null {
@@ -23,7 +21,5 @@ export function readHeroSettings(
     imageUrl: findValue(settings, `${prefix}_image_url`),
     imageAlt: findValue(settings, `${prefix}_image_alt`),
     title: findValue(settings, `${prefix}_title`),
-    description: findValue(settings, `${prefix}_description`),
-    kicker: findValue(settings, `${prefix}_kicker`),
   };
 }

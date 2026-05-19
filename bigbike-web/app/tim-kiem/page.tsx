@@ -51,7 +51,6 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     <section className="bb-page">
       <PageHero
         title={heroTitle}
-        kicker="KẾT QUẢ TÌM KIẾM"
         breadcrumb={[
           { label: "Trang chủ", href: toHomePath() },
           { label: "Tìm kiếm" },

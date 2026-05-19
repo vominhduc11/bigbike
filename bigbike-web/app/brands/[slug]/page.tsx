@@ -1,10 +1,11 @@
-import Link from "next/link";
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { CatalogFilters } from "@/components/catalog/CatalogFilters";
 import { CatalogSortSelect } from "@/components/catalog/CatalogSortSelect";
+import { PageHeading } from "@/components/layout/PageHeading";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { MediaImage } from "@/components/ui/MediaImage";
@@ -193,21 +194,16 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }} />
-      <div className="bb-breadcrumb">
-        <Link href={toHomePath()}>Trang chủ</Link>
-        <span className="sep">/</span>
-        <Link href={toBrandListPath()}>Thương hiệu</Link>
-        <span className="sep">/</span>
-        <span>{brandName}</span>
-      </div>
+      <Breadcrumb
+        variant="onLight"
+        items={[
+          { label: "Trang chủ", href: toHomePath() },
+          { label: "Thương hiệu", href: toBrandListPath() },
+          { label: brandName },
+        ]}
+      />
 
-      <div className="bb-page-head">
-        <span className="kicker">Thương hiệu</span>
-        <h1>{brandName}</h1>
-        {brand.description && (
-          <p className="bb-entity-desc">{brand.description}</p>
-        )}
-      </div>
+      <PageHeading kicker="Thương hiệu" title={brandName} description={brand.description} />
 
       {(brand.bannerImage ?? brand.logo) && (
         <div className="bb-container mb-6">

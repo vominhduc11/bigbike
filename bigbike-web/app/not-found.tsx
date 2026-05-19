@@ -15,9 +15,7 @@ export default async function NotFoundPage() {
   return (
     <section className="min-h-[62vh] bg-background py-20 text-center">
       <PageHero
-        kicker="Lỗi 404"
         title="Không tìm thấy trang"
-        description="Nội dung bạn tìm kiếm không còn tồn tại — có thể đã cũ hoặc đã được gỡ bỏ."
         breadcrumb={[
           { label: "Trang chủ", href: toHomePath() },
           { label: "404" },

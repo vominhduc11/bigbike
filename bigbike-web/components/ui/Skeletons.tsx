@@ -322,7 +322,7 @@ export function CatalogSkeleton({ withHero = false }: { withHero?: boolean }) {
   return (
     <SkeletonRoot label="Đang tải danh mục sản phẩm">
       {withHero && (
-        <div className="bb-cat-hero" style={{ position: "relative" }}>
+        <div className="relative h-[300px] md:h-[430px]">
           <SkelBlock w="100%" h="100%" rounded={false} style={{ position: "absolute", inset: 0 }} />
         </div>
       )}

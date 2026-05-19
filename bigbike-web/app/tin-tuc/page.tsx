@@ -92,7 +92,6 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
   const heroSettings = readHeroSettings(settingsResult.data ?? [], "hero_news");
 
   const articles = result.data;
-  const totalItems = result.pagination?.totalItems ?? articles.length;
   // Chỉ hiển thị danh mục có bài viết — giữ danh sách gọn như bản thiết kế.
   const sidebarCategories = categoriesResult.data.filter((cat) => cat.articleCount > 0);
 
@@ -117,7 +116,6 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
           { label: "Trang chủ", href: toHomePath() },
           { label: "Tin tức" },
         ]}
-        meta={`${totalItems} bài viết`}
       />
 
       <div className="bb-cat-layout">

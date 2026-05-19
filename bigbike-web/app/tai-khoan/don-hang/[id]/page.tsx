@@ -5,7 +5,7 @@ import { use, useEffect, useMemo, useState } from "react";
 import { cancelMyOrder, createReturn, fetchMyOrder } from "@/lib/api/client-api";
 import type { CreateReturnPayload, OrderDetail, OrderLineItem } from "@/lib/contracts/commerce";
 import { AccountShell } from "@/components/layout/AccountShell";
-import { formatDate, formatVnd, orderStatusLabel, paymentMethodLabel, paymentStatusLabel, safeText } from "@/lib/utils/format";
+import { formatAddress, formatDate, formatVnd, orderStatusLabel, paymentMethodLabel, paymentStatusLabel, safeText } from "@/lib/utils/format";
 import { toOrderHistoryPath } from "@/lib/utils/routes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -399,7 +399,7 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
               <b className="block font-display text-sm tracking-[0.04em] uppercase text-foreground mb-1">{safeText(primaryAddress?.fullName, "—")}</b>
               {primaryAddress?.phone && <p className="text-sm text-muted-foreground tracking-[0.04em] mb-[10px] m-0">{primaryAddress.phone}</p>}
               {primaryAddress?.addressLine1 && (
-                <p className="text-sm text-muted-foreground leading-[1.5] m-0">{[primaryAddress.addressLine1, primaryAddress.ward, primaryAddress.district, primaryAddress.province].filter(Boolean).join(", ")}</p>
+                <p className="text-sm text-muted-foreground leading-[1.5] m-0">{formatAddress([primaryAddress.addressLine1, primaryAddress.ward, primaryAddress.district, primaryAddress.province])}</p>
               )}
             </div>
             <div className="bg-card border border-border py-[18px] px-5 relative">
@@ -410,7 +410,7 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
               )}
               {(shippingAddress?.addressLine1 ?? primaryAddress?.addressLine1) && (() => {
                 const addr = shippingAddress ?? primaryAddress;
-                return <p className="text-sm text-muted-foreground leading-[1.5] m-0">{[addr?.addressLine1, addr?.ward, addr?.district, addr?.province].filter(Boolean).join(", ")}</p>;
+                return <p className="text-sm text-muted-foreground leading-[1.5] m-0">{formatAddress([addr?.addressLine1, addr?.ward, addr?.district, addr?.province])}</p>;
               })()}
             </div>
           </div>

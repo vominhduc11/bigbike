@@ -2,27 +2,28 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { X as XIcon, Copy, Maximize2, Edit2, Trash2, RotateCcw, AlertTriangle, Music, FileText, RefreshCw } from 'lucide-react'
-import { fetchMediaFolders, fetchMediaReferences, replaceMediaFile, updateMedia } from '../lib/adminApi'
+import { fetchMediaFolders, replaceMediaFile, updateMedia } from '../lib/adminApi'
+import { useMediaReferences } from '../lib/useMediaReferences'
 import { TagInput } from './TagInput'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 
-const TYPE_LABEL = {
-  PRODUCT: 'Sản phẩm',
-  PRODUCT_GALLERY: 'Gallery sản phẩm',
-  PRODUCT_VARIANT: 'Biến thể sản phẩm',
-  PRODUCT_VARIANT_GALLERY: 'Gallery biến thể',
-  CATEGORY: 'Danh mục',
-  BRAND: 'Thương hiệu',
-  HOME_VIDEO: 'Video trang chủ',
-  CONTENT: 'Bài viết',
-  CONTENT_PRODUCT_IMG: 'Bài viết (ảnh sản phẩm)',
-  CONTENT_SEO_OG: 'Bài viết (SEO OG)',
-  PAGE_SEO_OG: 'Trang (SEO OG)',
-  SLIDER_DESKTOP: 'Banner desktop',
-  SLIDER_MOBILE: 'Banner mobile',
+const REFERENCE_TYPE_KEYS = {
+  PRODUCT: 'media.referenceType.PRODUCT',
+  PRODUCT_GALLERY: 'media.referenceType.PRODUCT_GALLERY',
+  PRODUCT_VARIANT: 'media.referenceType.PRODUCT_VARIANT',
+  PRODUCT_VARIANT_GALLERY: 'media.referenceType.PRODUCT_VARIANT_GALLERY',
+  CATEGORY: 'media.referenceType.CATEGORY',
+  BRAND: 'media.referenceType.BRAND',
+  HOME_VIDEO: 'media.referenceType.HOME_VIDEO',
+  CONTENT: 'media.referenceType.CONTENT',
+  CONTENT_PRODUCT_IMG: 'media.referenceType.CONTENT_PRODUCT_IMG',
+  CONTENT_SEO_OG: 'media.referenceType.CONTENT_SEO_OG',
+  PAGE_SEO_OG: 'media.referenceType.PAGE_SEO_OG',
+  SLIDER_DESKTOP: 'media.referenceType.SLIDER_DESKTOP',
+  SLIDER_MOBILE: 'media.referenceType.SLIDER_MOBILE',
 }
 
 function formatBytes(bytes) {
@@ -57,8 +58,7 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
   const [saving, setSaving] = useState(false)
   const [replacing, setReplacing] = useState(false)
   const [error, setError] = useState('')
-  const [refs, setRefs] = useState(media.references ?? [])
-  const [refsLoading, setRefsLoading] = useState(false)
+  const { refs, refsLoading } = useMediaReferences(media)
   const replaceInputRef = useRef(null)
 
   const isImage = media.mimeType?.startsWith('image/')
@@ -76,25 +76,12 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
     setFolderId(media.folderId ?? '')
     setTags(Array.isArray(media.tags) ? media.tags : [])
     setError('')
-    setRefs(media.references ?? [])
   }, [media.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (Array.isArray(foldersProp)) return
     fetchMediaFolders().then(setFoldersLocal)
   }, [foldersProp])
-
-  // Lazy-load references when not bundled
-  useEffect(() => {
-    if (media.references && media.references.length > 0) return
-    if ((media.usageCount ?? 0) === 0) return
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setRefsLoading(true)
-    fetchMediaReferences(media.id)
-      .then(setRefs)
-      .catch(() => {})
-      .finally(() => setRefsLoading(false))
-  }, [media.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ESC to close
   useEffect(() => {
@@ -199,7 +186,7 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
                 <RefreshCw size={13} />
                 {t('media.replaceFile')}
               </Button>
-              <p className="text-[0.7rem] text-muted-foreground m-0">
+              <p className="text-xs text-muted-foreground m-0">
                 {t('media.replaceHint')}
               </p>
             </>
@@ -265,8 +252,8 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
             <p className="mediadetail-section-title">{t('media.variants')}</p>
             <ul className="list-none m-0 p-0 flex flex-col gap-1.5">
               {Object.entries(media.sizes).map(([name, url]) => (
-                <li key={name} className="flex items-center gap-1.5 text-[0.78rem]">
-                  <span className="bg-surface-muted border border-border rounded-xs px-2 py-px text-[0.68rem] font-bold text-muted-foreground uppercase shrink-0">
+                <li key={name} className="flex items-center gap-1.5 text-xs">
+                  <span className="bg-surface-muted border border-border rounded-xs px-2 py-px text-xs font-bold text-muted-foreground uppercase shrink-0">
                     {name}
                   </span>
                   <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-muted-foreground" title={url}>
@@ -300,7 +287,7 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
             <ul className="mediadetail-ref-list">
               {refs.map((r, i) => (
                 <li key={i}>
-                  <span className="mediadetail-ref-type">{TYPE_LABEL[r.type] ?? r.type}</span>
+                  <span className="mediadetail-ref-type">{REFERENCE_TYPE_KEYS[r.type] ? t(REFERENCE_TYPE_KEYS[r.type]) : r.type}</span>
                   {r.adminPath ? <a href={r.adminPath} title={r.name}>{r.name}</a>
                     : <span title={r.name}>{r.name}</span>}
                 </li>

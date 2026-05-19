@@ -66,6 +66,7 @@ public class AdminInventoryService {
 
     // ── List stock (DB-side filter + sort + pagination) ───────────────────────
 
+    @Transactional(readOnly = true)
     public PageResult<AdminStockItemResponse> listStock(
             int page, int size, String q, String stockState
     ) {
@@ -99,6 +100,7 @@ public class AdminInventoryService {
 
     // ── Stock movements — per variant ────────────────────────────────────────
 
+    @Transactional(readOnly = true)
     public PageResult<StockMovementResponse> listMovements(
             String variantId, int page, int size
     ) {
@@ -118,6 +120,7 @@ public class AdminInventoryService {
 
     // ── Stock movements — per product (variant-level + product-level combined) ─
 
+    @Transactional(readOnly = true)
     public PageResult<StockMovementResponse> listProductMovements(
             String productId, int page, int size
     ) {
@@ -137,6 +140,7 @@ public class AdminInventoryService {
 
     // ── All movements timeline ────────────────────────────────────────────────
 
+    @Transactional(readOnly = true)
     public PageResult<StockMovementResponse> listAllMovements(
             int page, int size, String movementType, String referenceType
     ) {
@@ -156,6 +160,7 @@ public class AdminInventoryService {
 
     // ── Inventory summary ─────────────────────────────────────────────────────
 
+    @Transactional(readOnly = true)
     public InventorySummaryResponse getSummary() {
         long variantTotal      = variantRepo.count();
         long variantOutOfStock = variantRepo.countByStockState(ProductStockState.OUT_OF_STOCK);
@@ -176,6 +181,7 @@ public class AdminInventoryService {
 
     private static final int CSV_CHUNK_SIZE = 500;
 
+    @Transactional(readOnly = true)
     public void exportCsv(HttpServletResponse response) throws IOException {
         response.setContentType("text/csv; charset=UTF-8");
         response.setHeader("Content-Disposition", "attachment; filename=\"inventory.csv\"");
@@ -440,6 +446,7 @@ public class AdminInventoryService {
 
     // ── List stock grouped by product ─────────────────────────────────────────
 
+    @Transactional(readOnly = true)
     public PageResult<AdminStockProductGroupResponse> listStockGrouped(
             int page, int size, String q, String stockState
     ) {

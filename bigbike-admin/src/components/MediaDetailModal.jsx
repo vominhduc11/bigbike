@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { fetchMediaReferences, updateMedia } from '../lib/adminApi'
+import { updateMedia } from '../lib/adminApi'
+import { useMediaReferences } from '../lib/useMediaReferences'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -43,24 +44,11 @@ export function MediaDetailModal({ media, onSave, onClose, onPreview }) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  const [refs, setRefs] = useState(media.references ?? [])
-  const [refsLoading, setRefsLoading] = useState(false)
+  const { refs, refsLoading } = useMediaReferences(media)
 
   const isImage = media.mimeType?.startsWith('image/')
   const isVideo = media.mimeType?.startsWith('video/')
   const isAudio = media.mimeType?.startsWith('audio/')
-
-  useEffect(() => {
-    // If references not already bundled in the list item, fetch separately
-    if (media.references && media.references.length > 0) return
-    if (media.usageCount === 0) return
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setRefsLoading(true)
-    fetchMediaReferences(media.id)
-      .then(setRefs)
-      .catch(() => {})
-      .finally(() => setRefsLoading(false))
-  }, [media.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     previousFocusRef.current = document.activeElement
@@ -184,24 +172,24 @@ export function MediaDetailModal({ media, onSave, onClose, onPreview }) {
             <p className="text-xs font-bold mb-2 flex items-center gap-2">
               {t('media.usageTitle')}
               {usageCount > 0
-                ? <span className="bg-primary text-white rounded-full px-2 py-px text-[0.7rem] font-bold">{usageCount}</span>
-                : <span className="bg-success text-white rounded-full px-2 py-px text-[0.7rem] font-semibold">{t('media.usageUnused')}</span>
+                ? <span className="bg-primary text-white rounded-full px-2 py-px text-xs font-bold">{usageCount}</span>
+                : <span className="bg-success text-white rounded-full px-2 py-px text-xs font-semibold">{t('media.usageUnused')}</span>
               }
             </p>
 
             {refsLoading && (
-              <p className="text-[0.78rem] text-muted-foreground">{t('common.loading')}</p>
+              <p className="text-xs text-muted-foreground">{t('common.loading')}</p>
             )}
 
             {!refsLoading && usageCount === 0 && (
-              <p className="text-[0.78rem] text-muted-foreground">{t('media.usageNoneDesc')}</p>
+              <p className="text-xs text-muted-foreground">{t('media.usageNoneDesc')}</p>
             )}
 
             {!refsLoading && refs.length > 0 && (
               <ul className="list-none m-0 p-0 flex flex-col gap-1.5">
                 {refs.map((ref, i) => (
-                  <li key={i} className="flex items-center gap-2 text-[0.78rem]">
-                    <span className="bg-surface-muted border border-border rounded-xs px-1.5 py-px text-[0.68rem] font-semibold text-muted-foreground whitespace-nowrap shrink-0">
+                  <li key={i} className="flex items-center gap-2 text-xs">
+                    <span className="bg-surface-muted border border-border rounded-xs px-1.5 py-px text-xs font-semibold text-muted-foreground whitespace-nowrap shrink-0">
                       {REFERENCE_TYPE_KEYS[ref.type] ? t(REFERENCE_TYPE_KEYS[ref.type]) : ref.type}
                     </span>
                     {ref.adminPath ? (

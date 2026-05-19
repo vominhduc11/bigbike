@@ -93,7 +93,9 @@ public class CatalogReadService {
     ) {
         SortSpec sortSpec = sortParser.parse(sort, "createdAt", SortDirection.DESC, PRODUCT_SORT_FIELDS);
 
-        List<Product> result = catalogReadRepository.findAllProducts().stream()
+        // findAllPublishedProducts() applies the PUBLISHED filter in SQL; the
+        // explicit predicate below is kept as a defensive guard and is a no-op.
+        List<Product> result = catalogReadRepository.findAllPublishedProducts().stream()
                 .filter(product -> product.publishStatus() == PublishStatus.PUBLISHED)
                 .filter(product -> matchesCategory(product, category))
                 .filter(product -> matchesBrand(product, brand))
@@ -184,7 +186,9 @@ public class CatalogReadService {
      * filter widget and keeps the endpoint a single pass over the catalog.
      */
     public CatalogFacets computeFacets(String categorySlug, String q) {
-        List<Product> publishedMatchingQuery = catalogReadRepository.findAllProducts().stream()
+        // findAllPublishedProducts() applies the PUBLISHED filter in SQL; the
+        // explicit predicate below is kept as a defensive guard and is a no-op.
+        List<Product> publishedMatchingQuery = catalogReadRepository.findAllPublishedProducts().stream()
                 .filter(product -> product.publishStatus() == PublishStatus.PUBLISHED)
                 .filter(product -> matchesQuery(product, q))
                 .toList();

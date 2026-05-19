@@ -12,9 +12,10 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -64,16 +65,29 @@ public class RateLimitingFilter extends OncePerRequestFilter {
                 .toList();
     }
 
-    private final Map<String, Bucket> loginBuckets               = new ConcurrentHashMap<>();
-    private final Map<String, Bucket> registerBuckets            = new ConcurrentHashMap<>();
-    private final Map<String, Bucket> passwordResetBuckets       = new ConcurrentHashMap<>();
-    private final Map<String, Bucket> resendVerificationBuckets  = new ConcurrentHashMap<>();
-    private final Map<String, Bucket> refreshBuckets             = new ConcurrentHashMap<>();
-    private final Map<String, Bucket> cartBuckets          = new ConcurrentHashMap<>();
-    private final Map<String, Bucket> checkoutBuckets      = new ConcurrentHashMap<>();
-    private final Map<String, Bucket> orderLookupBuckets   = new ConcurrentHashMap<>();
-    private final Map<String, Bucket> searchBuckets        = new ConcurrentHashMap<>();
-    private final Map<String, Bucket> reviewBuckets        = new ConcurrentHashMap<>();
+    // Bounded LRU maps: evict oldest entry when size > MAX_BUCKET_ENTRIES.
+    // Prevents unbounded memory growth under DDoS with unique source IPs.
+    private static final int MAX_BUCKET_ENTRIES = 50_000;
+
+    private final Map<String, Bucket> loginBuckets               = boundedMap();
+    private final Map<String, Bucket> registerBuckets            = boundedMap();
+    private final Map<String, Bucket> passwordResetBuckets       = boundedMap();
+    private final Map<String, Bucket> resendVerificationBuckets  = boundedMap();
+    private final Map<String, Bucket> refreshBuckets             = boundedMap();
+    private final Map<String, Bucket> cartBuckets                = boundedMap();
+    private final Map<String, Bucket> checkoutBuckets            = boundedMap();
+    private final Map<String, Bucket> orderLookupBuckets         = boundedMap();
+    private final Map<String, Bucket> searchBuckets              = boundedMap();
+    private final Map<String, Bucket> reviewBuckets              = boundedMap();
+
+    private static Map<String, Bucket> boundedMap() {
+        return Collections.synchronizedMap(new LinkedHashMap<>(256, 0.75f, true) {
+            @Override
+            protected boolean removeEldestEntry(Map.Entry<String, Bucket> eldest) {
+                return size() > MAX_BUCKET_ENTRIES;
+            }
+        });
+    }
 
     @Override
     protected void doFilterInternal(
@@ -180,12 +194,21 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             String forwarded = request.getHeader("X-Forwarded-For");
             if (forwarded != null && !forwarded.isBlank()) {
                 String candidate = forwarded.split(",")[0].trim();
-                if (!candidate.isEmpty()) {
+                if (!candidate.isEmpty() && isValidIp(candidate)) {
                     return candidate;
                 }
             }
         }
         return remoteAddr;
+    }
+
+    private static boolean isValidIp(String ip) {
+        try {
+            InetAddress.getByName(ip);
+            return true;
+        } catch (UnknownHostException e) {
+            return false;
+        }
     }
 
     private boolean isTrustedProxy(String ip) {

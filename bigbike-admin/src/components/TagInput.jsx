@@ -67,7 +67,7 @@ export function TagInput({ value, onChange, placeholder, disabled }) {
         disabled ? 'bg-surface-muted' : 'bg-surface'
       )}>
         {tags.map((tg) => (
-          <span key={tg} className="inline-flex items-center gap-1 bg-primary text-white rounded-full py-0.5 pl-2 pr-1 text-[0.72rem] font-semibold">
+          <span key={tg} className="inline-flex items-center gap-1 bg-primary text-white rounded-full py-0.5 pl-2 pr-1 text-xs font-semibold">
             <Hash size={10} />
             {tg}
             {!disabled && (
@@ -92,7 +92,7 @@ export function TagInput({ value, onChange, placeholder, disabled }) {
           {suggestions.slice(0, 10).map((s) => (
             <li key={s}>
               <button type="button" onMouseDown={(e) => { e.preventDefault(); addTag(s) }}
-                className="flex items-center gap-1 w-full px-2 py-1 text-[0.8rem] cursor-pointer rounded-xs bg-transparent border-none hover:bg-surface-muted">
+                className="flex items-center gap-1 w-full px-2 py-1 text-xs cursor-pointer rounded-xs bg-transparent border-none hover:bg-surface-muted">
                 <Hash size={12} /> {s}
               </button>
             </li>

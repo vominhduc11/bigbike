@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+﻿import { useEffect, useMemo, useRef, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { QRCodeSVG } from 'qrcode.react'
@@ -27,28 +28,21 @@ import {
   importBulkSerials,
   updateSerialStatus,
 } from '../lib/adminApi'
+import { StockStatusBadge } from '../components/StatusBadge'
 import { formatCurrencyVnd, formatDateTime } from '../lib/formatters'
 import { showConfirm } from '../lib/confirm'
+import { useAdminList } from '../lib/useAdminList'
 import { useDebounce } from '../lib/useDebounce'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { Alert } from '@/components/ui/alert'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 
 const STOCK_STATES = ['ALL', 'IN_STOCK', 'OUT_OF_STOCK', 'LOW_STOCK']
 
-const STOCK_STATE_BADGE_CLASSES = {
-  IN_STOCK:     'text-success',
-  LOW_STOCK:    'text-warning',
-  OUT_OF_STOCK: 'text-danger',
-}
-
-const STOCK_STATE_LABELS = {
-  IN_STOCK: 'Còn hàng',
-  LOW_STOCK: 'Sắp hết',
-  OUT_OF_STOCK: 'Hết hàng',
-}
 
 // ── Components ─────────────────────────────────────────────────────────────────
 
@@ -90,17 +84,6 @@ function ProductThumbnail({ image, alt, size = 40 }) {
   )
 }
 
-function StockBadge({ state }) {
-  const label = STOCK_STATE_LABELS[state]
-  if (!label) return null
-  const cls = STOCK_STATE_BADGE_CLASSES[state] ?? 'text-muted-foreground'
-  return (
-    <span className={`font-semibold text-sm ${cls}`}>
-      {label}
-    </span>
-  )
-}
-
 const MOVEMENT_TYPE_CLASSES = { IN: 'text-success', OUT: 'text-danger', RETURN: 'text-info' }
 
 function MovementTypeBadge({ type }) {
@@ -112,24 +95,25 @@ function MovementTypeBadge({ type }) {
 }
 
 function SummaryBanner({ summary }) {
+  const { t } = useTranslation()
   if (!summary || summary.totalItems === 0) return null
   return (
     <div className="flex gap-4 mb-4 flex-wrap">
       {summary.outOfStockCount > 0 && (
         <div className="bg-danger-bg border border-danger-border rounded-sm px-4 py-2">
           <span className="text-danger font-bold">{summary.outOfStockCount}</span>
-          <span className="text-danger ml-1.5 text-sm">Hết hàng</span>
+          <span className="text-danger ml-1.5 text-sm">{t('inventory.summary.outOfStock')}</span>
         </div>
       )}
       {summary.lowStockCount > 0 && (
         <div className="bg-warning-bg border border-warning-border rounded-sm px-4 py-2">
           <span className="text-warning font-bold">{summary.lowStockCount}</span>
-          <span className="text-warning ml-1.5 text-sm">Sắp hết hàng</span>
+          <span className="text-warning ml-1.5 text-sm">{t('inventory.summary.lowStock')}</span>
         </div>
       )}
       <div className="bg-surface border border-border rounded-sm px-4 py-2">
         <span className="font-bold">{summary.totalItems}</span>
-        <span className="ml-1.5 text-sm text-muted-foreground">Tổng mục</span>
+        <span className="ml-1.5 text-sm text-muted-foreground">{t('inventory.summary.totalItems')}</span>
       </div>
     </div>
   )
@@ -161,7 +145,10 @@ function parseSerialBatch(text) {
 
 // ── Serial file import helpers ────────────────────────────────────────────────
 
-const SERIAL_HEADER_NAMES = new Set(['serial', 'serial_number', 'serial number', 's/n', 'imei', 'sn'])
+const SERIAL_HEADER_NAMES = new Set([
+  'serial', 'serial_number', 'serialnumber', 'serial number',
+  's/n', 'sn', 'imei', 'ma_serial', 'mã serial', 'so_serial', 'số serial',
+])
 const FILE_IMPORT_SIZE_LIMIT_MB = 5
 const FILE_IMPORT_SIZE_LIMIT_BYTES = FILE_IMPORT_SIZE_LIMIT_MB * 1024 * 1024
 
@@ -198,7 +185,7 @@ function detectCsvDelimiter(firstLine) {
 }
 
 function parseSerialFromCsvText(text) {
-  const lines = text.split(/\r?\n/)
+  const lines = text.replace(/^\\uFEFF/, '').split(/\r?\n/)
   const delimiter = detectCsvDelimiter(lines[0] || '')
   const rows = lines.map((line) => line.split(delimiter).map((cell) => cell.trim()))
   return extractSerialsFromRows(rows)
@@ -213,6 +200,7 @@ async function parseSerialFromExcelBuffer(buffer) {
   return extractSerialsFromRows(rows)
 }
 
+// Returns string[] — serial values only (used by SerialListInput / stock-in form)
 async function parseSerialFromFile(file) {
   if (file.size > FILE_IMPORT_SIZE_LIMIT_BYTES) {
     const err = new Error('FILE_TOO_BIG')
@@ -228,6 +216,12 @@ async function parseSerialFromFile(file) {
   }
   const err = new Error('FILE_UNSUPPORTED')
   throw err
+}
+
+// Returns {serial: string}[] — structured shape used by AddSerialsPanel
+async function parseSerialFileAsObjects(file) {
+  const serials = await parseSerialFromFile(file)
+  return serials.map((s) => ({ serial: s }))
 }
 
 // ── SerialListInput ───────────────────────────────────────────────────────────
@@ -719,9 +713,9 @@ function StockInModal({ item, onSuccess, onClose }) {
                 )}
               </div>
               {selectedItem.forceOutOfStock && (
-                <div role="alert" className="bg-warning-bg border border-warning-border rounded-sm px-3 py-2 mb-3 text-xs text-warning">
+                <Alert tone="warning" size="sm" className="mb-3">
                   <strong>Lưu ý:</strong> Sản phẩm đang bị khoá trạng thái "Hết hàng" (forceOutOfStock). Sau khi nhập hàng, sản phẩm vẫn hiển thị là "Hết hàng" trên website cho đến khi tắt cờ này trong trang chỉnh sửa sản phẩm.
-                </div>
+                </Alert>
               )}
             </>
           )}
@@ -781,50 +775,6 @@ function SerialStatusBadge({ status }) {
   return <span className={`inline-block px-2 py-0.5 text-xs font-semibold ${classes}`}>{label}</span>
 }
 
-// ── File parser: CSV/Excel 1 cột mã serial ────────────────────────────────────
-
-const SERIAL_HEADERS = new Set(['serial', 'serial_number', 'serialnumber', 'ma_serial', 'mã serial', 'so_serial', 'số serial'])
-
-function detectSerialColumn(firstRow) {
-  const norm = firstRow.map((c) => (c == null ? '' : String(c).trim().toLowerCase()))
-  const serialIdx = norm.findIndex((c) => SERIAL_HEADERS.has(c))
-  return { hasHeader: serialIdx >= 0, serialIdx: serialIdx >= 0 ? serialIdx : 0 }
-}
-
-function rowsToSerials(dataRows, serialIdx) {
-  return dataRows.map((row) => {
-    const serial = String(row[serialIdx] ?? '').trim()
-    return { serial }
-  }).filter((r) => r.serial)
-}
-
-async function parseSerialFile(file) {
-  const ext = (file.name.split('.').pop() || '').toLowerCase()
-  if (file.size > 5 * 1024 * 1024) throw new Error('FILE_TOO_BIG')
-
-  if (ext === 'csv' || ext === 'txt') {
-    const text = await file.text()
-    const lines = text.replace(/^\uFEFF/, '').split(/\r?\n/)
-    const rows  = lines.map((l) => l.split(/[,;\t]/).map((c) => c.trim()))
-    if (rows.length === 0) return []
-    const { hasHeader, serialIdx } = detectSerialColumn(rows[0])
-    return rowsToSerials(hasHeader ? rows.slice(1) : rows, serialIdx)
-  }
-
-  if (ext === 'xlsx' || ext === 'xls') {
-    const xlsxModule = await import('xlsx')
-    const XLSX = xlsxModule.default ?? xlsxModule
-    const wb   = XLSX.read(new Uint8Array(await file.arrayBuffer()), { type: 'array' })
-    const ws   = wb.Sheets[wb.SheetNames[0]]
-    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' })
-    if (rows.length === 0) return []
-    const { hasHeader, serialIdx } = detectSerialColumn(rows[0])
-    return rowsToSerials(hasHeader ? rows.slice(1) : rows, serialIdx)
-  }
-
-  throw new Error('FILE_UNSUPPORTED')
-}
-
 // ── AddSerialsPanel ────────────────────────────────────────────────────────────
 
 function AddSerialsPanel({ item, onSuccess }) {
@@ -857,11 +807,11 @@ function AddSerialsPanel({ item, onSuccess }) {
     setParsePreview(null)
     setImportResult(null)
     try {
-      const pairs = await parseSerialFile(file)
+      const pairs = await parseSerialFileAsObjects(file)
       const valid = pairs.filter((r) => r.serial)
       const blank = pairs.length - valid.length
       setParsePreview({ total: pairs.length, valid: valid.length, blank })
-      setRows(valid.length > 0 ? valid.map((p) => ({ serial: p.serial })) : [{ serial: '' }])
+      setRows(valid.length > 0 ? valid : [{ serial: '' }])
       if (valid.length === 0) setError('File không có dòng hợp lệ nào.')
       else setError('')
     } catch (err) {
@@ -957,7 +907,7 @@ function AddSerialsPanel({ item, onSuccess }) {
 
       {/* Parse preview */}
       {parsePreview && (
-        <div className="flex flex-wrap gap-4 text-xs text-green-700 bg-green-50 border border-green-200 px-3 py-2 mb-2.5">
+        <div className="flex flex-wrap gap-4 text-xs text-success bg-success-bg border border-success-border px-3 py-2 mb-2.5">
           <span>Tổng dòng: <strong>{parsePreview.total}</strong></span>
           <span>Hợp lệ: <strong>{parsePreview.valid}</strong></span>
           {parsePreview.blank > 0 && <span>Dòng trống bỏ qua: <strong>{parsePreview.blank}</strong></span>}
@@ -1014,13 +964,13 @@ function AddSerialsPanel({ item, onSuccess }) {
 
       {/* Import result — skipped rows with reasons */}
       {importResult && importResult.skipped > 0 && (
-        <div className="mt-4 bg-amber-50 border border-amber-200 px-3.5 py-3">
+        <div className="mt-4 bg-warning-bg border border-warning-border px-3.5 py-3">
           <p className="font-semibold text-sm mb-1.5">
             Kết quả: {importResult.inserted} nhập thành công · {importResult.skipped} dòng bị bỏ qua
           </p>
           <table className="w-full text-xs border-collapse">
             <thead>
-              <tr className="border-b border-amber-200">
+              <tr className="border-b border-warning-border">
                 <th className="text-left py-0.5 px-1.5">Dòng</th>
                 <th className="text-left py-0.5 px-1.5">Trường</th>
                 <th className="text-left py-0.5 px-1.5">Lý do</th>
@@ -1028,9 +978,9 @@ function AddSerialsPanel({ item, onSuccess }) {
             </thead>
             <tbody>
               {importResult.errors.map((err, idx) => (
-                <tr key={idx} className="border-b border-amber-100">
+                <tr key={idx} className="border-b border-warning-border">
                   <td className="py-0.5 px-1.5 font-mono">{err.rowIndex + 1}</td>
-                  <td className="text-amber-800 py-0.5 px-1.5">{err.field}</td>
+                  <td className="text-warning py-0.5 px-1.5">{err.field}</td>
                   <td className="py-0.5 px-1.5">{err.message}</td>
                 </tr>
               ))}
@@ -1044,7 +994,7 @@ function AddSerialsPanel({ item, onSuccess }) {
       )}
 
       {importResult && importResult.skipped === 0 && importResult.inserted > 0 && (
-        <div className="mt-3 bg-green-50 border border-green-200 px-3.5 py-2.5 text-sm text-green-700">
+        <div className="mt-3 bg-success-bg border border-success-border px-3.5 py-2.5 text-sm text-success">
           ✓ Đã nhập thành công {importResult.inserted} serial vào kho.
         </div>
       )}
@@ -1294,24 +1244,21 @@ function SerialManageModal({ item, onClose }) {
 
   return (
     <Modal open wide title={`Quản lý serial — ${title}`} onClose={onClose}>
-      <div className="flex border-b border-border -mx-5 px-5 mb-4">
-        {[['list', 'Danh sách serial'], ['add', 'Thêm serial mới']].map(([id, label]) => (
-          <button key={id} type="button"
-            className={`px-4 py-2 text-sm -mb-px border-b-2 transition-colors ${activeTab === id ? 'font-bold border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
-            onClick={() => setActiveTab(id)}>
-            {label}
-          </button>
-        ))}
-      </div>
-      {activeTab === 'list' && (
-        <SerialListPanel item={item} refreshKey={listRefreshKey} />
-      )}
-      {activeTab === 'add' && (
-        <AddSerialsPanel
-          item={item}
-          onSuccess={() => { setActiveTab('list'); setListRefreshKey((k) => k + 1) }}
-        />
-      )}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="flex -mx-5 px-5 mb-4">
+          <TabsTrigger value="list">Danh sách serial</TabsTrigger>
+          <TabsTrigger value="add">Thêm serial mới</TabsTrigger>
+        </TabsList>
+        <TabsContent value="list" className="mt-0">
+          <SerialListPanel item={item} refreshKey={listRefreshKey} />
+        </TabsContent>
+        <TabsContent value="add" className="mt-0">
+          <AddSerialsPanel
+            item={item}
+            onSuccess={() => { setActiveTab('list'); setListRefreshKey((k) => k + 1) }}
+          />
+        </TabsContent>
+      </Tabs>
     </Modal>
   )
 }
@@ -1390,7 +1337,7 @@ function InventoryGroupRow({ group, isExpanded, onToggle, onStockIn, onSerialMan
         </td>
 
         <td className="py-2 px-3 align-middle">
-          <StockBadge state={group.aggregateStockState} />
+          <StockStatusBadge value={group.aggregateStockState} />
           {group.forceOutOfStock && (
             <span className="ml-1.5 text-xs text-warning font-semibold">
               Khoá
@@ -1455,7 +1402,7 @@ function InventoryGroupRow({ group, isExpanded, onToggle, onStockIn, onSerialMan
             <td className="py-1.5 px-3" />
 
             <td className="py-1.5 px-3 align-middle">
-              <StockBadge state={variant.stockState} />
+              <StockStatusBadge value={variant.stockState} />
             </td>
 
             <td className="py-1.5 px-3 text-right align-middle">
@@ -1672,20 +1619,21 @@ const INITIAL_QUERY = { q: '', stockState: 'ALL', page: 1, pageSize: 20 }
 
 export function InventoryScreen({ canUpdate = false }) {
   const { t } = useTranslation()
+  const queryClient = useQueryClient()
   const [query, setQuery] = useState(INITIAL_QUERY)
   const [searchInput, setSearchInput] = useState('')
   const debouncedSearch = useDebounce(searchInput, 250)
   const isFirst = useRef(true)
-  const [state, setState] = useState({ status: 'loading', items: [], pagination: null, warning: '' })
   const [summary, setSummary] = useState(null)
   const [stockInTarget, setStockInTarget] = useState(null)
   const [isStockInOpen, setIsStockInOpen] = useState(false)
   const [serialTarget, setSerialTarget] = useState(null)
   const [isSerialOpen, setIsSerialOpen] = useState(false)
   const [historyTarget, setHistoryTarget] = useState(null)
-  const [inventoryRefreshKey, setInventoryRefreshKey] = useState(0)
   const [csvDownloading, setCsvDownloading] = useState(false)
   const [serialOnlyMode, setSerialOnlyMode] = useState(false)
+
+  const state = useAdminList(['inventory', query], () => fetchInventoryGrouped(query))
 
   useEffect(() => {
     fetchInventorySummary().then(setSummary)
@@ -1697,27 +1645,10 @@ export function InventoryScreen({ canUpdate = false }) {
     setQuery((q) => ({ ...q, q: debouncedSearch, page: 1 }))
   }, [debouncedSearch])
 
-  useEffect(() => {
-    let active = true
-    Promise.resolve().then(() => {
-      if (active) setState((s) => ({ ...s, status: 'loading' }))
-    })
-    fetchInventoryGrouped(query)
-      .then((r) => {
-        if (!active) return
-        setState({ status: 'success', items: r.items, pagination: r.pagination, warning: r.mode === 'mock' ? r.warning : '' })
-      })
-      .catch((e) => {
-        if (!active) return
-        setState({ status: 'error', items: [], pagination: null, warning: '', error: e.message })
-      })
-    return () => { active = false }
-  }, [query, inventoryRefreshKey])
-
   function handleStockInSuccess() {
     setIsStockInOpen(false)
     setStockInTarget(null)
-    setInventoryRefreshKey((k) => k + 1)
+    queryClient.invalidateQueries({ queryKey: ['inventory'] })
     fetchInventorySummary().then(setSummary)
   }
 
@@ -1743,7 +1674,7 @@ export function InventoryScreen({ canUpdate = false }) {
   function closeSerialManage() {
     setIsSerialOpen(false)
     setSerialTarget(null)
-    setInventoryRefreshKey((k) => k + 1)
+    queryClient.invalidateQueries({ queryKey: ['inventory'] })
     fetchInventorySummary().then(setSummary)
   }
 
@@ -1775,12 +1706,9 @@ export function InventoryScreen({ canUpdate = false }) {
       <SummaryBanner summary={summary} />
 
       {serialOnlyMode && (
-        <div role="status" className="flex items-center gap-2.5 bg-info-bg border border-info-border rounded-sm px-4 py-2.5 mb-3">
-          <span>ℹ️</span>
-          <span className="text-info font-semibold text-sm">
-            Tồn kho đang được tính tự động từ serial. Không thể sửa số lượng thủ công.
-          </span>
-        </div>
+        <Alert tone="info" role="status" className="mb-3 font-semibold">
+          Tồn kho đang được tính tự động từ serial. Không thể sửa số lượng thủ công.
+        </Alert>
       )}
 
       {state.warning && <ReadOnlyBanner warning={state.warning} />}

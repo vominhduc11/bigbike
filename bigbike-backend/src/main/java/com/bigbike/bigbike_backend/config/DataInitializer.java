@@ -26,7 +26,7 @@ public class DataInitializer {
             AdminUserJpaRepository adminUserRepo,
             PasswordService passwordService,
             @Value("${bigbike.seed.admin-email:admin@bigbike.vn}") String seedAdminEmail,
-            @Value("${bigbike.seed.admin-password:admin123}") String seedAdminPassword
+            @Value("${bigbike.seed.admin-password}") String seedAdminPassword
     ) {
         this.adminUserRepo = adminUserRepo;
         this.passwordService = passwordService;
@@ -49,6 +49,6 @@ public class DataInitializer {
         admin.setUpdatedAt(Instant.now());
         adminUserRepo.save(admin);
 
-        log.warn("Seeded default admin user: {} — change the password immediately!", seedAdminEmail);
+        log.warn("Seeded default admin user '{}' — set BIGBIKE_SEED_ADMIN_PASSWORD via env and change immediately!", seedAdminEmail);
     }
 }

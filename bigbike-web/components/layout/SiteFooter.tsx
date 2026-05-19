@@ -127,9 +127,8 @@ const footerSocialLinkClass =
   "inline-flex items-center gap-2 text-[var(--bb-text-inverse-secondary)] text-sm no-underline hover:text-brand transition-colors";
 
 export async function SiteFooter() {
-  const [guideMenuResult, importedGuideMenuResult, settingsResult] = await Promise.all([
+  const [guideMenuResult, settingsResult] = await Promise.all([
     getPublicMenu("guide"),
-    getPublicMenu("guide-menu"),
     listPublicSettings(),
   ]);
 
@@ -151,9 +150,7 @@ export async function SiteFooter() {
   const businessLicenseAuthority = getSettingValue(settings, ["business_license_authority"], "");
 
   const guideLinksRaw = groupMenuItems(guideMenuResult.data?.items ?? []);
-  const importedGuideLinksRaw = groupMenuItems(importedGuideMenuResult.data?.items ?? []);
-  const guideLinksSource = guideLinksRaw.length > 0 ? guideLinksRaw : importedGuideLinksRaw;
-  const infoLinks = guideLinksSource.length > 0 ? guideLinksSource : FALLBACK_INFO_LINKS;
+  const infoLinks = guideLinksRaw.length > 0 ? guideLinksRaw : FALLBACK_INFO_LINKS;
 
   const socialLinks: Array<{ label: string; url: string; icon: React.ReactNode }> = [
     ...(facebookUrl ? [{ label: "Facebook", url: facebookUrl, icon: <IconFacebook /> }] : []),

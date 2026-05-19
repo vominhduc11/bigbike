@@ -17,6 +17,7 @@ import { showConfirm } from '../lib/confirm'
 import { useDebounce } from '../lib/useDebounce'
 import { formatDateTime } from '../lib/formatters'
 import { Badge } from '@/components/ui/badge'
+import { Alert } from '@/components/ui/alert'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -292,7 +293,7 @@ export function RedirectListScreen({ canUpdate }) {
               ? t('redirects.editTitle', { defaultValue: 'Edit redirect' })
               : t('redirects.createTitle', { defaultValue: 'Create redirect' })}
           </h3>
-          {formError && <p className="inline-error">{formError}</p>}
+          {formError && <Alert tone="danger" size="sm">{formError}</Alert>}
           <div className="grid grid-cols-2 gap-3">
             <label>
               {t('redirects.formSource', { defaultValue: 'Source pattern' })}
@@ -345,7 +346,7 @@ export function RedirectListScreen({ canUpdate }) {
             <label className="flex items-center gap-2 mt-6">
               <Checkbox
                 checked={form.enabled}
-                onChange={(e) => setForm((prev) => ({ ...prev, enabled: e.target.checked }))}
+                onCheckedChange={(checked) => setForm((prev) => ({ ...prev, enabled: checked === true }))}
                />
               {t('redirects.formEnabled', { defaultValue: 'Enabled' })}
             </label>
@@ -363,7 +364,7 @@ export function RedirectListScreen({ canUpdate }) {
             <Button type="submit" loading={saveMutation.isPending}>
               {t('common.save')}
             </Button>
-            <Button variant="outline" onClick={closeForm} disabled={saveMutation.isPending}>
+            <Button type="button" variant="outline" onClick={closeForm} disabled={saveMutation.isPending}>
               {t('common.cancel')}
             </Button>
           </div>

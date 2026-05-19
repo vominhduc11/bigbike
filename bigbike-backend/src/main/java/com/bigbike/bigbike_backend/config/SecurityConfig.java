@@ -53,6 +53,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/products/**").permitAll()
                         // Public review submission — no auth required, status defaults to PENDING
                         .requestMatchers(HttpMethod.POST, "/api/v1/products/*/reviews").permitAll()
+                        // Catalog filter facets — public, powers the storefront filter sidebar
+                        .requestMatchers(HttpMethod.GET, "/api/v1/catalog/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/brands/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/articles/**").permitAll()

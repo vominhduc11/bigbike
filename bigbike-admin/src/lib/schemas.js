@@ -6,9 +6,9 @@ const URL_REGEX = /^https?:\/\//
 // /media/* proxy (e.g. "/media/foo.jpg"). The MediaPickerModal returns the
 // latter, so image/gallery/video fields must accept both forms.
 const MEDIA_URL_REGEX = /^(?:https?:\/\/|\/)/
-const COLOR_ATTRIBUTE_KEYS = new Set(['color', 'colour', 'mau', 'mau sac', 'pa color', 'pa mau', 'pa mau sac'])
+export const COLOR_ATTRIBUTE_KEYS = new Set(['color', 'colour', 'mau', 'mau sac', 'pa color', 'pa mau', 'pa mau sac'])
 
-function normalizeVariantToken(value) {
+export function normalizeVariantToken(value) {
   return String(value || '')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -19,7 +19,7 @@ function normalizeVariantToken(value) {
     .trim()
 }
 
-function isColorAttributeName(name) {
+export function isColorAttributeName(name) {
   return COLOR_ATTRIBUTE_KEYS.has(normalizeVariantToken(name))
 }
 

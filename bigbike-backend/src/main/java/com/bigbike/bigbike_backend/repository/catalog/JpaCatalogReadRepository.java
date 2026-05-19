@@ -80,6 +80,13 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     }
 
     @Override
+    public List<Product> findAllPublishedProducts() {
+        return productJpaRepository.findByPublishStatus(PublishStatus.PUBLISHED).stream()
+                .map(this::toDomainPublicView)
+                .toList();
+    }
+
+    @Override
     public List<Product> findProductsFiltered(String query, String publishStatus, String stockState, String brandId, String categoryId) {
         Specification<ProductEntity> spec = buildProductSpec(query, publishStatus, stockState, brandId, categoryId);
         return productJpaRepository.findAll(spec).stream()

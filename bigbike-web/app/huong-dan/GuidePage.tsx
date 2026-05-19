@@ -85,9 +85,7 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
     return (
       <section className="bb-page">
         <PageHero
-          kicker="HƯỚNG DẪN"
           title="Hướng dẫn mua hàng & sản phẩm"
-          description="Hướng dẫn mua hàng, sử dụng sản phẩm và dịch vụ từ BigBike."
           breadcrumb={[
             { label: "Trang chủ", href: toHomePath() },
             { label: "Hướng dẫn" },
@@ -139,9 +137,7 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
       <PageHero
         imageUrl={page.heroImageUrl}
         imageAlt={page.heroImageAlt}
-        kicker={page.heroKicker ?? "HƯỚNG DẪN"}
         title={page.heroTitle ?? pageTitle}
-        description={page.heroDescription ?? route.description}
         breadcrumb={[
           { label: "Trang chủ", href: toHomePath() },
           { label: "Hướng dẫn", href: "/huong-dan/" },

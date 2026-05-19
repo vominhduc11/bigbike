@@ -29,7 +29,7 @@ export function ArticleCarousel({ articles }: Props) {
     <div className={cn("relative", isLocked && "[&_.swiper-wrapper]:justify-center")}>
       {!isLocked && (
         <button
-          className={cn(CAR_BTN, "-left-5 xl:-left-[60px]")}
+          className={cn(CAR_BTN, "-left-5 min-[1440px]:-left-[60px]")}
           onClick={() => swiperRef.current?.slidePrev()}
           aria-label="Cuộn trái"
         >
@@ -70,7 +70,7 @@ export function ArticleCarousel({ articles }: Props) {
 
       {!isLocked && (
         <button
-          className={cn(CAR_BTN, "-right-5 xl:-right-[60px]")}
+          className={cn(CAR_BTN, "-right-5 min-[1440px]:-right-[60px]")}
           onClick={() => swiperRef.current?.slideNext()}
           aria-label="Cuộn phải"
         >

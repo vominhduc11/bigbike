@@ -111,6 +111,7 @@
   --admin-z-overlay: 200;
   --admin-z-modal:   201;
   --admin-z-popup:   300;  /* dropdowns / popovers inside modals */
+  --admin-z-toast:   400;  /* notification toasts — always on top */
 
   /* ─── Transitions ───────────────────────────────────────────────────────── */
   --admin-transition-fast: 100ms ease;

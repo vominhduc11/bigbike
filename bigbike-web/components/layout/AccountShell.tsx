@@ -95,7 +95,7 @@ export function AccountShell({ children, loginRedirect }: Props) {
   return (
     <AccountRefreshContext.Provider value={refreshProfile}>
       <AccountContext.Provider value={profile}>
-        <nav aria-label="Breadcrumb" className="mx-auto max-w-[1280px] px-6 pt-4 pb-1 text-sm text-[#9a9a9a]">
+        <nav aria-label="Breadcrumb" className="mx-auto max-w-[1280px] px-6 pt-4 pb-1 text-sm text-muted-foreground">
           <Link href="/" className="hover:text-brand">Trang chủ</Link>
           <span className="mx-1.5">/</span>
           <Link href="/tai-khoan/edit-account/" className="hover:text-brand">Tài khoản</Link>

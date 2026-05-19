@@ -25,13 +25,13 @@ function Toast({ toast, onDismiss, navigate }) {
       }}
     >
       <div className="flex-1 overflow-hidden">
-        <p className="m-0 font-semibold text-[0.85rem] text-foreground">
+        <p className="m-0 font-semibold text-sm text-foreground">
           {isNew ? t('notifications.newOrder') : t('notifications.orderUpdate')}
         </p>
-        <p className="mt-0.5 mb-0 text-[0.8rem] text-muted-foreground overflow-hidden text-ellipsis whitespace-nowrap">
+        <p className="mt-0.5 mb-0 text-xs text-muted-foreground overflow-hidden text-ellipsis whitespace-nowrap">
           {toast.orderNumber} — {toast.customerName}
         </p>
-        <p className="mt-0.5 mb-0 text-[0.8rem] text-muted-foreground">
+        <p className="mt-0.5 mb-0 text-xs text-muted-foreground">
           {formatCurrencyVnd(toast.total)}
           {!isNew && toast.status ? ` · ${t('status.order.' + toast.status, toast.status)}` : ''}
         </p>
@@ -75,7 +75,8 @@ export function OrderNotificationToast({ navigate }) {
   return (
     <div
       aria-label={t('notifications.regionLabel')}
-      className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-2 pointer-events-none"
+      className="fixed bottom-6 right-6 flex flex-col gap-2 pointer-events-none"
+      style={{ zIndex: 'var(--z-toast)' }}
     >
       {toasts.map((toast) => (
         <div key={toast.id} className="pointer-events-auto">

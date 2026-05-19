@@ -57,7 +57,9 @@ export function FeaturedProductsTabbedGrid({ products }: Props) {
             <TabsTrigger
               key={t.key}
               value={t.key}
-              className="border-b-0 px-5 py-2.5 tracking-[0.06em] transition-colors hover:text-foreground data-[state=active]:bg-brand data-[state=active]:text-white"
+              // whitespace-normal + max-width: long category names (e.g. 50+ ký tự)
+              // must wrap instead of forcing a tab wider than a 320px phone.
+              className="max-w-full whitespace-normal border-b-0 px-5 py-2.5 text-center leading-tight tracking-[0.06em] transition-colors hover:text-foreground data-[state=active]:bg-brand data-[state=active]:text-white"
             >
               {t.label}
             </TabsTrigger>

@@ -290,8 +290,6 @@ button.summary-card:focus-visible {
    Desktop & tablet show tables; mobile shows cards.
    ═══════════════════════════════════════════════════════════════════════════ */
 .show-on-mobile { display: none; }
-.show-on-tablet { display: none; }
-
 @media (max-width: 1024px) {
   .show-on-tablet { display: revert; }
   .hide-on-tablet { display: none !important; }
@@ -353,24 +351,6 @@ button.summary-card:focus-visible {
   font-weight: 600;
   color: var(--admin-color-text-primary);
 }
-
-.form-field-required {
-  color: var(--admin-color-status-danger-text);
-  margin-left: 2px;
-}
-
-.form-field-helper {
-  font-size: var(--admin-text-xs);
-  color: var(--admin-color-text-muted);
-  line-height: 1.4;
-}
-
-.form-field-error {
-  font-size: var(--admin-text-xs);
-  color: var(--admin-color-status-danger-text);
-  font-weight: 500;
-}
-
 /* ═══════════════════════════════════════════════════════════════════════════
    Info grid — label/value pairs inside detail sections
    ═══════════════════════════════════════════════════════════════════════════ */

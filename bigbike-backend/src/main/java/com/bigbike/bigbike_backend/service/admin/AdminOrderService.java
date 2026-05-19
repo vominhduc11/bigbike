@@ -161,6 +161,7 @@ public class AdminOrderService {
 
     // ── List ──────────────────────────────────────────────────────────────────
 
+    @Transactional(readOnly = true)
     public PageResult<AdminOrderListItemResponse> listOrders(
             int page, int size, String status, String paymentStatus, String q, String from, String to, String sort
     ) {
@@ -218,6 +219,7 @@ public class AdminOrderService {
 
     // ── Detail ────────────────────────────────────────────────────────────────
 
+    @Transactional(readOnly = true)
     public AdminOrderDetailResponse getOrderDetail(UUID orderId) {
         OrderEntity order = orderRepo.findById(orderId)
                 .orElseThrow(() -> new NotFoundException("Order not found."));
@@ -230,6 +232,7 @@ public class AdminOrderService {
      * status whose business preconditions would cause {@link #updateOrderStatus}
      * to throw — so the UI only shows buttons that will actually succeed.
      */
+    @Transactional(readOnly = true)
     public List<String> listAllowedTransitions(UUID orderId) {
         OrderEntity order = orderRepo.findById(orderId)
                 .orElseThrow(() -> new NotFoundException("Order not found."));
@@ -625,6 +628,7 @@ public class AdminOrderService {
 
     // ── List notes ────────────────────────────────────────────────────────────
 
+    @Transactional(readOnly = true)
     public List<AdminOrderNoteResponse> listNotes(UUID orderId) {
         if (!orderRepo.existsById(orderId)) {
             throw new NotFoundException("Order not found.");

@@ -12,6 +12,7 @@ import { showConfirm } from '../lib/confirm'
 import { useDebounce } from '../lib/useDebounce'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Alert } from '@/components/ui/alert'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 
@@ -452,9 +453,9 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
               <div className="au-drawer-section">
                 <h3 className="au-drawer-section-title">{t('adminUsers.sectionAccount')}</h3>
                 {isSelf && (
-                  <p className="mb-3 rounded-xs border border-warning-border bg-warning-bg px-3 py-2 text-xs text-warning">
+                  <Alert tone="warning" size="sm" className="mb-3">
                     {t('adminUsers.selfEditLocked')}
-                  </p>
+                  </Alert>
                 )}
                 <div className="au-form-grid">
                   <label className="au-field">

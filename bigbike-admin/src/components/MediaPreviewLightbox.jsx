@@ -118,7 +118,7 @@ export function MediaPreviewLightbox({ media, items, index, onClose, onNavigate 
       </p>
 
       {hasNav && (
-        <p className="mt-1 text-white/50 text-[0.7rem] text-center">
+        <p className="mt-1 text-white/50 text-xs text-center">
           {t('media.lightboxHint')}
         </p>
       )}

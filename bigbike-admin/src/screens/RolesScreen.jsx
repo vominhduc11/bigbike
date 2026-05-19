@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Alert } from '@/components/ui/alert'
 
 // Fallback catalog used when the backend /admin/permissions API is unavailable.
 // Keep in sync with PermissionCatalog.java groups.
@@ -190,7 +191,7 @@ function Badge({ isSystem }) {
   const label = isSystem ? t('roles.systemBadge') : t('roles.customBadge')
   return (
     <span className={cn(
-      'inline-flex items-center px-2 py-px rounded-full text-[0.7rem] font-bold tracking-wide border',
+      'inline-flex items-center px-2 py-px rounded-full text-xs font-bold tracking-wide border',
       isSystem
         ? 'bg-primary/10 text-primary border-primary/25'
         : 'bg-surface-raised text-muted-foreground border-border'
@@ -225,7 +226,7 @@ function ConfirmSensitiveDialog({ pending, roleName, onConfirm, onCancel }) {
             {t('roles.sensitivePermTitle')}
           </strong>
         </div>
-        <p className="m-0 mb-5 text-sm text-muted-foreground whitespace-pre-line leading-[1.65]">
+        <p className="m-0 mb-5 text-sm text-muted-foreground whitespace-pre-line leading-relaxed">
           {msg}
         </p>
         <div className="flex gap-2 justify-end">
@@ -267,7 +268,7 @@ function SaveSummaryDialog({ pending, roleName, permLabels, sensitiveKeys, isOwn
 
         {added.length > 0 && (
           <div className="mb-3">
-            <div className="text-[0.7rem] font-bold text-success mb-1.5 uppercase tracking-[0.05em]">
+            <div className="text-xs font-bold text-success mb-1.5 uppercase tracking-wider">
               + {t('roles.saveSummaryAdding')}
             </div>
             {added.map(k => (
@@ -284,7 +285,7 @@ function SaveSummaryDialog({ pending, roleName, permLabels, sensitiveKeys, isOwn
 
         {removed.length > 0 && (
           <div className="mb-3">
-            <div className="text-[0.7rem] font-bold text-danger mb-1.5 uppercase tracking-[0.05em]">
+            <div className="text-xs font-bold text-danger mb-1.5 uppercase tracking-wider">
               − {t('roles.saveSummaryRemoving')}
             </div>
             {removed.map(k => (
@@ -300,19 +301,17 @@ function SaveSummaryDialog({ pending, roleName, permLabels, sensitiveKeys, isOwn
         )}
 
         {hasSensitive && (
-          <div className="flex items-start gap-1.5 px-3 py-2 rounded-xs mb-4 bg-warning-bg border border-warning-border text-xs text-warning">
-            <AlertTriangle size={13} className="shrink-0 mt-px" aria-hidden />
-            <span>{t('roles.saveSensitiveWarning')}</span>
-          </div>
+          <Alert tone="warning" size="sm" className="mb-4">
+            {t('roles.saveSensitiveWarning')}
+          </Alert>
         )}
 
         {isOwnRole && removed.length > 0 && (
-          <div className="flex items-start gap-1.5 px-3 py-2 rounded-xs mb-4 bg-danger-bg border border-danger-border text-xs text-danger">
-            <AlertTriangle size={13} className="shrink-0 mt-px" aria-hidden />
-            <span>{t('roles.saveOwnRoleWarning', {
+          <Alert tone="danger" size="sm" className="mb-4">
+            {t('roles.saveOwnRoleWarning', {
               defaultValue: 'Bạn đang sửa role của chính mình. Gỡ quyền ở đây sẽ ảnh hưởng trực tiếp tới quyền truy cập của bạn.',
-            })}</span>
-          </div>
+            })}
+          </Alert>
         )}
 
         <div className="flex gap-2 justify-end">
@@ -475,7 +474,7 @@ function DeleteRoleDialog({ role, onConfirm, onCancel, saving }) {
             {t('roles.deleteRoleTitle')}
           </strong>
         </div>
-        <p className="m-0 mb-5 text-sm text-muted-foreground whitespace-pre-line leading-[1.65]">
+        <p className="m-0 mb-5 text-sm text-muted-foreground whitespace-pre-line leading-relaxed">
           {t('roles.deleteRoleConfirm', { name: getRoleDisplayName(role, t) })}
         </p>
         <div className="flex gap-2 justify-end">
@@ -546,7 +545,7 @@ function PermGroup({ group, activePerms, editMode, onToggle, isSuperAdmin }) {
   const { t } = useTranslation()
   return (
     <div className="mb-6">
-      <div className="text-[0.7rem] font-bold tracking-[0.07em] uppercase text-muted-foreground py-1.5 border-b-2 border-border mb-1">
+      <div className="text-xs font-bold tracking-wider uppercase text-muted-foreground py-1.5 border-b-2 border-border mb-1">
         {t(group.groupKey)}
       </div>
 
@@ -665,7 +664,7 @@ function RoleDetail({
       <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
         <div className="min-w-0">
           <div className="flex items-center gap-2.5 mb-0.5 flex-wrap">
-            <h2 className="m-0 text-[1.05rem] font-bold text-foreground">
+            <h2 className="m-0 text-base font-bold text-foreground">
               {displayName}
             </h2>
             <Badge isSystem={role.isSystem} />
@@ -714,10 +713,9 @@ function RoleDetail({
 
       {/* Unsaved-changes banner */}
       {editMode && isDirty && (
-        <div className="flex items-center gap-2 px-3 py-2 mb-3.5 rounded-xs bg-warning-bg border border-warning-border text-xs text-warning">
-          <Info size={13} className="shrink-0" aria-hidden />
+        <Alert tone="warning" size="sm" className="mb-3.5">
           {t('common.dirty')}
-        </div>
+        </Alert>
       )}
 
       {/* View-only note */}
@@ -756,13 +754,13 @@ function RoleDetail({
         if (unknown.length === 0) return null
         return (
           <div className="mb-6">
-            <div className="flex items-center gap-1.5 text-[0.7rem] font-bold tracking-[0.07em] uppercase text-warning py-1.5 border-b-2 border-border mb-2">
+            <div className="flex items-center gap-1.5 text-xs font-bold tracking-wider uppercase text-warning py-1.5 border-b-2 border-border mb-2">
               <AlertTriangle size={11} aria-hidden />
               {t('roles.otherPermsLabel')}
             </div>
-            <div className="px-3 py-2 mb-2 rounded-xs bg-warning-bg border border-warning-border text-xs text-warning">
+            <Alert tone="warning" size="sm" className="mb-2">
               {t('roles.otherPermsNote')}
-            </div>
+            </Alert>
             {unknown.map(perm => (
               <div key={perm} className="roles-perm-row">
                 <Check size={14} className="text-success shrink-0 mt-0.5" aria-hidden />
@@ -1032,9 +1030,9 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
 
       {/* Error */}
       {!loading && loadError && (
-        <div className="p-6 rounded-sm border border-danger-border bg-danger-bg text-danger text-sm">
+        <Alert tone="danger" className="p-6">
           {loadError}
-        </div>
+        </Alert>
       )}
 
       {/* Empty */}

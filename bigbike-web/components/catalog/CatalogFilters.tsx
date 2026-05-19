@@ -256,7 +256,7 @@ export function CatalogFilters({
           )}
           <button
             type="button"
-            className="hidden cursor-pointer border-0 bg-transparent p-0 text-muted-foreground transition-colors hover:text-foreground max-[768px]:flex max-[768px]:items-center"
+            className="hidden cursor-pointer border-0 bg-transparent text-muted-foreground transition-colors hover:text-foreground max-[768px]:-mr-2 max-[768px]:flex max-[768px]:h-11 max-[768px]:w-11 max-[768px]:items-center max-[768px]:justify-center"
             onClick={() => setMobileOpen((v) => !v)}
             aria-expanded={mobileOpen}
             aria-label={mobileOpen ? "Thu gọn bộ lọc" : "Mở rộng bộ lọc"}

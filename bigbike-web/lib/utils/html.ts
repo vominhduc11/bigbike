@@ -9,7 +9,7 @@ import DOMPurify from "isomorphic-dompurify";
  */
 export function sanitizeRichHtml(rawHtml: string | null | undefined): string {
   if (!rawHtml) {
-    return "<p>Noi dung dang cap nhat.</p>";
+    return "<p>Nội dung đang cập nhật.</p>";
   }
 
   registerHooks();

@@ -29,12 +29,29 @@ const VISIBILITY_STATUS_VARIANT = {
 }
 
 const RETURN_STATUS_VARIANT = {
-  PENDING: 'warning',
-  APPROVED: 'info',
-  RECEIVED: 'info',
-  COMPLETED: 'success',
-  REFUNDED: 'success',
-  REJECTED: 'danger',
+  PENDING:    'warning',
+  APPROVED:   'info',
+  RECEIVED:   'info',
+  INSPECTING: 'info',
+  COMPLETED:  'success',
+  REFUNDED:   'success',
+  REJECTED:   'danger',
+}
+
+const WARRANTY_STATUS_VARIANT = {
+  ACTIVE:  'success',
+  EXPIRED: 'warning',
+  VOIDED:  'danger',
+}
+
+const SERIAL_STATUS_VARIANT = {
+  IN_STOCK:   'success',
+  RESERVED:   'info',
+  SOLD:       'muted',
+  RETURNED:   'warning',
+  INSPECTION: 'info',
+  DAMAGED:    'danger',
+  SCRAPPED:   'muted',
 }
 
 function toneFromPublish(status) {
@@ -73,15 +90,13 @@ export function StatusBadge({ status, type = 'order', className }) {
     label = key === 'VISIBLE' ? t('common.visible') : t('common.hidden')
   } else if (type === 'return') {
     variant = RETURN_STATUS_VARIANT[status] ?? 'muted'
-    const returnStatusKeys = {
-      PENDING: 'orders.detail.rsPending',
-      APPROVED: 'orders.detail.rsApproved',
-      RECEIVED: 'orders.detail.rsReceived',
-      COMPLETED: 'orders.detail.rsCompleted',
-      REFUNDED: 'orders.detail.rsRefunded',
-      REJECTED: 'orders.detail.rsRejected',
-    }
-    label = returnStatusKeys[status] ? t(returnStatusKeys[status]) : status
+    label = t(`returns.status.${status}`, { defaultValue: status })
+  } else if (type === 'warranty') {
+    variant = WARRANTY_STATUS_VARIANT[status] ?? 'muted'
+    label = t(`warranty.status.${status}`, { defaultValue: status })
+  } else if (type === 'serial') {
+    variant = SERIAL_STATUS_VARIANT[status] ?? 'muted'
+    label = t(`serial.status.${status}`, { defaultValue: status })
   }
 
   return <Badge variant={variant} className={className}>{label}</Badge>

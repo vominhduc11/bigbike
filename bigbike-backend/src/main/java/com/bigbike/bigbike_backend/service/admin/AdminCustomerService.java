@@ -63,6 +63,7 @@ public class AdminCustomerService {
 
     // ── List ──────────────────────────────────────────────────────────────────
 
+    @Transactional(readOnly = true)
     public PageResult<AdminCustomerListItemResponse> listCustomers(
             int page, int size, String q, String status, Boolean synthetic
     ) {
@@ -126,6 +127,7 @@ public class AdminCustomerService {
 
     // ── Detail ────────────────────────────────────────────────────────────────
 
+    @Transactional(readOnly = true)
     public AdminCustomerDetailResponse getCustomerDetail(UUID customerId) {
         CustomerEntity customer = customerRepo.findById(customerId)
                 .orElseThrow(() -> new NotFoundException("Customer not found."));

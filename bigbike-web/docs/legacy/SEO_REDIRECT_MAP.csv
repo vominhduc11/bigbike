@@ -32,6 +32,8 @@ sourcePattern,targetPattern,redirectType,status,notes
 /giam-10-khi-mua-hang-online-html/,/,301,active,Old promo page - redirect to home
 /chinh-sach-bao-ve-thong-tin-ca-nhan/,/chinh-sach/bao-mat/,301,active,WP page slug renamed in new platform
 /cac-dieu-kien-va-dieu-khoan/,/chinh-sach/dieu-khoan/,301,active,WP page slug renamed in new platform
+/chinh-sach-bao-hanh/,/chinh-sach/bao-hanh/,301,active,WP page slug renamed in new platform
+/chinh-sach-doi-tra-hang/,/chinh-sach/doi-tra/,301,active,WP page slug renamed in new platform
 /huong-dan-mua-hang-online-html/,/huong-dan-mua-hang/,301,active,Old WP .html promo page redirect
 /home-2/,/,301,active,Old WP staging page redirect to home
 /mu-bao-hiem/,/danh-muc-san-pham/non-bao-hiem-moto/,301,active,WP slug mu-bao-hiem renamed to non-bao-hiem-moto

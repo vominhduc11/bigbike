@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PurchaseSectionClient } from "@/components/catalog/PurchaseSectionClient";
 import { ProductTabs } from "@/components/catalog/ProductTabs";
@@ -7,6 +6,7 @@ import { ReviewsSection } from "@/components/catalog/ReviewsSection";
 import { RecentlyViewedSection } from "@/components/catalog/RecentlyViewedSection";
 import { FeaturedProductsCarousel } from "@/components/home/FeaturedProductsCarousel";
 import { AnalyticsView } from "@/components/analytics/AnalyticsView";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { getProductBySlug, listProducts } from "@/lib/api/public-api";
 import {
@@ -166,21 +166,17 @@ export default async function ProductDetailPage({
       <AnalyticsView product={product} />
 
       {/* Breadcrumb */}
-      <nav className="bb-breadcrumb" aria-label="Điều hướng">
-        <Link href={toHomePath()}>Trang chủ</Link>
-        <span className="sep" aria-hidden="true">/</span>
-        <Link href={toProductListPath()}>Danh mục sản phẩm</Link>
-        {effectiveCategory?.name && effectiveCategory.slug && (
-          <>
-            <span className="sep" aria-hidden="true">/</span>
-            <Link href={toCategoryPath(effectiveCategory.slug)}>
-              {effectiveCategory.name}
-            </Link>
-          </>
-        )}
-        <span className="sep" aria-hidden="true">/</span>
-        <span aria-current="page">{productName}</span>
-      </nav>
+      <Breadcrumb
+        variant="onLight"
+        items={[
+          { label: "Trang chủ", href: toHomePath() },
+          { label: "Danh mục sản phẩm", href: toProductListPath() },
+          ...(effectiveCategory?.name && effectiveCategory.slug
+            ? [{ label: effectiveCategory.name, href: toCategoryPath(effectiveCategory.slug) }]
+            : []),
+          { label: productName },
+        ]}
+      />
 
       {/*
        * Two-column PDP layout.

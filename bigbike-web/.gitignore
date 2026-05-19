@@ -13,6 +13,11 @@
 # testing
 /coverage
 
+# QA / test artifacts (screenshots, playwright output, scratch scripts)
+/qa-screenshots/
+/output/
+/_bbtmp-*
+
 # next.js
 /.next/
 /out/

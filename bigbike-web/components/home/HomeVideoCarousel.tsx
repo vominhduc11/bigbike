@@ -257,7 +257,7 @@ export function HomeVideoCarousel({ videos }: Props) {
           <>
             <button
               type="button"
-              className="absolute left-[-60px] top-1/2 z-[4] flex h-11 w-11 items-center justify-center border border-white/20 bg-black/55 p-2.5 text-white opacity-85 shadow-[0_2px_8px_rgba(0,0,0,0.4)] transition-[background,opacity,border-color] duration-150 hover:bg-black/80 hover:opacity-100 hover:border-white/40 focus-visible:outline-[var(--bb-focus-outline)] focus-visible:outline-offset-3 max-[1366px]:left-[-52px] max-[1100px]:left-[-24px] max-[991px]:left-[6px] max-[991px]:h-9 max-[991px]:w-9 max-[991px]:bg-black/65 max-[991px]:p-2 max-[575px]:hidden"
+              className="absolute left-2 top-1/2 z-[4] flex h-11 w-11 items-center justify-center border border-white/20 bg-black/55 p-2.5 text-white opacity-85 shadow-[0_2px_8px_rgba(0,0,0,0.4)] transition-[background,opacity,border-color] duration-150 hover:bg-black/80 hover:opacity-100 hover:border-white/40 focus-visible:outline-[var(--bb-focus-outline)] focus-visible:outline-offset-3 min-[1320px]:left-[-60px] max-[991px]:h-9 max-[991px]:w-9 max-[991px]:bg-black/65 max-[991px]:p-2 max-[575px]:hidden"
               style={{ transform: "translateY(calc(-50% - 26px))" }}
               onClick={() => swiperRef.current?.slidePrev()}
               aria-label="Video trước"
@@ -268,7 +268,7 @@ export function HomeVideoCarousel({ videos }: Props) {
             </button>
             <button
               type="button"
-              className="absolute right-[-60px] top-1/2 z-[4] flex h-11 w-11 items-center justify-center border border-white/20 bg-black/55 p-2.5 text-white opacity-85 shadow-[0_2px_8px_rgba(0,0,0,0.4)] transition-[background,opacity,border-color] duration-150 hover:bg-black/80 hover:opacity-100 hover:border-white/40 focus-visible:outline-[var(--bb-focus-outline)] focus-visible:outline-offset-3 max-[1366px]:right-[-52px] max-[1100px]:right-[-24px] max-[991px]:right-[6px] max-[991px]:h-9 max-[991px]:w-9 max-[991px]:bg-black/65 max-[991px]:p-2 max-[575px]:hidden"
+              className="absolute right-2 top-1/2 z-[4] flex h-11 w-11 items-center justify-center border border-white/20 bg-black/55 p-2.5 text-white opacity-85 shadow-[0_2px_8px_rgba(0,0,0,0.4)] transition-[background,opacity,border-color] duration-150 hover:bg-black/80 hover:opacity-100 hover:border-white/40 focus-visible:outline-[var(--bb-focus-outline)] focus-visible:outline-offset-3 min-[1320px]:right-[-60px] max-[991px]:h-9 max-[991px]:w-9 max-[991px]:bg-black/65 max-[991px]:p-2 max-[575px]:hidden"
               style={{ transform: "translateY(calc(-50% - 26px))" }}
               onClick={() => swiperRef.current?.slideNext()}
               aria-label="Video tiếp"

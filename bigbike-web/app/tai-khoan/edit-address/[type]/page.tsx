@@ -263,7 +263,7 @@ function AddressBookContent() {
                     <b className="font-display text-base font-semibold text-[#1a1a1a]">
                       {addr.fullName ?? "—"}
                     </b>
-                    <span className="shrink-0 text-sm text-[#9a9a9a]">
+                    <span className="shrink-0 text-sm text-muted-foreground">
                       Địa chỉ {idx + 1}
                     </span>
                   </div>
@@ -271,18 +271,18 @@ function AddressBookContent() {
                   <div className="mt-4 flex flex-col gap-[10px] text-sm text-[#555555]">
                     {addr.phone && (
                       <p className="m-0 flex items-center gap-2.5">
-                        <Phone className="h-4 w-4 shrink-0 text-[#9a9a9a]" aria-hidden />
+                        <Phone className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
                         {addr.phone}
                       </p>
                     )}
                     {(addr.email ?? accountEmail) && (
                       <p className="m-0 flex items-center gap-2.5">
-                        <Mail className="h-4 w-4 shrink-0 text-[#9a9a9a]" aria-hidden />
+                        <Mail className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
                         {addr.email ?? accountEmail}
                       </p>
                     )}
                     <p className="m-0 flex items-start gap-2.5">
-                      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#9a9a9a]" aria-hidden />
+                      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
                       <span>
                         {[addr.addressLine1, addr.ward, addr.district, addr.province]
                           .filter(Boolean)

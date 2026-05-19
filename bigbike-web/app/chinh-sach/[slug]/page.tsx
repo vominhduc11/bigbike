@@ -79,9 +79,7 @@ export default async function PolicyPage({ params }: Props) {
       <PageHero
         imageUrl={page.heroImageUrl}
         imageAlt={page.heroImageAlt}
-        kicker={page.heroKicker ?? "CHÍNH SÁCH"}
         title={page.heroTitle ?? pageTitle}
-        description={page.heroDescription}
         breadcrumb={[
           { label: "Trang chủ", href: toHomePath() },
           { label: "Chính sách" },

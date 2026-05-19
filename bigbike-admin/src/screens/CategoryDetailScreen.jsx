@@ -604,8 +604,8 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
               <label className="form-checkbox">
                 <Checkbox
                   checked={form.visible}
-                  onChange={(event) => {
-                    const nextVisible = event.target.checked
+                  onCheckedChange={(checked) => {
+                    const nextVisible = checked === true
                     setForm((prev) => ({
                       ...prev,
                       visible: nextVisible,

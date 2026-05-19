@@ -184,7 +184,7 @@ function FolderInput({ defaultValue = '', placeholder, onSubmit, onCancel }) {
       <Input autoFocus type="text" value={value} onChange={(e) => setValue(e.target.value)}
         onBlur={() => { if (!value.trim()) onCancel() }}
         onKeyDown={(e) => { if (e.key === 'Escape') onCancel() }} placeholder={placeholder}
-        className="text-[0.8rem] py-1 px-2"  />
+        className="text-xs py-1 px-2"  />
     </form>
   )
 }

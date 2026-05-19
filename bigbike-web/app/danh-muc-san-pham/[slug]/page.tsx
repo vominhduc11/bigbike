@@ -242,9 +242,6 @@ export default async function CategoryDetailPage({
 
   const rawDescription = category.description ?? null;
   const isHtmlDescription = rawDescription ? /<[a-z][\s\S]*>/i.test(rawDescription) : false;
-  const heroDescription = isHtmlDescription
-    ? rawDescription!.replace(/<[^>]+>/g, " ").replace(/\s{2,}/g, " ").trim()
-    : rawDescription;
 
   const heroBreadcrumb: PageHeroBreadcrumbItem[] = [
     { label: "Trang chủ", href: toHomePath() },
@@ -264,11 +261,8 @@ export default async function CategoryDetailPage({
       <PageHero
         imageUrl={heroImgAsset?.url}
         imageAlt={heroImgAsset?.alt}
-        kicker="DANH MỤC SẢN PHẨM"
         title={categoryName}
-        description={heroDescription}
         breadcrumb={heroBreadcrumb}
-        meta={pagination ? `${pagination.totalItems} sản phẩm` : undefined}
       />
 
       {/* ── Sub-categories ────────────────────────────────────── */}

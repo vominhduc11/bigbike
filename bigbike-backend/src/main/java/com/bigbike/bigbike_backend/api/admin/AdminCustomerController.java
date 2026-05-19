@@ -8,7 +8,6 @@ import com.bigbike.bigbike_backend.api.admin.dto.customer.UpdateCustomerStatusRe
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiListResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
-import com.bigbike.bigbike_backend.domain.auth.AdminPrincipal;
 import com.bigbike.bigbike_backend.service.admin.AdminCouponGiftService;
 import com.bigbike.bigbike_backend.service.admin.AdminCustomerService;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
@@ -19,8 +18,6 @@ import jakarta.validation.constraints.Min;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -36,9 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/admin/customers")
 @RequiredArgsConstructor
-public class AdminCustomerController {
-
-    private static final UUID DEV_ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+public class AdminCustomerController extends AdminControllerSupport {
 
     private final AdminCustomerService adminCustomerService;
     private final AdminCouponGiftService couponGiftService;
@@ -102,11 +97,4 @@ public class AdminCustomerController {
                 couponGiftService.sendCouponGift(customerId, resolveAdminId(), body), request);
     }
 
-    private UUID resolveAdminId() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.getPrincipal() instanceof AdminPrincipal principal) {
-            try { return UUID.fromString(principal.id()); } catch (IllegalArgumentException ignored) {}
-        }
-        return DEV_ADMIN_ID;
-    }
 }

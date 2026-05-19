@@ -5,6 +5,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CartJpaRepository extends JpaRepository<CartEntity, UUID> {
@@ -17,7 +19,7 @@ public interface CartJpaRepository extends JpaRepository<CartEntity, UUID> {
 
     List<CartEntity> findBySessionIdAndStatus(String sessionId, String status);
 
-    List<CartEntity> findByStatus(String status);
+    Page<CartEntity> findByStatus(String status, Pageable pageable);
 
-    List<CartEntity> findByExpiresAtBefore(Instant threshold);
+    Page<CartEntity> findByExpiresAtBefore(Instant threshold, Pageable pageable);
 }

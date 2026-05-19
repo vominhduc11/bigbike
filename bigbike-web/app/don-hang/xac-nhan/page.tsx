@@ -8,20 +8,10 @@ import { PurchaseEvent } from "@/components/analytics/PurchaseEvent";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { formatVnd } from "@/lib/utils/format";
 import { toHomePath, toOrderHistoryPath, toProductListPath } from "@/lib/utils/routes";
+import { pickSetting } from "@/lib/utils/settings";
 import { Button } from "@/components/ui/button";
 
 const FALLBACK_HOTLINE = "0906.902.404";
-
-function pickSetting(
-  settings: { settingKey: string; settingValue: string }[],
-  keys: string[],
-): string {
-  for (const key of keys) {
-    const v = settings.find((s) => s.settingKey === key)?.settingValue?.trim();
-    if (v) return v;
-  }
-  return "";
-}
 
 export const metadata: Metadata = buildPublicMetadata({
   title: "Đặt hàng thành công",

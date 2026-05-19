@@ -5,10 +5,11 @@ import { AdminTable } from '../components/AdminTable'
 import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
-import { createCoupon, fetchCoupons, sendBulkCouponGift, updateCoupon, updateCouponStatus } from '../lib/adminApi'
+import { createCoupon, fetchCoupons, mapValidationErrors, sendBulkCouponGift, updateCoupon, updateCouponStatus } from '../lib/adminApi'
 import { formatCurrencyVnd, formatDateTime } from '../lib/formatters'
 import { useDebounce } from '../lib/useDebounce'
 import { Badge } from '@/components/ui/badge'
+import { Alert } from '@/components/ui/alert'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -52,6 +53,7 @@ export function CouponListScreen({ canUpdate }) {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
   const [formError, setFormError] = useState('')
+  const [formFieldErrors, setFormFieldErrors] = useState({})
   const [formSaving, setFormSaving] = useState(false)
   const [editCoupon, setEditCoupon] = useState(null)
   const [editForm, setEditForm] = useState({})
@@ -95,6 +97,7 @@ export function CouponListScreen({ canUpdate }) {
     if (!form.name.trim()) { setFormError(t('coupons.formName') + ' ' + t('common.required').toLowerCase()); return }
     setFormSaving(true)
     setFormError('')
+    setFormFieldErrors({})
     try {
       const payload = {
         code: form.code,
@@ -111,7 +114,12 @@ export function CouponListScreen({ canUpdate }) {
       setForm(EMPTY_FORM)
       setQuery((p) => ({ ...p }))
     } catch (e) {
-      setFormError(e.message || t('coupons.creating'))
+      const fieldErrs = mapValidationErrors(e)
+      if (Object.keys(fieldErrs).length > 0) {
+        setFormFieldErrors(fieldErrs)
+      } else {
+        setFormError(e.message || t('common.error'))
+      }
     } finally {
       setFormSaving(false)
     }
@@ -238,10 +246,9 @@ export function CouponListScreen({ canUpdate }) {
       </header>
 
       {actionError && (
-        <p className="inline-error">
+        <Alert tone="danger" dismissible onDismiss={() => setActionError('')}>
           {actionError}
-          <button type="button" onClick={() => setActionError('')}>✕</button>
-        </p>
+        </Alert>
       )}
 
       {bulkOpen && (
@@ -294,15 +301,16 @@ export function CouponListScreen({ canUpdate }) {
             </label>
           </div>
           {bulkConfirm && (
-            <p className="mt-4 rounded-sm border border-warning-border bg-warning-bg px-4 py-3 text-sm text-warning">
+            <Alert tone="warning" className="mt-4">
               Xác nhận gửi? Hệ thống sẽ tạo và email mã riêng cho <strong>tất cả khách hàng ACTIVE có email</strong>. Thao tác không thể hoàn tác.
-            </p>
+            </Alert>
           )}
           <div className="mt-4 flex items-center gap-2">
             <Button type="submit" loading={bulkSaving}>
               {bulkConfirm ? 'Xác nhận gửi' : 'Tiếp tục'}
             </Button>
             <Button
+              type="button"
               variant="outline"
               onClick={() => { setBulkOpen(false); setBulkForm(EMPTY_BULK_FORM); setBulkConfirm(false) }}
               disabled={bulkSaving}
@@ -316,10 +324,18 @@ export function CouponListScreen({ canUpdate }) {
       {showForm && (
         <form onSubmit={handleCreate} className="mb-6 rounded-sm border border-border bg-surface p-6">
           <h3 className="mb-4">{t('coupons.createTitle')}</h3>
-          {formError && <p className="mb-3 text-sm text-danger">{formError}</p>}
+          {formError && <Alert tone="danger" size="sm" className="mb-3">{formError}</Alert>}
           <div className="grid grid-cols-2 gap-4">
-            <label>{t('coupons.formCode')} <Input required value={form.code} onChange={(e) => setForm((p) => ({ ...p, code: e.target.value.toUpperCase() }))}  /></label>
-            <label>{t('coupons.formName')} <Input required value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}  /></label>
+            <label>
+              {t('coupons.formCode')}
+              <Input required value={form.code} onChange={(e) => setForm((p) => ({ ...p, code: e.target.value.toUpperCase() }))}  />
+              {formFieldErrors.code && <p className="field-error">{formFieldErrors.code}</p>}
+            </label>
+            <label>
+              {t('coupons.formName')}
+              <Input required value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}  />
+              {formFieldErrors.name && <p className="field-error">{formFieldErrors.name}</p>}
+            </label>
             <label>{t('coupons.formDiscountType')}
               <Select value={form.discountType} onValueChange={(val) => setForm((p) => ({ ...p, discountType: val }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
                 <SelectItem value="FIXED">{t('coupons.formFixed')}</SelectItem>
@@ -340,7 +356,7 @@ export function CouponListScreen({ canUpdate }) {
           </div>
           <div className="mt-4 flex gap-2">
             <Button type="submit" loading={formSaving}>{t('coupons.createBtn')}</Button>
-            <Button variant="outline" onClick={() => { setShowForm(false); setForm(EMPTY_FORM); setFormError('') }}>{t('common.cancel')}</Button>
+            <Button type="button" variant="outline" onClick={() => { setShowForm(false); setForm(EMPTY_FORM); setFormError(''); setFormFieldErrors({}) }}>{t('common.cancel')}</Button>
           </div>
         </form>
       )}
@@ -348,7 +364,7 @@ export function CouponListScreen({ canUpdate }) {
       {editCoupon && (
         <form onSubmit={handleEdit} className="mb-6 rounded-sm border border-primary bg-surface p-6">
           <h3 className="mb-4">{t('coupons.editTitle', { code: editCoupon.code })}</h3>
-          {editError && <p className="mb-3 text-sm text-danger">{editError}</p>}
+          {editError && <Alert tone="danger" size="sm" className="mb-3">{editError}</Alert>}
           <div className="grid grid-cols-2 gap-4">
             <label>{t('coupons.formDiscountType')}
               <Select value={editForm.discountType} onValueChange={(val) => setEditForm((p) => ({ ...p, discountType: val }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
@@ -370,7 +386,7 @@ export function CouponListScreen({ canUpdate }) {
           </div>
           <div className="mt-4 flex gap-2">
             <Button type="submit" disabled={editSaving}>{editSaving ? t('common.saving') : t('coupons.saveBtn')}</Button>
-            <Button variant="outline" onClick={() => setEditCoupon(null)}>{t('common.cancel')}</Button>
+            <Button type="button" variant="outline" onClick={() => setEditCoupon(null)}>{t('common.cancel')}</Button>
           </div>
         </form>
       )}

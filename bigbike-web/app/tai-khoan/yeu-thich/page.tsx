@@ -1,27 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { fetchWishlistProducts } from "@/lib/api/client-api";
-import type { Product } from "@/lib/contracts/public";
+import { useWishlistProducts } from "@/lib/query/hooks";
 import { AccountShell } from "@/components/layout/AccountShell";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/button";
 
 function WishlistContent() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    let active = true;
-    fetchWishlistProducts()
-      .then(({ data }) => { if (active) setProducts(data); })
-      .catch((err: Error) => { if (active) setError(err.message ?? "Không tải được danh sách yêu thích."); })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
-  }, []);
+  const { data, isLoading, error } = useWishlistProducts();
+  const products = data?.data ?? [];
 
   return (
     <>
@@ -29,9 +17,9 @@ function WishlistContent() {
         <h2 className="font-display uppercase text-26 tracking-[0.01em] m-0 text-foreground">Sản phẩm yêu thích</h2>
       </div>
 
-      {error && <p className="text-brand text-sm mb-4 m-0">{error}</p>}
+      {error && <p className="text-brand text-sm mb-4 m-0">{(error as Error).message}</p>}
 
-      {loading ? (
+      {isLoading ? (
         <div className="bb-product-grid" aria-busy="true">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="bb-product-card">

@@ -5,6 +5,7 @@ import { ApiClientError } from '../lib/adminApi'
 import { useAuth } from '../lib/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Alert } from '@/components/ui/alert'
 
 export function LoginScreen() {
   const { login } = useAuth()
@@ -61,10 +62,10 @@ export function LoginScreen() {
         noValidate
       >
         <header className="grid gap-1.5">
-          <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-primary">
+          <p className="text-xs font-semibold uppercase tracking-widest text-primary">
             {t('auth.title')}
           </p>
-          <h1 className="text-[length:var(--admin-text-2xl)] font-bold leading-tight tracking-[-0.02em] text-foreground">
+          <h1 className="text-2xl font-bold leading-tight tracking-tight text-foreground">
             {t('auth.login')}
           </h1>
           <p className="text-sm leading-relaxed text-muted-foreground">
@@ -142,12 +143,9 @@ export function LoginScreen() {
         </div>
 
         {showForgot ? (
-          <div
-            id={forgotId}
-            className="rounded-[var(--admin-radius-xs)] border border-info-border bg-info-bg px-4 py-3 text-sm leading-relaxed text-info"
-          >
+          <Alert tone="info" id={forgotId} className="leading-relaxed">
             {t('auth.forgotPasswordNote')}
-          </div>
+          </Alert>
         ) : null}
 
         <Button type="submit" size="lg" loading={submitting} disabled={submitting}>

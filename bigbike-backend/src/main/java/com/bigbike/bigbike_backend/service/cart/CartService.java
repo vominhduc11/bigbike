@@ -127,11 +127,9 @@ public class CartService {
         UUID productUuid = tryParseUUID(product.getId());
         UUID variantUuid = (variant != null) ? tryParseUUID(variant.getId()) : null;
 
-        // Check if same product+variant already in cart
-        List<CartItemEntity> existingItems = cartItemRepo.findByCartId(cart.getId());
-        Optional<CartItemEntity> existing = existingItems.stream()
-                .filter(i -> matchesProductVariant(i, productUuid, variantUuid))
-                .findFirst();
+        // Targeted query — avoids loading all cart items just to find one matching product+variant
+        Optional<CartItemEntity> existing = cartItemRepo
+                .findByCartIdAndProductIdAndProductVariantId(cart.getId(), productUuid, variantUuid);
 
         int newQuantity = existing.map(i -> i.getQuantity() + req.quantity()).orElse(req.quantity());
         validateQuantityAgainstStock(product, variant, newQuantity);

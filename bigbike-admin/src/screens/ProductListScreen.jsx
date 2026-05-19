@@ -19,6 +19,7 @@ import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { Alert } from '@/components/ui/alert'
 
 const INITIAL_QUERY = {
   search: '',
@@ -422,13 +423,10 @@ export function ProductListScreen({ navigate, canUpdate }) {
           const blockLabel = t(HOMEPAGE_BLOCK_LABEL_KEYS[query.homepageBlock] ?? query.homepageBlock)
           if (totalFlagged <= limit) return null
           return (
-            <div
-              role="status"
-              className="my-3 rounded-sm border border-warning-border bg-warning-bg px-3.5 py-2.5 text-sm text-warning"
-            >
+            <Alert tone="warning" role="status" className="my-3">
               <strong>{t('products.homepageWarnCount', { count: totalFlagged })}</strong>{' '}
               {t('products.homepageWarnDetail', { limit, block: blockLabel })}
-            </div>
+            </Alert>
           )
         })()
       ) : null}

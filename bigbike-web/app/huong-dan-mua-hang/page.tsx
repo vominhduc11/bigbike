@@ -39,9 +39,7 @@ export default async function HowToBuyPage() {
       <PageHero
         imageUrl={page.heroImageUrl}
         imageAlt={page.heroImageAlt}
-        kicker={page.heroKicker ?? "HƯỚNG DẪN"}
         title={page.heroTitle ?? pageTitle}
-        description={page.heroDescription}
         breadcrumb={[
           { label: "Trang chủ", href: toHomePath() },
           { label: pageTitle },

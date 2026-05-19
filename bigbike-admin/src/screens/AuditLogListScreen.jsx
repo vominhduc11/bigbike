@@ -6,6 +6,7 @@ import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { fetchAuditLogs } from '../lib/adminApi'
+import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 import { formatDateTimeWithSeconds } from '../lib/formatters'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -105,47 +106,9 @@ const RESOURCE_OPTIONS = [
 ]
 const PRESET_KEYS      = ['today', '7d', '30d', 'month']
 
-function readQueryFromUrl() {
-  try {
-    const p = new URLSearchParams(window.location.search)
-    return {
-      actorType:    p.get('actorType')    || 'ALL',
-      resourceType: p.get('resourceType') || 'ALL',
-      q:            p.get('q')            || '',
-      from:         p.get('from')         || '',
-      to:           p.get('to')           || '',
-      page:         Number(p.get('page')) || 1,
-      pageSize:     Number(p.get('pageSize')) || 20,
-      detail:       p.get('detail')       || null,
-    }
-  } catch {
-    return null
-  }
-}
-
 const INITIAL_QUERY = {
   actorType: 'ALL', resourceType: 'ALL',
   q: '', from: '', to: '', page: 1, pageSize: 20, detail: null,
-}
-
-function buildInitialQuery() {
-  return readQueryFromUrl() || INITIAL_QUERY
-}
-
-function pushQueryToUrl(query) {
-  try {
-    const p = new URLSearchParams()
-    if (query.actorType    !== 'ALL') p.set('actorType',    query.actorType)
-    if (query.resourceType !== 'ALL') p.set('resourceType', query.resourceType)
-    if (query.q)     p.set('q',    query.q)
-    if (query.from)  p.set('from', query.from)
-    if (query.to)    p.set('to',   query.to)
-    if (query.page   !== 1)  p.set('page',     String(query.page))
-    if (query.pageSize !== 20) p.set('pageSize', String(query.pageSize))
-    if (query.detail) p.set('detail', query.detail)
-    const qs = p.toString()
-    window.history.replaceState(null, '', window.location.pathname + (qs ? '?' + qs : ''))
-  } catch { /* ignore */ }
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
@@ -562,7 +525,7 @@ function MobileFilterDrawer({ query, searchInput, onSearch, setSearchInput, onUp
 
 export function AuditLogListScreen() {
   const { t } = useTranslation()
-  const initialQuery = useMemo(() => buildInitialQuery(), [])
+  const initialQuery = useMemo(() => readQueryFromUrl(INITIAL_QUERY), [])
   const [query, setQuery]             = useState(initialQuery)
   const [searchInput, setSearchInput] = useState(() => initialQuery.q)
   const [state, setState]             = useState({ status: 'loading', items: [], pagination: null, warning: '' })
@@ -581,7 +544,7 @@ export function AuditLogListScreen() {
   ].filter(Boolean).length
 
   useEffect(() => {
-    pushQueryToUrl(query)
+    syncQueryToUrl(query, INITIAL_QUERY)
     let active = true
     fetchAuditLogs(query)
       .then((r) => {
@@ -830,12 +793,10 @@ export function AuditLogListScreen() {
       {/* ── Results summary bar ── */}
       {state.status === 'success' && totalItems != null && totalItems > 0 && (
         <div className="audit-summary-bar">
-          <span
-            dangerouslySetInnerHTML={{
-              __html: t('auditLog.summaryFound', { count: totalItems.toLocaleString('vi-VN') })
-                + (isFiltered ? ` ${t('auditLog.summaryFiltered')}` : ''),
-            }}
-          />
+          <span>
+            {t('auditLog.summaryFound', { count: <strong key="c">{totalItems.toLocaleString('vi-VN')}</strong> })}
+            {isFiltered && ` ${t('auditLog.summaryFiltered')}`}
+          </span>
         </div>
       )}
 

@@ -7,6 +7,7 @@ import { Modal } from '../components/layout'
 import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
+import { StatusBadge } from '../components/StatusBadge'
 import { fetchReturnDetail, fetchReturns, inspectReturnItem, updateReturnStatus } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import { useAdminList } from '../lib/useAdminList'
@@ -14,36 +15,13 @@ import { formatCurrencyVnd, formatDateTime } from '../lib/formatters'
 import { useDebounce } from '../lib/useDebounce'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 import { Button } from '@/components/ui/button'
+import { Alert } from '@/components/ui/alert'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 
 const STATUSES = ['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'RECEIVED', 'INSPECTING', 'COMPLETED', 'REFUNDED']
-const STATUS_BADGE_CLASSES = {
-  PENDING:    'text-warning',
-  APPROVED:   'text-info',
-  RECEIVED:   'text-info',
-  INSPECTING: 'text-info',
-  COMPLETED:  'text-success',
-  REFUNDED:   'text-success',
-  REJECTED:   'text-danger',
-}
-const STATUS_LABELS_VI = {
-  PENDING: 'Chờ duyệt',
-  APPROVED: 'Đã duyệt',
-  RECEIVED: 'Đã nhận hàng',
-  INSPECTING: 'Đang kiểm tra',
-  COMPLETED: 'Hoàn thành',
-  REFUNDED: 'Đã hoàn tiền',
-  REJECTED: 'Từ chối',
-}
-const REASON_LABELS_VI = {
-  DEFECTIVE: 'Hàng bị lỗi',
-  WRONG_ITEM: 'Sai sản phẩm',
-  NOT_AS_DESCRIBED: 'Không như mô tả',
-  CHANGED_MIND: 'Đổi ý',
-  OTHER: 'Khác',
-}
+
 // Mirrors AdminReturnService.TRANSITIONS. INSPECTING is the optional QC step
 // required for high-risk goods (mũ bảo hiểm, áo giáp) before closing the return.
 const NEXT_STATUSES = {
@@ -51,15 +29,6 @@ const NEXT_STATUSES = {
   APPROVED: ['RECEIVED'],
   RECEIVED: ['INSPECTING', 'COMPLETED', 'REFUNDED'],
   INSPECTING: ['COMPLETED', 'REFUNDED'],
-}
-
-function StatusBadge({ status }) {
-  const cls = STATUS_BADGE_CLASSES[status] ?? 'text-muted-foreground'
-  return (
-    <span className={`font-semibold text-sm ${cls}`}>
-      {STATUS_LABELS_VI[status] ?? status}
-    </span>
-  )
 }
 
 // ── Detail modal ──────────────────────────────────────────────────────────────
@@ -91,19 +60,19 @@ function ReturnDetailModal({ ret, onClose, onUpdate, canUpdate, navigate }) {
     const refundNum = refundAmount ? Number(refundAmount) : 0
     // REFUNDED records money back to the customer — require a positive amount.
     if (newStatus === 'REFUNDED' && !(refundNum > 0)) {
-      setError('Nhập số tiền hoàn lớn hơn 0 trước khi xác nhận hoàn tiền.')
+      setError(t('returns.errorRefundRequired'))
       return
     }
     if (newStatus === 'REFUNDED') {
       const ok = await showConfirm(
-        `Xác nhận hoàn ${formatCurrencyVnd(refundNum)} cho yêu cầu đổi trả ${detail.returnNumber}?\n\nThao tác này ghi nhận khoản hoàn tiền cho khách hàng.`,
-        'Xác nhận hoàn tiền',
+        t('returns.confirmRefund', { amount: formatCurrencyVnd(refundNum), rma: detail.returnNumber }),
+        t('returns.confirmRefundTitle'),
       )
       if (!ok) return
     } else if (newStatus === 'REJECTED') {
       const ok = await showConfirm(
-        `Từ chối yêu cầu đổi trả ${detail.returnNumber}?\n\nKhách hàng sẽ thấy yêu cầu bị từ chối.`,
-        'Xác nhận từ chối',
+        t('returns.confirmReject', { rma: detail.returnNumber }),
+        t('returns.confirmRejectTitle'),
       )
       if (!ok) return
     }
@@ -121,9 +90,9 @@ function ReturnDetailModal({ ret, onClose, onUpdate, canUpdate, navigate }) {
       setShowUpdateForm(false)
       setNote('')
       setRefundAmount('')
-      toast.success(`Đã cập nhật: ${STATUS_LABELS_VI[newStatus] ?? newStatus}`)
+      toast.success(t('returns.toastUpdated', { status: t(`returns.status.${newStatus}`, { defaultValue: newStatus }) }))
     } catch (err) {
-      setError(err.message || 'Lỗi cập nhật trạng thái.')
+      setError(err.message || t('returns.errorUpdateStatus'))
     } finally {
       setSaving(false)
     }
@@ -137,7 +106,7 @@ function ReturnDetailModal({ ret, onClose, onUpdate, canUpdate, navigate }) {
       setDetail(updated)
       onUpdate(updated)
     } catch (err) {
-      setError(err.message || 'Lỗi khi lưu kết quả kiểm tra.')
+      setError(err.message || t('returns.errorInspect'))
     } finally {
       setInspectingId(null)
     }
@@ -151,10 +120,14 @@ function ReturnDetailModal({ ret, onClose, onUpdate, canUpdate, navigate }) {
             <div>
               <span className="text-muted-foreground">{t('returns.detailOrder')}: </span>
               {detail.orderNumber ? (
-                <button type="button" className="bb-link font-mono text-sm"
-                  onClick={() => { navigate(`/admin/orders/${detail.orderId}`); onClose() }}>
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0 align-baseline font-mono text-sm"
+                  onClick={() => { navigate(`/admin/orders/${detail.orderId}`); onClose() }}
+                >
                   #{detail.orderNumber}
-                </button>
+                </Button>
               ) : <span className="font-mono">{detail.orderId?.slice(0, 8)}…</span>}
             </div>
             <div>
@@ -162,12 +135,12 @@ function ReturnDetailModal({ ret, onClose, onUpdate, canUpdate, navigate }) {
               <span>{detail.customerEmail ?? '—'}</span>
             </div>
             <div>
-              <span className="text-muted-foreground">Trạng thái: </span>
-              <StatusBadge status={detail.status} />
+              <span className="text-muted-foreground">{t('returns.modalStatusLabel')}: </span>
+              <StatusBadge type="return" status={detail.status} />
             </div>
             <div>
-              <span className="text-muted-foreground">Lý do: </span>
-              <span>{REASON_LABELS_VI[detail.reason] ?? detail.reason}</span>
+              <span className="text-muted-foreground">{t('returns.modalReasonLabel')}: </span>
+              <span>{t(`returns.reason.${detail.reason}`, { defaultValue: detail.reason })}</span>
             </div>
             {detail.refundAmount > 0 && (
               <div>
@@ -176,7 +149,7 @@ function ReturnDetailModal({ ret, onClose, onUpdate, canUpdate, navigate }) {
               </div>
             )}
             <div>
-              <span className="text-muted-foreground">Ngày tạo: </span>
+              <span className="text-muted-foreground">{t('returns.modalCreatedAtLabel')}: </span>
               <span>{formatDateTime(detail.createdAt)}</span>
             </div>
           </div>
@@ -193,25 +166,25 @@ function ReturnDetailModal({ ret, onClose, onUpdate, canUpdate, navigate }) {
 
           {/* Admin note */}
           {detail.adminNote && (
-            <div className="bg-warning-bg border border-warning-border rounded-sm px-3.5 py-2.5 text-sm">
-              <p className="mb-1 font-semibold text-warning">{t('returns.detailAdminNote')}</p>
-              <p className="m-0 text-warning">{detail.adminNote}</p>
-            </div>
+            <Alert tone="warning">
+              <p className="mb-1 font-semibold">{t('returns.detailAdminNote')}</p>
+              <p className="m-0">{detail.adminNote}</p>
+            </Alert>
           )}
 
           {/* Items */}
           {loadingDetail ? (
-            <p className="text-sm text-muted-foreground">Đang tải chi tiết…</p>
+            <p className="text-sm text-muted-foreground">{t('returns.modalLoading')}</p>
           ) : items.length > 0 && (
             <div>
               <p className="mb-2 font-semibold text-sm">{t('returns.detailItems')}</p>
               <table className="w-full text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-border">
-                    <th className="text-left py-1 font-semibold">Sản phẩm</th>
-                    <th className="text-center py-1 px-1.5 font-semibold">SL</th>
-                    <th className="text-right py-1 font-semibold">Đơn giá</th>
-                    <th className="text-right py-1 pl-1.5 font-semibold">Kiểm tra QC</th>
+                    <th className="text-left py-1 font-semibold">{t('returns.modalItemProduct')}</th>
+                    <th className="text-center py-1 px-1.5 font-semibold">{t('returns.modalItemQty')}</th>
+                    <th className="text-right py-1 font-semibold">{t('returns.modalItemPrice')}</th>
+                    <th className="text-right py-1 pl-1.5 font-semibold">{t('returns.modalItemQcResult')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -230,7 +203,7 @@ function ReturnDetailModal({ ret, onClose, onUpdate, canUpdate, navigate }) {
                         <td className="text-right py-1.5 pl-1.5">
                           {item.inspectionResult && (
                             <div className={`font-semibold ${item.inspectionResult === 'PASS' ? 'text-success' : 'text-danger'}`}>
-                              {item.inspectionResult === 'PASS' ? 'Đạt' : 'Không đạt'}
+                              {item.inspectionResult === 'PASS' ? t('returns.modalQcPass') : t('returns.modalQcFail')}
                             </div>
                           )}
                           {inspectable ? (
@@ -238,11 +211,11 @@ function ReturnDetailModal({ ret, onClose, onUpdate, canUpdate, navigate }) {
                               <Button type="button" size="sm"
                                 variant={item.inspectionResult === 'PASS' ? 'success' : 'outline'}
                                 disabled={busy}
-                                onClick={() => handleInspect(item.id, 'PASS')}>Đạt</Button>
+                                onClick={() => handleInspect(item.id, 'PASS')}>{t('returns.modalQcPass')}</Button>
                               <Button type="button" size="sm"
                                 variant={item.inspectionResult === 'FAIL' ? 'danger' : 'outline'}
                                 disabled={busy}
-                                onClick={() => handleInspect(item.id, 'FAIL')}>Không đạt</Button>
+                                onClick={() => handleInspect(item.id, 'FAIL')}>{t('returns.modalQcFail')}</Button>
                             </div>
                           ) : !item.inspectionResult ? (
                             <span className="text-muted-foreground">—</span>
@@ -266,8 +239,8 @@ function ReturnDetailModal({ ret, onClose, onUpdate, canUpdate, navigate }) {
                     <span className="text-muted-foreground whitespace-nowrap">{formatDateTime(h.createdAt)}</span>
                     <span>
                       {h.fromStatus
-                        ? <><StatusBadge status={h.fromStatus} />{' → '}<StatusBadge status={h.toStatus} /></>
-                        : <StatusBadge status={h.toStatus} />}
+                        ? <><StatusBadge type="return" status={h.fromStatus} />{' → '}<StatusBadge type="return" status={h.toStatus} /></>
+                        : <StatusBadge type="return" status={h.toStatus} />}
                       {h.note && <span className="text-muted-foreground"> — {h.note}</span>}
                     </span>
                   </div>
@@ -279,7 +252,7 @@ function ReturnDetailModal({ ret, onClose, onUpdate, canUpdate, navigate }) {
           {/* QC incomplete hint */}
           {detail.status === 'INSPECTING' && !allInspected && (
             <p className="text-sm text-warning">
-              Còn sản phẩm chưa có kết quả kiểm tra QC. Cần đánh dấu Đạt / Không đạt cho tất cả sản phẩm trước khi chuyển sang Hoàn thành hoặc Hoàn tiền.
+              {t('returns.modalQcWarning')}
             </p>
           )}
 
@@ -292,9 +265,9 @@ function ReturnDetailModal({ ret, onClose, onUpdate, canUpdate, navigate }) {
           {showUpdateForm && (
             <form onSubmit={handleSubmit} className="flex flex-col gap-2.5 border-t border-border pt-4">
               <div className="form-field">
-                <label className="field-label">Trạng thái mới *</label>
+                <label className="field-label">{t('returns.formNewStatus')} *</label>
                 <Select value={newStatus} onValueChange={setNewStatus} required><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-                  {next.map((s) => <SelectItem key={s} value={s}>{STATUS_LABELS_VI[s] ?? s}</SelectItem>)}
+                  {next.map((s) => <SelectItem key={s} value={s}>{t(`returns.status.${s}`, { defaultValue: s })}</SelectItem>)}
                 </SelectContent></Select>
               </div>
               {newStatus === 'REFUNDED' && (
@@ -311,10 +284,10 @@ function ReturnDetailModal({ ret, onClose, onUpdate, canUpdate, navigate }) {
               </div>
               {error && <p className="field-error">{error}</p>}
               <div className="flex gap-2">
-                <Button type="button" variant="outline" size="sm" onClick={() => setShowUpdateForm(false)}>Huỷ</Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => setShowUpdateForm(false)}>{t('returns.formCancel')}</Button>
                 <Button type="submit" size="sm" loading={saving}
                   disabled={!newStatus || (newStatus === 'REFUNDED' && !(Number(refundAmount) > 0))}>
-                  Xác nhận
+                  {t('returns.formConfirm')}
                 </Button>
               </div>
             </form>
@@ -360,8 +333,12 @@ export function ReturnListScreen({ canUpdate, navigate }) {
     {
       key: 'orderNumber', label: t('returns.colOrder'), skeletonWidth: '55%',
       render: (r) => r.orderNumber
-        ? <button type="button" className="bb-link font-mono text-xs"
-            onClick={() => navigate(`/admin/orders/${r.orderId}`)}>#{r.orderNumber}</button>
+        ? <Button
+            variant="link"
+            size="sm"
+            className="h-auto p-0 align-baseline font-mono text-xs"
+            onClick={() => navigate(`/admin/orders/${r.orderId}`)}
+          >#{r.orderNumber}</Button>
         : <span className="font-mono text-xs text-muted-foreground">{r.orderId?.slice(0, 8)}…</span>,
     },
     {
@@ -370,11 +347,11 @@ export function ReturnListScreen({ canUpdate, navigate }) {
     },
     {
       key: 'reason', label: t('returns.colReason'), skeletonWidth: '60%',
-      render: (r) => REASON_LABELS_VI[r.reason] ?? r.reason?.replace('_', ' '),
+      render: (r) => t(`returns.reason.${r.reason}`, { defaultValue: r.reason?.replace('_', ' ') }),
     },
     {
       key: 'status', label: t('returns.colStatus'), skeletonWidth: '45%',
-      render: (r) => <StatusBadge status={r.status} />,
+      render: (r) => <StatusBadge type="return" status={r.status} />,
     },
     {
       key: 'refundAmount', label: t('returns.colRefund'), align: 'right', skeletonWidth: '50%',
@@ -420,7 +397,11 @@ export function ReturnListScreen({ canUpdate, navigate }) {
           {t('returns.filterStatus')}
           <Select value={query.status}
             onValueChange={(val) => setQuery((q) => ({ ...q, status: val, page: 1 }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-            {STATUSES.map((s) => <SelectItem key={s} value={s}>{s === 'ALL' ? t('common.all') : (STATUS_LABELS_VI[s] ?? s)}</SelectItem>)}
+            {STATUSES.map((s) => (
+              <SelectItem key={s} value={s}>
+                {s === 'ALL' ? t('common.all') : t(`returns.status.${s}`, { defaultValue: s })}
+              </SelectItem>
+            ))}
           </SelectContent></Select>
         </label>
       </section>

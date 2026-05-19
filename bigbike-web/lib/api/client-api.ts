@@ -269,3 +269,24 @@ export async function fetchMyOrder(orderId: string): Promise<OrderDetail> {
   if (payload === null) throw new Error("Máy chủ không trả về dữ liệu hợp lệ.");
   return (payload as { data: OrderDetail }).data ?? (payload as OrderDetail);
 }
+
+// ── Warranty ──────────────────────────────────────────────────────────────────
+
+export type WarrantyLookupResult = {
+  serialNumber: string;
+  productName: string;
+  startDate: string;
+  endDate: string;
+  status: "ACTIVE" | "EXPIRED" | "VOIDED";
+  daysLeft: number;
+};
+
+export function lookupWarranty(serial: string): Promise<WarrantyLookupResult> {
+  return clientRequest("GET", `/api/v1/warranties/lookup?serial=${encodeURIComponent(serial)}`);
+}
+
+// ── Email verification ────────────────────────────────────────────────────────
+
+export function verifyEmail(token: string): Promise<void> {
+  return clientRequest<void>("POST", `/api/v1/customer/auth/verify-email?token=${encodeURIComponent(token)}`);
+}

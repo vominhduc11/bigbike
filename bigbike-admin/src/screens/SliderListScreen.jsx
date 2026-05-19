@@ -376,7 +376,7 @@ export function SliderListScreen({ canUpdate }) {
               <label className="form-field flex items-center gap-2">
                 <Checkbox
                   checked={form.isActive}
-                  onChange={(e) => setForm((p) => ({ ...p, isActive: e.target.checked }))}
+                  onCheckedChange={(checked) => setForm((p) => ({ ...p, isActive: checked === true }))}
                  />
                 {t('sliders.formIsActive')}
               </label>
@@ -419,7 +419,7 @@ export function SliderListScreen({ canUpdate }) {
               <Button type="submit" loading={isSaving}>
                 {editingId ? t('common.update') : t('sliders.saveBtn')}
               </Button>
-              <Button variant="outline" onClick={closeForm}>
+              <Button type="button" variant="outline" onClick={closeForm}>
                 {t('common.cancel')}
               </Button>
             </div>

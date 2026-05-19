@@ -253,7 +253,7 @@ export function MobileHeaderMenu({
                   </>
                 )}
                 {zaloUrl && (
-                  <a href={zaloUrl} target="_blank" rel="noreferrer">
+                  <a href={zaloUrl} target="_blank" rel="noopener noreferrer">
                     Zalo hỗ trợ nhanh
                   </a>
                 )}

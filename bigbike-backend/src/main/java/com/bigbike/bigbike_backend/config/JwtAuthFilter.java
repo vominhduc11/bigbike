@@ -38,7 +38,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 String email = claims.get("email", String.class);
                 String role = claims.get("role", String.class);
 
-                if (userId != null && role != null
+                if (userId != null && role != null && !role.isBlank()
                         && SecurityContextHolder.getContext().getAuthentication() == null) {
                     AdminPrincipal principal = new AdminPrincipal(userId, email, role);
                     List<SimpleGrantedAuthority> authorities = "SUPER_ADMIN".equals(role)

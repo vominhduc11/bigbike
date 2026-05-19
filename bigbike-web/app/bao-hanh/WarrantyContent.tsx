@@ -4,24 +4,10 @@ import { useState, useTransition } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { env } from "@/env";
+import { lookupWarranty, type WarrantyLookupResult } from "@/lib/api/client-api";
+import { formatDate } from "@/lib/utils/format";
 
-const API_BASE_URL = env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
-
-type WarrantyResult = {
-  serialNumber: string;
-  productName: string;
-  startDate: string;
-  endDate: string;
-  status: "ACTIVE" | "EXPIRED" | "VOIDED";
-  daysLeft: number;
-};
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("vi-VN");
-}
-
-function StatusBadge({ status, daysLeft }: { status: WarrantyResult["status"]; daysLeft: number }) {
+function StatusBadge({ status, daysLeft }: { status: WarrantyLookupResult["status"]; daysLeft: number }) {
   if (status === "VOIDED") {
     return <Badge variant="outline">{"Đã huỷ"}</Badge>;
   }
@@ -36,7 +22,7 @@ function StatusBadge({ status, daysLeft }: { status: WarrantyResult["status"]; d
 
 export function WarrantyContent() {
   const [serial, setSerial] = useState("");
-  const [result, setResult] = useState<WarrantyResult | null>(null);
+  const [result, setResult] = useState<WarrantyLookupResult | null>(null);
   const [error, setError] = useState("");
   const [isPending, startTransition] = useTransition();
 
@@ -50,18 +36,10 @@ export function WarrantyContent() {
 
     startTransition(async () => {
       try {
-        const res = await fetch(
-          `${API_BASE_URL}/api/v1/warranties/lookup?serial=${encodeURIComponent(trimmed)}`,
-          { headers: { Accept: "application/json" } }
-        );
-        const payload = await res.json() as { data?: WarrantyResult; error?: { message?: string } };
-        if (!res.ok) {
-          setError(payload.error?.message ?? "Không tìm thấy thông tin bảo hành.");
-          return;
-        }
-        setResult(payload.data ?? null);
-      } catch {
-        setError("Lỗi kết nối. Vui lòng thử lại.");
+        const data = await lookupWarranty(trimmed);
+        setResult(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Không tìm thấy thông tin bảo hành.");
       }
     });
   }

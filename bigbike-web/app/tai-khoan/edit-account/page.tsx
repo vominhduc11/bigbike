@@ -83,7 +83,7 @@ function EditAccountContent() {
         icon={<CircleUser className="h-7 w-7" strokeWidth={1.5} aria-hidden />}
       />
 
-      <p className="mb-5 text-sm leading-relaxed text-[#777777]">
+      <p className="mb-5 text-sm leading-relaxed text-muted-foreground">
         Từ trang Tài khoản, bạn có thể xem nhanh hoạt động mua hàng gần đây và cập nhật
         thông tin cá nhân của mình. Chọn một mục bên dưới để xem hoặc chỉnh sửa.
       </p>
@@ -134,7 +134,7 @@ function EditAccountContent() {
 
         {showPassword && (
           <div className="mt-4">
-            <p className="mb-3 text-sm text-[#777777]">
+            <p className="mb-3 text-sm text-muted-foreground">
               Xin vui lòng điền chính xác các thông tin để bảo vệ tài khoản Bigbike.
             </p>
             <div className="grid grid-cols-1 gap-x-6 gap-y-[18px] sm:grid-cols-3">

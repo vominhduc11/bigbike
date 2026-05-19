@@ -482,8 +482,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
     <th className="cat-select-cell">
       <Checkbox
         aria-label={t('categories.selectAllAria')}
-        checked={allCurrentSelected}
-        ref={(el) => { if (el) el.indeterminate = someCurrentSelected }}
+        checked={allCurrentSelected ? true : someCurrentSelected ? 'indeterminate' : false}
         onCheckedChange={toggleSelectAllOnPage}
         disabled={Boolean(bulkProgress) || currentPageIds.length === 0}
        />

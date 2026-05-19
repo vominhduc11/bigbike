@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   ArrowRight,
   Calendar,
@@ -14,16 +14,13 @@ import {
   Receipt,
   ShoppingBag,
 } from "lucide-react";
-import { fetchMyOrder, fetchMyOrders } from "@/lib/api/client-api";
-import type { OrderDetail, OrderListItem } from "@/lib/contracts/commerce";
+import type { OrderListItem } from "@/lib/contracts/commerce";
+import { useOrder, useOrders } from "@/lib/query/hooks";
 import { AccountSectionHeading, AccountShell } from "@/components/layout/AccountShell";
-import { formatDate, formatVnd, orderStatusLabel, paymentMethodLabel, resolveMediaUrl, safeText } from "@/lib/utils/format";
+import { formatAddress, formatDate, formatVnd, orderStatusLabel, paymentMethodLabel, resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { toOrderDetailPath } from "@/lib/utils/routes";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-function joinAddress(parts: (string | null | undefined)[]): string {
-  return parts.filter(Boolean).join(", ");
-}
 
 function OrderDetailModal({
   orderId,
@@ -34,23 +31,8 @@ function OrderDetailModal({
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
-  const [order, setOrder] = useState<OrderDetail | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    if (!open || !orderId) return;
-    let active = true;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLoading(true);
-    setError("");
-    setOrder(null);
-    fetchMyOrder(orderId)
-      .then((res) => { if (active) setOrder(res); })
-      .catch((e: Error) => { if (active) setError(e.message ?? "Không tải được đơn hàng."); })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
-  }, [open, orderId]);
+  const { data: order, isLoading: loading, error: queryError } = useOrder(open && orderId ? orderId : "");
+  const error = queryError ? (queryError as Error).message ?? "Không tải được đơn hàng." : "";
 
   const shipAddr =
     order?.addresses.find((a) => a.type.toUpperCase().includes("SHIP")) ??
@@ -74,11 +56,11 @@ function OrderDetailModal({
             {/* date + status */}
             <div className="flex flex-wrap items-center gap-5 border-b border-border pb-4 text-sm text-[#555555]">
               <span className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-[#9a9a9a]" aria-hidden />
+                <Calendar className="h-4 w-4 text-muted-foreground" aria-hidden />
                 {formatDate(order.placedAt)}
               </span>
               <span className="flex items-center gap-2">
-                <ClipboardList className="h-4 w-4 text-[#9a9a9a]" aria-hidden />
+                <ClipboardList className="h-4 w-4 text-muted-foreground" aria-hidden />
                 {orderStatusLabel(order.status)}
               </span>
             </div>
@@ -113,7 +95,7 @@ function OrderDetailModal({
                       {safeText(li.productName, "Sản phẩm")}
                     </p>
                     {li.variantName && (
-                      <p className="m-0 mt-0.5 text-sm text-[#777777]">{li.variantName}</p>
+                      <p className="m-0 mt-0.5 text-sm text-muted-foreground">{li.variantName}</p>
                     )}
                   </div>
                   <p className="m-0 shrink-0 text-sm text-[#555555]">
@@ -165,8 +147,8 @@ function OrderDetailModal({
                     {shipAddr.phone && <span>{shipAddr.phone}</span>}
                     {shipAddr.email && <span>{shipAddr.email}</span>}
                     <span className="flex items-start gap-1.5">
-                      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#9a9a9a]" aria-hidden />
-                      {joinAddress([shipAddr.addressLine1, shipAddr.ward, shipAddr.district, shipAddr.province])}
+                      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                      {formatAddress([shipAddr.addressLine1, shipAddr.ward, shipAddr.district, shipAddr.province])}
                     </span>
                   </div>
                 ) : (
@@ -198,28 +180,14 @@ function OrderDetailModal({
 }
 
 function OrderHistoryContent() {
-  const [orders, setOrders] = useState<OrderListItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [error, setError] = useState("");
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLoading(true);
-    fetchMyOrders(page)
-      .then((res) => {
-        setOrders(res.data);
-        setTotalPages(res.pagination?.totalPages ?? 1);
-        setError("");
-      })
-      .catch((e: Error | undefined) => {
-        if (e) setError(e.message ?? "Không tải được đơn hàng.");
-      })
-      .finally(() => setLoading(false));
-  }, [page]);
+  const { data, isLoading: loading, error: queryError } = useOrders(page);
+  const orders: OrderListItem[] = data?.data ?? [];
+  const totalPages = data?.pagination?.totalPages ?? 1;
+  const error = queryError ? (queryError as Error).message ?? "Không tải được đơn hàng." : "";
 
   function openOrder(id: string) {
     setActiveOrderId(id);
@@ -274,15 +242,15 @@ function OrderHistoryContent() {
                   </button>
                 </div>
                 <span className="flex items-center gap-2 text-sm text-[#555555]">
-                  <Receipt className="h-4 w-4 text-[#9a9a9a]" aria-hidden />
+                  <Receipt className="h-4 w-4 text-muted-foreground" aria-hidden />
                   {order.orderNumber}
                 </span>
                 <span className="flex items-center gap-2 text-sm text-[#555555]">
-                  <Calendar className="h-4 w-4 text-[#9a9a9a]" aria-hidden />
+                  <Calendar className="h-4 w-4 text-muted-foreground" aria-hidden />
                   {formatDate(order.placedAt)}
                 </span>
                 <span className="flex items-center gap-2 text-sm text-[#555555]">
-                  <ClipboardList className="h-4 w-4 text-[#9a9a9a]" aria-hidden />
+                  <ClipboardList className="h-4 w-4 text-muted-foreground" aria-hidden />
                   {orderStatusLabel(order.status)}
                 </span>
               </div>
@@ -301,7 +269,7 @@ function OrderHistoryContent() {
                 <ChevronLeft className="h-5 w-5" aria-hidden />
               </button>
               <span className="text-sm text-[#1a1a1a]">
-                {page} <span className="text-[#9a9a9a]">- {totalPages}</span>
+                {page} <span className="text-muted-foreground">- {totalPages}</span>
               </span>
               <button
                 type="button"

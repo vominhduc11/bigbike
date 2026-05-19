@@ -1,72 +1,65 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { AdminTable } from '../components/AdminTable'
 import { PaginationControls } from '../components/PaginationControls'
 import { StatePanel } from '../components/StatePanel'
 import { fetchNewsletterSubscribers } from '../lib/adminApi'
 import { formatDateTime } from '../lib/formatters'
+import { useAdminList } from '../lib/useAdminList'
 
 const INITIAL_QUERY = { page: 1, pageSize: 20 }
 
 export function NewsletterSubscribersScreen() {
+  const { t } = useTranslation()
   const [query, setQuery] = useState(INITIAL_QUERY)
-  const [state, setState] = useState({ status: 'loading', items: [], pagination: null })
 
-  useEffect(() => {
-    let active = true
-    fetchNewsletterSubscribers(query)
-      .then((r) => {
-        if (!active) return
-        setState({ status: 'success', items: r.items, pagination: r.pagination })
-      })
-      .catch((e) => {
-        if (!active) return
-        setState({ status: 'error', items: [], pagination: null, error: e.message })
-      })
-    return () => { active = false }
-  }, [query])
+  const { status, items, pagination, error, refetch } = useAdminList(
+    ['newsletter-subscribers', query],
+    () => fetchNewsletterSubscribers(query),
+  )
 
   const columns = useMemo(() => [
     {
-      key: 'email', label: 'Email', skeletonWidth: '70%',
+      key: 'email', label: t('newsletterSubscribers.colEmail'), skeletonWidth: '70%',
       render: (s) => <span className="font-medium">{s.email || '—'}</span>,
     },
     {
-      key: 'createdAt', label: 'Ngày đăng ký', align: 'right', skeletonWidth: '50%',
+      key: 'createdAt', label: t('newsletterSubscribers.colSignedUp'), align: 'right', skeletonWidth: '50%',
       render: (s) => <span className="text-xs">{formatDateTime(s.createdAt)}</span>,
     },
-  ], [])
+  ], [t])
 
   return (
     <section className="screen">
       <header className="screen-header">
         <div>
-          <p className="eyebrow">Marketing</p>
-          <h1>Email đăng ký nhận tin</h1>
-          <p>Danh sách email khách đăng ký qua ô đăng ký ở chân trang website.</p>
+          <p className="eyebrow">{t('newsletterSubscribers.eyebrow')}</p>
+          <h1>{t('newsletterSubscribers.title')}</h1>
+          <p>{t('newsletterSubscribers.description')}</p>
         </div>
       </header>
 
-      {state.status === 'error' && (
-        <StatePanel tone="danger" title="Không tải được danh sách"
-          description={state.error}
-          actionLabel="Thử lại" onAction={() => setQuery((q) => ({ ...q }))} />
+      {status === 'error' && (
+        <StatePanel tone="danger" title={t('newsletterSubscribers.loadError')}
+          description={error}
+          actionLabel={t('common.retry')} onAction={refetch} />
       )}
-      {state.status === 'success' && state.items.length === 0 && (
-        <StatePanel tone="neutral" title="Chưa có email đăng ký"
-          description="Email khách đăng ký nhận tin sẽ hiển thị ở đây." />
+      {status === 'success' && items.length === 0 && (
+        <StatePanel tone="neutral" title={t('newsletterSubscribers.empty')}
+          description={t('newsletterSubscribers.emptyDesc')} />
       )}
-      {(state.status === 'loading' || (state.status === 'success' && state.items.length > 0)) && (
+      {(status === 'loading' || (status === 'success' && items.length > 0)) && (
         <>
           <AdminTable
-            caption="Danh sách email đăng ký nhận tin"
+            caption={t('newsletterSubscribers.tableCaption')}
             columns={columns}
-            rows={state.items}
-            loading={state.status === 'loading'}
+            rows={items}
+            loading={status === 'loading'}
             pageSize={query.pageSize}
           />
-          {state.status === 'success' && state.pagination && (
+          {status === 'success' && pagination && (
             <PaginationControls
-              pagination={state.pagination}
+              pagination={pagination}
               onPageChange={(p) => setQuery((q) => ({ ...q, page: p }))}
             />
           )}

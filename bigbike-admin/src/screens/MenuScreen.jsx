@@ -267,7 +267,7 @@ function ItemForm({ value, onChange, parentOptions, t, isNew }) {
       <label className="form-checkbox">
         <Checkbox
           checked={value.openInNewTab}
-          onChange={(e) => onChange({ openInNewTab: e.target.checked })}
+          onCheckedChange={(checked) => onChange({ openInNewTab: checked === true })}
          />
         {t('menus.itemOpenInNewTab')}
       </label>

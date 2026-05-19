@@ -278,7 +278,7 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
                 <Button type="submit" disabled={editSaving}>
                   {editSaving ? 'Đang lưu...' : 'Lưu'}
                 </Button>
-                <Button variant="outline" onClick={handleEditCancel} disabled={editSaving}>
+                <Button type="button" variant="outline" onClick={handleEditCancel} disabled={editSaving}>
                   Hủy
                 </Button>
               </div>
@@ -424,7 +424,7 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
                 <label className="flex items-center gap-2">
                   <Checkbox
                     checked={creditForm.creditEnabled}
-                    onChange={(e) => setCreditForm((p) => ({ ...p, creditEnabled: e.target.checked }))}
+                    onCheckedChange={(checked) => setCreditForm((p) => ({ ...p, creditEnabled: checked === true }))}
                     disabled={creditSaving}
                    />
                   Cho phép bán chịu
@@ -478,7 +478,7 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
                   <Button type="submit" disabled={creditSaving}>
                     {creditSaving ? 'Đang lưu...' : 'Lưu'}
                   </Button>
-                  <Button variant="outline" onClick={() => setCreditEditOpen(false)} disabled={creditSaving}>
+                  <Button type="button" variant="outline" onClick={() => setCreditEditOpen(false)} disabled={creditSaving}>
                     Hủy
                   </Button>
                 </div>
@@ -579,7 +579,7 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
                   <Button type="submit" disabled={couponGiftSaving}>
                     {couponGiftSaving ? 'Đang gửi...' : 'Tạo & gửi mã'}
                   </Button>
-                  <Button variant="outline" onClick={() => setCouponGiftOpen(false)} disabled={couponGiftSaving}>
+                  <Button type="button" variant="outline" onClick={() => setCouponGiftOpen(false)} disabled={couponGiftSaving}>
                     Hủy
                   </Button>
                 </div>

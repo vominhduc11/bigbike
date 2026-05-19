@@ -19,24 +19,14 @@ import {
 import type { CartItem, CustomerAddress, PriceChange } from "@/lib/contracts/commerce";
 import { checkoutAddressSchema, type CheckoutAddressFormValues } from "@/lib/schemas/checkout";
 import { pushDataLayer } from "@/lib/analytics";
-import { formatVnd, paymentMethodLabel } from "@/lib/utils/format";
+import { formatAddress, formatVnd, paymentMethodLabel } from "@/lib/utils/format";
 import { toCartPath, toOrderConfirmPath } from "@/lib/utils/routes";
 import { CheckoutSkeleton } from "@/components/ui/Skeletons";
 import { VnAddressFields } from "@/components/ui/VnAddressFields";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
-function pickSetting(
-  settings: { settingKey: string; settingValue: string }[] | undefined,
-  keys: string[],
-): string {
-  if (!settings) return "";
-  for (const key of keys) {
-    const v = settings.find((s) => s.settingKey === key)?.settingValue?.trim();
-    if (v) return v;
-  }
-  return "";
-}
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { pickSetting } from "@/lib/utils/settings";
 
 function toGtmCartItems(items: CartItem[]) {
   return items.map((item) => ({
@@ -51,15 +41,6 @@ function toGtmCartItems(items: CartItem[]) {
 function pickDefaultAddress(addresses: CustomerAddress[]): CustomerAddress | null {
   if (!addresses.length) return null;
   return addresses.find((a) => a.isDefault) ?? addresses[0];
-}
-
-function formatAddressLine(a: {
-  addressLine1?: string | null;
-  ward?: string | null;
-  district?: string | null;
-  province?: string | null;
-}): string {
-  return [a.addressLine1, a.ward, a.district, a.province].filter(Boolean).join(", ");
 }
 
 type StepState = "active" | "done" | "todo";
@@ -296,6 +277,20 @@ export default function CheckoutPage() {
     );
   }
 
+  if (cart && cart.items.length === 0) {
+    return (
+      <div className="bb-container py-12 flex flex-col items-center gap-5 text-center">
+        <p className="m-0 font-display text-lg font-semibold uppercase text-foreground tracking-[0.04em]">
+          Giỏ hàng trống
+        </p>
+        <p className="m-0 text-sm text-muted-foreground">Bạn chưa thêm sản phẩm nào vào giỏ hàng.</p>
+        <Button asChild variant="primary">
+          <Link href={toCartPath()}>Xem giỏ hàng</Link>
+        </Button>
+      </div>
+    );
+  }
+
   const labelCls = "text-sm font-semibold tracking-[0.04em] text-foreground";
   const reqMark = <span className="text-brand ml-[3px]">*</span>;
 
@@ -339,57 +334,51 @@ export default function CheckoutPage() {
               {activeStep === 1 ? (
                 <div className="px-6 pb-[22px]">
                   {hasAddressBook && (
-                    <div className="flex flex-col gap-2.5 mb-4">
-                      <label className="flex items-center gap-2.5 cursor-pointer text-sm font-semibold text-foreground">
-                        <input
-                          type="radio"
-                          name="addressMode"
-                          checked={addressMode === "book"}
-                          onChange={() => setAddressMode("book")}
-                          className="accent-brand m-0"
-                        />
-                        Sổ địa chỉ
-                      </label>
-                      {addressMode === "book" && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-[14px] pl-[26px]">
-                          {addresses!.map((addr) => {
-                            const active = addr.id === selectedAddressId;
-                            return (
-                              <button
-                                type="button"
-                                key={addr.id}
-                                onClick={() => setSelectedAddressId(addr.id)}
-                                className={`text-left bg-white border p-4 transition-colors ${active ? "border-brand" : "border-border hover:border-[var(--bb-brand-primary-border)]"}`}
-                              >
-                                <div className="flex items-start justify-between gap-2">
-                                  <b className="font-semibold text-foreground text-sm">{addr.fullName ?? "—"}</b>
-                                  <span
-                                    className={`inline-flex w-[18px] h-[18px] rounded-full items-center justify-center flex-shrink-0 ${active ? "bg-brand text-white" : "border border-border"}`}
-                                  >
-                                    {active && <Check className="w-3 h-3" aria-hidden />}
-                                  </span>
-                                </div>
-                                <div className="mt-2 flex flex-col gap-1 text-sm text-muted-foreground">
-                                  {addr.phone && <span>{addr.phone}</span>}
-                                  {(addr.email ?? profile?.email) && <span>{addr.email ?? profile?.email}</span>}
-                                  <span>{formatAddressLine(addr) || "Chưa có địa chỉ"}</span>
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
+                    <div className="mb-4">
+                      <RadioGroup
+                        value={addressMode}
+                        onValueChange={(v) => setAddressMode(v as "book" | "new")}
+                        className="gap-2.5"
+                      >
+                        <label className="flex items-center gap-2.5 cursor-pointer text-sm font-semibold text-foreground">
+                          <RadioGroupItem value="book" id="addr-book" />
+                          <span>Sổ địa chỉ</span>
+                        </label>
+                        {addressMode === "book" && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-[14px] pl-[26px]">
+                            {addresses!.map((addr) => {
+                              const active = addr.id === selectedAddressId;
+                              return (
+                                <button
+                                  type="button"
+                                  key={addr.id}
+                                  onClick={() => setSelectedAddressId(addr.id)}
+                                  className={`text-left bg-white border p-4 transition-colors ${active ? "border-brand" : "border-border hover:border-[var(--bb-brand-primary-border)]"}`}
+                                >
+                                  <div className="flex items-start justify-between gap-2">
+                                    <b className="font-semibold text-foreground text-sm">{addr.fullName ?? "—"}</b>
+                                    <span
+                                      className={`inline-flex w-[18px] h-[18px] rounded-full items-center justify-center flex-shrink-0 ${active ? "bg-brand text-white" : "border border-border"}`}
+                                    >
+                                      {active && <Check className="w-3 h-3" aria-hidden />}
+                                    </span>
+                                  </div>
+                                  <div className="mt-2 flex flex-col gap-1 text-sm text-muted-foreground">
+                                    {addr.phone && <span>{addr.phone}</span>}
+                                    {(addr.email ?? profile?.email) && <span>{addr.email ?? profile?.email}</span>}
+                                    <span>{formatAddress([addr.addressLine1, addr.ward, addr.district, addr.province]) || "Chưa có địa chỉ"}</span>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
 
-                      <label className="flex items-center gap-2.5 cursor-pointer text-sm font-semibold text-foreground">
-                        <input
-                          type="radio"
-                          name="addressMode"
-                          checked={addressMode === "new"}
-                          onChange={() => setAddressMode("new")}
-                          className="accent-brand m-0"
-                        />
-                        Giao đến địa chỉ khác
-                      </label>
+                        <label className="flex items-center gap-2.5 cursor-pointer text-sm font-semibold text-foreground">
+                          <RadioGroupItem value="new" id="addr-new" />
+                          <span>Giao đến địa chỉ khác</span>
+                        </label>
+                      </RadioGroup>
                     </div>
                   )}
 
@@ -482,7 +471,7 @@ export default function CheckoutPage() {
                   <b className="text-foreground">{resolvedAddress.fullName}</b>
                   {resolvedAddress.phone ? ` · ${resolvedAddress.phone}` : ""}
                   <br />
-                  {formatAddressLine(resolvedAddress)}
+                  {formatAddress([resolvedAddress.addressLine1, resolvedAddress.ward, resolvedAddress.district, resolvedAddress.province])}
                 </div>
               )}
             </div>
@@ -501,21 +490,18 @@ export default function CheckoutPage() {
                   {optionsLoading ? (
                     <p className="text-muted-foreground text-sm m-0">Đang tải phương thức thanh toán...</p>
                   ) : checkoutOptions?.paymentMethods.length ? (
-                    <div className="flex flex-col">
+                    <RadioGroup
+                      value={paymentMethod}
+                      onValueChange={setPaymentMethod}
+                      className="gap-0"
+                    >
                       {checkoutOptions.paymentMethods.map((method) => {
                         const code = method.code.toUpperCase();
                         const checked = paymentMethod === method.code;
                         return (
                           <div key={method.code}>
                             <label className="flex items-center gap-3 py-3 cursor-pointer border-b border-border last:border-b-0">
-                              <input
-                                type="radio"
-                                name="paymentMethod"
-                                value={method.code}
-                                checked={checked}
-                                onChange={() => setPaymentMethod(method.code)}
-                                className="accent-brand m-0"
-                              />
+                              <RadioGroupItem value={method.code} id={`pm-${method.code}`} />
                               <b className="flex-1 text-sm text-foreground font-semibold">{method.title}</b>
                             </label>
 
@@ -601,7 +587,7 @@ export default function CheckoutPage() {
                           </div>
                         );
                       })}
-                    </div>
+                    </RadioGroup>
                   ) : (
                     <p className="text-brand text-sm m-0">
                       Phương thức thanh toán tạm thời không khả dụng. Vui lòng thử lại hoặc liên hệ hỗ trợ.
@@ -725,7 +711,7 @@ export default function CheckoutPage() {
                   <div className="mt-1 flex flex-col gap-0.5 text-sm text-muted-foreground">
                     {resolvedAddress.phone && <span>{resolvedAddress.phone}</span>}
                     {resolvedAddress.email && <span>{resolvedAddress.email}</span>}
-                    <span>{formatAddressLine(resolvedAddress)}</span>
+                    <span>{formatAddress([resolvedAddress.addressLine1, resolvedAddress.ward, resolvedAddress.district, resolvedAddress.province])}</span>
                   </div>
                 </div>
               )}
@@ -745,9 +731,10 @@ export default function CheckoutPage() {
       </div>
 
       {/* Mobile sticky action bar — total + step CTA. Hidden on desktop where the
-          step cards keep their own inline buttons. */}
+          step cards keep their own inline buttons. Right padding clears the
+          floating chat button so it never covers the CTA. */}
       <div className="fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border lg:hidden">
-        <div className="bb-container py-3 flex items-center justify-between gap-4">
+        <div className="bb-container py-3 pr-20 flex items-center justify-between gap-4">
           <div className="flex flex-col">
             <span className="text-xs text-muted-foreground leading-none">Tổng</span>
             <b className="font-display text-lg text-brand font-bold tracking-[0.01em]">{formatVnd(grandTotal)}</b>

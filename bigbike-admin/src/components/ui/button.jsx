@@ -35,6 +35,7 @@ export function Button({
   loading = false,
   disabled,
   children,
+  type = 'button',
   ...props
 }) {
   const Comp = asChild ? Slot : 'button'
@@ -47,6 +48,7 @@ export function Button({
   const hideChildren = showSpinner && size === 'icon'
   return (
     <Comp
+      type={asChild ? undefined : type}
       className={cn(buttonVariants({ variant, size, className }))}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
