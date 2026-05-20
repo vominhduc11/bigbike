@@ -27,6 +27,7 @@ public record OrderDetailResponse(
         String refundReason,
         Instant refundedAt,
         Instant placedAt,
+        String channel,
         List<OrderLineItemResponse> lineItems,
         List<OrderAddressResponse> addresses,
         List<OrderShippingItemResponse> shippingItems,

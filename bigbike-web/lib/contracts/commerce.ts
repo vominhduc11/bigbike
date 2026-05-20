@@ -13,6 +13,7 @@ export type CartItem = {
   lineSubtotal: number
   lineDiscount: number
   lineTotal: number
+  available: boolean
 }
 
 export type CartTotals = {
@@ -158,7 +159,7 @@ export type OrderNote = {
 export type OrderDetail = {
   id: string
   orderNumber: string
-  orderKey: string
+  orderKey: string | null
   status: string
   paymentStatus: string
   fulfillmentStatus: string
@@ -177,6 +178,7 @@ export type OrderDetail = {
   refundReason: string | null
   refundedAt: string | null
   placedAt: string
+  channel?: string
   lineItems: OrderLineItem[]
   addresses: OrderAddress[]
   shippingItems: OrderShippingItem[]
@@ -217,6 +219,7 @@ export type OrderListItem = {
   placedAt: string
   itemCount: number
   productNames?: string[]
+  channel?: string
 }
 
 export type CustomerAddress = {
@@ -301,4 +304,33 @@ export type CreateReturnPayload = {
   reason: string
   customerNote?: string
   items: CreateReturnItemPayload[]
+}
+
+export type ReturnEligibilityReason =
+  | "OK"
+  | "ORDER_NOT_FOUND"
+  | "NOT_OWNER"
+  | "ORDER_NOT_COMPLETED"
+  | "WINDOW_EXPIRED"
+  | "RETURN_IN_PROGRESS"
+  | "NOTHING_TO_RETURN"
+
+export type ReturnEligibilityItem = {
+  orderLineItemId: string
+  productName: string
+  variantName: string | null
+  sku: string | null
+  orderedQuantity: number
+  alreadyReturnedQuantity: number
+  returnableQuantity: number
+  unitPrice: number
+}
+
+export type ReturnEligibility = {
+  orderId: string
+  orderStatus: string | null
+  eligible: boolean
+  reason: ReturnEligibilityReason
+  daysRemaining: number | null
+  items: ReturnEligibilityItem[]
 }

@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { createReturn, fetchMyOrder, fetchMyOrders, fetchMyReturn, fetchMyReturns } from "@/lib/api/client-api";
-import type { CustomerReturn, OrderLineItem, OrderListItem } from "@/lib/contracts/commerce";
+import { createReturn, fetchMyOrders, fetchMyReturn, fetchMyReturns, fetchReturnEligibility } from "@/lib/api/client-api";
+import type { CustomerReturn, OrderListItem, ReturnEligibility, ReturnEligibilityItem, ReturnEligibilityReason } from "@/lib/contracts/commerce";
 import { AccountShell } from "@/components/layout/AccountShell";
 import { formatDate, formatVnd } from "@/lib/utils/format";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const RETURN_STATUS_KEYS = ["PENDING", "APPROVED", "REJECTED", "RECEIVED", "COMPLETED", "REFUNDED"] as const;
+const RETURN_STATUS_KEYS = ["PENDING", "APPROVED", "REJECTED", "RECEIVED", "INSPECTING", "COMPLETED", "REFUNDED"] as const;
 const RETURN_REASON_KEYS = ["DEFECTIVE", "WRONG_ITEM", "NOT_AS_DESCRIBED", "CHANGED_MIND", "OTHER"] as const;
 type ReturnStatusKey = (typeof RETURN_STATUS_KEYS)[number];
 type ReturnReasonKey = (typeof RETURN_REASON_KEYS)[number];
@@ -40,6 +40,7 @@ function returnStatusTone(status: string): StatusTone {
     REFUNDED: "success",
     APPROVED: "warning",
     RECEIVED: "warning",
+    INSPECTING: "warning",
     REJECTED: "danger",
   };
   return map[status] ?? "neutral";
@@ -189,8 +190,8 @@ function ReturnsContent() {
   const [returnableOrders, setReturnableOrders] = useState<OrderListItem[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState("");
-  const [selectedLineItems, setSelectedLineItems] = useState<OrderLineItem[]>([]);
-  const [lineItemsLoading, setLineItemsLoading] = useState(false);
+  const [eligibility, setEligibility] = useState<ReturnEligibility | null>(null);
+  const [eligibilityLoading, setEligibilityLoading] = useState(false);
   const [itemSelections, setItemSelections] = useState<Record<string, { selected: boolean; quantity: number }>>({});
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
@@ -236,25 +237,30 @@ function ReturnsContent() {
     setFormError("");
     setFormSuccess("");
     setSelectedOrderId("");
-    setSelectedLineItems([]);
+    setEligibility(null);
     setItemSelections({});
   }
 
   async function handleOrderChange(orderId: string) {
     setSelectedOrderId(orderId);
-    setSelectedLineItems([]);
+    setEligibility(null);
     setItemSelections({});
     if (!orderId) return;
-    setLineItemsLoading(true);
+    setEligibilityLoading(true);
     try {
-      const detail = await fetchMyOrder(orderId);
-      const items = detail.lineItems ?? [];
-      setSelectedLineItems(items);
-      setItemSelections(Object.fromEntries(items.map((li) => [li.id, { selected: false, quantity: 1 }])));
+      const elig = await fetchReturnEligibility(orderId);
+      setEligibility(elig);
+      if (elig.eligible) {
+        setItemSelections(Object.fromEntries(
+          elig.items
+            .filter((it) => it.returnableQuantity > 0)
+            .map((it) => [it.orderLineItemId, { selected: false, quantity: 1 }])
+        ));
+      }
     } catch {
-      setSelectedLineItems([]);
+      setEligibility(null);
     } finally {
-      setLineItemsLoading(false);
+      setEligibilityLoading(false);
     }
   }
 
@@ -278,9 +284,13 @@ function ReturnsContent() {
     if (!selectedOrderId) { setFormError(t("errorPickOrder")); return; }
     if (!reason) { setFormError(t("errorPickReason")); return; }
 
-    const items = selectedLineItems
-      .filter((li) => itemSelections[li.id]?.selected)
-      .map((li) => ({ orderLineItemId: li.id, quantity: itemSelections[li.id].quantity }));
+    const eligibleItems: ReturnEligibilityItem[] = eligibility?.items ?? [];
+    const items = eligibleItems
+      .filter((it) => itemSelections[it.orderLineItemId]?.selected)
+      .map((it) => ({
+        orderLineItemId: it.orderLineItemId,
+        quantity: itemSelections[it.orderLineItemId].quantity,
+      }));
 
     if (items.length === 0) { setFormError(t("errorPickItem")); return; }
 
@@ -356,32 +366,38 @@ function ReturnsContent() {
               {selectedOrderId && (
                 <div className="flex flex-col gap-1.5 col-span-full">
                   <label className="text-sm font-bold tracking-[0.14em] uppercase text-muted-foreground mb-2 block">{t("pickItemLabel")}</label>
-                  {lineItemsLoading ? (
+                  {eligibilityLoading ? (
                     <span className="bb-skel bb-skel--text" style={{ width: "100%", display: "block", height: 32 }} />
-                  ) : selectedLineItems.length === 0 ? (
+                  ) : !eligibility ? (
                     <p className="text-sm text-muted-foreground">{t("noItemsInOrder")}</p>
+                  ) : !eligibility.eligible ? (
+                    <div className="bg-[var(--bb-state-warning-bg)] border border-[var(--bb-state-warning-border)] p-[14px_18px] text-sm text-[var(--bb-state-warning-text)]">
+                      <p className="m-0">{t(`eligibility.${eligibility.reason as ReturnEligibilityReason}`)}</p>
+                    </div>
                   ) : (
-                    selectedLineItems.map((li) => (
-                      <div key={li.id} className="flex items-center gap-2.5 mb-2.5">
+                    eligibility.items
+                      .filter((it) => it.returnableQuantity > 0)
+                      .map((it) => (
+                      <div key={it.orderLineItemId} className="flex items-center gap-2.5 mb-2.5">
                         <Checkbox
-                          id={`dt-item-${li.id}`}
-                          checked={itemSelections[li.id]?.selected ?? false}
-                          onCheckedChange={() => toggleLineItem(li.id)}
+                          id={`dt-item-${it.orderLineItemId}`}
+                          checked={itemSelections[it.orderLineItemId]?.selected ?? false}
+                          onCheckedChange={() => toggleLineItem(it.orderLineItemId)}
                         />
-                        <label htmlFor={`dt-item-${li.id}`} className="flex-1 cursor-pointer text-sm">
-                          {li.productName}
-                          {li.variantName ? <span className="text-muted-foreground"> ({li.variantName})</span> : null}
-                          <span className="ml-1.5 text-muted-foreground">×{li.quantity}</span>
+                        <label htmlFor={`dt-item-${it.orderLineItemId}`} className="flex-1 cursor-pointer text-sm">
+                          {it.productName}
+                          {it.variantName ? <span className="text-muted-foreground"> ({it.variantName})</span> : null}
+                          <span className="ml-1.5 text-muted-foreground">×{it.returnableQuantity}</span>
                         </label>
-                        {itemSelections[li.id]?.selected && (
+                        {itemSelections[it.orderLineItemId]?.selected && (
                           <Input
                             type="number"
                             min={1}
-                            max={li.quantity}
-                            value={itemSelections[li.id].quantity}
-                            onChange={(e) => setLineItemQty(li.id, Number(e.target.value), li.quantity)}
+                            max={it.returnableQuantity}
+                            value={itemSelections[it.orderLineItemId].quantity}
+                            onChange={(e) => setLineItemQty(it.orderLineItemId, Number(e.target.value), it.returnableQuantity)}
                             className="w-16 text-center"
-                            aria-label={t("lineQuantityAria", { productName: li.productName })}
+                            aria-label={t("lineQuantityAria", { productName: it.productName })}
                           />
                         )}
                       </div>
@@ -414,7 +430,7 @@ function ReturnsContent() {
               </div>
             </div>
             <div className="flex gap-3 mt-5">
-              <Button type="submit" variant="primary" disabled={submitting || !selectedOrderId || lineItemsLoading}>
+              <Button type="submit" variant="primary" disabled={submitting || !selectedOrderId || eligibilityLoading || !eligibility?.eligible}>
                 {submitting ? t("submitting") : t("submit")}
               </Button>
               <Button type="button" variant="secondary" onClick={closeForm} disabled={submitting}>

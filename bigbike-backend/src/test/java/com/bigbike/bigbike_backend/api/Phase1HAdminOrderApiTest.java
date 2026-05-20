@@ -42,6 +42,7 @@ import org.springframework.test.context.jdbc.Sql;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
@@ -1348,6 +1349,35 @@ class Phase1HAdminOrderApiTest {
                 .andExpect(status().isConflict());
     }
 
+    // ── RETURNED fulfillment transitions — BUG-001 regression guard ──────────
+    @Test
+    void updateFulfillment_shippedToReturned_isAllowed() throws Exception {
+        OrderInfo order = placeGuestOrder(9700000);
+        patchFulfillment(order.orderId, "{\"fulfillmentStatus\":\"PROCESSING\"}").andExpect(status().isOk());
+        patchFulfillment(order.orderId, "{\"fulfillmentStatus\":\"SHIPPED\",\"trackingNumber\":\"TRK-RET-001\",\"shippingCarrier\":\"GHN\"}").andExpect(status().isOk());
+        patchFulfillment(order.orderId, "{\"fulfillmentStatus\":\"RETURNED\"}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.fulfillmentStatus").value("RETURNED"));
+    }
+
+    @Test
+    void updateFulfillment_deliveredToReturned_isAllowed() throws Exception {
+        OrderInfo order = placeGuestOrder(9800000);
+        markDelivered(order.orderId);
+        patchFulfillment(order.orderId, "{\"fulfillmentStatus\":\"RETURNED\"}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.fulfillmentStatus").value("RETURNED"));
+    }
+
+    @Test
+    void updateFulfillment_returnedIsTerminal() throws Exception {
+        OrderInfo order = placeGuestOrder(9900000);
+        markDelivered(order.orderId);
+        patchFulfillment(order.orderId, "{\"fulfillmentStatus\":\"RETURNED\"}").andExpect(status().isOk());
+        patchFulfillment(order.orderId, "{\"fulfillmentStatus\":\"DELIVERED\"}")
+                .andExpect(status().isConflict());
+    }
+
     // ── Refund PROCESSING+PAID order flips order status to REFUNDED ───────────
     @Test
     void createRefund_processingPaidOrder_flipsOrderStatusToRefunded() throws Exception {
@@ -1418,6 +1448,13 @@ class Phase1HAdminOrderApiTest {
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private ResultActions patchFulfillment(UUID orderId, String body) throws Exception {
+        return mockMvc.perform(patch("/api/v1/admin/orders/" + orderId + "/fulfillment")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body)
+                .header("Authorization", "Bearer " + adminToken));
+    }
 
     /**
      * Drive the DELIVERY fulfillment state machine to DELIVERED so an admin can

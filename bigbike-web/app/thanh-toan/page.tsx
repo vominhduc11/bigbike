@@ -26,8 +26,11 @@ import { CheckoutSkeleton } from "@/components/ui/Skeletons";
 import { VnAddressFields } from "@/components/ui/VnAddressFields";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { BBTooltip } from "@/components/ui/BBTooltip";
 import { pickSetting } from "@/lib/utils/settings";
+import { getVietnamRegion } from "@/lib/utils/vn-region";
 
 function toGtmCartItems(items: CartItem[]) {
   return items.map((item) => ({
@@ -87,6 +90,7 @@ export default function CheckoutPage() {
   const [gtmFired, setGtmFired] = useState(false);
   // Order-summary collapse — toggleable on mobile only; desktop is always expanded.
   const [summaryOpen, setSummaryOpen] = useState(true);
+  const [customerNote, setCustomerNote] = useState("");
   const idempotencyKey = useRef<string>(crypto.randomUUID());
   const hasPrefilledRef = useRef(false);
 
@@ -238,6 +242,10 @@ export default function CheckoutPage() {
       setSubmitError(t("errorShippingUnavailable"));
       return;
     }
+    if (paymentMethod === "BACS" && !resolvedAddress.email?.trim()) {
+      setSubmitError(t("errorEmailRequiredForBacs"));
+      return;
+    }
     setSubmitError("");
     setSubmitting(true);
     try {
@@ -255,6 +263,7 @@ export default function CheckoutPage() {
           },
           shippingMethodId: shippingMethodId || null,
           paymentMethod,
+          customerNote: customerNote.trim() || undefined,
         },
         idempotencyKey.current,
       );
@@ -496,6 +505,81 @@ export default function CheckoutPage() {
 
               {activeStep === 2 && (
                 <div className="px-6 pb-[22px]">
+                  {/* ── Shipping method picker ─── */}
+                  {optionsLoading ? null : (() => {
+                    const methods = checkoutOptions?.shippingMethods ?? [];
+                    if (methods.length === 0) return null;
+                    const userRegion = step1Done ? getVietnamRegion(resolvedAddress.province) : null;
+                    if (methods.length === 1) {
+                      const m = methods[0];
+                      const cost = (m.freeShippingThreshold != null && m.freeShippingThreshold > 0 && cartSubtotal >= m.freeShippingThreshold)
+                        ? 0
+                        : m.cost;
+                      return (
+                        <div className="mb-5">
+                          <p className="m-0 mb-2 font-display font-semibold text-sm uppercase text-foreground tracking-[0.04em]">
+                            {t("shippingMethodSectionTitle")}
+                          </p>
+                          <p className="m-0 text-sm text-foreground">
+                            {m.title} — <span className="italic text-muted-foreground">{cost > 0 ? formatVnd(cost) : t("shippingMethodFree")}</span>
+                          </p>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="mb-5">
+                        <p className="m-0 mb-2 font-display font-semibold text-sm uppercase text-foreground tracking-[0.04em]">
+                          {t("shippingMethodSectionTitle")}
+                        </p>
+                        <RadioGroup
+                          value={shippingMethodId}
+                          onValueChange={setShippingMethodId}
+                          className="gap-0"
+                        >
+                          {methods.map((m) => {
+                            const cost = (m.freeShippingThreshold != null && m.freeShippingThreshold > 0 && cartSubtotal >= m.freeShippingThreshold)
+                              ? 0
+                              : m.cost;
+                            const zoneMismatch =
+                              m.zoneRegionCode != null &&
+                              userRegion !== null &&
+                              userRegion !== m.zoneRegionCode;
+                            const radio = (
+                              <label
+                                className={cn(
+                                  "flex items-center gap-3 py-3 cursor-pointer border-b border-border last:border-b-0",
+                                  zoneMismatch && "opacity-50 cursor-not-allowed",
+                                )}
+                              >
+                                <RadioGroupItem
+                                  value={m.id}
+                                  id={`sm-${m.id}`}
+                                  disabled={zoneMismatch}
+                                />
+                                <span className="flex-1 text-sm text-foreground font-semibold">
+                                  {m.title}
+                                </span>
+                                <span className="text-sm text-muted-foreground italic">
+                                  {cost > 0 ? formatVnd(cost) : t("shippingMethodFree")}
+                                </span>
+                              </label>
+                            );
+                            return (
+                              <div key={m.id}>
+                                {zoneMismatch ? (
+                                  <BBTooltip content={t("shippingZoneMismatch")}>
+                                    {radio}
+                                  </BBTooltip>
+                                ) : radio}
+                              </div>
+                            );
+                          })}
+                        </RadioGroup>
+                      </div>
+                    );
+                  })()}
+
+                  {/* ── Payment method picker ─── */}
                   {optionsLoading ? (
                     <p className="text-muted-foreground text-sm m-0">{t("paymentLoading")}</p>
                   ) : checkoutOptions?.paymentMethods.length ? (
@@ -542,6 +626,19 @@ export default function CheckoutPage() {
                       {t("paymentNone")}
                     </p>
                   )}
+
+                  {/* ── Order note ─── */}
+                  <div className="flex flex-col gap-1.5 mt-5">
+                    <label className={labelCls}>{t("noteLabel")}</label>
+                    <Textarea
+                      placeholder={t("notePlaceholder")}
+                      value={customerNote}
+                      onChange={(e) => setCustomerNote(e.target.value)}
+                      maxLength={1000}
+                      rows={3}
+                      className="resize-none"
+                    />
+                  </div>
 
                   {belowMinOrder && minOrderAmount && (
                     <p className="text-sm text-brand mt-3 m-0">

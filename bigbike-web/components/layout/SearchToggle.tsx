@@ -4,12 +4,15 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
+import { Search, X, Clock, ArrowRight, ImageIcon } from "lucide-react";
 import { BBTooltip } from "@/components/ui/BBTooltip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useFocusTrap } from "@/lib/ui/focus-trap";
+import { Dialog, DialogPortal } from "@/components/ui/dialog";
 import { toProductListPath, toProductPath } from "@/lib/utils/routes";
 import { formatVnd, resolveMediaUrl } from "@/lib/utils/format";
+import { cn } from "@/lib/utils";
 
 const STORAGE_KEY = "bb_recent_searches";
 const MAX_RECENT = 6;
@@ -31,6 +34,7 @@ function getRecentSearches(): string[] {
 }
 
 function saveSearch(query: string): void {
+  if (query.trim().length < 2) return;
   try {
     const prev = getRecentSearches().filter((s) => s !== query);
     localStorage.setItem(
@@ -55,19 +59,11 @@ export function SearchToggle() {
   const [suggestLoading, setSuggestLoading] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
-  const shellRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const router = useRouter();
   const listboxId = useId();
   const optionIdPrefix = useId();
-
-  useFocusTrap(shellRef, {
-    active: open,
-    initialFocusRef: inputRef,
-    lockScroll: true,
-    onEscape: () => setOpen(false),
-  });
 
   useEffect(() => {
     if (open) {
@@ -218,40 +214,29 @@ export function SearchToggle() {
           type="button"
           onClick={() => setOpen((o) => !o)}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <circle cx="11" cy="11" r="8" />
-            <path d="m21 21-4.35-4.35" />
-          </svg>
+          <Search size={20} aria-hidden />
         </Button>
       </BBTooltip>
 
-      {open && (
-        <>
-          <div className="bb-search-overlay" onClick={() => setOpen(false)} aria-hidden="true" />
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogPortal>
+          {/* Overlay bắt đầu từ dưới header — giữ logo/nav hiển thị (z-overlay 400 > z-header 200) */}
+          <DialogPrimitive.Overlay className="fixed left-0 right-0 bottom-0 top-[var(--bb-header-stack)] z-[var(--bb-z-overlay)] bg-black/80 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 duration-200" />
 
-          <div
-            ref={shellRef}
-            className="bb-search-shell"
-            role="dialog"
-            aria-modal="true"
-            aria-label={t("dialogAriaLabel")}
+          {/* Panel tìm kiếm: khung nổi hẹp, canh giữa dưới header */}
+          <DialogPrimitive.Content
+            onOpenAutoFocus={(e) => {
+              e.preventDefault();
+              inputRef.current?.focus();
+            }}
+            className="fixed left-1/2 top-[calc(var(--bb-header-stack)+1rem)] z-[var(--bb-z-modal)] flex max-h-[calc(100dvh-var(--bb-header-stack)-2rem)] w-[min(calc(100vw-2rem),960px)] -translate-x-1/2 flex-col overflow-hidden border border-border bg-background text-foreground shadow-[var(--bb-shadow-lg)] data-[state=open]:animate-in data-[state=open]:slide-in-from-top-2 data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:slide-out-to-top-2 data-[state=closed]:fade-out-0 duration-300"
           >
-            <Button
-              type="button"
-              variant="ghost"
-              className="bb-search-close"
-              aria-label={t("closeAriaLabel")}
-              onClick={() => setOpen(false)}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
-                <path d="M18 6 6 18M6 6l12 12" />
-              </svg>
-              <span>ESC</span>
-            </Button>
+            <DialogPrimitive.Title className="sr-only">{t("dialogAriaLabel")}</DialogPrimitive.Title>
 
+            {/* Thanh tìm kiếm */}
             <form
-              className="bb-search-bar"
               role="search"
+              className="flex w-full items-center gap-3.5 border-b border-border bg-background py-3.5 pl-5 pr-5 sm:pl-6 sm:pr-6"
               onSubmit={(e) => {
                 e.preventDefault();
                 if (activeIndex >= 0 && activeList[activeIndex]) {
@@ -261,10 +246,7 @@ export function SearchToggle() {
                 }
               }}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.35-4.35" />
-              </svg>
+              <Search size={20} className="shrink-0 text-brand" aria-hidden />
 
               <Input
                 ref={inputRef}
@@ -280,38 +262,48 @@ export function SearchToggle() {
                 aria-autocomplete="list"
                 aria-activedescendant={activeDescendant}
                 aria-label={t("inputAriaLabel")}
+                className="flex-1 min-h-0 border-0 bg-transparent px-0 py-0 shadow-none text-17 font-medium text-foreground placeholder:text-muted-foreground hover:border-0 focus:border-0 focus:shadow-none"
               />
 
-              {suggestLoading && <span className="bb-search-spinner" aria-hidden="true" />}
+              {suggestLoading && (
+                <span
+                  className="size-4 shrink-0 animate-spin rounded-full border-2 border-border border-t-brand"
+                  aria-hidden="true"
+                />
+              )}
 
               {query && !suggestLoading && (
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="bb-search-clear"
+                  className="size-6 shrink-0 rounded-none text-muted-foreground hover:bg-brand hover:text-primary-foreground"
                   aria-label={t("clearAriaLabel")}
                   onClick={() => {
                     setQuery("");
                     inputRef.current?.focus();
                   }}
                 >
-                  ✕
+                  <X size={14} aria-hidden />
                 </Button>
               )}
             </form>
 
-            {/* Instant suggestions */}
+            {/* Gợi ý sản phẩm */}
             {hasSuggestions && (
-              <div className="bb-search-body">
-                <div className="bb-search-main">
-                  <div className="bb-search-block">
-                    <div className="bb-search-block-head">
-                      <span className="label">{t("suggestionsLabel")}</span>
-                      <span className="count">{suggestions.length}</span>
+              <div className="w-full min-h-0 overflow-y-auto">
+                <div className="px-[clamp(1rem,4vw,2.5rem)] py-4 bg-background">
+                  <div className="mb-5 last:mb-0">
+                    <div className="flex items-center justify-between mb-2 px-1">
+                      <span className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
+                        {t("suggestionsLabel")}
+                      </span>
+                      <span className="text-sm font-bold px-1.5 py-0.5 bg-brand/15 text-brand">
+                        {suggestions.length}
+                      </span>
                     </div>
                     <ul
-                      className="bb-search-suggest-list"
+                      className="flex flex-col gap-0.5 list-none p-0 m-0"
                       id={listboxId}
                       role="listbox"
                       aria-label={t("suggestAriaLabel")}
@@ -321,43 +313,48 @@ export function SearchToggle() {
                         const isActive = idx === activeIndex;
                         const thumb = resolveMediaUrl(p.image?.url ?? undefined);
                         return (
-                          <li key={p.id}>
+                          <li key={p.id} className="list-none">
                             <Link
                               href={toProductPath(p.slug)}
                               id={optionId(idx)}
                               role="option"
                               aria-selected={isActive}
                               data-active={isActive ? "true" : undefined}
-                              className="bb-search-suggest-item data-[active=true]:bg-white/10 data-[active=true]:text-white"
+                              className={cn(
+                                "flex items-center gap-3 px-2.5 py-2 text-sm no-underline transition-colors duration-[120ms]",
+                                "text-foreground hover:bg-accent hover:text-foreground",
+                                "data-[active=true]:bg-accent data-[active=true]:text-foreground",
+                              )}
                               onClick={() => {
                                 saveSearch(p.name);
                                 setOpen(false);
                               }}
                               onMouseEnter={() => setActiveIndex(idx)}
                             >
-                              <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden bg-white/5">
+                              <span className="flex size-10 shrink-0 items-center justify-center overflow-hidden border border-border bg-secondary">
                                 {thumb ? (
                                   // eslint-disable-next-line @next/next/no-img-element
                                   <img src={thumb} alt="" width={40} height={40} loading="lazy" className="h-full w-full object-cover" />
                                 ) : (
-                                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-white/50" aria-hidden="true">
-                                    <rect x="3" y="3" width="18" height="18" rx="2" />
-                                    <circle cx="9" cy="9" r="2" />
-                                    <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
-                                  </svg>
+                                  <ImageIcon size={18} className="text-muted-foreground" aria-hidden />
                                 )}
                               </span>
-                              <span className="bb-search-suggest-name">{p.name}</span>
+                              <span className="flex-1 min-w-0 truncate">{p.name}</span>
                               {price != null && price > 0 && (
-                                <span className="bb-search-suggest-price">{formatVnd(price)}</span>
+                                <span className="shrink-0 text-sm font-bold text-brand">{formatVnd(price)}</span>
                               )}
                             </Link>
                           </li>
                         );
                       })}
                     </ul>
-                    <div className="bb-search-suggest-all">
-                      <Button type="button" variant="ghost" className="tiny" onClick={() => doSearch(query)}>
+                    <div className="px-2.5 pt-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="h-auto p-0 text-sm text-brand bg-transparent hover:underline"
+                        onClick={() => doSearch(query)}
+                      >
                         {t("viewAllResultsBtn", { query: query.trim() })}
                       </Button>
                     </div>
@@ -366,25 +363,21 @@ export function SearchToggle() {
               </div>
             )}
 
-            {/* Empty state when no matches */}
+            {/* Không có kết quả */}
             {showEmpty && (
-              <div className="bb-search-body">
-                <div className="bb-search-main">
+              <div className="w-full min-h-0 overflow-y-auto">
+                <div className="px-[clamp(1rem,4vw,2.5rem)] py-4 bg-background">
                   <div className="flex flex-col items-center justify-center gap-3 px-4 py-10 text-center">
-                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-white/50" aria-hidden="true">
-                      <circle cx="11" cy="11" r="8" />
-                      <path d="m21 21-4.35-4.35" />
-                      <path d="M8 11h6" />
-                    </svg>
-                    <p className="text-sm text-white/80">
+                    <Search size={36} className="text-muted-foreground" aria-hidden />
+                    <p className="text-sm text-foreground">
                       {t("noMatchText", { query: query.trim() })}
                     </p>
-                    <p className="text-sm text-white/40">
+                    <p className="text-sm text-muted-foreground">
                       {t("noResultDescription")}{" "}
                       <Link
                         href={toProductListPath()}
                         onClick={() => setOpen(false)}
-                        className="text-[var(--bb-brand-primary)] hover:underline"
+                        className="text-brand hover:underline"
                       >
                         {t("noMatchBrowse")}
                       </Link>
@@ -396,24 +389,31 @@ export function SearchToggle() {
 
             {/* Lịch sử tìm kiếm */}
             {showHistoryBlock && (
-              <div className="bb-search-body">
-                <div className="bb-search-main">
-                  <div className="bb-search-block">
-                    <div className="bb-search-block-head">
-                      <span className="label">{t("recentLabel")}</span>
+              <div className="w-full min-h-0 overflow-y-auto">
+                <div className="px-[clamp(1rem,4vw,2.5rem)] py-4 bg-background">
+                  <div className="mb-5 last:mb-0">
+                    <div className="flex items-center justify-between mb-2 px-1">
+                      <span className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
+                        {t("recentLabel")}
+                      </span>
                       {recent.length > 0 && (
-                        <Button type="button" variant="ghost" className="tiny" onClick={clearRecent}>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="h-auto p-0 text-sm font-bold uppercase tracking-widest bg-transparent text-muted-foreground hover:text-brand"
+                          onClick={clearRecent}
+                        >
                           {t("recentClear")}
                         </Button>
                       )}
                     </div>
                     {recent.length === 0 ? (
-                      <p className="m-0 px-2.5 py-3 text-sm text-white/45">
+                      <p className="m-0 px-2.5 py-3 text-sm text-muted-foreground">
                         {t("recentEmpty")}
                       </p>
                     ) : (
                       <ul
-                        className="bb-search-recent"
+                        className="flex flex-col gap-0.5 list-none p-0 m-0"
                         id={listboxId}
                         role="listbox"
                         aria-label={t("recentAriaLabel")}
@@ -421,7 +421,7 @@ export function SearchToggle() {
                         {recent.map((s, idx) => {
                           const isActive = idx === activeIndex;
                           return (
-                            <li key={s}>
+                            <li key={s} className="list-none">
                               <Button
                                 type="button"
                                 variant="ghost"
@@ -429,18 +429,16 @@ export function SearchToggle() {
                                 role="option"
                                 aria-selected={isActive}
                                 data-active={isActive ? "true" : undefined}
-                                className="data-[active=true]:bg-white/10 data-[active=true]:text-white"
+                                className={cn(
+                                  "group w-full justify-start gap-2.5 rounded-none px-2.5 py-2 text-sm text-foreground hover:bg-accent hover:text-foreground",
+                                  "data-[active=true]:bg-accent data-[active=true]:text-foreground",
+                                )}
                                 onClick={() => doSearch(s)}
                                 onMouseEnter={() => setActiveIndex(idx)}
                               >
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                                  <path d="M3 3v5h5" />
-                                </svg>
-                                <span>{s}</span>
-                                <svg className="arr" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                  <path d="M5 12h14M12 5l7 7-7 7" />
-                                </svg>
+                                <Clock size={14} className="shrink-0 text-muted-foreground" aria-hidden />
+                                <span className="flex-1 min-w-0 truncate text-left">{s}</span>
+                                <ArrowRight size={14} className="shrink-0 text-muted-foreground opacity-0 transition-opacity duration-[120ms] group-hover:opacity-100 group-hover:text-brand" aria-hidden />
                               </Button>
                             </li>
                           );
@@ -452,26 +450,34 @@ export function SearchToggle() {
               </div>
             )}
 
-            <div className="bb-search-footer">
-              <span className="bb-search-shortcut">
-                <kbd>↑↓</kbd> {t("footerMove")}
+            {/* Footer: phím tắt bàn phím */}
+            <div className="flex w-full flex-wrap items-center gap-x-5 gap-y-2 border-t border-border bg-secondary px-5 py-3 sm:px-6">
+              <span className="flex items-center gap-1.5 text-sm uppercase tracking-widest text-muted-foreground">
+                <kbd className="font-body min-w-5 border border-border bg-background px-1.5 py-0.5 text-center text-sm font-bold text-foreground">↑↓</kbd>
+                {t("footerMove")}
               </span>
-              <span className="bb-search-shortcut">
-                <kbd>↵</kbd> {t("footerSelect")}
+              <span className="flex items-center gap-1.5 text-sm uppercase tracking-widest text-muted-foreground">
+                <kbd className="font-body min-w-5 border border-border bg-background px-1.5 py-0.5 text-center text-sm font-bold text-foreground">↵</kbd>
+                {t("footerSelect")}
               </span>
-              <span className="bb-search-shortcut">
-                <kbd>ESC</kbd> {t("footerClose")}
+              <span className="flex items-center gap-1.5 text-sm uppercase tracking-widest text-muted-foreground">
+                <kbd className="font-body min-w-5 border border-border bg-background px-1.5 py-0.5 text-center text-sm font-bold text-foreground">ESC</kbd>
+                {t("footerClose")}
               </span>
-              <span className="bb-search-footer-spacer" />
-              <span className="bb-search-hint">
-                <Link href={toProductListPath()} onClick={() => setOpen(false)}>
+              <span className="flex-1" />
+              <span className="text-sm text-muted-foreground">
+                <Link
+                  href={toProductListPath()}
+                  onClick={() => setOpen(false)}
+                  className="font-bold text-brand no-underline hover:underline"
+                >
                   {t("footerBrowse")}
                 </Link>
               </span>
             </div>
-          </div>
-        </>
-      )}
+          </DialogPrimitive.Content>
+        </DialogPortal>
+      </Dialog>
     </>
   );
 }

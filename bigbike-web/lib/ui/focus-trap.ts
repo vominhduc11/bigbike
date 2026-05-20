@@ -57,6 +57,7 @@ export function useFocusTrap(
     const previouslyFocused =
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const previousOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflowY;
     const hadTabIndex = trapRoot.hasAttribute("tabindex");
 
     if (!hadTabIndex) {
@@ -64,6 +65,7 @@ export function useFocusTrap(
     }
     if (lockScroll) {
       document.body.style.overflow = "hidden";
+      document.documentElement.style.overflowY = "hidden";
     }
 
     const focusTarget =
@@ -108,6 +110,7 @@ export function useFocusTrap(
       }
       if (lockScroll) {
         document.body.style.overflow = previousOverflow;
+        document.documentElement.style.overflowY = previousHtmlOverflow;
       }
       if (restoreFocus && previouslyFocused?.isConnected) {
         previouslyFocused.focus({ preventScroll: true });

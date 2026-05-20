@@ -67,7 +67,7 @@ export default async function BrandListPage({ searchParams }: BrandListPageProps
   const heroSettings = readHeroSettings(settingsResult.data ?? [], "hero_brands");
 
   return (
-    <section className="bb-page">
+    <>
       <PageHero
         imageUrl={heroSettings.imageUrl}
         imageAlt={heroSettings.imageAlt}
@@ -77,6 +77,7 @@ export default async function BrandListPage({ searchParams }: BrandListPageProps
           { label: "Thương hiệu" },
         ]}
       />
+      <section className="bb-page">
       <div className="bb-container">
 
         {result.error && result.data.length === 0 ? (
@@ -111,18 +112,16 @@ export default async function BrandListPage({ searchParams }: BrandListPageProps
               <PaginationNav
                 page={result.pagination.page}
                 totalPages={result.pagination.totalPages}
-                makeHref={(nextPage) =>
-                  `${toBrandListPath()}${buildQueryString({
-                    page: nextPage,
+                baseHref={`${toBrandListPath()}${buildQueryString({
                     size: sizeParsed.value,
                     sort: sortParsed.value,
-                  })}`
-                }
+                  })}`}
               />
             ) : null}
           </>
         )}
       </div>
-    </section>
+      </section>
+    </>
   );
 }

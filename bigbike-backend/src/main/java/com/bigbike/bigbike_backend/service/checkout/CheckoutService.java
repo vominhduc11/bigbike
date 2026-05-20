@@ -66,6 +66,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
 @RequiredArgsConstructor
@@ -257,9 +259,14 @@ public class CheckoutService {
         cart.setUpdatedAt(now);
         cartRepo.save(cart);
 
-        orderNotificationService.sendOrderConfirmation(savedOrder, req.paymentMethod());
-        orderNotificationService.sendAdminNewOrderNotification(savedOrder, req.paymentMethod());
-        adminOrderWsService.pushEvent(buildNewOrderEvent(savedOrder, req.paymentMethod()));
+        OrderEntity orderSnapshot = savedOrder;
+        String paymentMethodSnapshot = req.paymentMethod();
+        var newOrderEvent = buildNewOrderEvent(savedOrder, req.paymentMethod());
+        runAfterCommit(() -> {
+            orderNotificationService.sendOrderConfirmation(orderSnapshot, paymentMethodSnapshot);
+            orderNotificationService.sendAdminNewOrderNotification(orderSnapshot, paymentMethodSnapshot);
+            adminOrderWsService.pushEvent(newOrderEvent);
+        });
 
         attachOrderToReservation(idempotency, savedOrder.getId(), now);
         webRevalidationService.revalidateProductsForOrder(savedOrder.getId());
@@ -403,9 +410,14 @@ public class CheckoutService {
                 "Quick-buy đơn hàng được tạo. Phương thức thanh toán: " + req.paymentMethod() +
                 ". Sản phẩm: " + product.getName() + " x" + qty + ".", now));
 
-        orderNotificationService.sendOrderConfirmation(savedOrder, req.paymentMethod());
-        orderNotificationService.sendAdminNewOrderNotification(savedOrder, req.paymentMethod());
-        adminOrderWsService.pushEvent(buildNewOrderEvent(savedOrder, req.paymentMethod()));
+        OrderEntity quickSnapshot = savedOrder;
+        String quickPm = req.paymentMethod();
+        var quickOrderEvent = buildNewOrderEvent(savedOrder, req.paymentMethod());
+        runAfterCommit(() -> {
+            orderNotificationService.sendOrderConfirmation(quickSnapshot, quickPm);
+            orderNotificationService.sendAdminNewOrderNotification(quickSnapshot, quickPm);
+            adminOrderWsService.pushEvent(quickOrderEvent);
+        });
 
         attachOrderToReservation(idempotency, savedOrder.getId(), now);
         webRevalidationService.revalidateProductsForOrder(savedOrder.getId());
@@ -858,6 +870,10 @@ public class CheckoutService {
             ProductEntity product = productRepo.findByIdForUpdate(cartItem.getProductId().toString())
                     .orElseThrow(() -> new ConflictException(
                             "Product no longer exists: " + cartItem.getProductName()));
+            if (product.getPublishStatus() != PublishStatus.PUBLISHED) {
+                throw new ConflictException(
+                        "Sản phẩm '" + cartItem.getProductName() + "' không còn được bán.");
+            }
 
             ProductVariantEntity variant = null;
             if (cartItem.getProductVariantId() != null) {
@@ -1010,6 +1026,19 @@ public class CheckoutService {
     private UUID tryParseUUID(String id) {
         if (id == null) return null;
         try { return UUID.fromString(id); } catch (IllegalArgumentException e) { return null; }
+    }
+
+    private void runAfterCommit(Runnable action) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    action.run();
+                }
+            });
+        } else {
+            action.run();
+        }
     }
 
     private OrderWsEvent buildNewOrderEvent(OrderEntity order, String paymentMethod) {

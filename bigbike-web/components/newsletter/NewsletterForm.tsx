@@ -57,20 +57,20 @@ export function NewsletterForm() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-2" noValidate>
-      <div className="flex">
+      <div className="flex items-stretch">
         <Input
           type="email"
           name="email"
           placeholder={t("placeholder")}
           aria-label={t("ariaLabel")}
           required
-          className="h-11 flex-1 rounded-none border-0 bg-card text-card-foreground"
+          className="flex-1 rounded-none border-0 bg-card text-card-foreground"
         />
         <Button
           type="submit"
           variant="primary"
           disabled={saving}
-          className="h-11 shrink-0 rounded-none px-6"
+          className="self-stretch shrink-0 rounded-none px-6"
         >
           {saving ? t("submitting") : t("submit")}
         </Button>

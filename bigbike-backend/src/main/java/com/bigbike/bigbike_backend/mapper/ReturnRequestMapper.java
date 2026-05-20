@@ -6,6 +6,7 @@ import com.bigbike.bigbike_backend.api.order.dto.CustomerReturnResponse;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.returns.ReturnEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.returns.ReturnHistoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.returns.ReturnItemEntity;
+import java.math.BigDecimal;
 import java.util.List;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -34,12 +35,20 @@ public interface ReturnRequestMapper {
 
     @Mapping(target = "orderNumber", source = "orderNumber")
     @Mapping(target = "customerEmail", source = "customerEmail")
+    @Mapping(target = "orderPaidAmount", source = "orderPaidAmount")
+    @Mapping(target = "orderRefundedAmount", source = "orderRefundedAmount")
+    @Mapping(target = "orderRefundableAmount", source = "orderRefundableAmount")
+    @Mapping(target = "fullReturnCoverage", source = "fullReturnCoverage")
     @Mapping(target = "items", source = "items")
     @Mapping(target = "history", source = "history")
     AdminReturnDetailResponse toAdminDetail(
             ReturnEntity entity,
             String orderNumber,
             String customerEmail,
+            BigDecimal orderPaidAmount,
+            BigDecimal orderRefundedAmount,
+            BigDecimal orderRefundableAmount,
+            boolean fullReturnCoverage,
             List<AdminReturnDetailResponse.ReturnItemResponse> items,
             List<AdminReturnDetailResponse.ReturnHistoryResponse> history
     );

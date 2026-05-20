@@ -559,7 +559,7 @@ export function PurchaseSectionClient({
           disabled={busy || !isAvailable}
           className="flex-1"
         >
-          {buyLoading ? "Đang xử lý..." : "Mua ngay"}
+          {buyLoading ? t("buyNowProcessing") : t("buyNow")}
         </Button>
       </div>
     </>

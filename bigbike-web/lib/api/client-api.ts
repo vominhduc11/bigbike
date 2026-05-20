@@ -11,6 +11,7 @@ import type {
   OrderListItem,
   OrderSummary,
   QuickBuyPayload,
+  ReturnEligibility,
   SaveAddressPayload,
   UpdateCustomerProfilePayload,
 } from "@/lib/contracts/commerce";
@@ -48,6 +49,7 @@ async function clientRequest<T>(
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 
+  if (res.status === 204) return undefined as T;
   const payload = await res.json().catch(() => null);
   if (!res.ok) {
     const msg = (payload as { error?: { message?: string } } | null)?.error?.message ?? `HTTP ${res.status}`;
@@ -226,6 +228,10 @@ export function fetchMyReturn(returnId: string): Promise<CustomerReturn> {
 
 export function createReturn(orderId: string, payload: CreateReturnPayload): Promise<CustomerReturn> {
   return clientRequest("POST", `/api/v1/customer/orders/${encodeURIComponent(orderId)}/returns`, payload);
+}
+
+export function fetchReturnEligibility(orderId: string): Promise<ReturnEligibility> {
+  return clientRequest("GET", `/api/v1/customer/orders/${encodeURIComponent(orderId)}/return-eligibility`);
 }
 
 // ── Wishlist ──────────────────────────────────────────────────────────────────

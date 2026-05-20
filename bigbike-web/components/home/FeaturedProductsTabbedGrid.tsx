@@ -45,9 +45,10 @@ export function FeaturedProductsTabbedGrid({ products }: Props) {
   if (products.length === 0 || tabs.length === 0) return null;
 
   const productsForTab = (key: string): Product[] =>
-    key === SALE_TAB
+    (key === SALE_TAB
       ? products.filter(isOnSale)
-      : products.filter((p) => p.category?.id === key);
+      : products.filter((p) => p.category?.id === key)
+    ).slice(0, 4);
 
   return (
     <Tabs value={active} onValueChange={setActive}>
@@ -68,7 +69,7 @@ export function FeaturedProductsTabbedGrid({ products }: Props) {
       )}
       {tabs.map((t) => (
         <TabsContent key={t.key} value={t.key} className="mt-0">
-          <div className="grid grid-cols-4 gap-5 max-[900px]:grid-cols-3 max-[600px]:grid-cols-2">
+          <div className="grid grid-cols-4 gap-5 max-[900px]:grid-cols-3 max-[600px]:grid-cols-2 max-[575px]:grid-cols-1">
             {productsForTab(t.key).map((p) => (
               <ProductCard key={p.id} product={p} variant="featured" />
             ))}

@@ -22,7 +22,7 @@ export function ProductTabs({ sections }: { sections: ProductTabSection[] }) {
   return (
     <section className="mx-auto mt-14 max-w-[1440px] px-4 sm:px-6">
       <Tabs defaultValue={sections[0].id}>
-        <TabsList className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <TabsList className="sticky top-[var(--bb-header-stack)] z-10 bg-background overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden shadow-[0_2px_6px_rgba(0,0,0,0.06)]">
           {sections.map((section) => (
             <TabsTrigger key={section.id} value={section.id} className="shrink-0">
               {section.label}

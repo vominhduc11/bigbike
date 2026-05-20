@@ -113,10 +113,10 @@ export async function SiteHeader() {
 
           <div className="bb-right-header">
             <nav
-              className="bb-navigation"
+              className="bb-navigation flex flex-1 items-stretch h-full min-w-0 justify-center max-[1199px]:hidden"
               aria-label={navigationLabel}
             >
-              <ul className="bb-header-nav">
+              <ul className="bb-header-nav flex items-stretch h-full m-0 p-0 list-none">
                 {resolvedMenuTree.map((node) => (
                   <HeaderNavItem key={node.id} node={node} />
                 ))}
@@ -124,7 +124,9 @@ export async function SiteHeader() {
             </nav>
 
             <div className="bb-user-control">
-              <LanguageSwitcher />
+              <div className="max-[639px]:hidden self-center">
+                <LanguageSwitcher />
+              </div>
               <SearchToggle />
               <CartIcon />
               <HeaderUserMenu />

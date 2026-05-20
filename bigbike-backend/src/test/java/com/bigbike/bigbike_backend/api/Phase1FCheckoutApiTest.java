@@ -455,6 +455,25 @@ class Phase1FCheckoutApiTest {
                 .andExpect(status().isConflict());
     }
 
+    @Test
+    void checkout_withUnpublishedProduct_returns409() throws Exception {
+        // Product starts PUBLISHED so the cart API accepts it
+        ProductEntity product = createTestProduct("Checkout Unpublished Product", 2600000, null, PublishStatus.PUBLISHED);
+        GuestSession session = newGuestSession();
+        addProductToGuestCart(session, product.getId().toString(), 1);
+
+        // Simulate product being hidden after it was added to the cart
+        product.setPublishStatus(PublishStatus.DRAFT);
+        productRepo.save(product);
+
+        // Checkout must reject because the product is no longer PUBLISHED
+        mockMvc.perform(post("/api/v1/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isConflict());
+    }
+
     // ── Product-level serial (no variant) — Issue 1 regression guard ─────────
     // Before fix: validate pass counted IN_STOCK serials but apply-stock pass
     // skipped serial reservation entirely (only handled manageStock/stockQuantity).

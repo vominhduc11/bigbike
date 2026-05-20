@@ -114,8 +114,10 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
     : toArticleListPath();
   const relatedProducts = article.relatedProducts ?? [];
   const canonicalUrl = toCanonicalUrl(toArticlePath(article.slug));
+  const breadcrumbTitle =
+    articleTitle.length > 50 ? articleTitle.slice(0, 50) + "…" : articleTitle;
   const fbShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(canonicalUrl)}`;
-  const twShareUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(canonicalUrl)}&text=${encodeURIComponent(articleTitle)}`;
+  const xShareUrl = `https://x.com/intent/tweet?url=${encodeURIComponent(canonicalUrl)}&text=${encodeURIComponent(articleTitle)}`;
 
   return (
     <>
@@ -128,7 +130,8 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
         title={heroSettings.title ?? t("title")}
         breadcrumb={[
           { label: tBreadcrumb("home"), href: toHomePath() },
-          { label: t("breadcrumb") },
+          { label: t("breadcrumb"), href: toArticleListPath() },
+          { label: breadcrumbTitle },
         ]}
       />
 
@@ -155,7 +158,7 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
           </time>
         </div>
 
-        <h1 className="font-display text-[clamp(1.7rem,3vw,2.5rem)] uppercase tracking-[0.01em] leading-[1.15] m-0 mb-4 text-foreground">
+        <h1 className="font-display text-[clamp(1.7rem,3vw,2.5rem)] uppercase tracking-[0.01em] leading-[1.15] m-0 mb-4 text-foreground pr-14 sm:pr-0">
           {articleTitle}
         </h1>
 
@@ -177,7 +180,7 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
             href={fbShareUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-[6px] px-[14px] py-[7px] text-sm font-bold no-underline transition-opacity hover:opacity-80 bg-[#1877f2] text-white"
+            className="inline-flex items-center gap-[6px] px-[14px] py-[7px] text-sm font-bold no-underline transition-opacity hover:opacity-80 bg-social-facebook text-white"
             aria-label={t("shareToFacebook")}
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
@@ -186,16 +189,16 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
             Facebook
           </a>
           <a
-            href={twShareUrl}
+            href={xShareUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-[6px] px-[14px] py-[7px] text-sm font-bold no-underline transition-opacity hover:opacity-80 bg-[#1da1f2] text-white"
-            aria-label={t("shareToTwitter")}
+            className="inline-flex items-center gap-[6px] px-[14px] py-[7px] text-sm font-bold no-underline transition-opacity hover:opacity-80 bg-foreground text-background"
+            aria-label={t("shareToX")}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d="M23 4.6a8.3 8.3 0 0 1-2.4.66A4.18 4.18 0 0 0 22.4 3a8.36 8.36 0 0 1-2.65 1.02 4.16 4.16 0 0 0-7.1 3.8A11.8 11.8 0 0 1 4.2 3.5a4.16 4.16 0 0 0 1.29 5.55A4.1 4.1 0 0 1 3.6 8.5v.05a4.16 4.16 0 0 0 3.34 4.08 4.2 4.2 0 0 1-1.88.07 4.17 4.17 0 0 0 3.89 2.89A8.36 8.36 0 0 1 2 17.3a11.78 11.78 0 0 0 6.38 1.87c7.66 0 11.85-6.34 11.85-11.84 0-.18 0-.36-.01-.54A8.4 8.4 0 0 0 23 4.6Z" />
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
             </svg>
-            Twitter
+            X
           </a>
         </div>
       </article>

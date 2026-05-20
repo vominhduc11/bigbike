@@ -2,7 +2,7 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { LOCALES, LOCALE_COOKIE, type Locale } from "@/i18n/locale";
 
 /**
@@ -16,17 +16,24 @@ export function LanguageSwitcher() {
   const locale = useLocale() as Locale;
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [queuedLocale, setQueuedLocale] = useState<Locale | null>(null);
+
+  useEffect(() => {
+    if (!queuedLocale) return;
+    if (queuedLocale === locale) return;
+
+    document.cookie = `${LOCALE_COOKIE}=${queuedLocale}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
+    startTransition(() => router.refresh());
+  }, [locale, queuedLocale, router, startTransition]);
 
   function selectLocale(next: Locale) {
     if (next === locale) return;
-    // 1 year — opt-in preference; same-site by default so it travels on every nav.
-    document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
-    startTransition(() => router.refresh());
+    setQueuedLocale(next);
   }
 
   return (
     <div
-      className="inline-flex items-center gap-0.5 rounded-none border border-border bg-background text-xs font-medium"
+      className="inline-flex h-11 self-center items-stretch rounded-none border border-white/15 bg-white/5 text-xs font-bold"
       role="group"
       aria-label={t("label")}
     >
@@ -40,10 +47,10 @@ export function LanguageSwitcher() {
             disabled={isPending}
             aria-pressed={active}
             className={
-              "px-2.5 py-1 uppercase transition-colors " +
+              "min-w-11 px-2.5 font-cta uppercase transition-colors disabled:cursor-wait disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-brand focus-visible:outline-offset-[-2px] " +
               (active
-                ? "bg-foreground text-background"
-                : "text-foreground/70 hover:bg-foreground/5")
+                ? "bg-brand text-white"
+                : "text-white/70 hover:bg-white/5 hover:text-white focus-visible:bg-white/10 focus-visible:text-white")
             }
           >
             {code}

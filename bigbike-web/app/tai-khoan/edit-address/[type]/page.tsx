@@ -11,10 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { VnAddressFields } from "@/components/ui/VnAddressFields";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 // 2020-mockup field label: gray, sentence-case, red asterisk appended.
-const LEGACY_LABEL = "text-sm text-[#555555]";
+const LEGACY_LABEL = "text-sm text-muted-foreground";
 
 function ReqMark() {
   return <span className="text-brand">*</span>;
@@ -35,9 +35,15 @@ function AddressForm({ editing, accountEmail, saving, error, onSubmit }: Address
     district: editing?.district ?? "",
     ward: editing?.ward ?? "",
   });
+  const [vnError, setVnError] = useState("");
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (!vnAddress.province || !vnAddress.district || !vnAddress.ward) {
+      setVnError(t("errorRequiredAddress"));
+      return;
+    }
+    setVnError("");
     const fd = new FormData(e.currentTarget);
     const email = (fd.get("email") as string).trim();
     onSubmit({
@@ -100,11 +106,15 @@ function AddressForm({ editing, accountEmail, saving, error, onSubmit }: Address
           />
         </div>
         <div className="sm:col-span-2 grid grid-cols-1 gap-x-6 gap-y-[18px] sm:grid-cols-3">
+          {vnError && (
+            <p className="sm:col-span-3 text-sm text-destructive">{vnError}</p>
+          )}
           <VnAddressFields
             value={vnAddress}
             onChange={(field, val) => setVnAddress((prev) => ({ ...prev, [field]: val }))}
             required
             labelClassName={LEGACY_LABEL}
+            selectContentClassName="z-[var(--bb-z-modal-dropdown)]"
           />
         </div>
       </div>
@@ -113,7 +123,7 @@ function AddressForm({ editing, accountEmail, saving, error, onSubmit }: Address
         {/* Default-address toggle only on "add" — the 2020 edit modal has none;
             an existing address is made default via the card's "Đặt mặc định" button. */}
         {!editing && (
-          <label className="flex items-center gap-2 text-sm text-[#555555]">
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
             <Checkbox name="isDefault" defaultChecked={false} />
             {t("setDefault")}
           </label>
@@ -264,7 +274,7 @@ function AddressBookContent() {
                   className={`border bg-white p-5 ${addr.isDefault ? "border-[var(--bb-brand-primary-border)]" : "border-border"}`}
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <b className="font-display text-base font-semibold text-[#1a1a1a]">
+                    <b className="font-display text-base font-semibold text-foreground">
                       {addr.fullName ?? "—"}
                     </b>
                     <span className="shrink-0 text-sm text-muted-foreground">
@@ -272,7 +282,7 @@ function AddressBookContent() {
                     </span>
                   </div>
 
-                  <div className="mt-4 flex flex-col gap-[10px] text-sm text-[#555555]">
+                  <div className="mt-4 flex flex-col gap-[10px] text-sm text-muted-foreground">
                     {addr.phone && (
                       <p className="m-0 flex items-center gap-2.5">
                         <Phone className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
@@ -315,7 +325,7 @@ function AddressBookContent() {
                         type="button"
                         onClick={() => openEdit(addr)}
                         aria-label={t("editAria")}
-                        className="p-1.5 text-[#555555] hover:text-brand"
+                        className="p-1.5 text-muted-foreground hover:text-brand"
                       >
                         <SquarePen className="h-[18px] w-[18px]" aria-hidden />
                       </button>
@@ -323,7 +333,7 @@ function AddressBookContent() {
                         type="button"
                         onClick={() => handleDelete(addr)}
                         aria-label={t("deleteAria")}
-                        className="p-1.5 text-[#555555] hover:text-brand"
+                        className="p-1.5 text-muted-foreground hover:text-brand"
                       >
                         <Trash2 className="h-[18px] w-[18px]" aria-hidden />
                       </button>
@@ -364,6 +374,7 @@ function AddressBookContent() {
         <DialogContent className="max-w-[920px] w-[calc(100%-32px)] p-0">
           <DialogHeader className="p-6">
             <DialogTitle>{editing ? t("modalUpdate") : t("modalAdd")}</DialogTitle>
+            <DialogDescription className="sr-only">{editing ? t("modalUpdate") : t("modalAdd")}</DialogDescription>
           </DialogHeader>
           <AddressForm
             key={editing?.id ?? "new"}

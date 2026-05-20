@@ -9,7 +9,7 @@ export function RatingStars({ value }: RatingStarsProps) {
 
   return (
     <span
-      className="relative inline-block whitespace-nowrap leading-none text-[#767676]"
+      className="relative inline-block whitespace-nowrap leading-none text-muted-foreground"
       aria-label={`${normalized.toFixed(1)} sao`}
       title={`${normalized.toFixed(1)} sao`}
     >

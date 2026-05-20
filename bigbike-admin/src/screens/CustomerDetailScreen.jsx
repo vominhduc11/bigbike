@@ -210,7 +210,7 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
 
       {state.warning && <ReadOnlyBanner warning={state.warning} />}
 
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <DetailSection title={t('customers.detail.sectionAccount')}>
           <p><strong>{t('customers.detail.email')}</strong> {formatText(customer.email)}</p>
           <p><strong>{t('customers.detail.phone')}</strong> {formatText(customer.phone)}</p>
@@ -288,7 +288,7 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
 
         {/* Customer value stats */}
         <DetailSection title={t('customers.detail.sectionStats')}>
-          <div className="grid grid-cols-2 gap-y-3 gap-x-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-6">
             <div>
               <p className="text-xs text-muted-foreground mb-0.5">
                 {t('customers.detail.orderCount', { defaultValue: 'Tổng đơn hàng' })}
@@ -358,7 +358,7 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
               <p className="text-muted-foreground text-sm">Không có dữ liệu tín dụng.</p>
             ) : !creditEditOpen ? (
               <>
-                <div className="grid grid-cols-3 gap-y-4 gap-x-8 mb-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-4 gap-x-8 mb-4">
                   <div>
                     <p className="text-xs text-muted-foreground mb-0.5">Bán chịu</p>
                     <p className="font-bold">{credit.creditEnabled ? 'Được phép' : 'Không cho phép'}</p>

@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { cn } from "@/lib/utils";
 
 import type { PublicMenuItem } from "@/lib/contracts/public";
 import { normalizeMenuUrl, isActivePath } from "@/lib/utils/nav";
@@ -24,8 +26,6 @@ function isMegaNode(node: HeaderNavNode): boolean {
 }
 
 // ── Mega menu panel ────────────────────────────────────────────────────────
-// Bố cục theo thiết kế: cột trái là danh sách danh mục cấp 1, cột phải là
-// flyout hiển thị danh mục con của mục đang hover/focus.
 function MegaMenuPanel({
   nodes,
   onItemClick,
@@ -35,7 +35,7 @@ function MegaMenuPanel({
   onItemClick: () => void;
   pathname: string | null;
 }) {
-  // Mặc định mở flyout của danh mục đầu tiên có con — tránh cột phải trống.
+  const t = useTranslations("Header");
   const firstWithChildren = nodes.findIndex((n) => n.children.length > 0);
   const [activeIdx, setActiveIdx] = useState(
     firstWithChildren >= 0 ? firstWithChildren : 0,
@@ -44,32 +44,31 @@ function MegaMenuPanel({
   const activeNode = nodes[safeIdx];
 
   return (
-    <div className="mega-panel">
-      <div className="mega-panel-inner">
-        <ul className="mega-cat-list">
+    <div className="absolute top-full left-0 w-[min(680px,calc(100vw-32px))] bg-card border border-border shadow-lg z-[var(--bb-z-dropdown)]">
+      <div className="flex">
+        <ul className="list-none m-0 p-0 w-48 shrink-0 border-r border-border py-2">
           {nodes.map((node, index) => (
             <li key={node.id}>
               <Link
                 href={normalizeMenuUrl(node.url)}
-                className={
-                  "mega-cat-item" +
-                  (index === safeIdx ? " active" : "") +
-                  (isNodeActive(pathname, node) ? " current" : "")
-                }
+                className={cn(
+                  "flex items-center justify-between px-4 py-2.5 text-sm no-underline transition-colors hover:bg-muted hover:text-brand",
+                  index === safeIdx && "bg-muted text-brand font-medium",
+                  isNodeActive(pathname, node) && "text-brand",
+                )}
                 target={node.openInNewTab ? "_blank" : undefined}
                 rel={node.openInNewTab ? "noreferrer" : undefined}
                 onMouseEnter={() => setActiveIdx(index)}
                 onFocus={() => setActiveIdx(index)}
                 onClick={onItemClick}
               >
-                <span className="mega-cat-label">{node.label}</span>
+                <span>{node.label}</span>
                 {node.children.length > 0 && (
                   <ChevronDown
-                    className="mega-cat-chevron"
                     size={14}
                     strokeWidth={2.5}
                     aria-hidden="true"
-                    style={{ transform: "rotate(-90deg)" }}
+                    className="-rotate-90 shrink-0 text-muted-foreground"
                   />
                 )}
               </Link>
@@ -77,17 +76,17 @@ function MegaMenuPanel({
           ))}
         </ul>
 
-        <div className="mega-flyout">
+        <div className="flex-1 p-4 min-h-[180px]">
           {activeNode && activeNode.children.length > 0 ? (
-            <ul className="mega-flyout-list">
+            <ul className="list-none m-0 p-0 columns-2 gap-4">
               {activeNode.children.map((item) => (
-                <li key={item.id} className="mega-flyout-item-wrap">
+                <li key={item.id} className="break-inside-avoid mb-2">
                   <Link
                     href={normalizeMenuUrl(item.url)}
-                    className={
-                      "mega-flyout-item" +
-                      (isNodeActive(pathname, item) ? " active" : "")
-                    }
+                    className={cn(
+                      "block py-1 text-sm font-medium no-underline transition-colors hover:text-brand",
+                      isNodeActive(pathname, item) && "text-brand",
+                    )}
                     target={item.openInNewTab ? "_blank" : undefined}
                     rel={item.openInNewTab ? "noreferrer" : undefined}
                     onClick={onItemClick}
@@ -95,12 +94,15 @@ function MegaMenuPanel({
                     {item.label}
                   </Link>
                   {item.children.length > 0 && (
-                    <ul className="mega-flyout-sub">
+                    <ul className="list-none m-0 p-0 pl-3 mt-1 space-y-0.5">
                       {item.children.map((sub) => (
                         <li key={sub.id}>
                           <Link
                             href={normalizeMenuUrl(sub.url)}
-                            className={isNodeActive(pathname, sub) ? "active" : undefined}
+                            className={cn(
+                              "block text-sm text-muted-foreground no-underline transition-colors hover:text-brand",
+                              isNodeActive(pathname, sub) && "text-brand",
+                            )}
                             target={sub.openInNewTab ? "_blank" : undefined}
                             rel={sub.openInNewTab ? "noreferrer" : undefined}
                             onClick={onItemClick}
@@ -115,7 +117,7 @@ function MegaMenuPanel({
               ))}
             </ul>
           ) : (
-            <p className="mega-flyout-empty">Chọn một danh mục để xem chi tiết.</p>
+            <p className="m-0 p-2 text-sm text-muted-foreground italic">{t("megaMenuEmpty")}</p>
           )}
         </div>
       </div>
@@ -123,7 +125,7 @@ function MegaMenuPanel({
   );
 }
 
-// ── Standard sub-menu (dropdown thường, ≤ 2 cấp) ──────────────────────────
+// ── Standard sub-menu (dropdown, ≤ 2 levels) ──────────────────────────────
 function SubMenu({
   nodes,
   onItemClick,
@@ -136,21 +138,25 @@ function SubMenu({
   nested?: boolean;
 }) {
   return (
-    <ul className={nested ? "bb-sub-menu bb-sub-menu-nested" : "bb-sub-menu"}>
+    <ul
+      className={cn(
+        "list-none m-0 p-1 min-w-[200px] bg-card border border-border shadow-dropdown z-[var(--bb-z-dropdown)]",
+        nested
+          ? "absolute left-full top-0 hidden group-hover:block"
+          : "absolute top-full left-0",
+      )}
+    >
       {nodes.map((child) => {
         const hasChildren = child.children.length > 0;
         const active = isNodeActive(pathname, child);
         return (
-          <li
-            key={child.id}
-            className={
-              "bb-sub-menu-item" +
-              (hasChildren ? " bb-sub-menu-item-has-children" : "") +
-              (active ? " active" : "")
-            }
-          >
+          <li key={child.id} className={cn("relative", hasChildren && "group")}>
             <Link
               href={normalizeMenuUrl(child.url)}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 text-sm no-underline transition-colors hover:bg-muted hover:text-brand",
+                active && "text-brand font-medium",
+              )}
               target={child.openInNewTab ? "_blank" : undefined}
               rel={child.openInNewTab ? "noreferrer" : undefined}
               onClick={onItemClick}
@@ -158,11 +164,10 @@ function SubMenu({
               {child.label}
               {hasChildren && (
                 <ChevronDown
-                  className="sub-chevron"
                   size={13}
                   strokeWidth={2.5}
                   aria-hidden="true"
-                  style={{ transform: "rotate(-90deg)", marginLeft: "auto", flexShrink: 0 }}
+                  className="-rotate-90 ml-auto shrink-0 text-muted-foreground"
                 />
               )}
             </Link>
@@ -184,15 +189,15 @@ function SubMenu({
 // ── Nav item ───────────────────────────────────────────────────────────────
 const menuDelay: [number, number] = [80, 200];
 
+const navLinkBase =
+  "flex items-center px-3 h-full text-sm font-bold uppercase tracking-wide no-underline transition-colors duration-[140ms] text-white hover:text-brand";
+
 export function HeaderNavItem({ node }: HeaderNavItemProps) {
   const pathname = usePathname();
   const href = normalizeMenuUrl(node.url);
   const hasChildren = node.children.length > 0;
   const mega = hasChildren && isMegaNode(node);
   const active = isNodeActive(pathname, node);
-  const linkClass = [node.cssClass, active ? "active" : null]
-    .filter(Boolean)
-    .join(" ");
 
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLAnchorElement>(null);
@@ -267,10 +272,10 @@ export function HeaderNavItem({ node }: HeaderNavItemProps) {
 
   if (!hasChildren) {
     return (
-      <li className={"bb-navigation-item" + (active ? " active" : "")}>
+      <li className={cn("relative flex items-stretch h-full list-none", active && "is-active")}>
         <Link
           href={href}
-          className={linkClass || undefined}
+          className={cn(navLinkBase, node.cssClass, active && "text-brand")}
           target={node.openInNewTab ? "_blank" : undefined}
           rel={node.openInNewTab ? "noreferrer" : undefined}
           aria-current={active ? "page" : undefined}
@@ -284,12 +289,11 @@ export function HeaderNavItem({ node }: HeaderNavItemProps) {
   return (
     <li
       ref={wrapperRef}
-      className={
-        "bb-navigation-item bb-navigation-item-has-children" +
-        (mega ? " mega-item" : "") +
-        (active ? " active" : "") +
-        (open ? " open" : "")
-      }
+      className={cn(
+        "relative flex items-stretch h-full list-none",
+        active && "is-active",
+        open && "is-open",
+      )}
       onMouseEnter={() => openMenu()}
       onMouseLeave={scheduleCloseMenu}
       onFocusCapture={() => openMenu(true)}
@@ -302,7 +306,7 @@ export function HeaderNavItem({ node }: HeaderNavItemProps) {
       <Link
         ref={triggerRef}
         href={href}
-        className={linkClass || undefined}
+        className={cn(navLinkBase, node.cssClass, active && "text-brand", "gap-1")}
         target={node.openInNewTab ? "_blank" : undefined}
         rel={node.openInNewTab ? "noreferrer" : undefined}
         aria-current={active ? "page" : undefined}
@@ -320,7 +324,7 @@ export function HeaderNavItem({ node }: HeaderNavItemProps) {
             openMenu(true);
             window.setTimeout(() => {
               const firstLink = wrapperRef.current?.querySelector<HTMLAnchorElement>(
-                ".mega-cat-item, .bb-sub-menu a",
+                "[data-dropdown] a",
               );
               firstLink?.focus();
             }, 20);
@@ -328,16 +332,26 @@ export function HeaderNavItem({ node }: HeaderNavItemProps) {
         }}
       >
         {node.label}
-        <ChevronDown className="nav-chevron" size={14} strokeWidth={2.5} aria-hidden="true" />
+        <ChevronDown
+          size={14}
+          strokeWidth={2.5}
+          aria-hidden="true"
+          className={cn(
+            "shrink-0 transition-transform duration-[140ms]",
+            open && "rotate-180",
+          )}
+        />
       </Link>
 
-      <div id={menuId} aria-hidden={!open} data-open={open ? "true" : "false"}>
-        {mega ? (
-          <MegaMenuPanel nodes={node.children} onItemClick={closeMenu} pathname={pathname} />
-        ) : (
-          <SubMenu nodes={node.children} onItemClick={closeMenu} pathname={pathname} />
-        )}
-      </div>
+      {open && (
+        <div id={menuId} data-dropdown>
+          {mega ? (
+            <MegaMenuPanel nodes={node.children} onItemClick={closeMenu} pathname={pathname} />
+          ) : (
+            <SubMenu nodes={node.children} onItemClick={closeMenu} pathname={pathname} />
+          )}
+        </div>
+      )}
     </li>
   );
 }

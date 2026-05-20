@@ -224,7 +224,7 @@ export default async function HomePage() {
     listArticles({ page: 1, category: "tin-tuc", size: 3, sort: "publishedAt:desc" }),
     listBrands({ page: 1, size: 12, sort: "name:asc" }),
     listPublicSettings(),
-    listProducts({ page: 1, homepageBlock: "FEATURED_GRID", size: 12, sort: "homepageOrder:asc", lang: locale }),
+    listProducts({ page: 1, homepageBlock: "FEATURED_GRID", size: 3, sort: "homepageOrder:asc", lang: locale }),
     listProducts({ page: 1, homepageBlock: "RECOMMENDED_CAROUSEL", size: 10, sort: "homepageOrder:asc", lang: locale }),
     listHomeVideos(),
   ]);
@@ -307,7 +307,7 @@ export default async function HomePage() {
         {featuredProducts.length > 0 && (
           <section aria-label="Sản phẩm nổi bật">
             <div className="grid grid-cols-3 gap-4 py-[var(--bb-space-12)] max-[900px]:grid-cols-2 max-[600px]:grid-cols-1">
-              {featuredProducts.map((p) => (
+              {featuredProducts.slice(0, 3).map((p) => (
                 <ProductCard key={p.id} product={p} variant="tile" />
               ))}
             </div>
@@ -520,12 +520,12 @@ export default async function HomePage() {
         <div className="bb-container">
           {homeContentBottomHtml ? (
             <div
-              className="mx-auto max-w-[760px]"
+              className="w-full max-w-5xl"
               dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(homeContentBottomHtml) }}
             />
           ) : (
-            <div className="mx-auto max-w-[760px]">
-              <div className="mb-8 text-center max-[600px]:mb-6">
+            <div className="w-full max-w-5xl">
+              <div className="mb-8 max-[600px]:mb-6">
                 <p className="bb-kicker">VỀ BIGBIKE</p>
                 <h2 id="home-seo-heading" className="bb-section-title">
                   SHOP BÁN ĐỒ BẢO HỘ MOTO — PHỤ KIỆN TOURING CHÍNH HÃNG TẠI TP HCM

@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { use, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import { cancelMyOrder, createReturn, fetchMyOrder } from "@/lib/api/client-api";
-import type { CreateReturnPayload, OrderDetail, OrderLineItem } from "@/lib/contracts/commerce";
+import { cancelMyOrder, createReturn, fetchMyOrder, fetchReturnEligibility } from "@/lib/api/client-api";
+import type { CreateReturnPayload, OrderDetail, ReturnEligibility, ReturnEligibilityItem, ReturnEligibilityReason } from "@/lib/contracts/commerce";
 import { AccountShell } from "@/components/layout/AccountShell";
 import { formatAddress, formatDate, formatVnd, orderStatusLabelWithT, paymentMethodLabelWithT, paymentStatusLabelWithT, safeText } from "@/lib/utils/format";
 import { toOrderHistoryPath } from "@/lib/utils/routes";
@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { StatusBadge, type StatusTone } from "@/components/ui/StatusBadge";
+import { BBTooltip } from "@/components/ui/BBTooltip";
 
 function orderStatusTone(status: string): StatusTone {
   const map: Record<string, StatusTone> = {
@@ -75,11 +76,11 @@ const RETURN_REASON_KEYS = ["DEFECTIVE", "WRONG_ITEM", "NOT_AS_DESCRIBED", "CHAN
 
 function CreateReturnForm({
   orderId,
-  lineItems,
+  eligibleItems,
   onDone,
 }: {
   orderId: string;
-  lineItems: OrderLineItem[];
+  eligibleItems: ReturnEligibilityItem[];
   onDone: () => void;
 }) {
   const t = useTranslations("Account.orders");
@@ -87,7 +88,11 @@ function CreateReturnForm({
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
   const [selections, setSelections] = useState<Record<string, { selected: boolean; quantity: number }>>(
-    () => Object.fromEntries(lineItems.map((li) => [li.id, { selected: false, quantity: 1 }])),
+    () => Object.fromEntries(
+      eligibleItems
+        .filter((it) => it.returnableQuantity > 0)
+        .map((it) => [it.orderLineItemId, { selected: false, quantity: 1 }])
+    ),
   );
 
   function toggleItem(id: string) {
@@ -106,9 +111,9 @@ function CreateReturnForm({
     const customerNote = (fd.get("customerNote") as string).trim();
     if (!reason) { setFormError(t("reasonPlaceholder")); return; }
 
-    const items = lineItems
-      .filter((li) => selections[li.id]?.selected)
-      .map((li) => ({ orderLineItemId: li.id, quantity: selections[li.id].quantity }));
+    const items = eligibleItems
+      .filter((it) => selections[it.orderLineItemId]?.selected)
+      .map((it) => ({ orderLineItemId: it.orderLineItemId, quantity: selections[it.orderLineItemId].quantity }));
 
     if (items.length === 0) { setFormError(t("returnPickItem")); return; }
 
@@ -132,27 +137,29 @@ function CreateReturnForm({
         <div className="grid grid-cols-1 gap-[14px] sm:grid-cols-2">
           <div className="flex flex-col gap-1.5 col-span-full">
             <label className="text-sm font-bold tracking-[0.14em] uppercase text-muted-foreground mb-2 block">{t("returnPickItem")}</label>
-            {lineItems.map((li) => (
-              <div key={li.id} className="flex items-center gap-2.5 mb-2.5">
+            {eligibleItems
+              .filter((it) => it.returnableQuantity > 0)
+              .map((it) => (
+              <div key={it.orderLineItemId} className="flex items-center gap-2.5 mb-2.5">
                 <Checkbox
-                  id={`ret-item-${li.id}`}
-                  checked={selections[li.id]?.selected ?? false}
-                  onCheckedChange={() => toggleItem(li.id)}
+                  id={`ret-item-${it.orderLineItemId}`}
+                  checked={selections[it.orderLineItemId]?.selected ?? false}
+                  onCheckedChange={() => toggleItem(it.orderLineItemId)}
                 />
-                <label htmlFor={`ret-item-${li.id}`} className="flex-1 cursor-pointer text-sm">
-                  {li.productName}
-                  {li.variantName ? <span className="text-muted-foreground"> ({li.variantName})</span> : null}
-                  <span className="ml-1.5 text-muted-foreground">×{li.quantity}</span>
+                <label htmlFor={`ret-item-${it.orderLineItemId}`} className="flex-1 cursor-pointer text-sm">
+                  {it.productName}
+                  {it.variantName ? <span className="text-muted-foreground"> ({it.variantName})</span> : null}
+                  <span className="ml-1.5 text-muted-foreground">×{it.returnableQuantity}</span>
                 </label>
-                {selections[li.id]?.selected && (
+                {selections[it.orderLineItemId]?.selected && (
                   <Input
                     type="number"
                     min={1}
-                    max={li.quantity}
-                    value={selections[li.id].quantity}
-                    onChange={(e) => setQty(li.id, Number(e.target.value), li.quantity)}
+                    max={it.returnableQuantity}
+                    value={selections[it.orderLineItemId].quantity}
+                    onChange={(e) => setQty(it.orderLineItemId, Number(e.target.value), it.returnableQuantity)}
                     className="w-16 text-center"
-                    aria-label={t("lineQuantityAria", { productName: li.productName })}
+                    aria-label={t("lineQuantityAria", { productName: it.productName })}
                   />
                 )}
               </div>
@@ -239,6 +246,7 @@ type Props = { params: Promise<{ id: string }> };
 
 function OrderDetailContent({ orderId }: { orderId: string }) {
   const t = useTranslations("Account.orders");
+  const tEligibility = useTranslations("Account.returns.eligibility");
   const tCheckout = useTranslations("Checkout");
   const tCatalog = useTranslations("Catalog");
   const [order, setOrder] = useState<OrderDetail | null>(null);
@@ -246,6 +254,7 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
   const [error, setError] = useState("");
   const [showReturnForm, setShowReturnForm] = useState(false);
   const [returnSubmitted, setReturnSubmitted] = useState(false);
+  const [eligibility, setEligibility] = useState<ReturnEligibility | null>(null);
   const [cancelConfirm, setCancelConfirm] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState("");
@@ -254,8 +263,17 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!orderId) { setError(t("orderNotFoundShort")); setLoading(false); return; }
     let active = true;
-    fetchMyOrder(orderId)
-      .then((result) => { if (active) { setOrder(result); setError(""); } })
+    Promise.all([
+      fetchMyOrder(orderId),
+      // Eligibility is best-effort: a failure (e.g., 404 for non-COMPLETED order) just hides the return CTA.
+      fetchReturnEligibility(orderId).catch(() => null),
+    ])
+      .then(([result, elig]) => {
+        if (!active) return;
+        setOrder(result);
+        setEligibility(elig);
+        setError("");
+      })
       .catch((err: Error) => { if (active) setError(err.message ?? t("loadFailedShort")); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
@@ -542,17 +560,32 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
 
           {/* Return request */}
           {RETURNABLE_ORDER_STATUSES.has(order.status) && (
-            returnSubmitted ? (
+            order.channel === "IN_STORE" ? (
+              <div className="text-right">
+                <BBTooltip content={t("returnUnavailableInStore")} placement="top">
+                  {/* Span bắt buộc vì Radix Tooltip không fire trên disabled button */}
+                  <span>
+                    <Button type="button" variant="secondary" size="sm" disabled>
+                      {t("requestReturn")}
+                    </Button>
+                  </span>
+                </BBTooltip>
+              </div>
+            ) : returnSubmitted ? (
               <div className="bg-[var(--bb-state-success-bg)] border border-[var(--bb-state-success-border)] p-[14px_18px] text-sm text-[var(--bb-state-success-text)]"><p className="m-0">{t("returnSubmitted")} <Link href="/tai-khoan/doi-tra/" className="bb-link">{t("returnSubmittedLink")}</Link></p></div>
-            ) : showReturnForm ? (
-              <CreateReturnForm orderId={order.id} lineItems={order.lineItems} onDone={() => { setShowReturnForm(false); setReturnSubmitted(true); }} />
-            ) : (
+            ) : showReturnForm && eligibility?.eligible ? (
+              <CreateReturnForm orderId={order.id} eligibleItems={eligibility.items} onDone={() => { setShowReturnForm(false); setReturnSubmitted(true); }} />
+            ) : eligibility && !eligibility.eligible ? (
+              <div className="bg-[var(--bb-state-warning-bg)] border border-[var(--bb-state-warning-border)] p-[14px_18px] text-sm text-[var(--bb-state-warning-text)]">
+                <p className="m-0">{tEligibility(eligibility.reason as ReturnEligibilityReason)}</p>
+              </div>
+            ) : eligibility?.eligible ? (
               <div className="text-right">
                 <Button type="button" variant="secondary" size="sm" onClick={() => setShowReturnForm(true)}>
                   {t("requestReturn")}
                 </Button>
               </div>
-            )
+            ) : null
           )}
         </div>
       )}

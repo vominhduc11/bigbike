@@ -158,9 +158,7 @@ export function VariantSelector({
               </h6>
               <div
                 className={cn(
-                  isSizeGroup && !isColorGroup
-                    ? "grid grid-cols-5 gap-2"
-                    : "flex flex-wrap gap-2",
+                  "flex flex-wrap gap-2",
                 )}
               >
                 {group.values.map((info) => {
@@ -250,7 +248,7 @@ export function VariantSelector({
                       type="button"
                       className={cn(
                         "inline-flex h-11 min-w-11 cursor-pointer items-center justify-center gap-2 rounded-none border border-[color:var(--bb-border-default)] bg-white px-4 text-sm font-bold uppercase tracking-[0.06em] text-foreground transition-all hover:border-foreground",
-                        isSizeGroup && !isColorGroup && "w-full px-2",
+                        isSizeGroup && !isColorGroup && "min-w-[44px] px-2",
                         isActive && "border-black bg-black text-white hover:border-black",
                         !isAvailable && !isActive && "cursor-not-allowed line-through opacity-50",
                       )}

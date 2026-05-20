@@ -41,6 +41,7 @@ public record ReturnEligibilityResponse(
         public static final String WINDOW_EXPIRED      = "WINDOW_EXPIRED";
         public static final String RETURN_IN_PROGRESS  = "RETURN_IN_PROGRESS";
         public static final String NOTHING_TO_RETURN   = "NOTHING_TO_RETURN";
+        public static final String IN_STORE_ORDER      = "IN_STORE_ORDER";
 
         private Reason() {}
     }

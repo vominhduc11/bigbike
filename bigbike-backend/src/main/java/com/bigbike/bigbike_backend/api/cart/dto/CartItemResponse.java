@@ -16,5 +16,6 @@ public record CartItemResponse(
         BigDecimal unitPrice,
         BigDecimal lineSubtotal,
         BigDecimal lineDiscount,
-        BigDecimal lineTotal
+        BigDecimal lineTotal,
+        boolean available
 ) {}

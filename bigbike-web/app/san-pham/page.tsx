@@ -257,9 +257,7 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
                 <PaginationNav
                   page={pagination.page}
                   totalPages={pagination.totalPages}
-                  makeHref={(nextPage) =>
-                    `${toProductListPath()}${buildQueryString({
-                      page: nextPage,
+                  baseHref={`${toProductListPath()}${buildQueryString({
                       size: sizeParsed.value !== DEFAULT_PAGE_SIZE ? sizeParsed.value : undefined,
                       sort: sortParsed.value !== DEFAULT_SORT ? sortParsed.value : undefined,
                       category: categoryParsed.value,
@@ -268,8 +266,7 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
                       filter_color: colorParsed.value,
                       min_price: minPriceParsed.value,
                       max_price: maxPriceParsed.value,
-                    })}`
-                  }
+                    })}`}
                 />
               ) : null}
             </>

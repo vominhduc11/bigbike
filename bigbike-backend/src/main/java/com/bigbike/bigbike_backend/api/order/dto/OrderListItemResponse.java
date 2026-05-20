@@ -14,5 +14,6 @@ public record OrderListItemResponse(
         String currency,
         Instant placedAt,
         int itemCount,
-        List<String> productNames
+        List<String> productNames,
+        String channel
 ) {}

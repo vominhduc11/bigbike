@@ -81,7 +81,8 @@ export default async function PolicyPage({ params }: Props) {
   const pageTitle = safeText(page.title, meta ? t(meta.title) : t("policy.title"));
 
   return (
-    <section className="bb-page">
+    <>
+      {/* Hero render ngoài .bb-page để rule global `.bb-page h1` không ghi đè màu tiêu đề. */}
       <PageHero
         imageUrl={page.heroImageUrl}
         imageAlt={page.heroImageAlt}
@@ -92,18 +93,20 @@ export default async function PolicyPage({ params }: Props) {
           { label: pageTitle },
         ]}
       />
-      <div className="bb-container grid grid-cols-1 gap-[30px] pt-10 pb-[60px] items-start lg:grid-cols-[3fr_9fr]">
-        <PolicySidebar activeHref={`/chinh-sach/${slug}`} title={t("policy.sidebarTitle")} />
-        <div className="min-w-0">
-          <article
-            className="bb-richtext"
-            dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(page.body) }}
-          />
-          <p className="text-muted-foreground text-sm text-right mb-10">
-            {t("updatedAt", { date: formatDate(page.updatedAt) })}
-          </p>
+      <section className="bb-page">
+        <div className="bb-container grid grid-cols-1 gap-[30px] pt-10 pb-[60px] items-start lg:grid-cols-[3fr_9fr]">
+          <PolicySidebar activeHref={`/chinh-sach/${slug}`} title={t("policy.sidebarTitle")} />
+          <div className="min-w-0">
+            <article
+              className="bb-richtext"
+              dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(page.body) }}
+            />
+            <p className="text-muted-foreground text-sm text-right mb-10">
+              {t("updatedAt", { date: formatDate(page.updatedAt) })}
+            </p>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </>
   );
 }

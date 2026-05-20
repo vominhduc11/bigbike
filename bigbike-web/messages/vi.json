@@ -62,12 +62,14 @@
     "shopInfoTitle": "Về {siteName}",
     "shopInfoDescription": "Giới thiệu và thông tin liên hệ của {siteName}.",
     "shopInfoContactHeading": "Thông tin liên hệ",
-    "shopInfoStoreLabel": "Cửa hàng {siteName}",
-    "shopInfoDefaultDescription": "BigBike chuyên cung cấp đồ bảo hộ moto, mũ bảo hiểm, áo giáp, găng tay, giày và phụ kiện touring chính hãng.",
-    "shopInfoDefaultHoursLine1": "T2 - T6: 09h00 - 21h00",
-    "shopInfoDefaultHoursLine2": "T7 / CN: 09h00 - 18h00",
-    "shopInfoDefaultHoursLine3": "Lễ / Tết: nghỉ",
+    "shopInfoStoreLabel": "Shop bảo hộ {siteName}",
+    "shopInfoDefaultDescription": "Shop Bigbike.vn chuyên cung cấp đồ bảo hộ moto, xe máy, phượt, mũ bảo hộ Full Face, Mũ lật cằm, mũ 3/4, mũ cào cào, áo giáp quần bảo hộ, găng tay, balo, túi đeo moto, xe máy và các phụ kiện thời trang....",
+    "shopInfoDefaultHoursLine1": "T2-T6: 09:00-21:00",
+    "shopInfoDefaultHoursLine2": "T7-CN: 09:00-18:00",
+    "shopInfoDefaultHoursLine3": "Lễ/Tết: nghỉ",
     "mobileZaloSupport": "Zalo hỗ trợ nhanh",
+    "megaMenuEmpty": "Chọn một danh mục để xem chi tiết.",
+    "languageLabel": "Ngôn ngữ",
     "primaryNavigation": "Điều hướng chính",
     "fallbackNav": {
       "home": "Trang chủ",
@@ -240,7 +242,7 @@
       "buyNowProcessing": "Đang xử lý...",
       "buyNowFailed": "Không thể mua sản phẩm này.",
       "pickVariantCta": "Vui lòng chọn biến thể",
-      "pickVariantShort": "Chọn biến thể",
+      "pickVariantShort": "Chọn size/màu",
       "soldOut": "Tạm hết hàng",
       "callHotline": "Liên hệ tư vấn: {phone}",
       "zaloAdvice": "Tư vấn qua Zalo ngay",
@@ -475,7 +477,13 @@
       "BACS": "Chuyển khoản",
       "EMPTY": "—",
       "UNKNOWN": "{method}"
-    }
+    },
+    "shippingMethodSectionTitle": "Phương thức vận chuyển",
+    "shippingMethodFree": "Miễn phí",
+    "shippingZoneMismatch": "Không giao đến tỉnh/thành phố đã chọn",
+    "noteLabel": "Ghi chú đơn hàng",
+    "notePlaceholder": "Yêu cầu đặc biệt về giao hàng (không bắt buộc)",
+    "errorEmailRequiredForBacs": "Vui lòng nhập email để nhận thông tin chuyển khoản."
   },
   "Account": {
     "nav": {
@@ -565,6 +573,8 @@
       "submitReturnInProgress": "Đang gửi...",
       "lineQuantityAria": "Số lượng {productName}",
       "defaultNote": "Ghi chú",
+      "channelInStore": "Mua tại cửa hàng",
+      "returnUnavailableInStore": "Đơn hàng mua trực tiếp tại cửa hàng không hỗ trợ đổi trả trực tuyến.",
       "orderStatus": {
         "PENDING": "Chờ xác nhận",
         "ON_HOLD": "Tạm giữ",
@@ -646,6 +656,7 @@
         "APPROVED": "Đã duyệt",
         "REJECTED": "Từ chối",
         "RECEIVED": "Đã nhận hàng",
+        "INSPECTING": "Đang kiểm tra",
         "COMPLETED": "Hoàn thành",
         "REFUNDED": "Đã hoàn tiền"
       },
@@ -655,6 +666,18 @@
         "NOT_AS_DESCRIBED": "Không như mô tả",
         "CHANGED_MIND": "Đổi ý",
         "OTHER": "Khác"
+      },
+      "eligibility": {
+        "checking": "Đang kiểm tra điều kiện đổi trả...",
+        "OK": "Đơn hàng đủ điều kiện đổi trả.",
+        "ORDER_NOT_FOUND": "Không tìm thấy đơn hàng.",
+        "NOT_OWNER": "Không tìm thấy đơn hàng.",
+        "ORDER_NOT_COMPLETED": "Chỉ đơn đã Hoàn thành mới có thể đổi trả.",
+        "WINDOW_EXPIRED": "Đơn hàng đã quá 30 ngày kể từ khi hoàn thành, không thể yêu cầu đổi trả.",
+        "RETURN_IN_PROGRESS": "Đơn hàng đang có yêu cầu đổi trả chưa xử lý xong.",
+        "NOTHING_TO_RETURN": "Tất cả sản phẩm trong đơn đã được đổi trả.",
+        "IN_STORE_ORDER": "Đơn hàng mua tại cửa hàng không thể yêu cầu đổi trả trực tuyến.",
+        "daysRemaining": "Còn {days} ngày trong thời hạn đổi trả."
       }
     },
     "addresses": {
@@ -688,7 +711,8 @@
       "errorLoad": "Không tải được sổ địa chỉ.",
       "errorGeneric": "Có lỗi xảy ra, vui lòng thử lại.",
       "errorSetDefault": "Không đặt được địa chỉ mặc định.",
-      "errorDelete": "Không xóa được địa chỉ."
+      "errorDelete": "Không xóa được địa chỉ.",
+      "errorRequiredAddress": "Vui lòng chọn đầy đủ tỉnh/thành, quận/huyện và phường/xã."
     },
     "edit": {
       "intro": "Từ trang Tài khoản, bạn có thể xem nhanh hoạt động mua hàng gần đây và cập nhật thông tin cá nhân của mình. Chọn một mục bên dưới để xem hoặc chỉnh sửa.",
@@ -778,7 +802,10 @@
     "iconAria": "Giỏ hàng",
     "miniItemCount": "{count} sản phẩm",
     "miniMore": "+ {count} sản phẩm khác",
-    "miniViewCart": "XEM GIỎ HÀNG"
+    "miniViewCart": "XEM GIỎ HÀNG",
+    "shippingPending": "Tính khi đặt hàng",
+    "itemUnavailable": "Sản phẩm không còn bán",
+    "checkoutBlockedByUnavailable": "Xoá sản phẩm không còn bán để tiếp tục thanh toán"
   },
   "Blog": {
     "title": "Tin tức",
@@ -804,7 +831,7 @@
     "articleReadMore": "Đọc tiếp",
     "shareLabel": "Chia sẻ:",
     "shareToFacebook": "Chia sẻ lên Facebook",
-    "shareToTwitter": "Chia sẻ lên Twitter",
+    "shareToX": "Chia sẻ lên X",
     "relatedKicker": "Có thể bạn quan tâm",
     "relatedHeading": "Tin tức liên quan",
     "relatedProductsHeading": "Sản phẩm sử dụng trong bài viết",

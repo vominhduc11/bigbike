@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { LOCALES, LOCALE_COOKIE } from "@/i18n/locale";
 import type { HeaderNavNode } from "@/components/layout/HeaderNavItem";
 import { performLogout, useAuth } from "@/lib/auth/auth-store";
 import {
@@ -153,8 +154,17 @@ export function MobileHeaderMenu({
   const auth = useAuth();
   const pathname = usePathname();
   const router = useRouter();
+  const locale = useLocale();
+  const [isPending, startTransition] = useTransition();
 
   const close = () => setOpen(false);
+
+  function switchLocale(next: string) {
+    if (next === locale) return;
+    document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
+    close();
+    startTransition(() => router.refresh());
+  }
 
   const p = pathname?.replace(/\/$/, "") ?? "";
   const isOnLoginPage = p === "/dang-nhap";
@@ -268,6 +278,28 @@ export function MobileHeaderMenu({
                 )}
               </div>
             )}
+
+            <div className="bb-mobile-drawer-language">
+              <span>{t("languageLabel")}</span>
+              <div className="flex gap-2 mt-2">
+                {LOCALES.map((code) => (
+                  <button
+                    key={code}
+                    type="button"
+                    onClick={() => switchLocale(code)}
+                    disabled={isPending || code === locale}
+                    className={cn(
+                      "px-3 py-1.5 text-xs font-bold uppercase border transition-colors disabled:cursor-wait",
+                      code === locale
+                        ? "bg-brand text-white border-brand"
+                        : "text-white/60 border-white/20 hover:text-white hover:border-white/50",
+                    )}
+                  >
+                    {code}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </SheetContent>
       </Sheet>

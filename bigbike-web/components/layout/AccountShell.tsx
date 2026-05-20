@@ -105,7 +105,7 @@ export function AccountShell({ children, loginRedirect }: Props) {
           {activeNav && (
             <>
               <span className="mx-1.5">/</span>
-              <span className="text-[#1a1a1a]">{tNav(activeNav.labelKey)}</span>
+              <span className="text-foreground">{tNav(activeNav.labelKey)}</span>
             </>
           )}
         </nav>

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { setConfirmHandler } from '../lib/confirm'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 
 export function ConfirmDialogProvider() {
   const { t } = useTranslation()
@@ -38,7 +38,7 @@ export function ConfirmDialogProvider() {
         <DialogHeader>
           <DialogTitle>{dialog?.title}</DialogTitle>
         </DialogHeader>
-        <p className="px-6 pb-2 text-sm text-muted-foreground whitespace-pre-line">{dialog?.message}</p>
+        <DialogDescription className="px-6 pb-2 text-sm whitespace-pre-line">{dialog?.message}</DialogDescription>
         <DialogFooter>
           <Button variant="secondary" onClick={() => handleClose(false)}>
             {dialog?.cancelLabel}

@@ -68,6 +68,8 @@
     "shopInfoDefaultHoursLine2": "Sat / Sun: 09:00 - 18:00",
     "shopInfoDefaultHoursLine3": "Public holidays: closed",
     "mobileZaloSupport": "Fast Zalo support",
+    "megaMenuEmpty": "Select a category to see details.",
+    "languageLabel": "Language",
     "primaryNavigation": "Primary navigation",
     "fallbackNav": {
       "home": "Home",
@@ -475,7 +477,13 @@
       "BACS": "Bank transfer",
       "EMPTY": "—",
       "UNKNOWN": "{method}"
-    }
+    },
+    "shippingMethodSectionTitle": "Shipping Method",
+    "shippingMethodFree": "Free",
+    "shippingZoneMismatch": "Not available for the selected province",
+    "noteLabel": "Order Note",
+    "notePlaceholder": "Special delivery instructions (optional)",
+    "errorEmailRequiredForBacs": "Please enter your email to receive bank transfer details."
   },
   "Account": {
     "nav": {
@@ -565,6 +573,8 @@
       "submitReturnInProgress": "Submitting…",
       "lineQuantityAria": "Quantity of {productName}",
       "defaultNote": "Note",
+      "channelInStore": "In-store purchase",
+      "returnUnavailableInStore": "In-store orders cannot be returned via the online portal.",
       "orderStatus": {
         "PENDING": "Pending",
         "ON_HOLD": "On hold",
@@ -646,6 +656,7 @@
         "APPROVED": "Approved",
         "REJECTED": "Rejected",
         "RECEIVED": "Received",
+        "INSPECTING": "Inspecting",
         "COMPLETED": "Completed",
         "REFUNDED": "Refunded"
       },
@@ -655,6 +666,18 @@
         "NOT_AS_DESCRIBED": "Not as described",
         "CHANGED_MIND": "Changed mind",
         "OTHER": "Other"
+      },
+      "eligibility": {
+        "checking": "Checking return eligibility…",
+        "OK": "This order is eligible for return.",
+        "ORDER_NOT_FOUND": "Order not found.",
+        "NOT_OWNER": "Order not found.",
+        "ORDER_NOT_COMPLETED": "Only completed orders can be returned.",
+        "WINDOW_EXPIRED": "This order is past the 30-day return window.",
+        "RETURN_IN_PROGRESS": "There is already a return in progress for this order.",
+        "NOTHING_TO_RETURN": "All items in this order have been returned.",
+        "IN_STORE_ORDER": "In-store orders cannot be returned through the online portal.",
+        "daysRemaining": "{days} days remaining in the return window."
       }
     },
     "addresses": {
@@ -688,7 +711,8 @@
       "errorLoad": "Couldn't load your address book.",
       "errorGeneric": "Something went wrong, please try again.",
       "errorSetDefault": "Couldn't set the default address.",
-      "errorDelete": "Couldn't delete the address."
+      "errorDelete": "Couldn't delete the address.",
+      "errorRequiredAddress": "Please select province, district, and ward."
     },
     "edit": {
       "intro": "From the account area you can quickly see recent purchases and update your details. Pick a section below to view or edit.",
@@ -778,7 +802,10 @@
     "iconAria": "Cart",
     "miniItemCount": "{count, plural, =0 {No items} one {# item} other {# items}}",
     "miniMore": "+ {count} more {count, plural, one {item} other {items}}",
-    "miniViewCart": "VIEW CART"
+    "miniViewCart": "VIEW CART",
+    "shippingPending": "Calculated at checkout",
+    "itemUnavailable": "No longer available",
+    "checkoutBlockedByUnavailable": "Remove unavailable items to proceed to checkout"
   },
   "Blog": {
     "title": "News",
@@ -804,7 +831,7 @@
     "articleReadMore": "Read more",
     "shareLabel": "Share:",
     "shareToFacebook": "Share on Facebook",
-    "shareToTwitter": "Share on Twitter",
+    "shareToX": "Share on X",
     "relatedKicker": "You may also like",
     "relatedHeading": "Related articles",
     "relatedProductsHeading": "Products used in this article",

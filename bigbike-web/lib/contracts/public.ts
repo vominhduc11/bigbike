@@ -203,6 +203,8 @@ export type Product = {
   promotionContent?: string | null;
   /** Rich-HTML installation guide rendered in PDP section "Hướng dẫn lắp đặt". Detail-only. */
   installationGuide?: string | null;
+  /** Structured content blocks for the product description. Detail-only; null in list responses. */
+  descriptionBlocks?: { type: string; [key: string]: unknown }[] | null;
   /** Product FAQ entries rendered in PDP section "Câu hỏi thường gặp". Detail-only. */
   faqs?: ProductFaq[];
   /**

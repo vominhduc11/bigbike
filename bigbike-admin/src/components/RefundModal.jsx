@@ -2,10 +2,12 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { createRefund } from '../lib/adminApi'
+import { showConfirm } from '../lib/confirm'
 import { formatCurrencyVnd } from '../lib/formatters'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -57,6 +59,11 @@ export function RefundModal({ orderId, paidAmount, alreadyRefunded, onSuccess, o
     e.preventDefault()
     const errs = validate()
     if (Object.keys(errs).length) { setErrors(errs); return }
+    const confirmed = await showConfirm(
+      t('refund.confirmMessage', { amount: formatCurrencyVnd(Number(form.refundAmount)) }),
+      t('refund.confirmTitle'),
+    )
+    if (!confirmed) return
     setSaving(true)
     try {
       const result = await createRefund(orderId, {
@@ -79,6 +86,7 @@ export function RefundModal({ orderId, paidAmount, alreadyRefunded, onSuccess, o
       <DialogContent className="max-w-[480px]">
         <DialogHeader>
           <DialogTitle>{t('refund.modalTitle')}</DialogTitle>
+          <DialogDescription className="sr-only">{t('refund.modalTitle')}</DialogDescription>
         </DialogHeader>
 
         <div className="px-6 pb-2 text-sm text-muted-foreground">

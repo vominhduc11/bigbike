@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 type AddressState = {
   province: string;
@@ -23,9 +24,10 @@ type VnAddressFieldsProps = {
   onChange: (field: keyof AddressState, value: string) => void;
   required?: boolean;
   labelClassName?: string;
+  selectContentClassName?: string;
 };
 
-export function VnAddressFields({ value, onChange, required, labelClassName = "text-sm font-semibold tracking-[0.06em] uppercase text-muted-foreground" }: VnAddressFieldsProps) {
+export function VnAddressFields({ value, onChange, required, labelClassName = "text-sm font-semibold tracking-[0.06em] uppercase text-muted-foreground", selectContentClassName }: VnAddressFieldsProps) {
   const selectedProvince = useMemo(
     () => VN_PROVINCES.find((p) => p.name === value.province) ?? null,
     [value.province],
@@ -59,7 +61,7 @@ export function VnAddressFields({ value, onChange, required, labelClassName = "t
           <SelectTrigger>
             <SelectValue placeholder={"\u2014 Ch\u1ecdn t\u1ec9nh / th\u00e0nh ph\u1ed1 \u2014"} />
           </SelectTrigger>
-          <SelectContent className="max-h-72">
+          <SelectContent className={cn("max-h-72", selectContentClassName)}>
             {VN_PROVINCES.map((p) => (
               <SelectItem key={p.code} value={p.name}>{p.name}</SelectItem>
             ))}
@@ -68,9 +70,10 @@ export function VnAddressFields({ value, onChange, required, labelClassName = "t
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <label className={labelClassName}>{"Qu\u1eadn / Huy\u1ec7n"}</label>
+        <label className={labelClassName}>{"Qu\u1eadn / Huy\u1ec7n"}{required && <span className="text-brand ml-[3px]">*</span>}</label>
         {selectedProvince ? (
           <Select
+            required={required}
             value={value.district}
             onValueChange={(v) => {
               onChange("district", v);
@@ -80,7 +83,7 @@ export function VnAddressFields({ value, onChange, required, labelClassName = "t
             <SelectTrigger>
               <SelectValue placeholder={"\u2014 Ch\u1ecdn qu\u1eadn / huy\u1ec7n \u2014"} />
             </SelectTrigger>
-            <SelectContent className="max-h-72">
+            <SelectContent className={cn("max-h-72", selectContentClassName)}>
               {selectedProvince.districts.map((d) => (
                 <SelectItem key={d.code} value={d.name}>{d.name}</SelectItem>
               ))}
@@ -92,16 +95,17 @@ export function VnAddressFields({ value, onChange, required, labelClassName = "t
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <label className={labelClassName}>{"Ph\u01b0\u1eddng / X\u00e3"}</label>
+        <label className={labelClassName}>{"Ph\u01b0\u1eddng / X\u00e3"}{required && <span className="text-brand ml-[3px]">*</span>}</label>
         {selectedDistrict && wards.length > 0 ? (
           <Select
+            required={required}
             value={value.ward}
             onValueChange={(v) => onChange("ward", v)}
           >
             <SelectTrigger>
               <SelectValue placeholder={"\u2014 Ch\u1ecdn ph\u01b0\u1eddng / x\u00e3 \u2014"} />
             </SelectTrigger>
-            <SelectContent className="max-h-72">
+            <SelectContent className={cn("max-h-72", selectContentClassName)}>
               {wards.map((w) => (
                 <SelectItem key={w.code} value={w.name}>{w.name}</SelectItem>
               ))}

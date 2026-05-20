@@ -65,6 +65,11 @@ public class CustomerReturnService {
             throw new NotFoundException("Order not found.");
         }
 
+        if ("IN_STORE".equals(order.getChannel())) {
+            throw ValidationException.fromField("orderId", "IN_STORE_ORDER",
+                    "Đơn hàng mua tại cửa hàng không hỗ trợ yêu cầu hoàn trả trực tuyến.");
+        }
+
         if (!RETURNABLE_STATUSES.contains(order.getStatus())) {
             throw ValidationException.fromField("orderId", "NOT_RETURNABLE",
                     "Only COMPLETED orders can be returned. Current status: " + order.getStatus());
@@ -200,6 +205,11 @@ public class CustomerReturnService {
             // Same response shape as ORDER_NOT_FOUND to avoid leaking ownership info.
             return new ReturnEligibilityResponse(orderId, null, false,
                     Reason.NOT_OWNER, null, List.of());
+        }
+
+        if ("IN_STORE".equals(order.getChannel())) {
+            return new ReturnEligibilityResponse(orderId, order.getStatus(), false,
+                    Reason.IN_STORE_ORDER, null, List.of());
         }
 
         if (!RETURNABLE_STATUSES.contains(order.getStatus())) {

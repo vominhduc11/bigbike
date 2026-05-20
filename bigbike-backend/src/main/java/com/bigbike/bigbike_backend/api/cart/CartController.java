@@ -19,6 +19,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -196,8 +197,9 @@ public class CartController {
     // ── mapping helpers ───────────────────────────────────────────────────────
 
     private CartResponse toResponse(CartEntity cart, List<CartItemEntity> items, List<CartCouponEntity> coupons) {
+        Set<UUID> unavailableIds = cartService.findUnavailableItemIds(items);
         List<CartItemResponse> itemResponses = items.stream()
-                .map(this::toItemResponse)
+                .map(item -> toItemResponse(item, !unavailableIds.contains(item.getId())))
                 .toList();
         CartTotalsResponse totals = new CartTotalsResponse(
                 cart.getSubtotalAmount(),
@@ -212,7 +214,7 @@ public class CartController {
         return new CartResponse(cart.getId(), cart.getStatus(), cart.getCurrency(), itemResponses, totals, couponCodes);
     }
 
-    private CartItemResponse toItemResponse(CartItemEntity item) {
+    private CartItemResponse toItemResponse(CartItemEntity item, boolean available) {
         return new CartItemResponse(
                 item.getId(),
                 item.getProductId() != null ? item.getProductId().toString() : null,
@@ -225,7 +227,8 @@ public class CartController {
                 item.getUnitPrice(),
                 item.getLineSubtotal(),
                 item.getLineDiscount(),
-                item.getLineTotal()
+                item.getLineTotal(),
+                available
         );
     }
 

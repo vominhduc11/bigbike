@@ -11,7 +11,8 @@ import { OrderNotificationToast } from './components/OrderNotificationToast'
 import { StatePanel } from './components/StatePanel'
 import { AuthProvider, useAuth } from './lib/auth'
 import { readTokens } from './lib/authStorage'
-import { connectAdminWs, disconnectAdminWs } from './lib/adminWebSocket'
+import { connectAdminWs, disconnectAdminWs, setWsReconnectCallback } from './lib/adminWebSocket'
+import { queryClient } from './lib/queryClient'
 import { LoginScreen } from './screens/LoginScreen'
 
 // Wrap lazy imports with a one-shot reload on chunk load failure.
@@ -278,6 +279,7 @@ function AdminApp() {
   useEffect(() => {
     if (authState.status !== 'authenticated') return
     connectAdminWs(() => readTokens().accessToken)
+    setWsReconnectCallback(() => queryClient.invalidateQueries())
     return () => disconnectAdminWs()
   }, [authState.status])
 

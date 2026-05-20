@@ -1491,7 +1491,7 @@ function InventoryGroupedTable({ groups, loading, pageSize, canUpdate, serialOnl
 
   return (
     <div className="overflow-x-auto w-full">
-      <table className="w-full border-collapse text-sm">
+      <table className="w-full border-collapse text-sm min-w-[700px]">
         <thead>
           <tr className="border-b-2 border-border">
             <th className="w-8 py-2 px-1" />

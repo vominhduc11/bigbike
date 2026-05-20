@@ -23,10 +23,14 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -231,6 +235,41 @@ public class CartService {
 
     public List<CartItemEntity> getItems(CartEntity cart) {
         return cartItemRepo.findByCartId(cart.getId());
+    }
+
+    public Set<UUID> findUnavailableItemIds(List<CartItemEntity> items) {
+        if (items.isEmpty()) return Set.of();
+
+        Set<String> productPks = items.stream()
+                .filter(i -> i.getProductId() != null)
+                .map(i -> i.getProductId().toString())
+                .collect(Collectors.toSet());
+        Map<String, Boolean> productPublished = productRepo.findAllById(productPks).stream()
+                .collect(Collectors.toMap(
+                        ProductEntity::getId,
+                        p -> PublishStatus.PUBLISHED == p.getPublishStatus()));
+
+        Set<String> variantPks = items.stream()
+                .filter(i -> i.getProductVariantId() != null)
+                .map(i -> i.getProductVariantId().toString())
+                .collect(Collectors.toSet());
+        Map<String, Boolean> variantEnabled = variantPks.isEmpty() ? Map.of()
+                : variantRepo.findAllById(variantPks).stream()
+                        .collect(Collectors.toMap(
+                                ProductVariantEntity::getId,
+                                ProductVariantEntity::isAvailable));
+
+        Set<UUID> unavailable = new HashSet<>();
+        for (CartItemEntity item : items) {
+            String productPk = item.getProductId() != null ? item.getProductId().toString() : null;
+            String variantPk = item.getProductVariantId() != null ? item.getProductVariantId().toString() : null;
+            boolean productOk = productPk == null || Boolean.TRUE.equals(productPublished.get(productPk));
+            boolean variantOk = variantPk == null || Boolean.TRUE.equals(variantEnabled.get(variantPk));
+            if (!productOk || !variantOk) {
+                unavailable.add(item.getId());
+            }
+        }
+        return unavailable;
     }
 
     public List<CartCouponEntity> getCoupons(CartEntity cart) {

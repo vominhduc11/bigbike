@@ -277,7 +277,7 @@ export function AdminShell({
               </button>
             )}
 
-            <button className="icon-btn" type="button" title={t('common.help', { defaultValue: 'Trợ giúp' })}>
+            <button className="icon-btn max-sm:hidden" type="button" title={t('common.help', { defaultValue: 'Trợ giúp' })}>
               <HelpCircle size={18} />
             </button>
 

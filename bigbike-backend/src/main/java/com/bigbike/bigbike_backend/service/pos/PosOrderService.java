@@ -2,6 +2,7 @@ package com.bigbike.bigbike_backend.service.pos;
 
 import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
+import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
@@ -112,7 +113,9 @@ public class PosOrderService {
             Long changeAmount,
             BigDecimal paidAmount,
             BigDecimal refundAmount,
-            List<PosOrderItemResponse> items
+            List<PosOrderItemResponse> items,
+            BigDecimal discountAmount,
+            String couponCode
     ) {}
 
     private static final String CHANNEL_IN_STORE = "IN_STORE";
@@ -153,7 +156,13 @@ public class PosOrderService {
             if (req.customerId() == null || req.customerId().isBlank()) {
                 throw new ConflictException("customerId là bắt buộc khi thanh toán bằng CREDIT.");
             }
-            UUID custId = UUID.fromString(req.customerId());
+            UUID custId;
+            try {
+                custId = UUID.fromString(req.customerId());
+            } catch (IllegalArgumentException e) {
+                throw com.bigbike.bigbike_backend.api.error.ValidationException.fromField(
+                        "customerId", "INVALID_FORMAT", "customerId phải là UUID hợp lệ.");
+            }
             // Amount unknown yet — we validate after totaling; store customer for later
             creditCustomer = customerRepo.findById(custId)
                     .orElseThrow(() -> new NotFoundException("Customer not found: " + req.customerId()));
@@ -173,11 +182,15 @@ public class PosOrderService {
                 if ("CASH".equals(found.getPaymentMethod()) && req.tenderedAmount() != null) {
                     changeAmt = req.tenderedAmount() - found.getTotalAmount().setScale(0, RoundingMode.HALF_UP).longValue();
                 }
+                String foundCouponCode1 = appliedCouponRepo.findByOrderId(found.getId())
+                        .stream().findFirst().map(snap -> snap.getCode()).orElse(null);
+                BigDecimal foundDiscount1 = found.getDiscountAmount() != null
+                        ? found.getDiscountAmount() : BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
                 return new PosOrderResponse(
                         found.getId(), found.getOrderNumber(), found.getStatus(), found.getPaymentStatus(),
                         found.getPaymentMethod(), found.getTotalAmount(), req.tenderedAmount(), changeAmt,
                         found.getPaidAmount(), found.getRefundAmount(),
-                        loadItemsForOrder(found.getId()));
+                        loadItemsForOrder(found.getId()), foundDiscount1, foundCouponCode1);
             }
         }
 
@@ -294,15 +307,8 @@ public class PosOrderService {
             lineItems.add(li);
         }
 
-        // Validate credit limit now that we know subtotal
-        boolean creditLimitOverridden = false;
-        if ("CREDIT".equals(req.paymentMethod()) && creditCustomer != null) {
-            EligibilityResult eligibility = creditPolicyService.validateCreditEligibility(
-                    creditCustomer.getId(), subtotal, canOverrideCreditLimit);
-            creditLimitOverridden = eligibility.limitOverrideExercised();
-        }
-
-        // Validate và tính coupon discount (nếu có)
+        // Validate và tính coupon discount trước (nếu có) — phải trước credit check vì
+        // credit limit được so với totalAfterDiscount, không phải subtotal.
         CouponEntity appliedCoupon = null;
         BigDecimal discountAmount = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
         if (req.couponCode() != null && !req.couponCode().isBlank()) {
@@ -313,13 +319,41 @@ public class PosOrderService {
             String posCustomerId = creditCustomer != null ? creditCustomer.getId().toString()
                     : walkInCustomer != null ? walkInCustomer.getId().toString() : null;
             couponPolicy.validateCustomer(appliedCoupon, posCustomerId);
-            couponPolicy.validate(appliedCoupon, subtotal);
+            couponPolicy.validate(appliedCoupon, subtotal); // minimum-order check dùng subtotal — đúng intent
             discountAmount = couponPolicy.computeDiscount(appliedCoupon, subtotal);
         }
 
         BigDecimal totalAfterDiscount = subtotal.subtract(discountAmount).setScale(2, RoundingMode.HALF_UP);
         if (totalAfterDiscount.compareTo(BigDecimal.ZERO) < 0) {
             totalAfterDiscount = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        }
+
+        // Credit check sau discount — khách có coupon lớn có thể pass limit mà trước đó không pass
+        boolean creditLimitOverridden = false;
+        if ("CREDIT".equals(req.paymentMethod()) && creditCustomer != null) {
+            EligibilityResult eligibility = creditPolicyService.validateCreditEligibility(
+                    creditCustomer.getId(), totalAfterDiscount, canOverrideCreditLimit);
+            creditLimitOverridden = eligibility.limitOverrideExercised();
+        }
+
+        // Pro-rata phân bổ discount về từng line item (cần cho báo cáo doanh thu per-product)
+        if (discountAmount.compareTo(BigDecimal.ZERO) > 0 && subtotal.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal allocated = BigDecimal.ZERO;
+            for (int i = 0; i < lineItems.size(); i++) {
+                OrderLineItemEntity li = lineItems.get(i);
+                BigDecimal share;
+                if (i == lineItems.size() - 1) {
+                    share = discountAmount.subtract(allocated);
+                } else {
+                    share = discountAmount
+                            .multiply(li.getLineSubtotal())
+                            .divide(subtotal, 2, RoundingMode.HALF_UP);
+                }
+                allocated = allocated.add(share);
+                li.setLineDiscount(share);
+                li.setLineTotal(li.getLineSubtotal().subtract(share)
+                        .max(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP));
+            }
         }
 
         // Validate tiền mặt đủ nếu được gửi lên
@@ -386,11 +420,15 @@ public class PosOrderService {
                 if ("CASH".equals(found.getPaymentMethod()) && req.tenderedAmount() != null) {
                     changeAmt = req.tenderedAmount() - found.getTotalAmount().setScale(0, RoundingMode.HALF_UP).longValue();
                 }
+                String foundCouponCode2 = appliedCouponRepo.findByOrderId(found.getId())
+                        .stream().findFirst().map(snap -> snap.getCode()).orElse(null);
+                BigDecimal foundDiscount2 = found.getDiscountAmount() != null
+                        ? found.getDiscountAmount() : BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
                 return new PosOrderResponse(
                         found.getId(), found.getOrderNumber(), found.getStatus(), found.getPaymentStatus(),
                         found.getPaymentMethod(), found.getTotalAmount(), req.tenderedAmount(), changeAmt,
                         found.getPaidAmount(), found.getRefundAmount(),
-                        loadItemsForOrder(found.getId()));
+                        loadItemsForOrder(found.getId()), foundDiscount2, foundCouponCode2);
             }
             throw ex;
         }
@@ -526,7 +564,9 @@ public class PosOrderService {
                 req.paymentMethod(), totalAfterDiscount,
                 req.tenderedAmount(), changeAmount,
                 resolvedPaidAmount, BigDecimal.ZERO,
-                responseItems
+                responseItems,
+                discountAmount,
+                appliedCoupon != null ? appliedCoupon.getCode() : null
         );
     }
 

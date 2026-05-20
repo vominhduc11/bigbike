@@ -43,7 +43,7 @@ export default async function HowToBuyPage() {
   const pageTitle = safeText(page.title, t("howToBuy.title"));
 
   return (
-    <section className="bb-page">
+    <>
       <PageHero
         imageUrl={page.heroImageUrl}
         imageAlt={page.heroImageAlt}
@@ -53,18 +53,20 @@ export default async function HowToBuyPage() {
           { label: pageTitle },
         ]}
       />
-      <div className="bb-container grid grid-cols-1 gap-[30px] pt-10 pb-[60px] items-start lg:grid-cols-[3fr_9fr]">
-        <PolicySidebar activeHref="/huong-dan-mua-hang" title={t("howToBuy.sidebarTitle")} />
-        <div className="min-w-0">
-          <article
-            className="bb-richtext"
-            dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(page.body) }}
-          />
-          <p className="text-muted-foreground text-sm text-right mb-10">
-            {t("updatedAt", { date: formatDate(page.updatedAt) })}
-          </p>
+      <section className="bb-page">
+        <div className="bb-container grid grid-cols-1 gap-[30px] pt-10 pb-[60px] items-start lg:grid-cols-[3fr_9fr]">
+          <PolicySidebar activeHref="/huong-dan-mua-hang" title={t("howToBuy.sidebarTitle")} />
+          <div className="min-w-0">
+            <article
+              className="bb-richtext"
+              dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(page.body) }}
+            />
+            <p className="text-muted-foreground text-sm text-right mb-10">
+              {t("updatedAt", { date: formatDate(page.updatedAt) })}
+            </p>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </>
   );
 }

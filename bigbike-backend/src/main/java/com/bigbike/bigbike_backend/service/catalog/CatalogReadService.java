@@ -1,5 +1,6 @@
 package com.bigbike.bigbike_backend.service.catalog;
 
+import com.bigbike.bigbike_backend.api.error.GoneException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.domain.catalog.Brand;
 import com.bigbike.bigbike_backend.domain.catalog.CatalogFacets;
@@ -7,6 +8,7 @@ import com.bigbike.bigbike_backend.domain.catalog.Category;
 import com.bigbike.bigbike_backend.domain.catalog.HomepageBlock;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.repository.catalog.CatalogReadRepository;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.common.PaginationService;
@@ -18,6 +20,7 @@ import java.text.Normalizer;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -78,6 +81,7 @@ public class CatalogReadService {
     private final CatalogReadRepository catalogReadRepository;
     private final SortParser sortParser;
     private final PaginationService paginationService;
+    private final ProductJpaRepository productRepo;
 
     public PageResult<Product> listProducts(
             int page,
@@ -199,10 +203,18 @@ public class CatalogReadService {
     }
 
     public Product getProductBySlug(String slug, String lang) {
-        Product product = catalogReadRepository.findProductBySlug(slug, lang)
-                .filter(item -> item.publishStatus() == PublishStatus.PUBLISHED)
-                .orElseThrow(() -> new NotFoundException("Product not found."));
-        return product;
+        Optional<Product> published = catalogReadRepository.findProductBySlug(slug, lang)
+                .filter(item -> item.publishStatus() == PublishStatus.PUBLISHED);
+        if (published.isPresent()) {
+            return published.get();
+        }
+        boolean trashed = productRepo.findBySlug(slug)
+                .map(p -> p.getPublishStatus() == PublishStatus.TRASH)
+                .orElse(Boolean.FALSE);
+        if (trashed) {
+            throw new GoneException("Sản phẩm không còn được bán.");
+        }
+        throw new NotFoundException("Product not found.");
     }
 
     /**

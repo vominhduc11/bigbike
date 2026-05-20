@@ -20,6 +20,7 @@
 
   --bb-color-black: #000000;
   --bb-color-dark: #1a1a1a;
+  --bb-color-social-facebook: #1877f2;
   --bb-color-gray-25: #f8f8f8;
   --bb-color-gray-50: #f5f5f5;
   --bb-color-gray-100: #eeeeef;
@@ -84,6 +85,8 @@
   --bb-state-danger-bg: var(--bb-color-red-50);
   --bb-state-danger-border: var(--bb-brand-primary-border);
   --bb-state-info: var(--bb-color-blue);
+  --bb-state-info-bg: rgba(0, 123, 255, 0.12);
+  --bb-state-info-border: rgba(0, 123, 255, 0.32);
 
   --bb-product-price: var(--bb-brand-primary);
   /* Cart discount/coupon savings — WP parity (.summary--items .discount) */
@@ -151,7 +154,7 @@
   --bb-page-padding-mobile: var(--bb-space-4);
   --bb-page-padding-tablet: var(--bb-space-6);
   --bb-page-padding-desktop: var(--bb-space-8);
-  --bb-header-height: 5rem;
+  --bb-header-height: 5rem; /* 80px — desktop/tablet */
   --bb-promo-strip-height: 0px;
   --bb-header-stack: calc(var(--bb-header-height) + var(--bb-promo-strip-height));
   --bb-touch-target: 44px;
@@ -184,9 +187,16 @@
   --bb-ease-standard: cubic-bezier(0.2, 0, 0, 1);
 
   --bb-z-header: 200;
-  --bb-z-overlay: 400;
-  --bb-z-modal: 500;
   --bb-z-dropdown: 600;
+  --bb-z-overlay: 700;
+  --bb-z-modal: 800;
+  --bb-z-modal-dropdown: 900;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --bb-header-height: 3.75rem; /* 60px — mobile */
+  }
 }
 
 .bb-theme {

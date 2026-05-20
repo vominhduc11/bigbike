@@ -67,11 +67,14 @@ public class AdminReturnService {
     //   PENDING     → APPROVED | REJECTED
     //   APPROVED    → RECEIVED
     //   RECEIVED    → INSPECTING | COMPLETED | REFUNDED
-    //   INSPECTING  → COMPLETED | REFUNDED | RECEIVED (re-receive if QC bounces back)
+    //   INSPECTING  → COMPLETED | REFUNDED
     //
     // INSPECTING is optional — high-risk goods (mũ bảo hiểm, áo giáp) must enter
     // INSPECTING before being marked COMPLETED so each ReturnItem is reviewed and
     // marked PASS/FAIL. Items marked FAIL are excluded from stock restore.
+    //
+    // REFUNDED requires full-order coverage (RETURN_RULE_007) — see
+    // validateFullCoverageForRefund. Partial refunds are not supported (V114).
     private static final Map<String, Set<String>> TRANSITIONS = Map.of(
             "PENDING",    Set.of("APPROVED", "REJECTED"),
             "APPROVED",   Set.of("RECEIVED"),
@@ -168,6 +171,25 @@ public class AdminReturnService {
                 throw ValidationException.fromField("refundAmount", "REQUIRED",
                         "refundAmount must be provided and > 0 when transitioning to REFUNDED.");
             }
+            // RETURN_RULE_007: REFUNDED via RMA requires the return (together with any
+            // prior non-rejected returns) to cover every order line item × full quantity.
+            // Partial refunds are unsupported (V114) — RefundService is full-refund-only
+            // and operates on the whole order, so calling it for a partial-coverage RMA
+            // would over-refund and over-restore stock/serials for items the customer kept.
+            if (!isFullReturnCoverage(ret.getOrderId())) {
+                List<OrderLineItemEntity> lineItems = lineItemRepo.findByOrderId(ret.getOrderId());
+                String firstMissing = lineItems.stream()
+                        .filter(li -> itemRepo.sumNonRejectedQuantityByLineItemId(li.getId()) < li.getQuantity())
+                        .findFirst()
+                        .map(li -> "'" + li.getProductName() + "' còn "
+                                + (li.getQuantity() - itemRepo.sumNonRejectedQuantityByLineItemId(li.getId()))
+                                + " món chưa được trả")
+                        .orElse("một số sản phẩm chưa được trả");
+                throw new ConflictException(
+                        "Không thể hoàn tiền: phiếu trả chưa bao phủ toàn bộ đơn hàng (" + firstMissing
+                                + "). Nếu muốn hoàn tiền toàn đơn, dùng nút Hoàn tiền ở trang chi tiết đơn hàng."
+                                + " (RETURN_NOT_FULL_COVERAGE)");
+            }
         }
 
         String oldStatus = ret.getStatus();
@@ -207,10 +229,13 @@ public class AdminReturnService {
             serialLifecycleService.moveReturnedToInspection(ret.getId());
         }
 
-        // Non-serial items: restore stock immediately on COMPLETED/REFUNDED.
-        // Serial-tracked items: stock is only restored after admin sets INSPECTION → IN_STOCK
-        // via PATCH /admin/inventory/serials/{id}/status.
-        if ("COMPLETED".equals(newStatus) || "REFUNDED".equals(newStatus)) {
+        // COMPLETED path: RMA-level restore for non-serial items (no refund issued).
+        // REFUNDED path: stock & serials are restored at order level by
+        //   RefundService.applyRefund (called above) — calling restoreStockForReturn
+        //   here too would double-restore non-serial quantities. See RETURN_RULE_007.
+        // Serial-tracked items: stay RETURNED in both paths; admin promotes to
+        //   IN_STOCK manually via PATCH /admin/inventory/serials/{id}/status.
+        if ("COMPLETED".equals(newStatus)) {
             restoreStockForReturn(ret.getId());
         }
 
@@ -523,12 +548,39 @@ public class AdminReturnService {
         List<ReturnHistoryResponse> history = historyRepo.findByReturnIdOrderByCreatedAtAsc(r.getId())
                 .stream().map(returnRequestMapper::toAdminHistory).toList();
 
+        BigDecimal orderPaidAmount = (order != null && order.getPaidAmount() != null)
+                ? order.getPaidAmount() : BigDecimal.ZERO;
+        BigDecimal orderRefundedAmount = (order != null && order.getRefundAmount() != null)
+                ? order.getRefundAmount() : BigDecimal.ZERO;
+        BigDecimal orderRefundableAmount = orderPaidAmount.subtract(orderRefundedAmount);
+        boolean fullReturnCoverage = order != null && isFullReturnCoverage(order.getId());
+
         return returnRequestMapper.toAdminDetail(
                 r,
                 order != null ? order.getOrderNumber() : null,
                 order != null ? order.getCustomerEmail() : null,
+                orderPaidAmount,
+                orderRefundedAmount,
+                orderRefundableAmount,
+                fullReturnCoverage,
                 items,
                 history
         );
+    }
+
+    /**
+     * Returns true when every order line item is fully covered by non-rejected
+     * return items. Used to gate the REFUNDED transition (RETURN_RULE_007) and
+     * to expose the {@code fullReturnCoverage} flag on the detail response so
+     * admin UI can hide the REFUNDED option for partial-coverage RMAs.
+     */
+    private boolean isFullReturnCoverage(UUID orderId) {
+        List<OrderLineItemEntity> lineItems = lineItemRepo.findByOrderId(orderId);
+        if (lineItems.isEmpty()) return false;
+        for (OrderLineItemEntity li : lineItems) {
+            int totalReturned = itemRepo.sumNonRejectedQuantityByLineItemId(li.getId());
+            if (totalReturned < li.getQuantity()) return false;
+        }
+        return true;
     }
 }

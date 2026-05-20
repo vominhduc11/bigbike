@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { Badge } from "@/components/ui/badge";
 import {
   ArrowRight,
   Calendar,
@@ -20,7 +21,7 @@ import { useOrder, useOrders } from "@/lib/query/hooks";
 import { AccountSectionHeading, AccountShell } from "@/components/layout/AccountShell";
 import { formatAddress, formatDate, formatVnd, orderStatusLabelWithT, paymentMethodLabelWithT, resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { toOrderDetailPath } from "@/lib/utils/routes";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 
 function OrderDetailModal({
@@ -50,6 +51,7 @@ function OrderDetailModal({
           <DialogTitle className="font-mono normal-case tracking-[0.04em]">
             {order ? order.orderNumber : t("modalDefaultTitle")}
           </DialogTitle>
+          <DialogDescription className="sr-only">{t("modalDefaultTitle")}</DialogDescription>
         </DialogHeader>
 
         {loading && <p className="p-5 text-sm text-muted-foreground">{t("loading")}</p>}
@@ -58,7 +60,7 @@ function OrderDetailModal({
         {order && (
           <div className="p-5 pt-0">
             {/* date + status */}
-            <div className="flex flex-wrap items-center gap-5 border-b border-border pb-4 text-sm text-[#555555]">
+            <div className="flex flex-wrap items-center gap-5 border-b border-border pb-4 text-sm text-muted-foreground">
               <span className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-muted-foreground" aria-hidden />
                 {formatDate(order.placedAt)}
@@ -72,11 +74,11 @@ function OrderDetailModal({
             {/* invoice */}
             <div className="mt-4 flex items-center gap-2">
               <ShoppingBag className="h-4 w-4 text-brand" aria-hidden />
-              <p className="m-0 text-sm font-bold uppercase tracking-[0.06em] text-[#1a1a1a]">
+              <p className="m-0 text-sm font-bold uppercase tracking-[0.06em] text-foreground">
                 {t("orderInfo")}
               </p>
             </div>
-            <p className="mt-3 mb-1 text-sm font-bold text-[#1a1a1a]">{t("invoice")}</p>
+            <p className="mt-3 mb-1 text-sm font-bold text-foreground">{t("invoice")}</p>
 
             <div className="border-t border-border">
               {order.lineItems.map((li) => (
@@ -95,14 +97,14 @@ function OrderDetailModal({
                     </div>
                   )}
                   <div className="min-w-0 flex-1">
-                    <p className="m-0 truncate text-sm font-semibold uppercase text-[#1a1a1a]">
+                    <p className="m-0 truncate text-sm font-semibold uppercase text-foreground">
                       {safeText(li.productName, tCatalog("title"))}
                     </p>
                     {li.variantName && (
                       <p className="m-0 mt-0.5 text-sm text-muted-foreground">{li.variantName}</p>
                     )}
                   </div>
-                  <p className="m-0 shrink-0 text-sm text-[#555555]">
+                  <p className="m-0 shrink-0 text-sm text-muted-foreground">
                     {li.quantity} &nbsp;x&nbsp; {formatVnd(li.unitPrice)}
                   </p>
                 </div>
@@ -111,11 +113,11 @@ function OrderDetailModal({
 
             {/* totals */}
             <div className="mt-4 flex flex-col gap-2">
-              <div className="flex justify-between text-sm text-[#555555]">
+              <div className="flex justify-between text-sm text-muted-foreground">
                 <span>{t("subtotal")}</span>
                 <span>{formatVnd(order.subtotalAmount)}</span>
               </div>
-              <div className="flex justify-between text-sm text-[#555555]">
+              <div className="flex justify-between text-sm text-muted-foreground">
                 <span>{t("shipping")}</span>
                 <span>{formatVnd(order.shippingAmount)}</span>
               </div>
@@ -126,14 +128,14 @@ function OrderDetailModal({
                 </div>
               )}
               {order.feeAmount > 0 && (
-                <div className="flex justify-between text-sm text-[#555555]">
+                <div className="flex justify-between text-sm text-muted-foreground">
                   <span>{t("fee")}</span>
                   <span>{formatVnd(order.feeAmount)}</span>
                 </div>
               )}
             </div>
             <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
-              <span className="text-sm font-bold uppercase text-[#1a1a1a]">{t("total")}</span>
+              <span className="text-sm font-bold uppercase text-foreground">{t("total")}</span>
               <span className="font-display text-xl font-bold text-brand">
                 {formatVnd(order.totalAmount)}
               </span>
@@ -142,12 +144,12 @@ function OrderDetailModal({
             {/* shipping + payment */}
             <div className="mt-5 grid grid-cols-1 gap-5 border-t border-border pt-4 sm:grid-cols-2">
               <div>
-                <p className="m-0 mb-2 text-sm font-bold uppercase tracking-[0.04em] text-[#1a1a1a]">
+                <p className="m-0 mb-2 text-sm font-bold uppercase tracking-[0.04em] text-foreground">
                   {t("shippingInfo")}
                 </p>
                 {shipAddr ? (
-                  <div className="flex flex-col gap-1.5 text-sm text-[#555555]">
-                    <span className="font-semibold text-[#1a1a1a]">{shipAddr.fullName}</span>
+                  <div className="flex flex-col gap-1.5 text-sm text-muted-foreground">
+                    <span className="font-semibold text-foreground">{shipAddr.fullName}</span>
                     {shipAddr.phone && <span>{shipAddr.phone}</span>}
                     {shipAddr.email && <span>{shipAddr.email}</span>}
                     <span className="flex items-start gap-1.5">
@@ -160,10 +162,10 @@ function OrderDetailModal({
                 )}
               </div>
               <div>
-                <p className="m-0 mb-2 text-sm font-bold uppercase tracking-[0.04em] text-[#1a1a1a]">
+                <p className="m-0 mb-2 text-sm font-bold uppercase tracking-[0.04em] text-foreground">
                   {t("paymentInfo")}
                 </p>
-                <p className="m-0 text-sm text-[#555555]">
+                <p className="m-0 text-sm text-muted-foreground">
                   {order.payments[0]?.paymentMethod
                     ? paymentMethodLabelWithT(order.payments[0].paymentMethod, tCheckout)
                     : "—"}
@@ -234,11 +236,18 @@ function OrderHistoryContent() {
                 {/* Mobile: name + arrow share the top row. On desktop this
                     wrapper dissolves (md:contents) so all fields sit on one row. */}
                 <div className="flex items-start justify-between gap-3 md:contents">
-                  <p className="m-0 line-clamp-2 min-w-0 flex-1 text-sm font-semibold uppercase leading-snug text-[#1a1a1a] md:min-w-[180px]">
-                    {order.productNames && order.productNames.length > 0
-                      ? order.productNames.join(" + ")
-                      : t("itemsLabel", { count: order.itemCount })}
-                  </p>
+                  <div className="min-w-0 flex-1 flex flex-col gap-1">
+                    <p className="m-0 line-clamp-2 text-sm font-semibold uppercase leading-snug text-foreground md:min-w-[180px]">
+                      {order.productNames && order.productNames.length > 0
+                        ? order.productNames.join(" + ")
+                        : t("itemsLabel", { count: order.itemCount })}
+                    </p>
+                    {order.channel === "IN_STORE" && (
+                      <Badge variant="secondary" className="shrink-0 self-start text-xs font-normal rounded-none">
+                        {t("channelInStore")}
+                      </Badge>
+                    )}
+                  </div>
                   <button
                     type="button"
                     onClick={() => openOrder(order.id)}
@@ -248,15 +257,15 @@ function OrderHistoryContent() {
                     <ArrowRight className="h-[18px] w-[18px]" aria-hidden />
                   </button>
                 </div>
-                <span className="flex items-center gap-2 text-sm text-[#555555]">
+                <span className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Receipt className="h-4 w-4 text-muted-foreground" aria-hidden />
                   {order.orderNumber}
                 </span>
-                <span className="flex items-center gap-2 text-sm text-[#555555]">
+                <span className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Calendar className="h-4 w-4 text-muted-foreground" aria-hidden />
                   {formatDate(order.placedAt)}
                 </span>
-                <span className="flex items-center gap-2 text-sm text-[#555555]">
+                <span className="flex items-center gap-2 text-sm text-muted-foreground">
                   <ClipboardList className="h-4 w-4 text-muted-foreground" aria-hidden />
                   {orderStatusLabelWithT(order.status, t)}
                 </span>
@@ -271,11 +280,11 @@ function OrderHistoryContent() {
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page <= 1}
                 aria-label={tCatalog("previousPage")}
-                className="text-[#555555] disabled:opacity-30"
+                className="text-muted-foreground disabled:opacity-30"
               >
                 <ChevronLeft className="h-5 w-5" aria-hidden />
               </button>
-              <span className="text-sm text-[#1a1a1a]">
+              <span className="text-sm text-foreground">
                 {page} <span className="text-muted-foreground">- {totalPages}</span>
               </span>
               <button
@@ -283,7 +292,7 @@ function OrderHistoryContent() {
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page >= totalPages}
                 aria-label={tCatalog("nextPage")}
-                className="text-[#555555] disabled:opacity-30"
+                className="text-muted-foreground disabled:opacity-30"
               >
                 <ChevronRight className="h-5 w-5" aria-hidden />
               </button>

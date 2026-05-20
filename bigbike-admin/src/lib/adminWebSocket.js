@@ -40,6 +40,7 @@ let subscriptions = {}   // destination → Set<handler>
 let subIdMap = {}        // destination → subId string (e.g. 'sub-0')
 let subCounter = 0
 let reconnectTimer = null
+let onReconnect = null   // callback fired on every CONNECTED (initial + reconnect)
 
 function clearReconnect() {
   if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null }
@@ -82,6 +83,8 @@ function openConnection() {
           ws.send(buildFrame('SUBSCRIBE', { destination: dest, id: subIdMap[dest] }))
         }
       }
+      // Notify caller so stale React Query caches can be invalidated after any (re-)connect
+      if (typeof onReconnect === 'function') onReconnect()
     }
 
     if (frame.command === 'MESSAGE') {
@@ -121,7 +124,12 @@ export function disconnectAdminWs() {
   alive = false
   clearReconnect()
   getToken = null
+  onReconnect = null
   if (ws) { ws.close(); ws = null }
+}
+
+export function setWsReconnectCallback(fn) {
+  onReconnect = fn
 }
 
 export function subscribeAdminWs(destination, handler) {

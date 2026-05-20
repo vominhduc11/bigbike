@@ -88,7 +88,7 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
   // Root landing: static index without CMS dependency (CMS page "huong-dan" may not exist)
   if (isRoot) {
     return (
-      <section className="bb-page">
+      <>
         <PageHero
           title={t("heroTitle")}
           breadcrumb={[
@@ -96,6 +96,7 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
             { label: t("breadcrumb") },
           ]}
         />
+        <section className="bb-page">
         <div className="bb-container bb-section">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {Object.values(GUIDE_ROUTE_MAP).map((guide) => (
@@ -112,7 +113,8 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
             ))}
           </div>
         </div>
-      </section>
+        </section>
+      </>
     );
   }
 
@@ -138,7 +140,7 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
   const pageTitle = safeText(page.title, t(route.titleKey));
 
   return (
-    <section className="bb-page">
+    <>
       <PageHero
         imageUrl={page.heroImageUrl}
         imageAlt={page.heroImageAlt}
@@ -149,45 +151,47 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
           { label: pageTitle },
         ]}
       />
-      <div className="bb-container">
-        <div className="bb-detail-layout bb-section">
-          <div className="bb-card bb-card-content">
-            <article
-              className="bb-richtext"
-              dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(page.body) }}
-            />
-            <p className="bb-updated-date">{t("updatedAt", { date: formatDate(page.updatedAt) })}</p>
-          </div>
-
-          <aside className="bb-sidebar-grid">
+      <section className="bb-page">
+        <div className="bb-container">
+          <div className="bb-detail-layout bb-section">
             <div className="bb-card bb-card-content">
-              <h2 className="bb-sidebar-heading">{t("sidebarTitle")}</h2>
-              {menuResult.error ? (
-                <p className="text-sm text-destructive px-2 py-1.5">{menuResult.error.message}</p>
-              ) : menuItems.length === 0 ? (
-                <p className="text-muted-foreground text-sm">{t("emptyMenu")}</p>
-              ) : (
-                <nav className="bb-nav-links">
-                  {menuItems.map((item) => {
-                    const href = normalizeMenuUrl(item.url);
-                    const active = href === currentPath || href === `${currentPath}index.html`;
-                    return (
-                      <Link
-                        key={item.id}
-                        href={href}
-                        className={active ? "bb-link font-bold text-brand" : "bb-link font-medium"}
-                        aria-current={active ? "page" : undefined}
-                      >
-                        {safeText(item.label, t("menuFallback"))}
-                      </Link>
-                    );
-                  })}
-                </nav>
-              )}
+              <article
+                className="bb-richtext"
+                dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(page.body) }}
+              />
+              <p className="bb-updated-date">{t("updatedAt", { date: formatDate(page.updatedAt) })}</p>
             </div>
-          </aside>
+
+            <aside className="bb-sidebar-grid">
+              <div className="bb-card bb-card-content">
+                <h2 className="bb-sidebar-heading">{t("sidebarTitle")}</h2>
+                {menuResult.error ? (
+                  <p className="text-sm text-destructive px-2 py-1.5">{menuResult.error.message}</p>
+                ) : menuItems.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">{t("emptyMenu")}</p>
+                ) : (
+                  <nav className="bb-nav-links">
+                    {menuItems.map((item) => {
+                      const href = normalizeMenuUrl(item.url);
+                      const active = href === currentPath || href === `${currentPath}index.html`;
+                      return (
+                        <Link
+                          key={item.id}
+                          href={href}
+                          className={active ? "bb-link font-bold text-brand" : "bb-link font-medium"}
+                          aria-current={active ? "page" : undefined}
+                        >
+                          {safeText(item.label, t("menuFallback"))}
+                        </Link>
+                      );
+                    })}
+                  </nav>
+                )}
+              </div>
+            </aside>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </>
   );
 }

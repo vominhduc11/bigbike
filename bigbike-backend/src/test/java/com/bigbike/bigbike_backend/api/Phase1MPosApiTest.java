@@ -14,6 +14,7 @@ import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductSerialEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
+import com.bigbike.bigbike_backend.persistence.entity.coupon.CouponEntity;
 import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
@@ -23,9 +24,11 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariant
 import com.bigbike.bigbike_backend.persistence.repository.catalog.StockMovementJpaRepository;
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEntity;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLineItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.PaymentJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.receivable.ReceivableJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.warranty.WarrantyRecordJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.coupon.CouponJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
 import com.bigbike.bigbike_backend.service.auth.PasswordService;
 import java.math.BigDecimal;
@@ -66,6 +69,8 @@ class Phase1MPosApiTest {
     @Autowired CustomerJpaRepository customerRepo;
     @Autowired ProductSerialJpaRepository serialRepo;
     @Autowired WarrantyRecordJpaRepository warrantyRepo;
+    @Autowired CouponJpaRepository couponRepo;
+    @Autowired OrderLineItemJpaRepository lineItemRepo;
     @Autowired PasswordService passwordService;
 
     private MockMvc mockMvc;
@@ -842,9 +847,134 @@ class Phase1MPosApiTest {
                 .andExpect(status().isUnauthorized());
     }
 
+    // ── Bug fixes (A1, A2, A4, B1) ───────────────────────────────────────────
+
+    @Test
+    void createPosOrder_withCoupon_responseIncludesDiscountAndCode() throws Exception {
+        TestVariant tv = createProductWithVariant(5, 200000);
+        CouponEntity coupon = createPosCoupon("SAVE20K", "FIXED", new BigDecimal("20000"));
+
+        mockMvc.perform(post("/api/v1/admin/pos/orders")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "paymentMethod": "CASH",
+                                  "posIdempotencyKey": "%s",
+                                  "tenderedAmount": 9999999,
+                                  "couponCode": "%s",
+                                  "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1}]
+                                }
+                                """.formatted(UUID.randomUUID(), coupon.getCode(), tv.productId, tv.variantId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.discountAmount").value(20000.0))
+                .andExpect(jsonPath("$.data.couponCode").value(coupon.getCode()))
+                .andExpect(jsonPath("$.data.totalAmount").value(180000.0));
+    }
+
+    @Test
+    void createPosCreditOrder_couponAppliedBeforeCreditCheck() throws Exception {
+        // credit limit = 150k, item = 200k, coupon -60k → totalAfterDiscount = 140k ≤ 150k → must pass
+        TestVariant tv = createProductWithVariant(5, 200000);
+        CustomerEntity customer = createCreditCustomer(new BigDecimal("150000"));
+        CouponEntity coupon = createPosCoupon("CREDIT60K", "FIXED", new BigDecimal("60000"));
+
+        mockMvc.perform(post("/api/v1/admin/pos/orders")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "paymentMethod": "CREDIT",
+                                  "posIdempotencyKey": "%s",
+                                  "customerId": "%s",
+                                  "couponCode": "%s",
+                                  "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1}]
+                                }
+                                """.formatted(UUID.randomUUID(), customer.getId(), coupon.getCode(),
+                                tv.productId, tv.variantId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.totalAmount").value(140000.0))
+                .andExpect(jsonPath("$.data.discountAmount").value(60000.0));
+    }
+
+    @Test
+    void createPosOrder_invalidCustomerUuid_returns400() throws Exception {
+        TestVariant tv = createProductWithVariant(5, 100000);
+
+        mockMvc.perform(post("/api/v1/admin/pos/orders")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "paymentMethod": "CREDIT",
+                                  "posIdempotencyKey": "%s",
+                                  "customerId": "not-a-uuid",
+                                  "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1}]
+                                }
+                                """.formatted(UUID.randomUUID(), tv.productId, tv.variantId)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.details[0].field").value("customerId"))
+                .andExpect(jsonPath("$.error.details[0].code").value("INVALID_FORMAT"));
+    }
+
+    @Test
+    void createPosOrder_withCoupon_lineDiscountsDistributed() throws Exception {
+        // 2 items × 100k each = 200k subtotal; coupon -20k → each item gets ~10k lineDiscount
+        TestVariant tvA = createProductWithVariant(5, 100000);
+        TestVariant tvB = createProductWithVariant(5, 100000);
+        CouponEntity coupon = createPosCoupon("DISTRIB20K", "FIXED", new BigDecimal("20000"));
+
+        MvcResult result = mockMvc.perform(post("/api/v1/admin/pos/orders")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "paymentMethod": "CASH",
+                                  "posIdempotencyKey": "%s",
+                                  "tenderedAmount": 9999999,
+                                  "couponCode": "%s",
+                                  "items": [
+                                    {"productId": "%s", "productVariantId": "%s", "quantity": 1},
+                                    {"productId": "%s", "productVariantId": "%s", "quantity": 1}
+                                  ]
+                                }
+                                """.formatted(UUID.randomUUID(), coupon.getCode(),
+                                tvA.productId, tvA.variantId, tvB.productId, tvB.variantId)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String orderId = extractJsonString(result.getResponse().getContentAsString(), "orderId");
+        var lineItems = lineItemRepo.findByOrderId(UUID.fromString(orderId));
+        assertThat(lineItems).hasSize(2);
+
+        // Sum of line discounts must equal order discountAmount = 20000
+        java.math.BigDecimal sumLineDiscount = lineItems.stream()
+                .map(li -> li.getLineDiscount() != null ? li.getLineDiscount() : java.math.BigDecimal.ZERO)
+                .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+        assertThat(sumLineDiscount).isEqualByComparingTo(new BigDecimal("20000"));
+
+        // Each individual lineDiscount must be > 0
+        lineItems.forEach(li ->
+                assertThat(li.getLineDiscount()).isGreaterThan(java.math.BigDecimal.ZERO));
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private record TestVariant(String productId, String variantId) {}
+
+    private CouponEntity createPosCoupon(String code, String discountType, BigDecimal amount) {
+        CouponEntity c = new CouponEntity();
+        c.setCode(code + "-" + UUID.randomUUID().toString().replace("-", "").substring(0, 6));
+        c.setName("Test coupon " + code);
+        c.setDiscountType(discountType);
+        c.setAmount(amount);
+        c.setStatus("ACTIVE");
+        c.setChannel("POS");
+        Instant now = Instant.now();
+        c.setCreatedAt(now);
+        c.setUpdatedAt(now);
+        return couponRepo.save(c);
+    }
 
     private CustomerEntity createCreditCustomer(BigDecimal creditLimit) {
         CustomerEntity c = new CustomerEntity();

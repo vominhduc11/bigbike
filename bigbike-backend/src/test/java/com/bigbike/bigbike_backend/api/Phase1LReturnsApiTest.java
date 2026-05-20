@@ -20,6 +20,7 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.StockMovementJ
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLineItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.PaymentJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
 import com.bigbike.bigbike_backend.service.auth.PasswordService;
 import jakarta.servlet.http.Cookie;
 import java.time.Instant;
@@ -59,6 +60,7 @@ class Phase1LReturnsApiTest {
     @Autowired OrderLineItemJpaRepository lineItemRepo;
     @Autowired PaymentJpaRepository paymentRepo;
     @Autowired StockMovementJpaRepository stockMovementRepo;
+    @Autowired CustomerJpaRepository customerRepo;
 
     private MockMvc mockMvc;
     private String adminToken;
@@ -686,13 +688,129 @@ class Phase1LReturnsApiTest {
             assertThat(p.getRefundAmount().compareTo(java.math.BigDecimal.ZERO)).isGreaterThan(0);
         });
 
-        // Verify stock restore was triggered (same variant-guard applies as test 26)
-        boolean lineItemHasVariant = lineItemRepo.findById(UUID.fromString(session.lineItemId))
-                .map(li -> li.getProductVariantId() != null)
-                .orElse(false);
-        if (lineItemHasVariant) {
-            assertThat(stockMovementRepo.existsByReferenceTypeAndReferenceId("RETURN", returnUuid)).isTrue();
-        }
+        // Critical-fix regression: REFUNDED path is owned end-to-end by RefundService
+        // at order level. No RMA-scoped "RETURN" stock movement may be written, otherwise
+        // non-serial line items would be double-restored.
+        assertThat(stockMovementRepo.existsByReferenceTypeAndReferenceId("RETURN", returnUuid)).isFalse();
+    }
+
+    // ── 28. Partial-coverage RMA cannot transition to REFUNDED ───────────────
+
+    @Test
+    void adminUpdateReturnStatus_rmaRefunded_partialCoverage_returns409() throws Exception {
+        // Order has 2 of a product; the RMA only covers 1 → partial coverage.
+        AuthSession session = placeCompletedOrderWithQuantity(
+                "ret-partial-" + UUID.randomUUID() + "@bigbike.vn", 2);
+
+        // Mark order PAID so we don't get blocked by the PAYMENT precondition first.
+        orderRepo.findById(UUID.fromString(session.orderId)).ifPresent(order -> {
+            order.setPaymentStatus("PAID");
+            order.setPaidAmount(order.getTotalAmount());
+            order.setUpdatedAt(Instant.now());
+            orderRepo.save(order);
+        });
+
+        // Create RMA for quantity 1 only.
+        String body = "{\"reason\":\"DEFECTIVE\",\"items\":[{\"orderLineItemId\":\""
+                + session.lineItemId + "\",\"quantity\":1,\"reason\":\"DEFECTIVE\"}]}";
+        MvcResult createResult = mockMvc.perform(post("/api/v1/customer/orders/" + session.orderId + "/returns")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body)
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String returnId = extractJsonValue(createResult.getResponse().getContentAsString(), "id");
+
+        mockMvc.perform(patch("/api/v1/admin/returns/" + returnId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"APPROVED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+        mockMvc.perform(patch("/api/v1/admin/returns/" + returnId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"RECEIVED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        // Attempt RECEIVED → REFUNDED on partial-coverage RMA → 409 ConflictException
+        // with RETURN_NOT_FULL_COVERAGE message.
+        java.math.BigDecimal anyAmount = java.math.BigDecimal.valueOf(500_000);
+        mockMvc.perform(patch("/api/v1/admin/returns/" + returnId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"REFUNDED\",\"refundAmount\":" + anyAmount.toPlainString() + "}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isConflict());
+    }
+
+    // ── 29. COD/UNPAID order cannot be REFUNDED via RMA ──────────────────────
+
+    @Test
+    void adminUpdateReturnStatus_rmaRefunded_unpaidOrder_returns409() throws Exception {
+        AuthSession session = placeCompletedOrder("ret-cod-" + UUID.randomUUID() + "@bigbike.vn");
+        // Order is COMPLETED but paymentStatus stays UNPAID (COD never collected).
+
+        MvcResult createResult = mockMvc.perform(
+                        post("/api/v1/customer/orders/" + session.orderId + "/returns")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(buildReturnRequest("DEFECTIVE", null, session.lineItemId))
+                                .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String returnId = extractJsonValue(createResult.getResponse().getContentAsString(), "id");
+
+        mockMvc.perform(patch("/api/v1/admin/returns/" + returnId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"APPROVED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+        mockMvc.perform(patch("/api/v1/admin/returns/" + returnId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"RECEIVED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        // RefundService rejects because paymentStatus != PAID.
+        mockMvc.perform(patch("/api/v1/admin/returns/" + returnId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"REFUNDED\",\"refundAmount\":1000000}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isConflict());
+    }
+
+    // ── 30. Detail DTO exposes order-level refund context for the admin UI ──
+
+    @Test
+    void adminGetReturn_includesOrderRefundContextFields() throws Exception {
+        AuthSession session = placeCompletedOrder("ret-ctx-" + UUID.randomUUID() + "@bigbike.vn");
+
+        // Mark order PAID so paidAmount > 0 and orderRefundableAmount has a value to inspect.
+        orderRepo.findById(UUID.fromString(session.orderId)).ifPresent(order -> {
+            order.setPaymentStatus("PAID");
+            order.setPaidAmount(order.getTotalAmount());
+            order.setUpdatedAt(Instant.now());
+            orderRepo.save(order);
+        });
+
+        MvcResult createResult = mockMvc.perform(
+                        post("/api/v1/customer/orders/" + session.orderId + "/returns")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(buildReturnRequest("DEFECTIVE", null, session.lineItemId))
+                                .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String returnId = extractJsonValue(createResult.getResponse().getContentAsString(), "id");
+
+        // Single-item order with full-quantity RMA → fullReturnCoverage MUST be true.
+        mockMvc.perform(get("/api/v1/admin/returns/" + returnId)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.orderPaidAmount").isNumber())
+                .andExpect(jsonPath("$.orderRefundedAmount").isNumber())
+                .andExpect(jsonPath("$.orderRefundableAmount").isNumber())
+                .andExpect(jsonPath("$.fullReturnCoverage").value(true));
     }
 
     // ── 24. Create return — duplicate orderLineItemId in payload → 400 ───────
@@ -712,6 +830,70 @@ class Phase1LReturnsApiTest {
                         .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error.details[0].code").value("DUPLICATE"));
+    }
+
+    // ── Bug A3 — POS orders cannot be returned online ──────────────────────────
+
+    @Test
+    void getReturnEligibility_posOrder_returnsInStoreOrderReason() throws Exception {
+        String email = "ret-pos-elig-" + UUID.randomUUID() + "@bigbike.vn";
+        Cookie[] cookies = registerAndLogin(email);
+        String csrf = findCsrf(cookies);
+
+        UUID customerId = customerRepo.findByEmail(email).orElseThrow().getId();
+        String orderId = placePosOrderForCustomer(customerId);
+
+        mockMvc.perform(get("/api/v1/customer/orders/" + orderId + "/return-eligibility")
+                        .cookie(cookies).header("X-CSRF-Token", csrf))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.eligible").value(false))
+                .andExpect(jsonPath("$.data.reason").value("IN_STORE_ORDER"));
+    }
+
+    @Test
+    void createReturn_posOrder_returns400() throws Exception {
+        String email = "ret-pos-create-" + UUID.randomUUID() + "@bigbike.vn";
+        Cookie[] cookies = registerAndLogin(email);
+        String csrf = findCsrf(cookies);
+
+        UUID customerId = customerRepo.findByEmail(email).orElseThrow().getId();
+        String orderId = placePosOrderForCustomer(customerId);
+
+        String body = "{\"reason\":\"DEFECTIVE\",\"items\":[" +
+                "{\"orderLineItemId\":\"" + UUID.randomUUID() + "\",\"quantity\":1,\"reason\":\"DEFECTIVE\"}" +
+                "]}";
+
+        mockMvc.perform(post("/api/v1/customer/orders/" + orderId + "/returns")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body)
+                        .cookie(cookies).header("X-CSRF-Token", csrf))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.details[0].code").value("IN_STORE_ORDER"));
+    }
+
+    private String placePosOrderForCustomer(UUID customerId) {
+        Instant now = Instant.now();
+        OrderEntity order = new OrderEntity();
+        order.setOrderNumber("POS-TEST-" + UUID.randomUUID().toString().replace("-", "").substring(0, 10).toUpperCase());
+        order.setOrderKey(UUID.randomUUID().toString());
+        order.setCustomerId(customerId);
+        order.setStatus("COMPLETED");
+        order.setPaymentStatus("PAID");
+        order.setChannel("IN_STORE");
+        order.setFulfillmentType("PICKUP");
+        order.setCurrency("VND");
+        order.setSubtotalAmount(java.math.BigDecimal.valueOf(500000));
+        order.setDiscountAmount(java.math.BigDecimal.ZERO);
+        order.setShippingAmount(java.math.BigDecimal.ZERO);
+        order.setFeeAmount(java.math.BigDecimal.ZERO);
+        order.setTaxAmount(java.math.BigDecimal.ZERO);
+        order.setTotalAmount(java.math.BigDecimal.valueOf(500000));
+        order.setPaidAmount(java.math.BigDecimal.valueOf(500000));
+        order.setRefundAmount(java.math.BigDecimal.ZERO);
+        order.setPlacedAt(now);
+        order.setCreatedAt(now);
+        order.setUpdatedAt(now);
+        return orderRepo.save(order).getId().toString();
     }
 
     private String buildReturnRequest(String reason, String customerNote, String lineItemId) {
@@ -751,13 +933,17 @@ class Phase1LReturnsApiTest {
     }
 
     private AuthSession placeCompletedOrder(String email) throws Exception {
+        return placeCompletedOrderWithQuantity(email, 1);
+    }
+
+    private AuthSession placeCompletedOrderWithQuantity(String email, int quantity) throws Exception {
         Cookie[] cookies = registerAndLogin(email);
         String csrf = findCsrf(cookies);
 
         ProductEntity product = createTestProduct("Return Test Product " + email, 1_000_000);
         mockMvc.perform(post("/api/v1/cart/items")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"productId\":\"" + product.getId() + "\",\"quantity\":1}")
+                        .content("{\"productId\":\"" + product.getId() + "\",\"quantity\":" + quantity + "}")
                         .cookie(cookies).header("X-CSRF-Token", csrf))
                 .andExpect(status().isOk());
 

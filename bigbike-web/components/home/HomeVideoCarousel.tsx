@@ -1,6 +1,7 @@
 "use client";
 
 import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Swiper, SwiperSlide } from "swiper/react";
 import type { Swiper as SwiperType } from "swiper";
 import "swiper/css";
@@ -75,9 +76,14 @@ function VideoModal({
 
   // Lock body scroll while modal is open
   useEffect(() => {
-    const prev = document.body.style.overflow;
+    const prevBody = document.body.style.overflow;
+    const prevHtml = document.documentElement.style.overflowY;
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
+    document.documentElement.style.overflowY = "hidden";
+    return () => {
+      document.body.style.overflow = prevBody;
+      document.documentElement.style.overflowY = prevHtml;
+    };
   }, []);
 
   // Stop video on close by clearing src
@@ -193,7 +199,7 @@ function VideoCard({
         )}
         <PlayIcon />
       </div>
-      <div className="flex min-h-20 items-center justify-center border-t-2 border-t-transparent bg-[#111] px-4 pb-[22px] pt-5 transition-colors duration-300 group-hover:border-t-brand max-[575px]:min-h-16 max-[575px]:px-3 max-[575px]:pb-4 max-[575px]:pt-3.5">
+      <div className="flex min-h-20 items-center justify-center border-t-2 border-t-transparent bg-[var(--bb-bg-surface-dark-3)] px-4 pb-[22px] pt-5 transition-colors duration-300 group-hover:border-t-brand max-[575px]:min-h-16 max-[575px]:px-3 max-[575px]:pb-4 max-[575px]:pt-3.5">
         <p className="m-0 overflow-hidden text-center font-display text-base font-semibold uppercase leading-[1.35] tracking-[0.02em] text-[#e8e8e8] transition-colors duration-300 group-hover:text-brand max-[575px]:text-sm [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
           {title}
         </p>
@@ -306,12 +312,13 @@ export function HomeVideoCarousel({ videos }: Props) {
         </div>
       )}
 
-      {activeVideo && (
+      {activeVideo && createPortal(
         <VideoModal
           video={activeVideo}
           onClose={() => setActiveVideo(null)}
           triggerRef={triggerRef}
-        />
+        />,
+        document.body,
       )}
     </>
   );

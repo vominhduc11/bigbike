@@ -160,7 +160,7 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
         payload = basePayload
       }
       const result = await posCreateOrder(payload)
-      onSuccess(result, method)
+      onSuccess({ ...result, _cardRef: method === 'CARD_TERMINAL' ? cardRef.trim() : null }, method)
     } catch (err) {
       setError(err.message || 'Lỗi khi tạo đơn hàng.')
     } finally {
@@ -171,7 +171,7 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
   return (
     <Modal open title={t('pos.paymentMethod')} onClose={onClose}>
         <form onSubmit={handleSubmit}>
-          <div className="grid grid-cols-2 gap-2 mb-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
             <div>
               <label className="field-label">Tên khách (tuỳ chọn)</label>
               <Input
@@ -258,6 +258,11 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
               )}
               {insufficientTendered && (
                 <p className="field-error mt-1">Tiền đưa chưa đủ tổng thanh toán.</p>
+              )}
+              {method === 'CASH' && (tendered === '' || tenderedNum === 0) && !insufficientTendered && (
+                <Alert className="mt-2 py-1.5 text-xs" role="note">
+                  Chưa nhập tiền khách đưa — không thể tính tiền thừa.
+                </Alert>
               )}
             </div>
           )}
@@ -401,11 +406,17 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
   )
 }
 
-function printReceipt(order, cart) {
+function printReceipt(order, cart, cardRef) {
   const fmt = (n) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n)
   const items = cart || []
-  const total = items.reduce((s, c) => s + effectivePrice(c) * c.qty, 0)
+  const total = order?.totalAmount != null
+    ? Number(order.totalAmount)
+    : items.reduce((s, c) => s + effectivePrice(c) * c.qty, 0)
+  const discountAmt = order?.discountAmount ? Number(order.discountAmount) : 0
+  const couponCode = order?.couponCode || null
   const dateStr = new Date().toLocaleString('vi-VN')
+  const methodLabel = { CASH: 'Tiền mặt', CARD_TERMINAL: 'Quẹt thẻ', CREDIT: 'Bán chịu' }
+  const method = methodLabel[order?.paymentMethod] || order?.paymentMethod || '—'
   const rows = items.map((item) => `
     <tr>
       <td>${item.productName}${item.variantName ? `<br><small>${item.variantName}</small>` : ''}</td>
@@ -413,8 +424,19 @@ function printReceipt(order, cart) {
       <td class="r">${fmt(effectivePrice(item))}</td>
       <td class="r">${fmt(effectivePrice(item) * item.qty)}</td>
     </tr>`).join('')
+  const discountRow = discountAmt > 0
+    ? `<tr><td colspan="3">Giảm giá${couponCode ? ` (${couponCode})` : ''}</td><td class="r" style="color:green">-${fmt(discountAmt)}</td></tr>`
+    : ''
   const changeRow = order?.changeAmount > 0
     ? `<tr><td colspan="3">Tiền thừa trả lại</td><td class="r">${fmt(order.changeAmount)}</td></tr>`
+    : (order?.paymentMethod === 'CASH' && !order?.tenderedAmount
+      ? `<tr><td colspan="4" style="color:#888;font-style:italic">Tiền khách đưa: Chưa ghi nhận</td></tr>`
+      : '')
+  const customerInfo = (order?.customerName || order?.customerPhone)
+    ? `<p style="margin:2px 0">Khách: ${order.customerName || ''}${order.customerPhone ? ' — ' + order.customerPhone : ''}</p>`
+    : ''
+  const cardRefRow = cardRef
+    ? `<p style="margin:2px 0">Ref thẻ: ${cardRef}</p>`
     : ''
   const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>Hóa đơn ${order?.orderNumber || ''}</title>
@@ -432,16 +454,18 @@ function printReceipt(order, cart) {
   @media print{@page{margin:6mm}}
 </style></head>
 <body>
-<h2>BigBike</h2>
+<h2 style="text-align:center">BigBike — Phụ kiện mô tô</h2>
 <p class="center" style="margin:2px 0">Hóa đơn bán hàng tại quầy</p>
 <hr class="sep">
 <p style="margin:2px 0">Số đơn: <strong>${order?.orderNumber || '—'}</strong></p>
 <p style="margin:2px 0">Ngày: ${dateStr}</p>
-<hr class="sep">
+<p style="margin:2px 0">Thanh toán: <strong>${method}</strong></p>
+${customerInfo}${cardRefRow}<hr class="sep">
 <table>
   <thead><tr><th>Sản phẩm</th><th class="r">SL</th><th class="r">Đơn giá</th><th class="r">T.tiền</th></tr></thead>
   <tbody>${rows}</tbody>
   <tfoot>
+    ${discountRow}
     <tr class="total-row"><td colspan="3">Tổng cộng</td><td class="r">${fmt(total)}</td></tr>
     ${changeRow}
   </tfoot>
@@ -594,7 +618,9 @@ function ReceiptModal({ order, paymentMethod, cart, canRefund, onClose }) {
         hasSerial: false,
       }))
     : null) || cart || []
-  const total = items.reduce((s, c) => s + effectivePrice(c) * c.qty, 0)
+  const total = order?.totalAmount != null
+    ? Number(order.totalAmount)
+    : items.reduce((s, c) => s + effectivePrice(c) * c.qty, 0)
   const hasSerialItems = (cart || []).some((it) => it.hasSerial === true)
   const canHaveRefund = order?.paymentStatus === 'PAID'
   const [refundedAmount, setRefundedAmount] = useState(0)
@@ -646,6 +672,16 @@ function ReceiptModal({ order, paymentMethod, cart, canRefund, onClose }) {
               ))}
             </tbody>
             <tfoot>
+              {Number(order?.discountAmount) > 0 && (
+                <tr>
+                  <td colSpan={3} className="px-1.5 pt-1.5 text-right text-sm text-success">
+                    Giảm giá{order.couponCode ? ` (${order.couponCode})` : ''}
+                  </td>
+                  <td className="px-1.5 pt-1.5 text-right text-sm text-success whitespace-nowrap">
+                    -{formatCurrencyVnd(Number(order.discountAmount))}
+                  </td>
+                </tr>
+              )}
               <tr className="border-t border-border font-bold">
                 <td colSpan={3} className="px-1.5 pt-1.5 pb-0.5 text-right">Tổng cộng</td>
                 <td className="px-1.5 pt-1.5 pb-0.5 text-right whitespace-nowrap">{formatCurrencyVnd(total)}</td>
@@ -672,7 +708,7 @@ function ReceiptModal({ order, paymentMethod, cart, canRefund, onClose }) {
 
         <div className="flex gap-2 flex-wrap">
           <Button variant="secondary" type="button" className="flex items-center gap-1.5"
-            onClick={() => printReceipt(order, items)}
+            onClick={() => printReceipt(order, items, order?._cardRef)}
           >
             <Printer size={14} /> In hóa đơn
           </Button>
@@ -820,7 +856,7 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit, canOverri
 
   function commitEditPrice(cartKey) {
     const parsed = Number(priceInput)
-    if (!isNaN(parsed) && parsed >= 0) {
+    if (!isNaN(parsed) && parsed > 0) {
       setCart((prev) => prev.map((c) =>
         c.cartKey === cartKey ? { ...c, overriddenPrice: parsed === c.price ? null : parsed } : c
       ))

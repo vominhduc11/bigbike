@@ -44,9 +44,15 @@ function ReturnDetailModal({ ret, onClose, onUpdate, canUpdate, navigate }) {
   const [error, setError] = useState('')
   const [inspectingId, setInspectingId] = useState(null)
 
-  const next = NEXT_STATUSES[detail.status] || []
+  // Hide REFUNDED option when the RMA does not cover the entire order — backend
+  // would reject with RETURN_NOT_FULL_COVERAGE (V114 only supports full refunds).
+  const rawNext = NEXT_STATUSES[detail.status] || []
+  const next = (detail.fullReturnCoverage === false)
+    ? rawNext.filter((s) => s !== 'REFUNDED')
+    : rawNext
   const items = detail.items ?? []
   const allInspected = items.length > 0 && items.every((i) => i.inspectionResult)
+  const refundableAmount = Number(detail.orderRefundableAmount || 0)
 
   useEffect(() => {
     fetchReturnDetail(ret.id)
@@ -54,12 +60,25 @@ function ReturnDetailModal({ ret, onClose, onUpdate, canUpdate, navigate }) {
       .finally(() => setLoadingDetail(false))
   }, [ret.id])
 
+  // When the admin picks REFUNDED, prefill the amount with the remaining refundable
+  // amount (the only value the backend will accept — V114 full-refund-only).
+  useEffect(() => {
+    if (newStatus === 'REFUNDED' && refundableAmount > 0 && !refundAmount) {
+      setRefundAmount(String(refundableAmount))
+    }
+  }, [newStatus, refundableAmount, refundAmount])
+
   async function handleSubmit(e) {
     e.preventDefault()
     const refundNum = refundAmount ? Number(refundAmount) : 0
     // REFUNDED records money back to the customer — require a positive amount.
     if (newStatus === 'REFUNDED' && !(refundNum > 0)) {
       setError(t('returns.errorRefundRequired'))
+      return
+    }
+    // RefundService requires exact match with orderRefundableAmount.
+    if (newStatus === 'REFUNDED' && refundableAmount > 0 && refundNum !== refundableAmount) {
+      setError(t('returns.errorRefundMustMatch', { amount: formatCurrencyVnd(refundableAmount) }))
       return
     }
     if (newStatus === 'REFUNDED') {
@@ -147,11 +166,30 @@ function ReturnDetailModal({ ret, onClose, onUpdate, canUpdate, navigate }) {
                 <strong className="text-success">{formatCurrencyVnd(detail.refundAmount)}</strong>
               </div>
             )}
+            {detail.orderPaidAmount > 0 && (
+              <div>
+                <span className="text-muted-foreground">{t('returns.metaOrderPaid')}: </span>
+                <span>{formatCurrencyVnd(detail.orderPaidAmount)}</span>
+              </div>
+            )}
+            {detail.orderRefundableAmount > 0 && (
+              <div>
+                <span className="text-muted-foreground">{t('returns.metaOrderRefundable')}: </span>
+                <strong>{formatCurrencyVnd(detail.orderRefundableAmount)}</strong>
+              </div>
+            )}
             <div>
               <span className="text-muted-foreground">{t('returns.modalCreatedAtLabel')}: </span>
               <span>{formatDateTime(detail.createdAt)}</span>
             </div>
           </div>
+
+          {/* Partial-coverage warning — backend rejects REFUNDED in this case. */}
+          {detail.fullReturnCoverage === false && rawNext.includes('REFUNDED') && (
+            <Alert tone="warning">
+              <p className="m-0">{t('returns.refundPartialBlocked')}</p>
+            </Alert>
+          )}
 
           {/* Customer note */}
           {detail.customerNote && (
@@ -274,6 +312,7 @@ function ReturnDetailModal({ ret, onClose, onUpdate, canUpdate, navigate }) {
                   <label className="field-label">{t('returns.detailRefund')} *</label>
                   <Input type="number" value={refundAmount}
                     onChange={(e) => setRefundAmount(e.target.value)} placeholder="0" min="1"  />
+                  <p className="text-xs text-muted-foreground mt-1">{t('returns.refundFullHint')}</p>
                 </div>
               )}
               <div className="form-field">

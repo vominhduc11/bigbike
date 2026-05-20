@@ -19,6 +19,7 @@ public interface OrderMapper {
 
     @Mapping(target = "itemCount", source = "itemCount")
     @Mapping(target = "productNames", source = "productNames")
+    @Mapping(target = "channel", source = "entity.channel")
     OrderListItemResponse toCustomerListItem(OrderEntity entity, int itemCount, List<String> productNames);
 
     @Mapping(target = "itemCount", source = "itemCount")
@@ -30,6 +31,7 @@ public interface OrderMapper {
     @Mapping(target = "shippingItems", source = "shippingItems")
     @Mapping(target = "payments", source = "payments")
     @Mapping(target = "notes", source = "notes")
+    @Mapping(target = "channel", source = "entity.channel")
     OrderDetailResponse toDetailResponse(
             OrderEntity entity,
             String orderKey,

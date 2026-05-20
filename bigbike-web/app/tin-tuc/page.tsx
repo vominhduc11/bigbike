@@ -185,13 +185,10 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
                 <PaginationNav
                   page={result.pagination.page}
                   totalPages={result.pagination.totalPages}
-                  makeHref={(nextPage) =>
-                    `${toArticleListPath()}${buildQueryString({
-                      page: nextPage,
+                  baseHref={`${toArticleListPath()}${buildQueryString({
                       size: sizeParsed.value,
                       category: categoryParsed.value,
-                    })}`
-                  }
+                    })}`}
                 />
               ) : null}
             </>

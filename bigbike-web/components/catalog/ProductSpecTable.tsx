@@ -17,7 +17,7 @@ export function ProductSpecTable({
   if (specifications.length === 0) return null;
 
   return (
-    <div className="overflow-hidden border border-border">
+    <div className="overflow-x-auto border border-border">
       <table className="w-full border-collapse text-sm">
         <tbody>
           {specifications.flatMap((spec, index) => {

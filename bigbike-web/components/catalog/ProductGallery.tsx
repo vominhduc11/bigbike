@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { MediaImage } from "@/components/ui/MediaImage";
 import type { ImageAsset, VideoAsset } from "@/lib/contracts/public";
 import { resolveMediaUrl } from "@/lib/utils/format";
@@ -76,7 +77,7 @@ function VideoPlayer({
       type="button"
       onClick={() => setPlaying(true)}
       aria-label={`Phát ${title}`}
-      className="group relative flex aspect-square w-full cursor-pointer items-center justify-center overflow-hidden border border-border bg-[#141414]"
+      className="group relative flex aspect-square w-full cursor-pointer items-center justify-center overflow-hidden border border-border bg-[var(--bb-bg-surface-dark)]"
     >
       {video.thumbnail ? (
         <MediaImage
@@ -122,12 +123,10 @@ const ZOOM_FACTOR = 2.5;
 const LENS_SIZE_PCT = 100 / ZOOM_FACTOR;
 const FOCUS_RING =
   "outline-none focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2";
-const THUMBNAIL_VISIBLE_COUNT = 6;
-const THUMBNAIL_SIZE_PX = 76;
+const THUMBNAIL_VISIBLE_COUNT = 5;
 const THUMBNAIL_GAP_PX = 8;
-const THUMBNAIL_VIEWPORT_WIDTH_PX =
-  THUMBNAIL_VISIBLE_COUNT * THUMBNAIL_SIZE_PX +
-  (THUMBNAIL_VISIBLE_COUNT - 1) * THUMBNAIL_GAP_PX;
+// each item fills exactly 1/5.5 of the strip so the 6th item peeks
+const THUMBNAIL_ITEM_BASIS = `calc((100% - ${4.5 * THUMBNAIL_GAP_PX}px) / 5.5)`;
 
 function clamp01(value: number) {
   return Math.min(1, Math.max(0, value));
@@ -197,11 +196,12 @@ export function ProductGallery({
   function scrollThumbsBy(direction: "prev" | "next") {
     const el = thumbsRef.current;
     if (!el) return;
-    // Scroll by one thumbnail page.
-    const pageWidth =
-      (THUMBNAIL_SIZE_PX + THUMBNAIL_GAP_PX) * THUMBNAIL_VISIBLE_COUNT;
+    const firstChild = el.children[0] as HTMLElement | undefined;
+    const itemWidth = firstChild
+      ? firstChild.getBoundingClientRect().width + THUMBNAIL_GAP_PX
+      : el.clientWidth / 5.5 + THUMBNAIL_GAP_PX;
     el.scrollBy({
-      left: direction === "next" ? pageWidth : -pageWidth,
+      left: direction === "next" ? itemWidth : -itemWidth,
       behavior: "smooth",
     });
   }
@@ -219,7 +219,11 @@ export function ProductGallery({
 
   useEffect(() => {
     document.body.style.overflow = imageLightboxOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    document.documentElement.style.overflowY = imageLightboxOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+      document.documentElement.style.overflowY = "";
+    };
   }, [imageLightboxOpen]);
 
   useEffect(() => {
@@ -377,7 +381,7 @@ export function ProductGallery({
                 onClick={() => scrollThumbsBy("prev")}
                 aria-label="Cuộn thumbnail về trước"
                 className={cn(
-                  "flex h-[76px] w-6 shrink-0 items-center justify-center border border-border bg-white text-foreground transition-colors hover:border-foreground",
+                  "flex w-9 shrink-0 self-stretch items-center justify-center border border-border bg-white text-foreground transition-colors hover:border-foreground",
                   FOCUS_RING,
                 )}
               >
@@ -390,15 +394,15 @@ export function ProductGallery({
             <div
               ref={thumbsRef}
               className="flex min-w-0 flex-1 gap-2 overflow-x-hidden scroll-smooth"
-              style={{ maxWidth: THUMBNAIL_VIEWPORT_WIDTH_PX }}
             >
               {allItems.map((item, i) => {
                 const active = i === selectedIndex;
                 const baseClass = cn(
-                  "relative flex h-[76px] w-[76px] flex-none items-center justify-center overflow-hidden p-1.5 transition-[border-color]",
+                  "relative flex h-16 sm:h-20 md:h-24 shrink-0 items-center justify-center overflow-hidden p-1.5 transition-[border-color]",
                   active ? "border-2 border-brand" : "border border-border hover:border-foreground",
                   FOCUS_RING,
                 );
+                const itemStyle = { flexBasis: THUMBNAIL_ITEM_BASIS };
 
                 if (item.kind === "image") {
                   return (
@@ -406,6 +410,7 @@ export function ProductGallery({
                       key={item.asset.id ?? item.asset.url ?? i}
                       type="button"
                       className={cn(baseClass, "bg-white")}
+                      style={itemStyle}
                       onClick={() => setSelectedIndex(i)}
                       aria-label={`Xem ảnh ${i + 1}`}
                       aria-pressed={active}
@@ -426,7 +431,8 @@ export function ProductGallery({
                   <button
                     key={`video-${i}`}
                     type="button"
-                    className={cn(baseClass, "bg-[#141414]")}
+                    className={cn(baseClass, "bg-[var(--bb-bg-surface-dark)]")}
+                    style={itemStyle}
                     onClick={() => setSelectedIndex(i)}
                     aria-label={item.asset.title ? `Xem video: ${item.asset.title}` : "Xem video"}
                     aria-pressed={active}
@@ -460,7 +466,7 @@ export function ProductGallery({
                 onClick={() => scrollThumbsBy("next")}
                 aria-label="Cuộn thumbnail tiếp"
                 className={cn(
-                  "flex h-[76px] w-6 shrink-0 items-center justify-center border border-border bg-white text-foreground transition-colors hover:border-foreground",
+                  "flex w-9 shrink-0 self-stretch items-center justify-center border border-border bg-white text-foreground transition-colors hover:border-foreground",
                   FOCUS_RING,
                 )}
               >
@@ -474,8 +480,8 @@ export function ProductGallery({
       </div>
 
       {/* Lightbox — images only */}
-      {imageLightboxOpen && selectedImage && (
-        <div className="fixed inset-0 z-[500] flex items-center justify-center" role="dialog" aria-modal="true" aria-label="Xem ảnh">
+      {imageLightboxOpen && selectedImage && createPortal(
+        <div className="fixed inset-0 z-[var(--bb-z-modal)] flex items-center justify-center" role="dialog" aria-modal="true" aria-label="Xem ảnh">
           <div className="absolute inset-0 bg-black/[0.96]" onClick={() => setLightboxOpen(false)} />
 
           <button
@@ -536,7 +542,8 @@ export function ProductGallery({
               </div>
             </>
           )}
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );

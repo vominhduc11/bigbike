@@ -280,6 +280,10 @@ a {
   border-radius: 0 var(--admin-radius-xs) var(--admin-radius-xs) 0;
 }
 
+@media (max-width: 900px) {
+  .sidebar-link { min-height: 44px; }
+}
+
 /* Sidebar nav badge — live "needs attention" count on a nav item */
 .nav-badge {
   margin-left: auto;
@@ -1965,6 +1969,9 @@ a {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: var(--admin-space-2);
+}
+@media (max-width: 640px) {
+  .list-editor-fields-3col { grid-template-columns: 1fr; }
 }
 
 /* ─── Variants editor ────────────────────────────────────────────────────────*/
@@ -3925,6 +3932,9 @@ a {
   gap: var(--admin-space-2);
   margin-bottom: var(--admin-space-2);
 }
+@media (max-width: 400px) {
+  .pos-method-grid { grid-template-columns: 1fr; }
+}
 
 .pos-method-btn {
   padding: var(--admin-space-2) var(--admin-space-3);
@@ -4547,7 +4557,7 @@ a {
     padding: var(--admin-space-2) 0;
   }
 }
-@media (max-width: 640px) {
+@media (max-width: 760px) {
   .audit-table-wrapper { display: none; }
   .audit-card-list {
     display: flex;

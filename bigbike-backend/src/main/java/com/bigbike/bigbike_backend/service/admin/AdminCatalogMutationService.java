@@ -38,11 +38,13 @@ import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductFaqEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantOptionEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVideoEntity;
+import com.bigbike.bigbike_backend.persistence.entity.redirect.RedirectEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.AttributeJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.AttributeValueJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.BrandJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.redirect.RedirectJpaRepository;
 import com.bigbike.bigbike_backend.repository.catalog.CatalogReadRepository;
 import java.math.BigDecimal;
 import java.text.Normalizer;
@@ -82,6 +84,7 @@ public class AdminCatalogMutationService {
     private final WebRevalidationService webRevalidationService;
     private final AuditLogJpaRepository auditLogRepo;
     private final DescriptionBlockRenderer descriptionBlockRenderer;
+    private final RedirectJpaRepository redirectRepo;
 
     public AdminCatalogMutationService(
             ObjectProvider<ProductJpaRepository> productJpaRepositoryProvider,
@@ -93,7 +96,8 @@ public class AdminCatalogMutationService {
             MediaUrlProperties mediaUrlProperties,
             WebRevalidationService webRevalidationService,
             ObjectProvider<AuditLogJpaRepository> auditLogRepoProvider,
-            DescriptionBlockRenderer descriptionBlockRenderer
+            DescriptionBlockRenderer descriptionBlockRenderer,
+            ObjectProvider<RedirectJpaRepository> redirectRepoProvider
     ) {
         this.productJpaRepository = productJpaRepositoryProvider.getIfAvailable();
         this.categoryJpaRepository = categoryJpaRepositoryProvider.getIfAvailable();
@@ -105,6 +109,7 @@ public class AdminCatalogMutationService {
         this.webRevalidationService = webRevalidationService;
         this.auditLogRepo = auditLogRepoProvider.getIfAvailable();
         this.descriptionBlockRenderer = descriptionBlockRenderer;
+        this.redirectRepo = redirectRepoProvider.getIfAvailable();
     }
 
     @Transactional
@@ -152,6 +157,9 @@ public class AdminCatalogMutationService {
         applyProductPatch(entity, request, slug, category, brand, false);
         productJpaRepository.save(entity);
         auditLog("PRODUCT_UPDATED", "PRODUCT", adminId, null, productJson(entity));
+        if (!previousSlug.equals(entity.getSlug())) {
+            autoCreateSlugRedirect("/product/" + previousSlug, "/product/" + entity.getSlug());
+        }
         revalidateProduct(entity, previousSlug);
 
         return catalogReadRepository.findProductById(entity.getId())
@@ -297,6 +305,9 @@ public class AdminCatalogMutationService {
         applyCategoryPatch(entity, request, slug, parent, false);
         categoryJpaRepository.save(entity);
         auditLog("CATEGORY_UPDATED", "CATEGORY", adminId, null, categoryJson(entity));
+        if (!previousSlug.equals(entity.getSlug())) {
+            autoCreateSlugRedirect("/danh-muc-san-pham/" + previousSlug, "/danh-muc-san-pham/" + entity.getSlug());
+        }
         revalidateCategory(entity, previousSlug);
 
         return catalogReadRepository.findCategoryById(entity.getId())
@@ -384,6 +395,22 @@ public class AdminCatalogMutationService {
         log.setAfterData(after);
         log.setCreatedAt(Instant.now());
         auditLogRepo.save(log);
+    }
+
+    private void autoCreateSlugRedirect(String source, String target) {
+        if (redirectRepo == null) return;
+        RedirectEntity redirect = redirectRepo.findBySourcePattern(source)
+                .orElseGet(RedirectEntity::new);
+        redirect.setSourcePattern(source);
+        redirect.setTargetUrl(target);
+        redirect.setRedirectType("PERMANENT");
+        redirect.setStatusCode(301);
+        redirect.setEnabled(true);
+        redirect.setUpdatedAt(Instant.now());
+        if (redirect.getId() == null) {
+            redirect.setCreatedAt(Instant.now());
+        }
+        redirectRepo.save(redirect);
     }
 
     private static String productJson(ProductEntity e) {

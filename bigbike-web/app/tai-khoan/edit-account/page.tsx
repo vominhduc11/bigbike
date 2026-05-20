@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 
 // 2020-mockup field label: gray, sentence-case.
-const LEGACY_LABEL = "text-sm text-[#555555]";
+const LEGACY_LABEL = "text-sm text-muted-foreground";
 
 function ReqMark() {
   return <span className="text-brand">*</span>;
@@ -113,7 +113,7 @@ function EditAccountContent() {
           </div>
         </div>
 
-        <label className="mt-5 flex w-fit items-center gap-2 text-sm text-[#555555]">
+        <label className="mt-5 flex w-fit items-center gap-2 text-sm text-muted-foreground">
           <Checkbox name="newsletter" defaultChecked={profile?.newsletterSubscribed ?? false} />
           {t("newsletter")}
         </label>
@@ -121,7 +121,7 @@ function EditAccountContent() {
         <button
           type="button"
           onClick={() => setShowPassword((v) => !v)}
-          className="mt-3 flex items-center gap-2.5 text-sm text-[#555555]"
+          className="mt-3 flex items-center gap-2.5 text-sm text-muted-foreground"
           aria-pressed={showPassword}
         >
           <span

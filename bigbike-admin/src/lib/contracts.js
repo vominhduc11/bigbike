@@ -353,6 +353,14 @@ export function normalizeCategory(input) {
     isVisible: source.isVisible !== false,
     showOnHomepage: source.showOnHomepage === true,
     sortOrder: Number.isFinite(source.sortOrder) ? Number(source.sortOrder) : undefined,
+    translations: {
+      en: {
+        name: toTrimmedString(source.translations?.en?.name) || undefined,
+        description: toTrimmedString(source.translations?.en?.description) || undefined,
+        seoTitle: toTrimmedString(source.translations?.en?.seoTitle) || undefined,
+        seoDescription: toTrimmedString(source.translations?.en?.seoDescription) || undefined,
+      },
+    },
     createdAt: toTrimmedString(source.createdAt) || undefined,
     updatedAt: toTrimmedString(source.updatedAt) || undefined,
   }
@@ -372,6 +380,14 @@ export function normalizeBrand(input) {
     bannerImage: normalizeImageAsset(source.bannerImage),
     seo: normalizeSeoMeta(source.seo),
     isVisible: source.isVisible !== false,
+    translations: {
+      en: {
+        name: toTrimmedString(source.translations?.en?.name) || undefined,
+        description: toTrimmedString(source.translations?.en?.description) || undefined,
+        seoTitle: toTrimmedString(source.translations?.en?.seoTitle) || undefined,
+        seoDescription: toTrimmedString(source.translations?.en?.seoDescription) || undefined,
+      },
+    },
     createdAt: toTrimmedString(source.createdAt) || undefined,
     updatedAt: toTrimmedString(source.updatedAt) || undefined,
   }

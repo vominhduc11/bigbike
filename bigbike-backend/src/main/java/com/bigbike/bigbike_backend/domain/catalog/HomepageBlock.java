@@ -14,7 +14,7 @@ package com.bigbike.bigbike_backend.domain.catalog;
 public enum HomepageBlock {
     /** Not on the homepage. */
     NONE,
-    /** "Sản phẩm nổi bật" — grid of 12 products. */
+    /** "Sản phẩm nổi bật" — grid of 3 products. */
     FEATURED_GRID,
     /** "Gợi ý dành cho bạn" — carousel of 10 products. */
     RECOMMENDED_CAROUSEL

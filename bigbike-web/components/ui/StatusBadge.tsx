@@ -19,7 +19,7 @@ const TONE_CLASS: Record<StatusTone, string> = {
   danger:
     "bg-[var(--bb-state-danger-bg)] text-destructive border-[var(--bb-state-danger-border)]",
   info:
-    "bg-[rgba(0,123,255,0.12)] text-info border-[rgba(0,123,255,0.32)]",
+    "bg-[var(--bb-state-info-bg)] text-info border-[var(--bb-state-info-border)]",
   neutral:
     "bg-[var(--bb-bg-surface-raised)] text-muted-foreground border-border",
 };
@@ -34,7 +34,7 @@ export function StatusBadge({ tone, children, className }: StatusBadgeProps) {
   return (
     <span
       className={cn(
-        "inline-block border font-bold uppercase text-sm leading-none tracking-[0.1em] py-[5px] px-[10px]",
+        "inline-block border font-bold uppercase text-sm leading-none tracking-[0.1em] py-1.5 px-2.5",
         TONE_CLASS[tone],
         className,
       )}

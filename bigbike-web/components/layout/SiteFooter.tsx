@@ -252,7 +252,7 @@ export async function SiteFooter() {
               className="block h-9 w-auto"
             />
           </div>
-          <div className="flex-1 min-w-0 flex flex-col gap-[0.2rem]">
+          <div className="flex-1 min-w-0 flex flex-col gap-1">
             <p className="m-0 text-sm italic text-[var(--bb-text-inverse-secondary)]">Bigbike mong được lắng nghe và đồng hành cùng bạn trên mọi cung đường.</p>
             <p className="m-0 text-sm text-[var(--bb-text-inverse-secondary)]">© {new Date().getFullYear()} {siteName}. All rights reserved.</p>
             {businessLicenseNo && (

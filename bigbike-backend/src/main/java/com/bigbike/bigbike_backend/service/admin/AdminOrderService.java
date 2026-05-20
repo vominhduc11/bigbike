@@ -66,6 +66,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
 @RequiredArgsConstructor
@@ -389,11 +391,17 @@ public class AdminOrderService {
                 "{\"status\":\"" + beforeStatus + "\"}",
                 "{\"status\":\"" + newStatus + "\"}", now, clientIp, userAgent));
 
-        // Email customer when status is customer-visible
+        // Email customer when status is customer-visible (after commit so DB state is consistent)
         String customerNote = (req.note() != null && Boolean.TRUE.equals(req.customerVisible()))
                 ? req.note() : null;
-        orderNotificationService.sendOrderStatusUpdate(order, newStatus, customerNote);
-        adminOrderWsService.pushEvent(buildStatusChangedEvent(order, newStatus));
+        OrderEntity statusSnapshot = order;
+        String statusForEmail = newStatus;
+        String noteForEmail = customerNote;
+        var statusChangedEvent = buildStatusChangedEvent(order, newStatus);
+        runAfterCommit(() -> {
+            orderNotificationService.sendOrderStatusUpdate(statusSnapshot, statusForEmail, noteForEmail);
+            adminOrderWsService.pushEvent(statusChangedEvent);
+        });
 
         return toDetail(orderRepo.findById(orderId).orElseThrow());
     }
@@ -490,10 +498,11 @@ public class AdminOrderService {
                 "{\"paymentStatus\":\"" + beforePaymentStatus + "\"}",
                 "{\"paymentStatus\":\"" + newPaymentStatus + "\"}", now, clientIp, userAgent));
 
-        adminOrderWsService.pushEvent(new OrderWsEvent(
+        var paymentStatusChangedEvent = new OrderWsEvent(
                 "ORDER_PAYMENT_STATUS_CHANGED", order.getId(), order.getOrderNumber(),
                 safeCustomerName(order), order.getTotalAmount(),
-                order.getStatus(), newPaymentStatus, now));
+                order.getStatus(), newPaymentStatus, now);
+        runAfterCommit(() -> adminOrderWsService.pushEvent(paymentStatusChangedEvent));
 
         return toDetail(orderRepo.findById(orderId).orElseThrow());
     }
@@ -586,13 +595,16 @@ public class AdminOrderService {
         if ("SHIPPED".equals(newStatus)) {
             String customerNote = (req.note() != null && Boolean.TRUE.equals(req.customerVisible()))
                     ? req.note() : null;
-            orderNotificationService.sendOrderShipped(order, customerNote);
+            OrderEntity shippedSnapshot = order;
+            String shippedNote = customerNote;
+            runAfterCommit(() -> orderNotificationService.sendOrderShipped(shippedSnapshot, shippedNote));
         }
 
-        adminOrderWsService.pushEvent(new OrderWsEvent(
+        var fulfillmentChangedEvent = new OrderWsEvent(
                 "ORDER_FULFILLMENT_STATUS_CHANGED", order.getId(), order.getOrderNumber(),
                 safeCustomerName(order), order.getTotalAmount(),
-                order.getStatus(), order.getPaymentStatus(), now));
+                order.getStatus(), order.getPaymentStatus(), now);
+        runAfterCommit(() -> adminOrderWsService.pushEvent(fulfillmentChangedEvent));
 
         return toDetail(orderRepo.findById(orderId).orElseThrow());
     }
@@ -617,10 +629,11 @@ public class AdminOrderService {
                 "{\"noteType\":\"" + noteType + "\",\"customerVisible\":" + visible + "}", now,
                 clientIp, userAgent));
 
-        adminOrderWsService.pushEvent(new OrderWsEvent(
+        var noteAddedEvent = new OrderWsEvent(
                 "ORDER_NOTE_ADDED", order.getId(), order.getOrderNumber(),
                 safeCustomerName(order), order.getTotalAmount(),
-                order.getStatus(), order.getPaymentStatus(), now));
+                order.getStatus(), order.getPaymentStatus(), now);
+        runAfterCommit(() -> adminOrderWsService.pushEvent(noteAddedEvent));
 
         return toAdminNote(note);
     }
@@ -930,5 +943,18 @@ public class AdminOrderService {
                 order.getPaymentStatus(),
                 Instant.now()
         );
+    }
+
+    private void runAfterCommit(Runnable action) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    action.run();
+                }
+            });
+        } else {
+            action.run();
+        }
     }
 }

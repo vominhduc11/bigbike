@@ -638,7 +638,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
 function UploadQueue({ queue, onDismiss, t }) {
   const pending = queue.filter((u) => u.status === 'uploading' || u.status === 'pending').length
   return (
-    <div className="fixed bottom-4 right-4 z-50 bg-surface border border-border rounded-md shadow-xl w-[360px] max-h-[360px] overflow-y-auto">
+    <div className="fixed bottom-4 right-4 z-50 bg-surface border border-border rounded-md shadow-xl w-[360px] max-w-[calc(100vw-2rem)] max-h-[360px] overflow-y-auto">
       <div className="px-3 py-2 border-b border-border font-bold text-sm">
         {pending > 0 ? t('media.uploading') + ` (${pending})` : t('media.uploadComplete', { count: queue.length })}
       </div>

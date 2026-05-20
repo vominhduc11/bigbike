@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 type PaginationNavProps = {
   page: number;
   totalPages: number;
-  makeHref: (nextPage: number) => string;
+  baseHref: string;
 };
 
 function buildPageList(page: number, totalPages: number): (number | "…")[] {
@@ -25,7 +25,9 @@ function buildPageList(page: number, totalPages: number): (number | "…")[] {
   return pages;
 }
 
-export function PaginationNav({ page, totalPages, makeHref }: PaginationNavProps) {
+export function PaginationNav({ page, totalPages, baseHref }: PaginationNavProps) {
+  const makeHref = (p: number) =>
+    `${baseHref}${baseHref.includes("?") ? "&" : "?"}page=${p}`;
   const t = useTranslations("Catalog");
   if (totalPages <= 1) return null;
 

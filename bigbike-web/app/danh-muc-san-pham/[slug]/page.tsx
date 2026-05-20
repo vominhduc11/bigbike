@@ -350,9 +350,7 @@ export default async function CategoryDetailPage({
                 <PaginationNav
                   page={pagination.page}
                   totalPages={pagination.totalPages}
-                  makeHref={(nextPage) =>
-                    `${canonicalPath}${buildQueryString({
-                      page: nextPage,
+                  baseHref={`${canonicalPath}${buildQueryString({
                       size: sizeParsed.value !== DEFAULT_PAGE_SIZE ? sizeParsed.value : undefined,
                       sort: sortParsed.value !== DEFAULT_SORT ? sortParsed.value : undefined,
                       "pwb-brand": brandParsed.value,
@@ -360,8 +358,7 @@ export default async function CategoryDetailPage({
                       filter_color: colorParsed.value,
                       min_price: minPriceParsed.value,
                       max_price: maxPriceParsed.value,
-                    })}`
-                  }
+                    })}`}
                 />
               ) : null}
             </>

@@ -53,7 +53,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const heroTitle = query ? t("heroTitleWithQuery", { query }) : t("title");
 
   return (
-    <section className="bb-page">
+    <>
       <PageHero
         title={heroTitle}
         breadcrumb={[
@@ -61,6 +61,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           { label: t("breadcrumb") },
         ]}
       />
+      <section className="bb-page">
       <div className="bb-container">
         <form method="GET" className="bb-query-form">
           <div className="bb-query-row">
@@ -98,7 +99,8 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           <SearchResults query={query} limit={limitParsed.value} types={types} />
         )}
       </div>
-    </section>
+      </section>
+    </>
   );
 }
 

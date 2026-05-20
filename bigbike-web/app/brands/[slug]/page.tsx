@@ -266,9 +266,7 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
                 <PaginationNav
                   page={pagination.page}
                   totalPages={pagination.totalPages}
-                  makeHref={(nextPage) =>
-                    `${canonicalPath}${buildQueryString({
-                      page: nextPage,
+                  baseHref={`${canonicalPath}${buildQueryString({
                       size: sizeParsed.value,
                       sort: sortParsed.value,
                       "pwb-brand": brandFilterParsed.value,
@@ -276,8 +274,7 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
                       filter_color: colorParsed.value,
                       min_price: minPriceParsed.value,
                       max_price: maxPriceParsed.value,
-                    })}`
-                  }
+                    })}`}
                 />
               ) : null}
             </>

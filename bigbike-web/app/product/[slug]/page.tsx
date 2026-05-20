@@ -119,7 +119,7 @@ export default async function ProductDetailPage({
   ]);
 
   const result = await getProductBySlug(slug, await getLocale());
-  if (!result.data && result.error?.status === 404) notFound();
+  if (!result.data && (result.error?.status === 404 || result.error?.status === 410)) notFound();
 
   if (!result.data) {
     return (
@@ -374,7 +374,7 @@ export default async function ProductDetailPage({
             when admin has filled it in — most products leave it empty. */}
         {product.contentBottom && product.contentBottom.trim() && (
           <section
-            className="bb-pdp-content-bottom bb-content"
+            className="bb-pdp-content-bottom"
             dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(product.contentBottom) }}
           />
         )}

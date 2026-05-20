@@ -112,7 +112,7 @@ export function HeroSlider({ slides }: HeroSliderProps) {
             <br />
             <em className="not-italic text-brand">cho rider đi đường dài</em>
           </p>
-          <p className="mb-[var(--bb-space-6)] mt-0 max-w-[520px] text-base leading-6 text-[#cecece]">
+          <p className="mb-[var(--bb-space-6)] mt-0 max-w-[520px] text-base leading-6 text-[var(--bb-text-inverse-secondary)]">
             Mũ bảo hiểm, áo giáp, găng tay, intercom và phụ kiện touring được
             chọn lọc theo tinh thần garage cao cấp: rõ ràng, đáng tin, tư vấn kỹ.
           </p>
