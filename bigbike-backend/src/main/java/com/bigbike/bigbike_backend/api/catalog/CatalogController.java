@@ -157,18 +157,20 @@ public class CatalogController {
             @RequestParam(required = false) String sort,
             @RequestParam(required = false) Boolean showOnHomepage,
             @RequestParam(required = false) Boolean filterHome,
+            @RequestParam(defaultValue = "vi") @Pattern(regexp = LANG_REGEX, message = "Invalid lang.") String lang,
             HttpServletRequest request
     ) {
         Boolean homepageFilter = showOnHomepage != null ? showOnHomepage : filterHome;
-        return apiResponseFactory.list(catalogReadService.listCategories(page, size, sort, homepageFilter), request);
+        return apiResponseFactory.list(catalogReadService.listCategories(page, size, sort, homepageFilter, lang), request);
     }
 
     @GetMapping("/categories/{slug}")
     public ApiDataResponse<Category> getCategoryBySlug(
             @PathVariable @Pattern(regexp = SLUG_REGEX, message = "Invalid slug.") String slug,
+            @RequestParam(defaultValue = "vi") @Pattern(regexp = LANG_REGEX, message = "Invalid lang.") String lang,
             HttpServletRequest request
     ) {
-        return apiResponseFactory.data(catalogReadService.getCategoryBySlug(slug), request);
+        return apiResponseFactory.data(catalogReadService.getCategoryBySlug(slug, lang), request);
     }
 
     /**
@@ -190,16 +192,18 @@ public class CatalogController {
             @RequestParam(defaultValue = "1") @Min(1) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
             @RequestParam(required = false) String sort,
+            @RequestParam(defaultValue = "vi") @Pattern(regexp = LANG_REGEX, message = "Invalid lang.") String lang,
             HttpServletRequest request
     ) {
-        return apiResponseFactory.list(catalogReadService.listBrands(page, size, sort), request);
+        return apiResponseFactory.list(catalogReadService.listBrands(page, size, sort, lang), request);
     }
 
     @GetMapping("/brands/{slug}")
     public ApiDataResponse<Brand> getBrandBySlug(
             @PathVariable @Pattern(regexp = SLUG_REGEX, message = "Invalid slug.") String slug,
+            @RequestParam(defaultValue = "vi") @Pattern(regexp = LANG_REGEX, message = "Invalid lang.") String lang,
             HttpServletRequest request
     ) {
-        return apiResponseFactory.data(catalogReadService.getBrandBySlug(slug), request);
+        return apiResponseFactory.data(catalogReadService.getBrandBySlug(slug, lang), request);
     }
 }

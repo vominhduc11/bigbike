@@ -1,5 +1,7 @@
 import { StaticPageSkeleton } from "@/components/ui/Skeletons";
+import { getTranslations } from "next-intl/server";
 
-export default function HowToBuyLoading() {
-  return <StaticPageSkeleton title="Đang tải hướng dẫn mua hàng" />;
+export default async function HowToBuyLoading() {
+  const t = await getTranslations("Loading");
+  return <StaticPageSkeleton title={t("howToBuy")} />;
 }

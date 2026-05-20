@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
 
 import { ArticleCarousel } from "@/components/content/ArticleCarousel";
 import { ArticleProducts } from "@/components/content/ArticleProducts";
@@ -20,7 +21,8 @@ import { readHeroSettings } from "@/lib/utils/page-hero";
 import { toArticleListPath, toArticlePath, toCanonicalUrl, toHomePath } from "@/lib/utils/routes";
 import { isValidSlug } from "@/lib/utils/slug";
 
-export const revalidate = 3600;
+// Locale is read from a cookie (next-intl) — opt into dynamic rendering.
+export const dynamic = "force-dynamic";
 
 export async function generateStaticParams() {
   const result = await listArticles({ page: 1, size: 100, sort: "publishedAt:desc" });
@@ -32,21 +34,22 @@ type ArticleDetailPageProps = Readonly<{
 }>;
 
 export async function generateMetadata({ params }: ArticleDetailPageProps): Promise<Metadata> {
-  const { slug = "" } = await params;
+  const [{ slug = "" }, t] = await Promise.all([params, getTranslations("Blog")]);
   if (!isValidSlug(slug)) {
     return buildPublicMetadata({
-      title: "Bài viết không hợp lệ",
-      description: "Slug bài viết không hợp lệ.",
+      title: t("articleInvalidTitle"),
+      description: t("articleInvalidDescription"),
       canonicalPath: toArticlePath("invalid"),
       noIndex: true,
     });
   }
 
-  const result = await getArticleBySlug(slug);
+  const locale = await getLocale();
+  const result = await getArticleBySlug(slug, locale);
   if (!result.data) {
     return buildPublicMetadata({
-      title: "Không tìm thấy bài viết",
-      description: "Không tìm thấy bài viết yêu cầu.",
+      title: t("articleNotFoundTitle"),
+      description: t("articleNotFoundDescription"),
       canonicalPath: toArticlePath(slug),
       noIndex: true,
     });
@@ -55,7 +58,7 @@ export async function generateMetadata({ params }: ArticleDetailPageProps): Prom
   const article = result.data;
   return buildPublicMetadata({
     title: article.title,
-    description: article.excerpt ?? "Chi tiết bài viết BigBike.",
+    description: article.excerpt ?? t("articleDefaultDescription"),
     canonicalPath: toArticlePath(article.slug),
     noIndex: false,
     ogImage: article.coverImage?.url ?? undefined,
@@ -64,12 +67,17 @@ export async function generateMetadata({ params }: ArticleDetailPageProps): Prom
 }
 
 export default async function ArticleDetailPage({ params }: ArticleDetailPageProps) {
-  const { slug = "" } = await params;
+  const [{ slug = "" }, t, tBreadcrumb] = await Promise.all([
+    params,
+    getTranslations("Blog"),
+    getTranslations("Breadcrumb"),
+  ]);
   if (!isValidSlug(slug)) {
     notFound();
   }
 
-  const result = await getArticleBySlug(slug);
+  const locale = await getLocale();
+  const result = await getArticleBySlug(slug, locale);
   if (!result.data && result.error?.status === 404) {
     notFound();
   }
@@ -77,7 +85,7 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
     return (
       <section className="bb-page">
         <div className="bb-container">
-          <ErrorState message={result.error?.message ?? "Không tải được bài viết."} />
+          <ErrorState message={result.error?.message ?? t("loadFailed")} />
         </div>
       </section>
     );
@@ -98,8 +106,8 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
   const relatedArticles = (relatedResult.data ?? []).filter((a) => a.slug !== article.slug);
   const heroSettings = readHeroSettings(settingsResult.data ?? [], "hero_news");
 
-  const articleTitle = safeText(article.title, "Bài viết");
-  const articleCategory = safeText(article.category?.name, "Tin tức");
+  const articleTitle = safeText(article.title, t("articleTitleFallback"));
+  const articleCategory = safeText(article.category?.name, t("articleCategoryFallback"));
   const articleDate = article.publishedAt ?? article.createdAt;
   const categoryHref = article.category?.slug
     ? `${toArticleListPath()}?category=${encodeURIComponent(article.category.slug)}`
@@ -117,10 +125,10 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
       <PageHero
         imageUrl={heroSettings.imageUrl}
         imageAlt={heroSettings.imageAlt}
-        title={heroSettings.title ?? "Tin tức"}
+        title={heroSettings.title ?? t("title")}
         breadcrumb={[
-          { label: "Trang chủ", href: toHomePath() },
-          { label: "Tin tức" },
+          { label: tBreadcrumb("home"), href: toHomePath() },
+          { label: t("breadcrumb") },
         ]}
       />
 
@@ -160,17 +168,17 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
           dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(article.body) }}
         />
 
-        <ArticleProducts products={relatedProducts} />
+        <ArticleProducts products={relatedProducts} title={t("relatedProductsHeading")} />
 
         {/* Social share */}
         <div className="flex items-center gap-[10px] mt-8 pt-5 border-t border-border flex-wrap">
-          <span className="text-sm font-bold tracking-[0.1em] uppercase text-muted-foreground">Chia sẻ:</span>
+          <span className="text-sm font-bold tracking-[0.1em] uppercase text-muted-foreground">{t("shareLabel")}</span>
           <a
             href={fbShareUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-[6px] px-[14px] py-[7px] text-sm font-bold no-underline transition-opacity hover:opacity-80 bg-[#1877f2] text-white"
-            aria-label="Chia sẻ lên Facebook"
+            aria-label={t("shareToFacebook")}
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
               <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm1.75 3.5h-1c-.41 0-.5.19-.5.63V6h1.5l-.2 1.5H8.25V12h-1.5V7.5H6V6h.75V4.88C6.75 3.62 7.5 3 8.75 3c.58 0 1 .04 1 .04V4.5Z" />
@@ -182,7 +190,7 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-[6px] px-[14px] py-[7px] text-sm font-bold no-underline transition-opacity hover:opacity-80 bg-[#1da1f2] text-white"
-            aria-label="Chia sẻ lên Twitter"
+            aria-label={t("shareToTwitter")}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M23 4.6a8.3 8.3 0 0 1-2.4.66A4.18 4.18 0 0 0 22.4 3a8.36 8.36 0 0 1-2.65 1.02 4.16 4.16 0 0 0-7.1 3.8A11.8 11.8 0 0 1 4.2 3.5a4.16 4.16 0 0 0 1.29 5.55A4.1 4.1 0 0 1 3.6 8.5v.05a4.16 4.16 0 0 0 3.34 4.08 4.2 4.2 0 0 1-1.88.07 4.17 4.17 0 0 0 3.89 2.89A8.36 8.36 0 0 1 2 17.3a11.78 11.78 0 0 0 6.38 1.87c7.66 0 11.85-6.34 11.85-11.84 0-.18 0-.36-.01-.54A8.4 8.4 0 0 0 23 4.6Z" />
@@ -192,14 +200,13 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
         </div>
       </article>
 
-      {/* Related articles — "TIN TỨC LIÊN QUAN" carousel */}
       {relatedArticles.length > 0 && (
         <section className="bb-container mt-4 pt-9 pb-[60px] border-t border-border">
           <p className="text-sm font-bold tracking-[0.16em] uppercase text-brand text-center m-0 mb-1">
-            Có thể bạn quan tâm
+            {t("relatedKicker")}
           </p>
           <h2 className="font-display text-2xl font-semibold uppercase tracking-[0.04em] text-foreground text-center m-0 mb-8">
-            Tin tức liên quan
+            {t("relatedHeading")}
           </h2>
           <ArticleCarousel articles={relatedArticles} />
         </section>

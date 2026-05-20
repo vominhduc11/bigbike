@@ -1,11 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
-  AlertCircle, Check, ChevronDown as PfChevronDown, ChevronUp as PfChevronUp,
-  EyeOff, FileEdit, Globe, HelpCircle, Image as PfImage, Images, Info, Layers, Link2, ListChecks,
-  Loader2, Lock, LayoutList, Maximize2, Minimize2, Save, Search as PfSearch, Tag, Users, Video, Wrench, X as PfX,
+  AlertCircle, Check, ChevronDown, Info, Loader2, Lock, Save, Search as PfSearch, Users, X,
 } from 'lucide-react'
 import {
   createProduct,
@@ -19,17 +17,23 @@ import {
 import { showConfirm } from '../lib/confirm'
 import { formatDateTime } from '../lib/formatters'
 import { createProductSchema, zodErrors, COLOR_ATTRIBUTE_KEYS, normalizeVariantToken, isColorAttributeName } from '../lib/schemas'
-import { Modal, Tabs } from '../components/layout'
+import { Modal, Screen, ScreenHeader, StickyActionBar, Tabs } from '../components/layout'
 import { StatePanel } from '../components/StatePanel'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { MediaPickerModal } from '../components/MediaPickerModal'
 import { VideoPickerModal } from '../components/VideoPickerModal'
 import { RichTextEditor } from '../components/RichTextEditor'
+import { BlockEditor } from '../components/BlockEditor'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+} from '@/components/ui/dropdown-menu'
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
+import { cn } from '@/lib/utils'
 
 // Matches YouTube IDs across watch, share, embed, and shorts URLs.
 function extractYouTubeId(url) {
@@ -175,6 +179,7 @@ function buildEmptyForm() {
     name: '',
     shortDescription: '',
     description: '',
+    descriptionBlocks: null,
     contentBottom: '',
     promotionContent: '',
     installationGuide: '',
@@ -241,6 +246,7 @@ function buildFormFromItem(item) {
     name: item.name || '',
     shortDescription: item.shortDescription || '',
     description: item.description || '',
+    descriptionBlocks: item.descriptionBlocks ?? null,
     contentBottom: item.contentBottom || '',
     promotionContent: item.promotionContent || '',
     installationGuide: item.installationGuide || '',
@@ -353,7 +359,7 @@ function toPayload(form) {
     slug: form.slug.trim(),
     name: form.name.trim(),
     shortDescription: form.shortDescription.trim() || undefined,
-    description: form.description.trim() || undefined,
+    description: Array.isArray(form.descriptionBlocks) ? undefined : (form.description.trim() || undefined),
     contentBottom: form.contentBottom.trim() ? form.contentBottom.trim() : null,
     promotionContent: form.promotionContent.trim() ? form.promotionContent.trim() : null,
     installationGuide: form.installationGuide.trim() ? form.installationGuide.trim() : null,
@@ -428,6 +434,13 @@ function toPayload(form) {
 
   // Always send relatedProductIds — empty array explicitly clears the section.
   payload.relatedProductIds = Array.isArray(form.relatedProductIds) ? form.relatedProductIds : []
+
+  // descriptionBlocks — send when user is in block-editing mode (non-null).
+  // Strip _key (frontend tracking) before sending. Omit key entirely when null
+  // so the backend presence-flag leaves both columns untouched.
+  if (Array.isArray(form.descriptionBlocks)) {
+    payload.descriptionBlocks = form.descriptionBlocks.map(({ _key, ...rest }) => rest)
+  }
 
   const scopedVariants = withColorScopedMedia(form.variants).filter((v) => v.name.trim())
   const emittedImageColors = new Set()
@@ -1588,192 +1601,142 @@ const SECTION_DEFS = [
   { id: 'section-related',        key: 'related',       icon: 'Link2',      labelKey: 'products.detail.sectionRelated',        required: false },
 ]
 
-// Lucide icons referenced by SECTION_DEFS — resolved by name in the TOC and
-// section headers (icon components imported at the top of the file).
-const SECTION_ICONS = {
-  Info, Tag, Image: PfImage, Search: PfSearch, LayoutList,
-  Images, Video, ListChecks, Layers, Wrench, HelpCircle, Link2,
+// Group sections into 4 fixed tabs — keys must match SECTION_DEFS keys.
+// `general` holds the three required sections so users can publish from a single tab.
+const TAB_SECTIONS = {
+  general:  ['basic', 'pricing', 'media'],
+  content:  ['seo', 'contentBottom', 'gallery', 'videos'],
+  details:  ['specs', 'installation', 'faqs'],
+  variants: ['variants', 'related'],
 }
 
-// One collapsible form section in the prototype's `pf-section` style.
-function PfSection({ def, t, open, done, hasError, onToggle, badge, children }) {
-  const Icon = SECTION_ICONS[def.icon] || Info
+// Field-prefix groups by section key — single source of truth used by both the
+// in-render sectionErrors derivation and the synchronous save-time tab switch.
+const SECTION_FIELD_PREFIXES = {
+  basic:         ['name','slug','sku','shortDescription','description','brandId','categoryId','publishStatus'],
+  pricing:       ['retailPrice','compareAtPrice','salePrice'],
+  media:         ['imageUrl'],
+  seo:           ['seoTitle','seoDescription','seoCanonicalUrl','seoOgImageUrl','seoOgImageAlt'],
+  contentBottom: ['contentBottom'],
+  gallery:       ['gallery'],
+  videos:        ['videos'],
+  specs:         ['specifications'],
+  installation:  ['installationGuide'],
+  faqs:          ['faqs'],
+  variants:      ['variants'],
+  related:       ['relatedProductIds'],
+}
+
+function computeSectionErrorsFromMap(errors) {
+  const keys = Object.keys(errors)
+  const result = {}
+  for (const [section, prefixes] of Object.entries(SECTION_FIELD_PREFIXES)) {
+    result[section] = prefixes.some((p) => keys.some((k) => k === p || k.startsWith(p + '.')))
+  }
+  return result
+}
+
+// Find the first tab containing any failing section for the given errors map.
+function findTabForErrors(sectionErrors) {
+  for (const [tab, keys] of Object.entries(TAB_SECTIONS)) {
+    if (keys.some((k) => sectionErrors[k])) return tab
+  }
+  return null
+}
+
+// Map publishStatus → matching .badge variant. Used in ScreenHeader.
+function publishBadgeClass(status) {
+  switch (status) {
+    case 'PUBLISHED': return 'badge badge-success'
+    case 'DRAFT':     return 'badge badge-neutral'
+    case 'HIDDEN':    return 'badge badge-orange'
+    case 'TRASH':     return 'badge badge-danger'
+    default:          return 'badge badge-neutral'
+  }
+}
+
+// Pill badge showing which team role owns a section.
+function RoleBadge({ role }) {
+  const { t } = useTranslation()
+  if (role === 'content') {
+    const label = t('products.detail.assign.roleContent', { defaultValue: 'Content' })
+    return (
+      <span
+        className="inline-flex items-center text-[10px] uppercase tracking-wide px-1.5 py-0.5 border rounded-none"
+        style={{ color: 'var(--admin-color-brand-red)', borderColor: 'var(--admin-color-brand-red)' }}
+      >{label}</span>
+    )
+  }
+  if (role === 'seo') {
+    const label = t('products.detail.assign.roleSeo', { defaultValue: 'SEO' })
+    return (
+      <span
+        className="inline-flex items-center text-[10px] uppercase tracking-wide px-1.5 py-0.5 border rounded-none"
+        style={{ color: 'var(--admin-color-status-warning-text)', borderColor: 'var(--admin-color-status-warning-text)' }}
+      >{label}</span>
+    )
+  }
+  if (role === 'manager') {
+    const label = t('products.detail.assign.roleManager', { defaultValue: 'Quản lý' })
+    return (
+      <span
+        className="inline-flex items-center text-[10px] uppercase tracking-wide px-1.5 py-0.5 border rounded-none"
+        style={{ color: 'var(--admin-color-text-primary)', borderColor: 'var(--admin-color-text-primary)' }}
+      >{label}</span>
+    )
+  }
+  return null
+}
+
+// Section card wrapper — matches CategoryDetail/BrandDetail "card-head + card-body" pattern.
+// Required sections get a subtle red asterisk after the title instead of a loud "BẮT BUỘC" badge.
+function SectionCard({ title, badge, required, children }) {
   return (
-    <div className="pf-section" data-section={def.id} id={def.id}>
-      <button type="button" className="pf-section-head" onClick={onToggle}>
-        <span className={`pf-section-icon${done ? ' done' : ''}`}>
-          {done ? <Check size={14} /> : <Icon size={16} />}
-        </span>
-        <div style={{ flex: 1, textAlign: 'left' }}>
-          <div className="pf-section-title">
-            {t(def.labelKey)}
-            {def.required && !done && (
-              <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: 'var(--admin-color-brand-red)' }}>
-                {t('products.detail.requiredTag', { defaultValue: 'BẮT BUỘC' })}
-              </span>
-            )}
-            {!def.required && (
-              <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 500, color: 'var(--admin-color-text-muted)' }}>
-                {t('products.detail.optionalTag', { defaultValue: '(tuỳ chọn)' })}
-              </span>
-            )}
-          </div>
-        </div>
-        {done && (
-          <span className="badge badge-success" style={{ fontSize: 10 }}>
-            <Check size={10} />{t('products.detail.sectionDone', { defaultValue: 'Hoàn thành' })}
-          </span>
-        )}
-        {hasError && (
-          <span className="badge badge-danger" style={{ fontSize: 10 }}>
-            <AlertCircle size={10} />
-          </span>
-        )}
+    <div className="card">
+      <div className="card-head">
+        <h2>
+          {title}
+          {required && (
+            <span
+              className="ml-1 text-[var(--admin-color-brand-red)]"
+              aria-label="bắt buộc"
+              title="Bắt buộc"
+            >*</span>
+          )}
+        </h2>
         {badge}
-        {open ? <PfChevronUp size={16} /> : <PfChevronDown size={16} />}
-      </button>
-      {open && <div className="pf-section-body">{children}</div>}
+      </div>
+      <div className="card-body">{children}</div>
     </div>
   )
 }
 
-// Sticky table-of-contents with progress + quick-save bar.
-function ProductFormToc({
-  t, completion, sectionErrors, activeSection, openMap, onJump, onToggleAll,
-  saving, savedFlash, isDirty, publishStatus, isCreate,
-  onSave, onSaveDraft, onSaveHidden, onClose,
-}) {
-  const requiredDefs = SECTION_DEFS.filter((s) => s.required)
-  const optionalDefs = SECTION_DEFS.filter((s) => !s.required)
-  const doneRequired = requiredDefs.filter((s) => completion[s.key]).length
-  const doneOptional = optionalDefs.filter((s) => completion[s.key]).length
-  const allOpen = SECTION_DEFS.every((s) => openMap[s.id])
-
-  const saveDotClass = saving ? 'saving' : savedFlash ? 'saved-flash' : isDirty ? 'dirty' : 'saved'
-  const saveLabel = saving
-    ? t('products.detail.savingShort', { defaultValue: 'Đang lưu...' })
-    : savedFlash
-      ? t('common.clean')
-      : isDirty
-        ? t('common.dirty')
-        : t('common.clean')
-
+// Field shell — pass `full` to span both grid columns.
+function Field({ label, hint, error, count, countWarn, full, children }) {
   return (
-    <aside className="pf-toc">
-      <div className="pf-toc-head">
-        <div className="pf-toc-head-row">
-          <div>
-            <div className="pf-toc-head-title">{t('products.detail.tocProgress', { defaultValue: 'Tiến độ' })}</div>
-            <div className="pf-toc-head-meta">
-              <strong>{doneRequired}/{requiredDefs.length}</strong>{' '}
-              {t('products.detail.tocRequired', { defaultValue: 'bắt buộc' })}
-              {' · '}{doneOptional}/{optionalDefs.length}{' '}
-              {t('products.detail.tocOptional', { defaultValue: 'tuỳ chọn' })}
-            </div>
-          </div>
-          <button
-            type="button"
-            className="pf-toc-toggle-all"
-            title={allOpen
-              ? t('products.detail.tocCollapseAll', { defaultValue: 'Đóng tất cả' })
-              : t('products.detail.tocExpandAll', { defaultValue: 'Mở tất cả' })}
-            onClick={() => onToggleAll(!allOpen)}
-          >
-            {allOpen ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
-          </button>
-        </div>
-        <div className="pf-toc-progress">
-          <div style={{ width: `${(doneRequired / requiredDefs.length) * 100}%` }} />
-        </div>
-      </div>
-
-      <nav className="pf-toc-nav">
-        {SECTION_DEFS.map((def) => {
-          const Icon = SECTION_ICONS[def.icon] || Info
-          const done = completion[def.key]
-          const hasError = sectionErrors[def.key]
-          return (
-            <button
-              key={def.id}
-              type="button"
-              className={`pf-toc-item${done ? ' done' : ''}${hasError ? ' error' : ''}${activeSection === def.id ? ' active' : ''}`}
-              onClick={() => onJump(def.id)}
-            >
-              <span className="pf-toc-icon">
-                {hasError ? <AlertCircle size={13} /> : done ? <Check size={13} /> : <Icon size={13} />}
-              </span>
-              <span style={{ flex: 1, textAlign: 'left' }}>{t(def.labelKey)}</span>
-              {def.required && !done && !hasError && (
-                <span className="pf-toc-req" title={t('products.detail.tocRequired', { defaultValue: 'bắt buộc' })}>*</span>
+    <div className={cn('flex flex-col gap-1.5', full && 'md:col-span-2')}>
+      {(label || count != null) && (
+        <div className="flex justify-between items-baseline text-sm font-medium text-foreground/80">
+          {label && <span>{label}</span>}
+          {count != null && (
+            <span
+              className={cn(
+                'text-xs tabular-nums text-muted-foreground',
+                countWarn && 'text-[var(--admin-color-status-warning-text)] font-semibold',
               )}
-            </button>
-          )
-        })}
-      </nav>
-
-      <div className="pf-toc-save">
-        <div className="pf-toc-save-status">
-          <span className={`pf-dot ${saveDotClass}`} />
-          <span>{saveLabel}</span>
-        </div>
-        {publishStatus === 'PUBLISHED' ? (
-          <button type="button" className="btn btn-primary btn-sm pf-toc-primary" onClick={() => onSave()} disabled={saving || !isDirty}>
-            {saving ? <span className="pf-spin"><Loader2 size={13} /></span> : <Check size={13} />}
-            {isCreate ? t('products.detail.createBtn') : t('products.detail.saveBtn')}
-          </button>
-        ) : (
-          <button type="button" className="btn btn-primary btn-sm pf-toc-primary" onClick={() => onSave('PUBLISHED')} disabled={saving}>
-            {saving ? <span className="pf-spin"><Loader2 size={13} /></span> : <Globe size={13} />}
-            {isCreate ? t('products.detail.createAndPublish') : t('products.detail.saveAndPublish')}
-          </button>
-        )}
-        <div className="pf-toc-secondary">
-          {publishStatus === 'DRAFT' && (
-            <button type="button" className="pf-toc-icon-btn" onClick={onSaveDraft} disabled={saving || !isDirty}>
-              <FileEdit size={13} /><span>{t('products.detail.saveDraft')}</span>
-            </button>
+            >
+              {count}
+            </span>
           )}
-          {publishStatus === 'HIDDEN' && (
-            <button type="button" className="pf-toc-icon-btn" onClick={onSaveHidden} disabled={saving || !isDirty}>
-              <EyeOff size={13} /><span>{t('products.detail.saveHidden')}</span>
-            </button>
-          )}
-          <button type="button" className="pf-toc-icon-btn" onClick={onClose} disabled={saving}>
-            <PfX size={13} /><span>{t('common.cancel')}</span>
-          </button>
         </div>
-        <div className="pf-toc-kbd-hint">
-          <kbd>⌘</kbd>+<kbd>↵</kbd> {t('products.detail.saveShortcutHint', { defaultValue: 'lưu nhanh' })}
-        </div>
-      </div>
-
-      {/* Phân công — static reference panel. Informational only: it does not
-          restrict editing, every user can still change any section. */}
-      <div className="pf-toc-assign">
-        <div className="pf-toc-assign-head">
-          <Users size={13} />
-          <span>{t('products.detail.assign.title', { defaultValue: 'Phân công' })}</span>
-        </div>
-        <div className="pf-toc-assign-row content">
-          <strong>{t('products.detail.assign.roleContent', { defaultValue: 'Content' })}: </strong>
-          {t('products.detail.assign.itemsContent', {
-            defaultValue: 'Thông tin cơ bản · Ảnh đại diện · Bộ sưu tập ảnh · Video · Thông số kỹ thuật · Hướng dẫn lắp đặt · Câu hỏi thường gặp · Biến thể · Sản phẩm liên quan · Nội dung SEO dưới',
-          })}
-        </div>
-        <div className="pf-toc-assign-row seo">
-          <strong>{t('products.detail.assign.roleSeo', { defaultValue: 'SEO' })}: </strong>
-          {t('products.detail.assign.itemsSeo', {
-            defaultValue: 'Thông tin SEO (Title, Meta, OG image) · Đường dẫn (slug) · Kiểm tra checklist trước khi đăng',
-          })}
-        </div>
-        <div className="pf-toc-assign-row manager">
-          <strong>{t('products.detail.assign.roleManager', { defaultValue: 'Quản lý' })}: </strong>
-          {t('products.detail.assign.itemsManager', {
-            defaultValue: 'Giá & trạng thái · Duyệt đăng sản phẩm',
-          })}
-        </div>
-      </div>
-    </aside>
+      )}
+      {children}
+      {error
+        ? <span className="text-xs text-[var(--admin-color-status-danger-text)] font-semibold">{error}</span>
+        : hint
+          ? <span className="text-xs text-muted-foreground">{hint}</span>
+          : null}
+    </div>
   )
 }
 
@@ -2076,6 +2039,11 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     const clientErrors = zodErrors(result)
     if (Object.keys(clientErrors).length > 0) {
       setValidationErrors(clientErrors)
+      // Switch to the first tab containing an error so the user sees the field
+      // we're about to focus. computeSectionErrorsFromMap reuses the same
+      // prefix logic used by sectionErrors below.
+      const failedTab = findTabForErrors(computeSectionErrorsFromMap(clientErrors))
+      if (failedTab && failedTab !== activeTab) setActiveTab(failedTab)
       focusFirstError()
       return
     }
@@ -2103,76 +2071,9 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     setPendingPublish(null)
   }
 
-  // ── Prototype layout state — collapsible sections + TOC scroll-spy ────────
-  const [openMap, setOpenMap] = useState(() => {
-    try {
-      const stored = JSON.parse(localStorage.getItem('bb-product-form-sections') || 'null')
-      if (stored) return stored
-    } catch { /* ignore */ }
-    // New product opens the 3 required sections; edit opens basic + pricing.
-    const initial = {}
-    SECTION_DEFS.forEach((s, i) => { initial[s.id] = isCreate ? s.required : i < 2 })
-    return initial
-  })
-  const [activeSection, setActiveSection] = useState(SECTION_DEFS[0].id)
+  // ── Tab navigation state (replaces the old TOC sidebar) ─────────────────────
+  const [activeTab, setActiveTab] = useState('general')
   const [savedFlash, setSavedFlash] = useState(false)
-
-  useEffect(() => {
-    try { localStorage.setItem('bb-product-form-sections', JSON.stringify(openMap)) } catch { /* ignore */ }
-  }, [openMap])
-
-  // Scroll-spy — highlight the TOC entry of the section currently in view.
-  useEffect(() => {
-    const pc = document.querySelector('.page-content')
-    if (!pc) return undefined
-    const onScroll = () => {
-      const sections = pc.querySelectorAll('[data-section]')
-      let current = SECTION_DEFS[0].id
-      const containerTop = pc.getBoundingClientRect().top
-      for (const sec of sections) {
-        if (sec.getBoundingClientRect().top - containerTop < 180) current = sec.dataset.section
-        else break
-      }
-      setActiveSection(current)
-    }
-    onScroll()
-    pc.addEventListener('scroll', onScroll, { passive: true })
-    return () => pc.removeEventListener('scroll', onScroll)
-  }, [])
-
-  function toggleSection(id) {
-    setOpenMap((prev) => ({ ...prev, [id]: !prev[id] }))
-  }
-  function setAllSections(next) {
-    setOpenMap(() => {
-      const m = {}
-      SECTION_DEFS.forEach((s) => { m[s.id] = next })
-      return m
-    })
-  }
-  function jumpToSection(id) {
-    setOpenMap((prev) => (prev[id] ? prev : { ...prev, [id]: true }))
-    setTimeout(() => {
-      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }, 50)
-  }
-
-  // Per-section completion — drives TOC ticks + section header badges.
-  const completion = useMemo(() => ({
-    basic: Boolean(form.name.trim() && form.slug.trim() && form.brandId && form.categoryId),
-    pricing: Boolean(form.retailPrice && Number(form.retailPrice) > 0
-      && (!form.salePrice || Number(form.salePrice) < Number(form.retailPrice))),
-    media: Boolean(form.imageUrl),
-    seo: Boolean(form.seoTitle && form.seoDescription),
-    contentBottom: (form.contentBottom || '').length > 0,
-    gallery: form.gallery.length > 0,
-    videos: form.videos.length > 0,
-    specs: form.specifications.length > 0,
-    installation: (form.installationGuide || '').length > 0,
-    faqs: form.faqs.length > 0,
-    variants: form.variants.length > 0,
-    related: form.relatedProductIds.length > 0,
-  }), [form])
 
   if (state.status === 'loading') {
     return (
@@ -2208,22 +2109,10 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     )
   }
 
-  const errKeys = Object.keys(validationErrors)
-  const se = (prefixes) => prefixes.some((p) => errKeys.some((k) => k === p || k.startsWith(p + '.')))
-  const sectionErrors = {
-    basic:         se(['name','slug','sku','shortDescription','description','brandId','categoryId','publishStatus']),
-    pricing:       se(['retailPrice','compareAtPrice','salePrice']),
-    media:         se(['imageUrl']),
-    seo:           se(['seoTitle','seoDescription','seoCanonicalUrl','seoOgImageUrl','seoOgImageAlt']),
-    contentBottom: se(['contentBottom']),
-    gallery:       se(['gallery']),
-    videos:        se(['videos']),
-    specs:         se(['specifications']),
-    installation:  se(['installationGuide']),
-    faqs:          se(['faqs']),
-    variants:      se(['variants']),
-    related:       se(['relatedProductIds']),
-  }
+  const sectionErrors = computeSectionErrorsFromMap(validationErrors)
+  const tabCounts = Object.fromEntries(
+    Object.entries(TAB_SECTIONS).map(([tab, keys]) => [tab, keys.filter((k) => sectionErrors[k]).length]),
+  )
 
   // SEO checklist — same heuristics as the prototype, computed from real fields.
   const seoChecks = [
@@ -2238,102 +2127,203 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   ]
   const seoPassed = seoChecks.filter((c) => c.ok).length
 
+  // ── Save-bar derivations ────────────────────────────────────────────────────
+  const saveDotState = isSubmitting ? 'saving' : savedFlash ? 'saved-flash' : isDirty ? 'dirty' : 'saved'
+  const saveDotClass =
+    saveDotState === 'saving'      ? 'bg-[var(--admin-color-status-info-text)] animate-pulse'
+    : saveDotState === 'dirty'     ? 'bg-[var(--admin-color-status-warning-text)] animate-pulse'
+    :                                'bg-[var(--admin-color-status-success-text)]'
+  const saveLabel = isSubmitting
+    ? t('products.detail.savingShort', { defaultValue: 'Đang lưu...' })
+    : isDirty
+      ? t('products.detail.saveDirty', { defaultValue: 'Có thay đổi chưa lưu' })
+      : t('products.detail.saveClean', { defaultValue: 'Đã lưu' })
+
+  const isPublished = form.publishStatus === 'PUBLISHED'
+  const primaryLabel = isPublished
+    ? t('products.detail.saveBtn')
+    : (isCreate ? t('products.detail.createAndPublish') : t('products.detail.saveAndPublish'))
+
+  async function handleClose() {
+    if (isDirty) {
+      const confirmed = await showConfirm(
+        t('products.detail.unsavedChangesConfirm'),
+        t('products.detail.unsavedChangesTitle'),
+      )
+      if (!confirmed) return
+    }
+    navigate('/admin/products')
+  }
+
   return (
-    <div className="pf-screen">
-      {/* Read-only banner */}
-      {!canUpdate && (
-        <div className="pf-readonly-banner">
-          <Lock size={16} />
-          <span>{t('products.detail.permissionDesc')}</span>
-        </div>
-      )}
+    <div className="bb-proto">
+      <Screen maxWidth="1200px">
+        <ScreenHeader
+          eyebrow={t('products.detail.eyebrow')}
+          title={isCreate
+            ? t('products.detail.createTitle')
+            : (langValue('name') || form.name || t('products.detail.editTitle'))}
+          description={
+            !isCreate && state.item?.updatedAt ? (
+              <span className="text-xs">
+                {t('common.lastUpdated')} {formatDateTime(state.item.updatedAt)}
+                {isEnLang && (
+                  <>
+                    {' · '}
+                    {t('products.detail.langEnHint', {
+                      defaultValue: 'Bản tiếng Anh không bắt buộc',
+                    })}
+                  </>
+                )}
+              </span>
+            ) : isEnLang ? (
+              <span className="text-xs">
+                {t('products.detail.langEnHint', {
+                  defaultValue: 'Bản tiếng Anh không bắt buộc',
+                })}
+              </span>
+            ) : null
+          }
+          badge={
+            <span className="inline-flex items-center gap-2">
+              <span className={publishBadgeClass(form.publishStatus)}>
+                {t(`status.publish.${form.publishStatus}`, { defaultValue: form.publishStatus })}
+              </span>
+              {isReadOnly && (
+                <span className="badge badge-warn">
+                  <Lock size={11} />
+                  {t('products.detail.readOnlyBadge', { defaultValue: 'Chỉ đọc' })}
+                </span>
+              )}
+            </span>
+          }
+          actions={
+            <div className="flex items-center gap-3">
+              <Tabs
+                ariaLabel={t('products.detail.contentLanguageAriaLabel', { defaultValue: 'Ngôn ngữ nội dung' })}
+                value={contentLang}
+                onChange={setContentLang}
+                items={[
+                  { key: 'vi', label: 'VI' },
+                  { key: 'en', label: 'EN' },
+                ]}
+              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label={t('products.detail.assign.title', { defaultValue: 'Phân công' })}
+                    title={t('products.detail.assign.title', { defaultValue: 'Phân công' })}
+                  >
+                    <Users size={18} />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-80">
+                  <div className="flex items-center gap-2 mb-3 text-sm font-semibold uppercase tracking-wide">
+                    <Users size={14} />
+                    <span>{t('products.detail.assign.title', { defaultValue: 'Phân công' })}</span>
+                  </div>
+                  <div className="space-y-2 text-xs leading-relaxed">
+                    <div className="border-l-[3px] pl-2 py-1 border-[var(--admin-color-brand-red)]">
+                      <strong className="text-foreground">{t('products.detail.assign.roleContent', { defaultValue: 'Content' })}: </strong>
+                      <span className="text-muted-foreground">
+                        {t('products.detail.assign.itemsContent', {
+                          defaultValue: 'Thông tin cơ bản · Ảnh đại diện · Bộ sưu tập ảnh · Video · Thông số kỹ thuật · Hướng dẫn lắp đặt · Câu hỏi thường gặp · Biến thể · Sản phẩm liên quan · Nội dung SEO dưới',
+                        })}
+                      </span>
+                    </div>
+                    <div className="border-l-[3px] pl-2 py-1 border-[var(--admin-color-status-warning-text)]">
+                      <strong className="text-foreground">{t('products.detail.assign.roleSeo', { defaultValue: 'SEO' })}: </strong>
+                      <span className="text-muted-foreground">
+                        {t('products.detail.assign.itemsSeo', {
+                          defaultValue: 'Thông tin SEO (Title, Meta, OG image) · Đường dẫn (slug) · Kiểm tra checklist trước khi đăng',
+                        })}
+                      </span>
+                    </div>
+                    <div className="border-l-[3px] pl-2 py-1 border-[var(--admin-color-text-primary)]">
+                      <strong className="text-foreground">{t('products.detail.assign.roleManager', { defaultValue: 'Quản lý' })}: </strong>
+                      <span className="text-muted-foreground">
+                        {t('products.detail.assign.itemsManager', {
+                          defaultValue: 'Giá & trạng thái · Duyệt đăng sản phẩm',
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleClose}
+                aria-label={t('common.cancel')}
+                data-screen-close="true"
+              >
+                <X size={18} />
+              </Button>
+            </div>
+          }
+        />
 
-      {/* Mock-data warning */}
-      {state.warning && (
-        <div className="pf-restore-banner" style={{ borderColor: 'var(--admin-color-status-warning-border)', background: 'var(--admin-color-status-warning-bg)' }}>
-          <AlertCircle size={16} style={{ color: 'var(--admin-color-status-warning-text)' }} />
-          <div style={{ flex: 1, fontSize: 13 }}>{state.warning}</div>
-        </div>
-      )}
-
-      {/* Autosave draft recovery */}
-      {draftRecovery && (
-        <div className="pf-restore-banner">
-          <Save size={16} style={{ color: 'var(--admin-color-status-info-text)' }} />
-          <div style={{ flex: 1, fontSize: 13 }}>
-            <strong>{t('products.detail.draftFound', { defaultValue: 'Có bản nháp tạm trong trình duyệt' })}</strong>
-            {' — '}{formatDateTime(new Date(draftRecovery.ts).toISOString())}
+        {/* Banners — read-only / draft-recovery / mock-warning */}
+        {!canUpdate && (
+          <div className="flex items-center gap-2 px-4 py-2 bg-[var(--admin-color-status-warning-bg)] border border-[var(--admin-color-status-warning-border)] text-[var(--admin-color-status-warning-text)] text-sm">
+            <Lock size={16} />
+            <span>{t('products.detail.permissionDesc')}</span>
           </div>
-          <button
-            type="button"
-            className="btn btn-outline btn-sm"
-            onClick={() => {
-              setForm(draftRecovery.form)
-              setIsDirty(true)
-              setDraftRecovery(null)
-              slugEditedByUser.current = Boolean(draftRecovery.form.slug)
-            }}
-          >
-            {t('products.detail.draftRestore', { defaultValue: 'Khôi phục' })}
-          </button>
-          <button
-            type="button"
-            className="btn btn-ghost btn-sm"
-            onClick={() => { clearFormFromStorage(autosaveKey); setDraftRecovery(null) }}
-          >
-            {t('products.detail.draftDiscard', { defaultValue: 'Bỏ qua' })}
-          </button>
-        </div>
-      )}
+        )}
 
-      {showPublishChecklist && pendingPublish && (
-        <PublishChecklistModal
-          form={pendingPublish.formToSave}
-          onConfirm={confirmPublish}
-          onCancel={() => { setShowPublishChecklist(false); setPendingPublish(null) }}
-        />
-      )}
+        {state.warning && (
+          <div className="flex items-center gap-2 px-4 py-2 bg-[var(--admin-color-status-warning-bg)] border border-[var(--admin-color-status-warning-border)] text-[var(--admin-color-status-warning-text)] text-sm">
+            <AlertCircle size={16} />
+            <div className="flex-1">{state.warning}</div>
+          </div>
+        )}
 
-      {showMatrixWizard && (
-        <VariantMatrixWizard
-          onGenerate={(newVariants) => updateField('variants', [...form.variants, ...newVariants])}
-          onClose={() => setShowMatrixWizard(false)}
-        />
-      )}
+        {draftRecovery && (
+          <div className="flex flex-wrap items-center gap-2 px-3 py-1.5 bg-[var(--admin-color-status-info-bg)] border border-[var(--admin-color-status-info-border)] text-[var(--admin-color-status-info-text)] text-xs">
+            <Save size={14} className="shrink-0" />
+            <span className="flex-1 truncate">
+              <strong>{t('products.detail.draftFoundShort', { defaultValue: 'Có bản nháp tạm' })}</strong>
+              {' · '}{formatDateTime(new Date(draftRecovery.ts).toISOString())}
+            </span>
+            <button
+              type="button"
+              className="text-xs font-semibold underline hover:no-underline"
+              onClick={() => {
+                setForm(draftRecovery.form)
+                setIsDirty(true)
+                setDraftRecovery(null)
+                slugEditedByUser.current = Boolean(draftRecovery.form.slug)
+              }}
+            >
+              {t('products.detail.draftRestore', { defaultValue: 'Khôi phục' })}
+            </button>
+            <button
+              type="button"
+              className="text-xs opacity-70 hover:opacity-100"
+              onClick={() => { clearFormFromStorage(autosaveKey); setDraftRecovery(null) }}
+            >
+              {t('products.detail.draftDiscard', { defaultValue: 'Bỏ qua' })}
+            </button>
+          </div>
+        )}
 
-      {/* Body — TOC sidebar + sections */}
-      <div className="pf-body-wrap">
-        <ProductFormToc
-          t={t}
-          completion={completion}
-          sectionErrors={sectionErrors}
-          activeSection={activeSection}
-          openMap={openMap}
-          onJump={jumpToSection}
-          onToggleAll={setAllSections}
-          saving={isSubmitting}
-          savedFlash={savedFlash}
-          isDirty={isDirty}
-          publishStatus={form.publishStatus}
-          isCreate={isCreate}
-          onSave={(override) => handleSave(override ?? (form.publishStatus === 'PUBLISHED' ? undefined : 'PUBLISHED'))}
-          onSaveDraft={() => handleSave('DRAFT')}
-          onSaveHidden={() => handleSave()}
-          onClose={async () => {
-            if (isDirty) {
-              const confirmed = await showConfirm(
-                t('products.detail.unsavedChangesConfirm'),
-                t('products.detail.unsavedChangesTitle'),
-              )
-              if (!confirmed) return
-            }
-            navigate('/admin/products')
-          }}
+        <Tabs
+          ariaLabel={t('products.detail.tabsAriaLabel', { defaultValue: 'Phần của sản phẩm' })}
+          value={activeTab}
+          onChange={setActiveTab}
+          items={[
+            { key: 'general',  label: t('products.detail.tabGeneral'),  count: tabCounts.general  || undefined },
+            { key: 'content',  label: t('products.detail.tabContent'),  count: tabCounts.content  || undefined },
+            { key: 'details',  label: t('products.detail.tabDetails'),  count: tabCounts.details  || undefined },
+            { key: 'variants', label: t('products.detail.tabVariants'), count: tabCounts.variants || undefined },
+          ]}
         />
 
         <form
           ref={formRef}
-          className="pf-body"
+          className="flex flex-col gap-6 pb-4"
           onSubmit={(e) => { e.preventDefault(); handleSave() }}
           onKeyDown={(e) => {
             if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && !isReadOnly && isDirty) {
@@ -2342,714 +2332,747 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
             }
           }}
         >
-          {/* ── Content language toggle (V136) — VI canonical, EN optional ── */}
-          <div className="flex flex-wrap items-center gap-3 mb-4">
-            <span className="text-sm font-medium">
-              {t('products.detail.contentLanguage', { defaultValue: 'Ngôn ngữ nội dung' })}
-            </span>
-            <Tabs
-              ariaLabel={t('products.detail.contentLanguage', { defaultValue: 'Ngôn ngữ nội dung' })}
-              value={contentLang}
-              onChange={setContentLang}
-              items={[
-                { key: 'vi', label: t('products.detail.langVi', { defaultValue: 'Tiếng Việt' }) },
-                { key: 'en', label: t('products.detail.langEn', { defaultValue: 'English' }) },
-              ]}
-            />
-            {isEnLang && (
-              <span className="pf-field-msg pf-field-hint">
-                {t('products.detail.langEnHint', {
-                  defaultValue: 'Bản tiếng Anh không bắt buộc — để trống sẽ tự hiển thị bản tiếng Việt.',
-                })}
-              </span>
-            )}
-          </div>
+          {activeTab === 'general' && (
+            <>
+              {/* ── Card: Thông tin cơ bản ── */}
+              <SectionCard
+                title={t('products.detail.sectionBasic')}
+                required
+                badge={
+                  <div className="flex items-center gap-1.5">
+                    <RoleBadge role="content" />
+                    <RoleBadge role="seo" />
+                  </div>
+                }
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Field
+                    full
+                    label={t('products.detail.name')}
+                    count={`${langValue('name').length} / 255`}
+                    countWarn={langValue('name').length > 230}
+                    error={validationErrors.name}
+                  >
+                    <Input
+                      value={langValue('name')}
+                      onChange={(e) => (isEnLang ? updateTranslation('name', e.target.value) : handleNameChange(e.target.value))}
+                      disabled={isReadOnly}
+                      maxLength={255}
+                    />
+                  </Field>
 
-          {/* ── Section 1: Thông tin cơ bản ── */}
-          <PfSection
-            def={SECTION_DEFS[0]}
-            t={t}
-            open={openMap['section-basic']}
-            done={completion.basic}
-            hasError={sectionErrors.basic}
-            onToggle={() => toggleSection('section-basic')}
-          >
-            <div className="pf-grid">
-              <div className="pf-field full">
-                <div className="pf-field-label">
-                  <span>{t('products.detail.name')}</span>
-                  <span className={`pf-field-count${langValue('name').length > 230 ? ' warn' : ''}`}>{langValue('name').length} / 255</span>
-                </div>
-                <Input
-                  value={langValue('name')}
-                  onChange={(e) => (isEnLang ? updateTranslation('name', e.target.value) : handleNameChange(e.target.value))}
-                  disabled={isReadOnly}
-                  maxLength={255}
-                />
-                {validationErrors.name && <span className="pf-field-msg pf-field-msg-error">{validationErrors.name}</span>}
-              </div>
+                  <Field
+                    full
+                    label={t('products.detail.slug')}
+                    error={validationErrors.slug}
+                    hint={isEnLang
+                      ? t('products.detail.slugSharedHint', { defaultValue: 'Đường dẫn dùng chung cho cả hai ngôn ngữ — chỉ sửa được ở tab Tiếng Việt.' })
+                      : t('products.detail.slugHint')}
+                  >
+                    <Input
+                      value={form.slug}
+                      placeholder="vd: mu-bao-hiem-fullface-agv-k1s"
+                      onChange={(e) => handleSlugChange(e.target.value)}
+                      onBlur={(e) => handleSlugBlur(e.target.value)}
+                      disabled={isReadOnly || isEnLang}
+                      maxLength={200}
+                      className="font-mono"
+                    />
+                  </Field>
 
-              <div className="pf-field full">
-                <div className="pf-field-label"><span>{t('products.detail.slug')}</span></div>
-                <Input
-                  value={form.slug}
-                  placeholder="vd: mu-bao-hiem-fullface-agv-k1s"
-                  onChange={(e) => handleSlugChange(e.target.value)}
-                  onBlur={(e) => handleSlugBlur(e.target.value)}
-                  disabled={isReadOnly || isEnLang}
-                  maxLength={200}
-                  style={{ fontFamily: 'var(--admin-font-mono)' }}
-                />
-                {validationErrors.slug
-                  ? <span className="pf-field-msg pf-field-msg-error">{validationErrors.slug}</span>
-                  : <span className="pf-field-msg pf-field-hint">
-                      {isEnLang
-                        ? t('products.detail.slugSharedHint', { defaultValue: 'Đường dẫn dùng chung cho cả hai ngôn ngữ — chỉ sửa được ở tab Tiếng Việt.' })
-                        : t('products.detail.slugHint')}
-                    </span>}
-              </div>
+                  <Field
+                    label={t('products.detail.sku')}
+                    count={`${form.sku.length} / 100`}
+                    countWarn={form.sku.length > 85}
+                    hint={t('products.detail.skuHint')}
+                  >
+                    <Input
+                      value={form.sku}
+                      onChange={(e) => updateField('sku', e.target.value)}
+                      disabled={isReadOnly}
+                      maxLength={100}
+                      className="font-mono"
+                    />
+                  </Field>
 
-              <div className="pf-field">
-                <div className="pf-field-label">
-                  <span>{t('products.detail.sku')}</span>
-                  <span className={`pf-field-count${form.sku.length > 85 ? ' warn' : ''}`}>{form.sku.length} / 100</span>
-                </div>
-                <Input value={form.sku} onChange={(e) => updateField('sku', e.target.value)} disabled={isReadOnly} maxLength={100} style={{ fontFamily: 'var(--admin-font-mono)' }} />
-                <span className="pf-field-msg pf-field-hint">{t('products.detail.skuHint')}</span>
-              </div>
+                  <Field label={t('products.detail.categoryId')} error={validationErrors.categoryId}>
+                    <Select value={form.categoryId} onValueChange={(val) => updateField('categoryId', val)} disabled={isReadOnly}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {form.categoryId && !categories.some((c) => c.id === form.categoryId) && (
+                          <SelectItem value={form.categoryId} disabled>{t('products.detail.optionNotFound', { id: form.categoryId })}</SelectItem>
+                        )}
+                        {categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </Field>
 
-              <div className="pf-field">
-                <div className="pf-field-label"><span>{t('products.detail.categoryId')}</span></div>
-                <Select value={form.categoryId} onValueChange={(val) => updateField('categoryId', val)} disabled={isReadOnly}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {form.categoryId && !categories.some((c) => c.id === form.categoryId) && (
-                      <SelectItem value={form.categoryId} disabled>{t('products.detail.optionNotFound', { id: form.categoryId })}</SelectItem>
+                  <Field label={t('products.detail.brandId')}>
+                    <Select value={form.brandId} onValueChange={(val) => updateField('brandId', val)} disabled={isReadOnly}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {form.brandId && !brands.some((b) => b.id === form.brandId) && (
+                          <SelectItem value={form.brandId} disabled>{t('products.detail.optionNotFound', { id: form.brandId })}</SelectItem>
+                        )}
+                        {brands.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+
+                  <Field
+                    full
+                    label={t('products.detail.shortDescription')}
+                    count={`${langValue('shortDescription').length} / 500`}
+                    countWarn={langValue('shortDescription').length > 450}
+                    hint={t('products.detail.shortDescriptionHint')}
+                    error={validationErrors.shortDescription}
+                  >
+                    <Textarea
+                      className={validationErrors.shortDescription ? 'border-danger' : undefined}
+                      value={langValue('shortDescription')}
+                      onChange={(e) => langChange('shortDescription', e.target.value)}
+                      maxLength={500}
+                      placeholder={t('products.detail.shortDescriptionPlaceholder')}
+                      disabled={isReadOnly}
+                    />
+                  </Field>
+
+                  <Field full label={t('products.detail.description')} error={validationErrors.description}>
+                    {isEnLang ? (
+                      <RichTextEditor
+                        key="description-en"
+                        value={langValue('description')}
+                        onChange={(html) => langChange('description', html)}
+                        placeholder={t('products.detail.descriptionPlaceholder')}
+                        disabled={isReadOnly}
+                        hasError={Boolean(validationErrors.description)}
+                        enableImagePicker
+                      />
+                    ) : (
+                      <BlockEditor
+                        value={form.descriptionBlocks}
+                        onChange={(blocks) => updateField('descriptionBlocks', blocks)}
+                        disabled={isReadOnly}
+                        hasError={Boolean(validationErrors.description)}
+                        fallbackHtml={form.description}
+                      />
                     )}
-                    {categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                {validationErrors.categoryId && <span className="pf-field-msg pf-field-msg-error">{validationErrors.categoryId}</span>}
-              </div>
+                  </Field>
 
-              <div className="pf-field">
-                <div className="pf-field-label"><span>{t('products.detail.brandId')}</span></div>
-                <Select value={form.brandId} onValueChange={(val) => updateField('brandId', val)} disabled={isReadOnly}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {form.brandId && !brands.some((b) => b.id === form.brandId) && (
-                      <SelectItem value={form.brandId} disabled>{t('products.detail.optionNotFound', { id: form.brandId })}</SelectItem>
+                  <Field
+                    full
+                    label={t('products.detail.promotionContent')}
+                    hint={t('products.detail.promotionContentHint')}
+                    error={validationErrors.promotionContent}
+                  >
+                    <RichTextEditor
+                      key={`promotionContent-${contentLang}`}
+                      value={langValue('promotionContent')}
+                      onChange={(html) => langChange('promotionContent', html)}
+                      placeholder={t('products.detail.promotionContentPlaceholder')}
+                      disabled={isReadOnly}
+                      hasError={Boolean(validationErrors.promotionContent)}
+                      enableImagePicker
+                    />
+                  </Field>
+
+                  <Field full label={t('products.detail.homepageBlock')} hint={t('products.detail.homepageHint')}>
+                    <Select value={form.homepageBlock || 'NONE'} onValueChange={(val) => updateField('homepageBlock', val)} disabled={isReadOnly}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="NONE">{t('products.detail.homepageNone')}</SelectItem>
+                        <SelectItem value="FEATURED_GRID">{t('products.detail.homepageFeaturedGrid')}</SelectItem>
+                        <SelectItem value="RECOMMENDED_CAROUSEL">{t('products.detail.homepageRecommendedCarousel')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {form.homepageBlock && form.homepageBlock !== 'NONE' && form.publishStatus !== 'PUBLISHED' && (
+                      <span className="text-xs text-[var(--admin-color-status-warning-text)] font-semibold">
+                        {t('products.detail.homepagePublishWarning')}
+                      </span>
                     )}
-                    {brands.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
+                  </Field>
 
-              <div className="pf-field full">
-                <div className="pf-field-label">
-                  <span>{t('products.detail.shortDescription')}</span>
-                  <span className={`pf-field-count${langValue('shortDescription').length > 450 ? ' warn' : ''}`}>{langValue('shortDescription').length} / 500</span>
-                </div>
-                <Textarea
-                  className={validationErrors.shortDescription ? 'border-danger' : undefined}
-                  value={langValue('shortDescription')}
-                  onChange={(e) => langChange('shortDescription', e.target.value)}
-                  maxLength={500}
-                  placeholder={t('products.detail.shortDescriptionPlaceholder')}
-                  disabled={isReadOnly}
-                />
-                <span className="pf-field-msg pf-field-hint">{t('products.detail.shortDescriptionHint')}</span>
-                {validationErrors.shortDescription && <span className="pf-field-msg pf-field-msg-error">{validationErrors.shortDescription}</span>}
-              </div>
-
-              <div className="pf-field full">
-                <div className="pf-field-label"><span>{t('products.detail.description')}</span></div>
-                <RichTextEditor
-                  key={`description-${contentLang}`}
-                  value={langValue('description')}
-                  onChange={(html) => langChange('description', html)}
-                  placeholder={t('products.detail.descriptionPlaceholder')}
-                  disabled={isReadOnly}
-                  hasError={Boolean(validationErrors.description)}
-                  enableImagePicker
-                />
-                {validationErrors.description && <span className="pf-field-msg pf-field-msg-error">{validationErrors.description}</span>}
-              </div>
-
-              <div className="pf-field full">
-                <div className="pf-field-label"><span>{t('products.detail.promotionContent')}</span></div>
-                <RichTextEditor
-                  key={`promotionContent-${contentLang}`}
-                  value={langValue('promotionContent')}
-                  onChange={(html) => langChange('promotionContent', html)}
-                  placeholder={t('products.detail.promotionContentPlaceholder')}
-                  disabled={isReadOnly}
-                  hasError={Boolean(validationErrors.promotionContent)}
-                  enableImagePicker
-                />
-                <span className="pf-field-msg pf-field-hint">{t('products.detail.promotionContentHint')}</span>
-                {validationErrors.promotionContent && <span className="pf-field-msg pf-field-msg-error">{validationErrors.promotionContent}</span>}
-              </div>
-
-              <div className="pf-field full">
-                <div className="pf-field-label"><span>{t('products.detail.homepageBlock')}</span></div>
-                <Select value={form.homepageBlock || 'NONE'} onValueChange={(val) => updateField('homepageBlock', val)} disabled={isReadOnly}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="NONE">{t('products.detail.homepageNone')}</SelectItem>
-                    <SelectItem value="FEATURED_GRID">{t('products.detail.homepageFeaturedGrid')}</SelectItem>
-                    <SelectItem value="RECOMMENDED_CAROUSEL">{t('products.detail.homepageRecommendedCarousel')}</SelectItem>
-                  </SelectContent>
-                </Select>
-                <span className="pf-field-msg pf-field-hint">{t('products.detail.homepageHint')}</span>
-                {form.homepageBlock && form.homepageBlock !== 'NONE' && form.publishStatus !== 'PUBLISHED' && (
-                  <span className="pf-field-msg" style={{ color: 'var(--admin-color-status-warning-text)' }}>
-                    {t('products.detail.homepagePublishWarning')}
-                  </span>
-                )}
-              </div>
-
-              {form.homepageBlock && form.homepageBlock !== 'NONE' && (
-                <div className="pf-field">
-                  <div className="pf-field-label"><span>{t('products.detail.homepageOrder')}</span></div>
-                  <Input
-                    type="number"
-                    inputMode="numeric"
-                    step={1}
-                    min={0}
-                    value={form.homepageOrder}
-                    onChange={(e) => updateField('homepageOrder', e.target.value)}
-                    placeholder={t('products.detail.homepageOrderPlaceholder')}
-                    disabled={isReadOnly}
-                  />
-                  <span className="pf-field-msg pf-field-hint">{t('products.detail.homepageOrderHint')}</span>
-                </div>
-              )}
-            </div>
-          </PfSection>
-
-          {/* ── Section 2: Giá & Trạng thái ── */}
-          <PfSection
-            def={SECTION_DEFS[1]}
-            t={t}
-            open={openMap['section-pricing']}
-            done={completion.pricing}
-            hasError={sectionErrors.pricing}
-            onToggle={() => toggleSection('section-pricing')}
-          >
-            {form.variants.length > 0 && (
-              <div className="pf-note pf-note-info">
-                <Info size={14} />
-                <span>{t('products.detail.variantPricingHint')}</span>
-              </div>
-            )}
-            <div className="pf-grid">
-              <div className="pf-field">
-                <div className="pf-field-label"><span>{t('products.detail.retailPrice')}</span></div>
-                <Input
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  placeholder="vd: 5.900.000"
-                  value={formatPrice(form.retailPrice)}
-                  onChange={(e) => updateField('retailPrice', e.target.value.replace(/\D/g, ''))}
-                  disabled={isReadOnly}
-                />
-                {validationErrors.retailPrice && <span className="pf-field-msg pf-field-msg-error">{validationErrors.retailPrice}</span>}
-              </div>
-
-              <div className="pf-field">
-                <div className="pf-field-label">
-                  <span title={t('products.detail.compareAtPriceTitle')}>{t('products.detail.compareAtPriceLabel')}</span>
-                </div>
-                <Input
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  placeholder="vd: 6.500.000"
-                  value={formatPrice(form.compareAtPrice)}
-                  onChange={(e) => updateField('compareAtPrice', e.target.value.replace(/\D/g, ''))}
-                  disabled={isReadOnly}
-                />
-                {validationErrors.compareAtPrice && <span className="pf-field-msg pf-field-msg-error">{validationErrors.compareAtPrice}</span>}
-              </div>
-
-              <div className="pf-field">
-                <div className="pf-field-label"><span>{t('products.detail.salePrice')}</span></div>
-                <div className="discount-row">
-                  <Input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    placeholder="vd: 5.500.000"
-                    value={formatPrice(form.salePrice)}
-                    onChange={(e) => updateField('salePrice', e.target.value.replace(/\D/g, ''))}
-                    disabled={isReadOnly}
-                  />
-                  {!isReadOnly && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="discount-pct-btn"
-                      onClick={() => setShowDiscountHelper((p) => !p)}
-                      title={t('products.detail.discountButtonTitle')}
-                    >
-                      {t('products.detail.discountButton')}
-                    </Button>
+                  {form.homepageBlock && form.homepageBlock !== 'NONE' && (
+                    <Field label={t('products.detail.homepageOrder')} hint={t('products.detail.homepageOrderHint')}>
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        step={1}
+                        min={0}
+                        value={form.homepageOrder}
+                        onChange={(e) => updateField('homepageOrder', e.target.value)}
+                        placeholder={t('products.detail.homepageOrderPlaceholder')}
+                        disabled={isReadOnly}
+                      />
+                    </Field>
                   )}
                 </div>
-                {showDiscountHelper && !isReadOnly && (
-                  <div className="discount-helper">
-                    <Input
-                      type="number"
-                      min="1"
-                      max="99"
-                      placeholder={t('products.detail.discountInputPlaceholder')}
-                      value={discountPct}
-                      onChange={(e) => setDiscountPct(e.target.value)}
-                    />
-                    <Button
-                      size="sm"
-                      disabled={!(Number(form.retailPrice) || Number(form.compareAtPrice))}
-                      onClick={() => {
-                        const base = Number(form.retailPrice) || Number(form.compareAtPrice)
-                        const pct = Number(discountPct)
-                        if (base > 0 && pct > 0 && pct < 100) {
-                          updateField('salePrice', String(Math.round(base * (1 - pct / 100))))
-                          setShowDiscountHelper(false)
-                          setDiscountPct('')
-                        }
-                      }}
-                    >
-                      {t('products.detail.apply')}
-                    </Button>
-                    <small className="pf-field-hint">
-                      {(Number(form.retailPrice) || Number(form.compareAtPrice))
-                        ? t('products.detail.discountFromBaseHint')
-                        : t('products.detail.discountNeedsBaseHint')}
-                    </small>
+              </SectionCard>
+
+              {/* ── Card: Giá & trạng thái ── */}
+              <SectionCard title={t('products.detail.sectionPricing')} required badge={<RoleBadge role="manager" />}>
+                {form.variants.length > 0 && (
+                  <div className="flex items-start gap-2 mb-4 p-3 bg-[var(--admin-color-status-info-bg)] border border-[var(--admin-color-status-info-border)] text-[var(--admin-color-status-info-text)] text-sm">
+                    <Info size={14} className="mt-0.5 shrink-0" />
+                    <span>{t('products.detail.variantPricingHint')}</span>
                   </div>
                 )}
-                {validationErrors.salePrice
-                  ? <span className="pf-field-msg pf-field-msg-error">{validationErrors.salePrice}</span>
-                  : form.salePrice && form.retailPrice && Number(form.salePrice) >= Number(form.retailPrice)
-                    ? <span className="pf-field-msg pf-field-msg-error">{t('products.detail.saleMustBeLower')}</span>
-                    : null}
-              </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Field label={t('products.detail.retailPrice')} error={validationErrors.retailPrice}>
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      placeholder="vd: 5.900.000"
+                      value={formatPrice(form.retailPrice)}
+                      onChange={(e) => updateField('retailPrice', e.target.value.replace(/\D/g, ''))}
+                      disabled={isReadOnly}
+                    />
+                  </Field>
 
-              <div className="pf-field">
-                <div className="pf-field-label"><span>{t('products.detail.publishStatus')}</span></div>
-                <Select value={form.publishStatus} onValueChange={(val) => updateField('publishStatus', val)} disabled={isReadOnly}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {form.publishStatus && !['DRAFT', 'PUBLISHED', 'HIDDEN', 'TRASH'].includes(form.publishStatus) && (
-                      <SelectItem value={form.publishStatus} disabled>
-                        {t('products.detail.specialPublishNote', { state: form.publishStatus })}
-                      </SelectItem>
-                    )}
-                    <SelectItem value="DRAFT" disabled={!allowedPublishStatuses.includes('DRAFT')}>{t('status.publish.DRAFT')}</SelectItem>
-                    <SelectItem value="PUBLISHED" disabled={!allowedPublishStatuses.includes('PUBLISHED')}>{t('status.publish.PUBLISHED')}</SelectItem>
-                    <SelectItem value="HIDDEN" disabled={!allowedPublishStatuses.includes('HIDDEN')}>{t('status.publish.HIDDEN')}</SelectItem>
-                    {form.publishStatus === 'TRASH' && (
-                      <SelectItem value="TRASH" disabled>{t('status.publish.TRASH')}</SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
-                {validationErrors.publishStatus && <span className="pf-field-msg pf-field-msg-error">{validationErrors.publishStatus}</span>}
-              </div>
+                  <Field
+                    label={<span title={t('products.detail.compareAtPriceTitle')}>{t('products.detail.compareAtPriceLabel')}</span>}
+                    error={validationErrors.compareAtPrice}
+                  >
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      placeholder="vd: 6.500.000"
+                      value={formatPrice(form.compareAtPrice)}
+                      onChange={(e) => updateField('compareAtPrice', e.target.value.replace(/\D/g, ''))}
+                      disabled={isReadOnly}
+                    />
+                  </Field>
 
-              <label className="pf-checkbox" style={{ gridColumn: '1 / -1' }}>
-                <Checkbox
-                  checked={form.forceOutOfStock}
-                  onCheckedChange={(checked) => updateField('forceOutOfStock', checked)}
-                  disabled={isReadOnly}
-                />
-                <span><strong>{t('products.detail.forceOutOfStock')}</strong> — {t('products.detail.forceOutOfStockHint')}</span>
-              </label>
-            </div>
-          </PfSection>
-
-          {/* ── Section 3: Ảnh đại diện ── */}
-          <PfSection
-            def={SECTION_DEFS[2]}
-            t={t}
-            open={openMap['section-media']}
-            done={completion.media}
-            hasError={sectionErrors.media}
-            onToggle={() => toggleSection('section-media')}
-          >
-            <div style={{ paddingTop: 12 }}>
-              <div className="pf-field-label" style={{ marginBottom: 6 }}><span>{t('products.detail.imageUrl')}</span></div>
-              <ImageUrlInput
-                value={form.imageUrl}
-                onChange={(url) => updateField('imageUrl', url)}
-                alt={form.imageAlt}
-                onAltChange={(v) => updateField('imageAlt', v)}
-                disabled={isReadOnly}
-                error={validationErrors.imageUrl}
-              />
-            </div>
-          </PfSection>
-
-          {/* ── Section 4: SEO ── */}
-          <PfSection
-            def={SECTION_DEFS[3]}
-            t={t}
-            open={openMap['section-seo']}
-            done={completion.seo}
-            hasError={sectionErrors.seo}
-            onToggle={() => toggleSection('section-seo')}
-          >
-            {/* Live Google SERP preview */}
-            <div className="pf-serp" style={{ marginTop: 12 }}>
-              <div className="pf-serp-label">
-                <PfSearch size={12} /><span>{t('products.detail.serpPreview', { defaultValue: 'Xem trước trên Google' })}</span>
-              </div>
-              <div className="pf-serp-url">
-                https://bigbike.vn
-                <span className="pf-serp-slug-path"> › sp › {form.slug || 'duong-dan-san-pham'}</span>
-              </div>
-              <div className="pf-serp-title">
-                {(form.seoTitle || form.name || t('products.detail.serpTitleFallback', { defaultValue: 'Tiêu đề sản phẩm trên Google' })).slice(0, 60)}
-              </div>
-              <div className="pf-serp-desc">
-                {form.seoDescription || form.shortDescription || t('products.detail.serpDescFallback', { defaultValue: 'Mô tả ngắn về sản phẩm sẽ hiển thị ở đây.' })}
-              </div>
-            </div>
-
-            <div className="pf-grid">
-              <div className="pf-field full">
-                <div className="pf-field-label">
-                  <span>{t('products.detail.seoTitle')}</span>
-                  <span className={`pf-field-count${langValue('seoTitle').length > 230 ? ' warn' : ''}`}>{langValue('seoTitle').length} / 255</span>
-                </div>
-                <Input
-                  value={langValue('seoTitle')}
-                  onChange={(e) => langChange('seoTitle', e.target.value)}
-                  disabled={isReadOnly}
-                  maxLength={255}
-                  placeholder={t('products.detail.seoTitle')}
-                />
-                {validationErrors.seoTitle && <span className="pf-field-msg pf-field-msg-error">{validationErrors.seoTitle}</span>}
-              </div>
-
-              <div className="pf-field full">
-                <div className="pf-field-label">
-                  <span>{t('products.detail.seoDescription')}</span>
-                  <span className={`pf-field-count${langValue('seoDescription').length > 4500 ? ' warn' : ''}`}>{langValue('seoDescription').length} / 5000</span>
-                </div>
-                <Textarea
-                  value={langValue('seoDescription')}
-                  onChange={(e) => langChange('seoDescription', e.target.value)}
-                  disabled={isReadOnly}
-                  maxLength={5000}
-                  placeholder={t('products.detail.seoDescription')}
-                  className={validationErrors.seoDescription ? 'border-danger' : undefined}
-                />
-                {validationErrors.seoDescription && <span className="pf-field-msg pf-field-msg-error">{validationErrors.seoDescription}</span>}
-              </div>
-
-              <div className="pf-field full">
-                <div className="pf-field-label"><span>{t('products.detail.seoCanonicalUrl')}</span></div>
-                <Input
-                  value={form.seoCanonicalUrl}
-                  onChange={(e) => updateField('seoCanonicalUrl', e.target.value)}
-                  disabled={isReadOnly}
-                  placeholder="https://..."
-                  className={validationErrors.seoCanonicalUrl ? 'border-danger' : undefined}
-                />
-                {validationErrors.seoCanonicalUrl && <span className="pf-field-msg pf-field-msg-error">{validationErrors.seoCanonicalUrl}</span>}
-              </div>
-
-              <div className="pf-field full">
-                <div className="pf-field-label" style={{ marginBottom: 6 }}><span>{t('products.detail.seoOgImageUrl')}</span></div>
-                <ImageUrlInput
-                  value={form.seoOgImageUrl}
-                  onChange={(url) => updateField('seoOgImageUrl', url)}
-                  alt={form.seoOgImageAlt}
-                  onAltChange={(v) => updateField('seoOgImageAlt', v)}
-                  disabled={isReadOnly}
-                  error={validationErrors.seoOgImageUrl}
-                />
-                {validationErrors.seoOgImageAlt && <span className="pf-field-msg pf-field-msg-error">{validationErrors.seoOgImageAlt}</span>}
-              </div>
-
-              <label className="pf-checkbox" style={{ gridColumn: '1 / -1' }}>
-                <Checkbox
-                  checked={form.seoNoIndex}
-                  onCheckedChange={(checked) => updateField('seoNoIndex', checked)}
-                  disabled={isReadOnly}
-                />
-                <span>{t('products.detail.seoNoIndex')}</span>
-              </label>
-            </div>
-
-            {/* SEO checklist */}
-            <div className="pf-seo-check">
-              <div className="pf-seo-check-head">
-                <span><CheckCircle2Icon /><strong>{t('products.detail.seoChecklist', { defaultValue: 'Checklist SEO' })}</strong></span>
-                <span className="pf-seo-check-progress">{seoPassed} / {seoChecks.length}</span>
-              </div>
-              <div className="pf-seo-check-list">
-                {seoChecks.map((c, i) => (
-                  <div className={`pf-seo-check-item${c.ok ? ' ok' : ''}`} key={i}>
-                    <span className="pf-seo-check-dot">{c.ok ? <Check size={11} /> : null}</span>
-                    <span>{c.label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </PfSection>
-
-          {/* ── Section 5: Nội dung cuối trang ── */}
-          <PfSection
-            def={SECTION_DEFS[4]}
-            t={t}
-            open={openMap['section-content-bottom']}
-            done={completion.contentBottom}
-            hasError={sectionErrors.contentBottom}
-            onToggle={() => toggleSection('section-content-bottom')}
-          >
-            <div style={{ paddingTop: 12 }}>
-              <RichTextEditor
-                key={`contentBottom-${contentLang}`}
-                value={langValue('contentBottom')}
-                onChange={(html) => langChange('contentBottom', html)}
-                placeholder={t('products.detail.contentBottom')}
-                disabled={isReadOnly}
-                hasError={Boolean(validationErrors.contentBottom)}
-                enableImagePicker
-              />
-              {validationErrors.contentBottom && <span className="pf-field-msg pf-field-msg-error">{validationErrors.contentBottom}</span>}
-            </div>
-          </PfSection>
-
-          {/* ── Section 6: Bộ sưu tập ảnh ── */}
-          <PfSection
-            def={SECTION_DEFS[5]}
-            t={t}
-            open={openMap['section-gallery']}
-            done={completion.gallery}
-            hasError={sectionErrors.gallery}
-            onToggle={() => toggleSection('section-gallery')}
-            badge={<span className="pf-section-count">{form.gallery.length} {t('products.detail.galleryUnit', { defaultValue: 'ảnh' })}</span>}
-          >
-            <div style={{ paddingTop: 12 }}>
-              <GalleryEditor
-                items={form.gallery}
-                onChange={(next) => updateField('gallery', next)}
-                disabled={isReadOnly}
-                validationErrors={validationErrors}
-              />
-            </div>
-          </PfSection>
-
-          {/* ── Section 7: Video ── */}
-          <PfSection
-            def={SECTION_DEFS[6]}
-            t={t}
-            open={openMap['section-videos']}
-            done={completion.videos}
-            hasError={sectionErrors.videos}
-            onToggle={() => toggleSection('section-videos')}
-            badge={<span className="pf-section-count">{form.videos.length} video</span>}
-          >
-            <div style={{ paddingTop: 12 }}>
-              <VideoEditor
-                items={form.videos}
-                onChange={(next) => updateField('videos', next)}
-                disabled={isReadOnly}
-                validationErrors={validationErrors}
-              />
-            </div>
-          </PfSection>
-
-          {/* ── Section 8: Thông số kỹ thuật ── */}
-          <PfSection
-            def={SECTION_DEFS[7]}
-            t={t}
-            open={openMap['section-specs']}
-            done={completion.specs}
-            hasError={sectionErrors.specs}
-            onToggle={() => toggleSection('section-specs')}
-            badge={<span className="pf-section-count">{form.specifications.length} {t('products.detail.specUnit', { defaultValue: 'thông số' })}</span>}
-          >
-            <div style={{ paddingTop: 12 }}>
-              <SpecificationsEditor
-                items={form.specifications}
-                onChange={(next) => updateField('specifications', next)}
-                disabled={isReadOnly}
-                validationErrors={validationErrors}
-                contentLang={contentLang}
-              />
-            </div>
-          </PfSection>
-
-          {/* ── Section 9: Hướng dẫn lắp đặt ── */}
-          <PfSection
-            def={SECTION_DEFS[8]}
-            t={t}
-            open={openMap['section-installation']}
-            done={completion.installation}
-            hasError={sectionErrors.installation}
-            onToggle={() => toggleSection('section-installation')}
-          >
-            <div style={{ paddingTop: 12 }}>
-              <p className="pf-field-msg pf-field-hint">{t('products.detail.installationHint')}</p>
-              <RichTextEditor
-                key={`installationGuide-${contentLang}`}
-                value={langValue('installationGuide')}
-                onChange={(html) => langChange('installationGuide', html)}
-                placeholder={t('products.detail.installationPlaceholder')}
-                disabled={isReadOnly}
-                hasError={Boolean(validationErrors.installationGuide)}
-                enableImagePicker
-              />
-              {validationErrors.installationGuide && <span className="pf-field-msg pf-field-msg-error">{validationErrors.installationGuide}</span>}
-            </div>
-          </PfSection>
-
-          {/* ── Section 10: Câu hỏi thường gặp ── */}
-          <PfSection
-            def={SECTION_DEFS[9]}
-            t={t}
-            open={openMap['section-faqs']}
-            done={completion.faqs}
-            hasError={sectionErrors.faqs}
-            onToggle={() => toggleSection('section-faqs')}
-            badge={<span className="pf-section-count">{form.faqs.length} {t('products.detail.faqs.unit', { defaultValue: 'câu hỏi' })}</span>}
-          >
-            <div style={{ paddingTop: 12 }}>
-              <p className="pf-field-msg pf-field-hint">{t('products.detail.faqs.hint')}</p>
-              <FaqEditor
-                items={form.faqs}
-                onChange={(next) => updateField('faqs', next)}
-                disabled={isReadOnly}
-                validationErrors={validationErrors}
-                contentLang={contentLang}
-              />
-            </div>
-          </PfSection>
-
-          {/* ── Section 11: Biến thể ── */}
-          <PfSection
-            def={SECTION_DEFS[10]}
-            t={t}
-            open={openMap['section-variants']}
-            done={completion.variants}
-            hasError={sectionErrors.variants}
-            onToggle={() => toggleSection('section-variants')}
-            badge={<span className="pf-section-count">{form.variants.length} {t('products.detail.variantUnit', { defaultValue: 'biến thể' })}</span>}
-          >
-            <div style={{ paddingTop: 12 }}>
-              <VariantsEditor
-                items={form.variants}
-                onChange={(next) => updateField('variants', next)}
-                disabled={isReadOnly}
-                validationErrors={validationErrors}
-                onOpenMatrixWizard={() => setShowMatrixWizard(true)}
-              />
-            </div>
-          </PfSection>
-
-          {/* ── Section 12: Sản phẩm liên quan ── */}
-          <PfSection
-            def={SECTION_DEFS[11]}
-            t={t}
-            open={openMap['section-related']}
-            done={completion.related}
-            hasError={sectionErrors.related}
-            onToggle={() => toggleSection('section-related')}
-            badge={<span className="pf-section-count">{form.relatedProductIds.length} {t('products.detail.relatedUnit', { defaultValue: 'sản phẩm' })}</span>}
-          >
-            <div style={{ paddingTop: 12 }}>
-              <p className="pf-field-msg pf-field-hint">{t('products.detail.relatedHint')}</p>
-
-              {form.relatedProductChips.length > 0 && (
-                <div className="chip-row" style={{ marginTop: 8 }}>
-                  {form.relatedProductChips.map((chip) => (
-                    <span key={chip.id} className="chip">
-                      {chip.imageUrl && (
-                        <img src={chip.imageUrl} alt="" style={{ width: 20, height: 20, objectFit: 'cover', borderRadius: 3 }} />
-                      )}
-                      <strong>{chip.name}</strong>
+                  <Field
+                    label={t('products.detail.salePrice')}
+                    error={
+                      validationErrors.salePrice
+                        ? validationErrors.salePrice
+                        : form.salePrice && form.retailPrice && Number(form.salePrice) >= Number(form.retailPrice)
+                          ? t('products.detail.saleMustBeLower')
+                          : undefined
+                    }
+                  >
+                    <div className="flex gap-2">
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        placeholder="vd: 5.500.000"
+                        value={formatPrice(form.salePrice)}
+                        onChange={(e) => updateField('salePrice', e.target.value.replace(/\D/g, ''))}
+                        disabled={isReadOnly}
+                      />
                       {!isReadOnly && (
-                        <span
-                          className="x"
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => removeRelatedProduct(chip.id)}
-                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') removeRelatedProduct(chip.id) }}
-                          aria-label={t('products.detail.relatedRemove', { name: chip.name })}
-                        >×</span>
-                      )}
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              {!isReadOnly && (
-                <div style={{ position: 'relative', marginTop: 8 }}>
-                  <Input
-                    value={relatedSearch}
-                    onChange={(e) => setRelatedSearch(e.target.value)}
-                    placeholder={t('products.detail.relatedSearch')}
-                  />
-                  {relatedSearchDebounced.length >= 1 && (
-                    <div
-                      className="row-menu"
-                      style={{ left: 0, right: 0, minWidth: 0, maxHeight: 256, overflowY: 'auto' }}
-                    >
-                      {isSearchingRelated ? (
-                        <p className="text-sm muted" style={{ padding: '8px 10px' }}>
-                          {t('products.detail.relatedSearching')}
-                        </p>
-                      ) : relatedSearchItems.length === 0 ? (
-                        <p className="text-sm muted" style={{ padding: '8px 10px' }}>
-                          {t('products.detail.relatedEmpty')}
-                        </p>
-                      ) : (
-                        relatedSearchItems.map((product) => {
-                          const already = form.relatedProductIds.includes(product.id)
-                          return (
-                            <button
-                              key={product.id}
-                              type="button"
-                              disabled={already}
-                              onClick={() => addRelatedProduct(product)}
-                              style={already ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
-                            >
-                              {product.image?.url && (
-                                <img src={product.image.url} alt="" style={{ width: 24, height: 24, objectFit: 'cover', borderRadius: 4 }} />
-                              )}
-                              <span style={{ flex: 1 }}>{product.name}</span>
-                              {already && (
-                                <span className="text-xs muted">{t('products.detail.relatedAdded')}</span>
-                              )}
-                            </button>
-                          )
-                        })
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          type="button"
+                          onClick={() => setShowDiscountHelper((p) => !p)}
+                          title={t('products.detail.discountButtonTitle')}
+                        >
+                          {t('products.detail.discountButton')}
+                        </Button>
                       )}
                     </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </PfSection>
+                    {showDiscountHelper && !isReadOnly && (
+                      <div className="mt-2 flex flex-wrap items-center gap-2 p-2 bg-muted">
+                        <Input
+                          type="number"
+                          min="1"
+                          max="99"
+                          placeholder={t('products.detail.discountInputPlaceholder')}
+                          value={discountPct}
+                          onChange={(e) => setDiscountPct(e.target.value)}
+                          className="w-32"
+                        />
+                        <Button
+                          size="sm"
+                          type="button"
+                          disabled={!(Number(form.retailPrice) || Number(form.compareAtPrice))}
+                          onClick={() => {
+                            const base = Number(form.retailPrice) || Number(form.compareAtPrice)
+                            const pct = Number(discountPct)
+                            if (base > 0 && pct > 0 && pct < 100) {
+                              updateField('salePrice', String(Math.round(base * (1 - pct / 100))))
+                              setShowDiscountHelper(false)
+                              setDiscountPct('')
+                            }
+                          }}
+                        >
+                          {t('products.detail.apply')}
+                        </Button>
+                        <small className="text-xs text-muted-foreground">
+                          {(Number(form.retailPrice) || Number(form.compareAtPrice))
+                            ? t('products.detail.discountFromBaseHint')
+                            : t('products.detail.discountNeedsBaseHint')}
+                        </small>
+                      </div>
+                    )}
+                  </Field>
 
-          {!isCreate && state.item?.updatedAt && (
-            <p className="text-xs muted" style={{ textAlign: 'right' }}>
-              {t('common.lastUpdated')} {formatDateTime(state.item.updatedAt)}
-            </p>
+                  <Field label={t('products.detail.publishStatus')} error={validationErrors.publishStatus}>
+                    <Select value={form.publishStatus} onValueChange={(val) => updateField('publishStatus', val)} disabled={isReadOnly}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {form.publishStatus && !['DRAFT', 'PUBLISHED', 'HIDDEN', 'TRASH'].includes(form.publishStatus) && (
+                          <SelectItem value={form.publishStatus} disabled>
+                            {t('products.detail.specialPublishNote', { state: form.publishStatus })}
+                          </SelectItem>
+                        )}
+                        <SelectItem value="DRAFT" disabled={!allowedPublishStatuses.includes('DRAFT')}>{t('status.publish.DRAFT')}</SelectItem>
+                        <SelectItem value="PUBLISHED" disabled={!allowedPublishStatuses.includes('PUBLISHED')}>{t('status.publish.PUBLISHED')}</SelectItem>
+                        <SelectItem value="HIDDEN" disabled={!allowedPublishStatuses.includes('HIDDEN')}>{t('status.publish.HIDDEN')}</SelectItem>
+                        {form.publishStatus === 'TRASH' && (
+                          <SelectItem value="TRASH" disabled>{t('status.publish.TRASH')}</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+
+                  <label className="md:col-span-2 flex items-start gap-2.5 p-2.5 border border-border text-sm cursor-pointer hover:bg-muted">
+                    <Checkbox
+                      checked={form.forceOutOfStock}
+                      onCheckedChange={(checked) => updateField('forceOutOfStock', checked)}
+                      disabled={isReadOnly}
+                    />
+                    <span><strong>{t('products.detail.forceOutOfStock')}</strong> — {t('products.detail.forceOutOfStockHint')}</span>
+                  </label>
+                </div>
+              </SectionCard>
+
+              {/* ── Card: Ảnh đại diện ── */}
+              <SectionCard title={t('products.detail.mainImageTitle')} required badge={<RoleBadge role="content" />}>
+                <ImageUrlInput
+                  value={form.imageUrl}
+                  onChange={(url) => updateField('imageUrl', url)}
+                  alt={form.imageAlt}
+                  onAltChange={(v) => updateField('imageAlt', v)}
+                  disabled={isReadOnly}
+                  error={validationErrors.imageUrl}
+                />
+              </SectionCard>
+            </>
+          )}
+
+          {activeTab === 'content' && (
+            <>
+              {/* ── Card: SEO ── */}
+              <SectionCard title={t('products.detail.sectionSeo')} badge={<RoleBadge role="seo" />}>
+                {/* Live Google SERP preview */}
+                <div className="mb-4 p-3 border border-border bg-white">
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                    <PfSearch size={12} />
+                    <span>{t('products.detail.serpPreview', { defaultValue: 'Xem trước trên Google' })}</span>
+                  </div>
+                  <div className="text-xs text-[#5f6368] break-all mb-1">
+                    https://bigbike.vn
+                    <span className="text-[#70757a]"> › sp › {form.slug || 'duong-dan-san-pham'}</span>
+                  </div>
+                  <div className="text-lg leading-snug text-[#1a0dab] break-words mb-1">
+                    {(form.seoTitle || form.name || t('products.detail.serpTitleFallback', { defaultValue: 'Tiêu đề sản phẩm trên Google' })).slice(0, 60)}
+                  </div>
+                  <div className="text-sm leading-relaxed text-[#4d5156] break-words">
+                    {form.seoDescription || form.shortDescription || t('products.detail.serpDescFallback', { defaultValue: 'Mô tả ngắn về sản phẩm sẽ hiển thị ở đây.' })}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Field
+                    full
+                    label={t('products.detail.seoTitle')}
+                    count={`${langValue('seoTitle').length} / 255`}
+                    countWarn={langValue('seoTitle').length > 230}
+                    error={validationErrors.seoTitle}
+                  >
+                    <Input
+                      value={langValue('seoTitle')}
+                      onChange={(e) => langChange('seoTitle', e.target.value)}
+                      disabled={isReadOnly}
+                      maxLength={255}
+                      placeholder={t('products.detail.seoTitle')}
+                    />
+                  </Field>
+
+                  <Field
+                    full
+                    label={t('products.detail.seoDescription')}
+                    count={`${langValue('seoDescription').length} / 5000`}
+                    countWarn={langValue('seoDescription').length > 4500}
+                    error={validationErrors.seoDescription}
+                  >
+                    <Textarea
+                      value={langValue('seoDescription')}
+                      onChange={(e) => langChange('seoDescription', e.target.value)}
+                      disabled={isReadOnly}
+                      maxLength={5000}
+                      placeholder={t('products.detail.seoDescription')}
+                      className={validationErrors.seoDescription ? 'border-danger' : undefined}
+                    />
+                  </Field>
+
+                  <Field full label={t('products.detail.seoCanonicalUrl')} error={validationErrors.seoCanonicalUrl}>
+                    <Input
+                      value={form.seoCanonicalUrl}
+                      onChange={(e) => updateField('seoCanonicalUrl', e.target.value)}
+                      disabled={isReadOnly}
+                      placeholder="https://..."
+                      className={validationErrors.seoCanonicalUrl ? 'border-danger' : undefined}
+                    />
+                  </Field>
+
+                  <Field full label={t('products.detail.seoOgImageUrl')} error={validationErrors.seoOgImageAlt}>
+                    <ImageUrlInput
+                      value={form.seoOgImageUrl}
+                      onChange={(url) => updateField('seoOgImageUrl', url)}
+                      alt={form.seoOgImageAlt}
+                      onAltChange={(v) => updateField('seoOgImageAlt', v)}
+                      disabled={isReadOnly}
+                      error={validationErrors.seoOgImageUrl}
+                    />
+                  </Field>
+
+                  <label className="md:col-span-2 flex items-start gap-2.5 p-2.5 border border-border text-sm cursor-pointer hover:bg-muted">
+                    <Checkbox
+                      checked={form.seoNoIndex}
+                      onCheckedChange={(checked) => updateField('seoNoIndex', checked)}
+                      disabled={isReadOnly}
+                    />
+                    <span>{t('products.detail.seoNoIndex')}</span>
+                  </label>
+                </div>
+
+                {/* SEO checklist */}
+                <div className="mt-4 p-3 border border-border bg-muted/30">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="flex items-center gap-1.5 text-sm font-semibold">
+                      <Check size={14} />
+                      {t('products.detail.seoChecklist', { defaultValue: 'Checklist SEO' })}
+                    </span>
+                    <span className="font-mono font-bold text-sm text-[var(--admin-color-status-success-text)]">
+                      {seoPassed} / {seoChecks.length}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-y-1 gap-x-3">
+                    {seoChecks.map((c, i) => (
+                      <div key={i} className={cn('flex items-center gap-2 text-xs', c.ok ? 'text-foreground' : 'text-muted-foreground')}>
+                        <span className={cn(
+                          'w-4 h-4 flex items-center justify-center',
+                          c.ok
+                            ? 'bg-[var(--admin-color-status-success-bg)] text-[var(--admin-color-status-success-text)]'
+                            : 'bg-muted',
+                        )}>
+                          {c.ok ? <Check size={11} /> : null}
+                        </span>
+                        <span>{c.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </SectionCard>
+
+              {/* ── Card: Nội dung dưới ── */}
+              <SectionCard title={t('products.detail.sectionContentBottom')} badge={<RoleBadge role="content" />}>
+                <RichTextEditor
+                  key={`contentBottom-${contentLang}`}
+                  value={langValue('contentBottom')}
+                  onChange={(html) => langChange('contentBottom', html)}
+                  placeholder={t('products.detail.contentBottom')}
+                  disabled={isReadOnly}
+                  hasError={Boolean(validationErrors.contentBottom)}
+                  enableImagePicker
+                />
+                {validationErrors.contentBottom && (
+                  <span className="text-xs text-[var(--admin-color-status-danger-text)] font-semibold mt-2 block">
+                    {validationErrors.contentBottom}
+                  </span>
+                )}
+              </SectionCard>
+
+              {/* ── Card: Gallery ── */}
+              <SectionCard
+                title={t('products.detail.gallerySectionTitle')}
+                badge={
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5">
+                      {form.gallery.length} {t('products.detail.galleryUnit', { defaultValue: 'ảnh' })}
+                    </span>
+                    <RoleBadge role="content" />
+                  </div>
+                }
+              >
+                <GalleryEditor
+                  items={form.gallery}
+                  onChange={(next) => updateField('gallery', next)}
+                  disabled={isReadOnly}
+                  validationErrors={validationErrors}
+                />
+              </SectionCard>
+
+              {/* ── Card: Video ── */}
+              <SectionCard
+                title={t('products.detail.videoSectionTitle')}
+                badge={
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5">
+                      {form.videos.length} video
+                    </span>
+                    <RoleBadge role="content" />
+                  </div>
+                }
+              >
+                <VideoEditor
+                  items={form.videos}
+                  onChange={(next) => updateField('videos', next)}
+                  disabled={isReadOnly}
+                  validationErrors={validationErrors}
+                />
+              </SectionCard>
+            </>
+          )}
+
+          {activeTab === 'details' && (
+            <>
+              {/* ── Card: Thông số ── */}
+              <SectionCard
+                title={t('products.detail.specsSectionTitle')}
+                badge={
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5">
+                      {form.specifications.length} {t('products.detail.specUnit', { defaultValue: 'thông số' })}
+                    </span>
+                    <RoleBadge role="content" />
+                  </div>
+                }
+              >
+                <SpecificationsEditor
+                  items={form.specifications}
+                  onChange={(next) => updateField('specifications', next)}
+                  disabled={isReadOnly}
+                  validationErrors={validationErrors}
+                  contentLang={contentLang}
+                />
+              </SectionCard>
+
+              {/* ── Card: Hướng dẫn lắp đặt ── */}
+              <SectionCard title={t('products.detail.sectionInstallation')} badge={<RoleBadge role="content" />}>
+                <p className="text-xs text-muted-foreground mb-2">{t('products.detail.installationHint')}</p>
+                <RichTextEditor
+                  key={`installationGuide-${contentLang}`}
+                  value={langValue('installationGuide')}
+                  onChange={(html) => langChange('installationGuide', html)}
+                  placeholder={t('products.detail.installationPlaceholder')}
+                  disabled={isReadOnly}
+                  hasError={Boolean(validationErrors.installationGuide)}
+                  enableImagePicker
+                />
+                {validationErrors.installationGuide && (
+                  <span className="text-xs text-[var(--admin-color-status-danger-text)] font-semibold mt-2 block">
+                    {validationErrors.installationGuide}
+                  </span>
+                )}
+              </SectionCard>
+
+              {/* ── Card: FAQ ── */}
+              <SectionCard
+                title={t('products.detail.sectionFaqs')}
+                badge={
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5">
+                      {form.faqs.length} {t('products.detail.faqs.unit', { defaultValue: 'câu hỏi' })}
+                    </span>
+                    <RoleBadge role="content" />
+                  </div>
+                }
+              >
+                <p className="text-xs text-muted-foreground mb-2">{t('products.detail.faqs.hint')}</p>
+                <FaqEditor
+                  items={form.faqs}
+                  onChange={(next) => updateField('faqs', next)}
+                  disabled={isReadOnly}
+                  validationErrors={validationErrors}
+                  contentLang={contentLang}
+                />
+              </SectionCard>
+            </>
+          )}
+
+          {activeTab === 'variants' && (
+            <>
+              {/* ── Card: Biến thể ── */}
+              <SectionCard
+                title={t('products.detail.variantSectionTitle')}
+                badge={
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5">
+                      {form.variants.length} {t('products.detail.variantUnit', { defaultValue: 'biến thể' })}
+                    </span>
+                    <RoleBadge role="content" />
+                  </div>
+                }
+              >
+                <VariantsEditor
+                  items={form.variants}
+                  onChange={(next) => updateField('variants', next)}
+                  disabled={isReadOnly}
+                  validationErrors={validationErrors}
+                  onOpenMatrixWizard={() => setShowMatrixWizard(true)}
+                />
+              </SectionCard>
+
+              {/* ── Card: Sản phẩm liên quan ── */}
+              <SectionCard
+                title={t('products.detail.sectionRelated')}
+                badge={
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5">
+                      {form.relatedProductIds.length} {t('products.detail.relatedUnit', { defaultValue: 'sản phẩm' })}
+                    </span>
+                    <RoleBadge role="content" />
+                  </div>
+                }
+              >
+                <p className="text-xs text-muted-foreground mb-2">{t('products.detail.relatedHint')}</p>
+
+                {form.relatedProductChips.length > 0 && (
+                  <div className="chip-row mt-2">
+                    {form.relatedProductChips.map((chip) => (
+                      <span key={chip.id} className="chip">
+                        {chip.imageUrl && (
+                          <img src={chip.imageUrl} alt="" className="w-5 h-5 object-cover" />
+                        )}
+                        <strong>{chip.name}</strong>
+                        {!isReadOnly && (
+                          <span
+                            className="x"
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => removeRelatedProduct(chip.id)}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') removeRelatedProduct(chip.id) }}
+                            aria-label={t('products.detail.relatedRemove', { name: chip.name })}
+                          >×</span>
+                        )}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {!isReadOnly && (
+                  <div className="relative mt-2">
+                    <Input
+                      value={relatedSearch}
+                      onChange={(e) => setRelatedSearch(e.target.value)}
+                      placeholder={t('products.detail.relatedSearch')}
+                    />
+                    {relatedSearchDebounced.length >= 1 && (
+                      <div className="row-menu left-0 right-0 min-w-0 max-h-64 overflow-y-auto">
+                        {isSearchingRelated ? (
+                          <p className="text-sm text-muted-foreground px-2.5 py-2">
+                            {t('products.detail.relatedSearching')}
+                          </p>
+                        ) : relatedSearchItems.length === 0 ? (
+                          <p className="text-sm text-muted-foreground px-2.5 py-2">
+                            {t('products.detail.relatedEmpty')}
+                          </p>
+                        ) : (
+                          relatedSearchItems.map((product) => {
+                            const already = form.relatedProductIds.includes(product.id)
+                            return (
+                              <button
+                                key={product.id}
+                                type="button"
+                                disabled={already}
+                                onClick={() => addRelatedProduct(product)}
+                                className={already ? 'opacity-50 cursor-not-allowed' : undefined}
+                              >
+                                {product.image?.url && (
+                                  <img src={product.image.url} alt="" className="w-6 h-6 object-cover" />
+                                )}
+                                <span className="flex-1">{product.name}</span>
+                                {already && (
+                                  <span className="text-xs text-muted-foreground">{t('products.detail.relatedAdded')}</span>
+                                )}
+                              </button>
+                            )
+                          })
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </SectionCard>
+            </>
           )}
         </form>
-      </div>
+
+        <StickyActionBar
+          info={
+            <span className="flex items-center gap-2 text-sm">
+              <span className={cn('w-2 h-2 rounded-full', saveDotClass)} />
+              <span className="font-medium">{saveLabel}</span>
+            </span>
+          }
+        >
+          <Button
+            variant="outline"
+            type="button"
+            disabled={isReadOnly || !isDirty}
+            onClick={() => handleSave('DRAFT')}
+          >
+            {t('products.detail.saveDraft')}
+          </Button>
+
+          <div className="flex">
+            <Button
+              type="button"
+              disabled={isReadOnly || isSubmitting}
+              className="rounded-r-none"
+              onClick={() => handleSave(isPublished ? undefined : 'PUBLISHED')}
+            >
+              {isSubmitting && <Loader2 size={14} className="animate-spin mr-1.5" />}
+              {primaryLabel}
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  disabled={isReadOnly || isSubmitting}
+                  className="rounded-l-none border-l border-white/20 px-2"
+                  aria-label={t('products.detail.moreSaveOptions', { defaultValue: 'Thêm tuỳ chọn lưu' })}
+                >
+                  <ChevronDown size={16} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleSave('DRAFT')}>
+                  {t('products.detail.saveDraft')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleSave('HIDDEN')}>
+                  {t('products.detail.saveHidden')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </StickyActionBar>
+
+        {/* Modals */}
+        {showPublishChecklist && pendingPublish && (
+          <PublishChecklistModal
+            form={pendingPublish.formToSave}
+            onConfirm={confirmPublish}
+            onCancel={() => { setShowPublishChecklist(false); setPendingPublish(null) }}
+          />
+        )}
+
+        {showMatrixWizard && (
+          <VariantMatrixWizard
+            onGenerate={(newVariants) => updateField('variants', [...form.variants, ...newVariants])}
+            onClose={() => setShowMatrixWizard(false)}
+          />
+        )}
+      </Screen>
     </div>
   )
-}
-
-// Small wrapper so the SEO-checklist header can show a check-circle without
-// pulling another icon import into the top-level list.
-function CheckCircle2Icon() {
-  return <Check size={13} />
 }

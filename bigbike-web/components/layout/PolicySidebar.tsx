@@ -1,17 +1,10 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 export type PolicySidebarItem = {
   label: string;
   href: string;
 };
-
-export const POLICY_LINKS: PolicySidebarItem[] = [
-  { label: "Chính sách bảo mật thông tin", href: "/chinh-sach/bao-mat" },
-  { label: "Chính sách bảo hành", href: "/chinh-sach/bao-hanh" },
-  { label: "Chính sách đổi trả hàng", href: "/chinh-sach/doi-tra" },
-  { label: "Điều khoản sử dụng", href: "/chinh-sach/dieu-khoan" },
-  { label: "Hướng dẫn mua hàng", href: "/huong-dan-mua-hang" },
-];
 
 type Props = {
   activeHref?: string;
@@ -19,14 +12,24 @@ type Props = {
   items?: PolicySidebarItem[];
 };
 
-export function PolicySidebar({ activeHref, title = "TRANG TĨNH", items = POLICY_LINKS }: Props) {
+export async function PolicySidebar({ activeHref, title, items }: Props) {
+  const t = await getTranslations("StaticPage");
+  const resolvedTitle = title ?? t("policy.sidebarTitle");
+  const resolvedItems = items ?? [
+    { label: t("policy.privacyTitle"), href: "/chinh-sach/bao-mat" },
+    { label: t("policy.warrantyTitle"), href: "/chinh-sach/bao-hanh" },
+    { label: t("policy.returnsTitle"), href: "/chinh-sach/doi-tra" },
+    { label: t("policy.termsTitle"), href: "/chinh-sach/dieu-khoan" },
+    { label: t("howToBuy.title"), href: "/huong-dan-mua-hang" },
+  ];
+
   return (
-    <aside className="min-w-0" aria-label={title}>
+    <aside className="min-w-0" aria-label={resolvedTitle}>
       <h3 className="font-display text-base font-semibold uppercase text-foreground mb-4 pb-3 border-b-2 border-brand tracking-normal">
-        {title}
+        {resolvedTitle}
       </h3>
       <ul className="list-none p-0 m-0">
-        {items.map((item) => {
+        {resolvedItems.map((item) => {
           const active = activeHref === item.href;
           return (
             <li key={item.href} className="border-b border-border">

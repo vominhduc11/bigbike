@@ -1,10 +1,11 @@
 package com.bigbike.bigbike_backend.persistence.entity.content;
 
-import lombok.Getter;
-import lombok.Setter;
+import com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.domain.content.PageType;
+import com.bigbike.bigbike_backend.persistence.converter.DescriptionBlocksConverter;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -13,7 +14,10 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
 import java.time.Instant;
+import java.util.List;
 
 @Entity
 @Table(name = "pages")
@@ -79,6 +83,26 @@ public class PageEntity {
     @Column(name = "hero_kicker")
     private String heroKicker;
 
+    // English translations (V138) — nullable; storefront falls back to VI per PAGE_RULE_002
+    private String titleEn;
+
+    @Column(columnDefinition = "text")
+    private String bodyEn;
+
+    @Column(name = "hero_title_en")
+    private String heroTitleEn;
+
+    @Column(name = "hero_description_en", columnDefinition = "text")
+    private String heroDescriptionEn;
+
+    @Column(name = "hero_kicker_en")
+    private String heroKickerEn;
+
+    private String seoTitleEn;
+
+    @Column(columnDefinition = "text")
+    private String seoDescriptionEn;
+
     private Instant publishedAt;
 
     @Column(nullable = false)
@@ -86,5 +110,9 @@ public class PageEntity {
 
     @Column(nullable = false)
     private Instant updatedAt;
+
+    @Convert(converter = DescriptionBlocksConverter.class)
+    @Column(name = "body_blocks", columnDefinition = "jsonb")
+    private List<DescriptionBlock> bodyBlocks;
 
 }

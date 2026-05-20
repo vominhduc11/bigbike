@@ -1,3 +1,6 @@
+"use client";
+
+import { useTranslations } from "next-intl";
 import { oauthAuthorizeUrl } from "@/lib/api/client-api";
 
 /** Facebook brand mark — white glyph on the brand-blue circle. */
@@ -39,19 +42,20 @@ function GoogleIcon() {
  * Circular buttons use `rounded-full` (allowed for genuinely round elements).
  */
 export function SocialLoginButtons({ returnTo }: { returnTo: string }) {
+  const t = useTranslations("Auth.social");
   return (
     <div className="mt-6 flex items-center justify-center gap-3">
-      <span className="text-sm text-muted-foreground">Đăng nhập bằng:</span>
+      <span className="text-sm text-muted-foreground">{t("label")}</span>
       <a
         href={oauthAuthorizeUrl("facebook", returnTo)}
-        aria-label="Đăng nhập bằng Facebook"
+        aria-label={t("facebook")}
         className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1877F2] text-white transition-opacity hover:opacity-90"
       >
         <FacebookIcon />
       </a>
       <a
         href={oauthAuthorizeUrl("google", returnTo)}
-        aria-label="Đăng nhập bằng Google"
+        aria-label={t("google")}
         className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-white transition-opacity hover:opacity-90"
       >
         <GoogleIcon />

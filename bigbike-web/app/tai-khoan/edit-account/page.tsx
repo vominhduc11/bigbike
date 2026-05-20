@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { CircleUser } from "lucide-react";
 import { AccountSectionHeading, AccountShell, useAccount, useAccountRefresh } from "@/components/layout/AccountShell";
 import { updateCustomerProfile } from "@/lib/api/client-api";
@@ -16,6 +17,8 @@ function ReqMark() {
 }
 
 function EditAccountContent() {
+  const t = useTranslations("Account.edit");
+  const tNav = useTranslations("Account.nav");
   const profile = useAccount();
   const refreshProfile = useAccountRefresh();
 
@@ -44,17 +47,17 @@ function EditAccountContent() {
 
     if (newPassword) {
       if (newPassword.length < 8) {
-        setPasswordError("Mật khẩu mới phải có ít nhất 8 ký tự.");
+        setPasswordError(t("errorPasswordShort"));
         return;
       }
       if (newPassword !== confirmPassword) {
-        setPasswordError("Mật khẩu xác nhận không khớp.");
+        setPasswordError(t("errorPasswordMismatch"));
         return;
       }
     }
 
     if (isSensitiveChange && !currentPassword) {
-      setPasswordError("Vui lòng nhập mật khẩu hiện tại để thay đổi email hoặc mật khẩu.");
+      setPasswordError(t("errorMissingCurrentPassword"));
       return;
     }
 
@@ -70,7 +73,7 @@ function EditAccountContent() {
       await refreshProfile?.();
       setSuccess(true);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Có lỗi xảy ra, vui lòng thử lại.");
+      setError(err instanceof Error ? err.message : t("errorGeneric"));
     } finally {
       setSaving(false);
     }
@@ -79,18 +82,17 @@ function EditAccountContent() {
   return (
     <>
       <AccountSectionHeading
-        title="Thông tin tài khoản"
+        title={tNav("info")}
         icon={<CircleUser className="h-7 w-7" strokeWidth={1.5} aria-hidden />}
       />
 
       <p className="mb-5 text-sm leading-relaxed text-muted-foreground">
-        Từ trang Tài khoản, bạn có thể xem nhanh hoạt động mua hàng gần đây và cập nhật
-        thông tin cá nhân của mình. Chọn một mục bên dưới để xem hoặc chỉnh sửa.
+        {t("intro")}
       </p>
 
       {success && (
         <div className="bg-[var(--bb-state-success-bg)] border border-[var(--bb-state-success-border)] p-[12px_16px] mb-5 text-sm text-[var(--bb-state-success-text)]">
-          Thông tin đã được cập nhật.
+          {t("successUpdated")}
         </div>
       )}
       {error && (
@@ -102,18 +104,18 @@ function EditAccountContent() {
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 gap-x-6 gap-y-[18px] sm:grid-cols-2">
           <div className="flex flex-col gap-1.5">
-            <label className={LEGACY_LABEL}>Họ và tên</label>
-            <Input name="displayName" defaultValue={profile?.displayName ?? ""} placeholder="Họ và tên" />
+            <label className={LEGACY_LABEL}>{t("fullNameLabel")}</label>
+            <Input name="displayName" defaultValue={profile?.displayName ?? ""} placeholder={t("fullNamePlaceholder")} />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className={LEGACY_LABEL}>Email</label>
-            <Input type="email" name="email" defaultValue={profile?.email ?? ""} placeholder="email@example.com" />
+            <label className={LEGACY_LABEL}>{t("emailLabel")}</label>
+            <Input type="email" name="email" defaultValue={profile?.email ?? ""} placeholder={t("emailPlaceholder")} />
           </div>
         </div>
 
         <label className="mt-5 flex w-fit items-center gap-2 text-sm text-[#555555]">
           <Checkbox name="newsletter" defaultChecked={profile?.newsletterSubscribed ?? false} />
-          Đăng ký nhận tin
+          {t("newsletter")}
         </label>
 
         <button
@@ -129,39 +131,39 @@ function EditAccountContent() {
           >
             {showPassword && <span className="h-2 w-2 rounded-full bg-brand" />}
           </span>
-          Thay đổi mật khẩu
+          {t("changePassword")}
         </button>
 
         {showPassword && (
           <div className="mt-4">
             <p className="mb-3 text-sm text-muted-foreground">
-              Xin vui lòng điền chính xác các thông tin để bảo vệ tài khoản Bigbike.
+              {t("changePasswordHint")}
             </p>
             <div className="grid grid-cols-1 gap-x-6 gap-y-[18px] sm:grid-cols-3">
               <div className="flex flex-col gap-1.5">
-                <label className={LEGACY_LABEL}>Mật khẩu hiện tại<ReqMark /></label>
+                <label className={LEGACY_LABEL}>{t("currentPassword")}<ReqMark /></label>
                 <Input
                   type="password"
                   name="currentPassword"
-                  placeholder="Vui lòng nhập mật khẩu hiện tại..."
+                  placeholder={t("currentPasswordPlaceholder")}
                   autoComplete="current-password"
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className={LEGACY_LABEL}>Nhập mật khẩu mới<ReqMark /></label>
+                <label className={LEGACY_LABEL}>{t("newPassword")}<ReqMark /></label>
                 <Input
                   type="password"
                   name="newPassword"
-                  placeholder="Vui lòng nhập mật khẩu mới..."
+                  placeholder={t("newPasswordPlaceholder")}
                   autoComplete="new-password"
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className={LEGACY_LABEL}>Xác nhận mật khẩu mới<ReqMark /></label>
+                <label className={LEGACY_LABEL}>{t("confirmPassword")}<ReqMark /></label>
                 <Input
                   type="password"
                   name="confirmPassword"
-                  placeholder="Vui lòng xác nhận mật khẩu mới..."
+                  placeholder={t("confirmPasswordPlaceholder")}
                   autoComplete="new-password"
                 />
               </div>
@@ -171,7 +173,7 @@ function EditAccountContent() {
         )}
 
         <Button type="submit" variant="primary" disabled={saving} className="mt-6 min-w-[160px]">
-          {saving ? "Đang lưu..." : "Cập nhật"}
+          {saving ? t("saving") : t("save")}
         </Button>
       </form>
     </>

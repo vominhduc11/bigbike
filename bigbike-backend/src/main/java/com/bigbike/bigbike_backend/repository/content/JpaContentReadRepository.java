@@ -8,10 +8,12 @@ import com.bigbike.bigbike_backend.domain.catalog.ProductPrice;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.domain.catalog.SeoMeta;
 import com.bigbike.bigbike_backend.domain.content.Article;
+import com.bigbike.bigbike_backend.domain.content.ArticleTranslations;
 import com.bigbike.bigbike_backend.domain.content.AuthorSummary;
 import com.bigbike.bigbike_backend.domain.content.ContentCategorySummary;
 import com.bigbike.bigbike_backend.domain.content.ContentCategoryWithCount;
 import com.bigbike.bigbike_backend.domain.content.Page;
+import com.bigbike.bigbike_backend.domain.content.PageTranslations;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
@@ -56,6 +58,11 @@ public class JpaContentReadRepository implements ContentReadRepository {
     }
 
     @Override
+    public Optional<Article> findArticleBySlug(String slug, String locale) {
+        return articleJpaRepository.findBySlug(slug).map(e -> toDomain(e, locale));
+    }
+
+    @Override
     public Optional<Article> findArticleById(String id) {
         return articleJpaRepository.findById(id).map(this::toDomain);
     }
@@ -63,6 +70,11 @@ public class JpaContentReadRepository implements ContentReadRepository {
     @Override
     public Optional<Page> findPageBySlug(String slug) {
         return pageJpaRepository.findBySlug(slug).map(this::toDomain);
+    }
+
+    @Override
+    public Optional<Page> findPageBySlug(String slug, String locale) {
+        return pageJpaRepository.findBySlug(slug).map(e -> toDomain(e, locale));
     }
 
     @Override
@@ -74,14 +86,14 @@ public class JpaContentReadRepository implements ContentReadRepository {
 
     @Override
     public List<Article> findAllArticles() {
-        return articleJpaRepository.findAll().stream().map(this::toDomain).toList();
+        return articleJpaRepository.findAll().stream().map(e -> toDomain(e, "vi", false)).toList();
     }
 
     // --- DB-paginated public listing ---
 
     @Override
     public org.springframework.data.domain.Page<Article> listPublishedArticles(
-            String categorySlug, String q, Pageable pageable) {
+            String categorySlug, String q, Pageable pageable, String locale) {
         String normalizedQ = normalizeQuery(q);
         String normalizedCategory = (categorySlug != null && !categorySlug.isBlank()) ? categorySlug : null;
 
@@ -89,7 +101,7 @@ public class JpaContentReadRepository implements ContentReadRepository {
                 articleJpaRepository.findPublishedArticleIds(
                         PublishStatus.PUBLISHED, normalizedCategory, normalizedQ, pageable);
 
-        return fetchAndOrderArticles(idPage, pageable);
+        return fetchAndOrderArticles(idPage, pageable, locale);
     }
 
     // --- DB-paginated admin listing ---
@@ -102,7 +114,7 @@ public class JpaContentReadRepository implements ContentReadRepository {
         org.springframework.data.domain.Page<String> idPage =
                 articleJpaRepository.findAdminArticleIds(publishStatus, normalizedQ, pageable);
 
-        return fetchAndOrderArticles(idPage, pageable);
+        return fetchAndOrderArticles(idPage, pageable, "vi");
     }
 
     @Override
@@ -113,7 +125,7 @@ public class JpaContentReadRepository implements ContentReadRepository {
         org.springframework.data.domain.Page<String> idPage =
                 pageJpaRepository.findAdminPageIds(publishStatus, normalizedQ, pageable);
 
-        return fetchAndOrderPages(idPage, pageable);
+        return fetchAndOrderPages(idPage, pageable, "vi");
     }
 
     // --- Non-paginated filter for admin combined listing ---
@@ -121,13 +133,13 @@ public class JpaContentReadRepository implements ContentReadRepository {
     @Override
     public List<Article> findArticlesByFilter(PublishStatus publishStatus, String q) {
         return articleJpaRepository.findByFilter(publishStatus, normalizeQuery(q))
-                .stream().map(this::toDomain).toList();
+                .stream().map(e -> toDomain(e, "vi", false)).toList();
     }
 
     @Override
     public List<Page> findPagesByFilter(PublishStatus publishStatus, String q) {
         return pageJpaRepository.findByFilter(publishStatus, normalizeQuery(q))
-                .stream().map(this::toDomain).toList();
+                .stream().map(e -> toDomain(e, "vi", false)).toList();
     }
 
     // --- Content categories with published-article counts ---
@@ -140,26 +152,26 @@ public class JpaContentReadRepository implements ContentReadRepository {
     // --- Two-query helpers ---
 
     private org.springframework.data.domain.Page<Article> fetchAndOrderArticles(
-            org.springframework.data.domain.Page<String> idPage, Pageable pageable) {
+            org.springframework.data.domain.Page<String> idPage, Pageable pageable, String locale) {
         List<String> ids = idPage.getContent();
         if (ids.isEmpty()) {
             return new PageImpl<>(List.of(), pageable, idPage.getTotalElements());
         }
         List<ArticleEntity> entities = articleJpaRepository.findWithAssociationsByIdIn(ids);
         List<Article> ordered = orderByIds(entities, ids, ArticleEntity::getId)
-                .stream().map(this::toDomain).toList();
+                .stream().map(e -> toDomain(e, locale, false)).toList();
         return new PageImpl<>(ordered, pageable, idPage.getTotalElements());
     }
 
     private org.springframework.data.domain.Page<Page> fetchAndOrderPages(
-            org.springframework.data.domain.Page<String> idPage, Pageable pageable) {
+            org.springframework.data.domain.Page<String> idPage, Pageable pageable, String locale) {
         List<String> ids = idPage.getContent();
         if (ids.isEmpty()) {
             return new PageImpl<>(List.of(), pageable, idPage.getTotalElements());
         }
         List<PageEntity> entities = pageJpaRepository.findWithParentByIdIn(ids);
         List<Page> ordered = orderByIds(entities, ids, PageEntity::getId)
-                .stream().map(this::toDomain).toList();
+                .stream().map(e -> toDomain(e, locale, false)).toList();
         return new PageImpl<>(ordered, pageable, idPage.getTotalElements());
     }
 
@@ -172,12 +184,20 @@ public class JpaContentReadRepository implements ContentReadRepository {
     // --- Entity → domain mappers ---
 
     private Article toDomain(ArticleEntity entity) {
+        return toDomain(entity, "vi", true);
+    }
+
+    private Article toDomain(ArticleEntity entity, String locale) {
+        return toDomain(entity, locale, false);
+    }
+
+    private Article toDomain(ArticleEntity entity, String locale, boolean includeTranslations) {
         return new Article(
                 entity.getId(),
                 entity.getSlug(),
-                entity.getTitle(),
-                entity.getExcerpt(),
-                entity.getBody(),
+                pick(entity.getTitle(), entity.getTitleEn(), locale),
+                pick(entity.getExcerpt(), entity.getExcerptEn(), locale),
+                pick(entity.getBody(), entity.getBodyEn(), locale),
                 toImageAsset(
                         entity.getCoverImageId(),
                         entity.getCoverImageUrl(),
@@ -196,8 +216,8 @@ public class JpaContentReadRepository implements ContentReadRepository {
                         .toList(),
                 entity.getPublishStatus(),
                 toSeoMeta(
-                        entity.getSeoTitle(),
-                        entity.getSeoDescription(),
+                        pick(entity.getSeoTitle(), entity.getSeoTitleEn(), locale),
+                        pick(entity.getSeoDescription(), entity.getSeoDescriptionEn(), locale),
                         entity.getSeoCanonicalUrl(),
                         entity.getSeoOgImageId(),
                         entity.getSeoOgImageUrl(),
@@ -207,10 +227,12 @@ public class JpaContentReadRepository implements ContentReadRepository {
                         entity.getSeoOgImageMimeType(),
                         entity.getSeoNoIndex()
                 ),
+                includeTranslations ? toArticleTranslations(entity) : null,
                 entity.getPublishedAt(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt(),
-                toRelatedProducts(entity)
+                toRelatedProducts(entity),
+                includeTranslations ? entity.getBodyBlocks() : null
         );
     }
 
@@ -270,6 +292,7 @@ public class JpaContentReadRepository implements ContentReadRepository {
                 null,                       // installationGuide — detail only
                 List.of(),                  // faqs — detail only
                 List.of(),                  // relatedProducts — detail only
+                null,                       // descriptionBlocks — detail only
                 null,
                 null,                       // translations — detail only (admin product read)
                 entity.getCreatedAt(),
@@ -292,17 +315,25 @@ public class JpaContentReadRepository implements ContentReadRepository {
     }
 
     private Page toDomain(PageEntity entity) {
+        return toDomain(entity, "vi", true);
+    }
+
+    private Page toDomain(PageEntity entity, String locale) {
+        return toDomain(entity, locale, false);
+    }
+
+    private Page toDomain(PageEntity entity, String locale, boolean includeTranslations) {
         return new Page(
                 entity.getId(),
                 entity.getSlug(),
-                entity.getTitle(),
-                entity.getBody(),
+                pick(entity.getTitle(), entity.getTitleEn(), locale),
+                pick(entity.getBody(), entity.getBodyEn(), locale),
                 entity.getPageType(),
                 entity.getParent() != null ? entity.getParent().getId() : null,
                 entity.getPublishStatus(),
                 toSeoMeta(
-                        entity.getSeoTitle(),
-                        entity.getSeoDescription(),
+                        pick(entity.getSeoTitle(), entity.getSeoTitleEn(), locale),
+                        pick(entity.getSeoDescription(), entity.getSeoDescriptionEn(), locale),
                         entity.getSeoCanonicalUrl(),
                         entity.getSeoOgImageId(),
                         entity.getSeoOgImageUrl(),
@@ -314,12 +345,14 @@ public class JpaContentReadRepository implements ContentReadRepository {
                 ),
                 entity.getHeroImageUrl(),
                 entity.getHeroImageAlt(),
-                entity.getHeroTitle(),
-                entity.getHeroDescription(),
-                entity.getHeroKicker(),
+                pick(entity.getHeroTitle(), entity.getHeroTitleEn(), locale),
+                pick(entity.getHeroDescription(), entity.getHeroDescriptionEn(), locale),
+                pick(entity.getHeroKicker(), entity.getHeroKickerEn(), locale),
+                includeTranslations ? toPageTranslations(entity) : null,
                 entity.getPublishedAt(),
                 entity.getCreatedAt(),
-                entity.getUpdatedAt()
+                entity.getUpdatedAt(),
+                includeTranslations ? entity.getBodyBlocks() : null
         );
     }
 
@@ -387,5 +420,35 @@ public class JpaContentReadRepository implements ContentReadRepository {
 
     private static String normalizeQuery(String q) {
         return (q != null && !q.isBlank()) ? q.trim() : null;
+    }
+
+    private static String pick(String base, String en, String locale) {
+        return "en".equals(locale) && en != null && !en.isBlank() ? en : base;
+    }
+
+    private static ArticleTranslations toArticleTranslations(ArticleEntity entity) {
+        return new ArticleTranslations(
+                new ArticleTranslations.ArticleContent(
+                        entity.getTitleEn(),
+                        entity.getExcerptEn(),
+                        entity.getBodyEn(),
+                        entity.getSeoTitleEn(),
+                        entity.getSeoDescriptionEn()
+                )
+        );
+    }
+
+    private static PageTranslations toPageTranslations(PageEntity entity) {
+        return new PageTranslations(
+                new PageTranslations.PageContent(
+                        entity.getTitleEn(),
+                        entity.getBodyEn(),
+                        entity.getHeroTitleEn(),
+                        entity.getHeroDescriptionEn(),
+                        entity.getHeroKickerEn(),
+                        entity.getSeoTitleEn(),
+                        entity.getSeoDescriptionEn()
+                )
+        );
     }
 }

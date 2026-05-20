@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.bigbike.bigbike_backend.api.admin.dto.GalleryImageRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.ImageAssetRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.CategoryTranslationRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.BrandTranslationRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.ProductTranslationRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.SeoMetaRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.SpecificationRequest;
@@ -56,6 +58,7 @@ import java.util.Set;
 import java.util.UUID;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
+import com.bigbike.bigbike_backend.service.catalog.DescriptionBlockRenderer;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -78,6 +81,7 @@ public class AdminCatalogMutationService {
     private final MediaUrlProperties mediaUrlProperties;
     private final WebRevalidationService webRevalidationService;
     private final AuditLogJpaRepository auditLogRepo;
+    private final DescriptionBlockRenderer descriptionBlockRenderer;
 
     public AdminCatalogMutationService(
             ObjectProvider<ProductJpaRepository> productJpaRepositoryProvider,
@@ -88,7 +92,8 @@ public class AdminCatalogMutationService {
             CatalogReadRepository catalogReadRepository,
             MediaUrlProperties mediaUrlProperties,
             WebRevalidationService webRevalidationService,
-            ObjectProvider<AuditLogJpaRepository> auditLogRepoProvider
+            ObjectProvider<AuditLogJpaRepository> auditLogRepoProvider,
+            DescriptionBlockRenderer descriptionBlockRenderer
     ) {
         this.productJpaRepository = productJpaRepositoryProvider.getIfAvailable();
         this.categoryJpaRepository = categoryJpaRepositoryProvider.getIfAvailable();
@@ -99,6 +104,7 @@ public class AdminCatalogMutationService {
         this.mediaUrlProperties = mediaUrlProperties;
         this.webRevalidationService = webRevalidationService;
         this.auditLogRepo = auditLogRepoProvider.getIfAvailable();
+        this.descriptionBlockRenderer = descriptionBlockRenderer;
     }
 
     @Transactional
@@ -727,7 +733,8 @@ public class AdminCatalogMutationService {
         if (create || request.getShortDescription() != null) {
             entity.setShortDescription(AdminMutationValidators.trimToNull(request.getShortDescription()));
         }
-        if (create || request.getDescription() != null) {
+        // When descriptionBlocks are submitted, the renderer owns the description column.
+        if (!request.isDescriptionBlocksPresent() && (create || request.getDescription() != null)) {
             entity.setDescription(AdminMutationValidators.trimToNull(request.getDescription()));
         }
         if (create || request.getBrandId() != null) {
@@ -774,6 +781,15 @@ public class AdminCatalogMutationService {
         }
         if (create || request.isInstallationGuidePresent()) {
             entity.setInstallationGuide(AdminMutationValidators.trimToNull(request.getInstallationGuide()));
+        }
+
+        // descriptionBlocks presence flag: sending the key (even []) renders + overwrites both columns.
+        // Omitting the key leaves description_blocks and description untouched.
+        if (request.isDescriptionBlocksPresent()) {
+            List<com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock> blocks = request.getDescriptionBlocks();
+            entity.setDescriptionBlocks(blocks == null || blocks.isEmpty() ? null : blocks);
+            String renderedHtml = descriptionBlockRenderer.renderBlocksToHtml(blocks);
+            entity.setDescription(renderedHtml.isBlank() ? null : renderedHtml);
         }
 
         if (create || request.isImagePresent()) {
@@ -1208,6 +1224,21 @@ public class AdminCatalogMutationService {
         } else if (create) {
             clearSeo(entity);
         }
+
+        CategoryTranslationRequest translations = request.getTranslations();
+        CategoryTranslationRequest.CategoryContentRequest en =
+                translations != null ? translations.getEn() : null;
+        if (en != null) {
+            entity.setNameEn(AdminMutationValidators.trimToNull(en.getName()));
+            entity.setDescriptionEn(AdminMutationValidators.trimToNull(en.getDescription()));
+            entity.setSeoTitleEn(AdminMutationValidators.trimToNull(en.getSeoTitle()));
+            entity.setSeoDescriptionEn(AdminMutationValidators.trimToNull(en.getSeoDescription()));
+        } else if (create) {
+            entity.setNameEn(null);
+            entity.setDescriptionEn(null);
+            entity.setSeoTitleEn(null);
+            entity.setSeoDescriptionEn(null);
+        }
     }
 
     private void applyBrandPatch(
@@ -1245,6 +1276,21 @@ public class AdminCatalogMutationService {
             applySeo(entity, request.getSeo());
         } else if (create) {
             clearSeo(entity);
+        }
+
+        BrandTranslationRequest translations = request.getTranslations();
+        BrandTranslationRequest.BrandContentRequest en =
+                translations != null ? translations.getEn() : null;
+        if (en != null) {
+            entity.setNameEn(AdminMutationValidators.trimToNull(en.getName()));
+            entity.setDescriptionEn(AdminMutationValidators.trimToNull(en.getDescription()));
+            entity.setSeoTitleEn(AdminMutationValidators.trimToNull(en.getSeoTitle()));
+            entity.setSeoDescriptionEn(AdminMutationValidators.trimToNull(en.getSeoDescription()));
+        } else if (create) {
+            entity.setNameEn(null);
+            entity.setDescriptionEn(null);
+            entity.setSeoTitleEn(null);
+            entity.setSeoDescriptionEn(null);
         }
     }
 

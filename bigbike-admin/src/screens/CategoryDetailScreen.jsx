@@ -19,6 +19,7 @@ import { StatePanel } from '../components/StatePanel'
 import { PublishStatusBadge, StatusBadge } from '../components/StatusBadge'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { RichTextEditor } from '../components/RichTextEditor'
+import { Tabs } from '../components/layout'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -66,6 +67,7 @@ function buildEmptyForm() {
     seoDescription: '',
     seoCanonicalUrl: '',
     seoNoIndex: false,
+    translations: { en: { name: '', description: '', seoTitle: '', seoDescription: '' } },
   }
 }
 
@@ -84,6 +86,14 @@ function buildFormFromItem(item) {
     seoDescription: item.seo?.description || '',
     seoCanonicalUrl: item.seo?.canonicalUrl || '',
     seoNoIndex: Boolean(item.seo?.noIndex),
+    translations: {
+      en: {
+        name: item.translations?.en?.name || '',
+        description: item.translations?.en?.description || '',
+        seoTitle: item.translations?.en?.seoTitle || '',
+        seoDescription: item.translations?.en?.seoDescription || '',
+      },
+    },
   }
 }
 
@@ -110,6 +120,15 @@ function toPayload(form) {
     description: seoDescription || undefined,
     canonicalUrl: seoCanonicalUrl || undefined,
     noIndex: Boolean(form.seoNoIndex),
+  }
+
+  payload.translations = {
+    en: {
+      name: form.translations?.en?.name?.trim() || null,
+      description: form.translations?.en?.description?.trim() || null,
+      seoTitle: form.translations?.en?.seoTitle?.trim() || null,
+      seoDescription: form.translations?.en?.seoDescription?.trim() || null,
+    },
   }
 
   return payload
@@ -221,6 +240,19 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
     item: currentItem,
     warning: fetchResult?.mode === 'mock' ? (fetchResult?.warning ?? '') : '',
     error: fetchError?.message ?? '',
+  }
+
+  const [contentLang, setContentLang] = useState('vi')
+  const isEnLang = contentLang === 'en'
+
+  function updateTranslation(field, value) {
+    setForm((previous) => ({
+      ...previous,
+      translations: {
+        ...previous.translations,
+        en: { ...(previous.translations?.en || {}), [field]: value },
+      },
+    }))
   }
 
   const isDirty = useMemo(() => JSON.stringify(form) !== initialSnapshot, [form, initialSnapshot])
@@ -491,8 +523,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
 
       {!isCreate && canUpdate && !menuNoticeDismissed && (
         <div
-          className="pf-note pf-note-info mb-4"
-          style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}
+          className="flex items-start justify-between gap-3 mb-4 p-3 bg-[var(--admin-color-status-info-bg)] border border-[var(--admin-color-status-info-border)] text-[var(--admin-color-status-info-text)] text-sm"
         >
           <div>
             <strong>{t('categories.detail.menuNoticeTitle')}</strong>
@@ -534,13 +565,28 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
               <h2>{t('categories.sectionBasic')}</h2>
               <p className="sub">{t('categories.sectionBasicDesc')}</p>
             </div>
+            <Tabs
+              ariaLabel={t('categories.detail.contentLanguageAriaLabel', { defaultValue: 'Ngôn ngữ nội dung' })}
+              value={contentLang}
+              onChange={setContentLang}
+              items={[{ key: 'vi', label: 'VI' }, { key: 'en', label: 'EN' }]}
+            />
           </div>
           <div className="card-body">
             <div className="grid-2">
               <label className="form-field" data-field="name">
-                <span>{t('categories.detail.name')}</span>
-                <Input name="name" value={form.name} onChange={(e) => handleNameChange(e.target.value)} disabled={isReadOnly} />
-                {validationErrors.name && <span className="hint text-danger">{validationErrors.name}</span>}
+                <span>
+                  {t('categories.detail.name')}
+                  {isEnLang && <span className="hint" style={{ display: 'inline', marginLeft: 6 }}>{t('categories.detail.enFieldHint', { defaultValue: '(tiếng Anh — tùy chọn)' })}</span>}
+                </span>
+                <Input
+                  name="name"
+                  value={isEnLang ? (form.translations?.en?.name ?? '') : form.name}
+                  onChange={(e) => isEnLang ? updateTranslation('name', e.target.value) : handleNameChange(e.target.value)}
+                  disabled={isReadOnly}
+                  placeholder={isEnLang ? t('categories.detail.namePlaceholderEn', { defaultValue: 'English name (optional)' }) : undefined}
+                />
+                {!isEnLang && validationErrors.name && <span className="hint text-danger">{validationErrors.name}</span>}
               </label>
               <label className="form-field">
                 <span>{t('categories.detail.parentId')}</span>
@@ -561,14 +607,15 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
               <div className="form-field" style={{ gridColumn: '1 / -1' }}>
                 <span>{t('categories.detail.description')}</span>
                 <RichTextEditor
-                  value={form.description}
-                  onChange={(html) => updateField('description', html)}
+                  key={`description-${contentLang}`}
+                  value={isEnLang ? (form.translations?.en?.description ?? '') : form.description}
+                  onChange={(html) => isEnLang ? updateTranslation('description', html) : updateField('description', html)}
                   placeholder={t('categories.descriptionPlaceholder')}
                   disabled={isReadOnly}
                   enableImagePicker
                 />
                 <span className="hint">{t('categories.descriptionHint')}</span>
-                {validationErrors.description && <span className="hint text-danger">{validationErrors.description}</span>}
+                {!isEnLang && validationErrors.description && <span className="hint text-danger">{validationErrors.description}</span>}
               </div>
               <div className="form-field" data-field="imageUrl" style={{ gridColumn: '1 / -1' }}>
                 <span>{t('categories.detail.imageUrl')}</span>
@@ -579,7 +626,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                   error={validationErrors.imageUrl}
                 />
               </div>
-              <label className="pf-checkbox" style={{ width: 'fit-content' }}>
+              <label className="flex items-center gap-2.5 p-2.5 border border-border text-sm cursor-pointer hover:bg-muted w-fit">
                 <Checkbox
                   checked={form.visible}
                   onCheckedChange={(checked) => {
@@ -594,7 +641,10 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                 />
                 <span>{t('categories.detail.isVisible')}</span>
               </label>
-              <label className="pf-checkbox" style={{ width: 'fit-content', opacity: form.visible ? 1 : 0.5 }}>
+              <label
+                className="flex items-center gap-2.5 p-2.5 border border-border text-sm cursor-pointer hover:bg-muted w-fit"
+                style={{ opacity: form.visible ? 1 : 0.5 }}
+              >
                 <Checkbox
                   checked={form.showOnHomepage}
                   onCheckedChange={(checked) => updateField('showOnHomepage', checked)}

@@ -262,7 +262,10 @@ export function RedirectListScreen({ canUpdate }) {
                 <span>{t('redirects.formLegacyId', { defaultValue: 'Legacy ID' })}</span>
                 <Input type="number" min="0" value={form.legacyId} onChange={(e) => setForm((p) => ({ ...p, legacyId: e.target.value }))} />
               </label>
-              <label className="pf-checkbox" style={{ marginTop: 22, width: 'fit-content' }}>
+              <label
+                className="flex items-center gap-2.5 p-2.5 border border-border text-sm cursor-pointer hover:bg-muted w-fit"
+                style={{ marginTop: 22 }}
+              >
                 <Checkbox checked={form.enabled} onCheckedChange={(checked) => setForm((p) => ({ ...p, enabled: checked === true }))} />
                 <span>{t('redirects.formEnabled', { defaultValue: 'Bật' })}</span>
               </label>

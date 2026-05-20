@@ -1,13 +1,17 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { WarrantyContent } from "./WarrantyContent";
 
-export const metadata: Metadata = buildPublicMetadata({
-  title: "Tra cứu bảo hành",
-  description: "Tra cứu thông tin bảo hành sản phẩm BigBike bằng số serial trên tem sản phẩm.",
-  canonicalPath: "/bao-hanh/",
-  noIndex: false,
-});
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("Warranty");
+  return buildPublicMetadata({
+    title: t("metaTitle"),
+    description: t("metaDescription"),
+    canonicalPath: "/bao-hanh/",
+    noIndex: false,
+  });
+}
 
 export default function WarrantyLookupPage() {
   return <WarrantyContent />;

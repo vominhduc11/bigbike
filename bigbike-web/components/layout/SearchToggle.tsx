@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { BBTooltip } from "@/components/ui/BBTooltip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,6 +47,7 @@ type ActiveItem =
   | { kind: "recent"; term: string };
 
 export function SearchToggle() {
+  const t = useTranslations("Search");
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [recent, setRecent] = useState<string[]>([]);
@@ -78,7 +80,6 @@ export function SearchToggle() {
     }
   }, [open]);
 
-  // Debounced autocomplete fetch
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     const trimmed = query.trim();
@@ -89,9 +90,7 @@ export function SearchToggle() {
       }
       setSuggestLoading(true);
       try {
-        const res = await fetch(
-          `/api/search-suggest?q=${encodeURIComponent(trimmed)}`,
-        );
+        const res = await fetch(`/api/search-suggest?q=${encodeURIComponent(trimmed)}`);
         if (res.ok) {
           const json = (await res.json()) as { products?: SuggestProduct[] };
           setSuggestions(json.products ?? []);
@@ -123,24 +122,19 @@ export function SearchToggle() {
   const hasSuggestions = suggestions.length > 0;
   const queryShort = query.trim().length < 2;
   const showRecent = recent.length > 0 && queryShort;
-  // Khối "Lịch sử tìm kiếm" luôn hiện khi chưa nhập đủ keyword — kể cả khi
-  // chưa có lịch sử nào (hiện gợi ý thay vì ẩn cả khối).
   const showHistoryBlock = queryShort && !hasSuggestions && !suggestLoading;
-  const showEmpty =
-    query.trim().length >= 2 && !suggestLoading && suggestions.length === 0;
+  const showEmpty = query.trim().length >= 2 && !suggestLoading && suggestions.length === 0;
 
   const activeList: ActiveItem[] = useMemo(() => {
     if (hasSuggestions) {
       return suggestions.map((p) => ({ kind: "suggest" as const, product: p }));
     }
     if (showRecent) {
-      return recent.map((t) => ({ kind: "recent" as const, term: t }));
+      return recent.map((term) => ({ kind: "recent" as const, term }));
     }
     return [];
   }, [hasSuggestions, suggestions, showRecent, recent]);
 
-  // Reset highlight when list changes — setState during render is the React-approved
-  // pattern for resetting derived state when a computed value changes identity.
   const [prevActiveList, setPrevActiveList] = useState(activeList);
   if (prevActiveList !== activeList) {
     setPrevActiveList(activeList);
@@ -209,61 +203,44 @@ export function SearchToggle() {
   }
 
   const optionId = (index: number) => `${optionIdPrefix}-opt-${index}`;
-  const activeDescendant =
-    activeIndex >= 0 ? optionId(activeIndex) : undefined;
+  const activeDescendant = activeIndex >= 0 ? optionId(activeIndex) : undefined;
 
   return (
     <>
-      <BBTooltip content="Tìm kiếm">
-      <Button
-        ref={triggerRef}
-        variant="ghost"
-        className="bb-icon-btn"
-        aria-label="Tìm kiếm"
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-      >
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
+      <BBTooltip content={t("toggleTooltip")}>
+        <Button
+          ref={triggerRef}
+          variant="ghost"
+          className="bb-icon-btn"
+          aria-label={t("toggleAriaLabel")}
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          type="button"
+          onClick={() => setOpen((o) => !o)}
         >
-          <circle cx="11" cy="11" r="8" />
-          <path d="m21 21-4.35-4.35" />
-        </svg>
-      </Button>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.35-4.35" />
+          </svg>
+        </Button>
       </BBTooltip>
 
       {open && (
         <>
-          {/* Backdrop */}
-          <div
-            className="bb-search-overlay"
-            onClick={() => setOpen(false)}
-            aria-hidden="true"
-          />
+          <div className="bb-search-overlay" onClick={() => setOpen(false)} aria-hidden="true" />
 
-          {/* Search shell */}
           <div
             ref={shellRef}
             className="bb-search-shell"
             role="dialog"
             aria-modal="true"
-            aria-label="Tìm kiếm"
+            aria-label={t("dialogAriaLabel")}
           >
             <Button
               type="button"
               variant="ghost"
               className="bb-search-close"
-              aria-label="Đóng tìm kiếm"
+              aria-label={t("closeAriaLabel")}
               onClick={() => setOpen(false)}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
@@ -284,17 +261,7 @@ export function SearchToggle() {
                 }
               }}
             >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <circle cx="11" cy="11" r="8" />
                 <path d="m21 21-4.35-4.35" />
               </svg>
@@ -302,7 +269,7 @@ export function SearchToggle() {
               <Input
                 ref={inputRef}
                 type="text"
-                placeholder="Vui lòng nhập từ khóa..."
+                placeholder={t("inputPlaceholder")}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={onInputKeyDown}
@@ -312,12 +279,10 @@ export function SearchToggle() {
                 aria-controls={listboxId}
                 aria-autocomplete="list"
                 aria-activedescendant={activeDescendant}
-                aria-label="Tìm sản phẩm hoặc thương hiệu"
+                aria-label={t("inputAriaLabel")}
               />
 
-              {suggestLoading && (
-                <span className="bb-search-spinner" aria-hidden="true" />
-              )}
+              {suggestLoading && <span className="bb-search-spinner" aria-hidden="true" />}
 
               {query && !suggestLoading && (
                 <Button
@@ -325,7 +290,7 @@ export function SearchToggle() {
                   variant="ghost"
                   size="icon"
                   className="bb-search-clear"
-                  aria-label="Xoá"
+                  aria-label={t("clearAriaLabel")}
                   onClick={() => {
                     setQuery("");
                     inputRef.current?.focus();
@@ -342,14 +307,14 @@ export function SearchToggle() {
                 <div className="bb-search-main">
                   <div className="bb-search-block">
                     <div className="bb-search-block-head">
-                      <span className="label">Gợi ý</span>
+                      <span className="label">{t("suggestionsLabel")}</span>
                       <span className="count">{suggestions.length}</span>
                     </div>
                     <ul
                       className="bb-search-suggest-list"
                       id={listboxId}
                       role="listbox"
-                      aria-label="Gợi ý sản phẩm"
+                      aria-label={t("suggestAriaLabel")}
                     >
                       {suggestions.map((p, idx) => {
                         const price = p.price?.salePrice ?? p.price?.retailPrice;
@@ -373,25 +338,9 @@ export function SearchToggle() {
                               <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden bg-white/5">
                                 {thumb ? (
                                   // eslint-disable-next-line @next/next/no-img-element
-                                  <img
-                                    src={thumb}
-                                    alt=""
-                                    width={40}
-                                    height={40}
-                                    loading="lazy"
-                                    className="h-full w-full object-cover"
-                                  />
+                                  <img src={thumb} alt="" width={40} height={40} loading="lazy" className="h-full w-full object-cover" />
                                 ) : (
-                                  <svg
-                                    width="18"
-                                    height="18"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="1.5"
-                                    className="text-white/50"
-                                    aria-hidden="true"
-                                  >
+                                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-white/50" aria-hidden="true">
                                     <rect x="3" y="3" width="18" height="18" rx="2" />
                                     <circle cx="9" cy="9" r="2" />
                                     <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
@@ -408,13 +357,8 @@ export function SearchToggle() {
                       })}
                     </ul>
                     <div className="bb-search-suggest-all">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="tiny"
-                        onClick={() => doSearch(query)}
-                      >
-                        Xem tất cả kết quả cho &ldquo;{query.trim()}&rdquo; →
+                      <Button type="button" variant="ghost" className="tiny" onClick={() => doSearch(query)}>
+                        {t("viewAllResultsBtn", { query: query.trim() })}
                       </Button>
                     </div>
                   </div>
@@ -427,33 +371,22 @@ export function SearchToggle() {
               <div className="bb-search-body">
                 <div className="bb-search-main">
                   <div className="flex flex-col items-center justify-center gap-3 px-4 py-10 text-center">
-                    <svg
-                      width="36"
-                      height="36"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="text-white/50"
-                      aria-hidden="true"
-                    >
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-white/50" aria-hidden="true">
                       <circle cx="11" cy="11" r="8" />
                       <path d="m21 21-4.35-4.35" />
                       <path d="M8 11h6" />
                     </svg>
                     <p className="text-sm text-white/80">
-                      Không tìm thấy sản phẩm phù hợp với &ldquo;{query.trim()}&rdquo;
+                      {t("noMatchText", { query: query.trim() })}
                     </p>
                     <p className="text-sm text-white/40">
-                      Thử từ khoá khác hoặc{" "}
+                      {t("noResultDescription")}{" "}
                       <Link
                         href={toProductListPath()}
                         onClick={() => setOpen(false)}
                         className="text-[var(--bb-brand-primary)] hover:underline"
                       >
-                        xem toàn bộ sản phẩm
+                        {t("noMatchBrowse")}
                       </Link>
                     </p>
                   </div>
@@ -461,84 +394,57 @@ export function SearchToggle() {
               </div>
             )}
 
-            {/* Lịch sử tìm kiếm — luôn hiện khi chưa nhập keyword */}
+            {/* Lịch sử tìm kiếm */}
             {showHistoryBlock && (
               <div className="bb-search-body">
                 <div className="bb-search-main">
                   <div className="bb-search-block">
                     <div className="bb-search-block-head">
-                      <span className="label">Lịch sử tìm kiếm</span>
+                      <span className="label">{t("recentLabel")}</span>
                       {recent.length > 0 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          className="tiny"
-                          onClick={clearRecent}
-                        >
-                          Xoá tất cả
+                        <Button type="button" variant="ghost" className="tiny" onClick={clearRecent}>
+                          {t("recentClear")}
                         </Button>
                       )}
                     </div>
                     {recent.length === 0 ? (
                       <p className="m-0 px-2.5 py-3 text-sm text-white/45">
-                        Chưa có lịch sử tìm kiếm. Nhập từ khoá để tìm sản phẩm
-                        hoặc thương hiệu.
+                        {t("recentEmpty")}
                       </p>
                     ) : (
                       <ul
                         className="bb-search-recent"
                         id={listboxId}
                         role="listbox"
-                        aria-label="Lịch sử tìm kiếm"
+                        aria-label={t("recentAriaLabel")}
                       >
-                      {recent.map((s, idx) => {
-                        const isActive = idx === activeIndex;
-                        return (
-                          <li key={s}>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              id={optionId(idx)}
-                              role="option"
-                              aria-selected={isActive}
-                              data-active={isActive ? "true" : undefined}
-                              className="data-[active=true]:bg-white/10 data-[active=true]:text-white"
-                              onClick={() => doSearch(s)}
-                              onMouseEnter={() => setActiveIndex(idx)}
-                            >
-                              <svg
-                                width="14"
-                                height="14"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                aria-hidden="true"
+                        {recent.map((s, idx) => {
+                          const isActive = idx === activeIndex;
+                          return (
+                            <li key={s}>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                id={optionId(idx)}
+                                role="option"
+                                aria-selected={isActive}
+                                data-active={isActive ? "true" : undefined}
+                                className="data-[active=true]:bg-white/10 data-[active=true]:text-white"
+                                onClick={() => doSearch(s)}
+                                onMouseEnter={() => setActiveIndex(idx)}
                               >
-                                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                                <path d="M3 3v5h5" />
-                              </svg>
-                              <span>{s}</span>
-                              <svg
-                                className="arr"
-                                width="14"
-                                height="14"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                aria-hidden="true"
-                              >
-                                <path d="M5 12h14M12 5l7 7-7 7" />
-                              </svg>
-                            </Button>
-                          </li>
-                        );
-                      })}
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                                  <path d="M3 3v5h5" />
+                                </svg>
+                                <span>{s}</span>
+                                <svg className="arr" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                  <path d="M5 12h14M12 5l7 7-7 7" />
+                                </svg>
+                              </Button>
+                            </li>
+                          );
+                        })}
                       </ul>
                     )}
                   </div>
@@ -548,19 +454,18 @@ export function SearchToggle() {
 
             <div className="bb-search-footer">
               <span className="bb-search-shortcut">
-                <kbd>↑↓</kbd> Di chuyển
+                <kbd>↑↓</kbd> {t("footerMove")}
               </span>
               <span className="bb-search-shortcut">
-                <kbd>↵</kbd> Chọn
+                <kbd>↵</kbd> {t("footerSelect")}
               </span>
               <span className="bb-search-shortcut">
-                <kbd>ESC</kbd> Đóng
+                <kbd>ESC</kbd> {t("footerClose")}
               </span>
               <span className="bb-search-footer-spacer" />
               <span className="bb-search-hint">
-                Hoặc{" "}
                 <Link href={toProductListPath()} onClick={() => setOpen(false)}>
-                  xem tất cả sản phẩm →
+                  {t("footerBrowse")}
                 </Link>
               </span>
             </div>

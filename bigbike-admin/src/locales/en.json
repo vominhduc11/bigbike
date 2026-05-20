@@ -547,6 +547,46 @@
       },
       "moveUp": "Move up",
       "moveDown": "Move down",
+      "blocks": {
+        "addBlock": "Add block",
+        "blockTypeHeading": "Heading",
+        "blockTypeParagraph": "Paragraph",
+        "blockTypeList": "List",
+        "blockTypeImage": "Image",
+        "blockTypeVideo": "Video",
+        "blockTypeCallout": "Callout box",
+        "blockTypeDivider": "Divider",
+        "moveUp": "Move up",
+        "moveDown": "Move down",
+        "duplicate": "Duplicate",
+        "remove": "Remove",
+        "headingLevelLabel": "Level",
+        "headingLevel2": "Heading 2 (H2)",
+        "headingLevel3": "Heading 3 (H3)",
+        "headingTextPlaceholder": "Heading text...",
+        "listStyleBulleted": "Bulleted list",
+        "listStyleNumbered": "Numbered list",
+        "listAddItem": "Add item",
+        "listItemPlaceholder": "Item text...",
+        "listRemoveItem": "Remove item",
+        "imagePick": "Pick image",
+        "imageChange": "Change image",
+        "imageAltPlaceholder": "Image description (alt text)",
+        "imageCaptionPlaceholder": "Image caption (optional)",
+        "videoProviderLabel": "Video source",
+        "videoYouTube": "YouTube",
+        "videoUpload": "Uploaded video",
+        "videoUrlPlaceholder": "https://www.youtube.com/watch?v=...",
+        "videoCaptionPlaceholder": "Video caption (optional)",
+        "videoPick": "Pick from library",
+        "calloutVariantLabel": "Type",
+        "calloutVariantInfo": "Info",
+        "calloutVariantWarning": "Warning",
+        "calloutVariantNote": "Note",
+        "fallbackTitle": "Legacy description (HTML)",
+        "fallbackHint": "Add blocks above to replace this content.",
+        "empty": "No blocks yet. Click \"Add block\" to start."
+      },
       "variant": {
         "optionNamePlaceholder": "Attribute (e.g. Color)",
         "optionValuePlaceholder": "Value (e.g. Red)",
@@ -654,7 +694,21 @@
       "viewLiveTitle": "View live product page (new tab)",
       "viewLive": "View on site",
       "unsavedChangesTitle": "Unsaved changes",
-      "unsavedChangesConfirm": "You have unsaved changes. Leaving this page will discard them. Continue?"
+      "unsavedChangesConfirm": "You have unsaved changes. Leaving this page will discard them. Continue?",
+      "tabGeneral": "Overview",
+      "tabContent": "Content & SEO",
+      "tabDetails": "Specs & guides",
+      "tabVariants": "Variants & related",
+      "tabsAriaLabel": "Product sections",
+      "contentLanguageAriaLabel": "Content language",
+      "moreSaveOptions": "More save options",
+      "readOnlyBadge": "Read-only",
+      "draftFoundShort": "Draft available",
+      "saveDirty": "Unsaved changes",
+      "saveClean": "Saved",
+      "saveSaving": "Saving...",
+      "lastSavedAt": "at {{time}}",
+      "savingShort": "Saving..."
     }
   },
   "orders": {
@@ -978,7 +1032,10 @@
       "hardDeleteConfirm": "You are about to permanently delete the category \"{{name}}\".\n\nThis action CANNOT be undone. Once deleted, the category will disappear from both admin and the website.\n\nIf you only want to temporarily hide it from the website, use the \"Hide\" button instead.",
       "hardDeleteConfirmWithChildren": "You are about to permanently delete the category \"{{name}}\".\n\n⚠️ This category contains {{count}} sub-categories — all of them will be deleted too.\n\nThis action CANNOT be undone. If you only want to temporarily hide it, use the \"Hide\" button instead.",
       "hardDeleteSuccess": "Category permanently deleted.",
-      "hardDeleteConflict": "This category cannot be deleted yet because it still contains sub-categories or products. Please move or delete those first, then try again."
+      "hardDeleteConflict": "This category cannot be deleted yet because it still contains sub-categories or products. Please move or delete those first, then try again.",
+      "contentLanguageAriaLabel": "Content language",
+      "enFieldHint": "(English — optional)",
+      "namePlaceholderEn": "English name (optional)"
     }
   },
   "brands": {
@@ -1045,7 +1102,10 @@
       "errSeoCanonicalUrl": "Canonical URL must start with http:// or https://.",
       "errSeoOgImageUrl": "SEO OG image URL is invalid. Use a path from the media library or a URL starting with http:// or https://.",
       "errSaveFailed": "Failed to save brand.",
-      "errDeleteFailed": "Failed to delete brand."
+      "errDeleteFailed": "Failed to delete brand.",
+      "contentLanguageAriaLabel": "Content language",
+      "enFieldHint": "(English — optional)",
+      "namePlaceholderEn": "English name (optional)"
     }
   },
   "content": {
@@ -1092,6 +1152,9 @@
       "archiveConfirmTitle": "Archive content",
       "archiveBtn": "Archive",
       "archiveSuccess": "Content archived.",
+      "contentLanguageAriaLabel": "Content language",
+      "enFieldHint": "(English — optional)",
+      "titlePlaceholderEn": "English title (optional)",
       "sectionCore": "Core information",
       "sectionMedia": "Media & Tags",
       "sectionSeo": "SEO",
@@ -1137,7 +1200,16 @@
       "errSeoCanonicalUrl": "Canonical URL must start with http:// or https://.",
       "errSeoOgImageUrl": "SEO OG image URL is invalid. Use a path from the media library or a URL starting with http:// or https://.",
       "errSaveFailed": "Failed to save content.",
-      "errArchiveFailed": "Failed to archive content."
+      "errArchiveFailed": "Failed to archive content.",
+      "tabContent": "Content",
+      "tabSeoPublish": "SEO & Publishing",
+      "tabsAriaLabel": "Content sections",
+      "saveDirty": "Unsaved changes",
+      "saveClean": "Saved",
+      "savingShort": "Saving...",
+      "readOnlyBadge": "Read-only",
+      "sectionBody": "Main content",
+      "sectionPublish": "Publishing"
     }
   },
   "customers": {

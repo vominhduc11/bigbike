@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   type InfiniteData,
   useInfiniteQuery,
@@ -99,17 +100,18 @@ function StarRow({ rating, size = 16 }: { rating: number; size?: number }) {
 }
 
 function StarPicker({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  const t = useTranslations("Product.reviews");
   const [hovered, setHovered] = useState(0);
   const display = hovered || value;
   return (
-    <div className="bb-review-star-picker" role="radiogroup" aria-label="Chọn số sao">
+    <div className="bb-review-star-picker" role="radiogroup" aria-label={t("pickStars")}>
       {[1, 2, 3, 4, 5].map((n) => (
         <button
           key={n}
           type="button"
           role="radio"
           aria-checked={value === n}
-          aria-label={`${n} sao`}
+          aria-label={t("starsCount", { count: n })}
           className={`bb-review-star-btn${display >= n ? " active" : ""}`}
           onClick={() => onChange(n)}
           onMouseEnter={() => setHovered(n)}
@@ -133,6 +135,8 @@ function StarPicker({ value, onChange }: { value: number; onChange: (v: number) 
 }
 
 function WriteReviewForm({ productId, onSuccess }: { productId: string; onSuccess: () => void }) {
+  const t = useTranslations("Product.reviews");
+  const tCommon = useTranslations("Common");
   const [open, setOpen] = useState(false);
   const [rating, setRating] = useState(0);
   const [authorName, setAuthorName] = useState("");
@@ -144,8 +148,8 @@ function WriteReviewForm({ productId, onSuccess }: { productId: string; onSucces
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (rating === 0) { setError("Vui lòng chọn số sao."); return; }
-    if (!authorName.trim()) { setError("Vui lòng nhập tên."); return; }
+    if (rating === 0) { setError(t("errorPickStars")); return; }
+    if (!authorName.trim()) { setError(t("errorPickName")); return; }
     setError("");
     setSubmitting(true);
     try {
@@ -162,18 +166,18 @@ function WriteReviewForm({ productId, onSuccess }: { productId: string; onSucces
       const json = (await res.json()) as { error?: string };
       if (!res.ok) {
         if (res.status === 429) {
-          setError("Bạn gửi đánh giá quá nhanh. Vui lòng thử lại sau.");
+          setError(t("errorRateLimit"));
         } else if (res.status === 409) {
-          setError(json.error ?? "Đánh giá tương tự vừa được gửi. Vui lòng thử lại sau.");
+          setError(json.error ?? t("errorDuplicate"));
         } else {
-          setError(json.error ?? "Không thể gửi đánh giá.");
+          setError(json.error ?? t("errorSubmit"));
         }
         return;
       }
       setDone(true);
       onSuccess();
     } catch {
-      setError("Lỗi kết nối, vui lòng thử lại.");
+      setError(t("errorNetwork"));
     } finally {
       setSubmitting(false);
     }
@@ -183,7 +187,7 @@ function WriteReviewForm({ productId, onSuccess }: { productId: string; onSucces
     return (
       <div className="bb-review-done">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5" /></svg>
-        Cảm ơn bạn đã đánh giá! Đánh giá đang chờ kiểm duyệt.
+        {t("thanks")}
       </div>
     );
   }
@@ -194,14 +198,14 @@ function WriteReviewForm({ productId, onSuccess }: { productId: string; onSucces
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
         </svg>
-        Viết đánh giá
+        {t("writeButton")}
       </Button>
     );
   }
 
   return (
     <form className="bb-review-form" onSubmit={handleSubmit} noValidate>
-      <h4 className="bb-review-form-title">Đánh giá của bạn</h4>
+      <h4 className="bb-review-form-title">{t("formTitle")}</h4>
       {/* Honeypot — ẩn khỏi user, bot auto-fill sẽ bị block */}
       <input
         type="text"
@@ -215,15 +219,15 @@ function WriteReviewForm({ productId, onSuccess }: { productId: string; onSucces
       />
 
       <div className="bb-review-form-field">
-        <label>Số sao <span className="req">*</span></label>
+        <label>{t("formStars")} <span className="req">*</span></label>
         <StarPicker value={rating} onChange={setRating} />
       </div>
 
       <div className="bb-review-form-field">
-        <label htmlFor="review-name">Tên của bạn <span className="req">*</span></label>
+        <label htmlFor="review-name">{t("formName")} <span className="req">*</span></label>
         <Input
           id="review-name"
-          placeholder="Nguyễn Văn A"
+          placeholder={t("formNamePlaceholder")}
           value={authorName}
           onChange={(e) => setAuthorName(e.target.value)}
           maxLength={80}
@@ -232,10 +236,10 @@ function WriteReviewForm({ productId, onSuccess }: { productId: string; onSucces
       </div>
 
       <div className="bb-review-form-field">
-        <label htmlFor="review-comment">Nhận xét</label>
+        <label htmlFor="review-comment">{t("formComment")}</label>
         <Textarea
           id="review-comment"
-          placeholder="Sản phẩm tốt, đúng size, giao hàng nhanh..."
+          placeholder={t("formCommentPlaceholder")}
           value={comment}
           onChange={(e) => setComment(e.target.value)}
           maxLength={1000}
@@ -247,10 +251,10 @@ function WriteReviewForm({ productId, onSuccess }: { productId: string; onSucces
 
       <div className="bb-review-form-actions">
         <Button type="button" variant="secondary" onClick={() => setOpen(false)} disabled={submitting}>
-          Huỷ
+          {tCommon("cancel")}
         </Button>
         <Button type="submit" variant="primary" disabled={submitting}>
-          {submitting ? "Đang gửi..." : "Gửi đánh giá"}
+          {submitting ? t("submitting") : t("submit")}
         </Button>
       </div>
     </form>
@@ -267,7 +271,7 @@ function getErrorMessage(payload: unknown, fallback: string) {
   return fallback;
 }
 
-async function fetchReviewsPage(productId: string, page: number) {
+async function fetchReviewsPage(productId: string, page: number, errorFallback: string) {
   const params = new URLSearchParams({
     page: String(page),
     size: String(PAGE_SIZE),
@@ -276,13 +280,14 @@ async function fetchReviewsPage(productId: string, page: number) {
   const payload = (await res.json().catch(() => null)) as ReviewsData | { error?: string } | null;
 
   if (!res.ok) {
-    throw new Error(getErrorMessage(payload, "Không thể tải đánh giá."));
+    throw new Error(getErrorMessage(payload, errorFallback));
   }
 
   return payload as ReviewsData;
 }
 
 export function ReviewsSection({ productId }: ReviewsSectionProps) {
+  const t = useTranslations("Product.reviews");
   const queryClient = useQueryClient();
   const queryKey = ["product-reviews", productId] as const;
 
@@ -295,7 +300,7 @@ export function ReviewsSection({ productId }: ReviewsSectionProps) {
   } = useInfiniteQuery({
     queryKey,
     initialPageParam: 1,
-    queryFn: ({ pageParam }) => fetchReviewsPage(productId, pageParam),
+    queryFn: ({ pageParam }) => fetchReviewsPage(productId, pageParam, t("errorLoad")),
     getNextPageParam: (lastPage) => (
       lastPage.pagination.hasNext
         ? lastPage.pagination.page + 1
@@ -341,7 +346,7 @@ export function ReviewsSection({ productId }: ReviewsSectionProps) {
             <div className="flex flex-col gap-1">
               <StarRow rating={rating} size={20} />
               {total > 0 && (
-                <span className="bb-pdp-rating-count">({total} đánh giá)</span>
+                <span className="bb-pdp-rating-count">{t("ratingCount", { count: total })}</span>
               )}
             </div>
           </div>
@@ -384,10 +389,10 @@ export function ReviewsSection({ productId }: ReviewsSectionProps) {
             disabled={isFetchingNextPage}
             onClick={() => void fetchNextPage()}
           >
-            {isFetchingNextPage ? "Đang tải thêm..." : "Xem thêm đánh giá"}
+            {isFetchingNextPage ? t("loadingMore") : t("loadMore")}
           </Button>
           {isFetchNextPageError && (
-            <p className="text-sm text-destructive">Không thể tải thêm đánh giá.</p>
+            <p className="text-sm text-destructive">{t("errorLoadMore")}</p>
           )}
         </div>
       )}

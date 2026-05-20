@@ -2,7 +2,6 @@
 @import './styles/admin-tokens.css';
 @import './styles/admin-layout.css';
 @import './styles/admin-prototype.css';
-@import './styles/admin-product-form.css';
 
 /* ── shadcn/ui semantic token mapping (derives from admin-tokens.css) ─────── */
 :root {

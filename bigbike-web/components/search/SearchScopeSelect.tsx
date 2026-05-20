@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   Select,
   SelectContent,
@@ -12,6 +13,7 @@ import {
 const ALL_VALUE = "all";
 
 export function SearchScopeSelect({ current }: { current: string }) {
+  const t = useTranslations("Search");
   const [value, setValue] = useState(current || ALL_VALUE);
   const formValue = value === ALL_VALUE ? "" : value;
 
@@ -20,12 +22,12 @@ export function SearchScopeSelect({ current }: { current: string }) {
       <input type="hidden" name="post_type" value={formValue} />
       <Select value={value} onValueChange={setValue}>
         <SelectTrigger className="bb-query-select">
-          <SelectValue placeholder="Tất cả nội dung" />
+          <SelectValue placeholder={t("scopeAll")} />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value={ALL_VALUE}>Tất cả nội dung</SelectItem>
-          <SelectItem value="product">Sản phẩm</SelectItem>
-          <SelectItem value="article">Bài viết</SelectItem>
+          <SelectItem value={ALL_VALUE}>{t("scopeAll")}</SelectItem>
+          <SelectItem value="product">{t("scopeProduct")}</SelectItem>
+          <SelectItem value="article">{t("scopeArticle")}</SelectItem>
         </SelectContent>
       </Select>
     </>

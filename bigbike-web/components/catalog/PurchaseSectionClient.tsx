@@ -3,13 +3,13 @@
 import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { ProductGallery } from "./ProductGallery";
 import { PricingPanel } from "./PricingPanel";
 import { StockStatus } from "./StockStatus";
 import type { PricingData } from "./PricingPanel";
 import type { StockData } from "./StockStatus";
 import { VariantSelector } from "./VariantSelector";
-import { ProductVideoCarousel } from "./ProductVideoCarousel";
 import { ProductDeliveryInfo } from "./ProductDeliveryInfo";
 import { useCart } from "@/lib/cart-context";
 import { CompareButton } from "./CompareButton";
@@ -96,6 +96,7 @@ export function PurchaseSectionClient({
 }: PurchaseSectionClientProps) {
   const { addToCart } = useCart();
   const router = useRouter();
+  const t = useTranslations("Product.buyBox");
 
   // Track the customer's progressively-built attribute selection. Empty
   // map = no attributes picked yet. Drives:
@@ -201,12 +202,12 @@ export function PurchaseSectionClient({
     if (hotline && hotline.trim()) {
       return {
         href: `tel:${hotline.replace(/[^\d+]/g, "")}`,
-        label: `Liên hệ tư vấn: ${hotline.trim()}`,
+        label: t("callHotline", { phone: hotline.trim() }),
         external: false,
       };
     }
     if (zaloUrl && zaloUrl.trim()) {
-      return { href: toZaloHref(zaloUrl), label: "Tư vấn qua Zalo ngay", external: true };
+      return { href: toZaloHref(zaloUrl), label: t("zaloAdvice"), external: true };
     }
     return null;
   })();
@@ -241,7 +242,7 @@ export function PurchaseSectionClient({
       await addToCart(productId, quantity, selectedVariant?.id || undefined);
     } catch (err) {
       setAddError(
-        err instanceof Error ? err.message : "Không thể thêm vào giỏ hàng.",
+        err instanceof Error ? err.message : t("addToCartFailed"),
       );
     } finally {
       setAddLoading(false);
@@ -257,7 +258,7 @@ export function PurchaseSectionClient({
       // disabled through the navigation.
       router.push(toCheckoutPath());
     } catch (err) {
-      setAddError(err instanceof Error ? err.message : "Không thể mua sản phẩm này.");
+      setAddError(err instanceof Error ? err.message : t("buyNowFailed"));
       setBuyLoading(false);
     }
   }
@@ -281,10 +282,8 @@ export function PurchaseSectionClient({
           variantGallery={previewVariant?.gallery ?? undefined}
           variantKey={previewVariant?.id ?? null}
           discountBadge={galleryDiscount}
+          videos={videos}
         />
-        {videos && videos.length > 0 && (
-          <ProductVideoCarousel videos={videos} productName={productName} />
-        )}
       </div>
 
       {/* Right: Info + Purchase controls */}
@@ -302,7 +301,7 @@ export function PurchaseSectionClient({
                 <span className="h-1 w-1 shrink-0 rounded-full bg-border" aria-hidden="true" />
               )}
               {sku && (
-                <span className="text-sm text-muted-foreground">Mã SP: {sku}</span>
+                <span className="text-sm text-muted-foreground">{t("skuLabel", { sku })}</span>
               )}
             </div>
           )}
@@ -340,7 +339,7 @@ export function PurchaseSectionClient({
               </span>
               {typeof initialRatingCount === "number" && initialRatingCount > 0 && (
                 <span className="text-sm text-muted-foreground">
-                  ({initialRatingCount} đánh giá)
+                  {t("ratingCount", { count: initialRatingCount })}
                 </span>
               )}
             </div>
@@ -363,7 +362,7 @@ export function PurchaseSectionClient({
             className="border border-brand/30 bg-accent px-3.5 py-2.5 text-sm font-semibold text-brand"
             role="status"
           >
-            Vui lòng chọn size/màu sắc để mua hàng.
+            {t("pickVariantHint")}
           </div>
         )}
 
@@ -395,7 +394,7 @@ export function PurchaseSectionClient({
               onChange={setQuantity}
               min={1}
               max={effectiveStockData?.quantity ?? undefined}
-              ariaLabel="Số lượng sản phẩm"
+              ariaLabel={t("quantityLabel")}
             />
             <Button
               type="button"
@@ -405,12 +404,12 @@ export function PurchaseSectionClient({
               className="min-w-[180px] flex-1"
             >
               {addLoading
-                ? "Đang thêm..."
+                ? t("adding")
                 : requiresVariantSelection
-                  ? "Vui lòng chọn biến thể"
+                  ? t("pickVariantCta")
                   : isAvailable
-                    ? "Thêm vào giỏ hàng"
-                    : "Tạm hết hàng"}
+                    ? t("addToCart")
+                    : t("soldOut")}
             </Button>
           </div>
 
@@ -421,7 +420,7 @@ export function PurchaseSectionClient({
             disabled={busy || !isAvailable}
             className="w-full"
           >
-            {buyLoading ? "Đang xử lý..." : "Mua ngay"}
+            {buyLoading ? t("buyNowProcessing") : t("buyNow")}
           </Button>
 
           {contact && (
@@ -480,13 +479,13 @@ export function PurchaseSectionClient({
         {/* Social share — Facebook / Twitter / Instagram / Skype (parity with
             the legacy WP single-product social row). */}
         <div className="bb-pdp-share">
-          <span className="bb-pdp-share-label">Share</span>
+          <span className="bb-pdp-share-label">{t("shareLabel")}</span>
           <a
             href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(canonicalUrl)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="bb-pdp-share-btn"
-            aria-label="Chia sẻ lên Facebook"
+            aria-label={t("shareFacebook")}
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
               <path d="M9.2 14V8.5h1.85l.28-2.15H9.2V5c0-.62.17-1.04 1.06-1.04h1.13V2.05A15.4 15.4 0 0 0 9.84 2C8.2 2 7.08 3 7.08 4.84V6.35H5.22V8.5h1.86V14H9.2Z" />
@@ -497,7 +496,7 @@ export function PurchaseSectionClient({
             target="_blank"
             rel="noopener noreferrer"
             className="bb-pdp-share-btn"
-            aria-label="Chia sẻ trên X (Twitter)"
+            aria-label={t("shareTwitter")}
           >
             <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
               <path d="M9.52 6.78 14.94 1h-1.28L8.95 6.02 5.21 1H1l5.7 7.66L1 14.71h1.28l4.99-5.31 3.95 5.31H15L9.52 6.78Zm-1.77 1.88-.58-.78L2.74 1.94h1.97l3.71 4.97.58.77 4.83 6.46h-1.97L7.75 8.66Z" />
@@ -508,7 +507,7 @@ export function PurchaseSectionClient({
             target="_blank"
             rel="noopener noreferrer"
             className="bb-pdp-share-btn"
-            aria-label="Instagram BigBike"
+            aria-label={t("shareInstagram")}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
               <rect x="3" y="3" width="18" height="18" rx="5" />
@@ -521,7 +520,7 @@ export function PurchaseSectionClient({
             target="_blank"
             rel="noopener noreferrer"
             className="bb-pdp-share-btn"
-            aria-label="Chia sẻ qua Skype"
+            aria-label={t("shareSkype")}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M12 2a10 10 0 0 1 8.66 15.02 6 6 0 0 1-8.34 8.3A10 10 0 1 1 12 2Zm.2 16.6c2.86 0 4.62-1.4 4.62-3.62 0-1.43-.68-2.94-3.5-3.57l-1.6-.36c-.6-.14-1.3-.33-1.3-.9 0-.63.55-1.06 1.55-1.06 2.02 0 1.83 1.38 2.84 1.38.53 0 .99-.31.99-.85 0-1.25-2-2.2-3.67-2.2-1.82 0-3.76.78-3.76 2.84 0 1 .35 2.05 2.32 2.54l2.16.54c.65.16 1.22.44 1.22 1.05 0 .6-.6 1.18-1.7 1.18-2.19 0-1.89-1.68-3.07-1.68-.53 0-.92.37-.92.9 0 1.03 1.25 2.74 3.99 2.74Z" />
@@ -546,12 +545,12 @@ export function PurchaseSectionClient({
           className="flex-1"
         >
           {addLoading
-            ? "Đang thêm..."
+            ? t("adding")
             : requiresVariantSelection
-              ? "Chọn biến thể"
+              ? t("pickVariantShort")
               : isAvailable
-                ? "Thêm vào giỏ"
-                : "Tạm hết hàng"}
+                ? t("addToCartShort")
+                : t("soldOut")}
         </Button>
         <Button
           type="button"

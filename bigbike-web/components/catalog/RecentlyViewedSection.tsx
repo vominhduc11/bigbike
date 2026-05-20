@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { type RecentProduct, getRecentProducts, saveRecentProduct } from "@/lib/recently-viewed";
 import { formatVnd, resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { toProductPath } from "@/lib/utils/routes";
@@ -20,6 +21,8 @@ type Props = {
 };
 
 export function RecentlyViewedSection({ currentProductId, currentProduct }: Props) {
+  const tProduct = useTranslations("Product");
+  const tRecent = useTranslations("Product.recentlyViewed");
   const [items, setItems] = useState<RecentProduct[]>([]);
 
   useEffect(() => {
@@ -34,9 +37,9 @@ export function RecentlyViewedSection({ currentProductId, currentProduct }: Prop
   return (
     <section className="mt-12 border-t border-[color:var(--bb-border-default)] pt-9">
       <div className="mb-[18px]">
-        <p className="bb-kicker">VỪA XEM</p>
+        <p className="bb-kicker">{tRecent("kicker")}</p>
         <h2 className="mt-1 mb-0 font-heading text-[clamp(1.1rem,2vw,1.4rem)] font-semibold uppercase leading-normal text-foreground">
-          Sản phẩm đã xem gần đây
+          {tRecent("heading")}
         </h2>
       </div>
       <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-3.5">
@@ -52,7 +55,7 @@ export function RecentlyViewedSection({ currentProductId, currentProduct }: Prop
                 {src ? (
                   <Image
                     src={src}
-                    alt={safeText(p.name, "Sản phẩm")}
+                    alt={safeText(p.name, tProduct("fallbackShortName"))}
                     fill
                     sizes="(max-width: 600px) 50vw, 200px"
                     className="object-contain"

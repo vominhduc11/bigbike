@@ -1,5 +1,7 @@
 import { StaticPageSkeleton } from "@/components/ui/Skeletons";
+import { getTranslations } from "next-intl/server";
 
-export default function AboutLoading() {
-  return <StaticPageSkeleton title="Đang tải trang giới thiệu" />;
+export default async function AboutLoading() {
+  const t = await getTranslations("Loading");
+  return <StaticPageSkeleton title={t("about")} />;
 }

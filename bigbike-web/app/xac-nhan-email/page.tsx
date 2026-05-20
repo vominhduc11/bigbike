@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { AlertTriangle, CheckCircle2, Link2Off, LoaderCircle, MailCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { resendEmailVerification, verifyEmail } from "@/lib/api/client-api";
@@ -12,6 +13,7 @@ type Status = "idle" | "loading" | "success" | "error" | "missing";
 type ResendStatus = "idle" | "sending" | "sent" | "error";
 
 export default function VerifyEmailPage() {
+  const t = useTranslations("Auth.verify");
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
   const auth = useAuth();
@@ -27,10 +29,10 @@ export default function VerifyEmailPage() {
     verifyEmail(token)
       .then(() => setStatus("success"))
       .catch((e: Error) => {
-        setErrorMsg(e.message ?? "Đã xảy ra lỗi.");
+        setErrorMsg(e.message ?? t("errorGeneric"));
         setStatus("error");
       });
-  }, [token]);
+  }, [token, t]);
 
   async function handleResend() {
     setResendStatus("sending");
@@ -38,10 +40,10 @@ export default function VerifyEmailPage() {
     try {
       await resendEmailVerification();
       setResendStatus("sent");
-      setResendMsg("Email xác minh đã được gửi lại. Vui lòng kiểm tra hộp thư (kể cả thư mục Spam).");
+      setResendMsg(t("resendSent"));
     } catch (e) {
       setResendStatus("error");
-      setResendMsg(e instanceof Error ? e.message : "Không thể gửi lại email. Vui lòng thử lại sau.");
+      setResendMsg(e instanceof Error ? e.message : t("resendFailed"));
     }
   }
 
@@ -53,18 +55,18 @@ export default function VerifyEmailPage() {
         {status === "loading" && (
           <div className="grid justify-items-center gap-3 border border-border bg-card p-6">
             <LoaderCircle className="h-10 w-10 animate-spin text-brand" aria-hidden />
-            <h1 className="m-0 font-heading text-2xl font-semibold uppercase">Đang xác thực email...</h1>
-            <p className="bb-text-muted">Vui lòng đợi trong giây lát.</p>
+            <h1 className="m-0 font-heading text-2xl font-semibold uppercase">{t("loadingTitle")}</h1>
+            <p className="bb-text-muted">{t("loadingMessage")}</p>
           </div>
         )}
 
         {status === "success" && (
           <div className="grid justify-items-center gap-4 border border-[var(--bb-state-success-border)] bg-[var(--bb-state-success-bg)] p-6">
             <CheckCircle2 className="h-11 w-11 text-[var(--bb-state-success-text)]" aria-hidden />
-            <h1 className="m-0 font-heading text-2xl font-semibold uppercase">Email đã được xác thực!</h1>
-            <p className="bb-text-muted m-0">Tài khoản của bạn đã được kích hoạt đầy đủ.</p>
+            <h1 className="m-0 font-heading text-2xl font-semibold uppercase">{t("successTitle")}</h1>
+            <p className="bb-text-muted m-0">{t("successMessage")}</p>
             <Button asChild variant="primary">
-              <Link href="/tai-khoan/">Vào tài khoản</Link>
+              <Link href="/tai-khoan/">{t("successCta")}</Link>
             </Button>
           </div>
         )}
@@ -72,7 +74,7 @@ export default function VerifyEmailPage() {
         {status === "error" && (
           <div className="grid justify-items-center gap-4 border border-[var(--bb-state-danger-border)] bg-[var(--bb-state-danger-bg)] p-6">
             <AlertTriangle className="h-11 w-11 text-destructive" aria-hidden />
-            <h1 className="m-0 font-heading text-2xl font-semibold uppercase">Xác thực không thành công</h1>
+            <h1 className="m-0 font-heading text-2xl font-semibold uppercase">{t("errorTitle")}</h1>
             <p className="bb-text-muted m-0">{errorMsg}</p>
 
             {isLoggedIn ? (
@@ -90,7 +92,7 @@ export default function VerifyEmailPage() {
                       disabled={resendStatus === "sending"}
                       className="w-full"
                     >
-                      {resendStatus === "sending" ? "Đang gửi..." : "Gửi lại email xác minh"}
+                      {resendStatus === "sending" ? t("resending") : t("resend")}
                     </Button>
                     {resendStatus === "error" && (
                       <p className="text-sm text-destructive">{resendMsg}</p>
@@ -98,15 +100,15 @@ export default function VerifyEmailPage() {
                   </>
                 )}
                 <Button asChild variant="secondary" className="w-full">
-                  <Link href="/tai-khoan/">Về tài khoản</Link>
+                  <Link href="/tai-khoan/">{t("backToAccount")}</Link>
                 </Button>
               </div>
             ) : (
               <p className="m-0 text-sm text-muted-foreground">
                 <Link href="/dang-nhap?next=/xac-nhan-email" className="bb-link">
-                  Đăng nhập
+                  {t("loginToResend").split(" ")[0]}
                 </Link>{" "}
-                để gửi lại email xác minh.
+                {t("loginToResend").split(" ").slice(1).join(" ")}
               </p>
             )}
           </div>
@@ -115,15 +117,15 @@ export default function VerifyEmailPage() {
         {status === "missing" && (
           <div className="grid justify-items-center gap-4 border border-border bg-card p-6">
             <Link2Off className="h-11 w-11 text-muted-foreground" aria-hidden />
-            <h1 className="m-0 font-heading text-2xl font-semibold uppercase">Liên kết không hợp lệ</h1>
-            <p className="bb-text-muted m-0">Không tìm thấy token xác thực trong URL.</p>
+            <h1 className="m-0 font-heading text-2xl font-semibold uppercase">{t("missingTitle")}</h1>
+            <p className="bb-text-muted m-0">{t("missingMessage")}</p>
             {isLoggedIn ? (
               <Button variant="primary" onClick={handleResend} disabled={resendStatus === "sending"} className="w-full">
-                {resendStatus === "sending" ? "Đang gửi..." : "Gửi lại email xác minh"}
+                {resendStatus === "sending" ? t("resending") : t("resend")}
               </Button>
             ) : (
               <Button asChild variant="secondary">
-                <Link href="/">Về trang chủ</Link>
+                <Link href="/">{t("backToHome")}</Link>
               </Button>
             )}
             {resendStatus === "sent" && (

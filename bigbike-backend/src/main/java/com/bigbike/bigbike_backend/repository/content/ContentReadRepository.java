@@ -14,9 +14,13 @@ public interface ContentReadRepository {
 
     Optional<Article> findArticleBySlug(String slug);
 
+    Optional<Article> findArticleBySlug(String slug, String locale);
+
     Optional<Article> findArticleById(String id);
 
     Optional<Page> findPageBySlug(String slug);
+
+    Optional<Page> findPageBySlug(String slug, String locale);
 
     Optional<Page> findPageById(String id);
 
@@ -27,7 +31,7 @@ public interface ContentReadRepository {
     // --- DB-paginated listing (replaces in-memory full-scan in ContentReadService) ---
 
     org.springframework.data.domain.Page<Article> listPublishedArticles(
-            String categorySlug, String q, Pageable pageable);
+            String categorySlug, String q, Pageable pageable, String locale);
 
     // --- DB-paginated admin listing ---
 

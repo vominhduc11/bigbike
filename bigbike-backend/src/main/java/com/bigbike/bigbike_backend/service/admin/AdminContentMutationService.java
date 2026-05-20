@@ -1,6 +1,8 @@
 package com.bigbike.bigbike_backend.service.admin;
 
+import com.bigbike.bigbike_backend.api.admin.dto.ArticleTranslationRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.ImageAssetRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.PageTranslationRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.SeoMetaRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertArticleRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertPageRequest;
@@ -8,6 +10,7 @@ import com.bigbike.bigbike_backend.api.common.ApiErrorDetail;
 import com.bigbike.bigbike_backend.api.error.MutationNotImplementedException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.config.MediaUrlProperties;
+import com.bigbike.bigbike_backend.service.catalog.DescriptionBlockRenderer;
 import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.domain.content.AdminContentItem;
@@ -50,6 +53,7 @@ public class AdminContentMutationService {
     private final MediaUrlProperties mediaUrlProperties;
     private final WebRevalidationService webRevalidationService;
     private final AuditLogJpaRepository auditLogRepo;
+    private final DescriptionBlockRenderer descriptionBlockRenderer;
 
     public AdminContentMutationService(
             ObjectProvider<ArticleJpaRepository> articleJpaRepositoryProvider,
@@ -61,7 +65,8 @@ public class AdminContentMutationService {
             ContentReadRepository contentReadRepository,
             MediaUrlProperties mediaUrlProperties,
             WebRevalidationService webRevalidationService,
-            ObjectProvider<AuditLogJpaRepository> auditLogRepoProvider
+            ObjectProvider<AuditLogJpaRepository> auditLogRepoProvider,
+            DescriptionBlockRenderer descriptionBlockRenderer
     ) {
         this.articleJpaRepository = articleJpaRepositoryProvider.getIfAvailable();
         this.pageJpaRepository = pageJpaRepositoryProvider.getIfAvailable();
@@ -73,6 +78,7 @@ public class AdminContentMutationService {
         this.mediaUrlProperties = mediaUrlProperties;
         this.webRevalidationService = webRevalidationService;
         this.auditLogRepo = auditLogRepoProvider.getIfAvailable();
+        this.descriptionBlockRenderer = descriptionBlockRenderer;
     }
 
     @Transactional
@@ -369,7 +375,13 @@ public class AdminContentMutationService {
         if (create || request.getExcerpt() != null) {
             entity.setExcerpt(AdminMutationValidators.trimToNull(request.getExcerpt()));
         }
-        if (create || request.getBody() != null) {
+        if (request.isBodyBlocksPresent()) {
+            entity.setBodyBlocks(request.getBodyBlocks());
+            String rendered = request.getBodyBlocks() != null && !request.getBodyBlocks().isEmpty()
+                    ? descriptionBlockRenderer.renderBlocksToHtml(request.getBodyBlocks())
+                    : "";
+            entity.setBody(rendered);
+        } else if (create || request.getBody() != null) {
             entity.setBody(AdminMutationValidators.trimToNull(request.getBody()));
         }
         if (create || request.getPublishStatus() != null) {
@@ -420,6 +432,23 @@ public class AdminContentMutationService {
         } else if (create) {
             clearSeo(entity);
         }
+
+        ArticleTranslationRequest translations = request.getTranslations();
+        ArticleTranslationRequest.ArticleContentRequest en =
+                translations != null ? translations.getEn() : null;
+        if (en != null) {
+            entity.setTitleEn(AdminMutationValidators.trimToNull(en.getTitle()));
+            entity.setExcerptEn(AdminMutationValidators.trimToNull(en.getExcerpt()));
+            entity.setBodyEn(AdminMutationValidators.trimToNull(en.getBody()));
+            entity.setSeoTitleEn(AdminMutationValidators.trimToNull(en.getSeoTitle()));
+            entity.setSeoDescriptionEn(AdminMutationValidators.trimToNull(en.getSeoDescription()));
+        } else if (create) {
+            entity.setTitleEn(null);
+            entity.setExcerptEn(null);
+            entity.setBodyEn(null);
+            entity.setSeoTitleEn(null);
+            entity.setSeoDescriptionEn(null);
+        }
     }
 
     private void applyPagePatch(
@@ -435,7 +464,13 @@ public class AdminContentMutationService {
         if (create || request.getTitle() != null) {
             entity.setTitle(AdminMutationValidators.trimToNull(request.getTitle()));
         }
-        if (create || request.getBody() != null) {
+        if (request.isBodyBlocksPresent()) {
+            entity.setBodyBlocks(request.getBodyBlocks());
+            String rendered = request.getBodyBlocks() != null && !request.getBodyBlocks().isEmpty()
+                    ? descriptionBlockRenderer.renderBlocksToHtml(request.getBodyBlocks())
+                    : "";
+            entity.setBody(rendered);
+        } else if (create || request.getBody() != null) {
             entity.setBody(AdminMutationValidators.trimToNull(request.getBody()));
         }
         if (create || request.getParentId() != null) {
@@ -475,6 +510,27 @@ public class AdminContentMutationService {
         }
         if (create || request.getHeroKicker() != null) {
             entity.setHeroKicker(AdminMutationValidators.trimToNull(request.getHeroKicker()));
+        }
+
+        PageTranslationRequest translations = request.getTranslations();
+        PageTranslationRequest.PageContentRequest en =
+                translations != null ? translations.getEn() : null;
+        if (en != null) {
+            entity.setTitleEn(AdminMutationValidators.trimToNull(en.getTitle()));
+            entity.setBodyEn(AdminMutationValidators.trimToNull(en.getBody()));
+            entity.setHeroTitleEn(AdminMutationValidators.trimToNull(en.getHeroTitle()));
+            entity.setHeroDescriptionEn(AdminMutationValidators.trimToNull(en.getHeroDescription()));
+            entity.setHeroKickerEn(AdminMutationValidators.trimToNull(en.getHeroKicker()));
+            entity.setSeoTitleEn(AdminMutationValidators.trimToNull(en.getSeoTitle()));
+            entity.setSeoDescriptionEn(AdminMutationValidators.trimToNull(en.getSeoDescription()));
+        } else if (create) {
+            entity.setTitleEn(null);
+            entity.setBodyEn(null);
+            entity.setHeroTitleEn(null);
+            entity.setHeroDescriptionEn(null);
+            entity.setHeroKickerEn(null);
+            entity.setSeoTitleEn(null);
+            entity.setSeoDescriptionEn(null);
         }
     }
 
@@ -720,7 +776,8 @@ public class AdminContentMutationService {
                 null,
                 null,
                 null,
-                AdminContentReadService.toRelatedProductRefs(article)
+                AdminContentReadService.toRelatedProductRefs(article),
+                article.bodyBlocks()
         );
     }
 
@@ -762,7 +819,8 @@ public class AdminContentMutationService {
                 page.heroTitle(),
                 page.heroDescription(),
                 page.heroKicker(),
-                null
+                null,
+                page.bodyBlocks()
         );
     }
 

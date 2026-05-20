@@ -1,3 +1,6 @@
+"use client";
+
+import { useTranslations } from "next-intl";
 import { safeText } from "@/lib/utils/format";
 import type { ProductSpecification } from "@/lib/contracts/public";
 
@@ -10,6 +13,7 @@ export function ProductSpecTable({
 }: {
   specifications: ProductSpecification[];
 }) {
+  const tProduct = useTranslations("Product");
   if (specifications.length === 0) return null;
 
   return (
@@ -36,10 +40,10 @@ export function ProductSpecTable({
                 : []),
               <tr key={`${index}-${spec.name}`} className="even:bg-muted/40">
                 <td className="w-[36%] border-t border-border px-4 py-2.5 align-top font-medium text-muted-foreground">
-                  {safeText(spec.name, "Thông số")}
+                  {safeText(spec.name, tProduct("specifications"))}
                 </td>
                 <td className="border-t border-border px-4 py-2.5 align-top text-foreground">
-                  {safeText(spec.value, "Đang cập nhật")}
+                  {safeText(spec.value, tProduct("stockState.UNKNOWN"))}
                 </td>
               </tr>,
             ];

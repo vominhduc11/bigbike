@@ -2,11 +2,12 @@
 
 import { Fragment, type ReactNode } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useCompare } from "@/lib/compare-context";
 import { useCart } from "@/lib/cart-context";
 import { MediaImage } from "@/components/ui/MediaImage";
 import { RatingStars } from "@/components/ui/RatingStars";
-import { formatVnd, safeText, stockStateLabel } from "@/lib/utils/format";
+import { formatVnd, safeText } from "@/lib/utils/format";
 import { toProductPath } from "@/lib/utils/routes";
 import type { Product } from "@/lib/contracts/public";
 
@@ -39,8 +40,19 @@ function optionsSummary(p: Product): { name: string; values: string[] }[] {
 }
 
 export function ComparisonTable({ products }: ComparisonTableProps) {
+  const t = useTranslations("Compare");
+  const tProduct = useTranslations("Product");
   const { remove } = useCompare();
   const { addToCart, showToast } = useCart();
+
+  function stockLabelT(stockState: string | null | undefined): string {
+    switch (stockState) {
+      case "IN_STOCK": return tProduct("stockState.IN_STOCK");
+      case "LOW_STOCK": return tProduct("stockState.LOW_STOCK");
+      case "OUT_OF_STOCK": return tProduct("stockState.OUT_OF_STOCK");
+      default: return tProduct("stockState.UNKNOWN");
+    }
+  }
 
   // ── Union of specification rows across every product, clustered by group ──
   const specKeys: { group: string | null; name: string }[] = [];
@@ -83,8 +95,8 @@ export function ComparisonTable({ products }: ComparisonTableProps) {
       await addToCart(product.id, 1);
     } catch (err) {
       showToast(
-        "KHÔNG THỂ THÊM VÀO GIỎ",
-        err instanceof Error ? err.message : "Vui lòng thử lại.",
+        t("addToCartErrorTitle"),
+        err instanceof Error ? err.message : t("addToCartError"),
       );
     }
   }
@@ -114,17 +126,17 @@ export function ComparisonTable({ products }: ComparisonTableProps) {
         <thead>
           <tr>
             <th className="sticky left-0 z-[1] min-w-[120px] bg-muted px-3 py-3 text-left align-bottom font-heading text-xs font-semibold uppercase tracking-[0.06em] text-muted-foreground">
-              Sản phẩm
+              {t("tableProductCol")}
             </th>
             {products.map((product) => {
-              const name = safeText(product.name, "Sản phẩm");
+              const name = safeText(product.name, t("tableProductCol"));
               return (
                 <th key={product.id} className="min-w-[160px] px-3 py-3 align-top">
                   <div className="relative flex flex-col gap-2">
                     <button
                       type="button"
                       onClick={() => remove(product.id)}
-                      aria-label={`Bỏ ${name} khỏi so sánh`}
+                      aria-label={t("removeAriaLabel", { name })}
                       className="absolute right-0 top-0 flex h-6 w-6 items-center justify-center bg-white text-muted-foreground transition-colors hover:text-brand"
                     >
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
@@ -153,13 +165,13 @@ export function ComparisonTable({ products }: ComparisonTableProps) {
           </tr>
         </thead>
         <tbody>
-          {criterionRow("Thương hiệu", (p) => safeText(p.brand?.name, "BigBike"))}
-          {criterionRow("Giá", (p) => {
+          {criterionRow(t("brandRow"), (p) => safeText(p.brand?.name, "BigBike"))}
+          {criterionRow(t("priceRow"), (p) => {
             const { current, compare } = priceOf(p);
             return (
               <span className="flex flex-col">
                 <b className="font-display text-base text-brand">
-                  {current > 0 ? formatVnd(current) : "Liên hệ"}
+                  {current > 0 ? formatVnd(current) : t("contactPrice")}
                 </b>
                 {compare && (
                   <s className="text-xs text-muted-foreground">{formatVnd(compare)}</s>
@@ -167,26 +179,26 @@ export function ComparisonTable({ products }: ComparisonTableProps) {
               </span>
             );
           })}
-          {criterionRow("Đánh giá", (p) =>
+          {criterionRow(t("ratingRow"), (p) =>
             p.rating != null && p.rating > 0 ? (
               <span className="flex flex-col gap-0.5">
                 <RatingStars value={p.rating} />
                 {p.ratingCount != null && p.ratingCount > 0 && (
                   <span className="text-xs text-muted-foreground">
-                    ({p.ratingCount} đánh giá)
+                    {t("ratingCount", { count: p.ratingCount })}
                   </span>
                 )}
               </span>
             ) : (
-              <span className="text-muted-foreground">Chưa có đánh giá</span>
+              <span className="text-muted-foreground">{t("noRating")}</span>
             ),
           )}
-          {criterionRow("Tình trạng kho", (p) =>
-            stockStateLabel(p.forceOutOfStock ? "OUT_OF_STOCK" : p.stockState),
+          {criterionRow(t("stockRow"), (p) =>
+            stockLabelT(p.forceOutOfStock ? "OUT_OF_STOCK" : p.stockState),
           )}
-          {criterionRow("Tùy chọn", (p) => {
+          {criterionRow(t("optionsRow"), (p) => {
             const groups = optionsSummary(p);
-            if (groups.length === 0) return <span className="text-muted-foreground">—</span>;
+            if (groups.length === 0) return <span className="text-muted-foreground">{t("noOptions")}</span>;
             return (
               <span className="flex flex-col gap-1">
                 {groups.map((g) => (
@@ -258,14 +270,14 @@ export function ComparisonTable({ products }: ComparisonTableProps) {
                         onClick={() => handleAddToCart(product)}
                         className="bg-brand px-3 py-2 text-center font-heading text-xs font-semibold uppercase tracking-[0.04em] text-white transition-colors hover:bg-brand-hover"
                       >
-                        Thêm vào giỏ
+                        {t("addToCart")}
                       </button>
                     )}
                     <Link
                       href={toProductPath(product.slug)}
                       className="border border-border px-3 py-2 text-center font-heading text-xs font-semibold uppercase tracking-[0.04em] text-foreground transition-colors hover:border-brand hover:text-brand"
                     >
-                      Xem sản phẩm
+                      {t("viewProduct")}
                     </Link>
                   </div>
                 </td>

@@ -2,6 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { isSafeReturnTo } from "@/lib/utils/auth";
 import { toAccountPath } from "@/lib/utils/routes";
 import { cn } from "@/lib/utils";
@@ -45,6 +46,7 @@ function TabButton({
 }
 
 function AuthTabsInner({ defaultTab }: { defaultTab: Tab }) {
+  const t = useTranslations("Auth");
   const [tab, setTab] = useState<Tab>(defaultTab);
   const searchParams = useSearchParams();
   const raw = searchParams.get("tiep") ?? "";
@@ -54,21 +56,21 @@ function AuthTabsInner({ defaultTab }: { defaultTab: Tab }) {
     <section className="bb-page bb-page--auth">
       <div className="bb-container">
         <div className="bb-auth-wrap">
-          <h1 className="sr-only">Đăng nhập hoặc đăng ký tài khoản BigBike</h1>
-          <div role="tablist" aria-label="Đăng nhập hoặc đăng ký" className="mb-6 flex gap-2.5">
+          <h1 className="sr-only">{t("shellTitle")}</h1>
+          <div role="tablist" aria-label={t("tabsAria")} className="mb-6 flex gap-2.5">
             <TabButton
               active={tab === "login"}
               onClick={() => setTab("login")}
               controls="auth-panel"
             >
-              Đăng nhập
+              {t("tabLogin")}
             </TabButton>
             <TabButton
               active={tab === "register"}
               onClick={() => setTab("register")}
               controls="auth-panel"
             >
-              Đăng ký
+              {t("tabRegister")}
             </TabButton>
           </div>
 

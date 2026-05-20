@@ -2,6 +2,7 @@
 
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { BookUser, Check, Mail, MapPin, Phone, Plus, SquarePen, Trash2 } from "lucide-react";
 import { AccountSectionHeading, AccountShell, useAccount } from "@/components/layout/AccountShell";
 import { createAddress, deleteAddress, fetchMyAddresses, updateAddress } from "@/lib/api/client-api";
@@ -28,6 +29,7 @@ type AddressFormProps = {
 };
 
 function AddressForm({ editing, accountEmail, saving, error, onSubmit }: AddressFormProps) {
+  const t = useTranslations("Account.addresses");
   const [vnAddress, setVnAddress] = useState({
     province: editing?.province ?? "",
     district: editing?.district ?? "",
@@ -61,40 +63,40 @@ function AddressForm({ editing, accountEmail, saving, error, onSubmit }: Address
 
       <div className="grid grid-cols-1 gap-x-6 gap-y-[18px] sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">
-          <label className={LEGACY_LABEL}>Họ và tên<ReqMark /></label>
+          <label className={LEGACY_LABEL}>{t("fullNameLabel")}<ReqMark /></label>
           <Input
             name="fullName"
             required
             defaultValue={editing?.fullName ?? ""}
-            placeholder="Vui lòng nhập họ và tên..."
+            placeholder={t("fullNamePlaceholder")}
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label className={LEGACY_LABEL}>Số điện thoại<ReqMark /></label>
+          <label className={LEGACY_LABEL}>{t("phoneLabel")}<ReqMark /></label>
           <Input
             name="phone"
             type="tel"
             required
             defaultValue={editing?.phone ?? ""}
-            placeholder="Vui lòng nhập số điện thoại..."
+            placeholder={t("phonePlaceholder")}
           />
         </div>
         <div className="flex flex-col gap-1.5 sm:col-span-2">
-          <label className={LEGACY_LABEL}>Email</label>
+          <label className={LEGACY_LABEL}>{t("emailLabel")}</label>
           <Input
             type="email"
             name="email"
             defaultValue={editing?.email ?? accountEmail}
-            placeholder="Vui lòng nhập email..."
+            placeholder={t("emailPlaceholder")}
           />
         </div>
         <div className="flex flex-col gap-1.5 sm:col-span-2">
-          <label className={LEGACY_LABEL}>Địa chỉ nhận hàng<ReqMark /></label>
+          <label className={LEGACY_LABEL}>{t("addressLabel")}<ReqMark /></label>
           <Input
             name="addressLine1"
             required
             defaultValue={editing?.addressLine1 ?? ""}
-            placeholder="Số nhà, tên đường..."
+            placeholder={t("addressPlaceholder")}
           />
         </div>
         <div className="sm:col-span-2 grid grid-cols-1 gap-x-6 gap-y-[18px] sm:grid-cols-3">
@@ -113,7 +115,7 @@ function AddressForm({ editing, accountEmail, saving, error, onSubmit }: Address
         {!editing && (
           <label className="flex items-center gap-2 text-sm text-[#555555]">
             <Checkbox name="isDefault" defaultChecked={false} />
-            Đặt làm mặc định
+            {t("setDefault")}
           </label>
         )}
         <Button
@@ -122,7 +124,7 @@ function AddressForm({ editing, accountEmail, saving, error, onSubmit }: Address
           disabled={saving}
           className="w-full sm:w-auto sm:min-w-[160px]"
         >
-          {saving ? "Đang lưu..." : "Lưu"}
+          {saving ? t("saving") : t("save")}
         </Button>
       </div>
     </form>
@@ -130,6 +132,8 @@ function AddressForm({ editing, accountEmail, saving, error, onSubmit }: Address
 }
 
 function AddressBookContent() {
+  const t = useTranslations("Account.addresses");
+  const tNav = useTranslations("Account.nav");
   const profile = useAccount();
   const router = useRouter();
   const accountEmail = profile?.email ?? "";
@@ -148,7 +152,7 @@ function AddressBookContent() {
     let ignore = false;
     fetchMyAddresses()
       .then((all) => { if (!ignore) setAddresses(all); })
-      .catch(() => { if (!ignore) setListError("Không tải được sổ địa chỉ."); })
+      .catch(() => { if (!ignore) setListError(t("errorLoad")); })
       .finally(() => { if (!ignore) setLoading(false); });
     return () => { ignore = true; };
   }, []);
@@ -181,10 +185,10 @@ function AddressBookContent() {
         const all = await fetchMyAddresses();
         setAddresses(all);
       }
-      setNotice(editing ? "Đã cập nhật địa chỉ." : "Đã thêm địa chỉ mới.");
+      setNotice(editing ? t("noticeUpdated") : t("noticeAdded"));
       setModalOpen(false);
     } catch (err: unknown) {
-      setFormError(err instanceof Error ? err.message : "Có lỗi xảy ra, vui lòng thử lại.");
+      setFormError(err instanceof Error ? err.message : t("errorGeneric"));
     } finally {
       setSaving(false);
     }
@@ -204,27 +208,27 @@ function AddressBookContent() {
       });
       const all = await fetchMyAddresses();
       setAddresses(all);
-      setNotice("Đã đặt địa chỉ mặc định.");
+      setNotice(t("noticeDefault"));
     } catch (err: unknown) {
-      setListError(err instanceof Error ? err.message : "Không đặt được địa chỉ mặc định.");
+      setListError(err instanceof Error ? err.message : t("errorSetDefault"));
     }
   }
 
   async function handleDelete(addr: CustomerAddress) {
-    if (!window.confirm("Xóa địa chỉ này?")) return;
+    if (!window.confirm(t("confirmDelete"))) return;
     try {
       await deleteAddress(addr.id);
       setAddresses((prev) => prev.filter((a) => a.id !== addr.id));
-      setNotice("Đã xóa địa chỉ.");
+      setNotice(t("noticeDeleted"));
     } catch (err: unknown) {
-      setListError(err instanceof Error ? err.message : "Không xóa được địa chỉ.");
+      setListError(err instanceof Error ? err.message : t("errorDelete"));
     }
   }
 
   return (
     <>
       <AccountSectionHeading
-        title="Sổ địa chỉ"
+        title={tNav("addresses")}
         icon={<BookUser className="h-7 w-7" strokeWidth={1.5} aria-hidden />}
       />
 
@@ -264,7 +268,7 @@ function AddressBookContent() {
                       {addr.fullName ?? "—"}
                     </b>
                     <span className="shrink-0 text-sm text-muted-foreground">
-                      Địa chỉ {idx + 1}
+                      {t("addressItem", { index: idx + 1 })}
                     </span>
                   </div>
 
@@ -286,7 +290,7 @@ function AddressBookContent() {
                       <span>
                         {[addr.addressLine1, addr.ward, addr.district, addr.province]
                           .filter(Boolean)
-                          .join(", ") || "Chưa có địa chỉ"}
+                          .join(", ") || t("addressMissing")}
                       </span>
                     </p>
                   </div>
@@ -295,7 +299,7 @@ function AddressBookContent() {
                     {addr.isDefault ? (
                       <span className="flex items-center gap-1.5 text-sm font-bold uppercase tracking-[0.04em] text-brand">
                         <Check className="h-4 w-4" aria-hidden />
-                        Địa chỉ mặc định
+                        {t("defaultBadge")}
                       </span>
                     ) : (
                       <button
@@ -303,14 +307,14 @@ function AddressBookContent() {
                         onClick={() => handleSetDefault(addr)}
                         className="text-sm font-bold uppercase tracking-[0.04em] text-[#7c3aed] hover:underline"
                       >
-                        Đặt mặc định
+                        {t("setDefaultButton")}
                       </button>
                     )}
                     <div className="flex items-center gap-1">
                       <button
                         type="button"
                         onClick={() => openEdit(addr)}
-                        aria-label="Chỉnh sửa địa chỉ"
+                        aria-label={t("editAria")}
                         className="p-1.5 text-[#555555] hover:text-brand"
                       >
                         <SquarePen className="h-[18px] w-[18px]" aria-hidden />
@@ -318,7 +322,7 @@ function AddressBookContent() {
                       <button
                         type="button"
                         onClick={() => handleDelete(addr)}
-                        aria-label="Xóa địa chỉ"
+                        aria-label={t("deleteAria")}
                         className="p-1.5 text-[#555555] hover:text-brand"
                       >
                         <Trash2 className="h-[18px] w-[18px]" aria-hidden />
@@ -336,11 +340,11 @@ function AddressBookContent() {
             className="mt-5 flex items-center gap-2 text-sm font-bold uppercase tracking-[0.06em] text-brand hover:underline"
           >
             <Plus className="h-4 w-4" aria-hidden />
-            Thêm địa chỉ mới
+            {t("addNew")}
           </button>
 
           {addresses.length === 0 && (
-            <p className="mt-3 text-sm text-muted-foreground">Bạn chưa có địa chỉ nào.</p>
+            <p className="mt-3 text-sm text-muted-foreground">{t("empty")}</p>
           )}
 
           {/* "Cập nhật" — closes out the address book (each card already saves
@@ -351,7 +355,7 @@ function AddressBookContent() {
             onClick={() => router.push("/tai-khoan/edit-account/")}
             className="mt-6 w-full"
           >
-            Cập nhật
+            {t("updateButton")}
           </Button>
         </>
       )}
@@ -359,7 +363,7 @@ function AddressBookContent() {
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent className="max-w-[920px] w-[calc(100%-32px)] p-0">
           <DialogHeader className="p-6">
-            <DialogTitle>{editing ? "Cập nhật địa chỉ" : "Thêm địa chỉ mới"}</DialogTitle>
+            <DialogTitle>{editing ? t("modalUpdate") : t("modalAdd")}</DialogTitle>
           </DialogHeader>
           <AddressForm
             key={editing?.id ?? "new"}

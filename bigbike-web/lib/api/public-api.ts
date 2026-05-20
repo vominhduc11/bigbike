@@ -235,6 +235,8 @@ export type ProductListQuery = {
   maxPrice?: number;
   /** Filter to a single homepage placement slot. */
   homepageBlock?: "NONE" | "FEATURED_GRID" | "RECOMMENDED_CAROUSEL";
+  /** Content language: "vi" (default) or "en". English falls back to Vietnamese per PRODUCT_RULE_002. */
+  lang?: string;
 };
 
 export function listProducts(query: ProductListQuery): Promise<ListResult<Product>> {
@@ -251,14 +253,21 @@ export function listProducts(query: ProductListQuery): Promise<ListResult<Produc
       min_price: query.minPrice,
       max_price: query.maxPrice,
       homepage_block: query.homepageBlock,
+      lang: query.lang,
     },
     3600,
-    ["products"],
+    // Cache key must include locale so vi/en don't share entries.
+    ["products", `lang:${query.lang ?? "vi"}`],
   );
 }
 
-export function getProductBySlug(slug: string): Promise<DataResult<Product>> {
-  return loadData(`/api/v1/products/${slug}`, 3600, ["products", `product:${slug}`]);
+export function getProductBySlug(slug: string, lang?: string): Promise<DataResult<Product>> {
+  return loadDataWithQuery(
+    `/api/v1/products/${slug}`,
+    { lang },
+    3600,
+    ["products", `product:${slug}`, `lang:${lang ?? "vi"}`],
+  );
 }
 
 export type CategoryListQuery = {
@@ -267,6 +276,8 @@ export type CategoryListQuery = {
   sort?: string;
   filterHome?: boolean;
   showOnHomepage?: boolean;
+  /** Content language: "vi" (default) or "en". English falls back to Vietnamese per CATEGORY_RULE_002. */
+  lang?: string;
 };
 
 export function listCategories(query: CategoryListQuery): Promise<ListResult<Category>> {
@@ -278,20 +289,28 @@ export function listCategories(query: CategoryListQuery): Promise<ListResult<Cat
       sort: query.sort ?? "sortOrder:asc",
       filterHome: query.filterHome ? "true" : undefined,
       showOnHomepage: query.showOnHomepage ? "true" : undefined,
+      lang: query.lang,
     },
     3600,
-    ["categories"],
+    ["categories", `lang:${query.lang ?? "vi"}`],
   );
 }
 
-export function getCategoryBySlug(slug: string): Promise<DataResult<Category>> {
-  return loadData(`/api/v1/categories/${slug}`, 3600, ["categories", `category:${slug}`]);
+export function getCategoryBySlug(slug: string, lang?: string): Promise<DataResult<Category>> {
+  return loadDataWithQuery(
+    `/api/v1/categories/${slug}`,
+    { lang },
+    3600,
+    ["categories", `category:${slug}`, `lang:${lang ?? "vi"}`],
+  );
 }
 
 export type BrandListQuery = {
   page?: number;
   size?: number;
   sort?: string;
+  /** Content language: "vi" (default) or "en". English falls back to Vietnamese per BRAND_RULE_002. */
+  lang?: string;
 };
 
 export function listBrands(query: BrandListQuery): Promise<ListResult<Brand>> {
@@ -301,14 +320,20 @@ export function listBrands(query: BrandListQuery): Promise<ListResult<Brand>> {
       page: query.page,
       size: query.size,
       sort: query.sort ?? "name:asc",
+      lang: query.lang,
     },
     3600,
-    ["brands"],
+    ["brands", `lang:${query.lang ?? "vi"}`],
   );
 }
 
-export function getBrandBySlug(slug: string): Promise<DataResult<Brand>> {
-  return loadData(`/api/v1/brands/${slug}`, 3600, ["brands", `brand:${slug}`]);
+export function getBrandBySlug(slug: string, lang?: string): Promise<DataResult<Brand>> {
+  return loadDataWithQuery(
+    `/api/v1/brands/${slug}`,
+    { lang },
+    3600,
+    ["brands", `brand:${slug}`, `lang:${lang ?? "vi"}`],
+  );
 }
 
 export type CatalogFacetsQuery = {
@@ -336,6 +361,7 @@ export type ArticleListQuery = {
   category?: string;
   q?: string;
   featured?: boolean;
+  lang?: string;
 };
 
 export function listArticles(query: ArticleListQuery): Promise<ListResult<Article>> {
@@ -348,14 +374,15 @@ export function listArticles(query: ArticleListQuery): Promise<ListResult<Articl
       category: query.category,
       q: query.q,
       featured: query.featured ? "true" : undefined,
+      lang: query.lang,
     },
     3600,
-    ["articles"],
+    ["articles", `lang:${query.lang ?? "vi"}`],
   );
 }
 
-export function getArticleBySlug(slug: string): Promise<DataResult<Article>> {
-  return loadData(`/api/v1/articles/${slug}`, 3600, ["articles", `article:${slug}`]);
+export function getArticleBySlug(slug: string, lang?: string): Promise<DataResult<Article>> {
+  return loadDataWithQuery(`/api/v1/articles/${slug}`, { lang }, 3600, ["articles", `article:${slug}`, `lang:${lang ?? "vi"}`]);
 }
 
 export function listContentCategories(): Promise<ListResult<ContentCategoryWithCount>> {
@@ -366,8 +393,8 @@ export function listPages(): Promise<ListResult<Page>> {
   return loadList("/api/v1/pages", {}, 3600, ["pages"]);
 }
 
-export function getPageBySlug(slug: string): Promise<DataResult<Page>> {
-  return loadData(`/api/v1/pages/${slug}`, 3600, ["pages", `page:${slug}`]);
+export function getPageBySlug(slug: string, lang?: string): Promise<DataResult<Page>> {
+  return loadDataWithQuery(`/api/v1/pages/${slug}`, { lang }, 3600, ["pages", `page:${slug}`, `lang:${lang ?? "vi"}`]);
 }
 
 export function getPublicMenu(location: string): Promise<DataResult<PublicMenu>> {

@@ -458,9 +458,9 @@ export function BrandDetailSkeleton() {
 }
 
 /** Article list (tin-tuc) — hero + filter + 3-col article grid */
-export function ArticleListSkeleton() {
+export function ArticleListSkeleton({ label = "Loading articles" }: { label?: string }) {
   return (
-    <SkeletonRoot label="Đang tải danh sách bài viết" className="bb-news-page">
+    <SkeletonRoot label={label} className="bb-news-page">
       <div className="bb-container mt-6">
         <div className="bb-news-hero">
           <div className="bb-news-hero-copy bb-skel-stack">
@@ -489,9 +489,9 @@ export function ArticleListSkeleton() {
 }
 
 /** Article detail (tin-tuc/[slug]) — breadcrumb + meta + h1 + cover + body */
-export function ArticleDetailSkeleton() {
+export function ArticleDetailSkeleton({ label = "Loading article" }: { label?: string }) {
   return (
-    <SkeletonRoot label="Đang tải bài viết">
+    <SkeletonRoot label={label}>
       <div className="bb-breadcrumb"><SkelText w={280} /></div>
       <div className="bb-article-wrap">
         <header className="bb-skel-stack" style={{ marginBottom: 24 }}>
@@ -827,7 +827,7 @@ export function AuthSkeleton() {
 }
 
 /** Static / CMS page — h1 + body paragraphs */
-export function StaticPageSkeleton({ title = "Đang tải nội dung" }: { title?: string }) {
+export function StaticPageSkeleton({ title = "Loading content" }: { title?: string }) {
   return (
     <SkeletonRoot label={title}>
       <section className="bb-page">
@@ -851,9 +851,9 @@ export function StaticPageSkeleton({ title = "Đang tải nội dung" }: { title
 }
 
 /** Search page — header + query form + result skeleton (mixed grid) */
-export function SearchSkeleton() {
+export function SearchSkeleton({ label = "Loading search results" }: { label?: string }) {
   return (
-    <SkeletonRoot label="Đang tải kết quả tìm kiếm">
+    <SkeletonRoot label={label}>
       <section className="bb-page">
         <div className="bb-container">
           <header>
@@ -947,9 +947,9 @@ export function ContactSkeleton() {
 }
 
 /** Guide landing — sidebar nav + content */
-export function GuideSkeleton() {
+export function GuideSkeleton({ label = "Loading guide" }: { label?: string }) {
   return (
-    <SkeletonRoot label="Đang tải hướng dẫn">
+    <SkeletonRoot label={label}>
       <section className="bb-page">
         <div className="bb-container">
           <div style={{ display: "grid", gap: 28, gridTemplateColumns: "260px 1fr" }}>

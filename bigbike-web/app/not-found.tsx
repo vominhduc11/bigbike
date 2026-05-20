@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { PageHero } from "@/components/layout/PageHero";
 import { ArticleCard } from "@/components/content/ArticleCard";
 import { listArticles } from "@/lib/api/public-api";
@@ -9,15 +10,19 @@ import { Input } from "@/components/ui/input";
 export const revalidate = 3600;
 
 export default async function NotFoundPage() {
-  const recentResult = await listArticles({ page: 1, size: 3, sort: "publishedAt:desc" });
+  const [recentResult, t, tBreadcrumb] = await Promise.all([
+    listArticles({ page: 1, size: 3, sort: "publishedAt:desc" }),
+    getTranslations("NotFound"),
+    getTranslations("Breadcrumb"),
+  ]);
   const recent = recentResult.data ?? [];
 
   return (
     <section className="min-h-[62vh] bg-background py-20 text-center">
       <PageHero
-        title="Không tìm thấy trang"
+        title={t("pageTitle")}
         breadcrumb={[
-          { label: "Trang chủ", href: toHomePath() },
+          { label: tBreadcrumb("home"), href: toHomePath() },
           { label: "404" },
         ]}
       />
@@ -33,42 +38,42 @@ export default async function NotFoundPage() {
               </span>
             </div>
           </div>
-          <p className="text-base text-muted-foreground">Bạn có thể tìm kiếm sản phẩm hoặc tham khảo các bài viết bên dưới.</p>
+          <p className="text-base text-muted-foreground">{t("description")}</p>
 
           <form
             action={toProductListPath()}
             method="get"
             className="flex flex-col sm:flex-row w-full max-w-[560px] mx-auto border border-border overflow-hidden bg-card"
             role="search"
-            aria-label="Tìm kiếm sản phẩm"
+            aria-label={t("searchAriaLabel")}
           >
             <Input
               type="search"
               name="q"
-              placeholder="Tìm sản phẩm, thương hiệu..."
+              placeholder={t("searchPlaceholder")}
               className="flex-1 border-0 rounded-none bg-transparent h-12 min-h-0 text-sm focus-visible:ring-0 focus-visible:ring-offset-0"
-              aria-label="Từ khoá tìm kiếm"
+              aria-label={t("searchInputAriaLabel")}
             />
             <Button type="submit" variant="primary" className="rounded-none h-12 shrink-0 w-full sm:w-auto">
-              TÌM KIẾM
+              {t("searchButton")}
             </Button>
           </form>
 
           <div className="flex flex-wrap gap-3 justify-center">
             <Button asChild variant="primary">
-              <Link href={toHomePath()}>VỀ TRANG CHỦ</Link>
+              <Link href={toHomePath()}>{t("goHome")}</Link>
             </Button>
             <Button asChild variant="secondary">
-              <Link href={toProductListPath()}>XEM SẢN PHẨM</Link>
+              <Link href={toProductListPath()}>{t("browseProducts")}</Link>
             </Button>
             <Button asChild variant="secondary">
-              <Link href={toArticleListPath()}>ĐỌC TIN TỨC</Link>
+              <Link href={toArticleListPath()}>{t("readNews")}</Link>
             </Button>
           </div>
 
           {recent.length > 0 && (
-            <section className="mt-6 text-left" aria-label="Bài viết mới">
-              <h2 className="font-display text-2xl font-semibold uppercase tracking-wider mb-[18px] text-foreground">BÀI VIẾT MỚI</h2>
+            <section className="mt-6 text-left" aria-label={t("recentArticlesAriaLabel")}>
+              <h2 className="font-display text-2xl font-semibold uppercase tracking-wider mb-[18px] text-foreground">{t("recentArticlesHeading")}</h2>
               <div className="grid grid-cols-1 gap-[22px] sm:grid-cols-2 lg:grid-cols-3">
                 {recent.map((article) => (
                   <ArticleCard key={article.id} article={article} />

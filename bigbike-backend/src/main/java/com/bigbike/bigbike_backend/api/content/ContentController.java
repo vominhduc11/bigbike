@@ -40,17 +40,19 @@ public class ContentController {
             @RequestParam(required = false) String sort,
             @RequestParam(required = false) @Pattern(regexp = SLUG_REGEX, message = "Invalid category slug.") String category,
             @RequestParam(required = false) @Size(max = 100) String q,
+            @RequestParam(defaultValue = "vi") @Pattern(regexp = "^(vi|en)$", message = "Invalid lang.") String lang,
             HttpServletRequest request
     ) {
-        return apiResponseFactory.list(contentReadService.listArticles(page, size, sort, category, q), request);
+        return apiResponseFactory.list(contentReadService.listArticles(page, size, sort, category, q, lang), request);
     }
 
     @GetMapping("/articles/{slug}")
     public ApiDataResponse<Article> getArticleBySlug(
             @PathVariable @Pattern(regexp = SLUG_REGEX, message = "Invalid slug.") String slug,
+            @RequestParam(defaultValue = "vi") @Pattern(regexp = "^(vi|en)$", message = "Invalid lang.") String lang,
             HttpServletRequest request
     ) {
-        return apiResponseFactory.data(contentReadService.getArticleBySlug(slug), request);
+        return apiResponseFactory.data(contentReadService.getArticleBySlug(slug, lang), request);
     }
 
     @GetMapping("/content-categories")
@@ -71,9 +73,10 @@ public class ContentController {
     @GetMapping("/pages/{slug}")
     public ApiDataResponse<Page> getPageBySlug(
             @PathVariable @Pattern(regexp = SLUG_REGEX, message = "Invalid slug.") String slug,
+            @RequestParam(defaultValue = "vi") @Pattern(regexp = "^(vi|en)$", message = "Invalid lang.") String lang,
             HttpServletRequest request
     ) {
-        return apiResponseFactory.data(contentReadService.getPageBySlug(slug), request);
+        return apiResponseFactory.data(contentReadService.getPageBySlug(slug, lang), request);
     }
 }
 

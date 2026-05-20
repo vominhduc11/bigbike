@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { ArticleCard } from "@/components/content/ArticleCard";
 import { ArticleCategoryDrawer } from "@/components/content/ArticleCategoryDrawer";
 import { PageHero } from "@/components/layout/PageHero";
@@ -25,7 +26,7 @@ type ArticleListPageProps = {
 };
 
 export async function generateMetadata({ searchParams }: ArticleListPageProps): Promise<Metadata> {
-  const params = await searchParams;
+  const [params, t] = await Promise.all([searchParams, getTranslations("Blog")]);
   const page = Number(readSingleSearchParam(params.page) ?? "1");
   const hasFilters =
     page > 1 ||
@@ -33,15 +34,19 @@ export async function generateMetadata({ searchParams }: ArticleListPageProps): 
     Boolean(readSingleSearchParam(params.category));
 
   return buildPublicMetadata({
-    title: "Tin tức",
-    description: "Tin tức, đánh giá sản phẩm và hướng dẫn biker từ BigBike.",
+    title: t("title"),
+    description: t("metaDescription"),
     canonicalPath: toArticleListPath(),
     noIndex: hasFilters,
   });
 }
 
 export default async function ArticleListPage({ searchParams }: ArticleListPageProps) {
-  const params = await searchParams;
+  const [params, t, tBreadcrumb] = await Promise.all([
+    searchParams,
+    getTranslations("Blog"),
+    getTranslations("Breadcrumb"),
+  ]);
 
   const pageParsed = parsePositiveIntParam(params.page, {
     defaultValue: 1,
@@ -72,7 +77,7 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
     return (
       <section className="bb-page">
         <div className="bb-container">
-          <ErrorState title={"Query chưa hợp lệ"} message={validationErrors.join(" ")} retryHref={toArticleListPath()} />
+          <ErrorState title={t("invalidQuery")} message={validationErrors.join(" ")} retryHref={toArticleListPath()} />
         </div>
       </section>
     );
@@ -92,7 +97,6 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
   const heroSettings = readHeroSettings(settingsResult.data ?? [], "hero_news");
 
   const articles = result.data;
-  // Chỉ hiển thị danh mục có bài viết — giữ danh sách gọn như bản thiết kế.
   const sidebarCategories = categoriesResult.data.filter((cat) => cat.articleCount > 0);
 
   const makeListHref = (overrides: {
@@ -111,18 +115,18 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
       <PageHero
         imageUrl={heroSettings.imageUrl}
         imageAlt={heroSettings.imageAlt}
-        title={heroSettings.title ?? "Tin tức"}
+        title={heroSettings.title ?? t("title")}
         breadcrumb={[
-          { label: "Trang chủ", href: toHomePath() },
-          { label: "Tin tức" },
+          { label: tBreadcrumb("home"), href: toHomePath() },
+          { label: t("breadcrumb") },
         ]}
       />
 
       <div className="bb-cat-layout">
         {/* Sidebar danh mục — chỉ hiển thị trên desktop */}
-        <aside aria-label="Danh mục tin tức" className="max-[768px]:hidden">
+        <aside aria-label={t("categoryAriaLabel")} className="max-[768px]:hidden">
           <h3 className="font-display text-base font-semibold uppercase text-foreground mb-4 pb-3 border-b-2 border-brand tracking-normal">
-            {"Danh mục tin tức"}
+            {t("categoriesHeading")}
           </h3>
           <ul className="list-none p-0 m-0">
             <li className="border-b border-border">
@@ -130,7 +134,7 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
                 href={toArticleListPath()}
                 className={`flex items-center justify-between py-3 font-body text-sm uppercase tracking-[0.02em] no-underline transition-all duration-150 hover:text-brand ${!categoryParsed.value ? "text-brand font-semibold" : "text-foreground"}`}
               >
-                {"Tất cả"}
+                {t("allLabel")}
                 <ChevronRight className="w-4 h-4 shrink-0 opacity-50" />
               </Link>
             </li>
@@ -156,7 +160,7 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
 
         {/* Lưới bài viết */}
         <div>
-          {/* Bộ lọc danh mục cho điện thoại — khớp breakpoint với sidebar desktop */}
+          {/* Bộ lọc danh mục cho điện thoại */}
           <div className="mb-5 hidden max-[768px]:block">
             <ArticleCategoryDrawer
               categories={sidebarCategories}
@@ -167,8 +171,8 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
             <ErrorState message={result.error.message} retryHref={toArticleListPath()} />
           ) : result.data.length === 0 ? (
             <EmptyState
-              title={"Không có bài viết"}
-              description={"Chưa có bài viết phù hợp với bộ lọc hiện tại."}
+              title={t("emptyTitle")}
+              description={t("emptyDescription")}
             />
           ) : (
             <>

@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
+import { getLocale, getTranslations } from "next-intl/server";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { Button } from "@/components/ui/button";
 import { CatalogFilters } from "@/components/catalog/CatalogFilters";
@@ -59,7 +60,8 @@ export async function generateMetadata({ searchParams }: ProductListPageProps): 
     Boolean(maxPrice) ||
     page > 1;
 
-  const titleBase = q ? `Kết quả tìm kiếm: ${q}` : "Sản phẩm";
+  const tCatalog = await getTranslations("Catalog");
+  const titleBase = q ? tCatalog("searchResult", { query: q }) : tCatalog("title");
 
   return buildPublicMetadata({
     title: buildCatalogTitle(titleBase, {
@@ -68,7 +70,7 @@ export async function generateMetadata({ searchParams }: ProductListPageProps): 
       maxPrice: maxPrice ? Number(maxPrice) : undefined,
       colorName: color,
     }),
-    description: "Danh sách sản phẩm bảo hộ biker BigBike — mũ bảo hiểm, áo giáp, găng tay, giày và phụ kiện rider.",
+    description: tCatalog("metadataDescription"),
     canonicalPath: toProductListPath(),
     noIndex: hasFilters,
   });
@@ -76,6 +78,10 @@ export async function generateMetadata({ searchParams }: ProductListPageProps): 
 
 export default async function ProductListPage({ searchParams }: ProductListPageProps) {
   const params = await searchParams;
+  const [tCatalog, tBreadcrumb] = await Promise.all([
+    getTranslations("Catalog"),
+    getTranslations("Breadcrumb"),
+  ]);
 
   const pageParsed = parsePositiveIntParam(readSearchParamAlias(params, "page", "paged"), {
     defaultValue: 1,
@@ -122,7 +128,7 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
       <section className="bb-page">
         <div className="bb-container">
           <ErrorState
-            title="Bộ lọc không hợp lệ"
+            title={tCatalog("filterInvalidTitle")}
             message={validationErrors.join(" ")}
             retryHref={toProductListPath()}
           />
@@ -131,6 +137,7 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
     );
   }
 
+  const locale = await getLocale();
   const [result, brandsResult, categoriesResult, settingsResult] = await Promise.all([
     listProducts({
       page: pageParsed.value,
@@ -142,6 +149,7 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
       filterColor: colorParsed.value,
       minPrice: minPriceParsed.value,
       maxPrice: maxPriceParsed.value,
+      lang: locale,
     }),
     listBrands({ page: 1, size: 100, sort: "name:asc" }),
     listCategories({ page: 1, size: 100, sort: "sortOrder:asc" }),
@@ -150,12 +158,15 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
   const heroSettings = readHeroSettings(settingsResult.data ?? [], "hero_products");
 
   const pagination = result.pagination;
-  const pageTitle = buildCatalogTitle(qParsed.value ? `Kết quả tìm kiếm: "${qParsed.value}"` : "Sản phẩm", {
-    page: pageParsed.value,
-    minPrice: minPriceParsed.value,
-    maxPrice: maxPriceParsed.value,
-    colorName: colorParsed.value,
-  });
+  const pageTitle = buildCatalogTitle(
+    qParsed.value ? tCatalog("searchResultQuoted", { query: qParsed.value }) : tCatalog("title"),
+    {
+      page: pageParsed.value,
+      minPrice: minPriceParsed.value,
+      maxPrice: maxPriceParsed.value,
+      colorName: colorParsed.value,
+    },
+  );
 
   const currentFilters = {
     q: qParsed.value,
@@ -183,8 +194,8 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
         imageAlt={heroSettings.imageAlt}
         title={heroSettings.title ?? pageTitle}
         breadcrumb={[
-          { label: "Trang chủ", href: toHomePath() },
-          { label: "Sản phẩm" },
+          { label: tBreadcrumb("home"), href: toHomePath() },
+          { label: tCatalog("title") },
         ]}
       />
 
@@ -200,16 +211,14 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
         <div>
           <div className="bb-catalog-head">
             <div className="bb-catalog-count">
-              {result.data.length > 0 && pagination ? (
-                <>
-                  Hiển thị{" "}
-                  <b>
-                    {(pagination.page - 1) * pagination.pageSize + 1}–
-                    {Math.min(pagination.page * pagination.pageSize, pagination.totalItems)}
-                  </b>{" "}
-                  / {pagination.totalItems} sản phẩm
-                </>
-              ) : null}
+              {result.data.length > 0 && pagination
+                ? tCatalog.rich("showingRange", {
+                    from: (pagination.page - 1) * pagination.pageSize + 1,
+                    to: Math.min(pagination.page * pagination.pageSize, pagination.totalItems),
+                    total: pagination.totalItems,
+                    strong: (chunks) => <b>{chunks}</b>,
+                  })
+                : null}
             </div>
             <Suspense
               fallback={
@@ -227,12 +236,12 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
             <ErrorState message={result.error.message} retryHref={toProductListPath()} />
           ) : result.data.length === 0 ? (
             <EmptyState
-              title="Không tìm thấy sản phẩm"
-              description="Thử đổi bộ lọc hoặc bỏ qua từ khoá tìm kiếm."
+              title={tCatalog("noResultsTitle")}
+              description={tCatalog("noResultsDescription")}
               action={
                 hasActiveFilters ? (
                   <Button asChild variant="primary">
-                    <Link href={toProductListPath()}>Xoá bộ lọc</Link>
+                    <Link href={toProductListPath()}>{tCatalog("clearFilters")}</Link>
                   </Button>
                 ) : undefined
               }

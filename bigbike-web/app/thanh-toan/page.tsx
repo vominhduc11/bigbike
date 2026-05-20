@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Truck, CreditCard, Check, Pencil, ChevronDown } from "lucide-react";
@@ -17,9 +18,9 @@ import {
   usePublicSettings,
 } from "@/lib/query/hooks";
 import type { CartItem, CustomerAddress, PriceChange } from "@/lib/contracts/commerce";
-import { checkoutAddressSchema, type CheckoutAddressFormValues } from "@/lib/schemas/checkout";
+import { createCheckoutAddressSchema, type CheckoutAddressFormValues } from "@/lib/schemas/checkout";
 import { pushDataLayer } from "@/lib/analytics";
-import { formatAddress, formatVnd, paymentMethodLabel } from "@/lib/utils/format";
+import { formatAddress, formatVnd } from "@/lib/utils/format";
 import { toCartPath, toOrderConfirmPath } from "@/lib/utils/routes";
 import { CheckoutSkeleton } from "@/components/ui/Skeletons";
 import { VnAddressFields } from "@/components/ui/VnAddressFields";
@@ -57,8 +58,20 @@ function StepBadge({ n, state }: { n: number; state: StepState }) {
 }
 
 export default function CheckoutPage() {
+  const t = useTranslations("Checkout");
+  const tValidation = useTranslations("Checkout.validation");
+  const tPayment = useTranslations("Checkout.paymentMethod");
+  const tCart = useTranslations("Cart");
   const router = useRouter();
   const { refreshCount } = useCart();
+
+  // Locale-aware payment method label (falls back to the backend's translated title when available).
+  function paymentLabel(code: string | null | undefined) {
+    const upper = (code ?? "").trim().toUpperCase();
+    if (upper === "") return tPayment("EMPTY");
+    if (upper === "COD" || upper === "BACS") return tPayment(upper);
+    return tPayment("UNKNOWN", { method: code ?? "" });
+  }
 
   const [activeStep, setActiveStep] = useState<1 | 2>(1);
   const [step1Done, setStep1Done] = useState(false);
@@ -90,7 +103,7 @@ export default function CheckoutPage() {
     setValue,
     formState: { errors: addressErrors },
   } = useForm<CheckoutAddressFormValues>({
-    resolver: zodResolver(checkoutAddressSchema),
+    resolver: zodResolver(createCheckoutAddressSchema(tValidation)),
     defaultValues: { country: "VN" },
   });
 
@@ -193,11 +206,11 @@ export default function CheckoutPage() {
     setStep1Error("");
     if (addressMode === "book") {
       if (!selectedAddress) {
-        setStep1Error("Vui lòng chọn một địa chỉ giao hàng.");
+        setStep1Error(t("step1MissingAddress"));
         return;
       }
       if (!selectedAddress.phone) {
-        setStep1Error("Địa chỉ đã chọn chưa có số điện thoại. Vui lòng chọn địa chỉ khác hoặc nhập địa chỉ mới.");
+        setStep1Error(t("step1MissingPhone"));
         return;
       }
     } else {
@@ -210,19 +223,19 @@ export default function CheckoutPage() {
 
   async function placeOrder() {
     if (!cart?.items.length) {
-      setSubmitError("Giỏ hàng trống. Vui lòng thêm sản phẩm trước khi đặt hàng.");
+      setSubmitError(t("errorEmptyCart"));
       return;
     }
     if (!step1Done) {
-      setSubmitError("Vui lòng hoàn tất thông tin giao hàng.");
+      setSubmitError(t("errorMissingShipping"));
       return;
     }
     if (!paymentMethod) {
-      setSubmitError("Vui lòng chọn phương thức thanh toán.");
+      setSubmitError(t("errorMissingPayment"));
       return;
     }
     if (!shippingMethodId) {
-      setSubmitError("Phương thức vận chuyển không khả dụng. Vui lòng thử lại.");
+      setSubmitError(t("errorShippingUnavailable"));
       return;
     }
     setSubmitError("");
@@ -267,7 +280,7 @@ export default function CheckoutPage() {
     return (
       <div className="bb-container py-8">
         <p className="text-brand text-sm mb-4 m-0">
-          Không tải được giỏ hàng. <Link href={toCartPath()} className="bb-link">Quay lại giỏ hàng</Link>
+          {t("loadCartFailed")} <Link href={toCartPath()} className="bb-link">{t("backToCart")}</Link>
         </p>
       </div>
     );
@@ -277,11 +290,11 @@ export default function CheckoutPage() {
     return (
       <div className="bb-container py-12 flex flex-col items-center gap-5 text-center">
         <p className="m-0 font-display text-lg font-semibold uppercase text-foreground tracking-[0.04em]">
-          Giỏ hàng trống
+          {tCart("emptyHeading")}
         </p>
-        <p className="m-0 text-sm text-muted-foreground">Bạn chưa thêm sản phẩm nào vào giỏ hàng.</p>
+        <p className="m-0 text-sm text-muted-foreground">{tCart("emptyDescription")}</p>
         <Button asChild variant="primary">
-          <Link href={toCartPath()}>Xem giỏ hàng</Link>
+          <Link href={toCartPath()}>{t("viewCart")}</Link>
         </Button>
       </div>
     );
@@ -300,7 +313,7 @@ export default function CheckoutPage() {
             {/* Title bar with step icons */}
             <div className="bg-card border border-border py-[14px] px-6 flex items-center justify-between">
               <h1 className="m-0 font-display font-semibold text-xl uppercase text-foreground tracking-[0.04em]">
-                Thanh toán
+                {t("title")}
               </h1>
               <div className="flex items-center gap-2">
                 <Truck className={`w-6 h-6 ${activeStep === 1 ? "text-brand" : "text-muted-foreground"}`} aria-hidden />
@@ -314,7 +327,7 @@ export default function CheckoutPage() {
               <div className="flex items-center justify-between py-[18px] px-6">
                 <h2 className="m-0 font-display font-semibold text-base uppercase text-foreground flex items-center gap-3 tracking-[0.04em]">
                   <StepBadge n={1} state={activeStep === 1 ? "active" : "done"} />
-                  Thông tin giao hàng
+                  {t("step1Title")}
                 </h2>
                 {activeStep !== 1 && step1Done && (
                   <button
@@ -322,7 +335,7 @@ export default function CheckoutPage() {
                     onClick={() => setActiveStep(1)}
                     className="inline-flex items-center gap-1.5 text-sm font-semibold text-blue hover:text-brand"
                   >
-                    <Pencil className="w-4 h-4" aria-hidden /> Chỉnh sửa
+                    <Pencil className="w-4 h-4" aria-hidden /> {t("edit")}
                   </button>
                 )}
               </div>
@@ -338,7 +351,7 @@ export default function CheckoutPage() {
                       >
                         <label className="flex items-center gap-2.5 cursor-pointer text-sm font-semibold text-foreground">
                           <RadioGroupItem value="book" id="addr-book" />
-                          <span>Sổ địa chỉ</span>
+                          <span>{t("addressBook")}</span>
                         </label>
                         {addressMode === "book" && (
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-[14px] pl-[26px]">
@@ -362,7 +375,7 @@ export default function CheckoutPage() {
                                   <div className="mt-2 flex flex-col gap-1 text-sm text-muted-foreground">
                                     {addr.phone && <span>{addr.phone}</span>}
                                     {(addr.email ?? profile?.email) && <span>{addr.email ?? profile?.email}</span>}
-                                    <span>{formatAddress([addr.addressLine1, addr.ward, addr.district, addr.province]) || "Chưa có địa chỉ"}</span>
+                                    <span>{formatAddress([addr.addressLine1, addr.ward, addr.district, addr.province]) || t("addressMissing")}</span>
                                   </div>
                                 </button>
                               );
@@ -372,7 +385,7 @@ export default function CheckoutPage() {
 
                         <label className="flex items-center gap-2.5 cursor-pointer text-sm font-semibold text-foreground">
                           <RadioGroupItem value="new" id="addr-new" />
-                          <span>Giao đến địa chỉ khác</span>
+                          <span>{t("newAddress")}</span>
                         </label>
                       </RadioGroup>
                     </div>
@@ -381,9 +394,9 @@ export default function CheckoutPage() {
                   {addressMode === "new" && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-[14px]">
                       <div className="flex flex-col gap-1.5">
-                        <label className={labelCls}>Họ và tên {reqMark}</label>
+                        <label className={labelCls}>{t("fullName")} {reqMark}</label>
                         <Input
-                          placeholder="Vui lòng nhập họ và tên..."
+                          placeholder={t("fullNamePlaceholder")}
                           aria-invalid={!!addressErrors.fullName}
                           {...register("fullName")}
                         />
@@ -393,12 +406,12 @@ export default function CheckoutPage() {
                       </div>
 
                       <div className="flex flex-col gap-1.5">
-                        <label className={labelCls}>Số điện thoại {reqMark}</label>
+                        <label className={labelCls}>{t("phone")} {reqMark}</label>
                         <Input
                           type="tel"
                           inputMode="tel"
                           maxLength={12}
-                          placeholder="Vui lòng nhập số điện thoại..."
+                          placeholder={t("phonePlaceholder")}
                           aria-invalid={!!addressErrors.phone}
                           {...register("phone")}
                         />
@@ -408,10 +421,10 @@ export default function CheckoutPage() {
                       </div>
 
                       <div className="flex flex-col gap-1.5 col-span-full">
-                        <label className={labelCls}>Email</label>
+                        <label className={labelCls}>{t("email")}</label>
                         <Input
                           type="email"
-                          placeholder="Vui lòng nhập email..."
+                          placeholder={t("emailPlaceholder")}
                           aria-invalid={!!addressErrors.email}
                           {...register("email")}
                         />
@@ -421,9 +434,9 @@ export default function CheckoutPage() {
                       </div>
 
                       <div className="flex flex-col gap-1.5 col-span-full">
-                        <label className={labelCls}>Địa chỉ nhận hàng {reqMark}</label>
+                        <label className={labelCls}>{t("address")} {reqMark}</label>
                         <Input
-                          placeholder="Vui lòng nhập địa chỉ nhận hàng..."
+                          placeholder={t("addressPlaceholder")}
                           aria-invalid={!!addressErrors.addressLine1}
                           {...register("addressLine1")}
                         />
@@ -458,7 +471,7 @@ export default function CheckoutPage() {
 
                   <div className="flex justify-end mt-5">
                     <Button type="button" variant="primary" onClick={handleStep1Continue}>
-                      Tiếp tục
+                      {t("continue")}
                     </Button>
                   </div>
                 </div>
@@ -477,14 +490,14 @@ export default function CheckoutPage() {
               <div className="flex items-center py-[18px] px-6">
                 <h2 className="m-0 font-display font-semibold text-base uppercase text-foreground flex items-center gap-3 tracking-[0.04em]">
                   <StepBadge n={2} state={activeStep === 2 ? "active" : step1Done ? "todo" : "todo"} />
-                  Thông tin thanh toán
+                  {t("step2Title")}
                 </h2>
               </div>
 
               {activeStep === 2 && (
                 <div className="px-6 pb-[22px]">
                   {optionsLoading ? (
-                    <p className="text-muted-foreground text-sm m-0">Đang tải phương thức thanh toán...</p>
+                    <p className="text-muted-foreground text-sm m-0">{t("paymentLoading")}</p>
                   ) : checkoutOptions?.paymentMethods.length ? (
                     <RadioGroup
                       value={paymentMethod}
@@ -504,18 +517,18 @@ export default function CheckoutPage() {
                             {checked && code === "BACS" && (
                               <div className="my-2 ml-7 bg-[var(--bb-color-gray-50)] border border-border p-4">
                                 <p className="m-0 mb-2 font-display font-semibold text-sm uppercase text-foreground tracking-[0.04em]">
-                                  Thông tin tài khoản
+                                  {t("bankInfoTitle")}
                                 </p>
                                 {bankHolder || bankNumber || bankName ? (
                                   <div className="flex flex-col gap-1 text-sm text-muted-foreground">
-                                    {bankHolder && <span>Chủ tài khoản: <b className="text-foreground">{bankHolder}</b></span>}
-                                    {bankNumber && <span>Số tài khoản: <b className="text-foreground">{bankNumber}</b></span>}
-                                    {bankName && <span>Ngân hàng: <b className="text-foreground">{bankName}</b>{bankBranch ? ` — chi nhánh ${bankBranch}` : ""}</span>}
-                                    <span>Nội dung chuyển khoản: <b className="text-foreground">Tên khách hàng + Mã đơn hàng</b></span>
+                                    {bankHolder && <span>{t("bankHolder")} <b className="text-foreground">{bankHolder}</b></span>}
+                                    {bankNumber && <span>{t("bankNumber")} <b className="text-foreground">{bankNumber}</b></span>}
+                                    {bankName && <span>{t("bankName")} <b className="text-foreground">{bankName}</b>{bankBranch ? t("bankBranchSuffix", { branch: bankBranch }) : ""}</span>}
+                                    <span>{t("bankTransferNote")} <b className="text-foreground">{t("bankTransferNoteValue")}</b></span>
                                   </div>
                                 ) : (
                                   <p className="m-0 text-sm text-muted-foreground">
-                                    Thông tin tài khoản sẽ được gửi kèm email xác nhận sau khi đặt hàng.
+                                    {t("bankInfoFallback")}
                                   </p>
                                 )}
                               </div>
@@ -526,21 +539,20 @@ export default function CheckoutPage() {
                     </RadioGroup>
                   ) : (
                     <p className="text-brand text-sm m-0">
-                      Phương thức thanh toán tạm thời không khả dụng. Vui lòng thử lại hoặc liên hệ hỗ trợ.
+                      {t("paymentNone")}
                     </p>
                   )}
 
                   {belowMinOrder && minOrderAmount && (
                     <p className="text-sm text-brand mt-3 m-0">
-                      Đơn hàng chưa đạt giá trị tối thiểu {formatVnd(minOrderAmount)} cho phương thức vận chuyển.
-                      Vui lòng mua thêm.
+                      {t("belowMinOrder", { amount: formatVnd(minOrderAmount) })}
                     </p>
                   )}
 
                   {priceChanges.length > 0 && pendingOrderNav && (
                     <div className="bg-[var(--bb-color-gray-50)] border border-border p-[14px_18px] mt-3 text-sm text-foreground">
                       <p className="font-semibold mb-1.5 m-0">
-                        Giá một số sản phẩm đã giảm khi đặt hàng — bạn được áp dụng giá mới:
+                        {t("priceChanged")}
                       </p>
                       <ul className="m-0 mb-2 ml-4">
                         {priceChanges.map((pc, i) => (
@@ -555,7 +567,7 @@ export default function CheckoutPage() {
                         size="sm"
                         onClick={() => router.push(toOrderConfirmPath(pendingOrderNav.orderNumber, pendingOrderNav.orderKey))}
                       >
-                        Xem xác nhận đặt hàng
+                        {t("viewOrderConfirmation")}
                       </Button>
                     </div>
                   )}
@@ -568,7 +580,7 @@ export default function CheckoutPage() {
                       onClick={() => setActiveStep(1)}
                       className="font-display font-semibold text-sm tracking-[0.04em] uppercase text-foreground hover:text-brand"
                     >
-                      ‹ Quay lại
+                      {t("back")}
                     </button>
                     <Button
                       type="button"
@@ -576,7 +588,7 @@ export default function CheckoutPage() {
                       onClick={placeOrder}
                       disabled={submitting || cartLoading || !cart?.items.length || belowMinOrder}
                     >
-                      {submitting ? "Đang đặt hàng..." : "Đặt hàng"}
+                      {submitting ? t("placingOrder") : t("placeOrder")}
                     </Button>
                   </div>
                 </div>
@@ -594,7 +606,7 @@ export default function CheckoutPage() {
                 className="w-full bg-[var(--bb-color-gray-50)] py-[14px] px-5 border-b border-border flex items-center justify-between gap-3 lg:cursor-default"
               >
                 <h3 className="m-0 font-display font-semibold text-base uppercase text-foreground tracking-[0.04em]">
-                  Thông tin đơn đặt hàng
+                  {t("summaryTitle")}
                 </h3>
                 <ChevronDown
                   className={cn(
@@ -609,23 +621,23 @@ export default function CheckoutPage() {
               <div className={cn(summaryOpen ? "block" : "hidden", "lg:block")}>
               <div className="py-[14px] px-5">
                 <p className="m-0 mb-2 font-display font-semibold text-sm uppercase text-foreground tracking-[0.04em]">
-                  Hoá đơn
+                  {t("summaryInvoice")}
                 </p>
                 <div className="flex items-baseline justify-between gap-3 py-1.5 text-sm text-muted-foreground">
-                  <span>Tạm tính:</span>
+                  <span>{t("summarySubtotal")}</span>
                   <b className="text-foreground font-bold">{formatVnd(cartSubtotal)}</b>
                 </div>
                 <div className="flex items-baseline justify-between gap-3 py-1.5 text-sm text-muted-foreground">
-                  <span>Phí giao hàng:</span>
+                  <span>{t("summaryShipping")}</span>
                   {effectiveShippingCost > 0 ? (
                     <b className="text-foreground font-bold">{formatVnd(effectiveShippingCost)}</b>
                   ) : (
-                    <span className="italic">Miễn phí</span>
+                    <span className="italic">{t("summaryShippingFree")}</span>
                   )}
                 </div>
                 {cart && cart.totals.discountAmount > 0 && (
                   <div className="flex items-baseline justify-between gap-3 py-1.5 text-sm text-muted-foreground">
-                    <span>Khuyến mãi:</span>
+                    <span>{t("summaryDiscount")}</span>
                     <b className="text-blue font-bold">−{formatVnd(cart.totals.discountAmount)}</b>
                   </div>
                 )}
@@ -633,7 +645,7 @@ export default function CheckoutPage() {
 
               <div className="bg-[var(--bb-color-gray-50)] border-y border-border py-[14px] px-5 flex items-baseline justify-between gap-3">
                 <span className="font-display uppercase font-semibold text-foreground tracking-[0.04em] text-sm">
-                  Tổng tạm tính:
+                  {t("summaryTotal")}
                 </span>
                 <b className="font-display text-22 text-brand font-bold tracking-[0.01em]">{formatVnd(grandTotal)}</b>
               </div>
@@ -641,7 +653,7 @@ export default function CheckoutPage() {
               {step1Done && (
                 <div className="py-[14px] px-5 border-b border-border">
                   <p className="m-0 mb-2 font-display font-semibold text-sm uppercase text-foreground tracking-[0.04em]">
-                    Thông tin giao hàng
+                    {t("summaryShippingInfo")}
                   </p>
                   <b className="block text-sm text-foreground">{resolvedAddress.fullName || "—"}</b>
                   <div className="mt-1 flex flex-col gap-0.5 text-sm text-muted-foreground">
@@ -655,9 +667,9 @@ export default function CheckoutPage() {
               {step1Done && paymentMethod && (
                 <div className="py-[14px] px-5">
                   <p className="m-0 mb-1 font-display font-semibold text-sm uppercase text-foreground tracking-[0.04em]">
-                    Thông tin thanh toán
+                    {t("summaryPaymentInfo")}
                   </p>
-                  <p className="m-0 text-sm text-muted-foreground">{paymentMethodLabel(paymentMethod)}</p>
+                  <p className="m-0 text-sm text-muted-foreground">{paymentLabel(paymentMethod)}</p>
                 </div>
               )}
               </div>
@@ -672,7 +684,7 @@ export default function CheckoutPage() {
       <div className="fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border lg:hidden">
         <div className="bb-container py-3 pr-20 flex items-center justify-between gap-4">
           <div className="flex flex-col">
-            <span className="text-xs text-muted-foreground leading-none">Tổng</span>
+            <span className="text-xs text-muted-foreground leading-none">{t("totalLabel")}</span>
             <b className="font-display text-lg text-brand font-bold tracking-[0.01em]">{formatVnd(grandTotal)}</b>
           </div>
           {activeStep === 1 ? (

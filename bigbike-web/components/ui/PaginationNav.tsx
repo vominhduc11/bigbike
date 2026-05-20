@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -23,18 +26,19 @@ function buildPageList(page: number, totalPages: number): (number | "…")[] {
 }
 
 export function PaginationNav({ page, totalPages, makeHref }: PaginationNavProps) {
+  const t = useTranslations("Catalog");
   if (totalPages <= 1) return null;
 
   const pages = buildPageList(page, totalPages);
 
   return (
-    <nav className="mt-6 flex items-center justify-center gap-3 flex-wrap" aria-label="Phân trang">
+    <nav className="mt-6 flex items-center justify-center gap-3 flex-wrap" aria-label={t("paginationAria")}>
       {page > 1 ? (
         <Button asChild variant="secondary" size="icon">
-          <Link href={makeHref(page - 1)} aria-label="Trang trước"><ChevronLeft className="w-4 h-4" /></Link>
+          <Link href={makeHref(page - 1)} aria-label={t("previousPage")}><ChevronLeft className="w-4 h-4" /></Link>
         </Button>
       ) : (
-        <Button variant="secondary" size="icon" disabled aria-label="Trang trước"><ChevronLeft className="w-4 h-4" /></Button>
+        <Button variant="secondary" size="icon" disabled aria-label={t("previousPage")}><ChevronLeft className="w-4 h-4" /></Button>
       )}
 
       <div className="flex items-center gap-1 flex-wrap">
@@ -60,10 +64,10 @@ export function PaginationNav({ page, totalPages, makeHref }: PaginationNavProps
 
       {page < totalPages ? (
         <Button asChild variant="secondary" size="icon">
-          <Link href={makeHref(page + 1)} aria-label="Trang sau"><ChevronRight className="w-4 h-4" /></Link>
+          <Link href={makeHref(page + 1)} aria-label={t("nextPage")}><ChevronRight className="w-4 h-4" /></Link>
         </Button>
       ) : (
-        <Button variant="secondary" size="icon" disabled aria-label="Trang sau"><ChevronRight className="w-4 h-4" /></Button>
+        <Button variant="secondary" size="icon" disabled aria-label={t("nextPage")}><ChevronRight className="w-4 h-4" /></Button>
       )}
     </nav>
   );

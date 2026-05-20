@@ -1,6 +1,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
+import { useTranslations } from "next-intl";
 import { safeText } from "@/lib/utils/format";
 import {
   Select,
@@ -75,14 +76,14 @@ type SwatchInfo = {
   swatchImageUrl: string | null;
 };
 
-function buildOptionGroups(variants: ProductVariant[]) {
+function buildOptionGroups(variants: ProductVariant[], attributeFallback: string) {
   // Track distinct values per attribute. For each value we keep the first
   // non-null swatch info encountered (multiple variants share the same
   // term, so any of them yield the same colorHex / swatchImageUrl).
   const groups = new Map<string, Map<string, SwatchInfo>>();
   for (const v of variants) {
     for (const opt of v.options ?? []) {
-      const name = safeText(opt.name, "Thuộc tính").trim();
+      const name = safeText(opt.name, attributeFallback).trim();
       const value = safeText(opt.value, "").trim();
       if (!name || !value) continue;
       if (!groups.has(name)) groups.set(name, new Map());
@@ -111,11 +112,14 @@ function buildOptionGroups(variants: ProductVariant[]) {
   });
 }
 
-function describeVariant(v: ProductVariant): string {
+function describeVariant(
+  v: ProductVariant,
+  labels: { attribute: string; value: string; variant: string },
+): string {
   const opts = (v.options ?? [])
-    .map((o) => `${safeText(o.name, "Thuộc tính")}: ${safeText(o.value, "Không rõ")}`)
+    .map((o) => `${safeText(o.name, labels.attribute)}: ${safeText(o.value, labels.value)}`)
     .join(" · ");
-  return [safeText(v.name, "Biến thể"), opts].filter(Boolean).join(" · ");
+  return [safeText(v.name, labels.variant), opts].filter(Boolean).join(" · ");
 }
 
 export function VariantSelector({
@@ -125,10 +129,16 @@ export function VariantSelector({
   disabled,
   isLoading,
 }: VariantSelectorProps) {
+  const t = useTranslations("Product.variants");
   if (isLoading && !variants.length) return null;
   if (!variants.length) return null;
 
-  const groups = buildOptionGroups(variants);
+  const groups = buildOptionGroups(variants, t("attributeFallback"));
+  const describeLabels = {
+    attribute: t("attributeFallback"),
+    value: t("valueFallback"),
+    variant: t("variantFallback"),
+  };
 
   // Chip-group layout (when options are defined)
   if (groups.length > 0) {
@@ -143,7 +153,7 @@ export function VariantSelector({
               <h6 className={OPT_GROUP_HEADING}>
                 {group.name}:{" "}
                 <span className="font-bold text-brand">
-                  {currentValue || "Chưa chọn"}
+                  {currentValue || t("notPicked")}
                 </span>
               </h6>
               <div
@@ -274,7 +284,7 @@ export function VariantSelector({
 
   return (
     <div className="mb-5">
-      <h6 className={OPT_GROUP_HEADING}>Biến thể</h6>
+      <h6 className={OPT_GROUP_HEADING}>{t("variantFallback")}</h6>
       <Select
         value={currentVariantId}
         onValueChange={(id) => {
@@ -287,12 +297,12 @@ export function VariantSelector({
         disabled={disabled}
       >
         <SelectTrigger>
-          <SelectValue placeholder="— Chọn biến thể —" />
+          <SelectValue placeholder={t("pickVariantPlaceholder")} />
         </SelectTrigger>
         <SelectContent>
           {variants.map((v) => (
             <SelectItem key={v.id} value={v.id} disabled={!v.isAvailable}>
-              {describeVariant(v)}{v.isAvailable ? "" : " — hết hàng"}
+              {describeVariant(v, describeLabels)}{v.isAvailable ? "" : t("soldOutSuffix")}
             </SelectItem>
           ))}
         </SelectContent>

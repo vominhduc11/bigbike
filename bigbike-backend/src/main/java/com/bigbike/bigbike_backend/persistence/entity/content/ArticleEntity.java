@@ -1,8 +1,11 @@
 package com.bigbike.bigbike_backend.persistence.entity.content;
 
+import com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
+import com.bigbike.bigbike_backend.persistence.converter.DescriptionBlocksConverter;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -119,6 +122,20 @@ public class ArticleEntity {
     private String seoOgImageMimeType;
     private Boolean seoNoIndex;
 
+    // English translations (V138) — nullable; storefront falls back to VI per ARTICLE_RULE_002
+    private String titleEn;
+
+    @Column(columnDefinition = "text")
+    private String excerptEn;
+
+    @Column(columnDefinition = "text")
+    private String bodyEn;
+
+    private String seoTitleEn;
+
+    @Column(columnDefinition = "text")
+    private String seoDescriptionEn;
+
     private Instant publishedAt;
 
     @Column(nullable = false)
@@ -126,5 +143,9 @@ public class ArticleEntity {
 
     @Column(nullable = false)
     private Instant updatedAt;
+
+    @Convert(converter = DescriptionBlocksConverter.class)
+    @Column(name = "body_blocks", columnDefinition = "jsonb")
+    private List<DescriptionBlock> bodyBlocks;
 
 }

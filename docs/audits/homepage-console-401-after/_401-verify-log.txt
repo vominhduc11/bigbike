@@ -1,8 +1,0 @@
-[guest] /customer/me requests: 0 (statuses: none)
-[guest] total 401 responses: 0
-[guest] console errors: 0
-[with-bb_csrf] /customer/me requests: 1 (statuses: 401)
-[with-bb_csrf] total 401 responses: 1
-   · 401 http://localhost:8080/api/v1/customer/me
-[with-bb_csrf] console errors: 1
-   · Failed to load resource: the server responded with a status of 401 ()

@@ -15,6 +15,7 @@ import { createBrandSchema, zodErrors } from '../lib/schemas'
 import { StatePanel } from '../components/StatePanel'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { RichTextEditor } from '../components/RichTextEditor'
+import { Tabs } from '../components/layout'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -34,6 +35,7 @@ function buildEmptyForm() {
     seoDescription: '',
     seoCanonicalUrl: '',
     seoNoIndex: false,
+    translations: { en: { name: '', description: '', seoTitle: '', seoDescription: '' } },
   }
 }
 
@@ -52,6 +54,14 @@ function buildFormFromItem(item) {
     seoDescription: item.seo?.description || '',
     seoCanonicalUrl: item.seo?.canonicalUrl || '',
     seoNoIndex: Boolean(item.seo?.noIndex),
+    translations: {
+      en: {
+        name: item.translations?.en?.name || '',
+        description: item.translations?.en?.description || '',
+        seoTitle: item.translations?.en?.seoTitle || '',
+        seoDescription: item.translations?.en?.seoDescription || '',
+      },
+    },
   }
 }
 
@@ -86,6 +96,15 @@ function toPayload(form) {
     }
   }
 
+  payload.translations = {
+    en: {
+      name: form.translations?.en?.name?.trim() || null,
+      description: form.translations?.en?.description?.trim() || null,
+      seoTitle: form.translations?.en?.seoTitle?.trim() || null,
+      seoDescription: form.translations?.en?.seoDescription?.trim() || null,
+    },
+  }
+
   return payload
 }
 
@@ -116,6 +135,19 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
     item: fetchResult?.item ?? null,
     warning: fetchResult?.mode === 'mock' ? (fetchResult?.warning ?? '') : '',
     error: fetchError?.message ?? '',
+  }
+
+  const [contentLang, setContentLang] = useState('vi')
+  const isEnLang = contentLang === 'en'
+
+  function updateTranslation(field, value) {
+    setForm((previous) => ({
+      ...previous,
+      translations: {
+        ...previous.translations,
+        en: { ...(previous.translations?.en || {}), [field]: value },
+      },
+    }))
   }
 
   const formRef = useRef(null)
@@ -292,7 +324,15 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
       >
         {/* Thông tin cơ bản */}
         <div className="card mb-4">
-          <div className="card-head"><h2>{t('brands.detail.sectionBasic')}</h2></div>
+          <div className="card-head">
+            <h2>{t('brands.detail.sectionBasic')}</h2>
+            <Tabs
+              ariaLabel={t('brands.detail.contentLanguageAriaLabel', { defaultValue: 'Ngôn ngữ nội dung' })}
+              value={contentLang}
+              onChange={setContentLang}
+              items={[{ key: 'vi', label: 'VI' }, { key: 'en', label: 'EN' }]}
+            />
+          </div>
           <div className="card-body">
             <div className="grid-2">
               <label className="form-field">
@@ -302,24 +342,36 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
                 {validationErrors.slug && <span className="hint text-danger">{validationErrors.slug}</span>}
               </label>
               <label className="form-field">
-                <span>{t('brands.detail.name')}</span>
-                <Input value={form.name} onChange={(e) => updateField('name', e.target.value)} disabled={isReadOnly} />
-                {validationErrors.name && <span className="hint text-danger">{validationErrors.name}</span>}
+                <span>
+                  {t('brands.detail.name')}
+                  {isEnLang && <span className="hint" style={{ display: 'inline', marginLeft: 6 }}>{t('brands.detail.enFieldHint', { defaultValue: '(tiếng Anh — tùy chọn)' })}</span>}
+                </span>
+                <Input
+                  value={isEnLang ? (form.translations?.en?.name ?? '') : form.name}
+                  onChange={(e) => isEnLang ? updateTranslation('name', e.target.value) : updateField('name', e.target.value)}
+                  disabled={isReadOnly}
+                  placeholder={isEnLang ? t('brands.detail.namePlaceholderEn', { defaultValue: 'English name (optional)' }) : undefined}
+                />
+                {!isEnLang && validationErrors.name && <span className="hint text-danger">{validationErrors.name}</span>}
               </label>
-              <label className="pf-checkbox" style={{ gridColumn: '1 / -1', width: 'fit-content' }}>
+              <label
+                className="flex items-center gap-2.5 p-2.5 border border-border text-sm cursor-pointer hover:bg-muted w-fit"
+                style={{ gridColumn: '1 / -1' }}
+              >
                 <Checkbox checked={form.visible} onCheckedChange={(checked) => updateField('visible', checked)} disabled={isReadOnly} />
                 <span>{t('brands.detail.isVisible')}</span>
               </label>
               <div className="form-field" style={{ gridColumn: '1 / -1' }}>
                 <span>{t('brands.detail.description')}</span>
                 <RichTextEditor
-                  value={form.description}
-                  onChange={(html) => updateField('description', html)}
+                  key={`description-${contentLang}`}
+                  value={isEnLang ? (form.translations?.en?.description ?? '') : form.description}
+                  onChange={(html) => isEnLang ? updateTranslation('description', html) : updateField('description', html)}
                   placeholder={t('brands.detail.descriptionPlaceholder', { defaultValue: 'Nhập mô tả thương hiệu...' })}
                   disabled={isReadOnly}
                   enableImagePicker
                 />
-                {validationErrors.description && <span className="hint text-danger">{validationErrors.description}</span>}
+                {!isEnLang && validationErrors.description && <span className="hint text-danger">{validationErrors.description}</span>}
               </div>
             </div>
           </div>

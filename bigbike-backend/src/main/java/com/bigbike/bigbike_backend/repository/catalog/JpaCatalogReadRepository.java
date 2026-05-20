@@ -10,6 +10,8 @@ import com.bigbike.bigbike_backend.domain.catalog.ProductFaq;
 import com.bigbike.bigbike_backend.domain.catalog.ProductPrice;
 import com.bigbike.bigbike_backend.domain.catalog.ProductSpecification;
 import com.bigbike.bigbike_backend.domain.catalog.ProductTranslations;
+import com.bigbike.bigbike_backend.domain.catalog.CategoryTranslations;
+import com.bigbike.bigbike_backend.domain.catalog.BrandTranslations;
 import com.bigbike.bigbike_backend.domain.catalog.ProductVariant;
 import com.bigbike.bigbike_backend.domain.catalog.ProductVariantOption;
 import com.bigbike.bigbike_backend.domain.catalog.SeoMeta;
@@ -161,6 +163,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 null,                       // installationGuide — detail only
                 List.of(),                  // faqs — detail only
                 List.of(),                  // relatedProducts — detail only
+                null,                       // descriptionBlocks — detail only
                 null,
                 null,                       // translations — detail only (admin detail read)
                 entity.getCreatedAt(),
@@ -230,6 +233,13 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     }
 
     @Override
+    public List<Category> findAllCategories(String locale) {
+        return categoryJpaRepository.findAll().stream()
+                .map(entity -> toDomain(entity, locale))
+                .toList();
+    }
+
+    @Override
     public CategoryPage findCategoriesPaged(
             String query,
             String visibility,
@@ -291,6 +301,11 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     }
 
     @Override
+    public Optional<Category> findCategoryBySlug(String slug, String locale) {
+        return categoryJpaRepository.findBySlug(slug).map(entity -> toDomain(entity, locale));
+    }
+
+    @Override
     public Optional<Category> findCategoryById(String id) {
         return categoryJpaRepository.findById(id).map(this::toDomain);
     }
@@ -301,8 +316,20 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     }
 
     @Override
+    public List<Brand> findAllBrands(String locale) {
+        return brandJpaRepository.findAll().stream()
+                .map(entity -> toDomain(entity, locale))
+                .toList();
+    }
+
+    @Override
     public Optional<Brand> findBrandBySlug(String slug) {
         return brandJpaRepository.findBySlug(slug).map(this::toDomain);
+    }
+
+    @Override
+    public Optional<Brand> findBrandBySlug(String slug, String locale) {
+        return brandJpaRepository.findBySlug(slug).map(entity -> toDomain(entity, locale));
     }
 
     @Override
@@ -386,6 +413,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 pick(entity.getInstallationGuide(), entity.getInstallationGuideEn(), locale),
                 toFaqs(entity, publicView, locale),
                 toRelatedProducts(entity, publicView, locale),
+                entity.getDescriptionBlocks(),
                 toSeoMeta(
                         pick(entity.getSeoTitle(), entity.getSeoTitleEn(), locale),
                         pick(entity.getSeoDescription(), entity.getSeoDescriptionEn(), locale),
@@ -404,12 +432,22 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         );
     }
 
+    /** Admin detail read: Vietnamese content + raw English translations. */
     private Category toDomain(CategoryEntity entity) {
+        return toDomain(entity, LOCALE_VI, true);
+    }
+
+    /** Public read: localized content, no translations object. */
+    private Category toDomain(CategoryEntity entity, String locale) {
+        return toDomain(entity, locale, false);
+    }
+
+    private Category toDomain(CategoryEntity entity, String locale, boolean includeTranslations) {
         return new Category(
                 entity.getId(),
                 entity.getSlug(),
-                entity.getName(),
-                entity.getDescription(),
+                pick(entity.getName(), entity.getNameEn(), locale),
+                pick(entity.getDescription(), entity.getDescriptionEn(), locale),
                 entity.getParentId(),
                 toImageAsset(
                         entity.getImageId(),
@@ -428,8 +466,8 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         entity.getIconMimeType()
                 ),
                 toSeoMeta(
-                        entity.getSeoTitle(),
-                        entity.getSeoDescription(),
+                        pick(entity.getSeoTitle(), entity.getSeoTitleEn(), locale),
+                        pick(entity.getSeoDescription(), entity.getSeoDescriptionEn(), locale),
                         entity.getSeoCanonicalUrl(),
                         entity.getSeoOgImageId(),
                         entity.getSeoOgImageUrl(),
@@ -442,17 +480,42 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 entity.isVisible(),
                 entity.getShowOnHomepage(),
                 entity.getSortOrder(),
+                includeTranslations ? toCategoryTranslations(entity) : null,
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
         );
     }
 
+    private static CategoryTranslations toCategoryTranslations(CategoryEntity entity) {
+        boolean anyEnglish = isPresent(entity.getNameEn())
+                || isPresent(entity.getDescriptionEn())
+                || isPresent(entity.getSeoTitleEn())
+                || isPresent(entity.getSeoDescriptionEn());
+        if (!anyEnglish) return null;
+        return new CategoryTranslations(new CategoryTranslations.CategoryContent(
+                entity.getNameEn(),
+                entity.getDescriptionEn(),
+                entity.getSeoTitleEn(),
+                entity.getSeoDescriptionEn()
+        ));
+    }
+
+    /** Admin detail read: Vietnamese content + raw English translations. */
     private Brand toDomain(BrandEntity entity) {
+        return toDomain(entity, LOCALE_VI, true);
+    }
+
+    /** Public read: localized content, no translations object. */
+    private Brand toDomain(BrandEntity entity, String locale) {
+        return toDomain(entity, locale, false);
+    }
+
+    private Brand toDomain(BrandEntity entity, String locale, boolean includeTranslations) {
         return new Brand(
                 entity.getId(),
                 entity.getSlug(),
-                entity.getName(),
-                entity.getDescription(),
+                pick(entity.getName(), entity.getNameEn(), locale),
+                pick(entity.getDescription(), entity.getDescriptionEn(), locale),
                 toImageAsset(
                         entity.getLogoId(),
                         entity.getLogoUrl(),
@@ -463,8 +526,8 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 ),
                 toImageAsset(null, entity.getBannerUrl(), entity.getBannerAlt(), null, null, null),
                 toSeoMeta(
-                        entity.getSeoTitle(),
-                        entity.getSeoDescription(),
+                        pick(entity.getSeoTitle(), entity.getSeoTitleEn(), locale),
+                        pick(entity.getSeoDescription(), entity.getSeoDescriptionEn(), locale),
                         entity.getSeoCanonicalUrl(),
                         entity.getSeoOgImageId(),
                         entity.getSeoOgImageUrl(),
@@ -475,9 +538,24 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         entity.getSeoNoIndex()
                 ),
                 entity.isVisible(),
+                includeTranslations ? toBrandTranslations(entity) : null,
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
         );
+    }
+
+    private static BrandTranslations toBrandTranslations(BrandEntity entity) {
+        boolean anyEnglish = isPresent(entity.getNameEn())
+                || isPresent(entity.getDescriptionEn())
+                || isPresent(entity.getSeoTitleEn())
+                || isPresent(entity.getSeoDescriptionEn());
+        if (!anyEnglish) return null;
+        return new BrandTranslations(new BrandTranslations.BrandContent(
+                entity.getNameEn(),
+                entity.getDescriptionEn(),
+                entity.getSeoTitleEn(),
+                entity.getSeoDescriptionEn()
+        ));
     }
 
     private List<ImageAsset> toGallery(ProductEntity entity) {

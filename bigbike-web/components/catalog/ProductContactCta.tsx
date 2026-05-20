@@ -1,3 +1,7 @@
+"use client";
+
+import { useTranslations } from "next-intl";
+
 type ProductContactCtaProps = {
   productName: string;
   siteName: string;
@@ -24,12 +28,17 @@ export function ProductContactCta({
   hotline,
   zaloUrl,
 }: ProductContactCtaProps) {
+  const t = useTranslations("Product.contact");
   if (!address && !hotline && !zaloUrl) return null;
 
   return (
     <section className="border border-border border-t-2 border-t-brand bg-muted/40 px-6 py-8 text-center">
       <p className="font-display text-lg uppercase tracking-tight text-foreground sm:text-xl">
-        Mua <span className="text-brand">{productName}</span> chính hãng tại {siteName}
+        {t.rich("headline", {
+          productName,
+          siteName,
+          brand: (chunks) => <span className="text-brand">{chunks}</span>,
+        })}
       </p>
       <div className="mt-3 flex flex-col items-center gap-1.5 text-sm text-muted-foreground">
         {address && (
@@ -57,7 +66,7 @@ export function ProductContactCta({
               rel="noopener noreferrer"
               className="font-display text-base font-semibold text-brand hover:underline"
             >
-              Tư vấn qua Zalo
+              {t("zaloLink")}
             </a>
           )}
         </p>

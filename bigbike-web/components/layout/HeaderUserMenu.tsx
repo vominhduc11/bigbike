@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { performLogout, useAuth } from "@/lib/auth/auth-store";
 import {
   DropdownMenu,
@@ -51,6 +52,7 @@ function initials(profile: CustomerProfile): string {
 }
 
 export function HeaderUserMenu() {
+  const t = useTranslations("Header");
   const router = useRouter();
   const pathname = usePathname();
   const auth = useAuth();
@@ -71,7 +73,7 @@ export function HeaderUserMenu() {
       <button
         type="button"
         disabled
-        aria-label="Tài khoản"
+        aria-label={t("accountAriaLabel")}
         className="inline-flex items-center justify-center min-h-[var(--bb-header-height)] px-[14px] border border-transparent bg-transparent text-white/40 cursor-default [@media(max-width:420px)]:hidden"
       >
         <UserIcon />
@@ -86,10 +88,10 @@ export function HeaderUserMenu() {
     const loginHref = getSafeLoginHref(pathname);
 
     const guestSubText = isOnRegisterPage
-      ? "Đã có tài khoản? Đăng nhập ngay."
+      ? t("guestSubOnRegister")
       : isOnLoginPage
-        ? "Chưa có tài khoản? Đăng ký miễn phí."
-        : "Đăng nhập để theo dõi đơn hàng.";
+        ? t("guestSubOnLogin")
+        : t("guestSubDefault");
 
     return (
       <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
@@ -98,30 +100,30 @@ export function HeaderUserMenu() {
             <TooltipTrigger asChild>
               <DropdownMenuTrigger
                 className="inline-flex items-center justify-center min-h-[var(--bb-header-height)] px-[14px] border border-transparent bg-transparent text-white cursor-pointer transition-colors hover:text-brand hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-brand focus-visible:outline-offset-[-2px] [@media(max-width:420px)]:hidden"
-                aria-label="Tài khoản"
+                aria-label={t("accountAriaLabel")}
               >
                 <UserIcon />
               </DropdownMenuTrigger>
             </TooltipTrigger>
-            <TooltipContent>Tài khoản</TooltipContent>
+            <TooltipContent>{t("accountAriaLabel")}</TooltipContent>
           </Tooltip>
         </TooltipProvider>
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuLabel className="font-normal">
-            <p className="text-sm font-semibold normal-case">Chào bạn!</p>
+            <p className="text-sm font-semibold normal-case">{t("guestGreeting")}</p>
             <p className="text-sm text-muted-foreground normal-case">{guestSubText}</p>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           {!isOnLoginPage && (
             <DropdownMenuItem asChild>
               <Link href={loginHref} className="font-semibold">
-                Đăng nhập
+                {t("login")}
               </Link>
             </DropdownMenuItem>
           )}
           {!isOnRegisterPage && (
             <DropdownMenuItem asChild>
-              <Link href={toRegisterPath()}>Đăng ký</Link>
+              <Link href={toRegisterPath()}>{t("register")}</Link>
             </DropdownMenuItem>
           )}
         </DropdownMenuContent>
@@ -139,22 +141,22 @@ export function HeaderUserMenu() {
           <TooltipTrigger asChild>
             <DropdownMenuTrigger
               className="bb-round inline-flex items-center justify-center min-h-[var(--bb-header-height)] px-[14px] border bg-brand-soft text-brand border-[var(--bb-brand-primary-border)] text-[0.72rem] font-bold tracking-[0.04em] uppercase cursor-pointer transition-colors rounded-full hover:bg-brand hover:text-black hover:border-brand focus-visible:outline-2 focus-visible:outline-brand focus-visible:outline-offset-[-2px] [@media(max-width:420px)]:hidden"
-              aria-label={`Tài khoản của ${displayName}`}
+              aria-label={t("accountAriaLabelUser", { name: displayName ?? "" })}
             >
               <span aria-hidden="true">{initials(profile)}</span>
             </DropdownMenuTrigger>
           </TooltipTrigger>
-          <TooltipContent>{displayName ?? "Tài khoản"}</TooltipContent>
+          <TooltipContent>{displayName ?? t("accountAriaLabel")}</TooltipContent>
         </Tooltip>
       </TooltipProvider>
       <DropdownMenuContent align="end" className="w-64 p-3">
         <DropdownMenuLabel className="px-1 pb-2 pt-1 font-normal">
-          <p className="text-sm text-muted-foreground normal-case">Xin chào,</p>
+          <p className="text-sm text-muted-foreground normal-case">{t("loggedInGreeting")}</p>
           <p className="truncate text-sm font-semibold normal-case" title={profile.email}>
             {displayName}
           </p>
           <p className="mt-1 text-xs leading-snug text-muted-foreground normal-case">
-            Trải nghiệm mua sắm không giới hạn cùng Bigbike.vn
+            {t("loggedInTagline")}
           </p>
         </DropdownMenuLabel>
         <div className="flex flex-col gap-2 pt-1">
@@ -163,19 +165,19 @@ export function HeaderUserMenu() {
             className="justify-center gap-1.5 rounded-none bg-brand px-4 py-2.5 font-display text-sm font-bold uppercase tracking-[0.04em] text-white focus:bg-[var(--bb-brand-primary-hover)] focus:text-white"
           >
             <Link href={toAccountPath()}>
-              Tài khoản của tôi
+              {t("myAccount")}
               <span aria-hidden="true">›</span>
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild className="justify-center py-1 text-sm">
-            <Link href={toOrderHistoryPath()}>Đơn hàng của tôi</Link>
+            <Link href={toOrderHistoryPath()}>{t("myOrders")}</Link>
           </DropdownMenuItem>
           <DropdownMenuItem
             onSelect={handleLogout}
             disabled={loggingOut}
             className="justify-center gap-1.5 rounded-none bg-black px-4 py-2.5 font-display text-sm font-bold uppercase tracking-[0.04em] text-white focus:bg-black focus:text-white data-[disabled]:opacity-60"
           >
-            {loggingOut ? "Đang đăng xuất…" : "Đăng xuất"}
+            {loggingOut ? t("loggingOut") : t("logout")}
             <span aria-hidden="true">⇥</span>
           </DropdownMenuItem>
         </div>

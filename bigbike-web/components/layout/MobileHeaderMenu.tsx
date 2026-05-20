@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import type { HeaderNavNode } from "@/components/layout/HeaderNavItem";
 import { performLogout, useAuth } from "@/lib/auth/auth-store";
 import {
@@ -74,9 +75,10 @@ type MobileNavBranchProps = {
   pathname: string | null;
   onNavigate: () => void;
   depth: number;
+  t: ReturnType<typeof useTranslations<"Header">>;
 };
 
-function MobileNavBranch({ node, pathname, onNavigate, depth }: MobileNavBranchProps) {
+function MobileNavBranch({ node, pathname, onNavigate, depth, t }: MobileNavBranchProps) {
   const href = normalizeMenuUrl(node.url);
   const active = isActivePath(pathname, href);
   const hasChildren = node.children.length > 0;
@@ -111,7 +113,11 @@ function MobileNavBranch({ node, pathname, onNavigate, depth }: MobileNavBranchP
           type="button"
           className="bb-mobile-nav-toggle"
           aria-expanded={childOpen}
-          aria-label={childOpen ? `Thu gọn ${node.label}` : `Mở rộng ${node.label}`}
+          aria-label={
+            childOpen
+              ? t("mobileMenuCollapseAriaLabel", { label: node.label })
+              : t("mobileMenuExpandAriaLabel", { label: node.label })
+          }
           onClick={() => setChildOpen((prev) => !prev)}
         >
           <ChevronIcon open={childOpen} />
@@ -126,6 +132,7 @@ function MobileNavBranch({ node, pathname, onNavigate, depth }: MobileNavBranchP
               pathname={pathname}
               onNavigate={onNavigate}
               depth={depth + 1}
+              t={t}
             />
           ))}
         </div>
@@ -140,6 +147,7 @@ export function MobileHeaderMenu({
   hotline,
   zaloUrl,
 }: MobileHeaderMenuProps) {
+  const t = useTranslations("Header");
   const [open, setOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const auth = useAuth();
@@ -165,8 +173,8 @@ export function MobileHeaderMenu({
   return (
     <>
       <button
-        className="bb-icon-btn bb-menu-toggle"
-        aria-label="Mở menu"
+        className="bb-icon-btn bb-menu-toggle min-[1200px]:!hidden"
+        aria-label={t("mobileMenuOpenAriaLabel")}
         aria-expanded={open}
         type="button"
         onClick={() => setOpen(true)}
@@ -194,13 +202,14 @@ export function MobileHeaderMenu({
                   pathname={pathname}
                   onNavigate={close}
                   depth={0}
+                  t={t}
                 />
               ))}
             </nav>
 
             {auth.status === "authenticated" && (
               <div className="bb-mobile-drawer-account">
-                <span className="bb-mobile-drawer-account-label">Đang đăng nhập</span>
+                <span className="bb-mobile-drawer-account-label">{t("mobileLoggedIn")}</span>
                 <strong title={auth.profile.email}>
                   {auth.profile.displayName?.trim() || auth.profile.email}
                 </strong>
@@ -209,15 +218,15 @@ export function MobileHeaderMenu({
 
             <div className="bb-mobile-drawer-actions">
               <Link href={toCartPath()} onClick={close}>
-                Giỏ hàng
+                {t("mobileCartLink")}
               </Link>
               {auth.status === "loading" ? null : auth.status === "authenticated" ? (
                 <>
                   <Link href={toAccountPath()} onClick={close}>
-                    Tài khoản
+                    {t("mobileAccountLink")}
                   </Link>
                   <Link href={toOrderHistoryPath()} onClick={close}>
-                    Đơn hàng
+                    {t("mobileOrdersLink")}
                   </Link>
                   <button
                     type="button"
@@ -225,19 +234,19 @@ export function MobileHeaderMenu({
                     onClick={handleLogout}
                     disabled={loggingOut}
                   >
-                    {loggingOut ? "Đang đăng xuất..." : "Đăng xuất"}
+                    {loggingOut ? t("mobileLoggingOut") : t("logout")}
                   </button>
                 </>
               ) : (
                 <>
                   {!isOnLoginPage && (
                     <Link href={safeLoginHref} onClick={close}>
-                      Đăng nhập
+                      {t("login")}
                     </Link>
                   )}
                   {!isOnRegisterPage && (
                     <Link href={toRegisterPath()} onClick={close}>
-                      Đăng ký
+                      {t("register")}
                     </Link>
                   )}
                 </>
@@ -254,7 +263,7 @@ export function MobileHeaderMenu({
                 )}
                 {zaloUrl && (
                   <a href={zaloUrl} target="_blank" rel="noopener noreferrer">
-                    Zalo hỗ trợ nhanh
+                    {t("mobileZaloSupport")}
                   </a>
                 )}
               </div>

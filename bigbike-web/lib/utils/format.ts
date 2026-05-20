@@ -1,4 +1,4 @@
-export function safeText(value: string | null | undefined, fallback = "Đang cập nhật"): string {
+export function safeText(value: string | null | undefined, fallback = "—"): string {
   if (!value) {
     return fallback;
   }
@@ -13,7 +13,7 @@ export function safeArray<T>(value: T[] | null | undefined): T[] {
 export function formatVnd(value: number | null | undefined): string {
   const safeValue = typeof value === "number" && Number.isFinite(value) ? value : null;
   if (safeValue === null) {
-    return "Liên hệ";
+    return "—";
   }
 
   return new Intl.NumberFormat("vi-VN", {
@@ -107,14 +107,14 @@ export function isSafeHomeVideoUrl(value: string | null | undefined): boolean {
   return parsed.pathname.includes("/bigbike-media/");
 }
 
-export function formatDate(value: string | null | undefined): string {
+export function formatDate(value: string | null | undefined, fallback = "—"): string {
   if (!value) {
-    return "Đang cập nhật";
+    return fallback;
   }
 
   const date = new Date(value);
   if (Number.isNaN(date.valueOf())) {
-    return "Đang cập nhật";
+    return fallback;
   }
 
   return new Intl.DateTimeFormat("vi-VN", {
@@ -211,5 +211,42 @@ export function customerStatusLabel(status: string | null | undefined): string {
       return "Bị khoá";
     default:
       return status ?? "Đang cập nhật";
+  }
+}
+
+type TFn = (key: string) => string;
+
+/** Locale-aware variant of stockStateLabel. Pass t from useTranslations("Product"). */
+export function stockStateLabelWithT(stockState: string | null | undefined, t: TFn): string {
+  switch (stockState) {
+    case "IN_STOCK": return t("stockState.IN_STOCK");
+    case "LOW_STOCK": return t("stockState.LOW_STOCK");
+    case "OUT_OF_STOCK": return t("stockState.OUT_OF_STOCK");
+    default: return t("stockState.UNKNOWN");
+  }
+}
+
+/** Locale-aware variant of orderStatusLabel. Pass t from useTranslations("Account.orders"). */
+export function orderStatusLabelWithT(status: string | null | undefined, t: TFn): string {
+  const known = ["PENDING", "ON_HOLD", "PROCESSING", "COMPLETED", "CANCELLED", "REFUNDED", "FAILED"];
+  if (status && known.includes(status)) return t(`orderStatus.${status}`);
+  return status ?? t("orderStatus.UNKNOWN");
+}
+
+/** Locale-aware variant of paymentStatusLabel. Pass t from useTranslations("Account.orders"). */
+export function paymentStatusLabelWithT(status: string | null | undefined, t: TFn): string {
+  const known = ["UNPAID", "PAID", "REFUNDED", "CANCELLED"];
+  if (status && known.includes(status)) return t(`paymentStatus.${status}`);
+  return status ?? t("paymentStatus.UNKNOWN");
+}
+
+/** Locale-aware variant of paymentMethodLabel. Pass t from useTranslations("Checkout"). */
+export function paymentMethodLabelWithT(method: string | null | undefined, t: TFn): string {
+  const code = (method ?? "").trim().toUpperCase();
+  switch (code) {
+    case "COD": return t("paymentMethod.COD");
+    case "BACS": return t("paymentMethod.BACS");
+    case "": return t("paymentMethod.EMPTY");
+    default: return code;
   }
 }

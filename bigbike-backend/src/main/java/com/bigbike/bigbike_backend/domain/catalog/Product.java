@@ -46,6 +46,11 @@ public record Product(
          * empty in list responses. Public reads include only PUBLISHED entries.
          */
         List<Product> relatedProducts,
+        /**
+         * Structured description blocks (V139). Null for products authored via the legacy
+         * RichTextEditor. Detail-only; null in list responses.
+         */
+        List<DescriptionBlock> descriptionBlocks,
         SeoMeta seo,
         /**
          * Raw English content (V136). Populated only on admin product detail reads

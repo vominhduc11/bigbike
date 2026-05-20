@@ -742,9 +742,36 @@
 .bb-proto .app-shell.focus-mode .topbar { display: none; }
 .bb-proto .app-shell.focus-mode .breadcrumb { display: none; }
 .bb-proto .app-shell.focus-mode .page-content { padding: 0; }
-/* Product form already has its own outer margins — neutralise them so the
-   form fills the chrome-less viewport cleanly. */
-.bb-proto .app-shell.focus-mode .page-content .pf-screen { margin: 0; min-height: 100dvh; }
+
+/* Full-bleed form layout in focus mode — Screen fills the viewport with
+   consistent 24/32px inner padding instead of being capped at its normal
+   max-width (which left awkward empty space on wide monitors).
+   `!important` is required on max-width because <Screen maxWidth="1200px">
+   sets the cap via inline style, which would otherwise beat any rule here. */
+.bb-proto .app-shell.focus-mode .page-content .screen,
+.bb-proto .app-shell.focus-mode .page-content > .bb-proto > .screen {
+  max-width: none !important;
+  margin: 0;
+  padding: 24px 32px;
+  min-height: 100dvh;
+}
+
+/* StickyActionBar uses negative side margins to bleed out of the normal
+   page-content padding. In focus mode there is no padding to bleed out of,
+   so cancel them — otherwise the bar slides past the right edge of the
+   viewport and triggers a horizontal scrollbar. */
+.bb-proto .app-shell.focus-mode .sticky-action-bar {
+  margin-left: 0;
+  margin-right: 0;
+  margin-bottom: 0;
+}
+
+/* Hide the ScreenHeader close button in focus mode — the floating FAB
+   already provides the equivalent exit affordance and duplicating it in
+   the top-right corner is confusing. */
+.bb-proto .app-shell.focus-mode .screen-header [data-screen-close="true"] {
+  display: none;
+}
 
 /* Floating exit button */
 .bb-proto-focus-fab {

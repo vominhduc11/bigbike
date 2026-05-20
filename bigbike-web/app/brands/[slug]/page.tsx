@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { getLocale } from "next-intl/server";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { CatalogFilters } from "@/components/catalog/CatalogFilters";
 import { CatalogSortSelect } from "@/components/catalog/CatalogSortSelect";
@@ -54,7 +55,8 @@ export async function generateMetadata({ params, searchParams }: BrandDetailPage
     });
   }
 
-  const brandResult = await getBrandBySlug(slug);
+  const locale = await getLocale();
+  const brandResult = await getBrandBySlug(slug, locale);
   const brand = brandResult.data;
   if (!brand) {
     return buildPublicMetadata({
@@ -148,8 +150,9 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
     );
   }
 
+  const locale = await getLocale();
   const [brandResult, productsResult, brandsResult] = await Promise.all([
-    getBrandBySlug(slug),
+    getBrandBySlug(slug, locale),
     listProducts({
       page: pageParsed.value,
       size: sizeParsed.value,
@@ -159,6 +162,7 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
       filterColor: colorParsed.value,
       minPrice: minPriceParsed.value,
       maxPrice: maxPriceParsed.value,
+      lang: locale,
     }),
     listBrands({ page: 1, size: 100, sort: "name:asc" }),
   ]);

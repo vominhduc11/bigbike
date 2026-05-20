@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import type { Metadata } from "next";
+import { getLocale } from "next-intl/server";
 import type { Article, Category, HomeSlider, Product } from "@/lib/contracts/public";
 import { HeroSlider } from "@/components/home/HeroSlider";
 import { BrandCarousel } from "@/components/home/BrandCarousel";
@@ -43,7 +44,9 @@ import {
   toProductListPath,
 } from "@/lib/utils/routes";
 
-export const revalidate = 3600;
+// Locale is read from a cookie (next-intl) — opt into dynamic rendering.
+// Data fetches are still cached at the fetch cache level.
+export const dynamic = "force-dynamic";
 
 const HOME_ORG_LOGO = "/wp/logo.png";
 
@@ -203,6 +206,7 @@ function WpNewsCard({ article }: { article: Article }) {
 
 
 export default async function HomePage() {
+  const locale = await getLocale();
   const [
     slidersResult,
     categoriesResult,
@@ -220,8 +224,8 @@ export default async function HomePage() {
     listArticles({ page: 1, category: "tin-tuc", size: 3, sort: "publishedAt:desc" }),
     listBrands({ page: 1, size: 12, sort: "name:asc" }),
     listPublicSettings(),
-    listProducts({ page: 1, homepageBlock: "FEATURED_GRID", size: 12, sort: "homepageOrder:asc" }),
-    listProducts({ page: 1, homepageBlock: "RECOMMENDED_CAROUSEL", size: 10, sort: "homepageOrder:asc" }),
+    listProducts({ page: 1, homepageBlock: "FEATURED_GRID", size: 12, sort: "homepageOrder:asc", lang: locale }),
+    listProducts({ page: 1, homepageBlock: "RECOMMENDED_CAROUSEL", size: 10, sort: "homepageOrder:asc", lang: locale }),
     listHomeVideos(),
   ]);
 
@@ -260,7 +264,7 @@ export default async function HomePage() {
   const sliderProducts = await Promise.all(
     rawSliders.map((slider) => {
       const slug = sliderProductSlug(slider);
-      return slug ? getProductBySlug(slug) : Promise.resolve(null);
+      return slug ? getProductBySlug(slug, locale) : Promise.resolve(null);
     }),
   );
   const slides = rawSliders
@@ -512,15 +516,21 @@ export default async function HomePage() {
       )}
 
       {/* Block 11: SEO Content */}
-      <div className="bb-seo-content">
+      <section className="bb-seo-content" aria-labelledby="home-seo-heading">
         <div className="bb-container">
           {homeContentBottomHtml ? (
             <div
+              className="mx-auto max-w-[760px]"
               dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(homeContentBottomHtml) }}
             />
           ) : (
-            <>
-              <h2>Shop bán đồ bảo hộ moto — phụ kiện touring chính hãng tại TP HCM</h2>
+            <div className="mx-auto max-w-[760px]">
+              <div className="mb-8 text-center max-[600px]:mb-6">
+                <p className="bb-kicker">VỀ BIGBIKE</p>
+                <h2 id="home-seo-heading" className="bb-section-title">
+                  SHOP BÁN ĐỒ BẢO HỘ MOTO — PHỤ KIỆN TOURING CHÍNH HÃNG TẠI TP HCM
+                </h2>
+              </div>
               <p>
                 BigBike chuyên cung cấp đồ bảo hộ moto, phụ kiện touring và gear chính hãng
                 cho biker tại TP HCM.
@@ -542,10 +552,10 @@ export default async function HomePage() {
                   <Link href={toProductListPath()}>Phụ kiện touring</Link> cho hành trình dài.
                 </li>
               </ul>
-            </>
+            </div>
           )}
         </div>
-      </div>
+      </section>
 
       {/* Analytics (CSR, no render) */}
       <HomeAnalytics />

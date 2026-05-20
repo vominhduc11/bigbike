@@ -219,6 +219,30 @@ to `NULL` on write.
 
 Status: `CONFIRMED_FROM_CODE`
 
+### Product description blocks — `description_blocks` (V139)
+
+Admin-curated structured content stored as JSONB in `products.description_blocks` (nullable). The column holds a JSON array of block objects — the **structured** source of truth for the "Mô tả sản phẩm" section. The mutation service renders blocks to HTML and writes the result into the existing `description` (TEXT) column simultaneously, so public consumers see no change.
+
+Seven block types:
+
+| `type` | Required fields | Optional fields |
+|---|---|---|
+| `heading` | `level` (2 or 3), `text` (≤ 500 chars) | — |
+| `paragraph` | `html` (≤ 50 000 chars; inline `<b><i><a><br>` only) | — |
+| `list` | `style` (`bulleted`\|`numbered`), `items` (1–200 strings, each ≤ 2 000 chars) | — |
+| `image` | `url` (≤ 2 000 chars) | `alt` (≤ 500), `caption` (≤ 500) |
+| `video` | `provider` (`youtube`\|`upload`), `url` (≤ 2 000 chars) | `caption` (≤ 500) |
+| `callout` | `variant` (`info`\|`warning`\|`note`), `html` (≤ 10 000 chars) | — |
+| `divider` | — | — |
+
+**Presence semantics (PATCH):** Sending `descriptionBlocks` (including `[]`) triggers rendering and overwrites **both** columns (`description_blocks` and `description`). Omitting the key leaves both columns untouched.
+
+**Read:** `description_blocks` is returned on product detail responses (public and admin) as `descriptionBlocks: BlockObject[] | null`. Not included in list responses (null).
+
+**HTML sanitizer:** Rendered HTML is sanitized (Jsoup `Safelist`) before writing to `description` to block XSS vectors (`<script>`, `on*` handlers, `javascript:` URIs).
+
+Status: `CONFIRMED_FROM_CODE` — `DescriptionBlock.java` (sealed interface), `DescriptionBlocksConverter`, `ProductEntity.descriptionBlocks`, `DescriptionBlockRenderer`, `AdminCatalogMutationService.applyProductPatch`, migration `V139`.
+
 ### Product FAQ entries — `product_faqs` (V133)
 
 Per-product list of question/answer pairs rendered in the PDP "Câu hỏi
@@ -306,6 +330,109 @@ tên biến thể, `seo_canonical_url`.
 Status: `CONFIRMED_FROM_CODE` — `ProductEntity`, `ProductSpecificationEntity`,
 `ProductFaqEntity` (các trường `*En`), `ProductTranslations` domain record,
 `JpaCatalogReadRepository` (resolve locale), migration `V136`.
+
+### Category bilingual content — English columns (V137)
+
+Danh mục có 2 bản nội dung: **tiếng Việt** (canonical) và **tiếng Anh** (tùy chọn).
+Bản tiếng Anh lưu trên các cột `_en` nullable cùng dòng trong bảng `categories`.
+
+**Cột `_en` trên `categories`** (đều nullable):
+
+| Cột tiếng Việt | Cột tiếng Anh | Kiểu |
+|---|---|---|
+| `name` | `name_en` | `VARCHAR(255)` |
+| `description` | `description_en` | `TEXT` |
+| `seo_title` | `seo_title_en` | `VARCHAR(255)` |
+| `seo_description` | `seo_description_en` | `TEXT` |
+
+Fallback: giống `PRODUCT_RULE_002` — mỗi trường lùi về VI khi EN bị null/blank. Xem `CATEGORY_RULE_001/002`.
+
+Status: `CONFIRMED_FROM_CODE` — `CategoryEntity`, `CategoryTranslations` domain record, migration `V137`.
+
+### Brand bilingual content — English columns (V137)
+
+Thương hiệu có 2 bản nội dung: **tiếng Việt** (canonical) và **tiếng Anh** (tùy chọn).
+Bản tiếng Anh lưu trên các cột `_en` nullable cùng dòng trong bảng `brands`.
+
+**Cột `_en` trên `brands`** (đều nullable):
+
+| Cột tiếng Việt | Cột tiếng Anh | Kiểu |
+|---|---|---|
+| `name` | `name_en` | `VARCHAR(255)` |
+| `description` | `description_en` | `TEXT` |
+| `seo_title` | `seo_title_en` | `VARCHAR(255)` |
+| `seo_description` | `seo_description_en` | `TEXT` |
+
+Fallback: giống `PRODUCT_RULE_002` — mỗi trường lùi về VI khi EN bị null/blank. Xem `BRAND_RULE_001/002`.
+
+Status: `CONFIRMED_FROM_CODE` — `BrandEntity`, `BrandTranslations` domain record, migration `V137`.
+
+### Article bilingual content — English columns (V138)
+
+Bài viết (blog) có 2 bản nội dung: **tiếng Việt** (canonical) và **tiếng Anh** (tùy chọn).
+Bản tiếng Anh lưu trên các cột `_en` nullable cùng dòng trong bảng `articles`.
+
+**Cột `_en` trên `articles`** (đều nullable):
+
+| Cột tiếng Việt | Cột tiếng Anh | Kiểu |
+|---|---|---|
+| `title` | `title_en` | `VARCHAR(255)` |
+| `excerpt` | `excerpt_en` | `TEXT` |
+| `body` | `body_en` | `TEXT` |
+| `seo_title` | `seo_title_en` | `VARCHAR(255)` |
+| `seo_description` | `seo_description_en` | `TEXT` |
+
+Fallback: giống `PRODUCT_RULE_002` — mỗi trường lùi về VI khi EN bị null/blank. Xem `ARTICLE_RULE_001/002`.
+
+Status: `CONFIRMED_FROM_CODE` — `ArticleEntity`, `ArticleTranslations` domain record, migration `V138`.
+
+### Page bilingual content — English columns (V138)
+
+Trang tĩnh có 2 bản nội dung: **tiếng Việt** (canonical) và **tiếng Anh** (tùy chọn).
+Bản tiếng Anh lưu trên các cột `_en` nullable cùng dòng trong bảng `pages`.
+
+**Cột `_en` trên `pages`** (đều nullable):
+
+| Cột tiếng Việt | Cột tiếng Anh | Kiểu |
+|---|---|---|
+| `title` | `title_en` | `VARCHAR(255)` |
+| `body` | `body_en` | `TEXT` |
+| `hero_title` | `hero_title_en` | `VARCHAR(255)` |
+| `hero_description` | `hero_description_en` | `TEXT` |
+| `hero_kicker` | `hero_kicker_en` | `VARCHAR(255)` |
+| `seo_title` | `seo_title_en` | `VARCHAR(255)` |
+| `seo_description` | `seo_description_en` | `TEXT` |
+
+Fallback: giống `PRODUCT_RULE_002` — mỗi trường lùi về VI khi EN bị null/blank. Xem `PAGE_RULE_001/002`.
+
+Status: `CONFIRMED_FROM_CODE` — `PageEntity`, `PageTranslations` domain record, migration `V138`.
+
+### Article body blocks — `body_blocks` (V140)
+
+`articles.body_blocks` là cột `jsonb` thêm vào trong migration `V140`. Cột này lưu mảng block có cấu trúc — cùng định dạng `DescriptionBlock` với `products.description_blocks` (V139).
+
+7 block type giống hệt: `heading`, `paragraph`, `list`, `image`, `video`, `callout`, `divider`. Schema JSON block giống `DescriptionBlock` — xem §"Product description blocks — description_blocks (V139)".
+
+**Migration (V141):** HTML cũ trong cột `body` của tất cả article đã được parse sang blocks bởi `BodyBlockParser` khi chạy migration. Parser ánh xạ từng top-level HTML element sang block type gần nhất. Element không nhận dạng được trở thành fallback `paragraph` (outerHTML được giữ nguyên).
+
+**Read behavior:** Admin detail read trả về `bodyBlocks` trong `AdminContentItem`. Public read (`GET /api/v1/articles/{slug}`) vẫn chỉ đọc `body` HTML — không thay đổi contract web/mobile.
+
+**Mutation semantics (presence flag):**
+- Key `bodyBlocks` có mặt trong request → render blocks → ghi đè cả `body_blocks` lẫn `body`.
+- Key `bodyBlocks` vắng mặt → `body` được cập nhật bình thường; `body_blocks` không bị đụng.
+- Array rỗng `[]` → `body_blocks` = `[]`; `body` = `""`.
+
+Status: `CONFIRMED_FROM_CODE` — `ArticleEntity.bodyBlocks`, `Article.bodyBlocks`, `AdminContentItem.bodyBlocks`, `UpsertArticleRequest.bodyBlocksPresent`, `AdminContentMutationService.applyArticlePatch`, migration `V140/V141`.
+
+### Page body blocks — `body_blocks` (V140)
+
+`pages.body_blocks` là cột `jsonb` thêm vào trong migration `V140`. Cùng định dạng block với article — xem §"Article body blocks (V140)".
+
+**Migration (V141):** HTML cũ trong cột `body` của tất cả page đã được parse sang blocks bởi `BodyBlockParser`.
+
+**Read / mutation semantics:** giống hệt article `body_blocks` — xem §"Article body blocks (V140)".
+
+Status: `CONFIRMED_FROM_CODE` — `PageEntity.bodyBlocks`, `Page.bodyBlocks`, `AdminContentItem.bodyBlocks`, `UpsertPageRequest.bodyBlocksPresent`, `AdminContentMutationService.applyPagePatch`, migration `V140/V141`.
 
 ### Product homepage placement (V111+)
 

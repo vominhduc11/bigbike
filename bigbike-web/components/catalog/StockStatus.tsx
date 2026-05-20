@@ -1,6 +1,6 @@
 "use client";
 
-import { stockStateLabel } from "@/lib/utils/format";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
 export type StockData = {
@@ -33,13 +33,18 @@ export function StockStatus({
   isLoading,
   variant = "badge",
 }: StockStatusProps) {
+  const tProduct = useTranslations("Product");
   if (isLoading && !fallbackState) return null;
 
   const rawState = data?.forceOutOfStock
     ? "OUT_OF_STOCK"
     : (data?.stockState ?? fallbackState ?? "UNKNOWN");
 
-  const baseLabel = data?.label ?? stockStateLabel(rawState);
+  const stateKey =
+    rawState === "IN_STOCK" || rawState === "LOW_STOCK" || rawState === "OUT_OF_STOCK"
+      ? rawState
+      : "UNKNOWN";
+  const baseLabel = data?.label ?? tProduct(`stockState.${stateKey}`);
   const qty = data?.quantity ?? null;
 
   // Mirror WP's `wc_get_stock_html()` "Chỉ còn N sản phẩm" copy when the
@@ -47,7 +52,7 @@ export function StockStatus({
   // "Còn ít" so big numbers don't read as plenty.
   const label =
     rawState === "LOW_STOCK" && qty != null && qty > 0 && qty <= LOW_STOCK_URGENCY_THRESHOLD
-      ? `Chỉ còn ${qty} sản phẩm`
+      ? tProduct("lowStockRemaining", { count: qty })
       : baseLabel;
 
   // Inline status line — coloured dot + label (mockup buy-box style).

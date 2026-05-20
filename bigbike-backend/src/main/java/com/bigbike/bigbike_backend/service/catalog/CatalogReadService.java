@@ -167,6 +167,7 @@ public class CatalogReadService {
                 null,                       // installationGuide — detail only
                 List.of(),                  // faqs — detail only
                 List.of(),                  // relatedProducts — detail only
+                null,                       // descriptionBlocks — detail only
                 null,                       // seo — detail only
                 null,                       // translations — admin detail read only
                 p.createdAt(),
@@ -239,10 +240,10 @@ public class CatalogReadService {
         );
     }
 
-    public PageResult<Category> listCategories(int page, int size, String sort, Boolean showOnHomepage) {
+    public PageResult<Category> listCategories(int page, int size, String sort, Boolean showOnHomepage, String lang) {
         SortSpec sortSpec = sortParser.parse(sort, "sortOrder", SortDirection.ASC, CATEGORY_SORT_FIELDS);
 
-        List<Category> result = catalogReadRepository.findAllCategories().stream()
+        List<Category> result = catalogReadRepository.findAllCategories(lang).stream()
                 .filter(Category::isVisible)
                 .filter(category -> matchesFlag(category.showOnHomepage(), showOnHomepage))
                 .sorted(categoryComparator(sortSpec))
@@ -251,16 +252,16 @@ public class CatalogReadService {
         return paginationService.paginate(result, page, size);
     }
 
-    public Category getCategoryBySlug(String slug) {
-        return catalogReadRepository.findCategoryBySlug(slug)
+    public Category getCategoryBySlug(String slug, String lang) {
+        return catalogReadRepository.findCategoryBySlug(slug, lang)
                 .filter(Category::isVisible)
                 .orElseThrow(() -> new NotFoundException("Category not found."));
     }
 
-    public PageResult<Brand> listBrands(int page, int size, String sort) {
+    public PageResult<Brand> listBrands(int page, int size, String sort, String lang) {
         SortSpec sortSpec = sortParser.parse(sort, "name", SortDirection.ASC, BRAND_SORT_FIELDS);
 
-        List<Brand> result = catalogReadRepository.findAllBrands().stream()
+        List<Brand> result = catalogReadRepository.findAllBrands(lang).stream()
                 .filter(Brand::isVisible)
                 .sorted(brandComparator(sortSpec))
                 .toList();
@@ -268,8 +269,8 @@ public class CatalogReadService {
         return paginationService.paginate(result, page, size);
     }
 
-    public Brand getBrandBySlug(String slug) {
-        return catalogReadRepository.findBrandBySlug(slug)
+    public Brand getBrandBySlug(String slug, String lang) {
+        return catalogReadRepository.findBrandBySlug(slug, lang)
                 .filter(Brand::isVisible)
                 .orElseThrow(() -> new NotFoundException("Brand not found."));
     }

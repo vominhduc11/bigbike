@@ -383,7 +383,10 @@ export function SliderListScreen({ canUpdate }) {
                 <span>{t('sliders.formSortOrder')}</span>
                 <Input type="number" value={form.sortOrder} onChange={(e) => setForm((p) => ({ ...p, sortOrder: e.target.value }))} />
               </label>
-              <label className="pf-checkbox" style={{ width: 'fit-content', marginTop: 22 }}>
+              <label
+                className="flex items-center gap-2.5 p-2.5 border border-border text-sm cursor-pointer hover:bg-muted w-fit"
+                style={{ marginTop: 22 }}
+              >
                 <Checkbox checked={form.isActive} onCheckedChange={(checked) => setForm((p) => ({ ...p, isActive: checked === true }))} />
                 <span>{t('sliders.formIsActive')}</span>
               </label>

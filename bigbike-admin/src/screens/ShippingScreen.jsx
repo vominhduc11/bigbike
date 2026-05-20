@@ -194,7 +194,7 @@ export function ShippingScreen({ canUpdate }) {
                           <Input type="number" min="0" placeholder={t('shipping.formFreeThresholdHint')} value={methodForm.freeShippingThreshold} onChange={(e) => setMethodForm((p) => ({ ...p, freeShippingThreshold: e.target.value }))} />
                         </label>
                       </div>
-                      <label className="pf-checkbox mt-2" style={{ width: 'fit-content' }}>
+                      <label className="mt-2 flex items-center gap-2.5 p-2.5 border border-border text-sm cursor-pointer hover:bg-muted w-fit">
                         <Checkbox checked={methodForm.enabled} onCheckedChange={(checked) => setMethodForm((p) => ({ ...p, enabled: checked }))} />
                         <span>{t('shipping.formEnabled')}</span>
                       </label>

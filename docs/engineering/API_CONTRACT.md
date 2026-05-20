@@ -144,6 +144,16 @@ order-preserving list. `null` keeps the existing set; `[]` clears it (same prese
 Status: `CONFIRMED_FROM_CODE` — `ContentController`, `AdminContentMutationService`,
 `UpsertArticleRequest`, `AdminContentItem`. See [DATA_CONTRACT.md](DATA_CONTRACT.md) §"Article ↔ Product relation (V130)".
 
+### Article / Page body blocks — `bodyBlocks` (V140)
+
+Admin detail reads (`AdminContentItem`) của cả Article lẫn Page giờ bao gồm `bodyBlocks: DescriptionBlock[] | null`. `null` = chưa có blocks; `[]` = body bị xoá rỗng. **Public read** (`GET /api/v1/articles/{slug}`, `GET /api/v1/pages/{slug}`) **không** trả `bodyBlocks` — web và mobile tiếp tục đọc `body` HTML như cũ.
+
+**Upsert mutation:**
+- Gửi key `bodyBlocks: [...]` trong `UpsertArticleRequest` / `UpsertPageRequest` → server render HTML từ blocks, ghi đè cả `body_blocks` lẫn `body`.
+- Bỏ key `bodyBlocks` hoàn toàn → `body` được patch bình thường; `body_blocks` không bị đụng (presence-flag pattern, giống `products.descriptionBlocks`).
+
+Status: `CONFIRMED_FROM_CODE` — `UpsertArticleRequest.bodyBlocksPresent`, `UpsertPageRequest.bodyBlocksPresent`, `AdminContentMutationService`, `AdminContentItem.bodyBlocks`. Xem [DATA_CONTRACT.md](DATA_CONTRACT.md) §"Article body blocks (V140)".
+
 ## Commerce Mutation Contracts
 
 | Endpoint | Current contract | Status | Evidence |
@@ -276,6 +286,16 @@ Status: `CONFIRMED_FROM_CODE`
 
 Evidence: `UpsertProductRequest.java` (`promotionContent`/`installationGuide` + presence flags), `AdminCatalogMutationService.applyProductPatch`, `Product.java` domain record, `JpaCatalogReadRepository` (detail mapper maps both columns; list mapper passes `null`), `V124__add_product_promotion_content.sql`, `V133__add_product_installation_guide_and_faq.sql`.
 
+### Product description blocks — `descriptionBlocks` (V139)
+
+`POST /api/v1/admin/products` and `PATCH /api/v1/admin/products/{id}` accept `descriptionBlocks`: an optional array of typed block objects. Each element must include a `type` discriminator (`heading`, `paragraph`, `list`, `image`, `video`, `callout`, `divider`) plus its type-specific required fields (validated via Bean Validation cascade).
+
+**Mutation semantics:** Sending `descriptionBlocks` (including `[]`) triggers the block renderer, which converts the array to sanitized HTML and atomically overwrites **both** `description_blocks` (JSONB, raw blocks) and `description` (TEXT, rendered HTML). Omitting the key on PATCH leaves both columns untouched — backward-compatible with products authored via the legacy RichTextEditor.
+
+`descriptionBlocks` is returned on `GET /api/v1/products/{slug}` and `GET /api/v1/admin/products/{id}` as `descriptionBlocks: BlockObject[] | null`. Products without blocks have `descriptionBlocks: null`; `description` (HTML) remains present and populated from whatever source last wrote it. Not included in product list responses (null).
+
+Status: `CONFIRMED_FROM_CODE` — `UpsertProductRequest.java` (`descriptionBlocks` + presence flag), `DescriptionBlockRenderer`, `AdminCatalogMutationService.applyProductPatch`, `JpaCatalogReadRepository`, `V139__add_product_description_blocks.sql`.
+
 ### Product FAQ entries — `faqs`
 
 `POST /api/v1/admin/products` and `PATCH /api/v1/admin/products/{id}` accept `faqs` (added `V133`): an optional array of `{ question, answer, sortOrder }` objects, max 50 entries (`@Size(max = 50)`). `question` ≤ 500 chars, `answer` ≤ 20 000 chars. Sending `faqs` replaces the whole list; rows with a blank question or answer are dropped. Mirrors the `specifications` array mutation pattern (full-replace, not presence-flag).
@@ -303,7 +323,9 @@ Sản phẩm có 2 bản nội dung: tiếng Việt (canonical) và tiếng Anh 
 **Đọc public — query param `lang`:** `GET /api/v1/products` và
 `GET /api/v1/products/{slug}` nhận `lang` = `vi` (mặc định) hoặc `en`. Khi
 `lang=en`, mỗi trường text trả về bản tiếng Anh, **lùi về tiếng Việt theo từng
-trường** khi cột `_en` rỗng (`COALESCE`). Các trường được dịch: `name`,
+trường** khi cột `_en` rỗng (`COALESCE`). Storefront `bigbike-web` lưu lựa chọn
+trong cookie `NEXT_LOCALE` (1 năm); server pages đọc cookie qua `getLocale()`
+của next-intl và truyền vào `lang` query. Các trường được dịch: `name`,
 `shortDescription`, `description`, `contentBottom`, `promotionContent`,
 `installationGuide`, `seo.title`, `seo.description`, và `specifications[]`
 (`name`/`value`/`group`), `faqs[]` (`question`/`answer`). Response public **giữ

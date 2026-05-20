@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { createReturn, fetchMyOrder, fetchMyOrders, fetchMyReturn, fetchMyReturns } from "@/lib/api/client-api";
 import type { CustomerReturn, OrderLineItem, OrderListItem } from "@/lib/contracts/commerce";
 import { AccountShell } from "@/components/layout/AccountShell";
@@ -18,24 +19,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const RETURN_STATUS_LABELS: Record<string, string> = {
-  PENDING: "Chờ duyệt",
-  APPROVED: "Đã duyệt",
-  REJECTED: "Từ chối",
-  RECEIVED: "Đã nhận hàng",
-  COMPLETED: "Hoàn thành",
-  REFUNDED: "Đã hoàn tiền",
-};
-
-const RETURN_REASON_LABELS: Record<string, string> = {
-  DEFECTIVE: "Hàng bị lỗi",
-  WRONG_ITEM: "Sai sản phẩm",
-  NOT_AS_DESCRIBED: "Không như mô tả",
-  CHANGED_MIND: "Đổi ý",
-  OTHER: "Khác",
-};
+const RETURN_STATUS_KEYS = ["PENDING", "APPROVED", "REJECTED", "RECEIVED", "COMPLETED", "REFUNDED"] as const;
+const RETURN_REASON_KEYS = ["DEFECTIVE", "WRONG_ITEM", "NOT_AS_DESCRIBED", "CHANGED_MIND", "OTHER"] as const;
+type ReturnStatusKey = (typeof RETURN_STATUS_KEYS)[number];
+type ReturnReasonKey = (typeof RETURN_REASON_KEYS)[number];
 
 const RETURNABLE_STATUSES = ["COMPLETED"];
+
+function isReturnStatus(s: string): s is ReturnStatusKey {
+  return (RETURN_STATUS_KEYS as readonly string[]).includes(s);
+}
+
+function isReturnReason(s: string): s is ReturnReasonKey {
+  return (RETURN_REASON_KEYS as readonly string[]).includes(s);
+}
 
 function returnStatusTone(status: string): StatusTone {
   const map: Record<string, StatusTone> = {
@@ -49,6 +46,9 @@ function returnStatusTone(status: string): StatusTone {
 }
 
 function ReturnDetailPanel({ id, onClose }: { id: string; onClose: () => void }) {
+  const t = useTranslations("Account.returns");
+  const tStatus = useTranslations("Account.returns.status");
+  const tReason = useTranslations("Account.returns.reason");
   const [detail, setDetail] = useState<CustomerReturn | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -56,16 +56,19 @@ function ReturnDetailPanel({ id, onClose }: { id: string; onClose: () => void })
   useEffect(() => {
     fetchMyReturn(id)
       .then((d) => { setDetail(d); setError(""); })
-      .catch((e: Error | undefined) => setError(e?.message ?? "Không tải được chi tiết."))
+      .catch((e: Error | undefined) => setError(e?.message ?? t("detailError")))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, t]);
+
+  const reasonLabel = (key: string) => (isReturnReason(key) ? tReason(key) : key);
+  const statusLabel = (key: string) => (isReturnStatus(key) ? tStatus(key) : key);
 
   return (
     <div className="fixed inset-0 bg-black/65 z-[2000] flex justify-end" role="dialog" aria-modal="true">
       <div className="w-[min(480px,100vw)] h-full bg-card border-l border-border flex flex-col overflow-hidden">
         <div className="flex justify-between items-center py-[18px] px-[22px] border-b border-border flex-shrink-0">
-          <h3 className="text-sm font-bold text-foreground m-0 tracking-[0.04em]">Chi tiết yêu cầu đổi trả</h3>
-          <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label="Đóng">✕</Button>
+          <h3 className="text-sm font-bold text-foreground m-0 tracking-[0.04em]">{t("detailHeading")}</h3>
+          <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label={t("closeAria")}>✕</Button>
         </div>
 
         {loading && (
@@ -81,15 +84,15 @@ function ReturnDetailPanel({ id, onClose }: { id: string; onClose: () => void })
             {/* Meta */}
             <div className="flex flex-col gap-[10px]">
               {[
-                { label: "Mã yêu cầu", value: <b className="text-foreground font-semibold font-mono">{detail.returnNumber}</b> },
-                detail.orderNumber ? { label: "Đơn hàng", value: <b className="text-foreground font-semibold">#{detail.orderNumber}</b> } : null,
-                { label: "Lý do", value: <b className="text-foreground font-semibold">{RETURN_REASON_LABELS[detail.reason] ?? detail.reason}</b> },
+                { label: t("metaCode"), value: <b className="text-foreground font-semibold font-mono">{detail.returnNumber}</b> },
+                detail.orderNumber ? { label: t("metaOrder"), value: <b className="text-foreground font-semibold">#{detail.orderNumber}</b> } : null,
+                { label: t("metaReason"), value: <b className="text-foreground font-semibold">{reasonLabel(detail.reason)}</b> },
                 {
-                  label: "Trạng thái",
-                  value: <StatusBadge tone={returnStatusTone(detail.status)}>{RETURN_STATUS_LABELS[detail.status] ?? detail.status}</StatusBadge>,
+                  label: t("metaStatus"),
+                  value: <StatusBadge tone={returnStatusTone(detail.status)}>{statusLabel(detail.status)}</StatusBadge>,
                 },
-                detail.refundAmount > 0 ? { label: "Hoàn tiền", value: <b className="text-foreground font-semibold">{formatVnd(detail.refundAmount)}</b> } : null,
-                { label: "Ngày tạo", value: <b className="text-foreground font-semibold">{formatDate(detail.createdAt)}</b> },
+                detail.refundAmount > 0 ? { label: t("metaRefund"), value: <b className="text-foreground font-semibold">{formatVnd(detail.refundAmount)}</b> } : null,
+                { label: t("metaCreatedAt"), value: <b className="text-foreground font-semibold">{formatDate(detail.createdAt)}</b> },
               ].filter(Boolean).map((row, i) => (
                 <div key={i} className="flex justify-between items-center text-sm">
                   <span className="text-muted-foreground">{row!.label}</span>
@@ -101,7 +104,7 @@ function ReturnDetailPanel({ id, onClose }: { id: string; onClose: () => void })
             {/* Customer note */}
             {detail.customerNote && (
               <div className="py-3 px-[14px] text-sm leading-[1.6] bg-[var(--bb-bg-surface-raised)] text-muted-foreground [&_p]:m-0">
-                <p className="text-sm font-bold tracking-[0.1em] uppercase mb-[6px]">Ghi chú của bạn</p>
+                <p className="text-sm font-bold tracking-[0.1em] uppercase mb-[6px]">{t("customerNoteHeading")}</p>
                 <p>{detail.customerNote}</p>
               </div>
             )}
@@ -109,7 +112,7 @@ function ReturnDetailPanel({ id, onClose }: { id: string; onClose: () => void })
             {/* Admin note */}
             {detail.adminNote && (
               <div className="py-3 px-[14px] text-sm leading-[1.6] bg-[var(--bb-state-warning-bg)] text-[var(--bb-state-warning-text)] border border-[var(--bb-state-warning-border)] [&_p]:m-0">
-                <p className="text-sm font-bold tracking-[0.1em] uppercase mb-[6px]">Phản hồi từ cửa hàng</p>
+                <p className="text-sm font-bold tracking-[0.1em] uppercase mb-[6px]">{t("adminNoteHeading")}</p>
                 <p>{detail.adminNote}</p>
               </div>
             )}
@@ -117,13 +120,13 @@ function ReturnDetailPanel({ id, onClose }: { id: string; onClose: () => void })
             {/* Items */}
             {detail.items && detail.items.length > 0 && (
               <div>
-                <p className="text-sm font-bold tracking-[0.1em] uppercase text-muted-foreground m-0 mb-[10px]">Sản phẩm đổi trả</p>
+                <p className="text-sm font-bold tracking-[0.1em] uppercase text-muted-foreground m-0 mb-[10px]">{t("itemsHeading")}</p>
                 <table className="w-full border-collapse text-sm text-foreground">
                   <thead>
                     <tr>
-                      <th className="text-left text-sm tracking-[0.08em] uppercase text-muted-foreground py-1.5 border-b border-border">Sản phẩm</th>
-                      <th className="text-center text-sm tracking-[0.08em] uppercase text-muted-foreground py-1.5 border-b border-border">SL</th>
-                      <th className="text-right text-sm tracking-[0.08em] uppercase text-muted-foreground py-1.5 border-b border-border">Đơn giá</th>
+                      <th className="text-left text-sm tracking-[0.08em] uppercase text-muted-foreground py-1.5 border-b border-border">{t("colProduct")}</th>
+                      <th className="text-center text-sm tracking-[0.08em] uppercase text-muted-foreground py-1.5 border-b border-border">{t("colQty")}</th>
+                      <th className="text-right text-sm tracking-[0.08em] uppercase text-muted-foreground py-1.5 border-b border-border">{t("colUnitPrice")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -145,15 +148,15 @@ function ReturnDetailPanel({ id, onClose }: { id: string; onClose: () => void })
             {/* History */}
             {detail.history && detail.history.length > 0 && (
               <div>
-                <p className="text-sm font-bold tracking-[0.1em] uppercase text-muted-foreground m-0 mb-[10px]">Lịch sử xử lý</p>
+                <p className="text-sm font-bold tracking-[0.1em] uppercase text-muted-foreground m-0 mb-[10px]">{t("historyHeading")}</p>
                 <ol className="list-none m-0 p-0 flex flex-col">
                   {detail.history.map((h, i) => (
                     <li key={i} className="flex gap-3 pb-4 relative last:pb-0 [&:not(:last-child)]:before:content-[''] [&:not(:last-child)]:before:absolute [&:not(:last-child)]:before:left-[5px] [&:not(:last-child)]:before:top-[14px] [&:not(:last-child)]:before:bottom-0 [&:not(:last-child)]:before:w-px [&:not(:last-child)]:before:bg-border">
                       <span className="bb-round w-[11px] h-[11px] rounded-full bg-brand flex-shrink-0 mt-[2px]" />
                       <div className="flex-1">
                         <p className="text-sm font-semibold text-foreground m-0 mb-[3px]">
-                          {h.fromStatus ? `${RETURN_STATUS_LABELS[h.fromStatus] ?? h.fromStatus} → ` : ""}
-                          {RETURN_STATUS_LABELS[h.toStatus] ?? h.toStatus}
+                          {h.fromStatus ? `${statusLabel(h.fromStatus)} → ` : ""}
+                          {statusLabel(h.toStatus)}
                         </p>
                         <p className="text-sm text-muted-foreground m-0 mb-[3px]">{formatDate(h.createdAt)}</p>
                         {h.note && <p className="text-sm text-muted-foreground m-0 italic">{h.note}</p>}
@@ -171,6 +174,11 @@ function ReturnDetailPanel({ id, onClose }: { id: string; onClose: () => void })
 }
 
 function ReturnsContent() {
+  const t = useTranslations("Account.returns");
+  const tStatus = useTranslations("Account.returns.status");
+  const tReason = useTranslations("Account.returns.reason");
+  const reasonLabel = (key: string) => (isReturnReason(key) ? tReason(key) : key);
+  const statusLabel = (key: string) => (isReturnStatus(key) ? tStatus(key) : key);
   const [returns, setReturns] = useState<CustomerReturn[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -196,7 +204,7 @@ function ReturnsContent() {
         setError("");
       })
       .catch((e: Error | undefined) => {
-        if (e) setError(e.message ?? "Không tải được yêu cầu đổi trả.");
+        if (e) setError(e.message ?? t("errorLoad"));
       })
       .finally(() => setLoading(false));
   }
@@ -267,23 +275,23 @@ function ReturnsContent() {
     const reason = (fd.get("reason") as string).trim();
     const customerNote = (fd.get("customerNote") as string).trim();
 
-    if (!selectedOrderId) { setFormError("Vui lòng chọn đơn hàng."); return; }
-    if (!reason) { setFormError("Vui lòng chọn lý do đổi trả."); return; }
+    if (!selectedOrderId) { setFormError(t("errorPickOrder")); return; }
+    if (!reason) { setFormError(t("errorPickReason")); return; }
 
     const items = selectedLineItems
       .filter((li) => itemSelections[li.id]?.selected)
       .map((li) => ({ orderLineItemId: li.id, quantity: itemSelections[li.id].quantity }));
 
-    if (items.length === 0) { setFormError("Vui lòng chọn ít nhất một sản phẩm cần đổi trả."); return; }
+    if (items.length === 0) { setFormError(t("errorPickItem")); return; }
 
     setSubmitting(true);
     try {
       await createReturn(selectedOrderId, { reason, customerNote: customerNote || undefined, items });
-      setFormSuccess("Yêu cầu đổi trả đã được gửi thành công.");
+      setFormSuccess(t("successSubmitted"));
       closeForm();
       loadReturns();
     } catch (err: unknown) {
-      setFormError(err instanceof Error ? err.message : "Có lỗi xảy ra, vui lòng thử lại.");
+      setFormError(err instanceof Error ? err.message : t("errorGeneric"));
     } finally {
       setSubmitting(false);
     }
@@ -293,12 +301,12 @@ function ReturnsContent() {
     <>
       <div className="flex justify-between items-end mb-5 pb-4 border-b border-border">
         <div>
-          <h2 className="font-display uppercase text-26 tracking-[0.01em] m-0 text-foreground">Đổi trả</h2>
-          <p className="text-sm text-muted-foreground mt-1 m-0">Lịch sử yêu cầu đổi trả và hoàn tiền</p>
+          <h2 className="font-display uppercase text-26 tracking-[0.01em] m-0 text-foreground">{t("heading")}</h2>
+          <p className="text-sm text-muted-foreground mt-1 m-0">{t("subtitle")}</p>
         </div>
         {!showForm && (
           <Button type="button" variant="primary" size="sm" onClick={openForm}>
-            Tạo yêu cầu đổi trả
+            {t("createButton")}
           </Button>
         )}
       </div>
@@ -314,7 +322,7 @@ function ReturnsContent() {
       {/* Create return form */}
       {showForm && (
         <div className="bg-card border border-border p-[22px_24px] mb-6">
-          <p className="text-sm font-bold tracking-[0.14em] uppercase text-muted-foreground mb-4">Tạo yêu cầu đổi trả</p>
+          <p className="text-sm font-bold tracking-[0.14em] uppercase text-muted-foreground mb-4">{t("createHeading")}</p>
           {formError && (
             <div className="bg-[var(--bb-state-danger-bg)] border border-[var(--bb-state-danger-border)] p-[14px_18px] mb-3 text-sm text-destructive">
               <p className="m-0">{formError}</p>
@@ -323,21 +331,21 @@ function ReturnsContent() {
           <form onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 gap-[14px] sm:grid-cols-2">
               <div className="flex flex-col gap-1.5 col-span-full">
-                <label className="text-sm font-bold tracking-[0.14em] uppercase text-muted-foreground">Đơn hàng</label>
+                <label className="text-sm font-bold tracking-[0.14em] uppercase text-muted-foreground">{t("orderLabel")}</label>
                 {ordersLoading ? (
                   <span className="bb-skel bb-skel--text" style={{ width: "100%", display: "block", height: 38 }} />
                 ) : returnableOrders.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    Không có đơn hàng nào đủ điều kiện đổi trả (cần trạng thái Hoàn thành).
+                    {t("noEligibleOrders")}
                   </p>
                 ) : (
                   <Select value={selectedOrderId} onValueChange={handleOrderChange} required>
                     <SelectTrigger>
-                      <SelectValue placeholder="-- Chọn đơn hàng --" />
+                      <SelectValue placeholder={t("orderPlaceholder")} />
                     </SelectTrigger>
                     <SelectContent>
                       {returnableOrders.map((o) => (
-                        <SelectItem key={o.id} value={o.id}>Đơn #{o.orderNumber}</SelectItem>
+                        <SelectItem key={o.id} value={o.id}>{t("orderOption", { orderNumber: o.orderNumber })}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -347,11 +355,11 @@ function ReturnsContent() {
               {/* Line items appear after an order is chosen */}
               {selectedOrderId && (
                 <div className="flex flex-col gap-1.5 col-span-full">
-                  <label className="text-sm font-bold tracking-[0.14em] uppercase text-muted-foreground mb-2 block">Chọn sản phẩm đổi trả</label>
+                  <label className="text-sm font-bold tracking-[0.14em] uppercase text-muted-foreground mb-2 block">{t("pickItemLabel")}</label>
                   {lineItemsLoading ? (
                     <span className="bb-skel bb-skel--text" style={{ width: "100%", display: "block", height: 32 }} />
                   ) : selectedLineItems.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">Không có sản phẩm nào trong đơn hàng này.</p>
+                    <p className="text-sm text-muted-foreground">{t("noItemsInOrder")}</p>
                   ) : (
                     selectedLineItems.map((li) => (
                       <div key={li.id} className="flex items-center gap-2.5 mb-2.5">
@@ -373,7 +381,7 @@ function ReturnsContent() {
                             value={itemSelections[li.id].quantity}
                             onChange={(e) => setLineItemQty(li.id, Number(e.target.value), li.quantity)}
                             className="w-16 text-center"
-                            aria-label={`Số lượng ${li.productName}`}
+                            aria-label={t("lineQuantityAria", { productName: li.productName })}
                           />
                         )}
                       </div>
@@ -383,34 +391,34 @@ function ReturnsContent() {
               )}
 
               <div className="flex flex-col gap-1.5 col-span-full">
-                <label className="text-sm font-bold tracking-[0.14em] uppercase text-muted-foreground">Lý do đổi trả</label>
+                <label className="text-sm font-bold tracking-[0.14em] uppercase text-muted-foreground">{t("reasonLabel")}</label>
                 <Select name="reason" required>
                   <SelectTrigger>
-                    <SelectValue placeholder="-- Chọn lý do --" />
+                    <SelectValue placeholder={t("reasonPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.entries(RETURN_REASON_LABELS).map(([key, label]) => (
-                      <SelectItem key={key} value={key}>{label}</SelectItem>
+                    {RETURN_REASON_KEYS.map((key) => (
+                      <SelectItem key={key} value={key}>{tReason(key)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="flex flex-col gap-1.5 col-span-full">
-                <label className="text-sm font-bold tracking-[0.14em] uppercase text-muted-foreground">Mô tả thêm (không bắt buộc)</label>
+                <label className="text-sm font-bold tracking-[0.14em] uppercase text-muted-foreground">{t("noteLabel")}</label>
                 <Textarea
                   name="customerNote"
                   rows={3}
-                  placeholder="Mô tả thêm về vấn đề..."
+                  placeholder={t("notePlaceholder")}
                   className="resize-y"
                 />
               </div>
             </div>
             <div className="flex gap-3 mt-5">
               <Button type="submit" variant="primary" disabled={submitting || !selectedOrderId || lineItemsLoading}>
-                {submitting ? "Đang gửi..." : "Gửi yêu cầu"}
+                {submitting ? t("submitting") : t("submit")}
               </Button>
               <Button type="button" variant="secondary" onClick={closeForm} disabled={submitting}>
-                Hủy
+                {t("cancel")}
               </Button>
             </div>
           </form>
@@ -439,7 +447,7 @@ function ReturnsContent() {
         </div>
       ) : returns.length === 0 ? (
         <div className="text-center py-[60px] text-muted-foreground">
-          <p className="text-muted-foreground text-sm m-0">Bạn chưa có yêu cầu đổi trả nào.</p>
+          <p className="text-muted-foreground text-sm m-0">{t("empty")}</p>
         </div>
       ) : (
         <>
@@ -454,32 +462,32 @@ function ReturnsContent() {
                 <div className="flex justify-between items-center py-[14px] px-5 bg-[var(--bb-bg-surface-raised)] border-b border-border gap-[14px] flex-wrap">
                   <div className="flex gap-[22px] max-sm:flex-wrap max-sm:gap-x-[18px] max-sm:gap-y-3">
                     <div className="text-sm text-muted-foreground tracking-[0.1em] uppercase">
-                      Mã yêu cầu
+                      {t("metaCode")}
                       <b className="block text-sm text-foreground font-bold mt-[3px] tracking-[0.04em] normal-case font-mono">{ret.returnNumber}</b>
                     </div>
                     {ret.orderNumber && (
                       <div className="text-sm text-muted-foreground tracking-[0.1em] uppercase">
-                        Đơn hàng
+                        {t("metaOrder")}
                         <b className="block text-sm text-foreground font-bold mt-[3px] tracking-[0.04em] normal-case font-mono">#{ret.orderNumber}</b>
                       </div>
                     )}
                     <div className="text-sm text-muted-foreground tracking-[0.1em] uppercase">
-                      Lý do
-                      <b className="block text-sm text-foreground font-bold mt-[3px] tracking-[0.04em] normal-case">{RETURN_REASON_LABELS[ret.reason] ?? ret.reason}</b>
+                      {t("metaReason")}
+                      <b className="block text-sm text-foreground font-bold mt-[3px] tracking-[0.04em] normal-case">{reasonLabel(ret.reason)}</b>
                     </div>
                     <div className="text-sm text-muted-foreground tracking-[0.1em] uppercase">
-                      Ngày tạo
+                      {t("metaCreatedAt")}
                       <b className="block text-sm text-foreground font-bold mt-[3px] tracking-[0.04em] normal-case font-mono">{formatDate(ret.createdAt)}</b>
                     </div>
                     {ret.refundAmount > 0 && (
                       <div className="text-sm text-muted-foreground tracking-[0.1em] uppercase">
-                        Hoàn tiền
+                        {t("metaRefund")}
                         <b className="block text-sm text-foreground font-bold mt-[3px] tracking-[0.04em] normal-case">{formatVnd(ret.refundAmount)}</b>
                       </div>
                     )}
                   </div>
                   <StatusBadge tone={returnStatusTone(ret.status)}>
-                    {RETURN_STATUS_LABELS[ret.status] ?? ret.status}
+                    {statusLabel(ret.status)}
                   </StatusBadge>
                 </div>
               </button>

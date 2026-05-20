@@ -1,6 +1,7 @@
 "use client";
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import type {
   Brand,
   CatalogFacets,
@@ -176,6 +177,7 @@ export function CatalogFilters({
   hiddenParams = {},
   banner = null,
 }: CatalogFiltersProps) {
+  const t = useTranslations("Catalog");
   const [brandSearch, setBrandSearch] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -243,7 +245,7 @@ export function CatalogFilters({
       {/* Header */}
       <div className="mb-4 flex items-center justify-between border-b-2 border-brand pb-3 max-[768px]:px-0 max-[768px]:pt-1 max-[768px]:pb-2.5">
         <span className="font-display text-sm font-semibold uppercase tracking-[0.06em] text-foreground">
-          Bộ lọc
+          {t("filtersHeading")}
         </span>
         <div className="flex items-center gap-3">
           {hasActiveFilters && (
@@ -251,7 +253,7 @@ export function CatalogFilters({
               href={resetHref}
               className="text-sm font-semibold uppercase tracking-[0.06em] text-muted-foreground no-underline transition-colors hover:text-brand"
             >
-              Xoá tất cả
+              {t("clearAll")}
             </Link>
           )}
           <button
@@ -259,7 +261,7 @@ export function CatalogFilters({
             className="hidden cursor-pointer border-0 bg-transparent text-muted-foreground transition-colors hover:text-foreground max-[768px]:-mr-2 max-[768px]:flex max-[768px]:h-11 max-[768px]:w-11 max-[768px]:items-center max-[768px]:justify-center"
             onClick={() => setMobileOpen((v) => !v)}
             aria-expanded={mobileOpen}
-            aria-label={mobileOpen ? "Thu gọn bộ lọc" : "Mở rộng bộ lọc"}
+            aria-label={mobileOpen ? t("filterToggleCollapse") : t("filterToggleExpand")}
           >
             <svg
               className={cn(
@@ -291,7 +293,7 @@ export function CatalogFilters({
                 key={chip.label}
                 href={chip.removeHref}
                 className="inline-flex items-center gap-1.5 border border-[color:var(--bb-brand-primary-border)] bg-brand/10 px-2.5 py-1 text-sm font-bold uppercase tracking-[0.08em] text-brand no-underline transition-colors hover:bg-brand/20"
-                aria-label={`Bỏ bộ lọc: ${chip.label}`}
+                aria-label={t("removeFilter", { label: chip.label })}
               >
                 {chip.label}
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
@@ -304,10 +306,10 @@ export function CatalogFilters({
 
         {/* ── Nhóm sản phẩm ───────────────────────────────────────────── */}
         {categoryRows.length > 0 && (
-          <FilterSection title="Nhóm sản phẩm">
+          <FilterSection title={t("filterCategory")}>
             <div className="flex flex-col">
               <FilterRow href={allProductsHref} active={resetHref === allProductsHref}>
-                <span>Tất cả sản phẩm</span>
+                <span>{t("allProducts")}</span>
               </FilterRow>
               {categoryRows.map((cat) => {
                 const href = toCategoryPath(cat.key);
@@ -327,7 +329,7 @@ export function CatalogFilters({
         )}
 
         {/* ── Giá bán ─────────────────────────────────────────────────── */}
-        <FilterSection title="Giá bán">
+        <FilterSection title={t("filterPrice")}>
           <div className="flex flex-col">
             {priceRows.map((band) => {
               const active =
@@ -347,7 +349,7 @@ export function CatalogFilters({
 
         {/* ── Thương hiệu ─────────────────────────────────────────────── */}
         {brandRows.length > 0 && (
-          <FilterSection title="Thương hiệu">
+          <FilterSection title={t("filterBrand")}>
             <div className="flex flex-col">
               {brandRows.length > 8 && (
                 <div className="relative mb-2">
@@ -358,16 +360,16 @@ export function CatalogFilters({
                   <Input
                     type="text"
                     className="min-h-0 py-2 pl-[30px] pr-2.5 text-sm"
-                    placeholder="Tìm thương hiệu..."
+                    placeholder={t("brandSearchPlaceholder")}
                     value={brandSearch}
                     onChange={(e) => setBrandSearch(e.target.value)}
-                    aria-label="Tìm kiếm thương hiệu"
+                    aria-label={t("brandSearchAria")}
                   />
                 </div>
               )}
               <div className="max-h-[260px] overflow-y-auto pr-1">
                 <FilterRow href={queryHref({ "pwb-brand": undefined })} active={!current.brand}>
-                  <span>Tất cả</span>
+                  <span>{t("allBrands")}</span>
                 </FilterRow>
                 {filteredBrandRows.map((brand) => {
                   const active = current.brand === brand.key;
@@ -392,7 +394,7 @@ export function CatalogFilters({
                   );
                 })}
                 {filteredBrandRows.length === 0 && (
-                  <p className="m-0 py-1 text-sm text-muted-foreground">Không tìm thấy</p>
+                  <p className="m-0 py-1 text-sm text-muted-foreground">{t("brandNotFound")}</p>
                 )}
               </div>
             </div>
@@ -400,10 +402,10 @@ export function CatalogFilters({
         )}
 
         {/* ── Màu sắc ─────────────────────────────────────────────────── */}
-        <FilterSection title="Màu sắc">
+        <FilterSection title={t("filterColor")}>
           <div className="flex flex-col">
             <FilterRow href={queryHref({ filter_color: undefined })} active={!current.color}>
-              <span>Tất cả</span>
+              <span>{t("allColors")}</span>
             </FilterRow>
             {colorRows.map((color) => {
               const active = current.color === color.key;
@@ -428,10 +430,10 @@ export function CatalogFilters({
         {bannerImage && (
           <div className="mt-6">
             {bannerHref ? (
-              <Link href={bannerHref} className="block" aria-label="Xem khuyến mãi">
+              <Link href={bannerHref} className="block" aria-label={t("promoBannerAria")}>
                 <MediaImage
                   image={{ url: bannerImage.url ?? undefined, alt: bannerImage.alt ?? undefined }}
-                  altFallback="Khuyến mãi BigBike"
+                  altFallback={t("promoBannerAlt")}
                   width={bannerImage.width ?? 260}
                   height={bannerImage.height ?? 340}
                   className="h-auto w-full"
@@ -440,7 +442,7 @@ export function CatalogFilters({
             ) : (
               <MediaImage
                 image={{ url: bannerImage.url ?? undefined, alt: bannerImage.alt ?? undefined }}
-                altFallback="Khuyến mãi BigBike"
+                altFallback={t("promoBannerAlt")}
                 width={bannerImage.width ?? 260}
                 height={bannerImage.height ?? 340}
                 className="h-auto w-full"

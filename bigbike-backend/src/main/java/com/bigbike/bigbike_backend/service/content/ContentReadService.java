@@ -26,7 +26,7 @@ public class ContentReadService {
     private final ContentReadRepository contentReadRepository;
     private final SortParser sortParser;
 
-    public PageResult<Article> listArticles(int page, int size, String sort, String category, String q) {
+    public PageResult<Article> listArticles(int page, int size, String sort, String category, String q, String lang) {
         SortSpec sortSpec = sortParser.parse(sort, "publishedAt", SortDirection.DESC, ARTICLE_SORT_FIELDS);
 
         Sort springSort = toSpringSort(sortSpec);
@@ -34,19 +34,19 @@ public class ContentReadService {
 
         org.springframework.data.domain.Page<Article> result =
                 contentReadRepository.listPublishedArticles(
-                        blankToNull(category), blankToNull(q), pageable);
+                        blankToNull(category), blankToNull(q), pageable, resolvedLang(lang));
 
         return toPageResult(result);
     }
 
-    public Article getArticleBySlug(String slug) {
-        return contentReadRepository.findArticleBySlug(slug)
+    public Article getArticleBySlug(String slug, String lang) {
+        return contentReadRepository.findArticleBySlug(slug, resolvedLang(lang))
                 .filter(article -> article.publishStatus() == PublishStatus.PUBLISHED)
                 .orElseThrow(() -> new NotFoundException("Article not found."));
     }
 
-    public Page getPageBySlug(String slug) {
-        return contentReadRepository.findPageBySlug(slug)
+    public Page getPageBySlug(String slug, String lang) {
+        return contentReadRepository.findPageBySlug(slug, resolvedLang(lang))
                 .filter(page -> page.publishStatus() == PublishStatus.PUBLISHED)
                 .orElseThrow(() -> new NotFoundException("Page not found."));
     }
@@ -77,5 +77,9 @@ public class ContentReadService {
 
     private static String blankToNull(String s) {
         return (s != null && !s.isBlank()) ? s.trim() : null;
+    }
+
+    private static String resolvedLang(String lang) {
+        return "en".equals(lang) ? "en" : "vi";
     }
 }

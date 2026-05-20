@@ -37,4 +37,7 @@ public class UpsertBrandRequest {
     private SeoMetaRequest seo;
 
     private Boolean visible;
+
+    @Valid
+    private BrandTranslationRequest translations;
 }

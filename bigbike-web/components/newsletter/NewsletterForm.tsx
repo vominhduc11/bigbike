@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { subscribeNewsletter } from "@/lib/api/client-api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /** Ô đăng ký nhận tin qua email ở chân trang — gửi tới POST /api/v1/newsletter. */
 export function NewsletterForm() {
+  const t = useTranslations("Newsletter");
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
@@ -20,16 +22,16 @@ export function NewsletterForm() {
     setError("");
     const now = Date.now();
     if (now - lastSubmitAt.current < COOLDOWN_MS) {
-      setError("Vui lòng chờ một chút trước khi gửi lại.");
+      setError(t("cooldown"));
       return;
     }
     const email = ((new FormData(e.currentTarget).get("email") as string) ?? "").trim();
     if (!email) {
-      setError("Vui lòng nhập email.");
+      setError(t("emailRequired"));
       return;
     }
     if (!EMAIL_RE.test(email)) {
-      setError("Email không hợp lệ.");
+      setError(t("emailInvalid"));
       return;
     }
     setSaving(true);
@@ -39,7 +41,7 @@ export function NewsletterForm() {
       setDone(true);
       (e.target as HTMLFormElement).reset();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Đăng ký thất bại, vui lòng thử lại.");
+      setError(err instanceof Error ? err.message : t("submitFailed"));
     } finally {
       setSaving(false);
     }
@@ -48,7 +50,7 @@ export function NewsletterForm() {
   if (done) {
     return (
       <p className="m-0 text-sm font-semibold text-brand">
-        Cảm ơn bạn đã đăng ký nhận tin từ BigBike!
+        {t("success")}
       </p>
     );
   }
@@ -59,8 +61,8 @@ export function NewsletterForm() {
         <Input
           type="email"
           name="email"
-          placeholder="Email của bạn..."
-          aria-label="Email đăng ký nhận tin"
+          placeholder={t("placeholder")}
+          aria-label={t("ariaLabel")}
           required
           className="h-11 flex-1 rounded-none border-0 bg-card text-card-foreground"
         />
@@ -70,7 +72,7 @@ export function NewsletterForm() {
           disabled={saving}
           className="h-11 shrink-0 rounded-none px-6"
         >
-          {saving ? "Đang gửi..." : "Gửi"}
+          {saving ? t("submitting") : t("submit")}
         </Button>
       </div>
       {error && <p className="m-0 text-xs text-destructive">{error}</p>}

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useCart } from "@/lib/cart-context";
 import { fetchCart } from "@/lib/api/client-api";
 import type { Cart } from "@/lib/contracts/commerce";
@@ -11,20 +12,25 @@ import { toCartPath, toCheckoutPath } from "@/lib/utils/routes";
 
 const HOVER_OPEN_DELAY = 120;
 const HOVER_CLOSE_DELAY = 240;
+const CLOSE_ANIMATION_MS = 200;
 
 export function CartIcon() {
+  const t = useTranslations("Cart");
   const { cartCount } = useCart();
   const [open, setOpen] = useState(false);
+  const [closing, setClosing] = useState(false);
   const [cart, setCart] = useState<Cart | null>(null);
   const [loading, setLoading] = useState(false);
   const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const closeAnimTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const loadingRef = useRef(false);
   const lastLoadedCartCount = useRef<number | null>(null);
 
   const clearTimers = useCallback(() => {
     if (openTimer.current) clearTimeout(openTimer.current);
     if (closeTimer.current) clearTimeout(closeTimer.current);
+    if (closeAnimTimer.current) clearTimeout(closeAnimTimer.current);
   }, []);
 
   const refreshCart = useCallback(async () => {
@@ -48,30 +54,53 @@ export function CartIcon() {
     void refreshCart();
   }, [cart, cartCount, refreshCart]);
 
-  function handleEnter() {
+  const scheduleOpen = useCallback(() => {
     clearTimers();
     openTimer.current = setTimeout(() => {
+      setClosing(false);
       setOpen(true);
       loadCart();
     }, HOVER_OPEN_DELAY);
+  }, [clearTimers, loadCart]);
+
+  function handleHoverEnter() {
+    // Touch-only devices không có hover thật — bỏ qua để tránh popover bật/tắt do
+    // emulated mouse event khi tap; tap vào icon vẫn điều hướng sang /cart như cũ.
+    if (typeof window !== "undefined" && !window.matchMedia("(hover: hover)").matches) {
+      return;
+    }
+    scheduleOpen();
+  }
+
+  function handleFocusEnter() {
+    scheduleOpen();
   }
 
   function handleLeave() {
     clearTimers();
-    closeTimer.current = setTimeout(() => setOpen(false), HOVER_CLOSE_DELAY);
+    closeTimer.current = setTimeout(() => {
+      setClosing(true);
+      closeAnimTimer.current = setTimeout(() => {
+        setOpen(false);
+        setClosing(false);
+      }, CLOSE_ANIMATION_MS);
+    }, HOVER_CLOSE_DELAY);
   }
 
   useEffect(() => clearTimers, [clearTimers]);
 
+  const badgeCount = cartCount ?? 0;
+  const showBadge = badgeCount > 0;
+
   return (
     <div
       className="bb-cart-icon-wrap"
-      onMouseEnter={handleEnter}
+      onMouseEnter={handleHoverEnter}
       onMouseLeave={handleLeave}
-      onFocus={handleEnter}
+      onFocus={handleFocusEnter}
       onBlur={handleLeave}
     >
-      <Link href={toCartPath()} className="bb-cart-icon-link" aria-label="Giỏ hàng">
+      <Link href={toCartPath()} className="bb-cart-icon-link" aria-label={t("iconAria")}>
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="22"
@@ -88,26 +117,33 @@ export function CartIcon() {
           <circle cx="20" cy="21" r="1" />
           <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
         </svg>
-        <span className="bb-cart-badge">
-          {cartCount == null ? 0 : cartCount > 99 ? "99+" : cartCount}
-        </span>
+        {showBadge && (
+          <span className="bb-cart-badge">
+            {badgeCount > 99 ? "99+" : badgeCount}
+          </span>
+        )}
       </Link>
 
       {open && (
-        <div className="bb-mini-cart-popover" role="dialog" aria-label="Giỏ hàng nhanh">
+        <div
+          className="bb-mini-cart-popover"
+          data-state={closing ? "closing" : "open"}
+          role="dialog"
+          aria-label={t("miniAria")}
+        >
           <div className="bb-mini-cart-arrow" aria-hidden="true" />
           <div className="bb-mini-cart-head">
-            <h3>GIỎ HÀNG</h3>
-            <span className="bb-mini-cart-count">{cartCount ?? 0} sản phẩm</span>
+            <h3>{t("miniHeading")}</h3>
+            <span className="bb-mini-cart-count">{t("miniItemCount", { count: cartCount ?? 0 })}</span>
           </div>
 
           {loading && !cart ? (
-            <div className="bb-mini-cart-loading">Đang tải...</div>
+            <div className="bb-mini-cart-loading">{t("miniLoading")}</div>
           ) : !cart || cart.items.length === 0 ? (
             <div className="bb-mini-cart-empty">
-              <p>Giỏ hàng trống</p>
+              <p>{t("miniEmpty")}</p>
               <Link href="/san-pham/" className="bb-mini-cart-shop">
-                Xem sản phẩm
+                {t("viewProducts")}
               </Link>
             </div>
           ) : (
@@ -135,22 +171,22 @@ export function CartIcon() {
                 ))}
                 {cart.items.length > 4 && (
                   <p className="bb-mini-cart-more">
-                    + {cart.items.length - 4} sản phẩm khác
+                    {t("miniMore", { count: cart.items.length - 4 })}
                   </p>
                 )}
               </div>
 
               <div className="bb-mini-cart-total">
-                <span>Tổng:</span>
+                <span>{t("miniTotal")}</span>
                 <b>{formatVnd(cart.totals.totalAmount)}</b>
               </div>
 
               <div className="bb-mini-cart-actions">
                 <Link href={toCartPath()} className="bb-mini-cart-btn-secondary">
-                  XEM GIỎ HÀNG
+                  {t("miniViewCart")}
                 </Link>
                 <Link href={toCheckoutPath()} className="bb-mini-cart-btn-primary">
-                  THANH TOÁN
+                  {t("checkoutButton")}
                 </Link>
               </div>
             </>

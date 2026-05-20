@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
 import { PageHero } from "@/components/layout/PageHero";
 import { PolicySidebar } from "@/components/layout/PolicySidebar";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -17,22 +18,22 @@ const POLICY_SLUG_MAP: Record<string, string> = {
   "dieu-khoan": "cac-dieu-kien-va-dieu-khoan",
 };
 
-const POLICY_META: Record<string, { title: string; description: string }> = {
+const POLICY_META_KEYS: Record<string, { title: string; description: string }> = {
   "bao-mat": {
-    title: "Chính sách bảo mật thông tin",
-    description: "Chính sách bảo vệ thông tin cá nhân khách hàng tại BigBike.",
+    title: "policy.privacyTitle",
+    description: "policy.privacyDescription",
   },
   "bao-hanh": {
-    title: "Chính sách bảo hành",
-    description: "Chính sách bảo hành sản phẩm tại BigBike — cam kết bảo hành chính hãng.",
+    title: "policy.warrantyTitle",
+    description: "policy.warrantyDescription",
   },
   "doi-tra": {
-    title: "Chính sách đổi trả hàng",
-    description: "Chính sách đổi trả sản phẩm tại BigBike trong vòng 7 ngày.",
+    title: "policy.returnsTitle",
+    description: "policy.returnsDescription",
   },
   "dieu-khoan": {
-    title: "Điều khoản sử dụng",
-    description: "Điều khoản và điều kiện sử dụng dịch vụ BigBike.vn.",
+    title: "policy.termsTitle",
+    description: "policy.termsDescription",
   },
 };
 
@@ -41,22 +42,27 @@ type Props = {
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
-  const meta = POLICY_META[slug];
+  const [{ slug }, t] = await Promise.all([params, getTranslations("StaticPage")]);
+  const meta = POLICY_META_KEYS[slug];
   if (!meta) return {};
   return buildPublicMetadata({
-    title: meta.title,
-    description: meta.description,
+    title: t(meta.title),
+    description: t(meta.description),
     canonicalPath: `/chinh-sach/${slug}/`,
   });
 }
 
 export default async function PolicyPage({ params }: Props) {
-  const { slug } = await params;
+  const [{ slug }, t, tBreadcrumb] = await Promise.all([
+    params,
+    getTranslations("StaticPage"),
+    getTranslations("Breadcrumb"),
+  ]);
   const backendSlug = POLICY_SLUG_MAP[slug];
   if (!backendSlug) notFound();
 
-  const result = await getPageBySlug(backendSlug);
+  const locale = await getLocale();
+  const result = await getPageBySlug(backendSlug, locale);
   if (!result.data && result.error?.status === 404) {
     notFound();
   }
@@ -64,15 +70,15 @@ export default async function PolicyPage({ params }: Props) {
     return (
       <section className="bb-page">
         <div className="bb-container">
-          <ErrorState message={result.error?.message ?? "Không tải được nội dung trang."} />
+          <ErrorState message={result.error?.message ?? t("loadFailed")} />
         </div>
       </section>
     );
   }
 
   const page = result.data;
-  const meta = POLICY_META[slug] ?? {};
-  const pageTitle = safeText(page.title, meta.title ?? "Chính sách");
+  const meta = POLICY_META_KEYS[slug];
+  const pageTitle = safeText(page.title, meta ? t(meta.title) : t("policy.title"));
 
   return (
     <section className="bb-page">
@@ -81,19 +87,21 @@ export default async function PolicyPage({ params }: Props) {
         imageAlt={page.heroImageAlt}
         title={page.heroTitle ?? pageTitle}
         breadcrumb={[
-          { label: "Trang chủ", href: toHomePath() },
-          { label: "Chính sách" },
+          { label: tBreadcrumb("home"), href: toHomePath() },
+          { label: t("policy.title") },
           { label: pageTitle },
         ]}
       />
       <div className="bb-container grid grid-cols-1 gap-[30px] pt-10 pb-[60px] items-start lg:grid-cols-[3fr_9fr]">
-        <PolicySidebar activeHref={`/chinh-sach/${slug}`} title="CHÍNH SÁCH" />
+        <PolicySidebar activeHref={`/chinh-sach/${slug}`} title={t("policy.sidebarTitle")} />
         <div className="min-w-0">
           <article
             className="bb-richtext"
             dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(page.body) }}
           />
-          <p className="text-muted-foreground text-sm text-right mb-10">Cập nhật {formatDate(page.updatedAt)}</p>
+          <p className="text-muted-foreground text-sm text-right mb-10">
+            {t("updatedAt", { date: formatDate(page.updatedAt) })}
+          </p>
         </div>
       </div>
     </section>

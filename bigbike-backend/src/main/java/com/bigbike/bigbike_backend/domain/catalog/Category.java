@@ -14,6 +14,8 @@ public record Category(
         boolean isVisible,
         Boolean showOnHomepage,
         Integer sortOrder,
+        /** Raw English content — non-null only on admin detail reads (V137). */
+        CategoryTranslations translations,
         Instant createdAt,
         Instant updatedAt
 ) {

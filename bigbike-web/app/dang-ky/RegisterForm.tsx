@@ -2,12 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertTriangle } from "lucide-react";
 import { registerCustomer } from "@/lib/api/client-api";
 import { refreshAuth } from "@/lib/auth/auth-store";
-import { registerSchema, type RegisterFormValues } from "@/lib/schemas/auth";
+import { createRegisterSchema, type RegisterFormValues } from "@/lib/schemas/auth";
 import { toAccountPath } from "@/lib/utils/routes";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,8 @@ import { Label } from "@/components/ui/label";
  * On success it swaps to an email-confirmation panel.
  */
 export function RegisterForm({ returnTo = toAccountPath() }: { returnTo?: string }) {
+  const t = useTranslations("Auth.register");
+  const tValidation = useTranslations("Auth.validation");
   const router = useRouter();
   const [registered, setRegistered] = useState(false);
   const [confirmedEmail, setConfirmedEmail] = useState("");
@@ -28,7 +31,7 @@ export function RegisterForm({ returnTo = toAccountPath() }: { returnTo?: string
     formState: { errors, isSubmitting },
     setError,
   } = useForm<RegisterFormValues>({
-    resolver: zodResolver(registerSchema),
+    resolver: zodResolver(createRegisterSchema(tValidation)),
   });
 
   async function onSubmit(values: RegisterFormValues) {
@@ -65,16 +68,17 @@ export function RegisterForm({ returnTo = toAccountPath() }: { returnTo?: string
             <path d="M20 6L9 17l-5-5" />
           </svg>
         </div>
-        <h2 className="mb-3 text-[clamp(1.25rem,3vw,1.75rem)]">Tài khoản đã được tạo!</h2>
+        <h2 className="mb-3 text-[clamp(1.25rem,3vw,1.75rem)]">{t("successHeading")}</h2>
         {confirmedEmail && (
           <p className="bb-auth-footer mb-5">
-            Chúng tôi đã gửi email xác nhận đến{" "}
-            <strong className="text-foreground">{confirmedEmail}</strong>. Vui lòng kiểm tra hộp
-            thư (kể cả thư mục spam) để xác nhận tài khoản.
+            {t.rich("successDescription", {
+              email: confirmedEmail,
+              strong: (chunks) => <strong className="text-foreground">{chunks}</strong>,
+            })}
           </p>
         )}
         <Button type="button" variant="primary" className="w-full" onClick={() => router.push(returnTo)}>
-          Vào tài khoản
+          {t("successCta")}
         </Button>
       </div>
     );
@@ -83,7 +87,7 @@ export function RegisterForm({ returnTo = toAccountPath() }: { returnTo?: string
   return (
     <div>
       <p className="mb-5 text-sm text-muted-foreground">
-        Tạo tài khoản mới để mua sắm nhanh hơn và theo dõi đơn hàng.
+        {t("intro")}
       </p>
 
       {errors.root && (
@@ -100,12 +104,12 @@ export function RegisterForm({ returnTo = toAccountPath() }: { returnTo?: string
       <form onSubmit={handleSubmit(onSubmit)} className="bb-form-stack" noValidate>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="reg-firstName">
-            Tên <span className="text-destructive">*</span>
+            {t("firstNameLabel")} <span className="text-destructive">*</span>
           </Label>
           <Input
             id="reg-firstName"
             autoComplete="given-name"
-            placeholder="Văn A"
+            placeholder={t("firstNamePlaceholder")}
             {...register("firstName")}
           />
           {errors.firstName && (
@@ -114,24 +118,24 @@ export function RegisterForm({ returnTo = toAccountPath() }: { returnTo?: string
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="reg-lastName">Họ</Label>
+          <Label htmlFor="reg-lastName">{t("lastNameLabel")}</Label>
           <Input
             id="reg-lastName"
             autoComplete="family-name"
-            placeholder="Nguyễn"
+            placeholder={t("lastNamePlaceholder")}
             {...register("lastName")}
           />
         </div>
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="reg-email">
-            Email <span className="text-destructive">*</span>
+            {t("emailLabel")} <span className="text-destructive">*</span>
           </Label>
           <Input
             id="reg-email"
             type="email"
             autoComplete="email"
-            placeholder="email@example.com"
+            placeholder={t("emailPlaceholder")}
             {...register("email")}
           />
           {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
@@ -139,13 +143,13 @@ export function RegisterForm({ returnTo = toAccountPath() }: { returnTo?: string
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="reg-password">
-            Mật khẩu <span className="text-destructive">*</span>
+            {t("passwordLabel")} <span className="text-destructive">*</span>
           </Label>
           <Input
             id="reg-password"
             type="password"
             autoComplete="new-password"
-            placeholder="Ít nhất 8 ký tự"
+            placeholder={t("passwordPlaceholder")}
             {...register("password")}
           />
           {errors.password && (
@@ -155,20 +159,20 @@ export function RegisterForm({ returnTo = toAccountPath() }: { returnTo?: string
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="reg-confirm">
-            Xác nhận mật khẩu <span className="text-destructive">*</span>
+            {t("confirmLabel")} <span className="text-destructive">*</span>
           </Label>
           <Input
             id="reg-confirm"
             type="password"
             autoComplete="new-password"
-            placeholder="Nhập lại mật khẩu"
+            placeholder={t("confirmPlaceholder")}
             {...register("confirm")}
           />
           {errors.confirm && <p className="text-sm text-destructive">{errors.confirm.message}</p>}
         </div>
 
         <Button type="submit" variant="primary" className="w-full" disabled={isSubmitting}>
-          {isSubmitting ? "Đang tạo tài khoản..." : "Đăng ký"}
+          {isSubmitting ? t("submitting") : t("submit")}
         </Button>
       </form>
     </div>

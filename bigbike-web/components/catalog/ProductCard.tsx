@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import type { Product } from "@/lib/contracts/public";
 import { formatVnd, resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { toProductPath } from "@/lib/utils/routes";
@@ -36,20 +39,35 @@ function computePricing(product: Product) {
   return { retail, sale, compare, current, isSale, discountPercent };
 }
 
-function mapStockState(state: Product["stockState"]) {
+type StockLabels = {
+  IN_STOCK: string;
+  LOW_STOCK: string;
+  OUT_OF_STOCK: string;
+  UNKNOWN: string;
+};
+
+function mapStockState(state: Product["stockState"], labels: StockLabels) {
   switch (state) {
-    case "IN_STOCK":     return { label: "Còn hàng",      className: "bb-stock-in" };
-    case "LOW_STOCK":    return { label: "Sắp hết hàng",  className: "bb-stock-low" };
-    case "OUT_OF_STOCK": return { label: "Hết hàng",      className: "bb-stock-out" };
-    default:             return { label: "Đang cập nhật", className: "bb-stock-out" };
+    case "IN_STOCK":     return { label: labels.IN_STOCK,     className: "bb-stock-in" };
+    case "LOW_STOCK":    return { label: labels.LOW_STOCK,    className: "bb-stock-low" };
+    case "OUT_OF_STOCK": return { label: labels.OUT_OF_STOCK, className: "bb-stock-out" };
+    default:             return { label: labels.UNKNOWN,      className: "bb-stock-out" };
   }
 }
 
 export function ProductCard({ product, variant = "compact" }: ProductCardProps) {
-  const name = safeText(product.name, "Sản phẩm đang cập nhật");
+  const tProduct = useTranslations("Product");
+  const tCommon = useTranslations("Common");
+  const stockLabels: StockLabels = {
+    IN_STOCK: tProduct("stockState.IN_STOCK"),
+    LOW_STOCK: tProduct("stockState.LOW_STOCK"),
+    OUT_OF_STOCK: tProduct("stockState.OUT_OF_STOCK"),
+    UNKNOWN: tProduct("stockState.UNKNOWN"),
+  };
+  const name = safeText(product.name, tProduct("nameFallback"));
   const href = toProductPath(product.slug);
   const { current, compare, isSale, discountPercent } = computePricing(product);
-  const { label: stockLabel, className: stockClass } = mapStockState(product.stockState);
+  const { label: stockLabel, className: stockClass } = mapStockState(product.stockState, stockLabels);
 
   // --- featured variant (carousel sản phẩm nổi bật) ---
   if (variant === "featured") {
@@ -57,7 +75,7 @@ export function ProductCard({ product, variant = "compact" }: ProductCardProps) 
     return (
       <article className="bb-fp-item">
         <div className="bb-fp-thumb">
-          <Link href={href} aria-label={`Xem ${name}`} className="bb-fp-thumb-link">
+          <Link href={href} aria-label={tProduct("viewProductAria", { name })} className="bb-fp-thumb-link">
             <MediaImage image={product.image} altFallback={name} width={480} height={480} />
           </Link>
           {discountPercent != null && discountPercent > 0 && (
@@ -81,7 +99,7 @@ export function ProductCard({ product, variant = "compact" }: ProductCardProps) 
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                 <circle cx="12" cy="12" r="3" />
               </svg>
-              XEM SẢN PHẨM
+              {tProduct("viewProduct").toUpperCase()}
             </Link>
           </div>
         </div>
@@ -99,7 +117,7 @@ export function ProductCard({ product, variant = "compact" }: ProductCardProps) 
                   )}
                 </>
               ) : (
-                <p className="bb-fp-price-current">Liên hệ</p>
+                <p className="bb-fp-price-current">{tProduct("contactForPrice")}</p>
               )}
             </div>
           </div>
@@ -141,11 +159,11 @@ export function ProductCard({ product, variant = "compact" }: ProductCardProps) 
             {name}
           </h3>
           <span className="mt-3.5 inline-flex items-center gap-1.5 bg-brand px-4 py-2 font-display text-xs font-medium uppercase tracking-[0.1em] text-white transition-colors group-hover:bg-brand-hover">
-            Xem sản phẩm
+            {tProduct("viewProduct")}
             <span aria-hidden="true" className="text-sm leading-none">›</span>
           </span>
         </div>
-        <Link href={href} aria-label={`Xem ${name}`} className="absolute inset-0 z-[1]" />
+        <Link href={href} aria-label={tProduct("viewProductAria", { name })} className="absolute inset-0 z-[1]" />
       </div>
     );
   }
@@ -157,13 +175,13 @@ export function ProductCard({ product, variant = "compact" }: ProductCardProps) 
       <Link
         href={href}
         className="bb-product-card-link"
-        aria-label={`Xem ${name}`}
+        aria-label={tProduct("viewProductAria", { name })}
         tabIndex={0}
       />
       <div className="bb-product-image">
         {isSale && (
           <span className="bb-product-tag">
-            {discountPercent != null && discountPercent > 0 ? `-${discountPercent}%` : "Sale"}
+            {discountPercent != null && discountPercent > 0 ? `-${discountPercent}%` : tCommon("sale")}
           </span>
         )}
         <WishlistButton productId={product.id} />
@@ -202,7 +220,7 @@ export function ProductCard({ product, variant = "compact" }: ProductCardProps) 
               {compare && compare > current ? <s>{formatVnd(compare)}</s> : null}
             </>
           ) : (
-            <b>Liên hệ</b>
+            <b>{tProduct("contactForPrice")}</b>
           )}
         </div>
         <span className={`bb-stock-badge ${stockClass}`}>{stockLabel}</span>

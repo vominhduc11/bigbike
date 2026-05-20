@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useQueries } from "@tanstack/react-query";
 import { useCompare } from "@/lib/compare-context";
 import { fetchPublicProduct } from "@/lib/api/client-api";
@@ -13,6 +14,7 @@ import { toProductListPath } from "@/lib/utils/routes";
 import type { Product } from "@/lib/contracts/public";
 
 export function CompareClient() {
+  const t = useTranslations("Compare");
   const { items, hydrated } = useCompare();
 
   // One detail fetch per queued product — needed for `specifications`,
@@ -35,33 +37,33 @@ export function CompareClient() {
       <div className="bb-container pb-28">
         <header className="mb-6">
           <p className="font-heading text-xs font-semibold uppercase tracking-[0.12em] text-brand">
-            BigBike
+            {t("kicker")}
           </p>
           <h1 className="font-display text-2xl font-semibold uppercase text-foreground">
-            So sánh sản phẩm
+            {t("heading")}
           </h1>
           <p className="mt-1 text-muted-foreground">
-            Đặt các sản phẩm cạnh nhau để so thông số, giá và đánh giá trước khi chọn mua.
+            {t("subheading")}
           </p>
         </header>
 
         {!hydrated ? (
-          <p className="text-muted-foreground">Đang tải danh sách so sánh…</p>
+          <p className="text-muted-foreground">{t("loading")}</p>
         ) : items.length === 0 ? (
           <EmptyState
-            title="Chưa có sản phẩm để so sánh"
-            description="Bấm nút so sánh trên các sản phẩm cùng loại để thêm vào đây."
+            title={t("emptyTitle")}
+            description={t("emptyDescription")}
             action={
               <Button asChild variant="primary">
-                <Link href={toProductListPath()}>Xem sản phẩm</Link>
+                <Link href={toProductListPath()}>{t("browseProducts")}</Link>
               </Button>
             }
           />
         ) : loading && products.length === 0 ? (
-          <p className="text-muted-foreground">Đang tải thông tin sản phẩm…</p>
+          <p className="text-muted-foreground">{t("loadingProducts")}</p>
         ) : products.length === 0 ? (
           <ErrorState
-            message="Không tải được thông tin sản phẩm để so sánh."
+            message={t("loadFailed")}
             retryHref={toProductListPath()}
           />
         ) : (

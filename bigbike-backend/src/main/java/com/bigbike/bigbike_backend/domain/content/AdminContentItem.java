@@ -1,5 +1,6 @@
 package com.bigbike.bigbike_backend.domain.content;
 
+import com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock;
 import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.domain.catalog.SeoMeta;
@@ -33,6 +34,8 @@ public record AdminContentItem(
         String heroDescription,
         String heroKicker,
         /** Article-only: catalog products linked to the article. Null for pages. */
-        List<RelatedProductRef> relatedProducts
+        List<RelatedProductRef> relatedProducts,
+        /** Structured body blocks (V140). Non-null only on admin detail reads. */
+        List<DescriptionBlock> bodyBlocks
 ) {
 }

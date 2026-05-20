@@ -56,6 +56,16 @@ public class BrandEntity {
     private String seoOgImageMimeType;
     private Boolean seoNoIndex;
 
+    private String nameEn;
+
+    @Column(columnDefinition = "text")
+    private String descriptionEn;
+
+    private String seoTitleEn;
+
+    @Column(columnDefinition = "text")
+    private String seoDescriptionEn;
+
     @Column(nullable = false)
     private boolean isVisible;
 
@@ -239,6 +249,38 @@ public class BrandEntity {
 
     public void setSeoNoIndex(Boolean seoNoIndex) {
         this.seoNoIndex = seoNoIndex;
+    }
+
+    public String getNameEn() {
+        return nameEn;
+    }
+
+    public void setNameEn(String nameEn) {
+        this.nameEn = nameEn;
+    }
+
+    public String getDescriptionEn() {
+        return descriptionEn;
+    }
+
+    public void setDescriptionEn(String descriptionEn) {
+        this.descriptionEn = descriptionEn;
+    }
+
+    public String getSeoTitleEn() {
+        return seoTitleEn;
+    }
+
+    public void setSeoTitleEn(String seoTitleEn) {
+        this.seoTitleEn = seoTitleEn;
+    }
+
+    public String getSeoDescriptionEn() {
+        return seoDescriptionEn;
+    }
+
+    public void setSeoDescriptionEn(String seoDescriptionEn) {
+        this.seoDescriptionEn = seoDescriptionEn;
     }
 
     public boolean isVisible() {

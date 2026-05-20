@@ -55,6 +55,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 true,
                 true,
                 1,
+                null,
                 Instant.parse("2026-04-01T03:00:00Z"),
                 Instant.parse("2026-04-18T04:00:00Z")
         );
@@ -84,6 +85,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 true,
                 true,
                 2,
+                null,
                 Instant.parse("2026-04-01T03:00:00Z"),
                 Instant.parse("2026-04-18T04:00:00Z")
         );
@@ -112,6 +114,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                         false
                 ),
                 true,
+                null,
                 Instant.parse("2026-04-02T03:00:00Z"),
                 Instant.parse("2026-04-18T03:00:00Z")
         );
@@ -138,6 +141,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                         false
                 ),
                 true,
+                null,
                 Instant.parse("2026-04-02T03:00:00Z"),
                 Instant.parse("2026-04-18T03:00:00Z")
         );
@@ -246,6 +250,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 null,
                 List.of(),
                 List.of(),
+                null,           // descriptionBlocks
                 new SeoMeta(
                         "Mũ bảo hiểm LS2 FF800",
                         "Mũ fullface LS2 FF800 chính hãng tại BigBike.",
@@ -294,6 +299,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 null,
                 List.of(),
                 List.of(),
+                null,           // descriptionBlocks
                 new SeoMeta(
                         "Mũ bảo hiểm KYT NX Race",
                         "KYT NX Race hàng chính hãng.",
@@ -342,6 +348,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 null,
                 List.of(),
                 List.of(),
+                null,           // descriptionBlocks
                 new SeoMeta(
                         "Áo giáp LS2 City Rider",
                         "Áo giáp LS2 cho touring và daily ride.",
@@ -420,6 +427,11 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
     }
 
     @Override
+    public List<Category> findAllCategories(String locale) {
+        return categories;
+    }
+
+    @Override
     public CategoryPage findCategoriesPaged(
             String query,
             String visibility,
@@ -460,6 +472,11 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
     }
 
     @Override
+    public Optional<Category> findCategoryBySlug(String slug, String locale) {
+        return categories.stream().filter(category -> category.slug().equals(slug)).findFirst();
+    }
+
+    @Override
     public Optional<Category> findCategoryById(String id) {
         return categories.stream().filter(category -> category.id().equals(id)).findFirst();
     }
@@ -470,7 +487,17 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
     }
 
     @Override
+    public List<Brand> findAllBrands(String locale) {
+        return brands;
+    }
+
+    @Override
     public Optional<Brand> findBrandBySlug(String slug) {
+        return brands.stream().filter(brand -> brand.slug().equals(slug)).findFirst();
+    }
+
+    @Override
+    public Optional<Brand> findBrandBySlug(String slug, String locale) {
         return brands.stream().filter(brand -> brand.slug().equals(slug)).findFirst();
     }
 

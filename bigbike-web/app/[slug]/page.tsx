@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { getPageBySlug } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
@@ -13,21 +14,22 @@ type StaticPageDetailProps = {
 };
 
 export async function generateMetadata({ params }: StaticPageDetailProps): Promise<Metadata> {
-  const { slug } = await params;
+  const [{ slug }, t] = await Promise.all([params, getTranslations("StaticPage")]);
   if (!isValidSlug(slug)) {
     return buildPublicMetadata({
-      title: "Trang không hợp lệ",
-      description: "Slug trang không hợp lệ.",
+      title: t("invalidTitle"),
+      description: t("invalidDescription"),
       canonicalPath: toPagePath("invalid"),
       noIndex: true,
     });
   }
 
-  const result = await getPageBySlug(slug);
+  const locale = await getLocale();
+  const result = await getPageBySlug(slug, locale);
   if (!result.data) {
     return buildPublicMetadata({
-      title: "Không tìm thấy trang",
-      description: "Không tìm thấy nội dung trang yêu cầu.",
+      title: t("notFoundTitle"),
+      description: t("notFoundDescription"),
       canonicalPath: toPagePath(slug),
       noIndex: true,
     });
@@ -43,12 +45,13 @@ export async function generateMetadata({ params }: StaticPageDetailProps): Promi
 }
 
 export default async function StaticPageDetail({ params }: StaticPageDetailProps) {
-  const { slug } = await params;
+  const [{ slug }, t] = await Promise.all([params, getTranslations("StaticPage")]);
   if (!isValidSlug(slug)) {
     notFound();
   }
 
-  const result = await getPageBySlug(slug);
+  const locale = await getLocale();
+  const result = await getPageBySlug(slug, locale);
   if (!result.data && result.error?.status === 404) {
     notFound();
   }
@@ -56,7 +59,7 @@ export default async function StaticPageDetail({ params }: StaticPageDetailProps
     return (
       <section className="bb-page">
         <div className="bb-container">
-          <ErrorState message={result.error?.message ?? "Không tải được nội dung trang."} />
+          <ErrorState message={result.error?.message ?? t("loadFailed")} />
         </div>
       </section>
     );
@@ -68,7 +71,7 @@ export default async function StaticPageDetail({ params }: StaticPageDetailProps
     <section className="bb-page">
       <div className="bb-container">
         <header>
-          <h1>{safeText(page.title, "Nội dung")}</h1>
+          <h1>{safeText(page.title, t("contentFallback"))}</h1>
         </header>
 
         <article
@@ -78,7 +81,7 @@ export default async function StaticPageDetail({ params }: StaticPageDetailProps
           }}
         />
         <p className="text-muted-foreground text-sm mt-4">
-          Cập nhật {formatDate(page.updatedAt)}
+          {t("updatedAt", { date: formatDate(page.updatedAt) })}
         </p>
       </div>
     </section>

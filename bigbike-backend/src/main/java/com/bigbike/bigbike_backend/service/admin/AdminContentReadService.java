@@ -107,7 +107,8 @@ public class AdminContentReadService {
                 null,
                 null,
                 null,
-                toRelatedProductRefs(article)
+                toRelatedProductRefs(article),
+                article.bodyBlocks()
         );
     }
 
@@ -151,7 +152,8 @@ public class AdminContentReadService {
                 page.heroTitle(),
                 page.heroDescription(),
                 page.heroKicker(),
-                null
+                null,
+                page.bodyBlocks()
         );
     }
 

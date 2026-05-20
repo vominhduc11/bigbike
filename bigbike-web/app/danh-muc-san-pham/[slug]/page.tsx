@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { CatalogFilters } from "@/components/catalog/CatalogFilters";
 import { CatalogSortSelect } from "@/components/catalog/CatalogSortSelect";
@@ -56,21 +57,23 @@ type CategoryDetailPageProps = {
 
 export async function generateMetadata({ params, searchParams }: CategoryDetailPageProps): Promise<Metadata> {
   const { slug } = await params;
+  const tCatalog = await getTranslations("Catalog");
   if (!isValidSlug(slug)) {
     return buildPublicMetadata({
-      title: "Danh mục không hợp lệ",
-      description: "Slug danh mục không hợp lệ.",
+      title: tCatalog("categoryInvalidTitle"),
+      description: tCatalog("categoryInvalidDescription"),
       canonicalPath: toCategoryPath("invalid"),
       noIndex: true,
     });
   }
 
-  const categoryResult = await getCategoryBySlug(slug);
+  const locale = await getLocale();
+  const categoryResult = await getCategoryBySlug(slug, locale);
   const category = categoryResult.data;
   if (!category) {
     return buildPublicMetadata({
-      title: "Không tìm thấy danh mục",
-      description: "Không tìm thấy danh mục sản phẩm yêu cầu.",
+      title: tCatalog("categoryNotFoundTitle"),
+      description: tCatalog("categoryNotFoundDescription"),
       canonicalPath: toCategoryPath(slug),
       noIndex: true,
     });
@@ -83,6 +86,7 @@ export async function generateMetadata({ params, searchParams }: CategoryDetailP
   const color = readSingleSearchParam(query.filter_color);
   const minPrice = readSingleSearchParam(query.min_price);
   const maxPrice = readSingleSearchParam(query.max_price);
+  const defaultDescription = tCatalog("categoryDefaultDescription");
 
   return buildPublicMetadata({
     title: buildCatalogTitle(category.name, {
@@ -92,8 +96,8 @@ export async function generateMetadata({ params, searchParams }: CategoryDetailP
       colorName: color,
     }),
     description: category.description
-      ? category.description.replace(/<[^>]+>/g, " ").replace(/\s{2,}/g, " ").trim().slice(0, 160) || "Chi tiết danh mục sản phẩm BigBike."
-      : "Chi tiết danh mục sản phẩm BigBike.",
+      ? category.description.replace(/<[^>]+>/g, " ").replace(/\s{2,}/g, " ").trim().slice(0, 160) || defaultDescription
+      : defaultDescription,
     canonicalPath: toCategoryPath(category.slug),
     noIndex:
       page > 1 ||
@@ -115,6 +119,10 @@ export default async function CategoryDetailPage({
     notFound();
   }
 
+  const [tCatalog, tBreadcrumb] = await Promise.all([
+    getTranslations("Catalog"),
+    getTranslations("Breadcrumb"),
+  ]);
   const pageParams = await searchParams;
   const pageParsed = parsePositiveIntParam(readSearchParamAlias(pageParams, "page", "paged"), {
     defaultValue: 1,
@@ -157,12 +165,13 @@ export default async function CategoryDetailPage({
     return (
       <section className="bb-page">
         <div className="bb-container">
-          <ErrorState title="Bộ lọc không hợp lệ" message={validationErrors.join(" ")} />
+          <ErrorState title={tCatalog("filterInvalidTitle")} message={validationErrors.join(" ")} />
         </div>
       </section>
     );
   }
 
+  const locale = await getLocale();
   const [
     categoryResult,
     productsResult,
@@ -171,7 +180,7 @@ export default async function CategoryDetailPage({
     facetsResult,
     sidebarBannerResult,
   ] = await Promise.all([
-    getCategoryBySlug(slug),
+    getCategoryBySlug(slug, locale),
     listProducts({
       page: pageParsed.value,
       size: sizeParsed.value,
@@ -182,6 +191,7 @@ export default async function CategoryDetailPage({
       filterColor: colorParsed.value,
       minPrice: minPriceParsed.value,
       maxPrice: maxPriceParsed.value,
+      lang: locale,
     }),
     listBrands({ page: 1, size: 100, sort: "name:asc" }),
     listCategories({ page: 1, size: 100, sort: "sortOrder:asc" }),
@@ -197,7 +207,7 @@ export default async function CategoryDetailPage({
     return (
       <section className="bb-page">
         <div className="bb-container">
-          <ErrorState message={categoryResult.error?.message ?? "Không tải được thông tin danh mục."} />
+          <ErrorState message={categoryResult.error?.message ?? tCatalog("categoryLoadFailed")} />
         </div>
       </section>
     );
@@ -227,7 +237,7 @@ export default async function CategoryDetailPage({
 
   const breadcrumbJsonLd = serializeJsonLd(buildCategoryBreadcrumbJsonLd(category, parentCategory));
 
-  const categoryName = safeText(category.name, "Danh mục");
+  const categoryName = safeText(category.name, tCatalog("categoryFallback"));
   const pagination = productsResult.pagination;
   const currentFilters = {
     q: qParsed.value,
@@ -244,11 +254,11 @@ export default async function CategoryDetailPage({
   const isHtmlDescription = rawDescription ? /<[a-z][\s\S]*>/i.test(rawDescription) : false;
 
   const heroBreadcrumb: PageHeroBreadcrumbItem[] = [
-    { label: "Trang chủ", href: toHomePath() },
-    { label: "Sản phẩm", href: toProductListPath() },
+    { label: tBreadcrumb("home"), href: toHomePath() },
+    { label: tCatalog("title"), href: toProductListPath() },
     ...(parentCategory
       ? [{
-          label: safeText(parentCategory.name, "Danh mục cha"),
+          label: safeText(parentCategory.name, tCatalog("parentCategoryFallback")),
           href: toCategoryPath(parentCategory.slug),
         }]
       : []),
@@ -269,7 +279,7 @@ export default async function CategoryDetailPage({
       {childCategories.length > 0 && (
         <div className="bb-cat-children">
           <div className="bb-container bb-cat-children-inner">
-            <span className="bb-cat-children-label">Danh mục con:</span>
+            <span className="bb-cat-children-label">{tCatalog("childrenLabel")}</span>
             <div className="bb-cat-children-chips">
               {childCategories.map((child) => (
                 <Link
@@ -300,11 +310,12 @@ export default async function CategoryDetailPage({
         <div>
           <div className="bb-catalog-head">
             <div className="bb-catalog-count">
-              {pagination ? (
-                <>
-                  <b>{pagination.totalItems}</b> sản phẩm
-                </>
-              ) : null}
+              {pagination
+                ? tCatalog.rich("totalProductsCount", {
+                    count: pagination.totalItems,
+                    strong: (chunks) => <b>{chunks}</b>,
+                  })
+                : null}
             </div>
             <Suspense
               fallback={
@@ -325,8 +336,8 @@ export default async function CategoryDetailPage({
             />
           ) : productsResult.data.length === 0 ? (
             <EmptyState
-              title="Danh mục chưa có sản phẩm"
-              description="Danh mục này hiện tại chưa có sản phẩm được đăng."
+              title={tCatalog("categoryEmptyTitle")}
+              description={tCatalog("categoryEmptyDescription")}
             />
           ) : (
             <>

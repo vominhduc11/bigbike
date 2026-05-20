@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useCart } from "@/lib/cart-context";
 import { toProductPath } from "@/lib/utils/routes";
 
@@ -13,6 +14,7 @@ type Props = {
 };
 
 export function ProductCardAddBar({ productId, hasVariants, slug, stockState }: Props) {
+  const t = useTranslations("Product.cardAddBar");
   const { addToCart, showToast } = useCart();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -33,7 +35,7 @@ export function ProductCardAddBar({ productId, hasVariants, slug, stockState }: 
     setBusy(true);
     addToCart(productId, 1)
       .catch(() => {
-        showToast("Không thể thêm vào giỏ", "Vui lòng thử lại hoặc xem chi tiết sản phẩm.");
+        showToast(t("addError"), t("addErrorDetail"));
       })
       .finally(() => setBusy(false));
   }
@@ -45,7 +47,7 @@ export function ProductCardAddBar({ productId, hasVariants, slug, stockState }: 
       disabled={busy || isOutOfStock}
       onClick={handleClick}
     >
-      {isOutOfStock ? "TẠM HẾT HÀNG" : hasVariants ? "CHỌN BIẾN THỂ" : busy ? "ĐANG THÊM..." : "THÊM VÀO GIỎ HÀNG"}
+      {isOutOfStock ? t("soldOut") : hasVariants ? t("pickVariant") : busy ? t("adding") : t("addToCart")}
     </button>
   );
 }

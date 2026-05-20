@@ -168,6 +168,66 @@ Evidence:
 - `V136__add_product_bilingual_content.sql`
 - `DATA_CONTRACT.md` — "Product bilingual content"
 
+## Category Catalog Rules
+
+- `CATEGORY_RULE_001`: Mỗi danh mục bắt buộc có **bản nội dung tiếng Việt** (canonical). **Bản tiếng Anh là tùy chọn**. `CONFIRMED_FROM_CODE`
+- `CATEGORY_RULE_002`: Khi đọc danh mục bằng tiếng Anh (`lang=en`), mỗi trường thiếu bản tiếng Anh sẽ **tự lùi về bản tiếng Việt theo từng trường**. `CONFIRMED_FROM_CODE`
+- `CATEGORY_RULE_003`: `slug` của danh mục dùng chung 1 bản (không dịch theo ngôn ngữ). `CONFIRMED_FROM_CODE`
+
+Evidence:
+
+- `CategoryEntity.java` (các cột `name_en`, `description_en`, `seo_title_en`, `seo_description_en`)
+- `JpaCatalogReadRepository.java` (resolve locale + fallback cho category)
+- `CatalogController.java` (`lang` param trên category endpoints)
+- `AdminCatalogMutationService.java` (`applyCategoryPatch` ghi cột `_en`)
+- `V137__add_category_brand_bilingual_content.sql`
+- `DATA_CONTRACT.md` — "Category bilingual content"
+
+## Brand Catalog Rules
+
+- `BRAND_RULE_001`: Mỗi thương hiệu bắt buộc có **bản nội dung tiếng Việt** (canonical). **Bản tiếng Anh là tùy chọn**. `CONFIRMED_FROM_CODE`
+- `BRAND_RULE_002`: Khi đọc thương hiệu bằng tiếng Anh (`lang=en`), mỗi trường thiếu bản tiếng Anh sẽ **tự lùi về bản tiếng Việt theo từng trường**. `CONFIRMED_FROM_CODE`
+- `BRAND_RULE_003`: `slug` của thương hiệu dùng chung 1 bản (không dịch theo ngôn ngữ). `CONFIRMED_FROM_CODE`
+
+Evidence:
+
+- `BrandEntity.java` (các cột `name_en`, `description_en`, `seo_title_en`, `seo_description_en`)
+- `JpaCatalogReadRepository.java` (resolve locale + fallback cho brand)
+- `CatalogController.java` (`lang` param trên brand endpoints)
+- `AdminCatalogMutationService.java` (`applyBrandPatch` ghi cột `_en`)
+- `V137__add_category_brand_bilingual_content.sql`
+- `DATA_CONTRACT.md` — "Brand bilingual content"
+
+## Article (Blog) Rules
+
+- `ARTICLE_RULE_001`: Mỗi bài viết bắt buộc có **bản nội dung tiếng Việt** (canonical). **Bản tiếng Anh là tùy chọn**. `CONFIRMED_FROM_CODE`
+- `ARTICLE_RULE_002`: Khi đọc bài viết bằng tiếng Anh (`lang=en`), mỗi trường thiếu bản tiếng Anh sẽ **tự lùi về bản tiếng Việt theo từng trường** (title, excerpt, body, seoTitle, seoDescription). `CONFIRMED_FROM_CODE`
+- `ARTICLE_RULE_003`: `slug` của bài viết dùng chung 1 bản (không dịch theo ngôn ngữ). `CONFIRMED_FROM_CODE`
+
+Evidence:
+
+- `ArticleEntity.java` (các cột `title_en`, `excerpt_en`, `body_en`, `seo_title_en`, `seo_description_en`)
+- `JpaContentReadRepository.java` (resolve locale + fallback cho article)
+- `ContentController.java` (`lang` param trên article endpoints)
+- `AdminContentMutationService.java` (`applyArticlePatch` ghi cột `_en`)
+- `V138__add_article_page_bilingual_content.sql`
+- `DATA_CONTRACT.md` — "Article bilingual content"
+
+## Static Page Rules
+
+- `PAGE_RULE_001`: Mỗi trang tĩnh bắt buộc có **bản nội dung tiếng Việt** (canonical). **Bản tiếng Anh là tùy chọn**. `CONFIRMED_FROM_CODE`
+- `PAGE_RULE_002`: Khi đọc trang bằng tiếng Anh (`lang=en`), mỗi trường thiếu bản tiếng Anh sẽ **tự lùi về bản tiếng Việt theo từng trường** (title, body, heroTitle, heroDescription, heroKicker, seoTitle, seoDescription). `CONFIRMED_FROM_CODE`
+- `PAGE_RULE_003`: `slug` của trang dùng chung 1 bản (không dịch theo ngôn ngữ). `CONFIRMED_FROM_CODE`
+
+Evidence:
+
+- `PageEntity.java` (các cột `title_en`, `body_en`, `hero_title_en`, `hero_description_en`, `hero_kicker_en`, `seo_title_en`, `seo_description_en`)
+- `JpaContentReadRepository.java` (resolve locale + fallback cho page)
+- `ContentController.java` (`lang` param trên page endpoints)
+- `AdminContentMutationService.java` (`applyPagePatch` ghi cột `_en`)
+- `V138__add_article_page_bilingual_content.sql`
+- `DATA_CONTRACT.md` — "Page bilingual content"
+
 ## WebSocket Rules
 
 - WebSocket STOMP connect must include native header `Authorization: Bearer <token>`. `CONFIRMED_FROM_CODE`

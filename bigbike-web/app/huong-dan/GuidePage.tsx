@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { PageHero } from "@/components/layout/PageHero";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { getPageBySlug, getPublicMenu } from "@/lib/api/public-api";
@@ -13,28 +14,28 @@ type GuidePageProps = {
 type GuideRoute = {
   pageSlug: string;
   path: string;
-  title: string;
-  description: string;
+  titleKey: string;
+  descriptionKey: string;
 };
 
 const GUIDE_ROUTE_MAP: Record<string, GuideRoute> = {
   "mua-hang": {
     pageSlug: "huong-dan-mua-hang",
     path: "/huong-dan/mua-hang/",
-    title: "Hướng dẫn mua hàng",
-    description: "Hướng dẫn đặt hàng, thanh toán và nhận hàng tại BigBike.",
+    titleKey: "buyingTitle",
+    descriptionKey: "buyingDescription",
   },
   "size-mu": {
     pageSlug: "cach-do-size-dau",
     path: "/huong-dan/size-mu/",
-    title: "Cách xác định size mũ bảo hiểm",
-    description: "Hướng dẫn đo chu vi đầu và chọn size mũ bảo hiểm phù hợp.",
+    titleKey: "helmetSizeTitle",
+    descriptionKey: "helmetSizeDescription",
   },
   "size-gang-tay": {
     pageSlug: "cach-do-size-gang-tay",
     path: "/huong-dan/size-gang-tay/",
-    title: "Cách đo size găng tay bảo hộ",
-    description: "Hướng dẫn đo bàn tay và chọn size găng tay bảo hộ moto.",
+    titleKey: "gloveSizeTitle",
+    descriptionKey: "gloveSizeDescription",
   },
 };
 
@@ -57,8 +58,8 @@ export function resolveGuideRoute(subSegments?: string[]): GuideRoute {
     return {
       pageSlug: "huong-dan",
       path: "/huong-dan/",
-      title: "Hướng dẫn",
-      description: "Hướng dẫn mua hàng, sử dụng sản phẩm và dịch vụ từ BigBike.",
+      titleKey: "title",
+      descriptionKey: "description",
     };
   }
 
@@ -72,12 +73,16 @@ export function resolveGuideRoute(subSegments?: string[]): GuideRoute {
   return {
     pageSlug: "huong-dan",
     path: buildCurrentPath(subSegments),
-    title: "Hướng dẫn",
-    description: "Hướng dẫn mua hàng, sử dụng sản phẩm và dịch vụ từ BigBike.",
+    titleKey: "title",
+    descriptionKey: "description",
   };
 }
 
 export async function GuidePage({ subSegments }: GuidePageProps) {
+  const [t, tBreadcrumb] = await Promise.all([
+    getTranslations("Guide"),
+    getTranslations("Breadcrumb"),
+  ]);
   const isRoot = !subSegments || subSegments.length === 0;
 
   // Root landing: static index without CMS dependency (CMS page "huong-dan" may not exist)
@@ -85,10 +90,10 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
     return (
       <section className="bb-page">
         <PageHero
-          title="Hướng dẫn mua hàng & sản phẩm"
+          title={t("heroTitle")}
           breadcrumb={[
-            { label: "Trang chủ", href: toHomePath() },
-            { label: "Hướng dẫn" },
+            { label: tBreadcrumb("home"), href: toHomePath() },
+            { label: t("breadcrumb") },
           ]}
         />
         <div className="bb-container bb-section">
@@ -100,9 +105,9 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
                 className="group block bg-card border border-border p-6 no-underline text-inherit transition-colors duration-200 hover:border-brand"
               >
                 <h2 className="font-display text-lg uppercase tracking-[0.02em] m-0 mb-2 leading-snug transition-colors duration-200 group-hover:text-brand">
-                  {guide.title}
+                  {t(guide.titleKey)}
                 </h2>
-                <p className="text-sm text-muted-foreground m-0 leading-relaxed">{guide.description}</p>
+                <p className="text-sm text-muted-foreground m-0 leading-relaxed">{t(guide.descriptionKey)}</p>
               </Link>
             ))}
           </div>
@@ -121,7 +126,7 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
     return (
       <section className="bb-page">
         <div className="bb-container">
-          <ErrorState message={pageResult.error?.message ?? "Không tải được nội dung hướng dẫn."} />
+          <ErrorState message={pageResult.error?.message ?? t("loadFailed")} />
         </div>
       </section>
     );
@@ -130,7 +135,7 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
   const page = pageResult.data;
   const currentPath = route.path;
   const menuItems = menuResult.data?.items ?? [];
-  const pageTitle = safeText(page.title, route.title);
+  const pageTitle = safeText(page.title, t(route.titleKey));
 
   return (
     <section className="bb-page">
@@ -139,8 +144,8 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
         imageAlt={page.heroImageAlt}
         title={page.heroTitle ?? pageTitle}
         breadcrumb={[
-          { label: "Trang chủ", href: toHomePath() },
-          { label: "Hướng dẫn", href: "/huong-dan/" },
+          { label: tBreadcrumb("home"), href: toHomePath() },
+          { label: t("breadcrumb"), href: "/huong-dan/" },
           { label: pageTitle },
         ]}
       />
@@ -151,16 +156,16 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
               className="bb-richtext"
               dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(page.body) }}
             />
-            <p className="bb-updated-date">Cập nhật {formatDate(page.updatedAt)}</p>
+            <p className="bb-updated-date">{t("updatedAt", { date: formatDate(page.updatedAt) })}</p>
           </div>
 
           <aside className="bb-sidebar-grid">
             <div className="bb-card bb-card-content">
-              <h2 className="bb-sidebar-heading">Mục hướng dẫn</h2>
+              <h2 className="bb-sidebar-heading">{t("sidebarTitle")}</h2>
               {menuResult.error ? (
                 <p className="text-sm text-destructive px-2 py-1.5">{menuResult.error.message}</p>
               ) : menuItems.length === 0 ? (
-                <p className="text-muted-foreground text-sm">Chưa có mục hướng dẫn.</p>
+                <p className="text-muted-foreground text-sm">{t("emptyMenu")}</p>
               ) : (
                 <nav className="bb-nav-links">
                   {menuItems.map((item) => {
@@ -173,7 +178,7 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
                         className={active ? "bb-link font-bold text-brand" : "bb-link font-medium"}
                         aria-current={active ? "page" : undefined}
                       >
-                        {safeText(item.label, "Hướng dẫn")}
+                        {safeText(item.label, t("menuFallback"))}
                       </Link>
                     );
                   })}

@@ -42,4 +42,7 @@ public class UpsertCategoryRequest {
 
     @Valid
     private SeoMetaRequest seo;
+
+    @Valid
+    private CategoryTranslationRequest translations;
 }

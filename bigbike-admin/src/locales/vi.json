@@ -547,6 +547,46 @@
       },
       "moveUp": "Lên",
       "moveDown": "Xuống",
+      "blocks": {
+        "addBlock": "Thêm khối",
+        "blockTypeHeading": "Tiêu đề",
+        "blockTypeParagraph": "Đoạn văn",
+        "blockTypeList": "Danh sách",
+        "blockTypeImage": "Hình ảnh",
+        "blockTypeVideo": "Video",
+        "blockTypeCallout": "Hộp chú thích",
+        "blockTypeDivider": "Đường phân cách",
+        "moveUp": "Lên",
+        "moveDown": "Xuống",
+        "duplicate": "Sao chép",
+        "remove": "Xoá",
+        "headingLevelLabel": "Cấp",
+        "headingLevel2": "Tiêu đề 2 (H2)",
+        "headingLevel3": "Tiêu đề 3 (H3)",
+        "headingTextPlaceholder": "Nội dung tiêu đề...",
+        "listStyleBulleted": "Danh sách thường",
+        "listStyleNumbered": "Danh sách số",
+        "listAddItem": "Thêm mục",
+        "listItemPlaceholder": "Nội dung mục...",
+        "listRemoveItem": "Xoá mục",
+        "imagePick": "Chọn ảnh",
+        "imageChange": "Đổi ảnh",
+        "imageAltPlaceholder": "Mô tả ảnh (alt text)",
+        "imageCaptionPlaceholder": "Chú thích ảnh (tuỳ chọn)",
+        "videoProviderLabel": "Nguồn video",
+        "videoYouTube": "YouTube",
+        "videoUpload": "Video tải lên",
+        "videoUrlPlaceholder": "https://www.youtube.com/watch?v=...",
+        "videoCaptionPlaceholder": "Chú thích video (tuỳ chọn)",
+        "videoPick": "Chọn video từ thư viện",
+        "calloutVariantLabel": "Loại",
+        "calloutVariantInfo": "Thông tin",
+        "calloutVariantWarning": "Cảnh báo",
+        "calloutVariantNote": "Ghi chú",
+        "fallbackTitle": "Mô tả cũ (dạng HTML)",
+        "fallbackHint": "Thêm khối mới ở trên để thay thế nội dung này.",
+        "empty": "Chưa có khối nào. Nhấn \"Thêm khối\" để bắt đầu."
+      },
       "variant": {
         "optionNamePlaceholder": "Thuộc tính (vd: Màu)",
         "optionValuePlaceholder": "Giá trị (vd: Đỏ)",
@@ -654,7 +694,21 @@
       "viewLiveTitle": "Xem trang sản phẩm đang xuất bản (tab mới)",
       "viewLive": "Xem trên web",
       "unsavedChangesTitle": "Có thay đổi chưa lưu",
-      "unsavedChangesConfirm": "Bạn có thay đổi chưa lưu. Rời khỏi trang này sẽ mất những thay đổi đó. Tiếp tục?"
+      "unsavedChangesConfirm": "Bạn có thay đổi chưa lưu. Rời khỏi trang này sẽ mất những thay đổi đó. Tiếp tục?",
+      "tabGeneral": "Tổng quan",
+      "tabContent": "Nội dung & SEO",
+      "tabDetails": "Thông số & hướng dẫn",
+      "tabVariants": "Biến thể & liên kết",
+      "tabsAriaLabel": "Phần của sản phẩm",
+      "contentLanguageAriaLabel": "Ngôn ngữ nội dung",
+      "moreSaveOptions": "Thêm tuỳ chọn lưu",
+      "readOnlyBadge": "Chỉ đọc",
+      "draftFoundShort": "Có bản nháp tạm",
+      "saveDirty": "Có thay đổi chưa lưu",
+      "saveClean": "Đã lưu",
+      "saveSaving": "Đang lưu...",
+      "lastSavedAt": "lúc {{time}}",
+      "savingShort": "Đang lưu..."
     }
   },
   "orders": {
@@ -978,7 +1032,10 @@
       "hardDeleteConfirm": "Bạn sắp xoá vĩnh viễn danh mục \"{{name}}\".\n\nHành động này KHÔNG THỂ hoàn tác. Sau khi xoá, danh mục sẽ biến mất khỏi cả admin và website.\n\nNếu chỉ muốn tạm ẩn khỏi website, hãy dùng nút \"Ẩn\" thay vì xoá.",
       "hardDeleteConfirmWithChildren": "Bạn sắp xoá vĩnh viễn danh mục \"{{name}}\".\n\n⚠️ Danh mục này đang chứa {{count}} danh mục con — tất cả cũng sẽ bị xoá theo.\n\nHành động này KHÔNG THỂ hoàn tác. Nếu chỉ muốn tạm ẩn, hãy dùng nút \"Ẩn\" thay vì xoá.",
       "hardDeleteSuccess": "Đã xoá vĩnh viễn danh mục.",
-      "hardDeleteConflict": "Chưa thể xoá danh mục này vì vẫn còn danh mục con hoặc sản phẩm đang được xếp vào đây. Hãy chuyển hoặc xoá chúng trước, rồi thử lại."
+      "hardDeleteConflict": "Chưa thể xoá danh mục này vì vẫn còn danh mục con hoặc sản phẩm đang được xếp vào đây. Hãy chuyển hoặc xoá chúng trước, rồi thử lại.",
+      "contentLanguageAriaLabel": "Ngôn ngữ nội dung",
+      "enFieldHint": "(tiếng Anh — tùy chọn)",
+      "namePlaceholderEn": "Tên tiếng Anh (tùy chọn)"
     }
   },
   "brands": {
@@ -1045,7 +1102,10 @@
       "errSeoCanonicalUrl": "Canonical URL phải bắt đầu bằng http:// hoặc https://.",
       "errSeoOgImageUrl": "SEO OG image URL không hợp lệ. Dùng đường dẫn từ thư viện hoặc URL bắt đầu bằng http:// hoặc https://.",
       "errSaveFailed": "Không thể lưu thương hiệu.",
-      "errDeleteFailed": "Không thể xoá thương hiệu."
+      "errDeleteFailed": "Không thể xoá thương hiệu.",
+      "contentLanguageAriaLabel": "Ngôn ngữ nội dung",
+      "enFieldHint": "(tiếng Anh — tùy chọn)",
+      "namePlaceholderEn": "Tên tiếng Anh (tùy chọn)"
     }
   },
   "content": {
@@ -1092,6 +1152,9 @@
       "archiveConfirmTitle": "Archive content",
       "archiveBtn": "Archive",
       "archiveSuccess": "Đã archive nội dung.",
+      "contentLanguageAriaLabel": "Ngôn ngữ nội dung",
+      "enFieldHint": "(tiếng Anh — tùy chọn)",
+      "titlePlaceholderEn": "Tiêu đề tiếng Anh (tùy chọn)",
       "sectionCore": "Thông tin chính",
       "sectionMedia": "Media & Tags",
       "sectionSeo": "SEO",
@@ -1137,7 +1200,16 @@
       "errSeoCanonicalUrl": "Canonical URL phải bắt đầu bằng http:// hoặc https://.",
       "errSeoOgImageUrl": "SEO OG image URL không hợp lệ. Dùng đường dẫn từ thư viện hoặc URL bắt đầu bằng http:// hoặc https://.",
       "errSaveFailed": "Không thể lưu nội dung.",
-      "errArchiveFailed": "Không thể archive nội dung."
+      "errArchiveFailed": "Không thể archive nội dung.",
+      "tabContent": "Nội dung",
+      "tabSeoPublish": "SEO & Hiển thị",
+      "tabsAriaLabel": "Phần của nội dung",
+      "saveDirty": "Có thay đổi chưa lưu",
+      "saveClean": "Đã lưu",
+      "savingShort": "Đang lưu...",
+      "readOnlyBadge": "Chỉ đọc",
+      "sectionBody": "Nội dung chính",
+      "sectionPublish": "Hiển thị"
     }
   },
   "customers": {

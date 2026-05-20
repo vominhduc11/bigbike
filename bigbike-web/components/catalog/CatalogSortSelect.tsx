@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   Select,
   SelectContent,
@@ -10,15 +11,17 @@ import {
 } from "@/components/ui/select";
 
 const SORT_OPTIONS = [
-  { value: "createdAt:desc", label: "Mới nhất" },
-  { value: "createdAt:asc", label: "Cũ nhất" },
-  { value: "name:asc", label: "Tên A–Z" },
-  { value: "name:desc", label: "Tên Z–A" },
-  { value: "price:asc", label: "Giá tăng dần" },
-  { value: "price:desc", label: "Giá giảm dần" },
-];
+  { value: "createdAt:desc", labelKey: "newest" },
+  { value: "createdAt:asc", labelKey: "oldest" },
+  { value: "name:asc", labelKey: "nameAsc" },
+  { value: "name:desc", labelKey: "nameDesc" },
+  { value: "price:asc", labelKey: "priceAsc" },
+  { value: "price:desc", labelKey: "priceDesc" },
+] as const;
 
 export function CatalogSortSelect({ current }: { current: string }) {
+  const tCatalog = useTranslations("Catalog");
+  const tSort = useTranslations("Catalog.sort");
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -31,15 +34,15 @@ export function CatalogSortSelect({ current }: { current: string }) {
 
   return (
     <div className="flex items-center gap-[10px] text-sm text-muted-foreground">
-      <label htmlFor="sort-select" className="sr-only">Sắp xếp</label>
+      <label htmlFor="sort-select" className="sr-only">{tCatalog("sortLabel")}</label>
       <Select value={current} onValueChange={handleChange}>
         <SelectTrigger id="sort-select" className="min-h-[40px] min-w-[160px] text-sm">
-          <SelectValue placeholder="Sắp xếp theo..." />
+          <SelectValue placeholder={tCatalog("sortPlaceholder")} />
         </SelectTrigger>
         <SelectContent>
-          {SORT_OPTIONS.map(({ value, label }) => (
+          {SORT_OPTIONS.map(({ value, labelKey }) => (
             <SelectItem key={value} value={value}>
-              {label}
+              {tSort(labelKey)}
             </SelectItem>
           ))}
         </SelectContent>
@@ -47,4 +50,3 @@ export function CatalogSortSelect({ current }: { current: string }) {
     </div>
   );
 }
-

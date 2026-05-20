@@ -330,6 +330,7 @@ export function normalizeProduct(input) {
     // Optional English content (V136). Always an object so the form can bind
     // the EN language tab; individual fields are undefined when not translated.
     translations: { en: normalizeProductTranslations(source.translations) },
+    descriptionBlocks: Array.isArray(source.descriptionBlocks) ? source.descriptionBlocks : null,
     createdAt: toTrimmedString(source.createdAt) || undefined,
     updatedAt: toTrimmedString(source.updatedAt) || undefined,
   }
@@ -448,6 +449,7 @@ export function normalizeContentItem(input) {
     publishedAt: toTrimmedString(source.publishedAt) || undefined,
     createdAt: toTrimmedString(source.createdAt) || undefined,
     updatedAt: toTrimmedString(source.updatedAt) || undefined,
+    bodyBlocks: Array.isArray(source.bodyBlocks) ? source.bodyBlocks : null,
   }
 }
 

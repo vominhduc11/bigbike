@@ -1,14 +1,18 @@
+"use client";
+
+import { useTranslations } from "next-intl";
+
 type DeliveryItem = {
   icon: "truck" | "box" | "shield" | "return";
-  title: string;
-  detail: string;
+  titleKey: string;
+  detailKey: string;
 };
 
 const ITEMS: DeliveryItem[] = [
-  { icon: "truck", title: "Giao nhanh nội thành", detail: "Trong ngày tại TP.HCM" },
-  { icon: "box", title: "Giao hàng toàn quốc", detail: "Nhận sau 2–4 ngày" },
-  { icon: "shield", title: "Bảo hành chính hãng", detail: "Theo nhà sản xuất" },
-  { icon: "return", title: "Đổi trả trong 7 ngày", detail: "Khi lỗi nhà sản xuất" },
+  { icon: "truck", titleKey: "cityTitle", detailKey: "cityDetail" },
+  { icon: "box", titleKey: "nationwideTitle", detailKey: "nationwideDetail" },
+  { icon: "shield", titleKey: "warrantyTitle", detailKey: "warrantyDetail" },
+  { icon: "return", titleKey: "returnTitle", detailKey: "returnDetail" },
 ];
 
 function DeliveryIcon({ name }: { name: DeliveryItem["icon"] }) {
@@ -55,11 +59,12 @@ function DeliveryIcon({ name }: { name: DeliveryItem["icon"] }) {
 
 /** Static delivery / warranty / return trust grid shown under the buy box. */
 export function ProductDeliveryInfo() {
+  const t = useTranslations("Product.delivery");
   return (
     <ul className="grid grid-cols-2 gap-3">
       {ITEMS.map((item) => (
         <li
-          key={item.title}
+          key={item.titleKey}
           className="flex items-center gap-3 border border-border bg-muted/40 p-3"
         >
           <span
@@ -70,10 +75,10 @@ export function ProductDeliveryInfo() {
           </span>
           <span className="min-w-0 leading-snug">
             <b className="block text-sm font-semibold text-foreground">
-              {item.title}
+              {t(item.titleKey)}
             </b>
             <span className="block text-xs text-muted-foreground">
-              {item.detail}
+              {t(item.detailKey)}
             </span>
           </span>
         </li>

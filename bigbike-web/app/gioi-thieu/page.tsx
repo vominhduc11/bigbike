@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { AudioLines, BadgeCheck, BarChart3, Crown, Share2, Gem, Phone, Store } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { PageHero } from "@/components/layout/PageHero";
@@ -13,11 +14,14 @@ import { sanitizeRichHtml } from "@/lib/utils/html";
 import { toBrandPath, toPagePath } from "@/lib/utils/routes";
 import { pickSettingByPattern } from "@/lib/utils/settings";
 
-export const metadata: Metadata = buildPublicMetadata({
-  title: "Giới thiệu",
-  description: "Giới thiệu BigBike — hệ thống đồ bảo hộ biker, gear touring chính hãng.",
-  canonicalPath: toPagePath("gioi-thieu"),
-});
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("StaticPage");
+  return buildPublicMetadata({
+    title: t("aboutTitle"),
+    description: t("aboutDescription"),
+    canonicalPath: toPagePath("gioi-thieu"),
+  });
+}
 
 type ServiceTile = {
   title: string;
@@ -26,36 +30,41 @@ type ServiceTile = {
   icon: LucideIcon;
 };
 
-// Năm giá trị cốt lõi — nội dung 1:1 với bản thiết kế trang Giới thiệu.
-// Màu xen kẽ trắng – đỏ – trắng – đỏ – trắng.
-const SERVICE_TILES: ServiceTile[] = [
+type ServiceTileDef = {
+  titleKey: string;
+  bodyKey: string;
+  highlight: boolean;
+  icon: LucideIcon;
+};
+
+const SERVICE_TILE_DEFS: ServiceTileDef[] = [
   {
-    title: "Chế độ bảo hành và đổi trả",
-    body: "Sản phẩm được bảo hành theo chính sách hãng và hỗ trợ đổi trả trong 7 ngày nếu có lỗi từ nhà sản xuất. Quy trình nhanh chóng, minh bạch, đảm bảo quyền lợi tối đa cho khách hàng.",
+    titleKey: "serviceTiles.warrantyTitle",
+    bodyKey: "serviceTiles.warrantyBody",
     highlight: false,
     icon: BadgeCheck,
   },
   {
-    title: "Sản phẩm chính hãng cao cấp",
-    body: "Bigbike cam kết 100% sản phẩm chính hãng từ các thương hiệu hàng đầu thế giới. Chúng tôi nói không với hàng giả, hàng nhái, hàng kém chất lượng, mang đến cho bạn sự an tâm tuyệt đối khi lựa chọn sản phẩm tại Bigbike.",
+    titleKey: "serviceTiles.genuineTitle",
+    bodyKey: "serviceTiles.genuineBody",
     highlight: true,
     icon: Gem,
   },
   {
-    title: "Dịch vụ tư vấn tận tâm",
-    body: "Đội ngũ tư vấn viên là những biker giàu kinh nghiệm, luôn sẵn sàng lắng nghe và tư vấn sản phẩm phù hợp với nhu cầu của bạn. Chúng tôi không chỉ bán sản phẩm, mà còn chia sẻ đam mê và đồng hành cùng bạn trên mọi cung đường.",
+    titleKey: "serviceTiles.adviceTitle",
+    bodyKey: "serviceTiles.adviceBody",
     highlight: false,
     icon: Crown,
   },
   {
-    title: "Kiểm tra kỹ lưỡng & giao hàng nhanh",
-    body: "Mỗi sản phẩm đều được kiểm tra kỹ càng trước khi giao đến tay khách hàng. Bigbike hỗ trợ giao hàng toàn quốc nhanh chóng, đóng gói cẩn thận, đảm bảo sản phẩm đến tay bạn nguyên vẹn và đúng hẹn.",
+    titleKey: "serviceTiles.deliveryTitle",
+    bodyKey: "serviceTiles.deliveryBody",
     highlight: true,
     icon: AudioLines,
   },
   {
-    title: "Giá cả hợp lý & nhiều ưu đãi",
-    body: "Bigbike luôn mang đến mức giá cạnh tranh nhất cùng nhiều chương trình ưu đãi hấp dẫn. Chúng tôi tin rằng chất lượng tốt không nhất thiết phải đi kèm với giá cao.",
+    titleKey: "serviceTiles.priceTitle",
+    bodyKey: "serviceTiles.priceBody",
     highlight: false,
     icon: BarChart3,
   },
@@ -95,10 +104,11 @@ function ServiceTileCard({ tile }: { tile: ServiceTile }) {
 }
 
 export default async function AboutPage() {
-  const [pageResult, brandsResult, settingsResult] = await Promise.all([
+  const [pageResult, brandsResult, settingsResult, t] = await Promise.all([
     getPageBySlug("gioi-thieu"),
     listBrands({ page: 1, size: 8, sort: "name:asc" }),
     listPublicSettings(),
+    getTranslations("StaticPage"),
   ]);
   if (!pageResult.data && pageResult.error?.status === 404) {
     notFound();
@@ -107,7 +117,7 @@ export default async function AboutPage() {
     return (
       <section className="bb-page">
         <div className="bb-container">
-          <ErrorState message={pageResult.error?.message ?? "Không tải được nội dung giới thiệu."} />
+          <ErrorState message={pageResult.error?.message ?? t("aboutLoadFailed")} />
         </div>
       </section>
     );
@@ -125,7 +135,7 @@ export default async function AboutPage() {
       {/* Hero render ngoài .bb-page để nằm sát header và không bị rule `.bb-page h1` ghi đè. */}
       <PageHero
         variant="welcome"
-        title="Chào mừng đến với BigBike"
+        title={t("aboutHeroTitle")}
         watermark="BigBike"
         illustration={{ src: page.heroImageUrl, alt: page.heroImageAlt }}
       />
@@ -134,8 +144,8 @@ export default async function AboutPage() {
         {/* Row 1: intro text + richtext + brand logos */}
         <div className="grid grid-cols-1 gap-6 pb-10 items-start lg:grid-cols-[4fr_5fr_3fr] lg:gap-[30px]">
           <div>
-            <h3 className="font-display text-26 font-semibold uppercase text-foreground mb-4">Bigbike</h3>
-            <p className="text-muted-foreground text-base leading-snug m-0">Cửa hàng chuyên phân phối phụ kiện bảo hộ moto chính hãng uy tín tại TP HCM</p>
+            <h3 className="font-display text-26 font-semibold uppercase text-foreground mb-4">{t("aboutBigbike")}</h3>
+            <p className="text-muted-foreground text-base leading-snug m-0">{t("aboutSubtitle")}</p>
           </div>
           <article
             className="bb-richtext text-muted-foreground"
@@ -144,7 +154,7 @@ export default async function AboutPage() {
           {brands.length > 0 && (
             <div
               className="grid grid-cols-2 gap-x-6 gap-y-8 items-center justify-items-center"
-              aria-label="Thương hiệu phân phối"
+              aria-label={t("brandDistributors")}
             >
               {brands.slice(0, 8).map((brand) => {
                 const logoSrc = resolveMediaUrl(brand.logo?.url?.trim());
@@ -170,59 +180,59 @@ export default async function AboutPage() {
         {/* Row 2: quality section */}
         <div className="grid grid-cols-1 gap-[30px] py-[60px] items-start lg:grid-cols-[4fr_8fr]">
           <div>
-            <h3 className="font-display text-26 font-semibold uppercase text-foreground mb-4 leading-tight">Chất lượng dịch vụ tạo nên sự khác biệt</h3>
+            <h3 className="font-display text-26 font-semibold uppercase text-foreground mb-4 leading-tight">{t("aboutQualityTitle")}</h3>
             <p className="text-muted-foreground text-base leading-relaxed m-0">
-              Trong suốt quá trình hoạt động của mình, Bigbike đã được hân hạnh trở thành nhà tài
-              trợ đồng hành cho các sự kiện sinh nhật, kỉ niệm và từ thiện cùng câu lạc bộ xe
-              exciter và câu lạc bộ moto Việt Nam. Bigbike luôn lắng nghe và ghi nhận những ý kiến
-              đóng góp của khách hàng. Để từ đó, chúng tôi không ngừng nỗ lực cải thiện và nâng cao
-              chất lượng dịch vụ. Sự hài lòng của khách hàng chính là sự thành công của Bigbike.
+              {t("aboutQualityBody")}
             </p>
           </div>
-          {/* Năm thẻ giá trị cốt lõi — xếp dọc 1 cột như thiết kế */}
           <div className="flex flex-col gap-5">
-            {SERVICE_TILES.map((tile) => (
-              <ServiceTileCard key={tile.title} tile={tile} />
+            {SERVICE_TILE_DEFS.map((tile) => (
+              <ServiceTileCard
+                key={tile.titleKey}
+                tile={{
+                  title: t(tile.titleKey),
+                  body: t(tile.bodyKey),
+                  highlight: tile.highlight,
+                  icon: tile.icon,
+                }}
+              />
             ))}
           </div>
         </div>
 
         {/* Contact CTA */}
         <div className="py-10">
-          <h3 className="font-display text-26 font-semibold uppercase text-foreground mb-3">KẾT NỐI ĐỂ CHÚNG TÔI CÓ THỂ GẦN BẠN HƠN</h3>
+          <h3 className="font-display text-26 font-semibold uppercase text-foreground mb-3">{t("aboutConnectTitle")}</h3>
           <p className="text-muted-foreground mb-2">
-            Bigbike hiện đã nhận được hơn 80 lượt review 5 sao trên Google map và nhận được nhiều
-            lời khen ngợi khác. Đây chính là những động lực to lớn để chúng tôi tiếp tục cố gắng
-            trở thành người bạn đồng hành tốt nhất của cộng đồng biker Việt Nam.
+            {t("aboutConnectBody1")}
           </p>
           <p className="text-muted-foreground mb-2">
-            Hãy liên hệ với chúng tôi để được tư vấn thêm về các thông tin chi tiết sản phẩm và để
-            nhận được giá ưu đãi tốt nhất.
+            {t("aboutConnectBody2")}
           </p>
           <ContactInfoList
             className="mt-8"
             entries={[
               {
                 icon: <Store className="w-[22px] h-[22px]" strokeWidth={1.5} />,
-                label: "Cửa hàng chính",
+                label: t("mainStore"),
                 content: <p className="text-muted-foreground text-sm leading-snug m-0">{address}</p>,
               },
               {
                 icon: <Phone className="w-[22px] h-[22px]" strokeWidth={1.5} />,
-                label: "Hotline",
+                label: t("hotline"),
                 content: (
                   <>
                     <p className="text-muted-foreground text-sm leading-snug m-0">028.62797251</p>
-                    <p className="text-muted-foreground text-sm leading-snug m-0">0784.640.679 - Mrs. Thư / ZALO</p>
-                    <p className="text-muted-foreground text-sm leading-snug m-0">090.690.2404 - Mr. Trí</p>
-                    <p className="text-muted-foreground text-sm leading-snug mt-2 mb-0">Thứ 2 - Thứ 6: 09:00 - 21:00</p>
-                    <p className="text-muted-foreground text-sm leading-snug m-0">Thứ 7, Chủ Nhật: 09:00 - 18:00</p>
+                    <p className="text-muted-foreground text-sm leading-snug m-0">{t("advisorThu")}</p>
+                    <p className="text-muted-foreground text-sm leading-snug m-0">{t("advisorTri")}</p>
+                    <p className="text-muted-foreground text-sm leading-snug mt-2 mb-0">{t("weekdayHours")}</p>
+                    <p className="text-muted-foreground text-sm leading-snug m-0">{t("weekendHours")}</p>
                   </>
                 ),
               },
               {
                 icon: <Share2 className="w-[22px] h-[22px]" strokeWidth={1.5} />,
-                label: "Facebook",
+                label: t("facebook"),
                 content: (
                   <p className="text-muted-foreground text-sm leading-snug m-0">
                     <a href={facebookUrl} target="_blank" rel="noopener noreferrer" className="bb-link">

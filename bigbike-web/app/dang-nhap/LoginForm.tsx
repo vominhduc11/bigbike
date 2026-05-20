@@ -3,12 +3,13 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, User, KeyRound, AlertTriangle } from "lucide-react";
 import { loginCustomer } from "@/lib/api/client-api";
 import { refreshAuth, useAuth } from "@/lib/auth/auth-store";
-import { loginSchema, type LoginFormValues } from "@/lib/schemas/auth";
+import { createLoginSchema, type LoginFormValues } from "@/lib/schemas/auth";
 import { toForgotPasswordPath } from "@/lib/utils/routes";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,8 @@ import { SocialLoginButtons } from "./SocialLoginButtons";
  * `returnTo` is resolved by the shell from the `?tiep=` query param.
  */
 export function LoginForm({ returnTo }: { returnTo: string }) {
+  const t = useTranslations("Auth.login");
+  const tValidation = useTranslations("Auth.validation");
   const router = useRouter();
   const auth = useAuth();
 
@@ -37,7 +40,7 @@ export function LoginForm({ returnTo }: { returnTo: string }) {
     formState: { errors, isSubmitting },
     setError,
   } = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
+    resolver: zodResolver(createLoginSchema(tValidation)),
     defaultValues: { login: "", password: "", remember: true },
   });
 
@@ -49,7 +52,7 @@ export function LoginForm({ returnTo }: { returnTo: string }) {
     } catch (err: unknown) {
       const raw = (err as Error).message;
       const message = /invalid credentials/i.test(raw)
-        ? "Tên đăng nhập hoặc mật khẩu chưa đúng!"
+        ? t("invalidCredentials")
         : raw;
       setError("root", { message });
     }
@@ -60,7 +63,7 @@ export function LoginForm({ returnTo }: { returnTo: string }) {
   return (
     <div>
       <p className="mb-5 text-sm text-muted-foreground">
-        Nếu bạn có tài khoản, vui lòng đăng nhập.
+        {t("intro")}
       </p>
 
       {errors.root && (
@@ -77,13 +80,13 @@ export function LoginForm({ returnTo }: { returnTo: string }) {
       <form onSubmit={handleSubmit(onSubmit)} className="bb-form-stack" noValidate>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="login-username">
-            Email <span className="text-destructive">*</span>
+            {t("emailLabel")} <span className="text-destructive">*</span>
           </Label>
           <div className="relative">
             <Input
               id="login-username"
               autoComplete="username"
-              placeholder="Email đăng nhập..."
+              placeholder={t("emailPlaceholder")}
               className="pr-11"
               aria-invalid={!!errors.login}
               aria-describedby={errors.login ? "login-username-error" : undefined}
@@ -104,14 +107,14 @@ export function LoginForm({ returnTo }: { returnTo: string }) {
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="login-password">
-            Mật khẩu <span className="text-destructive">*</span>
+            {t("passwordLabel")} <span className="text-destructive">*</span>
           </Label>
           <div className="relative">
             <Input
               id="login-password"
               type="password"
               autoComplete="current-password"
-              placeholder="Mật khẩu..."
+              placeholder={t("passwordPlaceholder")}
               className="pr-11"
               aria-invalid={!!errors.password}
               aria-describedby={errors.password ? "login-password-error" : undefined}
@@ -142,16 +145,16 @@ export function LoginForm({ returnTo }: { returnTo: string }) {
                 />
               )}
             />
-            <span className="text-sm text-foreground">Ghi nhớ</span>
+            <span className="text-sm text-foreground">{t("remember")}</span>
           </label>
           <Link href={toForgotPasswordPath()} className="bb-link text-sm font-normal underline">
-            Quên mật khẩu?
+            {t("forgotPassword")}
           </Link>
         </div>
 
         <Button type="submit" variant="primary" className="w-full" disabled={isSubmitting}>
           {isSubmitting && <Loader2 size={16} className="animate-spin" aria-hidden="true" />}
-          {isSubmitting ? "Đang đăng nhập..." : "Đăng nhập"}
+          {isSubmitting ? t("submitting") : t("submit")}
         </Button>
       </form>
 

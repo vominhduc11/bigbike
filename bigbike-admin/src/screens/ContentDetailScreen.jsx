@@ -2,10 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import {
-  AlertCircle, Check, ChevronDown, ChevronUp, Eye, FileText, Image as ImageIcon,
-  Info, Loader2, Maximize2, Minimize2, Search, Trash2, X,
-} from 'lucide-react'
+import { AlertCircle, Info, Loader2, Lock, Search, Trash2, X } from 'lucide-react'
 import {
   createContent,
   deleteContent,
@@ -20,13 +17,16 @@ import { showConfirm } from '../lib/confirm'
 import { formatDateTime } from '../lib/formatters'
 import { createContentSchema, zodErrors } from '../lib/schemas'
 import { RichTextEditor } from '../components/RichTextEditor'
+import { BlockEditor } from '../components/BlockEditor'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { StatePanel } from '../components/StatePanel'
+import { Screen, ScreenHeader, StickyActionBar, Tabs } from '../components/layout'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 function normalizeContentType(value) {
   return String(value || '').toUpperCase() === 'PAGE' ? 'PAGE' : 'ARTICLE'
@@ -36,50 +36,85 @@ function mutationPath(contentType) {
   return normalizeContentType(contentType) === 'PAGE' ? 'pages' : 'articles'
 }
 
-// The 5 form sections (prototype layout). Section 3 ("media") swaps between
-// article gallery fields and page hero fields by content type.
-const CONTENT_SECTION_DEFS = [
-  { id: 'cs-basic',   icon: Info,      labelKey: 'content.detail.sectionCore',    required: true  },
-  { id: 'cs-body',    icon: FileText,  labelKey: 'content.detail.body',           required: true  },
-  { id: 'cs-media',   icon: ImageIcon, labelKey: 'content.detail.sectionMedia',   required: false },
-  { id: 'cs-seo',     icon: Search,    labelKey: 'content.detail.sectionSeo',     required: false },
-  { id: 'cs-publish', icon: Eye,       labelKey: 'content.detail.publishStatus',  required: true  },
-]
+// Validation-error field prefixes per section key — single source of truth
+// for derived `sectionErrors` and tab-error counts.
+const SECTION_FIELD_PREFIXES = {
+  basic:   ['title', 'slug', 'pageType', 'categoryId', 'authorId', 'excerpt'],
+  body:    ['body', 'bodyBlocks'],
+  media:   ['coverImageUrl', 'productImageUrl', 'heroImage'],
+  seo:     ['seoTitle', 'seoDescription', 'seoCanonicalUrl'],
+  publish: ['publishStatus'],
+}
 
-// One collapsible content-form section in the prototype `pf-section` style.
-function ContentSection({ def, t, open, done, hasError, onToggle, badge, children }) {
-  const Icon = def.icon
+// Group the 5 sections into 2 fixed tabs to mirror writer vs publisher workflows.
+const TAB_SECTIONS = {
+  content: ['basic', 'body', 'media'],
+  seo:     ['seo', 'publish'],
+}
+
+function computeSectionErrorsFromMap(errors) {
+  const keys = Object.keys(errors)
+  const result = {}
+  for (const [section, prefixes] of Object.entries(SECTION_FIELD_PREFIXES)) {
+    result[section] = prefixes.some((p) => keys.some((k) => k === p || k.startsWith(p + '.')))
+  }
+  return result
+}
+
+function findTabForErrors(sectionErrors) {
+  for (const [tab, keys] of Object.entries(TAB_SECTIONS)) {
+    if (keys.some((k) => sectionErrors[k])) return tab
+  }
+  return null
+}
+
+// Map publishStatus → matching .badge variant. Used in ScreenHeader.
+function publishBadgeClass(status) {
+  switch (status) {
+    case 'PUBLISHED': return 'badge badge-success'
+    case 'DRAFT':     return 'badge badge-neutral'
+    case 'HIDDEN':    return 'badge badge-orange'
+    case 'TRASH':     return 'badge badge-danger'
+    default:          return 'badge badge-neutral'
+  }
+}
+
+// Section card wrapper — matches the same shape used in ProductDetailScreen.
+// Required sections get a subtle red asterisk after the title instead of a loud "BẮT BUỘC" badge.
+function SectionCard({ title, badge, required, children }) {
   return (
-    <div className="pf-section" data-section={def.id} id={def.id}>
-      <button type="button" className="pf-section-head" onClick={onToggle}>
-        <span className={`pf-section-icon${done ? ' done' : ''}`}>
-          {done ? <Check size={14} /> : <Icon size={16} />}
-        </span>
-        <div style={{ flex: 1, textAlign: 'left' }}>
-          <div className="pf-section-title">
-            {t(def.labelKey)}
-            {def.required && !done && (
-              <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: 'var(--admin-color-brand-red)' }}>
-                {t('products.detail.requiredTag', { defaultValue: 'BẮT BUỘC' })}
-              </span>
-            )}
-            {!def.required && (
-              <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 500, color: 'var(--admin-color-text-muted)' }}>
-                {t('products.detail.optionalTag', { defaultValue: '(tuỳ chọn)' })}
-              </span>
-            )}
-          </div>
-        </div>
-        {done && (
-          <span className="badge badge-success" style={{ fontSize: 10 }}>
-            <Check size={10} />{t('products.detail.sectionDone', { defaultValue: 'Hoàn thành' })}
-          </span>
-        )}
-        {hasError && <span className="badge badge-danger" style={{ fontSize: 10 }}><AlertCircle size={10} /></span>}
+    <div className="card">
+      <div className="card-head">
+        <h2>
+          {title}
+          {required && (
+            <span
+              className="ml-1 text-[var(--admin-color-brand-red)]"
+              aria-label="bắt buộc"
+              title="Bắt buộc"
+            >*</span>
+          )}
+        </h2>
         {badge}
-        {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-      </button>
-      {open && <div className="pf-section-body">{children}</div>}
+      </div>
+      <div className="card-body">{children}</div>
+    </div>
+  )
+}
+
+// Field shell — pass `full` to span both grid columns.
+function Field({ label, hint, error, full, children }) {
+  return (
+    <div className={cn('flex flex-col gap-1.5', full && 'md:col-span-2')}>
+      {label && (
+        <label className="text-sm font-medium text-foreground/80">{label}</label>
+      )}
+      {children}
+      {error
+        ? <span className="text-xs text-[var(--admin-color-status-danger-text)] font-semibold">{error}</span>
+        : hint
+          ? <span className="text-xs text-muted-foreground">{hint}</span>
+          : null}
     </div>
   )
 }
@@ -100,6 +135,7 @@ function buildEmptyForm(contentType) {
     productImageUrl: '',
     productImageAlt: '',
     tags: '',
+    bodyBlocks: null,
     relatedProductIds: [],
     relatedProductChips: [],
     seoTitle: '',
@@ -112,6 +148,9 @@ function buildEmptyForm(contentType) {
     heroDescription: '',
     heroKicker: '',
     type: normalizeContentType(contentType),
+    translations: {
+      en: { title: '', excerpt: '', body: '', seoTitle: '', seoDescription: '', heroTitle: '', heroDescription: '', heroKicker: '' },
+    },
   }
 }
 
@@ -133,6 +172,9 @@ function buildFormFromItem(contentType, item) {
     coverImageAlt: item.coverImage?.alt || '',
     productImageUrl: item.productImage?.url || '',
     productImageAlt: item.productImage?.alt || '',
+    bodyBlocks: Array.isArray(item.bodyBlocks)
+      ? item.bodyBlocks.map((b) => (b._key ? b : { ...b, _key: crypto.randomUUID() }))
+      : null,
     tags: Array.isArray(item.tags) ? item.tags.join(', ') : '',
     relatedProductIds: Array.isArray(item.relatedProducts)
       ? item.relatedProducts.map((p) => p.id).filter(Boolean)
@@ -152,6 +194,18 @@ function buildFormFromItem(contentType, item) {
     heroDescription: item.heroDescription || '',
     heroKicker: item.heroKicker || '',
     type: normalizeContentType(item.type || contentType),
+    translations: {
+      en: {
+        title: item.translations?.en?.title || '',
+        excerpt: item.translations?.en?.excerpt || '',
+        body: item.translations?.en?.body || '',
+        seoTitle: item.translations?.en?.seoTitle || '',
+        seoDescription: item.translations?.en?.seoDescription || '',
+        heroTitle: item.translations?.en?.heroTitle || '',
+        heroDescription: item.translations?.en?.heroDescription || '',
+        heroKicker: item.translations?.en?.heroKicker || '',
+      },
+    },
   }
 }
 
@@ -168,8 +222,12 @@ function toPayload(form, isCreate) {
   const payload = {
     slug: form.slug.trim(),
     title: form.title.trim(),
-    body: form.body.trim(),
     publishStatus: form.publishStatus,
+    // bodyBlocks presence-flag: send when non-null so backend overwrites both body_blocks + body columns.
+    // When null (new form, no blocks added yet) omit so backend leaves columns unchanged.
+    bodyBlocks: form.bodyBlocks !== null
+      ? form.bodyBlocks.map(({ _key: _k, ...rest }) => rest)
+      : undefined,
   }
 
   if (form.type === 'ARTICLE') {
@@ -221,6 +279,19 @@ function toPayload(form, isCreate) {
     description: form.seoDescription.trim() || null,
     canonicalUrl: form.seoCanonicalUrl.trim() || null,
     noIndex: Boolean(form.seoNoIndex),
+  }
+
+  payload.translations = {
+    en: {
+      title: form.translations?.en?.title?.trim() || null,
+      excerpt: form.translations?.en?.excerpt?.trim() || null,
+      body: form.translations?.en?.body?.trim() || null,
+      seoTitle: form.translations?.en?.seoTitle?.trim() || null,
+      seoDescription: form.translations?.en?.seoDescription?.trim() || null,
+      heroTitle: form.translations?.en?.heroTitle?.trim() || null,
+      heroDescription: form.translations?.en?.heroDescription?.trim() || null,
+      heroKicker: form.translations?.en?.heroKicker?.trim() || null,
+    },
   }
 
   return payload
@@ -379,7 +450,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
   }
 
   function handleSubmit(event) {
-    event.preventDefault()
+    if (event && typeof event.preventDefault === 'function') event.preventDefault()
     if (!canUpdate) return
 
     const schema = createContentSchema(t, isCreate, normalizedType)
@@ -387,6 +458,8 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
     const clientErrors = zodErrors(result)
     if (Object.keys(clientErrors).length > 0) {
       setValidationErrors(clientErrors)
+      const failedTab = findTabForErrors(computeSectionErrorsFromMap(clientErrors))
+      if (failedTab && failedTab !== activeTab) setActiveTab(failedTab)
       return
     }
 
@@ -395,49 +468,22 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
     saveMutation.mutate(toPayload(form, isCreate))
   }
 
-  // ── Prototype layout state — collapsible sections + TOC scroll-spy ────────
-  const [openMap, setOpenMap] = useState(() => {
-    const m = {}
-    CONTENT_SECTION_DEFS.forEach((s, i) => { m[s.id] = isCreate ? s.required : i < 2 })
-    return m
-  })
-  const [activeSection, setActiveSection] = useState(CONTENT_SECTION_DEFS[0].id)
+  // ── Tab navigation state (replaces TOC sidebar) ───────────────────────────
+  const [activeTab, setActiveTab] = useState('content')
   const [savedFlash, setSavedFlash] = useState(false)
 
-  // Scroll-spy — highlight the TOC entry of the section currently in view.
-  useEffect(() => {
-    const pc = document.querySelector('.page-content')
-    if (!pc) return undefined
-    const onScroll = () => {
-      const sections = pc.querySelectorAll('[data-section]')
-      let current = CONTENT_SECTION_DEFS[0].id
-      const containerTop = pc.getBoundingClientRect().top
-      for (const sec of sections) {
-        if (sec.getBoundingClientRect().top - containerTop < 180) current = sec.dataset.section
-        else break
-      }
-      setActiveSection(current)
-    }
-    onScroll()
-    pc.addEventListener('scroll', onScroll, { passive: true })
-    return () => pc.removeEventListener('scroll', onScroll)
-  }, [])
+  // ── Content language toggle (VI / EN) ─────────────────────────────────────
+  const [contentLang, setContentLang] = useState('vi')
+  const isEnLang = contentLang === 'en'
 
-  function toggleSection(id) {
-    setOpenMap((prev) => ({ ...prev, [id]: !prev[id] }))
-  }
-  function setAllSections(next) {
-    setOpenMap(() => {
-      const m = {}
-      CONTENT_SECTION_DEFS.forEach((s) => { m[s.id] = next })
-      return m
-    })
-  }
-  function jumpToSection(id) {
-    setOpenMap((prev) => (prev[id] ? prev : { ...prev, [id]: true }))
-    setTimeout(() => {
-      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }, 50)
+  function updateTranslation(field, value) {
+    setForm((previous) => ({
+      ...previous,
+      translations: {
+        ...previous.translations,
+        en: { ...previous.translations?.en, [field]: value },
+      },
+    }))
   }
 
   if (state.status === 'loading') {
@@ -476,161 +522,118 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
 
   const isArticle = normalizedType === 'ARTICLE'
 
-  // Per-section completion — drives TOC ticks + section header badges.
-  const completion = {
-    'cs-basic': Boolean(form.title.trim() && form.slug.trim()
-      && (isArticle ? form.categoryId : form.pageType)),
-    'cs-body': (form.body || '').replace(/<[^>]*>/g, '').trim().length >= 30,
-    'cs-media': isArticle ? Boolean(form.coverImageUrl) : Boolean(form.heroImageUrl),
-    'cs-seo': Boolean(form.seoTitle && form.seoDescription),
-    'cs-publish': Boolean(form.publishStatus),
-  }
-  // Which sections carry a validation error.
-  const errKeys = Object.keys(validationErrors)
-  const inErr = (prefixes) => prefixes.some((p) => errKeys.some((k) => k === p || k.startsWith(p + '.')))
-  const sectionErrors = {
-    'cs-basic': inErr(['title', 'slug', 'pageType', 'categoryId', 'authorId', 'excerpt']),
-    'cs-body': inErr(['body']),
-    'cs-media': inErr(['coverImageUrl', 'productImageUrl', 'heroImage']),
-    'cs-seo': inErr(['seoTitle', 'seoDescription', 'seoCanonicalUrl']),
-    'cs-publish': inErr(['publishStatus']),
-  }
-  const requiredDefs = CONTENT_SECTION_DEFS.filter((s) => s.required)
-  const optionalDefs = CONTENT_SECTION_DEFS.filter((s) => !s.required)
-  const doneRequired = requiredDefs.filter((s) => completion[s.id]).length
-  const doneOptional = optionalDefs.filter((s) => completion[s.id]).length
-  const allOpen = CONTENT_SECTION_DEFS.every((s) => openMap[s.id])
-  const saveDotClass = isSubmitting ? 'saving' : savedFlash ? 'saved-flash' : isDirty ? 'dirty' : 'saved'
+  const sectionErrors = computeSectionErrorsFromMap(validationErrors)
+  const tabCounts = Object.fromEntries(
+    Object.entries(TAB_SECTIONS).map(([tab, keys]) => [tab, keys.filter((k) => sectionErrors[k]).length]),
+  )
+
+  const saveDotState = isSubmitting ? 'saving' : savedFlash ? 'saved' : isDirty ? 'dirty' : 'saved'
+  const saveDotClass =
+    saveDotState === 'saving' ? 'bg-[var(--admin-color-status-info-text)] animate-pulse'
+    : saveDotState === 'dirty' ? 'bg-[var(--admin-color-status-warning-text)] animate-pulse'
+    :                            'bg-[var(--admin-color-status-success-text)]'
   const saveLabel = isSubmitting
-    ? t('common.saving')
-    : savedFlash ? t('common.clean') : isDirty ? t('common.dirty') : t('common.clean')
+    ? t('content.detail.savingShort', { defaultValue: 'Đang lưu...' })
+    : isDirty
+      ? t('content.detail.saveDirty', { defaultValue: 'Có thay đổi chưa lưu' })
+      : t('content.detail.saveClean', { defaultValue: 'Đã lưu' })
+
+  const screenTitle = isCreate
+    ? t(isArticle ? 'content.detail.createArticleTitle' : 'content.detail.createPageTitle')
+    : (form.title || t(isArticle ? 'content.detail.editArticleTitle' : 'content.detail.editPageTitle'))
+
+  const primaryLabel = isCreate
+    ? t(isArticle ? 'content.detail.createArticleBtn' : 'content.detail.createPageBtn')
+    : t('content.detail.saveBtn')
+
+  async function handleClose() {
+    if (isDirty) {
+      const confirmed = await showConfirm(
+        t('products.detail.unsavedChangesConfirm', { defaultValue: 'Bạn có thay đổi chưa lưu. Rời khỏi trang này sẽ mất những thay đổi đó. Tiếp tục?' }),
+        t('products.detail.unsavedChangesTitle', { defaultValue: 'Có thay đổi chưa lưu' }),
+      )
+      if (!confirmed) return
+    }
+    navigate('/admin/content')
+  }
+
+  async function handleArchive() {
+    const confirmed = await showConfirm(
+      t('content.detail.archiveConfirm'),
+      t('content.detail.archiveConfirmTitle'),
+    )
+    if (!confirmed) return
+    setIsSubmitting(true)
+    archiveMutation.mutate()
+  }
 
   return (
-    <div className="pf-screen">
-      {/* Read-only banner */}
-      {!canUpdate && (
-        <div className="pf-readonly-banner">
-          <X size={16} />
-          <span>{t('content.detail.permissionDesc')}</span>
-        </div>
-      )}
-
-      {/* Mock-data warning */}
-      {state.warning && (
-        <div className="pf-restore-banner" style={{ borderColor: 'var(--admin-color-status-warning-border)', background: 'var(--admin-color-status-warning-bg)' }}>
-          <AlertCircle size={16} style={{ color: 'var(--admin-color-status-warning-text)' }} />
-          <div style={{ flex: 1, fontSize: 13 }}>{state.warning}</div>
-        </div>
-      )}
-
-      <div className="pf-body-wrap">
-        {/* TOC sidebar */}
-        <aside className="pf-toc">
-          <div className="pf-toc-head">
-            <div className="pf-toc-head-row">
-              <div>
-                <div className="pf-toc-head-title">{t('products.detail.tocProgress', { defaultValue: 'Tiến độ' })}</div>
-                <div className="pf-toc-head-meta">
-                  <strong>{doneRequired}/{requiredDefs.length}</strong>{' '}
-                  {t('products.detail.tocRequired', { defaultValue: 'bắt buộc' })}
-                  {' · '}{doneOptional}/{optionalDefs.length}{' '}
-                  {t('products.detail.tocOptional', { defaultValue: 'tuỳ chọn' })}
-                </div>
-              </div>
-              <button
-                type="button"
-                className="pf-toc-toggle-all"
-                title={allOpen
-                  ? t('products.detail.tocCollapseAll', { defaultValue: 'Đóng tất cả' })
-                  : t('products.detail.tocExpandAll', { defaultValue: 'Mở tất cả' })}
-                onClick={() => setAllSections(!allOpen)}
-              >
-                {allOpen ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
-              </button>
-            </div>
-            <div className="pf-toc-progress">
-              <div style={{ width: `${(doneRequired / requiredDefs.length) * 100}%` }} />
-            </div>
-          </div>
-
-          <nav className="pf-toc-nav">
-            {CONTENT_SECTION_DEFS.map((def) => {
-              const Icon = def.icon
-              const done = completion[def.id]
-              const hasError = sectionErrors[def.id]
-              return (
-                <button
-                  key={def.id}
-                  type="button"
-                  className={`pf-toc-item${done ? ' done' : ''}${hasError ? ' error' : ''}${activeSection === def.id ? ' active' : ''}`}
-                  onClick={() => jumpToSection(def.id)}
-                >
-                  <span className="pf-toc-icon">
-                    {hasError ? <AlertCircle size={13} /> : done ? <Check size={13} /> : <Icon size={13} />}
-                  </span>
-                  <span style={{ flex: 1, textAlign: 'left' }}>{t(def.labelKey)}</span>
-                  {def.required && !done && !hasError && (
-                    <span className="pf-toc-req" title={t('products.detail.tocRequired', { defaultValue: 'bắt buộc' })}>*</span>
-                  )}
-                </button>
-              )
-            })}
-          </nav>
-
-          <div className="pf-toc-save">
-            <div className="pf-toc-save-status">
-              <span className={`pf-dot ${saveDotClass}`} />
-              <span>{saveLabel}</span>
-            </div>
-            <button
-              type="button"
-              className="btn btn-primary btn-sm pf-toc-primary"
-              onClick={handleSubmit}
-              disabled={isReadOnly || !isDirty}
-            >
-              {isSubmitting ? <span className="pf-spin"><Loader2 size={13} /></span> : <Check size={13} />}
-              {isCreate
-                ? t(isArticle ? 'content.detail.createArticleBtn' : 'content.detail.createPageBtn')
-                : t('content.detail.saveBtn')}
-            </button>
-            <div className="pf-toc-secondary">
-              {!isCreate && canUpdate && (
-                <button
-                  type="button"
-                  className="pf-toc-icon-btn"
-                  disabled={isSubmitting}
-                  onClick={async () => {
-                    const confirmed = await showConfirm(
-                      t('content.detail.archiveConfirm'),
-                      t('content.detail.archiveConfirmTitle'),
-                    )
-                    if (!confirmed) return
-                    setIsSubmitting(true)
-                    archiveMutation.mutate()
-                  }}
-                >
-                  <Trash2 size={13} /><span>{t('content.detail.archiveBtn')}</span>
-                </button>
+    <div className="bb-proto">
+      <Screen maxWidth="1200px">
+        <ScreenHeader
+          eyebrow={t('content.detail.eyebrow')}
+          title={screenTitle}
+          description={
+            !isCreate && state.item?.updatedAt ? (
+              <span className="text-xs">
+                {t('common.lastUpdated')} {formatDateTime(state.item.updatedAt)}
+              </span>
+            ) : null
+          }
+          badge={
+            <span className="inline-flex items-center gap-2">
+              <span className={publishBadgeClass(form.publishStatus)}>
+                {t(`status.publish.${form.publishStatus}`, { defaultValue: form.publishStatus })}
+              </span>
+              {isReadOnly && (
+                <span className="badge badge-warn">
+                  <Lock size={11} />
+                  {t('content.detail.readOnlyBadge', { defaultValue: 'Chỉ đọc' })}
+                </span>
               )}
-              <button
-                type="button"
-                className="pf-toc-icon-btn"
-                disabled={isSubmitting}
-                onClick={() => navigate('/admin/content')}
-              >
-                <X size={13} /><span>{t('content.detail.backToList')}</span>
-              </button>
-            </div>
-            <div className="pf-toc-kbd-hint">
-              <kbd>⌘</kbd>+<kbd>↵</kbd> {t('products.detail.saveShortcutHint', { defaultValue: 'lưu nhanh' })}
-            </div>
-          </div>
-        </aside>
+            </span>
+          }
+          actions={
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleClose}
+              aria-label={t('content.detail.backToList')}
+              data-screen-close="true"
+            >
+              <X size={18} />
+            </Button>
+          }
+        />
 
-        {/* Form sections */}
+        {/* Banners — read-only + mock-warning */}
+        {!canUpdate && (
+          <div className="flex items-center gap-2 px-4 py-2 bg-[var(--admin-color-status-warning-bg)] border border-[var(--admin-color-status-warning-border)] text-[var(--admin-color-status-warning-text)] text-sm">
+            <Lock size={16} />
+            <span>{t('content.detail.permissionDesc')}</span>
+          </div>
+        )}
+
+        {state.warning && (
+          <div className="flex items-center gap-2 px-4 py-2 bg-[var(--admin-color-status-warning-bg)] border border-[var(--admin-color-status-warning-border)] text-[var(--admin-color-status-warning-text)] text-sm">
+            <AlertCircle size={16} />
+            <div className="flex-1">{state.warning}</div>
+          </div>
+        )}
+
+        <Tabs
+          ariaLabel={t('content.detail.tabsAriaLabel', { defaultValue: 'Phần của nội dung' })}
+          value={activeTab}
+          onChange={setActiveTab}
+          items={[
+            { key: 'content', label: t('content.detail.tabContent'),     count: tabCounts.content || undefined },
+            { key: 'seo',     label: t('content.detail.tabSeoPublish'),  count: tabCounts.seo     || undefined },
+          ]}
+        />
+
         <form
           ref={formRef}
-          className="pf-body"
+          className="flex flex-col gap-6 pb-4"
           onSubmit={handleSubmit}
           onKeyDown={(e) => {
             if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && !isReadOnly && isDirty) {
@@ -638,386 +641,389 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
             }
           }}
         >
-          {/* ── Section 1: Thông tin cơ bản ── */}
-          <ContentSection
-            def={CONTENT_SECTION_DEFS[0]}
-            t={t}
-            open={openMap['cs-basic']}
-            done={completion['cs-basic']}
-            hasError={sectionErrors['cs-basic']}
-            onToggle={() => toggleSection('cs-basic')}
-          >
-            <div className="pf-grid">
-              <div className="pf-field full">
-                <div className="pf-field-label"><span>{t('content.detail.title')}</span></div>
-                <Input value={form.title} onChange={(e) => updateField('title', e.target.value)} disabled={isReadOnly} />
-                {validationErrors.title && <span className="pf-field-msg pf-field-msg-error">{validationErrors.title}</span>}
-              </div>
-
-              <div className="pf-field full">
-                <div className="pf-field-label"><span>{t('content.detail.slug')}</span></div>
-                <Input
-                  value={form.slug}
-                  onChange={(e) => updateField('slug', e.target.value)}
-                  disabled={isReadOnly}
-                  style={{ fontFamily: 'var(--admin-font-mono)' }}
-                />
-                {validationErrors.slug && <span className="pf-field-msg pf-field-msg-error">{validationErrors.slug}</span>}
-              </div>
-
-              {!isArticle && (
-                <div className="pf-field">
-                  <div className="pf-field-label"><span>{t('content.detail.pageType')}</span></div>
-                  <Input
-                    value={form.pageType}
-                    onChange={(e) => updateField('pageType', e.target.value)}
-                    disabled={isReadOnly || !isCreate}
+          {activeTab === 'content' && (
+            <>
+              {/* ── Card: Thông tin chính ── */}
+              <SectionCard
+                title={t('content.detail.sectionCore')}
+                required
+                badge={
+                  <Tabs
+                    ariaLabel={t('content.detail.contentLanguageAriaLabel')}
+                    value={contentLang}
+                    onChange={setContentLang}
+                    items={[{ key: 'vi', label: 'VI' }, { key: 'en', label: 'EN' }]}
                   />
-                  {validationErrors.pageType && <span className="pf-field-msg pf-field-msg-error">{validationErrors.pageType}</span>}
-                </div>
-              )}
+                }
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Field full label={t('content.detail.title')} error={!isEnLang ? validationErrors.title : undefined} hint={isEnLang ? t('content.detail.enFieldHint') : undefined}>
+                    <Input
+                      value={isEnLang ? (form.translations?.en?.title ?? '') : form.title}
+                      onChange={(e) => isEnLang ? updateTranslation('title', e.target.value) : updateField('title', e.target.value)}
+                      disabled={isReadOnly}
+                      placeholder={isEnLang ? t('content.detail.titlePlaceholderEn') : undefined}
+                    />
+                  </Field>
 
-              {isArticle && (
-                <div className="pf-field">
-                  <div className="pf-field-label"><span>{t('content.detail.author', { defaultValue: 'Tác giả' })}</span></div>
-                  <Select value={form.authorId} onValueChange={(val) => updateField('authorId', val)} disabled={isReadOnly}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {authors.map((a) => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
+                  <Field full label={t('content.detail.slug')} error={validationErrors.slug}>
+                    <Input
+                      value={form.slug}
+                      onChange={(e) => updateField('slug', e.target.value)}
+                      disabled={isReadOnly}
+                      className="font-mono"
+                    />
+                  </Field>
 
-              {isArticle && (
-                <div className="pf-field">
-                  <div className="pf-field-label"><span>{t('content.detail.category', { defaultValue: 'Danh mục' })}</span></div>
-                  <Select value={form.categoryId} onValueChange={(val) => updateField('categoryId', val)} disabled={isReadOnly}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {isArticle && (
-                <div className="pf-field full">
-                  <div className="pf-field-label"><span>{t('content.detail.excerpt')}</span></div>
-                  <Textarea value={form.excerpt} onChange={(e) => updateField('excerpt', e.target.value)} disabled={isReadOnly} />
-                </div>
-              )}
-            </div>
-          </ContentSection>
-
-          {/* ── Section 2: Nội dung ── */}
-          <ContentSection
-            def={CONTENT_SECTION_DEFS[1]}
-            t={t}
-            open={openMap['cs-body']}
-            done={completion['cs-body']}
-            hasError={sectionErrors['cs-body']}
-            onToggle={() => toggleSection('cs-body')}
-          >
-            <div style={{ paddingTop: 12 }}>
-              <RichTextEditor
-                value={form.body}
-                onChange={(html) => updateField('body', html)}
-                placeholder={t('content.detail.bodyPlaceholder', { defaultValue: 'Nhập nội dung...' })}
-                disabled={isReadOnly}
-                hasError={Boolean(validationErrors.body)}
-                enableImagePicker
-              />
-              {validationErrors.body && <span className="pf-field-msg pf-field-msg-error">{validationErrors.body}</span>}
-            </div>
-          </ContentSection>
-
-          {/* ── Section 3: Hình ảnh — article gallery / page hero ── */}
-          <ContentSection
-            def={CONTENT_SECTION_DEFS[2]}
-            t={t}
-            open={openMap['cs-media']}
-            done={completion['cs-media']}
-            hasError={sectionErrors['cs-media']}
-            onToggle={() => toggleSection('cs-media')}
-          >
-            {isArticle ? (
-              <div className="pf-grid">
-                <div className="pf-field full">
-                  <div className="pf-field-label" style={{ marginBottom: 6 }}><span>{t('content.detail.coverImageUrl')}</span></div>
-                  <ImageUrlInput
-                    value={form.coverImageUrl}
-                    onChange={(url) => updateField('coverImageUrl', url)}
-                    alt={form.coverImageAlt}
-                    onAltChange={(v) => updateField('coverImageAlt', v)}
-                    disabled={isReadOnly}
-                    error={validationErrors.coverImageUrl}
-                  />
-                </div>
-
-                <div className="pf-field full">
-                  <div className="pf-field-label" style={{ marginBottom: 6 }}><span>{t('content.detail.productImageUrl')}</span></div>
-                  <ImageUrlInput
-                    value={form.productImageUrl}
-                    onChange={(url) => updateField('productImageUrl', url)}
-                    alt={form.productImageAlt}
-                    onAltChange={(v) => updateField('productImageAlt', v)}
-                    disabled={isReadOnly}
-                    error={validationErrors.productImageUrl}
-                  />
-                </div>
-
-                <div className="pf-field full">
-                  <div className="pf-field-label"><span>{t('content.detail.tags')}</span></div>
-                  <Input
-                    value={form.tags}
-                    onChange={(e) => updateField('tags', e.target.value)}
-                    disabled={isReadOnly}
-                    placeholder={t('content.detail.tagsPlaceholder')}
-                  />
-                </div>
-
-                <div className="pf-field full">
-                  <div className="pf-field-label"><span>{t('content.detail.relatedProducts')}</span></div>
-                  <span className="pf-field-msg pf-field-hint">{t('content.detail.relatedProductsHint')}</span>
-
-                  {form.relatedProductChips.length > 0 && (
-                    <div className="chip-row" style={{ marginTop: 8 }}>
-                      {form.relatedProductChips.map((chip) => (
-                        <span key={chip.id} className="chip">
-                          {chip.imageUrl && (
-                            <img src={chip.imageUrl} alt="" style={{ width: 20, height: 20, objectFit: 'cover', borderRadius: 3 }} />
-                          )}
-                          <strong>{chip.name}</strong>
-                          {!isReadOnly && (
-                            <span
-                              className="x"
-                              role="button"
-                              tabIndex={0}
-                              onClick={() => removeRelatedProduct(chip.id)}
-                              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') removeRelatedProduct(chip.id) }}
-                              aria-label={t('content.detail.relatedProductsRemove', { name: chip.name })}
-                            >×</span>
-                          )}
-                        </span>
-                      ))}
-                    </div>
+                  {!isArticle && (
+                    <Field label={t('content.detail.pageType')} error={validationErrors.pageType}>
+                      <Input
+                        value={form.pageType}
+                        onChange={(e) => updateField('pageType', e.target.value)}
+                        disabled={isReadOnly || !isCreate}
+                      />
+                    </Field>
                   )}
 
-                  {!isReadOnly && (
-                    <div style={{ position: 'relative', marginTop: 8 }}>
-                      <Input
-                        value={productSearch}
-                        onChange={(e) => setProductSearch(e.target.value)}
-                        placeholder={t('content.detail.relatedProductsSearch')}
+                  {isArticle && (
+                    <Field label={t('content.detail.author', { defaultValue: 'Tác giả' })}>
+                      <Select value={form.authorId} onValueChange={(val) => updateField('authorId', val)} disabled={isReadOnly}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {authors.map((a) => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                  )}
+
+                  {isArticle && (
+                    <Field label={t('content.detail.category', { defaultValue: 'Danh mục' })}>
+                      <Select value={form.categoryId} onValueChange={(val) => updateField('categoryId', val)} disabled={isReadOnly}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                  )}
+
+                  {isArticle && (
+                    <Field full label={t('content.detail.excerpt')} hint={isEnLang ? t('content.detail.enFieldHint') : undefined}>
+                      <Textarea
+                        value={isEnLang ? (form.translations?.en?.excerpt ?? '') : form.excerpt}
+                        onChange={(e) => isEnLang ? updateTranslation('excerpt', e.target.value) : updateField('excerpt', e.target.value)}
+                        disabled={isReadOnly}
                       />
-                      {productSearchDebounced.length >= 1 && (
-                        <div
-                          className="row-menu"
-                          style={{ left: 0, right: 0, minWidth: 0, maxHeight: 256, overflowY: 'auto' }}
-                        >
-                          {isSearchingProducts ? (
-                            <p className="text-sm muted" style={{ padding: '8px 10px' }}>
-                              {t('content.detail.relatedProductsSearching')}
-                            </p>
-                          ) : productSearchItems.length === 0 ? (
-                            <p className="text-sm muted" style={{ padding: '8px 10px' }}>
-                              {t('content.detail.relatedProductsEmpty')}
-                            </p>
-                          ) : (
-                            productSearchItems.map((product) => {
-                              const already = form.relatedProductIds.includes(product.id)
-                              return (
-                                <button
-                                  key={product.id}
-                                  type="button"
-                                  disabled={already}
-                                  onClick={() => addRelatedProduct(product)}
-                                  style={already ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
-                                >
-                                  {product.image?.url && (
-                                    <img src={product.image.url} alt="" style={{ width: 24, height: 24, objectFit: 'cover', borderRadius: 4 }} />
-                                  )}
-                                  <span style={{ flex: 1 }}>{product.name}</span>
-                                  {already && (
-                                    <span className="text-xs muted">{t('content.detail.relatedProductsAdded')}</span>
-                                  )}
-                                </button>
-                              )
-                            })
+                    </Field>
+                  )}
+                </div>
+              </SectionCard>
+
+              {/* ── Card: Nội dung chính ── */}
+              <SectionCard title={t('content.detail.sectionBody', { defaultValue: 'Nội dung chính' })} required>
+                {isEnLang ? (
+                  <RichTextEditor
+                    key={`body-${contentLang}`}
+                    value={form.translations?.en?.body ?? ''}
+                    onChange={(html) => updateTranslation('body', html)}
+                    placeholder={t('content.detail.bodyPlaceholder', { defaultValue: 'Nhập nội dung...' })}
+                    disabled={isReadOnly}
+                    enableImagePicker
+                  />
+                ) : (
+                  <BlockEditor
+                    key={`bodyBlocks-${contentLang}`}
+                    value={form.bodyBlocks}
+                    onChange={(blocks) => updateField('bodyBlocks', blocks)}
+                    disabled={isReadOnly}
+                    hasError={Boolean(validationErrors.bodyBlocks)}
+                    fallbackHtml={form.body}
+                  />
+                )}
+                {!isEnLang && validationErrors.bodyBlocks && (
+                  <span className="text-xs text-[var(--admin-color-status-danger-text)] font-semibold mt-2 block">
+                    {validationErrors.bodyBlocks}
+                  </span>
+                )}
+              </SectionCard>
+
+              {/* ── Card: Hình ảnh — article gallery / page hero ── */}
+              <SectionCard title={t('content.detail.sectionMedia')}>
+                {isArticle ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Field full label={t('content.detail.coverImageUrl')}>
+                      <ImageUrlInput
+                        value={form.coverImageUrl}
+                        onChange={(url) => updateField('coverImageUrl', url)}
+                        alt={form.coverImageAlt}
+                        onAltChange={(v) => updateField('coverImageAlt', v)}
+                        disabled={isReadOnly}
+                        error={validationErrors.coverImageUrl}
+                      />
+                    </Field>
+
+                    <Field full label={t('content.detail.productImageUrl')}>
+                      <ImageUrlInput
+                        value={form.productImageUrl}
+                        onChange={(url) => updateField('productImageUrl', url)}
+                        alt={form.productImageAlt}
+                        onAltChange={(v) => updateField('productImageAlt', v)}
+                        disabled={isReadOnly}
+                        error={validationErrors.productImageUrl}
+                      />
+                    </Field>
+
+                    <Field full label={t('content.detail.tags')}>
+                      <Input
+                        value={form.tags}
+                        onChange={(e) => updateField('tags', e.target.value)}
+                        disabled={isReadOnly}
+                        placeholder={t('content.detail.tagsPlaceholder')}
+                      />
+                    </Field>
+
+                    <Field full label={t('content.detail.relatedProducts')} hint={t('content.detail.relatedProductsHint')}>
+                      {form.relatedProductChips.length > 0 && (
+                        <div className="chip-row mt-2">
+                          {form.relatedProductChips.map((chip) => (
+                            <span key={chip.id} className="chip">
+                              {chip.imageUrl && (
+                                <img src={chip.imageUrl} alt="" className="w-5 h-5 object-cover" />
+                              )}
+                              <strong>{chip.name}</strong>
+                              {!isReadOnly && (
+                                <span
+                                  className="x"
+                                  role="button"
+                                  tabIndex={0}
+                                  onClick={() => removeRelatedProduct(chip.id)}
+                                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') removeRelatedProduct(chip.id) }}
+                                  aria-label={t('content.detail.relatedProductsRemove', { name: chip.name })}
+                                >×</span>
+                              )}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {!isReadOnly && (
+                        <div className="relative mt-2">
+                          <Input
+                            value={productSearch}
+                            onChange={(e) => setProductSearch(e.target.value)}
+                            placeholder={t('content.detail.relatedProductsSearch')}
+                          />
+                          {productSearchDebounced.length >= 1 && (
+                            <div className="row-menu left-0 right-0 min-w-0 max-h-64 overflow-y-auto">
+                              {isSearchingProducts ? (
+                                <p className="text-sm text-muted-foreground px-2.5 py-2">
+                                  {t('content.detail.relatedProductsSearching')}
+                                </p>
+                              ) : productSearchItems.length === 0 ? (
+                                <p className="text-sm text-muted-foreground px-2.5 py-2">
+                                  {t('content.detail.relatedProductsEmpty')}
+                                </p>
+                              ) : (
+                                productSearchItems.map((product) => {
+                                  const already = form.relatedProductIds.includes(product.id)
+                                  return (
+                                    <button
+                                      key={product.id}
+                                      type="button"
+                                      disabled={already}
+                                      onClick={() => addRelatedProduct(product)}
+                                      className={already ? 'opacity-50 cursor-not-allowed' : undefined}
+                                    >
+                                      {product.image?.url && (
+                                        <img src={product.image.url} alt="" className="w-6 h-6 object-cover" />
+                                      )}
+                                      <span className="flex-1">{product.name}</span>
+                                      {already && (
+                                        <span className="text-xs text-muted-foreground">{t('content.detail.relatedProductsAdded')}</span>
+                                      )}
+                                    </button>
+                                  )
+                                })
+                              )}
+                            </div>
                           )}
                         </div>
                       )}
+                    </Field>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-start gap-2 mb-4 p-3 bg-[var(--admin-color-status-info-bg)] border border-[var(--admin-color-status-info-border)] text-[var(--admin-color-status-info-text)] text-sm">
+                      <Info size={14} className="mt-0.5 shrink-0" />
+                      <span>{t('content.detail.heroHint', { defaultValue: 'Khối ảnh + tiêu đề lớn hiển thị đầu trang. Để trống ảnh nếu chưa có — trang sẽ rơi về nền mặc định.' })}</span>
                     </div>
-                  )}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Field full label={t('content.detail.heroImage', { defaultValue: 'Ảnh hero' })}>
+                        <ImageUrlInput
+                          value={form.heroImageUrl}
+                          onChange={(url) => updateField('heroImageUrl', url)}
+                          alt={form.heroImageAlt}
+                          onAltChange={(alt) => updateField('heroImageAlt', alt)}
+                          disabled={isReadOnly}
+                          error={validationErrors['heroImage.url']}
+                        />
+                      </Field>
+                      <Field label={t('content.detail.heroKicker', { defaultValue: 'Kicker' })} hint={isEnLang ? t('content.detail.enFieldHint') : undefined}>
+                        <Input
+                          value={isEnLang ? (form.translations?.en?.heroKicker ?? '') : form.heroKicker}
+                          onChange={(e) => isEnLang ? updateTranslation('heroKicker', e.target.value) : updateField('heroKicker', e.target.value)}
+                          disabled={isReadOnly}
+                          placeholder="vd: GIỚI THIỆU"
+                          maxLength={128}
+                        />
+                      </Field>
+                      <Field label={t('content.detail.heroTitle', { defaultValue: 'Tiêu đề hero' })} hint={isEnLang ? t('content.detail.enFieldHint') : undefined}>
+                        <Input
+                          value={isEnLang ? (form.translations?.en?.heroTitle ?? '') : form.heroTitle}
+                          onChange={(e) => isEnLang ? updateTranslation('heroTitle', e.target.value) : updateField('heroTitle', e.target.value)}
+                          disabled={isReadOnly}
+                          placeholder={t('content.detail.heroTitlePlaceholder', { defaultValue: 'Để trống nếu muốn dùng tên trang' })}
+                          maxLength={256}
+                        />
+                      </Field>
+                      <Field full label={t('content.detail.heroDescription', { defaultValue: 'Mô tả ngắn dưới tiêu đề' })} hint={isEnLang ? t('content.detail.enFieldHint') : undefined}>
+                        <Textarea
+                          value={isEnLang ? (form.translations?.en?.heroDescription ?? '') : form.heroDescription}
+                          onChange={(e) => isEnLang ? updateTranslation('heroDescription', e.target.value) : updateField('heroDescription', e.target.value)}
+                          disabled={isReadOnly}
+                          maxLength={1024}
+                          rows={2}
+                        />
+                      </Field>
+                    </div>
+                  </>
+                )}
+              </SectionCard>
+            </>
+          )}
+
+          {activeTab === 'seo' && (
+            <>
+              {/* ── Card: SEO ── */}
+              <SectionCard title={t('content.detail.sectionSeo')}>
+                {/* Live Google SERP preview */}
+                <div className="mb-4 p-3 border border-border bg-white">
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                    <Search size={12} />
+                    <span>{t('products.detail.serpPreview', { defaultValue: 'Xem trước trên Google' })}</span>
+                  </div>
+                  <div className="text-xs text-[#5f6368] break-all mb-1">
+                    https://bigbike.vn
+                    <span className="text-[#70757a]"> › {isArticle ? 'tin-tuc' : 'trang'} › {form.slug || 'duong-dan'}</span>
+                  </div>
+                  <div className="text-lg leading-snug text-[#1a0dab] break-words mb-1">
+                    {(form.seoTitle || form.title || t('products.detail.serpTitleFallback', { defaultValue: 'Tiêu đề trên Google' })).slice(0, 60)}
+                  </div>
+                  <div className="text-sm leading-relaxed text-[#4d5156] break-words">
+                    {form.seoDescription || form.excerpt || t('products.detail.serpDescFallback', { defaultValue: 'Mô tả ngắn sẽ hiển thị ở đây.' })}
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <>
-                <div className="pf-note pf-note-info">
-                  <Info size={14} />
-                  <span>{t('content.detail.heroHint', { defaultValue: 'Khối ảnh + tiêu đề lớn hiển thị đầu trang. Để trống ảnh nếu chưa có — trang sẽ rơi về nền mặc định.' })}</span>
-                </div>
-                <div className="pf-grid">
-                  <div className="pf-field full">
-                    <div className="pf-field-label" style={{ marginBottom: 6 }}><span>{t('content.detail.heroImage', { defaultValue: 'Ảnh hero' })}</span></div>
-                    <ImageUrlInput
-                      value={form.heroImageUrl}
-                      onChange={(url) => updateField('heroImageUrl', url)}
-                      alt={form.heroImageAlt}
-                      onAltChange={(alt) => updateField('heroImageAlt', alt)}
-                      disabled={isReadOnly}
-                      error={validationErrors['heroImage.url']}
-                    />
-                  </div>
-                  <div className="pf-field">
-                    <div className="pf-field-label"><span>{t('content.detail.heroKicker', { defaultValue: 'Kicker' })}</span></div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Field full label={t('content.detail.seoTitle', { defaultValue: 'Tiêu đề SEO' })} error={!isEnLang ? validationErrors.seoTitle : undefined} hint={isEnLang ? t('content.detail.enFieldHint') : undefined}>
                     <Input
-                      value={form.heroKicker}
-                      onChange={(e) => updateField('heroKicker', e.target.value)}
+                      value={isEnLang ? (form.translations?.en?.seoTitle ?? '') : form.seoTitle}
+                      onChange={(e) => isEnLang ? updateTranslation('seoTitle', e.target.value) : updateField('seoTitle', e.target.value)}
                       disabled={isReadOnly}
-                      placeholder="vd: GIỚI THIỆU"
-                      maxLength={128}
+                      placeholder={form.title || t('content.detail.seoTitle', { defaultValue: 'Tiêu đề SEO' })}
                     />
-                  </div>
-                  <div className="pf-field">
-                    <div className="pf-field-label"><span>{t('content.detail.heroTitle', { defaultValue: 'Tiêu đề hero' })}</span></div>
-                    <Input
-                      value={form.heroTitle}
-                      onChange={(e) => updateField('heroTitle', e.target.value)}
-                      disabled={isReadOnly}
-                      placeholder={t('content.detail.heroTitlePlaceholder', { defaultValue: 'Để trống nếu muốn dùng tên trang' })}
-                      maxLength={256}
-                    />
-                  </div>
-                  <div className="pf-field full">
-                    <div className="pf-field-label"><span>{t('content.detail.heroDescription', { defaultValue: 'Mô tả ngắn dưới tiêu đề' })}</span></div>
+                  </Field>
+
+                  <Field full label={t('content.detail.seoDescription', { defaultValue: 'Mô tả SEO' })} error={!isEnLang ? validationErrors.seoDescription : undefined} hint={isEnLang ? t('content.detail.enFieldHint') : undefined}>
                     <Textarea
-                      value={form.heroDescription}
-                      onChange={(e) => updateField('heroDescription', e.target.value)}
+                      value={isEnLang ? (form.translations?.en?.seoDescription ?? '') : form.seoDescription}
+                      onChange={(e) => isEnLang ? updateTranslation('seoDescription', e.target.value) : updateField('seoDescription', e.target.value)}
                       disabled={isReadOnly}
-                      maxLength={1024}
                       rows={2}
+                      className={!isEnLang && validationErrors.seoDescription ? 'border-danger' : undefined}
                     />
-                  </div>
+                  </Field>
+
+                  <Field full label={t('content.detail.seoCanonicalUrl', { defaultValue: 'URL canonical' })} error={validationErrors.seoCanonicalUrl}>
+                    <Input
+                      value={form.seoCanonicalUrl}
+                      onChange={(e) => updateField('seoCanonicalUrl', e.target.value)}
+                      disabled={isReadOnly}
+                      placeholder="https://bigbike.vn/..."
+                      className={validationErrors.seoCanonicalUrl ? 'border-danger' : undefined}
+                    />
+                  </Field>
+
+                  <label className="md:col-span-2 flex items-start gap-2.5 p-2.5 border border-border text-sm cursor-pointer hover:bg-muted">
+                    <Checkbox
+                      checked={form.seoNoIndex}
+                      onCheckedChange={(checked) => updateField('seoNoIndex', checked)}
+                      disabled={isReadOnly}
+                    />
+                    <span>{t('content.detail.seoNoIndex', { defaultValue: 'Không cho công cụ tìm kiếm lập chỉ mục (noindex)' })}</span>
+                  </label>
                 </div>
-              </>
-            )}
-          </ContentSection>
+              </SectionCard>
 
-          {/* ── Section 4: SEO ── */}
-          <ContentSection
-            def={CONTENT_SECTION_DEFS[3]}
-            t={t}
-            open={openMap['cs-seo']}
-            done={completion['cs-seo']}
-            hasError={sectionErrors['cs-seo']}
-            onToggle={() => toggleSection('cs-seo')}
-          >
-            {/* Live Google SERP preview */}
-            <div className="pf-serp" style={{ marginTop: 12 }}>
-              <div className="pf-serp-label">
-                <Search size={12} /><span>{t('products.detail.serpPreview', { defaultValue: 'Xem trước trên Google' })}</span>
-              </div>
-              <div className="pf-serp-url">
-                https://bigbike.vn
-                <span className="pf-serp-slug-path"> › {isArticle ? 'tin-tuc' : 'trang'} › {form.slug || 'duong-dan'}</span>
-              </div>
-              <div className="pf-serp-title">
-                {(form.seoTitle || form.title || t('products.detail.serpTitleFallback', { defaultValue: 'Tiêu đề trên Google' })).slice(0, 60)}
-              </div>
-              <div className="pf-serp-desc">
-                {form.seoDescription || form.excerpt || t('products.detail.serpDescFallback', { defaultValue: 'Mô tả ngắn sẽ hiển thị ở đây.' })}
-              </div>
-            </div>
-
-            <div className="pf-grid">
-              <div className="pf-field full">
-                <div className="pf-field-label"><span>{t('content.detail.seoTitle', { defaultValue: 'Tiêu đề SEO' })}</span></div>
-                <Input
-                  value={form.seoTitle}
-                  onChange={(e) => updateField('seoTitle', e.target.value)}
-                  disabled={isReadOnly}
-                  placeholder={form.title || t('content.detail.seoTitle', { defaultValue: 'Tiêu đề SEO' })}
-                />
-                {validationErrors.seoTitle && <span className="pf-field-msg pf-field-msg-error">{validationErrors.seoTitle}</span>}
-              </div>
-              <div className="pf-field full">
-                <div className="pf-field-label"><span>{t('content.detail.seoDescription', { defaultValue: 'Mô tả SEO' })}</span></div>
-                <Textarea
-                  value={form.seoDescription}
-                  onChange={(e) => updateField('seoDescription', e.target.value)}
-                  disabled={isReadOnly}
-                  rows={2}
-                  className={validationErrors.seoDescription ? 'border-danger' : undefined}
-                />
-                {validationErrors.seoDescription && <span className="pf-field-msg pf-field-msg-error">{validationErrors.seoDescription}</span>}
-              </div>
-              <div className="pf-field full">
-                <div className="pf-field-label"><span>{t('content.detail.seoCanonicalUrl', { defaultValue: 'URL canonical' })}</span></div>
-                <Input
-                  value={form.seoCanonicalUrl}
-                  onChange={(e) => updateField('seoCanonicalUrl', e.target.value)}
-                  disabled={isReadOnly}
-                  placeholder="https://bigbike.vn/..."
-                  className={validationErrors.seoCanonicalUrl ? 'border-danger' : undefined}
-                />
-                {validationErrors.seoCanonicalUrl && <span className="pf-field-msg pf-field-msg-error">{validationErrors.seoCanonicalUrl}</span>}
-              </div>
-              <label className="pf-checkbox" style={{ gridColumn: '1 / -1' }}>
-                <Checkbox
-                  checked={form.seoNoIndex}
-                  onCheckedChange={(checked) => updateField('seoNoIndex', checked)}
-                  disabled={isReadOnly}
-                />
-                <span>{t('content.detail.seoNoIndex', { defaultValue: 'Không cho công cụ tìm kiếm lập chỉ mục (noindex)' })}</span>
-              </label>
-            </div>
-          </ContentSection>
-
-          {/* ── Section 5: Hiển thị ── */}
-          <ContentSection
-            def={CONTENT_SECTION_DEFS[4]}
-            t={t}
-            open={openMap['cs-publish']}
-            done={completion['cs-publish']}
-            hasError={sectionErrors['cs-publish']}
-            onToggle={() => toggleSection('cs-publish')}
-          >
-            <div className="pf-grid">
-              {!isArticle && form.parentId !== undefined && (
-                <div className="pf-field">
-                  <div className="pf-field-label"><span>{t('content.detail.parentPage', { defaultValue: 'Trang cha (parentId)' })}</span></div>
-                  <Input
-                    value={form.parentId}
-                    onChange={(e) => updateField('parentId', e.target.value)}
-                    disabled={isReadOnly}
-                    placeholder={t('content.detail.parentPagePlaceholder', { defaultValue: 'Để trống nếu là trang gốc' })}
-                  />
+              {/* ── Card: Hiển thị ── */}
+              <SectionCard title={t('content.detail.sectionPublish', { defaultValue: 'Hiển thị' })} required>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {!isArticle && form.parentId !== undefined && (
+                    <Field label={t('content.detail.parentPage', { defaultValue: 'Trang cha (parentId)' })}>
+                      <Input
+                        value={form.parentId}
+                        onChange={(e) => updateField('parentId', e.target.value)}
+                        disabled={isReadOnly}
+                        placeholder={t('content.detail.parentPagePlaceholder', { defaultValue: 'Để trống nếu là trang gốc' })}
+                      />
+                    </Field>
+                  )}
+                  <Field label={t('content.detail.publishStatus')} error={validationErrors.publishStatus}>
+                    <Select value={form.publishStatus} onValueChange={(val) => updateField('publishStatus', val)} disabled={isReadOnly}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="DRAFT">{t('status.publish.DRAFT')}</SelectItem>
+                        <SelectItem value="PUBLISHED">{t('status.publish.PUBLISHED')}</SelectItem>
+                        <SelectItem value="HIDDEN">{t('status.publish.HIDDEN')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </Field>
                 </div>
-              )}
-              <div className="pf-field">
-                <div className="pf-field-label"><span>{t('content.detail.publishStatus')}</span></div>
-                <Select value={form.publishStatus} onValueChange={(val) => updateField('publishStatus', val)} disabled={isReadOnly}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="DRAFT">{t('status.publish.DRAFT')}</SelectItem>
-                    <SelectItem value="PUBLISHED">{t('status.publish.PUBLISHED')}</SelectItem>
-                    <SelectItem value="HIDDEN">{t('status.publish.HIDDEN')}</SelectItem>
-                  </SelectContent>
-                </Select>
-                {validationErrors.publishStatus && <span className="pf-field-msg pf-field-msg-error">{validationErrors.publishStatus}</span>}
-              </div>
-            </div>
-          </ContentSection>
-
-          {!isCreate && state.item?.updatedAt && (
-            <p className="text-xs muted" style={{ textAlign: 'right' }}>
-              {t('common.lastUpdated')} {formatDateTime(state.item.updatedAt)}
-            </p>
+              </SectionCard>
+            </>
           )}
         </form>
-      </div>
+
+        <StickyActionBar
+          info={
+            <span className="flex items-center gap-2 text-sm">
+              <span className={cn('w-2 h-2 rounded-full', saveDotClass)} />
+              <span className="font-medium">{saveLabel}</span>
+            </span>
+          }
+        >
+          {!isCreate && canUpdate && (
+            <Button
+              variant="outline"
+              type="button"
+              disabled={isSubmitting}
+              onClick={handleArchive}
+              className="text-[var(--admin-color-status-danger-text)]"
+            >
+              <Trash2 size={14} className="mr-1.5" />
+              {t('content.detail.archiveBtn')}
+            </Button>
+          )}
+          <Button
+            type="button"
+            disabled={isReadOnly || (!isCreate && !isDirty)}
+            onClick={handleSubmit}
+          >
+            {isSubmitting && <Loader2 size={14} className="animate-spin mr-1.5" />}
+            {primaryLabel}
+          </Button>
+        </StickyActionBar>
+      </Screen>
     </div>
   )
 }

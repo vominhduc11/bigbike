@@ -1,6 +1,9 @@
+"use client";
+
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import type { Article } from "@/lib/contracts/public";
-import { formatDate, safeText } from "@/lib/utils/format";
+import { formatDate } from "@/lib/utils/format";
 import { toArticlePath } from "@/lib/utils/routes";
 import { MediaImage } from "@/components/ui/MediaImage";
 
@@ -26,21 +29,25 @@ function truncateText(text: string, maxLength = 160): string {
   if (text.length <= maxLength) return text;
   const cut = text.lastIndexOf(" ", maxLength);
   const pos = cut > maxLength - 30 ? cut : maxLength;
-  return text.slice(0, pos).trimEnd() + "\u2026";
-}
-
-function resolveArticleExcerpt(article: Article): string {
-  const excerpt = article.excerpt?.trim();
-  if (excerpt) return excerpt;
-  const bodyText = article.body ? stripHtmlToText(article.body) : "";
-  if (bodyText) return truncateText(bodyText);
-  return "Xem chi ti\u1ebft b\u00e0i vi\u1ebft t\u1eeb BigBike.";
+  return text.slice(0, pos).trimEnd() + "…";
 }
 
 export function ArticleCard({ article, variant = "default" }: ArticleCardProps) {
-  const title = safeText(article.title, "B\u00e0i vi\u1ebft \u0111ang c\u1eadp nh\u1eadt");
+  const t = useTranslations("Blog");
+
+  function resolveArticleExcerpt(a: Article): string {
+    const excerpt = a.excerpt?.trim();
+    if (excerpt) return excerpt;
+    const bodyText = a.body ? stripHtmlToText(a.body) : "";
+    if (bodyText) return truncateText(bodyText);
+    return t("articleExcerptFallback");
+  }
+
+  const titleRaw = article.title?.trim();
+  const title = titleRaw && titleRaw.length > 0 ? titleRaw : t("articleTitleFallback");
   const excerpt = resolveArticleExcerpt(article);
-  const category = safeText(article.category?.name ?? article.categories?.[0]?.name, "Tin t\u1ee9c");
+  const categoryRaw = (article.category?.name ?? article.categories?.[0]?.name)?.trim();
+  const category = categoryRaw && categoryRaw.length > 0 ? categoryRaw : t("articleCategoryFallback");
   const publishedDate = formatDate(article.publishedAt ?? article.createdAt);
   const isFeatured = variant === "featured";
 
@@ -104,7 +111,7 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
           </p>
           {isFeatured && (
             <span className="mt-auto pt-[6px] text-muted-foreground text-sm font-bold tracking-[0.12em] uppercase transition-colors duration-300 group-hover:text-brand">
-              {"\u0110\u1ecdc ti\u1ebfp"}
+              {t("articleReadMore")}
             </span>
           )}
         </div>

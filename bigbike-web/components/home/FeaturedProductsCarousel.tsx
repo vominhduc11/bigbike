@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination } from "swiper/modules";
 import type { Swiper as SwiperType } from "swiper";
@@ -19,6 +20,7 @@ const CAR_BTN =
   "absolute top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-[3.125rem] font-light leading-none text-foreground shadow-none transition-[background,box-shadow] hover:text-brand pointer-coarse:hidden max-md:hidden";
 
 export function FeaturedProductsCarousel({ products }: Props) {
+  const t = useTranslations("Common");
   const swiperRef = useRef<SwiperType | null>(null);
   const [isLocked, setIsLocked] = useState(false);
 
@@ -30,7 +32,7 @@ export function FeaturedProductsCarousel({ products }: Props) {
         <button
           className={cn(CAR_BTN, "-left-5 min-[1440px]:-left-[60px]")}
           onClick={() => swiperRef.current?.slidePrev()}
-          aria-label="Cuộn trái"
+          aria-label={t("scrollPrev")}
         >
           ‹
         </button>
@@ -72,7 +74,7 @@ export function FeaturedProductsCarousel({ products }: Props) {
         <button
           className={cn(CAR_BTN, "-right-5 min-[1440px]:-right-[60px]")}
           onClick={() => swiperRef.current?.slideNext()}
-          aria-label="Cuộn phải"
+          aria-label={t("scrollNext")}
         >
           ›
         </button>

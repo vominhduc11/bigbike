@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   ArrowRight,
   Calendar,
@@ -17,7 +18,7 @@ import {
 import type { OrderListItem } from "@/lib/contracts/commerce";
 import { useOrder, useOrders } from "@/lib/query/hooks";
 import { AccountSectionHeading, AccountShell } from "@/components/layout/AccountShell";
-import { formatAddress, formatDate, formatVnd, orderStatusLabel, paymentMethodLabel, resolveMediaUrl, safeText } from "@/lib/utils/format";
+import { formatAddress, formatDate, formatVnd, orderStatusLabelWithT, paymentMethodLabelWithT, resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { toOrderDetailPath } from "@/lib/utils/routes";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
@@ -31,8 +32,11 @@ function OrderDetailModal({
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
+  const t = useTranslations("Account.orders");
+  const tCheckout = useTranslations("Checkout");
+  const tCatalog = useTranslations("Catalog");
   const { data: order, isLoading: loading, error: queryError } = useOrder(open && orderId ? orderId : "");
-  const error = queryError ? (queryError as Error).message ?? "Không tải được đơn hàng." : "";
+  const error = queryError ? (queryError as Error).message ?? t("loadFailed") : "";
 
   const shipAddr =
     order?.addresses.find((a) => a.type.toUpperCase().includes("SHIP")) ??
@@ -44,11 +48,11 @@ function OrderDetailModal({
       <DialogContent className="max-w-[560px] w-[calc(100%-32px)] max-h-[88vh] overflow-y-auto p-0">
         <DialogHeader className="p-5">
           <DialogTitle className="font-mono normal-case tracking-[0.04em]">
-            {order ? order.orderNumber : "Chi tiết đơn hàng"}
+            {order ? order.orderNumber : t("modalDefaultTitle")}
           </DialogTitle>
         </DialogHeader>
 
-        {loading && <p className="p-5 text-sm text-muted-foreground">Đang tải...</p>}
+        {loading && <p className="p-5 text-sm text-muted-foreground">{t("loading")}</p>}
         {error && <p className="p-5 text-sm text-destructive">{error}</p>}
 
         {order && (
@@ -61,7 +65,7 @@ function OrderDetailModal({
               </span>
               <span className="flex items-center gap-2">
                 <ClipboardList className="h-4 w-4 text-muted-foreground" aria-hidden />
-                {orderStatusLabel(order.status)}
+                {orderStatusLabelWithT(order.status, t)}
               </span>
             </div>
 
@@ -69,10 +73,10 @@ function OrderDetailModal({
             <div className="mt-4 flex items-center gap-2">
               <ShoppingBag className="h-4 w-4 text-brand" aria-hidden />
               <p className="m-0 text-sm font-bold uppercase tracking-[0.06em] text-[#1a1a1a]">
-                Thông tin đơn đặt hàng
+                {t("orderInfo")}
               </p>
             </div>
-            <p className="mt-3 mb-1 text-sm font-bold text-[#1a1a1a]">Hóa đơn</p>
+            <p className="mt-3 mb-1 text-sm font-bold text-[#1a1a1a]">{t("invoice")}</p>
 
             <div className="border-t border-border">
               {order.lineItems.map((li) => (
@@ -80,7 +84,7 @@ function OrderDetailModal({
                   {li.productThumbnailUrl ? (
                     <Image
                       src={resolveMediaUrl(li.productThumbnailUrl) ?? li.productThumbnailUrl}
-                      alt={safeText(li.productName, "Sản phẩm")}
+                      alt={safeText(li.productName, tCatalog("title"))}
                       width={48}
                       height={48}
                       className="h-12 w-12 shrink-0 border border-border object-cover"
@@ -92,7 +96,7 @@ function OrderDetailModal({
                   )}
                   <div className="min-w-0 flex-1">
                     <p className="m-0 truncate text-sm font-semibold uppercase text-[#1a1a1a]">
-                      {safeText(li.productName, "Sản phẩm")}
+                      {safeText(li.productName, tCatalog("title"))}
                     </p>
                     {li.variantName && (
                       <p className="m-0 mt-0.5 text-sm text-muted-foreground">{li.variantName}</p>
@@ -108,28 +112,28 @@ function OrderDetailModal({
             {/* totals */}
             <div className="mt-4 flex flex-col gap-2">
               <div className="flex justify-between text-sm text-[#555555]">
-                <span>Tạm tính:</span>
+                <span>{t("subtotal")}</span>
                 <span>{formatVnd(order.subtotalAmount)}</span>
               </div>
               <div className="flex justify-between text-sm text-[#555555]">
-                <span>Phí giao hàng:</span>
+                <span>{t("shipping")}</span>
                 <span>{formatVnd(order.shippingAmount)}</span>
               </div>
               {order.discountAmount > 0 && (
                 <div className="flex justify-between text-sm text-[#7c3aed]">
-                  <span>Khuyến mãi:</span>
+                  <span>{t("discount")}</span>
                   <span>-{formatVnd(order.discountAmount)}</span>
                 </div>
               )}
               {order.feeAmount > 0 && (
                 <div className="flex justify-between text-sm text-[#555555]">
-                  <span>Phí phụ thu:</span>
+                  <span>{t("fee")}</span>
                   <span>{formatVnd(order.feeAmount)}</span>
                 </div>
               )}
             </div>
             <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
-              <span className="text-sm font-bold uppercase text-[#1a1a1a]">Tổng tạm tính:</span>
+              <span className="text-sm font-bold uppercase text-[#1a1a1a]">{t("total")}</span>
               <span className="font-display text-xl font-bold text-brand">
                 {formatVnd(order.totalAmount)}
               </span>
@@ -139,7 +143,7 @@ function OrderDetailModal({
             <div className="mt-5 grid grid-cols-1 gap-5 border-t border-border pt-4 sm:grid-cols-2">
               <div>
                 <p className="m-0 mb-2 text-sm font-bold uppercase tracking-[0.04em] text-[#1a1a1a]">
-                  Thông tin giao hàng
+                  {t("shippingInfo")}
                 </p>
                 {shipAddr ? (
                   <div className="flex flex-col gap-1.5 text-sm text-[#555555]">
@@ -157,11 +161,11 @@ function OrderDetailModal({
               </div>
               <div>
                 <p className="m-0 mb-2 text-sm font-bold uppercase tracking-[0.04em] text-[#1a1a1a]">
-                  Thông tin thanh toán
+                  {t("paymentInfo")}
                 </p>
                 <p className="m-0 text-sm text-[#555555]">
                   {order.payments[0]?.paymentMethod
-                    ? paymentMethodLabel(order.payments[0].paymentMethod)
+                    ? paymentMethodLabelWithT(order.payments[0].paymentMethod, tCheckout)
                     : "—"}
                 </p>
               </div>
@@ -169,7 +173,7 @@ function OrderDetailModal({
 
             <div className="mt-5 border-t border-border pt-3 text-right">
               <Link href={toOrderDetailPath(order.id)} className="bb-link text-sm">
-                Xem trang đơn hàng đầy đủ →
+                {t("viewFull")}
               </Link>
             </div>
           </div>
@@ -180,6 +184,9 @@ function OrderDetailModal({
 }
 
 function OrderHistoryContent() {
+  const t = useTranslations("Account.orders");
+  const tNav = useTranslations("Account.nav");
+  const tCatalog = useTranslations("Catalog");
   const [page, setPage] = useState(1);
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -187,7 +194,7 @@ function OrderHistoryContent() {
   const { data, isLoading: loading, error: queryError } = useOrders(page);
   const orders: OrderListItem[] = data?.data ?? [];
   const totalPages = data?.pagination?.totalPages ?? 1;
-  const error = queryError ? (queryError as Error).message ?? "Không tải được đơn hàng." : "";
+  const error = queryError ? (queryError as Error).message ?? t("loadFailed") : "";
 
   function openOrder(id: string) {
     setActiveOrderId(id);
@@ -197,7 +204,7 @@ function OrderHistoryContent() {
   return (
     <>
       <AccountSectionHeading
-        title="Lịch sử mua hàng"
+        title={tNav("orders")}
         icon={<History className="h-7 w-7" strokeWidth={1.5} aria-hidden />}
       />
 
@@ -214,7 +221,7 @@ function OrderHistoryContent() {
         </div>
       ) : orders.length === 0 ? (
         <div className="py-[60px] text-center">
-          <p className="m-0 text-sm text-muted-foreground">Bạn chưa có đơn hàng nào.</p>
+          <p className="m-0 text-sm text-muted-foreground">{t("empty")}</p>
         </div>
       ) : (
         <>
@@ -230,12 +237,12 @@ function OrderHistoryContent() {
                   <p className="m-0 line-clamp-2 min-w-0 flex-1 text-sm font-semibold uppercase leading-snug text-[#1a1a1a] md:min-w-[180px]">
                     {order.productNames && order.productNames.length > 0
                       ? order.productNames.join(" + ")
-                      : `${order.itemCount} sản phẩm`}
+                      : t("itemsLabel", { count: order.itemCount })}
                   </p>
                   <button
                     type="button"
                     onClick={() => openOrder(order.id)}
-                    aria-label={`Xem đơn ${order.orderNumber}`}
+                    aria-label={t("rowAria", { orderNumber: order.orderNumber })}
                     className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand text-white transition-colors hover:bg-[var(--bb-color-red-600)] md:order-last"
                   >
                     <ArrowRight className="h-[18px] w-[18px]" aria-hidden />
@@ -251,7 +258,7 @@ function OrderHistoryContent() {
                 </span>
                 <span className="flex items-center gap-2 text-sm text-[#555555]">
                   <ClipboardList className="h-4 w-4 text-muted-foreground" aria-hidden />
-                  {orderStatusLabel(order.status)}
+                  {orderStatusLabelWithT(order.status, t)}
                 </span>
               </div>
             ))}
@@ -263,7 +270,7 @@ function OrderHistoryContent() {
                 type="button"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page <= 1}
-                aria-label="Trang trước"
+                aria-label={tCatalog("previousPage")}
                 className="text-[#555555] disabled:opacity-30"
               >
                 <ChevronLeft className="h-5 w-5" aria-hidden />
@@ -275,7 +282,7 @@ function OrderHistoryContent() {
                 type="button"
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page >= totalPages}
-                aria-label="Trang sau"
+                aria-label={tCatalog("nextPage")}
                 className="text-[#555555] disabled:opacity-30"
               >
                 <ChevronRight className="h-5 w-5" aria-hidden />

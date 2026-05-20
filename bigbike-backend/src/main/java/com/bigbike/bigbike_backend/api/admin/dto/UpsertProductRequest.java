@@ -1,5 +1,6 @@
 package com.bigbike.bigbike_backend.api.admin.dto;
 
+import com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock;
 import com.bigbike.bigbike_backend.domain.catalog.HomepageBlock;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import jakarta.validation.Valid;
@@ -112,6 +113,16 @@ public class UpsertProductRequest {
      */
     @Size(max = 24, message = "Related products may not have more than 24 items.")
     private List<String> relatedProductIds;
+
+    /**
+     * Structured description blocks (V139). Presence-flag pattern:
+     * sending this key (including []) triggers rendering and overwrites both
+     * description_blocks and description. Omitting the key leaves both untouched.
+     */
+    @Valid
+    @Size(max = 200, message = "descriptionBlocks may not have more than 200 items.")
+    private List<DescriptionBlock> descriptionBlocks;
+    private boolean descriptionBlocksPresent = false;
 
     public String getSku() {
         return sku;
@@ -353,5 +364,12 @@ public class UpsertProductRequest {
 
     public List<String> getRelatedProductIds() { return relatedProductIds; }
     public void setRelatedProductIds(List<String> relatedProductIds) { this.relatedProductIds = relatedProductIds; }
+
+    public List<DescriptionBlock> getDescriptionBlocks() { return descriptionBlocks; }
+    public void setDescriptionBlocks(List<DescriptionBlock> descriptionBlocks) {
+        this.descriptionBlocks = descriptionBlocks;
+        this.descriptionBlocksPresent = true;
+    }
+    public boolean isDescriptionBlocksPresent() { return descriptionBlocksPresent; }
 }
 

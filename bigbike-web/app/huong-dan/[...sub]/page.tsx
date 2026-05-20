@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { GuidePage, resolveGuideRoute } from "../GuidePage";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 
@@ -7,12 +8,12 @@ type Props = {
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { sub } = await params;
+  const [{ sub }, t] = await Promise.all([params, getTranslations("Guide")]);
   const route = resolveGuideRoute(sub);
 
   return buildPublicMetadata({
-    title: route.title,
-    description: route.description,
+    title: t(route.titleKey),
+    description: t(route.descriptionKey),
     canonicalPath: route.path,
     noIndex: false,
   });

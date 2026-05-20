@@ -2,10 +2,13 @@ package com.bigbike.bigbike_backend.persistence.entity.catalog;
 
 import lombok.Getter;
 import lombok.Setter;
+import com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock;
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
+import com.bigbike.bigbike_backend.persistence.converter.DescriptionBlocksConverter;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -149,6 +152,11 @@ public class ProductEntity {
 
     @Column(name = "installation_guide", columnDefinition = "text")
     private String installationGuide;
+
+    /** Structured description blocks (V139). Null for products authored via legacy RichTextEditor. */
+    @Convert(converter = DescriptionBlocksConverter.class)
+    @Column(name = "description_blocks", columnDefinition = "jsonb")
+    private List<DescriptionBlock> descriptionBlocks;
 
     private String seoTitle;
 

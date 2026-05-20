@@ -61,10 +61,12 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
                         null,
                         false
                 ),
+                null,
                 Instant.parse("2026-04-10T03:00:00Z"),
                 Instant.parse("2026-04-09T02:00:00Z"),
                 Instant.parse("2026-04-10T03:00:00Z"),
-                List.of()
+                List.of(),
+                null
         );
 
         Article article2 = new Article(
@@ -94,10 +96,12 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
                         null,
                         false
                 ),
+                null,
                 Instant.parse("2026-04-15T03:00:00Z"),
                 Instant.parse("2026-04-14T03:00:00Z"),
                 Instant.parse("2026-04-15T03:00:00Z"),
-                List.of()
+                List.of(),
+                null
         );
 
         this.articles = List.of(article1, article2);
@@ -122,9 +126,11 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
                 null,
                 null,
                 null,
+                null,
                 Instant.parse("2026-04-01T01:00:00Z"),
                 Instant.parse("2026-04-01T01:00:00Z"),
-                Instant.parse("2026-04-18T05:00:00Z")
+                Instant.parse("2026-04-18T05:00:00Z"),
+                null
         );
 
         Page pageWarranty = new Page(
@@ -147,9 +153,11 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
                 null,
                 null,
                 null,
+                null,
                 Instant.parse("2026-04-01T01:00:00Z"),
                 Instant.parse("2026-04-01T01:00:00Z"),
-                Instant.parse("2026-04-18T05:00:00Z")
+                Instant.parse("2026-04-18T05:00:00Z"),
+                null
         );
 
         this.pages = List.of(pageAbout, pageWarranty);
@@ -166,6 +174,11 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
     }
 
     @Override
+    public Optional<Article> findArticleBySlug(String slug, String locale) {
+        return findArticleBySlug(slug);
+    }
+
+    @Override
     public Optional<Article> findArticleById(String id) {
         return articles.stream().filter(a -> a.id().equals(id)).findFirst();
     }
@@ -176,13 +189,18 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
     }
 
     @Override
+    public Optional<Page> findPageBySlug(String slug, String locale) {
+        return findPageBySlug(slug);
+    }
+
+    @Override
     public Optional<Page> findPageById(String id) {
         return pages.stream().filter(p -> p.id().equals(id)).findFirst();
     }
 
     @Override
     public org.springframework.data.domain.Page<Article> listPublishedArticles(
-            String categorySlug, String q, Pageable pageable) {
+            String categorySlug, String q, Pageable pageable, String locale) {
         List<Article> filtered = articles.stream()
                 .filter(a -> a.publishStatus() == PublishStatus.PUBLISHED)
                 .filter(a -> matchesCategory(a, categorySlug))

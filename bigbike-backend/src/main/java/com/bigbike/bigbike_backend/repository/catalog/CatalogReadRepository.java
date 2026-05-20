@@ -33,6 +33,9 @@ public interface CatalogReadRepository {
     /** Batch public-view lookup by id. Order of the result is not guaranteed; callers re-order. */
     List<Product> findProductsByIdsPublicView(List<String> ids, String locale);
 
+    /** Public locale-aware category list (localized name/description/seo, no translations object). */
+    List<Category> findAllCategories(String locale);
+
     List<Category> findAllCategories();
 
     /**
@@ -60,11 +63,20 @@ public interface CatalogReadRepository {
 
     Optional<Category> findCategoryBySlug(String slug);
 
+    /** Public locale-aware category lookup. */
+    Optional<Category> findCategoryBySlug(String slug, String locale);
+
     Optional<Category> findCategoryById(String id);
+
+    /** Public locale-aware brand list (localized name/description/seo, no translations object). */
+    List<Brand> findAllBrands(String locale);
 
     List<Brand> findAllBrands();
 
     Optional<Brand> findBrandBySlug(String slug);
+
+    /** Public locale-aware brand lookup. */
+    Optional<Brand> findBrandBySlug(String slug, String locale);
 
     Optional<Brand> findBrandById(String id);
 }

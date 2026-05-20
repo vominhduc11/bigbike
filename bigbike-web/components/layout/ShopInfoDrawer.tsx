@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { Clock, MapPin, Menu, Phone } from "lucide-react";
+import { useTranslations } from "next-intl";
 import {
   Sheet,
   SheetContent,
@@ -22,10 +23,6 @@ type ShopInfoDrawerProps = {
   instagramUrl: string;
 };
 
-const DEFAULT_DESCRIPTION =
-  "BigBike chuyên cung cấp đồ bảo hộ moto, mũ bảo hiểm, áo giáp, găng tay, giày và phụ kiện touring chính hãng.";
-const DEFAULT_HOURS = "T2 - T6: 09h00 - 21h00\nT7 / CN: 09h00 - 18h00\nLễ / Tết: nghỉ";
-
 /**
  * Khung "Về BigBike" — off-canvas trượt từ phải: mô tả shop + thông tin liên hệ.
  * Mở bằng nút ☰ ở header (chỉ hiện trên desktop ≥ 1200px; dưới mức đó header
@@ -41,8 +38,14 @@ export function ShopInfoDrawer({
   zaloUrl,
   instagramUrl,
 }: ShopInfoDrawerProps) {
-  const desc = description.trim() || DEFAULT_DESCRIPTION;
-  const hoursLines = (hours.trim() || DEFAULT_HOURS)
+  const t = useTranslations("Header");
+  const desc = description.trim() || t("shopInfoDefaultDescription");
+  const defaultHours = [
+    t("shopInfoDefaultHoursLine1"),
+    t("shopInfoDefaultHoursLine2"),
+    t("shopInfoDefaultHoursLine3"),
+  ].join("\n");
+  const hoursLines = (hours.trim() || defaultHours)
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
@@ -54,16 +57,16 @@ export function ShopInfoDrawer({
         <Button
           variant="ghost"
           className="bb-icon-btn max-[1199px]:!hidden"
-          aria-label={`Thông tin về ${siteName}`}
+          aria-label={t("shopInfoAriaLabel", { siteName })}
         >
           <Menu className="h-5 w-5" aria-hidden="true" />
         </Button>
       </SheetTrigger>
 
       <SheetContent side="right" className="w-full overflow-y-auto p-0 sm:max-w-lg">
-        <SheetTitle className="sr-only">Về {siteName}</SheetTitle>
+        <SheetTitle className="sr-only">{t("shopInfoTitle", { siteName })}</SheetTitle>
         <SheetDescription className="sr-only">
-          Giới thiệu và thông tin liên hệ của {siteName}.
+          {t("shopInfoDescription", { siteName })}
         </SheetDescription>
 
         <div className="flex flex-col gap-7 p-7">
@@ -79,7 +82,7 @@ export function ShopInfoDrawer({
 
           <div className="border-t border-border pt-6">
             <h2 className="m-0 mb-4 font-display text-base font-semibold uppercase tracking-[0.08em] text-foreground">
-              Thông tin liên hệ
+              {t("shopInfoContactHeading")}
             </h2>
             <ul className="m-0 flex list-none flex-col gap-4 p-0">
               <li className="flex gap-3">
@@ -94,7 +97,7 @@ export function ShopInfoDrawer({
                 <li className="flex gap-3">
                   <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-brand" aria-hidden="true" />
                   <div className="flex flex-col gap-0.5 text-sm text-foreground">
-                    <span className="font-semibold">Cửa hàng {siteName}</span>
+                    <span className="font-semibold">{t("shopInfoStoreLabel", { siteName })}</span>
                     <span>{address}</span>
                   </div>
                 </li>

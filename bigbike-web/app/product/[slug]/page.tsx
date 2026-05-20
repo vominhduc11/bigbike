@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
 import { PurchaseSectionClient } from "@/components/catalog/PurchaseSectionClient";
 import { ProductTabs } from "@/components/catalog/ProductTabs";
 import { ProductSpecTable } from "@/components/catalog/ProductSpecTable";
@@ -35,10 +36,10 @@ import {
 } from "@/lib/utils/routes";
 import { isValidSlug } from "@/lib/utils/slug";
 
-// Static content is ISR-cached for 1 hour.
-// Dynamic content (pricing, stock, variants, reviews) is always fetched fresh
-// client-side via /api/products/[id]/snapshot route.
-export const revalidate = 3600;
+// Locale is read from a cookie (next-intl), which opts the page into
+// dynamic rendering. Underlying API fetches are still cached at the
+// data-cache level (3600 s TTL set in loadDataWithQuery).
+export const dynamic = "force-dynamic";
 
 export async function generateStaticParams() {
   const result = await listProducts({ page: 1, size: 100, sort: "createdAt:desc" });
@@ -75,21 +76,22 @@ export async function generateMetadata({
   params,
 }: ProductDetailPageProps): Promise<Metadata> {
   const { slug } = await params;
+  const tMeta = await getTranslations("Product.metadata");
   if (!isValidSlug(slug)) {
     return buildPublicMetadata({
-      title: "Sản phẩm không hợp lệ",
-      description: "Slug sản phẩm không hợp lệ.",
+      title: tMeta("invalidTitle"),
+      description: tMeta("invalidDescription"),
       canonicalPath: toProductPath("invalid"),
       noIndex: true,
     });
   }
 
-  const result = await getProductBySlug(slug);
+  const result = await getProductBySlug(slug, await getLocale());
   const product = result.data;
   if (!product) {
     return buildPublicMetadata({
-      title: "Không tìm thấy sản phẩm",
-      description: "Không tìm thấy thông tin sản phẩm yêu cầu.",
+      title: tMeta("notFoundTitle"),
+      description: tMeta("notFoundDescription"),
       canonicalPath: toProductPath(slug),
       noIndex: true,
     });
@@ -97,9 +99,7 @@ export async function generateMetadata({
 
   return buildPublicMetadata({
     title: product.name,
-    description:
-      product.shortDescription ??
-      "Chi tiết sản phẩm bảo hộ biker BigBike.",
+    description: product.shortDescription ?? tMeta("defaultDescription"),
     canonicalPath: toProductPath(product.slug),
     noIndex: false,
     ogImage: product.image?.url ?? undefined,
@@ -113,7 +113,12 @@ export default async function ProductDetailPage({
   const { slug } = await params;
   if (!isValidSlug(slug)) notFound();
 
-  const result = await getProductBySlug(slug);
+  const [tProduct, tBreadcrumb] = await Promise.all([
+    getTranslations("Product"),
+    getTranslations("Breadcrumb"),
+  ]);
+
+  const result = await getProductBySlug(slug, await getLocale());
   if (!result.data && result.error?.status === 404) notFound();
 
   if (!result.data) {
@@ -121,7 +126,7 @@ export default async function ProductDetailPage({
       <section className="bb-page">
         <div className="bb-container">
           <ErrorState
-            message={result.error?.message ?? "Không tải được chi tiết sản phẩm."}
+            message={result.error?.message ?? tProduct("loadFailed")}
           />
         </div>
       </section>
@@ -129,7 +134,7 @@ export default async function ProductDetailPage({
   }
 
   const product = result.data;
-  const productName = safeText(product.name, "Sản phẩm");
+  const productName = safeText(product.name, tProduct("fallbackShortName"));
   const gallery = safeArray(product.gallery);
   const videos = safeArray(product.videos);
   const specs = safeArray(product.specifications);
@@ -197,7 +202,7 @@ export default async function ProductDetailPage({
   if (richHasContent(sanitizedDescription)) {
     sections.push({
       id: "mo-ta",
-      label: "Mô tả sản phẩm",
+      label: tProduct("tabs.description"),
       content: (
         <article
           className="bb-richtext"
@@ -209,7 +214,7 @@ export default async function ProductDetailPage({
   if (richHasContent(sanitizedPromotion)) {
     sections.push({
       id: "uu-dai",
-      label: "Ưu đãi & khuyến mãi",
+      label: tProduct("tabs.promotion"),
       content: (
         <article
           className="bb-richtext"
@@ -221,14 +226,14 @@ export default async function ProductDetailPage({
   if (specs.length > 0) {
     sections.push({
       id: "thong-so",
-      label: "Thông số kỹ thuật",
+      label: tProduct("tabs.specs"),
       content: <ProductSpecTable specifications={specs} />,
     });
   }
   if (richHasContent(sanitizedInstallation)) {
     sections.push({
       id: "lap-dat",
-      label: "Hướng dẫn lắp đặt",
+      label: tProduct("tabs.installation"),
       content: (
         <article
           className="bb-richtext"
@@ -239,13 +244,16 @@ export default async function ProductDetailPage({
   }
   sections.push({
     id: "danh-gia",
-    label: reviewCount > 0 ? `Đánh giá (${reviewCount})` : "Đánh giá khách hàng",
+    label:
+      reviewCount > 0
+        ? tProduct("tabs.reviewsWithCount", { count: reviewCount })
+        : tProduct("tabs.reviewsEmpty"),
     content: <ReviewsSection productId={product.id} />,
   });
   if (faqs.length > 0) {
     sections.push({
       id: "faq",
-      label: "Câu hỏi thường gặp",
+      label: tProduct("tabs.faqs"),
       content: <ProductFaqSection faqs={faqs} />,
     });
   }
@@ -277,8 +285,8 @@ export default async function ProductDetailPage({
       <Breadcrumb
         variant="onLight"
         items={[
-          { label: "Trang chủ", href: toHomePath() },
-          { label: "Danh mục sản phẩm", href: toProductListPath() },
+          { label: tBreadcrumb("home"), href: toHomePath() },
+          { label: tBreadcrumb("products"), href: toProductListPath() },
           ...(effectiveCategory?.name && effectiveCategory.slug
             ? [{ label: effectiveCategory.name, href: toCategoryPath(effectiveCategory.slug) }]
             : []),
@@ -335,9 +343,9 @@ export default async function ProductDetailPage({
           <section className="bb-pdp-related">
             <div className="bb-pdp-related-header">
               <div>
-                <p className="bb-kicker">SẢN PHẨM LIÊN QUAN</p>
+                <p className="bb-kicker">{tProduct("related.kicker")}</p>
                 <h2 className="bb-pdp-related-title">
-                  Khám phá thêm sản phẩm khác
+                  {tProduct("related.heading")}
                 </h2>
               </div>
             </div>

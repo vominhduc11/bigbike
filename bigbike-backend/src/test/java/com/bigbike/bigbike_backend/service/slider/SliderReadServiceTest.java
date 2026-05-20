@@ -70,6 +70,7 @@ class SliderReadServiceTest {
                         null,
                         List.of(),
                         List.of(),
+                        null,       // descriptionBlocks
                         null,
                         null,
                         Instant.now(),

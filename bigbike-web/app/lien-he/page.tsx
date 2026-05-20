@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { Metadata } from "next";
 import Image from "next/image";
+import { getTranslations } from "next-intl/server";
 import { Button } from "@/components/ui/button";
 import { PageHero } from "@/components/layout/PageHero";
 import { ContactInfoList } from "@/components/ui/ContactInfoList";
@@ -10,11 +11,14 @@ import { getPageBySlug, listPublicSettings } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { toHomePath, toPagePath } from "@/lib/utils/routes";
 
-export const metadata: Metadata = buildPublicMetadata({
-  title: "Liên hệ",
-  description: "Thông tin liên hệ BigBike — hotline, Zalo, Facebook, địa chỉ cửa hàng và bản đồ.",
-  canonicalPath: toPagePath("lien-he"),
-});
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("StaticPage");
+  return buildPublicMetadata({
+    title: t("contactTitle"),
+    description: t("contactDescription"),
+    canonicalPath: toPagePath("lien-he"),
+  });
+}
 
 type Setting = { settingKey: string; settingValue: string };
 
@@ -30,13 +34,18 @@ function publicAsset(relPath: string): string | null {
 }
 
 export default async function ContactPage() {
-  const [pageResult, settingsResult] = await Promise.all([getPageBySlug("lien-he"), listPublicSettings()]);
+  const [pageResult, settingsResult, t, tBreadcrumb] = await Promise.all([
+    getPageBySlug("lien-he"),
+    listPublicSettings(),
+    getTranslations("StaticPage"),
+    getTranslations("Breadcrumb"),
+  ]);
 
   if (!pageResult.data) {
     return (
       <section className="bb-page">
         <div className="bb-container">
-          <ErrorState message={pageResult.error?.message ?? "Không tải được nội dung trang liên hệ."} />
+          <ErrorState message={pageResult.error?.message ?? t("contactLoadFailed")} />
         </div>
       </section>
     );
@@ -68,12 +77,12 @@ export default async function ContactPage() {
       {/* Hero render ngoài .bb-page để rule global `.bb-page h1` không ghi đè tiêu đề. */}
       <PageHero
         variant="contact"
-        title="Liên hệ"
+        title={t("contactTitle")}
         imageUrl={heroImageUrl}
         imageAlt={page.heroImageAlt}
         breadcrumb={[
-          { label: "Trang chủ", href: toHomePath() },
-          { label: "Liên hệ" },
+          { label: tBreadcrumb("home"), href: toHomePath() },
+          { label: t("contactBreadcrumb") },
         ]}
         illustration={hasPhoneAsset ? { src: PHONE_ASSET } : null}
       />
@@ -84,7 +93,7 @@ export default async function ContactPage() {
             {/* Thông tin liên hệ */}
             <div className="min-w-0">
               <h2 className="font-display text-[26px] font-semibold text-foreground mb-6">
-                Thông tin liên hệ
+                {t("contactInfoHeading")}
               </h2>
               <ContactInfoList
                 variant="list"
@@ -93,14 +102,14 @@ export default async function ContactPage() {
                     icon: (
                       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><path d="M9 9v.01"/><path d="M9 12v.01"/><path d="M9 15v.01"/><path d="M9 18v.01"/></svg>
                     ),
-                    label: "Cửa hàng chính",
+                    label: t("mainStore"),
                     content: <p className="text-muted-foreground leading-relaxed">{address}</p>,
                   },
                   {
                     icon: (
                       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.86 19.86 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.86 19.86 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
                     ),
-                    label: "Hotline",
+                    label: t("hotline"),
                     content: (
                       <>
                         <p className="text-muted-foreground leading-relaxed">
@@ -114,7 +123,7 @@ export default async function ContactPage() {
                         {zaloUrl ? (
                           <p className="text-muted-foreground leading-relaxed">
                             <a href={zaloUrl} target="_blank" rel="noopener noreferrer" className="bb-link">
-                              Nhắn tin qua Zalo
+                              {t("chatViaZalo")}
                             </a>
                           </p>
                         ) : null}
@@ -127,7 +136,7 @@ export default async function ContactPage() {
                           icon: (
                             <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M22 12a10 10 0 1 0-11.56 9.88v-6.99H7.9V12h2.54V9.8c0-2.5 1.49-3.89 3.77-3.89 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.78l-.44 2.89h-2.34v6.99A10 10 0 0 0 22 12z"/></svg>
                           ),
-                          label: "Facebook",
+                          label: t("facebook"),
                           content: (
                             <p className="text-muted-foreground leading-relaxed break-words">
                               <a href={facebookUrl} target="_blank" rel="noopener noreferrer" className="bb-link">
@@ -145,11 +154,11 @@ export default async function ContactPage() {
             {/* Hệ thống cửa hàng */}
             <div className="min-w-0">
               <h2 className="font-display text-[26px] font-semibold text-foreground mb-6">
-                Hệ thống cửa hàng
+                {t("storeSystemHeading")}
               </h2>
               <div className="relative w-full h-[420px] bg-secondary border border-border">
                 <iframe
-                  title="Bản đồ cửa hàng BigBike"
+                  title={t("mapTitle")}
                   src={mapEmbedSrc}
                   width="100%"
                   height="100%"
@@ -165,13 +174,13 @@ export default async function ContactPage() {
                   </div>
                   <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{address}</p>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Hotline: <a href={tel(hotline)} className="bb-link">{hotline}</a>
+                    {t("hotline")}: <a href={tel(hotline)} className="bb-link">{hotline}</a>
                   </p>
                 </div>
               </div>
               <Button asChild variant="primary" className="mt-5 w-full">
                 <a href={directionsHref} target="_blank" rel="noopener noreferrer">
-                  Chỉ đường
+                  {t("directions")}
                 </a>
               </Button>
             </div>

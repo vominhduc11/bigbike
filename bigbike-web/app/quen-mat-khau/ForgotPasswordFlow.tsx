@@ -3,12 +3,13 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { requestPasswordReset, resetCustomerPassword } from "@/lib/api/client-api";
 import {
-  forgotPasswordSchema,
-  resetPasswordSchema,
+  createForgotPasswordSchema,
+  createResetPasswordSchema,
   type ForgotPasswordFormValues,
   type ResetPasswordFormValues,
 } from "@/lib/schemas/auth";
@@ -48,6 +49,8 @@ function RootError({ message }: { message?: string }) {
 }
 
 function RequestResetForm() {
+  const t = useTranslations("Auth.forgot");
+  const tValidation = useTranslations("Auth.validation");
   const [success, setSuccess] = useState(false);
 
   const {
@@ -57,7 +60,7 @@ function RequestResetForm() {
     setError,
     reset,
   } = useForm<ForgotPasswordFormValues>({
-    resolver: zodResolver(forgotPasswordSchema),
+    resolver: zodResolver(createForgotPasswordSchema(tValidation)),
   });
 
   async function onSubmit(values: ForgotPasswordFormValues) {
@@ -73,18 +76,17 @@ function RequestResetForm() {
   if (success) {
     return (
       <>
-        <AuthHeader title="QUÊN MẬT KHẨU" />
+        <AuthHeader title={t("title")} />
         <div className="text-center">
           <Image
             src="/auth/forgot-password-sent.png"
-            alt="Đã gửi email khôi phục mật khẩu"
+            alt={t("sentImageAlt")}
             width={224}
             height={200}
             className="mx-auto"
           />
           <p className="bb-page-subtitle mx-auto mt-6">
-            Chúng tôi vừa gửi email khôi phục mật khẩu đến hộp thư quý khách cung cấp.
-            Vui lòng kiểm tra email và đặt lại mật khẩu.
+            {t("sentDescription")}
           </p>
         </div>
       </>
@@ -93,20 +95,17 @@ function RequestResetForm() {
 
   return (
     <>
-      <AuthHeader
-        title="QUÊN MẬT KHẨU"
-        subtitle="Vui lòng nhập địa chỉ email để khôi phục mật khẩu của bạn."
-      />
+      <AuthHeader title={t("title")} subtitle={t("subtitle")} />
       <RootError message={errors.root?.message} />
       <form onSubmit={handleSubmit(onSubmit)} className="bb-form-stack" noValidate>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="forgot-login">
-            Email <RequiredMark />
+            {t("emailLabel")} <RequiredMark />
           </Label>
           <Input
             id="forgot-login"
             autoComplete="username"
-            placeholder="Email đăng nhập..."
+            placeholder={t("emailPlaceholder")}
             aria-invalid={!!errors.login}
             aria-describedby={errors.login ? "forgot-login-error" : undefined}
             {...register("login")}
@@ -118,7 +117,7 @@ function RequestResetForm() {
           )}
         </div>
         <Button type="submit" variant="primary" className="w-full" disabled={isSubmitting}>
-          {isSubmitting ? "Đang gửi..." : "Khôi phục mật khẩu"}
+          {isSubmitting ? t("submitting") : t("submit")}
         </Button>
       </form>
     </>
@@ -126,6 +125,9 @@ function RequestResetForm() {
 }
 
 function ResetPasswordForm({ token }: { token: string }) {
+  const t = useTranslations("Auth.reset");
+  const tForgot = useTranslations("Auth.forgot");
+  const tValidation = useTranslations("Auth.validation");
   const [success, setSuccess] = useState(false);
 
   const {
@@ -134,7 +136,7 @@ function ResetPasswordForm({ token }: { token: string }) {
     formState: { errors, isSubmitting },
     setError,
   } = useForm<ResetPasswordFormValues>({
-    resolver: zodResolver(resetPasswordSchema),
+    resolver: zodResolver(createResetPasswordSchema(tValidation)),
   });
 
   async function onSubmit(values: ResetPasswordFormValues) {
@@ -151,17 +153,17 @@ function ResetPasswordForm({ token }: { token: string }) {
       <div className="text-center">
         <Image
           src="/auth/reset-success.png"
-          alt="Đặt lại mật khẩu thành công"
+          alt={t("successImageAlt")}
           width={200}
           height={220}
           className="mx-auto"
         />
-        <h2 className="bb-auth-title mt-6">Đặt lại mật khẩu thành công</h2>
+        <h2 className="bb-auth-title mt-6">{t("successHeading")}</h2>
         <p className="bb-page-subtitle mx-auto mt-3">
-          Đăng nhập tài khoản Bigbike với mật khẩu mới.
+          {t("successDescription")}
         </p>
         <Button asChild variant="primary" className="w-full mt-8">
-          <Link href={toLoginPath()}>Đăng nhập ngay</Link>
+          <Link href={toLoginPath()}>{t("loginNow")}</Link>
         </Button>
       </div>
     );
@@ -169,21 +171,18 @@ function ResetPasswordForm({ token }: { token: string }) {
 
   return (
     <>
-      <AuthHeader
-        title="QUÊN MẬT KHẨU"
-        subtitle="Vui lòng nhập mật khẩu mới cho tài khoản Bigbike."
-      />
+      <AuthHeader title={tForgot("title")} subtitle={t("subtitle")} />
       <RootError message={errors.root?.message} />
       <form onSubmit={handleSubmit(onSubmit)} className="bb-form-stack" noValidate>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="reset-password">
-            Nhập mật khẩu mới <RequiredMark />
+            {t("newPasswordLabel")} <RequiredMark />
           </Label>
           <Input
             id="reset-password"
             type="password"
             autoComplete="new-password"
-            placeholder="Vui lòng nhập mật khẩu mới..."
+            placeholder={t("newPasswordPlaceholder")}
             aria-invalid={!!errors.password}
             aria-describedby={errors.password ? "reset-password-error" : undefined}
             {...register("password")}
@@ -196,13 +195,13 @@ function ResetPasswordForm({ token }: { token: string }) {
         </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="reset-confirm">
-            Xác nhận mật khẩu mới <RequiredMark />
+            {t("confirmLabel")} <RequiredMark />
           </Label>
           <Input
             id="reset-confirm"
             type="password"
             autoComplete="new-password"
-            placeholder="Vui lòng xác nhận mật khẩu mới..."
+            placeholder={t("confirmPlaceholder")}
             aria-invalid={!!errors.confirm}
             aria-describedby={errors.confirm ? "reset-confirm-error" : undefined}
             {...register("confirm")}
@@ -214,7 +213,7 @@ function ResetPasswordForm({ token }: { token: string }) {
           )}
         </div>
         <Button type="submit" variant="primary" className="w-full" disabled={isSubmitting}>
-          {isSubmitting ? "Đang cập nhật..." : "Xác nhận"}
+          {isSubmitting ? t("submitting") : t("submit")}
         </Button>
       </form>
     </>

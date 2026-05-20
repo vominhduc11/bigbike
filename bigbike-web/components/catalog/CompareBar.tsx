@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { useCompare } from "@/lib/compare-context";
 import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { toComparePath } from "@/lib/utils/routes";
@@ -13,6 +14,7 @@ import { cn } from "@/lib/utils";
  * button so the action buttons stay tappable.
  */
 export function CompareBar() {
+  const t = useTranslations("Compare");
   const { items, remove, clear, max } = useCompare();
 
   if (items.length === 0) return null;
@@ -24,13 +26,13 @@ export function CompareBar() {
     <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-white shadow-[0_-4px_14px_rgba(0,0,0,0.1)] pb-[env(safe-area-inset-bottom)]">
       <div className="mx-auto flex max-w-[1200px] items-center gap-3 px-4 py-2.5 pr-[84px]">
         <span className="hidden shrink-0 font-heading text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground sm:block">
-          So sánh
+          {t("barLabel")}
         </span>
 
         <div className="flex flex-1 items-center gap-2 overflow-x-auto">
           {items.map((item) => {
             const src = resolveMediaUrl(item.imageUrl ?? undefined);
-            const name = safeText(item.name, "Sản phẩm");
+            const name = safeText(item.name, t("tableProductCol"));
             return (
               <div
                 key={item.id}
@@ -53,7 +55,7 @@ export function CompareBar() {
                 <button
                   type="button"
                   onClick={() => remove(item.id)}
-                  aria-label={`Bỏ ${name} khỏi so sánh`}
+                  aria-label={t("barRemoveAriaLabel", { name })}
                   className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center text-muted-foreground transition-colors hover:text-brand"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
@@ -68,7 +70,7 @@ export function CompareBar() {
               key={`empty-${i}`}
               className="flex h-[52px] shrink-0 items-center justify-center border border-dashed border-border px-3 text-xs text-muted-foreground"
             >
-              <span className="hidden md:inline">Thêm sản phẩm</span>
+              <span className="hidden md:inline">{t("barAddSlot")}</span>
               <span aria-hidden="true" className="md:hidden">+</span>
             </div>
           ))}
@@ -79,7 +81,7 @@ export function CompareBar() {
           onClick={clear}
           className="shrink-0 whitespace-nowrap text-sm text-muted-foreground transition-colors hover:text-brand"
         >
-          Xóa tất cả
+          {t("barClearAll")}
         </button>
 
         <Link
@@ -91,7 +93,7 @@ export function CompareBar() {
             !canCompare && "pointer-events-none opacity-50",
           )}
         >
-          So sánh ({items.length})
+          {t("barCompare", { count: items.length })}
         </Link>
       </div>
     </div>

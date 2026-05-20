@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { getTranslations } from "next-intl/server";
 import { getPublicMenu, listPublicSettings } from "@/lib/api/public-api";
 import { safeText } from "@/lib/utils/format";
 import { normalizeMenuUrl } from "@/lib/utils/nav";
@@ -8,18 +9,8 @@ import { FooterCollapsible } from "./FooterCollapsible";
 import { NewsletterForm } from "@/components/newsletter/NewsletterForm";
 
 const DEFAULT_SITE_NAME = "BigBike";
-const DEFAULT_FOOTER_HEADING = "BigBike mong được lắng nghe và thấu hiểu bạn hơn";
-const DEFAULT_FOOTER_DESCRIPTION =
-  "Đăng ký bản tin để nhận những ưu đãi đặc biệt, tin tức mới nhất về sản phẩm và các sự kiện hấp dẫn từ BigBike. Đừng bỏ lỡ cơ hội nâng tầm trải nghiệm của bạn với những thông tin hữu ích và chương trình khuyến mãi độc quyền.";
 
 type FallbackLink = { id: string; parentId: null; label: string; url: string; children: never[] };
-
-const FALLBACK_INFO_LINKS: FallbackLink[] = [
-  { id: "fbi-1", parentId: null, label: "Chính sách bảo hành", url: "/chinh-sach/bao-hanh/", children: [] },
-  { id: "fbi-2", parentId: null, label: "Chính sách đổi trả hàng", url: "/chinh-sach/doi-tra/", children: [] },
-  { id: "fbi-3", parentId: null, label: "Chính sách bảo mật thông tin", url: "/chinh-sach/bao-mat/", children: [] },
-  { id: "fbi-4", parentId: null, label: "Hướng dẫn mua hàng", url: "/huong-dan-mua-hang/", children: [] },
-];
 
 function getSettingValue(
   settings: { settingKey: string; settingValue: string }[],
@@ -127,15 +118,16 @@ const footerSocialLinkClass =
   "inline-flex items-center gap-2 text-[var(--bb-text-inverse-secondary)] text-sm no-underline hover:text-brand transition-colors";
 
 export async function SiteFooter() {
-  const [guideMenuResult, settingsResult] = await Promise.all([
+  const [guideMenuResult, settingsResult, t] = await Promise.all([
     getPublicMenu("guide"),
     listPublicSettings(),
+    getTranslations("Footer"),
   ]);
 
   const settings = settingsResult.data ?? [];
   const siteName = getSettingValue(settings, ["site_name", "site_title", "site.name"], DEFAULT_SITE_NAME);
-  const footerHeading = getSettingValue(settings, ["footer_tagline"], DEFAULT_FOOTER_HEADING);
-  const footerDescription = getSettingValue(settings, ["footer_description"], DEFAULT_FOOTER_DESCRIPTION);
+  const footerHeading = getSettingValue(settings, ["footer_tagline"], t("defaultHeading"));
+  const footerDescription = getSettingValue(settings, ["footer_description"], t("defaultDescription"));
   const hotline = getSettingValue(settings, ["hotline", "contact_phone", "support_phone"], "");
   const email = getSettingValue(settings, ["contact_email", "email", "support_email", "site.contact_email"], "");
   const address = getSettingValue(settings, ["contact_address", "address", "site_address"], "");
@@ -150,7 +142,13 @@ export async function SiteFooter() {
   const businessLicenseAuthority = getSettingValue(settings, ["business_license_authority"], "");
 
   const guideLinksRaw = groupMenuItems(guideMenuResult.data?.items ?? []);
-  const infoLinks = guideLinksRaw.length > 0 ? guideLinksRaw : FALLBACK_INFO_LINKS;
+  const fallbackInfoLinks: FallbackLink[] = [
+    { id: "fbi-1", parentId: null, label: t("fallbackInfo.warranty"), url: "/chinh-sach/bao-hanh/", children: [] },
+    { id: "fbi-2", parentId: null, label: t("fallbackInfo.returns"), url: "/chinh-sach/doi-tra/", children: [] },
+    { id: "fbi-3", parentId: null, label: t("fallbackInfo.privacy"), url: "/chinh-sach/bao-mat/", children: [] },
+    { id: "fbi-4", parentId: null, label: t("fallbackInfo.howToBuy"), url: "/huong-dan-mua-hang/", children: [] },
+  ];
+  const infoLinks = guideLinksRaw.length > 0 ? guideLinksRaw : fallbackInfoLinks;
 
   const socialLinks: Array<{ label: string; url: string; icon: React.ReactNode }> = [
     ...(facebookUrl ? [{ label: "Facebook", url: facebookUrl, icon: <IconFacebook /> }] : []),
@@ -175,16 +173,16 @@ export async function SiteFooter() {
         </section>
 
         {/* Thông tin */}
-        <FooterCollapsible title="Thông tin">
+        <FooterCollapsible title={t("infoHeading")}>
           {infoLinks.map((item) => (
             <Link key={item.id} href={normalizeMenuUrl(item.url)} className={footerLinkClass}>
-              {safeText(item.label, "Liên kết")}
+              {safeText(item.label, t("linkFallback"))}
             </Link>
           ))}
         </FooterCollapsible>
 
         {/* Liên hệ */}
-        <FooterCollapsible title="Liên hệ">
+        <FooterCollapsible title={t("contactHeading")}>
           {hotline ? (
             <a
               href={`tel:${hotline.replace(/[\s.]/g, "")}`}
@@ -216,12 +214,12 @@ export async function SiteFooter() {
             </p>
           ) : null}
           {!hotline && !email && !address ? (
-            <p className="m-0 text-sm">Đang cập nhật thông tin liên hệ.</p>
+            <p className="m-0 text-sm">{t("contactUpdating")}</p>
           ) : null}
         </FooterCollapsible>
 
         {/* Mạng xã hội */}
-        <FooterCollapsible title="Mạng xã hội">
+        <FooterCollapsible title={t("socialHeading")}>
           {socialLinks.length > 0 ? (
             socialLinks.map((item) => (
               <a
@@ -237,7 +235,7 @@ export async function SiteFooter() {
               </a>
             ))
           ) : (
-            <p className="m-0 text-sm">Đang cập nhật kênh mạng xã hội.</p>
+            <p className="m-0 text-sm">{t("socialUpdating")}</p>
           )}
         </FooterCollapsible>
       </div>

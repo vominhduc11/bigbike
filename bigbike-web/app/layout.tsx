@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { Barlow, Barlow_Condensed, Oswald } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
 import "./globals.css";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
@@ -56,13 +58,15 @@ export const viewport: Viewport = {
 
 const GTM_ID = env.NEXT_PUBLIC_GTM_ID;
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
+  const messages = await getMessages();
   return (
-    <html lang="vi" className={`${barlow.variable} ${barlowCondensed.variable} ${oswald.variable} h-full antialiased`} suppressHydrationWarning>
+    <html lang={locale} className={`${barlow.variable} ${barlowCondensed.variable} ${oswald.variable} h-full antialiased`} suppressHydrationWarning>
       <body className="bb-theme min-h-full flex flex-col">
         {GTM_ID && (
           <Script
@@ -84,21 +88,23 @@ export default function RootLayout({
             />
           </noscript>
         )}
-        <QueryProvider>
-          <CartProvider>
-            <WishlistProvider>
-              <CompareProvider>
-                <SiteHeader />
-                <main className="bb-main">{children}</main>
-                <SiteFooter />
-                <CompareBar />
-                <div className="fixed bottom-[max(24px,env(safe-area-inset-bottom))] right-[max(24px,env(safe-area-inset-right))] z-[var(--bb-z-overlay)] flex flex-col items-end gap-3 pointer-events-none [&>*]:pointer-events-auto [@media(max-width:480px)]:bottom-[max(16px,env(safe-area-inset-bottom))] [@media(max-width:480px)]:right-[max(12px,env(safe-area-inset-right))] [@media(max-width:480px)]:gap-2 [[data-scroll-locked]_&]:hidden">
-                  <FloatingChatLoader />
-                </div>
-              </CompareProvider>
-            </WishlistProvider>
-          </CartProvider>
-        </QueryProvider>
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <QueryProvider>
+            <CartProvider>
+              <WishlistProvider>
+                <CompareProvider>
+                  <SiteHeader />
+                  <main className="bb-main">{children}</main>
+                  <SiteFooter />
+                  <CompareBar />
+                  <div className="fixed bottom-[max(24px,env(safe-area-inset-bottom))] right-[max(24px,env(safe-area-inset-right))] z-[var(--bb-z-overlay)] flex flex-col items-end gap-3 pointer-events-none [&>*]:pointer-events-auto [@media(max-width:480px)]:bottom-[max(16px,env(safe-area-inset-bottom))] [@media(max-width:480px)]:right-[max(12px,env(safe-area-inset-right))] [@media(max-width:480px)]:gap-2 [[data-scroll-locked]_&]:hidden">
+                    <FloatingChatLoader />
+                  </div>
+                </CompareProvider>
+              </WishlistProvider>
+            </CartProvider>
+          </QueryProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );
