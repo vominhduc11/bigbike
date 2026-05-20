@@ -1,6 +1,9 @@
 # Documentation (local only, not pushed to remote)
 docs/
 
+# Mobile app (local only, not pushed to remote)
+bigbike_mobile/
+
 # Legacy reference data
 bigbike_vn__2026_04_17/
 uploads/
