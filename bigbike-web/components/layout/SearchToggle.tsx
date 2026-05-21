@@ -450,31 +450,6 @@ export function SearchToggle() {
               </div>
             )}
 
-            {/* Footer: phím tắt bàn phím */}
-            <div className="flex w-full flex-wrap items-center gap-x-5 gap-y-2 border-t border-border bg-secondary px-5 py-3 sm:px-6">
-              <span className="flex items-center gap-1.5 text-sm uppercase tracking-widest text-muted-foreground">
-                <kbd className="font-body min-w-5 border border-border bg-background px-1.5 py-0.5 text-center text-sm font-bold text-foreground">↑↓</kbd>
-                {t("footerMove")}
-              </span>
-              <span className="flex items-center gap-1.5 text-sm uppercase tracking-widest text-muted-foreground">
-                <kbd className="font-body min-w-5 border border-border bg-background px-1.5 py-0.5 text-center text-sm font-bold text-foreground">↵</kbd>
-                {t("footerSelect")}
-              </span>
-              <span className="flex items-center gap-1.5 text-sm uppercase tracking-widest text-muted-foreground">
-                <kbd className="font-body min-w-5 border border-border bg-background px-1.5 py-0.5 text-center text-sm font-bold text-foreground">ESC</kbd>
-                {t("footerClose")}
-              </span>
-              <span className="flex-1" />
-              <span className="text-sm text-muted-foreground">
-                <Link
-                  href={toProductListPath()}
-                  onClick={() => setOpen(false)}
-                  className="font-bold text-brand no-underline hover:underline"
-                >
-                  {t("footerBrowse")}
-                </Link>
-              </span>
-            </div>
           </DialogPrimitive.Content>
         </DialogPortal>
       </Dialog>

@@ -58,7 +58,7 @@ function WelcomeHero({ title, watermark, illustration }: PageHeroProps) {
     <header className="relative bg-[var(--bb-bg-page)]">
       {/* Banner nền núi đỏ — mood racing. Cắt chéo đáy bằng clip-path; cùng ảnh
           và cùng khung hình với hero `contact` để zoom nền đồng nhất. */}
-      <div className="relative h-[300px] overflow-hidden md:h-[430px] [clip-path:polygon(0_0,100%_0,100%_75%,0_100%)]">
+      <div className="relative h-[300px] overflow-hidden md:h-[450px] [clip-path:polygon(0_0,100%_0,100%_75%,0_100%)]">
         <Image
           src={WP_HERO_BG_SOLID}
           alt=""
@@ -113,9 +113,9 @@ function ContactHero({ imageUrl, imageAlt, title, breadcrumb, illustration }: Pa
   // Trang truyền ảnh straddle (vd điện thoại) → cần thêm khoảng dưới banner;
   // còn lại dùng ảnh gear mặc định nằm gọn trong banner → cao bằng banner.
   return (
-    <div className={`relative h-[300px] ${passedIllustration ? "md:h-[560px]" : "md:h-[430px]"}`}>
+    <div className={`relative h-[300px] ${passedIllustration ? "md:h-[560px]" : "md:h-[450px]"}`}>
       {/* Banner ảnh nền, cắt chéo đáy bằng clip-path. */}
-      <div className="absolute inset-x-0 top-0 h-[300px] overflow-hidden bg-black md:h-[430px] [clip-path:polygon(0_0,100%_0,100%_75%,0_100%)]">
+      <div className="absolute inset-x-0 top-0 h-[300px] overflow-hidden bg-black md:h-[450px] [clip-path:polygon(0_0,100%_0,100%_75%,0_100%)]">
         <Image
           src={bgSrc}
           alt={safeText(imageAlt, title)}
@@ -127,9 +127,9 @@ function ContactHero({ imageUrl, imageAlt, title, breadcrumb, illustration }: Pa
         <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/35 to-transparent" />
       </div>
 
-      <div className="absolute inset-x-0 top-0 flex h-[300px] items-center md:h-[430px]">
+      <div className="absolute inset-x-0 top-0 flex h-[300px] items-center md:h-[450px]">
         <div className="bb-container">
-          <h1 className="bb-cat-hero-title" style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)", lineHeight: 1.05 }}>
+          <h1 className="bb-cat-hero-title" style={{ fontSize: "clamp(2.5rem, 5vw, 4.375rem)", lineHeight: 1.05 }}>
             {title}
           </h1>
           <Breadcrumb items={breadcrumb ?? []} variant="onHero" className="mt-4" />

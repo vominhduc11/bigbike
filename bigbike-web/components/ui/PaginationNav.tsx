@@ -54,8 +54,8 @@ export function PaginationNav({ page, totalPages, baseHref }: PaginationNavProps
               aria-current={p === page ? "page" : undefined}
               className={
                 p === page
-                  ? "bb-pagination-page inline-flex items-center justify-center min-w-9 h-9 px-[6px] border text-sm no-underline bg-brand border-brand text-white pointer-events-none"
-                  : "bb-pagination-page inline-flex items-center justify-center min-w-9 h-9 px-[6px] border border-border text-muted-foreground text-sm no-underline transition-all duration-[var(--bb-duration-fast)] hover:border-[var(--bb-border-brand)] hover:text-brand"
+                  ? "bb-pagination-page inline-flex items-center justify-center no-underline"
+                  : "bb-pagination-page inline-flex items-center justify-center no-underline hover:text-brand"
               }
             >
               {p}

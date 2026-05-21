@@ -1,7 +1,7 @@
 "use client";
 
+import { useState } from "react";
 import type { ReactNode } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export type ProductTabSection = {
   /** Stable anchor id for the section. */
@@ -12,29 +12,40 @@ export type ProductTabSection = {
   content: ReactNode;
 };
 
-/**
- * Tabbed product-detail content (Mô tả / Thông số / Đánh giá …). Replaces the
- * scroll-band layout: one panel visible at a time, switched by the tab bar.
- */
 export function ProductTabs({ sections }: { sections: ProductTabSection[] }) {
+  const [active, setActive] = useState(sections[0]?.id ?? "");
+
   if (sections.length === 0) return null;
 
   return (
     <section className="mx-auto mt-14 max-w-[1440px] px-4 sm:px-6">
-      <Tabs defaultValue={sections[0].id}>
-        <TabsList className="sticky top-[var(--bb-header-stack)] z-10 bg-background overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden shadow-[0_2px_6px_rgba(0,0,0,0.06)]">
-          {sections.map((section) => (
-            <TabsTrigger key={section.id} value={section.id} className="shrink-0">
-              {section.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+      <nav className="bb-product-tabs-nav" role="tablist" aria-label="Thông tin sản phẩm">
         {sections.map((section) => (
-          <TabsContent key={section.id} value={section.id} className="py-8">
-            {section.content}
-          </TabsContent>
+          <button
+            key={section.id}
+            type="button"
+            role="tab"
+            aria-selected={active === section.id}
+            aria-controls={`bb-tab-panel-${section.id}`}
+            id={`bb-tab-${section.id}`}
+            className={`bb-product-tab-btn${active === section.id ? " active" : ""}`}
+            onClick={() => setActive(section.id)}
+          >
+            <span>{section.label}</span>
+          </button>
         ))}
-      </Tabs>
+      </nav>
+      {sections.map((section) => (
+        <div
+          key={section.id}
+          id={`bb-tab-panel-${section.id}`}
+          role="tabpanel"
+          aria-labelledby={`bb-tab-${section.id}`}
+          className={`bb-product-tab-panel${active === section.id ? " active" : ""}`}
+        >
+          <div className="py-8">{section.content}</div>
+        </div>
+      ))}
     </section>
   );
 }

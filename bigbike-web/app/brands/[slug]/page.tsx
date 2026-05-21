@@ -5,11 +5,9 @@ import { getLocale } from "next-intl/server";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { CatalogFilters } from "@/components/catalog/CatalogFilters";
 import { CatalogSortSelect } from "@/components/catalog/CatalogSortSelect";
-import { PageHeading } from "@/components/layout/PageHeading";
-import { Breadcrumb } from "@/components/ui/Breadcrumb";
+import { PageHero } from "@/components/layout/PageHero";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { MediaImage } from "@/components/ui/MediaImage";
 import { PaginationNav } from "@/components/ui/PaginationNav";
 import { PRODUCT_SORT_VALUES, getBrandBySlug, listBrands, listProducts } from "@/lib/api/public-api";
 import { buildCatalogTitle } from "@/lib/utils/catalog";
@@ -198,29 +196,16 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }} />
-      <Breadcrumb
-        variant="onLight"
-        items={[
+      <PageHero
+        imageUrl={brand.bannerImage?.url}
+        imageAlt={brand.bannerImage?.alt ?? brandName}
+        title={brandName}
+        breadcrumb={[
           { label: "Trang chủ", href: toHomePath() },
           { label: "Thương hiệu", href: toBrandListPath() },
           { label: brandName },
         ]}
       />
-
-      <PageHeading kicker="Thương hiệu" title={brandName} description={brand.description} />
-
-      {(brand.bannerImage ?? brand.logo) && (
-        <div className="bb-container mb-6">
-          <div className="p-4 bg-card border border-border rounded-none">
-            <MediaImage
-              image={(brand.bannerImage ?? brand.logo)!}
-              altFallback={brandName}
-              width={1200}
-              height={400}
-            />
-          </div>
-        </div>
-      )}
 
       <div className="bb-cat-layout">
         <CatalogFilters

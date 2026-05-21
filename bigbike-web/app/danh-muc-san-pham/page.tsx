@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PageHeading } from "@/components/layout/PageHeading";
-import { Breadcrumb } from "@/components/ui/Breadcrumb";
+import { PageHero } from "@/components/layout/PageHero";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { MediaImage } from "@/components/ui/MediaImage";
@@ -60,15 +59,13 @@ export default async function CategoryListPage() {
 
   return (
     <>
-      <Breadcrumb
-        variant="onLight"
-        items={[
+      <PageHero
+        title="Danh mục sản phẩm"
+        breadcrumb={[
           { label: "Trang chủ", href: toHomePath() },
           { label: "Danh mục sản phẩm" },
         ]}
       />
-
-      <PageHeading kicker="Shop gear biker" title="Danh mục sản phẩm" />
 
       <div className="bb-container pb-16">
         {result.error && visible.length === 0 ? (

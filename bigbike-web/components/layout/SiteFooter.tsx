@@ -7,6 +7,7 @@ import { normalizeMenuUrl } from "@/lib/utils/nav";
 import { BctBadge } from "./BctBadge";
 import { FooterCollapsible } from "./FooterCollapsible";
 import { NewsletterForm } from "@/components/newsletter/NewsletterForm";
+import { ScrollToTopButton } from "./ScrollToTopButton";
 
 const DEFAULT_SITE_NAME = "BigBike";
 
@@ -42,11 +43,9 @@ function groupMenuItems(items: Array<{ id: string; parentId: string | null; labe
   }));
 }
 
-const iconClass = "shrink-0 mt-[0.15em]";
-
 function IconPhone() {
   return (
-    <svg width="16" height="16" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={iconClass}>
+    <svg width="16" height="16" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0 mt-[0.15em]">
       <path d="M2 2.5A1.5 1.5 0 0 1 3.5 1h1a1 1 0 0 1 .98.8l.4 2a1 1 0 0 1-.27.93L4.8 5.55C5.7 7.2 6.8 8.3 8.45 9.2l.82-.83a1 1 0 0 1 .93-.27l2 .4A1 1 0 0 1 13 9.5v1A1.5 1.5 0 0 1 11.5 12C5.7 12 2 8.3 2 2.5Z" />
     </svg>
   );
@@ -54,7 +53,7 @@ function IconPhone() {
 
 function IconMail() {
   return (
-    <svg width="16" height="16" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={iconClass}>
+    <svg width="16" height="16" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0 mt-[0.15em]">
       <rect x="1" y="3" width="12" height="8" rx="1.5" />
       <path d="M1 4l6 4 6-4" />
     </svg>
@@ -63,7 +62,7 @@ function IconMail() {
 
 function IconMapPin() {
   return (
-    <svg width="16" height="16" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={iconClass}>
+    <svg width="16" height="16" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0 mt-[0.15em]">
       <path d="M11.5 5.8c0 3.2-4.5 6.9-4.5 6.9S2.5 9 2.5 5.8a4.5 4.5 0 0 1 9 0Z" />
       <circle cx="7" cy="5.8" r="1.6" />
     </svg>
@@ -72,7 +71,7 @@ function IconMapPin() {
 
 function IconFacebook() {
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" className={iconClass}>
+    <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
       <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm1.75 3.5h-1c-.41 0-.5.19-.5.63V6h1.5l-.2 1.5H8.25V12h-1.5V7.5H6V6h.75V4.88C6.75 3.62 7.5 3 8.75 3c.58 0 1 .04 1 .04V4.5Z" />
     </svg>
   );
@@ -80,7 +79,7 @@ function IconFacebook() {
 
 function IconZalo() {
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" className={iconClass}>
+    <svg width="20" height="20" viewBox="0 0 16 16" fill="none" aria-hidden="true">
       <rect width="16" height="16" rx="4" fill="currentColor" fillOpacity="0.15" />
       <text x="8" y="11.5" textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="900" fontSize="9" fill="currentColor">Z</text>
       <ellipse cx="8" cy="8" rx="5.5" ry="4.5" stroke="currentColor" strokeWidth="1.2" fill="none" />
@@ -90,7 +89,7 @@ function IconZalo() {
 
 function IconYouTube() {
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" className={iconClass}>
+    <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
       <path d="M15.3 4.5a2 2 0 0 0-1.4-1.4C12.7 2.8 8 2.8 8 2.8s-4.7 0-5.9.3A2 2 0 0 0 .7 4.5C.4 5.7.4 8 .4 8s0 2.3.3 3.5a2 2 0 0 0 1.4 1.4c1.2.3 5.9.3 5.9.3s4.7 0 5.9-.3a2 2 0 0 0 1.4-1.4c.3-1.2.3-3.5.3-3.5s0-2.3-.3-3.5ZM6.5 10.3V5.7L10.5 8l-4 2.3Z" />
     </svg>
   );
@@ -98,7 +97,7 @@ function IconYouTube() {
 
 function IconTikTok() {
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" className={iconClass}>
+    <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
       <path d="M11 1h-2v9.5a1.5 1.5 0 1 1-1.5-1.5c.17 0 .34.02.5.07V7.03A3.5 3.5 0 1 0 11 10.5V5.6a5.52 5.52 0 0 0 3 .9V4.52A3.52 3.52 0 0 1 11 1Z" />
     </svg>
   );
@@ -106,16 +105,11 @@ function IconTikTok() {
 
 function IconInstagram() {
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" className={iconClass}>
+    <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
       <path d="M8 1c1.86 0 2.09.01 2.82.04.73.03 1.23.15 1.66.31.45.17.83.4 1.21.78.38.38.61.76.78 1.21.17.43.28.93.31 1.66.04.73.04.96.04 2.82s-.01 2.09-.04 2.82c-.03.73-.14 1.23-.31 1.66a3.35 3.35 0 0 1-.78 1.21c-.38.38-.76.61-1.21.78-.43.17-.93.28-1.66.31-.73.04-.96.04-2.82.04s-2.09-.01-2.82-.04c-.73-.03-1.23-.14-1.66-.31a3.35 3.35 0 0 1-1.21-.78 3.35 3.35 0 0 1-.78-1.21c-.17-.43-.28-.93-.31-1.66C1.01 10.09 1 9.86 1 8s.01-2.09.04-2.82c.03-.73.14-1.23.31-1.66.17-.45.4-.83.78-1.21.38-.38.76-.61 1.21-.78.43-.17.93-.28 1.66-.31C5.91 1.01 6.14 1 8 1Zm0 1.44c-1.83 0-2.05.01-2.77.04-.67.03-1.03.14-1.27.23-.32.12-.55.27-.79.51-.24.24-.39.47-.51.79-.09.24-.2.6-.23 1.27-.03.72-.04.94-.04 2.77s.01 2.05.04 2.77c.03.67.14 1.03.23 1.27.12.32.27.55.51.79.24.24.47.39.79.51.24.09.6.2 1.27.23.72.03.94.04 2.77.04s2.05-.01 2.77-.04c.67-.03 1.03-.14 1.27-.23.32-.12.55-.27.79-.51.24-.24.39-.47.51-.79.09-.24.2-.6.23-1.27.03-.72.04-.94.04-2.77s-.01-2.05-.04-2.77c-.03-.67-.14-1.03-.23-1.27a2.13 2.13 0 0 0-.51-.79 2.13 2.13 0 0 0-.79-.51c-.24-.09-.6-.2-1.27-.23-.72-.03-.94-.04-2.77-.04ZM8 5.14a2.86 2.86 0 1 1 0 5.72 2.86 2.86 0 0 1 0-5.72Zm0 1.44a1.42 1.42 0 1 0 0 2.84 1.42 1.42 0 0 0 0-2.84Zm3-2.57a.68.68 0 1 1 0 1.36.68.68 0 0 1 0-1.36Z" />
     </svg>
   );
 }
-
-const footerLinkClass =
-  "w-fit font-semibold text-[var(--bb-text-inverse-secondary)] hover:text-brand transition-colors";
-const footerSocialLinkClass =
-  "inline-flex items-center gap-2 text-[var(--bb-text-inverse-secondary)] text-sm no-underline hover:text-brand transition-colors";
 
 export async function SiteFooter() {
   const [guideMenuResult, settingsResult, t] = await Promise.all([
@@ -158,120 +152,127 @@ export async function SiteFooter() {
     ...(instagramUrl ? [{ label: "Instagram", url: instagramUrl, icon: <IconInstagram /> }] : []),
   ];
 
+  const footerLinkClass = "block py-1.5 font-semibold text-[var(--bb-text-inverse-secondary)] hover:text-brand transition-colors text-sm no-underline";
+
   return (
-    <footer className="border-t-[3px] border-brand bg-footer-top text-[var(--bb-text-inverse-secondary)]">
-      {/* Main footer body */}
-      <div className="bb-container grid grid-cols-1 gap-6 py-10 md:grid-cols-[minmax(0,1.7fr)_minmax(0,0.85fr)_minmax(0,1.05fr)_minmax(0,0.85fr)] md:gap-10">
-        {/* Brand + newsletter column */}
-        <section className="grid content-start gap-3">
-          <p className="m-0 text-brand text-sm font-bold tracking-[0.12em] uppercase">{siteName}</p>
-          <h2 className="m-0 font-display uppercase text-2xl text-white md:text-3xl">{footerHeading}</h2>
-          <div className="mt-1">
-            <NewsletterForm />
+    <>
+      <footer className="border-t-[3px] border-brand bg-footer-top text-[var(--bb-text-inverse-secondary)]">
+        {/* Top section — WP footer .top: 7/5 column split */}
+        <div className="bb-container py-12">
+          <div className="grid grid-cols-1 gap-10 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+            {/* Left col (7/12): newsletter + contact info */}
+            <div className="grid content-start gap-6">
+              {/* Newsletter */}
+              <div>
+                <p className="m-0 mb-1 font-display text-xs font-semibold uppercase tracking-[0.14em] text-brand">{siteName}</p>
+                <h2 className="m-0 mb-4 font-display uppercase text-2xl text-white md:text-3xl">{footerHeading}</h2>
+                <NewsletterForm />
+              </div>
+              {/* Contact details */}
+              <div className="grid gap-2">
+                {hotline && (
+                  <a
+                    href={`tel:${hotline.replace(/[\s.]/g, "")}`}
+                    className="flex items-start gap-2 text-sm font-bold text-brand no-underline hover:text-[var(--bb-brand-primary-hover)] transition-colors"
+                  >
+                    <IconPhone />
+                    {hotline}
+                  </a>
+                )}
+                {email && (
+                  <a
+                    href={`mailto:${email}`}
+                    className="flex items-start gap-2 text-sm font-bold text-brand no-underline hover:text-[var(--bb-brand-primary-hover)] transition-colors"
+                  >
+                    <IconMail />
+                    {email}
+                  </a>
+                )}
+                {address && (
+                  <p className="m-0 flex items-start gap-2 text-sm leading-relaxed text-[var(--bb-text-inverse-secondary)]">
+                    <IconMapPin />
+                    {address}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Right col (5/12): about text + info links + social */}
+            <div className="grid content-start gap-6">
+              {/* About / description */}
+              {footerDescription && (
+                <p className="m-0 text-sm leading-relaxed text-[var(--bb-text-inverse-secondary)]">{footerDescription}</p>
+              )}
+
+              {/* Info links */}
+              <FooterCollapsible title={t("infoHeading")}>
+                {infoLinks.map((item) => (
+                  <Link key={item.id} href={normalizeMenuUrl(item.url)} className={footerLinkClass}>
+                    {safeText(item.label, t("linkFallback"))}
+                  </Link>
+                ))}
+              </FooterCollapsible>
+
+              {/* Social icons */}
+              {socialLinks.length > 0 && (
+                <div>
+                  <p className="mb-3 text-xs font-bold uppercase tracking-[0.12em] text-white">{t("socialHeading")}</p>
+                  <div className="flex flex-wrap gap-3">
+                    {socialLinks.map((item) => (
+                      <a
+                        key={item.label}
+                        href={item.url}
+                        className="flex items-center justify-center w-9 h-9 border border-white/20 text-[var(--bb-text-inverse-secondary)] no-underline hover:text-brand hover:border-brand transition-colors"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`${item.label} BigBike`}
+                      >
+                        {item.icon}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-          <p className="m-0 text-sm leading-relaxed text-[var(--bb-text-inverse-secondary)]">{footerDescription}</p>
-        </section>
+        </div>
 
-        {/* Thông tin */}
-        <FooterCollapsible title={t("infoHeading")}>
-          {infoLinks.map((item) => (
-            <Link key={item.id} href={normalizeMenuUrl(item.url)} className={footerLinkClass}>
-              {safeText(item.label, t("linkFallback"))}
-            </Link>
-          ))}
-        </FooterCollapsible>
-
-        {/* Liên hệ */}
-        <FooterCollapsible title={t("contactHeading")}>
-          {hotline ? (
-            <a
-              href={`tel:${hotline.replace(/[\s.]/g, "")}`}
-              className="flex items-start gap-2 text-sm font-bold text-brand no-underline hover:text-[var(--bb-brand-primary-hover)] transition-colors"
-            >
-              <span className="text-brand">
-                <IconPhone />
-              </span>
-              {hotline}
-            </a>
-          ) : null}
-          {email ? (
-            <a
-              href={`mailto:${email}`}
-              className="flex items-start gap-2 text-sm font-bold text-brand no-underline hover:text-[var(--bb-brand-primary-hover)] transition-colors"
-            >
-              <span className="text-brand">
-                <IconMail />
-              </span>
-              {email}
-            </a>
-          ) : null}
-          {address ? (
-            <p className="m-0 flex items-start gap-2 text-sm leading-relaxed text-[var(--bb-text-inverse-secondary)]">
-              <span className="text-brand">
-                <IconMapPin />
-              </span>
-              {address}
-            </p>
-          ) : null}
-          {!hotline && !email && !address ? (
-            <p className="m-0 text-sm">{t("contactUpdating")}</p>
-          ) : null}
-        </FooterCollapsible>
-
-        {/* Mạng xã hội */}
-        <FooterCollapsible title={t("socialHeading")}>
-          {socialLinks.length > 0 ? (
-            socialLinks.map((item) => (
-              <a
-                key={item.label}
-                href={item.url}
-                className={footerSocialLinkClass}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={`${item.label} BigBike`}
-              >
-                {item.icon}
-                {item.label}
-              </a>
-            ))
-          ) : (
-            <p className="m-0 text-sm">{t("socialUpdating")}</p>
-          )}
-        </FooterCollapsible>
-      </div>
-
-      {/* Bottom strip */}
-      <div className="border-t border-white/10 bg-black py-[30px]">
-        <div className="bb-container flex items-center gap-6 flex-wrap max-md:flex-col max-md:items-start max-md:gap-4">
-          <div className="shrink-0 opacity-70">
-            <Image
-              src="/wp/logo-footer.png"
-              alt="BigBike"
-              width={200}
-              height={66}
-              className="block h-9 w-auto"
-            />
-          </div>
-          <div className="flex-1 min-w-0 flex flex-col gap-1">
-            <p className="m-0 text-sm italic text-[var(--bb-text-inverse-secondary)]">Bigbike mong được lắng nghe và đồng hành cùng bạn trên mọi cung đường.</p>
-            <p className="m-0 text-sm text-[var(--bb-text-inverse-secondary)]">© {new Date().getFullYear()} {siteName}. All rights reserved.</p>
-            {businessLicenseNo && (
-              <p className="m-0 text-sm text-[var(--bb-text-inverse-secondary)]">
-                Mã ĐKKD: {businessLicenseNo}.
-                {businessLicenseDate ? ` Ngày cấp: ${businessLicenseDate}.` : ""}
-                {businessLicenseAuthority ? ` Nơi cấp: ${businessLicenseAuthority}.` : ""}
-              </p>
+        {/* Bottom section — WP footer .foot: logo left + copyright right */}
+        <div className="border-t border-white/10 bg-black py-[30px]">
+          <div className="bb-container flex items-center justify-between gap-6 flex-wrap max-md:flex-col max-md:items-start max-md:gap-4">
+            <div className="shrink-0 opacity-70">
+              <Image
+                src="/wp/logo-footer.png"
+                alt="BigBike"
+                width={200}
+                height={66}
+                className="block h-9 w-auto"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <p className="m-0 text-sm italic text-[var(--bb-text-inverse-secondary)]">Bigbike mong được lắng nghe và đồng hành cùng bạn trên mọi cung đường.</p>
+              <p className="m-0 text-sm text-[var(--bb-text-inverse-secondary)]">© {new Date().getFullYear()} {siteName}. All rights reserved.</p>
+              {businessLicenseNo && (
+                <p className="m-0 text-sm text-[var(--bb-text-inverse-secondary)]">
+                  Mã ĐKKD: {businessLicenseNo}.
+                  {businessLicenseDate ? ` Ngày cấp: ${businessLicenseDate}.` : ""}
+                  {businessLicenseAuthority ? ` Nơi cấp: ${businessLicenseAuthority}.` : ""}
+                </p>
+              )}
+            </div>
+            {bctUrl && (
+              <div className="shrink-0">
+                <a href={bctUrl} target="_blank" rel="noopener noreferrer" aria-label="Đã thông báo Bộ Công Thương">
+                  <BctBadge alt="Đã thông báo Bộ Công Thương" height={36} />
+                </a>
+              </div>
             )}
           </div>
-          {bctUrl && (
-            <div className="shrink-0">
-              <a href={bctUrl} target="_blank" rel="noopener noreferrer" aria-label="Đã thông báo Bộ Công Thương">
-                <BctBadge alt="Đã thông báo Bộ Công Thương" height={36} />
-              </a>
-            </div>
-          )}
         </div>
-      </div>
-    </footer>
+      </footer>
+
+      {/* Fixed scroll-to-top button — WP parity, 52×52px red square */}
+      <ScrollToTopButton />
+    </>
   );
 }

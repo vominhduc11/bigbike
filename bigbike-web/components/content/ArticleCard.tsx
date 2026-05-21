@@ -51,21 +51,37 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
   const publishedDate = formatDate(article.publishedAt ?? article.createdAt);
   const isFeatured = variant === "featured";
 
+  if (!isFeatured) {
+    return (
+      <Link href={toArticlePath(article.slug)} className="bb-news-card group">
+        <div className="bb-news-img-wrap">
+          <MediaImage
+            image={article.coverImage}
+            altFallback={title}
+            className="bb-news-img"
+            width={1200}
+            height={675}
+          />
+        </div>
+        <div className="bb-news-body">
+          <span className="bb-news-date">{publishedDate}</span>
+          <div className="bb-news-body-inside">
+            <p className="m-0 text-sm font-bold uppercase tracking-[0.14em] text-brand">{category}</p>
+            <h3 className="bb-news-card-title">{title}</h3>
+            <p className="bb-news-excerpt">{excerpt}</p>
+          </div>
+        </div>
+      </Link>
+    );
+  }
+
   return (
     <Link
       href={toArticlePath(article.slug)}
-      className={
-        isFeatured
-          ? "group flex flex-col md:grid md:grid-cols-[minmax(0,1.25fr)_minmax(300px,0.75fr)] mb-[22px] md:min-h-[360px] no-underline text-inherit bg-card shadow-md transition-shadow duration-300 hover:shadow-[0_6px_14px_rgba(0,0,0,0.22)]"
-          : "group flex flex-col no-underline text-inherit bg-card shadow-md transition-shadow duration-300 hover:shadow-[0_6px_14px_rgba(0,0,0,0.22)]"
-      }
+      className="group flex flex-col md:grid md:grid-cols-[minmax(0,1.25fr)_minmax(300px,0.75fr)] mb-[22px] md:min-h-[360px] no-underline text-inherit bg-card shadow-md transition-shadow duration-300 hover:shadow-[0_6px_14px_rgba(0,0,0,0.22)]"
     >
       <div
-        className={
-          isFeatured
-            ? "relative aspect-video md:aspect-auto overflow-hidden bg-muted shrink-0 md:h-full md:min-h-[320px]"
-            : "relative aspect-video overflow-hidden bg-muted shrink-0"
-        }
+        className="relative aspect-video md:aspect-auto overflow-hidden bg-muted shrink-0 md:h-full md:min-h-[320px]"
       >
         <MediaImage
           image={article.coverImage}
@@ -76,44 +92,28 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
         />
       </div>
       <div
-        className={
-          isFeatured
-            ? "relative pt-[41px] px-[34px] pb-[30px] flex flex-col gap-2 flex-1 bg-card justify-center"
-            : "relative pt-5 px-5 pb-[30px] flex flex-col gap-2 flex-1 bg-card"
-        }
+        className="relative pt-[41px] px-[34px] pb-[30px] flex flex-col gap-2 flex-1 bg-card justify-center"
       >
-        {isFeatured && (
-          <span className="absolute -top-[21px] left-0 z-[2] inline-flex items-center h-[42px] min-w-[168px] pl-[22px] pr-[28px] bg-brand text-white font-display text-sm font-bold tracking-[0.04em] uppercase whitespace-nowrap [clip-path:polygon(0_0,100%_0,calc(100%-18px)_100%,0_100%)]">
-            {publishedDate}
-          </span>
-        )}
+        <span className="absolute -top-[21px] left-0 z-[2] inline-flex items-center h-[42px] min-w-[168px] pl-[22px] pr-[28px] bg-brand text-white font-display text-sm font-bold tracking-[0.04em] uppercase whitespace-nowrap [clip-path:polygon(0_0,100%_0,calc(100%-18px)_100%,0_100%)]">
+          {publishedDate}
+        </span>
         <div className="flex flex-col gap-2 flex-1">
           <p className="text-sm font-bold tracking-[0.14em] uppercase text-brand m-0">
-            {isFeatured ? category : `${category} / ${publishedDate}`}
+            {category}
           </p>
           <h3
-            className={
-              isFeatured
-                ? "font-display font-semibold uppercase tracking-[0.02em] text-foreground leading-[1.12] m-0 transition-colors duration-300 group-hover:text-brand line-clamp-3 text-[clamp(1.4rem,2.6vw,2.3rem)]"
-                : "font-display text-lg font-semibold uppercase tracking-[0.02em] text-foreground leading-[1.3] m-0 transition-colors duration-300 group-hover:text-brand line-clamp-2"
-            }
+            className="font-display font-semibold uppercase tracking-[0.02em] text-foreground leading-[1.12] m-0 transition-colors duration-300 group-hover:text-brand line-clamp-3 text-[clamp(1.4rem,2.6vw,2.3rem)]"
           >
             {title}
           </h3>
           <p
-            className={
-              isFeatured
-                ? "text-sm text-muted-foreground leading-[1.65] m-0"
-                : "text-sm text-muted-foreground leading-[1.55] m-0 min-h-[104px] line-clamp-4"
-            }
+            className="text-sm text-muted-foreground leading-[1.65] m-0"
           >
             {excerpt}
           </p>
-          {isFeatured && (
-            <span className="mt-auto pt-[6px] text-muted-foreground text-sm font-bold tracking-[0.12em] uppercase transition-colors duration-300 group-hover:text-brand">
-              {t("articleReadMore")}
-            </span>
-          )}
+          <span className="mt-auto pt-[6px] text-muted-foreground text-sm font-bold tracking-[0.12em] uppercase transition-colors duration-300 group-hover:text-brand">
+            {t("articleReadMore")}
+          </span>
         </div>
       </div>
     </Link>

@@ -137,7 +137,7 @@ export function ProductCard({ product, variant = "compact" }: ProductCardProps) 
     const src = resolveMediaUrl(product.image?.url?.trim());
     const categoryName = product.category?.name ?? "";
     return (
-      <div className="group relative flex min-h-[200px] flex-col justify-center overflow-hidden bg-muted p-6">
+      <div className="group relative flex h-[300px] flex-col justify-center overflow-hidden bg-[var(--bb-bg-surface-raised)] p-6">
         {src && (
           <div className="pointer-events-none absolute bottom-0 right-0 h-[82%] w-[44%]">
             <Image

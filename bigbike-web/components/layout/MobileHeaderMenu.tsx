@@ -161,6 +161,7 @@ export function MobileHeaderMenu({
 
   function switchLocale(next: string) {
     if (next === locale) return;
+    // eslint-disable-next-line react-hooks/immutability
     document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
     close();
     startTransition(() => router.refresh());

@@ -5,7 +5,7 @@ import { getLocale } from "next-intl/server";
 import type { Article, Category, HomeSlider, Product } from "@/lib/contracts/public";
 import { HeroSlider } from "@/components/home/HeroSlider";
 import { BrandCarousel } from "@/components/home/BrandCarousel";
-import { FeaturedProductsTabbedGrid } from "@/components/home/FeaturedProductsTabbedGrid";
+import { FeaturedProductsCarousel } from "@/components/home/FeaturedProductsCarousel";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { ExperienceCarousel } from "@/components/home/ExperienceCarousel";
 import { HomeVideoCarousel } from "@/components/home/HomeVideoCarousel";
@@ -378,7 +378,7 @@ export default async function HomePage() {
                 SẢN PHẨM NỔI BẬT TẠI BIGBIKE
               </h2>
             </div>
-            <FeaturedProductsTabbedGrid products={carouselProducts} />
+            <FeaturedProductsCarousel products={carouselProducts} />
             {categoriesResult.data.length > 0 && (
               <div className="bb-cat-list" aria-label="Danh mục sản phẩm">
                 {categoriesResult.data.map((cat) => (
