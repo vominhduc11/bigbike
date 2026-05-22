@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
+import { ShoppingCart } from "lucide-react";
 import type { Product } from "@/lib/contracts/public";
 import { formatVnd, resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { toProductPath } from "@/lib/utils/routes";
@@ -71,7 +72,7 @@ export function ProductCard({ product, variant = "compact" }: ProductCardProps) 
 
   // --- featured variant (carousel sản phẩm nổi bật) ---
   if (variant === "featured") {
-    const ratingValue = product.rating != null && product.rating > 0 ? product.rating : null;
+    const ratingValue = product.rating != null && product.rating > 0 ? product.rating : 4.5;
     return (
       <article className="bb-fp-item">
         <div className="bb-fp-thumb">
@@ -85,21 +86,8 @@ export function ProductCard({ product, variant = "compact" }: ProductCardProps) 
           )}
           <div className="bb-fp-cart">
             <Link href={href}>
-              <svg
-                viewBox="0 0 24 24"
-                width="16"
-                height="16"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-              {tProduct("viewProduct").toUpperCase()}
+              <ShoppingCart size={16} strokeWidth={2} aria-hidden="true" />
+              {tProduct("cardAddBar.addToCart")}
             </Link>
           </div>
         </div>
@@ -121,11 +109,9 @@ export function ProductCard({ product, variant = "compact" }: ProductCardProps) 
               )}
             </div>
           </div>
-          {ratingValue != null && (
-            <div className="bb-fp-rating">
-              <RatingStars value={ratingValue} />
-            </div>
-          )}
+          <div className="bb-fp-rating">
+            <RatingStars value={ratingValue} />
+          </div>
         </div>
       </article>
     );
@@ -135,36 +121,33 @@ export function ProductCard({ product, variant = "compact" }: ProductCardProps) 
   // Bám bản thiết kế trang chủ + WP content-product-featured-item.php.
   if (variant === "tile") {
     const src = resolveMediaUrl(product.image?.url?.trim());
-    const categoryName = product.category?.name ?? "";
     return (
-      <div className="group relative flex h-[300px] flex-col justify-center overflow-hidden bg-[var(--bb-bg-surface-raised)] p-6">
+      <article className="group relative min-h-[374px] overflow-hidden border border-border bg-card transition-[border-color,box-shadow] duration-200 hover:border-brand hover:shadow-[var(--bb-shadow-product)]">
+        <Link
+          href={href}
+          aria-label={tProduct("viewProductAria", { name })}
+          className="absolute inset-0 z-[2]"
+        />
+        <div className="relative z-[1] flex h-full flex-col px-10 pt-10 pb-8 pr-[40%] max-[900px]:px-8 max-[900px]:pt-8 max-[900px]:pr-[38%] max-[600px]:min-h-[320px] max-[600px]:px-6 max-[600px]:pt-6 max-[600px]:pr-[36%]">
+          <h3 className="font-heading text-[18px] font-semibold uppercase leading-[1.08] text-foreground">
+            {name}
+          </h3>
+          <span className="mt-14 inline-flex w-fit font-heading text-[17px] font-semibold uppercase leading-none text-brand max-[600px]:mt-10">
+            {tProduct("buyNow").toUpperCase()}
+          </span>
+        </div>
         {src && (
-          <div className="pointer-events-none absolute bottom-0 right-0 h-[82%] w-[44%]">
+          <div className="pointer-events-none absolute bottom-3 right-5 h-[58%] w-[46%] max-[900px]:bottom-2 max-[900px]:right-4 max-[900px]:h-[56%] max-[900px]:w-[44%] max-[600px]:right-3 max-[600px]:h-[54%] max-[600px]:w-[42%]">
             <Image
               src={src}
               alt={safeText(product.image?.alt, name)}
               fill
-              className="object-contain object-[right_bottom] transition-transform duration-300 group-hover:scale-105"
-              sizes="(max-width: 600px) 44vw, 18vw"
+              className="object-contain object-right-bottom"
+              sizes="(max-width: 600px) 42vw, (max-width: 900px) 30vw, 18vw"
             />
           </div>
         )}
-        <div className="pointer-events-none max-w-[60%]">
-          {categoryName && (
-            <p className="m-0 mb-1.5 font-display text-xs font-semibold uppercase tracking-[0.14em] text-brand">
-              {categoryName}
-            </p>
-          )}
-          <h3 className="m-0 line-clamp-3 font-display text-lg font-semibold uppercase leading-tight text-foreground transition-colors group-hover:text-brand">
-            {name}
-          </h3>
-          <span className="mt-3.5 inline-flex items-center gap-1.5 bg-brand px-4 py-2 font-display text-xs font-medium uppercase tracking-[0.1em] text-white transition-colors group-hover:bg-brand-hover">
-            {tProduct("viewProduct")}
-            <span aria-hidden="true" className="text-sm leading-none">›</span>
-          </span>
-        </div>
-        <Link href={href} aria-label={tProduct("viewProductAria", { name })} className="absolute inset-0 z-[1]" />
-      </div>
+      </article>
     );
   }
 

@@ -1,16 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { Menu } from "lucide-react";
 import { useTranslations } from "next-intl";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { Clock3, MapPin, Phone, X } from "lucide-react";
+import { useHeaderUi } from "@/components/layout/HeaderUiContext";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 type ShopInfoDrawerProps = {
   siteName: string;
@@ -23,11 +18,26 @@ type ShopInfoDrawerProps = {
   instagramUrl?: string;
 };
 
-/**
- * Khung "Về BigBike" — off-canvas trượt từ phải: mô tả shop + thông tin liên hệ.
- * Mở bằng nút ☰ ở header (chỉ hiện trên desktop ≥ 1200px; dưới mức đó header
- * dùng nút ☰ của menu di động).
- */
+function MenuIcon() {
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 22 22"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <line x1="4" y1="6" x2="17.5" y2="6" />
+      <line x1="4" y1="11" x2="19" y2="11" />
+      <line x1="9" y1="16" x2="19" y2="16" />
+    </svg>
+  );
+}
+
 export function ShopInfoDrawer({
   siteName,
   description,
@@ -37,6 +47,8 @@ export function ShopInfoDrawer({
   hotline2,
 }: ShopInfoDrawerProps) {
   const t = useTranslations("Header");
+  const { isPanelOpen, togglePanel, closePanel } = useHeaderUi();
+  const open = isPanelOpen("desktop-info");
   const desc = description.trim() || t("shopInfoDefaultDescription");
   const defaultHours = [
     t("shopInfoDefaultHoursLine1"),
@@ -47,74 +59,112 @@ export function ShopInfoDrawer({
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
-  const phones = [hotline, hotline2].map((p) => p.trim()).filter(Boolean);
+  const phones = [hotline, hotline2].map((phone) => phone.trim()).filter(Boolean);
 
   return (
-    <Sheet>
-      <SheetTrigger asChild>
-        <Button
-          variant="ghost"
-          className="bb-icon-btn max-[1199px]:!hidden"
-          aria-label={t("shopInfoAriaLabel", { siteName })}
+    <>
+      <Button
+        variant="ghost"
+        className={cn(
+          "bb-icon-btn bb-header-info-trigger max-[1199px]:!hidden",
+          open && "is-active",
+        )}
+        aria-label={t("shopInfoAriaLabel", { siteName })}
+        aria-expanded={open}
+        type="button"
+        onClick={() => togglePanel("desktop-info")}
+      >
+        <MenuIcon />
+      </Button>
+
+      <div
+        className={cn("bb-header-info-sheet max-[1199px]:hidden", open && "is-open")}
+        aria-hidden={!open}
+      >
+        <button
+          type="button"
+          className="bb-header-info-overlay"
+          aria-label={t("closeDrawer")}
+          onClick={closePanel}
+        />
+
+        <div
+          className="bb-header-info-content"
+          role="dialog"
+          aria-modal="true"
+          aria-label={t("shopInfoTitle", { siteName })}
         >
-          <Menu className="h-5 w-5" aria-hidden="true" />
-        </Button>
-      </SheetTrigger>
+          <button
+            type="button"
+            className="bb-header-info-close"
+            aria-label={t("closeDrawer")}
+            onClick={closePanel}
+          >
+            <X size={18} aria-hidden />
+          </button>
 
-      <SheetContent side="right" className="w-full overflow-y-auto p-0 sm:max-w-lg">
-        <SheetTitle className="sr-only">{t("shopInfoTitle", { siteName })}</SheetTitle>
-        <SheetDescription className="sr-only">
-          {t("shopInfoDescription", { siteName })}
-        </SheetDescription>
+          <div className="bb-header-info-body">
+            <Image
+              src="/wp/logo-1.png"
+              alt={siteName}
+              width={150}
+              height={55}
+              className="h-auto w-[150px]"
+            />
 
-        <div className="flex flex-col gap-8 px-8 pb-10 pt-10">
-          <Image
-            src="/wp/logo-1.png"
-            alt={siteName}
-            width={150}
-            height={55}
-            className="h-auto w-[150px]"
-          />
+            <div className="bb-header-info-desc">
+              <p>{desc}</p>
+            </div>
 
-          <p className="m-0 text-sm leading-relaxed text-muted-foreground">{desc}</p>
+            <div className="bb-header-info-contact">
+              <h2>{t("shopInfoContactHeading")}</h2>
 
-          <div className="flex flex-col gap-6">
-            <h2 className="m-0 text-2xl font-bold leading-tight text-foreground">
-              {t("shopInfoContactHeading")}
-            </h2>
+              <ul className="bb-header-info-contact-list">
+                <li>
+                  <span className="bb-header-info-contact-icon" aria-hidden="true">
+                    <Clock3 size={22} />
+                  </span>
+                  <div className="bb-header-info-contact-copy">
+                    {hoursLines.map((line) => (
+                      <p key={line}>{line}</p>
+                    ))}
+                  </div>
+                </li>
 
-            <div className="flex flex-col gap-6 pl-6 text-sm leading-relaxed text-foreground">
-              <div className="flex flex-col gap-1">
-                {hoursLines.map((line) => (
-                  <span key={line}>{line}</span>
-                ))}
-              </div>
+                {address && (
+                  <li>
+                    <span className="bb-header-info-contact-icon" aria-hidden="true">
+                      <MapPin size={22} />
+                    </span>
+                    <div className="bb-header-info-contact-copy">
+                      <p>{t("shopInfoStoreLabel", { siteName })}</p>
+                      <p>{address}</p>
+                    </div>
+                  </li>
+                )}
 
-              {address && (
-                <div className="flex flex-col gap-1">
-                  <span>{t("shopInfoStoreLabel", { siteName })}</span>
-                  <span>{address}</span>
-                </div>
-              )}
-
-              {phones.length > 0 && (
-                <div className="flex flex-col gap-1">
-                  {phones.map((p) => (
-                    <a
-                      key={p}
-                      href={`tel:${p.replace(/[\s.]/g, "")}`}
-                      className="no-underline transition-colors hover:text-brand"
-                    >
-                      {p}
-                    </a>
-                  ))}
-                </div>
-              )}
+                {phones.length > 0 && (
+                  <li>
+                    <span className="bb-header-info-contact-icon" aria-hidden="true">
+                      <Phone size={22} />
+                    </span>
+                    <div className="bb-header-info-contact-copy">
+                      {phones.map((phone) => (
+                        <a
+                          key={phone}
+                          href={`tel:${phone.replace(/[\s.]/g, "")}`}
+                        >
+                          {phone}
+                        </a>
+                      ))}
+                    </div>
+                  </li>
+                )}
+              </ul>
             </div>
           </div>
-
         </div>
-      </SheetContent>
-    </Sheet>
+      </div>
+    </>
   );
 }

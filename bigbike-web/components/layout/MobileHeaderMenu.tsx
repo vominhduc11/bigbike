@@ -1,23 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useLocale, useTranslations } from "next-intl";
-import { LOCALES, LOCALE_COOKIE } from "@/i18n/locale";
+import { Clock3, LogOut, MapPin, Phone, UserCircle2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import type { HeaderNavNode } from "@/components/layout/HeaderNavItem";
+import { useHeaderUi } from "@/components/layout/HeaderUiContext";
 import { performLogout, useAuth } from "@/lib/auth/auth-store";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import {
   getSafeLoginHref,
   toAccountPath,
-  toCartPath,
-  toOrderHistoryPath,
   toRegisterPath,
 } from "@/lib/utils/routes";
 import { normalizeMenuUrl, isActivePath } from "@/lib/utils/nav";
@@ -26,25 +19,29 @@ import { cn } from "@/lib/utils";
 type MobileHeaderMenuProps = {
   menuTree: HeaderNavNode[];
   menuLabel: string;
+  siteName: string;
+  hours: string;
+  address: string;
   hotline: string;
-  zaloUrl: string;
+  hotline2: string;
 };
 
 function MenuIcon() {
   return (
     <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
+      width="22"
+      height="22"
+      viewBox="0 0 22 22"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2"
+      strokeWidth="1.8"
       strokeLinecap="round"
+      strokeLinejoin="round"
       aria-hidden="true"
     >
-      <line x1="3" y1="6" x2="21" y2="6" />
-      <line x1="3" y1="12" x2="21" y2="12" />
-      <line x1="3" y1="18" x2="21" y2="18" />
+      <line x1="4" y1="6" x2="17.5" y2="6" />
+      <line x1="4" y1="11" x2="19" y2="11" />
+      <line x1="9" y1="16" x2="19" y2="16" />
     </svg>
   );
 }
@@ -79,7 +76,13 @@ type MobileNavBranchProps = {
   t: ReturnType<typeof useTranslations<"Header">>;
 };
 
-function MobileNavBranch({ node, pathname, onNavigate, depth, t }: MobileNavBranchProps) {
+function MobileNavBranch({
+  node,
+  pathname,
+  onNavigate,
+  depth,
+  t,
+}: MobileNavBranchProps) {
   const href = normalizeMenuUrl(node.url);
   const active = isActivePath(pathname, href);
   const hasChildren = node.children.length > 0;
@@ -89,10 +92,7 @@ function MobileNavBranch({ node, pathname, onNavigate, depth, t }: MobileNavBran
     return (
       <Link
         href={href}
-        className={cn(
-          `bb-mobile-nav-link bb-mobile-nav-depth-${depth}`,
-          active && "active",
-        )}
+        className={cn(`bb-mobile-nav-link bb-mobile-nav-depth-${depth}`, active && "active")}
         onClick={onNavigate}
       >
         {node.label}
@@ -124,6 +124,7 @@ function MobileNavBranch({ node, pathname, onNavigate, depth, t }: MobileNavBran
           <ChevronIcon open={childOpen} />
         </button>
       </div>
+
       {childOpen && (
         <div className="bb-mobile-nav-children">
           {node.children.map((child) => (
@@ -145,32 +146,34 @@ function MobileNavBranch({ node, pathname, onNavigate, depth, t }: MobileNavBran
 export function MobileHeaderMenu({
   menuTree,
   menuLabel,
+  siteName,
+  hours,
+  address,
   hotline,
-  zaloUrl,
+  hotline2,
 }: MobileHeaderMenuProps) {
   const t = useTranslations("Header");
-  const [open, setOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const auth = useAuth();
   const pathname = usePathname();
   const router = useRouter();
-  const locale = useLocale();
-  const [isPending, startTransition] = useTransition();
-
-  const close = () => setOpen(false);
-
-  function switchLocale(next: string) {
-    if (next === locale) return;
-    // eslint-disable-next-line react-hooks/immutability
-    document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
-    close();
-    startTransition(() => router.refresh());
-  }
-
-  const p = pathname?.replace(/\/$/, "") ?? "";
-  const isOnLoginPage = p === "/dang-nhap";
-  const isOnRegisterPage = p === "/dang-ky";
+  const { isPanelOpen, togglePanel, closePanel } = useHeaderUi();
+  const open = isPanelOpen("mobile-menu");
   const safeLoginHref = getSafeLoginHref(pathname);
+  const defaultHours = [
+    t("shopInfoDefaultHoursLine1"),
+    t("shopInfoDefaultHoursLine2"),
+    t("shopInfoDefaultHoursLine3"),
+  ].join("\n");
+  const hoursLines = (hours.trim() || defaultHours)
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const phones = [hotline, hotline2].map((phone) => phone.trim()).filter(Boolean);
+
+  function close() {
+    closePanel();
+  }
 
   async function handleLogout() {
     setLoggingOut(true);
@@ -184,126 +187,122 @@ export function MobileHeaderMenu({
   return (
     <>
       <button
-        className="bb-icon-btn bb-menu-toggle min-[1200px]:!hidden"
+        className={cn(
+          "bb-icon-btn bb-menu-toggle min-[1200px]:!hidden",
+          open && "is-active",
+        )}
         aria-label={t("mobileMenuOpenAriaLabel")}
         aria-expanded={open}
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={() => togglePanel("mobile-menu")}
       >
         <MenuIcon />
       </button>
 
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent
-          side="left"
-          className="w-[85vw] max-w-xs p-0 flex flex-col bg-surface-dark text-white border-r-0"
-        >
-          <SheetHeader className="px-4 py-3 border-b border-white/10 shrink-0">
-            <SheetTitle className="text-white uppercase font-heading text-sm tracking-wide">
-              {menuLabel || "BIGBIKE MENU"}
-            </SheetTitle>
-          </SheetHeader>
-
-          <div className="flex-1 overflow-y-auto">
-            <nav className="bb-mobile-nav" aria-label={menuLabel}>
-              {menuTree.map((node) => (
-                <MobileNavBranch
-                  key={node.id}
-                  node={node}
-                  pathname={pathname}
-                  onNavigate={close}
-                  depth={0}
-                  t={t}
-                />
-              ))}
-            </nav>
-
-            {auth.status === "authenticated" && (
-              <div className="bb-mobile-drawer-account">
-                <span className="bb-mobile-drawer-account-label">{t("mobileLoggedIn")}</span>
-                <strong title={auth.profile.email}>
+      <div
+        className={cn("bb-mobile-header-panel min-[1200px]:hidden", open && "is-open")}
+        aria-hidden={!open}
+      >
+        <div className="bb-mobile-header-drawer" role="dialog" aria-modal="true">
+          {auth.status === "authenticated" ? (
+            <div className="bb-mobile-header-account is-authenticated">
+              <div className="bb-mobile-header-account-copy">
+                <p>HEY YO!....</p>
+                <span title={auth.profile.email}>
                   {auth.profile.displayName?.trim() || auth.profile.email}
-                </strong>
+                </span>
+                <Link href={toAccountPath()} onClick={close}>
+                  {t("myAccount")}
+                </Link>
               </div>
-            )}
+              <button
+                type="button"
+                className="bb-mobile-header-logout"
+                aria-label={t("logout")}
+                onClick={handleLogout}
+                disabled={loggingOut}
+              >
+                <LogOut size={20} aria-hidden />
+              </button>
+            </div>
+          ) : (
+            <div className="bb-mobile-header-account">
+              <UserCircle2 size={40} aria-hidden className="shrink-0 text-white" />
+              <div className="bb-mobile-header-auth-links">
+                <Link href={toRegisterPath()} onClick={close}>
+                  {t("register")}
+                </Link>
+                <span>/</span>
+                <Link href={safeLoginHref} onClick={close}>
+                  {t("login")}
+                </Link>
+              </div>
+            </div>
+          )}
 
-            <div className="bb-mobile-drawer-actions">
-              <Link href={toCartPath()} onClick={close}>
-                {t("mobileCartLink")}
-              </Link>
-              {auth.status === "loading" ? null : auth.status === "authenticated" ? (
-                <>
-                  <Link href={toAccountPath()} onClick={close}>
-                    {t("mobileAccountLink")}
-                  </Link>
-                  <Link href={toOrderHistoryPath()} onClick={close}>
-                    {t("mobileOrdersLink")}
-                  </Link>
-                  <button
-                    type="button"
-                    className="bb-mobile-drawer-logout"
-                    onClick={handleLogout}
-                    disabled={loggingOut}
-                  >
-                    {loggingOut ? t("mobileLoggingOut") : t("logout")}
-                  </button>
-                </>
-              ) : (
-                <>
-                  {!isOnLoginPage && (
-                    <Link href={safeLoginHref} onClick={close}>
-                      {t("login")}
-                    </Link>
-                  )}
-                  {!isOnRegisterPage && (
-                    <Link href={toRegisterPath()} onClick={close}>
-                      {t("register")}
-                    </Link>
-                  )}
-                </>
+          <nav className="bb-mobile-nav" aria-label={menuLabel || "BIGBIKE MENU"}>
+            {menuTree.map((node) => (
+              <MobileNavBranch
+                key={node.id}
+                node={node}
+                pathname={pathname}
+                onNavigate={close}
+                depth={0}
+                t={t}
+              />
+            ))}
+          </nav>
+
+          <div className="bb-mobile-header-contact">
+            <h2>{t("shopInfoContactHeading")}</h2>
+
+            <ul className="bb-mobile-header-contact-list">
+              {hoursLines.length > 0 && (
+                <li>
+                  <span className="bb-mobile-header-contact-icon" aria-hidden="true">
+                    <Clock3 size={20} />
+                  </span>
+                  <div className="bb-mobile-header-contact-copy">
+                    {hoursLines.map((line) => (
+                      <p key={line}>{line}</p>
+                    ))}
+                  </div>
+                </li>
               )}
-            </div>
 
-            {(hotline || zaloUrl) && (
-              <div className="bb-mobile-drawer-contact">
-                {hotline && (
-                  <>
-                    <span>HOTLINE</span>
-                    <b>{hotline}</b>
-                  </>
-                )}
-                {zaloUrl && (
-                  <a href={zaloUrl} target="_blank" rel="noopener noreferrer">
-                    {t("mobileZaloSupport")}
-                  </a>
-                )}
-              </div>
-            )}
+              {address && (
+                <li>
+                  <span className="bb-mobile-header-contact-icon" aria-hidden="true">
+                    <MapPin size={20} />
+                  </span>
+                  <div className="bb-mobile-header-contact-copy">
+                    <p>{t("shopInfoStoreLabel", { siteName })}</p>
+                    <p>{address}</p>
+                  </div>
+                </li>
+              )}
 
-            <div className="bb-mobile-drawer-language">
-              <span>{t("languageLabel")}</span>
-              <div className="flex gap-2 mt-2">
-                {LOCALES.map((code) => (
-                  <button
-                    key={code}
-                    type="button"
-                    onClick={() => switchLocale(code)}
-                    disabled={isPending || code === locale}
-                    className={cn(
-                      "px-3 py-1.5 text-xs font-bold uppercase border transition-colors disabled:cursor-wait",
-                      code === locale
-                        ? "bg-brand text-white border-brand"
-                        : "text-white/60 border-white/20 hover:text-white hover:border-white/50",
-                    )}
-                  >
-                    {code}
-                  </button>
-                ))}
-              </div>
-            </div>
+              {phones.length > 0 && (
+                <li>
+                  <span className="bb-mobile-header-contact-icon" aria-hidden="true">
+                    <Phone size={20} />
+                  </span>
+                  <div className="bb-mobile-header-contact-copy">
+                    {phones.map((phone) => (
+                      <a
+                        key={phone}
+                        href={`tel:${phone.replace(/[\s.]/g, "")}`}
+                      >
+                        {phone}
+                      </a>
+                    ))}
+                  </div>
+                </li>
+              )}
+            </ul>
           </div>
-        </SheetContent>
-      </Sheet>
+        </div>
+      </div>
     </>
   );
 }

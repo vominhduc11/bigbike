@@ -2,23 +2,13 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { performLogout, useAuth } from "@/lib/auth/auth-store";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import type { CustomerProfile } from "@/lib/contracts/commerce";
+import { cn } from "@/lib/utils";
 import {
   getSafeLoginHref,
   toAccountPath,
-  toOrderHistoryPath,
   toRegisterPath,
 } from "@/lib/utils/routes";
 
@@ -41,147 +31,157 @@ function UserIcon() {
   );
 }
 
-function initials(profile: CustomerProfile): string {
-  const source = (profile.displayName ?? profile.email ?? "").trim();
-  if (!source) return "?";
-  const parts = source.split(/\s+/).filter(Boolean);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  }
-  return source.slice(0, 2).toUpperCase();
-}
-
 export function HeaderUserMenu() {
   const t = useTranslations("Header");
   const router = useRouter();
   const pathname = usePathname();
   const auth = useAuth();
   const [loggingOut, setLoggingOut] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const loginHref = getSafeLoginHref(pathname);
+
+  useEffect(() => {
+    if (!open) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (wrapperRef.current?.contains(target)) return;
+      setOpen(false);
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [open]);
+
+  function handleBlur(event: React.FocusEvent<HTMLDivElement>) {
+    const nextTarget = event.relatedTarget;
+    if (nextTarget instanceof Node && event.currentTarget.contains(nextTarget)) {
+      return;
+    }
+
+    setOpen(false);
+  }
 
   async function handleLogout() {
     setLoggingOut(true);
     await performLogout();
     setLoggingOut(false);
+    setOpen(false);
     router.push("/");
     router.refresh();
   }
 
-  // During hydration render a non-navigating placeholder to avoid spurious navigation.
   if (auth.status === "loading") {
     return (
       <button
         type="button"
         disabled
         aria-label={t("accountAriaLabel")}
-        className="inline-flex items-center justify-center min-h-[var(--bb-header-height)] px-[14px] border border-transparent bg-transparent text-white/40 cursor-default [@media(max-width:420px)]:hidden"
+        className="hidden min-h-[var(--bb-header-height)] items-center justify-center px-3 text-white/40 cursor-default min-[768px]:inline-flex"
       >
         <UserIcon />
       </button>
     );
   }
 
-  if (auth.status === "anonymous") {
-    const p = pathname?.replace(/\/$/, "") ?? "";
-    const isOnLoginPage = p === "/dang-nhap";
-    const isOnRegisterPage = p === "/dang-ky";
-    const loginHref = getSafeLoginHref(pathname);
-
-    const guestSubText = isOnRegisterPage
-      ? t("guestSubOnRegister")
-      : isOnLoginPage
-        ? t("guestSubOnLogin")
-        : t("guestSubDefault");
-
-    return (
-      <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
-        <TooltipProvider>
-          <Tooltip open={dropdownOpen ? false : undefined}>
-            <TooltipTrigger asChild>
-              <DropdownMenuTrigger
-                className="inline-flex items-center justify-center min-h-[var(--bb-header-height)] px-[14px] border border-transparent bg-transparent text-white cursor-pointer transition-colors hover:text-brand hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-brand focus-visible:outline-offset-[-2px] [@media(max-width:420px)]:hidden"
-                aria-label={t("accountAriaLabel")}
-              >
-                <UserIcon />
-              </DropdownMenuTrigger>
-            </TooltipTrigger>
-            <TooltipContent>{t("accountAriaLabel")}</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-        <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuLabel className="font-normal">
-            <p className="text-sm font-semibold normal-case">{t("guestGreeting")}</p>
-            <p className="text-sm text-muted-foreground normal-case">{guestSubText}</p>
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          {!isOnLoginPage && (
-            <DropdownMenuItem asChild>
-              <Link href={loginHref} className="font-semibold">
-                {t("login")}
-              </Link>
-            </DropdownMenuItem>
-          )}
-          {!isOnRegisterPage && (
-            <DropdownMenuItem asChild>
-              <Link href={toRegisterPath()}>{t("register")}</Link>
-            </DropdownMenuItem>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
-    );
-  }
-
-  const { profile } = auth;
-  const displayName = profile.displayName?.trim() || profile.email;
+  const displayName =
+    auth.status === "authenticated"
+      ? auth.profile.displayName?.trim() || auth.profile.email || t("myAccount")
+      : "";
 
   return (
-    <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
-      <TooltipProvider>
-        <Tooltip open={dropdownOpen ? false : undefined}>
-          <TooltipTrigger asChild>
-            <DropdownMenuTrigger
-              className="bb-round inline-flex items-center justify-center min-h-[var(--bb-header-height)] px-[14px] border bg-brand-soft text-brand border-[var(--bb-brand-primary-border)] text-[0.72rem] font-bold tracking-[0.04em] uppercase cursor-pointer transition-colors rounded-full hover:bg-brand hover:text-black hover:border-brand focus-visible:outline-2 focus-visible:outline-brand focus-visible:outline-offset-[-2px] [@media(max-width:420px)]:hidden"
-              aria-label={t("accountAriaLabelUser", { name: displayName ?? "" })}
-            >
-              <span aria-hidden="true">{initials(profile)}</span>
-            </DropdownMenuTrigger>
-          </TooltipTrigger>
-          <TooltipContent>{displayName ?? t("accountAriaLabel")}</TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-      <DropdownMenuContent align="end" className="w-64 p-3">
-        <DropdownMenuLabel className="px-1 pb-2 pt-1 font-normal">
-          <p className="text-sm text-muted-foreground normal-case">{t("loggedInGreeting")}</p>
-          <p className="truncate text-sm font-semibold normal-case" title={profile.email}>
-            {displayName}
-          </p>
-          <p className="mt-1 text-xs leading-snug text-muted-foreground normal-case">
-            {t("loggedInTagline")}
-          </p>
-        </DropdownMenuLabel>
-        <div className="flex flex-col gap-2 pt-1">
-          <DropdownMenuItem
-            asChild
-            className="justify-center gap-1.5 rounded-none bg-brand px-4 py-2.5 font-display text-sm font-bold uppercase tracking-[0.04em] text-white focus:bg-[var(--bb-brand-primary-hover)] focus:text-white"
+    <div
+      ref={wrapperRef}
+      className="bb-header-user max-[767px]:hidden"
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+      onBlurCapture={handleBlur}
+    >
+      {auth.status === "authenticated" ? (
+        <>
+          <button
+            type="button"
+            className="bb-header-user-trigger bb-header-user-trigger-auth"
+            aria-label={t("accountAriaLabelUser", { name: displayName })}
+            aria-expanded={open}
+            onClick={() => setOpen((current) => !current)}
+            onFocus={() => setOpen(true)}
           >
-            <Link href={toAccountPath()}>
-              {t("myAccount")}
-              <span aria-hidden="true">›</span>
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild className="justify-center py-1 text-sm">
-            <Link href={toOrderHistoryPath()}>{t("myOrders")}</Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onSelect={handleLogout}
-            disabled={loggingOut}
-            className="justify-center gap-1.5 rounded-none bg-black px-4 py-2.5 font-display text-sm font-bold uppercase tracking-[0.04em] text-white focus:bg-black focus:text-white data-[disabled]:opacity-60"
+            <span className="bb-header-user-greeting">HEY YO!....</span>
+            <span className="bb-header-user-name" title={auth.profile.email}>
+              {displayName}
+            </span>
+          </button>
+
+          <div
+            className={cn("bb-header-user-menu", open && "is-open")}
+            role="menu"
           >
-            {loggingOut ? t("loggingOut") : t("logout")}
-            <span aria-hidden="true">⇥</span>
-          </DropdownMenuItem>
-        </div>
-      </DropdownMenuContent>
-    </DropdownMenu>
+            <ul className="bb-header-user-menu-list">
+              <li>
+                <Link
+                  href={toAccountPath()}
+                  className="bb-header-user-menu-link is-primary"
+                  onClick={() => setOpen(false)}
+                >
+                  {t("myAccount")}
+                </Link>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  className="bb-header-user-menu-link"
+                  onClick={handleLogout}
+                  disabled={loggingOut}
+                >
+                  {loggingOut ? t("loggingOut") : t("logout")}
+                </button>
+              </li>
+            </ul>
+          </div>
+        </>
+      ) : (
+        <>
+          <button
+            type="button"
+            className="bb-header-user-trigger bb-header-user-trigger-guest"
+            aria-label={t("accountAriaLabel")}
+            aria-expanded={open}
+            onClick={() => setOpen((current) => !current)}
+            onFocus={() => setOpen(true)}
+          >
+            <UserIcon />
+          </button>
+
+          <div
+            className={cn("bb-header-user-menu", open && "is-open")}
+            role="menu"
+          >
+            <ul className="bb-header-user-menu-list">
+              <li>
+                <Link
+                  href={toRegisterPath()}
+                  className="bb-header-user-menu-link is-primary"
+                  onClick={() => setOpen(false)}
+                >
+                  {t("register")}
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href={loginHref}
+                  className="bb-header-user-menu-link"
+                  onClick={() => setOpen(false)}
+                >
+                  {t("login")}
+                </Link>
+              </li>
+            </ul>
+          </div>
+        </>
+      )}
+    </div>
   );
 }

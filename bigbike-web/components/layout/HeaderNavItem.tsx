@@ -190,7 +190,7 @@ function SubMenu({
 const menuDelay: [number, number] = [80, 200];
 
 const navLinkBase =
-  "flex items-center px-3 h-full text-sm font-bold uppercase tracking-wide no-underline transition-colors duration-[140ms] text-white hover:text-brand";
+  "bb-header-nav-link flex h-full items-center whitespace-nowrap font-cta text-17 font-semibold uppercase no-underline text-white transition-colors duration-150 hover:text-brand";
 
 export function HeaderNavItem({ node }: HeaderNavItemProps) {
   const pathname = usePathname();
@@ -272,7 +272,12 @@ export function HeaderNavItem({ node }: HeaderNavItemProps) {
 
   if (!hasChildren) {
     return (
-      <li className={cn("relative flex items-stretch h-full list-none", active && "is-active")}>
+      <li
+        className={cn(
+          "bb-header-nav-item relative flex h-full list-none items-stretch",
+          active && "is-active",
+        )}
+      >
         <Link
           href={href}
           className={cn(navLinkBase, node.cssClass, active && "text-brand")}
@@ -290,7 +295,7 @@ export function HeaderNavItem({ node }: HeaderNavItemProps) {
     <li
       ref={wrapperRef}
       className={cn(
-        "relative flex items-stretch h-full list-none",
+        "bb-header-nav-item relative flex h-full list-none items-stretch",
         active && "is-active",
         open && "is-open",
       )}
@@ -306,7 +311,7 @@ export function HeaderNavItem({ node }: HeaderNavItemProps) {
       <Link
         ref={triggerRef}
         href={href}
-        className={cn(navLinkBase, node.cssClass, active && "text-brand", "gap-1")}
+        className={cn(navLinkBase, node.cssClass, active && "text-brand")}
         target={node.openInNewTab ? "_blank" : undefined}
         rel={node.openInNewTab ? "noreferrer" : undefined}
         aria-current={active ? "page" : undefined}
@@ -332,15 +337,6 @@ export function HeaderNavItem({ node }: HeaderNavItemProps) {
         }}
       >
         {node.label}
-        <ChevronDown
-          size={14}
-          strokeWidth={2.5}
-          aria-hidden="true"
-          className={cn(
-            "shrink-0 transition-transform duration-[140ms]",
-            open && "rotate-180",
-          )}
-        />
       </Link>
 
       {open && (

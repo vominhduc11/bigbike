@@ -37,7 +37,6 @@ import {
 } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import {
-  toArticleListPath,
   toArticlePath,
   toCategoryPath,
   toHomePath,
@@ -136,21 +135,19 @@ function isRenderableHomeVideo(video: import("@/lib/contracts/public").HomeVideo
 function WpCategoryListItem({ category }: { category: Category }) {
   const name = safeText(category.name, "Danh mục");
   const imgAsset = category.image ?? category.icon;
-  const src = imgAsset?.url ? resolveMediaUrl(imgAsset.url.trim()) : null;
+  const src = resolveMediaUrl(imgAsset?.url?.trim()) || "/wp/category-fallback.png";
 
   return (
     <Link href={toCategoryPath(category.slug)} className="bb-cat-list-item">
       <span className="bb-cat-list-img" aria-hidden="true">
-        {src ? (
-          <Image
-            src={src}
-            alt={safeText(imgAsset?.alt, name)}
-            width={90}
-            height={90}
-            sizes="(max-width: 600px) 70px, 90px"
-            style={{ width: 90, height: 90 }}
-          />
-        ) : null}
+        <Image
+          src={src}
+          alt=""
+          width={90}
+          height={90}
+          sizes="90px"
+          className="bb-cat-list-icon"
+        />
       </span>
       <span className="bb-cat-list-desc">{name}</span>
       <svg
@@ -168,8 +165,39 @@ function WpCategoryListItem({ category }: { category: Category }) {
   );
 }
 
+function stripHtmlToText(html: string): string {
+  return html
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;|&#160;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function truncateWpExcerpt(text: string, maxLength = 120): string {
+  if (text.length <= maxLength) return text;
+
+  const ending = "…";
+  const cut = text.lastIndexOf(" ", maxLength - ending.length);
+  const pos = cut > maxLength - 30 ? cut : maxLength - ending.length;
+  return `${text.slice(0, pos).trimEnd()}${ending}`;
+}
+
+function resolveWpNewsExcerpt(article: Article): string {
+  const manualExcerpt = article.excerpt?.trim();
+  if (manualExcerpt) return truncateWpExcerpt(manualExcerpt);
+
+  const bodyText = article.body ? stripHtmlToText(article.body) : "";
+  return bodyText ? truncateWpExcerpt(bodyText) : "";
+}
+
 function WpNewsCard({ article }: { article: Article }) {
   const title = safeText(article.title, "Bài viết");
+  const excerpt = resolveWpNewsExcerpt(article);
   const src = resolveMediaUrl(article.coverImage?.url?.trim());
   const dateStr = formatDate(article.publishedAt ?? article.createdAt);
 
@@ -182,7 +210,7 @@ function WpNewsCard({ article }: { article: Article }) {
             alt={safeText(article.coverImage?.alt, title)}
             fill
             className="bb-news-img"
-            sizes="(max-width: 600px) 100vw, 33vw"
+            sizes="(max-width: 575px) calc(100vw - 30px), (max-width: 767px) 50vw, 370px"
           />
         ) : (
           <div className="bb-news-img-placeholder" aria-hidden="true">
@@ -196,8 +224,7 @@ function WpNewsCard({ article }: { article: Article }) {
         </span>
         <div className="bb-news-body-inside">
           <h3 className="bb-news-card-title">{title}</h3>
-          {article.excerpt && <p className="bb-news-excerpt">{article.excerpt}</p>}
-          <span className="bb-news-read-more" aria-hidden="true">Đọc thêm →</span>
+          {excerpt && <p className="bb-news-excerpt">{excerpt}</p>}
         </div>
       </div>
     </Link>
@@ -273,9 +300,8 @@ export default async function HomePage() {
 
   const expArticles = expArticlesResult.data;
   const newsArticles = newsArticlesResult.data;
-  // Cap to keep the homepage carousel scannable. Older videos belong to a future
-  // dedicated /videos page, not the homepage which should highlight a curated set.
-  const HOME_VIDEO_LIMIT = 8;
+  // WordPress homepage renders the five latest videos in this carousel.
+  const HOME_VIDEO_LIMIT = 5;
   const homeVideos = (homeVideosResult.data ?? [])
     .filter(isRenderableHomeVideo)
     .slice(0, HOME_VIDEO_LIMIT);
@@ -306,7 +332,7 @@ export default async function HomePage() {
         {/* Block 2: Featured Products (ISR) */}
         {featuredProducts.length > 0 && (
           <section aria-label="Sản phẩm nổi bật">
-            <div className="grid grid-cols-3 gap-4 py-[var(--bb-space-12)] max-[900px]:grid-cols-2 max-[600px]:grid-cols-1">
+            <div className="grid grid-cols-3 gap-[30px] pt-[40px] pb-[40px] max-[900px]:grid-cols-2 max-[600px]:grid-cols-1">
               {featuredProducts.slice(0, 3).map((p) => (
                 <ProductCard key={p.id} product={p} variant="tile" />
               ))}
@@ -370,7 +396,7 @@ export default async function HomePage() {
 
       {/* Block 4: Product Carousel (ISR) — admin-curated picks */}
       {carouselProducts.length > 0 && (
-        <section className="bb-products-section" aria-labelledby="home-products-heading">
+        <section className="bb-products-section bb-home-products-parity" aria-labelledby="home-products-heading">
           <div className="bb-container">
             <div className="bb-products-header">
               <p className="bb-kicker">SẢN PHẨM NỔI BẬT</p>
@@ -380,7 +406,7 @@ export default async function HomePage() {
             </div>
             <FeaturedProductsCarousel products={carouselProducts} />
             {categoriesResult.data.length > 0 && (
-              <div className="bb-cat-list" aria-label="Danh mục sản phẩm">
+              <div className="bb-cat-list mb-[10px]" aria-label="Danh mục sản phẩm">
                 {categoriesResult.data.map((cat) => (
                   <WpCategoryListItem key={cat.id} category={cat} />
                 ))}
@@ -405,21 +431,23 @@ export default async function HomePage() {
 
       {/* Block 6: Promo Banner */}
       {promoImageSrc ? (
-        <Link
-          href={promoHref}
-          className="bb-promo-banner bb-promo-banner-image block no-underline"
-          aria-label="Khuyến mãi BigBike"
-        >
-          <div className="bb-container bb-promo-image-container">
-            <Image
-              src={promoImageSrc}
-              alt="Banner khuyến mãi BigBike"
-              fill
-              className="bb-promo-image"
-              sizes="(max-width: 768px) 100vw, 1440px"
-            />
-          </div>
-        </Link>
+        <div className="pt-[60px]">
+          <Link
+            href={promoHref}
+            className="bb-promo-banner bb-promo-banner-image block no-underline"
+            aria-label="Khuyến mãi BigBike"
+          >
+            <div className="bb-container bb-promo-image-container">
+              <Image
+                src={promoImageSrc}
+                alt="Banner khuyến mãi BigBike"
+                fill
+                className="bb-promo-image"
+                sizes="(max-width: 768px) 100vw, 1440px"
+              />
+            </div>
+          </Link>
+        </div>
       ) : (
         <Link
           href={promoHref}
@@ -446,14 +474,20 @@ export default async function HomePage() {
 
       {/* Block 7: Experience Section */}
       {expArticles.length > 0 && (
-        <section className="bb-experience" aria-labelledby="home-exp-heading">
-          <div className="bb-container">
-            <div className="bb-experience-header">
-              <p className="bb-kicker">{expSubtitle}</p>
-              <h2 id="home-exp-heading" className="bb-experience-title">
+        <section className="bb-experience !pb-0 !pt-[100px]" aria-labelledby="home-exp-heading">
+          <div className="mx-auto w-full max-w-[1200px] px-[15px]">
+            <div className="bb-experience-header !pb-[40px] text-center">
+              <p className="bb-experience-kicker !mb-[10px] !text-[16px] !leading-[19px]">
+                {expSubtitle}
+              </p>
+              <h2 id="home-exp-heading" className="bb-experience-title !m-0 !text-[35px] !leading-[60px] max-[767px]:!text-24 max-[767px]:!leading-[30px]">
                 {expTitle}
               </h2>
-              <p className="bb-experience-desc">{expDesc}</p>
+              <div className="mx-auto w-full pt-[30px] md:w-2/3 min-[1200px]:max-w-[770px]">
+                <p className="bb-experience-desc !m-0 !max-w-none !text-base !leading-6 !text-black">
+                  {expDesc}
+                </p>
+              </div>
             </div>
           </div>
           <ExperienceCarousel articles={expArticles} />
@@ -467,7 +501,7 @@ export default async function HomePage() {
           aria-labelledby="home-news-heading"
         >
           <div className="bb-container">
-            <div className="bb-news-block-title">
+            <div className="bb-news-block-title text-center">
               <p className="bb-news-kicker">TIN TỨC MỚI UPDATE</p>
               <h2 id="home-news-heading" className="bb-news-heading">
                 CẬP NHẬT XU HƯỚNG CÙNG BIGBIKE
@@ -478,26 +512,21 @@ export default async function HomePage() {
                 <WpNewsCard key={article.id} article={article} />
               ))}
             </div>
-            <div className="bb-news-cta-row">
-              <Link href={toArticleListPath()} className="bb-news-cta-btn">
-                XEM TẤT CẢ TIN TỨC
-              </Link>
-            </div>
           </div>
         </section>
       )}
 
       {/* Block 9: Home Video Carousel */}
       {homeVideos.length > 0 && (
-        <section className="relative bg-[var(--bb-bg-surface-dark-3)] p-0" aria-labelledby="home-video-heading">
+        <section className="relative bg-background pt-[80px]" aria-labelledby="home-video-heading">
           <div
-            className="relative bg-[url('/wp/video-bg.jpg')] bg-cover bg-[position:center_30%] bg-no-repeat py-[var(--bb-space-20)] pb-[calc(var(--bb-space-20)+8px)] before:pointer-events-none before:absolute before:inset-0 before:z-0 before:bg-[linear-gradient(180deg,rgba(0,0,0,0.72)_0%,rgba(0,0,0,0.58)_50%,rgba(0,0,0,0.78)_100%)] before:content-[''] max-[991px]:py-[var(--bb-space-15)] max-[991px]:pb-[calc(var(--bb-space-15)+8px)] max-[575px]:py-[var(--bb-space-12)] max-[575px]:pb-[calc(var(--bb-space-12)+4px)]"
+            className="relative bg-[url('/wp/video-bg.jpg')] bg-cover bg-center bg-no-repeat pb-[90px]"
           >
-            <div className="bb-container relative z-[1]">
-              <div className="mb-12 border-b border-[rgba(255,255,255,0.12)] pb-7 text-center text-white max-[575px]:mb-8 max-[575px]:pb-5">
+            <div className="relative z-[1] mx-auto w-full max-w-[1200px] px-[15px]">
+              <div className="pt-[90px] pb-[70px] text-center text-white max-[575px]:pt-12 max-[575px]:pb-10">
                 <h2
                   id="home-video-heading"
-                  className="m-0 font-display text-40 font-bold uppercase leading-[1.1] tracking-[0.06em] text-white [text-shadow:0_2px_16px_rgba(0,0,0,0.9)] after:mx-auto after:mt-3.5 after:block after:h-[3px] after:w-12 after:bg-brand after:content-[''] max-[991px]:text-32 max-[575px]:text-26 max-[575px]:tracking-[0.04em]"
+                  className="m-0 font-display text-[35px] font-semibold uppercase leading-[60px] tracking-normal text-white max-[991px]:text-32 max-[991px]:leading-[1.35] max-[575px]:text-26 max-[575px]:leading-[1.25]"
                 >
                   TRẢI NGHIỆM SẢN PHẨM CÙNG BIGBIKE.VN
                 </h2>
@@ -510,7 +539,7 @@ export default async function HomePage() {
 
       {/* Block 10: Brand Carousel */}
       {brandsResult.data.length > 0 && (
-        <section className="bb-brands-section" aria-label="Thương hiệu đối tác">
+        <section className="bb-brands-section pt-[120px] pb-[120px]" aria-label="Thương hiệu đối tác">
           <BrandCarousel brands={brandsResult.data} />
         </section>
       )}
@@ -520,11 +549,11 @@ export default async function HomePage() {
         <div className="bb-container">
           {homeContentBottomHtml ? (
             <div
-              className="w-full max-w-5xl"
+              className="bb-seo-content-body"
               dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(homeContentBottomHtml) }}
             />
           ) : (
-            <div className="w-full max-w-5xl">
+            <div className="bb-seo-content-body">
               <div className="mb-8 max-[600px]:mb-6">
                 <p className="bb-kicker">VỀ BIGBIKE</p>
                 <h2 id="home-seo-heading" className="bb-section-title">

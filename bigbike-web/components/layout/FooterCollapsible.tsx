@@ -3,29 +3,25 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
 
-/**
- * Cột chân trang dạng thu gọn trên mobile (nút +/−), luôn mở trên desktop (≥ md).
- */
 export function FooterCollapsible({ title, children }: { title: string; children: ReactNode }) {
   const [open, setOpen] = useState(false);
+
   return (
-    <section className="border-t border-white/10 md:border-t-0">
+    <section className="mb-[2.286rem] max-md:border-b max-md:border-[#4b4b4b] max-md:pb-10">
       <h3 className="m-0">
         <button
           type="button"
-          onClick={() => setOpen((v) => !v)}
+          onClick={() => setOpen((value) => !value)}
           aria-expanded={open}
-          className="flex w-full items-center justify-between gap-2 py-4 text-left md:cursor-default md:py-0"
+          className="flex w-full items-center justify-between gap-2 text-left md:cursor-default"
         >
-          <span className="font-display uppercase text-base text-brand">{title}</span>
-          <span className="text-brand text-2xl leading-none md:hidden" aria-hidden="true">
+          <span className="font-body text-base font-medium uppercase text-brand">{title}</span>
+          <span className="text-2xl leading-none text-brand md:hidden" aria-hidden="true">
             {open ? "−" : "+"}
           </span>
         </button>
       </h3>
-      <div className={`${open ? "grid" : "hidden"} gap-3 pb-5 md:grid md:pb-0 md:pt-1`}>
-        {children}
-      </div>
+      <div className={`${open ? "block" : "hidden"} mt-[30px] md:block`}>{children}</div>
     </section>
   );
 }

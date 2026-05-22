@@ -22,6 +22,21 @@ type HeroSliderProps = {
   slides: HeroSlide[];
 };
 
+function enforceHorizontalTrack(swiper: SwiperType | null) {
+  if (!swiper?.wrapperEl) return;
+
+  swiper.wrapperEl.style.display = "flex";
+  swiper.wrapperEl.style.flexDirection = "row";
+  swiper.wrapperEl.style.flexWrap = "nowrap";
+  swiper.wrapperEl.style.height = "100%";
+
+  Array.from(swiper.wrapperEl.children).forEach((child) => {
+    if (!(child instanceof HTMLElement)) return;
+    child.style.height = "100%";
+    child.style.flexShrink = "0";
+  });
+}
+
 function HeroSlideView({ slide }: { slide: HeroSlide }) {
   const image = (
     <picture>
@@ -93,8 +108,12 @@ export function HeroSlider({ slides }: HeroSliderProps) {
           autoplay={{ delay: 5000, disableOnInteraction: false, pauseOnMouseEnter: true }}
           onSwiper={(swiper) => {
             swiperRef.current = swiper;
+            enforceHorizontalTrack(swiper);
           }}
-          onSlideChange={(swiper) => setActiveIndex(swiper.realIndex)}
+          onSlideChange={(swiper) => {
+            enforceHorizontalTrack(swiper);
+            setActiveIndex(swiper.realIndex);
+          }}
           style={{ width: "100%", height: "100%" }}
         >
           {slides.map((slide) => (

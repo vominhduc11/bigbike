@@ -4,7 +4,6 @@ import { getTranslations } from "next-intl/server";
 import { CartIcon } from "@/components/cart/CartIcon";
 import { HeaderNavItem, type HeaderNavNode } from "@/components/layout/HeaderNavItem";
 import { HeaderUserMenu } from "@/components/layout/HeaderUserMenu";
-import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 import { MobileHeaderMenu } from "@/components/layout/MobileHeaderMenu";
 import { SearchToggle } from "@/components/layout/SearchToggle";
 import { ShopInfoDrawer } from "@/components/layout/ShopInfoDrawer";
@@ -96,16 +95,16 @@ export async function SiteHeader() {
                 className="bb-logo-img hide-mobile"
                 src="/wp/logo.png"
                 alt={siteName}
-                width={210}
-                height={190}
+                width={252}
+                height={196}
                 priority
               />
               <Image
                 className="bb-logo-img hide-desktop"
                 src="/wp/logo-1.png"
                 alt={siteName}
-                width={120}
-                height={44}
+                width={164}
+                height={52}
                 priority
               />
             </Link>
@@ -124,9 +123,6 @@ export async function SiteHeader() {
             </nav>
 
             <div className="bb-user-control">
-              <div className="max-[639px]:hidden self-center">
-                <LanguageSwitcher />
-              </div>
               <SearchToggle />
               <CartIcon />
               <HeaderUserMenu />
@@ -143,8 +139,11 @@ export async function SiteHeader() {
               <MobileHeaderMenu
                 menuTree={resolvedMenuTree}
                 menuLabel={navigationLabel}
+                siteName={siteName}
+                hours={businessHours}
+                address={shopAddress}
                 hotline={hotline}
-                zaloUrl={zaloUrl}
+                hotline2={hotline2}
               />
             </div>
           </div>

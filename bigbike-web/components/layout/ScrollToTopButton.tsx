@@ -1,36 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { ChevronUp } from "lucide-react";
 
 export function ScrollToTopButton() {
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => setVisible(window.scrollY > 300);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
   return (
     <button
       type="button"
-      className={`bb-scroll-top${visible ? " visible" : ""}`}
+      className="absolute z-20 flex h-[52px] w-[52px] items-center justify-center bg-brand text-white transition-colors hover:bg-brand-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white max-md:right-[15px] max-md:top-0 md:right-0 md:top-[-150px] xl:right-[-100px]"
       onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
       aria-label="Lên đầu trang"
     >
-      <svg
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-      >
-        <path d="M18 15l-6-6-6 6" />
-      </svg>
+      <ChevronUp size={24} strokeWidth={3} aria-hidden="true" />
     </button>
   );
 }
