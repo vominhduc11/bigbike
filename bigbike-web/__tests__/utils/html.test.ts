@@ -48,4 +48,23 @@ describe("sanitizeRichHtml — WP shortcodes", () => {
     expect(output).toContain("<img");
     expect(output).toContain("Safe");
   });
+
+  it("preserves inline styles only when explicitly requested", () => {
+    const input = '<p style="text-align:center" onclick="alert(1)">Centered</p>';
+    expect(sanitizeRichHtml(input)).not.toContain("style=");
+
+    const output = sanitizeRichHtml(input, { allowInlineStyles: true });
+    expect(output).toContain("style=");
+    expect(output).toContain("text-align");
+    expect(output).not.toContain("onclick");
+  });
+
+  it("rewrites legacy MinIO upload URLs only when explicitly requested", () => {
+    const input = '<img src="http://localhost:9000/bigbike-media/wp-uploads/2026/04/a.webp">';
+    expect(sanitizeRichHtml(input)).toContain("http://localhost:9000");
+
+    const output = sanitizeRichHtml(input, { rewriteMediaUrls: true });
+    expect(output).toContain('/media/wp-uploads/2026/04/a.webp');
+    expect(output).not.toContain("localhost:9000");
+  });
 });

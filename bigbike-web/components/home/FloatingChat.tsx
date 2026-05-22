@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactElement } from "react";
+import { type ReactElement } from "react";
 
 type FloatingChatProps = {
   hotline?: string;
@@ -31,7 +31,7 @@ function IconHotline() {
 function IconZalo() {
   return (
     <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true">
-      <circle cx="20" cy="20" r="20" fill="#0068ff" />
+      <circle cx="20" cy="20" r="20" fill="#3498db" />
       <text
         x="20"
         y="25"
@@ -59,50 +59,14 @@ function IconMessenger() {
   );
 }
 
-function IconChat() {
-  return (
-    <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" fill="none">
-      <path
-        d="M7 9.5C7 7.6 8.6 6 10.5 6h11C23.4 6 25 7.6 25 9.5v7.3c0 1.9-1.6 3.5-3.5 3.5h-4.3l-4.8 3.9V20.3h-1.9c-1.9 0-3.5-1.6-3.5-3.5V9.5Z"
-        fill="#fff"
-      />
-      <path d="M11 11.6h10M11 15h7" stroke="rgba(255,255,255,0.75)" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function IconClose() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" fill="none">
-      <path d="M3 3l8 8M11 3l-8 8" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
+function extractTrailingValue(url: string, fallback: string): string {
+  const match = url.match(/\/([^/?#]+)(?:[?#].*)?$/);
+  return match?.[1] ?? fallback;
 }
 
 export function FloatingChat({ hotline, zaloUrl, messengerUrl }: FloatingChatProps) {
-  const [open, setOpen] = useState(false);
-  const wrapperRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    function onDocClick(event: MouseEvent) {
-      if (!wrapperRef.current) return;
-      if (!wrapperRef.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    }
-    function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") setOpen(false);
-    }
-    document.addEventListener("mousedown", onDocClick);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDocClick);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
-
   const items: ContactItem[] = [];
+
   if (hotline) {
     const tel = hotline.replace(/[^\d+]/g, "");
     if (tel) {
@@ -110,26 +74,28 @@ export function FloatingChat({ hotline, zaloUrl, messengerUrl }: FloatingChatPro
         key: "hotline",
         href: `tel:${tel}`,
         label: "Hotline",
-        value: hotline,
+        value: tel,
         icon: <IconHotline />,
       });
     }
   }
+
   if (zaloUrl) {
     items.push({
       key: "zalo",
       href: zaloUrl,
       label: "Zalo",
-      value: zaloUrl.replace(/^https?:\/\/(?:www\.)?zalo\.me\//i, ""),
+      value: extractTrailingValue(zaloUrl, "0764640679"),
       icon: <IconZalo />,
     });
   }
+
   if (messengerUrl) {
     items.push({
       key: "messenger",
       href: messengerUrl,
       label: "Messenger",
-      value: messengerUrl.replace(/^https?:\/\/(?:www\.)?m\.me\//i, "Bigbike.vn"),
+      value: "Bigbike.vn",
       icon: <IconMessenger />,
     });
   }
@@ -137,35 +103,30 @@ export function FloatingChat({ hotline, zaloUrl, messengerUrl }: FloatingChatPro
   if (items.length === 0) return null;
 
   return (
-    <div className="bb-chat-float" ref={wrapperRef}>
-      {!open && <span className="bb-chat-label">Bạn cần hỗ trợ?</span>}
-      {open && (
-        <div className="bb-chat-popup" role="dialog" aria-label="Liên hệ hỗ trợ">
-          {items.map((item) => (
-            <a
-              key={item.key}
-              href={item.href}
-              className="bb-chat-item"
-              target={item.key === "hotline" ? undefined : "_blank"}
-              rel={item.key === "hotline" ? undefined : "noreferrer noopener"}
-            >
-              <span className="bb-chat-item-icon">{item.icon}</span>
-              <span className="bb-chat-item-label">
-                {item.label}: <strong>{item.value}</strong>
-              </span>
-            </a>
-          ))}
-        </div>
-      )}
-      <button
-        type="button"
-        className="bb-chat-btn"
-        aria-label={open ? "Đóng hỗ trợ" : "Mở liên hệ hỗ trợ"}
-        aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
-      >
-        {open ? <IconClose /> : <IconChat />}
-      </button>
+    <div
+      id="sudovn-btn-wrapper"
+      className="bb-chat-float b24-widget-button-wrapper b24-widget-button-position-bottom-right b24-widget-button-visible"
+      dir="ltr"
+    >
+      <div id="sudovn-btn-title" className="bb-chat-title">
+        Bạn cần hỗ trợ?
+      </div>
+      <div id="sudovn-btn-social" className="bb-chat-social">
+        {items.map((item) => (
+          <a
+            key={item.key}
+            href={item.href}
+            className="bb-chat-item sudovn-btn-social-item"
+            target="_blank"
+            rel="nofollow noreferrer"
+          >
+            <span className="bb-chat-item-icon sudovn-btn-social-item-icon">{item.icon}</span>
+            <span className="bb-chat-item-label sudovn-btn-social-item-label">
+              {item.label}: <strong>{item.value}</strong>
+            </span>
+          </a>
+        ))}
+      </div>
     </div>
   );
 }

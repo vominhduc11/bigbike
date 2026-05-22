@@ -1,16 +1,9 @@
 "use client";
+
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import type {
-  Brand,
-  CatalogFacets,
-  Category,
-  HomeSlider,
-  ImageAsset,
-} from "@/lib/contracts/public";
-import { MediaImage } from "@/components/ui/MediaImage";
-import { Input } from "@/components/ui/input";
+import type { Brand, CatalogFacets, Category, HomeSlider } from "@/lib/contracts/public";
 import { buildQueryString } from "@/lib/utils/query";
 import { toCategoryPath, toProductListPath } from "@/lib/utils/routes";
 import { cn } from "@/lib/utils";
@@ -25,7 +18,7 @@ type FilterState = {
   sort?: string;
 };
 
-type CatalogFiltersProps = {
+export type CatalogFiltersProps = {
   brands: Brand[];
   categories?: Category[];
   facets?: CatalogFacets | null;
@@ -33,11 +26,10 @@ type CatalogFiltersProps = {
   resetHref: string;
   hiddenParams?: Record<string, string | undefined>;
   banner?: HomeSlider | null;
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
 };
 
-type Chip = { label: string; removeHref: string };
-
-// Fixed named colors — must stay in sync with CatalogReadService.COLOR_FACETS (backend).
 const COLOR_FALLBACK: { key: string; label: string }[] = [
   { key: "bac", label: "Bạc" },
   { key: "cam", label: "Cam" },
@@ -51,20 +43,6 @@ const COLOR_FALLBACK: { key: string; label: string }[] = [
   { key: "do", label: "Đỏ" },
 ];
 
-const COLOR_HEX: Record<string, string> = {
-  bac: "#c4c4c4",
-  cam: "#f97316",
-  hong: "#ec4899",
-  trang: "#f5f5f5",
-  xam: "#6b7280",
-  "xanh-da-troi": "#3b82f6",
-  "xanh-la-cay": "#22c55e",
-  vang: "#eab308",
-  den: "#1a1a1a",
-  do: "#e02020",
-};
-
-// Fixed price bands — must stay in sync with CatalogReadService.PRICE_BANDS (backend).
 const PRICE_FALLBACK: { key: string; label: string; min?: number; max?: number }[] = [
   { key: "0-1tr", label: "0đ - 1.000.000đ", min: 0, max: 1_000_000 },
   { key: "1-2tr", label: "1.000.000đ - 2.000.000đ", min: 1_000_000, max: 2_000_000 },
@@ -77,94 +55,64 @@ const PRICE_FALLBACK: { key: string; label: string; min?: number; max?: number }
   { key: "tren-9tr", label: "Trên 9.000.000đ", min: 9_000_000, max: undefined },
 ];
 
-function buildChips(
-  current: FilterState,
-  resetHref: string,
-  hiddenParams: Record<string, string | undefined>,
-  categories: Category[],
-): Chip[] {
-  const chips: Chip[] = [];
+const CATEGORY_ICON_SLUGS = new Set([
+  "balo-deo-lung-tui-deo-tui-treo-xe",
+  "gang-tay",
+  "giap-bao-ho-tay-chan-dai-lung-phu-kien-giap",
+  "giay-bao-ho",
+  "non-bao-hiem-moto",
+  "phu-kien-di-mua",
+  "phu-kien-khac",
+  "pinlock-kinh-chong-suong-mu",
+  "quan-ao-bao-ho-moto",
+  "san-pham-khuyen-mai",
+  "san-pham-ve-sinh-do-bao-ho-cham-soc-xe",
+  "tai-nghe-bluetooth-mu-bao-hiem",
+  "phu-kien-do-lot",
+]);
 
-  function hrefWithout(key: string): string {
-    const remaining: Record<string, string | number | undefined> = {
-      ...hiddenParams,
-      q: key === "q" ? undefined : current.q,
-      category: key === "category" ? undefined : current.category,
-      "pwb-brand": key === "brand" ? undefined : current.brand,
-      filter_color: key === "color" ? undefined : current.color,
-      min_price: key === "price" ? undefined : current.minPrice,
-      max_price: key === "price" ? undefined : current.maxPrice,
-      sort: key === "sort" ? undefined : current.sort,
-    };
-    const qs = buildQueryString(remaining);
-    return qs ? `${resetHref}${qs}` : resetHref;
-  }
-
-  if (current.q) chips.push({ label: `"${current.q}"`, removeHref: hrefWithout("q") });
-  if (current.category) {
-    const categoryLabel =
-      categories.find((c) => c.slug === current.category)?.name ?? current.category;
-    chips.push({ label: `Danh mục: ${categoryLabel}`, removeHref: hrefWithout("category") });
-  }
-  if (current.brand) chips.push({ label: current.brand, removeHref: hrefWithout("brand") });
-  if (current.color) chips.push({ label: `Màu: ${current.color}`, removeHref: hrefWithout("color") });
-  if (current.minPrice || current.maxPrice) {
-    const lo = current.minPrice ? `${(current.minPrice / 1_000_000).toFixed(0)}tr` : "0";
-    const hi = current.maxPrice ? `${(current.maxPrice / 1_000_000).toFixed(0)}tr` : "∞";
-    chips.push({ label: `${lo} – ${hi}`, removeHref: hrefWithout("price") });
-  }
-
-  return chips;
-}
-
-const SECTION_HEADER =
-  "mb-2.5 border-b-2 border-brand pb-1.5 font-display text-sm font-semibold uppercase tracking-[0.06em] text-foreground";
-
-// One filter section — header + always-open content.
 function FilterSection({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="mb-6 last:mb-0">
-      <h3 className={SECTION_HEADER}>{title}</h3>
-      {children}
+    <div className="widget">
+      <div className="widget--title">
+        <h3>{title}</h3>
+      </div>
+      <div className="widget--body">{children}</div>
     </div>
   );
 }
 
-// One clickable filter row — label slot + optional count badge.
-function FilterRow({
-  href,
-  active,
-  count,
-  children,
-}: {
-  href: string;
-  active: boolean;
-  count?: number;
-  children: ReactNode;
-}) {
+function Count({ value }: { value?: number }) {
+  if (value == null) return null;
   return (
-    <Link
-      href={href}
-      className={cn(
-        "flex items-center gap-2 py-[5px] text-sm leading-[1.3] no-underline transition-colors",
-        active
-          ? "font-semibold text-brand"
-          : "text-muted-foreground hover:text-foreground",
+    <span className="count">
+      <span>{value}</span>
+    </span>
+  );
+}
+
+function FilterList({
+  children,
+  count,
+  className,
+}: {
+  children: ReactNode;
+  count: number;
+  className?: string;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const shouldClamp = count > 10;
+
+  return (
+    <>
+      <ul className={cn(className, shouldClamp && !expanded && "visible")}>{children}</ul>
+      {shouldClamp && (
+        <button type="button" className="show-more" onClick={() => setExpanded((v) => !v)}>
+          {expanded ? "Thu gọn" : "Xem thêm"}
+          <span aria-hidden="true">{expanded ? " -" : " +"}</span>
+        </button>
       )}
-      aria-current={active ? "true" : undefined}
-    >
-      {children}
-      {count != null && (
-        <span
-          className={cn(
-            "ml-auto shrink-0 text-xs tabular-nums",
-            active ? "text-brand" : "text-muted-foreground/70",
-          )}
-        >
-          {count}
-        </span>
-      )}
-    </Link>
+    </>
   );
 }
 
@@ -175,21 +123,12 @@ export function CatalogFilters({
   current,
   resetHref,
   hiddenParams = {},
-  banner = null,
+  mobileOpen = false,
+  onMobileClose,
 }: CatalogFiltersProps) {
   const t = useTranslations("Catalog");
-  const [brandSearch, setBrandSearch] = useState("");
-  const [mobileOpen, setMobileOpen] = useState(false);
-
   const visibleCategories = categories.filter((c) => c.isVisible);
-  const chips = buildChips(current, resetHref, hiddenParams, visibleCategories);
 
-  const hasActiveFilters =
-    current.category || current.brand || current.color ||
-    current.minPrice || current.maxPrice || current.q;
-
-  // Builds an href off resetHref that keeps every active filter except the
-  // dimension being changed by `override`.
   function queryHref(override: Record<string, string | number | undefined>): string {
     const params: Record<string, string | number | undefined> = {
       ...hiddenParams,
@@ -208,24 +147,15 @@ export function CatalogFilters({
   const facetCount = (buckets: { key: string; count: number }[] | undefined, key: string) =>
     buckets?.find((b) => b.key === key)?.count;
 
-  // ── Category rows: navigate to each category's own page ──────────────────
   const allProductsHref = toProductListPath();
-  const categoryRows = visibleCategories.map((c) => ({ key: c.slug, label: c.name }));
-
-  // ── Brand rows: prefer facets (all visible brands + counts), else props ──
-  const brandRows: { key: string; label: string; image?: ImageAsset | null; count?: number }[] =
+  const brandRows: { key: string; label: string; count?: number }[] =
     facets?.brands && facets.brands.length > 0
       ? facets.brands
-      : brands.map((b) => ({ key: b.slug, label: b.name, image: b.logo }));
-  const filteredBrandRows = brandSearch.trim()
-    ? brandRows.filter((b) => b.label.toLowerCase().includes(brandSearch.toLowerCase()))
-    : brandRows;
+      : brands.map((b) => ({ key: b.slug, label: b.name }));
 
-  // ── Color rows ───────────────────────────────────────────────────────────
   const colorRows: { key: string; label: string; count?: number }[] =
     facets?.colors && facets.colors.length > 0 ? facets.colors : COLOR_FALLBACK;
 
-  // ── Price rows ───────────────────────────────────────────────────────────
   const priceRows =
     facets?.priceBands && facets.priceBands.length > 0
       ? facets.priceBands.map((b) => ({
@@ -237,220 +167,107 @@ export function CatalogFilters({
         }))
       : PRICE_FALLBACK.map((b) => ({ ...b, count: undefined as number | undefined }));
 
-  const bannerImage = banner?.desktopImage?.url ? banner.desktopImage : null;
-  const bannerHref = banner?.link ?? banner?.productLink ?? banner?.externalLink ?? null;
-
   return (
-    <aside className="sticky top-[calc(var(--bb-header-height)+34px+16px)] self-start border-r border-border pr-7 max-[768px]:static max-[768px]:mb-6 max-[768px]:border-r-0 max-[768px]:border-b max-[768px]:border-b-white/[0.08] max-[768px]:pr-0 max-[768px]:pb-1">
-      {/* Header */}
-      <div className="mb-4 flex items-center justify-between border-b-2 border-brand pb-3 max-[768px]:px-0 max-[768px]:pt-1 max-[768px]:pb-2.5">
-        <span className="font-display text-sm font-semibold uppercase tracking-[0.06em] text-foreground">
-          {t("filtersHeading")}
-        </span>
-        <div className="flex items-center gap-3">
-          {hasActiveFilters && (
-            <Link
-              href={resetHref}
-              className="text-sm font-semibold uppercase tracking-[0.06em] text-muted-foreground no-underline transition-colors hover:text-brand"
-            >
-              {t("clearAll")}
-            </Link>
-          )}
-          <button
-            type="button"
-            className="hidden cursor-pointer border-0 bg-transparent text-muted-foreground transition-colors hover:text-foreground max-[768px]:-mr-2 max-[768px]:flex max-[768px]:h-11 max-[768px]:w-11 max-[768px]:items-center max-[768px]:justify-center"
-            onClick={() => setMobileOpen((v) => !v)}
-            aria-expanded={mobileOpen}
-            aria-label={mobileOpen ? t("filterToggleCollapse") : t("filterToggleExpand")}
-          >
-            <svg
-              className={cn(
-                "shrink-0 text-muted-foreground transition-transform duration-300",
-                mobileOpen && "rotate-180",
-              )}
-              width="12"
-              height="12"
-              viewBox="0 0 12 12"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M2 4l4 4 4-4" />
-            </svg>
+    <aside className={cn("sidebar-wrap-product bb-archive-sidebar", mobileOpen && "active in")}>
+      <div className="wrapper-product">
+        <div className="mobile-sidebar-title">
+          <p>{t("filtersHeading").toUpperCase()}</p>
+          <button type="button" className="close-btn" onClick={onMobileClose} aria-label={t("filterToggleCollapse")}>
+            ×
           </button>
         </div>
-      </div>
 
-      <div className={cn("block max-[768px]:hidden", mobileOpen && "max-[768px]:block")}>
-        {/* Active filter chips */}
-        {chips.length > 0 && (
-          <div className="mb-4 flex flex-wrap gap-1.5">
-            {chips.map((chip) => (
-              <Link
-                key={chip.label}
-                href={chip.removeHref}
-                className="inline-flex items-center gap-1.5 border border-[color:var(--bb-brand-primary-border)] bg-brand/10 px-2.5 py-1 text-sm font-bold uppercase tracking-[0.08em] text-brand no-underline transition-colors hover:bg-brand/20"
-                aria-label={t("removeFilter", { label: chip.label })}
-              >
-                {chip.label}
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-                  <path d="M2 2l6 6M8 2l-6 6" />
-                </svg>
-              </Link>
-            ))}
-          </div>
-        )}
+        <div className="wrapper">
+          {visibleCategories.length > 0 && (
+            <FilterSection title={t("filterCategory")}>
+              <ul className="product-categories">
+                <li className={cn(resetHref === allProductsHref && !current.category && "current-cat active")}>
+                  <Link href={allProductsHref}>{t("allProducts")}</Link>
+                </li>
+                {visibleCategories.map((cat) => {
+                  const href = toCategoryPath(cat.slug);
+                  const active = href === resetHref || current.category === cat.slug;
+                  return (
+                    <li
+                      key={cat.id}
+                      className={cn(
+                        cat.slug,
+                        CATEGORY_ICON_SLUGS.has(cat.slug) && "bb-category-icon",
+                        active && "current-cat active",
+                      )}
+                    >
+                      <Link href={href}>{cat.name}</Link>
+                      <Count value={facetCount(facets?.categories, cat.slug)} />
+                    </li>
+                  );
+                })}
+              </ul>
+            </FilterSection>
+          )}
 
-        {/* ── Nhóm sản phẩm ───────────────────────────────────────────── */}
-        {categoryRows.length > 0 && (
-          <FilterSection title={t("filterCategory")}>
-            <div className="flex flex-col">
-              <FilterRow href={allProductsHref} active={resetHref === allProductsHref}>
-                <span>{t("allProducts")}</span>
-              </FilterRow>
-              {categoryRows.map((cat) => {
-                const href = toCategoryPath(cat.key);
+          <FilterSection title={t("filterPrice")}>
+            <FilterList className="woocommerce-widget-layered-nav-list" count={priceRows.length}>
+              {priceRows.map((band) => {
+                const active =
+                  (current.minPrice ?? undefined) === band.min &&
+                  (current.maxPrice ?? undefined) === band.max;
+                const href = active
+                  ? queryHref({ min_price: undefined, max_price: undefined })
+                  : queryHref({ min_price: band.min, max_price: band.max });
                 return (
-                  <FilterRow
-                    key={cat.key}
-                    href={href}
-                    active={href === resetHref}
-                    count={facetCount(facets?.categories, cat.key)}
-                  >
-                    <span>{cat.label}</span>
-                  </FilterRow>
+                  <li key={band.key} className={cn(active && "chosen active")}>
+                    <Link href={href}>{band.label}</Link>
+                    <Count value={band.count} />
+                  </li>
                 );
               })}
-            </div>
+            </FilterList>
           </FilterSection>
-        )}
 
-        {/* ── Giá bán ─────────────────────────────────────────────────── */}
-        <FilterSection title={t("filterPrice")}>
-          <div className="flex flex-col">
-            {priceRows.map((band) => {
-              const active =
-                (current.minPrice ?? undefined) === band.min &&
-                (current.maxPrice ?? undefined) === band.max;
-              const href = active
-                ? queryHref({ min_price: undefined, max_price: undefined })
-                : queryHref({ min_price: band.min, max_price: band.max });
-              return (
-                <FilterRow key={band.key} href={href} active={active} count={band.count}>
-                  <span>{band.label}</span>
-                </FilterRow>
-              );
-            })}
-          </div>
-        </FilterSection>
-
-        {/* ── Thương hiệu ─────────────────────────────────────────────── */}
-        {brandRows.length > 0 && (
-          <FilterSection title={t("filterBrand")}>
-            <div className="flex flex-col">
-              {brandRows.length > 8 && (
-                <div className="relative mb-2">
-                  <svg className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
-                    <circle cx="5.5" cy="5.5" r="4" />
-                    <path d="M8.5 8.5l3 3" />
-                  </svg>
-                  <Input
-                    type="text"
-                    className="min-h-0 py-2 pl-[30px] pr-2.5 text-sm"
-                    placeholder={t("brandSearchPlaceholder")}
-                    value={brandSearch}
-                    onChange={(e) => setBrandSearch(e.target.value)}
-                    aria-label={t("brandSearchAria")}
-                  />
-                </div>
-              )}
-              <div className="max-h-[260px] overflow-y-auto pr-1">
-                <FilterRow href={queryHref({ "pwb-brand": undefined })} active={!current.brand}>
-                  <span>{t("allBrands")}</span>
-                </FilterRow>
-                {filteredBrandRows.map((brand) => {
+          {brandRows.length > 0 && (
+            <FilterSection title={t("filterBrand")}>
+              <FilterList className="woocommerce-widget-layered-nav-list" count={brandRows.length + 1}>
+                <li className={cn(!current.brand && "chosen active")}>
+                  <Link href={queryHref({ "pwb-brand": undefined })}>{t("allBrands")}</Link>
+                </li>
+                {brandRows.map((brand) => {
                   const active = current.brand === brand.key;
                   const href = active
                     ? queryHref({ "pwb-brand": undefined })
                     : queryHref({ "pwb-brand": brand.key });
                   return (
-                    <FilterRow key={brand.key} href={href} active={active} count={brand.count}>
-                      {brand.image?.url ? (
-                        <MediaImage
-                          image={brand.image}
-                          altFallback={brand.label}
-                          width={28}
-                          height={28}
-                          className="h-7 w-7 shrink-0 object-contain"
-                        />
-                      ) : (
-                        <span className="h-7 w-7 shrink-0" aria-hidden="true" />
-                      )}
-                      <span className="truncate">{brand.label}</span>
-                    </FilterRow>
+                    <li key={brand.key} className={cn(active && "chosen active")}>
+                      <Link href={href}>{brand.label}</Link>
+                      <Count value={brand.count} />
+                    </li>
                   );
                 })}
-                {filteredBrandRows.length === 0 && (
-                  <p className="m-0 py-1 text-sm text-muted-foreground">{t("brandNotFound")}</p>
-                )}
-              </div>
-            </div>
+              </FilterList>
+            </FilterSection>
+          )}
+
+          <FilterSection title={t("filterColor")}>
+            <FilterList className="woocommerce-widget-layered-nav-list" count={colorRows.length + 1}>
+              <li className={cn(!current.color && "chosen active")}>
+                <Link href={queryHref({ filter_color: undefined })}>{t("allColors")}</Link>
+              </li>
+              {colorRows.map((color) => {
+                const active = current.color === color.key;
+                const href = active
+                  ? queryHref({ filter_color: undefined })
+                  : queryHref({ filter_color: color.key });
+                return (
+                  <li key={color.key} className={cn(active && "chosen active")}>
+                    <Link href={href}>{color.label}</Link>
+                    <Count value={color.count} />
+                  </li>
+                );
+              })}
+            </FilterList>
           </FilterSection>
-        )}
-
-        {/* ── Màu sắc ─────────────────────────────────────────────────── */}
-        <FilterSection title={t("filterColor")}>
-          <div className="flex flex-col">
-            <FilterRow href={queryHref({ filter_color: undefined })} active={!current.color}>
-              <span>{t("allColors")}</span>
-            </FilterRow>
-            {colorRows.map((color) => {
-              const active = current.color === color.key;
-              const href = active
-                ? queryHref({ filter_color: undefined })
-                : queryHref({ filter_color: color.key });
-              return (
-                <FilterRow key={color.key} href={href} active={active} count={color.count}>
-                  <span
-                    className="h-4 w-4 shrink-0 rounded-full border border-border"
-                    style={{ background: COLOR_HEX[color.key] ?? "#cccccc" }}
-                    aria-hidden="true"
-                  />
-                  <span>{color.label}</span>
-                </FilterRow>
-              );
-            })}
-          </div>
-        </FilterSection>
-
-        {/* ── Banner khuyến mãi (admin-managed) ───────────────────────── */}
-        {bannerImage && (
-          <div className="mt-6">
-            {bannerHref ? (
-              <Link href={bannerHref} className="block" aria-label={t("promoBannerAria")}>
-                <MediaImage
-                  image={{ url: bannerImage.url ?? undefined, alt: bannerImage.alt ?? undefined }}
-                  altFallback={t("promoBannerAlt")}
-                  width={bannerImage.width ?? 260}
-                  height={bannerImage.height ?? 340}
-                  className="h-auto w-full"
-                />
-              </Link>
-            ) : (
-              <MediaImage
-                image={{ url: bannerImage.url ?? undefined, alt: bannerImage.alt ?? undefined }}
-                altFallback={t("promoBannerAlt")}
-                width={bannerImage.width ?? 260}
-                height={bannerImage.height ?? 340}
-                className="h-auto w-full"
-              />
-            )}
-          </div>
-        )}
+        </div>
       </div>
+      <button type="button" className="overlay" onClick={onMobileClose} aria-label={t("filterToggleCollapse")} />
     </aside>
   );
 }

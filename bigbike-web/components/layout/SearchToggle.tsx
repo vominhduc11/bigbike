@@ -1,23 +1,25 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Search, X } from "lucide-react";
 import { useHeaderUi } from "@/components/layout/HeaderUiContext";
-import { BBTooltip } from "@/components/ui/BBTooltip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { toProductListPath } from "@/lib/utils/routes";
+
+const SEARCH_PATH = "/tim-kiem/";
 
 export function SearchToggle() {
   const t = useTranslations("Search");
   const router = useRouter();
+  const searchParams = useSearchParams();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const { isPanelOpen, togglePanel, closePanel } = useHeaderUi();
   const open = isPanelOpen("search");
+  const currentSearchQuery = searchParams.get("s") ?? searchParams.get("q") ?? "";
 
   useEffect(() => {
     if (!open) return;
@@ -37,6 +39,7 @@ export function SearchToggle() {
       return;
     }
 
+    setQuery(currentSearchQuery);
     togglePanel("search");
   }
 
@@ -45,27 +48,25 @@ export function SearchToggle() {
     if (!trimmed) return;
 
     handleClose();
-    router.push(`${toProductListPath()}?q=${encodeURIComponent(trimmed)}`);
+    router.push(`${SEARCH_PATH}?s=${encodeURIComponent(trimmed)}`);
   }
 
   return (
     <div className="bb-header-search">
-      <BBTooltip content={t("toggleTooltip")}>
-        <Button
-          variant="ghost"
-          className={cn(
-            "bb-icon-btn bb-header-search-trigger",
-            open && "is-active",
-          )}
-          aria-label={t("toggleAriaLabel")}
-          aria-haspopup="dialog"
-          aria-expanded={open}
-          type="button"
-          onClick={handleToggle}
-        >
-          <Search size={20} aria-hidden />
-        </Button>
-      </BBTooltip>
+      <Button
+        variant="ghost"
+        className={cn(
+          "bb-icon-btn bb-header-search-trigger",
+          open && "is-active",
+        )}
+        aria-label={t("toggleAriaLabel")}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        type="button"
+        onClick={handleToggle}
+      >
+        <Search size={20} aria-hidden />
+      </Button>
 
       <div
         className={cn("bb-header-search-layer", open && "is-open")}

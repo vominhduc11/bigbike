@@ -1,13 +1,8 @@
-import { Suspense } from "react";
-import Link from "next/link";
 import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
 import { ProductCard } from "@/components/catalog/ProductCard";
-import { Button } from "@/components/ui/button";
-import { CatalogFilters } from "@/components/catalog/CatalogFilters";
-import { CatalogSortSelect } from "@/components/catalog/CatalogSortSelect";
-import { PageHero } from "@/components/layout/PageHero";
-import { EmptyState } from "@/components/ui/EmptyState";
+import { ProductArchiveHero } from "@/components/catalog/ProductArchiveHero";
+import { ProductArchiveLayout } from "@/components/catalog/ProductArchiveLayout";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { PaginationNav } from "@/components/ui/PaginationNav";
 import {
@@ -178,18 +173,9 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
     sort: sortParsed.value,
   };
 
-  const hasActiveFilters = Boolean(
-    qParsed.value ||
-      categoryParsed.value ||
-      brandParsed.value ||
-      colorParsed.value ||
-      minPriceParsed.value ||
-      maxPriceParsed.value,
-  );
-
   return (
-    <>
-      <PageHero
+    <div className="bb-product-archive archive post-type-archive-product">
+      <ProductArchiveHero
         imageUrl={heroSettings.imageUrl}
         imageAlt={heroSettings.imageAlt}
         title={heroSettings.title ?? pageTitle}
@@ -199,58 +185,25 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
         ]}
       />
 
-      <div className="bb-cat-layout">
-        <CatalogFilters
-          key={[currentFilters.category, currentFilters.brand, currentFilters.color, currentFilters.minPrice, currentFilters.maxPrice, currentFilters.q].join(",")}
-          brands={brandsResult.data}
-          categories={categoriesResult.data}
-          current={currentFilters}
-          resetHref={toProductListPath()}
-        />
-
-        <div>
-          <div className="bb-catalog-head">
-            <div className="bb-catalog-count">
-              {result.data.length > 0 && pagination
-                ? tCatalog.rich("showingRange", {
-                    from: (pagination.page - 1) * pagination.pageSize + 1,
-                    to: Math.min(pagination.page * pagination.pageSize, pagination.totalItems),
-                    total: pagination.totalItems,
-                    strong: (chunks) => <b>{chunks}</b>,
-                  })
-                : null}
-            </div>
-            <Suspense
-              fallback={
-                <span
-                  className="bb-skel w-40 h-9"
-                  aria-hidden="true"
-                />
-              }
-            >
-              <CatalogSortSelect current={sortParsed.value ?? "createdAt:desc"} />
-            </Suspense>
-          </div>
-
+      <ProductArchiveLayout
+        totalItems={pagination?.totalItems ?? null}
+        sortCurrent={sortParsed.value ?? DEFAULT_SORT}
+        filters={{
+          brands: brandsResult.data,
+          categories: categoriesResult.data,
+          current: currentFilters,
+          resetHref: toProductListPath(),
+        }}
+      >
           {result.error && result.data.length === 0 ? (
             <ErrorState message={result.error.message} retryHref={toProductListPath()} />
           ) : result.data.length === 0 ? (
-            <EmptyState
-              title={tCatalog("noResultsTitle")}
-              description={tCatalog("noResultsDescription")}
-              action={
-                hasActiveFilters ? (
-                  <Button asChild variant="primary">
-                    <Link href={toProductListPath()}>{tCatalog("clearFilters")}</Link>
-                  </Button>
-                ) : undefined
-              }
-            />
+            <p className="woocommerce-info">{tCatalog("noResults")}</p>
           ) : (
             <>
               <div className="bb-product-grid">
                 {result.data.map((product) => (
-                  <ProductCard key={product.id} product={product} />
+                  <ProductCard key={product.id} product={product} variant="archive" />
                 ))}
               </div>
               {pagination ? (
@@ -267,12 +220,12 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
                       min_price: minPriceParsed.value,
                       max_price: maxPriceParsed.value,
                     })}`}
+                  variant="archive"
                 />
               ) : null}
             </>
           )}
-        </div>
-      </div>
-    </>
+      </ProductArchiveLayout>
+    </div>
   );
 }

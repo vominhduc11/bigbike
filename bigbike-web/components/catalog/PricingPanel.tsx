@@ -17,13 +17,11 @@ type PricingPanelProps = {
   isLoading?: boolean;
 };
 
-// Renders only the inner price content (price + compare + savings badge).
-// Wrapped alongside StockStatus by PurchaseSectionClient.
 export function PricingPanel({ data, fallback, isLoading }: PricingPanelProps) {
   if (isLoading) {
     return (
-      <div className="flex items-baseline gap-3 flex-wrap min-w-0">
-        <b className="text-brand font-display text-[clamp(1.4rem,5vw,2rem)] font-semibold tracking-normal opacity-40">Đang tải...</b>
+      <div className="price">
+        <p>Đang tải...</p>
       </div>
     );
   }
@@ -35,21 +33,20 @@ export function PricingPanel({ data, fallback, isLoading }: PricingPanelProps) {
 
   if (!current) {
     return (
-      <div className="flex items-baseline gap-3 flex-wrap min-w-0">
-        <b className="text-brand font-display text-[clamp(1.4rem,5vw,2rem)] font-semibold tracking-normal">Liên hệ</b>
+      <div className="price">
+        <p>Liên hệ</p>
       </div>
     );
   }
 
-  const savings = compare && compare > current ? compare - current : 0;
+  const hasSale = Boolean(compare && compare > current);
 
   return (
-    <div className="flex items-baseline gap-3 flex-wrap min-w-0">
-      <b className="text-brand font-display text-[clamp(1.4rem,5vw,2rem)] font-semibold tracking-normal">{formatVnd(current)}</b>
-      {compare && compare > current && <s className="text-muted-foreground text-base">{formatVnd(compare)}</s>}
-      {savings > 0 && (
-        <span className="bg-brand text-white py-1 px-2.5 font-bold text-sm tracking-[0.1em]">Tiết kiệm {formatVnd(savings)}</span>
-      )}
+    <div className="price">
+      <p className="price js-single-price">
+        {hasSale && compare ? <del>{formatVnd(compare)}</del> : null}
+        {hasSale ? <ins>{formatVnd(current)}</ins> : formatVnd(current)}
+      </p>
     </div>
   );
 }

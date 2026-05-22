@@ -6,7 +6,6 @@ import type { Article, Category, HomeSlider, Product } from "@/lib/contracts/pub
 import { HeroSlider } from "@/components/home/HeroSlider";
 import { BrandCarousel } from "@/components/home/BrandCarousel";
 import { FeaturedProductsCarousel } from "@/components/home/FeaturedProductsCarousel";
-import { ProductCard } from "@/components/catalog/ProductCard";
 import { ExperienceCarousel } from "@/components/home/ExperienceCarousel";
 import { HomeVideoCarousel } from "@/components/home/HomeVideoCarousel";
 import { HomeAnalytics } from "@/components/home/HomeAnalytics";
@@ -48,6 +47,30 @@ import {
 export const dynamic = "force-dynamic";
 
 const HOME_ORG_LOGO = "/wp/logo.png";
+
+const WP_ABOUT_SUBTITLE = "BIGBIKE";
+const WP_ABOUT_TITLE = "SHOP BẢO HỘ MOTO UY TÍN";
+const WP_ABOUT_HTML = `
+  <p><span style="font-weight: 400;">Bigbike tự hào là một trong những shop chuyên bán đồ phượt, đồ bảo hộ moto đáng tin cậy tại TP HCM được nhiều anh em biker tin tưởng lựa chọn. Chúng tôi chuyên cung cấp đa dạng các dòng sản phẩm phụ kiện bảo hộ dành cho biker như mũ bảo hiểm fullface, mũ bảo hiểm 3/4, áo giáp, găng tay, giày bảo hộ, balo, túi đeo, túi treo xe, kính, khăn đa năng và nhiều phụ kiện moto khác.</span></p>
+  <p><span style="font-weight: 400;">Bigbike luôn ưu tiên sản phẩm chính hãng, nguồn gốc rõ ràng, tư vấn đúng nhu cầu và đồng hành cùng rider trong từng chuyến đi.</span></p>
+`;
+
+const HOME_CATEGORY_HIGHLIGHTS = [
+  {
+    category: "BALÔ ĐEO LƯNG - TÚI ĐEO - TÚI TREO XE",
+    title: "BALO MOTO PHƯỢT TAICHI RSB278 – CHỐNG NƯỚC",
+    href: "/sp/balo-moto-phuot-chinh-hang-taichi-rs278-chong-nuoc.html",
+    imageSrc:
+      "/wp-content/uploads/2023/03/Balo-di-mo-to-phuot-chinh-hang-Taichi-RSB278-chong-mua-3-300x300.jpg",
+  },
+  {
+    category: "MŨ BẢO HIỂM",
+    title: "MŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06",
+    href: "/sp/mu-bao-hiem-ls2-ff800-storm.html",
+    imageSrc:
+      "/wp-content/uploads/2020/07/MU-BAO-HIEM-LS2-FF800-TITANIUM-17-300x300.jpg",
+  },
+];
 
 const HOME_FAQS = [
   {
@@ -165,6 +188,32 @@ function WpCategoryListItem({ category }: { category: Category }) {
   );
 }
 
+function HomeCategoryHighlights() {
+  return (
+    <section className="bb-home-category-list" aria-label="Sản phẩm theo danh mục">
+      <div className="bb-home-category-list-grid">
+        {HOME_CATEGORY_HIGHLIGHTS.map((item) => (
+          <Link key={item.href} href={item.href} className="bb-home-category-item">
+            <span className="bb-home-category-label">{item.category}</span>
+            <span className="bb-home-category-title">{item.title}</span>
+            <span className="bb-home-category-button">Mua ngay</span>
+            <Image
+              src={item.imageSrc}
+              alt={item.title}
+              width={300}
+              height={300}
+              className="bb-home-category-image"
+              sizes="(max-width: 767px) 58vw, 220px"
+              loading="lazy"
+              unoptimized
+            />
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function stripHtmlToText(html: string): string {
   return html
     .replace(/<[^>]*>/g, " ")
@@ -241,7 +290,6 @@ export default async function HomePage() {
     newsArticlesResult,
     brandsResult,
     settingsResult,
-    featuredProductsResult,
     carouselProductsResult,
     homeVideosResult,
   ] = await Promise.all([
@@ -251,14 +299,12 @@ export default async function HomePage() {
     listArticles({ page: 1, category: "tin-tuc", size: 3, sort: "publishedAt:desc" }),
     listBrands({ page: 1, size: 12, sort: "name:asc" }),
     listPublicSettings(),
-    listProducts({ page: 1, homepageBlock: "FEATURED_GRID", size: 3, sort: "homepageOrder:asc", lang: locale }),
     listProducts({ page: 1, homepageBlock: "RECOMMENDED_CAROUSEL", size: 10, sort: "homepageOrder:asc", lang: locale }),
     listHomeVideos(),
   ]);
 
   // Each product lives in exactly one homepage block (enum FEATURED_GRID | RECOMMENDED_CAROUSEL | NONE),
   // so the prior dedupe pass is no longer required.
-  const featuredProducts = featuredProductsResult.data;
   const carouselProducts = carouselProductsResult.data;
 
   const settings = settingsResult.data ?? [];
@@ -329,23 +375,12 @@ export default async function HomePage() {
       <HeroSlider slides={slides} />
 
       <div className="bb-container">
-        {/* Block 2: Featured Products (ISR) */}
-        {featuredProducts.length > 0 && (
-          <section aria-label="Sản phẩm nổi bật">
-            <div className="grid grid-cols-3 gap-[30px] pt-[40px] pb-[40px] max-[900px]:grid-cols-2 max-[600px]:grid-cols-1">
-              {featuredProducts.slice(0, 3).map((p) => (
-                <ProductCard key={p.id} product={p} variant="tile" />
-              ))}
-            </div>
-          </section>
-        )}
+        {/* Block 2: Category highlight tiles - WP page-home.php category-list */}
+        <HomeCategoryHighlights />
 
         {/* Block 3: About BigBike */}
         <section className="bb-about" aria-labelledby="home-about-heading">
           <div className="bb-about-inner">
-            <div className="bb-about-mark" aria-hidden="true">
-              <Image src={HOME_ORG_LOGO} alt="" width={260} height={160} />
-            </div>
             <div className="bb-about-text">
               {hasSettingsAbout ? (
                 <>
@@ -360,33 +395,14 @@ export default async function HomePage() {
                 </>
               ) : (
                 <>
-                  <p className="bb-kicker">Về BigBike · Est. 2013</p>
+                  <p className="bb-kicker">{WP_ABOUT_SUBTITLE}</p>
                   <h2 id="home-about-heading" className="bb-about-title">
-                    Gear bảo hộ chính hãng cho rider biết mình cần gì
+                    {WP_ABOUT_TITLE}
                   </h2>
-                  <p>
-                    BigBike là shop chuyên đồ phượt, đồ bảo hộ moto và phụ kiện touring tại TP
-                    HCM, tập trung vào sản phẩm chính hãng, thông tin rõ ràng và tư vấn kỹ trước
-                    khi khách xuống tiền.
-                  </p>
-                  <p>
-                    Tinh thần của shop: nhìn nhanh biết món nào đáng tin, so sánh dễ, chọn đúng
-                    size, đúng nhu cầu — và luôn có người hỗ trợ khi cần.
-                  </p>
-                  <div className="bb-about-stats">
-                    <div className="bb-about-stat">
-                      <b>Từ 2013</b>
-                      <span>Năm thành lập</span>
-                    </div>
-                    <div className="bb-about-stat">
-                      <b>100%</b>
-                      <span>Hàng chính hãng</span>
-                    </div>
-                    <div className="bb-about-stat">
-                      <b>Toàn quốc</b>
-                      <span>Giao hàng</span>
-                    </div>
-                  </div>
+                  <div
+                    className="bb-about-richtext"
+                    dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(WP_ABOUT_HTML) }}
+                  />
                 </>
               )}
             </div>

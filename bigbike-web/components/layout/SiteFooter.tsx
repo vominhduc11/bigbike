@@ -11,15 +11,14 @@ const WP_FOOTER_HEADING = "Bigbike mong được lắng nghe\nvà thấu hiểu 
 const WP_FOOTER_DESCRIPTION =
   "Shop Bigbike.vn chuyên cung cấp đồ bảo hộ moto, xe máy, phượt, mũ bảo hộ Full Face, Mũ lật cằm, mũ 3/4, mũ cào cào, áo giáp quần bảo hộ, găng tay, balo, túi đeo moto, xe máy và các phụ kiện thời trang....";
 const WP_FACEBOOK_URL = "https://www.facebook.com/bigbikegear";
-const WP_FACEBOOK_LABEL = "fb/bigbikegear";
+const WP_FACEBOOK_LABEL = "fb/bigbike.vn";
 const WP_BCT_URL = "http://online.gov.vn/Home/WebDetails/27044";
 const WP_BUSINESS_LICENSE =
   "Giấy chứng nhận đăng ký kinh doanh số: 41K8017383 | Ngày cấp 8 tháng 3 năm 2016 | Nơi cấp: Ủy Ban Nhân Dân Quận 11";
 
 const WP_CONTACTS: FooterContact[] = [
-  { id: "hotline-main", label: "028 6279 7251", hrefValue: "028 6279 7251", icon: "phone" },
-  { id: "hotline-zalo", label: "0764 640 679 - Mrs. Thư / Zalo", hrefValue: "0764 640 679", icon: "phone" },
-  { id: "hotline-tri", label: "0906 902 404 - Mr. Trí", hrefValue: "0906 902 404", icon: "phone" },
+  { id: "hotline-tri", label: "0906.90.2404", hrefValue: "0906902404", icon: "phone" },
+  { id: "hotline-zalo", label: "0764.640.679", hrefValue: "0764640679", icon: "phone" },
   { id: "email", label: "bigbikevnshop@gmail.com", hrefValue: "bigbikevnshop@gmail.com", icon: "email" },
 ];
 

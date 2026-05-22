@@ -94,7 +94,7 @@ export function HeaderUserMenu() {
   return (
     <div
       ref={wrapperRef}
-      className="bb-header-user max-[767px]:hidden"
+      className="bb-header-user max-[1260px]:hidden"
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
       onBlurCapture={handleBlur}

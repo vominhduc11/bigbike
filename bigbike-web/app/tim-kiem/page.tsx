@@ -1,20 +1,15 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
-import { ArticleCard } from "@/components/content/ArticleCard";
+import { getLocale, getTranslations } from "next-intl/server";
 import { ProductCard } from "@/components/catalog/ProductCard";
-import { PageHero } from "@/components/layout/PageHero";
-import { EmptyState } from "@/components/ui/EmptyState";
-import { ErrorState } from "@/components/ui/ErrorState";
-import { search } from "@/lib/api/public-api";
+import { ProductArchiveHero } from "@/components/catalog/ProductArchiveHero";
+import { listProducts } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
-import { parsePositiveIntParam, parseTextParam, readSingleSearchParam } from "@/lib/utils/query";
+import { buildQueryString, parsePositiveIntParam, parseTextParam, readSearchParamAlias } from "@/lib/utils/query";
 import { toHomePath } from "@/lib/utils/routes";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { SearchScopeSelect } from "@/components/search/SearchScopeSelect";
 
 const SEARCH_PATH = "/tim-kiem/";
+const DEFAULT_PAGE_SIZE = 4;
 
 type SearchPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -22,12 +17,13 @@ type SearchPageProps = {
 
 export async function generateMetadata({ searchParams }: SearchPageProps): Promise<Metadata> {
   const [params, t] = await Promise.all([searchParams, getTranslations("Search")]);
-  const q = readSingleSearchParam(params.q);
+  const q = readSearchParamAlias(params, "s", "q");
   return buildPublicMetadata({
-    title: q ? t("metaTitleWithQuery", { query: q }) : t("title"),
+    title: q ? `${q} - Bigbike.vn` : t("title"),
     description: t("metaDescription"),
     canonicalPath: SEARCH_PATH,
     noIndex: true,
+    ogType: "article",
   });
 }
 
@@ -37,142 +33,164 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     getTranslations("Search"),
     getTranslations("Breadcrumb"),
   ]);
-  const qParsed = parseTextParam(params.q, 200);
-  const postType = readSingleSearchParam(params.post_type)?.trim().toLowerCase() ?? "";
-  const limitParsed = parsePositiveIntParam(params.limit, {
-    defaultValue: 20,
+  const qParsed = parseTextParam(readSearchParamAlias(params, "s", "q"), 200);
+  const pageParsed = parsePositiveIntParam(readSearchParamAlias(params, "paged", "page"), {
+    defaultValue: 1,
     min: 1,
-    max: 50,
-    field: "limit",
+    max: 999,
+    field: "paged",
   });
 
   const query = qParsed.value?.trim() ?? "";
-  const types: Array<"product" | "article"> | undefined =
-    postType === "product" ? ["product"] : postType === "article" ? ["article"] : undefined;
-
-  const heroTitle = query ? t("heroTitleWithQuery", { query }) : t("title");
+  const heroTitle = query ? `Kết quả tìm kiếm: “${query}”` : t("title");
+  const breadcrumbCurrent = query ? `Search results for '${query}'` : t("breadcrumb");
+  const page = pageParsed.value;
 
   return (
-    <>
-      <PageHero
+    <div className="bb-product-archive bb-search-results-page search search-results">
+      <ProductArchiveHero
         title={heroTitle}
         breadcrumb={[
           { label: tBreadcrumb("home"), href: toHomePath() },
-          { label: t("breadcrumb") },
+          { label: breadcrumbCurrent },
         ]}
       />
-      <section className="bb-page">
-      <div className="bb-container">
-        <form method="GET" className="bb-query-form">
-          <div className="bb-query-row">
-            <label className="bb-query-label">
-              {t("keywordLabel")}
-              <Input
-                name="q"
-                defaultValue={query}
-                className="bb-query-input"
-                placeholder={t("keywordPlaceholder")}
-                required
-                minLength={1}
-                maxLength={200}
-              />
-            </label>
-            <label className="bb-query-label">
-              {t("scopeLabel")}
-              <SearchScopeSelect current={postType} />
-            </label>
-          </div>
-          <div className="bb-section-row">
-            <Button type="submit" variant="primary">{t("submit")}</Button>
-            <Button asChild variant="secondary">
-              <Link href={SEARCH_PATH}>{t("clear")}</Link>
-            </Button>
-          </div>
-        </form>
 
-        {query.length === 0 ? (
-          <EmptyState
-            title={t("emptyTitle")}
-            description={t("emptyDescription")}
-          />
-        ) : (
-          <SearchResults query={query} limit={limitParsed.value} types={types} />
-        )}
+      <div id="main-content" className="page_search bb-search-main">
+        <div className="container bb-wp-container">
+          <div className="row bb-wp-row bb-search-row">
+            <div className="col-md-9 bb-wp-col-md-9 bb-search-content">
+              <div className="product-list pb-40">
+                <div className="container bb-search-inner-container">
+                  <div className="product-list-filter headroom bb-search-toolbar">
+                    <div className="row align-items-center bb-wp-row">
+                      <div className="woocommerce-notices-wrapper" />
+                    </div>
+                  </div>
+                  <div className="product-count" />
+                  <div className="product">
+                    {query.length === 0 || qParsed.error || pageParsed.error ? (
+                      <p className="woocommerce-info">
+                        {qParsed.error || pageParsed.error || "Không tìm thấy sản phẩm nào khớp với lựa chọn của bạn."}
+                      </p>
+                    ) : (
+                      <SearchResults query={query} page={page} />
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      </section>
+    </div>
+  );
+}
+
+async function SearchResults({ query, page }: { query: string; page: number }) {
+  const locale = await getLocale();
+  const result = await listProducts({
+    page,
+    size: DEFAULT_PAGE_SIZE,
+    q: query,
+    lang: locale,
+  });
+
+  if (result.error && result.data.length === 0) {
+    return <p className="woocommerce-info">{result.error.message}</p>;
+  }
+
+  if (result.data.length === 0) {
+    return <p className="woocommerce-info">Không tìm thấy sản phẩm nào khớp với lựa chọn của bạn.</p>;
+  }
+
+  const pagination = result.pagination;
+
+  return (
+    <>
+      <div className="row bb-wp-row bb-search-product-row">
+        {result.data.map((product) => (
+          <div key={product.id} className="col-md-3 col-6 bb-wp-col-md-3 bb-wp-col-6 bb-search-product-col">
+            <ProductCard product={product} variant="archive" />
+          </div>
+        ))}
+      </div>
+
+      {pagination ? (
+        <SearchPagination
+          page={pagination.page}
+          totalPages={pagination.totalPages}
+          query={query}
+        />
+      ) : null}
     </>
   );
 }
 
-async function SearchResults({
+function SearchPagination({
+  page,
+  totalPages,
   query,
-  limit,
-  types,
 }: {
+  page: number;
+  totalPages: number;
   query: string;
-  limit: number;
-  types?: Array<"product" | "article">;
 }) {
-  const [result, t] = await Promise.all([
-    search({ q: query, limit, types }),
-    getTranslations("Search"),
-  ]);
+  if (totalPages <= 1) return null;
 
-  if (result.error) {
-    return <ErrorState message={result.error.message} retryHref={`${SEARCH_PATH}?q=${encodeURIComponent(query)}`} />;
-  }
-
-  const products = result.data?.products ?? [];
-  const articles = result.data?.articles ?? [];
-  const totalHits = products.length + articles.length;
-
-  if (totalHits === 0) {
-    return (
-      <EmptyState
-        title={t("noResultTitle", { query })}
-        description={t("noResultDescription")}
-        action={
-          <Button asChild variant="primary">
-            <Link href="/san-pham/">{t("viewAllProducts")}</Link>
-          </Button>
-        }
-      />
-    );
-  }
+  const pages = buildSearchPageList(page, totalPages);
+  const hrefFor = (nextPage: number) =>
+    `${SEARCH_PATH}${buildQueryString({
+      s: query,
+      paged: nextPage > 1 ? nextPage : undefined,
+    })}`;
 
   return (
-    <>
-      <p className="bb-result-summary">
-        {t.rich("resultSummary", {
-          productCount: products.length,
-          articleCount: articles.length,
-          query,
-          strong: (chunks) => <strong>{chunks}</strong>,
-          em: (chunks) => <em>{chunks}</em>,
-        })}
-      </p>
-
-      {products.length > 0 ? (
-        <section className="bb-search-section">
-          <h2>{t("sectionProducts")}</h2>
-          <div className="bb-grid-products">
-            {products.map((product) => (
-              <ProductCard key={product.id} product={product} />
+    <div className="pagination pb-40 pt-20 bb-archive-pagination bb-search-pagination">
+      <div className="text-right">
+        <div className="paginate-links">
+          <ul className="page-numbers">
+            {pages.map((item, index) => (
+              <li key={item === "..." ? `dots-${index}` : item}>
+                {item === "..." ? (
+                  <span className="page-numbers dots">&hellip;</span>
+                ) : item === page ? (
+                  <span aria-current="page" className="page-numbers current">
+                    {item}
+                  </span>
+                ) : (
+                  <Link className="page-numbers" href={hrefFor(item)}>
+                    {item}
+                  </Link>
+                )}
+              </li>
             ))}
-          </div>
-        </section>
-      ) : null}
-
-      {articles.length > 0 ? (
-        <section className="bb-search-section">
-          <h2>{t("sectionArticles")}</h2>
-          <div className="bb-grid-articles">
-            {articles.map((article) => (
-              <ArticleCard key={article.id} article={article} />
-            ))}
-          </div>
-        </section>
-      ) : null}
-    </>
+            {page < totalPages ? (
+              <li>
+                <Link className="next page-numbers" href={hrefFor(page + 1)} aria-label="Trang sau">
+                  <span aria-hidden="true">›</span>
+                </Link>
+              </li>
+            ) : null}
+          </ul>
+        </div>
+      </div>
+    </div>
   );
+}
+
+function buildSearchPageList(page: number, totalPages: number): (number | "...")[] {
+  if (totalPages <= 3) {
+    return Array.from({ length: totalPages }, (_, i) => i + 1);
+  }
+
+  if (page <= 2) {
+    return [1, 2, "...", totalPages];
+  }
+
+  if (page >= totalPages - 1) {
+    return [1, "...", totalPages - 1, totalPages];
+  }
+
+  return [1, "...", page, "...", totalPages];
 }

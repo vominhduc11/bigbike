@@ -66,7 +66,7 @@ export function ShopInfoDrawer({
       <Button
         variant="ghost"
         className={cn(
-          "bb-icon-btn bb-header-info-trigger max-[1199px]:!hidden",
+          "bb-icon-btn bb-header-info-trigger max-[1260px]:!hidden",
           open && "is-active",
         )}
         aria-label={t("shopInfoAriaLabel", { siteName })}
@@ -78,7 +78,7 @@ export function ShopInfoDrawer({
       </Button>
 
       <div
-        className={cn("bb-header-info-sheet max-[1199px]:hidden", open && "is-open")}
+        className={cn("bb-header-info-sheet max-[1260px]:hidden", open && "is-open")}
         aria-hidden={!open}
       >
         <button

@@ -1,7 +1,6 @@
 "use client";
 
-import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { useRef, useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import type { Swiper as SwiperType } from "swiper";
 import "swiper/css";
@@ -30,138 +29,15 @@ function PlayIcon() {
   );
 }
 
-const FOCUSABLE =
-  'a[href],button:not([disabled]),input,select,textarea,[tabindex]:not([tabindex="-1"])';
-
-function VideoModal({
-  video,
-  onClose,
-  triggerRef,
-}: {
-  video: HomeVideo;
-  onClose: () => void;
-  triggerRef: RefObject<HTMLButtonElement | null>;
-}) {
-  const backdropRef = useRef<HTMLDivElement>(null);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-
-  useEffect(() => {
-    const first = backdropRef.current?.querySelector<HTMLElement>(FOCUSABLE);
-    first?.focus();
-    const savedTrigger = triggerRef.current;
-    return () => {
-      savedTrigger?.focus();
-    };
-  }, [triggerRef]);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-        return;
-      }
-      if (e.key !== "Tab") return;
-      const el = backdropRef.current;
-      if (!el) return;
-      const focusable = Array.from(el.querySelectorAll<HTMLElement>(FOCUSABLE));
-      if (focusable.length === 0) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (e.shiftKey) {
-        if (document.activeElement === first) {
-          e.preventDefault();
-          last.focus();
-        }
-      } else if (document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
-  useEffect(() => {
-    const prevBody = document.body.style.overflow;
-    const prevHtml = document.documentElement.style.overflowY;
-    document.body.style.overflow = "hidden";
-    document.documentElement.style.overflowY = "hidden";
-    return () => {
-      document.body.style.overflow = prevBody;
-      document.documentElement.style.overflowY = prevHtml;
-    };
-  }, []);
-
-  useEffect(() => {
-    const iframe = iframeRef.current;
-    return () => {
-      if (iframe) iframe.src = "";
-    };
-  }, []);
-
-  return (
-    <div
-      ref={backdropRef}
-      className="fixed inset-0 z-[var(--bb-z-modal)] flex items-center justify-center bg-black/90 p-4"
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-label={safeText(video.title, "Video")}
-    >
-      <div className="relative w-full max-w-[900px]" onClick={(e) => e.stopPropagation()}>
-        <button
-          type="button"
-          className="absolute -top-11 right-0 cursor-pointer border border-white/20 bg-white/10 px-2.5 pb-1.5 pt-1 text-[1.75rem] leading-none text-white opacity-85 transition-[background,opacity] duration-150 hover:bg-[rgba(255,12,9,0.65)] hover:opacity-100 focus-visible:outline-[var(--bb-focus-outline)] focus-visible:outline-offset-3"
-          onClick={onClose}
-          aria-label="Đóng video"
-        >
-          ×
-        </button>
-        {video.embedUrl ? (
-          <iframe
-            ref={iframeRef}
-            className="block w-full [aspect-ratio:16/9] rounded-none bg-black"
-            src={video.embedUrl}
-            title={safeText(video.title, "Video")}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
-        ) : isSafeHomeVideoUrl(video.videoUrl) ? (
-          <video
-            className="block w-full [aspect-ratio:16/9] rounded-none bg-black"
-            src={video.videoUrl}
-            controls
-            autoPlay
-            muted
-            playsInline
-          />
-        ) : (
-          <div
-            className="flex w-full flex-col items-center justify-center gap-2.5 bg-brand [aspect-ratio:16/9]"
-            aria-hidden="true"
-          >
-            <span className="font-display text-2xl font-extrabold uppercase tracking-[0.22em] text-white/80">
-              BIGBIKE
-            </span>
-          </div>
-        )}
-        <p className="mt-3.5 text-center font-display text-15 font-semibold uppercase tracking-[0.04em] text-white/85">
-          {safeText(video.title, "Video")}
-        </p>
-      </div>
-    </div>
-  );
+function resolveVideoHref(video: HomeVideo): string {
+  if (isSafeHomeVideoUrl(video.videoUrl)) return video.videoUrl;
+  if (video.youtubeId) return `https://www.youtube.com/watch?v=${video.youtubeId}`;
+  return "#";
 }
 
-function VideoCard({
-  video,
-  onOpen,
-}: {
-  video: HomeVideo;
-  onOpen: (el: HTMLButtonElement) => void;
-}) {
-  const btnRef = useRef<HTMLButtonElement>(null);
+function VideoCard({ video }: { video: HomeVideo }) {
   const title = safeText(video.title, "Video");
+  const href = resolveVideoHref(video);
 
   const thumbUrls: string[] = [];
   const custom = resolveMediaUrl(video.thumbnail?.url?.trim());
@@ -177,13 +53,11 @@ function VideoCard({
   const thumbSrc = thumbIdx < thumbUrls.length ? thumbUrls[thumbIdx] : null;
 
   return (
-    <button
-      ref={btnRef}
-      type="button"
-      className="group block w-full cursor-pointer border-0 bg-transparent p-0 text-left"
-      onClick={() => {
-        if (btnRef.current) onOpen(btnRef.current);
-      }}
+    <a
+      href={href}
+      className="group block w-full text-left no-underline"
+      target="_blank"
+      rel="nofollow noreferrer"
       aria-label={`Xem video: ${title}`}
     >
       <div className="relative w-full overflow-hidden bg-brand [aspect-ratio:370/233]">
@@ -211,20 +85,13 @@ function VideoCard({
           {title}
         </p>
       </div>
-    </button>
+    </a>
   );
 }
 
 export function HomeVideoCarousel({ videos }: Props) {
-  const [activeVideo, setActiveVideo] = useState<HomeVideo | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const triggerRef = useRef<HTMLButtonElement | null>(null);
   const swiperRef = useRef<SwiperType | null>(null);
-
-  const handleOpen = useCallback((video: HomeVideo, el: HTMLButtonElement) => {
-    triggerRef.current = el;
-    setActiveVideo(video);
-  }, []);
 
   if (videos.length === 0) return null;
 
@@ -254,7 +121,7 @@ export function HomeVideoCarousel({ videos }: Props) {
           >
             {videos.map((video) => (
               <SwiperSlide key={video.id} className="h-auto" suppressHydrationWarning>
-                <VideoCard video={video} onOpen={(el) => handleOpen(video, el)} />
+                <VideoCard video={video} />
               </SwiperSlide>
             ))}
           </Swiper>
@@ -327,16 +194,6 @@ export function HomeVideoCarousel({ videos }: Props) {
           ))}
         </div>
       )}
-
-      {activeVideo &&
-        createPortal(
-          <VideoModal
-            video={activeVideo}
-            onClose={() => setActiveVideo(null)}
-            triggerRef={triggerRef}
-          />,
-          document.body,
-        )}
     </>
   );
 }
