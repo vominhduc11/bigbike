@@ -76,14 +76,17 @@ State colors:
 
 | Vai trò | Font | Size | Weight | Line height |
 |---|---|---:|---:|---:|
-| Display / hero | Barlow Condensed | 30px | 700 | 45px |
-| H1 | Barlow | 32px | 600 | 48px |
-| H2 | Barlow | 24px | 600 | 36px |
-| H3 | Oswald | 18px | 600 | 20px |
-| Body | Barlow | 16px | 400 | 24px |
-| Button / CTA | Oswald | 16px | 600 | 24px |
-| Link | Barlow | 16px | 400 | 24px |
-| Meta / badge | Barlow | 12px | 700 | 12px |
+| Display / H1 | Oswald | 32px | 600 | 1.08 |
+| H2 | Oswald | 24px | 600 | 1.5 |
+| H3–H6 | Barlow Condensed | 18px | 600 | 1.1 |
+| Body | Barlow | 16px | 400 | 1.5 |
+| Button / CTA | Barlow Condensed | 16px | 600 | 1 |
+| Nav | Barlow Condensed | 17px | 600 | 1 |
+| Link (body) | Barlow | 16px | 400 | 1.5 |
+| Meta / badge | Barlow Condensed | 12px | 600 | 1 |
+| News title | Oswald | 20px | 600 | 1.5 |
+| Price | Barlow Condensed | 16px | 600 | 1.5 |
+| Footer slogan | Barlow Condensed | 3.429rem | 500 | 4.143rem |
 
 Quy tắc:
 
@@ -109,7 +112,7 @@ Quy tắc:
 - Nền trắng, chữ đen, padding 20px, border `1px solid #DDDDDD`, radius `0`.
 - Ảnh vuông 1:1, full width.
 - Title: Oswald 18/600/20.
-- Price: Oswald 16/600, đỏ `#FF0C09`.
+- Price: Barlow Condensed 16/600, đỏ `#FF0C09`.
 - Hover: border đỏ, shadow `0 4px 12px rgba(255,12,9,0.1)`.
 - Add-to-cart bar: đen, chữ trắng, trượt lên khi hover; trên touch luôn hiện.
 
@@ -121,7 +124,7 @@ Quy tắc:
 
 ### Navigation
 
-- Header nền đen, cao 64px, chữ trắng.
+- Header nền đen, cao 80px (5rem desktop / 60px mobile), chữ trắng.
 - Nav hover/active: đỏ `#FF0C09`, underline đỏ.
 - Cart badge: đỏ, chữ trắng, tròn.
 

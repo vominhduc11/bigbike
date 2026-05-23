@@ -124,11 +124,16 @@
   --bb-text-40: 40px;
 
   --bb-text-hero: 30px;
+  /* WP .slogan-bigbike: Barlow Condensed 500, 3.429rem, line-height 4.143rem, uppercase, white */
+  --bb-text-footer-slogan: 3.429rem;
+  --bb-line-footer-slogan: 4.143rem;
+  --bb-text-footer-slogan-mobile: 2.875rem;
   --bb-text-h1: 32px;
   --bb-text-h2: 24px;
   --bb-text-h3: 18px;
 
   --bb-font-weight-regular: 400;
+  --bb-font-weight-medium: 500;
   --bb-font-weight-semibold: 600;
   --bb-font-weight-bold: 700;
 
@@ -258,9 +263,9 @@
 .bb-price {
   color: var(--bb-product-price);
   font-family: var(--bb-font-cta);
-  font-size: 16px;
-  font-weight: 600;
-  line-height: 24px;
+  font-size: var(--bb-text-base);
+  font-weight: var(--bb-font-weight-semibold);
+  line-height: 1.5;
 }
 
 .bb-price-compare {
@@ -360,6 +365,8 @@
     --bb-text-32: 24px;
     --bb-text-40: 26px;
     --bb-text-22: 18px;
+    --bb-text-footer-slogan: 2.875rem;
+    --bb-line-footer-slogan: 1.2;
     --bb-section-y: 2rem;
   }
 }
