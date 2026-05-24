@@ -9,6 +9,7 @@ import {
   writeOffReceivable,
 } from '../lib/adminApi'
 import { useUrlQuery } from '../lib/useUrlQuery'
+import { PaginationControls } from '../components/PaginationControls'
 import { StatePanel } from '../components/StatePanel'
 import { Modal, FormField } from '../components/layout'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -229,14 +230,12 @@ export function ReceivablesListScreen({ navigate, canRecordPayment, canWriteOff 
               </table>
             </div>
           </div>
-          {pagination && pagination.totalPages > 1 && (
-            <div className="card-foot">
-              <span>{t('receivables.paginationOf', { page: pagination.page, total: pagination.totalPages })}</span>
-              <div className="pager">
-                <button type="button" disabled={pagination.page <= 1} onClick={() => handlePage(pagination.page - 1)}>‹</button>
-                <button type="button" className="active">{pagination.page}</button>
-                <button type="button" disabled={pagination.page >= pagination.totalPages} onClick={() => handlePage(pagination.page + 1)}>›</button>
-              </div>
+          {pagination && (
+            <div className="px-[18px] py-3 border-t border-border">
+              <PaginationControls
+                pagination={pagination}
+                onPageChange={handlePage}
+              />
             </div>
           )}
         </div>

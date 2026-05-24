@@ -173,17 +173,6 @@ function WpCategoryListItem({ category }: { category: Category }) {
         />
       </span>
       <span className="bb-cat-list-desc">{name}</span>
-      <svg
-        className="bb-cat-list-arrow"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        aria-hidden="true"
-      >
-        <circle cx="12" cy="12" r="11" />
-        <path d="M10 7l5 5-5 5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
     </Link>
   );
 }

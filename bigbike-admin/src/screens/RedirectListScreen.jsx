@@ -9,6 +9,7 @@ import {
   fetchRedirects,
   updateRedirect,
 } from '../lib/adminApi'
+import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { showConfirm } from '../lib/confirm'
@@ -394,14 +395,12 @@ export function RedirectListScreen({ canUpdate }) {
               </table>
             </div>
           </div>
-          {pagination && pagination.totalPages > 1 && (
-            <div className="card-foot">
-              <span>{t('common.paginationSummary', { defaultValue: `${items.length} / ${pagination.totalItems}`, count: items.length, total: pagination.totalItems })}</span>
-              <div className="pager">
-                <button type="button" disabled={pagination.page <= 1} onClick={() => updateQuery({ page: pagination.page - 1 })}>‹</button>
-                <button type="button" className="active">{pagination.page}</button>
-                <button type="button" disabled={pagination.page >= pagination.totalPages} onClick={() => updateQuery({ page: pagination.page + 1 })}>›</button>
-              </div>
+          {pagination && (
+            <div className="px-[18px] py-3 border-t border-border">
+              <PaginationControls
+                pagination={pagination}
+                onPageChange={(p) => updateQuery({ page: p })}
+              />
             </div>
           )}
         </div>

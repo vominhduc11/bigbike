@@ -1780,120 +1780,6 @@ body {
 
 /* -- WP Floating Chat ---------------------------------------- */
 
-.bb-chat-float {
-  position: relative;
-  display: flex;
-  align-items: flex-end;
-  gap: 10px;
-  flex-shrink: 0;
-}
-
-.bb-chat-label {
-  background: var(--bb-brand-primary);
-  color: #fff;
-  padding: 7px 13px;
-  border-radius: var(--bb-radius-none);
-  font-size: 0.875rem;
-  font-weight: 500;
-  box-shadow: var(--bb-shadow-brand);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  white-space: nowrap;
-  margin-bottom: 16px;
-}
-
-.bb-chat-popup {
-  position: absolute;
-  bottom: 90px;
-  right: 0;
-  min-width: 300px;
-  background: #fff;
-  padding: 8px 0;
-  border-radius: var(--bb-radius-none);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
-  display: flex;
-  flex-direction: column;
-}
-
-.bb-chat-popup::after {
-  content: "";
-  position: absolute;
-  bottom: -7px;
-  right: 25px;
-  width: 0;
-  height: 0;
-  border-left: 8px solid transparent;
-  border-right: 8px solid transparent;
-  border-top: 8px solid #fff;
-}
-
-.bb-chat-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0.5rem 1rem;
-  color: #333;
-  text-decoration: none;
-  transition: background var(--bb-duration-fast) var(--bb-ease-standard);
-}
-
-.bb-chat-item:hover {
-  background: #f2f2f2;
-}
-
-.bb-chat-item-icon {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.bb-chat-item-icon img,
-.bb-chat-item-icon svg {
-  width: 40px;
-  height: 40px;
-  display: block;
-}
-
-.bb-chat-item-label {
-  height: 40px;
-  line-height: 40px;
-  color: #333;
-  font-size: 1.05em;
-}
-
-.bb-chat-item-label strong {
-  font-weight: 600;
-}
-
-.bb-chat-btn {
-  width: 56px;
-  height: 56px;
-  border: 0;
-  padding: 0;
-  cursor: pointer;
-  border-radius: 50%;
-  background: var(--bb-brand-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow:
-    0 0 0 8px rgba(255, 12, 9, 0.1),
-    0 4px 14px rgba(255, 12, 9, 0.35);
-  text-decoration: none;
-  color: #fff;
-  flex-shrink: 0;
-  transition: background var(--bb-duration-fast) var(--bb-ease-standard), transform var(--bb-duration-fast) var(--bb-ease-standard);
-}
-
-.bb-chat-btn:hover {
-  background: var(--bb-brand-primary-hover);
-  transform: translateY(-2px);
-}
-
-.bb-chat-btn:focus-visible {
-  outline: 2px solid #fff;
-  outline-offset: 3px;
-}
 
 /* -- Responsive ---------------------------------------------- */
 /* BP note: 900px is intentionally NOT the token 1024px.
@@ -2178,12 +2064,12 @@ body {
 .bb-cat-list {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 0;
+  gap: 1px;
+  background: var(--bb-color-gray-300);
   margin-top: 130px;
 }
 
 .bb-cat-list-item {
-  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2191,32 +2077,17 @@ body {
   height: 290px;
   padding: 30px;
   background: var(--bb-color-white);
-  border: 1px solid var(--bb-color-gray-300);
   text-align: center;
   text-decoration: none;
   color: var(--bb-text-primary);
-  overflow: hidden;
-  z-index: 1;
 }
 
-/* Red hover.jpg overlay - appears on hover */
-.bb-cat-list-item::before {
-  content: "";
-  position: absolute;
-  inset: 0;
+.bb-cat-list-item:hover {
   background: url("/wp/cat-hover.jpg") top center / cover no-repeat;
-  opacity: 0;
-  transition: opacity 0.5s ease;
-  z-index: 0;
-}
-.bb-cat-list-item:hover::before {
-  opacity: 1;
 }
 
 .bb-cat-list-img {
   display: block;
-  position: relative;
-  z-index: 1;
   pointer-events: none;
 }
 .bb-cat-list-img img {
@@ -2226,47 +2097,24 @@ body {
   max-width: 90px;
   max-height: 90px;
   object-fit: contain;
-  transition: filter 0.3s ease;
 }
 .bb-cat-list-item:hover .bb-cat-list-img img {
-  filter: brightness(0) invert(1); /* black - white */
+  filter: brightness(0) invert(1);
 }
 
 .bb-cat-list-desc {
   display: block;
-  position: relative;
-  z-index: 1;
   margin-top: 30px;
   font-family: var(--bb-font-body);
   font-weight: 400;
   font-size: 16px;
   line-height: 24px;
   color: #000;
-  transition: color 0.3s ease;
 }
 .bb-cat-list-item:hover .bb-cat-list-desc {
   color: #fff;
 }
 
-/* Chevron arrow - hidden by default, slides down on hover */
-.bb-cat-list-arrow {
-  position: relative;
-  z-index: 1;
-  display: block;
-  width: 24px;
-  height: 0;
-  margin-top: 0;
-  color: #000;
-  opacity: 0;
-  overflow: hidden;
-  transition: opacity 0.3s ease, height 0.3s ease, margin-top 0.3s ease, color 0.3s ease;
-}
-.bb-cat-list-item:hover .bb-cat-list-arrow {
-  color: #fff;
-  height: 24px;
-  margin-top: 30px;
-  opacity: 1;
-}
 
 /* -- Experience Section (articles as big image slides) -- */
 
@@ -3793,18 +3641,6 @@ img, picture, video, svg, canvas { max-width: 100%; }
 
 /* Phase 2-7: product carousel - arrows invisible on touch, cards fill viewport */
 
-/* -- Floating action group: mobile/iOS safe-area handled at group level -- */
-@media (max-width: 480px) {
-  .bb-chat-label { display: none; }
-  .bb-chat-popup { min-width: 260px; }
-  .bb-chat-btn {
-    width: 52px;
-    height: 52px;
-    box-shadow:
-      0 0 0 6px rgba(255, 12, 9, 0.1),
-      0 4px 14px rgba(255, 12, 9, 0.35);
-  }
-}
 
 /* -- Toast: clamp to viewport on small screens -------------- */
 
@@ -5092,7 +4928,6 @@ a:not(.font-cta):hover {
 .bb-query-form,
 .bb-product-card,
 .bb-fp-item,
-.bb-cat-list-item,
 .bb-info-card,
 .bb-info-card-form,
 .bb-nav-card,
@@ -5583,7 +5418,6 @@ input[type="checkbox"] {
 }
 
 .bb-wishlist-btn,
-.bb-chat-btn,
 .bb-chat-item-icon svg circle,
 .bb-contact-icon,
 .bb-site-header .bb-cart-badge,
@@ -5625,52 +5459,10 @@ input[type="checkbox"] {
 }
 
 .bb-cat-list-item {
-  border: 1px solid var(--bb-color-gray-300);
   color: #000000;
 }
 
 
-.bb-chat-label {
-  background: #ff0c09;
-  border-radius: 0;
-  color: #ffffff;
-  box-shadow: 0 4px 12px rgba(255, 12, 9, 0.25);
-}
-
-.bb-chat-popup {
-  background: #ffffff;
-  color: #000000;
-  border: 1px solid #dddddd;
-  border-radius: 0;
-  box-shadow: var(--bb-shadow-dropdown);
-}
-
-.bb-chat-item {
-  color: #333322;
-  font-family: var(--bb-font-link);
-}
-
-.bb-chat-item:hover {
-  background: rgba(255, 12, 9, 0.06);
-}
-
-.bb-chat-btn {
-  width: 56px;
-  height: 56px;
-  background: #ff0c09;
-  box-shadow: 0 4px 12px rgba(255, 12, 9, 0.3);
-}
-
-.bb-chat-btn:hover {
-  background: #cc0a07;
-  filter: none;
-  transform: translateY(-2px);
-}
-
-.bb-chat-btn:focus-visible {
-  outline: 2px solid #ffffff;
-  outline-offset: 3px;
-}
 
 .bb-card,
 .bb-empty-state,
@@ -5760,7 +5552,7 @@ input[type="checkbox"] {
   border-radius: 0;
 }
 
-.bb-theme :is(.bb-round, .bb-chat-btn, .bb-site-header .bb-cart-badge, .bb-wishlist-btn, .bb-contact-icon, .bb-checkout-step-title h3 span, .bb-mini-thumb .qty-badge, .bb-account-avatar, .bb-order-tl-dot, .bb-timeline-dot, .bb-success-icon, .bb-skel--circle, .swiper-pagination-bullet, .bb-slider-dot, .bb-video-play-btn-ring) {
+.bb-theme :is(.bb-round, .bb-site-header .bb-cart-badge, .bb-wishlist-btn, .bb-contact-icon, .bb-checkout-step-title h3 span, .bb-mini-thumb .qty-badge, .bb-account-avatar, .bb-order-tl-dot, .bb-timeline-dot, .bb-success-icon, .bb-skel--circle, .swiper-pagination-bullet, .bb-slider-dot, .bb-video-play-btn-ring) {
   border-radius: 50%;
 }
 
@@ -6561,74 +6353,246 @@ body:has(.bb-home) {
   margin-top: 1rem;
 }
 
+/* Floating contact widget — WP: b24-widget-button-wrapper, flex column-reverse */
 .bb-chat-float {
+  position: relative;
+  direction: ltr;
+  font-family: Arial, sans-serif;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-end;
+}
+
+/* Full-screen overlay — position:fixed escapes parent stacking context */
+.b24-widget-button-shadow {
   position: fixed;
-  right: 24px;
-  bottom: 24px;
-  z-index: 10000;
+  background: rgba(33, 33, 33, 0.3);
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  z-index: 10100;
+  visibility: hidden;
+  opacity: 0;
+}
+
+/* Title — WP: positioned relative, shifts up beside button */
+#sudovn-btn-title,
+.bb-chat-title {
+  background: #00aeef;
+  padding: 2px 5px;
+  border-radius: 3px;
+  color: #fff;
+  font-size: 13px;
+  font-family: Arial, sans-serif;
+  white-space: nowrap;
+  position: relative;
+  bottom: 42px;
+  right: 70px;
+}
+
+/* Social panel — hidden by default, absolute above toggle button */
+#sudovn-btn-social,
+.bb-chat-social {
+  opacity: 0;
+  visibility: hidden;
+  background: #fff;
+  min-width: 300px;
+  padding: 8px 0;
+  position: absolute;
+  bottom: 90px;
+  right: 0;
+  border-radius: 8px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.18);
+}
+
+/* Downward triangle arrow */
+#sudovn-btn-social::before,
+.bb-chat-social::before {
+  content: "";
+  position: absolute;
+  bottom: -7px;
+  right: 25px;
+  display: inline-block;
+  border-right: 8px solid transparent;
+  border-top: 8px solid #fff;
+  border-left: 8px solid transparent;
+}
+
+/* Show state — fade in animation matching WP */
+.b24-widget-button-show {
+  animation: bbWidgetShow 0.3s linear forwards;
+}
+
+@keyframes bbWidgetShow {
+  0%   { opacity: 0; visibility: hidden; }
+  50%  { opacity: 0; visibility: hidden; }
+  100% { opacity: 1; visibility: visible; }
+}
+
+/* Social items — flat list */
+.sudovn-btn-social-item,
+.bb-chat-item {
   display: block;
-  width: auto;
+  color: #333;
+  overflow: hidden;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+}
+
+.sudovn-btn-social-item:hover,
+.bb-chat-item:hover {
+  background: #f2f2f2;
+}
+
+/* Item icon — float left */
+.sudovn-btn-social-item-icon,
+.bb-chat-item-icon {
+  float: left;
+  margin-right: 5px;
+}
+
+.sudovn-btn-social-item-icon img,
+.sudovn-btn-social-item-icon svg,
+.bb-chat-item-icon img,
+.bb-chat-item-icon svg {
+  width: 40px;
+  height: 40px;
+  display: block;
+}
+
+/* Item label */
+.sudovn-btn-social-item-label,
+.bb-chat-item-label {
+  height: 40px;
+  line-height: 40px;
+  color: #333;
+  margin: 0;
+  font-size: 1.1em;
   font-family: Arial, sans-serif;
 }
 
-.bb-chat-title {
-  width: max-content;
-  margin: 0 0 8px auto;
-  padding: 6px 12px;
-  border-radius: 3px;
-  background: #fff;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.18);
-  color: #333;
-  font-size: 13px;
-  line-height: 1.4;
-  white-space: nowrap;
-}
-
-.bb-chat-social {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
-}
-
-.bb-chat-item {
-  display: flex;
-  min-width: 210px;
-  height: 48px;
-  align-items: center;
-  gap: 8px;
-  border-radius: 24px;
-  background: #fff;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.18);
-  color: #333;
-  padding: 4px 14px 4px 4px;
-  text-decoration: none;
-  transition: opacity 0.2s ease;
-}
-
-.bb-chat-item:hover {
-  background: #fff;
-  opacity: 0.86;
-}
-
-.bb-chat-item-icon,
-.bb-chat-item-icon svg {
-  display: block;
-  width: 40px;
-  height: 40px;
-  flex: 0 0 40px;
-}
-
-.bb-chat-item-label {
-  height: auto;
-  color: #333;
-  font-size: 14px;
-  line-height: 1.2;
-  white-space: nowrap;
-}
-
+.sudovn-btn-social-item-label strong,
 .bb-chat-item-label strong {
   font-weight: 700;
+}
+
+/* Circle clip wrapper — WP: b24-widget-button-block */
+.b24-widget-button-block {
+  width: 66px;
+  height: 66px;
+  border-radius: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* Toggle button — WP: CIRCLE 66px (border-radius: 100px, not 10px) */
+.b24-widget-button-inner-block {
+  position: relative;
+  width: 66px;
+  height: 66px;
+  border-radius: 100px;
+  background: #00aeef;
+  border: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.b24-widget-button-inner-block:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
+/* Halo ring — WP: circular, 82px height, calc(100%+16px) width */
+.b24-widget-button-inner-mask {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  width: calc(100% + 16px);
+  height: 82px;
+  min-width: 66px;
+  border-radius: 100px;
+  background: #00aeef;
+  opacity: 0.2;
+  pointer-events: none;
+}
+
+.b24-widget-button-inner-container {
+  position: relative;
+  display: inline-block;
+}
+
+/* Icon items inside button */
+.b24-widget-button-icon-container {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+}
+
+.b24-widget-button-inner-item {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  transition: opacity 0.6s ease-out;
+  opacity: 0;
+}
+
+.b24-widget-button-icon-animation {
+  opacity: 1;
+}
+
+/* === OPEN STATE: .b24-widget-button-bottom added to wrapper === */
+
+/* Button + halo turn gray */
+.b24-widget-button-bottom .b24-widget-button-inner-block,
+.b24-widget-button-bottom .b24-widget-button-inner-mask {
+  background: #d6d6d6 !important;
+  transition: background 0.3s linear;
+}
+
+/* Button scales down */
+.b24-widget-button-bottom .b24-widget-button-inner-container {
+  transform: scale(0.7);
+  transition: transform 0.3s linear;
+}
+
+/* Hide chat icon when open */
+.b24-widget-button-bottom .b24-widget-button-inner-item {
+  display: none;
+}
+
+/* Show close icon when open */
+.b24-widget-button-bottom .b24-widget-button-close {
+  display: flex;
+  opacity: 1;
+  animation: socialRotate 0.4s;
+}
+
+@keyframes socialRotate {
+  0%   { transform: rotate(-90deg); }
+  100% { transform: rotate(0deg); }
+}
+
+/* Load-in scale animation */
+.b24-widget-button-visible {
+  animation: b24-widget-button-visible 1s ease-out forwards 1;
+}
+
+@keyframes b24-widget-button-visible {
+  0%       { transform: scale(0); }
+  30.001%  { transform: scale(1.2); }
+  62.999%  { transform: scale(1); }
+  100%     { transform: scale(1); }
 }
 
 @media (max-width: 1260px) {
@@ -6675,20 +6639,14 @@ body:has(.bb-home) {
 }
 
 @media (max-width: 430px) {
-  .bb-chat-float {
-    right: 12px;
-    bottom: 16px;
-  }
-
-  .bb-chat-title,
-  .bb-chat-item-label {
+  #sudovn-btn-title,
+  .bb-chat-title {
     display: none;
   }
 
-  .bb-chat-item {
-    min-width: 0;
-    width: 48px;
-    padding: 4px;
+  #sudovn-btn-social,
+  .bb-chat-social {
+    min-width: 260px;
   }
 }
 
@@ -7063,9 +7021,10 @@ body:has(.bb-home) {
   width: 52px;
   height: 52px;
   border: 1px solid #000;
-  background-color: #fff;
+  background-color: #f5f5f5;
   background-position: center;
-  background-size: cover;
+  background-repeat: no-repeat;
+  background-size: contain;
   color: #000;
   font-size: 1.5rem;
   font-weight: 600;

@@ -35,7 +35,6 @@ import { showConfirm } from '../lib/confirm'
 import { useAdminList } from '../lib/useAdminList'
 import { useDebounce } from '../lib/useDebounce'
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -337,21 +336,21 @@ function SerialListInput({ onChange, disabled, maxCount }) {
         </label>
         <div className="flex gap-1.5 flex-wrap">
           {hasContent && (
-            <Button variant="outline" size="sm"
+            <button type="button" className="btn btn-outline btn-sm"
               onClick={handleClearAll} disabled={disabled || importing}>
               {t('inventory.stockIn.serialsClearAll')}
-            </Button>
+            </button>
           )}
-          <Button
-            variant="outline"
-            size="sm"
+          <button
+            type="button"
+            className="btn btn-outline btn-sm"
             onClick={() => fileInputRef.current?.click()}
             disabled={disabled || importing}
           >
             {importing
               ? t('inventory.stockIn.serialsImportFileParsing')
               : t('inventory.stockIn.serialsImportFile')}
-          </Button>
+          </button>
           <input
             ref={fileInputRef}
             type="file"
@@ -360,12 +359,12 @@ function SerialListInput({ onChange, disabled, maxCount }) {
             className="hidden"
             onChange={handleFileImport}
           />
-          <Button variant="outline" size="sm"
+          <button type="button" className="btn btn-outline btn-sm"
             onClick={handleTogglePanel} disabled={disabled || importing}>
             {panelOpen
               ? t('inventory.stockIn.serialsBatchClose')
               : t('inventory.stockIn.serialsBatchTitle')}
-          </Button>
+          </button>
         </div>
       </div>
 
@@ -435,14 +434,14 @@ function SerialListInput({ onChange, disabled, maxCount }) {
           <span className="text-xs text-warning flex-1">
             {t('inventory.stockIn.warnSerialDuplicateAutoRemoved', { count: parsed.dupeCount })}
           </span>
-          <Button variant="outline" size="sm"
+          <button type="button" className="btn btn-outline btn-sm"
             onClick={handleCopyErrors} disabled={disabled}>
             {t('inventory.stockIn.serialsCopyErrors')}
-          </Button>
-          <Button variant="outline" size="sm"
+          </button>
+          <button type="button" className="btn btn-outline btn-sm"
             onClick={handleDownloadErrors} disabled={disabled}>
             {t('inventory.stockIn.serialsDownloadErrors')}
-          </Button>
+          </button>
         </div>
       )}
 
@@ -619,12 +618,12 @@ function StockInModal({ item, onSuccess, onClose }) {
       actions={
         <>
           {formError && <p className="field-error mr-auto">{formError}</p>}
-          <Button type="button" variant="outline" size="sm" onClick={onClose} disabled={submitting}>
+          <button type="button" className="btn btn-outline btn-sm" onClick={onClose} disabled={submitting}>
             {t('common.cancel')}
-          </Button>
-          <Button type="submit" form="stock-in-form" size="sm" loading={submitting}>
-            {t('inventory.stockIn.submit')}
-          </Button>
+          </button>
+          <button type="submit" form="stock-in-form" className="btn btn-primary btn-sm" disabled={submitting}>
+            {submitting ? t('common.saving') : t('inventory.stockIn.submit')}
+          </button>
         </>
       }
     >
@@ -719,14 +718,14 @@ function StockInModal({ item, onSuccess, onClose }) {
                   </div>
                 </div>
                 {!item && (
-                  <Button
-                    variant="outline"
-                    size="sm"
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-sm"
                     onClick={handleChangeVariant}
                     disabled={submitting}
                   >
                     {t('inventory.stockIn.changeItem', { defaultValue: 'Đổi sản phẩm' })}
-                  </Button>
+                  </button>
                 )}
               </div>
               {selectedItem.forceOutOfStock && (
@@ -911,10 +910,10 @@ function AddSerialsPanel({ item, onSuccess }) {
       {/* File import */}
       <div className="flex items-center gap-2 mb-2.5 flex-wrap">
         <p className="form-label m-0">Danh sách serial nhận về</p>
-        <Button variant="outline" size="sm"
+        <button type="button" className="btn btn-outline btn-sm"
           onClick={() => fileInputRef.current?.click()} disabled={submitting || parsing}>
           {parsing ? 'Đang đọc file…' : 'Import từ file'}
-        </Button>
+        </button>
         <input ref={fileInputRef} type="file" accept=".csv,.txt,.xlsx,.xls"
           className="hidden" onChange={handleFileImport} />
         <span className="text-xs text-muted-foreground">
@@ -956,27 +955,27 @@ function AddSerialsPanel({ item, onSuccess }) {
               </td>
               <td className="py-1 px-1.5">
                 {rows.length > 1 && (
-                  <Button variant="ghost" size="icon"
-                    onClick={() => removeRow(i)} disabled={submitting} aria-label="Xoá dòng">✕</Button>
+                  <button type="button" className="btn btn-ghost btn-icon"
+                    onClick={() => removeRow(i)} disabled={submitting} aria-label="Xoá dòng">✕</button>
                 )}
               </td>
             </tr>
           ))}
         </tbody>
       </table>
-      <Button variant="outline" className="mb-3.5"
+      <button type="button" className="btn btn-outline mb-3.5"
         onClick={addRow} disabled={submitting}>
         + Thêm dòng
-      </Button>
+      </button>
 
       {error && (
         <p role="alert" className="text-destructive text-xs mb-2">{error}</p>
       )}
 
       <div className="flex gap-2 items-center flex-wrap">
-        <Button type="submit" disabled={submitting || validCount === 0}>
+        <button type="submit" className="btn btn-primary" disabled={submitting || validCount === 0}>
           {submitting ? 'Đang nhập…' : `Nhập ${validCount} serial`}
-        </Button>
+        </button>
       </div>
 
       {/* Import result — skipped rows with reasons */}
@@ -1003,10 +1002,10 @@ function AddSerialsPanel({ item, onSuccess }) {
               ))}
             </tbody>
           </table>
-          <Button variant="outline" size="sm" className="mt-2.5"
+          <button type="button" className="btn btn-outline btn-sm mt-2.5"
             onClick={handleRetrySkipped}>
             Tải lại {importResult.skipped} dòng lỗi để sửa
-          </Button>
+          </button>
         </div>
       )}
 
@@ -1052,8 +1051,8 @@ function SerialQrModal({ serial, onClose }) {
       onClose={onClose}
       actions={
         <>
-          <Button type="button" variant="outline" size="sm" onClick={onClose}>Đóng</Button>
-          <Button type="button" size="sm" onClick={handlePrint} disabled={!qrValue}>In QR</Button>
+          <button type="button" className="btn btn-outline btn-sm" onClick={onClose}>Đóng</button>
+          <button type="button" className="btn btn-primary btn-sm" onClick={handlePrint} disabled={!qrValue}>In QR</button>
         </>
       }
     >
@@ -1189,18 +1188,18 @@ function SerialListPanel({ item, refreshKey }) {
                   <td className="py-1.5 px-2">
                     <div className="flex gap-1 items-center flex-wrap">
                       {/* QR button — always visible */}
-                      <Button variant="outline" size="sm"
+                      <button type="button" className="btn btn-outline btn-sm"
                         title="Xem mã QR"
                         onClick={() => setQrSerial(s)}>
                         QR
-                      </Button>
+                      </button>
 
                       {/* Status change */}
                       {allowedTo.length > 0 && !isChanging && (
-                        <Button variant="outline" size="sm"
+                        <button type="button" className="btn btn-outline btn-sm"
                           onClick={() => { setStatusChangeId(s.id); setStatusChangeValue('') }}>
                           Đổi trạng thái
-                        </Button>
+                        </button>
                       )}
                       {isChanging && (
                         <div className="flex flex-col gap-1">
@@ -1219,16 +1218,16 @@ function SerialListPanel({ item, refreshKey }) {
                             disabled={changing}
                             required={NOTE_REQUIRED_STATUSES.has(statusChangeValue)} />
                           <div className="flex gap-1">
-                            <Button size="sm"
+                            <button type="button" className="btn btn-primary btn-sm"
                               onClick={() => handleStatusChange(s.id)}
                               disabled={changing || !statusChangeValue}>
                               {changing ? '…' : 'Xác nhận'}
-                            </Button>
-                            <Button variant="outline" size="sm"
+                            </button>
+                            <button type="button" className="btn btn-outline btn-sm"
                               onClick={() => { setStatusChangeId(null); setStatusChangeValue(''); setStatusNote('') }}
                               disabled={changing}>
                               Huỷ
-                            </Button>
+                            </button>
                           </div>
                         </div>
                       )}
@@ -1372,7 +1371,7 @@ function InventoryGroupRow({ group, isExpanded, onToggle, onStockIn, onSerialMan
 
         <td className="py-2 px-3 align-middle">
           <div className="flex gap-1.5 flex-wrap">
-            <Button variant="outline" size="sm" className="whitespace-nowrap"
+            <button type="button" className="btn btn-outline btn-sm whitespace-nowrap"
               onClick={() => onViewHistory({
                 scope: 'product',
                 productId: group.productId,
@@ -1380,18 +1379,18 @@ function InventoryGroupRow({ group, isExpanded, onToggle, onStockIn, onSerialMan
                 variantName: null,
               })}>
               Lịch sử
-            </Button>
+            </button>
             {canUpdate && group.isNoVariant && (
               (group.trackSerials || serialOnlyMode) ? (
-                <Button variant="outline" size="sm" className="whitespace-nowrap"
+                <button type="button" className="btn btn-outline btn-sm whitespace-nowrap"
                   onClick={() => onSerialManage(buildProductItem())}>
                   Quản lý serial
-                </Button>
+                </button>
               ) : (
-                <Button variant="outline" size="sm" className="whitespace-nowrap"
+                <button type="button" className="btn btn-outline btn-sm whitespace-nowrap"
                   onClick={() => onStockIn(buildProductItem())}>
                   Nhập hàng
-                </Button>
+                </button>
               )
             )}
           </div>
@@ -1437,7 +1436,7 @@ function InventoryGroupRow({ group, isExpanded, onToggle, onStockIn, onSerialMan
 
             <td className="py-1.5 px-3 align-middle">
               <div className="flex gap-1.5 flex-wrap">
-                <Button variant="outline" size="sm" className="whitespace-nowrap"
+                <button type="button" className="btn btn-outline btn-sm whitespace-nowrap"
                   onClick={() => onViewHistory({
                     scope: 'variant',
                     variantId: variant.variantId,
@@ -1445,17 +1444,17 @@ function InventoryGroupRow({ group, isExpanded, onToggle, onStockIn, onSerialMan
                     variantName: variant.variantName,
                   })}>
                   Lịch sử
-                </Button>
+                </button>
                 {canUpdate && ((variant.trackSerials || serialOnlyMode) ? (
-                  <Button variant="outline" size="sm" className="whitespace-nowrap"
+                  <button type="button" className="btn btn-outline btn-sm whitespace-nowrap"
                     onClick={() => onSerialManage(item)}>
                     Quản lý serial
-                  </Button>
+                  </button>
                 ) : (
-                  <Button variant="outline" size="sm" className="whitespace-nowrap"
+                  <button type="button" className="btn btn-outline btn-sm whitespace-nowrap"
                     onClick={() => onStockIn(item)}>
                     Nhập hàng
-                  </Button>
+                  </button>
                 ))}
               </div>
             </td>
@@ -1724,15 +1723,7 @@ export function InventoryScreen({ canUpdate = false }) {
       <SummaryBanner summary={summary} />
 
       {/* Derived-field info banner — stockState is auto-computed. */}
-      <div
-        style={{
-          background: 'var(--admin-color-status-info-bg)',
-          border: '1px solid var(--admin-color-status-info-border)',
-          borderRadius: 10, padding: '12px 16px', marginBottom: 16,
-          display: 'flex', gap: 12, alignItems: 'flex-start',
-          fontSize: 13, color: 'var(--admin-color-status-info-text)',
-        }}
-      >
+      <div className="inv-info-banner">
         <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: 2 }} />
         <div>
           <strong style={{ display: 'block', marginBottom: 2 }}>stockState luôn được tự động tính</strong>

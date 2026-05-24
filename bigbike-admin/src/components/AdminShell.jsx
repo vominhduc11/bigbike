@@ -3,6 +3,7 @@ import { ChevronDown, HelpCircle, LogOut, Maximize2, Menu, Minimize2, X } from '
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../lib/auth'
 import { useNavBadges } from '../lib/useNavBadges'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { ConfirmDialogProvider } from './ConfirmDialog'
 import { GlobalSearch } from './GlobalSearch'
 import { LanguageSwitcher } from './LanguageSwitcher'
@@ -189,36 +190,44 @@ export function AdminShell({
           </div>
 
           <nav className="sidebar-nav" aria-label={t('nav.mainNav')}>
-            {navGroups.map((group) => (
-              <div key={group.groupKey} className="nav-group">
-                <div className="nav-group-label">{group.label}</div>
-                {group.items.map((item) => {
-                  const Icon = item.icon
-                  const active = isRouteActive(activePath, item.path)
-                  const badgeCount = navBadges[item.path] || 0
-                  return (
-                    <a
-                      key={item.path}
-                      href={item.path}
-                      className={active ? 'nav-link active' : 'nav-link'}
-                      onClick={(e) => handleNavClick(e, item.path)}
-                      aria-current={active ? 'page' : undefined}
-                    >
-                      {Icon && <Icon size={15} strokeWidth={active ? 2.25 : 1.75} aria-hidden="true" />}
-                      <span>{item.label}</span>
-                      {badgeCount > 0 && (
-                        <span
-                          className={item.path === '/admin/orders' ? 'nav-badge' : 'nav-badge muted'}
-                          aria-label={t('nav.pendingBadge', { count: badgeCount })}
-                        >
-                          {badgeCount > 99 ? '99+' : badgeCount}
-                        </span>
-                      )}
-                    </a>
-                  )
-                })}
-              </div>
-            ))}
+            <TooltipProvider delayDuration={400}>
+              {navGroups.map((group) => (
+                <div key={group.groupKey} className="nav-group">
+                  <div className="nav-group-label">{group.label}</div>
+                  {group.items.map((item) => {
+                    const Icon = item.icon
+                    const active = isRouteActive(activePath, item.path)
+                    const badgeCount = navBadges[item.path] || 0
+                    return (
+                      <Tooltip key={item.path}>
+                        <TooltipTrigger asChild>
+                          <a
+                            href={item.path}
+                            className={active ? 'nav-link active' : 'nav-link'}
+                            onClick={(e) => handleNavClick(e, item.path)}
+                            aria-current={active ? 'page' : undefined}
+                          >
+                            {Icon && <Icon size={15} strokeWidth={active ? 2.25 : 1.75} aria-hidden="true" />}
+                            <span>{item.label}</span>
+                            {badgeCount > 0 && (
+                              <span
+                                className={item.path === '/admin/orders' ? 'nav-badge' : 'nav-badge muted'}
+                                aria-label={t('nav.pendingBadge', { count: badgeCount })}
+                              >
+                                {badgeCount > 99 ? '99+' : badgeCount}
+                              </span>
+                            )}
+                          </a>
+                        </TooltipTrigger>
+                        <TooltipContent side="right">
+                          {item.label}{badgeCount > 0 ? ` (${badgeCount})` : ''}
+                        </TooltipContent>
+                      </Tooltip>
+                    )
+                  })}
+                </div>
+              ))}
+            </TooltipProvider>
           </nav>
 
           {/* Sidebar footer: signed-in admin */}

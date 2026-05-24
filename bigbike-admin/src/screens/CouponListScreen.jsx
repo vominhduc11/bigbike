@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Copy, Pencil, Plus, Search, Send } from 'lucide-react'
+import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { createCoupon, fetchCoupons, mapValidationErrors, sendBulkCouponGift, updateCoupon, updateCouponStatus } from '../lib/adminApi'
@@ -10,7 +11,6 @@ import { useDebounce } from '../lib/useDebounce'
 import { Alert } from '@/components/ui/alert'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
 
 // Coupon status → prototype badge palette.
 const STATUS_BADGE = { ACTIVE: 'badge-success', INACTIVE: 'badge-neutral', EXPIRED: 'badge-danger', ARCHIVED: 'badge-neutral' }
@@ -301,10 +301,10 @@ export function CouponListScreen({ canUpdate }) {
               </Alert>
             )}
             <div className="mt-4 flex gap-2">
-              <Button type="submit" loading={bulkSaving}>{bulkConfirm ? 'Xác nhận gửi' : 'Tiếp tục'}</Button>
-              <Button type="button" variant="outline"
+              <button type="submit" className="btn btn-primary" disabled={bulkSaving}>{bulkConfirm ? 'Xác nhận gửi' : 'Tiếp tục'}</button>
+              <button type="button" className="btn btn-outline"
                 onClick={() => { setBulkOpen(false); setBulkForm(EMPTY_BULK_FORM); setBulkConfirm(false) }}
-                disabled={bulkSaving}>Hủy</Button>
+                disabled={bulkSaving}>Hủy</button>
             </div>
           </form>
         </div>
@@ -366,8 +366,8 @@ export function CouponListScreen({ canUpdate }) {
               </label>
             </div>
             <div className="mt-4 flex gap-2">
-              <Button type="submit" loading={formSaving}>{t('coupons.createBtn')}</Button>
-              <Button type="button" variant="outline" onClick={() => { setShowForm(false); setForm(EMPTY_FORM); setFormError(''); setFormFieldErrors({}) }}>{t('common.cancel')}</Button>
+              <button type="submit" className="btn btn-primary" disabled={formSaving}>{formSaving ? t('common.saving') : t('coupons.createBtn')}</button>
+              <button type="button" className="btn btn-outline" onClick={() => { setShowForm(false); setForm(EMPTY_FORM); setFormError(''); setFormFieldErrors({}) }}>{t('common.cancel')}</button>
             </div>
           </form>
         </div>
@@ -419,8 +419,8 @@ export function CouponListScreen({ canUpdate }) {
               </label>
             </div>
             <div className="mt-4 flex gap-2">
-              <Button type="submit" disabled={editSaving}>{editSaving ? t('common.saving') : t('coupons.saveBtn')}</Button>
-              <Button type="button" variant="outline" onClick={() => setEditCoupon(null)}>{t('common.cancel')}</Button>
+              <button type="submit" className="btn btn-primary" disabled={editSaving}>{editSaving ? t('common.saving') : t('coupons.saveBtn')}</button>
+              <button type="button" className="btn btn-outline" onClick={() => setEditCoupon(null)}>{t('common.cancel')}</button>
             </div>
           </form>
         </div>
@@ -532,14 +532,12 @@ export function CouponListScreen({ canUpdate }) {
               </table>
             </div>
           </div>
-          {state.status === 'success' && state.pagination && state.pagination.totalPages > 1 && (
-            <div className="card-foot">
-              <span>{t('common.paginationSummary', { defaultValue: `${items.length} mã`, count: items.length, total: state.pagination.totalItems })}</span>
-              <div className="pager">
-                <button type="button" disabled={state.pagination.page <= 1} onClick={() => updateQuery({ page: state.pagination.page - 1 })}>‹</button>
-                <button type="button" className="active">{state.pagination.page}</button>
-                <button type="button" disabled={state.pagination.page >= state.pagination.totalPages} onClick={() => updateQuery({ page: state.pagination.page + 1 })}>›</button>
-              </div>
+          {state.status === 'success' && state.pagination && (
+            <div className="px-[18px] py-3 border-t border-border">
+              <PaginationControls
+                pagination={state.pagination}
+                onPageChange={(p) => updateQuery({ page: p })}
+              />
             </div>
           )}
         </div>

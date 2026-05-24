@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Download, File, FileText, Pencil, Plus, Search } from 'lucide-react'
+import { PaginationControls } from '../components/PaginationControls'
 import { PublishStatusBadge } from '../components/StatusBadge'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
@@ -223,19 +224,11 @@ export function ContentListScreen({ navigate, canUpdate }) {
             </div>
           </div>
           {state.status === 'success' && pagination && (
-            <div className="card-foot">
-              <span>
-                {t('common.paginationSummary', {
-                  defaultValue: `Hiển thị ${items.length} trong ${pagination.totalItems} nội dung`,
-                  count: items.length,
-                  total: pagination.totalItems,
-                })}
-              </span>
-              <div className="pager">
-                <button type="button" disabled={pagination.page <= 1} onClick={() => updateQuery({ page: pagination.page - 1 })}>‹</button>
-                <button type="button" className="active">{pagination.page}</button>
-                <button type="button" disabled={pagination.page >= pagination.totalPages} onClick={() => updateQuery({ page: pagination.page + 1 })}>›</button>
-              </div>
+            <div className="px-[18px] py-3 border-t border-border">
+              <PaginationControls
+                pagination={pagination}
+                onPageChange={(p) => updateQuery({ page: p })}
+              />
             </div>
           )}
         </div>

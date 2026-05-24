@@ -11,13 +11,13 @@ import {
 import type { ProductVariant } from "@/lib/contracts/public";
 import { cn } from "@/lib/utils";
 
-type VariantSelectorProps = {
+type VariantSelectorProps = Readonly<{
   variants: ProductVariant[];
-  selectedOptions: Record<string, string>;
+  selectedOptions: Readonly<Record<string, string>>;
   onSelectOption: (attributeName: string, value: string) => void;
   disabled?: boolean;
   isLoading?: boolean;
-};
+}>;
 
 const SIZE_ORDER: Record<string, number> = {
   xxxs: 0,
@@ -69,11 +69,17 @@ type SwatchInfo = {
   value: string;
   colorHex: string | null;
   swatchImageUrl: string | null;
+  variantImageUrl: string | null;
 };
+
+function hasSwatch(info: SwatchInfo): boolean {
+  return Boolean(info.colorHex || info.swatchImageUrl || info.variantImageUrl);
+}
 
 function buildOptionGroups(variants: ProductVariant[], attributeFallback: string) {
   const groups = new Map<string, Map<string, SwatchInfo>>();
   for (const variant of variants) {
+    const variantImg = variant.gallery?.[0]?.url ?? variant.image?.url ?? null;
     for (const opt of variant.options ?? []) {
       const name = safeText(opt.name, attributeFallback).trim();
       const value = safeText(opt.value, "").trim();
@@ -85,24 +91,21 @@ function buildOptionGroups(variants: ProductVariant[], attributeFallback: string
         value,
         colorHex: opt.colorHex ?? null,
         swatchImageUrl: opt.swatchImageUrl ?? null,
+        variantImageUrl: isColorAttribute(name) ? variantImg : null,
       };
-      if (!existing) {
-        valueMap.set(value, candidate);
-      } else if (
-        !existing.colorHex &&
-        !existing.swatchImageUrl &&
-        (candidate.colorHex || candidate.swatchImageUrl)
-      ) {
+      if (!existing || (!hasSwatch(existing) && hasSwatch(candidate))) {
         valueMap.set(value, candidate);
       }
     }
   }
 
-  return Array.from(groups.entries()).map(([name, valueMap]) => {
-    const values = Array.from(valueMap.values());
-    if (isSizeAttribute(name)) values.sort((a, b) => compareSizeValues(a.value, b.value));
-    return { name, values };
-  });
+  return Array.from(groups.entries()).map(toOptionGroup);
+}
+
+function toOptionGroup([name, valueMap]: [string, Map<string, SwatchInfo>]) {
+  const values = Array.from(valueMap.values());
+  if (isSizeAttribute(name)) values.sort((a, b) => compareSizeValues(a.value, b.value));
+  return { name, values };
 }
 
 export function VariantSelector({
@@ -133,19 +136,20 @@ export function VariantSelector({
               </div>
               <div className="variation-radios">
                 {group.values.map((info) => {
-                  const { value, colorHex, swatchImageUrl } = info;
+                  const { value, colorHex, swatchImageUrl, variantImageUrl } = info;
                   const probeSelection = { ...selectedOptions, [group.name]: value };
                   const candidate =
                     findMatchingVariant(variants, probeSelection, { onlyAvailable: true }) ??
                     findMatchingVariant(variants, probeSelection);
                   const active = normalizeValue(currentValue) === normalizeValue(value);
                   const available = Boolean(candidate?.isAvailable);
-                  const swatchStyle: CSSProperties | undefined =
-                    isColorGroup && swatchImageUrl
-                      ? { backgroundImage: `url(${swatchImageUrl})` }
-                      : isColorGroup && colorHex
-                        ? { backgroundColor: colorHex }
-                        : undefined;
+                  const effectiveImageUrl = swatchImageUrl || variantImageUrl;
+                  let swatchStyle: CSSProperties | undefined;
+                  if (isColorGroup && effectiveImageUrl) {
+                    swatchStyle = { backgroundImage: `url(${effectiveImageUrl})` };
+                  } else if (isColorGroup && colorHex) {
+                    swatchStyle = { backgroundColor: colorHex };
+                  }
 
                   return (
                     <button

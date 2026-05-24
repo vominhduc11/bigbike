@@ -136,7 +136,7 @@ function ExperienceSlide({
           "bb-exp-slide-content mt-[-32%] transform-gpu transition-[opacity,transform] duration-[700ms] ease-[ease] will-change-[opacity,transform]",
           isActive
             ? "pointer-events-auto translate-y-0 opacity-100"
-            : "pointer-events-none translate-y-10 opacity-0",
+            : "pointer-events-none translate-y-10 opacity-0 max-[767px]:translate-y-0 max-[767px]:opacity-100",
         )}
         aria-hidden={!isActive}
       >

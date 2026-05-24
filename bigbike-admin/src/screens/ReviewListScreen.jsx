@@ -8,6 +8,7 @@ import { deleteReview, fetchReviews, updateReviewStatus } from '../lib/adminApi'
 import { formatDateTime, formatText } from '../lib/formatters'
 import { useDebounce } from '../lib/useDebounce'
 import { Alert } from '@/components/ui/alert'
+import { PaginationControls } from '../components/PaginationControls'
 
 const STATUS_OPTIONS = ['ALL', 'APPROVED', 'PENDING', 'SPAM', 'TRASH']
 const STATUS_BADGE = { APPROVED: 'badge-success', PENDING: 'badge-warn', SPAM: 'badge-neutral', TRASH: 'badge-neutral' }
@@ -314,13 +315,12 @@ export function ReviewListScreen({ navigate, canUpdate }) {
             )
           })}
 
-          {state.status === 'success' && state.pagination && state.pagination.totalPages > 1 && (
-            <div className="flex justify-end">
-              <div className="pager">
-                <button type="button" disabled={state.pagination.page <= 1} onClick={() => updateQuery({ page: state.pagination.page - 1 })}>‹</button>
-                <button type="button" className="active">{state.pagination.page}</button>
-                <button type="button" disabled={state.pagination.page >= state.pagination.totalPages} onClick={() => updateQuery({ page: state.pagination.page + 1 })}>›</button>
-              </div>
+          {state.status === 'success' && state.pagination && (
+            <div className="px-[18px] py-3 border-t border-border">
+              <PaginationControls
+                pagination={state.pagination}
+                onPageChange={(p) => updateQuery({ page: p })}
+              />
             </div>
           )}
         </div>

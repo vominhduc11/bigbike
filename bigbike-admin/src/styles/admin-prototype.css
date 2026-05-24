@@ -143,7 +143,7 @@
   background: var(--admin-color-background-page);
 }
 
-.bb-proto .screen-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+.bb-proto .screen-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 12px; flex-wrap: wrap; }
 .bb-proto .screen-header .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; color: var(--admin-color-brand-red); text-transform: uppercase; margin: 0 0 6px; }
 .bb-proto .screen-header h1 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.01em; color: var(--admin-color-text-primary); }
 .bb-proto .screen-header .desc { margin: 6px 0 0; color: var(--admin-color-text-muted); font-size: 14px; max-width: 540px; }
@@ -804,4 +804,44 @@
 .bb-proto .icon-btn.focus-toggle-active {
   background: var(--admin-color-brand-red-subtle);
   color: var(--admin-color-brand-red);
+}
+
+/* ── Compact sidebar (901–1200px): icon-only, 64px wide ───────────────────── */
+@media (min-width: 901px) and (max-width: 1200px) {
+  .bb-proto .sidebar-brand {
+    padding: 16px 0;
+    justify-content: center;
+  }
+  .bb-proto .sidebar-brand .eyebrow,
+  .bb-proto .sidebar-brand h1,
+  .bb-proto .sidebar-brand .build {
+    display: none;
+  }
+  .bb-proto .nav-group-label {
+    display: none;
+  }
+  .bb-proto .nav-link {
+    padding: 0;
+    justify-content: center;
+    height: 40px;
+    position: relative;
+  }
+  .bb-proto .nav-link > span:not(.nav-badge) {
+    display: none;
+  }
+  .bb-proto .nav-badge {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    min-width: 14px;
+    height: 14px;
+    padding: 0 3px;
+    font-size: 8px;
+  }
+  .bb-proto .sidebar-foot {
+    display: none;
+  }
+  .bb-proto .sidebar-nav {
+    padding: 6px 4px;
+  }
 }

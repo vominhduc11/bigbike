@@ -123,6 +123,7 @@
     "products": "Sản phẩm",
     "categories": "Danh mục",
     "brands": "Thương hiệu",
+    "attributes": "Thuộc tính màu",
     "content": "Nội dung",
     "orders": "Đơn hàng",
     "customers": "Khách hàng",
@@ -427,7 +428,6 @@
       "brandPlaceholder": "— Không chọn —",
       "shortDescription": "Mô tả ngắn",
       "description": "Mô tả",
-      "promotionContent": "Nội dung khuyến mãi",
       "retailPrice": "Giá niêm yết (VND) *",
       "compareAtPrice": "Giá so sánh (VND)",
       "salePrice": "Giá sale (VND)",
@@ -624,14 +624,18 @@
       "matrix": {
         "defaultColor": "Màu sắc",
         "defaultSize": "Size",
-        "title": "Sinh ma trận biến thể",
+        "title": "Tạo nhanh biến thể",
         "generateButton": "Sinh {{count}} biến thể",
+        "generateButtonEmpty": "Nhập giá trị để sinh biến thể",
         "description": "Nhập thuộc tính và giá trị (cách nhau bằng dấu phẩy). Hệ thống tạo tất cả tổ hợp tự động.",
         "attributePlaceholder": "Thuộc tính (vd: Màu sắc)",
         "valuesPlaceholder": "Giá trị (vd: Đỏ, Xanh, Trắng)",
+        "valuesHelp": "Nhập giá trị cách nhau bằng dấu phẩy. Ví dụ: Đỏ, Xanh, Trắng",
+        "rowValuesEmpty": "Nhập ít nhất 1 giá trị cho thuộc tính này",
         "estimate": "Sẽ tạo {{count}} biến thể.",
         "estimateWarn": "Sẽ tạo {{count}} biến thể — khá nhiều, kiểm tra lại.",
-        "estimateHardCap": "{{count}} biến thể vượt giới hạn tối đa {{cap}}. Giảm số giá trị để tiếp tục."
+        "estimateHardCap": "{{count}} biến thể vượt giới hạn tối đa {{cap}}. Giảm số giá trị để tiếp tục.",
+        "skipDuplicates": "Đã bỏ qua {{count}} biến thể trùng với biến thể hiện có."
       },
       "draftRecovery": {
         "found": "Phát hiện bản nháp chưa lưu lúc {{time}}.",
@@ -653,8 +657,6 @@
       "shortDescriptionPlaceholder": "Vd: Mũ fullface AGV K1S đạt chuẩn ECE 22.06, vỏ composite 1.5kg, kính chống xước, phù hợp đi đường trường…",
       "shortDescriptionHint": "Hiển thị dưới tiêu đề ở trang chi tiết và trong danh sách sản phẩm. Tối thiểu 20 ký tự, lý tưởng 80–160 ký tự.",
       "descriptionPlaceholder": "Nhập mô tả chi tiết sản phẩm...",
-      "promotionContentPlaceholder": "Nhập nội dung khuyến mãi hiển thị ở tab \"Khuyến mãi\" trên trang sản phẩm...",
-      "promotionContentHint": "Hiển thị ở tab \"Khuyến mãi\" đầu tiên trên trang chi tiết sản phẩm. Để trống thì ẩn tab này.",
       "homepageNone": "Không hiển thị trang chủ",
       "homepageFeaturedGrid": "Sản phẩm nổi bật — grid trên trang chủ (tối đa 3)",
       "homepageRecommendedCarousel": "Gợi ý dành cho bạn — carousel trên trang chủ (tối đa 10)",
@@ -2632,5 +2634,27 @@
     "loadError": "Không tải được danh sách",
     "empty": "Chưa có email đăng ký",
     "emptyDesc": "Email khách đăng ký nhận tin sẽ hiển thị ở đây."
+  },
+  "attributes": {
+    "eyebrow": "Catalog",
+    "title": "Thuộc tính màu",
+    "description": "Quản lý swatch ảnh và mã màu cho các thuộc tính màu sắc sản phẩm.",
+    "colPreview": "Preview",
+    "colLabel": "Tên màu",
+    "colHex": "Mã màu",
+    "colImage": "Ảnh swatch",
+    "colName": "Tên",
+    "colCode": "Code",
+    "colKind": "Loại",
+    "colCount": "Số giá trị",
+    "values": "màu",
+    "btnSelectImage": "Chọn ảnh",
+    "btnSave": "Lưu",
+    "successUpdate": "Đã lưu swatch",
+    "errSaveFailed": "Lưu thất bại",
+    "otherTitle": "Thuộc tính khác",
+    "noColorAttrs": "Chưa có thuộc tính màu",
+    "noColorAttrsDesc": "Các thuộc tính có kind=\"color\" sẽ hiển thị ở đây để quản lý swatch.",
+    "loadValuesError": "Không tải được danh sách màu."
   }
 }

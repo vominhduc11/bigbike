@@ -891,23 +891,38 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     }
 
     /**
-     * Resolve a WP attachment ID stored in {@code attribute_values.swatch_image_id}
-     * to a public URL via the media table. Returns null when the id is
-     * blank, non-numeric, or no matching media row exists. Lookup failures
-     * are silent — a missing swatch should not block the variant render.
+     * Resolve a value stored in {@code attribute_values.swatch_image_id} to a public URL.
+     * Handles three formats (newest-first precedence):
+     * - Direct URL (new admin uploads store the publicUrl directly)
+     * - UUID string (media entity primary key)
+     * - Numeric string (legacy WP attachment ID from migration importer)
+     * Returns null silently when the value is blank or unresolvable.
      */
     private String resolveSwatchUrl(String swatchImageId) {
         if (swatchImageId == null || swatchImageId.isBlank()) return null;
-        final long legacyId;
+        final String trimmed = swatchImageId.trim();
+        // Direct URL — new admin uploads store publicUrl in this column
+        if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed;
+        // UUID lookup — media entity primary key
         try {
-            legacyId = Long.parseLong(swatchImageId.trim());
+            java.util.UUID uuid = java.util.UUID.fromString(trimmed);
+            return mediaJpaRepository.findById(uuid)
+                    .map(MediaEntity::getPublicUrl)
+                    .filter(url -> url != null && !url.isBlank())
+                    .orElse(null);
+        } catch (IllegalArgumentException ignored) {
+            // not a UUID — fall through
+        }
+        // Fallback: legacy WP attachment numeric ID
+        try {
+            long legacyId = Long.parseLong(trimmed);
+            return mediaJpaRepository.findByLegacyId(legacyId)
+                    .map(MediaEntity::getPublicUrl)
+                    .filter(url -> url != null && !url.isBlank())
+                    .orElse(null);
         } catch (NumberFormatException e) {
             return null;
         }
-        return mediaJpaRepository.findByLegacyId(legacyId)
-                .map(MediaEntity::getPublicUrl)
-                .filter(url -> url != null && !url.isBlank())
-                .orElse(null);
     }
 
     private CategorySummary toCategorySummary(CategoryEntity entity) {
