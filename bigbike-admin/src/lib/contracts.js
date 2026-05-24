@@ -183,7 +183,14 @@ function normalizeVariantOption(input) {
   const name = toTrimmedString(input.name || input.optionName)
   const value = toTrimmedString(input.value || input.optionValue)
   if (!name || !value) return undefined
-  return { name, value }
+  return {
+    name,
+    value,
+    attributeValueId: toTrimmedString(input.attributeValueId) || null,
+    colorHex: toTrimmedString(input.colorHex) || null,
+    swatchImageUrl: toTrimmedString(input.swatchImageUrl) || null,
+    swatchImageId: toTrimmedString(input.swatchImageId) || null,
+  }
 }
 
 function normalizeVariant(input) {

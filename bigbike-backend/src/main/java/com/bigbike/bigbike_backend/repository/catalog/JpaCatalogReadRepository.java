@@ -856,17 +856,37 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         AttributeEntity attribute = option.getAttribute();
         AttributeValueEntity value = option.getAttributeValue();
 
-        // Lazy resolution path: only fires when the FK wasn't populated.
-        // Cheap because Hibernate caches single-row PK reads and most
-        // products only have a handful of options.
+        // Lazy resolution path: only fires when the FK wasn't populated at write time.
+        // Three fallbacks mirror AdminCatalogMutationService.linkAttributeReferences():
+        //   1. findByCode  — exact WP taxonomy slug (e.g. "pa_color")
+        //   2. findByNameIgnoreCase — human-typed label (e.g. "Màu sắc")
+        //   3. slug normalisation  — strips diacritics so "Đen" matches stored slug "den"
         if (attribute == null && option.getOptionName() != null && !option.getOptionName().isBlank()) {
             attribute = attributeJpaRepository.findByCode(option.getOptionName()).orElse(null);
+            if (attribute == null) {
+                attribute = attributeJpaRepository.findByNameIgnoreCase(option.getOptionName()).orElse(null);
+            }
         }
         if (value == null && attribute != null
                 && option.getOptionValue() != null && !option.getOptionValue().isBlank()) {
             value = attributeValueJpaRepository
                     .findByAttributeIdAndSlug(attribute.getId(), option.getOptionValue())
                     .orElse(null);
+            if (value == null) {
+                String normalizedSlug = normalizeVariantToken(option.getOptionValue());
+                if (!normalizedSlug.isEmpty()) {
+                    value = attributeValueJpaRepository
+                            .findByAttributeIdAndSlug(attribute.getId(), normalizedSlug)
+                            .orElse(null);
+                }
+            }
+        }
+
+        // Priority 1: direct swatch picked by admin on this variant option row
+        String resolvedSwatchUrl = resolveSwatchUrl(option.getSwatchImageId());
+        // Priority 2: dictionary swatch from attribute_values (existing behaviour)
+        if (resolvedSwatchUrl == null && value != null) {
+            resolvedSwatchUrl = resolveSwatchUrl(value.getSwatchImageId());
         }
 
         return new ProductVariantOption(
@@ -879,7 +899,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         option.getOptionValue()
                 ),
                 value != null ? value.getColorHex() : null,
-                value != null ? resolveSwatchUrl(value.getSwatchImageId()) : null
+                resolvedSwatchUrl
         );
     }
 

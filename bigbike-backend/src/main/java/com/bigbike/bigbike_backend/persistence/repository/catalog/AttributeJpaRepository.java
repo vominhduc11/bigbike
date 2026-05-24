@@ -7,5 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface AttributeJpaRepository extends JpaRepository<AttributeEntity, String> {
     Optional<AttributeEntity> findByCode(String code);
+    Optional<AttributeEntity> findByNameIgnoreCase(String name);
     List<AttributeEntity> findAllByOrderByNameAsc();
 }

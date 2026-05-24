@@ -43,4 +43,7 @@ public class ProductVariantOptionEntity {
     @Column(nullable = false)
     private String optionValue;
 
+    @Column(name = "swatch_image_id")
+    private String swatchImageId;
+
 }

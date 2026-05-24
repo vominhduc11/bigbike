@@ -7,6 +7,8 @@ import {
 } from 'lucide-react'
 import {
   createProduct,
+  fetchAttributes,
+  fetchAttributeValues,
   fetchBrands,
   fetchCategoryTree,
   fetchProductDetail,
@@ -233,7 +235,14 @@ function buildFormFromItem(item) {
     name: v.name || '',
     imageUrl: v.image?.url || '',
     isAvailable: v.isAvailable !== false,
-    options: (v.options || []).map((o) => ({ name: o.name || '', value: o.value || '' })),
+    options: (v.options || []).map((o) => ({
+      name: o.name || '',
+      value: o.value || '',
+      attributeValueId: o.attributeValueId || null,
+      _colorHex: o.colorHex || null,
+      _swatchImageUrl: o.swatchImageUrl || null,
+      _directSwatchImageId: o.swatchImageId || null,
+    })),
     gallery: (v.gallery || []).map((img) => ({ url: img.url || '' })),
   })))
 
@@ -464,7 +473,13 @@ function toPayload(form) {
       sortOrder: i,
       options: v.options
         .filter((o) => o.name.trim() && o.value.trim())
-        .map((o, j) => ({ optionName: o.name.trim(), optionValue: o.value.trim(), sortOrder: j })),
+        .map((o, j) => ({
+          optionName: o.name.trim(),
+          optionValue: o.value.trim(),
+          ...(o.attributeValueId ? { attributeValueId: o.attributeValueId } : {}),
+          ...(o._directSwatchImageId ? { swatchImageId: o._directSwatchImageId } : {}),
+          sortOrder: j,
+        })),
       gallery: shouldSendGallery ? gallery : [],
     }
   })
@@ -940,45 +955,171 @@ function FaqEditor({ items, onChange, disabled, validationErrors, contentLang = 
 
 function VariantOptionsEditor({ options, onChange, disabled }) {
   const { t } = useTranslation()
-  function updateOption(i, field, value) {
-    const next = options.map((o, idx) => idx === i ? { ...o, [field]: value } : o)
-    onChange(next)
+  const loadedAttrIds = useRef(new Set())
+  const [attrValuesById, setAttrValuesById] = useState({})
+
+  const { data: attributes = [] } = useQuery({
+    queryKey: ['attributes'],
+    queryFn: fetchAttributes,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  // Resolve an attribute from the catalog by matching option name against code or name
+  function resolveAttr(optionName) {
+    const norm = normalizeVariantToken(optionName)
+    return attributes.find(
+      (a) => normalizeVariantToken(a.name) === norm || normalizeVariantToken(a.code) === norm,
+    ) ?? null
   }
+
+  // Eagerly load attribute values for color options whenever options/catalog change
+  useEffect(() => {
+    if (!attributes.length) return
+    options.forEach((o) => {
+      const attr = resolveAttr(o.name)
+      if (!attr || attr.kind !== 'color') return
+      if (loadedAttrIds.current.has(attr.id)) return
+      loadedAttrIds.current.add(attr.id)
+      fetchAttributeValues(attr.id).then((values) =>
+        setAttrValuesById((prev) => ({ ...prev, [attr.id]: values })),
+      )
+    })
+  }, [options, attributes]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  function updateOptionFields(i, updates) {
+    onChange(options.map((o, idx) => (idx === i ? { ...o, ...updates } : o)))
+  }
+
   function addOption() {
-    onChange([...options, { name: '', value: '' }])
+    onChange([...options, { name: '', value: '', attributeValueId: null, _colorHex: null, _swatchImageUrl: null, _directSwatchImageId: null }])
   }
+
   function removeOption(i) {
     onChange(options.filter((_, idx) => idx !== i))
   }
 
   return (
     <div className="variant-options-editor">
-      {options.map((opt, i) => (
-        <div key={i} className="list-editor-row variant-option-row">
-          <Input
-            placeholder={t('products.detail.variant.optionNamePlaceholder')}
-            value={opt.name}
-            onChange={(e) => updateOption(i, 'name', e.target.value)}
-            disabled={disabled}
-           />
-          <Input
-            placeholder={t('products.detail.variant.optionValuePlaceholder')}
-            value={opt.value}
-            onChange={(e) => updateOption(i, 'value', e.target.value)}
-            disabled={disabled}
-           />
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-destructive hover:text-destructive"
-            onClick={() => removeOption(i)}
-            disabled={disabled}
-            aria-label={t('products.detail.variant.removeOption')}
-          >
-            ✕
-          </Button>
-        </div>
-      ))}
+      {options.map((opt, i) => {
+        const attr = resolveAttr(opt.name)
+        const isColor = Boolean(attr?.kind === 'color' || isColorAttributeName(opt.name))
+        const colorValues = attr ? (attrValuesById[attr.id] ?? []) : []
+        const hasSwatch = Boolean(opt._swatchImageUrl || opt._colorHex)
+
+        return (
+          <div key={i} className="list-editor-row variant-option-row">
+            {/* Name — text input with datalist suggestions from attribute catalog */}
+            <div className="flex-1">
+              <Input
+                list={`attr-names-${i}`}
+                placeholder={t('products.detail.variant.optionNamePlaceholder')}
+                value={opt.name}
+                onChange={(e) =>
+                  updateOptionFields(i, {
+                    name: e.target.value,
+                    attributeValueId: null,
+                    _colorHex: null,
+                    _swatchImageUrl: null,
+                  })
+                }
+                disabled={disabled}
+              />
+              <datalist id={`attr-names-${i}`}>
+                {attributes.map((a) => <option key={a.id} value={a.name} />)}
+              </datalist>
+            </div>
+
+            {/* Value — swatch select for color attributes, plain text otherwise */}
+            <div className="flex flex-col gap-1 flex-1">
+              <div className="flex items-center gap-2">
+                {hasSwatch && (
+                  <span
+                    className="shrink-0 size-5 rounded-full border border-border"
+                    style={
+                      opt._swatchImageUrl
+                        ? { backgroundImage: `url(${opt._swatchImageUrl})`, backgroundSize: 'cover' }
+                        : { backgroundColor: opt._colorHex }
+                    }
+                    aria-label={t('products.detail.variant.colorPreview')}
+                  />
+                )}
+                {isColor && colorValues.length > 0 ? (
+                  <Select
+                    value={opt.value}
+                    onValueChange={(val) => {
+                      const item = colorValues.find((v) => v.label === val)
+                      updateOptionFields(i, {
+                        value: val,
+                        attributeValueId: item?.id ?? null,
+                        _colorHex: item?.colorHex ?? null,
+                        _swatchImageUrl: item?.swatchImageUrl ?? null,
+                      })
+                    }}
+                    disabled={disabled}
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder={t('products.detail.variant.selectColorValue')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {colorValues.map((v) => (
+                        <SelectItem key={v.id} value={v.label}>
+                          <span className="flex items-center gap-2">
+                            {(v.swatchImageUrl || v.colorHex) && (
+                              <span
+                                className="shrink-0 size-4 rounded-full border border-border"
+                                style={
+                                  v.swatchImageUrl
+                                    ? { backgroundImage: `url(${v.swatchImageUrl})`, backgroundSize: 'cover' }
+                                    : { backgroundColor: v.colorHex }
+                                }
+                              />
+                            )}
+                            {v.label}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    className="flex-1"
+                    placeholder={t('products.detail.variant.optionValuePlaceholder')}
+                    value={opt.value}
+                    onChange={(e) => updateOptionFields(i, { value: e.target.value })}
+                    disabled={disabled}
+                  />
+                )}
+              </div>
+              {isColor && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">{t('products.detail.variant.directSwatchImage')}</p>
+                  <ImageUrlInput
+                    value={opt._directSwatchImageId || ''}
+                    onChange={(url) =>
+                      updateOptionFields(i, {
+                        _directSwatchImageId: url || null,
+                        _swatchImageUrl: url || opt._swatchImageUrl,
+                      })
+                    }
+                    disabled={disabled}
+                  />
+                </div>
+              )}
+            </div>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-destructive hover:text-destructive"
+              onClick={() => removeOption(i)}
+              disabled={disabled}
+              aria-label={t('products.detail.variant.removeOption')}
+            >
+              ✕
+            </Button>
+          </div>
+        )
+      })}
       <Button variant="outline" size="sm" onClick={addOption} disabled={disabled}>
         + {t('products.detail.variant.addOption')}
       </Button>

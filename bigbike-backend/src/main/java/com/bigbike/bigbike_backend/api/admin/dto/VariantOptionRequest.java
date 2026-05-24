@@ -19,4 +19,12 @@ public class VariantOptionRequest {
 
     @Size(max = 255, message = "Option value is too long.")
     private String optionValue;
+
+    /** When present, backend links FK directly by ID — bypasses text-based attribute lookup. */
+    @Size(max = 36)
+    private String attributeValueId;
+
+    /** Direct swatch image — publicUrl or media UUID picked from the media library. */
+    @Size(max = 512, message = "Swatch image ID is too long.")
+    private String swatchImageId;
 }
