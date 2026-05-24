@@ -120,13 +120,16 @@ function clearFormFromStorage(key) {
 
 function getPublishReadiness(form, t) {
   const items = [
-    { id: 'name', label: t('products.detail.checklist.name'), ok: Boolean(form.name.trim()), required: true },
-    { id: 'image', label: t('products.detail.checklist.image'), ok: Boolean(form.imageUrl.trim()), required: false },
-    { id: 'price', label: t('products.detail.checklist.price'), ok: Boolean(form.retailPrice?.trim()), required: true },
-    { id: 'shortDesc', label: t('products.detail.checklist.shortDesc'), ok: form.shortDescription.trim().length >= 20, required: false },
-    { id: 'desc', label: t('products.detail.checklist.desc'), ok: form.description.trim().length > 50, required: false },
+    { id: 'name',      label: t('products.detail.checklist.name'),      ok: Boolean(form.name?.trim()),                                             required: true  },
+    { id: 'brand',     label: t('products.detail.checklist.brand'),     ok: Boolean(form.brandId),                                                  required: true  },
+    { id: 'category',  label: t('products.detail.checklist.category'),  ok: Boolean(form.categoryId),                                               required: true  },
+    { id: 'image',     label: t('products.detail.checklist.image'),     ok: Boolean(form.imageUrl?.trim()),                                         required: true  },
+    { id: 'price',     label: t('products.detail.checklist.price'),     ok: Boolean(form.retailPrice?.trim()) && Number(form.retailPrice) > 0,      required: true  },
+    { id: 'shortDesc', label: t('products.detail.checklist.shortDesc'), ok: Boolean(form.shortDescription?.trim()),                                 required: true  },
+    { id: 'seoTitle',  label: t('products.detail.checklist.seoTitle'),  ok: Boolean(form.seoTitle?.trim()),                                         required: true  },
+    { id: 'seoDesc',   label: t('products.detail.checklist.seoDesc'),   ok: Boolean(form.seoDescription?.trim()),                                   required: true  },
+    { id: 'desc',      label: t('products.detail.checklist.desc'),      ok: (form.description?.trim().length ?? 0) > 50,                            required: false },
   ]
-
 
   return items
 }
@@ -2549,8 +2552,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   </Field>
 
                   <Field label={t('products.detail.categoryId')} error={validationErrors.categoryId}>
-                    <Select value={form.categoryId} onValueChange={(val) => updateField('categoryId', val)} disabled={isReadOnly}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                    <Select key={`cat-${categories.length > 0}`} value={form.categoryId} onValueChange={(val) => updateField('categoryId', val)} disabled={isReadOnly}>
+                      <SelectTrigger><SelectValue placeholder={t('products.detail.categoryPlaceholder')} /></SelectTrigger>
                       <SelectContent>
                         {form.categoryId && !categories.some((c) => c.id === form.categoryId) && (
                           <SelectItem value={form.categoryId} disabled>{t('products.detail.optionNotFound', { id: form.categoryId })}</SelectItem>
@@ -2561,8 +2564,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   </Field>
 
                   <Field label={t('products.detail.brandId')}>
-                    <Select value={form.brandId} onValueChange={(val) => updateField('brandId', val)} disabled={isReadOnly}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                    <Select key={`brand-${brands.length > 0}`} value={form.brandId} onValueChange={(val) => updateField('brandId', val)} disabled={isReadOnly}>
+                      <SelectTrigger><SelectValue placeholder={t('products.detail.brandPlaceholder')} /></SelectTrigger>
                       <SelectContent>
                         {form.brandId && !brands.some((b) => b.id === form.brandId) && (
                           <SelectItem value={form.brandId} disabled>{t('products.detail.optionNotFound', { id: form.brandId })}</SelectItem>

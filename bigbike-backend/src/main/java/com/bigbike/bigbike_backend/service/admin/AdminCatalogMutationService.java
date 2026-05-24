@@ -187,6 +187,12 @@ public class AdminCatalogMutationService {
         }
         AdminMutationValidators.throwIfErrors(errors);
 
+        if (publishStatus == PublishStatus.PUBLISHED) {
+            List<ApiErrorDetail> readinessErrors = new ArrayList<>();
+            AdminMutationValidators.validatePublishReadiness(entity, readinessErrors);
+            AdminMutationValidators.throwIfPublishErrors(readinessErrors);
+        }
+
         entity.setPublishStatus(publishStatus);
         entity.setUpdatedAt(Instant.now());
         productJpaRepository.save(entity);
