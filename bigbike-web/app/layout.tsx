@@ -67,7 +67,7 @@ export default async function RootLayout({
   const messages = await getMessages();
   return (
     <html lang={locale} className={`${barlow.variable} ${barlowCondensed.variable} ${oswald.variable} h-full antialiased`} suppressHydrationWarning>
-      <body className="bb-theme min-h-full flex flex-col">
+      <body className="bb-theme min-h-full flex flex-col" suppressHydrationWarning>
         {GTM_ID && (
           <Script
             id="gtm-init"

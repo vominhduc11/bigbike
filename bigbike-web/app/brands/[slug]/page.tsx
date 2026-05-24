@@ -8,6 +8,12 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { PaginationNav } from "@/components/ui/PaginationNav";
 import { PRODUCT_SORT_VALUES, getBrandBySlug, listBrands, listCategories, listProducts } from "@/lib/api/public-api";
 import { buildCatalogTitle } from "@/lib/utils/catalog";
+import {
+  DEFAULT_WP_ORDERBY,
+  isWpOrderbyValue,
+  productSortToWpOrderby,
+  wpOrderbyToProductSort,
+} from "@/lib/utils/catalog-sort";
 import { buildBrandBreadcrumbJsonLd, serializeJsonLd } from "@/lib/seo/json-ld";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { safeText } from "@/lib/utils/format";
@@ -26,6 +32,8 @@ import { toBrandPath, toHomePath, toBrandListPath } from "@/lib/utils/routes";
 import { isValidSlug } from "@/lib/utils/slug";
 
 export const dynamic = "force-dynamic";
+const DEFAULT_SORT = "createdAt:desc";
+const DEFAULT_PAGE_SIZE = 24;
 
 export async function generateStaticParams() {
   const result = await listBrands({ page: 1, size: 1000, sort: "name:asc" });
@@ -67,6 +75,7 @@ export async function generateMetadata({ params, searchParams }: BrandDetailPage
   const color = readSingleSearchParam(query.filter_color);
   const minPrice = readSingleSearchParam(query.min_price);
   const maxPrice = readSingleSearchParam(query.max_price);
+  const orderby = readSingleSearchParam(query.orderby);
 
   return buildPublicMetadata({
     title:
@@ -84,7 +93,8 @@ export async function generateMetadata({ params, searchParams }: BrandDetailPage
       Boolean(q) ||
       Boolean(color) ||
       Boolean(minPrice) ||
-      Boolean(maxPrice),
+      Boolean(maxPrice) ||
+      Boolean(orderby && orderby !== DEFAULT_WP_ORDERBY),
     ogImage: brand.logo?.url ?? undefined,
   });
 }
@@ -103,7 +113,7 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
     field: "page",
   });
   const sizeParsed = parsePositiveIntParam(query.size, {
-    defaultValue: 24,
+    defaultValue: DEFAULT_PAGE_SIZE,
     min: 1,
     max: 100,
     field: "size",
@@ -121,7 +131,15 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
     max: 1_000_000_000,
     field: "max_price",
   });
-  const sortParsed = parseSortParam(query.sort, PRODUCT_SORT_VALUES, "createdAt:desc");
+  const orderbyParam = readSingleSearchParam(query.orderby);
+  const orderbyError = orderbyParam && !isWpOrderbyValue(orderbyParam) ? "orderby không hợp lệ." : null;
+  const sortParsed = parseSortParam(query.sort, PRODUCT_SORT_VALUES, DEFAULT_SORT);
+  const orderbyCurrent = isWpOrderbyValue(orderbyParam)
+    ? orderbyParam
+    : productSortToWpOrderby(sortParsed.value ?? DEFAULT_SORT);
+  const productSort = isWpOrderbyValue(orderbyParam)
+    ? wpOrderbyToProductSort(orderbyParam, DEFAULT_SORT)
+    : sortParsed.value;
   const validationErrors = collectErrors(
     pageParsed.error,
     sizeParsed.error,
@@ -130,7 +148,8 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
     colorParsed.error,
     minPriceParsed.error,
     maxPriceParsed.error,
-    sortParsed.error,
+    orderbyError,
+    orderbyParam ? null : sortParsed.error,
   );
 
   if (validationErrors.length > 0) {
@@ -149,7 +168,7 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
     listProducts({
       page: pageParsed.value,
       size: sizeParsed.value,
-      sort: sortParsed.value,
+      sort: productSort,
       brand: slug,
       q: qParsed.value,
       filterColor: colorParsed.value,
@@ -184,7 +203,6 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
     color: colorParsed.value,
     minPrice: minPriceParsed.value,
     maxPrice: maxPriceParsed.value,
-    sort: sortParsed.value,
   };
 
   return (
@@ -203,12 +221,15 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
 
       <ProductArchiveLayout
         totalItems={pagination?.totalItems ?? null}
-        sortCurrent={sortParsed.value ?? "createdAt:desc"}
+        sortCurrent={orderbyCurrent}
         filters={{
           brands: [],
           categories: categoriesResult.data,
           current: currentFilters,
           resetHref: canonicalPath,
+          hiddenParams: {
+            orderby: orderbyCurrent !== DEFAULT_WP_ORDERBY ? orderbyCurrent : undefined,
+          },
         }}
       >
         {productsResult.error && productsResult.data.length === 0 ? (
@@ -217,9 +238,11 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
           <p className="woocommerce-info">No products were found matching your selection.</p>
         ) : (
           <>
-            <div className="bb-product-grid">
+            <div className="row bb-wp-row bb-product-grid">
               {productsResult.data.map((product) => (
-                <ProductCard key={product.id} product={product} variant="archive" />
+                <div key={product.id} className="col-md-3 col-6 bb-wp-col-md-3 bb-wp-col-6">
+                  <ProductCard product={product} variant="archive" />
+                </div>
               ))}
             </div>
             {pagination ? (
@@ -227,8 +250,8 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
                 page={pagination.page}
                 totalPages={pagination.totalPages}
                 baseHref={`${canonicalPath}${buildQueryString({
-                    size: sizeParsed.value,
-                    sort: sortParsed.value,
+                    size: sizeParsed.value !== DEFAULT_PAGE_SIZE ? sizeParsed.value : undefined,
+                    orderby: orderbyCurrent !== DEFAULT_WP_ORDERBY ? orderbyCurrent : undefined,
                     "pwb-brand": brandFilterParsed.value,
                     q: qParsed.value,
                     filter_color: colorParsed.value,

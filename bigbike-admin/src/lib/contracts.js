@@ -274,12 +274,32 @@ export function normalizeProduct(input) {
   const source = input && typeof input === 'object' ? input : {}
   const id = toTrimmedString(source.id) || 'unknown-product'
   const slug = toTrimmedString(source.slug) || id
+  const brandSource = source.brand && typeof source.brand === 'object' ? source.brand : null
+  const categorySource = source.category && typeof source.category === 'object' ? source.category : null
+  const categories = Array.isArray(source.categories)
+    ? source.categories.map(normalizeCategorySummary).filter(Boolean)
+    : []
+  const brandId =
+    toTrimmedString(source.brandId) ||
+    (brandSource ? toTrimmedString(brandSource.id) : '')
+  const categoryId =
+    toTrimmedString(source.categoryId) ||
+    (categorySource ? toTrimmedString(categorySource.id) : '') ||
+    categories[0]?.id ||
+    ''
   const category =
-    normalizeCategorySummary(source.category) || {
-      id: 'uncategorized',
-      name: 'Uncategorized',
-      slug: 'uncategorized',
-    }
+    normalizeCategorySummary(categorySource) ||
+    (categoryId
+      ? {
+          id: categoryId,
+          name: toTrimmedString(categorySource?.name) || categoryId,
+          slug: toTrimmedString(categorySource?.slug) || categoryId,
+        }
+      : {
+          id: 'uncategorized',
+          name: 'Uncategorized',
+          slug: 'uncategorized',
+        })
 
   return {
     id,
@@ -291,11 +311,11 @@ export function normalizeProduct(input) {
     contentBottom: toTrimmedString(source.contentBottom) || undefined,
     promotionContent: toTrimmedString(source.promotionContent) || undefined,
     installationGuide: toTrimmedString(source.installationGuide) || undefined,
-    brand: normalizeBrandSummary(source.brand),
+    brand: normalizeBrandSummary(brandSource),
+    brandId: brandId || undefined,
     category,
-    categories: Array.isArray(source.categories)
-      ? source.categories.map(normalizeCategorySummary).filter(Boolean)
-      : [],
+    categoryId: categoryId || undefined,
+    categories,
     image: normalizeImageAsset(source.image),
     gallery: Array.isArray(source.gallery)
       ? source.gallery.map(normalizeImageAsset).filter(Boolean)

@@ -4,7 +4,6 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { ProductArchiveHero } from "@/components/catalog/ProductArchiveHero";
 import { ProductArchiveLayout } from "@/components/catalog/ProductArchiveLayout";
 import { ProductCard } from "@/components/catalog/ProductCard";
-import { ErrorState } from "@/components/ui/ErrorState";
 import { PaginationNav } from "@/components/ui/PaginationNav";
 import {
   PRODUCT_SORT_VALUES,
@@ -15,9 +14,16 @@ import {
   listProducts,
 } from "@/lib/api/public-api";
 import { buildCatalogTitle } from "@/lib/utils/catalog";
+import {
+  DEFAULT_WP_ORDERBY,
+  isWpOrderbyValue,
+  productSortToWpOrderby,
+  wpOrderbyToProductSort,
+} from "@/lib/utils/catalog-sort";
 import { buildCategoryBreadcrumbJsonLd, serializeJsonLd } from "@/lib/seo/json-ld";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { safeText } from "@/lib/utils/format";
+import { sanitizeRichHtml } from "@/lib/utils/html";
 import {
   buildQueryString,
   collectErrors,
@@ -29,7 +35,7 @@ import {
   readSearchParamAlias,
   readSingleSearchParam,
 } from "@/lib/utils/query";
-import { toCategoryPath, toHomePath, toProductListPath } from "@/lib/utils/routes";
+import { toCategoryPath, toHomePath } from "@/lib/utils/routes";
 import { isValidSlug } from "@/lib/utils/slug";
 
 export const dynamic = "force-dynamic";
@@ -41,6 +47,16 @@ export async function generateStaticParams() {
 
 const DEFAULT_SORT = "createdAt:desc";
 const DEFAULT_PAGE_SIZE = 24;
+
+async function getCategoryByRouteSlug(slug: string, locale: string) {
+  const result = await getCategoryBySlug(slug, locale);
+  if (result.data || result.error?.status !== 404 || slug.endsWith("-1")) {
+    return result;
+  }
+
+  const legacyDuplicateResult = await getCategoryBySlug(`${slug}-1`, locale);
+  return legacyDuplicateResult.data ? legacyDuplicateResult : result;
+}
 
 type CategoryDetailPageProps = {
   params: Promise<{ slug: string }>;
@@ -60,7 +76,7 @@ export async function generateMetadata({ params, searchParams }: CategoryDetailP
   }
 
   const locale = await getLocale();
-  const categoryResult = await getCategoryBySlug(slug, locale);
+  const categoryResult = await getCategoryByRouteSlug(slug, locale);
   const category = categoryResult.data;
   if (!category) {
     return buildPublicMetadata({
@@ -78,6 +94,7 @@ export async function generateMetadata({ params, searchParams }: CategoryDetailP
   const color = readSingleSearchParam(query.filter_color);
   const minPrice = readSingleSearchParam(query.min_price);
   const maxPrice = readSingleSearchParam(query.max_price);
+  const orderby = readSingleSearchParam(query.orderby);
   const defaultDescription = tCatalog("categoryDefaultDescription");
 
   return buildPublicMetadata({
@@ -97,7 +114,8 @@ export async function generateMetadata({ params, searchParams }: CategoryDetailP
       Boolean(q) ||
       Boolean(color) ||
       Boolean(minPrice) ||
-      Boolean(maxPrice),
+      Boolean(maxPrice) ||
+      Boolean(orderby && orderby !== DEFAULT_WP_ORDERBY),
     ogImage: (category.image ?? category.icon)?.url ?? undefined,
   });
 }
@@ -111,10 +129,7 @@ export default async function CategoryDetailPage({
     notFound();
   }
 
-  const [tCatalog, tBreadcrumb] = await Promise.all([
-    getTranslations("Catalog"),
-    getTranslations("Breadcrumb"),
-  ]);
+  const tCatalog = await getTranslations("Catalog");
   const pageParams = await searchParams;
   const pageParsed = parsePositiveIntParam(readSearchParamAlias(pageParams, "page", "paged"), {
     defaultValue: 1,
@@ -141,7 +156,15 @@ export default async function CategoryDetailPage({
     max: 1_000_000_000,
     field: "max_price",
   });
+  const orderbyParam = readSingleSearchParam(pageParams.orderby);
+  const orderbyError = orderbyParam && !isWpOrderbyValue(orderbyParam) ? "orderby không hợp lệ." : null;
   const sortParsed = parseSortParam(pageParams.sort, PRODUCT_SORT_VALUES, DEFAULT_SORT);
+  const orderbyCurrent = isWpOrderbyValue(orderbyParam)
+    ? orderbyParam
+    : productSortToWpOrderby(sortParsed.value ?? DEFAULT_SORT);
+  const productSort = isWpOrderbyValue(orderbyParam)
+    ? wpOrderbyToProductSort(orderbyParam, DEFAULT_SORT)
+    : sortParsed.value;
 
   const validationErrors = collectErrors(
     pageParsed.error,
@@ -151,32 +174,52 @@ export default async function CategoryDetailPage({
     colorParsed.error,
     minPriceParsed.error,
     maxPriceParsed.error,
-    sortParsed.error,
+    orderbyError,
+    orderbyParam ? null : sortParsed.error,
   );
   if (validationErrors.length > 0) {
     return (
-      <section className="bb-page">
-        <div className="bb-container">
-          <ErrorState title={tCatalog("filterInvalidTitle")} message={validationErrors.join(" ")} />
+      <div className="bb-product-archive archive tax-product_cat">
+        <div id="main-content" className="bb-archive-main">
+          <div className="container bb-wp-container">
+            <p className="woocommerce-info">{validationErrors.join(" ")}</p>
+          </div>
         </div>
-      </section>
+      </div>
     );
   }
 
   const locale = await getLocale();
+  const categoryResult = await getCategoryByRouteSlug(slug, locale);
+
+  if (!categoryResult.data && categoryResult.error?.status === 404) {
+    notFound();
+  }
+
+  if (!categoryResult.data) {
+    return (
+      <div className="bb-product-archive archive tax-product_cat">
+        <div id="main-content" className="bb-archive-main">
+          <div className="container bb-wp-container">
+            <p className="woocommerce-info">{categoryResult.error?.message ?? tCatalog("categoryLoadFailed")}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const category = categoryResult.data;
   const [
-    categoryResult,
     productsResult,
     brandsResult,
     allCategoriesResult,
     facetsResult,
   ] = await Promise.all([
-    getCategoryBySlug(slug, locale),
     listProducts({
       page: pageParsed.value,
       size: sizeParsed.value,
-      sort: sortParsed.value,
-      category: slug,
+      sort: productSort,
+      category: category.slug,
       brand: brandParsed.value,
       q: qParsed.value,
       filterColor: colorParsed.value,
@@ -186,36 +229,14 @@ export default async function CategoryDetailPage({
     }),
     listBrands({ page: 1, size: 100, sort: "name:asc" }),
     listCategories({ page: 1, size: 100, sort: "sortOrder:asc" }),
-    getCatalogFacets({ category: slug, q: qParsed.value }),
+    getCatalogFacets({ category: category.slug, q: qParsed.value }),
   ]);
-
-  if (!categoryResult.data && categoryResult.error?.status === 404) {
-    notFound();
-  }
-
-  if (!categoryResult.data) {
-    return (
-      <section className="bb-page">
-        <div className="bb-container">
-          <ErrorState message={categoryResult.error?.message ?? tCatalog("categoryLoadFailed")} />
-        </div>
-      </section>
-    );
-  }
-
-  const category = categoryResult.data;
   const canonicalPath = toCategoryPath(category.slug);
   const allCategories = allCategoriesResult.data ?? [];
   const parentCategory = category.parentId
     ? (allCategories.find((c) => c.id === category.parentId) ?? null)
     : null;
-  const childCategories = allCategories.filter((c) => c.parentId === category.id && c.isVisible);
-  const siblingCategories = (
-    category.parentId
-      ? allCategories.filter((c) => c.parentId === category.parentId)
-      : allCategories.filter((c) => !c.parentId)
-  ).filter((c) => c.isVisible);
-  const filterCategories = childCategories.length > 0 ? childCategories : siblingCategories;
+  const filterCategories = allCategories.filter((c) => c.isVisible);
 
   const breadcrumbJsonLd = serializeJsonLd(buildCategoryBreadcrumbJsonLd(category, parentCategory));
   const categoryName = safeText(category.name, tCatalog("categoryFallback"));
@@ -226,12 +247,13 @@ export default async function CategoryDetailPage({
     color: colorParsed.value,
     minPrice: minPriceParsed.value,
     maxPrice: maxPriceParsed.value,
-    sort: sortParsed.value,
   };
+  const categoryDescriptionHtml = category.description?.trim()
+    ? sanitizeRichHtml(category.description, { rewriteMediaUrls: true })
+    : null;
 
   const heroBreadcrumb = [
-    { label: tBreadcrumb("home"), href: toHomePath() },
-    { label: tCatalog("title"), href: toProductListPath() },
+    { label: "Bigbike.vn", href: toHomePath() },
     ...(parentCategory
       ? [{
           label: safeText(parentCategory.name, tCatalog("parentCategoryFallback")),
@@ -244,28 +266,41 @@ export default async function CategoryDetailPage({
   return (
     <div className="bb-product-archive archive tax-product_cat">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }} />
-      <ProductArchiveHero title={categoryName} breadcrumb={heroBreadcrumb} />
+      <ProductArchiveHero
+        title={categoryName}
+        breadcrumb={heroBreadcrumb}
+        illustrationUrl={(category.image ?? category.icon)?.url}
+        illustrationAlt={(category.image ?? category.icon)?.alt ?? categoryName}
+      />
 
       <ProductArchiveLayout
         totalItems={pagination?.totalItems ?? null}
-        sortCurrent={sortParsed.value ?? DEFAULT_SORT}
+        sortCurrent={orderbyCurrent}
         filters={{
           brands: brandsResult.data,
           categories: filterCategories,
           facets: facetsResult.data,
           current: currentFilters,
           resetHref: canonicalPath,
+          hiddenParams: {
+            orderby: orderbyCurrent !== DEFAULT_WP_ORDERBY ? orderbyCurrent : undefined,
+          },
         }}
       >
+        {categoryDescriptionHtml ? (
+          <div className="desc" dangerouslySetInnerHTML={{ __html: categoryDescriptionHtml }} />
+        ) : null}
         {productsResult.error && productsResult.data.length === 0 ? (
-          <ErrorState message={productsResult.error.message} retryHref={canonicalPath} />
+          <p className="woocommerce-info">{productsResult.error.message}</p>
         ) : productsResult.data.length === 0 ? (
           <p className="woocommerce-info">{tCatalog("noResults")}</p>
         ) : (
           <>
-            <div className="bb-product-grid">
+            <div className="row bb-wp-row bb-product-grid">
               {productsResult.data.map((product) => (
-                <ProductCard key={product.id} product={product} variant="archive" />
+                <div key={product.id} className="col-md-3 col-6 bb-wp-col-md-3 bb-wp-col-6">
+                  <ProductCard product={product} variant="archive" />
+                </div>
               ))}
             </div>
             {pagination ? (
@@ -274,7 +309,7 @@ export default async function CategoryDetailPage({
                 totalPages={pagination.totalPages}
                 baseHref={`${canonicalPath}${buildQueryString({
                     size: sizeParsed.value !== DEFAULT_PAGE_SIZE ? sizeParsed.value : undefined,
-                    sort: sortParsed.value !== DEFAULT_SORT ? sortParsed.value : undefined,
+                    orderby: orderbyCurrent !== DEFAULT_WP_ORDERBY ? orderbyCurrent : undefined,
                     "pwb-brand": brandParsed.value,
                     q: qParsed.value,
                     filter_color: colorParsed.value,

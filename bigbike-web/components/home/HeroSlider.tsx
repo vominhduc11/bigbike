@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import { Swiper, SwiperSlide } from "swiper/react";
 import type { Swiper as SwiperType } from "swiper";
@@ -37,27 +38,23 @@ function enforceHorizontalTrack(swiper: SwiperType | null) {
 }
 
 function HeroSlideView({ slide }: { slide: HeroSlide }) {
-  const image = (
-    <picture>
-      {slide.mobileSrc && <source media="(max-width: 767px)" srcSet={slide.mobileSrc} />}
-      {/* Legacy WP uses the banner as the slide surface; keep this as a plain image, not a text hero. */}
-      <img
-        src={slide.desktopSrc}
-        alt={slide.alt}
-        className="bb-main-banner-img"
-        loading="eager"
-        decoding="async"
-      />
-    </picture>
-  );
+  const style = {
+    backgroundImage: `url("${slide.desktopSrc}")`,
+    backgroundSize: "cover",
+    "--bb-mobile-banner-bg": `url("${slide.mobileSrc ?? slide.desktopSrc}")`,
+  } as CSSProperties & Record<"--bb-mobile-banner-bg", string>;
 
   if (!slide.href) {
-    return <div className="bb-main-banner-link">{image}</div>;
+    return (
+      <div className="-swiper-lazy bb-main-banner-link" style={style}>
+        <span style={{ backgroundImage: `url("${slide.desktopSrc}")` }} />
+      </div>
+    );
   }
 
   return (
-    <Link href={slide.href} className="bb-main-banner-link">
-      {image}
+    <Link href={slide.href} className="-swiper-lazy bb-main-banner-link" style={style}>
+      <span style={{ backgroundImage: `url("${slide.desktopSrc}")` }} />
     </Link>
   );
 }
@@ -76,24 +73,18 @@ export function HeroSlider({ slides }: HeroSliderProps) {
 
   if (count === 0) {
     return (
-      <section id="main-banner" className="bb-main-banner bb-main-banner-fallback" aria-label="BigBike">
+      <div id="main-banner" className="bb-main-banner bb-main-banner-fallback" aria-label="BigBike">
         <Link href="/san-pham/" className="bb-main-banner-link">
-          <img
-            src="/wp/banner-ads.jpg"
-            alt="BigBike"
-            className="bb-main-banner-img"
-            loading="eager"
-            decoding="async"
-          />
+          <span style={{ backgroundImage: 'url("/wp/banner-ads.jpg")' }} />
         </Link>
-      </section>
+      </div>
     );
   }
 
   const activeSlide = slides[activeIndex] ?? slides[0];
 
   return (
-    <section
+    <div
       id="main-banner"
       className="bb-main-banner"
       aria-roledescription="carousel"
@@ -101,6 +92,7 @@ export function HeroSlider({ slides }: HeroSliderProps) {
     >
       {mounted ? (
         <Swiper
+          className="swiper-container js-home-banner"
           loop={count > 1}
           onSwiper={(swiper) => {
             swiperRef.current = swiper;
@@ -113,7 +105,11 @@ export function HeroSlider({ slides }: HeroSliderProps) {
           style={{ width: "100%", height: "100%" }}
         >
           {slides.map((slide) => (
-            <SwiperSlide key={slide.id} style={{ width: "100%", height: "100%" }}>
+            <SwiperSlide
+              key={slide.id}
+              style={{ width: "100%", height: "100%" }}
+              product-code={slide.productCode || slide.categoryName || "BIGBIKE"}
+            >
               <HeroSlideView slide={slide} />
             </SwiperSlide>
           ))}
@@ -126,26 +122,24 @@ export function HeroSlider({ slides }: HeroSliderProps) {
         <>
           <button
             type="button"
-            className="bb-main-banner-arrow bb-main-banner-arrow-prev"
+            className="swiper-button-prev"
             onClick={() => swiperRef.current?.slidePrev()}
             aria-label="Slide trước"
-          >
-            <span aria-hidden="true">‹</span>
-          </button>
+          />
           <button
             type="button"
-            className="bb-main-banner-arrow bb-main-banner-arrow-next"
+            className="swiper-button-next"
             onClick={() => swiperRef.current?.slideNext()}
             aria-label="Slide tiếp"
+          />
+          <div
+            className="swiper-pagination"
+            product-code={activeSlide.productCode || activeSlide.categoryName || "BIGBIKE"}
           >
-            <span aria-hidden="true">›</span>
-          </button>
-          <div className="bb-main-banner-pagination">
-            <span>{activeIndex + 1} / {count}</span>
-            {activeSlide.productCode ? <span>{activeSlide.productCode}</span> : null}
+            {activeIndex + 1} / {count}
           </div>
         </>
       ) : null}
-    </section>
+    </div>
   );
 }

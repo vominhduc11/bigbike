@@ -10,6 +10,7 @@ import type { PricingData } from "./PricingPanel";
 import type { StockData } from "./StockStatus";
 import { VariantSelector } from "./VariantSelector";
 import { useCart } from "@/lib/cart-context";
+import { cn } from "@/lib/utils";
 import {
   collectAttributeNames,
   findColorPreviewVariant,
@@ -45,6 +46,7 @@ export type PurchaseSectionClientProps = {
   fallbackPrice: ProductPrice | null | undefined;
   fallbackStockState: string;
   fallbackVariants: ProductVariant[];
+  shortDescriptionHtml?: string;
   canonicalUrl: string;
 };
 
@@ -55,29 +57,23 @@ function RatingRow({
   rating: number | null;
   count: number | null;
 }) {
-  const value = rating && rating > 0 ? rating : 4.5;
-  const reviewCount = count && count > 0 ? count : 124;
-  const rounded = Math.round(value);
+  const value = rating && rating > 0 ? rating : 5;
+  const reviewCount = count && count > 0 ? count : 125;
+  const displayValue = Number.isInteger(value) ? String(value) : value.toFixed(1);
 
   return (
-    <div className="bb-wp-rating">
-      <span className="bb-wp-rating-stars" aria-label={`${value.toFixed(1)} sao`}>
-        {Array.from({ length: 5 }, (_, i) => (
-          <svg
-            key={i}
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-            fill={i < rounded ? "currentColor" : "none"}
-            stroke="currentColor"
-            strokeWidth="1.8"
-          >
-            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-          </svg>
-        ))}
-      </span>
-      <span className="bb-wp-rating-count">({reviewCount})</span>
+    <div
+      className="rating"
+      itemProp="aggregateRating"
+      itemScope
+      itemType="https://schema.org/AggregateRating"
+    >
+      <div className="rating-star" data-rating={displayValue} aria-label={`${displayValue} sao`} />
+      <br />
+      <p>
+        Đánh giá: <span itemProp="ratingValue">{displayValue}/</span>
+        <span itemProp="reviewCount">{reviewCount}</span>
+      </p>
     </div>
   );
 }
@@ -144,6 +140,7 @@ export function PurchaseSectionClient({
   fallbackPrice,
   fallbackStockState,
   fallbackVariants,
+  shortDescriptionHtml,
   canonicalUrl,
 }: PurchaseSectionClientProps) {
   const { addToCart } = useCart();
@@ -280,9 +277,12 @@ export function PurchaseSectionClient({
           </div>
         </div>
 
-        {shortDescription && (
+        {(shortDescriptionHtml || shortDescription) && (
           <div className="desc wyswyg">
-            <p>{shortDescription}</p>
+            <div
+              className="woocommerce-product-details__short-description"
+              dangerouslySetInnerHTML={{ __html: shortDescriptionHtml || shortDescription || "" }}
+            />
           </div>
         )}
 
@@ -311,20 +311,23 @@ export function PurchaseSectionClient({
             <div className="add-to-cart">
               <button
                 type="button"
-                className="btn"
+                className={cn(
+                  "single_add_to_cart_button button alt btn js-add-to-cart-btn",
+                  !isAvailable && "disabled wc-variation-selection-needed",
+                )}
                 onClick={handleAddToCart}
                 disabled={busy || !isAvailable}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6.2 6h15l-1.8 8.4H7.8L6.2 6Zm0 0L5.7 3.8H2.5M8.5 20a1.4 1.4 0 1 0 0-2.8 1.4 1.4 0 0 0 0 2.8Zm9 0a1.4 1.4 0 1 0 0-2.8 1.4 1.4 0 0 0 0 2.8Z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
                 {addToCartLabel}
               </button>
             </div>
             <div className="add-to-cart quick-add-to-cart">
               <button
                 type="button"
-                className="btn js-quickby"
+                className={cn(
+                  "btn single_add_to_cart_button button btn-quick-buy js-quickby",
+                  !isAvailable && "disabled",
+                )}
                 disabled={!isAvailable}
                 onClick={() => setQuickBuyOpen((open) => !open)}
               >
@@ -336,18 +339,20 @@ export function PurchaseSectionClient({
           {quickBuyOpen && (
             <div className="quickbuy-box js-quickbuy-box">
               <form
-                className="quickbuyform"
+                className="Form quickbuyform js-quickbuyform js-form-submit-data"
                 onSubmit={(event) => event.preventDefault()}
               >
+                <input type="hidden" name="action" value="woopanel_quickbuy" />
                 <input type="hidden" name="product_id" value={productId} />
                 {selectedVariant?.id && (
                   <input type="hidden" name="variation_id" value={selectedVariant.id} />
                 )}
-                <input type="text" name="customer_name" placeholder="Tên của bạn" />
-                <input type="tel" name="customer_phone" placeholder="Số điện thoại" />
-                <input type="email" name="customer_email" placeholder="Email" />
+                <input type="text" name="name" placeholder="Tên của bạn" />
+                <input type="tel" name="phone" placeholder="Số điện thoại" />
+                <input type="email" name="email" placeholder="Email" />
+                <input type="text" name="address" placeholder="Địa chỉ nhận hàng" />
                 <button type="submit" className="btn">
-                  {t("buyNow")}
+                  Đặt hàng
                 </button>
               </form>
             </div>
@@ -379,7 +384,7 @@ export function PurchaseSectionClient({
             aria-label={t("shareTwitter")}
           >
             <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-              <path d="M9.52 6.78 14.94 1h-1.28L8.95 6.02 5.21 1H1l5.7 7.66L1 14.71h1.28l4.99-5.31 3.95 5.31H15L9.52 6.78Zm-1.77 1.88-.58-.78L2.74 1.94h1.97l3.71 4.97.58.77 4.83 6.46h-1.97L7.75 8.66Z" />
+              <path d="M14.4 4.1v.4c0 4.3-3.3 9.3-9.3 9.3-1.8 0-3.5-.5-4.9-1.5h.8c1.5 0 2.9-.5 4-1.4-1.4 0-2.5-.9-2.9-2.2.2 0 .4.1.7.1.3 0 .6 0 .8-.1C2.2 8.4 1.1 7.2 1.1 5.8c.4.2.9.4 1.4.4C1.7 5.6 1.1 4.6 1.1 3.5c0-.6.2-1.2.5-1.7 1.6 2 4 3.3 6.7 3.4-.1-.2-.1-.5-.1-.8 0-1.8 1.5-3.3 3.3-3.3.9 0 1.8.4 2.4 1 .7-.1 1.3-.4 1.9-.7-.2.7-.7 1.3-1.3 1.7.6-.1 1.1-.2 1.6-.4-.4.5-1 1-1.7 1.4Z" />
             </svg>
           </a>
           <a

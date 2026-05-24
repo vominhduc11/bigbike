@@ -2,14 +2,14 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { isWpOrderbyValue, productSortToWpOrderby } from "@/lib/utils/catalog-sort";
 
 const SORT_OPTIONS = [
-  { value: "createdAt:desc", labelKey: "newest" },
-  { value: "createdAt:asc", labelKey: "oldest" },
-  { value: "name:asc", labelKey: "nameAsc" },
-  { value: "name:desc", labelKey: "nameDesc" },
-  { value: "price:asc", labelKey: "priceAsc" },
-  { value: "price:desc", labelKey: "priceDesc" },
+  { value: "menu_order", labelKey: "default" },
+  { value: "popularity", labelKey: "popularity" },
+  { value: "date", labelKey: "date" },
+  { value: "price", labelKey: "priceAsc" },
+  { value: "price-desc", labelKey: "priceDesc" },
 ] as const;
 
 export function CatalogSortSelect({ current }: { current: string }) {
@@ -17,17 +17,20 @@ export function CatalogSortSelect({ current }: { current: string }) {
   const tSort = useTranslations("Catalog.sort");
   const router = useRouter();
   const searchParams = useSearchParams();
+  const selectedValue = isWpOrderbyValue(current) ? current : productSortToWpOrderby(current);
 
   function handleChange(value: string) {
     const params = new URLSearchParams(searchParams.toString());
-    if (value === "createdAt:desc") {
-      params.delete("sort");
+    if (value === "menu_order") {
+      params.delete("orderby");
     } else {
-      params.set("sort", value);
+      params.set("orderby", value);
     }
+    params.delete("sort");
     params.delete("page");
+    params.delete("paged");
     const next = params.toString();
-    router.push(next ? `?${next}` : window.location.pathname);
+    router.push(next ? `${window.location.pathname}?${next}` : window.location.pathname);
   }
 
   return (
@@ -37,8 +40,8 @@ export function CatalogSortSelect({ current }: { current: string }) {
         <select
           id="sort-select"
           name="orderby"
-          className="form-control"
-          value={current}
+          className="form-control text-left"
+          value={selectedValue}
           onChange={(event) => handleChange(event.target.value)}
           aria-label={tCatalog("sortLabel")}
         >

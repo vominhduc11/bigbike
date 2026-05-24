@@ -1,0 +1,211 @@
+id,name,slug,sku,category,brand,publish_status,retail_price,legacy_id
+wp-prod-4030,BALO ALPINESTARS CITY HUNTER BACK PACK,balo-alpinestars-city-hunter-back-pack,CITYHUNTERBACKPACK,BALÔ ĐEO LƯNG - TÚI ĐEO - TÚI TREO XE,,DRAFT,2760000.00,4030
+wp-prod-133,BALO ĐEO LƯNGTAICHI RSB 272 BLACK CHỐNG NƯỚC ĐÈN LED,balo-deo-lung-chong-nuoc-di-mo-to-balo-deo-lung-chong-nuoc-den-led-taichi-rsb-272-black,RSB272-3,BALÔ ĐEO LƯNG - TÚI ĐEO - TÚI TREO XE,,DRAFT,790000.00,133
+wp-prod-880,TÚI HÍT BÌNH XĂNG SCOYCO 2 IN 1 MB09B,balo-hit-binh-xang-tui-hit-binh-xang-scoyco-mb09b,MB09B,BALÔ ĐEO LƯNG - TÚI ĐEO - TÚI TREO XE,SCOYCO,DRAFT,1220000.00,880
+wp-prod-1076,TÚI ĐEO ĐÙI SCOYCO MB14,tui-deo-dui-deo-hong-di-mo-to-xe-may-phuot-tui-deo-dui-deo-hong-chinh-hang-scoyco-mb14,MB14,BALÔ ĐEO LƯNG - TÚI ĐEO - TÚI TREO XE,SCOYCO,DRAFT,770000.00,1076
+wp-prod-220,Túi treo 2 bên xe Tanked Racing đa năng,tui-treo-2-ben-xe-tanked-racing-da-nang,BTA01,BALÔ ĐEO LƯNG - TÚI ĐEO - TÚI TREO XE,,DRAFT,1190000.00,220
+wp-prod-272,Túi đeo đùi Alpinestars Camo,tu-i-deo-du-i-alpinestars-camo,B033,BALÔ ĐEO LƯNG - TÚI ĐEO - TÚI TREO XE,,DRAFT,200000.00,272
+wp-prod-3685,TÚI HÍT BÌNH XĂNG GIVI RTB01,tui-hit-binh-xang-givi-rtb01,GIVIRB01,BALÔ ĐEO LƯNG - TÚI ĐEO - TÚI TREO XE,GIVI,DRAFT,1470000.00,3685
+wp-prod-4164,TÚI HÍT BÌNH XĂNG GIVI XS312,tui-hit-binh-xang-givi-xs312,XS312,BALÔ ĐEO LƯNG - TÚI ĐEO - TÚI TREO XE,,DRAFT,2090000.00,4164
+wp-prod-3989,TÚI HÍT BÌNH XĂNG SW-MOTECH QUICK-LOCK EVO MICRO 1680 2.5L,tui-hit-binh-xang-sw-motech-quick-lock-evo-micro-1680-2-5l,QUICK-LOCK EVO ,BALÔ ĐEO LƯNG - TÚI ĐEO - TÚI TREO XE,,DRAFT,1820000.00,3989
+wp-prod-1077,TÚI ĐEO HÔNG - BAO TỬ SCOYCO MB11-2,tui-deo-hong-tui-bao-tu-di-mo-to-xe-may-phuot-tui-deo-hong-tui-bao-tu-chinh-hang-scoyco-mb11-2,MB11-2,BALÔ ĐEO LƯNG - TÚI ĐEO - TÚI TREO XE,SCOYCO,DRAFT,810000.00,1077
+wp-prod-3879,TÚI ĐEO ĐÙI ALPINESTARS STREAM BALCK/WHITE/RED,tui-deo-dui-alpinestars-stream-balck-white-red,STREAM 1,BALÔ ĐEO LƯNG - TÚI ĐEO - TÚI TREO XE,,DRAFT,800000.00,3879
+wp-prod-3878,TÚI ĐEO ĐÙI ALPINESTARS STREAM BLACK/YELLOW,tui-deo-dui-alpinestars-stream-black-yellow,STREAM,BALÔ ĐEO LƯNG - TÚI ĐEO - TÚI TREO XE,,DRAFT,800000.00,3878
+wp-prod-274,"Túi đeo hông, túi bao tử Alpinestars Black",tui-deo-hong-tu-i-bao-t-di-mo-to-xe-ma-y-phuo-t-tui-deo-hong-tu-i-bao-tu-alpinestars-black,BA024B,BALÔ ĐEO LƯNG - TÚI ĐEO - TÚI TREO XE,,DRAFT,350000.00,274
+wp-prod-273,"Túi đeo hông, túi bao tử Alpinestars Red",tui-deo-hong-tui-bao-tu-di-mo-to-xe-may-phuot-tui-deo-hong-tui-bao-tu-alpinestars-red,BA024R,BALÔ ĐEO LƯNG - TÚI ĐEO - TÚI TREO XE,,DRAFT,350000.00,273
+wp-prod-35864,,hang-oder,BB-CHUAP-035864,Chưa phân loại,,DRAFT,0.00,35864
+wp-prod-41176,Dual Sport WS-902 Helmet: Dual Visor | Rally & Off-road Specialist,dual-sport-ws-902-helmet-dual-visor-rally-off-road-specialist,BB-CHUAP-041176,Chưa phân loại,,DRAFT,0.00,41176
+wp-prod-34824,GIÀY BẢO HỘ ORIGINAL SWAT CLASSIC 9 CHO NỮ,giay-bao-ho-original-swat-classic-9-cho-nu,BB-CHUAP-034824,Chưa phân loại,,DRAFT,0.00,34824
+wp-prod-26868,GIÀY RACING GAERNE GP1 EVO,giay-racing-gaerne-gp1-evo,BB-CHUAP-026868,Chưa phân loại,,DRAFT,0.00,26868
+wp-prod-29785,Giày Forma Elite Dry,giay-forma-elite-dry-29785,BB-CHUAP-029785,Chưa phân loại,,DRAFT,0.00,29785
+wp-prod-41214,GĂNG TAY MÔ TÔ ILM THOÁNG KHÍ CHO NAM VÀ NỮ JC44,gang-tay-mo-to-ilm-thoang-khi-cho-nam-va-nu-jc44,BB-CHUAP-041214,Chưa phân loại,,DRAFT,0.00,41214
+wp-prod-321,Găng tay Fox Racing Flexair Race MX,gang-tay-bao-ho-mo-to-xe-may-phuot-gang-tay-fox-racing-flexair-race-mx,F020,Chưa phân loại,,DRAFT,250000.00,321
+wp-prod-36291,MŨ BẢO HIỂM ADVENTURE NEXX X.WED3 - KEYO,mu-bao-hiem-adventure-nexx-x-wed3-keyo,BB-CHUAP-036291,Chưa phân loại,,DRAFT,0.00,36291
+wp-prod-30499,NÓN NEXX SX.100 SKYWAY,non-nexx-sx-100-skyway,BB-CHUAP-030499,Chưa phân loại,,DRAFT,0.00,30499
+wp-prod-34298,QUẦN BẢO HỘ BULLFIGHTER VULCAN MALE BUKSE REGULAR,quan-bao-ho-bullfighter-vulcan-male-bukse-regular,BB-CHUAP-034298,Chưa phân loại,,DRAFT,0.00,34298
+wp-prod-39542,QUẦN BẢO HỘ ILM BJN01,quan-bao-ho-ilm-bjn01,BB-CHUAP-039542,Chưa phân loại,,DRAFT,0.00,39542
+wp-prod-34870,QUẦN GIÁP BẢO HỘ CHO NỮ REVIT AIRWAY 2,quan-giap-bao-ho-cho-nu-revit-airway-2,BB-CHUAP-034870,Chưa phân loại,,DRAFT,0.00,34870
+wp-prod-32580,QUẦN GIÁP BẢO HỘ FURYGAN VULCAN MALE BUKSER REGULAR,quan-giap-bao-ho-furygan-vulcan-male-bukser-regular,BB-CHUAP-032580,Chưa phân loại,,DRAFT,0.00,32580
+wp-prod-29126,RACEDAY LIGHT PARKA,raceday-light-parka,BB-CHUAP-029126,Chưa phân loại,,DRAFT,5800000.00,29126
+wp-prod-3366,GIÀY CHỐNG NƯỚC TCX RUSH WP GREEN,giay-bao-ho-mo-to-chong-nuoc-chinh-hang-tcx-rush-wp-green,TCXRUSHGREEN,GIÀY BẢO HỘ,,DRAFT,2750000.00,3366
+wp-prod-4001,GIÀY ALPINESTARS SUPERTECH R LORENZO,giay-bao-ho-alpinestars-supertech-r-lorenzo,2220015-3091,GIÀY BẢO HỘ,,DRAFT,12000000.00,4001
+wp-prod-3430,GIÀY SIDI VORTICE AIR,giay-bao-ho-sidi-vortice-air,SIDIVORTICE,GIÀY BẢO HỘ,,DRAFT,11350000.00,3430
+wp-prod-111,Bộ phụ kiện giáp bảo hộ cho áo,bo-phu-kien-giap-cho-ao-bao-ho,AM01,GIÁP BẢO HỘ TAY CHÂN - ĐAI LƯNG - PHỤ KIỆN GIÁP,,DRAFT,175000.00,111
+wp-prod-4040,GIÁP CHÂN SCOYCO K12 BLUE,giap-bao-ho-chan-scoyco-k12-blue,K12BL,GIÁP BẢO HỘ TAY CHÂN - ĐAI LƯNG - PHỤ KIỆN GIÁP,SCOYCO,DRAFT,800000.00,4040
+wp-prod-4039,GIÁP CHÂN SCOYCO K12 PINK,giap-bao-ho-chan-scoyco-k12-pink,K12P,GIÁP BẢO HỘ TAY CHÂN - ĐAI LƯNG - PHỤ KIỆN GIÁP,SCOYCO,DRAFT,800000.00,4039
+wp-prod-434,GIÁP CHÂN SCOYCO K12 WHITE,giap-bao-ho-tay-va-chan-scoyco-k12-white,K12W,GIÁP BẢO HỘ TAY CHÂN - ĐAI LƯNG - PHỤ KIỆN GIÁP,SCOYCO,DRAFT,800000.00,434
+wp-prod-3988,GIÁP CHÂN SCOYCO K17H17,giap-bao-ho-chan-scoyco-k17h17,K17H17,GIÁP BẢO HỘ TAY CHÂN - ĐAI LƯNG - PHỤ KIỆN GIÁP,SCOYCO,DRAFT,1850000.00,3988
+wp-prod-139,Giáp bảo hộ tay và chân GXT,giap-bao-ho-tay-va-chan-di-mo-to-xe-may-phuot-giap-bao-ho-tay-va-chan-gxt,GXT08,GIÁP BẢO HỘ TAY CHÂN - ĐAI LƯNG - PHỤ KIỆN GIÁP,,DRAFT,290000.00,139
+wp-prod-118,Giáp bảo hộ tay và chân Mad Bike inox,bao-ho-tay-va-chan-di-mo-to-xe-may-phuot-giap-bao-ho-tay-va-chan-mad-bike-inox,MAD01,GIÁP BẢO HỘ TAY CHÂN - ĐAI LƯNG - PHỤ KIỆN GIÁP,,DRAFT,430000.00,118
+wp-prod-119,Giáp bảo hộ tay và chân Mad Bike inox mini,giap-bao-ho-tay-va-chan-di-mo-to-xe-may-phuot-giap-bao-ho-tay-va-chan-mad-bike-inox-mini,MAD02,GIÁP BẢO HỘ TAY CHÂN - ĐAI LƯNG - PHỤ KIỆN GIÁP,,DRAFT,250000.00,119
+wp-prod-101,Giáp gối và tay Pro-Biker,bao-ho-tay-va-chan-di-mo-to-xe-may-phuot-bao-ho-probiker-giap-goi-va-tay-probiker,AP011,GIÁP BẢO HỘ TAY CHÂN - ĐAI LƯNG - PHỤ KIỆN GIÁP,,DRAFT,160000.00,101
+wp-prod-2691,ĐAI LƯNG SCOYCO U11 BLUE CHỐNG MỎI,dai-lung-chong-moi-di-mo-to-xe-may-phuot-dai-lung-chong-moi-chinh-hang-scoyco-u11-xanh-duong,U11B,GIÁP BẢO HỘ TAY CHÂN - ĐAI LƯNG - PHỤ KIỆN GIÁP,SCOYCO,DRAFT,790000.00,2691
+wp-prod-3940,ĐỒ BẢO VỆ CỔ SCOYCO N03,do-bao-ve-co-scoyco-n03,N03,GIÁP BẢO HỘ TAY CHÂN - ĐAI LƯNG - PHỤ KIỆN GIÁP,,DRAFT,820000.00,3940
+wp-prod-5261,GĂNG TAY ALPINESTARS CELER V2 BLACK/WHITE,gang-tay-alpinestars-celer-v2-black-white,ALCV2BW,GĂNG TAY,ALPINESTARS,DRAFT,2300000.00,5261
+wp-prod-4730,GĂNG TAY ALPINESTARS MASAI BLACK/RED/YELLOW/GREEN,gang-tay-alpinestars-masai-black-white-green,MASAI BWG,GĂNG TAY,,DRAFT,1380000.00,4730
+wp-prod-5572,GĂNG TAY ALPINESTARS SHORE BLACK YELLOW,gang-tay-alpinestars-shore-balck-yellow,ALSHOREBY,GĂNG TAY,ALPINESTARS,DRAFT,960000.00,5572
+wp-prod-4792,GĂNG TAY ALPINESTARS SMX-2 AC BLACK/WHITE,gang-tay-alpinestars-smx-2-ac-black-white,SMX-2 AC BW,GĂNG TAY,ALPINESTARS,DRAFT,1850000.00,4792
+wp-prod-3068,GĂNG TAY ALPINESTARS SP AIR BLACK/WHITE,gang-tay-bao-ho-chinh-hang-alpinestars-sp-air-black-white,ALSPABW,GĂNG TAY,,DRAFT,2990000.00,3068
+wp-prod-2154,GĂNG TAY ALPINESTARS SPARTAN BLACK,gang-tay-bao-ho-mo-to-xe-may-phuot-gang-tay-alpinestars-spartan-black,ASB,GĂNG TAY,,DRAFT,920000.00,2154
+wp-prod-2160,GĂNG TAY ALPINESTARS SPARTAN BLACK/ GREEN,gang-tay-bao-ho-mo-to-xe-may-phuot-gang-tay-alpinestars-spartan-black-green,ASBG,GĂNG TAY,ALPINESTARS,DRAFT,920000.00,2160
+wp-prod-2156,GĂNG TAY ALPINESTARS SPARTAN BLACK/ RED/ WHITE,gang-tay-bao-ho-mo-to-xe-may-phuot-gang-tay-alpinestars-spartan-black-red-white,ASBRW,GĂNG TAY,ALPINESTARS,DRAFT,920000.00,2156
+wp-prod-4738,GĂNG TAY ALPINESTARS WARDEN,gang-tay-alpinestars-warden,WARDEN,GĂNG TAY,ALPINESTARS,DRAFT,1280000.00,4738
+wp-prod-3949,GĂNG TAY DAINESE AIR HERO VR46,gang-tay-bao-ho-dainese-air-hero-vr46,AIR HERO VR46,GĂNG TAY,,DRAFT,1694000.00,3949
+wp-prod-4931,GĂNG TAY FURYGAN AFS 6 BLACK,gang-tay-furygan-afs-6-black,FUAFS6,GĂNG TAY,,DRAFT,750000.00,4931
+wp-prod-5030,GĂNG TAY GIRO BRAVO GEL RED,gang-tay-giro-bravo-gel-red,GIBRAGELR,GĂNG TAY,,DRAFT,200000.00,5030
+wp-prod-5032,GĂNG TAY GIRO DND™ BLACK,gang-tay-giro-dndtm-black,GIDNDB,GĂNG TAY,,DRAFT,200000.00,5032
+wp-prod-5033,GĂNG TAY GIRO DND™ BLACK/RED,gang-tay-giro-dndtm-black-red,GIDNDBR,GĂNG TAY,ALPINESTARS,DRAFT,200000.00,5033
+wp-prod-3587,GĂNG TAY ICON TWENTY - NINER,gang-tay-bao-ho-icon-twenty-niner-chinh-hang,ICONTN,GĂNG TAY,,DRAFT,800000.00,3587
+wp-prod-336,GĂNG TAY SCOYCO MC10 BLACK/GRAY,gang-tay-bao-ho-scoyco-mc10-xam,MC10W,GĂNG TAY,SCOYCO,DRAFT,245000.00,336
+wp-prod-5277,GĂNG TAY SCOYCO MC50,gang-tay-scoyco-mc50-black,SCOYMC50B,GĂNG TAY,SCOYCO,DRAFT,750000.00,5277
+wp-prod-2782,GĂNG TAY STARFIELD KNIGHT SKG 521 BLACK,gang-tay-bao-ho-chinh-hang-starfield-knight-skg-521-den,SKG521B,GĂNG TAY,,DRAFT,620000.00,2782
+wp-prod-2786,GĂNG TAY STARFIELD KNIGHT SKG 521 BLACK/RED,gang-tay-bao-ho-chinh-hang-starfield-knight-skg-521-den-do,SKG521BR,GĂNG TAY,,DRAFT,620000.00,2786
+wp-prod-2790,GĂNG TAY STARFIELD KNIGHT SKG 521 BLACK/WHITE,gang-tay-bao-ho-chinh-hang-starfield-knight-skg-521-den-trang,SKG521BW,GĂNG TAY,,DRAFT,620000.00,2790
+wp-prod-2801,GĂNG TAY STARFIELD KNIGHT SKG 523 BLACK,gang-tay-bao-ho-chinh-hang-starfield-knight-skg-523-den,SKG523B,GĂNG TAY,,DRAFT,690000.00,2801
+wp-prod-2809,GĂNG TAY STARFIELD KNIGHT SKG 523 BLACK/GREEN,gang-tay-chinh-hang-starfield-knight-skg-523-den-xanh-la,SKG523BG,GĂNG TAY,,DRAFT,690000.00,2809
+wp-prod-2805,GĂNG TAY STARFIELD KNIGHT SKG 523 BLACK/RED,gang-tay-bao-ho-chinh-hang-starfield-knight-skg-523-den-wp-2805,SKG523BR,GĂNG TAY,,DRAFT,690000.00,2805
+wp-prod-2819,GĂNG TAY STARFIELD KNIGHT SKG 525 BOA BLACK,gang-tay-bao-ho-chinh-hang-starfield-knight-skg-525-boa-den,SGK525,GĂNG TAY,,DRAFT,790000.00,2819
+wp-prod-2823,GĂNG TAY STARFIELD KNIGHT SKG 525 BOA BLACK/RED,gang-tay-chinh-hang-starfield-knight-skg-525-boa-den-do,SKG525BR,GĂNG TAY,,DRAFT,790000.00,2823
+wp-prod-3561,GĂNG TAY TAICHI RST429 BLACK,gang-tay-bao-ho-chinh-hang-taichi-rst429-black,RST429,GĂNG TAY,,DRAFT,1200000.00,3561
+wp-prod-3564,GĂNG TAY TAICHI RST429 BLACK/RED,gang-tay-chinh-hang-taichi-rst429-black-red,RST429BR,GĂNG TAY,,DRAFT,1200000.00,3564
+wp-prod-305,Găng Tay Bảo Hộ Madbike Gù Inox 2015 Đỏ,gang-tay-madbike-gu-inox-2015,MAD05R,GĂNG TAY,,DRAFT,210000.00,305
+wp-prod-209,Găng tay PROBIKER Monster full ngón đen,gang-tay-bao-ho-di-mo-to-xe-may-phuot-gang-tay-probiker-monster-full-ngon-den,P008,GĂNG TAY,,DRAFT,110000.00,209
+wp-prod-353,Găng tay Scoyco MC17B chống nước & cảm ứng White  chính hãng,gang-tay-bao-ho-di-mo-to-xe-may-phuot-gang-tay-chinh-hang-scoyco-mc17b-chong-nuoc-cam-ung-white,MC17B,GĂNG TAY,,DRAFT,800000.00,353
+wp-prod-96,Găng tay bảo hộ OAKLEY cụt ngón đen,gang-tay-bao-ho-di-mo-to-xe-may-phuot-gang-tay-bao-ho-oakley-cut-ngon-den,OL004B,GĂNG TAY,,DRAFT,180000.00,96
+wp-prod-224,Găng tay chống nước Scoyco MC15 xanh chính hãng,gang-tay-bao-ho-mo-to-xe-may-phuot-gang-tay-bao-ho-chong-nuoc-scoyco-mc15-xanh,MC15,GĂNG TAY,,DRAFT,600000.00,224
+wp-prod-1713,Găng tay da Dainese 2016 Orange,gang-tay-bao-ho-mo-to-xe-may-phuot-gang-tay-da-dainese-2016-orange,DNO,GĂNG TAY,,DRAFT,750000.00,1713
+wp-prod-129,Găng tay da OAKLEY cụt ngón gù carbon  Black,gang-tay-da-oakley-cut-ngon-gu-carbon,OL01B,GĂNG TAY,,DRAFT,160000.00,129
+wp-prod-221,Găng tay xe máy chống thấm nước - chống lạnh Probiker,gang-tay-xe-may-chong-tham-nuoc-chong-lanh-probiker,P011,GĂNG TAY,,DRAFT,250000.00,221
+wp-prod-2178,ÁO BẢO HỘ SCOYCO JK36C,ao-bao-ho-di-mo-to-xe-may-phuot-ao-bo-ho-chinh-hang-scoyco-jk36c,JK36C,KHUYẾN MÃI HOT,,DRAFT,1760000.00,2178
+wp-prod-373,ÁO SCOYCO AM06 YELLOW,ao-bao-ho-scoyco-am06-yellow,AM06Y,KHUYẾN MÃI HOT,,DRAFT,1183000.00,373
+wp-prod-10414,ÁO TOURING RJAYS TOUR AIR 2,ao-touring-rjays-tour,RJ-TOUR,KHUYẾN MÃI HOT,,DRAFT,2990000.00,10414
+wp-prod-1744,Áo bảo hộ HYOD STJ102D Japan Black/White,ao-bao-ho-di-mo-to-xe-may-phuot-ao-bao-ho-hyod-stj102d-japan-black-white,STJ102D-BW,KHUYẾN MÃI HOT,,DRAFT,1600000.00,1744
+wp-prod-2749,Áo da Alpinestars Stella Jaw Black cho nữ  chính hãng,ao-bao-ho-di-moto-xe-may-phuot-ao-da-chinh-hang-alpinestars-stella-jaw-pink-cho-nu,ALSJB,KHUYẾN MÃI HOT,,DRAFT,6500000.00,2749
+wp-prod-1704,Áo phản quang Duhan có giáp lưng,ao-vest-phan-quang-ao-phan-quang-duhan-co-giap-lung,DH-H1,KHUYẾN MÃI HOT,,DRAFT,550000.00,1704
+wp-prod-2234,BALO GÀI NẮP BÌNH XĂNG MENAT MB021,balo-binh-xang-menat-balo-gai-nap-binh-xang-menat-mb021,MB021,KHUYẾN MÃI HOT,,DRAFT,1590000.00,2234
+wp-prod-3413,GIÀY SIDI RACING ST,giay-bao-ho-sidi-racing-st,SIDIST,KHUYẾN MÃI HOT,,DRAFT,7155000.00,3413
+wp-prod-2418,GĂNG TAY ALPINESTARS MUSTANG BLACK,gang-tay-bao-ho-chinh-hang-alpinestars-mustang-black,MUSTANGB,KHUYẾN MÃI HOT,,DRAFT,1645000.00,2418
+wp-prod-5348,GĂNG TAY DAINESE AIR,gang-tay-bao-ho-dainese-air,DAINESEAIR,KHUYẾN MÃI HOT,,DRAFT,910000.00,5348
+wp-prod-3595,"GĂNG TAY SCOYCO  CHỐNG NƯỚC, GIỮ ẤM MC15B-2",gang-tay-bao-ho-scoyco-mc15b-2-black-chinh-hang,MC15B-2BL,KHUYẾN MÃI HOT,,DRAFT,560000.00,3595
+wp-prod-1885,GĂNG TAY SCOYCO MC09,gang-tay-bao-ho-scoyco-mc09-den,MC09B,KHUYẾN MÃI HOT,,DRAFT,266000.00,1885
+wp-prod-3602,GĂNG TAY SCOYCO MC15B-2 BLUE,gang-tay-bao-ho-scoyco-mc15b-2-blue-chinh-hang,MC15B-2B,KHUYẾN MÃI HOT,,DRAFT,560000.00,3602
+wp-prod-3597,GĂNG TAY SCOYCO MC15B-2 RED,gang-tay-bao-ho-scoyco-mc15b-2-red-chinh-hang,MC15B-2R,KHUYẾN MÃI HOT,,DRAFT,560000.00,3597
+wp-prod-363,GĂNG TAY SCOYCO MC20,gang-tay-bao-ho-scoyco-mc20-xanh,MC20B,KHUYẾN MÃI HOT,,DRAFT,511000.00,363
+wp-prod-812,GĂNG TAY SCOYCO MC20 WHITE,gang-tay-bao-ho-scoyco-mc20-trang,MC20W,KHUYẾN MÃI HOT,,DRAFT,520000.00,812
+wp-prod-38,QUẦN KOMINE PK-711,quan-bao-ho-komine-pk-711w,PK711W,KHUYẾN MÃI HOT,,DRAFT,1170000.00,38
+wp-prod-1111,TAI NGHE BUETOOTH VIMOTO V6,tai-nghe-bluetooth-cho-non-bao-hiem-tai-nghe-buetooth-vimoto-v6,V6,KHUYẾN MÃI HOT,,DRAFT,1020000.00,1111
+wp-prod-1112,TAI NGHE BUETOOTH VIMOTO V6,tai-nghe-bluetooth-cho-non-bao-hiem-tai-nghe-buetooth-vimoto-v6-wp-1112,V6-wp-1112,KHUYẾN MÃI HOT,,DRAFT,1020000.00,1112
+wp-prod-3987,TÚI HÍT BÌNH XĂNG PRO-BIKER,tui-hit-binh-xang-pro-biker, PRO-BIKER,KHUYẾN MÃI HOT,,DRAFT,175000.00,3987
+wp-prod-3931,ÁO FURYGAN MALCOM BRONZE,ao-giap-bao-ho-furygan-malcom-bronze,MALCOM BRONZE,KHUYẾN MÃI HOT,,DRAFT,1700000.00,3931
+wp-prod-5879,ÁO FURYGAN MALCOM GREEN,ao-furygan-malcom-green,MALCOMG,KHUYẾN MÃI HOT,FURYGAN,DRAFT,1290000.00,5879
+wp-prod-3929,ÁO FURYGAN MALCOM GREY,ao-giap-bao-ho-furygan-malcom-grey,MALCOM GREY,KHUYẾN MÃI HOT,,DRAFT,1700000.00,3929
+wp-prod-3933,ÁO FURYGAN VESTE ZENO,ao-giap-bao-ho-furygan-veste-zeno,VESTE ZENO ,KHUYẾN MÃI HOT,,DRAFT,1900000.00,3933
+wp-prod-5352,ÁO TAICHI RSJJ18 VOX AIR GREEN,ao-taichi-rsjj18-vox-air-green,TAICHIRSJJ18G,KHUYẾN MÃI HOT,,DRAFT,2700000.00,5352
+wp-prod-5609,PINLOCK 70 AGV DKS118 CLEAR,pinlock-70-agv-dks118-clear,DKS118CLEAR,KÍNH THAY - PINLOCK CHỐNG SƯƠNG,AGV,DRAFT,765000.00,5609
+wp-prod-4879,PINLOCK DKS301 SHOEI PROTECTINT,s-n-ph-m-pinlock-dks301-shoei-protectint,DKS301SHOEIPRO,KÍNH THAY - PINLOCK CHỐNG SƯƠNG,,DRAFT,1590000.00,4879
+wp-prod-4902,PINLOCK OVERLAY HJC PO008 RPHA 10 PLUS,pinlock-overlay-hjc-po008-rpha-10-plus,OVERLAYHJC08,KÍNH THAY - PINLOCK CHỐNG SƯƠNG,,DRAFT,2980000.00,4902
+wp-prod-4903,PINLOCK OVERLAY SHOEI PO003 X SPIRIT 3,pinlock-overlay-shoei-po003-x-spirit-3,OVERLAYSHOEIX,KÍNH THAY - PINLOCK CHỐNG SƯƠNG,,DRAFT,2980000.00,4903
+wp-prod-2689,MŨ BẢO HIỂM CÀO CÀO SS2500,mu-bao-hiem-di-mo-to-xe-may-phuot-mu-cao-cao-speed-and-strength-ss2500-den-bong,SS2500,MŨ BẢO HIỂM,,DRAFT,4600000.00,2689
+wp-prod-3220,MŨ BẢO HIỂM LS2 FF397 VECTOR SINGE MONO MATT CARBON,mu-bao-hiem-fullface-double-lens-ls2-ff397-vector-singe-mono-matt-carbon,FF397MONO,MŨ BẢO HIỂM,LS2,DRAFT,8900000.00,3220
+wp-prod-2624,Mũ bảo hiểm AGV K3-SV DOT Myth,mu-bao-hiem-fullface-fullface-agv-k3-sv-dot-myth,K3SVMYTH,MŨ BẢO HIỂM,,DRAFT,5750000.00,2624
+wp-prod-2628,Mũ bảo hiểm AGV K3-SV Tartaruga Asia Fit chính hãng,mu-bao-hiem-fullface-fullface-agv-k3-sv-dot-tartaruga,K3SVTARTARUGA,MŨ BẢO HIỂM,,DRAFT,6990000.00,2628
+wp-prod-1135,Mũ bảo hiểm fulface double lens LS2 FF320GY,mu-bao-hiem-di-mo-to-xe-may-phuot-mu-bao-hiem-fulface-double-lens-ls2-ff320gy,FF320GY,MŨ BẢO HIỂM,,DRAFT,2390000.00,1135
+wp-prod-3578,MŨ BẢO HIỂM 3/4 ID Venom THÁI LAN BLACK,mu-bao-hiem-3-4-id-venom-doublelens,IDVENOM,MŨ BẢO HIỂM,,DRAFT,750000.00,3578
+wp-prod-3582,MŨ BẢO HIỂM 3/4 ID Venom THÁI LAN WHITE/ORANGE,mu-bao-hiem-3-4-id-venom-trang-cam-doublelens,IDVenom2,MŨ BẢO HIỂM,,DRAFT,750000.00,3582
+wp-prod-5442,MŨ BẢO HIỂM AGV K1 MATTE BLACK,mu-bao-hiem-agv-k1-matte-black,AGVK1MB,MŨ BẢO HIỂM,AGV,DRAFT,5500000.00,5442
+wp-prod-32785,MŨ BẢO HIỂM HJC HELMETS I40N CHUẨN ECE 22.06,mu-bao-ho-hjc-helmets-i40-wirox-mc2,HJCI40-MC2,MŨ BẢO HIỂM,HJC,DRAFT,2800000.00,32785
+wp-prod-2704,MŨ BẢO HIỂM LS2 FF328 09,mu-bao-hiem-ls2-ff328-09,FF32809,MŨ BẢO HIỂM,,DRAFT,2600000.00,2704
+wp-prod-5605,MŨ BẢO HIỂM LS2 FF390 BREAKER BOLD,mu-bao-hiem-ls2-ff390-breaker-bold,LS2FF390BB,MŨ BẢO HIỂM,LS2,DRAFT,3500000.00,5605
+wp-prod-3774,MŨ BẢO HIỂM LS2 METRO FF324 BLACK/YELLOW,mu-bao-hiem-ls2-metro-ff324-black-yellow-2,LS2METROFF324-wp-3774,MŨ BẢO HIỂM,LS2,DRAFT,3960000.00,3774
+wp-prod-3691,MŨ BẢO HIỂM LS2 METRO FF324 BLACK/YELLOW,mu-bao-hiem-ls2-metro-ff324-black-yellow,LS2METROFF324,MŨ BẢO HIỂM,LS2,DRAFT,3960000.00,3691
+wp-prod-3779,MŨ BẢO HIỂM LS2 METRO FF324 WHITE/ORGANGE,mu-bao-hiem-ls2-metro-ff324-white-organge-2,LS2METRO FF324 1,MŨ BẢO HIỂM,LS2,DRAFT,3600000.00,3779
+wp-prod-1789,Mũ bảo hiểm fullface Royal M07 02,mu-bao-ho-di-mo-to-xe-may-phuot-mu-bao-hiem-fullface-royal-m07-02,M0702,MŨ BẢO HIỂM,,DRAFT,650000.00,1789
+wp-prod-1787,Mũ bảo hiểm fullface Royal M07 03,mu-bao-ho-di-mo-to-xe-may-phuot-mu-bao-hiem-fullface-royal-m07-03,M0703,MŨ BẢO HIỂM,,DRAFT,650000.00,1787
+wp-prod-1116,"Mũ bảo hiểm đi mô tô, xe máy, phượt - Mũ bảo hiểm fulface LS2 FF325G",mu-bao-hiem-di-mo-to-xe-may-phuot-mu-bao-hiem-fulface-ls2-ff325g,FF325G,MŨ BẢO HIỂM,,DRAFT,1550000.00,1116
+wp-prod-1117,"Mũ bảo hiểm đi mô tô, xe máy, phượt - Mũ bảo hiểm fulface LS2 FF325G",mu-bao-hiem-di-mo-to-xe-may-phuot-mu-bao-hiem-fulface-ls2-ff325g-wp-1117,FF325G-wp-1117,MŨ BẢO HIỂM,,DRAFT,1550000.00,1117
+wp-prod-1128,"Mũ bảo hiểm đi mô tô, xe máy, phượt - Mũ bảo hiểm fulface LS2 FF325O",mu-bao-hiem-di-mo-to-xe-may-phuot-mu-bao-hiem-fulface-ls2-ff325o,FF325O,MŨ BẢO HIỂM,,DRAFT,1550000.00,1128
+wp-prod-42078,GIÁ ĐỠ ĐIỆN THOẠI GẮN CHÂN GƯƠNG KEWIG KWG-M36-C2,gia-do-dien-thoai-gan-chan-guong-kewig-kwg-m36-c2,BB-PHUKI-042078,PHỤ KIỆN - GIÁ ĐỠ ĐIỆN THOẠI,KEWIG,DRAFT,0.00,42078
+wp-prod-4137,ÁO MƯA BỘ GIVI RRS07-AX BLACK BLUE,ao-mua-bo-givi-rrs07-ax-black-blue,RRS07 BB,PHỤ KIỆN ĐI MƯA,,DRAFT,570000.00,4137
+wp-prod-4142,ÁO MƯA BỘ GIVI RRS07-AX BLACK GRAY,ao-mua-bo-givi-rrs07-ax-black-gray,RRS07 BG,PHỤ KIỆN ĐI MƯA,,DRAFT,570000.00,4142
+wp-prod-4071,BAGA GIVI YAMAHA FZ150 FI-14,baga-givi-yamaha-fz150-fi-14,FZ150 FI-14,Phụ kiện khác,,DRAFT,286000.00,4071
+wp-prod-4136,BAGA MV - EXCITER 2011,baga-mv-exciter-2011,MV - EXCITER 2011,Phụ kiện khác,,DRAFT,264000.00,4136
+wp-prod-140,Dây phản quang,day-phan-quang,PQ1,Phụ kiện khác,,DRAFT,35000.00,140
+wp-prod-128,KHĂN TRÙM ĐẦU,khau-trang-trum-dau-khan-trum-dau,BS010,Phụ kiện khác,,DRAFT,50000.00,128
+wp-prod-4912,PINLOCK THREE COMPONET PINS,pinlock-three-componet-pins,PINS3,Phụ kiện khác,,DRAFT,380000.00,4912
+wp-prod-4037,TRÙM ĐẦU ALPINESTARS OPEN FACE BALACLAVA,trum-dau-alpinestars-open-face-balaclava,OCEFACEBALACLAVA,Phụ kiện khác,,DRAFT,575000.00,4037
+wp-prod-271,TRÙM ĐẦU COOLMAX KOMINE 2 IN 1,trum-dau-coolmax-komine-2-in-1,Coolmax,Phụ kiện khác,,DRAFT,120000.00,271
+wp-prod-208,Xương cá carbon dạ quang Spirit Beast,xuong-ca-carbon-da-quang-spirit-beast,Decal03,Phụ kiện khác,,DRAFT,140000.00,208
+wp-prod-4031,ÁO THUN LÓT ALPINESTARS RIDE TECH LS SUM-BLACK/RED,ao-thun-lot-alpinestars-ride-tech-ls-sum-black-red,RIDETECHLSSUM,Phụ kiện khác,,DRAFT,2070000.00,4031
+wp-prod-859,ỐNG TAY CHỐNG NẮNG KOMINE AK 313,ong-tay-chong-nang-komine-ak-313,AK313,Phụ kiện khác,,DRAFT,160000.00,859
+wp-prod-1092,TAI NGHE ĐIỆN THOẠI CHO NÓN BẢO HIỂM,tai-nghe-dien-thoai-cho-non-bao-hiem,HP01,TAI NGHE BLUETOOTH,,DRAFT,180000.00,1092
+wp-prod-1098,TAI NGHE ĐIỆN THOẠI CHO NÓN BẢO HIỂM,tai-nghe-dien-thoai-cho-non-bao-hiem-wp-1098,HP01-wp-1098,TAI NGHE BLUETOOTH,,DRAFT,180000.00,1098
+wp-prod-10885,Imported WP product 10885,orphan-product-10885,BB-UNCAT-010885,Uncategorized,,DRAFT,0.00,10885
+wp-prod-28414,Imported WP product 28414,orphan-product-28414,BB-UNCAT-028414,Uncategorized,,DRAFT,0.00,28414
+wp-prod-42079,MÓC TREO ĐỒ DÀNH CHO MOTOR/XE MÁY KEWIG KWG-CBK-2,moc-treo-do-danh-cho-motor-xe-may-kewig-kwg-cbk-2,BB-UNCAT-042079,Uncategorized,,DRAFT,0.00,42079
+wp-prod-37742,product-37742,product-37742,BB-UNCAT-037742,Uncategorized,,DRAFT,0.00,37742
+wp-prod-3082,ÁO TAICHI RSJ710 BLACK,ao-bao-ho-mo-to-xe-may-phuot-taichi-rsj-710,RSJ710B,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,,DRAFT,2800000.00,3082
+wp-prod-1340,Áo bảo hộ  Furygan Seven Lady chính hãng,ao-bao-ho-di-mo-to-xe-may-phuot-ao-bao-ho-chinh-hang-furygan-seven-lady,FUSELA,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,,DRAFT,1200000.00,1340
+wp-prod-2043,Áo bảo hộ  Furygan Titan chính hãng,ao-bao-ho-di-mo-to-xe-may-phuot-ao-bao-ho-chinh-hang-furygan-titan,FTITAN,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,,DRAFT,1700000.00,2043
+wp-prod-2492,Áo bảo hộ Benkia JW36,ao-bao-ho-di-mo-to-xe-may-phuot-ao-bao-ho-benkia-jw21-black-wp-2492,JW36,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,,DRAFT,1600000.00,2492
+wp-prod-1157,Áo bảo hộ IXS Nemesis,ao-bao-ho-di-mo-to-xe-may-phuot-ao-bao-ho-ixs-nemesis,IXSNEMESIS,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,,DRAFT,1400000.00,1157
+wp-prod-48,Áo bảo hộ Komine JK-006 - 2014,ao-bao-ho-mo-to-xe-may-phuot-ao-bao-ho-komine-jk-006-2014,JK006,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,,DRAFT,1490000.00,48
+wp-prod-2695,Áo bảo hộ Taichi RSJJ313 chính hãng,ao-bao-ho-mo-to-xe-may-phuot-ao-bao-ho-taichi-chinh-hang-rsj313,RSJ313,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,,DRAFT,2700000.00,2695
+wp-prod-1315,Áo bảo hộ chính hãng Furygan Genesis 2 En 1 Vented Evo,ao-bao-ho-di-mo-to-xe-may-phuot-ao-bao-ho-chinh-hang-furygan-genesis-2-en-1-vented-evo,FUGVE,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,,DRAFT,1700000.00,1315
+wp-prod-1163,Áo bảo hộ chính hãng Furygan Hero Evo Black,ao-bao-ho-di-mo-to-xe-may-phuot-ao-bao-ho-chinh-hang-furygan-hero-evo-black,FUHEB,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,,DRAFT,1600000.00,1163
+wp-prod-1165,Áo bảo hộ chính hãng Furygan Hero Evo Silver Gray,ao-bao-ho-di-mo-to-xe-may-phuot-ao-bao-ho-chinh-hang-furygan-hero-evo-silver-gray,FUHEW,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,,DRAFT,1600000.00,1165
+wp-prod-1517,"Áo bảo hộ mô tô , xe máy, phượt - Áo bảo hộ chính hãng Macna Bunker",ao-bao-ho-mo-to-xe-may-phuot-ao-bao-ho-chinh-hang-macna-bunker,BUNKER,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,,DRAFT,900000.00,1517
+wp-prod-1498,"Áo bảo hộ đi mô tô, xe máy, phượt - Áo bảo hộ Apro GLOBE White",ao-bao-ho-di-mo-to-xe-may-phuot-ao-bao-ho-apro-globe-white,GLOBE,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,,DRAFT,1500000.00,1498
+wp-prod-1354,"Áo bảo hộ đi mô tô, xe máy, phượt - Áo bảo hộ chính hãng DRIRIDER MANX",ao-bao-ho-di-mo-to-xe-may-phuot-ao-bao-ho-chinh-hang-dririder-manx,DRMA,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,,DRAFT,1800000.00,1354
+wp-prod-873,"Áo bảo hộ đi mô tô, xe máy, phượt - Áo bảo hộ Komine JK-079R",ao-bao-ho-di-mo-to-xe-may-phuot-ao-bao-ho-komine-jk-079r,JK079R,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,,DRAFT,2700000.00,873
+wp-prod-127,Áo lót  thun lạnh Alpinestars / Monster / Dainese,ao-lot-thun-lanh-alpinestars-monster-dainese,AL10,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,,DRAFT,180000.00,127
+wp-prod-5802,QUẦN ALPINESTARS BOGOTA' DRYSTAR WHITE,quan-alpinestars-bogota-drystar-white,ALBOGOTAW,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,ALPINESTARS,DRAFT,1000000.00,5802
+wp-prod-246,Quần bảo hộ  Taichi,quan-bao-ho-mo-to-xe-may-phuot-quan-bao-ho-taichi,Taichi,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,,DRAFT,1100000.00,246
+wp-prod-5661,ÁO  FURYGAN TITAN BLACK,ao-furygan-titan-black,FUTITANB,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,FURYGAN,DRAFT,1890000.00,5661
+wp-prod-5042,ÁO BMW BOULDER GRAY,ao-bmw-boulder-gray,BMWBG,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,,DRAFT,3120000.00,5042
+wp-prod-4997,ÁO FURYGAN ARROW BLACK/GREEN,ao-giap-furygan-arrow-black-green,FUABG,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,FURYGAN,DRAFT,2170000.00,4997
+wp-prod-5000,ÁO FURYGAN ARROW BLACK/ORANGE,ao-giap-furygan-arrow-black-orange,FUABO,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,FURYGAN,DRAFT,2170000.00,5000
+wp-prod-5002,ÁO FURYGAN ARROW BLACK/WHITE,ao-giap-furygan-arrow-black-white,FUABW,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,FURYGAN,DRAFT,2170000.00,5002
+wp-prod-4993,ÁO FURYGAN ARROW VENTED BLACK/BLUE,ao-giap-furygan-arrow-vented-black-blue,FUAVBB,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,FURYGAN,DRAFT,1960000.00,4993
+wp-prod-3920,ÁO FURYGAN ARROW VENTED BLACK/GREEN,ao-bao-ho-furygan-arrow-black-green,ARROW VENTED BG,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,,DRAFT,1960000.00,3920
+wp-prod-3922,ÁO FURYGAN ARROW VENTED BLACK/RED,ao-giap-bao-ho-furygan-arrow-black-red,ARROW VENTED BR,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,,DRAFT,1960000.00,3922
+wp-prod-5883,ÁO FURYGAN BRUCE BLACK,ao-furygan-bruce-black,FUBRUCEB,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,FURYGAN,DRAFT,1290000.00,5883
+wp-prod-5881,ÁO FURYGAN CHROME BLACK/WHITE,ao-furygan-chrome-black-white,FUCHROMEBW,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,FURYGAN,DRAFT,1620000.00,5881
+wp-prod-5678,ÁO FURYGAN COLD MASTER BLACK,ao-furygan-cold-master-black-2,FUCOLDMASTERB,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,FURYGAN,DRAFT,2100000.00,5678
+wp-prod-5672,ÁO FURYGAN COLD MASTER BLACK/RED,ao-furygan-cold-master-black,FUCOLDMASTERBL,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,FURYGAN,DRAFT,2100000.00,5672
+wp-prod-4152,ÁO FURYGAN DIGITAL TEXTILE,ao-bao-ho-furygan-digital-textile,DIGITAL TEXTILE,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,,DRAFT,1750000.00,4152
+wp-prod-4147,ÁO FURYGAN GENESIS CLAW VENT BLACK,ao-giap-furygan-genesis-claw-vent,GENESIS CLAW VENT,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,,DRAFT,1960000.00,4147
+wp-prod-4196,ÁO FURYGAN GENESIS CLAW VENT BLACK/RED,ao-giap-furygan-genesis-claw-vent-black-red,GENESIS CLAW VENT R,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,,DRAFT,2800000.00,4196
+wp-prod-4535,ÁO FURYGAN GENESIS HIGHLAND,ao-bao-ho-furygan-genesis-highland,FURYGAN GENESIS HIGHLAND,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,,DRAFT,1290000.00,4535
+wp-prod-4194,ÁO FURYGAN GENESIS VENTED 2-in-1 TEXTILE BLACK,ao-bao-ho-furygan-genesis-vented-2-in-1-textile-black,FURYGAN GENESIS VENTED 2-in-1 ,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,,DRAFT,1890000.00,4194
+wp-prod-4200,ÁO FURYGAN HERO EVO,ao-giap-furygan-hero-evo,FURYGAN HERO EVO,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,,DRAFT,3000000.00,4200
+wp-prod-4585,ÁO FURYGAN KIARA VENTED LADY,ao-furygan-kiara-vented-lady,KIARA LADY,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,,DRAFT,1800000.00,4585
+wp-prod-4597,ÁO FURYGAN LADY MODEL,furygan-lady-model,FURYGAN LADY,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,,DRAFT,1900000.00,4597
+wp-prod-4595,ÁO FURYGAN LADY MODEL MỚI VENTED,ao-bao-ho-furygan-lady-model-m-i-vented,FURYGAN LADY VENTED,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,,DRAFT,1890000.00,4595
+wp-prod-4591,ÁO FURYGAN MYTIC LADY,ao-furygan-mytic-lady,MYTIC LADY,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,FURYGAN,DRAFT,2050000.00,4591
+wp-prod-5696,ÁO FURYGAN NINA VENTED 2W IN 1 BLACK/GRAY,ao-furygan-ninja-vented-2w-in-1-black-gray,FUNINJABG,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,FURYGAN,DRAFT,1890000.00,5696
+wp-prod-5708,ÁO FURYGAN ROCKY BLACK,ao-furygan-rocky-black,FUROCKB,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,FURYGAN,DRAFT,2030000.00,5708
+wp-prod-5877,ÁO FURYGAN SERPICO BLACK,ao-furygan-serpico-black,FUSERPICOB,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,FURYGAN,DRAFT,1940000.00,5877
+wp-prod-5676,ÁO FURYGAN SPARK BLACK/WHITE/BLUE,ao-furygan-spark-black-white-blue,FUSPARKBWB,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,FURYGAN,DRAFT,2450000.00,5676
+wp-prod-4995,ÁO FURYGAN SWIRL VENTED 3 EN 1 GREEN,ao-giap-furygan-swirl-vented-3-en-1-green,FUSV3EN1,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,FURYGAN,DRAFT,2240000.00,4995
+wp-prod-5622,ÁO FURYGAN SWIRL VENTED 3 EN 1 RED,ao-furygan-swirl-vented-3-en-1-red,FUSWIRLV3EN1R,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,FURYGAN,DRAFT,2240000.00,5622
+wp-prod-5688,ÁO FURYGAN VULCAIN 3 IN 1 BLACK,ao-furygan-vulcain-3-in-1-black,FUVULCAINB,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,FURYGAN,DRAFT,2100000.00,5688
+wp-prod-4210,ÁO FURYGAN WARRIOR TEXTILE,ao-giap-furygan-warrior-textile,FURYGAN WARRIOR TEXTILE,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,,DRAFT,3000000.00,4210
+wp-prod-4212,ÁO FURYGAN WB-06 2EN1 VENTED,ao-bao-ho-furygan-wb-06-2en1-vented,FURYGAN WB-06 2EN1,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,,DRAFT,2400000.00,4212
+wp-prod-3749,ÁO GIÁP SCOYCO - JK42 BLACK/GREEN,ao-bao-ho-scoyco-jk42-black-green,JK42BG,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,SCOYCO,DRAFT,3200000.00,3749
+wp-prod-3806,ÁO GIÁP SCOYCO - JK42 BLACK/GREEN,ao-bao-ho-scoyco-jk42-black-green-2,JK42BG-wp-3806,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,SCOYCO,DRAFT,3200000.00,3806
+wp-prod-3758,ÁO GIÁP SCOYCO - JK42 BLACK/ORANGE,ao-bao-ho-scoyco-jk42-black-orange,JK42BO,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,SCOYCO,DRAFT,3200000.00,3758
+wp-prod-3754,ÁO GIÁP SCOYCO JK42 BLACK/WHITE,ao-bao-ho-scoyco-jk42-black-white,JK42BW,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,SCOYCO,DRAFT,3200000.00,3754
+wp-prod-3743,ÁO GIÁP SCOYCO-JK63 BLACK,ao-bao-ho-scoyco-jk63-black,JK63B,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,SCOYCO,DRAFT,2025000.00,3743
+wp-prod-3802,ÁO GIÁP SCOYCO-JK63 GREEN,ao-bao-ho-scoyco-jk63-green-2,JK63G-wp-3802,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,SCOYCO,DRAFT,2025000.00,3802
+wp-prod-3745,ÁO GIÁP SCOYCO-JK63 GREEN,ao-bao-ho-scoyco-jk63-green,JK63G,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,SCOYCO,DRAFT,2025000.00,3745
+wp-prod-3747,ÁO GIÁP SCOYCO-JK63 WHITE,ao-bao-ho-scoyco-jk63-white,JK63W,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,SCOYCO,DRAFT,2025000.00,3747
+wp-prod-3804,ÁO GIÁP SCOYCO-JK63 WHITE,ao-bao-ho-scoyco-jk63-white-2,JK63W-wp-3804,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,SCOYCO,DRAFT,2025000.00,3804
+wp-prod-4549,ÁO MACNA FLARE CAMO ORANGE,ao-giap-bao-ho-macna-vosges-camo-orange,MACNA FLARE CAMO O,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,,DRAFT,1750000.00,4549
+wp-prod-4465,ÁO MACNA SURGE,ao-bao-ho-macna-surge,MACNA SURGE,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,,DRAFT,1470000.00,4465
+wp-prod-5710,ÁO NỮ DRIRIDER JEWEL 2 AIR,ao-n-dririder-jewel-2-air,DRIJEWEL2AIR,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,,DRAFT,1890000.00,5710
+wp-prod-5684,ÁO NỮ FURYGAN ARROW PINK,ao-furygan-arrow-pink,FUARROWP,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,FURYGAN,DRAFT,2170000.00,5684
+wp-prod-5712,ÁO NỮ FURYGAN ARROW WHITE,ao-n-furygan-arrow-white,FUARROWW,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,FURYGAN,DRAFT,2170000.00,5712
+wp-prod-5414,ÁO TAICHI RSJ706 AVIATOR ALL SEASON,ao-taichi-rsj706-aviator-all-season,RSJ706AAS,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,,DRAFT,2900000.00,5414
+wp-prod-5354,ÁO TAICHI RSJJ14 SPLIT AIR BLACK/GRAY,ao-taichi-rsjj14-black-gray,TAICHIRSJJ14G,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,,DRAFT,2161000.00,5354
+wp-prod-3976,ÁO TÚI KHÍ HIT-AIR SHOCK BUFFERING MC3,ao-bao-ho-tui-khi-hit-air-shock-buffering-mc3,SHOCK BUFFERING MC3,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,,DRAFT,5940000.00,3976
+wp-prod-855,Áo bảo hộ  Komine JK-088,ao-bao-ho-di-mo-to-xe-may-phuot-ao-bao-ho-komine-jk-088,JK088,ÁO QUẦN BẢO HỘ MOTO PHƯỢT,,DRAFT,2700000.00,855

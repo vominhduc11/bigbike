@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import type { Metadata } from "next";
 import { getLocale } from "next-intl/server";
-import type { Article, Category, HomeSlider, Product } from "@/lib/contracts/public";
+import type { Article, Category, HomeSlider, HomeVideo, Product } from "@/lib/contracts/public";
 import { HeroSlider } from "@/components/home/HeroSlider";
 import { BrandCarousel } from "@/components/home/BrandCarousel";
 import { FeaturedProductsCarousel } from "@/components/home/FeaturedProductsCarousel";
@@ -28,19 +28,12 @@ import {
   serializeJsonLd,
 } from "@/lib/seo/json-ld";
 import {
-  formatDate,
   isSafeHomeVideoUrl,
   resolveMediaUrl,
   safeText,
   toSafePublicHref,
 } from "@/lib/utils/format";
-import { sanitizeRichHtml } from "@/lib/utils/html";
-import {
-  toArticlePath,
-  toCategoryPath,
-  toHomePath,
-  toProductListPath,
-} from "@/lib/utils/routes";
+import { toArticlePath, toCategoryPath, toHomePath, toProductListPath } from "@/lib/utils/routes";
 
 // Locale is read from a cookie (next-intl) — opt into dynamic rendering.
 // Data fetches are still cached at the fetch cache level.
@@ -48,29 +41,35 @@ export const dynamic = "force-dynamic";
 
 const HOME_ORG_LOGO = "/wp/logo.png";
 
-const WP_ABOUT_SUBTITLE = "BIGBIKE";
-const WP_ABOUT_TITLE = "SHOP BẢO HỘ MOTO UY TÍN";
-const WP_ABOUT_HTML = `
-  <p><span style="font-weight: 400;">Bigbike tự hào là một trong những shop chuyên bán đồ phượt, đồ bảo hộ moto đáng tin cậy tại TP HCM được nhiều anh em biker tin tưởng lựa chọn. Chúng tôi chuyên cung cấp đa dạng các dòng sản phẩm phụ kiện bảo hộ dành cho biker như mũ bảo hiểm fullface, mũ bảo hiểm 3/4, áo giáp, găng tay, giày bảo hộ, balo, túi đeo, túi treo xe, kính, khăn đa năng và nhiều phụ kiện moto khác.</span></p>
-  <p><span style="font-weight: 400;">Bigbike luôn ưu tiên sản phẩm chính hãng, nguồn gốc rõ ràng, tư vấn đúng nhu cầu và đồng hành cùng rider trong từng chuyến đi.</span></p>
-`;
+const WP_ABOUT_HTML =
+  '<p><span style="font-weight: 400">Bigbike tự hào là một trong những shop chuyên bán đồ phượt, đồ bảo hộ moto đáng tin cậy tại TP HCM được nhiều anh em biker tin tưởng lựa chọn. Chúng tôi chuyên cung cấp đa dạng các dòng sản phẩm đồ phượt moto, phụ kiện phượt, đồ bảo hộ chính hãng từ nhiều thương hiệu nổi tiếng trên thế giới.</span></p>';
+
+const WP_CONTENT_BOTTOM_HTML = `<h1 style="text-align: justify"><strong>Shop bán đồ phượt moto chuyên cung cấp phụ kiện phượt moto</strong></h1><p style="text-align: justify"><span style="font-weight: 400">Các sản phẩm <strong>đồ bảo hộ moto</strong> và <strong>phụ kiện phượt</strong> là những vật dụng không thể thiếu cho các tay chơi phân khối lớn. Các sản phẩm này có chức năng chính là bảo vệ sự an toàn cho các biker khi điều khiển xe moto với tốc độ cao trong các cuộc hành trình khám phá.</span></p><p style="text-align: justify"><span style="font-weight: 400">Có rất nhiều loại đồ bảo hộ moto, mỗi sản phẩm đều sở hữu một tính năng bảo vệ riêng, có thể kể đến như:</span></p><ul style="text-align: justify"><li style="font-weight: 400"><span style="font-weight: 400">Mũ bảo hiểm: giúp giảm thiểu tối đa chấn thương vùng đầu.</span></li><li style="font-weight: 400"><span style="font-weight: 400">Áo quần bảo hộ: bảo vệ cơ thể người mặc khỏi những va đập khi di chuyển.</span></li><li style="font-weight: 400"><span style="font-weight: 400">Găng tay bảo hộ: hạn chế tổn thương vùng tay.</span></li><li style="font-weight: 400"><span style="font-weight: 400">Giày bảo hộ: tăng khả năng bảo vệ chân khỏi nguy hiểm.</span></li><li style="font-weight: 400"><span style="font-weight: 400">Giáp bảo hộ tay chân – đai lưng – phụ kiện giáp: hỗ trợ tăng khả năng chống va đập, mài mòn và nâng cao khả năng bảo vệ người mặc trong những tình huống bất ngờ.</span></li></ul><p style="text-align: justify"><span style="font-weight: 400">Bên cạnh đó, các biker hiện nay thường có xu hướng trang bị thêm cho mình nhiều phụ kiện đi phượt moto khác để nâng cao khả năng bảo vệ cho cơ thể. Có nhiều loại sản phẩm đang được các biker ưa chuộng như phụ kiện đi mưa, pinlock và khẩu trang.</span></p><p style="text-align: justify"><span style="font-weight: 400">Ngoài ra, những sản phẩm đồ bảo hộ và phụ kiện đi phượt moto còn góp phần làm nổi bật phong cách và đồng thời thể hiện sự mạnh mẽ cho người sử dụng. </span></p><h2 style="text-align: justify"><strong>Shop bảo hộ moto đáng tin cậy của các biker</strong></h2><p style="text-align: justify"><span style="font-weight: 400">Đến với shop bán đồ phượt moto Bigbike, khách hàng được hoàn toàn đảm bảo về chất lượng sản phẩm. Các sản phẩm luôn đạt được các tiêu chuẩn về độ an toàn dành cho các thiết bị bảo hộ, nên bạn có thể yên tâm khi sử dụng. </span></p><p style="text-align: justify"><span style="font-weight: 400">Các sản phẩm </span><a href="https://bigbike.vn/mu-bao-hiem.html"><span style="font-weight: 400">mũ bảo hiểm</span></a><span style="font-weight: 400">, </span><a href="https://bigbike.vn/ao-quan-bao-ho.html"><span style="font-weight: 400">quần – áo bảo hộ</span></a><span style="font-weight: 400">, </span><a href="https://bigbike.vn/gang-tay.html"><span style="font-weight: 400">găng tay</span></a><span style="font-weight: 400">, </span><a href="https://bigbike.vn/giay-bao-ho.html"><span style="font-weight: 400">giày bảo hộ moto</span></a><span style="font-weight: 400"> và </span><a href="https://bigbike.vn/phu-kien-khac.html"><span style="font-weight: 400">các phụ kiện đi phượt moto khác</span></a><span style="font-weight: 400"> được cung cấp bởi những thương hiệu nổi tiếng như </span><span style="font-weight: 400">Alpinestars, Scoyco và Furygan, </span><span style="font-weight: 400">rất đa dạng về mẫu mã, kích cỡ và màu sắc cho khách hàng nhiều sự lựa chọn khác nhau. Bên cạnh sự cam kết về chất lượng, chúng tôi còn đảm bảo về mức giá tốt nhất cho khách hàng. </span></p><p style="text-align: justify"><span style="font-weight: 400">Những xu hướng và mẫu mã thịnh hành nhất trên thị trường hiện nay luôn được shop đồbảo hộ moto của chúng tôi cập nhật thường xuyên. Nhằm</span> <span style="font-weight: 400">đáp ứng kịp thời thị hiếu và nhu cầu từ cơ bản đến nâng cao của khách hàng. Khi đến trực tiếp shop đồ phượt moto của Bigbike, bạn sẽ được nhân viên tư vấn thông tin chi tiết và có thể kiểm tra chất lượng trực tiếp để lựa chọn cho mình sản phẩm phù hợp.</span></p><p style="text-align: justify"><span style="font-weight: 400">Bigbike luôn lắng nghe, thấu hiểu những ý kiến đóng góp của khách hàng và cố gắng hoàn thiện mình để đem đến cho bạn những sản phẩm và dịch vụ tốt nhất và cố gắng trở thành shop đồ phượt Hồ Chí Minh được các anh em biker tin tưởng. Trong suốt quá trình hình thành và phát triển, chúng tôi tự hào là đơn vị nhận được sự tin tưởng cũng như những đánh giá tích cực từ cộng đồng biker. </span></p><p style="text-align: justify"><span style="font-weight: 400">Đội ngũ nhân viên của shop đồ phượt moto Bigbike có sự am hiểu về kiến thức, thông tin sản phẩm và luôn sẵn sàng tư vấn khi cần thiết. Sự hài lòng của khách hàng luôn là tiêu chí hàng đầu của chúng tôi. </span></p><p style="text-align: justify"><span style="font-weight: 400">Những chính sách hậu mãi và dịch vụ hậu cần cũng luôn được thực hiện nhanh chóng. Các hoạt động giao nhận hàng hóa, các chính sách bảo hành và đổi trả sản phẩm luôn được áp dụng tiện lợi nhất. Hàng hóa khi được vận chuyển luôn đảm bảo trạng thái tốt nhất khi đến tay của khách hàng. </span></p><p style="text-align: justify"><span style="font-weight: 400">Chúng tôi cung cấp đầy đủ những gì bạn cần cho một cuộc hành trình. Bigbike là shop bảo hộ moto uy tín và xứng đáng để bạn trao gửi niềm tin. Hãy </span><a href="https://bigbike.vn/vi/lien-he.html"><span style="font-weight: 400">liên hệ</span></a>  <span style="font-weight: 400">ngay với bộ phận tư vấn chúng tôi để biết thêm thông tin chi tiết về các sản phẩm và để được nhận các chương trình ưu đãi hấp dẫn.</span></p>`;
+
+function toLegacyWpMediaUrl(src: string | null | undefined): string | null {
+  if (!src) return null;
+  return src.startsWith("/wp-content/") ? `https://bigbike.vn${src}` : src;
+}
 
 const HOME_CATEGORY_HIGHLIGHTS = [
   {
     category: "BALÔ ĐEO LƯNG - TÚI ĐEO - TÚI TREO XE",
+    categoryHref: "/balo-deo-lung-tui-deo-tui-treo-xe.html",
     title: "BALO MOTO PHƯỢT TAICHI RSB278 – CHỐNG NƯỚC",
     href: "/sp/balo-moto-phuot-chinh-hang-taichi-rs278-chong-nuoc.html",
     imageSrc:
-      "/wp-content/uploads/2023/03/Balo-di-mo-to-phuot-chinh-hang-Taichi-RSB278-chong-mua-3-300x300.jpg",
+      "https://bigbike.vn/wp-content/uploads/2023/03/Balo-di-mo-to-phuot-chinh-hang-Taichi-RSB278-chong-mua-3-300x300.jpg",
   },
   {
     category: "MŨ BẢO HIỂM",
+    categoryHref: "/mu-bao-hiem.html",
     title: "MŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06",
     href: "/sp/mu-bao-hiem-ls2-ff800-storm.html",
     imageSrc:
-      "/wp-content/uploads/2020/07/MU-BAO-HIEM-LS2-FF800-TITANIUM-17-300x300.jpg",
+      "https://bigbike.vn/wp-content/uploads/2020/07/MU-BAO-HIEM-LS2-FF800-TITANIUM-17-300x300.jpg",
   },
 ];
+
 
 const HOME_FAQS = [
   {
@@ -130,9 +129,10 @@ function sliderProductSlug(slider: HomeSlider): string | null {
 }
 
 function toHeroSlide(slider: HomeSlider, product: Product | null) {
-  const desktopSrc = resolveMediaUrl(slider.desktopImage?.url?.trim());
+  const desktopSrc = toLegacyWpMediaUrl(resolveMediaUrl(slider.desktopImage?.url?.trim()));
   if (!desktopSrc) return null;
-  const mobileSrc = resolveMediaUrl(slider.mobileImage?.url?.trim()) || desktopSrc;
+  const mobileSrc =
+    toLegacyWpMediaUrl(resolveMediaUrl(slider.mobileImage?.url?.trim())) || desktopSrc;
   return {
     id: slider.id,
     desktopSrc,
@@ -144,11 +144,11 @@ function toHeroSlide(slider: HomeSlider, product: Product | null) {
     alt: safeText(slider.desktopImage?.alt || slider.mobileImage?.alt, "BigBike"),
     productName: product ? safeText(product.name, "") : "",
     categoryName: product?.category?.name ?? "",
-    productCode: product?.sku?.trim() ?? "",
+    productCode: product?.sku?.trim() || "BIGBIKE",
   };
 }
 
-function isRenderableHomeVideo(video: import("@/lib/contracts/public").HomeVideo): boolean {
+function isRenderableHomeVideo(video: HomeVideo): boolean {
   if (video.youtubeId && /^[A-Za-z0-9_-]{11}$/.test(video.youtubeId)) {
     return true;
   }
@@ -179,29 +179,40 @@ function WpCategoryListItem({ category }: { category: Category }) {
 
 function HomeCategoryHighlights() {
   return (
-    <section className="bb-home-category-list" aria-label="Sản phẩm theo danh mục">
-      <div className="bb-home-category-list-grid">
-        {HOME_CATEGORY_HIGHLIGHTS.map((item) => (
-          <Link key={item.href} href={item.href} className="bb-home-category-item">
-            <span className="bb-home-category-label">{item.category}</span>
-            <span className="bb-home-category-title">{item.title}</span>
-            <span className="bb-home-category-button">Mua ngay</span>
-            <Image
-              src={item.imageSrc}
-              alt={item.title}
-              width={300}
-              height={300}
-              className="bb-home-category-image"
-              sizes="(max-width: 767px) 58vw, 220px"
-              loading="lazy"
-              unoptimized
-            />
-          </Link>
-        ))}
+    <div className="category-list">
+      <div className="container">
+        <div className="row">
+          {HOME_CATEGORY_HIGHLIGHTS.map((item) => (
+            <div key={item.href} className="col-md-4">
+              <div className="item">
+                <div className="item--thumbnail">
+                  <Link href={item.href}>
+                    <img
+                      src={item.imageSrc}
+                      alt={item.title}
+                      className="-swiper-lazy lazy"
+                      loading="lazy"
+                    />
+                  </Link>
+                </div>
+                <Link className="item--category" href={item.categoryHref}>
+                  {item.category}
+                </Link>
+                <h3 className="item--title">
+                  <Link href={item.href}>{item.title}</Link>
+                </h3>
+                <Link className="item--btn" href={item.href}>
+                  Mua ngay <i className="fal fa-chevron-right" aria-hidden="true" />
+                </Link>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
-    </section>
+    </div>
   );
 }
+
 
 function stripHtmlToText(html: string): string {
   return html
@@ -233,42 +244,57 @@ function resolveWpNewsExcerpt(article: Article): string {
   return bodyText ? truncateWpExcerpt(bodyText) : "";
 }
 
+function formatWpHomeDate(value: string | null | undefined): string {
+  const date = new Date(value ?? "");
+  if (Number.isNaN(date.valueOf())) return "";
+  return new Intl.DateTimeFormat("vi-VN", {
+    day: "numeric",
+    month: "numeric",
+    year: "numeric",
+  }).format(date);
+}
+
 function WpNewsCard({ article }: { article: Article }) {
   const title = safeText(article.title, "Bài viết");
   const excerpt = resolveWpNewsExcerpt(article);
-  const src = resolveMediaUrl(article.coverImage?.url?.trim());
-  const dateStr = formatDate(article.publishedAt ?? article.createdAt);
+  const src = toLegacyWpMediaUrl(resolveMediaUrl(article.coverImage?.url?.trim()));
+  const href = toArticlePath(article.slug);
+  const dateStr = formatWpHomeDate(article.publishedAt ?? article.createdAt);
 
   return (
-    <Link href={toArticlePath(article.slug)} className="bb-news-card">
-      <div className="bb-news-img-wrap">
-        {src ? (
-          <Image
-            src={src}
-            alt={safeText(article.coverImage?.alt, title)}
-            fill
-            className="bb-news-img"
-            sizes="(max-width: 575px) calc(100vw - 30px), (max-width: 767px) 50vw, 370px"
-          />
-        ) : (
-          <div className="bb-news-img-placeholder" aria-hidden="true">
-            <span className="bb-news-img-placeholder-mark">BIGBIKE</span>
+    <div className="col-md-4 col-sm-6">
+      <div className="news--item">
+        <div className="news--item-thumbnail">
+          <Link
+            className="lazy"
+            href={href}
+            style={src ? { backgroundImage: `url("${src}")` } : undefined}
+          >
+            {src ? (
+              <img
+                src={src}
+                alt={safeText(article.coverImage?.alt, title)}
+                className="lazy"
+                loading="lazy"
+              />
+            ) : null}
+          </Link>
+        </div>
+        <div className="news--item-desc">
+          <div className="news-date">
+            <p>{dateStr}</p>
           </div>
-        )}
-      </div>
-      <div className="bb-news-body">
-        <span className="bb-news-date" aria-hidden="true">
-          {dateStr}
-        </span>
-        <div className="bb-news-body-inside">
-          <h3 className="bb-news-card-title">{title}</h3>
-          {excerpt && <p className="bb-news-excerpt">{excerpt}</p>}
+          <div className="news--item-inside">
+            <p className="title-post">
+              <Link href={href}>{title}</Link>
+            </p>
+            {excerpt ? <p>{excerpt}</p> : null}
+          </div>
         </div>
       </div>
-    </Link>
+    </div>
   );
 }
-
 
 export default async function HomePage() {
   const locale = await getLocale();
@@ -288,26 +314,20 @@ export default async function HomePage() {
     listArticles({ page: 1, category: "tin-tuc", size: 3, sort: "publishedAt:desc" }),
     listBrands({ page: 1, size: 12, sort: "name:asc" }),
     listPublicSettings(),
-    listProducts({ page: 1, homepageBlock: "RECOMMENDED_CAROUSEL", size: 10, sort: "homepageOrder:asc", lang: locale }),
+    listProducts({
+      page: 1,
+      homepageBlock: "RECOMMENDED_CAROUSEL",
+      size: 10,
+      sort: "homepageOrder:asc",
+      lang: locale,
+    }),
     listHomeVideos(),
   ]);
 
-  // Each product lives in exactly one homepage block (enum FEATURED_GRID | RECOMMENDED_CAROUSEL | NONE),
-  // so the prior dedupe pass is no longer required.
   const carouselProducts = carouselProductsResult.data;
-
   const settings = settingsResult.data ?? [];
   const hotline = findSetting(settings, "hotline") || findSetting(settings, "phone");
-  const promoTitle = findSetting(settings, "promo_title") || "LS2 DUAL SPORT MX436\nPIONEER";
-  const promoOff = findSetting(settings, "promo_off") || "20% OFF";
-  const promoHref = findSetting(settings, "promo_href") || toProductListPath();
-  const promoImageSrc =
-    resolveMediaUrl(findSetting(settings, "promo_image_url").trim()) || "/wp/banner-ads.jpg";
-  const aboutTitle = findSetting(settings, "about_title").trim();
-  const aboutSubtitle = findSetting(settings, "about_subtitle").trim();
-  const aboutContentHtml = findSetting(settings, "about_content_html").trim();
-  const hasSettingsAbout = Boolean(aboutTitle && aboutSubtitle && aboutContentHtml);
-  const homeContentBottomHtml = findSetting(settings, "home_content_bottom_html").trim();
+  const address = findSetting(settings, "address");
   const homeH1 =
     findSetting(settings, "seo_home_h1").trim() ||
     findSetting(settings, "seo_home_title").trim() ||
@@ -319,9 +339,7 @@ export default async function HomePage() {
   const expDesc =
     findSetting(settings, "home_exp_desc").trim() ||
     "Tại shop bán đồ phượt moto Bigbike, các sản phẩm đồ bảo hộ moto và phụ kiện phượt rất đa dạng về mẫu mã và kiểu dáng với giá cả vô cùng phải chăng. Ngoài ra, đội ngũ nhân viên của cửa hàng rất am hiểu sản phẩm, sẵn sàng tư vấn và chăm sóc khách hàng khi cần thiết.";
-  const address = findSetting(settings, "address");
 
-  // Mỗi banner có thể gắn 1 sản phẩm — tải sản phẩm đó để hiện tên/danh mục lên hero.
   const rawSliders = slidersResult.data ?? [];
   const sliderProducts = await Promise.all(
     rawSliders.map((slider) => {
@@ -335,11 +353,9 @@ export default async function HomePage() {
 
   const expArticles = expArticlesResult.data;
   const newsArticles = newsArticlesResult.data;
-  // WordPress homepage renders the five latest videos in this carousel.
-  const HOME_VIDEO_LIMIT = 5;
   const homeVideos = (homeVideosResult.data ?? [])
     .filter(isRenderableHomeVideo)
-    .slice(0, HOME_VIDEO_LIMIT);
+    .slice(0, 5);
 
   const jsonLdOrg = serializeJsonLd(buildOrganizationJsonLd("BigBike", HOME_ORG_LOGO));
   const jsonLdWeb = serializeJsonLd(buildWebSiteJsonLd("BigBike"));
@@ -358,45 +374,22 @@ export default async function HomePage() {
       />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdFaq }} />
 
-      {/* Block 1: Hero Banner — WP page-home.php main-banner swiper */}
-      {/* H1 ở đây là sr-only cho SEO — WP không có tagline strip */}
       <h1 className="sr-only">{homeH1}</h1>
       <HeroSlider slides={slides} />
 
-      <div className="bb-container">
-        {/* Block 2: Category highlight tiles - WP page-home.php category-list */}
-        <HomeCategoryHighlights />
+      <HomeCategoryHighlights />
 
-        {/* Block 3: About BigBike */}
-        <section className="bb-about" aria-labelledby="home-about-heading">
-          <div className="bb-about-inner">
-            <div className="bb-about-text">
-              {hasSettingsAbout ? (
-                <>
-                  <p className="bb-kicker">{aboutSubtitle}</p>
-                  <h2 id="home-about-heading" className="bb-about-title">
-                    {aboutTitle}
-                  </h2>
-                  <div
-                    className="bb-about-richtext"
-                    dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(aboutContentHtml) }}
-                  />
-                </>
-              ) : (
-                <>
-                  <p className="bb-kicker">{WP_ABOUT_SUBTITLE}</p>
-                  <h2 id="home-about-heading" className="bb-about-title">
-                    {WP_ABOUT_TITLE}
-                  </h2>
-                  <div
-                    className="bb-about-richtext"
-                    dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(WP_ABOUT_HTML) }}
-                  />
-                </>
-              )}
-            </div>
+      <div className="about-bigbike">
+        <div className="container">
+          <div className="block-title text-center mb-40">
+            <p className="sub-title">BIGBIKE</p>
+            <h3>SHOP BẢO HỘ MOTO UY TÍN</h3>
           </div>
-        </section>
+          <div
+            className="block-content text-center"
+            dangerouslySetInnerHTML={{ __html: WP_ABOUT_HTML }}
+          />
+        </div>
       </div>
 
       {/* Block 4: Product Carousel (ISR) — admin-curated picks */}
@@ -434,48 +427,17 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* Block 6: Promo Banner */}
-      {promoImageSrc ? (
-        <div className="pt-[60px]">
-          <Link
-            href={promoHref}
-            className="bb-promo-banner bb-promo-banner-image block no-underline"
-            aria-label="Khuyến mãi BigBike"
-          >
-            <div className="bb-container bb-promo-image-container">
-              <Image
-                src={promoImageSrc}
-                alt="Banner khuyến mãi BigBike"
-                fill
-                className="bb-promo-image"
-                sizes="(max-width: 768px) 100vw, 1440px"
-              />
+      <div className="banner-ads pt-60">
+        <div className="container">
+          <div className="row">
+            <div className="col-md-12">
+              <a href="#">
+                <img src="/wp/banner-ads.jpg" alt="" className="lazy" loading="lazy" suppressHydrationWarning />
+              </a>
             </div>
-          </Link>
-        </div>
-      ) : (
-        <Link
-          href={promoHref}
-          className="bb-promo-banner block no-underline"
-        >
-          <div className="bb-container">
-            <div className="bb-promo-content">
-              <p className="bb-promo-subtitle">HOT OFFER</p>
-              <h2 className="bb-promo-title">
-                {promoTitle.split("\n").map((line, i) => (
-                  <span key={i} className="block">
-                    {line}
-                  </span>
-                ))}{" "}
-                <span className="bb-promo-off">{promoOff}</span>
-              </h2>
-            </div>
-            <span className="bb-promo-bg-text" aria-hidden="true">
-              BIGBIKE
-            </span>
           </div>
-        </Link>
-      )}
+        </div>
+      </div>
 
       {/* Block 7: Experience Section */}
       {expArticles.length > 0 && (
@@ -499,26 +461,22 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* Block 8: News Section */}
       {newsArticles.length > 0 && (
-        <section
-          className="bb-news-section bb-news-section--home"
-          aria-labelledby="home-news-heading"
-        >
-          <div className="bb-container">
-            <div className="bb-news-block-title text-center">
-              <p className="bb-news-kicker">TIN TỨC MỚI UPDATE</p>
-              <h2 id="home-news-heading" className="bb-news-heading">
-                CẬP NHẬT XU HƯỚNG CÙNG BIGBIKE
-              </h2>
+        <div className="news pt-60">
+          <div className="container">
+            <div className="block-title text-center pb-40">
+              <p className="sub-title">TIN TỨC MỚI UPDATE</p>
+              <h3>CẬP NHẬT XU HƯỚNG CÙNG BIGBIKE</h3>
             </div>
-            <div className="bb-articles-grid-v2">
-              {newsArticles.map((article) => (
-                <WpNewsCard key={article.id} article={article} />
-              ))}
+            <div className="news-list">
+              <div className="row">
+                {newsArticles.map((article) => (
+                  <WpNewsCard key={article.id} article={article} />
+                ))}
+              </div>
             </div>
           </div>
-        </section>
+        </div>
       )}
 
       {/* Block 9: Home Video Carousel */}
@@ -542,56 +500,19 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* Block 10: Brand Carousel */}
       {brandsResult.data.length > 0 && (
-        <section className="bb-brands-section pt-[120px] pb-[120px]" aria-label="Thương hiệu đối tác">
+        <div className="partner-slide pt-120 pb-120">
           <BrandCarousel brands={brandsResult.data} />
-        </section>
+        </div>
       )}
 
-      {/* Block 11: SEO Content */}
-      <section className="bb-seo-content" aria-labelledby="home-seo-heading">
-        <div className="bb-container">
-          {homeContentBottomHtml ? (
-            <div
-              className="bb-seo-content-body"
-              dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(homeContentBottomHtml) }}
-            />
-          ) : (
-            <div className="bb-seo-content-body">
-              <div className="mb-8 max-[600px]:mb-6">
-                <p className="bb-kicker">VỀ BIGBIKE</p>
-                <h2 id="home-seo-heading" className="bb-section-title">
-                  SHOP BÁN ĐỒ BẢO HỘ MOTO — PHỤ KIỆN TOURING CHÍNH HÃNG TẠI TP HCM
-                </h2>
-              </div>
-              <p>
-                BigBike chuyên cung cấp đồ bảo hộ moto, phụ kiện touring và gear chính hãng
-                cho biker tại TP HCM.
-              </p>
-              <ul>
-                <li>
-                  <Link href={toCategoryPath("non-bao-hiem-moto")}>Mũ bảo hiểm</Link> chính hãng.
-                </li>
-                <li>
-                  <Link href={toCategoryPath("quan-ao-bao-ho-moto")}>Áo giáp moto</Link> và quần áo bảo hộ.
-                </li>
-                <li>
-                  <Link href={toCategoryPath("gang-tay")}>Găng tay</Link> cho nhiều nhu cầu chạy xe.
-                </li>
-                <li>
-                  <Link href={toCategoryPath("giay-bao-ho")}>Giày moto</Link> và boot bảo hộ.
-                </li>
-                <li>
-                  <Link href={toProductListPath()}>Phụ kiện touring</Link> cho hành trình dài.
-                </li>
-              </ul>
-            </div>
-          )}
-        </div>
-      </section>
+      <div className="content-bottom wyswyg">
+        <div
+          className="container"
+          dangerouslySetInnerHTML={{ __html: WP_CONTENT_BOTTOM_HTML }}
+        />
+      </div>
 
-      {/* Analytics (CSR, no render) */}
       <HomeAnalytics />
     </div>
   );

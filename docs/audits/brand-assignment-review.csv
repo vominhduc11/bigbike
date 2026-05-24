@@ -1,0 +1,4 @@
+product_id,product_name,product_slug,brand_id,brand_name,brand_slug,confidence,status
+wp-prod-33452,ÁO GIÁP BẢO HỘ CHO NỮ SEVENTY SD-JR49,ao-khoac-bao-ho-macna-flare,wp-brand-2422,MACNA,macna,MEDIUM,PENDING_REVIEW — not applied to DB
+wp-prod-37123,GĂNG TAY MOTO O'NEAL BUTCH CARBON GLOVE BLACK,gang-tay-moto-oneal-butch-carbon-glove-black,wp-brand-6612,ONEAL,oneal,MEDIUM,PENDING_REVIEW — not applied to DB
+wp-prod-3989,TÚI HÍT BÌNH XĂNG SW-MOTECH QUICK-LOCK EVO MICRO 1680 2.5L,tui-hit-binh-xang-sw-motech-quick-lock-evo-micro-1680-2-5l,wp-brand-386,SW MOTECH,sw-motech,MEDIUM,PENDING_REVIEW — not applied to DB

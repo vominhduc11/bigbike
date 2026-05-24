@@ -7,8 +7,8 @@ import type { Product } from "@/lib/contracts/public";
 
 type PdpRelatedProductsCarouselProps = {
   products: Product[];
-  kicker: string;
-  heading: string;
+  kicker?: string;
+  heading?: string;
 };
 
 function getColumns(width: number) {
@@ -19,8 +19,8 @@ function getColumns(width: number) {
 
 export function PdpRelatedProductsCarousel({
   products,
-  kicker,
-  heading,
+  kicker = "SẢN PHẨM LIÊN QUAN",
+  heading = "Sản phẩm tương tự",
 }: PdpRelatedProductsCarouselProps) {
   const [columns, setColumns] = useState(4);
   const [index, setIndex] = useState(0);
@@ -46,16 +46,16 @@ export function PdpRelatedProductsCarousel({
   if (products.length === 0) return null;
 
   return (
-    <section className="product-list pt-80 pb-40 bb-wp-related">
-      <div className="container">
-        <div className="block-title text-center mb-40">
-          <p className="sub-title">{kicker}</p>
-          <h3>{heading}</h3>
-        </div>
+    <section className="related products bb-wp-related">
+      <div className="block-title text-center mb-40">
+        <p className="sub-title text-uppercase">{kicker}</p>
+        <p className="text-uppercase related_heading">{heading}</p>
+      </div>
 
-        <div className="product product-slide product-related-bigbike">
-          {products.length > columns && (
-            <>
+      <div className="row">
+        <div className="product-list pb-40">
+          <div className="container">
+            <div className="product product-slide product-related-woo">
               <button
                 type="button"
                 className="swiper-button-next swiper-button"
@@ -76,16 +76,16 @@ export function PdpRelatedProductsCarousel({
                   <path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </button>
-            </>
-          )}
 
-          <div className="swiper-container">
-            <div className="swiper-wrapper bb-wp-related-track" style={trackStyle}>
-              {products.map((product) => (
-                <div className="swiper-slide" key={product.id}>
-                  <ProductCard product={product} variant="featured" />
+              <div className="swiper-container">
+                <div className="swiper-wrapper bb-wp-related-track" style={trackStyle}>
+                  {products.map((product) => (
+                    <div className="swiper-slide" key={product.id}>
+                      <ProductCard product={product} variant="related" />
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
             </div>
           </div>
         </div>

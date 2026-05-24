@@ -282,10 +282,13 @@
     "sortLabel": "Sort",
     "sortPlaceholder": "Sort by…",
     "sort": {
+      "default": "Default sorting",
+      "popularity": "Sort by popularity",
+      "date": "Sort by latest",
       "newest": "Newest",
       "oldest": "Oldest",
-      "priceAsc": "Price: low to high",
-      "priceDesc": "Price: high to low",
+      "priceAsc": "Sort by price: low to high",
+      "priceDesc": "Sort by price: high to low",
       "nameAsc": "Name A–Z",
       "nameDesc": "Name Z–A"
     },
