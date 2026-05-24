@@ -7,22 +7,44 @@ import DOMPurify from "isomorphic-dompurify";
  * sanitizer — regex HTML sanitizers are historically bypassable. WordPress
  * shortcodes are stripped first (they are plain-text noise, not an XSS vector).
  */
-export function sanitizeRichHtml(rawHtml: string | null | undefined): string {
+type SanitizeRichHtmlOptions = Readonly<{
+  allowInlineStyles?: boolean;
+  rewriteMediaUrls?: boolean;
+}>;
+
+export function sanitizeRichHtml(
+  rawHtml: string | null | undefined,
+  options: SanitizeRichHtmlOptions = {},
+): string {
   if (!rawHtml) {
     return "<p>Nội dung đang cập nhật.</p>";
   }
 
   registerHooks();
-  const withoutShortcodes = stripWpShortcodes(rawHtml);
+  const normalizedHtml = options.rewriteMediaUrls ? rewriteLegacyMediaUrls(rawHtml) : rawHtml;
+  const withoutShortcodes = stripWpShortcodes(normalizedHtml);
+  const allowedAttr = options.allowInlineStyles
+    ? [...ALLOWED_ATTR, "style", "dir", "srcset", "sizes", "decoding", "fetchpriority"]
+    : ALLOWED_ATTR;
 
   return DOMPurify.sanitize(withoutShortcodes, {
     ALLOWED_TAGS,
-    ALLOWED_ATTR,
+    ALLOWED_ATTR: allowedAttr,
     // Drop generic data-* attributes; `data-src` is allowlisted explicitly above.
     ALLOW_DATA_ATTR: false,
   })
     .replace(/<h1(\s[^>]*)?>/gi, "<h2$1>")
     .replace(/<\/h1>/gi, "</h2>");
+}
+
+function rewriteLegacyMediaUrls(html: string): string {
+  return html
+    .replace(/https:\/\/cdn\.bigbike\.vn\/uploads\//g, "/wp-content/uploads/")
+    .replace(/https?:\/\/(?:www\.)?bigbike\.vn\/wp-content\/uploads\//g, "/wp-content/uploads/")
+    .replace(
+      /https?:\/\/(?:localhost|127\.0\.0\.1|minio):9000\/bigbike-media\/wp-uploads\//g,
+      "/media/wp-uploads/",
+    );
 }
 
 // WordPress shortcode names known to wrap content (`[name]…[/name]`). The

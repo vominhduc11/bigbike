@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { Crown, Download, Search, UserCheck, UserPlus, Users } from 'lucide-react'
+import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { exportCustomersCsv, fetchCustomers, fetchCustomerSummary } from '../lib/adminApi'
@@ -213,19 +214,11 @@ export function CustomerListScreen({ navigate }) {
             </div>
           </div>
           {state.status === 'success' && pagination && (
-            <div className="card-foot">
-              <span>
-                {t('common.paginationSummary', {
-                  defaultValue: `Hiển thị ${items.length} trong ${pagination.totalItems} khách hàng`,
-                  count: items.length,
-                  total: pagination.totalItems,
-                })}
-              </span>
-              <div className="pager">
-                <button type="button" disabled={pagination.page <= 1} onClick={() => updateQuery({ page: pagination.page - 1 })}>‹</button>
-                <button type="button" className="active">{pagination.page}</button>
-                <button type="button" disabled={pagination.page >= pagination.totalPages} onClick={() => updateQuery({ page: pagination.page + 1 })}>›</button>
-              </div>
+            <div className="px-[18px] py-3 border-t border-border">
+              <PaginationControls
+                pagination={pagination}
+                onPageChange={(p) => updateQuery({ page: p })}
+              />
             </div>
           )}
         </div>

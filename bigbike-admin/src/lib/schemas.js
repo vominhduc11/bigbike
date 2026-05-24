@@ -93,7 +93,6 @@ export function createProductSchema(t, isCreate = false) {
           shortDescription: z.string().optional(),
           description: z.string().optional(),
           contentBottom: z.string().optional(),
-          promotionContent: z.string().optional(),
           installationGuide: z.string().optional(),
           seoTitle: z.string().optional(),
           seoDescription: z.string().optional(),
@@ -183,7 +182,7 @@ export function createProductSchema(t, isCreate = false) {
       const en = data.translations?.en ?? {}
       const enLimits = [
         ['name', 255], ['shortDescription', 2000], ['description', 20000],
-        ['contentBottom', 50000], ['promotionContent', 50000],
+        ['contentBottom', 50000],
         ['installationGuide', 50000], ['seoTitle', 255], ['seoDescription', 5000],
       ]
       for (const [field, max] of enLimits) {

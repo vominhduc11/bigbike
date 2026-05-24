@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { Swiper, SwiperSlide } from "swiper/react";
+import "swiper/css";
 import type { Article } from "@/lib/contracts/public";
 import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { toArticlePath } from "@/lib/utils/routes";
@@ -75,8 +76,11 @@ function orderLikeLegacyWp(articles: Article[]): Article[] {
   });
 }
 
-function modulo(index: number, length: number): number {
-  return ((index % length) + length) % length;
+function expandForSwiperLoop(articles: Article[]): Article[] {
+  if (articles.length <= 1) return articles;
+  const expanded = [...articles];
+  while (expanded.length < 6) expanded.push(...articles);
+  return expanded;
 }
 
 function resolveArticleMedia(article: Article): {
@@ -112,7 +116,7 @@ function ExperienceSlide({
   const media = resolveArticleMedia(article);
 
   return (
-    <div className="bb-exp-slide">
+    <div className="bb-exp-slide select-none">
       <div className="overflow-hidden bg-[linear-gradient(135deg,var(--bb-brand-primary-active),var(--bb-bg-surface-dark-2))]">
         {media.bgSrc ? (
           // eslint-disable-next-line @next/next/no-img-element -- WP parity needs native image sizing/max-height behavior.
@@ -129,10 +133,10 @@ function ExperienceSlide({
 
       <div
         className={cn(
-          "bb-exp-slide-content mt-[-32%] transition-all duration-700 ease-in-out",
+          "bb-exp-slide-content mt-[-32%] transform-gpu transition-[opacity,transform] duration-[700ms] ease-[ease] will-change-[opacity,transform]",
           isActive
             ? "pointer-events-auto translate-y-0 opacity-100"
-            : "pointer-events-none translate-y-10 opacity-0",
+            : "pointer-events-none translate-y-10 opacity-0 max-[767px]:translate-y-0 max-[767px]:opacity-100",
         )}
         aria-hidden={!isActive}
       >
@@ -142,7 +146,7 @@ function ExperienceSlide({
             <img
               src={media.productSrc}
               alt={media.productAlt}
-              className="mx-auto w-1/2 max-w-none max-[1260px]:w-4/5"
+              className="mx-auto w-1/2 max-w-none max-[991px]:w-4/5"
               loading="eager"
               decoding="async"
               draggable={false}
@@ -151,19 +155,18 @@ function ExperienceSlide({
         ) : null}
 
         <div className="text-center max-[767px]:mt-5">
-          <h3 className="m-0 font-heading text-[18.72px] font-semibold uppercase leading-[28.08px] text-black max-[767px]:text-24 max-[767px]:leading-[36px]">
+          <h3 className="m-0 font-heading text-[18.72px] font-semibold uppercase leading-[28.08px] text-black max-[767px]:mx-auto max-[767px]:max-w-[240px] max-[767px]:text-24 max-[767px]:leading-[36px]">
             {media.title}
           </h3>
-          {isActive ? (
-            <div className="pt-[40px] text-center">
-              <Link
-                href={toArticlePath(article.slug)}
-                className="inline-block w-[170px] border border-[var(--bb-border-default)] p-0 font-cta text-base font-semibold uppercase leading-[52px] text-black no-underline hover:text-black hover:no-underline focus-visible:outline-[var(--bb-focus-outline)] focus-visible:outline-offset-4"
-              >
-                XEM CHI TIẾT
-              </Link>
-            </div>
-          ) : null}
+          <div className="pt-[40px] text-center">
+            <Link
+              href={toArticlePath(article.slug)}
+              className="inline-block w-[170px] border border-[var(--bb-border-default)] p-0 font-cta text-base font-semibold uppercase leading-[52px] text-black no-underline transition-[border-color,color] duration-[var(--bb-duration-fast)] ease-[var(--bb-ease-standard)] hover:text-black hover:no-underline focus-visible:outline-[var(--bb-focus-outline)] focus-visible:outline-offset-4"
+              tabIndex={isActive ? 0 : -1}
+            >
+              XEM CHI TIẾT
+            </Link>
+          </div>
         </div>
       </div>
     </div>
@@ -172,73 +175,40 @@ function ExperienceSlide({
 
 export function ExperienceCarousel({ articles }: Props) {
   const orderedArticles = orderLikeLegacyWp(articles);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const pointerStartX = useRef<number | null>(null);
-
   if (orderedArticles.length === 0) return null;
 
-  const normalizedActiveIndex = modulo(activeIndex, orderedArticles.length);
-  const activeArticle = orderedArticles[normalizedActiveIndex];
-  const previousArticle = orderedArticles[modulo(normalizedActiveIndex - 1, orderedArticles.length)];
-  const nextArticle = orderedArticles[modulo(normalizedActiveIndex + 1, orderedArticles.length)];
   const hasSideSlides = orderedArticles.length > 1;
-
-  const goTo = (index: number) => {
-    setActiveIndex(modulo(index, orderedArticles.length));
-  };
-
-  const handlePointerUp = (clientX: number) => {
-    if (pointerStartX.current === null || !hasSideSlides) return;
-    const deltaX = clientX - pointerStartX.current;
-    pointerStartX.current = null;
-
-    if (Math.abs(deltaX) < 42) return;
-    goTo(normalizedActiveIndex + (deltaX < 0 ? 1 : -1));
-  };
+  const carouselArticles = expandForSwiperLoop(orderedArticles);
 
   return (
-    <div
-      className="bb-exp-carousel relative w-full touch-pan-y overflow-hidden pb-[40px] [--bb-exp-slide-gap:40px] [--bb-exp-slide-size:calc((100%_-_57.2px)_/_2.43)] max-[766px]:[--bb-exp-slide-gap:13px] max-[766px]:[--bb-exp-slide-size:calc((100%_-_2.6px)_/_1.2)]"
-      onPointerDown={(event) => {
-        pointerStartX.current = event.clientX;
-      }}
-      onPointerCancel={() => {
-        pointerStartX.current = null;
-      }}
-      onPointerLeave={(event) => {
-        if (event.buttons === 1) handlePointerUp(event.clientX);
-      }}
-      onPointerUp={(event) => {
-        handlePointerUp(event.clientX);
+    <Swiper
+      className="bb-exp-carousel w-full touch-pan-y pb-[40px] [&_.swiper-slide]:h-auto [&_.swiper-slide]:cursor-pointer"
+      speed={1000}
+      slidesPerView={1.2}
+      spaceBetween={13}
+      centeredSlides
+      loop={hasSideSlides}
+      initialSlide={hasSideSlides ? orderedArticles.length - 1 : 0}
+      slideToClickedSlide={hasSideSlides}
+      autoHeight
+      watchOverflow
+      breakpoints={{
+        767: {
+          slidesPerView: 2.43,
+          spaceBetween: 40,
+          autoHeight: false,
+        },
       }}
       aria-roledescription="carousel"
       aria-label="Góc trải nghiệm BigBike"
     >
-      {hasSideSlides ? (
-        <button
-          type="button"
-          className="absolute left-1/2 top-0 z-0 block w-[var(--bb-exp-slide-size)] translate-x-[calc(-150%_-_var(--bb-exp-slide-gap))] cursor-pointer border-0 bg-transparent p-0 text-left"
-          onClick={() => goTo(normalizedActiveIndex - 1)}
-          aria-label={`Xem ${resolveArticleMedia(previousArticle).title}`}
-        >
-          <ExperienceSlide article={previousArticle} isActive={false} />
-        </button>
-      ) : null}
-
-      <div className="bb-exp-active-slide relative z-10 mx-auto w-[var(--bb-exp-slide-size)]">
-        <ExperienceSlide article={activeArticle} isActive />
-      </div>
-
-      {hasSideSlides ? (
-        <button
-          type="button"
-          className="absolute left-1/2 top-0 z-0 block w-[var(--bb-exp-slide-size)] translate-x-[calc(50%_+_var(--bb-exp-slide-gap))] cursor-pointer border-0 bg-transparent p-0 text-left"
-          onClick={() => goTo(normalizedActiveIndex + 1)}
-          aria-label={`Xem ${resolveArticleMedia(nextArticle).title}`}
-        >
-          <ExperienceSlide article={nextArticle} isActive={false} />
-        </button>
-      ) : null}
-    </div>
+      {carouselArticles.map((article, index) => (
+        <SwiperSlide key={`${article.id}-${index}`}>
+          {({ isActive }) => (
+            <ExperienceSlide article={article} isActive={isActive} />
+          )}
+        </SwiperSlide>
+      ))}
+    </Swiper>
   );
 }

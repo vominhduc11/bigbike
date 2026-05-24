@@ -28,6 +28,7 @@ import com.bigbike.bigbike_backend.domain.catalog.Product;
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeValueEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
@@ -185,6 +186,12 @@ public class AdminCatalogMutationService {
             );
         }
         AdminMutationValidators.throwIfErrors(errors);
+
+        if (publishStatus == PublishStatus.PUBLISHED) {
+            List<ApiErrorDetail> readinessErrors = new ArrayList<>();
+            AdminMutationValidators.validatePublishReadiness(entity, readinessErrors);
+            AdminMutationValidators.throwIfPublishErrors(readinessErrors);
+        }
 
         entity.setPublishStatus(publishStatus);
         entity.setUpdatedAt(Instant.now());
@@ -1125,13 +1132,17 @@ public class AdminCatalogMutationService {
                     opt.setSortOrder(j);
                     opt.setOptionName(oName);
                     opt.setOptionValue(oValue);
+                    String swatchImageId = AdminMutationValidators.trimToNull(optReq.getSwatchImageId());
+                    if (swatchImageId != null) {
+                        opt.setSwatchImageId(swatchImageId);
+                    }
                     // Link to the AttributeEntity / AttributeValueEntity rows
                     // when a matching taxonomy exists. Without these FKs the
                     // storefront cannot resolve per-term swatch metadata
                     // (color_hex / swatch_image_id) and falls back to the
                     // raw slug — which is why colour chips render as text
                     // even when the dictionary has hex values populated.
-                    linkAttributeReferences(opt, oName, oValue);
+                    linkAttributeReferences(opt, oName, oValue, AdminMutationValidators.trimToNull(optReq.getAttributeValueId()));
                     options.add(opt);
                 }
             }
@@ -1156,21 +1167,59 @@ public class AdminCatalogMutationService {
 
     /**
      * Resolve and attach the {@link AttributeEntity} / {@link AttributeValueEntity}
-     * references for a freshly-built variant option, keyed off
-     * (option_name, option_value). Both lookups are best-effort: if no
-     * matching taxonomy or value exists, the FK stays null and the storefront
-     * falls back to the raw slug for that chip. Repositories are nullable
-     * during tests that don't load the JPA stack — guard accordingly.
+     * references for a freshly-built variant option. Three resolution paths, in order:
+     *
+     * <ol>
+     *   <li>Direct ID: when {@code attributeValueId} is supplied the FK is set without
+     *       any text matching — the admin selected the value from the dictionary UI.</li>
+     *   <li>Code lookup: {@code findByCode(optionName)} covers WP-imported attributes
+     *       whose code is a WP taxonomy slug (e.g. {@code "pa_color"}).</li>
+     *   <li>Name fallback: {@code findByNameIgnoreCase(optionName)} covers human-typed
+     *       values such as {@code "Màu sắc"} that don't match a WP code.</li>
+     * </ol>
+     *
+     * Slug matching tries the raw {@code optionValue} first, then a normalised form
+     * (diacritics stripped, lower-cased) to tolerate {@code "Đen"} vs {@code "den"}.
+     *
+     * All lookups are best-effort: when no match is found the FK stays null and
+     * the storefront falls back to the raw text chip. Repositories are nullable
+     * in tests that skip the JPA stack.
      */
-    private void linkAttributeReferences(ProductVariantOptionEntity opt, String optionName, String optionValue) {
+    private void linkAttributeReferences(ProductVariantOptionEntity opt,
+                                          String optionName, String optionValue,
+                                          String attributeValueId) {
+        // Path 1: admin supplied an explicit attribute-value ID from the dictionary
+        if (attributeValueId != null && attributeValueJpaRepository != null) {
+            attributeValueJpaRepository.findById(attributeValueId).ifPresent(v -> {
+                opt.setAttribute(v.getAttribute());
+                opt.setAttributeValue(v);
+            });
+            return;
+        }
+
         if (attributeJpaRepository == null) return;
+
+        // Path 2: exact code match (WP taxonomy slugs like "pa_color")
         AttributeEntity attribute = attributeJpaRepository.findByCode(optionName).orElse(null);
+        // Path 3: name fallback for human-typed labels like "Màu sắc"
+        if (attribute == null) {
+            attribute = attributeJpaRepository.findByNameIgnoreCase(optionName).orElse(null);
+        }
         if (attribute == null) return;
         opt.setAttribute(attribute);
+
         if (attributeValueJpaRepository == null) return;
-        attributeValueJpaRepository
-                .findByAttributeIdAndSlug(attribute.getId(), optionValue)
-                .ifPresent(opt::setAttributeValue);
+        // Exact slug match first, then normalised-slug fallback ("Đen" → "den")
+        Optional<AttributeValueEntity> valueOpt =
+                attributeValueJpaRepository.findByAttributeIdAndSlug(attribute.getId(), optionValue);
+        if (valueOpt.isEmpty()) {
+            String normalizedSlug = normalizeVariantToken(optionValue);
+            if (!normalizedSlug.isEmpty()) {
+                valueOpt = attributeValueJpaRepository
+                        .findByAttributeIdAndSlug(attribute.getId(), normalizedSlug);
+            }
+        }
+        valueOpt.ifPresent(opt::setAttributeValue);
     }
 
     private static void applyVariantGallery(ProductVariantEntity variant, List<GalleryImageRequest> requests) {

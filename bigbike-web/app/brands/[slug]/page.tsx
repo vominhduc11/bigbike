@@ -1,15 +1,12 @@
-import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getLocale } from "next-intl/server";
+import { ProductArchiveHero } from "@/components/catalog/ProductArchiveHero";
+import { ProductArchiveLayout } from "@/components/catalog/ProductArchiveLayout";
 import { ProductCard } from "@/components/catalog/ProductCard";
-import { CatalogFilters } from "@/components/catalog/CatalogFilters";
-import { CatalogSortSelect } from "@/components/catalog/CatalogSortSelect";
-import { PageHero } from "@/components/layout/PageHero";
-import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { PaginationNav } from "@/components/ui/PaginationNav";
-import { PRODUCT_SORT_VALUES, getBrandBySlug, listBrands, listProducts } from "@/lib/api/public-api";
+import { PRODUCT_SORT_VALUES, getBrandBySlug, listBrands, listCategories, listProducts } from "@/lib/api/public-api";
 import { buildCatalogTitle } from "@/lib/utils/catalog";
 import { buildBrandBreadcrumbJsonLd, serializeJsonLd } from "@/lib/seo/json-ld";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
@@ -28,8 +25,6 @@ import {
 import { toBrandPath, toHomePath, toBrandListPath } from "@/lib/utils/routes";
 import { isValidSlug } from "@/lib/utils/slug";
 
-// searchParams (filters, pagination, sort) make this page per-request dynamic.
-// Data caching is handled at the fetch level in public-api.ts (revalidate: 3600 + tags).
 export const dynamic = "force-dynamic";
 
 export async function generateStaticParams() {
@@ -149,7 +144,7 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
   }
 
   const locale = await getLocale();
-  const [brandResult, productsResult, brandsResult] = await Promise.all([
+  const [brandResult, productsResult, categoriesResult] = await Promise.all([
     getBrandBySlug(slug, locale),
     listProducts({
       page: pageParsed.value,
@@ -162,7 +157,7 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
       maxPrice: maxPriceParsed.value,
       lang: locale,
     }),
-    listBrands({ page: 1, size: 100, sort: "name:asc" }),
+    listCategories({ page: 1, size: 100, sort: "sortOrder:asc" }),
   ]);
 
   if (!brandResult.data && brandResult.error?.status === 404) {
@@ -181,7 +176,6 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
   const brand = brandResult.data;
   const canonicalPath = toBrandPath(brand.slug);
   const breadcrumbJsonLd = serializeJsonLd(buildBrandBreadcrumbJsonLd(brand));
-
   const brandName = safeText(brand.name, "Thương hiệu");
   const pagination = productsResult.pagination;
   const currentFilters = {
@@ -194,9 +188,9 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
   };
 
   return (
-    <>
+    <div className="bb-product-archive archive tax-pwb-brand">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }} />
-      <PageHero
+      <ProductArchiveHero
         imageUrl={brand.bannerImage?.url}
         imageAlt={brand.bannerImage?.alt ?? brandName}
         title={brandName}
@@ -207,65 +201,46 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
         ]}
       />
 
-      <div className="bb-cat-layout">
-        <CatalogFilters
-          brands={brandsResult.data}
-          current={currentFilters}
-          resetHref={canonicalPath}
-        />
-
-        <div>
-          <div className="bb-catalog-head">
-            <div className="bb-catalog-count">
-              {productsResult.data.length > 0 && pagination ? (
-                <>
-                  Hiển thị{" "}
-                  <b>
-                    {(pagination.page - 1) * pagination.pageSize + 1}–
-                    {Math.min(pagination.page * pagination.pageSize, pagination.totalItems)}
-                  </b>{" "}
-                  / {pagination.totalItems} sản phẩm
-                </>
-              ) : null}
+      <ProductArchiveLayout
+        totalItems={pagination?.totalItems ?? null}
+        sortCurrent={sortParsed.value ?? "createdAt:desc"}
+        filters={{
+          brands: [],
+          categories: categoriesResult.data,
+          current: currentFilters,
+          resetHref: canonicalPath,
+        }}
+      >
+        {productsResult.error && productsResult.data.length === 0 ? (
+          <ErrorState message={productsResult.error.message} retryHref={canonicalPath} />
+        ) : productsResult.data.length === 0 ? (
+          <p className="woocommerce-info">No products were found matching your selection.</p>
+        ) : (
+          <>
+            <div className="bb-product-grid">
+              {productsResult.data.map((product) => (
+                <ProductCard key={product.id} product={product} variant="archive" />
+              ))}
             </div>
-            <Suspense fallback={null}>
-              <CatalogSortSelect current={sortParsed.value ?? "createdAt:desc"} />
-            </Suspense>
-          </div>
-
-          {productsResult.error && productsResult.data.length === 0 ? (
-            <ErrorState message={productsResult.error.message} retryHref={canonicalPath} />
-          ) : productsResult.data.length === 0 ? (
-            <EmptyState
-              title="Thương hiệu chưa có sản phẩm"
-              description="Sản phẩm cho thương hiệu này đang được cập nhật."
-            />
-          ) : (
-            <>
-              <div className="bb-product-grid">
-                {productsResult.data.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
-              {pagination ? (
-                <PaginationNav
-                  page={pagination.page}
-                  totalPages={pagination.totalPages}
-                  baseHref={`${canonicalPath}${buildQueryString({
-                      size: sizeParsed.value,
-                      sort: sortParsed.value,
-                      "pwb-brand": brandFilterParsed.value,
-                      q: qParsed.value,
-                      filter_color: colorParsed.value,
-                      min_price: minPriceParsed.value,
-                      max_price: maxPriceParsed.value,
-                    })}`}
-                />
-              ) : null}
-            </>
-          )}
-        </div>
-      </div>
-    </>
+            {pagination ? (
+              <PaginationNav
+                page={pagination.page}
+                totalPages={pagination.totalPages}
+                baseHref={`${canonicalPath}${buildQueryString({
+                    size: sizeParsed.value,
+                    sort: sortParsed.value,
+                    "pwb-brand": brandFilterParsed.value,
+                    q: qParsed.value,
+                    filter_color: colorParsed.value,
+                    min_price: minPriceParsed.value,
+                    max_price: maxPriceParsed.value,
+                  })}`}
+                variant="archive"
+              />
+            ) : null}
+          </>
+        )}
+      </ProductArchiveLayout>
+    </div>
   );
 }

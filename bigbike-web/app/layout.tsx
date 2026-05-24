@@ -97,7 +97,7 @@ export default async function RootLayout({
                   <main className="bb-main">{children}</main>
                   <SiteFooter />
                   <CompareBar />
-                  <div className="fixed bottom-[max(24px,env(safe-area-inset-bottom))] right-[max(24px,env(safe-area-inset-right))] z-[var(--bb-z-overlay)] flex flex-col items-end gap-3 pointer-events-none [&>*]:pointer-events-auto [@media(max-width:480px)]:bottom-[max(16px,env(safe-area-inset-bottom))] [@media(max-width:480px)]:right-[max(12px,env(safe-area-inset-right))] [@media(max-width:480px)]:gap-2 [[data-scroll-locked]_&]:hidden">
+                  <div className="fixed bottom-[max(50px,env(safe-area-inset-bottom))] right-[max(50px,env(safe-area-inset-right))] z-[var(--bb-z-overlay)] pointer-events-none [&>*]:pointer-events-auto [[data-scroll-locked]_&]:hidden">
                     <FloatingChatLoader />
                   </div>
                 </CompareProvider>

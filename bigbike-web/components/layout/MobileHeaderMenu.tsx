@@ -188,7 +188,7 @@ export function MobileHeaderMenu({
     <>
       <button
         className={cn(
-          "bb-icon-btn bb-menu-toggle min-[1200px]:!hidden",
+          "bb-icon-btn bb-menu-toggle min-[1261px]:!hidden",
           open && "is-active",
         )}
         aria-label={t("mobileMenuOpenAriaLabel")}
@@ -200,7 +200,7 @@ export function MobileHeaderMenu({
       </button>
 
       <div
-        className={cn("bb-mobile-header-panel min-[1200px]:hidden", open && "is-open")}
+        className={cn("bb-mobile-header-panel min-[1261px]:hidden", open && "is-open")}
         aria-hidden={!open}
       >
         <div className="bb-mobile-header-drawer" role="dialog" aria-modal="true">

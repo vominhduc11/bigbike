@@ -654,13 +654,15 @@ a {
   gap: var(--admin-space-4);
   max-width: 1400px;
   min-height: 100%;
+  width: 100%;
+  margin-inline: auto;
 }
 
 .screen-header {
   background: var(--admin-color-surface-base);
   border: 1px solid var(--admin-color-border-subtle);
   border-radius: var(--admin-radius-md);
-  padding: var(--admin-space-5) var(--admin-space-6);
+  padding: var(--admin-space-4) var(--admin-space-6);
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -1295,10 +1297,10 @@ a {
 
 /* ─── Responsive ─────────────────────────────────────────────────────────────*/
 
-/* ── Tablet narrow (≤1100px): shrink sidebar to icon+text, tight padding ── */
-@media (max-width: 1100px) {
+/* ── Compact sidebar (901–1200px): icon-only, 64px wide ── */
+@media (min-width: 901px) and (max-width: 1200px) {
   .app-shell {
-    grid-template-columns: 220px 1fr;
+    grid-template-columns: 64px 1fr;
   }
 
   .page-content {

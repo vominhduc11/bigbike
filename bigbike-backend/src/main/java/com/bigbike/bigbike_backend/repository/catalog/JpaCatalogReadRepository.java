@@ -856,17 +856,37 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         AttributeEntity attribute = option.getAttribute();
         AttributeValueEntity value = option.getAttributeValue();
 
-        // Lazy resolution path: only fires when the FK wasn't populated.
-        // Cheap because Hibernate caches single-row PK reads and most
-        // products only have a handful of options.
+        // Lazy resolution path: only fires when the FK wasn't populated at write time.
+        // Three fallbacks mirror AdminCatalogMutationService.linkAttributeReferences():
+        //   1. findByCode  — exact WP taxonomy slug (e.g. "pa_color")
+        //   2. findByNameIgnoreCase — human-typed label (e.g. "Màu sắc")
+        //   3. slug normalisation  — strips diacritics so "Đen" matches stored slug "den"
         if (attribute == null && option.getOptionName() != null && !option.getOptionName().isBlank()) {
             attribute = attributeJpaRepository.findByCode(option.getOptionName()).orElse(null);
+            if (attribute == null) {
+                attribute = attributeJpaRepository.findByNameIgnoreCase(option.getOptionName()).orElse(null);
+            }
         }
         if (value == null && attribute != null
                 && option.getOptionValue() != null && !option.getOptionValue().isBlank()) {
             value = attributeValueJpaRepository
                     .findByAttributeIdAndSlug(attribute.getId(), option.getOptionValue())
                     .orElse(null);
+            if (value == null) {
+                String normalizedSlug = normalizeVariantToken(option.getOptionValue());
+                if (!normalizedSlug.isEmpty()) {
+                    value = attributeValueJpaRepository
+                            .findByAttributeIdAndSlug(attribute.getId(), normalizedSlug)
+                            .orElse(null);
+                }
+            }
+        }
+
+        // Priority 1: direct swatch picked by admin on this variant option row
+        String resolvedSwatchUrl = resolveSwatchUrl(option.getSwatchImageId());
+        // Priority 2: dictionary swatch from attribute_values (existing behaviour)
+        if (resolvedSwatchUrl == null && value != null) {
+            resolvedSwatchUrl = resolveSwatchUrl(value.getSwatchImageId());
         }
 
         return new ProductVariantOption(
@@ -879,7 +899,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         option.getOptionValue()
                 ),
                 value != null ? value.getColorHex() : null,
-                value != null ? resolveSwatchUrl(value.getSwatchImageId()) : null
+                resolvedSwatchUrl
         );
     }
 
@@ -891,23 +911,38 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     }
 
     /**
-     * Resolve a WP attachment ID stored in {@code attribute_values.swatch_image_id}
-     * to a public URL via the media table. Returns null when the id is
-     * blank, non-numeric, or no matching media row exists. Lookup failures
-     * are silent — a missing swatch should not block the variant render.
+     * Resolve a value stored in {@code attribute_values.swatch_image_id} to a public URL.
+     * Handles three formats (newest-first precedence):
+     * - Direct URL (new admin uploads store the publicUrl directly)
+     * - UUID string (media entity primary key)
+     * - Numeric string (legacy WP attachment ID from migration importer)
+     * Returns null silently when the value is blank or unresolvable.
      */
     private String resolveSwatchUrl(String swatchImageId) {
         if (swatchImageId == null || swatchImageId.isBlank()) return null;
-        final long legacyId;
+        final String trimmed = swatchImageId.trim();
+        // Direct URL — new admin uploads store publicUrl in this column
+        if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed;
+        // UUID lookup — media entity primary key
         try {
-            legacyId = Long.parseLong(swatchImageId.trim());
+            java.util.UUID uuid = java.util.UUID.fromString(trimmed);
+            return mediaJpaRepository.findById(uuid)
+                    .map(MediaEntity::getPublicUrl)
+                    .filter(url -> url != null && !url.isBlank())
+                    .orElse(null);
+        } catch (IllegalArgumentException ignored) {
+            // not a UUID — fall through
+        }
+        // Fallback: legacy WP attachment numeric ID
+        try {
+            long legacyId = Long.parseLong(trimmed);
+            return mediaJpaRepository.findByLegacyId(legacyId)
+                    .map(MediaEntity::getPublicUrl)
+                    .filter(url -> url != null && !url.isBlank())
+                    .orElse(null);
         } catch (NumberFormatException e) {
             return null;
         }
-        return mediaJpaRepository.findByLegacyId(legacyId)
-                .map(MediaEntity::getPublicUrl)
-                .filter(url -> url != null && !url.isBlank())
-                .orElse(null);
     }
 
     private CategorySummary toCategorySummary(CategoryEntity entity) {

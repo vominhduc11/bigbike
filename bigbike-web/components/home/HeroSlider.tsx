@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Autoplay } from "swiper/modules";
 import type { Swiper as SwiperType } from "swiper";
 import "swiper/css";
 
@@ -102,10 +101,7 @@ export function HeroSlider({ slides }: HeroSliderProps) {
     >
       {mounted ? (
         <Swiper
-          modules={[Autoplay]}
           loop={count > 1}
-          speed={600}
-          autoplay={{ delay: 5000, disableOnInteraction: false, pauseOnMouseEnter: true }}
           onSwiper={(swiper) => {
             swiperRef.current = swiper;
             enforceHorizontalTrack(swiper);
@@ -145,7 +141,7 @@ export function HeroSlider({ slides }: HeroSliderProps) {
             <span aria-hidden="true">›</span>
           </button>
           <div className="bb-main-banner-pagination">
-            <span>{(activeIndex + 1).toString().padStart(2, "0")}</span>
+            <span>{activeIndex + 1} / {count}</span>
             {activeSlide.productCode ? <span>{activeSlide.productCode}</span> : null}
           </div>
         </>

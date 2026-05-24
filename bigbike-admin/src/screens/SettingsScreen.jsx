@@ -221,7 +221,7 @@ function SettingField({ setting, canUpdate, draft, error, onChange }) {
         {isDirty && (
           <span
             aria-label={t('settings.unsavedDot')}
-            style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--admin-color-status-warning-text)' }}
+            className="settings-dirty-dot"
           />
         )}
       </label>
@@ -304,7 +304,7 @@ function SettingTabPanel({ title, items, canUpdate, drafts, errors, onDraftChang
 
       {canUpdate && dirtyCount > 0 && (
         <div className="card-foot">
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--admin-color-status-warning-text)' }}>
+          <span className="settings-unsaved-hint">
             <AlertCircle size={14} />
             {t('settings.unsavedCount', { count: dirtyCount })}
           </span>
@@ -518,15 +518,7 @@ export function SettingsScreen({ canUpdate }) {
             {saveSuccess && (
               <div
                 role="status"
-                className="mb-3"
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 6,
-                  padding: '8px 12px', borderRadius: 8,
-                  background: 'var(--admin-color-status-success-bg)',
-                  color: 'var(--admin-color-status-success-text)',
-                  border: '1px solid var(--admin-color-status-success-border)',
-                  fontSize: 13, fontWeight: 600,
-                }}
+                className="settings-save-banner mb-3"
               >
                 <CheckCircle2 size={15} />
                 {t('settings.saveSuccess')}

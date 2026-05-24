@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Eye, EyeOff, MoreHorizontal, Pencil, Search, UserPlus } from 'lucide-react'
+import { PaginationControls } from '../components/PaginationControls'
 import { Modal } from '../components/layout'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
@@ -405,14 +406,12 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
               </table>
             </div>
           </div>
-          {listState.status === 'success' && listState.pagination && listState.pagination.totalPages > 1 && (
-            <div className="card-foot">
-              <span>{t('common.paginationSummary', { defaultValue: `${items.length} tài khoản`, count: items.length, total: listState.pagination.totalItems })}</span>
-              <div className="pager">
-                <button type="button" disabled={listState.pagination.page <= 1} onClick={() => setQuery((p) => ({ ...p, page: p.page - 1 }))}>‹</button>
-                <button type="button" className="active">{listState.pagination.page}</button>
-                <button type="button" disabled={listState.pagination.page >= listState.pagination.totalPages} onClick={() => setQuery((p) => ({ ...p, page: p.page + 1 }))}>›</button>
-              </div>
+          {listState.status === 'success' && listState.pagination && (
+            <div className="px-[18px] py-3 border-t border-border">
+              <PaginationControls
+                pagination={listState.pagination}
+                onPageChange={(newPage) => setQuery((p) => ({ ...p, page: newPage }))}
+              />
             </div>
           )}
         </div>

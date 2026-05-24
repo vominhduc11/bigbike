@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { PaginationControls } from '../components/PaginationControls'
 import { StatePanel } from '../components/StatePanel'
 import { fetchNewsletterSubscribers } from '../lib/adminApi'
 import { formatDateTime } from '../lib/formatters'
@@ -67,20 +68,12 @@ export function NewsletterSubscribersScreen() {
               </table>
             </div>
           </div>
-          {status === 'success' && pagination && pagination.totalPages > 1 && (
-            <div className="card-foot">
-              <span>
-                {t('common.paginationSummary', {
-                  defaultValue: `${rows.length} / ${pagination.totalItems}`,
-                  count: rows.length,
-                  total: pagination.totalItems,
-                })}
-              </span>
-              <div className="pager">
-                <button type="button" disabled={pagination.page <= 1} onClick={() => setQuery((q) => ({ ...q, page: q.page - 1 }))}>‹</button>
-                <button type="button" className="active">{pagination.page}</button>
-                <button type="button" disabled={pagination.page >= pagination.totalPages} onClick={() => setQuery((q) => ({ ...q, page: q.page + 1 }))}>›</button>
-              </div>
+          {status === 'success' && pagination && (
+            <div className="px-[18px] py-3 border-t border-border">
+              <PaginationControls
+                pagination={pagination}
+                onPageChange={(p) => setQuery((q) => ({ ...q, page: p }))}
+              />
             </div>
           )}
         </div>

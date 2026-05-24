@@ -492,79 +492,115 @@ export function ArticleListSkeleton({ label = "Loading articles" }: { label?: st
 export function ArticleDetailSkeleton({ label = "Loading article" }: { label?: string }) {
   return (
     <SkeletonRoot label={label}>
-      <div className="bb-breadcrumb"><SkelText w={280} /></div>
-      <div className="bb-article-wrap">
-        <header className="bb-skel-stack" style={{ marginBottom: 24 }}>
-          <div className="bb-skel-row">
-            <SkelChip w={80} />
-            <SkelText w={100} />
-            <SkelText w={80} />
+      <section
+        className="relative mb-[90px] bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: "url('/wp/page-title-bg.png')" }}
+      >
+        <div className="mx-auto w-full max-w-[1200px] px-[15px]">
+          <div className="-mx-[15px] flex min-h-[450px] flex-wrap items-center">
+            <div className="relative w-full px-[15px] md:w-1/2">
+              <SkelTitle w="82%" h="1.8em" />
+              <div className="mt-3 flex gap-2">
+                <SkelText w={90} />
+                <SkelText w={180} />
+              </div>
+            </div>
           </div>
-          <SkelTitle w="92%" h="2.4em" />
-          <SkelText w="80%" />
-        </header>
-        <SkelBlock w="100%" h={420} />
-        <div className="bb-skel-stack" style={{ marginTop: 28 }}>
-          <SkelText w="98%" />
-          <SkelText w="100%" />
-          <SkelText w="92%" />
-          <SkelText w="96%" />
-          <SkelText w="60%" />
-          <SkelText w="100%" />
-          <SkelText w="78%" />
+        </div>
+      </section>
+      <div className="pb-10">
+        <div className="mx-auto w-full max-w-[1200px] px-[15px]">
+          <div className="-mx-[15px] flex flex-wrap">
+            <div className="relative w-full px-[15px]">
+              <div className="bb-skel-stack">
+                <SkelTitle w="50%" h="2em" />
+                <SkelText w="98%" />
+                <SkelText w="100%" />
+                <SkelText w="92%" />
+                <SkelText w="96%" />
+                <SkelText w="60%" />
+                <SkelBlock w="100%" h={280} />
+                <SkelText w="100%" />
+                <SkelText w="78%" />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </SkeletonRoot>
   );
 }
 
-/** Cart — breadcrumb + page-head + 2-col cart-list+summary */
+/** Cart - WooCommerce cart structure skeleton. */
 export function CartSkeleton() {
   return (
     <SkeletonRoot label="Đang tải giỏ hàng">
-      <div className="bb-breadcrumb"><SkelText w={140} /></div>
-      <div className="bb-page-head">
-        <SkelText w="10%" />
-        <SkelTitle w="22%" h="2em" />
-      </div>
-      <div className="bb-cart-layout">
-        <div>
-          <div className="bb-cart-list">
-            <div className="bb-cart-header-row">
-              <SkelText w="30%" />
-              <SkelText w="50%" />
-              <SkelText w="50%" />
-              <SkelText w="50%" />
-              <span />
+      <div id="main-content" className="bb-cart-page bb-cart-page--skeleton">
+        <div className="bb-container">
+          <div className="bb-cart-heading-row">
+            <div className="bb-cart-heading-col">
+              <SkelTitle w={150} h="2.5rem" />
+              <div className="bb-cart-breadcrumb">
+                <SkelText w={180} />
+              </div>
             </div>
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="bb-cart-item">
-                <div className="bb-cart-item-prod">
-                  <SkelBlock w={72} h={72} />
-                  <div className="bb-skel-col" style={{ flex: 1 }}>
-                    <SkelText w="40%" />
-                    <SkelText w="80%" />
-                    <SkelText w="50%" />
+          </div>
+          <div className="cart-table">
+            <div className="bb-cart-content-row">
+              <div className="bb-cart-content-main">
+                <div className="cart-avalable">
+                  <SkelTitle w={260} h="1.714rem" />
+                </div>
+                <div className="table">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="table--items bb-cart-line-item">
+                      <div className="table--items-item thumbnail">
+                        <SkelBlock w={120} h={100} />
+                      </div>
+                      <div className="table--items-item cart-information">
+                        <SkelText w="65%" />
+                        <SkelText w="42%" />
+                        <SkelText w="55%" />
+                      </div>
+                      <div className="table--items-item quantity">
+                        <SkelText w={96} h={20} />
+                      </div>
+                      <div className="table--items-item action">
+                        <SkelCircle size={24} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="bb-cart-update-row">
+                  <SkelButton w={180} />
+                </div>
+                <div className="bb-cart-action-row">
+                  <SkelButton w={220} />
+                  <SkelButton w={180} />
+                </div>
+              </div>
+              <div className="bb-cart-content-side">
+                <div className="summary">
+                  <div className="cart_totals">
+                    <SkelTitle w="75%" />
+                    <SkelText w="100%" />
+                    <SkelText w="100%" />
+                    <SkelButton w="100%" />
                   </div>
                 </div>
-                <SkelBlock w={106} h={36} />
-                <SkelText w="80%" />
-                <SkelText w="80%" />
-                <SkelCircle size={32} />
+                <div className="promotion">
+                  <div className="promotion-form">
+                    <SkelText w="75%" />
+                    <SkelBlock w="100%" h={52} />
+                  </div>
+                </div>
+                <div className="total-summary summary">
+                  <SkelTitle w="100%" h="1.714rem" />
+                </div>
               </div>
-            ))}
+            </div>
           </div>
         </div>
-        <aside className="bb-summary-card">
-          <div className="bb-skel-stack">
-            <SkelTitle w="50%" />
-            <SkelText w="100%" />
-            <SkelText w="100%" />
-            <SkelText w="100%" />
-            <SkelTitle w="60%" h="1.4em" />
-            <SkelButton w="100%" />
-          </div>
-        </aside>
       </div>
     </SkeletonRoot>
   );

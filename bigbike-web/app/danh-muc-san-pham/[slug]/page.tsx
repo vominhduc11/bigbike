@@ -1,13 +1,9 @@
-import { Suspense } from "react";
-import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
+import { ProductArchiveHero } from "@/components/catalog/ProductArchiveHero";
+import { ProductArchiveLayout } from "@/components/catalog/ProductArchiveLayout";
 import { ProductCard } from "@/components/catalog/ProductCard";
-import { CatalogFilters } from "@/components/catalog/CatalogFilters";
-import { CatalogSortSelect } from "@/components/catalog/CatalogSortSelect";
-import { PageHero, type PageHeroBreadcrumbItem } from "@/components/layout/PageHero";
-import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { PaginationNav } from "@/components/ui/PaginationNav";
 import {
@@ -17,7 +13,6 @@ import {
   listBrands,
   listCategories,
   listProducts,
-  listSliders,
 } from "@/lib/api/public-api";
 import { buildCatalogTitle } from "@/lib/utils/catalog";
 import { buildCategoryBreadcrumbJsonLd, serializeJsonLd } from "@/lib/seo/json-ld";
@@ -36,10 +31,7 @@ import {
 } from "@/lib/utils/query";
 import { toCategoryPath, toHomePath, toProductListPath } from "@/lib/utils/routes";
 import { isValidSlug } from "@/lib/utils/slug";
-import { sanitizeRichHtml } from "@/lib/utils/html";
 
-// searchParams (filters, pagination, sort) make this page per-request dynamic.
-// Data caching is handled at the fetch level in public-api.ts (revalidate: 3600 + tags).
 export const dynamic = "force-dynamic";
 
 export async function generateStaticParams() {
@@ -178,7 +170,6 @@ export default async function CategoryDetailPage({
     brandsResult,
     allCategoriesResult,
     facetsResult,
-    sidebarBannerResult,
   ] = await Promise.all([
     getCategoryBySlug(slug, locale),
     listProducts({
@@ -196,7 +187,6 @@ export default async function CategoryDetailPage({
     listBrands({ page: 1, size: 100, sort: "name:asc" }),
     listCategories({ page: 1, size: 100, sort: "sortOrder:asc" }),
     getCatalogFacets({ category: slug, q: qParsed.value }),
-    listSliders("category_sidebar"),
   ]);
 
   if (!categoryResult.data && categoryResult.error?.status === 404) {
@@ -215,16 +205,11 @@ export default async function CategoryDetailPage({
 
   const category = categoryResult.data;
   const canonicalPath = toCategoryPath(category.slug);
-
   const allCategories = allCategoriesResult.data ?? [];
   const parentCategory = category.parentId
     ? (allCategories.find((c) => c.id === category.parentId) ?? null)
     : null;
   const childCategories = allCategories.filter((c) => c.parentId === category.id && c.isVisible);
-
-  // Sidebar "Nhóm sản phẩm": this category's children for drill-down, else its
-  // siblings (so a leaf category shows itself highlighted among its peers),
-  // falling back to top-level categories.
   const siblingCategories = (
     category.parentId
       ? allCategories.filter((c) => c.parentId === category.parentId)
@@ -232,11 +217,7 @@ export default async function CategoryDetailPage({
   ).filter((c) => c.isVisible);
   const filterCategories = childCategories.length > 0 ? childCategories : siblingCategories;
 
-  // First active admin-managed slider for the catalog sidebar promo banner.
-  const sidebarBanner = sidebarBannerResult.data?.[0] ?? null;
-
   const breadcrumbJsonLd = serializeJsonLd(buildCategoryBreadcrumbJsonLd(category, parentCategory));
-
   const categoryName = safeText(category.name, tCatalog("categoryFallback"));
   const pagination = productsResult.pagination;
   const currentFilters = {
@@ -248,12 +229,7 @@ export default async function CategoryDetailPage({
     sort: sortParsed.value,
   };
 
-  const heroImgAsset = category.image ?? category.icon;
-
-  const rawDescription = category.description ?? null;
-  const isHtmlDescription = rawDescription ? /<[a-z][\s\S]*>/i.test(rawDescription) : false;
-
-  const heroBreadcrumb: PageHeroBreadcrumbItem[] = [
+  const heroBreadcrumb = [
     { label: tBreadcrumb("home"), href: toHomePath() },
     { label: tCatalog("title"), href: toProductListPath() },
     ...(parentCategory
@@ -266,115 +242,51 @@ export default async function CategoryDetailPage({
   ];
 
   return (
-    <>
+    <div className="bb-product-archive archive tax-product_cat">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }} />
-      <PageHero
-        imageUrl={heroImgAsset?.url}
-        imageAlt={heroImgAsset?.alt}
-        title={categoryName}
-        breadcrumb={heroBreadcrumb}
-      />
+      <ProductArchiveHero title={categoryName} breadcrumb={heroBreadcrumb} />
 
-      {/* ── Sub-categories ────────────────────────────────────── */}
-      {childCategories.length > 0 && (
-        <div className="bb-cat-children">
-          <div className="bb-container bb-cat-children-inner">
-            <span className="bb-cat-children-label">{tCatalog("childrenLabel")}</span>
-            <div className="bb-cat-children-chips">
-              {childCategories.map((child) => (
-                <Link
-                  key={child.id}
-                  href={toCategoryPath(child.slug)}
-                  className="bb-cat-child-chip"
-                >
-                  {safeText(child.name, child.slug)}
-                </Link>
+      <ProductArchiveLayout
+        totalItems={pagination?.totalItems ?? null}
+        sortCurrent={sortParsed.value ?? DEFAULT_SORT}
+        filters={{
+          brands: brandsResult.data,
+          categories: filterCategories,
+          facets: facetsResult.data,
+          current: currentFilters,
+          resetHref: canonicalPath,
+        }}
+      >
+        {productsResult.error && productsResult.data.length === 0 ? (
+          <ErrorState message={productsResult.error.message} retryHref={canonicalPath} />
+        ) : productsResult.data.length === 0 ? (
+          <p className="woocommerce-info">{tCatalog("noResults")}</p>
+        ) : (
+          <>
+            <div className="bb-product-grid">
+              {productsResult.data.map((product) => (
+                <ProductCard key={product.id} product={product} variant="archive" />
               ))}
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Catalog body ──────────────────────────────────────── */}
-      <div className="bb-cat-layout">
-        <CatalogFilters
-          key={[currentFilters.brand, currentFilters.color, currentFilters.minPrice, currentFilters.maxPrice, currentFilters.q].join(",")}
-          brands={brandsResult.data}
-          categories={filterCategories}
-          facets={facetsResult.data}
-          current={currentFilters}
-          resetHref={canonicalPath}
-          banner={sidebarBanner}
-        />
-
-        <div>
-          <div className="bb-catalog-head">
-            <div className="bb-catalog-count">
-              {pagination
-                ? tCatalog.rich("totalProductsCount", {
-                    count: pagination.totalItems,
-                    strong: (chunks) => <b>{chunks}</b>,
-                  })
-                : null}
-            </div>
-            <Suspense
-              fallback={
-                <span
-                  className="bb-skel w-40 h-9"
-                  aria-hidden="true"
-                />
-              }
-            >
-              <CatalogSortSelect current={sortParsed.value ?? "createdAt:desc"} />
-            </Suspense>
-          </div>
-
-          {productsResult.error && productsResult.data.length === 0 ? (
-            <ErrorState
-              message={productsResult.error.message}
-              retryHref={canonicalPath}
-            />
-          ) : productsResult.data.length === 0 ? (
-            <EmptyState
-              title={tCatalog("categoryEmptyTitle")}
-              description={tCatalog("categoryEmptyDescription")}
-            />
-          ) : (
-            <>
-              <div className="bb-product-grid">
-                {productsResult.data.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
-              {pagination ? (
-                <PaginationNav
-                  page={pagination.page}
-                  totalPages={pagination.totalPages}
-                  baseHref={`${canonicalPath}${buildQueryString({
-                      size: sizeParsed.value !== DEFAULT_PAGE_SIZE ? sizeParsed.value : undefined,
-                      sort: sortParsed.value !== DEFAULT_SORT ? sortParsed.value : undefined,
-                      "pwb-brand": brandParsed.value,
-                      q: qParsed.value,
-                      filter_color: colorParsed.value,
-                      min_price: minPriceParsed.value,
-                      max_price: maxPriceParsed.value,
-                    })}`}
-                />
-              ) : null}
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* ── SEO description (full HTML) ────────────────────────── */}
-      {isHtmlDescription && rawDescription && (
-        <div className="bb-cat-seo">
-          <div
-            className="bb-cat-seo-prose"
-            dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(rawDescription) }}
-          />
-        </div>
-      )}
-    </>
+            {pagination ? (
+              <PaginationNav
+                page={pagination.page}
+                totalPages={pagination.totalPages}
+                baseHref={`${canonicalPath}${buildQueryString({
+                    size: sizeParsed.value !== DEFAULT_PAGE_SIZE ? sizeParsed.value : undefined,
+                    sort: sortParsed.value !== DEFAULT_SORT ? sortParsed.value : undefined,
+                    "pwb-brand": brandParsed.value,
+                    q: qParsed.value,
+                    filter_color: colorParsed.value,
+                    min_price: minPriceParsed.value,
+                    max_price: maxPriceParsed.value,
+                  })}`}
+                variant="archive"
+              />
+            ) : null}
+          </>
+        )}
+      </ProductArchiveLayout>
+    </div>
   );
 }

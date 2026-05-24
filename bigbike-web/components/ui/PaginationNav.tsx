@@ -9,29 +9,66 @@ type PaginationNavProps = {
   page: number;
   totalPages: number;
   baseHref: string;
+  variant?: "default" | "archive";
 };
 
-function buildPageList(page: number, totalPages: number): (number | "…")[] {
+function buildPageList(page: number, totalPages: number): (number | "...")[] {
   if (totalPages <= 7) {
     return Array.from({ length: totalPages }, (_, i) => i + 1);
   }
-  const pages: (number | "…")[] = [1];
-  if (page > 3) pages.push("…");
+  const pages: (number | "...")[] = [1];
+  if (page > 3) pages.push("...");
   for (let p = Math.max(2, page - 2); p <= Math.min(totalPages - 1, page + 2); p++) {
     pages.push(p);
   }
-  if (page < totalPages - 2) pages.push("…");
+  if (page < totalPages - 2) pages.push("...");
   pages.push(totalPages);
   return pages;
 }
 
-export function PaginationNav({ page, totalPages, baseHref }: PaginationNavProps) {
+export function PaginationNav({ page, totalPages, baseHref, variant = "default" }: PaginationNavProps) {
   const makeHref = (p: number) =>
     `${baseHref}${baseHref.includes("?") ? "&" : "?"}page=${p}`;
   const t = useTranslations("Catalog");
   if (totalPages <= 1) return null;
 
   const pages = buildPageList(page, totalPages);
+
+  if (variant === "archive") {
+    return (
+      <nav className="pagination pb-40 pt-20 text-right bb-archive-pagination" aria-label={t("paginationAria")}>
+        <ul className="page-numbers">
+          {page > 1 && (
+            <li>
+              <Link href={makeHref(page - 1)} aria-label={t("previousPage")}>
+                <ChevronLeft className="bb-archive-page-icon" aria-hidden="true" />
+              </Link>
+            </li>
+          )}
+          {pages.map((p, i) => (
+            <li key={p === "..." ? `ellipsis-${i}` : p}>
+              {p === "..." ? (
+                <span className="dots">...</span>
+              ) : p === page ? (
+                <span className="page-numbers current">{p}</span>
+              ) : (
+                <Link href={makeHref(p)} className="page-numbers">
+                  {p}
+                </Link>
+              )}
+            </li>
+          ))}
+          {page < totalPages && (
+            <li>
+              <Link href={makeHref(page + 1)} aria-label={t("nextPage")}>
+                <ChevronRight className="bb-archive-page-icon" aria-hidden="true" />
+              </Link>
+            </li>
+          )}
+        </ul>
+      </nav>
+    );
+  }
 
   return (
     <nav className="mt-6 flex items-center justify-center gap-3 flex-wrap" aria-label={t("paginationAria")}>
@@ -45,8 +82,8 @@ export function PaginationNav({ page, totalPages, baseHref }: PaginationNavProps
 
       <div className="flex items-center gap-1 flex-wrap">
         {pages.map((p, i) =>
-          p === "…" ? (
-            <span key={`ellipsis-${i}`} className="inline-flex h-9 min-w-7 items-center justify-center text-sm text-muted-foreground">…</span>
+          p === "..." ? (
+            <span key={`ellipsis-${i}`} className="inline-flex h-9 min-w-7 items-center justify-center text-sm text-muted-foreground">...</span>
           ) : (
             <Link
               key={p}

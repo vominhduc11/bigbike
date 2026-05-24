@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Search } from 'lucide-react'
+import { PaginationControls } from '../components/PaginationControls'
 import { Modal } from '../components/layout'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
@@ -372,14 +373,12 @@ export function SerialListScreen({ canUpdate = false, canReadWarranty = false })
               </table>
             </div>
           </div>
-          {state.status === 'success' && pagination && pagination.totalPages > 1 && (
-            <div className="card-foot">
-              <span>{t('common.paginationSummary', { defaultValue: `${items.length} / ${pagination.totalItems}`, count: items.length, total: pagination.totalItems })}</span>
-              <div className="pager">
-                <button type="button" disabled={pagination.page <= 1} onClick={() => setQuery((q) => ({ ...q, page: q.page - 1 }))}>‹</button>
-                <button type="button" className="active">{pagination.page}</button>
-                <button type="button" disabled={pagination.page >= pagination.totalPages} onClick={() => setQuery((q) => ({ ...q, page: q.page + 1 }))}>›</button>
-              </div>
+          {state.status === 'success' && pagination && (
+            <div className="px-[18px] py-3 border-t border-border">
+              <PaginationControls
+                pagination={pagination}
+                onPageChange={(p) => setQuery((q) => ({ ...q, page: p }))}
+              />
             </div>
           )}
         </div>

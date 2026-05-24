@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
 import type { PublicMenuItem } from "@/lib/contracts/public";
@@ -21,111 +20,6 @@ function isNodeActive(pathname: string | null, node: HeaderNavNode): boolean {
   return node.children.some((child) => isNodeActive(pathname, child));
 }
 
-function isMegaNode(node: HeaderNavNode): boolean {
-  return node.children.length >= 5 || node.children.some((c) => c.children.length > 0);
-}
-
-// ── Mega menu panel ────────────────────────────────────────────────────────
-function MegaMenuPanel({
-  nodes,
-  onItemClick,
-  pathname,
-}: {
-  nodes: HeaderNavNode[];
-  onItemClick: () => void;
-  pathname: string | null;
-}) {
-  const t = useTranslations("Header");
-  const firstWithChildren = nodes.findIndex((n) => n.children.length > 0);
-  const [activeIdx, setActiveIdx] = useState(
-    firstWithChildren >= 0 ? firstWithChildren : 0,
-  );
-  const safeIdx = activeIdx < nodes.length ? activeIdx : 0;
-  const activeNode = nodes[safeIdx];
-
-  return (
-    <div className="absolute top-full left-0 w-[min(680px,calc(100vw-32px))] bg-card border border-border shadow-lg z-[var(--bb-z-dropdown)]">
-      <div className="flex">
-        <ul className="list-none m-0 p-0 w-48 shrink-0 border-r border-border py-2">
-          {nodes.map((node, index) => (
-            <li key={node.id}>
-              <Link
-                href={normalizeMenuUrl(node.url)}
-                className={cn(
-                  "flex items-center justify-between px-4 py-2.5 text-sm no-underline transition-colors hover:bg-muted hover:text-brand",
-                  index === safeIdx && "bg-muted text-brand font-medium",
-                  isNodeActive(pathname, node) && "text-brand",
-                )}
-                target={node.openInNewTab ? "_blank" : undefined}
-                rel={node.openInNewTab ? "noreferrer" : undefined}
-                onMouseEnter={() => setActiveIdx(index)}
-                onFocus={() => setActiveIdx(index)}
-                onClick={onItemClick}
-              >
-                <span>{node.label}</span>
-                {node.children.length > 0 && (
-                  <ChevronDown
-                    size={14}
-                    strokeWidth={2.5}
-                    aria-hidden="true"
-                    className="-rotate-90 shrink-0 text-muted-foreground"
-                  />
-                )}
-              </Link>
-            </li>
-          ))}
-        </ul>
-
-        <div className="flex-1 p-4 min-h-[180px]">
-          {activeNode && activeNode.children.length > 0 ? (
-            <ul className="list-none m-0 p-0 columns-2 gap-4">
-              {activeNode.children.map((item) => (
-                <li key={item.id} className="break-inside-avoid mb-2">
-                  <Link
-                    href={normalizeMenuUrl(item.url)}
-                    className={cn(
-                      "block py-1 text-sm font-medium no-underline transition-colors hover:text-brand",
-                      isNodeActive(pathname, item) && "text-brand",
-                    )}
-                    target={item.openInNewTab ? "_blank" : undefined}
-                    rel={item.openInNewTab ? "noreferrer" : undefined}
-                    onClick={onItemClick}
-                  >
-                    {item.label}
-                  </Link>
-                  {item.children.length > 0 && (
-                    <ul className="list-none m-0 p-0 pl-3 mt-1 space-y-0.5">
-                      {item.children.map((sub) => (
-                        <li key={sub.id}>
-                          <Link
-                            href={normalizeMenuUrl(sub.url)}
-                            className={cn(
-                              "block text-sm text-muted-foreground no-underline transition-colors hover:text-brand",
-                              isNodeActive(pathname, sub) && "text-brand",
-                            )}
-                            target={sub.openInNewTab ? "_blank" : undefined}
-                            rel={sub.openInNewTab ? "noreferrer" : undefined}
-                            onClick={onItemClick}
-                          >
-                            {sub.label}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="m-0 p-2 text-sm text-muted-foreground italic">{t("megaMenuEmpty")}</p>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Standard sub-menu (dropdown, ≤ 2 levels) ──────────────────────────────
 function SubMenu({
   nodes,
   onItemClick,
@@ -140,22 +34,27 @@ function SubMenu({
   return (
     <ul
       className={cn(
-        "list-none m-0 p-1 min-w-[200px] bg-card border border-border shadow-dropdown z-[var(--bb-z-dropdown)]",
-        nested
-          ? "absolute left-full top-0 hidden group-hover:block"
-          : "absolute top-full left-0",
+        "m-0 w-[300px] list-none bg-white p-0 text-left shadow-dropdown z-[var(--bb-z-dropdown)]",
+        nested ? "absolute left-full top-0 hidden group-hover:block" : "absolute top-full left-0",
       )}
     >
       {nodes.map((child) => {
         const hasChildren = child.children.length > 0;
         const active = isNodeActive(pathname, child);
+
         return (
-          <li key={child.id} className={cn("relative", hasChildren && "group")}>
+          <li
+            key={child.id}
+            className={cn(
+              "relative border-b border-[#cecece] last:border-b-0",
+              hasChildren && "group",
+            )}
+          >
             <Link
               href={normalizeMenuUrl(child.url)}
               className={cn(
-                "flex items-center gap-2 px-4 py-2 text-sm no-underline transition-colors hover:bg-muted hover:text-brand",
-                active && "text-brand font-medium",
+                "flex items-center gap-2 px-[30px] py-[15px] font-heading text-[14px] font-semibold leading-[1.3] text-[#6f6f6f] no-underline transition-colors duration-300 hover:text-brand",
+                active && "text-brand",
               )}
               target={child.openInNewTab ? "_blank" : undefined}
               rel={child.openInNewTab ? "noreferrer" : undefined}
@@ -186,8 +85,7 @@ function SubMenu({
   );
 }
 
-// ── Nav item ───────────────────────────────────────────────────────────────
-const menuDelay: [number, number] = [80, 200];
+const menuDelay: [number, number] = [0, 0];
 
 const navLinkBase =
   "bb-header-nav-link flex h-full items-center whitespace-nowrap font-cta text-17 font-semibold uppercase no-underline text-white transition-colors duration-150 hover:text-brand";
@@ -196,11 +94,9 @@ export function HeaderNavItem({ node }: HeaderNavItemProps) {
   const pathname = usePathname();
   const href = normalizeMenuUrl(node.url);
   const hasChildren = node.children.length > 0;
-  const mega = hasChildren && isMegaNode(node);
   const active = isNodeActive(pathname, node);
 
   const [open, setOpen] = useState(false);
-  const triggerRef = useRef<HTMLAnchorElement>(null);
   const wrapperRef = useRef<HTMLLIElement>(null);
   const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -251,24 +147,17 @@ export function HeaderNavItem({ node }: HeaderNavItemProps) {
 
   useEffect(() => {
     if (!open) return;
+
     function onPointerDown(event: PointerEvent) {
       const target = event.target;
       if (!(target instanceof Node)) return;
       if (wrapperRef.current?.contains(target)) return;
       closeMenu();
     }
+
     document.addEventListener("pointerdown", onPointerDown);
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, [open, closeMenu]);
-
-  useEffect(() => {
-    if (!open || !mega) return;
-    function onScroll() {
-      if (window.scrollY > 10) closeMenu();
-    }
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [open, mega, closeMenu]);
 
   if (!hasChildren) {
     return (
@@ -309,7 +198,6 @@ export function HeaderNavItem({ node }: HeaderNavItemProps) {
       }}
     >
       <Link
-        ref={triggerRef}
         href={href}
         className={cn(navLinkBase, node.cssClass, active && "text-brand")}
         target={node.openInNewTab ? "_blank" : undefined}
@@ -341,11 +229,7 @@ export function HeaderNavItem({ node }: HeaderNavItemProps) {
 
       {open && (
         <div id={menuId} data-dropdown>
-          {mega ? (
-            <MegaMenuPanel nodes={node.children} onItemClick={closeMenu} pathname={pathname} />
-          ) : (
-            <SubMenu nodes={node.children} onItemClick={closeMenu} pathname={pathname} />
-          )}
+          <SubMenu nodes={node.children} onItemClick={closeMenu} pathname={pathname} />
         </div>
       )}
     </li>

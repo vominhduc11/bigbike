@@ -3,8 +3,10 @@ package com.bigbike.bigbike_backend.service.admin;
 import com.bigbike.bigbike_backend.api.admin.dto.ImageAssetRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.SeoMetaRequest;
 import com.bigbike.bigbike_backend.api.common.ApiErrorDetail;
+import com.bigbike.bigbike_backend.api.error.PublishGateException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.math.BigDecimal;
@@ -14,6 +16,7 @@ import java.util.regex.Pattern;
 
 final class AdminMutationValidators {
 
+    private static final String REQUIRED = "REQUIRED";
     private static final Pattern SLUG_PATTERN = Pattern.compile("^[a-z0-9]+(?:-[a-z0-9]+)*$");
     private static final Pattern WINDOWS_PATH_PATTERN = Pattern.compile("^[A-Za-z]:[\\\\/].*");
 
@@ -31,7 +34,7 @@ final class AdminMutationValidators {
     static void validateRequiredSlug(String slug, String field, List<ApiErrorDetail> errors) {
         String normalized = trimToNull(slug);
         if (normalized == null) {
-            errors.add(new ApiErrorDetail(field, "REQUIRED", "Slug is required."));
+            errors.add(new ApiErrorDetail(field, REQUIRED, "Slug is required."));
             return;
         }
         validateSlugFormat(normalized, field, errors);
@@ -47,7 +50,7 @@ final class AdminMutationValidators {
 
     static void validateRequiredText(String value, String field, String label, List<ApiErrorDetail> errors) {
         if (trimToNull(value) == null) {
-            errors.add(new ApiErrorDetail(field, "REQUIRED", label + " is required."));
+            errors.add(new ApiErrorDetail(field, REQUIRED, label + " is required."));
         }
     }
 
@@ -252,6 +255,42 @@ final class AdminMutationValidators {
     static void throwIfErrors(List<ApiErrorDetail> errors) {
         if (!errors.isEmpty()) {
             throw new ValidationException("Validation failed.", List.copyOf(errors));
+        }
+    }
+
+    static void validatePublishReadiness(ProductEntity entity, List<ApiErrorDetail> errors) {
+        if (trimToNull(entity.getName()) == null) {
+            errors.add(new ApiErrorDetail("name", REQUIRED, "Product name is required to publish."));
+        }
+        if (entity.getCategory() == null) {
+            errors.add(new ApiErrorDetail("categoryId", REQUIRED, "Category is required to publish."));
+        }
+        if (entity.getBrand() == null) {
+            errors.add(new ApiErrorDetail("brandId", REQUIRED, "Brand is required to publish."));
+        }
+        if (trimToNull(entity.getImageUrl()) == null && trimToNull(entity.getImageId()) == null) {
+            errors.add(new ApiErrorDetail("imageUrl", REQUIRED, "A main product image is required to publish."));
+        }
+        if (entity.getRetailPrice() == null || entity.getRetailPrice().compareTo(BigDecimal.ZERO) <= 0) {
+            errors.add(new ApiErrorDetail("retailPrice", REQUIRED, "Retail price must be greater than 0 to publish."));
+        }
+        if (trimToNull(entity.getSeoTitle()) == null) {
+            errors.add(new ApiErrorDetail("seoTitle", REQUIRED, "SEO title is required to publish."));
+        }
+        if (trimToNull(entity.getSeoDescription()) == null) {
+            errors.add(new ApiErrorDetail("seoDescription", REQUIRED, "SEO description is required to publish."));
+        }
+        if (trimToNull(entity.getSeoCanonicalUrl()) == null) {
+            errors.add(new ApiErrorDetail("seoCanonicalUrl", REQUIRED, "SEO canonical URL is required to publish."));
+        }
+        if (trimToNull(entity.getShortDescription()) == null) {
+            errors.add(new ApiErrorDetail("shortDescription", REQUIRED, "Short description is required to publish."));
+        }
+    }
+
+    static void throwIfPublishErrors(List<ApiErrorDetail> errors) {
+        if (!errors.isEmpty()) {
+            throw new PublishGateException(List.copyOf(errors));
         }
     }
 

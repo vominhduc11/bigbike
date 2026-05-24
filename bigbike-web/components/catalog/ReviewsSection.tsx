@@ -7,9 +7,6 @@ import {
   useInfiniteQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
 
 type Review = {
   id: number | string;
@@ -22,7 +19,6 @@ type Review = {
 type ReviewsData = {
   avgRating: number;
   totalReviews: number;
-  /** Approved-review count keyed by star value ("5".."1"). */
   ratingBreakdown: Record<string, number>;
   reviews: Review[];
   pagination: {
@@ -41,56 +37,20 @@ type ReviewsSectionProps = {
 
 const PAGE_SIZE = 10;
 
-/** Per-star count bars shown next to the average score. */
-function RatingHistogram({
-  breakdown,
-  total,
-}: {
-  breakdown: Record<string, number>;
-  total: number;
-}) {
-  return (
-    <div className="flex min-w-[200px] flex-1 flex-col gap-1.5">
-      {[5, 4, 3, 2, 1].map((star) => {
-        const count = breakdown[String(star)] ?? 0;
-        const pct = total > 0 ? (count / total) * 100 : 0;
-        return (
-          <div key={star} className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="flex w-8 shrink-0 items-center gap-0.5">
-              {star}
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" className="text-brand" aria-hidden="true">
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-              </svg>
-            </span>
-            <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
-              <span
-                className="block h-full rounded-full bg-brand"
-                style={{ width: `${pct}%` }}
-              />
-            </span>
-            <span className="w-8 shrink-0 text-right tabular-nums">{count}</span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function StarRow({ rating, size = 16 }: { rating: number; size?: number }) {
+function StarRow({ rating }: { rating: number }) {
   const rounded = Math.round(rating);
   return (
     <span className="stars" aria-label={`${rating.toFixed(1)} sao`}>
       {Array.from({ length: 5 }, (_, i) => (
         <svg
           key={i}
-          width={size}
-          height={size}
+          width="14"
+          height="14"
           viewBox="0 0 24 24"
           aria-hidden="true"
           fill={i < rounded ? "currentColor" : "none"}
           stroke="currentColor"
           strokeWidth="1.8"
-          className="text-brand"
         >
           <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
         </svg>
@@ -99,47 +59,11 @@ function StarRow({ rating, size = 16 }: { rating: number; size?: number }) {
   );
 }
 
-function StarPicker({ value, onChange }: { value: number; onChange: (v: number) => void }) {
-  const t = useTranslations("Product.reviews");
-  const [hovered, setHovered] = useState(0);
-  const display = hovered || value;
-  return (
-    <div className="bb-review-star-picker" role="radiogroup" aria-label={t("pickStars")}>
-      {[1, 2, 3, 4, 5].map((n) => (
-        <button
-          key={n}
-          type="button"
-          role="radio"
-          aria-checked={value === n}
-          aria-label={t("starsCount", { count: n })}
-          className={`bb-review-star-btn${display >= n ? " active" : ""}`}
-          onClick={() => onChange(n)}
-          onMouseEnter={() => setHovered(n)}
-          onMouseLeave={() => setHovered(0)}
-        >
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill={display >= n ? "currentColor" : "none"}
-            stroke="currentColor"
-            strokeWidth="1.8"
-            aria-hidden="true"
-          >
-            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-          </svg>
-        </button>
-      ))}
-    </div>
-  );
-}
-
 function WriteReviewForm({ productId, onSuccess }: { productId: string; onSuccess: () => void }) {
   const t = useTranslations("Product.reviews");
-  const tCommon = useTranslations("Common");
-  const [open, setOpen] = useState(false);
   const [rating, setRating] = useState(0);
   const [authorName, setAuthorName] = useState("");
+  const [authorEmail, setAuthorEmail] = useState("");
   const [comment, setComment] = useState("");
   const [website, setWebsite] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -148,8 +72,14 @@ function WriteReviewForm({ productId, onSuccess }: { productId: string; onSucces
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (rating === 0) { setError(t("errorPickStars")); return; }
-    if (!authorName.trim()) { setError(t("errorPickName")); return; }
+    if (rating === 0) {
+      setError(t("errorPickStars"));
+      return;
+    }
+    if (!authorName.trim()) {
+      setError(t("errorPickName"));
+      return;
+    }
     setError("");
     setSubmitting(true);
     try {
@@ -163,14 +93,14 @@ function WriteReviewForm({ productId, onSuccess }: { productId: string; onSucces
           website,
         }),
       });
-      const json = (await res.json()) as { error?: string };
+      const json = (await res.json().catch(() => null)) as { error?: string } | null;
       if (!res.ok) {
         if (res.status === 429) {
           setError(t("errorRateLimit"));
         } else if (res.status === 409) {
-          setError(json.error ?? t("errorDuplicate"));
+          setError(json?.error ?? t("errorDuplicate"));
         } else {
-          setError(json.error ?? t("errorSubmit"));
+          setError(json?.error ?? t("errorSubmit"));
         }
         return;
       }
@@ -184,80 +114,95 @@ function WriteReviewForm({ productId, onSuccess }: { productId: string; onSucces
   }
 
   if (done) {
-    return (
-      <div className="bb-review-done">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5" /></svg>
-        {t("thanks")}
-      </div>
-    );
-  }
-
-  if (!open) {
-    return (
-      <Button type="button" variant="ghost" className="bb-review-open-btn" onClick={() => setOpen(true)}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-        </svg>
-        {t("writeButton")}
-      </Button>
-    );
+    return <p className="woocommerce-message">{t("thanks")}</p>;
   }
 
   return (
-    <form className="bb-review-form" onSubmit={handleSubmit} noValidate>
-      <h4 className="bb-review-form-title">{t("formTitle")}</h4>
-      {/* Honeypot — ẩn khỏi user, bot auto-fill sẽ bị block */}
-      <input
-        type="text"
-        name="website"
-        tabIndex={-1}
-        aria-hidden="true"
-        autoComplete="off"
-        value={website}
-        onChange={(e) => setWebsite(e.target.value)}
-        style={{ position: "absolute", left: "-9999px", width: 0, height: 0, opacity: 0, pointerEvents: "none" }}
-      />
+    <div id="review_form_wrapper">
+      <div id="review_form" className="comment-respond">
+        <span id="reply-title" className="comment-reply-title">
+          {t("formTitle")}
+        </span>
+        <form className="comment-form" onSubmit={handleSubmit} noValidate>
+          <input
+            type="text"
+            name="website"
+            tabIndex={-1}
+            aria-hidden="true"
+            autoComplete="off"
+            value={website}
+            onChange={(event) => setWebsite(event.target.value)}
+            style={{ position: "absolute", left: "-9999px", width: 0, height: 0, opacity: 0, pointerEvents: "none" }}
+          />
 
-      <div className="bb-review-form-field">
-        <label>{t("formStars")} <span className="req">*</span></label>
-        <StarPicker value={rating} onChange={setRating} />
+          <p className="comment-form-rating">
+            <label htmlFor="rating">
+              {t("formStars")} <span className="required">*</span>
+            </label>
+            <select
+              id="rating"
+              name="rating"
+              required
+              value={rating}
+              onChange={(event) => setRating(Number.parseInt(event.target.value, 10))}
+            >
+              <option value={0}>Đánh giá...</option>
+              <option value={5}>Rất tốt</option>
+              <option value={4}>Tốt</option>
+              <option value={3}>Trung bình</option>
+              <option value={2}>Không tệ</option>
+              <option value={1}>Rất kém</option>
+            </select>
+          </p>
+
+          <p className="comment-form-author">
+            <label htmlFor="author">
+              {t("formName")} <span className="required">*</span>
+            </label>
+            <input
+              id="author"
+              name="author"
+              type="text"
+              value={authorName}
+              onChange={(event) => setAuthorName(event.target.value)}
+              maxLength={80}
+              required
+            />
+          </p>
+
+          <p className="comment-form-email">
+            <label htmlFor="email">Email</label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              value={authorEmail}
+              onChange={(event) => setAuthorEmail(event.target.value)}
+            />
+          </p>
+
+          <p className="comment-form-comment">
+            <label htmlFor="comment">{t("formComment")}</label>
+            <textarea
+              id="comment"
+              name="comment"
+              value={comment}
+              onChange={(event) => setComment(event.target.value)}
+              maxLength={1000}
+              rows={5}
+            />
+          </p>
+
+          {error && <p className="woocommerce-error">{error}</p>}
+
+          <p className="form-submit">
+            <button type="submit" className="submit" disabled={submitting}>
+              {submitting ? t("submitting") : t("submit")}
+            </button>
+          </p>
+        </form>
       </div>
-
-      <div className="bb-review-form-field">
-        <label htmlFor="review-name">{t("formName")} <span className="req">*</span></label>
-        <Input
-          id="review-name"
-          placeholder={t("formNamePlaceholder")}
-          value={authorName}
-          onChange={(e) => setAuthorName(e.target.value)}
-          maxLength={80}
-          required
-        />
-      </div>
-
-      <div className="bb-review-form-field">
-        <label htmlFor="review-comment">{t("formComment")}</label>
-        <Textarea
-          id="review-comment"
-          placeholder={t("formCommentPlaceholder")}
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-          maxLength={1000}
-          rows={3}
-        />
-      </div>
-
-      {error && <p className="text-sm text-destructive">{error}</p>}
-
-      <div className="bb-review-form-actions">
-        <Button type="button" variant="secondary" onClick={() => setOpen(false)} disabled={submitting}>
-          {tCommon("cancel")}
-        </Button>
-        <Button type="submit" variant="primary" disabled={submitting}>
-          {submitting ? t("submitting") : t("submit")}
-        </Button>
-      </div>
-    </form>
+    </div>
   );
 }
 
@@ -291,13 +236,7 @@ export function ReviewsSection({ productId }: ReviewsSectionProps) {
   const queryClient = useQueryClient();
   const queryKey = ["product-reviews", productId] as const;
 
-  const {
-    data,
-    hasNextPage,
-    fetchNextPage,
-    isFetchingNextPage,
-    isFetchNextPageError,
-  } = useInfiniteQuery({
+  const { data } = useInfiniteQuery({
     queryKey,
     initialPageParam: 1,
     queryFn: ({ pageParam }) => fetchReviewsPage(productId, pageParam, t("errorLoad")),
@@ -310,20 +249,12 @@ export function ReviewsSection({ productId }: ReviewsSectionProps) {
     retry: 1,
   });
 
-  const firstPage = data?.pages[0];
   const reviews = data?.pages.flatMap((page) => page.reviews) ?? [];
-  // Only use verified API average — never fall back to the denormalized product.rating
-  // which can be a seeded/default value with no actual reviews behind it.
-  const total = firstPage?.totalReviews ?? 0;
-  const rating = total > 0 ? (firstPage?.avgRating ?? 0) : 0;
-  const ratingBreakdown = firstPage?.ratingBreakdown ?? {};
+  const total = data?.pages[0]?.totalReviews ?? 0;
 
   const resetToFirstPage = () => {
     queryClient.setQueryData<InfiniteData<ReviewsData>>(queryKey, (current) => {
-      if (!current) {
-        return current;
-      }
-
+      if (!current) return current;
       return {
         pages: current.pages.slice(0, 1),
         pageParams: current.pageParams.slice(0, 1),
@@ -338,64 +269,44 @@ export function ReviewsSection({ productId }: ReviewsSectionProps) {
   };
 
   return (
-    <div>
-      {rating > 0 && (
-        <div className="mb-6 flex flex-wrap items-center gap-x-10 gap-y-4">
-          <div className="flex items-center gap-3">
-            <span className="bb-pdp-rating-score">{rating.toFixed(1)}</span>
-            <div className="flex flex-col gap-1">
-              <StarRow rating={rating} size={20} />
-              {total > 0 && (
-                <span className="bb-pdp-rating-count">{t("ratingCount", { count: total })}</span>
-              )}
-            </div>
-          </div>
-          {total > 0 && <RatingHistogram breakdown={ratingBreakdown} total={total} />}
-        </div>
-      )}
+    <div id="reviews" className="woocommerce-Reviews">
+      <div id="comments">
+        <h2 className="woocommerce-Reviews-title">
+          {total > 0 ? `Reviews (${total})` : "Reviews"}
+        </h2>
 
-      <WriteReviewForm
-        productId={productId}
-        onSuccess={resetToFirstPage}
-      />
+        {reviews.length > 0 ? (
+          <ol className="commentlist">
+            {reviews.map((review) => (
+              <li key={review.id} className="review">
+                <div className="comment_container">
+                  <div className="comment-text">
+                    <p className="meta">
+                      <strong className="woocommerce-review__author">{review.authorName}</strong>
+                      <time
+                        className="woocommerce-review__published-date"
+                        dateTime={review.createdAt}
+                      >
+                        {new Date(review.createdAt).toLocaleDateString("vi-VN")}
+                      </time>
+                    </p>
+                    <StarRow rating={review.rating} />
+                    {review.comment && (
+                      <div className="description">
+                        <p>{review.comment}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p className="woocommerce-noreviews">There are no reviews yet.</p>
+        )}
+      </div>
 
-      {!!reviews.length && (
-        <ul className="bb-pdp-review-list">
-          {reviews.map((review) => (
-            <li key={review.id} className="bb-pdp-review-item">
-              <div className="bb-pdp-review-meta">
-                <span className="bb-pdp-review-author">{review.authorName}</span>
-                <StarRow rating={review.rating} size={14} />
-                <time
-                  className="bb-pdp-review-date"
-                  dateTime={review.createdAt}
-                >
-                  {new Date(review.createdAt).toLocaleDateString("vi-VN")}
-                </time>
-              </div>
-              {review.comment && (
-                <p className="bb-pdp-review-comment">{review.comment}</p>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {hasNextPage && (
-        <div className="bb-review-pagination">
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={isFetchingNextPage}
-            onClick={() => void fetchNextPage()}
-          >
-            {isFetchingNextPage ? t("loadingMore") : t("loadMore")}
-          </Button>
-          {isFetchNextPageError && (
-            <p className="text-sm text-destructive">{t("errorLoadMore")}</p>
-          )}
-        </div>
-      )}
+      <WriteReviewForm productId={productId} onSuccess={resetToFirstPage} />
     </div>
   );
 }

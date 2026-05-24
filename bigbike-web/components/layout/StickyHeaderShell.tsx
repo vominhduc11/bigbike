@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { HeaderUiProvider } from "@/components/layout/HeaderUiContext";
 
 const SCROLL_ATTR = "data-header-scrolled";
-const SCROLL_THRESHOLD = 10;
+const SCROLL_THRESHOLD = 0;
 
 export function StickyHeaderShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {

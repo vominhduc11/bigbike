@@ -7,6 +7,8 @@ import {
 } from 'lucide-react'
 import {
   createProduct,
+  fetchAttributes,
+  fetchAttributeValues,
   fetchBrands,
   fetchCategoryTree,
   fetchProductDetail,
@@ -32,7 +34,6 @@ import { Textarea } from '@/components/ui/textarea'
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
 } from '@/components/ui/dropdown-menu'
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 
 // Matches YouTube IDs across watch, share, embed, and shorts URLs.
@@ -119,13 +120,16 @@ function clearFormFromStorage(key) {
 
 function getPublishReadiness(form, t) {
   const items = [
-    { id: 'name', label: t('products.detail.checklist.name'), ok: Boolean(form.name.trim()), required: true },
-    { id: 'image', label: t('products.detail.checklist.image'), ok: Boolean(form.imageUrl.trim()), required: false },
-    { id: 'price', label: t('products.detail.checklist.price'), ok: Boolean(form.retailPrice?.trim()), required: true },
-    { id: 'shortDesc', label: t('products.detail.checklist.shortDesc'), ok: form.shortDescription.trim().length >= 20, required: false },
-    { id: 'desc', label: t('products.detail.checklist.desc'), ok: form.description.trim().length > 50, required: false },
+    { id: 'name',      label: t('products.detail.checklist.name'),      ok: Boolean(form.name?.trim()),                                             required: true  },
+    { id: 'brand',     label: t('products.detail.checklist.brand'),     ok: Boolean(form.brandId),                                                  required: true  },
+    { id: 'category',  label: t('products.detail.checklist.category'),  ok: Boolean(form.categoryId),                                               required: true  },
+    { id: 'image',     label: t('products.detail.checklist.image'),     ok: Boolean(form.imageUrl?.trim()),                                         required: true  },
+    { id: 'price',     label: t('products.detail.checklist.price'),     ok: Boolean(form.retailPrice?.trim()) && Number(form.retailPrice) > 0,      required: true  },
+    { id: 'shortDesc', label: t('products.detail.checklist.shortDesc'), ok: Boolean(form.shortDescription?.trim()),                                 required: true  },
+    { id: 'seoTitle',  label: t('products.detail.checklist.seoTitle'),  ok: Boolean(form.seoTitle?.trim()),                                         required: true  },
+    { id: 'seoDesc',   label: t('products.detail.checklist.seoDesc'),   ok: Boolean(form.seoDescription?.trim()),                                   required: true  },
+    { id: 'desc',      label: t('products.detail.checklist.desc'),      ok: (form.description?.trim().length ?? 0) > 50,                            required: false },
   ]
-
 
   return items
 }
@@ -181,7 +185,6 @@ function buildEmptyForm() {
     description: '',
     descriptionBlocks: null,
     contentBottom: '',
-    promotionContent: '',
     installationGuide: '',
     brandId: '',
     categoryId: '',
@@ -219,7 +222,6 @@ function buildEmptyTranslation() {
     shortDescription: '',
     description: '',
     contentBottom: '',
-    promotionContent: '',
     installationGuide: '',
     seoTitle: '',
     seoDescription: '',
@@ -236,7 +238,14 @@ function buildFormFromItem(item) {
     name: v.name || '',
     imageUrl: v.image?.url || '',
     isAvailable: v.isAvailable !== false,
-    options: (v.options || []).map((o) => ({ name: o.name || '', value: o.value || '' })),
+    options: (v.options || []).map((o) => ({
+      name: o.name || '',
+      value: o.value || '',
+      attributeValueId: o.attributeValueId || null,
+      _colorHex: o.colorHex || null,
+      _swatchImageUrl: o.swatchImageUrl || null,
+      _directSwatchImageId: o.swatchImageId || null,
+    })),
     gallery: (v.gallery || []).map((img) => ({ url: img.url || '' })),
   })))
 
@@ -248,7 +257,6 @@ function buildFormFromItem(item) {
     description: item.description || '',
     descriptionBlocks: item.descriptionBlocks ?? null,
     contentBottom: item.contentBottom || '',
-    promotionContent: item.promotionContent || '',
     installationGuide: item.installationGuide || '',
     brandId: item.brand?.id || '',
     categoryId: item.category?.id || '',
@@ -361,7 +369,6 @@ function toPayload(form) {
     shortDescription: form.shortDescription.trim() || undefined,
     description: Array.isArray(form.descriptionBlocks) ? undefined : (form.description.trim() || undefined),
     contentBottom: form.contentBottom.trim() ? form.contentBottom.trim() : null,
-    promotionContent: form.promotionContent.trim() ? form.promotionContent.trim() : null,
     installationGuide: form.installationGuide.trim() ? form.installationGuide.trim() : null,
     brandId: form.brandId.trim() || undefined,
     categoryId: form.categoryId.trim(),
@@ -469,7 +476,13 @@ function toPayload(form) {
       sortOrder: i,
       options: v.options
         .filter((o) => o.name.trim() && o.value.trim())
-        .map((o, j) => ({ optionName: o.name.trim(), optionValue: o.value.trim(), sortOrder: j })),
+        .map((o, j) => ({
+          optionName: o.name.trim(),
+          optionValue: o.value.trim(),
+          ...(o.attributeValueId ? { attributeValueId: o.attributeValueId } : {}),
+          ...(o._directSwatchImageId ? { swatchImageId: o._directSwatchImageId } : {}),
+          sortOrder: j,
+        })),
       gallery: shouldSendGallery ? gallery : [],
     }
   })
@@ -945,45 +958,171 @@ function FaqEditor({ items, onChange, disabled, validationErrors, contentLang = 
 
 function VariantOptionsEditor({ options, onChange, disabled }) {
   const { t } = useTranslation()
-  function updateOption(i, field, value) {
-    const next = options.map((o, idx) => idx === i ? { ...o, [field]: value } : o)
-    onChange(next)
+  const loadedAttrIds = useRef(new Set())
+  const [attrValuesById, setAttrValuesById] = useState({})
+
+  const { data: attributes = [] } = useQuery({
+    queryKey: ['attributes'],
+    queryFn: fetchAttributes,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  // Resolve an attribute from the catalog by matching option name against code or name
+  function resolveAttr(optionName) {
+    const norm = normalizeVariantToken(optionName)
+    return attributes.find(
+      (a) => normalizeVariantToken(a.name) === norm || normalizeVariantToken(a.code) === norm,
+    ) ?? null
   }
+
+  // Eagerly load attribute values for color options whenever options/catalog change
+  useEffect(() => {
+    if (!attributes.length) return
+    options.forEach((o) => {
+      const attr = resolveAttr(o.name)
+      if (!attr || attr.kind !== 'color') return
+      if (loadedAttrIds.current.has(attr.id)) return
+      loadedAttrIds.current.add(attr.id)
+      fetchAttributeValues(attr.id).then((values) =>
+        setAttrValuesById((prev) => ({ ...prev, [attr.id]: values })),
+      )
+    })
+  }, [options, attributes]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  function updateOptionFields(i, updates) {
+    onChange(options.map((o, idx) => (idx === i ? { ...o, ...updates } : o)))
+  }
+
   function addOption() {
-    onChange([...options, { name: '', value: '' }])
+    onChange([...options, { name: '', value: '', attributeValueId: null, _colorHex: null, _swatchImageUrl: null, _directSwatchImageId: null }])
   }
+
   function removeOption(i) {
     onChange(options.filter((_, idx) => idx !== i))
   }
 
   return (
     <div className="variant-options-editor">
-      {options.map((opt, i) => (
-        <div key={i} className="list-editor-row variant-option-row">
-          <Input
-            placeholder={t('products.detail.variant.optionNamePlaceholder')}
-            value={opt.name}
-            onChange={(e) => updateOption(i, 'name', e.target.value)}
-            disabled={disabled}
-           />
-          <Input
-            placeholder={t('products.detail.variant.optionValuePlaceholder')}
-            value={opt.value}
-            onChange={(e) => updateOption(i, 'value', e.target.value)}
-            disabled={disabled}
-           />
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-destructive hover:text-destructive"
-            onClick={() => removeOption(i)}
-            disabled={disabled}
-            aria-label={t('products.detail.variant.removeOption')}
-          >
-            ✕
-          </Button>
-        </div>
-      ))}
+      {options.map((opt, i) => {
+        const attr = resolveAttr(opt.name)
+        const isColor = Boolean(attr?.kind === 'color' || isColorAttributeName(opt.name))
+        const colorValues = attr ? (attrValuesById[attr.id] ?? []) : []
+        const hasSwatch = Boolean(opt._swatchImageUrl || opt._colorHex)
+
+        return (
+          <div key={i} className="list-editor-row variant-option-row">
+            {/* Name — text input with datalist suggestions from attribute catalog */}
+            <div className="flex-1">
+              <Input
+                list={`attr-names-${i}`}
+                placeholder={t('products.detail.variant.optionNamePlaceholder')}
+                value={opt.name}
+                onChange={(e) =>
+                  updateOptionFields(i, {
+                    name: e.target.value,
+                    attributeValueId: null,
+                    _colorHex: null,
+                    _swatchImageUrl: null,
+                  })
+                }
+                disabled={disabled}
+              />
+              <datalist id={`attr-names-${i}`}>
+                {attributes.map((a) => <option key={a.id} value={a.name} />)}
+              </datalist>
+            </div>
+
+            {/* Value — swatch select for color attributes, plain text otherwise */}
+            <div className="flex flex-col gap-1 flex-1">
+              <div className="flex items-center gap-2">
+                {hasSwatch && (
+                  <span
+                    className="shrink-0 size-5 rounded-full border border-border"
+                    style={
+                      opt._swatchImageUrl
+                        ? { backgroundImage: `url(${opt._swatchImageUrl})`, backgroundSize: 'cover' }
+                        : { backgroundColor: opt._colorHex }
+                    }
+                    aria-label={t('products.detail.variant.colorPreview')}
+                  />
+                )}
+                {isColor && colorValues.length > 0 ? (
+                  <Select
+                    value={opt.value}
+                    onValueChange={(val) => {
+                      const item = colorValues.find((v) => v.label === val)
+                      updateOptionFields(i, {
+                        value: val,
+                        attributeValueId: item?.id ?? null,
+                        _colorHex: item?.colorHex ?? null,
+                        _swatchImageUrl: item?.swatchImageUrl ?? null,
+                      })
+                    }}
+                    disabled={disabled}
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder={t('products.detail.variant.selectColorValue')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {colorValues.map((v) => (
+                        <SelectItem key={v.id} value={v.label}>
+                          <span className="flex items-center gap-2">
+                            {(v.swatchImageUrl || v.colorHex) && (
+                              <span
+                                className="shrink-0 size-4 rounded-full border border-border"
+                                style={
+                                  v.swatchImageUrl
+                                    ? { backgroundImage: `url(${v.swatchImageUrl})`, backgroundSize: 'cover' }
+                                    : { backgroundColor: v.colorHex }
+                                }
+                              />
+                            )}
+                            {v.label}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    className="flex-1"
+                    placeholder={t('products.detail.variant.optionValuePlaceholder')}
+                    value={opt.value}
+                    onChange={(e) => updateOptionFields(i, { value: e.target.value })}
+                    disabled={disabled}
+                  />
+                )}
+              </div>
+              {isColor && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">{t('products.detail.variant.directSwatchImage')}</p>
+                  <ImageUrlInput
+                    value={opt._directSwatchImageId || ''}
+                    onChange={(url) =>
+                      updateOptionFields(i, {
+                        _directSwatchImageId: url || null,
+                        _swatchImageUrl: url || opt._swatchImageUrl,
+                      })
+                    }
+                    disabled={disabled}
+                  />
+                </div>
+              )}
+            </div>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-destructive hover:text-destructive"
+              onClick={() => removeOption(i)}
+              disabled={disabled}
+              aria-label={t('products.detail.variant.removeOption')}
+            >
+              ✕
+            </Button>
+          </div>
+        )
+      })}
       <Button variant="outline" size="sm" onClick={addOption} disabled={disabled}>
         + {t('products.detail.variant.addOption')}
       </Button>
@@ -1509,6 +1648,8 @@ function VariantMatrixWizard({ onGenerate, onClose }) {
     onClose()
   }
 
+  const isValid = estimatedCount > 0 && estimatedCount <= MATRIX_HARD_CAP
+
   return (
     <Modal
       open
@@ -1518,33 +1659,44 @@ function VariantMatrixWizard({ onGenerate, onClose }) {
       actions={
         <>
           <Button type="button" variant="outline" size="sm" onClick={onClose}>{t('common.cancel')}</Button>
-          <Button type="button" size="sm" onClick={generate} disabled={estimatedCount === 0 || estimatedCount > MATRIX_HARD_CAP}>
-            {t('products.detail.matrix.generateButton', { count: estimatedCount })}
+          <Button
+            type="button"
+            variant={isValid ? 'default' : 'outline'}
+            size="sm"
+            onClick={generate}
+            disabled={!isValid}
+          >
+            {estimatedCount === 0
+              ? t('products.detail.matrix.generateButtonEmpty')
+              : t('products.detail.matrix.generateButton', { count: estimatedCount })}
           </Button>
         </>
       }
     >
-        <p className="detail-section-desc mb-4">
-          {t('products.detail.matrix.description')}
-        </p>
+      <p className="text-sm text-muted-foreground mb-4">
+        {t('products.detail.matrix.description')}
+      </p>
 
-        <div className="wizard-attrs">
-          {attributes.map((attr, i) => (
-            <div key={i} className="wizard-attr-row">
+      <div className="flex flex-col gap-3 mb-4">
+        {attributes.map((attr, i) => (
+          <div key={i} className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
               <Input
                 placeholder={t('products.detail.matrix.attributePlaceholder')}
                 value={attr.name}
                 onChange={(e) => updateAttr(i, 'name', e.target.value)}
-               />
-              <Input className="wizard-attr-values"
+                className="flex-1"
+              />
+              <Input
                 placeholder={t('products.detail.matrix.valuesPlaceholder')}
                 value={attr.values}
                 onChange={(e) => updateAttr(i, 'values', e.target.value)}
-               />
+                className="flex-[2]"
+              />
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-destructive hover:text-destructive"
+                className="text-destructive hover:text-destructive shrink-0"
                 onClick={() => removeAttr(i)}
                 disabled={attributes.length <= 1}
                 aria-label={t('products.detail.variant.removeOption')}
@@ -1552,29 +1704,36 @@ function VariantMatrixWizard({ onGenerate, onClose }) {
                 ✕
               </Button>
             </div>
-          ))}
-        </div>
+            <p className="text-xs text-muted-foreground ml-0">
+              {t('products.detail.matrix.valuesHelp')}
+            </p>
+            {attr.name.trim() && !attr.values.trim() && (
+              <p className="text-xs text-warning">
+                {t('products.detail.matrix.rowValuesEmpty')}
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={addAttr}
-          disabled={attributes.length >= 5}
-          className="mt-2"
-        >
-          + {t('products.detail.variant.addOption')}
-        </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={addAttr}
+        disabled={attributes.length >= 5}
+      >
+        + {t('products.detail.variant.addOption')}
+      </Button>
 
-        {estimatedCount > 0 && (
-          <p className={`wizard-estimate${estimatedCount > MATRIX_HARD_CAP ? ' wizard-estimate--error' : estimatedCount > 50 ? ' wizard-estimate--warn' : ''}`}>
-            {estimatedCount > MATRIX_HARD_CAP
-              ? t('products.detail.matrix.estimateHardCap', { count: estimatedCount, cap: MATRIX_HARD_CAP })
-              : estimatedCount > 50
-                ? t('products.detail.matrix.estimateWarn', { count: estimatedCount })
-                : t('products.detail.matrix.estimate', { count: estimatedCount })}
-          </p>
-        )}
-
+      {estimatedCount > 0 && (
+        <p className={`text-sm mt-3 ${estimatedCount > MATRIX_HARD_CAP ? 'text-danger font-medium' : estimatedCount > 50 ? 'text-warning font-medium' : 'text-muted-foreground'}`}>
+          {estimatedCount > MATRIX_HARD_CAP
+            ? t('products.detail.matrix.estimateHardCap', { count: estimatedCount, cap: MATRIX_HARD_CAP })
+            : estimatedCount > 50
+              ? t('products.detail.matrix.estimateWarn', { count: estimatedCount })
+              : t('products.detail.matrix.estimate', { count: estimatedCount })}
+        </p>
+      )}
     </Modal>
   )
 }
@@ -1707,6 +1866,44 @@ function SectionCard({ title, badge, required, children }) {
         {badge}
       </div>
       <div className="card-body">{children}</div>
+    </div>
+  )
+}
+
+// Inline assignment guide — replaces the icon-only Popover in the header.
+function AssignmentBanner({ t }) {
+  return (
+    <div className="px-4 py-3 bg-surface-muted border-b border-border">
+      <div className="flex items-center gap-1.5 mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <Users size={12} />
+        <span>{t('products.detail.assign.title')}</span>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="border-l-[3px] pl-2 py-0.5" style={{ borderColor: 'var(--admin-color-brand-red)' }}>
+          <div className="text-[11px] font-bold uppercase tracking-wide text-foreground mb-0.5">
+            {t('products.detail.assign.roleContent')}
+          </div>
+          <div className="text-[11px] leading-relaxed" style={{ color: 'var(--admin-color-text-secondary)' }}>
+            {t('products.detail.assign.itemsContent')}
+          </div>
+        </div>
+        <div className="border-l-[3px] pl-2 py-0.5" style={{ borderColor: 'var(--admin-color-status-warning-text)' }}>
+          <div className="text-[11px] font-bold uppercase tracking-wide text-foreground mb-0.5">
+            {t('products.detail.assign.roleSeo')}
+          </div>
+          <div className="text-[11px] leading-relaxed" style={{ color: 'var(--admin-color-text-secondary)' }}>
+            {t('products.detail.assign.itemsSeo')}
+          </div>
+        </div>
+        <div className="border-l-[3px] pl-2 py-0.5" style={{ borderColor: 'var(--admin-color-text-primary)' }}>
+          <div className="text-[11px] font-bold uppercase tracking-wide text-foreground mb-0.5">
+            {t('products.detail.assign.roleManager')}
+          </div>
+          <div className="text-[11px] leading-relaxed" style={{ color: 'var(--admin-color-text-secondary)' }}>
+            {t('products.detail.assign.itemsManager')}
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
@@ -2157,7 +2354,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
 
   return (
     <div className="bb-proto">
-      <Screen maxWidth="1200px">
+      <Screen maxWidth="1440px">
         <ScreenHeader
           eyebrow={t('products.detail.eyebrow')}
           title={isCreate
@@ -2208,50 +2405,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   { key: 'en', label: 'EN' },
                 ]}
               />
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label={t('products.detail.assign.title', { defaultValue: 'Phân công' })}
-                    title={t('products.detail.assign.title', { defaultValue: 'Phân công' })}
-                  >
-                    <Users size={18} />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent align="end" className="w-80">
-                  <div className="flex items-center gap-2 mb-3 text-sm font-semibold uppercase tracking-wide">
-                    <Users size={14} />
-                    <span>{t('products.detail.assign.title', { defaultValue: 'Phân công' })}</span>
-                  </div>
-                  <div className="space-y-2 text-xs leading-relaxed">
-                    <div className="border-l-[3px] pl-2 py-1 border-[var(--admin-color-brand-red)]">
-                      <strong className="text-foreground">{t('products.detail.assign.roleContent', { defaultValue: 'Content' })}: </strong>
-                      <span className="text-muted-foreground">
-                        {t('products.detail.assign.itemsContent', {
-                          defaultValue: 'Thông tin cơ bản · Ảnh đại diện · Bộ sưu tập ảnh · Video · Thông số kỹ thuật · Hướng dẫn lắp đặt · Câu hỏi thường gặp · Biến thể · Sản phẩm liên quan · Nội dung SEO dưới',
-                        })}
-                      </span>
-                    </div>
-                    <div className="border-l-[3px] pl-2 py-1 border-[var(--admin-color-status-warning-text)]">
-                      <strong className="text-foreground">{t('products.detail.assign.roleSeo', { defaultValue: 'SEO' })}: </strong>
-                      <span className="text-muted-foreground">
-                        {t('products.detail.assign.itemsSeo', {
-                          defaultValue: 'Thông tin SEO (Title, Meta, OG image) · Đường dẫn (slug) · Kiểm tra checklist trước khi đăng',
-                        })}
-                      </span>
-                    </div>
-                    <div className="border-l-[3px] pl-2 py-1 border-[var(--admin-color-text-primary)]">
-                      <strong className="text-foreground">{t('products.detail.assign.roleManager', { defaultValue: 'Quản lý' })}: </strong>
-                      <span className="text-muted-foreground">
-                        {t('products.detail.assign.itemsManager', {
-                          defaultValue: 'Giá & trạng thái · Duyệt đăng sản phẩm',
-                        })}
-                      </span>
-                    </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
               <Button
                 variant="ghost"
                 size="icon"
@@ -2309,6 +2462,9 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
           </div>
         )}
 
+        {/* Assignment banner — always visible */}
+        <AssignmentBanner t={t} />
+
         <Tabs
           ariaLabel={t('products.detail.tabsAriaLabel', { defaultValue: 'Phần của sản phẩm' })}
           value={activeTab}
@@ -2323,7 +2479,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
 
         <form
           ref={formRef}
-          className="flex flex-col gap-6 pb-4"
+          className="flex flex-col gap-6 pb-24"
           onSubmit={(e) => { e.preventDefault(); handleSave() }}
           onKeyDown={(e) => {
             if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && !isReadOnly && isDirty) {
@@ -2396,8 +2552,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   </Field>
 
                   <Field label={t('products.detail.categoryId')} error={validationErrors.categoryId}>
-                    <Select value={form.categoryId} onValueChange={(val) => updateField('categoryId', val)} disabled={isReadOnly}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                    <Select key={`cat-${categories.length > 0}`} value={form.categoryId} onValueChange={(val) => updateField('categoryId', val)} disabled={isReadOnly}>
+                      <SelectTrigger><SelectValue placeholder={t('products.detail.categoryPlaceholder')} /></SelectTrigger>
                       <SelectContent>
                         {form.categoryId && !categories.some((c) => c.id === form.categoryId) && (
                           <SelectItem value={form.categoryId} disabled>{t('products.detail.optionNotFound', { id: form.categoryId })}</SelectItem>
@@ -2408,8 +2564,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   </Field>
 
                   <Field label={t('products.detail.brandId')}>
-                    <Select value={form.brandId} onValueChange={(val) => updateField('brandId', val)} disabled={isReadOnly}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                    <Select key={`brand-${brands.length > 0}`} value={form.brandId} onValueChange={(val) => updateField('brandId', val)} disabled={isReadOnly}>
+                      <SelectTrigger><SelectValue placeholder={t('products.detail.brandPlaceholder')} /></SelectTrigger>
                       <SelectContent>
                         {form.brandId && !brands.some((b) => b.id === form.brandId) && (
                           <SelectItem value={form.brandId} disabled>{t('products.detail.optionNotFound', { id: form.brandId })}</SelectItem>
@@ -2457,23 +2613,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                         fallbackHtml={form.description}
                       />
                     )}
-                  </Field>
-
-                  <Field
-                    full
-                    label={t('products.detail.promotionContent')}
-                    hint={t('products.detail.promotionContentHint')}
-                    error={validationErrors.promotionContent}
-                  >
-                    <RichTextEditor
-                      key={`promotionContent-${contentLang}`}
-                      value={langValue('promotionContent')}
-                      onChange={(html) => langChange('promotionContent', html)}
-                      placeholder={t('products.detail.promotionContentPlaceholder')}
-                      disabled={isReadOnly}
-                      hasError={Boolean(validationErrors.promotionContent)}
-                      enableImagePicker
-                    />
                   </Field>
 
                   <Field full label={t('products.detail.homepageBlock')} hint={t('products.detail.homepageHint')}>
@@ -3068,7 +3207,24 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
 
         {showMatrixWizard && (
           <VariantMatrixWizard
-            onGenerate={(newVariants) => updateField('variants', [...form.variants, ...newVariants])}
+            onGenerate={(newVariants) => {
+              const existing = form.variants
+              function variantSig(options) {
+                return JSON.stringify(
+                  [...(options || [])].sort((a, b) => a.name.localeCompare(b.name))
+                    .map(o => `${o.name}:::${o.value.trim().toLowerCase()}`)
+                )
+              }
+              const existingSigs = new Set(existing.map(v => variantSig(v.options)))
+              const deduped = newVariants.filter(nv => !existingSigs.has(variantSig(nv.options)))
+              const skipped = newVariants.length - deduped.length
+              if (skipped > 0) {
+                toast.info(t('products.detail.matrix.skipDuplicates', { count: skipped }))
+              }
+              if (deduped.length > 0) {
+                updateField('variants', [...existing, ...deduped])
+              }
+            }}
             onClose={() => setShowMatrixWizard(false)}
           />
         )}

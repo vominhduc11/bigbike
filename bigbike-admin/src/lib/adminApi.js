@@ -703,6 +703,27 @@ export async function deleteBrand(brandId) {
   return parseDetailPayload(payload, normalizeBrand)
 }
 
+// ── Attribute management ──────────────────────────────────────────────────────
+
+export async function fetchAttributes() {
+  const payload = await requestJson('/admin/attributes')
+  return payload?.data ?? []
+}
+
+export async function fetchAttributeValues(attributeId) {
+  const payload = await requestJson(`/admin/attributes/${attributeId}/values`)
+  return payload?.data ?? []
+}
+
+export async function updateAttributeValueSwatch(valueId, { colorHex, swatchImageUrl }) {
+  assertMutationEnabled()
+  const payload = await requestJson(`/admin/attribute-values/${valueId}/swatch`, {
+    method: 'PATCH',
+    body: { colorHex, swatchImageUrl },
+  })
+  return payload?.data ?? payload
+}
+
 export async function fetchContent(query) {
   if (FORCE_MOCK) {
     return withMockFallback(

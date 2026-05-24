@@ -2,7 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react
 import { useTranslation } from 'react-i18next'
 import {
   Activity, AlignLeft, ArrowRightLeft, Award, BarChart2, FileText, Hash, Image, KeyRound, LayoutDashboard,
-  Package, RotateCcw, Send, Settings, Shield, ShieldCheck, ShoppingCart, Star, Store, Tag, Ticket,
+  Package, Palette, RotateCcw, Send, Settings, Shield, ShieldCheck, ShoppingCart, Star, Store, Tag, Ticket,
   Truck, Users, Wallet,
 } from 'lucide-react'
 import { AdminShell } from './components/AdminShell'
@@ -70,6 +70,7 @@ const ReceivableDetailScreen = lazyScreen(() => import('./screens/ReceivableDeta
 const WarrantyListScreen     = lazyScreen(() => import('./screens/WarrantyListScreen'),     'WarrantyListScreen')
 const SerialListScreen       = lazyScreen(() => import('./screens/SerialListScreen'),       'SerialListScreen')
 const NewsletterSubscribersScreen = lazyScreen(() => import('./screens/NewsletterSubscribersScreen'), 'NewsletterSubscribersScreen')
+const AttributeListScreen        = lazyScreen(() => import('./screens/AttributeListScreen'),        'AttributeListScreen')
 
 // ── Grouped navigation definition ────────────────────────────────────────────
 const NAV_GROUP_DEFS = [
@@ -98,6 +99,7 @@ const NAV_GROUP_DEFS = [
       { path: '/admin/warranties',  labelKey: 'nav.warranties',  permission: 'warranty.read',     icon: ShieldCheck },
       { path: '/admin/categories', labelKey: 'nav.categories', permission: 'catalog.read',   icon: Tag },
       { path: '/admin/brands',     labelKey: 'nav.brands',     permission: 'catalog.read',   icon: Award },
+      { path: '/admin/attributes', labelKey: 'nav.attributes', permission: 'catalog.read',   icon: Palette },
     ],
   },
   {
@@ -163,6 +165,8 @@ function parseRoute(pathname) {
   if (module === 'brands' && id === 'new') return { kind: 'screen', name: 'brand-create' }
   if (module === 'brands' && id)           return { kind: 'screen', name: 'brand-detail', brandId: id }
 
+  if (module === 'attributes') return { kind: 'screen', name: 'attributes-list' }
+
   if (module === 'content' && !id) return { kind: 'screen', name: 'content-list' }
   if (module === 'content' && id && sub === 'new') return { kind: 'screen', name: 'content-create', contentType: id.toUpperCase() === 'PAGES' || id.toUpperCase() === 'PAGE' ? 'PAGE' : 'ARTICLE' }
   if (module === 'content' && id && sub) return { kind: 'screen', name: 'content-detail', contentType: id.toUpperCase() === 'PAGES' || id.toUpperCase() === 'PAGE' ? 'PAGE' : 'ARTICLE', contentId: sub }
@@ -213,6 +217,7 @@ function routePermission(routeName) {
     case 'category-detail':
     case 'brands-list':
     case 'brand-detail':                 return 'catalog.read'
+    case 'attributes-list':              return 'catalog.read'
     case 'content-create':               return 'content.update'
     case 'content-list':
     case 'content-detail':               return 'content.read'
@@ -443,6 +448,8 @@ function AdminApp() {
       screen = <ReceivablesListScreen navigate={navigate} canRecordPayment={hasPermission('receivables.record_payment')} canWriteOff={hasPermission('receivables.write_off')} />; break
     case 'receivable-detail':
       screen = <ReceivableDetailScreen key={route.receivableId} receivableId={route.receivableId} navigate={navigate} canRecordPayment={hasPermission('receivables.record_payment')} canWriteOff={hasPermission('receivables.write_off')} />; break
+    case 'attributes-list':
+      screen = <AttributeListScreen canUpdate={hasPermission('catalog.update')} />; break
     default:
       screen = <StatePanel tone="neutral" title={t('app.moduleNotAvailable')} description={t('app.moduleNotAvailableDesc')} />
   }

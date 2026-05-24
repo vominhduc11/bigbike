@@ -15,7 +15,7 @@ import { RatingStars } from "@/components/ui/RatingStars";
 
 type ProductCardProps = {
   product: Product;
-  variant?: "compact" | "featured" | "tile";
+  variant?: "compact" | "featured" | "tile" | "archive";
 };
 
 function computePricing(product: Product) {
@@ -67,12 +67,11 @@ export function ProductCard({ product, variant = "compact" }: ProductCardProps) 
   };
   const name = safeText(product.name, tProduct("nameFallback"));
   const href = toProductPath(product.slug);
-  const { current, compare, isSale, discountPercent } = computePricing(product);
+  const { retail, sale, current, compare, isSale, discountPercent } = computePricing(product);
   const { label: stockLabel, className: stockClass } = mapStockState(product.stockState, stockLabels);
 
   // --- featured variant (carousel sản phẩm nổi bật) ---
   if (variant === "featured") {
-    const ratingValue = product.rating != null && product.rating > 0 ? product.rating : 4.5;
     return (
       <article className="bb-fp-item">
         <div className="bb-fp-thumb">
@@ -108,9 +107,6 @@ export function ProductCard({ product, variant = "compact" }: ProductCardProps) 
                 <p className="bb-fp-price-current">{tProduct("contactForPrice")}</p>
               )}
             </div>
-          </div>
-          <div className="bb-fp-rating">
-            <RatingStars value={ratingValue} />
           </div>
         </div>
       </article>
@@ -152,6 +148,72 @@ export function ProductCard({ product, variant = "compact" }: ProductCardProps) 
   }
 
   // --- compact variant (trang listing / tìm kiếm / yêu thích, mặc định) ---
+  if (variant === "archive") {
+    const imageSrc = resolveMediaUrl(product.image?.url?.trim()) || "/wp/logo-1.png";
+    const archiveCompare =
+      compare && compare > current
+        ? compare
+        : sale && retail > current
+          ? retail
+          : null;
+    const ratingValue = product.rating != null && product.rating > 0 ? product.rating : 4.5;
+    const archiveCta =
+      product.stockState === "OUT_OF_STOCK"
+        ? tProduct("cardAddBar.soldOut")
+        : product.variants?.length
+          ? tProduct("cardAddBar.pickVariant")
+          : tProduct("cardAddBar.addToCart");
+
+    return (
+      <article className="product--item bb-archive-product">
+        <div className="product--item-thumbnail bb-archive-product-thumb">
+          <Link href={href} aria-label={tProduct("viewProductAria", { name })}>
+            <Image
+              src={imageSrc}
+              alt={safeText(product.image?.alt, name)}
+              width={product.image?.width ?? 480}
+              height={product.image?.height ?? 480}
+              className="bb-archive-product-img"
+            />
+          </Link>
+
+          {discountPercent != null && discountPercent > 0 && (
+            <div className="product--item-sale bb-archive-product-sale">
+              <p>{discountPercent}%</p>
+            </div>
+          )}
+
+          <div className="product--item-cart bb-archive-product-cart">
+            <Link href={href}>{archiveCta}</Link>
+          </div>
+        </div>
+
+        <div className="product--item-desc bb-archive-product-desc">
+          <div className="product--item-inside row bb-archive-product-inside">
+            <div className="col-md-12 bb-archive-product-info">
+              <p className="product--item-title bb-archive-product-title">
+                <Link href={href}>{name}</Link>
+              </p>
+
+              {product.price && current > 0 ? (
+                <div className="product--item-price bb-archive-product-price">
+                  <p>{formatVnd(current)}</p>
+                  {archiveCompare && archiveCompare > current ? (
+                    <p className="old">{formatVnd(archiveCompare)}</p>
+                  ) : null}
+                </div>
+              ) : null}
+
+              <div className="rating bb-archive-rating">
+                <RatingStars value={ratingValue} />
+              </div>
+            </div>
+          </div>
+        </div>
+      </article>
+    );
+  }
+
   const brandName = safeText(product.brand?.name, "BigBike");
   return (
     <article className="bb-product-card">
