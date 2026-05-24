@@ -46,7 +46,8 @@ No redirect, no provider webhook, no `paymentRedirectUrl`. The Alepay/ZaloPay on
 
 ## Social Login (OAuth2) — Google & Facebook
 
-Customers can sign in with Google or Facebook from the storefront login screen.
+The backend supports Google and Facebook OAuth callbacks. The legacy-parity storefront auth
+screen currently exposes the Facebook social link, matching the WordPress page.
 The backend implements the **authorization-code flow manually** (`CustomerOAuthController` +
 `CustomerOAuthService`) rather than Spring Security's auto-wired `/oauth2/*` chain — the
 custom `CustomerSessionFilter` / `CustomerCsrfFilter` and the `STATELESS` policy make the

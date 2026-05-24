@@ -1,9 +1,12 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element */
+
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import type { Brand, CatalogFacets, Category, HomeSlider } from "@/lib/contracts/public";
+import type { Brand, CatalogFacets, Category, HomeSlider, ImageAsset } from "@/lib/contracts/public";
+import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { buildQueryString } from "@/lib/utils/query";
 import { toCategoryPath } from "@/lib/utils/routes";
 import { cn } from "@/lib/utils";
@@ -26,6 +29,7 @@ export type CatalogFiltersProps = {
   resetHref: string;
   hiddenParams?: Record<string, string | undefined>;
   banner?: HomeSlider | null;
+  showBrandLabels?: boolean;
   mobileOpen?: boolean;
   mobileIn?: boolean;
   onMobileClose?: () => void;
@@ -54,9 +58,17 @@ const PRICE_FALLBACK: { key: string; label: string; min?: number; max?: number }
   { key: "tren-10tr", label: "Trên 10.000.000 VND", min: 10_000_000, max: undefined },
 ];
 
-function FilterSection({ title, children }: { title: string; children: ReactNode }) {
+function FilterSection({
+  title,
+  children,
+  className,
+}: {
+  title: string;
+  children: ReactNode;
+  className?: string;
+}) {
   return (
-    <div className="widget">
+    <div className={cn("widget", className)}>
       <div className="widget--title">
         <h3>{title}</h3>
       </div>
@@ -106,6 +118,7 @@ export function CatalogFilters({
   current,
   resetHref,
   hiddenParams = {},
+  showBrandLabels = false,
   mobileOpen = false,
   mobileIn = false,
   onMobileClose,
@@ -117,10 +130,9 @@ export function CatalogFilters({
   );
   const activeCategoryParentId = activeCategory?.parentId ?? activeCategory?.id ?? null;
   const rootCategories = visibleCategories.filter((cat) => !cat.parentId);
-  const activeChildren = activeCategoryParentId
-    ? visibleCategories.filter((cat) => cat.parentId === activeCategoryParentId)
-    : [];
-  const categoryRowCount = rootCategories.length + activeChildren.length;
+  const categoryRowCount =
+    rootCategories.length +
+    (activeCategoryParentId ? visibleCategories.filter((cat) => cat.parentId === activeCategoryParentId).length : 0);
 
   function queryHref(override: Record<string, string | number | undefined>): string {
     const params: Record<string, string | number | undefined> = {
@@ -140,10 +152,10 @@ export function CatalogFilters({
   const facetCount = (buckets: { key: string; count: number }[] | undefined, key: string) =>
     buckets?.find((b) => b.key === key)?.count;
 
-  const brandRows: { key: string; label: string; count?: number }[] =
+  const brandRows: { key: string; label: string; image?: ImageAsset | null; count?: number }[] =
     facets?.brands && facets.brands.length > 0
       ? facets.brands
-      : brands.map((b) => ({ key: b.slug, label: b.name }));
+      : brands.map((b) => ({ key: b.slug, label: b.name, image: b.logo ?? null }));
 
   const colorRows: { key: string; label: string; count?: number }[] =
     facets?.colors && facets.colors.length > 0 ? facets.colors : COLOR_FALLBACK;
@@ -163,7 +175,7 @@ export function CatalogFilters({
     <aside className={cn("sidebar-wrap-product bb-archive-sidebar", mobileOpen && "active", mobileIn && "in")}>
       <div className="wrapper-product">
         <div className="mobile-sidebar-title">
-          <p>{t("filtersHeading").toUpperCase()}</p>
+          <p>BỘ LỌC</p>
           <button type="button" className="close-btn" onClick={onMobileClose} aria-label={t("filterToggleCollapse")}>
             ×
           </button>
@@ -171,7 +183,7 @@ export function CatalogFilters({
 
         <div className="wrapper">
           {rootCategories.length > 0 && (
-            <FilterSection title={t("filterCategory")}>
+            <FilterSection title="Danh mục sản phẩm">
               <FilterList className="product-categories" count={categoryRowCount}>
                 {rootCategories.map((cat) => {
                   const href = toCategoryPath(cat.slug);
@@ -216,7 +228,7 @@ export function CatalogFilters({
             </FilterSection>
           )}
 
-          <FilterSection title={t("filterPrice")}>
+          <FilterSection title="Giá">
             <FilterList className="woocommerce-widget-layered-nav-list" count={priceRows.length + 1}>
               <li className={cn(current.minPrice == null && current.maxPrice == null && "chosen active")}>
                 <Link href={queryHref({ min_price: undefined, max_price: undefined })}>Tất cả</Link>
@@ -239,16 +251,31 @@ export function CatalogFilters({
           </FilterSection>
 
           {brandRows.length > 0 && (
-            <FilterSection title={t("filterBrand")}>
+            <FilterSection title="Thương Hiệu" className="widget_filter_by_brand">
               <FilterList className="woocommerce-widget-layered-nav-list" count={brandRows.length}>
                 {brandRows.map((brand) => {
                   const active = current.brand === brand.key;
                   const href = active
                     ? queryHref({ "pwb-brand": undefined })
                     : queryHref({ "pwb-brand": brand.key });
+                  const imageSrc = brand.image?.url?.trim()
+                    ? resolveMediaUrl(brand.image.url.trim())
+                    : null;
                   return (
                     <li key={brand.key} className={cn(active && "chosen active")}>
-                      <Link href={href}>{brand.label}</Link>
+                      <Link href={href}>
+                        {imageSrc ? (
+                          <img
+                            src={imageSrc}
+                            alt={safeText(brand.image?.alt, brand.label)}
+                            width={92}
+                            loading="lazy"
+                          />
+                        ) : null}
+                        {showBrandLabels || !imageSrc ? (
+                          <span className="bb-brand-filter-label">{brand.label}</span>
+                        ) : null}
+                      </Link>
                       <Count value={brand.count} />
                     </li>
                   );
@@ -257,7 +284,7 @@ export function CatalogFilters({
             </FilterSection>
           )}
 
-          <FilterSection title={t("filterColor")}>
+          <FilterSection title="Màu sắc">
             <FilterList className="woocommerce-widget-layered-nav-list" count={colorRows.length}>
               {colorRows.map((color) => {
                 const active = current.color === color.key;

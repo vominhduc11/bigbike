@@ -174,7 +174,7 @@ export default async function CategoryDetailPage({
     colorParsed.error,
     minPriceParsed.error,
     maxPriceParsed.error,
-    orderbyError,
+    orderbyError ? "orderby không hợp lệ." : null,
     orderbyParam ? null : sortParsed.error,
   );
   if (validationErrors.length > 0) {
@@ -201,7 +201,7 @@ export default async function CategoryDetailPage({
       <div className="bb-product-archive archive tax-product_cat">
         <div id="main-content" className="bb-archive-main">
           <div className="container bb-wp-container">
-            <p className="woocommerce-info">{categoryResult.error?.message ?? tCatalog("categoryLoadFailed")}</p>
+            <p className="woocommerce-info">{categoryResult.error?.message ?? "Không tải được thông tin danh mục."}</p>
           </div>
         </div>
       </div>
@@ -293,7 +293,7 @@ export default async function CategoryDetailPage({
         {productsResult.error && productsResult.data.length === 0 ? (
           <p className="woocommerce-info">{productsResult.error.message}</p>
         ) : productsResult.data.length === 0 ? (
-          <p className="woocommerce-info">{tCatalog("noResults")}</p>
+          <p className="woocommerce-info">Không tìm thấy sản phẩm phù hợp.</p>
         ) : (
           <>
             <div className="row bb-wp-row bb-product-grid">

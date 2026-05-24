@@ -42,36 +42,38 @@ export function PaginationNav({ page, totalPages, baseHref, variant = "default" 
   if (variant === "archive") {
     return (
       <nav className="pagination pb-40 pt-20 text-right bb-archive-pagination" aria-label={t("paginationAria")}>
-        <div className="paginate-links">
-          <ul className="page-numbers">
-            {page > 1 && (
-              <li>
-                <Link href={makeHref(page - 1)} className="prev page-numbers" aria-label={t("previousPage")}>
-                  <i className="fal fa-angle-left bb-archive-page-icon" aria-hidden="true" />
-                </Link>
-              </li>
-            )}
-            {pages.map((p, i) => (
-              <li key={p === "..." ? `ellipsis-${i}` : p}>
-                {p === "..." ? (
-                  <span className="page-numbers dots">…</span>
-                ) : p === page ? (
-                  <span className="page-numbers current">{p}</span>
-                ) : (
-                  <Link href={makeHref(p)} className="page-numbers">
-                    {p}
+        <div className="text-right">
+          <div className="paginate-links">
+            <ul className="page-numbers">
+              {page > 1 && (
+                <li>
+                  <Link href={makeHref(page - 1)} className="prev page-numbers" aria-label={t("previousPage")}>
+                    <i className="fal fa-angle-left bb-archive-page-icon" aria-hidden="true" />
                   </Link>
-                )}
-              </li>
-            ))}
-            {page < totalPages && (
-              <li>
-                <Link href={makeHref(page + 1)} className="next page-numbers" aria-label={t("nextPage")}>
-                  <i className="fal fa-angle-right bb-archive-page-icon" aria-hidden="true" />
-                </Link>
-              </li>
-            )}
-          </ul>
+                </li>
+              )}
+              {pages.map((p, i) => (
+                <li key={p === "..." ? `ellipsis-${i}` : p}>
+                  {p === "..." ? (
+                    <span className="page-numbers dots">…</span>
+                  ) : p === page ? (
+                    <span className="page-numbers current">{p}</span>
+                  ) : (
+                    <Link href={makeHref(p)} className="page-numbers">
+                      {p}
+                    </Link>
+                  )}
+                </li>
+              ))}
+              {page < totalPages && (
+                <li>
+                  <Link href={makeHref(page + 1)} className="next page-numbers" aria-label={t("nextPage")}>
+                    <i className="fal fa-angle-right bb-archive-page-icon" aria-hidden="true" />
+                  </Link>
+                </li>
+              )}
+            </ul>
+          </div>
         </div>
       </nav>
     );

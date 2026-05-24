@@ -2,15 +2,12 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
 import { applyCoupon, fetchCart, removeCoupon, removeCartItem, updateCartItem } from "@/lib/api/client-api";
 import type { Cart, CartItem } from "@/lib/contracts/commerce";
 import { pushDataLayer } from "@/lib/analytics";
 import { formatVnd } from "@/lib/utils/format";
 import { toCategoryListPath, toCheckoutPath } from "@/lib/utils/routes";
 import { MediaImage } from "@/components/ui/MediaImage";
-import { CartSkeleton } from "@/components/ui/Skeletons";
-import { ErrorState } from "@/components/ui/ErrorState";
 
 const COPY = {
   title: "Giỏ hàng",
@@ -27,14 +24,13 @@ const COPY = {
   subtotal: "Tạm tính",
   discount: "Khuyến mãi",
   shipping: "Phí vận chuyển",
-  shippingPending: "Các tùy chọn vận chuyển sẽ được cập nhật trong quá trình thanh toán.",
+  shippingPending: "Phí vận chuyển là 35.000đ và miễn phí vận chuyển với đơn hàng từ 2.000.000đ",
   total: "Tổng",
   couponLegend: "Nhập mã khuyến mãi",
   couponPlaceholder: "Nhập mã giảm giá",
   couponApply: "Áp dụng",
   couponApplying: "...",
-  itemUnavailable: "Sản phẩm không còn bán",
-  checkoutBlocked: "Xóa sản phẩm không còn bán để tiếp tục thanh toán",
+  loadFailed: "Không tải được giỏ hàng.",
   removeItem: "Xóa sản phẩm",
   removeCoupon: "Xóa mã",
 };
@@ -94,7 +90,6 @@ function RemoveIcon() {
 }
 
 export default function CartPage() {
-  const t = useTranslations("Cart");
   const [cart, setCart] = useState<Cart | null>(null);
   const [quantityDrafts, setQuantityDrafts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
@@ -220,7 +215,16 @@ export default function CartPage() {
   }, [cart, quantityDrafts]);
 
   if (loading) {
-    return <CartSkeleton />;
+    return (
+      <div id="main-content" className="bb-cart-page" aria-busy="true">
+        <div className="bb-container">
+          <CartHeading />
+          <div className="cart-table">
+            <div className="woocommerce-notices-wrapper" />
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (!cart) {
@@ -228,11 +232,16 @@ export default function CartPage() {
       <div id="main-content" className="bb-cart-page">
         <div className="bb-container">
           <CartHeading />
-          <ErrorState
-            title={t("loadFailedTitle")}
-            message={error || t("loadFailedMessage")}
-            retryHref="/gio-hang/"
-          />
+          <div className="cart-table">
+            <div className="woocommerce-notices-wrapper">
+              <div className="woocommerce-error" role="alert">{error || COPY.loadFailed}</div>
+            </div>
+            <p className="return-to-shop">
+              <Link className="button wc-backward" href="/gio-hang/">
+                {COPY.updateCart}
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -285,7 +294,7 @@ export default function CartPage() {
                       return (
                         <div
                           key={item.id}
-                          className={`table--items bb-cart-line-item${isMutating ? " is-mutating" : ""}${!item.available ? " is-unavailable" : ""}`}
+                          className={`table--items bb-cart-line-item${isMutating ? " is-mutating" : ""}`}
                           role="listitem"
                         >
                           <div className="table--items-item thumbnail">
@@ -295,15 +304,11 @@ export default function CartPage() {
                           <div className="table--items-item cart-information">
                             <h3>{item.productName}</h3>
                             {item.variantName ? <p>{item.variantName}</p> : <p aria-hidden="true">&nbsp;</p>}
-                            {!item.available ? (
-                              <p className="bb-cart-row-unavailable">{COPY.itemUnavailable}</p>
-                            ) : (
-                              <p className="price">
-                                <b>
-                                  {item.quantity} x {formatVnd(item.unitPrice)} = {formatVnd(item.lineTotal)}
-                                </b>
-                              </p>
-                            )}
+                            <p className="price">
+                              <b>
+                                {item.quantity} x {formatVnd(item.unitPrice)} = {formatVnd(item.lineTotal)}
+                              </b>
+                            </p>
                           </div>
 
                           <div className="table--items-item quantity">
@@ -387,7 +392,6 @@ export default function CartPage() {
                         </Link>
                       )}
                     </div>
-                    {hasUnavailable && <p className="bb-cart-blocked">{COPY.checkoutBlocked}</p>}
                   </div>
                 </div>
 

@@ -1,4 +1,6 @@
-"use client";
+﻿"use client";
+
+/* eslint-disable @next/next/no-img-element */
 
 import Link from "next/link";
 import Image from "next/image";
@@ -74,8 +76,78 @@ export function ProductCard({ product, variant = "compact" }: ProductCardProps) 
   const { retail, sale, current, compare, isSale, discountPercent } = computePricing(product);
   const { label: stockLabel, className: stockClass } = mapStockState(product.stockState, stockLabels);
 
-  // --- featured/related variant (WooCommerce product--item card) ---
-  if (variant === "featured" || variant === "related") {
+  // Featured variant: homepage carousel, matching WP #main-product-slide classes.
+  if (variant === "featured") {
+    const featuredCompare =
+      compare && compare > current
+        ? compare
+        : sale && retail > current
+          ? retail
+          : null;
+    const ratingValue = product.rating != null && product.rating > 0 ? product.rating : 4.5;
+    const featuredImageSrc = toLegacyWpMediaUrl(resolveMediaUrl(product.image?.url?.trim()));
+
+    return (
+      <article className="bb-fp-item">
+        <div className="bb-fp-thumb">
+          <Link href={href} className="bb-fp-thumb-link" aria-label={tProduct("viewProductAria", { name })}>
+            {featuredImageSrc ? (
+              <img
+                src={featuredImageSrc}
+                alt={safeText(product.image?.alt, name)}
+                className="swiper-lazy -lazy"
+                loading="lazy"
+              />
+            ) : (
+              <MediaImage
+                image={product.image}
+                altFallback={name}
+                width={480}
+                height={480}
+                className="swiper-lazy -lazy"
+              />
+            )}
+          </Link>
+          {discountPercent != null && discountPercent > 0 && (
+            <div className="bb-fp-sale">
+              <p>{discountPercent}%</p>
+            </div>
+          )}
+          <div className="bb-fp-cart">
+            <Link href={href}>
+              <i className="fal fa-shopping-cart" aria-hidden="true" />
+              THÊM VÀO GIỎ HÀNG
+            </Link>
+          </div>
+        </div>
+        <div className="bb-fp-desc">
+          <div className="bb-fp-inside">
+            <p className="bb-fp-title">
+              <Link href={href}>{name}</Link>
+            </p>
+            <div className="bb-fp-price">
+              {product.price && current > 0 ? (
+                <>
+                  <span className="bb-fp-price-current">{formatVnd(current)}</span>
+                  {featuredCompare && featuredCompare > current ? (
+                    <span className="bb-fp-price-old">{formatVnd(featuredCompare)}</span>
+                  ) : null}
+                </>
+              ) : (
+                <span className="bb-fp-price-current">{tProduct("contactForPrice")}</span>
+              )}
+            </div>
+          </div>
+          <div className="bb-fp-rating">
+            <RatingStars value={ratingValue} />
+          </div>
+        </div>
+      </article>
+    );
+  }
+
+  // Related variant: PDP related products, matching WP product--item classes.
+  if (variant === "related") {
     const featuredCompare =
       compare && compare > current
         ? compare
@@ -148,8 +220,8 @@ export function ProductCard({ product, variant = "compact" }: ProductCardProps) 
     );
   }
 
-  // --- tile variant: homepage "Sản phẩm nổi bật" — nhãn danh mục + tên + nút "Mua ngay", ảnh bên phải ---
-  // Bám bản thiết kế trang chủ + WP content-product-featured-item.php.
+  // Tile variant: homepage featured product block.
+  // Matches the homepage design and WP content-product-featured-item.php.
   if (variant === "tile") {
     const src = resolveMediaUrl(product.image?.url?.trim());
     return (
@@ -182,7 +254,6 @@ export function ProductCard({ product, variant = "compact" }: ProductCardProps) 
     );
   }
 
-  // --- compact variant (trang listing / tìm kiếm / yêu thích, mặc định) ---
   if (variant === "archive") {
     const imageSrc = resolveMediaUrl(product.image?.url?.trim()) || "/wp/logo-1.png";
     const archiveCompare =
@@ -191,7 +262,7 @@ export function ProductCard({ product, variant = "compact" }: ProductCardProps) 
         : sale && retail > current
           ? retail
           : null;
-    const ratingValue = product.rating != null && product.rating > 0 ? product.rating : null;
+    const ratingValue = product.rating != null && product.rating > 0 ? product.rating : 5;
     const archiveCta =
       product.stockState === "OUT_OF_STOCK"
         ? "Hết hàng"
@@ -239,18 +310,15 @@ export function ProductCard({ product, variant = "compact" }: ProductCardProps) 
                 </div>
               ) : null}
 
-              {ratingValue != null ? (
-                <div className="rating bb-archive-rating">
-                  <RatingStars value={ratingValue} />
-                </div>
-              ) : null}
+              <div className="rating bb-archive-rating">
+                <RatingStars value={ratingValue} />
+              </div>
             </div>
           </div>
         </div>
       </article>
     );
   }
-
   const brandName = safeText(product.brand?.name, "BigBike");
   return (
     <article className="bb-product-card">
@@ -310,3 +378,5 @@ export function ProductCard({ product, variant = "compact" }: ProductCardProps) 
     </article>
   );
 }
+
+

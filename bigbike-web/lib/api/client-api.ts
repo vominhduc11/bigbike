@@ -146,8 +146,9 @@ export function registerCustomer(
   password: string,
   firstName: string,
   lastName?: string,
+  phone?: string,
 ): Promise<CustomerAuthData> {
-  return clientRequest("POST", "/api/v1/customer/auth/register", { email, password, firstName, lastName });
+  return clientRequest("POST", "/api/v1/customer/auth/register", { email, password, phone, firstName, lastName });
 }
 
 export function logoutCustomer(): Promise<void> {

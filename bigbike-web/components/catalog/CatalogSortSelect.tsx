@@ -1,20 +1,17 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
 import { isWpOrderbyValue, productSortToWpOrderby } from "@/lib/utils/catalog-sort";
 
 const SORT_OPTIONS = [
-  { value: "menu_order", labelKey: "default" },
-  { value: "popularity", labelKey: "popularity" },
-  { value: "date", labelKey: "date" },
-  { value: "price", labelKey: "priceAsc" },
-  { value: "price-desc", labelKey: "priceDesc" },
+  { value: "menu_order", label: "Sắp xếp mặc định" },
+  { value: "popularity", label: "Sắp xếp theo mức độ phổ biến" },
+  { value: "date", label: "Sắp xếp theo mới nhất" },
+  { value: "price", label: "Sắp xếp theo giá: thấp đến cao" },
+  { value: "price-desc", label: "Sắp xếp theo giá: cao đến thấp" },
 ] as const;
 
 export function CatalogSortSelect({ current }: { current: string }) {
-  const tCatalog = useTranslations("Catalog");
-  const tSort = useTranslations("Catalog.sort");
   const router = useRouter();
   const searchParams = useSearchParams();
   const selectedValue = isWpOrderbyValue(current) ? current : productSortToWpOrderby(current);
@@ -35,7 +32,7 @@ export function CatalogSortSelect({ current }: { current: string }) {
 
   return (
     <form className="woocommerce-ordering" method="get">
-      <label htmlFor="sort-select" className="sr-only">{tCatalog("sortLabel")}</label>
+      <label htmlFor="sort-select" className="sr-only">Sắp xếp</label>
       <div className="form-group form-select">
         <select
           id="sort-select"
@@ -43,11 +40,11 @@ export function CatalogSortSelect({ current }: { current: string }) {
           className="form-control text-left"
           value={selectedValue}
           onChange={(event) => handleChange(event.target.value)}
-          aria-label={tCatalog("sortLabel")}
+          aria-label="Sắp xếp"
         >
-          {SORT_OPTIONS.map(({ value, labelKey }) => (
+          {SORT_OPTIONS.map(({ value, label }) => (
             <option key={value} value={value}>
-              {tSort(labelKey)}
+              {label}
             </option>
           ))}
         </select>

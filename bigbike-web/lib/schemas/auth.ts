@@ -13,9 +13,9 @@ export function createLoginSchema(t: AuthValidationT) {
 export function createRegisterSchema(t: AuthValidationT) {
   return z
     .object({
-      firstName: z.string().min(1, t("firstNameRequired")),
-      lastName: z.string().optional(),
+      fullName: z.string().min(1, t("firstNameRequired")),
       email: z.string().email(t("emailInvalid")),
+      phone: z.string().min(1, t("phoneRequired")).regex(/^\+?[0-9]{8,15}$/, t("phoneInvalid")),
       password: z.string().min(8, t("passwordMin8")),
       confirm: z.string().min(1, t("confirmRequired")),
     })
@@ -51,9 +51,9 @@ export const loginSchema = z.object({
 
 export const registerSchema = z
   .object({
-    firstName: z.string().min(1, "Please enter your first name"),
-    lastName: z.string().optional(),
+    fullName: z.string().min(1, "Please enter your name"),
     email: z.string().email("Invalid email address"),
+    phone: z.string().min(1, "Please enter your phone number").regex(/^\+?[0-9]{8,15}$/, "Invalid phone number"),
     password: z.string().min(8, "Password must be at least 8 characters"),
     confirm: z.string().min(1, "Please confirm your password"),
   })

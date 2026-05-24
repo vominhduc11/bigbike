@@ -1,7 +1,6 @@
 "use client";
 
 import { Suspense, useEffect, useRef, useState, type ReactNode } from "react";
-import { useTranslations } from "next-intl";
 import { CatalogFilters, type CatalogFiltersProps } from "@/components/catalog/CatalogFilters";
 import { CatalogSortSelect } from "@/components/catalog/CatalogSortSelect";
 
@@ -21,7 +20,6 @@ export function ProductArchiveLayout({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileIn, setMobileIn] = useState(false);
   const mobileTimer = useRef<number | null>(null);
-  const t = useTranslations("Catalog");
 
   useEffect(() => {
     document.documentElement.classList.toggle("overlay", mobileOpen);
@@ -82,7 +80,7 @@ export function ProductArchiveLayout({
                     <div className="col-sm-6 filter-mobile-wrapper bb-wp-col-sm-6">
                       <button type="button" className="filter-mobile" onClick={openMobileFilters}>
                         <p>
-                          {t("filtersHeading").toUpperCase()}
+                          BỘ LỌC
                           <i className="far fa-sliders-v" aria-hidden="true" />
                         </p>
                       </button>
