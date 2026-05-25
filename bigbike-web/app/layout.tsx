@@ -4,6 +4,7 @@ import { Barlow, Barlow_Condensed, Oswald } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import "./globals.css";
+import "./home-news-parity.css";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { FloatingChatLoader } from "@/components/layout/FloatingChatLoader";

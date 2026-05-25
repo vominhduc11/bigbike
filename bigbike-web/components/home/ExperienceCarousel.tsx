@@ -6,7 +6,6 @@ import "swiper/css";
 import type { Article } from "@/lib/contracts/public";
 import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { toArticlePath } from "@/lib/utils/routes";
-import { cn } from "@/lib/utils";
 
 type Props = { articles: Article[] };
 
@@ -71,7 +70,7 @@ function ExperienceSlide({
 
   return (
     <div className="bb-exp-slide select-none">
-      <div className="overflow-hidden bg-[linear-gradient(135deg,var(--bb-brand-primary-active),var(--bb-bg-surface-dark-2))]">
+      <div className="bb-exp-slide-cover overflow-hidden bg-[linear-gradient(135deg,var(--bb-brand-primary-active),var(--bb-bg-surface-dark-2))]">
         {media.bgSrc ? (
           // eslint-disable-next-line @next/next/no-img-element -- native img keeps the legacy cover sizing.
           <img
@@ -86,12 +85,7 @@ function ExperienceSlide({
       </div>
 
       <div
-        className={cn(
-          "bb-exp-slide-content mt-[-32%] transform-gpu transition-[opacity,transform] duration-[700ms] ease-[ease] will-change-[opacity,transform]",
-          isActive
-            ? "pointer-events-auto translate-y-0 opacity-100"
-            : "pointer-events-none translate-y-10 opacity-0 max-[767px]:translate-y-0 max-[767px]:opacity-100",
-        )}
+        className="bb-exp-slide-content mt-[-32%]"
         aria-hidden={!isActive}
       >
         {media.productSrc ? (

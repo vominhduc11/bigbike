@@ -1,12 +1,13 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import type { Swiper as SwiperType } from "swiper";
 import "swiper/css";
 import Image from "next/image";
+import { X } from "lucide-react";
 import type { HomeVideo } from "@/lib/contracts/public";
-import { isSafeHomeVideoUrl, resolveMediaUrl, safeText } from "@/lib/utils/format";
+import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { cn } from "@/lib/utils";
 
 type Props = { videos: HomeVideo[] };
@@ -29,15 +30,8 @@ function PlayIcon() {
   );
 }
 
-function resolveVideoHref(video: HomeVideo): string {
-  if (isSafeHomeVideoUrl(video.videoUrl)) return video.videoUrl;
-  if (video.youtubeId) return `https://www.youtube.com/watch?v=${video.youtubeId}`;
-  return "#";
-}
-
-function VideoCard({ video }: { video: HomeVideo }) {
+function VideoCard({ video, onPlay }: { video: HomeVideo; onPlay: () => void }) {
   const title = safeText(video.title, "Video");
-  const href = resolveVideoHref(video);
 
   const thumbUrls: string[] = [];
   const custom = resolveMediaUrl(video.thumbnail?.url?.trim());
@@ -53,11 +47,10 @@ function VideoCard({ video }: { video: HomeVideo }) {
   const thumbSrc = thumbIdx < thumbUrls.length ? thumbUrls[thumbIdx] : null;
 
   return (
-    <a
-      href={href}
-      className="group block w-full text-left no-underline"
-      target="_blank"
-      rel="nofollow noreferrer"
+    <button
+      type="button"
+      className="group block w-full cursor-pointer appearance-none bg-transparent p-0 text-left"
+      onClick={onPlay}
       aria-label={`Xem video: ${title}`}
     >
       <div className="relative w-full overflow-hidden bg-brand [aspect-ratio:370/233]">
@@ -80,23 +73,85 @@ function VideoCard({ video }: { video: HomeVideo }) {
         )}
         <PlayIcon />
       </div>
-      <div className="h-[160px] bg-black px-5 py-7 max-[767px]:px-4">
-        <p className="m-0 overflow-hidden normal-case font-display text-17 font-semibold leading-[1.5] text-white [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
+      <div className="min-h-[104px] bg-black px-5 py-7 max-[767px]:px-4">
+        <p className="m-0 overflow-hidden normal-case font-display text-[18px] font-semibold leading-[1.5] text-white [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
           {title}
         </p>
       </div>
-    </a>
+    </button>
+  );
+}
+
+function VideoModal({
+  embedSrc,
+  title,
+  onClose,
+}: {
+  embedSrc: string | null;
+  title: string;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-[var(--bb-z-modal)] flex items-center justify-center bg-black/80 p-4 animate-in fade-in-0 duration-200"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+    >
+      <div className="relative w-full max-w-3xl bg-black shadow-2xl animate-in fade-in-0 zoom-in-95 duration-200">
+        {embedSrc ? (
+          <div className="relative w-full [aspect-ratio:16/9]">
+            <iframe
+              src={embedSrc}
+              className="absolute inset-0 h-full w-full border-0"
+              allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+              allowFullScreen
+              title={title}
+            />
+          </div>
+        ) : null}
+        <button
+          type="button"
+          className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-black/90 focus-visible:outline-[var(--bb-focus-outline)]"
+          onClick={onClose}
+          aria-label="Đóng video"
+        >
+          <X className="h-5 w-5" />
+        </button>
+        {title && (
+          <div className="px-5 py-4">
+            <p className="m-0 font-display text-[18px] font-semibold text-white">{title}</p>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
 export function HomeVideoCarousel({ videos }: Props) {
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [activeVideo, setActiveVideo] = useState<HomeVideo | null>(null);
   const swiperRef = useRef<SwiperType | null>(null);
 
   if (videos.length === 0) return null;
 
   const showControls = videos.length > 1;
   const loopEnabled = videos.length > 1;
+
+  const activeTitle = activeVideo ? safeText(activeVideo.title, "Video") : "";
+  const activeEmbedSrc = activeVideo
+    ? (activeVideo.embedUrl ??
+        (activeVideo.youtubeId
+          ? `https://www.youtube-nocookie.com/embed/${activeVideo.youtubeId}?autoplay=1&rel=0`
+          : null))
+    : null;
 
   return (
     <>
@@ -121,7 +176,7 @@ export function HomeVideoCarousel({ videos }: Props) {
           >
             {videos.map((video) => (
               <SwiperSlide key={video.id} className="h-auto" suppressHydrationWarning>
-                <VideoCard video={video} />
+                <VideoCard video={video} onPlay={() => setActiveVideo(video)} />
               </SwiperSlide>
             ))}
           </Swiper>
@@ -186,13 +241,21 @@ export function HomeVideoCarousel({ videos }: Props) {
             >
               <span
                 className={cn(
-                  "block h-[10px] w-[10px] rounded-[20px] bg-white transition-[width,background-color] duration-300",
+                  "block h-[10px] w-[10px] rounded-full bg-white transition-[width,background-color] duration-300",
                   idx === selectedIndex && "w-5 bg-brand",
                 )}
               />
             </button>
           ))}
         </div>
+      )}
+
+      {activeVideo && (
+        <VideoModal
+          embedSrc={activeEmbedSrc}
+          title={activeTitle}
+          onClose={() => setActiveVideo(null)}
+        />
       )}
     </>
   );

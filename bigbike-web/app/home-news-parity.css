@@ -1,0 +1,158 @@
+/* Home news section parity — scoped to .bb-home-news-parity
+   Ground truth: bigbike_vn__2026_04_17/files/wp-content/themes/bigbike/styles/home.css */
+
+/* ── Section wrapper ── */
+.bb-home-news-parity {
+  background: #fff;
+}
+
+/* ── Section header: centered ── */
+.bb-home-news-parity .block-title {
+  text-align: center;
+}
+
+/* Section heading: WP uses Barlow Condensed 3.571rem/4.286rem — at our 16px root that's ~57px.
+   We target 44px to match screenshot proportions without the oversized poster look. */
+body .bb-home .bb-home-news-parity .block-title h2 {
+  font-family: var(--bb-font-cta, "Barlow Condensed", sans-serif);
+  font-size: 44px;
+  line-height: 1.15;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: #000;
+  margin: 0;
+}
+
+/* Kicker already correct in globals (.bb-home .block-title p.sub-title):
+   color #cecece, 16px, Barlow Condensed, uppercase — no override needed */
+
+/* ── Image area: block display, fixed height crop ── */
+.bb-home .bb-home-news-parity .news-list .news--item-thumbnail a {
+  display: block;
+  overflow: hidden;
+}
+
+.bb-home .bb-home-news-parity .news-list .news--item-thumbnail a img {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: 215px;
+  object-fit: cover;
+  vertical-align: middle;
+  transition: transform 0.3s ease;
+}
+
+.bb-home .bb-home-news-parity .news-list .news--item-thumbnail a:hover img {
+  transform: scale(1.03);
+}
+
+/* ── Card ── */
+.bb-home .bb-home-news-parity .news--item {
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16);
+  background: #fff;
+  margin-bottom: 30px;
+}
+
+/* ── Date badge: WP exact values ── */
+.bb-home .bb-home-news-parity .news--item-desc .news-date {
+  position: absolute;
+  top: -21px;
+  left: 0;
+  display: inline-block;
+  width: 170px;
+}
+
+.bb-home .bb-home-news-parity .news--item-desc .news-date p {
+  position: relative;
+  margin: 0;
+  /* WP: padding: 0 0 0 20px — left-align text, NOT centered */
+  padding: 0 0 0 20px;
+  background: #ff0c09;
+  color: #fff;
+  font-family: "Oswald", var(--bb-font-heading, sans-serif);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 42px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.bb-home .bb-home-news-parity .news--item-desc .news-date p::after {
+  position: absolute;
+  right: -15px;
+  bottom: 0;
+  width: 25px;
+  height: 42px;
+  background-color: #ff0c09;
+  content: "";
+  transform: skewX(-20deg);
+}
+
+/* ── Card body ── */
+.bb-home .bb-home-news-parity .news--item-desc {
+  position: relative;
+}
+
+/* WP: padding: 41px 20px 30px */
+.bb-home .bb-home-news-parity .news--item-inside {
+  padding: 41px 20px 30px;
+}
+
+/* ── Card title: WP home.css uses h3 with Oswald 1.25rem/1.5rem, weight 600, NO uppercase.
+   Our JSX uses .title-post inside <p> — we target that class. ── */
+.bb-home .bb-home-news-parity .news--item-inside .title-post {
+  margin: 0 0 5px;
+  font-family: "Oswald", var(--bb-font-heading, sans-serif);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 24px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #000;
+}
+
+.bb-home .bb-home-news-parity .news--item-inside .title-post a {
+  color: #000;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.bb-home .bb-home-news-parity .news--item-inside .title-post a:hover {
+  color: #ff0c09;
+}
+
+/* ── Card excerpt: WP 1rem/1.25rem ── */
+.bb-home .bb-home-news-parity .news--item-inside p:not(.title-post) {
+  margin: 0;
+  font-size: 16px;
+  line-height: 20px;
+  color: #000;
+}
+
+/* ── Responsive: tablet 768–991px ── */
+@media (min-width: 768px) and (max-width: 991px) {
+  body .bb-home .bb-home-news-parity .block-title h2 {
+    font-size: 34px;
+  }
+
+  .bb-home .bb-home-news-parity .news-list .news--item-thumbnail a img {
+    height: 200px;
+  }
+}
+
+/* ── Responsive: mobile < 768px ── */
+@media (max-width: 767px) {
+  body .bb-home .bb-home-news-parity .block-title h2 {
+    font-size: 28px;
+    line-height: 1.2;
+  }
+
+  .bb-home .bb-home-news-parity .news-list .news--item-thumbnail a img {
+    height: 180px;
+  }
+
+  .bb-home .bb-home-news-parity .news--item-inside {
+    padding: 41px 16px 24px;
+  }
+}

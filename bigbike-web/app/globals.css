@@ -1842,7 +1842,32 @@ body {
   outline-offset: 4px;
 }
 
-/* -- Experience Carousel (Embla, slideToClickedSlide UX) -- */
+/* -- Experience Carousel ------------------------------------ */
+
+/* Cover image: scale in slightly on active slide */
+.bb-exp-slide-cover {
+  transform: scale(1.04);
+  transform-origin: center center;
+  transition: transform 1000ms ease;
+  will-change: transform;
+}
+.swiper-slide-active .bb-exp-slide-cover {
+  transform: scale(1);
+}
+
+/* Content block: hidden by default; only active slide shows it */
+.bb-exp-slide-content {
+  transform: translate3d(0, 2.5rem, 0);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 1000ms ease, transform 1000ms ease;
+  will-change: opacity, transform;
+}
+.swiper-slide-active .bb-exp-slide-content {
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
+  pointer-events: auto;
+}
 
 /* -- WP Floating Chat ---------------------------------------- */
 
