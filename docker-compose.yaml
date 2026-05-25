@@ -59,7 +59,7 @@ services:
       minio:
         condition: service_healthy
     ports:
-      - "127.0.0.1:8080:8080"
+      - "8080:8080"
     deploy:
       resources:
         limits:
@@ -131,7 +131,7 @@ services:
     # Bind to loopback only — production traffic must arrive via the nginx reverse proxy
     # (TLS, rate limit, security headers). localhost access for local dev still works.
     ports:
-      - "127.0.0.1:3000:3000"
+      - "3000:3000"
     deploy:
       resources:
         limits:
@@ -179,7 +179,7 @@ services:
     # Bind to loopback only — the admin dashboard must not be reachable on an external
     # interface without the nginx reverse proxy in front of it.
     ports:
-      - "127.0.0.1:4000:80"
+      - "4000:80"
     deploy:
       resources:
         limits:

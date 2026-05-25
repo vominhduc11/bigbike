@@ -29,7 +29,7 @@ import java.util.Map;
  * <p>Runs outside the Spring context — instantiates {@link BodyBlockParser} and
  * {@link ObjectMapper} directly (no DI needed).
  */
-public class V141__MigrateContentBodyToBlocks extends BaseJavaMigration {
+public class V143__MigrateContentBodyToBlocks extends BaseJavaMigration {
 
     @Override
     public void migrate(Context context) throws Exception {
@@ -56,7 +56,7 @@ public class V141__MigrateContentBodyToBlocks extends BaseJavaMigration {
         }
 
         if (rows.isEmpty()) {
-            System.out.printf("[V141] %s: 0 rows to migrate%n", table);
+            System.out.printf("[V143] %s: 0 rows to migrate%n", table);
             return;
         }
 
@@ -85,7 +85,7 @@ public class V141__MigrateContentBodyToBlocks extends BaseJavaMigration {
             }
         }
 
-        System.out.printf("[V141] %s: %d rows processed, block counts: %s%n",
+        System.out.printf("[V143] %s: %d rows processed, block counts: %s%n",
                 table, processed, typeCounts);
     }
 

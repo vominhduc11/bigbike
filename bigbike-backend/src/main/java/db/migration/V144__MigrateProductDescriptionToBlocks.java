@@ -26,7 +26,7 @@ import java.util.Map;
  *       (outerHTML preserved) — admin can clean up via BlockEditor.</li>
  * </ul>
  */
-public class V142__MigrateProductDescriptionToBlocks extends BaseJavaMigration {
+public class V144__MigrateProductDescriptionToBlocks extends BaseJavaMigration {
 
     @Override
     public void migrate(Context context) throws Exception {
@@ -45,7 +45,7 @@ public class V142__MigrateProductDescriptionToBlocks extends BaseJavaMigration {
         }
 
         if (rows.isEmpty()) {
-            System.out.println("[V142] products: 0 rows to migrate");
+            System.out.println("[V144] products: 0 rows to migrate");
             return;
         }
 
@@ -73,7 +73,7 @@ public class V142__MigrateProductDescriptionToBlocks extends BaseJavaMigration {
             }
         }
 
-        System.out.printf("[V142] products: %d rows processed, block counts: %s%n",
+        System.out.printf("[V144] products: %d rows processed, block counts: %s%n",
                 processed, typeCounts);
     }
 
