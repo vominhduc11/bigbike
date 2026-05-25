@@ -127,9 +127,7 @@ export function RedirectListScreen({ canUpdate }) {
   })
 
   const items = data?.items ?? []
-  const warning = data?.mode === 'mock'
-    ? (data?.warning || t('redirects.mockWarning', { defaultValue: 'Showing mock redirect data.' }))
-    : ''
+  const warning = ''
 
   function openCreateForm() {
     setEditingRedirect(null)

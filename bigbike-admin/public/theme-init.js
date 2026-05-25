@@ -6,7 +6,7 @@
     if (localStorage.getItem('bigbike-admin-theme') === 'dark') {
       document.documentElement.setAttribute('data-theme', 'dark');
     }
-  } catch (e) {
+  } catch {
     /* localStorage unavailable (private mode / disabled) — skip silently */
   }
 })();

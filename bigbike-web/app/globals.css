@@ -87,6 +87,7 @@
   --text-26: var(--bb-text-26);
   --text-32: var(--bb-text-32);
   --text-40: var(--bb-text-40);
+  --text-50: var(--bb-text-50);
 
   /* Accordion animations */
   --animate-accordion-down: accordion-down 220ms cubic-bezier(0.2, 0, 0, 1);
@@ -530,9 +531,11 @@ body {
   display: grid;
   gap: var(--bb-space-3);
   color: var(--bb-text-primary);
-  line-height: 1.75;
+  font-family: var(--bb-font-body);
+  font-size: var(--bb-text-base);
+  line-height: var(--bb-line-body);
   min-width: 0;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
   word-break: break-word;
 }
 
@@ -551,26 +554,27 @@ body {
 .bb-richtext h2,
 .bb-richtext h3 {
   color: var(--bb-text-primary);
-  font-family: var(--bb-font-display);
-  line-height: 1.16;
+  font-family: var(--bb-font-heading);
+  font-weight: 600;
+  line-height: 1.3;
   text-transform: uppercase;
-  font-size: clamp(1rem, 3.6vw, 1.25rem);
-  letter-spacing: 0.02em;
-  overflow-wrap: anywhere;
+  letter-spacing: 0;
+  overflow-wrap: break-word;
 }
 
-.bb-richtext h1 { font-size: clamp(1.125rem, 4vw, 1.5rem); }
-.bb-richtext h2 { font-size: clamp(1.0625rem, 3.6vw, 1.25rem); }
-.bb-richtext h3 { font-size: clamp(1rem, 3.2vw, 1.125rem); }
+.bb-richtext h1 { font-size: clamp(1.5rem, 4vw, 2rem); }
+.bb-richtext h2 { font-size: clamp(1.25rem, 3vw, 1.5rem); }
+.bb-richtext h3 { font-size: var(--bb-text-h3); }
 .bb-richtext h4,
 .bb-richtext h5,
 .bb-richtext h6 {
-  font-family: var(--bb-font-body);
+  font-family: var(--bb-font-cta);
   color: var(--bb-text-primary);
-  font-size: clamp(0.95rem, 3vw, 1rem);
-  font-weight: 700;
+  font-size: var(--bb-text-h3);
+  font-weight: 600;
+  line-height: 1.25;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0;
 }
 
 .bb-richtext a {
@@ -664,16 +668,21 @@ body {
 }
 
 .bb-page--auth .bb-auth-wrap h1 {
-  font-family: var(--bb-font-body);
-  font-size: 16px;
-  line-height: 1.35;
-  text-transform: none;
+  margin: 0 0 8px;
+  color: var(--bb-text-primary);
+  font-family: var(--bb-font-heading);
+  font-size: var(--bb-text-32);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0;
+  text-transform: uppercase;
 }
 
 /* Override .bb-page h1 specificity for auth card — responsive, title-case */
 .bb-page--auth .bb-auth-title {
-  font-size: clamp(1.5rem, 3vw, 2.25rem);
-  text-transform: none;
+  font-size: var(--bb-text-32);
+  line-height: 1.2;
+  text-transform: uppercase;
 }
 
 /* ...............................................................
@@ -1750,6 +1759,10 @@ body {
   padding: var(--bb-space-20) 0;
 }
 
+.bb-experience--home {
+  padding: 100px 0 0;
+}
+
 .bb-experience-header {
   text-align: center;
   padding-bottom: 2.857rem;
@@ -1758,24 +1771,24 @@ body {
 }
 
 .bb-experience-kicker {
-  margin: 0;
-  color: var(--bb-border-default);
-  font-family: var(--bb-font-body);
-  font-size: 1.143rem;
+  margin: 0 0 10px;
+  color: #cecece;
+  font-family: var(--bb-font-cta);
+  font-size: var(--bb-text-section-kicker);
   font-weight: 600;
-  line-height: 1.357rem;
+  line-height: var(--bb-line-section-kicker);
   letter-spacing: 0;
   text-transform: uppercase;
 }
 
 .bb-experience-title {
   font-family: var(--bb-font-heading);
-  font-size: clamp(2.25rem, 4.45vw, 4.286rem);
+  font-size: var(--bb-text-section-title);
   font-weight: 600;
   text-transform: uppercase;
   color: var(--bb-text-primary);
-  margin: 1.286rem 0 0;
-  line-height: 1.18;
+  margin: 0;
+  line-height: var(--bb-line-section-title);
   letter-spacing: 0;
 }
 
@@ -1790,6 +1803,43 @@ body {
   margin: 0 auto;
   line-height: 1.375;
   font-size: 1rem;
+}
+
+.bb-exp-slide-title {
+  margin: 0;
+  color: #000;
+  font-family: var(--bb-font-heading);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 30px;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.bb-exp-slide-link {
+  display: inline-block;
+  width: 170px;
+  padding: 0;
+  border: 1px solid var(--bb-border-default);
+  color: #000;
+  font-family: var(--bb-font-cta);
+  font-size: var(--bb-text-base);
+  font-weight: 600;
+  line-height: 52px;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: border-color var(--bb-duration-fast) var(--bb-ease-standard),
+    color var(--bb-duration-fast) var(--bb-ease-standard);
+}
+
+.bb-exp-slide-link:hover {
+  color: #000;
+  text-decoration: none;
+}
+
+.bb-exp-slide-link:focus-visible {
+  outline: var(--bb-focus-outline);
+  outline-offset: 4px;
 }
 
 /* -- Experience Carousel (Embla, slideToClickedSlide UX) -- */
@@ -1857,13 +1907,13 @@ body {
   }
 
   .bb-experience-kicker {
-    font-size: 1rem;
-    line-height: 1.25rem;
+    font-size: var(--bb-text-section-kicker);
+    line-height: var(--bb-line-section-kicker);
   }
 
   .bb-experience-title {
-    font-size: clamp(2rem, 7vw, 2.5rem);
-    line-height: 1.25;
+    font-size: var(--bb-text-section-title);
+    line-height: var(--bb-line-section-title);
   }
 
   .bb-experience-copy {
@@ -1873,6 +1923,13 @@ body {
 
   .bb-experience-desc {
     line-height: 1.65;
+  }
+
+  .bb-exp-slide-title {
+    max-width: 240px;
+    margin-inline: auto;
+    font-size: 24px;
+    line-height: 36px;
   }
 
   .bb-promo-banner {
@@ -2039,14 +2096,14 @@ body {
 }
 
 .bb-products-title {
-  font-family: var(--bb-font-display);
-  font-size: clamp(1.3rem, 2.5vw, 2rem);
-  font-weight: 400;
+  font-family: var(--bb-font-heading);
+  font-size: var(--bb-text-section-title);
+  font-weight: 600;
   text-transform: uppercase;
   color: var(--bb-text-primary);
-  margin: 0.3rem 0 0;
-  line-height: 1.08;
-  letter-spacing: 0.01em;
+  margin: 0;
+  line-height: var(--bb-line-section-title);
+  letter-spacing: 0;
 }
 
 .bb-view-all-link {
@@ -2122,10 +2179,8 @@ body {
 }
 .bb-cat-list-img img {
   display: block;
-  width: auto;
-  height: auto;
-  max-width: 90px;
-  max-height: 90px;
+  width: 60px;
+  height: 60px;
   object-fit: contain;
   transition: filter 0.3s ease;
 }
@@ -2444,8 +2499,8 @@ body {
 /* -- Section headers -------------------------------------- */
 .bb-section { max-width: 1200px; margin: 60px auto 0; padding: 0 24px; }
 .bb-section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 28px; padding-bottom: 16px; border-bottom: 1px solid var(--bb-border-default); }
-.bb-section-head .bb-kicker { font-family: var(--bb-font-display); font-size: 1.143rem; line-height: 1.357rem; letter-spacing: 0; text-transform: uppercase; color: var(--bb-brand-primary); font-weight: 600; margin: 0 0 10px; display: block; }
-.bb-section-title { font-family: var(--bb-font-display); text-transform: uppercase; font-size: clamp(1.5rem, 2.6vw, 2.143rem); font-weight: 600; letter-spacing: 0; line-height: 1.2; margin: 0; color: var(--bb-text-primary); }
+.bb-section-head .bb-kicker { font-family: var(--bb-font-cta); font-size: var(--bb-text-section-kicker); line-height: var(--bb-line-section-kicker); letter-spacing: 0; text-transform: uppercase; color: #cecece; font-weight: 600; margin: 0 0 10px; display: block; }
+.bb-section-title { font-family: var(--bb-font-heading); text-transform: uppercase; font-size: var(--bb-text-section-title); font-weight: 600; letter-spacing: 0; line-height: var(--bb-line-section-title); margin: 0; color: var(--bb-text-primary); }
 
 
 
@@ -4678,10 +4733,10 @@ img, picture, video, svg, canvas { max-width: 100%; }
   padding-bottom: 2.5rem;
 }
 .bb-products-section .bb-kicker {
-  color: var(--bb-text-muted);
-  font-family: var(--bb-font-display);
-  font-size: 1.143rem;
-  line-height: 1.357rem;
+  color: #cecece;
+  font-family: var(--bb-font-cta);
+  font-size: var(--bb-text-section-kicker);
+  line-height: var(--bb-line-section-kicker);
   font-weight: 600;
   letter-spacing: 0;
   text-transform: uppercase;
@@ -4976,27 +5031,41 @@ a:not(.font-cta):hover {
   text-transform: uppercase;
 }
 
-/* WP section title: Barlow Condensed/Oswald 50px (3.571rem at 14px base) — custom.css .block-title h3 */
-.bb-section-title {
-  font-size: 50px;
-  line-height: 1.2;
+/* WP section title: Oswald 50px/60px desktop; scales via brand tokens on tablet/mobile. */
+.bb-section-title,
+.bb-products-title,
+.bb-experience .bb-experience-title {
+  font-size: var(--bb-text-section-title);
+  line-height: var(--bb-line-section-title);
 }
 
 @media (max-width: 767px) {
-  .bb-section-title {
-    font-size: 30px;
+  .bb-section-title,
+  .bb-products-title,
+  .bb-experience .bb-experience-title {
+    font-size: var(--bb-text-section-title);
+    line-height: var(--bb-line-section-title);
   }
 }
 
 .bb-kicker,
 .bb-kicker,
 .bb-news-kicker,
-.bb-products-section .bb-kicker,
-.bb-section-head .bb-kicker,
 .bb-product-brand {
   color: var(--bb-color-red-700);
   font-family: var(--bb-font-cta);
   font-weight: 600;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.bb-products-section .bb-kicker,
+.bb-section-head .bb-kicker {
+  color: #cecece;
+  font-family: var(--bb-font-cta);
+  font-size: var(--bb-text-section-kicker);
+  font-weight: 600;
+  line-height: var(--bb-line-section-kicker);
   letter-spacing: 0;
   text-transform: uppercase;
 }
@@ -5278,7 +5347,7 @@ input[type="checkbox"] {
 /* Card title sits on a white background — must use dark text */
 .bb-fp-title,
 .bb-fp-title a {
-  font-family: var(--bb-font-display);
+  font-family: var(--bb-font-heading);
   font-size: 18px;
   font-weight: 600;
   line-height: 20px;
@@ -5300,8 +5369,8 @@ input[type="checkbox"] {
 .bb-checkout-summary-card .bb-mini-price,
 .bb-price {
   color: var(--bb-brand-primary);
-  font-family: var(--bb-font-display);
-  font-size: 14px;
+  font-family: var(--bb-font-cta);
+  font-size: var(--bb-text-base);
   font-weight: 600;
   line-height: 24px;
 }
@@ -5769,7 +5838,7 @@ input[type="checkbox"] {
 
 /* Homepage product carousel: legacy WP parity for page-home.php #main-product-slide. */
 .bb-home-products-parity {
-  padding-top: 40px;
+  padding-top: 60px;
   padding-bottom: 40px;
   background: #fff;
 }
@@ -5789,20 +5858,21 @@ input[type="checkbox"] {
 .bb-home-products-parity .bb-kicker {
   margin: 0 0 10px;
   color: #cecece;
-  font-family: var(--bb-font-display);
-  font-size: 1.143rem;
+  font-family: var(--bb-font-cta);
+  font-size: var(--bb-text-section-kicker);
   font-weight: 600;
-  line-height: 1.357rem;
+  line-height: var(--bb-line-section-kicker);
+  letter-spacing: 0;
   text-transform: uppercase;
 }
 
 .bb-home-products-parity .bb-products-title {
   margin: 0;
   color: #000;
-  font-family: var(--bb-font-display);
-  font-size: 35px;
+  font-family: var(--bb-font-heading);
+  font-size: var(--bb-text-section-title);
   font-weight: 600;
-  line-height: 4.286rem;
+  line-height: var(--bb-line-section-title);
   letter-spacing: 0;
   text-align: center;
   text-transform: uppercase;
@@ -5960,7 +6030,7 @@ input[type="checkbox"] {
   display: block;
   margin-top: 0;
   color: #ff0c09;
-  font-family: var(--bb-font-display);
+  font-family: var(--bb-font-cta);
   font-size: 14px;
   font-weight: 600;
   text-align: left;
@@ -6674,11 +6744,17 @@ body:has(.bb-article-detail-page) footer .bb-container.relative > button.absolut
   margin-top: 0;
   margin-bottom: 0.5rem;
   color: #000;
-  font-family: var(--bb-font-body);
-  font-weight: 500;
+  font-family: var(--bb-font-heading);
+  font-weight: 600;
   line-height: 1.2;
   letter-spacing: 0;
   text-transform: none;
+}
+
+.bb-article-detail-page .bb-article-wyswyg h4,
+.bb-article-detail-page .bb-article-wyswyg h5,
+.bb-article-detail-page .bb-article-wyswyg h6 {
+  font-family: var(--bb-font-cta);
 }
 
 .bb-article-detail-page .bb-article-wyswyg h1 { font-size: 2.5rem; }
@@ -6784,8 +6860,8 @@ body:has(.bb-article-detail-page) footer .bb-container.relative > button.absolut
   }
 
   .bb-home-products-parity .bb-products-title {
-    font-size: 24px;
-    line-height: 30px;
+    font-size: var(--bb-text-section-title);
+    line-height: var(--bb-line-section-title);
   }
 
   .bb-home-products-parity .bb-fp-pagination {
@@ -8175,7 +8251,7 @@ body:has(.bb-home) {
 
 .bb-wp-related .product--item-price {
   color: #ff0c09;
-  font-family: var(--bb-font-heading);
+  font-family: var(--bb-font-cta);
   font-size: 14px;
   font-weight: 600;
   text-align: left;
@@ -9007,7 +9083,7 @@ body:has(.bb-search-results-page) {
 
 .bb-archive-product-price {
   color: #ff0c09;
-  font-family: var(--bb-font-display);
+  font-family: var(--bb-font-cta);
   font-size: 14px;
   font-weight: 600;
   text-align: left;
@@ -9389,19 +9465,29 @@ body:has(.bb-search-results-page) {
 .bb-home .block-title p.sub-title {
   margin: 0 0 10px;
   color: #cecece;
-  font-size: 16px;
+  font-family: var(--bb-font-cta);
+  font-size: var(--bb-text-section-kicker);
   font-weight: 600;
-  line-height: 19px;
+  line-height: var(--bb-line-section-kicker);
+  letter-spacing: 0;
+  text-transform: uppercase;
 }
 
+body .bb-home .block-title h2,
 body .bb-home .block-title h3 {
   margin: 0;
   color: #000;
-  font-family: Oswald, sans-serif;
-  font-size: 35px;
+  font-family: var(--bb-font-heading);
+  font-size: var(--bb-text-section-title);
   font-weight: 600;
-  line-height: 60px;
+  line-height: var(--bb-line-section-title);
+  letter-spacing: 0;
   text-transform: uppercase;
+}
+
+body .bb-home .white.block-title h2,
+body .bb-home .white.block-title h3 {
+  color: #fff;
 }
 
 .bb-home .block-title--content p {
@@ -9449,7 +9535,7 @@ body .bb-home .block-title h3 {
   min-height: 120px;
   background-color: #ddd;
   background-repeat: no-repeat;
-  background-position: 50%;
+  background-position: 50% 0%;
   background-size: cover;
 }
 
@@ -9459,7 +9545,7 @@ body .bb-home .block-title h3 {
   width: 100%;
   height: 100%;
   background-repeat: no-repeat;
-  background-position: 50%;
+  background-position: 50% 0%;
   background-size: cover;
 }
 
@@ -9550,6 +9636,19 @@ body .bb-home .block-title h3 {
 .bb-home .about-bigbike .block-content p {
   margin: 0;
   color: #6f6f6f;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.bb-home .about-bigbike .block-title h2 {
+  margin: 0;
+  color: #000;
+  font-family: var(--bb-font-heading);
+  font-size: var(--bb-text-section-title);
+  font-weight: 600;
+  line-height: var(--bb-line-section-title);
+  letter-spacing: 0;
+  text-transform: uppercase;
 }
 
 .bb-home .product-list {
@@ -9657,10 +9756,12 @@ body .bb-home .block-title h3 {
 
 .bb-home .news--item-inside .title-post {
   margin: 0 0 5px;
-  font-family: Oswald, sans-serif;
-  font-size: 18px;
+  font-family: var(--bb-font-heading);
+  font-size: var(--bb-text-news-title);
   font-weight: 600;
-  line-height: 24px;
+  line-height: var(--bb-line-news-title);
+  letter-spacing: 0;
+  text-transform: uppercase;
 }
 
 .bb-home .news--item-inside .title-post a {
@@ -9692,12 +9793,23 @@ body .bb-home .block-title h3 {
 
 .bb-home .bb-home-news-parity .news--item-inside .title-post {
   margin: 0 0 25px;
-  font-size: 17.5px;
-  line-height: 21px;
+  font-size: var(--bb-text-news-title);
+  line-height: var(--bb-line-news-title);
 }
 
 .bb-home .bb-home-news-parity .news--item-inside p {
   line-height: 17.5px;
+}
+
+.bb-home-video-title {
+  margin: 0;
+  color: #fff;
+  font-family: var(--bb-font-heading);
+  font-size: var(--bb-text-section-title);
+  font-weight: 600;
+  line-height: var(--bb-line-section-title);
+  letter-spacing: 0;
+  text-transform: uppercase;
 }
 
 .bb-home .videos-slide--inner {
@@ -9850,12 +9962,36 @@ body .bb-home .block-title h3 {
 }
 
 .bb-home .content-bottom.wyswyg h1,
-.bb-home .content-bottom.wyswyg h2 {
+.bb-home .content-bottom.wyswyg h2,
+.bb-home .content-bottom.wyswyg h3,
+.bb-home .content-bottom.wyswyg h4,
+.bb-home .content-bottom.wyswyg h5,
+.bb-home .content-bottom.wyswyg h6 {
   margin: 0 0 16px;
   color: #000;
-  font-family: Oswald, sans-serif;
+  font-family: var(--bb-font-body);
   font-weight: 600;
-  line-height: 1.3;
+  line-height: 1.5;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.bb-home .content-bottom.wyswyg h1 {
+  font-size: 32px;
+  line-height: 48px;
+}
+
+.bb-home .content-bottom.wyswyg h2 {
+  font-size: 24px;
+  line-height: 36px;
+}
+
+.bb-home .content-bottom.wyswyg h3,
+.bb-home .content-bottom.wyswyg h4,
+.bb-home .content-bottom.wyswyg h5,
+.bb-home .content-bottom.wyswyg h6 {
+  font-size: 18px;
+  line-height: 27px;
 }
 
 .bb-home .content-bottom.wyswyg p,
@@ -9922,9 +10058,15 @@ body .bb-home .block-title h3 {
     display: none;
   }
 
+  body .bb-home .block-title h2,
   body .bb-home .block-title h3 {
-    font-size: 24px;
-    line-height: 30px;
+    font-size: var(--bb-text-section-title);
+    line-height: var(--bb-line-section-title);
+  }
+
+  .bb-home .about-bigbike .block-title h2 {
+    font-size: var(--bb-text-section-title);
+    line-height: var(--bb-line-section-title);
   }
 
   .bb-home .category-list .item {
@@ -9949,6 +10091,246 @@ body .bb-home .block-title h3 {
 
   body .bb-home .videos-slide .swiper-button-prev {
     left: 15px;
+  }
+}
+
+/* Homepage spacing pass: scoped after WP parity utilities so the home rhythm
+   follows page-home.php without changing global section rules. */
+.bb-home .category-list {
+  padding-top: 60px;
+  padding-bottom: 60px;
+}
+
+.bb-home .about-bigbike {
+  padding-top: 40px;
+  padding-bottom: 40px;
+}
+
+.bb-home .about-bigbike .block-title {
+  margin-bottom: 40px;
+}
+
+.bb-home-products-parity {
+  padding-top: 40px;
+  padding-bottom: 40px;
+}
+
+.bb-home-products-parity .bb-products-header {
+  margin-bottom: 40px;
+}
+
+.bb-home-products-parity .bb-fp-item {
+  margin-top: 30px;
+}
+
+.bb-home-products-parity .bb-fp-pagination {
+  margin-top: 60px;
+}
+
+.bb-home-products-parity .bb-cat-list {
+  margin-top: 130px;
+  margin-bottom: 10px;
+}
+
+.bb-home > .bb-products-section:not(.bb-home-products-parity) {
+  padding-top: 40px;
+  padding-bottom: 40px;
+}
+
+.bb-home > .bb-products-section:not(.bb-home-products-parity) .bb-cat-list {
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+.bb-home .banner-ads {
+  padding-top: 60px;
+  padding-bottom: 0;
+}
+
+.bb-home .bb-experience {
+  padding-top: 100px;
+  padding-bottom: 0;
+}
+
+.bb-home .bb-experience-header {
+  padding-bottom: 40px;
+}
+
+.bb-home .bb-exp-carousel {
+  padding-bottom: 40px;
+}
+
+.bb-home .bb-home-news-parity {
+  padding-top: 60px;
+  padding-bottom: 0;
+}
+
+.bb-home .bb-home-news-parity .block-title {
+  padding-bottom: 40px;
+}
+
+.bb-home .videos-slide {
+  padding-top: 80px;
+  padding-bottom: 0;
+}
+
+.bb-home .videos-slide--inner {
+  padding-bottom: 90px;
+}
+
+.bb-home .videos-slide div:has(> .bb-home-video-title) {
+  padding-top: 90px;
+  padding-bottom: 70px;
+}
+
+.bb-home .partner-slide {
+  padding-top: 120px;
+  padding-bottom: 120px;
+}
+
+.bb-home .content-bottom {
+  padding-top: 60px;
+  padding-bottom: 60px;
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .bb-home .category-list {
+    padding-top: 52px;
+    padding-bottom: 52px;
+  }
+
+  .bb-home-products-parity {
+    padding-top: 40px;
+    padding-bottom: 40px;
+  }
+
+  .bb-home-products-parity .bb-cat-list {
+    margin-top: 80px;
+  }
+
+  .bb-home > .bb-products-section:not(.bb-home-products-parity) {
+    padding-top: 40px;
+    padding-bottom: 40px;
+  }
+
+  .bb-home .banner-ads,
+  .bb-home .bb-home-news-parity {
+    padding-top: 52px;
+  }
+
+  .bb-home .bb-experience {
+    padding-top: 72px;
+  }
+
+  .bb-home .videos-slide {
+    padding-top: 64px;
+  }
+
+  .bb-home .videos-slide--inner {
+    padding-bottom: 72px;
+  }
+
+  .bb-home .videos-slide div:has(> .bb-home-video-title) {
+    padding-top: 72px;
+    padding-bottom: 56px;
+  }
+
+  .bb-home .partner-slide {
+    padding-top: 80px;
+    padding-bottom: 80px;
+  }
+}
+
+@media (max-width: 767px) {
+  .bb-home .category-list {
+    padding-top: 40px;
+    padding-bottom: 40px;
+  }
+
+  .bb-home .about-bigbike {
+    padding-top: 32px;
+  }
+
+  .bb-home .about-bigbike .block-title {
+    margin-bottom: 24px;
+  }
+
+  .bb-home-products-parity {
+    padding-top: 32px;
+    padding-bottom: 32px;
+  }
+
+  .bb-home-products-parity .bb-products-header {
+    margin-bottom: 28px;
+  }
+
+  .bb-home-products-parity .bb-fp-item {
+    margin-top: 20px;
+  }
+
+  .bb-home-products-parity .bb-fp-pagination {
+    margin-top: 20px;
+  }
+
+  .bb-home-products-parity .bb-cat-list {
+    margin-top: 48px;
+  }
+
+  .bb-home > .bb-products-section:not(.bb-home-products-parity) {
+    padding-top: 32px;
+    padding-bottom: 32px;
+  }
+
+  .bb-home > .bb-products-section:not(.bb-home-products-parity) .bb-cat-list {
+    margin-top: 0;
+  }
+
+  .bb-home .banner-ads,
+  .bb-home .bb-home-news-parity {
+    padding-top: 40px;
+  }
+
+  .bb-home .bb-home-news-parity .block-title {
+    padding-bottom: 28px;
+  }
+
+  .bb-home .bb-experience {
+    padding-top: 48px;
+  }
+
+  .bb-home .bb-experience-header {
+    padding-bottom: 28px;
+  }
+
+  .bb-home .bb-experience-header > div {
+    padding-top: 20px;
+  }
+
+  .bb-home .bb-exp-carousel {
+    padding-bottom: 32px;
+  }
+
+  .bb-home .videos-slide {
+    padding-top: 48px;
+  }
+
+  .bb-home .videos-slide--inner {
+    padding-bottom: 56px;
+  }
+
+  .bb-home .videos-slide div:has(> .bb-home-video-title) {
+    padding-top: 48px;
+    padding-bottom: 36px;
+  }
+
+  .bb-home .partner-slide {
+    padding-top: 56px;
+    padding-bottom: 56px;
+  }
+
+  .bb-home .content-bottom {
+    padding-top: 40px;
+    padding-bottom: 40px;
   }
 }
 

@@ -139,7 +139,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
     fetchAdminUsers(query)
       .then((r) => {
         if (!active) return
-        setListState({ status: 'success', items: r.items, pagination: r.pagination, warning: r.mode === 'mock' ? r.warning : '' })
+        setListState({ status: 'success', items: r.items, pagination: r.pagination, warning: '' })
       })
       .catch((e) => {
         if (!active) return

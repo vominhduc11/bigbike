@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { toCanonicalUrl } from "@/lib/utils/routes";
 
 const DEFAULT_OG_IMAGE = "/wp/logo.png";
-const SITE_NAME = "BigBike";
 
 type PublicMetadataInput = {
   title: string;
@@ -11,6 +10,7 @@ type PublicMetadataInput = {
   noIndex?: boolean;
   ogImage?: string;
   ogType?: "website" | "article";
+  siteName?: string;
 };
 
 export function buildPublicMetadata(input: PublicMetadataInput): Metadata {
@@ -27,7 +27,7 @@ export function buildPublicMetadata(input: PublicMetadataInput): Metadata {
       title: input.title,
       description: input.description,
       url: canonicalUrl,
-      siteName: SITE_NAME,
+      ...(input.siteName ? { siteName: input.siteName } : {}),
       images: [{ url: ogImageUrl }],
       locale: "vi_VN",
       type: input.ogType ?? "website",
@@ -49,4 +49,3 @@ export function buildPublicMetadata(input: PublicMetadataInput): Metadata {
 
   return metadata;
 }
-

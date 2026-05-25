@@ -354,7 +354,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
   const state = {
     status: isCreate ? 'success' : isLoading ? 'loading' : isError ? 'error' : 'success',
     item: fetchResult?.item ?? null,
-    warning: fetchResult?.mode === 'mock' ? (fetchResult?.warning ?? '') : '',
+    warning: '',
     error: fetchError?.message ?? '',
   }
 
@@ -606,7 +606,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
           }
         />
 
-        {/* Banners — read-only + mock-warning */}
+        {/* Banners — read-only */}
         {!canUpdate && (
           <div className="flex items-center gap-2 px-4 py-2 bg-[var(--admin-color-status-warning-bg)] border border-[var(--admin-color-status-warning-border)] text-[var(--admin-color-status-warning-text)] text-sm">
             <Lock size={16} />

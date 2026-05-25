@@ -21,7 +21,7 @@ export function useAdminList(queryKey, queryFn) {
     isFetching,
     items: data?.items ?? [],
     pagination: data?.pagination ?? null,
-    warning: data?.mode === 'mock' ? (data?.warning ?? '') : '',
+    warning: '',
     error: error?.message ?? '',
     refetch: result.refetch,
   }

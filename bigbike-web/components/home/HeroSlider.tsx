@@ -41,20 +41,21 @@ function HeroSlideView({ slide }: { slide: HeroSlide }) {
   const style = {
     backgroundImage: `url("${slide.desktopSrc}")`,
     backgroundSize: "cover",
+    backgroundPosition: "top center",
     "--bb-mobile-banner-bg": `url("${slide.mobileSrc ?? slide.desktopSrc}")`,
   } as CSSProperties & Record<"--bb-mobile-banner-bg", string>;
 
   if (!slide.href) {
     return (
       <div className="-swiper-lazy bb-main-banner-link" style={style}>
-        <span style={{ backgroundImage: `url("${slide.desktopSrc}")` }} />
+        <span style={{ backgroundImage: `url("${slide.desktopSrc}")`, backgroundPosition: "top center" }} />
       </div>
     );
   }
 
   return (
     <Link href={slide.href} className="-swiper-lazy bb-main-banner-link" style={style}>
-      <span style={{ backgroundImage: `url("${slide.desktopSrc}")` }} />
+      <span style={{ backgroundImage: `url("${slide.desktopSrc}")`, backgroundPosition: "top center" }} />
     </Link>
   );
 }
@@ -71,14 +72,14 @@ export function HeroSlider({ slides }: HeroSliderProps) {
 
   const count = slides.length;
 
+  useEffect(() => {
+    if (count === 0) {
+      console.warn("[HeroSlider] No active home sliders were returned by the backend.");
+    }
+  }, [count]);
+
   if (count === 0) {
-    return (
-      <div id="main-banner" className="bb-main-banner bb-main-banner-fallback" aria-label="BigBike">
-        <Link href="/san-pham/" className="bb-main-banner-link">
-          <span style={{ backgroundImage: 'url("/wp/banner-ads.jpg")' }} />
-        </Link>
-      </div>
-    );
+    return null;
   }
 
   const activeSlide = slides[activeIndex] ?? slides[0];

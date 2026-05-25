@@ -72,7 +72,7 @@ export function CouponListScreen({ canUpdate }) {
   useEffect(() => {
     let active = true
     fetchCoupons(query)
-      .then((r) => { if (!active) return; setState({ status: 'success', items: r.items, pagination: r.pagination, warning: r.mode === 'mock' ? r.warning : '' }) })
+      .then((r) => { if (!active) return; setState({ status: 'success', items: r.items, pagination: r.pagination, warning: '' }) })
       .catch((e) => { if (!active) return; setState({ status: 'error', items: [], pagination: null, warning: '', error: e.message }) })
     return () => { active = false }
   }, [query])

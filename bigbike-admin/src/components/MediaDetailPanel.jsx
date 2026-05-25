@@ -80,8 +80,10 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
 
   useEffect(() => {
     if (Array.isArray(foldersProp)) return
-    fetchMediaFolders().then(setFoldersLocal)
-  }, [foldersProp])
+    fetchMediaFolders()
+      .then(setFoldersLocal)
+      .catch((e) => setError(e.message || t('common.error')))
+  }, [foldersProp, t])
 
   // ESC to close
   useEffect(() => {

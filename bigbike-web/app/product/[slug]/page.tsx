@@ -10,7 +10,7 @@ import { PdpRelatedProductsCarousel } from "@/components/catalog/PdpRelatedProdu
 import { AnalyticsView } from "@/components/analytics/AnalyticsView";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { getProductBySlug, listProducts } from "@/lib/api/public-api";
+import { getProductBySlug, listProducts, listPublicSettings } from "@/lib/api/public-api";
 import {
   buildBreadcrumbJsonLd,
   buildFaqPageJsonLd,
@@ -26,6 +26,7 @@ import {
   toHomePath,
   toProductPath,
 } from "@/lib/utils/routes";
+import { pickSetting } from "@/lib/utils/settings";
 import { isValidSlug } from "@/lib/utils/slug";
 
 // Locale is read from a cookie (next-intl), which opts the page into
@@ -89,9 +90,15 @@ export default async function ProductDetailPage({
   const { slug } = await params;
   if (!isValidSlug(slug)) notFound();
 
-  const tProduct = await getTranslations("Product");
+  const [tProduct, locale] = await Promise.all([
+    getTranslations("Product"),
+    getLocale(),
+  ]);
 
-  const result = await getProductBySlug(slug, await getLocale());
+  const [result, settingsResult] = await Promise.all([
+    getProductBySlug(slug, locale),
+    listPublicSettings(),
+  ]);
   if (!result.data && (result.error?.status === 404 || result.error?.status === 410)) notFound();
 
   if (!result.data) {
@@ -107,11 +114,13 @@ export default async function ProductDetailPage({
   }
 
   const product = result.data;
+  const settings = settingsResult.data ?? [];
   const productName = safeText(product.name, tProduct("fallbackShortName"));
   const gallery = safeArray(product.gallery);
   const videos = safeArray(product.videos);
   const specs = safeArray(product.specifications);
   const faqs = safeArray(product.faqs);
+  const instagramUrl = pickSetting(settings, ["instagram_url"]);
 
   const effectiveCategory =
     product.category?.slug === "chua-phan-loai" ? null : (product.category ?? null);
@@ -222,6 +231,7 @@ export default async function ProductDetailPage({
             fallbackVariants={product.variants ?? []}
             shortDescriptionHtml={sanitizedShortDescription}
             canonicalUrl={toCanonicalUrl(toProductPath(product.slug))}
+            instagramUrl={instagramUrl || undefined}
           />
         </div>
 

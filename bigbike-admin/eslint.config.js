@@ -8,7 +8,7 @@ export default defineConfig([
   globalIgnores(['dist']),
   {
     // Build/tooling configs run in Node — needs Node globals (__dirname, process…).
-    files: ['scripts/**/*.js', 'vite.config.js', 'eslint.config.js'],
+    files: ['scripts/**/*.{js,mjs}', 'vite.config.js', 'eslint.config.js'],
     extends: [js.configs.recommended],
     languageOptions: {
       ecmaVersion: 2022,

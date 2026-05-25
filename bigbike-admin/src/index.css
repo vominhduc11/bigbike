@@ -578,12 +578,6 @@ a {
   border: 1px solid var(--admin-color-status-success-border);
 }
 
-.mode-pill-mock {
-  background: var(--admin-color-status-warning-bg);
-  color: var(--admin-color-status-warning-text);
-  border: 1px solid var(--admin-color-status-warning-border);
-}
-
 .mode-pill-dot {
   width: 6px;
   height: 6px;

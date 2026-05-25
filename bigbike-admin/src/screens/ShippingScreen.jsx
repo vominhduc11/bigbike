@@ -55,7 +55,7 @@ export function ShippingScreen({ canUpdate }) {
           .sort((a, b) => ZONE_ORDER.indexOf(a.regionCode) - ZONE_ORDER.indexOf(b.regionCode))
         setZones(fixed)
         setZonesStatus('success')
-        setZonesWarning(r.mode === 'mock' ? r.warning : '')
+        setZonesWarning('')
         setSelectedZoneId((prev) => prev ?? (fixed[0]?.id ?? null))
       })
       .catch((e) => { setZonesStatus('error'); setZonesError(e.message) })

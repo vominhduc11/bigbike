@@ -9,31 +9,6 @@ import { toArticlePath } from "@/lib/utils/routes";
 import { cn } from "@/lib/utils";
 
 type Props = { articles: Article[] };
-type LegacyExperienceKey = "ls2" | "agv" | "scoyco";
-
-const LEGACY_EXPERIENCE_MEDIA: Record<
-  LegacyExperienceKey,
-  { order: number; title: string; coverImage: string; productImage: string }
-> = {
-  ls2: {
-    order: 0,
-    title: "Mũ bảo hiểm fullface LS2 FF352",
-    coverImage: "https://bigbike.vn/wp-content/uploads/2020/06/LS2-FF352_background.jpg",
-    productImage: "https://bigbike.vn/wp-content/uploads/2020/06/LS2-FF352_thumbnail.png",
-  },
-  agv: {
-    order: 1,
-    title: "[Tiêu điểm] Mũ Bảo Hiểm AGV Chính Hãng 2025",
-    coverImage: "https://bigbike.vn/wp-content/uploads/2020/06/avg_background.jpg",
-    productImage: "https://bigbike.vn/wp-content/uploads/2020/06/avg_thmbnail-1.png",
-  },
-  scoyco: {
-    order: 2,
-    title: "[Review] - Áo bảo hộ SCOYCO JK37",
-    coverImage: "https://bigbike.vn/wp-content/uploads/2020/06/scoyco-jk37_background.jpg",
-    productImage: "https://bigbike.vn/wp-content/uploads/2020/06/scoyco-jk37_thumbnail-1.png",
-  },
-};
 
 const LEGACY_BODY_UPLOAD_PREFIXES = [
   "https://bigbike.vn/wp-content/uploads/",
@@ -58,24 +33,6 @@ function normalizeLegacyUploadUrl(url: string | null | undefined): string | null
   return resolveMediaUrl(url) ?? null;
 }
 
-function getLegacyExperienceKey(article: Article): LegacyExperienceKey | null {
-  const haystack = `${article.slug} ${article.title}`.toLowerCase();
-  if (haystack.includes("ls2-ff352") || haystack.includes("ls2 ff352")) return "ls2";
-  if (haystack.includes("agv")) return "agv";
-  if (haystack.includes("scoyco-jk37") || haystack.includes("scoyco")) return "scoyco";
-  return null;
-}
-
-function orderLikeLegacyWp(articles: Article[]): Article[] {
-  return [...articles].sort((a, b) => {
-    const aKey = getLegacyExperienceKey(a);
-    const bKey = getLegacyExperienceKey(b);
-    const aOrder = aKey ? LEGACY_EXPERIENCE_MEDIA[aKey].order : Number.MAX_SAFE_INTEGER;
-    const bOrder = bKey ? LEGACY_EXPERIENCE_MEDIA[bKey].order : Number.MAX_SAFE_INTEGER;
-    return aOrder - bOrder;
-  });
-}
-
 function expandForSwiperLoop(articles: Article[]): Article[] {
   if (articles.length <= 1) return articles;
   const expanded = [...articles];
@@ -90,16 +47,13 @@ function resolveArticleMedia(article: Article): {
   productSrc: string | null;
   productAlt: string;
 } {
-  const legacyKey = getLegacyExperienceKey(article);
-  const legacyMedia = legacyKey ? LEGACY_EXPERIENCE_MEDIA[legacyKey] : null;
-  const title = legacyMedia?.title ?? safeText(article.title, "Bài viết");
+  const title = safeText(article.title, "Bài viết");
 
   return {
     title,
-    bgSrc: legacyMedia?.coverImage ?? resolveMediaUrl(article.coverImage?.url?.trim()) ?? null,
+    bgSrc: resolveMediaUrl(article.coverImage?.url?.trim()) ?? null,
     bgAlt: safeText(article.coverImage?.alt, title),
     productSrc:
-      legacyMedia?.productImage ||
       normalizeLegacyUploadUrl(article.productImage?.url?.trim()) ||
       normalizeLegacyUploadUrl(extractFirstImageUrl(article.body)),
     productAlt: safeText(article.productImage?.alt, title),
@@ -119,7 +73,7 @@ function ExperienceSlide({
     <div className="bb-exp-slide select-none">
       <div className="overflow-hidden bg-[linear-gradient(135deg,var(--bb-brand-primary-active),var(--bb-bg-surface-dark-2))]">
         {media.bgSrc ? (
-          // eslint-disable-next-line @next/next/no-img-element -- WP parity needs native image sizing/max-height behavior.
+          // eslint-disable-next-line @next/next/no-img-element -- native img keeps the legacy cover sizing.
           <img
             src={media.bgSrc}
             alt={media.bgAlt}
@@ -142,7 +96,7 @@ function ExperienceSlide({
       >
         {media.productSrc ? (
           <div className="text-center">
-            {/* eslint-disable-next-line @next/next/no-img-element -- product art follows the legacy transparent PNG sizing. */}
+            {/* eslint-disable-next-line @next/next/no-img-element -- transparent product art follows the legacy PNG sizing. */}
             <img
               src={media.productSrc}
               alt={media.productAlt}
@@ -155,13 +109,13 @@ function ExperienceSlide({
         ) : null}
 
         <div className="text-center max-[767px]:mt-5">
-          <h3 className="m-0 font-heading text-[18.72px] font-semibold uppercase leading-[28.08px] text-black max-[767px]:mx-auto max-[767px]:max-w-[240px] max-[767px]:text-24 max-[767px]:leading-[36px]">
+          <h3 className="bb-exp-slide-title">
             {media.title}
           </h3>
           <div className="pt-[40px] text-center">
             <Link
               href={toArticlePath(article.slug)}
-              className="inline-block w-[170px] border border-[var(--bb-border-default)] p-0 font-cta text-base font-semibold uppercase leading-[52px] text-black no-underline transition-[border-color,color] duration-[var(--bb-duration-fast)] ease-[var(--bb-ease-standard)] hover:text-black hover:no-underline focus-visible:outline-[var(--bb-focus-outline)] focus-visible:outline-offset-4"
+              className="bb-exp-slide-link"
               tabIndex={isActive ? 0 : -1}
             >
               XEM CHI TIẾT
@@ -174,11 +128,10 @@ function ExperienceSlide({
 }
 
 export function ExperienceCarousel({ articles }: Props) {
-  const orderedArticles = orderLikeLegacyWp(articles);
-  if (orderedArticles.length === 0) return null;
+  if (articles.length === 0) return null;
 
-  const hasSideSlides = orderedArticles.length > 1;
-  const carouselArticles = expandForSwiperLoop(orderedArticles);
+  const hasSideSlides = articles.length > 1;
+  const carouselArticles = expandForSwiperLoop(articles);
 
   return (
     <Swiper
@@ -188,7 +141,7 @@ export function ExperienceCarousel({ articles }: Props) {
       spaceBetween={13}
       centeredSlides
       loop={hasSideSlides}
-      initialSlide={hasSideSlides ? orderedArticles.length - 1 : 0}
+      initialSlide={hasSideSlides ? articles.length - 1 : 0}
       slideToClickedSlide={hasSideSlides}
       autoHeight
       watchOverflow

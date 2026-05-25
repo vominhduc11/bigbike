@@ -365,7 +365,7 @@ export function MenuScreen({ canUpdate }) {
     queryFn: fetchMenus,
   })
 
-  const warning = menusData?.mode === 'mock' ? (menusData?.warning ?? '') : ''
+  const warning = ''
 
   const menuByLocation = useMemo(() => {
     const map = new Map()

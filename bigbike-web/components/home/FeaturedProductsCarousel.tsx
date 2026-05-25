@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Product } from "@/lib/contracts/public";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { cn } from "@/lib/utils";
@@ -21,7 +22,7 @@ function resolveGap(slidesPerView: number) {
 }
 
 const CAR_BTN =
-  "bb-fp-arrow absolute top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-[3.125rem] font-normal leading-none text-foreground shadow-none transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand";
+  "bb-fp-arrow absolute top-1/2 z-10 flex h-24 w-24 -translate-y-1/2 cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-foreground transition-colors hover:text-brand focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand";
 
 export function FeaturedProductsCarousel({ products }: Props) {
   const t = useTranslations("Common");
@@ -53,18 +54,18 @@ export function FeaturedProductsCarousel({ products }: Props) {
 
   return (
     <div className="bb-fp-carousel relative">
-      <div className="bb-fp-viewport relative w-full overflow-hidden">
-        {hasMultiplePages && (
-          <button
-            className={cn(CAR_BTN, "left-0")}
-            type="button"
-            onClick={goPrev}
-            aria-label={t("scrollPrev")}
-          >
-            ‹
-          </button>
-        )}
+      {hasMultiplePages && (
+        <button
+          className={cn(CAR_BTN, "-left-16")}
+          type="button"
+          onClick={goPrev}
+          aria-label={t("scrollPrev")}
+        >
+          <ChevronLeft size={64} />
+        </button>
+      )}
 
+      <div className="bb-fp-viewport relative w-full overflow-hidden">
         <div
           className="bb-fp-page-track"
           style={{ transform: `translate3d(calc(-${currentPage * 100}% - ${offsetGap}px), 0, 0)` }}
@@ -73,18 +74,18 @@ export function FeaturedProductsCarousel({ products }: Props) {
             <ProductCard key={product.id} product={product} variant="featured" />
           ))}
         </div>
-
-        {hasMultiplePages && (
-          <button
-            className={cn(CAR_BTN, "right-0")}
-            type="button"
-            onClick={goNext}
-            aria-label={t("scrollNext")}
-          >
-            ›
-          </button>
-        )}
       </div>
+
+      {hasMultiplePages && (
+        <button
+          className={cn(CAR_BTN, "-right-16")}
+          type="button"
+          onClick={goNext}
+          aria-label={t("scrollNext")}
+        >
+          <ChevronRight size={64} />
+        </button>
+      )}
 
       {hasMultiplePages && (
         <div className="bb-fp-pagination" aria-label={t("carouselPagination")}>

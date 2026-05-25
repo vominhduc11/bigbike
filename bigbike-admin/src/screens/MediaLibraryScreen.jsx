@@ -89,7 +89,11 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
 
   // Sidebar refresh signal — bumped when folder list might have changed (after bulk move, etc.)
   const [folderRefreshKey, setFolderRefreshKey] = useState(0)
-  useEffect(() => { fetchMediaFolders().then(setFolders) }, [folderRefreshKey])
+  useEffect(() => {
+    fetchMediaFolders()
+      .then(setFolders)
+      .catch((e) => toast.error(e.message || t('common.error')))
+  }, [folderRefreshKey, t])
   const fileInputRef = useRef(null)
   const screenRef = useRef(null)
   const dropZoneRef = useRef(null)
@@ -115,14 +119,16 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
     setState((p) => ({ ...p, status: 'loading' }))
     setSelectedIds(new Set())
     fetchMedia(apiQuery)
-      .then((r) => { if (!active) return; setState({ status: 'success', items: r.items, pagination: r.pagination, warning: r.mode === 'mock' ? r.warning : '' }) })
+      .then((r) => { if (!active) return; setState({ status: 'success', items: r.items, pagination: r.pagination, warning: '' }) })
       .catch((e) => { if (!active) return; setState({ status: 'error', items: [], pagination: null, warning: '', error: e.message }) })
     return () => { active = false }
   }, [apiQuery])
 
   useEffect(() => {
     let active = true
-    fetchMediaStats(apiQuery).then((s) => { if (active) setStats(s) })
+    fetchMediaStats(apiQuery)
+      .then((s) => { if (active) setStats(s) })
+      .catch((e) => { if (active) toast.error(e.message || t('common.error')) })
     return () => { active = false }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiQuery.search, apiQuery.mimeType, apiQuery.status, apiQuery.uploadedFrom, apiQuery.uploadedTo,

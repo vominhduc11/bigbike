@@ -42,13 +42,21 @@ type Props = {
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const [{ slug }, t] = await Promise.all([params, getTranslations("StaticPage")]);
+  const [{ slug }, locale, t] = await Promise.all([
+    params,
+    getLocale(),
+    getTranslations("StaticPage"),
+  ]);
   const meta = POLICY_META_KEYS[slug];
   if (!meta) return {};
+  const backendSlug = POLICY_SLUG_MAP[slug];
+  const pageResult = backendSlug ? await getPageBySlug(backendSlug, locale) : null;
+  const page = pageResult?.data;
   return buildPublicMetadata({
-    title: t(meta.title),
-    description: t(meta.description),
-    canonicalPath: `/chinh-sach/${slug}/`,
+    title: page?.seo?.title ?? page?.title ?? t(meta.title),
+    description: page?.seo?.description ?? t(meta.description),
+    canonicalPath: page?.seo?.canonicalUrl ?? `/chinh-sach/${slug}/`,
+    noIndex: page?.seo?.noIndex ?? false,
   });
 }
 

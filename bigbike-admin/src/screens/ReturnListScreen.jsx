@@ -58,16 +58,18 @@ function ReturnDetailModal({ ret, onClose, onUpdate, canUpdate, navigate }) {
   useEffect(() => {
     fetchReturnDetail(ret.id)
       .then((d) => { if (d) setDetail(d) })
+      .catch((e) => setError(e.message || t('common.error')))
       .finally(() => setLoadingDetail(false))
-  }, [ret.id])
+  }, [ret.id, t])
 
   // When the admin picks REFUNDED, prefill the amount with the remaining refundable
   // amount (the only value the backend will accept — V114 full-refund-only).
-  useEffect(() => {
-    if (newStatus === 'REFUNDED' && refundableAmount > 0 && !refundAmount) {
-      setRefundAmount(String(refundableAmount))
+  function applyStatus(value) {
+    setNewStatus(value)
+    if (value === 'REFUNDED' && refundableAmount > 0) {
+      setRefundAmount((current) => current || String(refundableAmount))
     }
-  }, [newStatus, refundableAmount, refundAmount])
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -296,7 +298,7 @@ function ReturnDetailModal({ ret, onClose, onUpdate, canUpdate, navigate }) {
 
           {/* Update status form */}
           {canUpdate && next.length > 0 && !showUpdateForm && (
-            <Button size="sm" onClick={() => { setShowUpdateForm(true); setNewStatus(next[0]) }}>
+            <Button size="sm" onClick={() => { setShowUpdateForm(true); applyStatus(next[0]) }}>
               {t('returns.updateBtn')}
             </Button>
           )}
@@ -304,7 +306,7 @@ function ReturnDetailModal({ ret, onClose, onUpdate, canUpdate, navigate }) {
             <form onSubmit={handleSubmit} className="flex flex-col gap-2.5 border-t border-border pt-4">
               <div className="form-field">
                 <label className="field-label">{t('returns.formNewStatus')} *</label>
-                <Select value={newStatus} onValueChange={setNewStatus} required><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+                <Select value={newStatus} onValueChange={applyStatus} required><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
                   {next.map((s) => <SelectItem key={s} value={s}>{t(`returns.status.${s}`, { defaultValue: s })}</SelectItem>)}
                 </SelectContent></Select>
               </div>

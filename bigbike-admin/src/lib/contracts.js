@@ -759,21 +759,17 @@ export const DISCOUNT_TYPE_VALUES = ['PERCENT', 'FIXED']
 
 export function normalizeCoupon(input) {
   const s = input && typeof input === 'object' ? input : {}
-  // discountType: backend stores "FIXED" or "PERCENT"; accept legacy "FIXED_AMOUNT" from mock
   const rawType = toTrimmedStringLocal(s.discountType)
-  const discountType = rawType === 'FIXED_AMOUNT' ? 'FIXED' : (DISCOUNT_TYPE_VALUES.includes(rawType) ? rawType : 'FIXED')
+  const discountType = DISCOUNT_TYPE_VALUES.includes(rawType) ? rawType : 'FIXED'
   return {
     id: toTrimmedStringLocal(s.id) || 'unknown-coupon',
     code: toTrimmedStringLocal(s.code) || 'UNKNOWN',
     name: toTrimmedStringLocal(s.name) || '',
     discountType,
-    // backend: `amount`; mock compat: `discountValue`
-    discountValue: toIntegerLocal(s.amount ?? s.discountValue, 0),
-    // backend: `minimumAmount`; mock compat: `minimumOrderAmount`
-    minimumOrderAmount: toIntegerLocal(s.minimumAmount ?? s.minimumOrderAmount, 0),
+    discountValue: toIntegerLocal(s.amount, 0),
+    minimumOrderAmount: toIntegerLocal(s.minimumAmount, 0),
     maximumAmount: s.maximumAmount != null ? toIntegerLocal(s.maximumAmount) : undefined,
-    // backend: `usageLimit`; mock compat: `maxUsage`
-    maxUsage: (s.usageLimit ?? s.maxUsage) != null ? toIntegerLocal(s.usageLimit ?? s.maxUsage) : undefined,
+    maxUsage: s.usageLimit != null ? toIntegerLocal(s.usageLimit) : undefined,
     usageCount: toIntegerLocal(s.usageCount, 0),
     status: COUPON_STATUS_VALUES.includes(s.status) ? s.status : 'INACTIVE',
     channel: ['ALL', 'ONLINE', 'POS'].includes(s.channel) ? s.channel : 'ALL',

@@ -238,7 +238,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
   const state = {
     status: isCreate ? 'success' : isLoading ? 'loading' : isError ? 'error' : 'success',
     item: currentItem,
-    warning: fetchResult?.mode === 'mock' ? (fetchResult?.warning ?? '') : '',
+    warning: '',
     error: fetchError?.message ?? '',
   }
 

@@ -24,7 +24,6 @@
     "noPermission": "Không có quyền",
     "actions": "Thao tác",
     "liveApi": "Live API",
-    "mockFallback": "Mock fallback",
     "logout": "Đăng xuất",
     "dirty": "Có thay đổi chưa lưu",
     "clean": "Chưa có thay đổi",
@@ -115,8 +114,8 @@
     "forgotPasswordNote": "Liên hệ quản trị viên hệ thống để đặt lại mật khẩu.",
     "supportContact": "Hỗ trợ kỹ thuật",
     "connectionLive": "Đang kết nối",
-    "connectionOffline": "Dữ liệu mẫu",
-    "connectionOfflineTooltip": "Đang dùng dữ liệu mẫu — chưa kết nối server thực"
+    "connectionOffline": "Chưa xác nhận kết nối",
+    "connectionOfflineTooltip": "Chưa xác nhận kết nối backend."
   },
   "nav": {
     "dashboard": "Tổng quan",
@@ -190,7 +189,6 @@
     "period90d": "90 ngày",
     "periodLabel": "Khoảng thời gian",
     "loadError": "Không thể tải dữ liệu tổng quan.",
-    "mockWarning": "Đang hiển thị dữ liệu mẫu. Kết nối backend thất bại hoặc chưa được cấu hình.",
     "kpi": {
       "todayRevenue": "Doanh thu hôm nay",
       "todayRevenueHint": "So với cùng giờ hôm qua",
@@ -2666,8 +2664,7 @@
     "noColorAttrs": "Chưa có thuộc tính màu",
     "noColorAttrsDesc": "Các thuộc tính có kind=\"color\" sẽ hiển thị ở đây để quản lý swatch.",
     "loadValuesError": "Không tải được danh sách màu."
-  }
-,
+  },
   "homeHighlights": {
     "eyebrow": "Nội dung",
     "title": "Highlights trang chủ",

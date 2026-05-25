@@ -24,7 +24,6 @@
     "noPermission": "No permission",
     "actions": "Actions",
     "liveApi": "Live API",
-    "mockFallback": "Mock fallback",
     "logout": "Logout",
     "dirty": "Unsaved changes",
     "clean": "No changes",
@@ -115,8 +114,8 @@
     "forgotPasswordNote": "Contact your system administrator to reset your password.",
     "supportContact": "Technical support",
     "connectionLive": "Connected",
-    "connectionOffline": "Demo data",
-    "connectionOfflineTooltip": "Using sample data — not connected to a live server"
+    "connectionOffline": "Connection unknown",
+    "connectionOfflineTooltip": "Backend connection has not been confirmed."
   },
   "nav": {
     "dashboard": "Overview",
@@ -190,7 +189,6 @@
     "period90d": "90 days",
     "periodLabel": "Time range",
     "loadError": "Unable to load dashboard data.",
-    "mockWarning": "Showing mock data. Backend connection failed or not configured.",
     "kpi": {
       "todayRevenue": "Today's Revenue",
       "todayRevenueHint": "vs same time yesterday",
@@ -2666,8 +2664,7 @@
     "noColorAttrs": "No color attributes",
     "noColorAttrsDesc": "Attributes with kind=\"color\" will appear here for swatch management.",
     "loadValuesError": "Could not load color values."
-  }
-,
+  },
   "homeHighlights": {
     "eyebrow": "Content",
     "title": "Home Highlights",
