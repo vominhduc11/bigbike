@@ -371,7 +371,8 @@ const nextConfig: NextConfig = {
         value: [
           "default-src 'self'",
           // Next.js inline scripts (nonces are ideal but require middleware; this is a pragmatic baseline)
-          "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com",
+          "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://www.googletagmanager.com",
+          "worker-src 'self' blob:",
           "style-src 'self' 'unsafe-inline'",
           `img-src 'self' data: blob: https:${MEDIA_ORIGIN ? " " + MEDIA_ORIGIN : ""}`,
           `media-src 'self' blob: https:${MEDIA_ORIGIN ? " " + MEDIA_ORIGIN : ""}`,

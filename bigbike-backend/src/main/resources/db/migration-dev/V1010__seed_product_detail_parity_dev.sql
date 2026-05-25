@@ -102,7 +102,8 @@ from (
         (2, 'ff327-parity-video-3', 'https://youtube.com/shorts/zgTqj7kk7Pk', 'Trải nghiệm đội mũ LS2 FF327 cho touring', 'http://localhost:9000/bigbike-media/wp-uploads/2019/03/mu_bao_hiem_ls2_carbon_ff327_challenger-05.jpg', 'Trải nghiệm LS2 FF327 Challenger Carbon'),
         (3, 'ff327-parity-video-4', 'https://youtube.com/shorts/eW5QmxrfcU4', 'Hướng dẫn chọn size LS2 FF327 Challenger Carbon', 'http://localhost:9000/bigbike-media/wp-uploads/2019/03/mu_bao_hiem_ls2_carbon_ff327_challenger-06.jpg', 'Chọn size LS2 FF327 Challenger Carbon')
 ) as seed(sort_order, video_id, video_url, title, thumbnail_url, thumbnail_alt)
-where not exists (
+where exists (select 1 from products where id = 'wp-prod-6093')
+  and not exists (
     select 1
     from product_videos existing
     where existing.product_id = 'wp-prod-6093'
@@ -131,7 +132,8 @@ from (
         (3, 'Chuẩn an toàn', 'ECE/R22-05', 'Thông số kỹ thuật'),
         (4, 'Kích thước', 'M, L, XL, XXL', 'Thông số kỹ thuật')
 ) as seed(sort_order, name, spec_value, group_name)
-where not exists (
+where exists (select 1 from products where id = 'wp-prod-6093')
+  and not exists (
     select 1
     from product_specifications existing
     where existing.product_id = 'wp-prod-6093'
