@@ -8,11 +8,13 @@ import "./home-news-parity.css";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { FloatingChatLoader } from "@/components/layout/FloatingChatLoader";
+import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { CartProvider } from "@/lib/cart-context";
 import { WishlistProvider } from "@/lib/wishlist-context";
 import { CompareProvider } from "@/lib/compare-context";
 import { CompareBar } from "@/components/catalog/CompareBar";
 import { QueryProvider } from "@/components/providers/QueryProvider";
+import { HeaderUiProvider } from "@/components/layout/HeaderUiContext";
 import { env } from "@/env";
 
 const oswald = Oswald({
@@ -91,19 +93,24 @@ export default async function RootLayout({
         )}
         <NextIntlClientProvider locale={locale} messages={messages}>
           <QueryProvider>
-            <CartProvider>
-              <WishlistProvider>
-                <CompareProvider>
-                  <SiteHeader />
-                  <main className="bb-main">{children}</main>
-                  <SiteFooter />
-                  <CompareBar />
-                  <div className="fixed bottom-[max(50px,env(safe-area-inset-bottom))] right-[max(50px,env(safe-area-inset-right))] z-[var(--bb-z-overlay)] pointer-events-none [&>*]:pointer-events-auto [[data-scroll-locked]_&]:hidden">
-                    <FloatingChatLoader />
-                  </div>
-                </CompareProvider>
-              </WishlistProvider>
-            </CartProvider>
+            <HeaderUiProvider>
+              <CartProvider>
+                <WishlistProvider>
+                  <CompareProvider>
+                    <SiteHeader />
+                    <main className="bb-main pb-16 md:pb-0">{children}</main>
+                    <div className="block md:hidden">
+                      <MobileBottomNav />
+                    </div>
+                    <SiteFooter />
+                    <CompareBar />
+                    <div className="fixed bottom-[max(80px,calc(env(safe-area-inset-bottom)+80px))] md:bottom-[max(50px,env(safe-area-inset-bottom))] right-[max(50px,env(safe-area-inset-right))] z-[var(--bb-z-overlay)] pointer-events-none [&>*]:pointer-events-auto [[data-scroll-locked]_&]:hidden">
+                      <FloatingChatLoader />
+                    </div>
+                  </CompareProvider>
+                </WishlistProvider>
+              </CartProvider>
+            </HeaderUiProvider>
           </QueryProvider>
         </NextIntlClientProvider>
       </body>

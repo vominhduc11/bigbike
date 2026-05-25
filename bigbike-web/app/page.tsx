@@ -7,6 +7,8 @@ import { ExperienceCarousel } from "@/components/home/ExperienceCarousel";
 import { FeaturedProductsCarousel } from "@/components/home/FeaturedProductsCarousel";
 import { HeroSlider } from "@/components/home/HeroSlider";
 import { HomeAnalytics } from "@/components/home/HomeAnalytics";
+import { MobileCategoryGrid } from "@/components/home/MobileCategoryGrid";
+import { MobileTrustSignals } from "@/components/home/MobileTrustSignals";
 import { HomeVideoCarousel } from "@/components/home/HomeVideoCarousel";
 import type {
   Article,
@@ -417,9 +419,18 @@ export default async function HomePage() {
       <h1 className="sr-only">{homeH1}</h1>
       <HeroSlider slides={slides} />
 
-      <HomeCategoryHighlights items={homeHighlights} />
+      {categoriesResult.data.length > 0 && (
+        <div className="block md:hidden">
+          <MobileCategoryGrid categories={categoriesResult.data} />
+        </div>
+      )}
+
+      <div className="hidden md:block">
+        <HomeCategoryHighlights items={homeHighlights} />
+      </div>
 
       {(aboutSubtitle || aboutTitle || aboutMarkup) && (
+        <div className="hidden md:block">
         <div className="about-bigbike">
           <div className="container">
             {(aboutSubtitle || aboutTitle) && (
@@ -435,6 +446,7 @@ export default async function HomePage() {
               />
             ) : null}
           </div>
+        </div>
         </div>
       )}
 
@@ -452,10 +464,12 @@ export default async function HomePage() {
             </div>
             <FeaturedProductsCarousel products={carouselProducts} />
             {categoriesResult.data.length > 0 && (
-              <div className="bb-cat-list mb-[10px]" aria-label="Danh mục sản phẩm">
-                {categoriesResult.data.map((category) => (
-                  <WpCategoryListItem key={category.id} category={category} />
-                ))}
+              <div className="hidden md:block">
+                <div className="bb-cat-list mb-[10px]" aria-label="Danh mục sản phẩm">
+                  {categoriesResult.data.map((category) => (
+                    <WpCategoryListItem key={category.id} category={category} />
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -463,15 +477,17 @@ export default async function HomePage() {
       )}
 
       {carouselProducts.length === 0 && categoriesResult.data.length > 0 && (
-        <section className="bb-products-section" aria-label="Danh mục sản phẩm">
-          <div className="bb-container">
-            <div className="bb-cat-list">
-              {categoriesResult.data.map((category) => (
-                <WpCategoryListItem key={category.id} category={category} />
-              ))}
+        <div className="hidden md:block">
+          <section className="bb-products-section" aria-label="Danh mục sản phẩm">
+            <div className="bb-container">
+              <div className="bb-cat-list">
+                {categoriesResult.data.map((category) => (
+                  <WpCategoryListItem key={category.id} category={category} />
+                ))}
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        </div>
       )}
 
       <PromoBanner
@@ -480,6 +496,10 @@ export default async function HomePage() {
         title={promoTitle}
         offLabel={promoOff}
       />
+
+      <div className="block md:hidden">
+        <MobileTrustSignals />
+      </div>
 
       {expArticles.length > 0 && (
         <section className="bb-experience bb-experience--home" aria-labelledby="home-exp-heading">
