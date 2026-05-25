@@ -1479,6 +1479,27 @@ export async function deleteSlider(sliderId) {
   await requestJson(`/admin/sliders/${sliderId}`, { method: 'DELETE' })
 }
 
+// -- Home Category Highlights -------------------------------------------------------
+
+export async function fetchHomeHighlights() {
+  try {
+    const payload = await requestJson('/admin/home/category-highlights')
+    return withLiveData({ items: Array.isArray(payload?.data) ? payload.data : [] })
+  } catch (error) {
+    const e = normalizeError(error)
+    throw e
+  }
+}
+
+export async function saveHomeHighlights(slots) {
+  assertMutationEnabled()
+  const payload = await requestJson('/admin/home/category-highlights', {
+    method: 'PUT',
+    body: { slots },
+  })
+  return { items: Array.isArray(payload?.data) ? payload.data : [] }
+}
+
 // â”€â”€ Home Videos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function normalizeHomeVideo(input) {

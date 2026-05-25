@@ -67,8 +67,10 @@ public final class PermissionCatalog {
             new Entry("menus.write",        false),
             new Entry("sliders.read",       false),
             new Entry("sliders.write",      false),
-            new Entry("home_videos.read",   false),
-            new Entry("home_videos.write",  false),
+            new Entry("home_videos.read",       false),
+            new Entry("home_videos.write",      false),
+            new Entry("home_highlights.read",   false),
+            new Entry("home_highlights.write",  false),
             new Entry("redirects.read",     false),
             new Entry("redirects.write",    false)
         )),

@@ -40,6 +40,7 @@ public final class AdminRolePermissions {
                     "roles.read", "roles.write",
                     "audit-logs.read",
                     "home_videos.read", "home_videos.write",
+                    "home_highlights.read", "home_highlights.write",
                     "redirects.read", "redirects.write",
                     "pos.read", "pos.write", "pos.price_override", "pos.refund",
                     "receivables.read", "receivables.create", "receivables.record_payment",
@@ -68,7 +69,8 @@ public final class AdminRolePermissions {
                     "content.read", "content.update",
                     "media.read", "media.write",
                     "menus.read", "menus.write",
-                    "sliders.read", "sliders.write"
+                    "sliders.read", "sliders.write",
+                    "home_highlights.read", "home_highlights.write"
             ),
             "AUTHOR", List.of(
                     "content.read", "content.update",

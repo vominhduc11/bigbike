@@ -578,6 +578,16 @@ body {
   font-weight: 700;
 }
 
+/* globals.css overrides the h1-h3 style from brand-tokens.css to use display font.
+   Remaining elements (ul/ol/li/p/blockquote/table/strong) are fully covered by brand-tokens.css. */
+
+/* Suppress &nbsp; spacer paragraphs common in WP-imported descriptions */
+.bb-richtext p:empty { display: none; }
+.bb-richtext p:has(> br:only-child) { display: none; }
+
+/* Marker accent color */
+.bb-richtext li::marker { color: var(--bb-text-brand); }
+
 
 @keyframes skeleton-shimmer {
   from {
@@ -9661,6 +9671,33 @@ body .bb-home .block-title h3 {
   margin: 0;
   font-size: 14px;
   line-height: 18px;
+}
+
+.bb-home .bb-home-news-parity .news-list .news--item-thumbnail a {
+  display: inline;
+  transition: all .3s ease;
+}
+
+.bb-home .bb-home-news-parity .news-list .news--item-thumbnail a img {
+  display: inline;
+  width: auto;
+  max-width: min(100%, 300px);
+  height: auto;
+  vertical-align: middle;
+}
+
+.bb-home .bb-home-news-parity .news--item-desc .news-date p {
+  padding: 0 20px;
+}
+
+.bb-home .bb-home-news-parity .news--item-inside .title-post {
+  margin: 0 0 25px;
+  font-size: 17.5px;
+  line-height: 21px;
+}
+
+.bb-home .bb-home-news-parity .news--item-inside p {
+  line-height: 17.5px;
 }
 
 .bb-home .videos-slide--inner {

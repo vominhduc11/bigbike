@@ -133,6 +133,7 @@
     "menus": "Menu",
     "sliders": "Banner",
     "homeVideos": "Video trang chủ",
+    "homeHighlights": "Highlights trang chủ",
     "shipping": "Vận chuyển",
     "reviews": "Đánh giá",
     "adminUsers": "Quản trị viên",
@@ -2665,5 +2666,17 @@
     "noColorAttrs": "Chưa có thuộc tính màu",
     "noColorAttrsDesc": "Các thuộc tính có kind=\"color\" sẽ hiển thị ở đây để quản lý swatch.",
     "loadValuesError": "Không tải được danh sách màu."
+  }
+,
+  "homeHighlights": {
+    "eyebrow": "Nội dung",
+    "title": "Highlights trang chủ",
+    "description": "Chọn sản phẩm đại diện cho 3 slot hiển thị nổi bật trên trang chủ.",
+    "searchPlaceholder": "Tìm sản phẩm theo tên hoặc slug...",
+    "noResults": "Không tìm thấy sản phẩm",
+    "clearSlot": "Bỏ chọn",
+    "saveButton": "Lưu cấu hình",
+    "savedSuccess": "Đã lưu cấu hình highlights trang chủ.",
+    "noSlotsError": "Phải chọn ít nhất 1 slot."
   }
 }

@@ -60,6 +60,7 @@ public class PublicCacheHeaderFilter extends OncePerRequestFilter {
             "/api/v1/pages",
             "/api/v1/sliders",
             "/api/v1/home-videos",
+            "/api/v1/home/category-highlights",
             "/api/v1/content-categories",
             "/api/v1/settings/public",
     };

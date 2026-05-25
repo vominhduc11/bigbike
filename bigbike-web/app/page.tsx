@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import type { Metadata } from "next";
 import { getLocale } from "next-intl/server";
-import type { Article, Category, HomeSlider, HomeVideo, Product } from "@/lib/contracts/public";
+import type { Article, Category, HomeHighlightItem, HomeSlider, HomeVideo, Product } from "@/lib/contracts/public";
 import { HeroSlider } from "@/components/home/HeroSlider";
 import { BrandCarousel } from "@/components/home/BrandCarousel";
 import { FeaturedProductsCarousel } from "@/components/home/FeaturedProductsCarousel";
@@ -14,6 +14,7 @@ import {
   listArticles,
   listBrands,
   listCategories,
+  listHomeHighlights,
   listHomeSliders,
   listHomeVideos,
   listProducts,
@@ -50,25 +51,6 @@ function toLegacyWpMediaUrl(src: string | null | undefined): string | null {
   if (!src) return null;
   return src.startsWith("/wp-content/") ? `https://bigbike.vn${src}` : src;
 }
-
-const HOME_CATEGORY_HIGHLIGHTS = [
-  {
-    category: "BALÔ ĐEO LƯNG - TÚI ĐEO - TÚI TREO XE",
-    categoryHref: "/balo-deo-lung-tui-deo-tui-treo-xe.html",
-    title: "BALO MOTO PHƯỢT TAICHI RSB278 – CHỐNG NƯỚC",
-    href: "/sp/balo-moto-phuot-chinh-hang-taichi-rs278-chong-nuoc.html",
-    imageSrc:
-      "https://bigbike.vn/wp-content/uploads/2023/03/Balo-di-mo-to-phuot-chinh-hang-Taichi-RSB278-chong-mua-3-300x300.jpg",
-  },
-  {
-    category: "MŨ BẢO HIỂM",
-    categoryHref: "/mu-bao-hiem.html",
-    title: "MŨ BẢO HIỂM LS2 FF800 STORM II ECE22.06",
-    href: "/sp/mu-bao-hiem-ls2-ff800-storm.html",
-    imageSrc:
-      "https://bigbike.vn/wp-content/uploads/2020/07/MU-BAO-HIEM-LS2-FF800-TITANIUM-17-300x300.jpg",
-  },
-];
 
 
 const HOME_FAQS = [
@@ -177,36 +159,45 @@ function WpCategoryListItem({ category }: { category: Category }) {
   );
 }
 
-function HomeCategoryHighlights() {
+function HomeCategoryHighlights({ items }: { items: HomeHighlightItem[] }) {
+  if (items.length === 0) return null;
+
   return (
     <div className="category-list">
       <div className="container">
         <div className="row">
-          {HOME_CATEGORY_HIGHLIGHTS.map((item) => (
-            <div key={item.href} className="col-md-4">
-              <div className="item">
-                <div className="item--thumbnail">
-                  <Link href={item.href}>
-                    <img
-                      src={item.imageSrc}
-                      alt={item.title}
-                      className="-swiper-lazy lazy"
-                      loading="lazy"
-                    />
+          {items.map((item) => {
+            const href = `/sp/${item.productSlug}.html`;
+            const categoryHref = `/danh-muc-san-pham/${item.categorySlug}/`;
+            const imageSrc = toLegacyWpMediaUrl(resolveMediaUrl(item.productImageUrl));
+            return (
+              <div key={item.slot} className="col-md-4">
+                <div className="item">
+                  <div className="item--thumbnail">
+                    <Link href={href}>
+                      {imageSrc && (
+                        <img
+                          src={imageSrc}
+                          alt={item.productName}
+                          className="-swiper-lazy lazy"
+                          loading="lazy"
+                        />
+                      )}
+                    </Link>
+                  </div>
+                  <Link className="item--category" href={categoryHref}>
+                    {item.categoryName}
+                  </Link>
+                  <h3 className="item--title">
+                    <Link href={href}>{item.productName}</Link>
+                  </h3>
+                  <Link className="item--btn" href={href}>
+                    Mua ngay <i className="fal fa-chevron-right" aria-hidden="true" />
                   </Link>
                 </div>
-                <Link className="item--category" href={item.categoryHref}>
-                  {item.category}
-                </Link>
-                <h3 className="item--title">
-                  <Link href={item.href}>{item.title}</Link>
-                </h3>
-                <Link className="item--btn" href={item.href}>
-                  Mua ngay <i className="fal fa-chevron-right" aria-hidden="true" />
-                </Link>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
@@ -307,6 +298,7 @@ export default async function HomePage() {
     settingsResult,
     carouselProductsResult,
     homeVideosResult,
+    homeHighlightsResult,
   ] = await Promise.all([
     listHomeSliders(),
     listCategories({ page: 1, size: 100, sort: "sortOrder:asc", showOnHomepage: true }),
@@ -322,9 +314,11 @@ export default async function HomePage() {
       lang: locale,
     }),
     listHomeVideos(),
+    listHomeHighlights(),
   ]);
 
   const carouselProducts = carouselProductsResult.data;
+  const homeHighlights = homeHighlightsResult.data ?? [];
   const settings = settingsResult.data ?? [];
   const hotline = findSetting(settings, "hotline") || findSetting(settings, "phone");
   const address = findSetting(settings, "address");
@@ -377,7 +371,7 @@ export default async function HomePage() {
       <h1 className="sr-only">{homeH1}</h1>
       <HeroSlider slides={slides} />
 
-      <HomeCategoryHighlights />
+      <HomeCategoryHighlights items={homeHighlights} />
 
       <div className="about-bigbike">
         <div className="container">
@@ -462,7 +456,7 @@ export default async function HomePage() {
       )}
 
       {newsArticles.length > 0 && (
-        <div className="news pt-60">
+        <div className="news pt-60 bb-home-news-parity">
           <div className="container">
             <div className="block-title text-center pb-40">
               <p className="sub-title">TIN TỨC MỚI UPDATE</p>

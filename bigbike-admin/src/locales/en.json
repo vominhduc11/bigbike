@@ -133,6 +133,7 @@
     "menus": "Menus",
     "sliders": "Banners",
     "homeVideos": "Home Videos",
+    "homeHighlights": "Home Highlights",
     "shipping": "Shipping",
     "reviews": "Reviews",
     "adminUsers": "Admin Users",
@@ -2665,5 +2666,17 @@
     "noColorAttrs": "No color attributes",
     "noColorAttrsDesc": "Attributes with kind=\"color\" will appear here for swatch management.",
     "loadValuesError": "Could not load color values."
+  }
+,
+  "homeHighlights": {
+    "eyebrow": "Content",
+    "title": "Home Highlights",
+    "description": "Select a representative product for each of the 3 featured slots on the homepage.",
+    "searchPlaceholder": "Search products by name or slug...",
+    "noResults": "No products found",
+    "clearSlot": "Clear",
+    "saveButton": "Save configuration",
+    "savedSuccess": "Home highlights configuration saved.",
+    "noSlotsError": "At least one slot must be selected."
   }
 }
