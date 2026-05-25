@@ -107,8 +107,8 @@ function stripWpShortcodes(html: string): string {
 const ALLOWED_TAGS = [
   "a", "b", "blockquote", "br", "caption", "cite", "code", "div", "em",
   "figcaption", "figure", "h1", "h2", "h3", "h4", "h5", "h6", "hr", "i",
-  "iframe", "img", "li", "ol", "p", "pre", "small", "span", "strong",
-  "table", "tbody", "td", "tfoot", "th", "thead", "tr", "u", "ul",
+  "iframe", "img", "li", "ol", "p", "pre", "small", "source", "span", "strong",
+  "table", "tbody", "td", "tfoot", "th", "thead", "tr", "u", "ul", "video",
 ];
 
 // DOMPurify applies ALLOWED_ATTR globally (not per-tag); each attribute below
@@ -120,6 +120,8 @@ const ALLOWED_ATTR = [
   "allow", "allowfullscreen", "loading", "src", "data-src",
   "alt", "width", "height",
   "colspan", "rowspan", "scope",
+  "controls", "controlslist", "disablepictureinpicture", "muted", "playsinline",
+  "poster", "preload", "type",
 ];
 
 const ALLOWED_IFRAME_HOSTS = new Set([
@@ -153,7 +155,7 @@ function registerHooks(): void {
     const src = el.getAttribute("src") ?? "";
     let allowed = false;
     try {
-      allowed = ALLOWED_IFRAME_HOSTS.has(new URL(src).hostname.toLowerCase());
+      allowed = ALLOWED_IFRAME_HOSTS.has(new URL(src, "https://bigbike.vn").hostname.toLowerCase());
     } catch {
       allowed = false;
     }

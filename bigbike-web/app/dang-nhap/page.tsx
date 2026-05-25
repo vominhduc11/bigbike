@@ -1,6 +1,14 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
-import { AuthTabs } from "./AuthTabs";
+import { readSingleSearchParam } from "@/lib/utils/query";
+import { isSafeReturnTo } from "@/lib/utils/auth";
+import { toAccountPath } from "@/lib/utils/routes";
+import { LoginForm } from "./LoginForm";
+
+type LoginPageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
 
 export const metadata: Metadata = buildPublicMetadata({
   title: "Đăng nhập",
@@ -9,6 +17,27 @@ export const metadata: Metadata = buildPublicMetadata({
   noIndex: true,
 });
 
-export default function LoginPage() {
-  return <AuthTabs defaultTab="login" />;
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const params = await searchParams;
+  const rawReturnTo = readSingleSearchParam(params.tiep) ?? "";
+  const returnTo = isSafeReturnTo(rawReturnTo) ? rawReturnTo : toAccountPath();
+
+  return (
+    <section className="bb-page bb-page--auth">
+      <div className="bb-container">
+        <div className="bb-auth-wrap">
+          <div className="mb-5">
+            <h1 className="mb-2 text-base font-semibold normal-case">Đăng nhập</h1>
+            <p className="m-0 text-sm text-foreground">
+              Đăng ký thành viên mới tại{" "}
+              <Link href="/dang-ky/" className="bb-link font-normal">
+                đây
+              </Link>
+            </p>
+          </div>
+          <LoginForm returnTo={returnTo} />
+        </div>
+      </div>
+    </section>
+  );
 }

@@ -1,0 +1,201 @@
+[
+  {
+    "route": "/dang-nhap/",
+    "viewport": 375,
+    "status": 200,
+    "finalUrl": "http://localhost:3001/dang-nhap/",
+    "title": "Đăng nhập | BigBike",
+    "screenshot": "E:\\Project\\bigbike\\.artifacts\\auth-account-playwright\\375-dang-nhap.png",
+    "failed": null,
+    "errors": [
+      "Access to fetch at 'http://localhost:8080/api/v1/cart' from origin 'http://localhost:3001' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+      "Failed to load resource: net::ERR_FAILED"
+    ]
+  },
+  {
+    "route": "/dang-ky/",
+    "viewport": 375,
+    "status": 200,
+    "finalUrl": "http://localhost:3001/dang-ky/",
+    "title": "Đăng ký tài khoản | BigBike",
+    "screenshot": "E:\\Project\\bigbike\\.artifacts\\auth-account-playwright\\375-dang-ky.png",
+    "failed": null,
+    "errors": [
+      "Access to fetch at 'http://localhost:8080/api/v1/cart' from origin 'http://localhost:3001' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+      "Failed to load resource: net::ERR_FAILED"
+    ]
+  },
+  {
+    "route": "/quen-mat-khau/",
+    "viewport": 375,
+    "status": 200,
+    "finalUrl": "http://localhost:3001/quen-mat-khau/",
+    "title": "Quên mật khẩu | BigBike",
+    "screenshot": "E:\\Project\\bigbike\\.artifacts\\auth-account-playwright\\375-quen-mat-khau.png",
+    "failed": null,
+    "errors": [
+      "Access to fetch at 'http://localhost:8080/api/v1/cart' from origin 'http://localhost:3001' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+      "Failed to load resource: net::ERR_FAILED"
+    ]
+  },
+  {
+    "route": "/quen-mat-khau/?token=test-token",
+    "viewport": 375,
+    "status": 200,
+    "finalUrl": "http://localhost:3001/quen-mat-khau/?token=test-token",
+    "title": "Đặt lại mật khẩu | BigBike",
+    "screenshot": "E:\\Project\\bigbike\\.artifacts\\auth-account-playwright\\375-quen-mat-khau_token_test-token.png",
+    "failed": null,
+    "errors": [
+      "Access to fetch at 'http://localhost:8080/api/v1/cart' from origin 'http://localhost:3001' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+      "Failed to load resource: net::ERR_FAILED"
+    ]
+  },
+  {
+    "route": "/xac-nhan-email/",
+    "viewport": 375,
+    "status": 200,
+    "finalUrl": "http://localhost:3001/xac-nhan-email/",
+    "title": "BigBike - Đồ Bảo Hộ Biker",
+    "screenshot": "E:\\Project\\bigbike\\.artifacts\\auth-account-playwright\\375-xac-nhan-email.png",
+    "failed": null,
+    "errors": [
+      "Access to fetch at 'http://localhost:8080/api/v1/cart' from origin 'http://localhost:3001' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+      "Failed to load resource: net::ERR_FAILED"
+    ]
+  },
+  {
+    "route": "/xac-nhan-email/?token=test-token",
+    "viewport": 375,
+    "status": 200,
+    "finalUrl": "http://localhost:3001/xac-nhan-email/?token=test-token",
+    "title": "BigBike - Đồ Bảo Hộ Biker",
+    "screenshot": "E:\\Project\\bigbike\\.artifacts\\auth-account-playwright\\375-xac-nhan-email_token_test-token.png",
+    "failed": null,
+    "errors": [
+      "Access to fetch at 'http://localhost:8080/api/v1/cart' from origin 'http://localhost:3001' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+      "Failed to load resource: net::ERR_FAILED",
+      "Access to fetch at 'http://localhost:8080/api/v1/customer/auth/verify-email?token=test-token' from origin 'http://localhost:3001' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+      "Failed to load resource: net::ERR_FAILED"
+    ]
+  },
+  {
+    "route": "/dang-nhap/",
+    "viewport": 1280,
+    "status": 200,
+    "finalUrl": "http://localhost:3001/dang-nhap/",
+    "title": "Đăng nhập | BigBike",
+    "screenshot": "E:\\Project\\bigbike\\.artifacts\\auth-account-playwright\\1280-dang-nhap.png",
+    "failed": null,
+    "errors": [
+      "Access to fetch at 'http://localhost:8080/api/v1/cart' from origin 'http://localhost:3001' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+      "Failed to load resource: net::ERR_FAILED"
+    ]
+  },
+  {
+    "route": "/dang-ky/",
+    "viewport": 1280,
+    "status": 200,
+    "finalUrl": "http://localhost:3001/dang-ky/",
+    "title": "Đăng ký tài khoản | BigBike",
+    "screenshot": "E:\\Project\\bigbike\\.artifacts\\auth-account-playwright\\1280-dang-ky.png",
+    "failed": null,
+    "errors": [
+      "Access to fetch at 'http://localhost:8080/api/v1/cart' from origin 'http://localhost:3001' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+      "Failed to load resource: net::ERR_FAILED"
+    ]
+  },
+  {
+    "route": "/quen-mat-khau/",
+    "viewport": 1280,
+    "status": 200,
+    "finalUrl": "http://localhost:3001/quen-mat-khau/",
+    "title": "Quên mật khẩu | BigBike",
+    "screenshot": "E:\\Project\\bigbike\\.artifacts\\auth-account-playwright\\1280-quen-mat-khau.png",
+    "failed": null,
+    "errors": [
+      "Access to fetch at 'http://localhost:8080/api/v1/cart' from origin 'http://localhost:3001' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+      "Failed to load resource: net::ERR_FAILED"
+    ]
+  },
+  {
+    "route": "/quen-mat-khau/?token=test-token",
+    "viewport": 1280,
+    "status": 200,
+    "finalUrl": "http://localhost:3001/quen-mat-khau/?token=test-token",
+    "title": "Đặt lại mật khẩu | BigBike",
+    "screenshot": "E:\\Project\\bigbike\\.artifacts\\auth-account-playwright\\1280-quen-mat-khau_token_test-token.png",
+    "failed": null,
+    "errors": [
+      "Access to fetch at 'http://localhost:8080/api/v1/cart' from origin 'http://localhost:3001' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+      "Failed to load resource: net::ERR_FAILED"
+    ]
+  },
+  {
+    "route": "/xac-nhan-email/",
+    "viewport": 1280,
+    "status": 200,
+    "finalUrl": "http://localhost:3001/xac-nhan-email/",
+    "title": "BigBike - Đồ Bảo Hộ Biker",
+    "screenshot": "E:\\Project\\bigbike\\.artifacts\\auth-account-playwright\\1280-xac-nhan-email.png",
+    "failed": null,
+    "errors": [
+      "Access to fetch at 'http://localhost:8080/api/v1/cart' from origin 'http://localhost:3001' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+      "Failed to load resource: net::ERR_FAILED"
+    ]
+  },
+  {
+    "route": "/xac-nhan-email/?token=test-token",
+    "viewport": 1280,
+    "status": 200,
+    "finalUrl": "http://localhost:3001/xac-nhan-email/?token=test-token",
+    "title": "BigBike - Đồ Bảo Hộ Biker",
+    "screenshot": "E:\\Project\\bigbike\\.artifacts\\auth-account-playwright\\1280-xac-nhan-email_token_test-token.png",
+    "failed": null,
+    "errors": [
+      "Access to fetch at 'http://localhost:8080/api/v1/cart' from origin 'http://localhost:3001' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+      "Failed to load resource: net::ERR_FAILED",
+      "Access to fetch at 'http://localhost:8080/api/v1/customer/auth/verify-email?token=test-token' from origin 'http://localhost:3001' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+      "Failed to load resource: net::ERR_FAILED"
+    ]
+  },
+  {
+    "route": "/tai-khoan/",
+    "viewport": 1280,
+    "status": 200,
+    "finalUrl": "http://localhost:3001/dang-nhap/?tiep=%2Ftai-khoan%2F",
+    "title": "Đăng nhập | BigBike",
+    "screenshot": null,
+    "failed": null,
+    "errors": [
+      "Access to fetch at 'http://localhost:8080/api/v1/cart' from origin 'http://localhost:3001' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+      "Failed to load resource: net::ERR_FAILED"
+    ]
+  },
+  {
+    "route": "/tai-khoan/don-hang/",
+    "viewport": 1280,
+    "status": 200,
+    "finalUrl": "http://localhost:3001/dang-nhap/?tiep=%2Ftai-khoan%2Fdon-hang%2F",
+    "title": "Đăng nhập | BigBike",
+    "screenshot": null,
+    "failed": null,
+    "errors": [
+      "Access to fetch at 'http://localhost:8080/api/v1/cart' from origin 'http://localhost:3001' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+      "Failed to load resource: net::ERR_FAILED"
+    ]
+  },
+  {
+    "route": "/tai-khoan/don-hang/test-order/",
+    "viewport": 1280,
+    "status": 200,
+    "finalUrl": "http://localhost:3001/dang-nhap/?tiep=%2Ftai-khoan%2Fdon-hang%2Ftest-order%2F",
+    "title": "Đăng nhập | BigBike",
+    "screenshot": null,
+    "failed": null,
+    "errors": [
+      "Access to fetch at 'http://localhost:8080/api/v1/cart' from origin 'http://localhost:3001' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+      "Failed to load resource: net::ERR_FAILED"
+    ]
+  }
+]

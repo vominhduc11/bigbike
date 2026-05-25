@@ -9,6 +9,9 @@ type WpArticleImageProps = {
   alt: string;
 };
 
+const TRANSPARENT_THUMBNAIL =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='169' viewBox='0 0 300 169'%3E%3C/svg%3E";
+
 export function WpArticleImage({ src, fallbackSrc, alt }: WpArticleImageProps) {
   const imageRef = useRef<HTMLImageElement>(null);
   const [currentSrc, setCurrentSrc] = useState(src);
@@ -46,9 +49,13 @@ export function WpArticleImage({ src, fallbackSrc, alt }: WpArticleImageProps) {
 
   if (!currentSrc || failed) {
     return (
-      <span className="bb-news-img bb-news-img-placeholder" aria-label={alt}>
-        <span className="bb-news-img-placeholder-mark">BigBike</span>
-      </span>
+      <img
+        src={TRANSPARENT_THUMBNAIL}
+        alt={alt}
+        className="lazy bb-news-img-placeholder"
+        loading="lazy"
+        decoding="async"
+      />
     );
   }
 
@@ -56,9 +63,10 @@ export function WpArticleImage({ src, fallbackSrc, alt }: WpArticleImageProps) {
     <img
       ref={imageRef}
       src={currentSrc}
+      data-src={currentSrc}
       data-fallback-src={fallbackSrc ?? undefined}
       alt={alt}
-      className="bb-news-img"
+      className="lazy"
       loading="lazy"
       decoding="async"
       onError={() => {

@@ -1,8 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState, type ReactNode } from "react";
-import { SlidersHorizontal } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { CatalogFilters, type CatalogFiltersProps } from "@/components/catalog/CatalogFilters";
 import { CatalogSortSelect } from "@/components/catalog/CatalogSortSelect";
 
@@ -20,12 +18,34 @@ export function ProductArchiveLayout({
   children,
 }: ProductArchiveLayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const t = useTranslations("Catalog");
+  const [mobileIn, setMobileIn] = useState(false);
+  const mobileTimer = useRef<number | null>(null);
 
   useEffect(() => {
     document.documentElement.classList.toggle("overlay", mobileOpen);
-    return () => document.documentElement.classList.remove("overlay");
+    return () => {
+      document.documentElement.classList.remove("overlay");
+      if (mobileTimer.current != null) {
+        window.clearTimeout(mobileTimer.current);
+      }
+    };
   }, [mobileOpen]);
+
+  function openMobileFilters() {
+    if (mobileTimer.current != null) {
+      window.clearTimeout(mobileTimer.current);
+    }
+    setMobileOpen(true);
+    window.requestAnimationFrame(() => setMobileIn(true));
+  }
+
+  function closeMobileFilters() {
+    setMobileIn(false);
+    if (mobileTimer.current != null) {
+      window.clearTimeout(mobileTimer.current);
+    }
+    mobileTimer.current = window.setTimeout(() => setMobileOpen(false), 300);
+  }
 
   return (
     <div id="main-content" className="bb-archive-main">
@@ -35,7 +55,8 @@ export function ProductArchiveLayout({
             <CatalogFilters
               {...filters}
               mobileOpen={mobileOpen}
-              onMobileClose={() => setMobileOpen(false)}
+              mobileIn={mobileIn}
+              onMobileClose={closeMobileFilters}
             />
           </div>
 
@@ -46,28 +67,21 @@ export function ProductArchiveLayout({
                   <div className="row align-items-center bb-wp-row">
                     <div className="col-sm-6 bb-wp-col-sm-6 bb-archive-result-col">
                       <div className="result">
-                        {totalItems != null ? (
-                          <p>
-                            {t.rich("totalProductsCount", {
-                              count: totalItems,
-                              strong: (chunks) => <strong>{chunks}</strong>,
-                            })}
-                          </p>
-                        ) : null}
+                        {totalItems != null ? `${totalItems} Sản phẩm` : null}
                       </div>
                     </div>
 
                     <div className="col-sm-6 bb-wp-col-sm-6 bb-archive-sort-col">
-                      <Suspense fallback={<span className="bb-skel bb-archive-sort-skel" aria-hidden="true" />}>
+                      <Suspense fallback={null}>
                         <CatalogSortSelect current={sortCurrent} />
                       </Suspense>
                     </div>
 
                     <div className="col-sm-6 filter-mobile-wrapper bb-wp-col-sm-6">
-                      <button type="button" className="filter-mobile" onClick={() => setMobileOpen(true)}>
+                      <button type="button" className="filter-mobile" onClick={openMobileFilters}>
                         <p>
-                          {t("filtersHeading").toUpperCase()}
-                          <SlidersHorizontal size={16} strokeWidth={1.8} aria-hidden="true" />
+                          BỘ LỌC
+                          <i className="far fa-sliders-v" aria-hidden="true" />
                         </p>
                       </button>
                     </div>

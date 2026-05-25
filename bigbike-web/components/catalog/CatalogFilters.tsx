@@ -1,11 +1,14 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element */
+
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import type { Brand, CatalogFacets, Category, HomeSlider } from "@/lib/contracts/public";
+import type { Brand, CatalogFacets, Category, HomeSlider, ImageAsset } from "@/lib/contracts/public";
+import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { buildQueryString } from "@/lib/utils/query";
-import { toCategoryPath, toProductListPath } from "@/lib/utils/routes";
+import { toCategoryPath } from "@/lib/utils/routes";
 import { cn } from "@/lib/utils";
 
 type FilterState = {
@@ -26,7 +29,9 @@ export type CatalogFiltersProps = {
   resetHref: string;
   hiddenParams?: Record<string, string | undefined>;
   banner?: HomeSlider | null;
+  showBrandLabels?: boolean;
   mobileOpen?: boolean;
+  mobileIn?: boolean;
   onMobileClose?: () => void;
 };
 
@@ -44,36 +49,26 @@ const COLOR_FALLBACK: { key: string; label: string }[] = [
 ];
 
 const PRICE_FALLBACK: { key: string; label: string; min?: number; max?: number }[] = [
-  { key: "0-1tr", label: "0đ - 1.000.000đ", min: 0, max: 1_000_000 },
-  { key: "1-2tr", label: "1.000.000đ - 2.000.000đ", min: 1_000_000, max: 2_000_000 },
-  { key: "2-3tr", label: "2.000.000đ - 3.000.000đ", min: 2_000_000, max: 3_000_000 },
-  { key: "3-4tr", label: "3.000.000đ - 4.000.000đ", min: 3_000_000, max: 4_000_000 },
-  { key: "4-5tr", label: "4.000.000đ - 5.000.000đ", min: 4_000_000, max: 5_000_000 },
-  { key: "5-6tr", label: "5.000.000đ - 6.000.000đ", min: 5_000_000, max: 6_000_000 },
-  { key: "6-7tr", label: "6.000.000đ - 7.000.000đ", min: 6_000_000, max: 7_000_000 },
-  { key: "7-8tr", label: "7.000.000đ - 8.000.000đ", min: 7_000_000, max: 8_000_000 },
-  { key: "tren-9tr", label: "Trên 9.000.000đ", min: 9_000_000, max: undefined },
+  { key: "0-500k", label: "0 - 500.000 VND", min: 0, max: 500_000 },
+  { key: "500k-1tr", label: "500.000 - 1.000.000 VND", min: 500_000, max: 1_000_000 },
+  { key: "1-2tr", label: "1.000.000 - 2.000.000 VND", min: 1_000_000, max: 2_000_000 },
+  { key: "2-3tr", label: "2.000.000 - 3.000.000 VND", min: 2_000_000, max: 3_000_000 },
+  { key: "3-5tr", label: "3.000.000 - 5.000.000 VND", min: 3_000_000, max: 5_000_000 },
+  { key: "5-10tr", label: "5.000.000 - 10.000.000 VND", min: 5_000_000, max: 10_000_000 },
+  { key: "tren-10tr", label: "Trên 10.000.000 VND", min: 10_000_000, max: undefined },
 ];
 
-const CATEGORY_ICON_SLUGS = new Set([
-  "balo-deo-lung-tui-deo-tui-treo-xe",
-  "gang-tay",
-  "giap-bao-ho-tay-chan-dai-lung-phu-kien-giap",
-  "giay-bao-ho",
-  "non-bao-hiem-moto",
-  "phu-kien-di-mua",
-  "phu-kien-khac",
-  "pinlock-kinh-chong-suong-mu",
-  "quan-ao-bao-ho-moto",
-  "san-pham-khuyen-mai",
-  "san-pham-ve-sinh-do-bao-ho-cham-soc-xe",
-  "tai-nghe-bluetooth-mu-bao-hiem",
-  "phu-kien-do-lot",
-]);
-
-function FilterSection({ title, children }: { title: string; children: ReactNode }) {
+function FilterSection({
+  title,
+  children,
+  className,
+}: {
+  title: string;
+  children: ReactNode;
+  className?: string;
+}) {
   return (
-    <div className="widget">
+    <div className={cn("widget", className)}>
       <div className="widget--title">
         <h3>{title}</h3>
       </div>
@@ -100,16 +95,16 @@ function FilterList({
   count: number;
   className?: string;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const [revealed, setRevealed] = useState(false);
   const shouldClamp = count > 10;
 
   return (
     <>
-      <ul className={cn(className, shouldClamp && !expanded && "visible")}>{children}</ul>
-      {shouldClamp && (
-        <button type="button" className="show-more" onClick={() => setExpanded((v) => !v)}>
-          {expanded ? "Thu gọn" : "Xem thêm"}
-          <span aria-hidden="true">{expanded ? " -" : " +"}</span>
+      <ul className={cn(className, shouldClamp && !revealed && "visible")}>{children}</ul>
+      {shouldClamp && !revealed && (
+        <button type="button" className="show-more" onClick={() => setRevealed(true)}>
+          Xem thêm
+          <i className="far fa-plus" aria-hidden="true" />
         </button>
       )}
     </>
@@ -123,11 +118,21 @@ export function CatalogFilters({
   current,
   resetHref,
   hiddenParams = {},
+  showBrandLabels = false,
   mobileOpen = false,
+  mobileIn = false,
   onMobileClose,
 }: CatalogFiltersProps) {
   const t = useTranslations("Catalog");
   const visibleCategories = categories.filter((c) => c.isVisible);
+  const activeCategory = visibleCategories.find(
+    (cat) => toCategoryPath(cat.slug) === resetHref || current.category === cat.slug,
+  );
+  const activeCategoryParentId = activeCategory?.parentId ?? activeCategory?.id ?? null;
+  const rootCategories = visibleCategories.filter((cat) => !cat.parentId);
+  const categoryRowCount =
+    rootCategories.length +
+    (activeCategoryParentId ? visibleCategories.filter((cat) => cat.parentId === activeCategoryParentId).length : 0);
 
   function queryHref(override: Record<string, string | number | undefined>): string {
     const params: Record<string, string | number | undefined> = {
@@ -147,11 +152,10 @@ export function CatalogFilters({
   const facetCount = (buckets: { key: string; count: number }[] | undefined, key: string) =>
     buckets?.find((b) => b.key === key)?.count;
 
-  const allProductsHref = toProductListPath();
-  const brandRows: { key: string; label: string; count?: number }[] =
+  const brandRows: { key: string; label: string; image?: ImageAsset | null; count?: number }[] =
     facets?.brands && facets.brands.length > 0
       ? facets.brands
-      : brands.map((b) => ({ key: b.slug, label: b.name }));
+      : brands.map((b) => ({ key: b.slug, label: b.name, image: b.logo ?? null }));
 
   const colorRows: { key: string; label: string; count?: number }[] =
     facets?.colors && facets.colors.length > 0 ? facets.colors : COLOR_FALLBACK;
@@ -168,45 +172,67 @@ export function CatalogFilters({
       : PRICE_FALLBACK.map((b) => ({ ...b, count: undefined as number | undefined }));
 
   return (
-    <aside className={cn("sidebar-wrap-product bb-archive-sidebar", mobileOpen && "active in")}>
+    <aside className={cn("sidebar-wrap-product bb-archive-sidebar", mobileOpen && "active", mobileIn && "in")}>
       <div className="wrapper-product">
         <div className="mobile-sidebar-title">
-          <p>{t("filtersHeading").toUpperCase()}</p>
+          <p>BỘ LỌC</p>
           <button type="button" className="close-btn" onClick={onMobileClose} aria-label={t("filterToggleCollapse")}>
             ×
           </button>
         </div>
 
         <div className="wrapper">
-          {visibleCategories.length > 0 && (
-            <FilterSection title={t("filterCategory")}>
-              <ul className="product-categories">
-                <li className={cn(resetHref === allProductsHref && !current.category && "current-cat active")}>
-                  <Link href={allProductsHref}>{t("allProducts")}</Link>
-                </li>
-                {visibleCategories.map((cat) => {
+          {rootCategories.length > 0 && (
+            <FilterSection title="Danh mục sản phẩm">
+              <FilterList className="product-categories" count={categoryRowCount}>
+                {rootCategories.map((cat) => {
                   const href = toCategoryPath(cat.slug);
                   const active = href === resetHref || current.category === cat.slug;
+                  const children = activeCategoryParentId === cat.id
+                    ? visibleCategories.filter((child) => child.parentId === cat.id)
+                    : [];
                   return (
                     <li
                       key={cat.id}
                       className={cn(
+                        "cat-item",
                         cat.slug,
-                        CATEGORY_ICON_SLUGS.has(cat.slug) && "bb-category-icon",
+                        visibleCategories.some((child) => child.parentId === cat.id) && "cat-parent",
                         active && "current-cat active",
+                        !active && activeCategoryParentId === cat.id && "current-cat-parent",
                       )}
                     >
                       <Link href={href}>{cat.name}</Link>
                       <Count value={facetCount(facets?.categories, cat.slug)} />
+                      {children.length > 0 ? (
+                        <ul className="children">
+                          {children.map((child) => {
+                            const childHref = toCategoryPath(child.slug);
+                            const childActive = childHref === resetHref || current.category === child.slug;
+                            return (
+                              <li
+                                key={child.id}
+                                className={cn("cat-item", child.slug, childActive && "current-cat active")}
+                              >
+                                <Link href={childHref}>{child.name}</Link>
+                                <Count value={facetCount(facets?.categories, child.slug)} />
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      ) : null}
                     </li>
                   );
                 })}
-              </ul>
+              </FilterList>
             </FilterSection>
           )}
 
-          <FilterSection title={t("filterPrice")}>
-            <FilterList className="woocommerce-widget-layered-nav-list" count={priceRows.length}>
+          <FilterSection title="Giá">
+            <FilterList className="woocommerce-widget-layered-nav-list" count={priceRows.length + 1}>
+              <li className={cn(current.minPrice == null && current.maxPrice == null && "chosen active")}>
+                <Link href={queryHref({ min_price: undefined, max_price: undefined })}>Tất cả</Link>
+              </li>
               {priceRows.map((band) => {
                 const active =
                   (current.minPrice ?? undefined) === band.min &&
@@ -225,19 +251,31 @@ export function CatalogFilters({
           </FilterSection>
 
           {brandRows.length > 0 && (
-            <FilterSection title={t("filterBrand")}>
-              <FilterList className="woocommerce-widget-layered-nav-list" count={brandRows.length + 1}>
-                <li className={cn(!current.brand && "chosen active")}>
-                  <Link href={queryHref({ "pwb-brand": undefined })}>{t("allBrands")}</Link>
-                </li>
+            <FilterSection title="Thương Hiệu" className="widget_filter_by_brand">
+              <FilterList className="woocommerce-widget-layered-nav-list" count={brandRows.length}>
                 {brandRows.map((brand) => {
                   const active = current.brand === brand.key;
                   const href = active
                     ? queryHref({ "pwb-brand": undefined })
                     : queryHref({ "pwb-brand": brand.key });
+                  const imageSrc = brand.image?.url?.trim()
+                    ? resolveMediaUrl(brand.image.url.trim())
+                    : null;
                   return (
                     <li key={brand.key} className={cn(active && "chosen active")}>
-                      <Link href={href}>{brand.label}</Link>
+                      <Link href={href}>
+                        {imageSrc ? (
+                          <img
+                            src={imageSrc}
+                            alt={safeText(brand.image?.alt, brand.label)}
+                            width={92}
+                            loading="lazy"
+                          />
+                        ) : null}
+                        {showBrandLabels || !imageSrc ? (
+                          <span className="bb-brand-filter-label">{brand.label}</span>
+                        ) : null}
+                      </Link>
                       <Count value={brand.count} />
                     </li>
                   );
@@ -246,11 +284,8 @@ export function CatalogFilters({
             </FilterSection>
           )}
 
-          <FilterSection title={t("filterColor")}>
-            <FilterList className="woocommerce-widget-layered-nav-list" count={colorRows.length + 1}>
-              <li className={cn(!current.color && "chosen active")}>
-                <Link href={queryHref({ filter_color: undefined })}>{t("allColors")}</Link>
-              </li>
+          <FilterSection title="Màu sắc">
+            <FilterList className="woocommerce-widget-layered-nav-list" count={colorRows.length}>
               {colorRows.map((color) => {
                 const active = current.color === color.key;
                 const href = active

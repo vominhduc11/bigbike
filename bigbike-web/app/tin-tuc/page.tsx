@@ -27,12 +27,13 @@ const BIGBIKE_UPLOADS_BASE = "https://bigbike.vn/wp-content/uploads/";
 const LEGACY_CDN_PREFIX = "https://cdn.bigbike.vn/uploads/";
 const WP_UPLOADS_PATH = "/wp-content/uploads/";
 const MINIO_UPLOADS_SUBPATH = "/wp-uploads/";
+const WP_EXCERPT_WORDS = 20;
 
 const NEWS_INTRO =
-  "Bên cạnh việc mang đến khách hàng những dòng mũ bảo hiểm chất lượng, BigBike còn thường xuyên cập nhật các thông tin hữu ích về xe máy, mũ bảo hiểm, phụ kiện và kinh nghiệm lái xe an toàn.";
+  "Bên cạnh việc mang đến khách hàng các sản phẩm phượt moto cao cấp chính hãng, Bigbike mong muốn chia sẻ các thông tin chi tiết cũng như các bí quyết lựa chọn quần áo bảo hộ, mũ bảo hiểm, găng tay, giày bảo hộ và các phụ kiện phượt moto khác trên trang TIN TỨC của chúng tôi. Ngoài ra, các bài đánh giá và xếp hạng sản phẩm bảo hộ phượt moto uy tín, chất lượng và các xu hướng mới nhất trên thị trường cũng luôn được cập nhật thường xuyên.";
 
 const NEWS_OUTRO =
-  "Qua những thông tin được BigBike chia sẻ, hy vọng khách hàng có thêm kiến thức để lựa chọn sản phẩm phù hợp và sử dụng xe an toàn hơn mỗi ngày. Xin chân thành cảm ơn quý khách đã theo dõi.";
+  "Qua những thông tin và các bài viết được chia sẻ, Bigbike hy vọng các anh em biker sẽ cập nhật thêm nhiều thông tin bổ ích và có thể chọn lựa sản phẩm bảo hộ phượt moto phù hợp cho mình. Tuy nhiên, các sản phẩm bảo hộ phượt moto là những mặt hàng đòi hỏi người mua phải cân nhắc trên nhiều khía cạnh như kích cỡ, chất liệu và thiết kế. Chính vì thế, Bigbike khuyên rằng khách hàng nên đến trực tiếp cửa hàng để được tư vấn, hỗ trợ thêm về thông tin các sản phẩm và các dịch vụ tại Bigbike. Xin chân thành cảm ơn sự tín nhiệm của khách hàng dành cho Bigbike!";
 
 export async function generateMetadata({ searchParams }: ArticleListPageProps): Promise<Metadata> {
   const [params, t] = await Promise.all([searchParams, getTranslations("Blog")]);
@@ -51,10 +52,7 @@ export async function generateMetadata({ searchParams }: ArticleListPageProps): 
 }
 
 export default async function ArticleListPage({ searchParams }: ArticleListPageProps) {
-  const [params, t] = await Promise.all([
-    searchParams,
-    getTranslations("Blog"),
-  ]);
+  const params = await searchParams;
 
   const pageParsed = parsePositiveIntParam(params.paged ?? params.page, {
     defaultValue: 1,
@@ -85,9 +83,9 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
     return (
       <div className="bb-blog-listing-parity">
         <WpPageTitle title="Tin tức" />
-        <div className="bb-wp-main-content">
-          <div className="bb-container">
-            <WpNoResults title={t("invalidQuery")} message={validationErrors.join(" ")} />
+        <div id="main-content" className="bb-wp-main-content">
+          <div className="bb-container container">
+            <WpNoResults query={qParsed.value} />
           </div>
         </div>
       </div>
@@ -109,8 +107,11 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
     categoriesResult.data.filter((cat) => cat.articleCount > 0),
   );
   const activeCategory = sidebarCategories.find((cat) => cat.slug === categoryParsed.value);
-  const pageTitle = activeCategory?.name ?? "Tin tức";
-  const showNewsDescription = !categoryParsed.value || categoryParsed.value === ROOT_CATEGORY_SLUG;
+  const basePageTitle = activeCategory?.name ?? "Tin tức";
+  const pageTitle =
+    pageParsed.value > 1 ? `${basePageTitle} - Trang ${pageParsed.value}` : basePageTitle;
+  const showNewsDescription =
+    !qParsed.value && (!categoryParsed.value || categoryParsed.value === ROOT_CATEGORY_SLUG);
 
   const makeListHref = (overrides: {
     page?: number;
@@ -132,35 +133,31 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
     <div className="bb-blog-listing-parity">
       <WpPageTitle title={pageTitle} />
 
-      <div className="bb-wp-main-content">
-        <div className="bb-container">
+      <div id="main-content" className="bb-wp-main-content">
+        <div className="bb-container container">
           {showNewsDescription ? (
-            <div className="bb-wp-block-text bb-wp-block-text--top">
-              <p>{NEWS_INTRO}</p>
-              <p aria-hidden="true">&nbsp;</p>
+            <div className="bb-wp-block-text bb-wp-block-text--top block-text pb-60">
+              <div>
+                <p style={{ textAlign: "justify" }}>{NEWS_INTRO}</p>
+              </div>
+              <div> </div>
             </div>
           ) : null}
 
-          <div className="bb-wp-row">
-            <aside className="bb-wp-sidebar" aria-label="Danh mục tin tức">
-              <WpCategoryWidget
-                categories={sidebarCategories}
-                currentCategory={categoryParsed.value}
-                makeListHref={makeListHref}
-              />
+          <div className="bb-wp-row row">
+            <aside className="bb-wp-sidebar col-md-3" aria-label="Danh mục tin tức">
+              <WpCategoryWidget categories={sidebarCategories} />
             </aside>
 
-            <section className="bb-wp-content-col" aria-label="Danh sách bài viết">
-              {result.error && result.data.length === 0 ? (
-                <WpNoResults title="Không thể tải bài viết" message={result.error.message} />
-              ) : result.data.length === 0 ? (
-                <WpNoResults title={t("emptyTitle")} message={t("emptyDescription")} />
+            <section className="bb-wp-content-col col-md-9" aria-label="Danh sách bài viết">
+              {result.data.length === 0 ? (
+                <WpNoResults query={qParsed.value} />
               ) : (
                 <>
-                  <div className="bb-wp-news-list">
-                    <div className="bb-wp-row">
+                  <div className="bb-wp-news-list news-list">
+                    <div className="bb-wp-row row">
                       {result.data.map((article) => (
-                        <div key={article.id} className="bb-wp-card-col">
+                        <div key={article.id} className="bb-wp-card-col col-md-4 col-sm-6 col-12">
                           <WpArticleCard article={article} />
                         </div>
                       ))}
@@ -186,9 +183,9 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
           </div>
 
           {showNewsDescription ? (
-            <div className="bb-wp-block-text bb-wp-block-text--bottom">
+            <div className="bb-wp-block-text bb-wp-block-text--bottom block-text pt-100 pb-60">
               <p aria-hidden="true">&nbsp;</p>
-              <p>{NEWS_OUTRO}</p>
+              <p style={{ textAlign: "justify" }}>{NEWS_OUTRO}</p>
             </div>
           ) : null}
         </div>
@@ -200,14 +197,14 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
 function WpPageTitle({ title }: { title: string }) {
   return (
     <section
-      className="bb-wp-page-title"
+      className="bb-wp-page-title page-title"
       style={{ backgroundImage: "url('/wp/page-title-bg.png')" }}
     >
-      <div className="bb-container">
-        <div className="bb-wp-page-title-row">
-          <div className="bb-wp-page-title-copy">
+      <div className="bb-container container">
+        <div className="bb-wp-page-title-row row align-items-center">
+          <div className="bb-wp-page-title-copy col-md-6">
             <h1>{title}</h1>
-            <nav className="bb-wp-breadcrumb" aria-label="Breadcrumb">
+            <nav className="bb-wp-breadcrumb breadcrumb" aria-label="Breadcrumb">
               <ul>
                 <li>
                   <Link href={toHomePath()} className="home">
@@ -215,51 +212,50 @@ function WpPageTitle({ title }: { title: string }) {
                   </Link>
                 </li>
                 <li>
-                  <span aria-current="page">{title}</span>
+                  <span className="archive taxonomy category current-item" aria-current="page">
+                    {title}
+                  </span>
                 </li>
               </ul>
             </nav>
           </div>
         </div>
-        <div className="bb-wp-page-title-img text-right" aria-hidden="true">
-          <Image src="/wp/mu-bao-hiem.png" alt="" width={420} height={300} priority />
+        <div className="bb-wp-page-title-img img text-right">
+          <Image
+            src="/wp/mu-bao-hiem.png"
+            alt={title}
+            width={420}
+            height={300}
+            priority
+            unoptimized
+            style={{ width: "auto", height: "auto" }}
+          />
         </div>
       </div>
     </section>
   );
 }
 
-function WpCategoryWidget({
-  categories,
-  currentCategory,
-  makeListHref,
-}: {
-  categories: ContentCategoryWithCount[];
-  currentCategory?: string;
-  makeListHref: (overrides: { page?: number; category?: string; size?: number }) => string;
-}) {
+function WpCategoryWidget({ categories }: { categories: ContentCategoryWithCount[] }) {
   if (categories.length === 0) {
     return null;
   }
 
   return (
-    <div className="bb-wp-widget">
-      <div className="bb-wp-widget-title">
+    <div className="bb-wp-widget widget">
+      <div className="bb-wp-widget-title widget--title">
         <h3>Danh mục tin tức</h3>
       </div>
-      <div className="bb-wp-widget-body">
-        <div className="bb-wp-product-category">
+      <div className="bb-wp-widget-body widget--body">
+        <div className="bb-wp-product-category product-category">
           <ul>
             {categories.map((cat) => {
               const href = cat.slug === ROOT_CATEGORY_SLUG
                 ? toArticleListPath()
-                : makeListHref({ category: cat.slug });
-              const isCurrent = currentCategory
-                ? currentCategory === cat.slug
-                : cat.slug === ROOT_CATEGORY_SLUG;
+                : `${toArticleListPath()}${buildQueryString({ category: cat.slug })}`;
 
               return (
-                <li key={cat.id} className={isCurrent ? "current-cat" : undefined}>
+                <li key={cat.id}>
                   <Link href={href}>
                     {cat.name}
                     <span className="count">
@@ -283,21 +279,32 @@ function WpArticleCard({ article }: { article: Article }) {
   const imageUrl = (article.coverImage ?? article.productImage)?.url;
   const imageSrc = resolveWpUploadUrl(imageUrl);
   const fallbackImageSrc = makeSlugThumbnailFallback(imageUrl, article.slug);
+  const href = toArticlePath(article.slug);
 
   return (
-    <article className="bb-wp-news-item">
-      <Link href={toArticlePath(article.slug)} className="bb-news-card">
-        <span className="bb-news-img-wrap">
+    <article className="bb-wp-news-item news--item">
+      <div className="news--item-thumbnail">
+        <Link
+          href={href}
+          className="lazy"
+          data-background-image={imageSrc ?? fallbackImageSrc ?? undefined}
+        >
           <WpArticleImage src={imageSrc} fallbackSrc={fallbackImageSrc} alt={title} />
-        </span>
-        <span className="bb-news-body">
-          {publishedAt ? <span className="bb-news-date">{publishedAt}</span> : null}
-          <span className="bb-news-body-inside">
-            <span className="bb-news-card-title">{title}</span>
-            {excerpt ? <span className="bb-news-excerpt">{excerpt}</span> : null}
-          </span>
-        </span>
-      </Link>
+        </Link>
+      </div>
+      <div className="news--item-desc">
+        {publishedAt ? (
+          <div className="news-date">
+            <p>{publishedAt}</p>
+          </div>
+        ) : null}
+        <div className="news--item-inside">
+          <p className="title-post">
+            <Link href={href}>{title}</Link>
+          </p>
+          {excerpt ? <p>{excerpt}</p> : null}
+        </div>
+      </div>
     </article>
   );
 }
@@ -318,50 +325,70 @@ function WpPagination({
   const pages = buildWpPageItems(page, totalPages);
 
   return (
-    <nav className="bb-wp-pagination" aria-label="Phân trang bài viết">
-      <ul className="page-numbers">
-        {page > 1 ? (
-          <li>
-            <Link className="prev page-numbers" href={makeHref(page - 1)} aria-label="Trang trước">
-              <span aria-hidden="true">‹</span>
-            </Link>
-          </li>
-        ) : null}
-        {pages.map((item, index) => (
-          <li key={`${item}-${index}`}>
-            {item === "dots" ? (
-              <span className="page-numbers dots">...</span>
-            ) : item === page ? (
-              <span aria-current="page" className="page-numbers current">
-                {item}
-              </span>
-            ) : (
-              <Link className="page-numbers" href={makeHref(item)}>
-                {item}
-              </Link>
-            )}
-          </li>
-        ))}
-        {page < totalPages ? (
-          <li>
-            <Link className="next page-numbers" href={makeHref(page + 1)} aria-label="Trang sau">
-              <span aria-hidden="true">›</span>
-            </Link>
-          </li>
-        ) : null}
+    <nav className="bb-wp-pagination pagination pb-40 pt-20" aria-label="Phân trang bài viết">
+      <ul className="text-right">
+        <div className="paginate-links">
+          <ul className="page-numbers">
+            {page > 1 ? (
+              <li {...{ index: 0 }}>
+                <Link className="prev page-numbers" href={makeHref(page - 1)} aria-label="Trang trước">
+                  <i className="fal fa-angle-left" aria-hidden="true" />
+                </Link>
+              </li>
+            ) : null}
+            {pages.map((item, itemIndex) => {
+              const index = page > 1 ? itemIndex + 1 : itemIndex;
+
+              return (
+                <li key={`${item}-${itemIndex}`} {...{ index }}>
+                  {item === "dots" ? (
+                    <span className="page-numbers dots">…</span>
+                  ) : item === page ? (
+                    <span aria-current="page" className="page-numbers current">
+                      {item}
+                    </span>
+                  ) : (
+                    <Link className="page-numbers" href={makeHref(item)}>
+                      {item}
+                    </Link>
+                  )}
+                </li>
+              );
+            })}
+            {page < totalPages ? (
+              <li {...{ index: pages.length + (page > 1 ? 1 : 0) }}>
+                <Link className="next page-numbers" href={makeHref(page + 1)} aria-label="Trang sau">
+                  <i className="fal fa-angle-right" aria-hidden="true" />
+                </Link>
+              </li>
+            ) : null}
+          </ul>
+        </div>
       </ul>
     </nav>
   );
 }
 
-function WpNoResults({ title, message }: { title: string; message: string }) {
+function WpNoResults({ query }: { query?: string }) {
   return (
     <section className="no-results not-found">
       <header className="page-header">
-        <h2 className="page-title">{title}</h2>
+        <h1 className="page-title">Nothing Found</h1>
       </header>
       <div className="page-content">
-        <p>{message}</p>
+        <p>It seems we can’t find what you’re looking for. Perhaps searching can help.</p>
+        <form role="search" method="get" className="search-form" action="/">
+          <label>
+            <span className="screen-reader-text">Search for:</span>
+            <input
+              className="form-control"
+              type="text"
+              placeholder="Tìm kiếm..."
+              name="s"
+              defaultValue={query ?? ""}
+            />
+          </label>
+        </form>
       </div>
     </section>
   );
@@ -387,15 +414,21 @@ function buildWpPageItems(page: number, totalPages: number): Array<number | "dot
     return Array.from({ length: totalPages }, (_, index) => index + 1);
   }
 
-  if (page <= 2) {
+  if (page === 1) {
     return [1, 2, "dots", totalPages];
   }
 
-  if (page >= totalPages - 1) {
-    return [1, "dots", totalPages - 1, totalPages];
+  if (page === 2) {
+    return [1, 2, 3, "dots", totalPages];
   }
 
-  return [1, "dots", page, "dots", totalPages];
+  if (page >= totalPages - 1) {
+    return [1, "dots", totalPages - 2, totalPages - 1, totalPages].filter(
+      (item, index, items): item is number | "dots" => item !== items[index - 1],
+    );
+  }
+
+  return [1, "dots", page - 1, page, page + 1, "dots", totalPages];
 }
 
 function makeExcerpt(article: Article): string {
@@ -406,7 +439,12 @@ function makeExcerpt(article: Article): string {
     return "";
   }
 
-  return plain.length > 180 ? `${plain.slice(0, 177).trim()}...` : plain;
+  const words = plain.split(/\s+/);
+  if (words.length <= WP_EXCERPT_WORDS) {
+    return plain.replace(/\.\.\.$/, "…");
+  }
+
+  return `${words.slice(0, WP_EXCERPT_WORDS).join(" ")}…`;
 }
 
 function stripHtml(value: string | null | undefined): string {

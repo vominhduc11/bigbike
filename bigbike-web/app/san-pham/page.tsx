@@ -3,18 +3,21 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { ProductArchiveHero } from "@/components/catalog/ProductArchiveHero";
 import { ProductArchiveLayout } from "@/components/catalog/ProductArchiveLayout";
-import { ErrorState } from "@/components/ui/ErrorState";
 import { PaginationNav } from "@/components/ui/PaginationNav";
 import {
   PRODUCT_SORT_VALUES,
   listBrands,
   listCategories,
   listProducts,
-  listPublicSettings,
 } from "@/lib/api/public-api";
 import { buildCatalogTitle } from "@/lib/utils/catalog";
+import {
+  DEFAULT_WP_ORDERBY,
+  isWpOrderbyValue,
+  productSortToWpOrderby,
+  wpOrderbyToProductSort,
+} from "@/lib/utils/catalog-sort";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
-import { readHeroSettings } from "@/lib/utils/page-hero";
 import { toHomePath, toProductListPath } from "@/lib/utils/routes";
 import {
   buildQueryString,
@@ -46,6 +49,7 @@ export async function generateMetadata({ searchParams }: ProductListPageProps): 
   const minPrice = readSingleSearchParam(params.min_price);
   const maxPrice = readSingleSearchParam(params.max_price);
   const brand = readSearchParamAlias(params, "pwb-brand", "brand");
+  const orderby = readSingleSearchParam(params.orderby);
   const hasFilters =
     Boolean(q) ||
     Boolean(category) ||
@@ -53,6 +57,7 @@ export async function generateMetadata({ searchParams }: ProductListPageProps): 
     Boolean(color) ||
     Boolean(minPrice) ||
     Boolean(maxPrice) ||
+    Boolean(orderby && orderby !== DEFAULT_WP_ORDERBY) ||
     page > 1;
 
   const tCatalog = await getTranslations("Catalog");
@@ -73,10 +78,7 @@ export async function generateMetadata({ searchParams }: ProductListPageProps): 
 
 export default async function ProductListPage({ searchParams }: ProductListPageProps) {
   const params = await searchParams;
-  const [tCatalog, tBreadcrumb] = await Promise.all([
-    getTranslations("Catalog"),
-    getTranslations("Breadcrumb"),
-  ]);
+  const tCatalog = await getTranslations("Catalog");
 
   const pageParsed = parsePositiveIntParam(readSearchParamAlias(params, "page", "paged"), {
     defaultValue: 1,
@@ -104,7 +106,15 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
     max: PRICE_PARAM_MAX,
     field: "max_price",
   });
+  const orderbyParam = readSingleSearchParam(params.orderby);
+  const orderbyError = orderbyParam && !isWpOrderbyValue(orderbyParam) ? "orderby không hợp lệ." : null;
   const sortParsed = parseSortParam(params.sort, PRODUCT_SORT_VALUES, DEFAULT_SORT);
+  const orderbyCurrent = isWpOrderbyValue(orderbyParam)
+    ? orderbyParam
+    : productSortToWpOrderby(sortParsed.value ?? DEFAULT_SORT);
+  const productSort = isWpOrderbyValue(orderbyParam)
+    ? wpOrderbyToProductSort(orderbyParam, DEFAULT_SORT)
+    : sortParsed.value;
 
   const validationErrors = collectErrors(
     pageParsed.error,
@@ -115,29 +125,29 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
     colorParsed.error,
     minPriceParsed.error,
     maxPriceParsed.error,
-    sortParsed.error,
+    orderbyError,
+    orderbyParam ? null : sortParsed.error,
   );
 
   if (validationErrors.length > 0) {
     return (
-      <section className="bb-page">
-        <div className="bb-container">
-          <ErrorState
-            title={tCatalog("filterInvalidTitle")}
-            message={validationErrors.join(" ")}
-            retryHref={toProductListPath()}
-          />
+      <div className="bb-product-archive archive post-type-archive-product">
+        <ProductArchiveHero title={tCatalog("allProducts")} breadcrumb={[{ label: "Bigbike.vn", href: toHomePath() }]} />
+        <div id="main-content" className="bb-archive-main">
+          <div className="container bb-wp-container">
+            <p className="woocommerce-info">{validationErrors.join(" ")}</p>
+          </div>
         </div>
-      </section>
+      </div>
     );
   }
 
   const locale = await getLocale();
-  const [result, brandsResult, categoriesResult, settingsResult] = await Promise.all([
+  const [result, brandsResult, categoriesResult] = await Promise.all([
     listProducts({
       page: pageParsed.value,
       size: sizeParsed.value,
-      sort: sortParsed.value,
+      sort: productSort,
       category: categoryParsed.value,
       brand: brandParsed.value,
       q: qParsed.value,
@@ -148,21 +158,9 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
     }),
     listBrands({ page: 1, size: 100, sort: "name:asc" }),
     listCategories({ page: 1, size: 100, sort: "sortOrder:asc" }),
-    listPublicSettings(),
   ]);
-  const heroSettings = readHeroSettings(settingsResult.data ?? [], "hero_products");
 
   const pagination = result.pagination;
-  const pageTitle = buildCatalogTitle(
-    qParsed.value ? tCatalog("searchResultQuoted", { query: qParsed.value }) : tCatalog("title"),
-    {
-      page: pageParsed.value,
-      minPrice: minPriceParsed.value,
-      maxPrice: maxPriceParsed.value,
-      colorName: colorParsed.value,
-    },
-  );
-
   const currentFilters = {
     q: qParsed.value,
     category: categoryParsed.value,
@@ -170,40 +168,39 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
     color: colorParsed.value,
     minPrice: minPriceParsed.value,
     maxPrice: maxPriceParsed.value,
-    sort: sortParsed.value,
   };
 
   return (
     <div className="bb-product-archive archive post-type-archive-product">
       <ProductArchiveHero
-        imageUrl={heroSettings.imageUrl}
-        imageAlt={heroSettings.imageAlt}
-        title={heroSettings.title ?? pageTitle}
-        breadcrumb={[
-          { label: tBreadcrumb("home"), href: toHomePath() },
-          { label: tCatalog("title") },
-        ]}
+        title={tCatalog("allProducts")}
+        breadcrumb={[{ label: "Bigbike.vn", href: toHomePath() }]}
       />
 
       <ProductArchiveLayout
         totalItems={pagination?.totalItems ?? null}
-        sortCurrent={sortParsed.value ?? DEFAULT_SORT}
+        sortCurrent={orderbyCurrent}
         filters={{
           brands: brandsResult.data,
           categories: categoriesResult.data,
           current: currentFilters,
           resetHref: toProductListPath(),
+          hiddenParams: {
+            orderby: orderbyCurrent !== DEFAULT_WP_ORDERBY ? orderbyCurrent : undefined,
+          },
         }}
       >
           {result.error && result.data.length === 0 ? (
-            <ErrorState message={result.error.message} retryHref={toProductListPath()} />
+            <p className="woocommerce-info">{result.error.message}</p>
           ) : result.data.length === 0 ? (
             <p className="woocommerce-info">{tCatalog("noResults")}</p>
           ) : (
             <>
-              <div className="bb-product-grid">
+              <div className="row bb-wp-row bb-product-grid">
                 {result.data.map((product) => (
-                  <ProductCard key={product.id} product={product} variant="archive" />
+                  <div key={product.id} className="col-md-3 col-6 bb-wp-col-md-3 bb-wp-col-6">
+                    <ProductCard product={product} variant="archive" />
+                  </div>
                 ))}
               </div>
               {pagination ? (
@@ -212,7 +209,7 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
                   totalPages={pagination.totalPages}
                   baseHref={`${toProductListPath()}${buildQueryString({
                       size: sizeParsed.value !== DEFAULT_PAGE_SIZE ? sizeParsed.value : undefined,
-                      sort: sortParsed.value !== DEFAULT_SORT ? sortParsed.value : undefined,
+                      orderby: orderbyCurrent !== DEFAULT_WP_ORDERBY ? orderbyCurrent : undefined,
                       category: categoryParsed.value,
                       "pwb-brand": brandParsed.value,
                       q: qParsed.value,

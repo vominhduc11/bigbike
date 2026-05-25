@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { CircleUser } from "lucide-react";
 import { AccountSectionHeading, AccountShell, useAccount, useAccountRefresh } from "@/components/layout/AccountShell";
 import { updateCustomerProfile } from "@/lib/api/client-api";
 import { Input } from "@/components/ui/input";
@@ -22,7 +21,6 @@ function EditAccountContent() {
   const profile = useAccount();
   const refreshProfile = useAccountRefresh();
 
-  const [showPassword, setShowPassword] = useState(false);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
@@ -83,7 +81,6 @@ function EditAccountContent() {
     <>
       <AccountSectionHeading
         title={tNav("info")}
-        icon={<CircleUser className="h-7 w-7" strokeWidth={1.5} aria-hidden />}
       />
 
       <p className="mb-5 text-sm leading-relaxed text-muted-foreground">
@@ -118,59 +115,42 @@ function EditAccountContent() {
           {t("newsletter")}
         </label>
 
-        <button
-          type="button"
-          onClick={() => setShowPassword((v) => !v)}
-          className="mt-3 flex items-center gap-2.5 text-sm text-muted-foreground"
-          aria-pressed={showPassword}
-        >
-          <span
-            className={`flex h-[18px] w-[18px] items-center justify-center rounded-full border ${
-              showPassword ? "border-brand" : "border-[#bbbbbb]"
-            }`}
-          >
-            {showPassword && <span className="h-2 w-2 rounded-full bg-brand" />}
-          </span>
-          {t("changePassword")}
-        </button>
-
-        {showPassword && (
-          <div className="mt-4">
-            <p className="mb-3 text-sm text-muted-foreground">
-              {t("changePasswordHint")}
-            </p>
-            <div className="grid grid-cols-1 gap-x-6 gap-y-[18px] sm:grid-cols-3">
-              <div className="flex flex-col gap-1.5">
-                <label className={LEGACY_LABEL}>{t("currentPassword")}<ReqMark /></label>
-                <Input
-                  type="password"
-                  name="currentPassword"
-                  placeholder={t("currentPasswordPlaceholder")}
-                  autoComplete="current-password"
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className={LEGACY_LABEL}>{t("newPassword")}<ReqMark /></label>
-                <Input
-                  type="password"
-                  name="newPassword"
-                  placeholder={t("newPasswordPlaceholder")}
-                  autoComplete="new-password"
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className={LEGACY_LABEL}>{t("confirmPassword")}<ReqMark /></label>
-                <Input
-                  type="password"
-                  name="confirmPassword"
-                  placeholder={t("confirmPasswordPlaceholder")}
-                  autoComplete="new-password"
-                />
-              </div>
+        <fieldset className="mt-5 border-0 p-0">
+          <legend className="mb-3 text-sm text-muted-foreground">{t("changePassword")}</legend>
+          <p className="mb-3 text-sm text-muted-foreground">
+            {t("changePasswordHint")}
+          </p>
+          <div className="grid grid-cols-1 gap-x-6 gap-y-[18px] sm:grid-cols-3">
+            <div className="flex flex-col gap-1.5">
+              <label className={LEGACY_LABEL}>{t("currentPassword")}<ReqMark /></label>
+              <Input
+                type="password"
+                name="currentPassword"
+                placeholder={t("currentPasswordPlaceholder")}
+                autoComplete="current-password"
+              />
             </div>
-            {passwordError && <p className="mt-2 text-sm text-destructive">{passwordError}</p>}
+            <div className="flex flex-col gap-1.5">
+              <label className={LEGACY_LABEL}>{t("newPassword")}<ReqMark /></label>
+              <Input
+                type="password"
+                name="newPassword"
+                placeholder={t("newPasswordPlaceholder")}
+                autoComplete="new-password"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className={LEGACY_LABEL}>{t("confirmPassword")}<ReqMark /></label>
+              <Input
+                type="password"
+                name="confirmPassword"
+                placeholder={t("confirmPasswordPlaceholder")}
+                autoComplete="new-password"
+              />
+            </div>
           </div>
-        )}
+          {passwordError && <p className="mt-2 text-sm text-destructive">{passwordError}</p>}
+        </fieldset>
 
         <Button type="submit" variant="primary" disabled={saving} className="mt-6 min-w-[160px]">
           {saving ? t("saving") : t("save")}

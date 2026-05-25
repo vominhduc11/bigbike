@@ -27,8 +27,13 @@ function buildPageList(page: number, totalPages: number): (number | "...")[] {
 }
 
 export function PaginationNav({ page, totalPages, baseHref, variant = "default" }: PaginationNavProps) {
-  const makeHref = (p: number) =>
+  const makeDefaultHref = (p: number) =>
     `${baseHref}${baseHref.includes("?") ? "&" : "?"}page=${p}`;
+  const makeArchiveHref = (p: number) => {
+    if (p <= 1) return baseHref;
+    return `${baseHref}${baseHref.includes("?") ? "&" : "?"}paged=${p}`;
+  };
+  const makeHref = variant === "archive" ? makeArchiveHref : makeDefaultHref;
   const t = useTranslations("Catalog");
   if (totalPages <= 1) return null;
 
@@ -37,35 +42,39 @@ export function PaginationNav({ page, totalPages, baseHref, variant = "default" 
   if (variant === "archive") {
     return (
       <nav className="pagination pb-40 pt-20 text-right bb-archive-pagination" aria-label={t("paginationAria")}>
-        <ul className="page-numbers">
-          {page > 1 && (
-            <li>
-              <Link href={makeHref(page - 1)} aria-label={t("previousPage")}>
-                <ChevronLeft className="bb-archive-page-icon" aria-hidden="true" />
-              </Link>
-            </li>
-          )}
-          {pages.map((p, i) => (
-            <li key={p === "..." ? `ellipsis-${i}` : p}>
-              {p === "..." ? (
-                <span className="dots">...</span>
-              ) : p === page ? (
-                <span className="page-numbers current">{p}</span>
-              ) : (
-                <Link href={makeHref(p)} className="page-numbers">
-                  {p}
-                </Link>
+        <div className="text-right">
+          <div className="paginate-links">
+            <ul className="page-numbers">
+              {page > 1 && (
+                <li>
+                  <Link href={makeHref(page - 1)} className="prev page-numbers" aria-label={t("previousPage")}>
+                    <i className="fal fa-angle-left bb-archive-page-icon" aria-hidden="true" />
+                  </Link>
+                </li>
               )}
-            </li>
-          ))}
-          {page < totalPages && (
-            <li>
-              <Link href={makeHref(page + 1)} aria-label={t("nextPage")}>
-                <ChevronRight className="bb-archive-page-icon" aria-hidden="true" />
-              </Link>
-            </li>
-          )}
-        </ul>
+              {pages.map((p, i) => (
+                <li key={p === "..." ? `ellipsis-${i}` : p}>
+                  {p === "..." ? (
+                    <span className="page-numbers dots">…</span>
+                  ) : p === page ? (
+                    <span className="page-numbers current">{p}</span>
+                  ) : (
+                    <Link href={makeHref(p)} className="page-numbers">
+                      {p}
+                    </Link>
+                  )}
+                </li>
+              ))}
+              {page < totalPages && (
+                <li>
+                  <Link href={makeHref(page + 1)} className="next page-numbers" aria-label={t("nextPage")}>
+                    <i className="fal fa-angle-right bb-archive-page-icon" aria-hidden="true" />
+                  </Link>
+                </li>
+              )}
+            </ul>
+          </div>
+        </div>
       </nav>
     );
   }

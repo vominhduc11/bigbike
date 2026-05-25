@@ -65,6 +65,18 @@ function compareSizeValues(a: string, b: string): number {
   return ak.localeCompare(bk, "vi");
 }
 
+function toWpAttributeSlug(value: string): string {
+  const slug = value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/đ/g, "d")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return slug || "option";
+}
+
 type SwatchInfo = {
   value: string;
   colorHex: string | null;
@@ -129,7 +141,15 @@ export function VariantSelector({
         const isColorGroup = isColorAttribute(group.name);
 
         return (
-          <div key={group.name} className="options">
+          <div
+            key={group.name}
+            className={cn(
+              "options",
+              `pa_${toWpAttributeSlug(group.name)}`,
+              isColorGroup && "color",
+              "size",
+            )}
+          >
             <div className="group">
               <div className="group-label">
                 <label>{group.name}</label>
@@ -151,29 +171,40 @@ export function VariantSelector({
                     swatchStyle = { backgroundColor: colorHex };
                   }
 
+                  const inputId = `${toWpAttributeSlug(group.name)}-${toWpAttributeSlug(value)}`;
+
                   return (
-                    <button
+                    <div
                       key={`${group.name}-${value}`}
-                      type="button"
                       className={cn(
                         "form-group",
                         isColorGroup && "form-group--color",
                         active && "is-active",
                         !available && !active && "is-disabled",
                       )}
-                      onClick={() => {
-                        if (!available && !active) return;
-                        onSelectOption(group.name, value);
-                      }}
-                      disabled={disabled || (!available && !active)}
-                      title={value}
-                      aria-label={value}
-                      aria-pressed={active}
                     >
-                      <span className="bb-wp-variant-label" style={swatchStyle}>
+                      <input
+                        id={inputId}
+                        type="radio"
+                        name={`attribute_pa_${toWpAttributeSlug(group.name)}`}
+                        value={value}
+                        className={cn("form-control", isColorGroup && "js-change-color")}
+                        checked={active}
+                        disabled={disabled || (!available && !active)}
+                        onChange={() => {
+                          if (!available && !active) return;
+                          onSelectOption(group.name, value);
+                        }}
+                      />
+                      <label
+                        className="bb-wp-variant-label"
+                        style={swatchStyle}
+                        htmlFor={inputId}
+                        title={value}
+                      >
                         {isColorGroup && swatchStyle ? "" : value}
-                      </span>
-                    </button>
+                      </label>
+                    </div>
                   );
                 })}
               </div>

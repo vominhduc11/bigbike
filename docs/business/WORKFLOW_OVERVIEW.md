@@ -25,9 +25,9 @@
 
 | Step | Actor | Current flow | Status | Evidence |
 |---|---|---|---|---|
-| 1 | Guest | Open `/dang-nhap` — one screen with "Đăng nhập" / "Đăng ký" tabs | `CONFIRMED_FROM_CODE` | `AuthTabs.tsx` |
+| 1 | Guest | Open `/dang-nhap` or `/dang-ky` as separate legacy-parity pages; registration remains a separate route, not an in-place auth tab | `CONFIRMED_FROM_CODE` | `bigbike_vn__2026_04_17/sqldump.sql`, live legacy pages `/dang-nhap.html`, `/dang-ky.html`, `page.tsx`, `LoginForm.tsx`, `RegisterForm.tsx` |
 | 2a | Guest | Sign in with email/phone + password; "Ghi nhớ" keeps the session for 30 days (vs 1 day when unchecked) | `CONFIRMED_FROM_CODE` | `CustomerAuthService.login`, `CustomerSessionService` |
-| 2b | Guest | Or sign in with Google / Facebook — the account is linked to or created from the social profile | `CONFIRMED_FROM_CODE` | `CustomerOAuthService.linkOrCreate` |
+| 2b | Guest | Or sign in with the legacy-visible Facebook social link; the backend OAuth service still supports Google/Facebook provider callbacks | `CONFIRMED_FROM_CODE` | `SocialLoginButtons.tsx`, `CustomerOAuthService.linkOrCreate` |
 | 3 | System | Issue `bb_session` / `bb_refresh` / `bb_csrf` cookies and return the customer to the page they came from | `CONFIRMED_FROM_CODE` | `CustomerAuthController`, `CustomerOAuthController` |
 
 ## POS Workflow

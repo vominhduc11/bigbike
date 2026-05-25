@@ -18,20 +18,20 @@ const LEGACY_EXPERIENCE_MEDIA: Record<
   ls2: {
     order: 0,
     title: "Mũ bảo hiểm fullface LS2 FF352",
-    coverImage: "/wp-content/uploads/2020/06/LS2-FF352_background.jpg",
-    productImage: "/wp-content/uploads/2020/06/LS2-FF352_thumbnail.png",
+    coverImage: "https://bigbike.vn/wp-content/uploads/2020/06/LS2-FF352_background.jpg",
+    productImage: "https://bigbike.vn/wp-content/uploads/2020/06/LS2-FF352_thumbnail.png",
   },
   agv: {
     order: 1,
     title: "[Tiêu điểm] Mũ Bảo Hiểm AGV Chính Hãng 2025",
-    coverImage: "/wp-content/uploads/2020/06/avg_background.jpg",
-    productImage: "/wp-content/uploads/2020/06/avg_thmbnail-1.png",
+    coverImage: "https://bigbike.vn/wp-content/uploads/2020/06/avg_background.jpg",
+    productImage: "https://bigbike.vn/wp-content/uploads/2020/06/avg_thmbnail-1.png",
   },
   scoyco: {
     order: 2,
     title: "[Review] - Áo bảo hộ SCOYCO JK37",
-    coverImage: "/wp-content/uploads/2020/06/scoyco-jk37_background.jpg",
-    productImage: "/wp-content/uploads/2020/06/scoyco-jk37_thumbnail-1.png",
+    coverImage: "https://bigbike.vn/wp-content/uploads/2020/06/scoyco-jk37_background.jpg",
+    productImage: "https://bigbike.vn/wp-content/uploads/2020/06/scoyco-jk37_thumbnail-1.png",
   },
 };
 

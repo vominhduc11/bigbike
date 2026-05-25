@@ -18,10 +18,10 @@ type PricingPanelProps = {
 };
 
 export function PricingPanel({ data, fallback, isLoading }: PricingPanelProps) {
-  if (isLoading) {
+  if (isLoading && !fallback) {
     return (
       <div className="price">
-        <p>Đang tải...</p>
+        <p aria-hidden="true">&nbsp;</p>
       </div>
     );
   }

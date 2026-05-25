@@ -1,10 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { MouseEvent } from "react";
 import { MediaImage } from "@/components/ui/MediaImage";
 import type { ImageAsset, VideoAsset } from "@/lib/contracts/public";
-import { resolveMediaUrl } from "@/lib/utils/format";
 import { cn } from "@/lib/utils";
 
 type ProductGalleryProps = {
@@ -17,13 +15,6 @@ type ProductGalleryProps = {
   discountBadge?: number;
   videos?: VideoAsset[];
 };
-
-const ZOOM_FACTOR = 2.5;
-const LENS_SIZE_PCT = 100 / ZOOM_FACTOR;
-
-function clamp01(value: number) {
-  return Math.min(1, Math.max(0, value));
-}
 
 export function ProductGallery({
   mainImage,
@@ -42,10 +33,6 @@ export function ProductGallery({
 
   const currentVariantKey = variantKey ?? "__no_variant__";
   const [selection, setSelection] = useState({ index: 0, variantKey: currentVariantKey });
-  const [zoomActive, setZoomActive] = useState(false);
-  const [zoomPos, setZoomPos] = useState({ x: 0.5, y: 0.5 });
-  const [canHover, setCanHover] = useState(false);
-  const mainRef = useRef<HTMLDivElement | null>(null);
   const thumbsRef = useRef<HTMLDivElement | null>(null);
 
   const count = images.length;
@@ -54,8 +41,6 @@ export function ProductGallery({
       ? Math.min(selection.index, Math.max(0, count - 1))
       : 0;
   const selectedImage = images[selectedIndex] ?? null;
-  const zoomImageUrl = selectedImage ? resolveMediaUrl(selectedImage.url) ?? null : null;
-  const zoomEnabled = canHover && Boolean(zoomImageUrl);
 
   const setSelectedIndex = useCallback(
     (next: number | ((current: number) => number)) => {
@@ -74,15 +59,6 @@ export function ProductGallery({
     const thumb = container.children[selectedIndex] as HTMLElement | undefined;
     thumb?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
   }, [selectedIndex]);
-
-  useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return;
-    const mq = window.matchMedia("(hover: hover) and (pointer: fine)");
-    const update = () => setCanHover(mq.matches);
-    update();
-    mq.addEventListener?.("change", update);
-    return () => mq.removeEventListener?.("change", update);
-  }, []);
 
   const prev = useCallback(() => {
     if (count < 2) return;
@@ -110,28 +86,6 @@ export function ProductGallery({
       top: isMobile ? 0 : direction === "next" ? amount : -amount,
       behavior: "smooth",
     });
-  }
-
-  function updateZoomPos(e: MouseEvent<HTMLDivElement>) {
-    const node = mainRef.current;
-    if (!node) return;
-    const rect = node.getBoundingClientRect();
-    if (rect.width === 0 || rect.height === 0) return;
-    setZoomPos({
-      x: clamp01((e.clientX - rect.left) / rect.width),
-      y: clamp01((e.clientY - rect.top) / rect.height),
-    });
-  }
-
-  function handleMainMouseEnter(e: MouseEvent<HTMLDivElement>) {
-    if (!zoomEnabled) return;
-    updateZoomPos(e);
-    setZoomActive(true);
-  }
-
-  function handleMainMouseMove(e: MouseEvent<HTMLDivElement>) {
-    if (!zoomEnabled || !zoomActive) return;
-    updateZoomPos(e);
   }
 
   return (
@@ -187,13 +141,7 @@ export function ProductGallery({
       )}
 
       <div className="bb-wp-gallery-main-wrap">
-        <div
-          ref={mainRef}
-          className="bb-wp-gallery-main"
-          onMouseEnter={handleMainMouseEnter}
-          onMouseMove={handleMainMouseMove}
-          onMouseLeave={() => setZoomActive(false)}
-        >
+        <div className="bb-wp-gallery-main">
           <MediaImage
             image={selectedImage}
             altFallback={altFallback}
@@ -202,18 +150,6 @@ export function ProductGallery({
             height={1200}
             className="bb-wp-gallery-main-img"
           />
-          {zoomActive && (
-            <span
-              className="bb-wp-gallery-zoom-lens"
-              style={{
-                width: `${LENS_SIZE_PCT}%`,
-                height: `${LENS_SIZE_PCT}%`,
-                left: `${zoomPos.x * (100 - LENS_SIZE_PCT)}%`,
-                top: `${zoomPos.y * (100 - LENS_SIZE_PCT)}%`,
-              }}
-              aria-hidden="true"
-            />
-          )}
         </div>
 
         {count > 1 && (
@@ -239,18 +175,6 @@ export function ProductGallery({
               </svg>
             </button>
           </>
-        )}
-
-        {zoomActive && zoomImageUrl && (
-          <div
-            className="bb-wp-gallery-zoom-pane"
-            style={{
-              backgroundImage: `url("${zoomImageUrl.replaceAll('"', "%22")}")`,
-              backgroundPosition: `${zoomPos.x * 100}% ${zoomPos.y * 100}%`,
-              backgroundSize: `${ZOOM_FACTOR * 100}% ${ZOOM_FACTOR * 100}%`,
-            }}
-            aria-hidden="true"
-          />
         )}
       </div>
     </div>

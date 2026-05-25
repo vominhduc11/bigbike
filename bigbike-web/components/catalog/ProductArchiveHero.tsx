@@ -52,8 +52,8 @@ export function ProductArchiveHero({
                     const isLast = index === breadcrumb.length - 1;
                     return (
                       <li key={`${item.href ?? "current"}-${item.label}`}>
-                        {item.href && !isLast ? (
-                          <Link href={item.href}>{item.label}</Link>
+                        {item.href && (!isLast || breadcrumb.length === 1) ? (
+                          <Link href={item.href} aria-current={isLast ? "page" : undefined}>{item.label}</Link>
                         ) : (
                           <span aria-current={isLast ? "page" : undefined}>{item.label}</span>
                         )}

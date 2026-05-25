@@ -56,7 +56,13 @@ export function ProductVideosTab({ videos }: ProductVideosTabProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   if (validVideos.length === 0) {
-    return <p>Chưa có video nào</p>;
+    return (
+      <div className="videos-slide">
+        <div className="row">
+          <p>Chưa có video nào</p>
+        </div>
+      </div>
+    );
   }
 
   const selected = validVideos[selectedIndex] ?? validVideos[0];

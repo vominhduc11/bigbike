@@ -1,0 +1,74 @@
+id,name,sku,category,brand,retail_price,compare_at_price,sale_price,wp_stock_qty,publish_status,has_image,legacy_id,suggested_price,suggestion_reason
+wp-prod-26796,OS18,BB-BALOD-026796,BALÔ ĐEO LƯNG - TÚI ĐEO - TÚI TREO XE,KRIEGA,0.00,,,,DRAFT,true,26796,,no_source_manual_input_required
+wp-prod-7215,TÚI CHỐNG NƯỚC KRIEGA US-20 DRYPACK,KUS20,BALÔ ĐEO LƯNG - TÚI ĐEO - TÚI TREO XE,KRIEGA,0.00,5400000.00,,,DRAFT,true,7215,5400000.00,from compare_at_price
+wp-prod-7222,TÚI CHỐNG NƯỚC KRIEGA US-30 DRYPACK,KUS30,BALÔ ĐEO LƯNG - TÚI ĐEO - TÚI TREO XE,KRIEGA,0.00,5950000.00,,,DRAFT,true,7222,5950000.00,from compare_at_price
+wp-prod-35864,,BB-CHUAP-035864,Chưa phân loại,,0.00,,,,DRAFT,false,35864,,no_source_manual_input_required
+wp-prod-41176,Dual Sport WS-902 Helmet: Dual Visor | Rally & Off-road Specialist,BB-CHUAP-041176,Chưa phân loại,,0.00,,,,DRAFT,false,41176,,no_source_manual_input_required
+wp-prod-36571,GIÀY BẢO HỘ CHỐNG NƯỚC SIDI SDS DENVER WATERPROOF,BB-CHUAP-036571,Chưa phân loại,,0.00,,,,DRAFT,true,36571,,no_source_manual_input_required
+wp-prod-36565,GIÀY BẢO HỘ MOTOCROSS SIDI CROSSFIRE 3,BB-CHUAP-036565,Chưa phân loại,,0.00,,,,DRAFT,true,36565,,no_source_manual_input_required
+wp-prod-36567,GIÀY BẢO HỘ MOTOCROSS SIDI CROSSFIRE 3 SRS,BB-CHUAP-036567,Chưa phân loại,,0.00,,,,DRAFT,true,36567,,no_source_manual_input_required
+wp-prod-36569,GIÀY BẢO HỘ MOTOCROSS SIDI XPOWER SC,BB-CHUAP-036569,Chưa phân loại,,0.00,,,,DRAFT,true,36569,,no_source_manual_input_required
+wp-prod-34824,GIÀY BẢO HỘ ORIGINAL SWAT CLASSIC 9 CHO NỮ,BB-CHUAP-034824,Chưa phân loại,,0.00,,,,DRAFT,false,34824,,no_source_manual_input_required
+wp-prod-36573,GIÀY BẢO HỘ SIDI ADVENTURE 2 GORE-TEX,BB-CHUAP-036573,Chưa phân loại,,0.00,,,,DRAFT,true,36573,,no_source_manual_input_required
+wp-prod-36581,GIÀY BẢO HỘ SIDI ADVVENTURE 2 GORETEX,BB-CHUAP-036581,Chưa phân loại,,0.00,,,,DRAFT,true,36581,,no_source_manual_input_required
+wp-prod-36587,GIÀY BẢO HỘ SIDI ARIA GORETEX,BB-CHUAP-036587,Chưa phân loại,,0.00,,,,DRAFT,true,36587,,no_source_manual_input_required
+wp-prod-36575,GIÀY BẢO HỘ SIDI CANYON 2 GORETEX,BB-CHUAP-036575,Chưa phân loại,,0.00,,,,DRAFT,true,36575,,no_source_manual_input_required
+wp-prod-36583,GIÀY BẢO HỘ SIDI GAVIA GORETEX ADVENTURE,BB-CHUAP-036583,Chưa phân loại,,0.00,,,,DRAFT,true,36583,,no_source_manual_input_required
+wp-prod-36585,GIÀY BẢO HỘ SIDI MID ADVENTURE 2 GORETEX,BB-CHUAP-036585,Chưa phân loại,,0.00,,,,DRAFT,true,36585,,no_source_manual_input_required
+wp-prod-36577,GIÀY BẢO HỘ SPORT SIDI MID PERFORMER,BB-CHUAP-036577,Chưa phân loại,,0.00,,,,DRAFT,true,36577,,no_source_manual_input_required
+wp-prod-36579,GIÀY BẢO HỘ SPORT SIDI REX,BB-CHUAP-036579,Chưa phân loại,,0.00,,,,DRAFT,true,36579,,no_source_manual_input_required
+wp-prod-26868,GIÀY RACING GAERNE GP1 EVO,BB-CHUAP-026868,Chưa phân loại,,0.00,,,,DRAFT,false,26868,,no_source_manual_input_required
+wp-prod-29785,Giày Forma Elite Dry,BB-CHUAP-029785,Chưa phân loại,,0.00,,,,DRAFT,false,29785,,no_source_manual_input_required
+wp-prod-39831,GĂNG TAY BẢO HỘ TAICHI RST468,BB-CHUAP-039831,Chưa phân loại,,0.00,,,,DRAFT,true,39831,,no_source_manual_input_required
+wp-prod-37123,GĂNG TAY MOTO O'NEAL BUTCH CARBON GLOVE BLACK,BB-CHUAP-037123,Chưa phân loại,,0.00,,,,DRAFT,true,37123,,no_source_manual_input_required
+wp-prod-41214,GĂNG TAY MÔ TÔ ILM THOÁNG KHÍ CHO NAM VÀ NỮ JC44,BB-CHUAP-041214,Chưa phân loại,,0.00,,,,DRAFT,false,41214,,no_source_manual_input_required
+wp-prod-37108,KHĂN TRÙM ĐẦU EGO BALACLAVA,BB-CHUAP-037108,Chưa phân loại,,0.00,,,,DRAFT,true,37108,,no_source_manual_input_required
+wp-prod-36278,MŨ 3/4 NEXX X.VILIBY PLAIN,BB-CHUAP-036278,Chưa phân loại,,0.00,,,,DRAFT,true,36278,,no_source_manual_input_required
+wp-prod-36271,MŨ 3/4 NEXX Y.10 ARTVILLE,BB-CHUAP-036271,Chưa phân loại,,0.00,,,,DRAFT,true,36271,,no_source_manual_input_required
+wp-prod-36269,MŨ 3/4 NEXX Y.10 CORE,BB-CHUAP-036269,Chưa phân loại,,0.00,,,,DRAFT,true,36269,,no_source_manual_input_required
+wp-prod-36267,MŨ 3/4 NEXX Y.10 MIDTOWN,BB-CHUAP-036267,Chưa phân loại,,0.00,,,,DRAFT,true,36267,,no_source_manual_input_required
+wp-prod-36265,MŨ 3/4 NEXX Y.10 PLAIN,BB-CHUAP-036265,Chưa phân loại,,0.00,,,,DRAFT,true,36265,,no_source_manual_input_required
+wp-prod-36281,MŨ ADVENTURE NEXX X.WRL ATIKA CARBON,BB-CHUAP-036281,Chưa phân loại,,0.00,,,,DRAFT,true,36281,,no_source_manual_input_required
+wp-prod-36291,MŨ BẢO HIỂM ADVENTURE NEXX X.WED3 - KEYO,BB-CHUAP-036291,Chưa phân loại,,0.00,,,,DRAFT,false,36291,,no_source_manual_input_required
+wp-prod-36289,MŨ BẢO HIỂM ADVENTURE NEXX X.WED3 - WILD,BB-CHUAP-036289,Chưa phân loại,,0.00,,,,DRAFT,true,36289,,no_source_manual_input_required
+wp-prod-36287,MŨ BẢO HIỂM ADVENTURE NEXX X.WED3 - ZERO,BB-CHUAP-036287,Chưa phân loại,,0.00,,,,DRAFT,true,36287,,no_source_manual_input_required
+wp-prod-38174,MŨ BẢO HIỂM AGV K6 S MPLK NARDO GRAY,BB-CHUAP-038174,Chưa phân loại,,0.00,,,,DRAFT,true,38174,,no_source_manual_input_required
+wp-prod-38179,MŨ BẢO HIỂM AGV K6 S MPLK WHITE,BB-CHUAP-038179,Chưa phân loại,,0.00,,,,DRAFT,true,38179,,no_source_manual_input_required
+wp-prod-35573,MŨ BẢO HIỂM FULLFACE HJC C10 - 1 KÍNH,BB-CHUAP-035573,Chưa phân loại,,0.00,,,,DRAFT,true,35573,,no_source_manual_input_required
+wp-prod-38185,MŨ BẢO HIỂM LẬT HÀM AGV STREETMODULAR MONO MATT ASFALTO GREY,BB-CHUAP-038185,Chưa phân loại,,0.00,,,,DRAFT,true,38185,,no_source_manual_input_required
+wp-prod-38182,MŨ BẢO HIỂM LẬT HÀM AGV STREETMODULAR MONO MATT BLACK MATERIA WHITE,BB-CHUAP-038182,Chưa phân loại,,0.00,,,,DRAFT,true,38182,,no_source_manual_input_required
+wp-prod-36259,MŨ FULLFACE NEXX SX.100 CORE,BB-CHUAP-036259,Chưa phân loại,,0.00,,,,DRAFT,true,36259,,no_source_manual_input_required
+wp-prod-36263,MŨ FULLFACE NEXX SX.100 ENIGMA,BB-CHUAP-036263,Chưa phân loại,,0.00,,,,DRAFT,true,36263,,no_source_manual_input_required
+wp-prod-36255,MŨ FULLFACE NEXX SX.100 SKYWAY,BB-CHUAP-036255,Chưa phân loại,,0.00,,,,DRAFT,true,36255,,no_source_manual_input_required
+wp-prod-36276,MŨ FULLFACE NEXX SX.100R - MATT BLACK,BB-CHUAP-036276,Chưa phân loại,,0.00,,,,DRAFT,true,36276,,no_source_manual_input_required
+wp-prod-36274,MŨ FULLFACE NEXX SX.100R FRENETIC,BB-CHUAP-036274,Chưa phân loại,,0.00,,,,DRAFT,true,36274,,no_source_manual_input_required
+wp-prod-36261,MŨ FULLFACE NEXX SX.100R GRIDLINE,BB-CHUAP-036261,Chưa phân loại,,0.00,,,,DRAFT,true,36261,,no_source_manual_input_required
+wp-prod-36284,MŨ FULLFACE NEXX SX.100R SKIDDER,BB-CHUAP-036284,Chưa phân loại,,0.00,,,,DRAFT,true,36284,,no_source_manual_input_required
+wp-prod-39528,NÓN BẢO HIỂM ILM WS902,BB-CHUAP-039528,Chưa phân loại,,0.00,,,,DRAFT,true,39528,,no_source_manual_input_required
+wp-prod-30499,NÓN NEXX SX.100 SKYWAY,BB-CHUAP-030499,Chưa phân loại,,0.00,,,,DRAFT,false,30499,,no_source_manual_input_required
+wp-prod-34298,QUẦN BẢO HỘ BULLFIGHTER VULCAN MALE BUKSE REGULAR,BB-CHUAP-034298,Chưa phân loại,,0.00,,,,DRAFT,false,34298,,no_source_manual_input_required
+wp-prod-39542,QUẦN BẢO HỘ ILM BJN01,BB-CHUAP-039542,Chưa phân loại,,0.00,,,,DRAFT,false,39542,,no_source_manual_input_required
+wp-prod-39540,QUẦN BẢO HỘ ILM PM1,BB-CHUAP-039540,Chưa phân loại,,0.00,,,,DRAFT,true,39540,,no_source_manual_input_required
+wp-prod-34870,QUẦN GIÁP BẢO HỘ CHO NỮ REVIT AIRWAY 2,BB-CHUAP-034870,Chưa phân loại,,0.00,,,,DRAFT,false,34870,,no_source_manual_input_required
+wp-prod-32580,QUẦN GIÁP BẢO HỘ FURYGAN VULCAN MALE BUKSER REGULAR,BB-CHUAP-032580,Chưa phân loại,,0.00,,,,DRAFT,false,32580,,no_source_manual_input_required
+wp-prod-32730,QUẦN LÓT RS TAICHI COOLRIDE BASIC UNDER PANT - RSU328,BB-CHUAP-032730,Chưa phân loại,,0.00,,,,DRAFT,true,32730,,no_source_manual_input_required
+wp-prod-39534,ÁO BẢO HỘ ILM JAM1,BB-CHUAP-039534,Chưa phân loại,,0.00,,,,DRAFT,true,39534,,no_source_manual_input_required
+wp-prod-39532,ÁO BẢO HỘ ILM JRF4,BB-CHUAP-039532,Chưa phân loại,,0.00,,,,DRAFT,true,39532,,no_source_manual_input_required
+wp-prod-41186,FULLFACE HELMET ILM RACING MF510,BB-MOTOR-041186,HELMETS,,0.00,,,,DRAFT,true,41186,,no_source_manual_input_required
+wp-prod-41187,product-41187,BB-MOTOR-041187,HELMETS,,0.00,,,,DRAFT,true,41187,,no_source_manual_input_required
+wp-prod-4016,MŨ BẢO HIỂM SS1310 FAST FORWARD BLACK/GREEN,SS1310 FAST FORWARD 1,KHUYẾN MÃI HOT,,0.00,,,,DRAFT,true,4016,,no_source_manual_input_required
+wp-prod-28956,MŨ BẢO HIỂM AGV K3 SV ANGRY BLACE,ANGRY,MŨ BẢO HIỂM,AGV,0.00,,,,DRAFT,true,28956,,no_source_manual_input_required
+wp-prod-28938,MŨ BẢO HIỂM AGV K3 SV BUBLE GRAY,BUBLE,MŨ BẢO HIỂM,AGV,0.00,,,,DRAFT,true,28938,,no_source_manual_input_required
+wp-prod-28966,MŨ BẢO HIỂM AGV K3 SV ROSSI MUGELLO,ROSSI,MŨ BẢO HIỂM,AGV,0.00,,,,DRAFT,true,28966,,no_source_manual_input_required
+wp-prod-32746,MŨ BẢO HIỂM FULLFACE AGV K3-SV - GLOSS BLACK,K3SVGB,MŨ BẢO HIỂM,AGV,0.00,,,,DRAFT,true,32746,,no_source_manual_input_required
+wp-prod-27678,NÓN BẢO HIỂM 3/4 AGV ORBYT,ORBYT,MŨ BẢO HIỂM,AGV,0.00,,,,DRAFT,true,27678,,no_source_manual_input_required
+wp-prod-39839,MŨ BẢO HIỂM ILM Z302 (DOT| ECE 22.06),BB-NONBA-039839,MŨ BẢO HIỂM,ILM,0.00,,,,DRAFT,true,39839,,no_source_manual_input_required
+wp-prod-30290,NÓN BẢO HIỂM NEXX SX.100R ABISAL,SX100R-A,MŨ BẢO HIỂM,NEXX,0.00,,,,DRAFT,true,30290,,no_source_manual_input_required
+wp-prod-30269,MŨ BẢO HIỂM NEXX SX.100R BLACK,SX100R,Mũ Bảo Hiểm Fullface,NEXX,0.00,,,,DRAFT,true,30269,,no_source_manual_input_required
+wp-prod-30243,NÓN NEXX SX.100R HUNGRY MILES,BB-MUBAO-030243,Mũ Bảo Hiểm Fullface,NEXX,0.00,,,,DRAFT,true,30243,,no_source_manual_input_required
+wp-prod-42078,GIÁ ĐỠ ĐIỆN THOẠI GẮN CHÂN GƯƠNG KEWIG KWG-M36-C2,BB-PHUKI-042078,PHỤ KIỆN - GIÁ ĐỠ ĐIỆN THOẠI,KEWIG,0.00,,,,DRAFT,false,42078,,no_source_manual_input_required
+wp-prod-42051,GIÁ ĐỠ ĐIỆN THOẠI GẮN GHI ĐÔNG KEWIG KWG-M36-C1S,BB-PHUKI-042051,PHỤ KIỆN - GIÁ ĐỠ ĐIỆN THOẠI,KEWIG,0.00,,,,DRAFT,true,42051,,no_source_manual_input_required
+wp-prod-10885,Imported WP product 10885,BB-UNCAT-010885,Uncategorized,,0.00,,,,DRAFT,false,10885,,no_source_manual_input_required
+wp-prod-28414,Imported WP product 28414,BB-UNCAT-028414,Uncategorized,,0.00,,,,DRAFT,false,28414,,no_source_manual_input_required
+wp-prod-42079,MÓC TREO ĐỒ DÀNH CHO MOTOR/XE MÁY KEWIG KWG-CBK-2,BB-UNCAT-042079,Uncategorized,,0.00,,,,DRAFT,false,42079,,no_source_manual_input_required
+wp-prod-37742,product-37742,BB-UNCAT-037742,Uncategorized,,0.00,,,,DRAFT,false,37742,,no_source_manual_input_required

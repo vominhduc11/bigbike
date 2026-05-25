@@ -9,7 +9,7 @@ import { buildQueryString, parsePositiveIntParam, parseTextParam, readSearchPara
 import { toHomePath } from "@/lib/utils/routes";
 
 const SEARCH_PATH = "/tim-kiem/";
-const DEFAULT_PAGE_SIZE = 4;
+const DEFAULT_PAGE_SIZE = 10;
 
 type SearchPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -150,6 +150,13 @@ function SearchPagination({
       <div className="text-right">
         <div className="paginate-links">
           <ul className="page-numbers">
+            {page > 1 ? (
+              <li>
+                <Link className="prev page-numbers" href={hrefFor(page - 1)} aria-label="Trang trước">
+                  <i className="fal fa-angle-left" aria-hidden="true" />
+                </Link>
+              </li>
+            ) : null}
             {pages.map((item, index) => (
               <li key={item === "..." ? `dots-${index}` : item}>
                 {item === "..." ? (
@@ -168,7 +175,7 @@ function SearchPagination({
             {page < totalPages ? (
               <li>
                 <Link className="next page-numbers" href={hrefFor(page + 1)} aria-label="Trang sau">
-                  <span aria-hidden="true">›</span>
+                  <i className="fal fa-angle-right" aria-hidden="true" />
                 </Link>
               </li>
             ) : null}

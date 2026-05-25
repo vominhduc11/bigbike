@@ -6,7 +6,6 @@ import { PurchaseSectionClient } from "@/components/catalog/PurchaseSectionClien
 import { ProductTabs } from "@/components/catalog/ProductTabs";
 import { ProductSpecTable } from "@/components/catalog/ProductSpecTable";
 import { ProductVideosTab } from "@/components/catalog/ProductVideosTab";
-import { ReviewsSection } from "@/components/catalog/ReviewsSection";
 import { PdpRelatedProductsCarousel } from "@/components/catalog/PdpRelatedProductsCarousel";
 import { AnalyticsView } from "@/components/analytics/AnalyticsView";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
@@ -23,9 +22,8 @@ import { safeArray, safeText } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import {
   toCanonicalUrl,
-  toCategoryPath,
+  toBrandPath,
   toHomePath,
-  toProductListPath,
   toProductPath,
 } from "@/lib/utils/routes";
 import { isValidSlug } from "@/lib/utils/slug";
@@ -91,10 +89,7 @@ export default async function ProductDetailPage({
   const { slug } = await params;
   if (!isValidSlug(slug)) notFound();
 
-  const [tProduct, tBreadcrumb] = await Promise.all([
-    getTranslations("Product"),
-    getTranslations("Breadcrumb"),
-  ]);
+  const tProduct = await getTranslations("Product");
 
   const result = await getProductBySlug(slug, await getLocale());
   if (!result.data && (result.error?.status === 404 || result.error?.status === 410)) notFound();
@@ -122,6 +117,9 @@ export default async function ProductDetailPage({
     product.category?.slug === "chua-phan-loai" ? null : (product.category ?? null);
 
   const sanitizedDescription = product.description ? sanitizeRichHtml(product.description) : "";
+  const sanitizedShortDescription = product.shortDescription
+    ? sanitizeRichHtml(product.shortDescription)
+    : "";
 
   const productForJsonLd = effectiveCategory
     ? product
@@ -142,7 +140,6 @@ export default async function ProductDetailPage({
     .filter((p) => p.id !== product.id)
     .slice(0, 8);
 
-  const reviewCount = product.ratingCount ?? 0;
   const sections: {
     id: string;
     label: string;
@@ -151,7 +148,7 @@ export default async function ProductDetailPage({
 
   if (richHasContent(sanitizedDescription)) {
     sections.push({
-      id: "mo-ta",
+      id: "tab-description",
       label: "Mô tả",
       content: (
         <article
@@ -163,24 +160,16 @@ export default async function ProductDetailPage({
   }
 
   sections.push({
-    id: "danh-gia",
-    label: reviewCount > 0 ? `Đánh giá (${reviewCount})` : "Đánh giá",
-    content: <ReviewsSection productId={product.id} />,
-  });
-
-  sections.push({
-    id: "videos",
+    id: "tab-videos",
     label: "Videos",
     content: <ProductVideosTab videos={videos} />,
   });
 
-  if (specs.length > 0) {
-    sections.push({
-      id: "thong-so",
-      label: "Thông số kĩ thuật",
-      content: <ProductSpecTable specifications={specs} />,
-    });
-  }
+  sections.push({
+    id: "tab-more_infomation",
+    label: "Thông số kĩ thuật",
+    content: <ProductSpecTable specifications={specs} />,
+  });
 
   return (
     <>
@@ -205,10 +194,9 @@ export default async function ProductDetailPage({
         <Breadcrumb
           variant="onLight"
           items={[
-            { label: tBreadcrumb("home"), href: toHomePath() },
-            { label: tBreadcrumb("products"), href: toProductListPath() },
-            ...(effectiveCategory?.name && effectiveCategory.slug
-              ? [{ label: effectiveCategory.name, href: toCategoryPath(effectiveCategory.slug) }]
+            { label: "Bigbike.vn", href: toHomePath() },
+            ...(product.brand?.name && product.brand.slug
+              ? [{ label: product.brand.name, href: toBrandPath(product.brand.slug) }]
               : []),
             { label: productName },
           ]}
@@ -232,6 +220,7 @@ export default async function ProductDetailPage({
             fallbackPrice={product.price}
             fallbackStockState={product.stockState}
             fallbackVariants={product.variants ?? []}
+            shortDescriptionHtml={sanitizedShortDescription}
             canonicalUrl={toCanonicalUrl(toProductPath(product.slug))}
           />
         </div>
@@ -239,18 +228,7 @@ export default async function ProductDetailPage({
         <ProductTabs sections={sections} />
 
         {relatedProducts.length > 0 && (
-          <PdpRelatedProductsCarousel
-            products={relatedProducts}
-            kicker={tProduct("related.kicker")}
-            heading={tProduct("related.heading")}
-          />
-        )}
-
-        {product.contentBottom && product.contentBottom.trim() && (
-          <section
-            className="block-text pt-100 pb-60 bb-wp-content-bottom"
-            dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(product.contentBottom) }}
-          />
+          <PdpRelatedProductsCarousel products={relatedProducts} />
         )}
       </div>
     </>

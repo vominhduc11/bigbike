@@ -228,6 +228,18 @@ function buildEmptyTranslation() {
   }
 }
 
+function findOptionById(items, id) {
+  if (!id) return null
+  return items.find((item) => item?.id === id) || null
+}
+
+function prependSelectedOption(items, selected) {
+  if (!selected?.id || findOptionById(items, selected.id)) {
+    return items
+  }
+  return [selected, ...items]
+}
+
 function buildFormFromItem(item) {
   if (!item) return buildEmptyForm()
 
@@ -258,8 +270,8 @@ function buildFormFromItem(item) {
     descriptionBlocks: item.descriptionBlocks ?? null,
     contentBottom: item.contentBottom || '',
     installationGuide: item.installationGuide || '',
-    brandId: item.brand?.id || '',
-    categoryId: item.category?.id || '',
+    brandId: item.brandId || item.brand?.id || '',
+    categoryId: item.categoryId || item.category?.id || item.categories?.[0]?.id || '',
     retailPrice:
       Number.isInteger(item.price?.retailPrice) && item.price.retailPrice > 0
         ? String(item.price.retailPrice)
@@ -1989,6 +2001,23 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   })
   const categories = categoriesResult?.items ?? []
   const brands = brandsResult?.items ?? []
+  const loadedProduct = fetchResult?.item ?? null
+  const selectedCategoryRef = findOptionById(
+    [
+      loadedProduct?.category,
+      ...(Array.isArray(loadedProduct?.categories) ? loadedProduct.categories : []),
+    ].filter(Boolean),
+    form.categoryId,
+  )
+  const selectedBrandRef = findOptionById([loadedProduct?.brand].filter(Boolean), form.brandId)
+  const categoryOptions = prependSelectedOption(categories, selectedCategoryRef)
+  const brandOptions = prependSelectedOption(brands, selectedBrandRef)
+  const selectedCategoryLabel =
+    findOptionById(categoryOptions, form.categoryId)?.name ||
+    (form.categoryId ? t('products.detail.optionNotFound', { id: form.categoryId }) : undefined)
+  const selectedBrandLabel =
+    findOptionById(brandOptions, form.brandId)?.name ||
+    (form.brandId ? t('products.detail.optionNotFound', { id: form.brandId }) : undefined)
 
   // Product picker for the "Sản phẩm liên quan" section — debounced search,
   // self excluded so a product can't be added to its own related list.
@@ -2552,25 +2581,29 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   </Field>
 
                   <Field label={t('products.detail.categoryId')} error={validationErrors.categoryId}>
-                    <Select key={`cat-${categories.length > 0}`} value={form.categoryId} onValueChange={(val) => updateField('categoryId', val)} disabled={isReadOnly}>
-                      <SelectTrigger><SelectValue placeholder={t('products.detail.categoryPlaceholder')} /></SelectTrigger>
+                    <Select key={`cat-${categoryOptions.length > 0}`} value={form.categoryId} onValueChange={(val) => updateField('categoryId', val)} disabled={isReadOnly}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={t('products.detail.categoryPlaceholder')}>{selectedCategoryLabel}</SelectValue>
+                      </SelectTrigger>
                       <SelectContent>
-                        {form.categoryId && !categories.some((c) => c.id === form.categoryId) && (
+                        {form.categoryId && !categoryOptions.some((c) => c.id === form.categoryId) && (
                           <SelectItem value={form.categoryId} disabled>{t('products.detail.optionNotFound', { id: form.categoryId })}</SelectItem>
                         )}
-                        {categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                        {categoryOptions.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </Field>
 
                   <Field label={t('products.detail.brandId')}>
-                    <Select key={`brand-${brands.length > 0}`} value={form.brandId} onValueChange={(val) => updateField('brandId', val)} disabled={isReadOnly}>
-                      <SelectTrigger><SelectValue placeholder={t('products.detail.brandPlaceholder')} /></SelectTrigger>
+                    <Select key={`brand-${brandOptions.length > 0}`} value={form.brandId} onValueChange={(val) => updateField('brandId', val)} disabled={isReadOnly}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={t('products.detail.brandPlaceholder')}>{selectedBrandLabel}</SelectValue>
+                      </SelectTrigger>
                       <SelectContent>
-                        {form.brandId && !brands.some((b) => b.id === form.brandId) && (
+                        {form.brandId && !brandOptions.some((b) => b.id === form.brandId) && (
                           <SelectItem value={form.brandId} disabled>{t('products.detail.optionNotFound', { id: form.brandId })}</SelectItem>
                         )}
-                        {brands.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                        {brandOptions.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </Field>
