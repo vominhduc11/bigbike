@@ -62,17 +62,28 @@ function toInteger(value, fallback = 0) {
   return parsed
 }
 
-// Rewrites Docker-internal MinIO URLs to the nginx-proxied /media-proxy/... path
-// so the browser can load them. The internal origin is configured via
-// VITE_MINIO_INTERNAL_ORIGIN (default: http://minio:9000).
+// Rewrites MinIO URLs (both Docker-internal and localhost) to the nginx-proxied
+// /media-proxy/... path so the browser can load them.
+// Handles two origin forms stored in the DB:
+//   - http://minio:9000/...  (set by migration runner inside Docker)
+//   - http://localhost:9000/... (set by migration when MINIO_ENDPOINT=localhost)
+// VITE_MINIO_INTERNAL_ORIGIN overrides the primary internal origin (default: http://minio:9000).
 const _MINIO_INTERNAL_ORIGIN = (
   import.meta.env.VITE_MINIO_INTERNAL_ORIGIN || 'http://minio:9000'
 ).replace(/\/$/, '')
 
+const _MINIO_LOCALHOST_ORIGIN = 'http://localhost:9000'
+
 function rewriteInternalMinioUrl(url) {
-  const prefix = _MINIO_INTERNAL_ORIGIN + '/'
-  if (!url.startsWith(prefix)) return url
-  const rest = url.slice(prefix.length)
+  let rest = null
+  for (const origin of [_MINIO_INTERNAL_ORIGIN, _MINIO_LOCALHOST_ORIGIN]) {
+    const prefix = origin + '/'
+    if (url.startsWith(prefix)) {
+      rest = url.slice(prefix.length)
+      break
+    }
+  }
+  if (rest === null) return url
   const slashIdx = rest.indexOf('/')
   if (slashIdx === -1) return url
   return '/media-proxy/' + rest.slice(slashIdx + 1)
@@ -748,21 +759,17 @@ export const DISCOUNT_TYPE_VALUES = ['PERCENT', 'FIXED']
 
 export function normalizeCoupon(input) {
   const s = input && typeof input === 'object' ? input : {}
-  // discountType: backend stores "FIXED" or "PERCENT"; accept legacy "FIXED_AMOUNT" from mock
   const rawType = toTrimmedStringLocal(s.discountType)
-  const discountType = rawType === 'FIXED_AMOUNT' ? 'FIXED' : (DISCOUNT_TYPE_VALUES.includes(rawType) ? rawType : 'FIXED')
+  const discountType = DISCOUNT_TYPE_VALUES.includes(rawType) ? rawType : 'FIXED'
   return {
     id: toTrimmedStringLocal(s.id) || 'unknown-coupon',
     code: toTrimmedStringLocal(s.code) || 'UNKNOWN',
     name: toTrimmedStringLocal(s.name) || '',
     discountType,
-    // backend: `amount`; mock compat: `discountValue`
-    discountValue: toIntegerLocal(s.amount ?? s.discountValue, 0),
-    // backend: `minimumAmount`; mock compat: `minimumOrderAmount`
-    minimumOrderAmount: toIntegerLocal(s.minimumAmount ?? s.minimumOrderAmount, 0),
+    discountValue: toIntegerLocal(s.amount, 0),
+    minimumOrderAmount: toIntegerLocal(s.minimumAmount, 0),
     maximumAmount: s.maximumAmount != null ? toIntegerLocal(s.maximumAmount) : undefined,
-    // backend: `usageLimit`; mock compat: `maxUsage`
-    maxUsage: (s.usageLimit ?? s.maxUsage) != null ? toIntegerLocal(s.usageLimit ?? s.maxUsage) : undefined,
+    maxUsage: s.usageLimit != null ? toIntegerLocal(s.usageLimit) : undefined,
     usageCount: toIntegerLocal(s.usageCount, 0),
     status: COUPON_STATUS_VALUES.includes(s.status) ? s.status : 'INACTIVE',
     channel: ['ALL', 'ONLINE', 'POS'].includes(s.channel) ? s.channel : 'ALL',

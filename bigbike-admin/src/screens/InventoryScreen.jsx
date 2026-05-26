@@ -1652,9 +1652,13 @@ export function InventoryScreen({ canUpdate = false }) {
   const state = useAdminList(['inventory', query], () => fetchInventoryGrouped(query))
 
   useEffect(() => {
-    fetchInventorySummary().then(setSummary)
-    fetchSerialInventoryOnly().then(setSerialOnlyMode)
-  }, [])
+    fetchInventorySummary()
+      .then(setSummary)
+      .catch((e) => toast.error(e.message || t('common.error')))
+    fetchSerialInventoryOnly()
+      .then(setSerialOnlyMode)
+      .catch((e) => toast.error(e.message || t('common.error')))
+  }, [t])
 
   useEffect(() => {
     if (isFirst.current) { isFirst.current = false; return }
@@ -1665,7 +1669,9 @@ export function InventoryScreen({ canUpdate = false }) {
     setIsStockInOpen(false)
     setStockInTarget(null)
     queryClient.invalidateQueries({ queryKey: ['inventory'] })
-    fetchInventorySummary().then(setSummary)
+    fetchInventorySummary()
+      .then(setSummary)
+      .catch((e) => toast.error(e.message || t('common.error')))
   }
 
   function openStockIn(item = null) {
@@ -1691,7 +1697,9 @@ export function InventoryScreen({ canUpdate = false }) {
     setIsSerialOpen(false)
     setSerialTarget(null)
     queryClient.invalidateQueries({ queryKey: ['inventory'] })
-    fetchInventorySummary().then(setSummary)
+    fetchInventorySummary()
+      .then(setSummary)
+      .catch((e) => toast.error(e.message || t('common.error')))
   }
 
 

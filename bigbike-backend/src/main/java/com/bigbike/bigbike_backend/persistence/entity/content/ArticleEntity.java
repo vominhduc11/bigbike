@@ -20,6 +20,8 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -145,6 +147,7 @@ public class ArticleEntity {
     private Instant updatedAt;
 
     @Convert(converter = DescriptionBlocksConverter.class)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "body_blocks", columnDefinition = "jsonb")
     private List<DescriptionBlock> bodyBlocks;
 

@@ -122,8 +122,17 @@
   --bb-text-26: 26px;
   --bb-text-32: 32px;
   --bb-text-40: 40px;
+  --bb-text-50: 50px;
 
   --bb-text-hero: 30px;
+  --bb-text-section-title: 50px;
+  --bb-line-section-title: 60px;
+  --bb-text-section-kicker: 16px;
+  --bb-line-section-kicker: 19px;
+  --bb-text-news-title: 20px;
+  --bb-line-news-title: 24px;
+  --bb-text-product-title: 16px;
+  --bb-line-product-title: 20px;
   /* WP .slogan-bigbike: Barlow Condensed 500, 3.429rem, line-height 4.143rem, uppercase, white */
   --bb-text-footer-slogan: 3.429rem;
   --bb-line-footer-slogan: 4.143rem;
@@ -364,6 +373,9 @@
     --bb-text-26: 20px;
     --bb-text-32: 24px;
     --bb-text-40: 26px;
+    --bb-text-50: 30px;
+    --bb-text-section-title: 30px;
+    --bb-line-section-title: 36px;
     --bb-text-22: 18px;
     --bb-text-footer-slogan: 2.875rem;
     --bb-line-footer-slogan: 1.2;
@@ -379,6 +391,9 @@
     --bb-text-26: 22px;
     --bb-text-32: 26px;
     --bb-text-40: 32px;
+    --bb-text-50: 42px;
+    --bb-text-section-title: 42px;
+    --bb-line-section-title: 50px;
     --bb-section-y: 3.25rem;
   }
 }

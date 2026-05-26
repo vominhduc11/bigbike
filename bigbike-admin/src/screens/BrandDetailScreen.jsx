@@ -133,7 +133,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
   const state = {
     status: isCreate ? 'success' : isLoading ? 'loading' : isError ? 'error' : 'success',
     item: fetchResult?.item ?? null,
-    warning: fetchResult?.mode === 'mock' ? (fetchResult?.warning ?? '') : '',
+    warning: '',
     error: fetchError?.message ?? '',
   }
 

@@ -20,7 +20,7 @@ bigbike-backend/target/
 output/
 
 # Local backup output
-# backups/
+backups/
 
 # Local agent/tooling state
 .claude/

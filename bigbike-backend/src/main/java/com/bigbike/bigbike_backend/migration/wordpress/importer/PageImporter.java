@@ -42,7 +42,11 @@ public class PageImporter implements DomainImporter {
             try {
                 String slug = resolveSlug(mp);
                 String entityId = "wp-page-" + mp.sourceId();
+                // Lookup by wp-id first, then by slug to avoid duplicate slug constraint
                 Optional<PageEntity> existing = repo.findById(entityId);
+                if (existing.isEmpty()) {
+                    existing = repo.findBySlug(slug);
+                }
                 PageEntity entity;
                 boolean isNew;
                 if (existing.isPresent()) {

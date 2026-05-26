@@ -35,7 +35,7 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
         setState({
           status: 'success',
           item: result.item,
-          warning: result.mode === 'mock' ? result.warning : '',
+          warning: '',
         })
       })
       .catch((error) => {

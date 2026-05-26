@@ -9,6 +9,7 @@ import {
   listBrands,
   listCategories,
   listProducts,
+  listPublicSettings,
 } from "@/lib/api/public-api";
 import { buildCatalogTitle } from "@/lib/utils/catalog";
 import {
@@ -18,6 +19,7 @@ import {
   wpOrderbyToProductSort,
 } from "@/lib/utils/catalog-sort";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
+import { readHeroSettings } from "@/lib/utils/page-hero";
 import { toHomePath, toProductListPath } from "@/lib/utils/routes";
 import {
   buildQueryString,
@@ -143,7 +145,7 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
   }
 
   const locale = await getLocale();
-  const [result, brandsResult, categoriesResult] = await Promise.all([
+  const [result, brandsResult, categoriesResult, settingsResult] = await Promise.all([
     listProducts({
       page: pageParsed.value,
       size: sizeParsed.value,
@@ -158,7 +160,9 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
     }),
     listBrands({ page: 1, size: 100, sort: "name:asc" }),
     listCategories({ page: 1, size: 100, sort: "sortOrder:asc" }),
+    listPublicSettings(),
   ]);
+  const heroSettings = readHeroSettings(settingsResult.data ?? [], "hero_products");
 
   const pagination = result.pagination;
   const currentFilters = {
@@ -173,8 +177,10 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
   return (
     <div className="bb-product-archive archive post-type-archive-product">
       <ProductArchiveHero
-        title={tCatalog("allProducts")}
+        title={heroSettings.title ?? tCatalog("allProducts")}
         breadcrumb={[{ label: "Bigbike.vn", href: toHomePath() }]}
+        imageUrl={heroSettings.imageUrl}
+        imageAlt={heroSettings.imageAlt}
       />
 
       <ProductArchiveLayout

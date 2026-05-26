@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 
-export type HeaderPanel = "none" | "search" | "desktop-info" | "mobile-menu";
+export type HeaderPanel = "none" | "search" | "desktop-info" | "mobile-menu" | "cart";
 type ToggleableHeaderPanel = Exclude<HeaderPanel, "none">;
 
 type HeaderUiContextValue = {
@@ -27,7 +27,10 @@ export function HeaderUiProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const shouldLockScroll =
-      activePanel === "search" || activePanel === "desktop-info";
+      activePanel === "search" ||
+      activePanel === "desktop-info" ||
+      activePanel === "mobile-menu" ||
+      activePanel === "cart";
 
     document.body.style.overflow = shouldLockScroll ? "hidden" : "";
     document.documentElement.style.overflow = shouldLockScroll ? "hidden" : "";

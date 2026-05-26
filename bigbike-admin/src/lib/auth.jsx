@@ -13,7 +13,7 @@ const AuthContext = createContext(null)
 const initialState = {
   status: 'initializing', // 'initializing' | 'unauthenticated' | 'authenticated' | 'error'
   user: null,
-  mode: 'mock',
+  mode: 'live',
   error: '',
 }
 
@@ -24,7 +24,7 @@ export function AuthProvider({ children }) {
   const aliveRef = useRef(true)
 
   const setUnauthenticated = useCallback(() => {
-    setState({ status: 'unauthenticated', user: null, mode: 'mock', error: '' })
+    setState({ status: 'unauthenticated', user: null, mode: 'live', error: '' })
   }, [])
 
   // Wired into the fetch interceptor: when refresh ultimately fails, kick the

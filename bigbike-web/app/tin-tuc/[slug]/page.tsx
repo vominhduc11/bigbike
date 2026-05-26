@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 
 import { ErrorState } from "@/components/ui/ErrorState";
-import { getArticleBySlug, listArticles } from "@/lib/api/public-api";
+import { getArticleBySlug, listArticles, listPublicSettings } from "@/lib/api/public-api";
 import type { Article } from "@/lib/contracts/public";
 import {
   buildArticleBreadcrumbJsonLd,
@@ -15,6 +15,7 @@ import {
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { safeText } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
+import { pickSetting } from "@/lib/utils/settings";
 import {
   toArticleListPath,
   toArticlePath,
@@ -103,12 +104,14 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
   }
 
   const article = result.data;
-  const [featuredResult, latestResult, articleJsonLd, breadcrumbJsonLd] = await Promise.all([
+  const [featuredResult, latestResult, settingsResult, breadcrumbJsonLd] = await Promise.all([
     listArticles({ page: 1, size: 8, sort: "publishedAt:desc", featured: true, lang: locale }),
     listArticles({ page: 1, size: 8, sort: "publishedAt:desc", lang: locale }),
-    Promise.resolve(serializeJsonLd(buildArticleJsonLd(article))),
+    listPublicSettings(),
     Promise.resolve(serializeJsonLd(buildArticleBreadcrumbJsonLd(article))),
   ]);
+  const siteName = pickSetting(settingsResult.data ?? [], ["site_name"]);
+  const articleJsonLd = serializeJsonLd(buildArticleJsonLd(article, siteName || undefined));
 
   const articleTitle = safeText(article.title, t("articleTitleFallback"));
   const categoryLabel = getArticleCategoryLabel(article);

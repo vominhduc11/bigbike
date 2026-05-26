@@ -16,6 +16,8 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.time.Instant;
 import java.util.List;
 
@@ -112,6 +114,7 @@ public class PageEntity {
     private Instant updatedAt;
 
     @Convert(converter = DescriptionBlocksConverter.class)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "body_blocks", columnDefinition = "jsonb")
     private List<DescriptionBlock> bodyBlocks;
 

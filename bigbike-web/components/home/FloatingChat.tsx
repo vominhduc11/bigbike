@@ -83,9 +83,17 @@ function IconToggleClose() {
   );
 }
 
-function extractTrailingValue(url: string, fallback: string): string {
+function extractDisplayValue(url: string): string {
   const match = /\/([^/?#]+)(?:[?#].*)?$/.exec(url);
-  return match?.[1] ?? fallback;
+  if (match?.[1]) {
+    return match[1];
+  }
+
+  try {
+    return new URL(url).hostname.replace(/^www\./i, "");
+  } catch {
+    return url;
+  }
 }
 
 export function FloatingChat({ hotline, zaloUrl, messengerUrl }: Readonly<FloatingChatProps>) {
@@ -123,7 +131,7 @@ export function FloatingChat({ hotline, zaloUrl, messengerUrl }: Readonly<Floati
       key: "zalo",
       href: zaloUrl,
       label: "Zalo",
-      value: extractTrailingValue(zaloUrl, "0764640679"),
+      value: extractDisplayValue(zaloUrl),
       icon: <IconZalo />,
     });
   }
@@ -133,7 +141,7 @@ export function FloatingChat({ hotline, zaloUrl, messengerUrl }: Readonly<Floati
       key: "messenger",
       href: messengerUrl,
       label: "Messenger",
-      value: "Bigbike.vn",
+      value: extractDisplayValue(messengerUrl),
       icon: <IconMessenger />,
     });
   }

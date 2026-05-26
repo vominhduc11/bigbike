@@ -217,7 +217,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
     queryFn: () => fetchOrderDetail(orderId),
   })
   const order = orderQuery.data?.item ?? null
-  const warning = orderQuery.data?.mode === 'mock' ? (orderQuery.data?.warning ?? '') : ''
+  const warning = ''
   const status = orderQuery.isLoading ? 'loading' : orderQuery.isError ? 'error' : 'success'
 
   const [saving, setSaving] = useState(false)

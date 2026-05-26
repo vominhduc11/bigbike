@@ -10,6 +10,7 @@ import type {
   ClientError,
   ContentCategoryWithCount,
   DataResult,
+  HomeHighlightItem,
   HomeSlider,
   HomeVideo,
   ListResult,
@@ -416,6 +417,10 @@ export function listHomeSliders(): Promise<DataResult<HomeSlider[]>> {
 
 export function listHomeVideos(): Promise<DataResult<HomeVideo[]>> {
   return loadData<HomeVideo[]>("/api/v1/home-videos", 300, ["home-videos"]);
+}
+
+export function listHomeHighlights(): Promise<DataResult<HomeHighlightItem[]>> {
+  return loadData<HomeHighlightItem[]>("/api/v1/home/category-highlights", 300, ["home-highlights"]);
 }
 
 export function getOrderLookup(orderNumber: string, orderKey: string): Promise<DataResult<OrderDetail>> {

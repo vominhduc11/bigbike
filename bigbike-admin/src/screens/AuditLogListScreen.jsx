@@ -549,7 +549,7 @@ export function AuditLogListScreen() {
     fetchAuditLogs(query)
       .then((r) => {
         if (!active) return
-        setState({ status: 'success', items: r.items, pagination: r.pagination, warning: r.mode === 'mock' ? r.warning : '' })
+        setState({ status: 'success', items: r.items, pagination: r.pagination, warning: '' })
         // Restore detail drawer from URL on initial load
         if (query.detail) {
           const match = r.items.find((item) => item.id === query.detail)

@@ -360,6 +360,17 @@ export type HomeVideo = {
   thumbnail: ImageAsset | null;
 };
 
+export type HomeHighlightItem = {
+  slot: number;
+  productId: string;
+  productSlug: string;
+  productName: string;
+  productImageUrl: string | null;
+  categoryId: string;
+  categoryName: string;
+  categorySlug: string;
+};
+
 export type PublicSiteSetting = {
   settingKey: string;
   settingValue: string;

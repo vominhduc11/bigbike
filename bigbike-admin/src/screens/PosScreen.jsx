@@ -115,7 +115,10 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
     try {
       const credit = await fetchCustomerCredit(customerId)
       setCustomerCredit(credit)
-    } catch { setCustomerCredit(null) }
+    } catch (e) {
+      setCustomerCredit(null)
+      toast.error(e.message || t('common.error'))
+    }
     finally { setCreditLoading(false) }
   }
 

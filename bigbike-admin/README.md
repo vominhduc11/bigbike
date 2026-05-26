@@ -35,12 +35,10 @@ npm run lint
 
 Default landing: `/admin/products`.
 
-## Data mode
+## Data Source
 
-The API client supports a typed mock fallback when the backend is unavailable. Mock mode renders an explicit read-only banner.
+The admin runtime uses the real backend API as its only data source. Backend failures surface as screen error states; the client does not fall back to generated data.
 
 ```text
-VITE_USE_ADMIN_MOCK=true                              # force mock mode
-VITE_ADMIN_ROLE=ADMIN|MANAGER|CONTENT_EDITOR|VIEWER|SUPER_ADMIN  # mock permission profile
 VITE_ADMIN_API_BASE=http://localhost:8080/api/v1      # API base
 ```

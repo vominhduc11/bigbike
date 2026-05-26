@@ -397,6 +397,31 @@ Status: `CONFIRMED_FROM_CODE`
 
 **Sensitive key masking:** Any key whose name contains `secret`, `password`, `token`, `api_key`, `privatekey`, etc. always returns `settingValue="********"` in admin responses and in audit log `before_data`/`after_data`.
 
+**Public storefront setting keys returned by `GET /api/v1/settings/public`:**
+
+- `general`:
+  - `site_name` — public site/display name used by header/footer/SEO helpers.
+  - `footer_tagline` — footer hero/tagline heading text.
+  - `footer_description` — footer descriptive paragraph.
+  - `bct_url` — public Bộ Công Thương registration URL for the footer badge.
+- `contact`:
+  - `contact_email`, `contact_address`
+  - `hotline`, `hotline_2`
+  - `facebook_url`, `messenger_url`, `zalo_url`, `youtube_url`, `tiktok_url`, `instagram_url`
+  - `google_maps_url` — contact-page embedded map URL.
+- `public_home`:
+  - `promo_title`, `promo_off`, `promo_href`, `promo_image_url` — homepage promo banner block.
+  - `home_exp_subtitle`, `home_exp_title`, `home_exp_desc` — homepage experience/news teaser section copy.
+  - `about_title`, `about_subtitle`, `about_content_html` — homepage about block copy.
+- `seo`:
+  - `seo_home_title`, `seo_home_description`, `seo_home_h1`, `og_image_url`
+  - `home_content_bottom_html` — homepage bottom SEO HTML block.
+
+Status: `CONFIRMED_FROM_CODE` — `SettingDefinitionRegistry.java`, `PublicSettingsController.java`,
+`V18__add_public_homepage_contract_fields.sql`, `V19__backfill_homepage_data.sql`,
+`V22__seed_footer_menu_settings.sql`, `V24__seed_footer_contact_settings.sql`,
+`V32__add_article_product_image_and_home_exp_settings.sql`.
+
 **Page hero settings (group `public_hero`, all `publicAllowed`):**
 
 For each listing page that lacks a `PageEntity` backing (`/san-pham`, `/brands`, `/tin-tuc`), the hero block is composed from 5 keys:

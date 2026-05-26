@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { PageHero } from "@/components/layout/PageHero";
 import { PolicySidebar } from "@/components/layout/PolicySidebar";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -11,17 +11,24 @@ import { sanitizeRichHtml } from "@/lib/utils/html";
 import { toHomePath, toPagePath } from "@/lib/utils/routes";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations("StaticPage");
+  const [locale, t] = await Promise.all([
+    getLocale(),
+    getTranslations("StaticPage"),
+  ]);
+  const pageResult = await getPageBySlug("huong-dan-mua-hang", locale);
+  const page = pageResult.data;
   return buildPublicMetadata({
-    title: t("howToBuy.title"),
-    description: t("howToBuy.description"),
-    canonicalPath: toPagePath("huong-dan-mua-hang"),
+    title: page?.seo?.title ?? page?.title ?? t("howToBuy.title"),
+    description: page?.seo?.description ?? t("howToBuy.description"),
+    canonicalPath: page?.seo?.canonicalUrl ?? toPagePath("huong-dan-mua-hang"),
+    noIndex: page?.seo?.noIndex ?? false,
   });
 }
 
 export default async function HowToBuyPage() {
+  const locale = await getLocale();
   const [pageResult, t, tBreadcrumb] = await Promise.all([
-    getPageBySlug("huong-dan-mua-hang"),
+    getPageBySlug("huong-dan-mua-hang", locale),
     getTranslations("StaticPage"),
     getTranslations("Breadcrumb"),
   ]);

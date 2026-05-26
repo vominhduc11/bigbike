@@ -110,7 +110,7 @@ export function ReportsScreen() {
     fetchAnalytics(from, to)
       .then((r) => {
         if (!active) return
-        setState({ status: 'success', data: r.data, warning: r.mode === 'mock' ? r.warning : '' })
+        setState({ status: 'success', data: r.data, warning: '' })
       })
       .catch((e) => {
         if (!active) return

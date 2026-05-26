@@ -3,13 +3,32 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Search, X } from "lucide-react";
+import { Search, X, Zap } from "lucide-react";
 import { useHeaderUi } from "@/components/layout/HeaderUiContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 const SEARCH_PATH = "/tim-kiem/";
+const QUICK_SEARCHES = [
+  "mũ bảo hiểm fullface",
+  "áo giáp touring",
+  "găng tay carbon",
+  "giày moto",
+];
+const TRENDING_SEARCHES = [
+  "Shoei",
+  "Alpinestars",
+  "Dainese",
+  "AGV",
+  "touring chống nước",
+];
+const POPULAR_CATEGORIES = [
+  "Mũ bảo hiểm",
+  "Áo giáp",
+  "Găng tay",
+  "Phụ kiện",
+];
 
 export function SearchToggle() {
   const t = useTranslations("Search");
@@ -43,8 +62,8 @@ export function SearchToggle() {
     togglePanel("search");
   }
 
-  function handleSearchSubmit() {
-    const trimmed = query.trim();
+  function runSearch(value = query) {
+    const trimmed = value.trim();
     if (!trimmed) return;
 
     handleClose();
@@ -79,13 +98,18 @@ export function SearchToggle() {
           onClick={handleClose}
         />
 
-        <div className="bb-header-search-panel">
+        <div
+          className="bb-header-search-panel"
+          role="dialog"
+          aria-modal="true"
+          aria-label={t("dialogAriaLabel")}
+        >
           <form
             role="search"
             className="bb-header-search-form"
             onSubmit={(event) => {
               event.preventDefault();
-              handleSearchSubmit();
+              runSearch();
             }}
           >
             <span className="bb-header-search-icon" aria-hidden="true">
@@ -113,6 +137,44 @@ export function SearchToggle() {
               <X size={20} aria-hidden />
             </Button>
           </form>
+
+          <div className="bb-mobile-search-body">
+            <section className="bb-mobile-search-section">
+              <p>GỢI Ý TÌM KIẾM</p>
+              <div className="bb-mobile-search-list">
+                {QUICK_SEARCHES.map((item) => (
+                  <button key={item} type="button" onClick={() => runSearch(item)}>
+                    <Search size={16} aria-hidden />
+                    <span>{item}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section className="bb-mobile-search-section">
+              <p>XU HƯỚNG</p>
+              <div className="bb-mobile-search-chips">
+                {TRENDING_SEARCHES.map((item) => (
+                  <button key={item} type="button" onClick={() => runSearch(item)}>
+                    <Zap size={13} aria-hidden />
+                    {item}
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section className="bb-mobile-search-section">
+              <p>DANH MỤC PHỔ BIẾN</p>
+              <div className="bb-mobile-search-grid">
+                {POPULAR_CATEGORIES.map((item) => (
+                  <button key={item} type="button" onClick={() => runSearch(item)}>
+                    <span>{item}</span>
+                    <small>BIGBIKE</small>
+                  </button>
+                ))}
+              </div>
+            </section>
+          </div>
         </div>
       </div>
     </div>

@@ -8,11 +8,11 @@ import { cn } from '@/lib/utils'
  * Multi-tag input with prefix-based autocomplete from {@code GET /admin/media/tags}.
  *
  * Behaviour:
- *   - Type → suggestion dropdown filtered by prefix (debounced 150ms).
- *   - Enter or "," → add the typed value as a new tag.
- *   - Click suggestion → add it.
- *   - Backspace on empty input → remove last tag.
- *   - Click ✕ on a chip → remove that tag.
+ *   - Type -> suggestion dropdown filtered by prefix (debounced 150ms).
+ *   - Enter or "," -> add the typed value as a new tag.
+ *   - Click suggestion -> add it.
+ *   - Backspace on empty input -> remove last tag.
+ *   - Click the remove icon on a chip -> remove that tag.
  *
  * Tags are normalized to lowercase + trim, dedup-ed.
  */
@@ -32,8 +32,12 @@ export function TagInput({ value, onChange, placeholder, disabled }) {
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(async () => {
-      const results = await fetchMediaTags(input)
-      setSuggestions(results.filter((t) => !tagsRef.current.includes(t)))
+      try {
+        const results = await fetchMediaTags(input)
+        setSuggestions(results.filter((t) => !tagsRef.current.includes(t)))
+      } catch {
+        setSuggestions([])
+      }
     }, 150)
     return () => debounceRef.current && clearTimeout(debounceRef.current)
   }, [input])

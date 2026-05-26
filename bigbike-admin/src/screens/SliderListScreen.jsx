@@ -151,7 +151,7 @@ export function SliderListScreen({ canUpdate }) {
   })
 
   const items = [...(data?.items ?? [])].sort((a, b) => a.sortOrder - b.sortOrder)
-  const warning = data?.mode === 'mock' ? (data?.warning ?? '') : ''
+  const warning = ''
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),

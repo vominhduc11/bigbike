@@ -23,6 +23,8 @@ import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -156,6 +158,7 @@ public class ProductEntity {
 
     /** Structured description blocks (V139). Null for products authored via legacy RichTextEditor. */
     @Convert(converter = DescriptionBlocksConverter.class)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "description_blocks", columnDefinition = "jsonb")
     private List<DescriptionBlock> descriptionBlocks;
 

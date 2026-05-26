@@ -13,16 +13,19 @@ import {
 
 type JsonLdObject = Record<string, unknown>;
 
-const SITE_NAME = "BigBike";
-const ORG_LOGO_PATH = "/wp/logo.png";
+const DEFAULT_ORG_LOGO_PATH = "/wp/logo.png";
 
-function buildPublisher(): JsonLdObject {
+function buildPublisher(siteName?: string, logoPath = DEFAULT_ORG_LOGO_PATH): JsonLdObject | undefined {
+  if (!siteName) {
+    return undefined;
+  }
+
   return {
     "@type": "Organization",
-    name: SITE_NAME,
+    name: siteName,
     logo: {
       "@type": "ImageObject",
-      url: toCanonicalUrl(ORG_LOGO_PATH),
+      url: toCanonicalUrl(logoPath),
     },
   };
 }
@@ -59,7 +62,11 @@ export function buildProductJsonLd(product: Product): JsonLdObject {
   };
 }
 
-export function buildArticleJsonLd(article: Article): JsonLdObject {
+export function buildArticleJsonLd(
+  article: Article,
+  publisherName?: string,
+  publisherLogoPath = DEFAULT_ORG_LOGO_PATH,
+): JsonLdObject {
   const canonicalUrl = toCanonicalUrl(article.seo?.canonicalUrl ?? toArticlePath(article.slug));
   const images = article.coverImage?.url ? [article.coverImage.url] : [];
 
@@ -80,7 +87,7 @@ export function buildArticleJsonLd(article: Article): JsonLdObject {
     dateModified: article.updatedAt,
     mainEntityOfPage: canonicalUrl,
     url: canonicalUrl,
-    publisher: buildPublisher(),
+    publisher: buildPublisher(publisherName, publisherLogoPath),
   };
 }
 

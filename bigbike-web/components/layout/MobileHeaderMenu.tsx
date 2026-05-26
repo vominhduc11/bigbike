@@ -1,9 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Clock3, LogOut, MapPin, Phone, UserCircle2 } from "lucide-react";
+import { Clock3, LogOut, MapPin, Phone, UserCircle2, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { HeaderNavNode } from "@/components/layout/HeaderNavItem";
 import { useHeaderUi } from "@/components/layout/HeaderUiContext";
@@ -13,7 +14,7 @@ import {
   toAccountPath,
   toRegisterPath,
 } from "@/lib/utils/routes";
-import { normalizeMenuUrl, isActivePath } from "@/lib/utils/nav";
+import { isActivePath, normalizeMenuUrl } from "@/lib/utils/nav";
 import { cn } from "@/lib/utils";
 
 type MobileHeaderMenuProps = {
@@ -203,7 +204,23 @@ export function MobileHeaderMenu({
         className={cn("bb-mobile-header-panel min-[1261px]:hidden", open && "is-open")}
         aria-hidden={!open}
       >
-        <div className="bb-mobile-header-drawer" role="dialog" aria-modal="true">
+        <button
+          type="button"
+          className="bb-mobile-header-overlay"
+          aria-label={t("closeDrawer")}
+          onClick={close}
+        />
+
+        <div className="bb-mobile-header-drawer" role="dialog" aria-modal="true" aria-label={menuLabel || "BIGBIKE MENU"}>
+          <div className="bb-mobile-drawer-head">
+            <Link href="/" aria-label={siteName} onClick={close}>
+              <Image src="/wp/logo-1.png" alt={siteName} width={150} height={55} priority />
+            </Link>
+            <button type="button" aria-label={t("closeDrawer")} onClick={close}>
+              <X size={22} aria-hidden />
+            </button>
+          </div>
+
           {auth.status === "authenticated" ? (
             <div className="bb-mobile-header-account is-authenticated">
               <div className="bb-mobile-header-account-copy">

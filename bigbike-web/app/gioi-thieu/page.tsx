@@ -1,8 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
-import { AudioLines, BadgeCheck, BarChart3, Crown, Share2, Gem, Phone, Store } from "lucide-react";
+import { getLocale, getTranslations } from "next-intl/server";
+import {
+  AudioLines,
+  BadgeCheck,
+  BarChart3,
+  Crown,
+  Gem,
+  Phone,
+  Share2,
+  Store,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { PageHero } from "@/components/layout/PageHero";
 import { ContactInfoList } from "@/components/ui/ContactInfoList";
@@ -12,16 +21,7 @@ import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { resolveMediaUrl } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import { toBrandPath, toPagePath } from "@/lib/utils/routes";
-import { pickSettingByPattern } from "@/lib/utils/settings";
-
-export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations("StaticPage");
-  return buildPublicMetadata({
-    title: t("aboutTitle"),
-    description: t("aboutDescription"),
-    canonicalPath: toPagePath("gioi-thieu"),
-  });
-}
+import { pickSetting } from "@/lib/utils/settings";
 
 type ServiceTile = {
   title: string;
@@ -75,24 +75,24 @@ function ServiceTileCard({ tile }: { tile: ServiceTile }) {
   return (
     <div
       className={`flex gap-4 p-5 ${
-        tile.highlight ? "bg-brand" : "bg-card border border-border shadow-sm"
+        tile.highlight ? "bg-brand" : "border border-border bg-card shadow-sm"
       }`}
     >
       <Icon
-        className={`w-9 h-9 shrink-0 ${tile.highlight ? "text-white" : "text-brand"}`}
+        className={`h-9 w-9 shrink-0 ${tile.highlight ? "text-white" : "text-brand"}`}
         strokeWidth={1.5}
         aria-hidden="true"
       />
       <div className="min-w-0">
         <h4
-          className={`font-display text-base font-semibold uppercase mb-1.5 leading-tight ${
+          className={`mb-1.5 font-display text-base font-semibold uppercase leading-tight ${
             tile.highlight ? "text-white" : "text-foreground"
           }`}
         >
           {tile.title}
         </h4>
         <p
-          className={`text-sm leading-[1.55] m-0 ${
+          className={`m-0 text-sm leading-[1.55] ${
             tile.highlight ? "text-white/90" : "text-muted-foreground"
           }`}
         >
@@ -103,16 +103,35 @@ function ServiceTileCard({ tile }: { tile: ServiceTile }) {
   );
 }
 
+export async function generateMetadata(): Promise<Metadata> {
+  const [locale, t] = await Promise.all([
+    getLocale(),
+    getTranslations("StaticPage"),
+  ]);
+  const pageResult = await getPageBySlug("gioi-thieu", locale);
+  const page = pageResult.data;
+
+  return buildPublicMetadata({
+    title: page?.seo?.title ?? page?.title ?? t("aboutTitle"),
+    description: page?.seo?.description ?? t("aboutDescription"),
+    canonicalPath: page?.seo?.canonicalUrl ?? toPagePath("gioi-thieu"),
+    noIndex: page?.seo?.noIndex ?? false,
+  });
+}
+
 export default async function AboutPage() {
+  const locale = await getLocale();
   const [pageResult, brandsResult, settingsResult, t] = await Promise.all([
-    getPageBySlug("gioi-thieu"),
-    listBrands({ page: 1, size: 8, sort: "name:asc" }),
+    getPageBySlug("gioi-thieu", locale),
+    listBrands({ page: 1, size: 8, sort: "name:asc", lang: locale }),
     listPublicSettings(),
     getTranslations("StaticPage"),
   ]);
+
   if (!pageResult.data && pageResult.error?.status === 404) {
     notFound();
   }
+
   if (!pageResult.data) {
     return (
       <section className="bb-page">
@@ -126,125 +145,167 @@ export default async function AboutPage() {
   const page = pageResult.data;
   const brands = brandsResult.data ?? [];
   const settings = settingsResult.data ?? [];
-  const address = pickSettingByPattern(settings, [/address/i, /diachi/i, /dia_chi/i]) || "79/30/52 Âu Cơ, P.4, Q.11, Tp.HCM";
-  const facebookUrl = pickSettingByPattern(settings, [/facebook/i]) || "https://www.facebook.com/bigbikegear";
+  const pageTitle = page.heroTitle ?? page.title ?? t("aboutHeroTitle");
+  const address = pickSetting(settings, ["contact_address"]);
+  const hotline = pickSetting(settings, ["hotline"]);
+  const hotline2 = pickSetting(settings, ["hotline_2"]);
+  const facebookUrl = pickSetting(settings, ["facebook_url"]);
   const facebookHandle = facebookUrl.replace(/^https?:\/\/(www\.)?/, "");
 
   return (
     <>
-      {/* Hero render ngoài .bb-page để nằm sát header và không bị rule `.bb-page h1` ghi đè. */}
       <PageHero
         variant="welcome"
-        title={t("aboutHeroTitle")}
+        title={pageTitle}
         watermark="BigBike"
         illustration={{ src: page.heroImageUrl, alt: page.heroImageAlt }}
       />
       <section className="bb-page">
-      <div className="bb-container">
-        {/* Row 1: intro text + richtext + brand logos */}
-        <div className="grid grid-cols-1 gap-6 pb-10 items-start lg:grid-cols-[4fr_5fr_3fr] lg:gap-[30px]">
-          <div>
-            <h3 className="font-display text-26 font-semibold uppercase text-foreground mb-4">{t("aboutBigbike")}</h3>
-            <p className="text-muted-foreground text-base leading-snug m-0">{t("aboutSubtitle")}</p>
-          </div>
-          <article
-            className="bb-richtext text-muted-foreground"
-            dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(page.body) }}
-          />
-          {brands.length > 0 && (
-            <div
-              className="grid grid-cols-2 gap-x-6 gap-y-8 items-center justify-items-center"
-              aria-label={t("brandDistributors")}
-            >
-              {brands.slice(0, 8).map((brand) => {
-                const logoSrc = resolveMediaUrl(brand.logo?.url?.trim());
-                return (
-                  <Link
-                    key={brand.id}
-                    href={toBrandPath(brand.slug)}
-                    className="flex items-center justify-center no-underline transition-opacity duration-150 hover:opacity-70"
-                  >
-                    {logoSrc ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={logoSrc} alt={brand.name} loading="lazy" className="max-h-12 w-auto object-contain" />
-                    ) : (
-                      <span className="font-display font-semibold text-sm text-foreground text-center uppercase">{brand.name}</span>
-                    )}
-                  </Link>
-                );
-              })}
+        <div className="bb-container">
+          <div className="grid grid-cols-1 items-start gap-6 pb-10 lg:grid-cols-[4fr_5fr_3fr] lg:gap-[30px]">
+            <div>
+              <h3 className="mb-4 font-display text-26 font-semibold uppercase text-foreground">
+                {t("aboutBigbike")}
+              </h3>
+              <p className="m-0 text-base leading-snug text-muted-foreground">
+                {t("aboutSubtitle")}
+              </p>
             </div>
-          )}
-        </div>
-
-        {/* Row 2: quality section */}
-        <div className="grid grid-cols-1 gap-[30px] py-[60px] items-start lg:grid-cols-[4fr_8fr]">
-          <div>
-            <h3 className="font-display text-26 font-semibold uppercase text-foreground mb-4 leading-tight">{t("aboutQualityTitle")}</h3>
-            <p className="text-muted-foreground text-base leading-relaxed m-0">
-              {t("aboutQualityBody")}
-            </p>
+            <article
+              className="bb-richtext text-muted-foreground"
+              dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(page.body) }}
+            />
+            {brands.length > 0 ? (
+              <div
+                className="grid grid-cols-2 items-center justify-items-center gap-x-6 gap-y-8"
+                aria-label={t("brandDistributors")}
+              >
+                {brands.slice(0, 8).map((brand) => {
+                  const logoSrc = resolveMediaUrl(brand.logo?.url?.trim());
+                  return (
+                    <Link
+                      key={brand.id}
+                      href={toBrandPath(brand.slug)}
+                      className="flex items-center justify-center no-underline transition-opacity duration-150 hover:opacity-70"
+                    >
+                      {logoSrc ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={logoSrc}
+                          alt={brand.name}
+                          loading="lazy"
+                          className="max-h-12 w-auto object-contain"
+                        />
+                      ) : (
+                        <span className="text-center font-display text-sm font-semibold uppercase text-foreground">
+                          {brand.name}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            ) : null}
           </div>
-          <div className="flex flex-col gap-5">
-            {SERVICE_TILE_DEFS.map((tile) => (
-              <ServiceTileCard
-                key={tile.titleKey}
-                tile={{
-                  title: t(tile.titleKey),
-                  body: t(tile.bodyKey),
-                  highlight: tile.highlight,
-                  icon: tile.icon,
-                }}
+
+          <div className="grid grid-cols-1 items-start gap-[30px] py-[60px] lg:grid-cols-[4fr_8fr]">
+            <div>
+              <h3 className="mb-4 font-display text-26 font-semibold uppercase leading-tight text-foreground">
+                {t("aboutQualityTitle")}
+              </h3>
+              <p className="m-0 text-base leading-relaxed text-muted-foreground">
+                {t("aboutQualityBody")}
+              </p>
+            </div>
+            <div className="flex flex-col gap-5">
+              {SERVICE_TILE_DEFS.map((tile) => (
+                <ServiceTileCard
+                  key={tile.titleKey}
+                  tile={{
+                    title: t(tile.titleKey),
+                    body: t(tile.bodyKey),
+                    highlight: tile.highlight,
+                    icon: tile.icon,
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+
+          {(address || hotline || hotline2 || facebookUrl) ? (
+            <div className="py-10">
+              <h3 className="mb-3 font-display text-26 font-semibold uppercase text-foreground">
+                {t("aboutConnectTitle")}
+              </h3>
+              <p className="mb-2 text-muted-foreground">{t("aboutConnectBody1")}</p>
+              <p className="mb-2 text-muted-foreground">{t("aboutConnectBody2")}</p>
+              <ContactInfoList
+                className="mt-8"
+                entries={[
+                  ...(address
+                    ? [{
+                        icon: <Store className="h-[22px] w-[22px]" strokeWidth={1.5} />,
+                        label: t("mainStore"),
+                        content: (
+                          <p className="m-0 text-sm leading-snug text-muted-foreground">
+                            {address}
+                          </p>
+                        ),
+                      }]
+                    : []),
+                  ...((hotline || hotline2)
+                    ? [{
+                        icon: <Phone className="h-[22px] w-[22px]" strokeWidth={1.5} />,
+                        label: t("hotline"),
+                        content: (
+                          <>
+                            {hotline ? (
+                              <p className="m-0 text-sm leading-snug text-muted-foreground">
+                                <a
+                                  href={`tel:${hotline.replace(/[^\d+]/g, "")}`}
+                                  className="bb-link"
+                                >
+                                  {hotline}
+                                </a>
+                              </p>
+                            ) : null}
+                            {hotline2 ? (
+                              <p className="m-0 text-sm leading-snug text-muted-foreground">
+                                <a
+                                  href={`tel:${hotline2.replace(/[^\d+]/g, "")}`}
+                                  className="bb-link"
+                                >
+                                  {hotline2}
+                                </a>
+                              </p>
+                            ) : null}
+                          </>
+                        ),
+                      }]
+                    : []),
+                  ...(facebookUrl
+                    ? [{
+                        icon: <Share2 className="h-[22px] w-[22px]" strokeWidth={1.5} />,
+                        label: t("facebook"),
+                        content: (
+                          <p className="m-0 text-sm leading-snug text-muted-foreground">
+                            <a
+                              href={facebookUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="bb-link"
+                            >
+                              {facebookHandle}
+                            </a>
+                          </p>
+                        ),
+                      }]
+                    : []),
+                ]}
               />
-            ))}
-          </div>
+            </div>
+          ) : null}
         </div>
-
-        {/* Contact CTA */}
-        <div className="py-10">
-          <h3 className="font-display text-26 font-semibold uppercase text-foreground mb-3">{t("aboutConnectTitle")}</h3>
-          <p className="text-muted-foreground mb-2">
-            {t("aboutConnectBody1")}
-          </p>
-          <p className="text-muted-foreground mb-2">
-            {t("aboutConnectBody2")}
-          </p>
-          <ContactInfoList
-            className="mt-8"
-            entries={[
-              {
-                icon: <Store className="w-[22px] h-[22px]" strokeWidth={1.5} />,
-                label: t("mainStore"),
-                content: <p className="text-muted-foreground text-sm leading-snug m-0">{address}</p>,
-              },
-              {
-                icon: <Phone className="w-[22px] h-[22px]" strokeWidth={1.5} />,
-                label: t("hotline"),
-                content: (
-                  <>
-                    <p className="text-muted-foreground text-sm leading-snug m-0">028.62797251</p>
-                    <p className="text-muted-foreground text-sm leading-snug m-0">{t("advisorThu")}</p>
-                    <p className="text-muted-foreground text-sm leading-snug m-0">{t("advisorTri")}</p>
-                    <p className="text-muted-foreground text-sm leading-snug mt-2 mb-0">{t("weekdayHours")}</p>
-                    <p className="text-muted-foreground text-sm leading-snug m-0">{t("weekendHours")}</p>
-                  </>
-                ),
-              },
-              {
-                icon: <Share2 className="w-[22px] h-[22px]" strokeWidth={1.5} />,
-                label: t("facebook"),
-                content: (
-                  <p className="text-muted-foreground text-sm leading-snug m-0">
-                    <a href={facebookUrl} target="_blank" rel="noopener noreferrer" className="bb-link">
-                      {facebookHandle || "facebook.com/bigbikegear"}
-                    </a>
-                  </p>
-                ),
-              },
-            ]}
-          />
-        </div>
-      </div>
       </section>
     </>
   );

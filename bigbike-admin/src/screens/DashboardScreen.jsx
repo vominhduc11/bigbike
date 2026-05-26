@@ -170,7 +170,6 @@ export function DashboardScreen({ navigate }) {
   const state = {
     status: isLoading ? 'loading' : isError ? 'error' : 'ok',
     data: dashResult?.data ?? null,
-    isMock: dashResult?.isMock ?? false,
   }
   const { data } = state
 
@@ -298,10 +297,6 @@ export function DashboardScreen({ navigate }) {
           </div>
         </div>
       </div>
-
-      {state.isMock && (
-        <StatePanel tone="warning" title={t('readOnly.prefix')} description={t('dashboard.mockWarning')} />
-      )}
 
       {state.status === 'error' && (
         <StatePanel

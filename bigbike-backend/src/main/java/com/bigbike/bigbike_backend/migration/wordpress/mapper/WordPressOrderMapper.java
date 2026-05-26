@@ -273,7 +273,7 @@ public class WordPressOrderMapper {
 
     private String mapWcStatus(String postStatus, List<String> warnings) {
         return switch (postStatus) {
-            case "wc-pending"    -> "PENDING_PAYMENT";
+            case "wc-pending"    -> "PENDING";
             case "wc-processing" -> "PROCESSING";
             case "wc-on-hold"    -> "ON_HOLD";
             case "wc-completed"  -> "COMPLETED";
@@ -282,8 +282,8 @@ public class WordPressOrderMapper {
             case "wc-failed"     -> "FAILED";
             default -> {
                 warnings.add("Unknown WooCommerce order status: '" + postStatus
-                        + "' — defaulting to PENDING_PAYMENT");
-                yield "PENDING_PAYMENT";
+                        + "' — defaulting to PENDING");
+                yield "PENDING";
             }
         };
     }
@@ -292,13 +292,13 @@ public class WordPressOrderMapper {
                                         String transactionId, BigDecimal paidAmount,
                                         BigDecimal total, List<String> warnings) {
         if ("REFUNDED".equals(orderStatus)) return "REFUNDED";
-        if ("CANCELLED".equals(orderStatus) || "FAILED".equals(orderStatus)) return orderStatus;
+        if ("CANCELLED".equals(orderStatus) || "FAILED".equals(orderStatus)) return "CANCELLED";
         if (paidAt != null) return "PAID";
         if (transactionId != null && !transactionId.isBlank()) return "PAID";
         if ("COMPLETED".equals(orderStatus)) return "PAID";
         if ("PROCESSING".equals(orderStatus)) {
-            warnings.add("Order PROCESSING but no paid date or transaction ID — payment status PENDING");
-            return "PENDING";
+            warnings.add("Order PROCESSING but no paid date or transaction ID — defaulting payment status to UNPAID");
+            return "UNPAID";
         }
         return "UNPAID";
     }

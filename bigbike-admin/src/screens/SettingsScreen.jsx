@@ -339,7 +339,7 @@ export function SettingsScreen({ canUpdate }) {
     fetchSettings()
       .then((r) => {
         if (!active) return
-        setState({ status: 'success', items: r.items, warning: r.mode === 'mock' ? r.warning : '' })
+        setState({ status: 'success', items: r.items, warning: '' })
       })
       .catch((e) => {
         if (!active) return

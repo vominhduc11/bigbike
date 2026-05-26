@@ -41,8 +41,9 @@ export function MediaFolderSidebar({
     let active = true
     fetchMediaTags()
       .then((ts) => { if (active) setTags(ts) })
+      .catch((e) => { if (active) toast.error(e.message || t('common.error')) })
     return () => { active = false }
-  }, [])
+  }, [t])
 
   async function handleCreate(name) {
     if (!name?.trim()) return

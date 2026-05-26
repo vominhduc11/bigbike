@@ -77,7 +77,7 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
   useEffect(() => {
     let active = true
     fetchCustomerDetail(customerId)
-      .then((r) => { if (!active) return; setState({ status: 'success', customer: r.item, warning: r.mode === 'mock' ? r.warning : '' }) })
+      .then((r) => { if (!active) return; setState({ status: 'success', customer: r.item, warning: '' }) })
       .catch((e) => { if (!active) return; setState({ status: 'error', customer: null, warning: '', error: e.message }) })
     return () => { active = false }
   }, [customerId])
@@ -98,10 +98,14 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
           creditNote: r.creditNote ?? '',
         })
       })
-      .catch(() => { if (active) setCredit(null) })
+      .catch((e) => {
+        if (!active) return
+        setCredit(null)
+        toast.error(e.message || t('common.error'))
+      })
       .finally(() => { if (active) setCreditLoading(false) })
     return () => { active = false }
-  }, [customerId, canReadReceivables])
+  }, [customerId, canReadReceivables, t])
 
   async function handleStatusChange(e) {
     setSaving(true)

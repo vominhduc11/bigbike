@@ -56,6 +56,9 @@ public class ArticleImporter implements DomainImporter {
                 String slug = resolveSlug(ma);
                 String entityId = "wp-art-" + ma.sourceId();
                 Optional<ArticleEntity> existing = repo.findById(entityId);
+                if (existing.isEmpty()) {
+                    existing = repo.findBySlug(slug);
+                }
                 ArticleEntity entity;
                 boolean isNew;
                 if (existing.isPresent()) {

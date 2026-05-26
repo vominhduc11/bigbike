@@ -47,6 +47,13 @@ public class CustomerImporter implements DomainImporter {
         for (MappedCustomer mc : items) {
             try {
                 Optional<CustomerEntity> existing = customerRepo.findByLegacyId(mc.sourceId());
+                // Fallback: avoid duplicate phone/email constraint violations
+                if (existing.isEmpty() && mc.phone() != null && !mc.phone().isBlank()) {
+                    existing = customerRepo.findByPhone(truncate(mc.phone(), 50));
+                }
+                if (existing.isEmpty() && mc.email() != null && !mc.email().isBlank()) {
+                    existing = customerRepo.findByEmail(truncate(mc.email(), 255));
+                }
                 CustomerEntity entity;
                 boolean isNew;
                 if (existing.isPresent()) {

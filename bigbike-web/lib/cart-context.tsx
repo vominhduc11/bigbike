@@ -37,7 +37,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         setCartCount(total);
       })
       .catch(() => {})
-      .finally(() => { fetchInFlight.current = false; });
+      .finally(() => {
+        fetchInFlight.current = false;
+      });
   }, []);
 
   useEffect(() => {
@@ -71,12 +73,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     <CartContext.Provider value={{ cartCount, addToCart, showToast, refreshCount }}>
       {children}
       {toasts.map((toast) => (
-        <div key={toast.id} className="fixed top-[88px] right-5 z-[600] bg-white border border-brand border-l-[3px] py-[14px] px-[18px] shadow-[var(--bb-shadow-lg)] flex gap-3 items-center max-w-[360px] animate-[bb-toast-in_0.3s_ease] [@media(max-width:480px)]:top-[calc(var(--bb-header-stack)+8px)] [@media(max-width:480px)]:right-3 [@media(max-width:480px)]:left-3 [@media(max-width:480px)]:max-w-none" role="status" aria-live="polite">
+        <div
+          key={toast.id}
+          className="bb-cart-toast fixed top-[88px] right-5 z-[600] bg-white border border-brand border-l-[3px] py-[14px] px-[18px] shadow-[var(--bb-shadow-lg)] flex gap-3 items-center max-w-[360px] animate-[bb-toast-in_0.3s_ease] [@media(max-width:480px)]:top-[calc(var(--bb-header-stack)+8px)] [@media(max-width:480px)]:right-3 [@media(max-width:480px)]:left-3 [@media(max-width:480px)]:max-w-none"
+          role="status"
+          aria-live="polite"
+        >
           <div>
             <b className="block text-sm font-bold tracking-[0.08em] uppercase text-brand mb-[2px]">{toast.title}</b>
             <span className="text-sm text-muted-foreground">{toast.message}</span>
           </div>
-          <Link href={toCartPath()} className="text-sm font-bold text-brand no-underline whitespace-nowrap tracking-[0.04em] shrink-0 hover:text-brand-hover">Xem giỏ →</Link>
+          <Link href={toCartPath()} className="text-sm font-bold text-brand no-underline whitespace-nowrap tracking-[0.04em] shrink-0 hover:text-brand-hover">
+            Xem giỏ
+          </Link>
         </div>
       ))}
     </CartContext.Provider>
@@ -88,4 +97,3 @@ export function useCart() {
   if (!ctx) throw new Error("useCart must be used within CartProvider");
   return ctx;
 }
-

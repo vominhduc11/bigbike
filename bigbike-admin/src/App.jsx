@@ -71,6 +71,7 @@ const WarrantyListScreen     = lazyScreen(() => import('./screens/WarrantyListSc
 const SerialListScreen       = lazyScreen(() => import('./screens/SerialListScreen'),       'SerialListScreen')
 const NewsletterSubscribersScreen = lazyScreen(() => import('./screens/NewsletterSubscribersScreen'), 'NewsletterSubscribersScreen')
 const AttributeListScreen        = lazyScreen(() => import('./screens/AttributeListScreen'),        'AttributeListScreen')
+const HomeHighlightsScreen       = lazyScreen(() => import('./screens/HomeHighlightsScreen'),       'HomeHighlightsScreen')
 
 // ── Grouped navigation definition ────────────────────────────────────────────
 const NAV_GROUP_DEFS = [
@@ -108,8 +109,9 @@ const NAV_GROUP_DEFS = [
     items: [
       { path: '/admin/content',    labelKey: 'nav.content',    permission: 'content.read',   icon: FileText },
       { path: '/admin/sliders',      labelKey: 'nav.sliders',      permission: 'sliders.read',      icon: BarChart2 },
-      { path: '/admin/home-videos',  labelKey: 'nav.homeVideos',   permission: 'home_videos.read',  icon: BarChart2 },
-      { path: '/admin/redirects',   labelKey: 'nav.redirects',   permission: 'redirects.read',   icon: ArrowRightLeft },
+      { path: '/admin/home-videos',     labelKey: 'nav.homeVideos',       permission: 'home_videos.read',    icon: BarChart2 },
+      { path: '/admin/home-highlights', labelKey: 'nav.homeHighlights',   permission: 'home_highlights.read', icon: LayoutDashboard },
+      { path: '/admin/redirects',       labelKey: 'nav.redirects',        permission: 'redirects.read',       icon: ArrowRightLeft },
       { path: '/admin/menus',      labelKey: 'nav.menus',      permission: 'menus.read',     icon: AlignLeft },
       { path: '/admin/media',      labelKey: 'nav.media',      permission: 'media.read',     icon: Image },
     ],
@@ -186,8 +188,9 @@ function parseRoute(pathname) {
   if (module === 'coupons')     return { kind: 'screen', name: 'coupons-list' }
   if (module === 'menus')       return { kind: 'screen', name: 'menus' }
   if (module === 'sliders')      return { kind: 'screen', name: 'sliders' }
-  if (module === 'home-videos')  return { kind: 'screen', name: 'home-videos' }
-  if (module === 'redirects')    return { kind: 'screen', name: 'redirects' }
+  if (module === 'home-videos')      return { kind: 'screen', name: 'home-videos' }
+  if (module === 'home-highlights')  return { kind: 'screen', name: 'home-highlights' }
+  if (module === 'redirects')        return { kind: 'screen', name: 'redirects' }
   if (module === 'shipping')    return { kind: 'screen', name: 'shipping' }
   if (module === 'admin-users') return { kind: 'screen', name: 'admin-users' }
   if (module === 'settings')    return { kind: 'screen', name: 'settings' }
@@ -231,6 +234,7 @@ function routePermission(routeName) {
     case 'menus':                        return 'menus.read'
     case 'sliders':                      return 'sliders.read'
     case 'home-videos':                  return 'home_videos.read'
+    case 'home-highlights':              return 'home_highlights.read'
     case 'redirects':                    return 'redirects.read'
     case 'shipping':                     return 'shipping.read'
     case 'reviews':                      return 'reviews.read'
@@ -416,6 +420,8 @@ function AdminApp() {
       screen = <SliderListScreen canUpdate={hasPermission('sliders.write')} />; break
     case 'home-videos':
       screen = <HomeVideoListScreen canUpdate={hasPermission('home_videos.write')} />; break
+    case 'home-highlights':
+      screen = <HomeHighlightsScreen canUpdate={hasPermission('home_highlights.write')} />; break
     case 'redirects':
       screen = <RedirectListScreen canUpdate={hasPermission('redirects.write')} />; break
     case 'shipping':

@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
-import { listArticles, listContentCategories } from "@/lib/api/public-api";
+import { listArticles, listContentCategories, listPublicSettings } from "@/lib/api/public-api";
 import type { Article, ContentCategoryWithCount } from "@/lib/contracts/public";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
+import { resolveMediaUrl } from "@/lib/utils/format";
+import { readHeroSettings } from "@/lib/utils/page-hero";
 import {
   buildQueryString,
   collectErrors,
@@ -21,19 +23,12 @@ type ArticleListPageProps = {
 };
 
 const DEFAULT_PAGE_SIZE = 12;
-const CATEGORY_ORDER = ["khong-phan-loai", "reviews", "tin-tuc"];
 const ROOT_CATEGORY_SLUG = "tin-tuc";
 const BIGBIKE_UPLOADS_BASE = "https://bigbike.vn/wp-content/uploads/";
 const LEGACY_CDN_PREFIX = "https://cdn.bigbike.vn/uploads/";
 const WP_UPLOADS_PATH = "/wp-content/uploads/";
 const MINIO_UPLOADS_SUBPATH = "/wp-uploads/";
 const WP_EXCERPT_WORDS = 20;
-
-const NEWS_INTRO =
-  "Bên cạnh việc mang đến khách hàng các sản phẩm phượt moto cao cấp chính hãng, Bigbike mong muốn chia sẻ các thông tin chi tiết cũng như các bí quyết lựa chọn quần áo bảo hộ, mũ bảo hiểm, găng tay, giày bảo hộ và các phụ kiện phượt moto khác trên trang TIN TỨC của chúng tôi. Ngoài ra, các bài đánh giá và xếp hạng sản phẩm bảo hộ phượt moto uy tín, chất lượng và các xu hướng mới nhất trên thị trường cũng luôn được cập nhật thường xuyên.";
-
-const NEWS_OUTRO =
-  "Qua những thông tin và các bài viết được chia sẻ, Bigbike hy vọng các anh em biker sẽ cập nhật thêm nhiều thông tin bổ ích và có thể chọn lựa sản phẩm bảo hộ phượt moto phù hợp cho mình. Tuy nhiên, các sản phẩm bảo hộ phượt moto là những mặt hàng đòi hỏi người mua phải cân nhắc trên nhiều khía cạnh như kích cỡ, chất liệu và thiết kế. Chính vì thế, Bigbike khuyên rằng khách hàng nên đến trực tiếp cửa hàng để được tư vấn, hỗ trợ thêm về thông tin các sản phẩm và các dịch vụ tại Bigbike. Xin chân thành cảm ơn sự tín nhiệm của khách hàng dành cho Bigbike!";
 
 export async function generateMetadata({ searchParams }: ArticleListPageProps): Promise<Metadata> {
   const [params, t] = await Promise.all([searchParams, getTranslations("Blog")]);
@@ -92,7 +87,7 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
     );
   }
 
-  const [result, categoriesResult] = await Promise.all([
+  const [result, categoriesResult, settingsResult] = await Promise.all([
     listArticles({
       page: pageParsed.value,
       size: sizeParsed.value,
@@ -101,17 +96,15 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
       q: qParsed.value,
     }),
     listContentCategories(),
+    listPublicSettings(),
   ]);
 
-  const sidebarCategories = orderCategories(
-    categoriesResult.data.filter((cat) => cat.articleCount > 0),
-  );
+  const sidebarCategories = categoriesResult.data.filter((cat) => cat.articleCount > 0);
+  const heroSettings = readHeroSettings(settingsResult.data ?? [], "hero_news");
   const activeCategory = sidebarCategories.find((cat) => cat.slug === categoryParsed.value);
-  const basePageTitle = activeCategory?.name ?? "Tin tức";
+  const basePageTitle = activeCategory?.name ?? heroSettings.title ?? "Tin tức";
   const pageTitle =
     pageParsed.value > 1 ? `${basePageTitle} - Trang ${pageParsed.value}` : basePageTitle;
-  const showNewsDescription =
-    !qParsed.value && (!categoryParsed.value || categoryParsed.value === ROOT_CATEGORY_SLUG);
 
   const makeListHref = (overrides: {
     page?: number;
@@ -131,19 +124,14 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
 
   return (
     <div className="bb-blog-listing-parity">
-      <WpPageTitle title={pageTitle} />
+      <WpPageTitle
+        title={pageTitle}
+        imageUrl={heroSettings.imageUrl}
+        imageAlt={heroSettings.imageAlt}
+      />
 
       <div id="main-content" className="bb-wp-main-content">
         <div className="bb-container container">
-          {showNewsDescription ? (
-            <div className="bb-wp-block-text bb-wp-block-text--top block-text pb-60">
-              <div>
-                <p style={{ textAlign: "justify" }}>{NEWS_INTRO}</p>
-              </div>
-              <div> </div>
-            </div>
-          ) : null}
-
           <div className="bb-wp-row row">
             <aside className="bb-wp-sidebar col-md-3" aria-label="Danh mục tin tức">
               <WpCategoryWidget categories={sidebarCategories} />
@@ -181,24 +169,29 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
               )}
             </section>
           </div>
-
-          {showNewsDescription ? (
-            <div className="bb-wp-block-text bb-wp-block-text--bottom block-text pt-100 pb-60">
-              <p aria-hidden="true">&nbsp;</p>
-              <p style={{ textAlign: "justify" }}>{NEWS_OUTRO}</p>
-            </div>
-          ) : null}
         </div>
       </div>
     </div>
   );
 }
 
-function WpPageTitle({ title }: { title: string }) {
+function WpPageTitle({
+  title,
+  imageUrl,
+  imageAlt,
+}: {
+  title: string;
+  imageUrl?: string | null;
+  imageAlt?: string | null;
+}) {
+  const backgroundSrc = imageUrl?.trim() ? resolveMediaUrl(imageUrl.trim()) : "/wp/page-title-bg.png";
+  const backgroundAlt = imageAlt?.trim() || title;
+
   return (
     <section
       className="bb-wp-page-title page-title"
-      style={{ backgroundImage: "url('/wp/page-title-bg.png')" }}
+      style={{ backgroundImage: `url('${backgroundSrc}')` }}
+      aria-label={backgroundAlt}
     >
       <div className="bb-container container">
         <div className="bb-wp-page-title-row row align-items-center">
@@ -392,21 +385,6 @@ function WpNoResults({ query }: { query?: string }) {
       </div>
     </section>
   );
-}
-
-function orderCategories(categories: ContentCategoryWithCount[]) {
-  return [...categories].sort((a, b) => {
-    const aIndex = CATEGORY_ORDER.indexOf(a.slug);
-    const bIndex = CATEGORY_ORDER.indexOf(b.slug);
-    const aOrder = aIndex === -1 ? CATEGORY_ORDER.length : aIndex;
-    const bOrder = bIndex === -1 ? CATEGORY_ORDER.length : bIndex;
-
-    if (aOrder !== bOrder) {
-      return aOrder - bOrder;
-    }
-
-    return a.name.localeCompare(b.name, "vi");
-  });
 }
 
 function buildWpPageItems(page: number, totalPages: number): Array<number | "dots"> {

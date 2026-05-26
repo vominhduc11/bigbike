@@ -49,7 +49,7 @@ export function ReviewListScreen({ navigate, canUpdate }) {
           status: 'success',
           items: result.items,
           pagination: result.pagination,
-          warning: result.mode === 'mock' ? result.warning : '',
+          warning: '',
         })
       })
       .catch((error) => {
