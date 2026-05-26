@@ -120,6 +120,7 @@
   "nav": {
     "dashboard": "Tổng quan",
     "products": "Sản phẩm",
+    "featuredProducts": "Sản phẩm nổi bật",
     "categories": "Danh mục",
     "brands": "Thương hiệu",
     "attributes": "Thuộc tính màu",
@@ -379,7 +380,6 @@
     "dupLoadError": "Không thể tải dữ liệu sản phẩm để sao chép.",
     "colHomepage": "Trang chủ",
     "homepageFeatured": "Nổi bật (grid)",
-    "homepageRecommended": "Gợi ý (carousel)",
     "homepageNone": "Không trên trang chủ",
     "homepageOrderLabel": "Thứ tự",
     "duplicate": "Sao chép",
@@ -666,9 +666,8 @@
       "shortDescriptionHint": "Hiển thị dưới tiêu đề ở trang chi tiết và trong danh sách sản phẩm. Tối thiểu 20 ký tự, lý tưởng 80–160 ký tự.",
       "descriptionPlaceholder": "Nhập mô tả chi tiết sản phẩm...",
       "homepageNone": "Không hiển thị trang chủ",
-      "homepageFeaturedGrid": "Sản phẩm nổi bật — grid trên trang chủ (tối đa 3)",
-      "homepageRecommendedCarousel": "Gợi ý dành cho bạn — carousel trên trang chủ (tối đa 10)",
-      "homepageHint": "Mỗi sản phẩm chỉ có thể ở một trong hai khối. Số sản phẩm vượt quá hạn mức của khối sẽ không hiển thị — dùng ô \"Thứ tự trang chủ\" để chọn ra sản phẩm lên trang chủ trước.",
+      "homepageFeaturedGrid": "Sản phẩm nổi bật — grid trên trang chủ (tối đa 12)",
+      "homepageHint": "Sắp xếp sản phẩm nổi bật trong màn Sản phẩm nổi bật.",
       "homepagePublishWarning": "Sản phẩm chưa được Xuất bản — chỉ hiển thị trên web sau khi chuyển trạng thái sang Xuất bản.",
       "homepageOrder": "Thứ tự trang chủ",
       "homepageOrderPlaceholder": "VD: 1",
@@ -2664,6 +2663,18 @@
     "noColorAttrs": "Chưa có thuộc tính màu",
     "noColorAttrsDesc": "Các thuộc tính có kind=\"color\" sẽ hiển thị ở đây để quản lý swatch.",
     "loadValuesError": "Không tải được danh sách màu."
+  },
+  "featuredProducts": {
+    "eyebrow": "Sản phẩm",
+    "title": "Sản phẩm nổi bật",
+    "description": "Kéo để sắp xếp thứ tự. Tối đa 12 sản phẩm hiển thị trong khối Sản phẩm nổi bật trên trang chủ.",
+    "gridTitle": "Danh sách sản phẩm nổi bật (FEATURED_GRID)",
+    "searchPlaceholder": "Tìm sản phẩm để thêm vào danh sách...",
+    "noResults": "Không tìm thấy sản phẩm đã xuất bản",
+    "saveButton": "Lưu thứ tự",
+    "savedSuccess": "Đã lưu danh sách sản phẩm nổi bật.",
+    "limitReached": "Đã đủ tối đa {{max}} sản phẩm.",
+    "emptyHint": "Chưa có sản phẩm nào. Dùng ô tìm kiếm bên dưới để thêm."
   },
   "homeHighlights": {
     "eyebrow": "Nội dung",

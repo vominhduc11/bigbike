@@ -72,6 +72,7 @@ const SerialListScreen       = lazyScreen(() => import('./screens/SerialListScre
 const NewsletterSubscribersScreen = lazyScreen(() => import('./screens/NewsletterSubscribersScreen'), 'NewsletterSubscribersScreen')
 const AttributeListScreen        = lazyScreen(() => import('./screens/AttributeListScreen'),        'AttributeListScreen')
 const HomeHighlightsScreen       = lazyScreen(() => import('./screens/HomeHighlightsScreen'),       'HomeHighlightsScreen')
+const FeaturedProductsScreen     = lazyScreen(() => import('./screens/FeaturedProductsScreen'),     'FeaturedProductsScreen')
 
 // ── Grouped navigation definition ────────────────────────────────────────────
 const NAV_GROUP_DEFS = [
@@ -94,13 +95,14 @@ const NAV_GROUP_DEFS = [
     groupKey: 'products',
     labelKey: 'nav.group.products',
     items: [
-      { path: '/admin/products',   labelKey: 'nav.products',   permission: 'products.read',  icon: Package },
-      { path: '/admin/inventory',   labelKey: 'nav.inventory',   permission: 'inventory.read',    icon: Package },
-      { path: '/admin/serials',     labelKey: 'nav.serials',     permission: 'inventory.read',    icon: Hash },
-      { path: '/admin/warranties',  labelKey: 'nav.warranties',  permission: 'warranty.read',     icon: ShieldCheck },
-      { path: '/admin/categories', labelKey: 'nav.categories', permission: 'catalog.read',   icon: Tag },
-      { path: '/admin/brands',     labelKey: 'nav.brands',     permission: 'catalog.read',   icon: Award },
-      { path: '/admin/attributes', labelKey: 'nav.attributes', permission: 'catalog.read',   icon: Palette },
+      { path: '/admin/products',          labelKey: 'nav.products',          permission: 'products.read',  icon: Package },
+      { path: '/admin/featured-products', labelKey: 'nav.featuredProducts',  permission: 'products.update', icon: Star },
+      { path: '/admin/inventory',         labelKey: 'nav.inventory',         permission: 'inventory.read',    icon: Package },
+      { path: '/admin/serials',           labelKey: 'nav.serials',           permission: 'inventory.read',    icon: Hash },
+      { path: '/admin/warranties',        labelKey: 'nav.warranties',        permission: 'warranty.read',     icon: ShieldCheck },
+      { path: '/admin/categories',        labelKey: 'nav.categories',        permission: 'catalog.read',   icon: Tag },
+      { path: '/admin/brands',            labelKey: 'nav.brands',            permission: 'catalog.read',   icon: Award },
+      { path: '/admin/attributes',        labelKey: 'nav.attributes',        permission: 'catalog.read',   icon: Palette },
     ],
   },
   {
@@ -167,7 +169,8 @@ function parseRoute(pathname) {
   if (module === 'brands' && id === 'new') return { kind: 'screen', name: 'brand-create' }
   if (module === 'brands' && id)           return { kind: 'screen', name: 'brand-detail', brandId: id }
 
-  if (module === 'attributes') return { kind: 'screen', name: 'attributes-list' }
+  if (module === 'attributes')         return { kind: 'screen', name: 'attributes-list' }
+  if (module === 'featured-products') return { kind: 'screen', name: 'featured-products' }
 
   if (module === 'content' && !id) return { kind: 'screen', name: 'content-list' }
   if (module === 'content' && id && sub === 'new') return { kind: 'screen', name: 'content-create', contentType: id.toUpperCase() === 'PAGES' || id.toUpperCase() === 'PAGE' ? 'PAGE' : 'ARTICLE' }
@@ -221,6 +224,7 @@ function routePermission(routeName) {
     case 'brands-list':
     case 'brand-detail':                 return 'catalog.read'
     case 'attributes-list':              return 'catalog.read'
+    case 'featured-products':           return 'products.update'
     case 'content-create':               return 'content.update'
     case 'content-list':
     case 'content-detail':               return 'content.read'
@@ -456,6 +460,8 @@ function AdminApp() {
       screen = <ReceivableDetailScreen key={route.receivableId} receivableId={route.receivableId} navigate={navigate} canRecordPayment={hasPermission('receivables.record_payment')} canWriteOff={hasPermission('receivables.write_off')} />; break
     case 'attributes-list':
       screen = <AttributeListScreen canUpdate={hasPermission('catalog.update')} />; break
+    case 'featured-products':
+      screen = <FeaturedProductsScreen canUpdate={hasPermission('products.update')} />; break
     default:
       screen = <StatePanel tone="neutral" title={t('app.moduleNotAvailable')} description={t('app.moduleNotAvailableDesc')} />
   }

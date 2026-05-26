@@ -454,10 +454,21 @@ export async function fetchCategories(query) {
  * list endpoint caps pageSize at 100, which silently truncates the tree as
  * the catalog grows.
  */
+function flattenCategoryTree(nodes) {
+  const result = []
+  for (const node of nodes) {
+    result.push(normalizeCategory(node))
+    if (Array.isArray(node.children) && node.children.length > 0) {
+      result.push(...flattenCategoryTree(node.children))
+    }
+  }
+  return result
+}
+
 export async function fetchCategoryTree() {
   try {
     const payload = await requestJson('/admin/categories/tree')
-    const items = Array.isArray(payload?.data) ? payload.data.map(normalizeCategory) : []
+    const items = Array.isArray(payload?.data) ? flattenCategoryTree(payload.data) : []
     return withLiveData({ items })
   } catch (error) {
     throw normalizeError(error)
@@ -2170,4 +2181,23 @@ export async function voidWarranty(warrantyId) {
 export async function getWarrantyBySerial(serialId) {
   const payload = await requestJson(`/admin/warranties/by-serial/${serialId}`)
   return normalizeWarranty(payload?.data || payload || {})
+}
+
+// Featured Products (homepage blocks)
+
+export async function fetchHomepageBlocks() {
+  const payload = await requestJson('/admin/products', {
+    query: { homepageBlock: 'FEATURED_GRID', size: 20, sort: 'homepageOrder:asc' },
+  })
+  return {
+    featuredGrid: (payload?.items ?? payload?.data?.items ?? []).map(normalizeProduct),
+  }
+}
+
+export async function saveHomepageBlocks(featuredGrid) {
+  const payload = await requestJson('/admin/products/homepage-blocks', {
+    method: 'POST',
+    body: { featuredGrid },
+  })
+  return payload
 }

@@ -32,12 +32,10 @@ const INITIAL_QUERY = {
 // Mirror of the homepage block sizes in bigbike-web/app/page.tsx.
 const HOMEPAGE_BLOCK_LIMITS = {
   FEATURED_GRID: 12,
-  RECOMMENDED_CAROUSEL: 10,
 }
 const HOMEPAGE_BLOCK_LABEL_KEYS = {
   NONE: 'products.hbNone',
   FEATURED_GRID: 'products.hbFeatured',
-  RECOMMENDED_CAROUSEL: 'products.hbRecommended',
 }
 
 export function ProductListScreen({ navigate, canUpdate }) {
@@ -374,7 +372,7 @@ export function ProductListScreen({ navigate, canUpdate }) {
                             <span className="muted">—</span>
                           ) : (
                             <span className="text-xs fw-600">
-                              {block === 'FEATURED_GRID' ? t('products.homepageFeatured') : t('products.homepageRecommended')}
+                              {t('products.homepageFeatured')}
                               {Number.isFinite(product.homepageOrder) ? ` · #${product.homepageOrder}` : ''}
                             </span>
                           )}

@@ -203,16 +203,17 @@ Status: `CONFIRMED_FROM_CODE`
 
 | Param | Type | Purpose |
 |---|---|---|
-| `homepageBlock` (admin) / `homepage_block` (public) | enum `NONE \| FEATURED_GRID \| RECOMMENDED_CAROUSEL` (optional) | Filter to a single homepage slot. Omit for all. |
+| `homepageBlock` (admin) / `homepage_block` (public) | enum `NONE \| FEATURED_GRID` (optional) | Filter to a single homepage slot. Omit for all. |
 | `sort` | `string` (optional) | Accepts `homepageOrder:asc` and `homepageOrder:desc` in addition to `name`, `price`, `createdAt`, `updatedAt`. Null-last: unpinned products always appear after pinned ones. |
 
-**Schema:** Each product carries exactly one `homepageBlock` enum. Migration `V111__refactor_product_homepage_block.sql` (2026-05-14) backfilled from the legacy boolean pair (`is_featured`, `show_on_homepage`) with the rule: `is_featured=true` → `FEATURED_GRID`, else `show_on_homepage=true` → `RECOMMENDED_CAROUSEL`, else `NONE`. The legacy columns are dropped.
+**Schema:** Each product carries exactly one `homepageBlock` enum. Migration `V111__refactor_product_homepage_block.sql` (2026-05-14) backfilled from the legacy boolean pair (`is_featured`, `show_on_homepage`). Migration `V149__drop_recommended_carousel_block.sql` (2026-05-26) removed `RECOMMENDED_CAROUSEL` because the web storefront never rendered that block — all products previously in that slot were reset to `NONE`.
 
-**Homepage placement limits** (enforced on the web frontend, not the backend API):
-- `FEATURED_GRID` — max 12 products shown in the "Sản phẩm nổi bật" grid
-- `RECOMMENDED_CAROUSEL` — max 10 products shown in the "Gợi ý dành cho bạn" carousel
+**Homepage placement** (admin-managed via dedicated screen, max enforced in admin UI):
+- `FEATURED_GRID` — max 12 products shown in the "Sản phẩm nổi bật" grid on the homepage
 
-A product is in exactly one slot, so the prior web dedupe pass is no longer needed. Admin UI shows a warning banner when the filtered count of a slot exceeds its limit.
+**New endpoint (V149):** `POST /api/v1/admin/products/homepage-blocks` — atomically sets the full ordered list of FEATURED_GRID products. Requires `products.update` permission. Request: `{ "featuredGrid": ["<id>", ...] }` (max 12 ids, each must be PUBLISHED). Response: updated list of FEATURED_GRID products.
+
+`homepageBlock` and `homepageOrder` are no longer editable in the per-product form; they are set exclusively via the homepage-blocks endpoint.
 
 Status: `CONFIRMED_FROM_CODE`
 

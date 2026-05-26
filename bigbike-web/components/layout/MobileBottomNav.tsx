@@ -15,12 +15,12 @@ function isHomePath(pathname: string) {
 function tabClass(active: boolean) {
   return cn(
     "bb-bottom-nav-item relative flex min-h-14 min-w-14 flex-col items-center justify-center gap-1 px-1",
-    active ? "text-brand-on-dark" : "text-muted-foreground",
+    active && "is-active",
   );
 }
 
 function ActiveBar() {
-  return <span className="absolute left-1/2 top-0 h-0.5 w-6 -translate-x-1/2 bg-brand-on-dark" />;
+  return <span className="bb-bottom-nav-active-bar absolute left-1/2 top-0 h-0.5 w-6 -translate-x-1/2" />;
 }
 
 export function MobileBottomNav() {
@@ -38,7 +38,7 @@ export function MobileBottomNav() {
 
   return (
     <nav
-      className="bb-bottom-nav fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-surface-dark/[0.94] backdrop-blur-md md:hidden"
+      className="bb-bottom-nav fixed bottom-0 left-0 right-0 z-40 border-t backdrop-blur-md md:hidden"
       style={{ paddingBottom: "max(8px, env(safe-area-inset-bottom))" }}
       aria-label="Điều hướng chính"
     >
@@ -59,6 +59,7 @@ export function MobileBottomNav() {
           onClick={() => openPanel("mobile-menu")}
           className={tabClass(menuActive)}
           aria-pressed={menuActive}
+          aria-label="Mở danh mục"
           type="button"
         >
           {menuActive && <ActiveBar />}
@@ -72,6 +73,7 @@ export function MobileBottomNav() {
           onClick={() => openPanel("search")}
           className={tabClass(searchActive)}
           aria-pressed={searchActive}
+          aria-label="Mở tìm kiếm"
           type="button"
         >
           {searchActive && <ActiveBar />}
@@ -85,6 +87,7 @@ export function MobileBottomNav() {
           onClick={() => openPanel("cart")}
           className={tabClass(cartActive || cartRouteActive)}
           aria-pressed={cartActive}
+          aria-label="Mở giỏ hàng"
           type="button"
         >
           {(cartActive || cartRouteActive) && <ActiveBar />}

@@ -40,7 +40,7 @@ public class CatalogController {
     // (prefix_uuid, e.g. prod_a1b2c3d4...). Underscores and hyphens are both valid separators.
     private static final String ID_OR_SLUG_REGEX = "^[a-z0-9][a-z0-9_-]*$";
     private static final String HOMEPAGE_BLOCK_REGEX =
-            "^(NONE|FEATURED_GRID|RECOMMENDED_CAROUSEL)$";
+            "^(NONE|FEATURED_GRID)$";
     // Storefront content language. Vietnamese is canonical; English falls back
     // field-by-field (see BUSINESS_RULES.md PRODUCT_RULE_002).
     private static final String LANG_REGEX = "^(vi|en)$";

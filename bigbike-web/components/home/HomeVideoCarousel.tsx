@@ -53,7 +53,7 @@ function VideoCard({ video, onPlay }: { video: HomeVideo; onPlay: () => void }) 
       onClick={onPlay}
       aria-label={`Xem video: ${title}`}
     >
-      <div className="relative w-full overflow-hidden bg-brand [aspect-ratio:370/233]">
+      <div className="relative w-full overflow-hidden bg-brand [aspect-ratio:9/16]">
         {thumbSrc ? (
           <Image
             key={thumbSrc}
@@ -61,7 +61,7 @@ function VideoCard({ video, onPlay }: { video: HomeVideo; onPlay: () => void }) 
             alt={safeText(video.thumbnail?.alt, title)}
             fill
             className="object-cover opacity-70 transition-transform duration-300 group-hover:scale-[1.03]"
-            sizes="(max-width: 600px) calc(100vw - 30px), (max-width: 767px) 50vw, 370px"
+            sizes="(max-width: 600px) calc(100vw - 30px), (max-width: 900px) 45vw, (max-width: 1200px) 32vw, 240px"
             onError={() => setThumbIdx((prev) => prev + 1)}
           />
         ) : (
@@ -83,31 +83,49 @@ function VideoCard({ video, onPlay }: { video: HomeVideo; onPlay: () => void }) 
 }
 
 function VideoModal({
-  embedSrc,
-  title,
+  videos,
+  activeIndex,
   onClose,
+  onPrev,
+  onNext,
 }: {
-  embedSrc: string | null;
-  title: string;
+  videos: HomeVideo[];
+  activeIndex: number;
   onClose: () => void;
+  onPrev: () => void;
+  onNext: () => void;
 }) {
+  const video = videos[activeIndex];
+  const title = safeText(video.title, "Video");
+  const embedSrc = video.embedUrl ??
+    (video.youtubeId
+      ? `https://www.youtube-nocookie.com/embed/${video.youtubeId}?autoplay=1&rel=0`
+      : null);
+
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      else if (e.key === "ArrowLeft") onPrev();
+      else if (e.key === "ArrowRight") onNext();
+    };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, [onClose, onPrev, onNext]);
 
   return (
     <div
-      className="fixed inset-0 z-[var(--bb-z-modal)] flex items-center justify-center bg-black/80 p-4 animate-in fade-in-0 duration-200"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4 animate-in fade-in-0 duration-200"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       role="dialog"
       aria-modal="true"
       aria-label={title}
     >
-      <div className="relative w-full max-w-3xl bg-black shadow-2xl animate-in fade-in-0 zoom-in-95 duration-200">
-        {embedSrc ? (
-          <div className="relative w-full [aspect-ratio:16/9]">
+      <div
+        className="relative bg-black shadow-2xl animate-in fade-in-0 zoom-in-95 duration-200"
+        style={{ width: "min(420px, calc(100vw - 32px), calc((90vh - 80px) * 9 / 16))" }}
+      >
+        <div className="relative w-full [aspect-ratio:9/16]">
+          {embedSrc ? (
             <iframe
               src={embedSrc}
               className="absolute inset-0 h-full w-full border-0"
@@ -115,8 +133,50 @@ function VideoModal({
               allowFullScreen
               title={title}
             />
-          </div>
-        ) : null}
+          ) : null}
+          {videos.length > 1 && (
+            <>
+              <button
+                type="button"
+                className="absolute left-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-black/80 focus-visible:outline-[var(--bb-focus-outline)]"
+                onClick={onPrev}
+                aria-label="Video trước"
+              >
+                <svg
+                  className="h-6 w-4 shrink-0"
+                  viewBox="0 0 27 44"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.25"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M22 2 L4 22 L22 42" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                className="absolute right-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-black/80 focus-visible:outline-[var(--bb-focus-outline)]"
+                onClick={onNext}
+                aria-label="Video tiếp theo"
+              >
+                <svg
+                  className="h-6 w-4 shrink-0"
+                  viewBox="0 0 27 44"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.25"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M5 2 L23 22 L5 42" />
+                </svg>
+              </button>
+            </>
+          )}
+        </div>
         <button
           type="button"
           className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-black/90 focus-visible:outline-[var(--bb-focus-outline)]"
@@ -137,21 +197,18 @@ function VideoModal({
 
 export function HomeVideoCarousel({ videos }: Props) {
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [activeVideo, setActiveVideo] = useState<HomeVideo | null>(null);
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const swiperRef = useRef<SwiperType | null>(null);
 
   if (videos.length === 0) return null;
 
   const showControls = videos.length > 1;
-  const loopEnabled = videos.length > 1;
+  const loopEnabled = false;
 
-  const activeTitle = activeVideo ? safeText(activeVideo.title, "Video") : "";
-  const activeEmbedSrc = activeVideo
-    ? (activeVideo.embedUrl ??
-        (activeVideo.youtubeId
-          ? `https://www.youtube-nocookie.com/embed/${activeVideo.youtubeId}?autoplay=1&rel=0`
-          : null))
-    : null;
+  const handlePrev = () =>
+    setActiveIndex((i) => (i !== null ? (i - 1 + videos.length) % videos.length : null));
+  const handleNext = () =>
+    setActiveIndex((i) => (i !== null ? (i + 1) % videos.length : null));
 
   return (
     <>
@@ -170,13 +227,14 @@ export function HomeVideoCarousel({ videos }: Props) {
             slidesPerView={1}
             spaceBetween={0}
             breakpoints={{
-              600: { slidesPerView: 2, spaceBetween: 20 },
-              767: { slidesPerView: 3, spaceBetween: 30 },
+              600: { slidesPerView: 2, spaceBetween: 16 },
+              900: { slidesPerView: 3, spaceBetween: 16 },
+              1200: { slidesPerView: 5, spaceBetween: 16 },
             }}
           >
-            {videos.map((video) => (
+            {videos.map((video, idx) => (
               <SwiperSlide key={video.id} className="h-auto" suppressHydrationWarning>
-                <VideoCard video={video} onPlay={() => setActiveVideo(video)} />
+                <VideoCard video={video} onPlay={() => setActiveIndex(idx)} />
               </SwiperSlide>
             ))}
           </Swiper>
@@ -250,11 +308,13 @@ export function HomeVideoCarousel({ videos }: Props) {
         </div>
       )}
 
-      {activeVideo && (
+      {activeIndex !== null && (
         <VideoModal
-          embedSrc={activeEmbedSrc}
-          title={activeTitle}
-          onClose={() => setActiveVideo(null)}
+          videos={videos}
+          activeIndex={activeIndex}
+          onClose={() => setActiveIndex(null)}
+          onPrev={handlePrev}
+          onNext={handleNext}
         />
       )}
     </>

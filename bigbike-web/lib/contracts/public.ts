@@ -187,7 +187,7 @@ export type Product = {
   forceOutOfStock?: boolean | null;
   publishStatus: PublishStatus;
   /** Homepage placement slot. NONE = not pinned to homepage. */
-  homepageBlock: "NONE" | "FEATURED_GRID" | "RECOMMENDED_CAROUSEL";
+  homepageBlock: "NONE" | "FEATURED_GRID";
   /**
    * Manual pin priority inside the homepageBlock.
    * Lower number = appears earlier; null = unpinned (sorted to the end by createdAt DESC).

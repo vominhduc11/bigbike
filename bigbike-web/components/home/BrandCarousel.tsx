@@ -58,17 +58,13 @@ export function BrandCarousel({ brands }: Props) {
               <SwiperSlide key={b.id}>
                 <Link href={toBrandPath(b.slug)}>
                   {logo ? (
-                    <>
-                      <img
-                        src={logo}
-                        alt={safeText(b.logo?.alt, b.name)}
-                        className="swiper-lazy"
-                        width={1}
-                        height={1}
-                        loading={index < 5 ? "eager" : "lazy"}
-                      />
-                      <div className="swiper-lazy-preloader" />
-                    </>
+                    <img
+                      src={logo}
+                      alt={safeText(b.logo?.alt, b.name)}
+                      width={1}
+                      height={1}
+                      loading={index < 5 ? "eager" : "lazy"}
+                    />
                   ) : (
                     <span>{b.name}</span>
                   )}

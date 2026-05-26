@@ -120,6 +120,7 @@
   "nav": {
     "dashboard": "Overview",
     "products": "Products",
+    "featuredProducts": "Featured Products",
     "categories": "Categories",
     "brands": "Brands",
     "attributes": "Color Swatches",
@@ -379,7 +380,6 @@
     "dupLoadError": "Could not load product data to copy.",
     "colHomepage": "Homepage",
     "homepageFeatured": "Featured (grid)",
-    "homepageRecommended": "Recommended (carousel)",
     "homepageNone": "Not on homepage",
     "homepageOrderLabel": "Order",
     "duplicate": "Duplicate",
@@ -666,9 +666,8 @@
       "shortDescriptionHint": "Shown below the title on the product page and in product listings. Minimum 20 characters, ideal 80–160 characters.",
       "descriptionPlaceholder": "Enter detailed product description...",
       "homepageNone": "Hide from homepage",
-      "homepageFeaturedGrid": "Featured products — homepage grid (max 3)",
-      "homepageRecommendedCarousel": "Recommended for you — homepage carousel (max 10)",
-      "homepageHint": "A product can belong to only one homepage block. If the block exceeds its limit, overflow items are hidden — use \"Homepage order\" to prioritize what appears first.",
+      "homepageFeaturedGrid": "Featured products — homepage grid (max 12)",
+      "homepageHint": "Manage featured products in the Featured Products screen.",
       "homepagePublishWarning": "This product is not Published yet — it will only appear on the website after switching status to Published.",
       "homepageOrder": "Homepage order",
       "homepageOrderPlaceholder": "e.g. 1",
@@ -2664,6 +2663,18 @@
     "noColorAttrs": "No color attributes",
     "noColorAttrsDesc": "Attributes with kind=\"color\" will appear here for swatch management.",
     "loadValuesError": "Could not load color values."
+  },
+  "featuredProducts": {
+    "eyebrow": "Products",
+    "title": "Featured Products",
+    "description": "Drag to reorder. Up to 12 products are shown in the Featured Products block on the homepage.",
+    "gridTitle": "Featured products list (FEATURED_GRID)",
+    "searchPlaceholder": "Search published products to add...",
+    "noResults": "No published products found",
+    "saveButton": "Save order",
+    "savedSuccess": "Featured products saved.",
+    "limitReached": "Maximum of {{max}} products reached.",
+    "emptyHint": "No products yet. Use the search field below to add some."
   },
   "homeHighlights": {
     "eyebrow": "Content",

@@ -25,19 +25,19 @@ export function MobileCategoryGrid({ categories }: { categories: Category[] }) {
             <Link
               key={category.id}
               href={toCategoryPath(category.slug)}
-              className="bb-home-mobile-category-card block overflow-hidden border border-border"
+              className="bb-home-mobile-category-card block overflow-hidden border border-border bg-card"
             >
-              <div className="bb-home-mobile-category-image relative aspect-[4/3] w-full">
+              <div className="bb-home-mobile-category-image relative aspect-[4/3] w-full bg-white">
                 <Image
                   src={src}
                   alt={name}
                   fill
                   sizes="(max-width: 767px) 50vw"
-                  className="object-cover"
+                  className="object-contain p-3"
                 />
               </div>
               <div className="p-2.5">
-                <div className="font-cta text-sm font-semibold uppercase leading-tight text-foreground">
+                <div className="line-clamp-2 min-h-[2.25rem] font-cta text-sm font-semibold uppercase leading-tight text-foreground">
                   {name}
                 </div>
               </div>

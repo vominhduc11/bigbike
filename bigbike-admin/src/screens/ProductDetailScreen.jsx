@@ -201,8 +201,6 @@ function buildEmptyForm() {
     seoOgImageUrl: '',
     seoOgImageAlt: '',
     seoNoIndex: false,
-    homepageBlock: 'NONE',
-    homepageOrder: '',
     gallery: [],
     videos: [],
     specifications: [],
@@ -294,8 +292,6 @@ function buildFormFromItem(item) {
     seoOgImageUrl: item.seo?.ogImage?.url || '',
     seoOgImageAlt: item.seo?.ogImage?.alt || '',
     seoNoIndex: Boolean(item.seo?.noIndex),
-    homepageBlock: item.homepageBlock || 'NONE',
-    homepageOrder: Number.isFinite(item.homepageOrder) ? String(item.homepageOrder) : '',
     gallery: (item.gallery || []).map((img) => ({ url: img.url || '', alt: img.alt || '' })),
     videos: (item.videos || []).map((v) => ({
       url: v.url || '',
@@ -392,8 +388,6 @@ function toPayload(form) {
     currency: 'VND',
     forceOutOfStock: Boolean(form.forceOutOfStock),
     publishStatus: form.publishStatus,
-    homepageBlock: form.homepageBlock || 'NONE',
-    homepageOrder: form.homepageOrder === '' ? null : toIntegerOrNull(form.homepageOrder),
     seo: hasSeo
       ? {
           title: form.seoTitle.trim() || null,
@@ -2072,8 +2066,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
           slug: '',
           sku: base.sku ? `${base.sku}-COPY` : '',
           publishStatus: 'DRAFT',
-          homepageBlock: 'NONE',
-          homepageOrder: '',
           // Clear variants IDs so they create as new
           variants: base.variants.map((v) => ({ ...v, _key: generateId(), id: '' })),
         }
@@ -2581,7 +2573,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   </Field>
 
                   <Field label={t('products.detail.categoryId')} error={validationErrors.categoryId}>
-                    <Select key={`cat-${categoryOptions.length > 0}`} value={form.categoryId} onValueChange={(val) => updateField('categoryId', val)} disabled={isReadOnly}>
+                    <Select value={form.categoryId} onValueChange={(val) => { if (val) updateField('categoryId', val) }} disabled={isReadOnly}>
                       <SelectTrigger>
                         <SelectValue placeholder={t('products.detail.categoryPlaceholder')}>{selectedCategoryLabel}</SelectValue>
                       </SelectTrigger>
@@ -2595,7 +2587,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   </Field>
 
                   <Field label={t('products.detail.brandId')}>
-                    <Select key={`brand-${brandOptions.length > 0}`} value={form.brandId} onValueChange={(val) => updateField('brandId', val)} disabled={isReadOnly}>
+                    <Select value={form.brandId} onValueChange={(val) => { if (val) updateField('brandId', val) }} disabled={isReadOnly}>
                       <SelectTrigger>
                         <SelectValue placeholder={t('products.detail.brandPlaceholder')}>{selectedBrandLabel}</SelectValue>
                       </SelectTrigger>
@@ -2648,36 +2640,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     )}
                   </Field>
 
-                  <Field full label={t('products.detail.homepageBlock')} hint={t('products.detail.homepageHint')}>
-                    <Select value={form.homepageBlock || 'NONE'} onValueChange={(val) => updateField('homepageBlock', val)} disabled={isReadOnly}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="NONE">{t('products.detail.homepageNone')}</SelectItem>
-                        <SelectItem value="FEATURED_GRID">{t('products.detail.homepageFeaturedGrid')}</SelectItem>
-                        <SelectItem value="RECOMMENDED_CAROUSEL">{t('products.detail.homepageRecommendedCarousel')}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {form.homepageBlock && form.homepageBlock !== 'NONE' && form.publishStatus !== 'PUBLISHED' && (
-                      <span className="text-xs text-[var(--admin-color-status-warning-text)] font-semibold">
-                        {t('products.detail.homepagePublishWarning')}
-                      </span>
-                    )}
-                  </Field>
-
-                  {form.homepageBlock && form.homepageBlock !== 'NONE' && (
-                    <Field label={t('products.detail.homepageOrder')} hint={t('products.detail.homepageOrderHint')}>
-                      <Input
-                        type="number"
-                        inputMode="numeric"
-                        step={1}
-                        min={0}
-                        value={form.homepageOrder}
-                        onChange={(e) => updateField('homepageOrder', e.target.value)}
-                        placeholder={t('products.detail.homepageOrderPlaceholder')}
-                        disabled={isReadOnly}
-                      />
-                    </Field>
-                  )}
                 </div>
               </SectionCard>
 
@@ -2786,7 +2748,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   </Field>
 
                   <Field label={t('products.detail.publishStatus')} error={validationErrors.publishStatus}>
-                    <Select value={form.publishStatus} onValueChange={(val) => updateField('publishStatus', val)} disabled={isReadOnly}>
+                    <Select value={form.publishStatus} onValueChange={(val) => { if (val) updateField('publishStatus', val) }} disabled={isReadOnly}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {form.publishStatus && !['DRAFT', 'PUBLISHED', 'HIDDEN', 'TRASH'].includes(form.publishStatus) && (

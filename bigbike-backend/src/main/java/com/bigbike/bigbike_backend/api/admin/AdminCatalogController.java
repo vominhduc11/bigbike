@@ -1,6 +1,7 @@
 package com.bigbike.bigbike_backend.api.admin;
 
 import com.bigbike.bigbike_backend.api.admin.dto.ProductPublishRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.SetHomepageBlocksRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertBrandRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertCategoryRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertProductRequest;
@@ -44,7 +45,7 @@ public class AdminCatalogController extends AdminControllerSupport {
     private static final String STOCK_STATE_REGEX = "^(IN_STOCK|LOW_STOCK|OUT_OF_STOCK)$";
     private static final String VISIBILITY_REGEX = "^(VISIBLE|HIDDEN)$";
     private static final String HOMEPAGE_BLOCK_REGEX =
-            "^(NONE|FEATURED_GRID|RECOMMENDED_CAROUSEL)$";
+            "^(NONE|FEATURED_GRID)$";
 
     private final AdminCatalogReadService adminCatalogReadService;
     private final AdminCatalogMutationService adminCatalogMutationService;
@@ -151,6 +152,15 @@ public class AdminCatalogController extends AdminControllerSupport {
     ) {
         devAdminAuthService.requirePermission(request, "products.update");
         return apiResponseFactory.data(adminCatalogMutationService.restoreProduct(id, resolveAdminId()), request);
+    }
+
+    @PostMapping("/products/homepage-blocks")
+    public ApiDataResponse<List<Product>> setHomepageBlocks(
+            @Valid @RequestBody SetHomepageBlocksRequest payload,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "products.update");
+        return apiResponseFactory.data(adminCatalogMutationService.setHomepageBlocks(payload, resolveAdminId()), request);
     }
 
     @GetMapping("/categories")

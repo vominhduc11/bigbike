@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Clock3, LogOut, MapPin, Phone, UserCircle2, X } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -154,6 +154,7 @@ export function MobileHeaderMenu({
   hotline2,
 }: MobileHeaderMenuProps) {
   const t = useTranslations("Header");
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
   const [loggingOut, setLoggingOut] = useState(false);
   const auth = useAuth();
   const pathname = usePathname();
@@ -171,6 +172,13 @@ export function MobileHeaderMenu({
     .map((line) => line.trim())
     .filter(Boolean);
   const phones = [hotline, hotline2].map((phone) => phone.trim()).filter(Boolean);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const timer = window.setTimeout(() => closeButtonRef.current?.focus(), 80);
+    return () => window.clearTimeout(timer);
+  }, [open]);
 
   function close() {
     closePanel();
@@ -216,7 +224,7 @@ export function MobileHeaderMenu({
             <Link href="/" aria-label={siteName} onClick={close}>
               <Image src="/wp/logo-1.png" alt={siteName} width={150} height={55} priority />
             </Link>
-            <button type="button" aria-label={t("closeDrawer")} onClick={close}>
+            <button ref={closeButtonRef} type="button" aria-label={t("closeDrawer")} onClick={close}>
               <X size={22} aria-hidden />
             </button>
           </div>

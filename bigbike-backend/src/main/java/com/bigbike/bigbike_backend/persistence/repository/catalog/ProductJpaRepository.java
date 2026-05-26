@@ -1,9 +1,11 @@
 package com.bigbike.bigbike_backend.persistence.repository.catalog;
 
+import com.bigbike.bigbike_backend.domain.catalog.HomepageBlock;
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import jakarta.persistence.LockModeType;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -135,6 +137,8 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Strin
         ORDER BY p.name ASC
         """)
     List<ProductEntity> findByIdsWithVariants(@Param("ids") List<String> ids);
+
+    List<ProductEntity> findByHomepageBlockIn(Collection<HomepageBlock> blocks);
 
     @Query("SELECT p.slug FROM ProductEntity p WHERE p.id IN :ids AND p.slug IS NOT NULL")
     List<String> findSlugsByIds(@Param("ids") List<String> ids);

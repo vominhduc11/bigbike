@@ -3,19 +3,17 @@ package com.bigbike.bigbike_backend.domain.catalog;
 /**
  * Where a product is pinned on the storefront homepage.
  *
- * Each product is in exactly one of these slots — replaces the prior pair of
- * mutually-overlapping booleans (`isFeatured` + `showOnHomepage`) that admins
- * could toggle independently, even though the web frontend deduped them so
- * the second flag was silently ineffective when the first was set.
+ * Each product is in exactly one slot. Within a slot, products are ordered by
+ * `homepageOrder` ascending (null last). Slot capacity is enforced by the admin
+ * UI, not by this enum.
  *
- * Within a slot, products are ordered by `homepageOrder` ascending (null last).
- * Slot capacity is enforced by the web frontend, not by this enum.
+ * RECOMMENDED_CAROUSEL was removed in V149 (2026-05-26): the web storefront
+ * never rendered that block, so the value was invisible to customers and
+ * confusing for admins.
  */
 public enum HomepageBlock {
     /** Not on the homepage. */
     NONE,
-    /** "Sản phẩm nổi bật" — grid of 3 products. */
-    FEATURED_GRID,
-    /** "Gợi ý dành cho bạn" — carousel of 10 products. */
-    RECOMMENDED_CAROUSEL
+    /** "Sản phẩm nổi bật" — grid on the homepage (admin-managed, max 12). */
+    FEATURED_GRID
 }

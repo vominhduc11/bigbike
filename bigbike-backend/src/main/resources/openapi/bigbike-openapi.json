@@ -246,8 +246,7 @@
               "type": "string",
               "enum": [
                 "NONE",
-                "FEATURED_GRID",
-                "RECOMMENDED_CAROUSEL"
+                "FEATURED_GRID"
               ]
             },
             "description": "Filter to a single homepage placement slot."
@@ -2938,8 +2937,7 @@
               "type": "string",
               "enum": [
                 "NONE",
-                "FEATURED_GRID",
-                "RECOMMENDED_CAROUSEL"
+                "FEATURED_GRID"
               ]
             },
             "description": "Filter to a single homepage placement slot."
@@ -7769,8 +7767,7 @@
             "type": "string",
             "enum": [
               "NONE",
-              "FEATURED_GRID",
-              "RECOMMENDED_CAROUSEL"
+              "FEATURED_GRID"
             ],
             "description": "Homepage placement slot. NONE = not pinned."
           },

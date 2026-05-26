@@ -47,11 +47,15 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRep
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.redirect.RedirectJpaRepository;
 import com.bigbike.bigbike_backend.repository.catalog.CatalogReadRepository;
+import com.bigbike.bigbike_backend.api.admin.dto.SetHomepageBlocksRequest;
+import com.bigbike.bigbike_backend.domain.catalog.HomepageBlock;
 import java.math.BigDecimal;
 import java.text.Normalizer;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -1666,6 +1670,65 @@ public class AdminCatalogMutationService {
                     ". Hide or re-parent them first."
             );
         }
+    }
+
+    @Transactional
+    public List<Product> setHomepageBlocks(SetHomepageBlocksRequest request, UUID adminId) {
+        requireJpaPersistenceEnabled();
+
+        List<String> featuredIds = request.getFeaturedGrid() == null ? List.of() : request.getFeaturedGrid();
+
+        // Load all products currently in FEATURED_GRID + all submitted ids
+        List<ProductEntity> currentlyPinned = productJpaRepository.findByHomepageBlockIn(List.of(HomepageBlock.FEATURED_GRID));
+        Set<String> allAffectedIds = new HashSet<>();
+        currentlyPinned.forEach(p -> allAffectedIds.add(p.getId()));
+        allAffectedIds.addAll(featuredIds);
+
+        List<ProductEntity> allEntities = productJpaRepository.findAllById(allAffectedIds);
+        Map<String, ProductEntity> byId = new HashMap<>();
+        for (ProductEntity e : allEntities) {
+            byId.put(e.getId(), e);
+        }
+
+        // Validate all submitted ids exist and are PUBLISHED
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        for (int i = 0; i < featuredIds.size(); i++) {
+            String id = featuredIds.get(i);
+            ProductEntity entity = byId.get(id);
+            if (entity == null) {
+                errors.add(new ApiErrorDetail("featuredGrid[" + i + "]", "NOT_FOUND", "Product '" + id + "' not found."));
+            } else if (entity.getPublishStatus() != PublishStatus.PUBLISHED) {
+                errors.add(new ApiErrorDetail("featuredGrid[" + i + "]", "NOT_PUBLISHED",
+                        "Product '" + id + "' must be PUBLISHED to appear on the homepage."));
+            }
+        }
+        AdminMutationValidators.throwIfErrors(errors);
+
+        Set<String> newFeaturedSet = new HashSet<>(featuredIds);
+        Instant now = Instant.now();
+
+        for (ProductEntity entity : allEntities) {
+            String id = entity.getId();
+            if (newFeaturedSet.contains(id)) {
+                entity.setHomepageBlock(HomepageBlock.FEATURED_GRID);
+                entity.setHomepageOrder(featuredIds.indexOf(id));
+                entity.setUpdatedAt(now);
+            } else {
+                entity.setHomepageBlock(HomepageBlock.NONE);
+                entity.setHomepageOrder(null);
+                entity.setUpdatedAt(now);
+            }
+        }
+
+        productJpaRepository.saveAll(allEntities);
+        auditLog("PRODUCT_HOMEPAGE_BLOCKS_SET", "PRODUCT", adminId, null, null);
+        webRevalidationService.revalidate("products");
+
+        List<Product> result = new ArrayList<>();
+        for (String id : featuredIds) {
+            catalogReadRepository.findProductById(id).ifPresent(result::add);
+        }
+        return result;
     }
 }
 

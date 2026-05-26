@@ -448,23 +448,24 @@ Two columns on the `products` table control homepage surface placement. The lega
 | Value | Slot | Frontend display |
 |---|---|---|
 | `NONE` | Not pinned to homepage | Default for all products |
-| `FEATURED_GRID` | "Sản phẩm nổi bật" grid | Max 12 shown (frontend-enforced) |
-| `RECOMMENDED_CAROUSEL` | "Gợi ý dành cho bạn" carousel | Max 10 shown (frontend-enforced) |
+| `FEATURED_GRID` | "Sản phẩm nổi bật" grid | Max 12 shown (admin UI-enforced) |
 
-A product occupies exactly one slot — no deduplication pass needed. Admin UI shows a warning banner when the filtered count of a slot exceeds its display limit.
+> `RECOMMENDED_CAROUSEL` was **removed in V149 (2026-05-26)**. The web storefront never rendered that block, making assignments invisible to customers and confusing for admins. All rows previously set to `RECOMMENDED_CAROUSEL` were reset to `NONE` by the migration.
 
-**Backfill rule (V111):** `is_featured=true` → `FEATURED_GRID`; else `show_on_homepage=true` → `RECOMMENDED_CAROUSEL`; else `NONE`. Legacy columns then dropped via `ALTER TABLE products DROP COLUMN is_featured, DROP COLUMN show_on_homepage`.
+A product occupies exactly one slot. `homepageBlock` and `homepageOrder` are set exclusively via `POST /api/v1/admin/products/homepage-blocks` (see API_CONTRACT.md), not via the per-product update form.
+
+**Backfill rule (V111):** `is_featured=true` → `FEATURED_GRID`; else `show_on_homepage=true` → `RECOMMENDED_CAROUSEL` (removed V149); else `NONE`. Legacy columns then dropped via `ALTER TABLE products DROP COLUMN is_featured, DROP COLUMN show_on_homepage`.
 
 Status: `CONFIRMED_FROM_CODE`
 
 Evidence:
 - `ProductEntity.java` — `@Column(name = "homepage_block") @Enumerated(EnumType.STRING) private HomepageBlock homepageBlock` (no `isFeatured` / `showOnHomepage` fields)
-- `HomepageBlock.java` — enum `NONE | FEATURED_GRID | RECOMMENDED_CAROUSEL`
-- `UpsertProductRequest.java` — presence-flag pattern (`homepageOrderPresent`) prevents null from clearing an existing value on partial PATCH
-- `AdminCatalogMutationService.applyProductPatch()` — applies `homepageBlock` and `homepageOrder` updates
+- `HomepageBlock.java` — enum `NONE | FEATURED_GRID`
+- `AdminCatalogMutationService.setHomepageBlocks()` — atomic bulk set of FEATURED_GRID ordering
 - `CatalogReadService.productComparator()` — compound sort: pinned ASC/DESC, null last, `createdAt:DESC` tiebreaker
-- `V111__refactor_product_homepage_block.sql` — schema change + backfill + column drop
-- `API_CONTRACT.md` §"Admin Catalog Contract" — documents filter/sort params for `homepageBlock`
+- `V111__refactor_product_homepage_block.sql` — original schema change + backfill + column drop
+- `V149__drop_recommended_carousel_block.sql` — removes RECOMMENDED_CAROUSEL, tightens check constraint
+- `API_CONTRACT.md` §"Admin Catalog Contract" — documents filter/sort params + new homepage-blocks endpoint
 
 ### Page hero fields (V98)
 

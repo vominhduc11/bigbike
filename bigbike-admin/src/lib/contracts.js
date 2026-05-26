@@ -31,7 +31,7 @@ export function normalizeStockState(value) {
   return isKnownStockState(value) ? value : 'UNKNOWN'
 }
 
-export const HOMEPAGE_BLOCKS = ['NONE', 'FEATURED_GRID', 'RECOMMENDED_CAROUSEL']
+export const HOMEPAGE_BLOCKS = ['NONE', 'FEATURED_GRID']
 
 export function normalizeHomepageBlock(value) {
   return HOMEPAGE_BLOCKS.includes(value) ? value : 'NONE'

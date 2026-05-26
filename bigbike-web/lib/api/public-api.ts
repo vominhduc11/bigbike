@@ -235,7 +235,7 @@ export type ProductListQuery = {
   minPrice?: number;
   maxPrice?: number;
   /** Filter to a single homepage placement slot. */
-  homepageBlock?: "NONE" | "FEATURED_GRID" | "RECOMMENDED_CAROUSEL";
+  homepageBlock?: "NONE" | "FEATURED_GRID";
   /** Content language: "vi" (default) or "en". English falls back to Vietnamese per PRODUCT_RULE_002. */
   lang?: string;
 };

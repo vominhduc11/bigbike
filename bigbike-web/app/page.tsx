@@ -347,7 +347,7 @@ export default async function HomePage() {
     listProducts({
       page: 1,
       homepageBlock: "FEATURED_GRID",
-      size: 5,
+      size: 12,
       sort: "homepageOrder:asc",
       lang: locale,
     }),

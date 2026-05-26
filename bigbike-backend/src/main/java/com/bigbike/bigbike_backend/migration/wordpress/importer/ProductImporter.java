@@ -88,15 +88,11 @@ public class ProductImporter implements DomainImporter {
                 entity.setStockQuantity(mp.stockQuantity());
                 entity.setManageStock(mp.manageStock());
                 entity.setBackorders(mp.backorders());
-                // Mirror the prior web dedupe: isFeatured wins over showOnHomepage.
-                com.bigbike.bigbike_backend.domain.catalog.HomepageBlock block;
-                if (Boolean.TRUE.equals(mp.isFeatured())) {
-                    block = com.bigbike.bigbike_backend.domain.catalog.HomepageBlock.FEATURED_GRID;
-                } else if (Boolean.TRUE.equals(mp.showOnHomepage())) {
-                    block = com.bigbike.bigbike_backend.domain.catalog.HomepageBlock.RECOMMENDED_CAROUSEL;
-                } else {
-                    block = com.bigbike.bigbike_backend.domain.catalog.HomepageBlock.NONE;
-                }
+                // Only FEATURED_GRID remains (RECOMMENDED_CAROUSEL removed in V149).
+                com.bigbike.bigbike_backend.domain.catalog.HomepageBlock block =
+                        Boolean.TRUE.equals(mp.isFeatured())
+                                ? com.bigbike.bigbike_backend.domain.catalog.HomepageBlock.FEATURED_GRID
+                                : com.bigbike.bigbike_backend.domain.catalog.HomepageBlock.NONE;
                 entity.setHomepageBlock(block);
                 entity.setRating(mp.rating());
 

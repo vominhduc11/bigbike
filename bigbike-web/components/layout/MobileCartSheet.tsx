@@ -178,26 +178,33 @@ export function MobileCartSheet() {
           )}
         </div>
 
-        <div className="bb-mobile-cart-foot">
-          <div className="bb-mobile-cart-total">
-            <span>TỔNG TẠM TÍNH</span>
-            <strong>{formatVnd(cart?.totals.totalAmount ?? 0)}</strong>
-          </div>
-          <div className="bb-mobile-cart-actions">
-            <Link href={toCartPath()} className="bb-mobile-cart-secondary" onClick={closePanel}>
-              Xem giỏ hàng
-            </Link>
-            {items.length === 0 || unavailable ? (
-              <span className="bb-mobile-cart-primary is-disabled" aria-disabled="true">
-                Thanh toán
-              </span>
-            ) : (
-              <Link href={toCheckoutPath()} className="bb-mobile-cart-primary" onClick={closePanel}>
-                Thanh toán
+        {items.length > 0 ? (
+          <div className="bb-mobile-cart-foot">
+            <div className="bb-mobile-cart-total">
+              <span>TỔNG TẠM TÍNH</span>
+              <strong>{formatVnd(cart?.totals.totalAmount ?? 0)}</strong>
+            </div>
+            {unavailable ? (
+              <p className="bb-mobile-cart-foot-warning" role="alert">
+                Có sản phẩm tạm thời không khả dụng. Vui lòng cập nhật giỏ hàng trước khi thanh toán.
+              </p>
+            ) : null}
+            <div className="bb-mobile-cart-actions">
+              <Link href={toCartPath()} className="bb-mobile-cart-secondary" onClick={closePanel}>
+                Xem giỏ hàng
               </Link>
-            )}
+              {unavailable ? (
+                <span className="bb-mobile-cart-primary is-disabled" aria-disabled="true">
+                  Thanh toán
+                </span>
+              ) : (
+                <Link href={toCheckoutPath()} className="bb-mobile-cart-primary" onClick={closePanel}>
+                  Thanh toán
+                </Link>
+              )}
+            </div>
           </div>
-        </div>
+        ) : null}
       </SheetContent>
     </Sheet>
   );
