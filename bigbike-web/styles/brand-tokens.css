@@ -340,7 +340,7 @@
   text-decoration: underline;
   text-underline-offset: 2px;
 }
-.bb-richtext a:hover { color: var(--bb-brand-primary); }
+.bb-richtext a:hover { color: var(--bb-text-brand); }
 .bb-richtext strong,
 .bb-richtext b { font-weight: var(--bb-font-weight-bold); }
 .bb-richtext ul,

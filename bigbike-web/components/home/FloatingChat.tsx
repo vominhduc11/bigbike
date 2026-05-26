@@ -22,7 +22,7 @@ function IconHotline() {
       <circle cx="20" cy="20" r="20" fill="#00b14f" />
       <path
         d="M14.6 13.2a1.6 1.6 0 0 1 1.6-1.2h2.1c.7 0 1.3.5 1.4 1.2l.5 2.5a1.4 1.4 0 0 1-.4 1.3l-1.4 1.3c1 1.9 2.5 3.4 4.4 4.4l1.3-1.4a1.4 1.4 0 0 1 1.3-.4l2.5.5c.7.1 1.2.7 1.2 1.4v2.1a1.6 1.6 0 0 1-1.6 1.6c-7.7 0-14-6.3-14-14Z"
-        fill="#fff"
+        fill="currentColor"
       />
     </svg>
   );
@@ -52,7 +52,7 @@ function IconMessenger() {
       </defs>
       <circle cx="20" cy="20" r="20" fill="url(#bb-msg-grad)" />
       <path
-        fill="#fff"
+        fill="currentColor"
         d="M20 9C13.925 9 9 13.582 9 19.2c0 3.265 1.628 6.178 4.175 8.099V31l3.778-2.078c1.01.28 2.08.428 3.19.428 6.075 0 11-4.582 11-10.15C31 13.582 26.075 9 20 9zm1.082 13.652L18.64 20.1l-4.86 2.677 5.35-5.685 2.523 2.552 4.86-2.677-5.35 5.685z"
       />
     </svg>
@@ -63,7 +63,7 @@ function IconToggleOpen() {
   return (
     <svg width="28" height="28" viewBox="0 0 28 29" fill="none" aria-hidden="true">
       <path
-        fill="#fff"
+        fill="currentColor"
         fillRule="evenodd"
         d="M14 3C8 3 3 7.5 3 13c0 3.2 1.6 6 4.1 7.9V25l3.8-2.1c1 .2 2 .3 3.1.3 6 0 11-4.5 11-10S20 3 14 3Z"
       />
@@ -75,7 +75,7 @@ function IconToggleClose() {
   return (
     <svg width="29" height="29" viewBox="0 0 29 29" fill="none" aria-hidden="true">
       <path
-        fill="#fff"
+        fill="currentColor"
         fillRule="evenodd"
         d="M18.866 14.45l9.58-9.582L24.03.448l-9.587 9.58L4.873.447.455 4.866l9.575 9.587-9.583 9.57 4.418 4.42 9.58-9.577 9.58 9.58 4.42-4.42"
       />

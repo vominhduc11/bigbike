@@ -46,7 +46,7 @@ function SubMenu({
           <li
             key={child.id}
             className={cn(
-              "relative border-b border-[#cecece] last:border-b-0",
+              "relative border-b border-border last:border-b-0",
               hasChildren && "group",
             )}
           >

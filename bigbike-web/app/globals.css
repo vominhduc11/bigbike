@@ -65,6 +65,7 @@
   --color-brand-active: var(--bb-brand-primary-aa-hover);
   --color-brand-on-dark: var(--bb-brand-primary-on-dark);
   --color-brand-inverse: var(--bb-brand-primary-inverse);
+  --color-brand-border: var(--bb-border-brand);
   --color-brand-soft: var(--bb-brand-primary-soft);
   --color-blue: var(--bb-link-text);
   --color-cyan: var(--bb-color-cyan);
@@ -390,7 +391,7 @@ body {
 .bb-query-input:focus,
 .bb-query-select:focus {
   outline: none;
-  border-color: var(--bb-brand-primary);
+  border-color: var(--bb-border-control-hover);
   background: var(--bb-bg-surface);
   box-shadow: var(--bb-focus-ring);
 }
@@ -515,7 +516,7 @@ body {
 .bb-query-input:focus,
 .bb-query-select:focus {
   outline: none;
-  border-color: var(--bb-brand-primary);
+  border-color: var(--bb-border-control-hover);
   box-shadow: var(--bb-focus-ring);
 }
 
@@ -589,7 +590,7 @@ body {
 /* globals.css overrides the h1-h3 style from brand-tokens.css to use display font.
    Remaining elements (ul/ol/li/p/blockquote/table/strong) are fully covered by brand-tokens.css. */
 
-/* Suppress &nbsp; spacer paragraphs common in WP-imported descriptions */
+/* Suppress   spacer paragraphs common in WP-imported descriptions */
 .bb-richtext p:empty { display: none; }
 .bb-richtext p:has(> br:only-child) { display: none; }
 
@@ -862,7 +863,7 @@ body {
   right: 0;
   width: 6px;
   height: 6px;
-  background: var(--bb-brand-primary);
+  background: var(--bb-action-primary);
   transform: translate(50%, -50%) rotate(45deg);
 }
 
@@ -896,9 +897,12 @@ body {
   padding-left: clamp(6px, 0.8vw, 14px);
 }
 
+.bb-user-control .bb-icon-btn {
+  display: inline-flex;
+}
+
 .bb-user-control .bb-icon-btn,
 .bb-site-header .bb-cart-icon-link {
-  display: inline-flex;
   align-items: center;
   justify-content: center;
   height: 100%;
@@ -944,7 +948,7 @@ body {
   height: 18px;
   padding: 0 4px 3px;
   border-radius: 999px;
-  background: var(--bb-brand-primary);
+  background: var(--bb-action-primary);
   color: #ffffff;
   font-family: var(--bb-font-body);
   font-size: 11px;
@@ -1187,7 +1191,7 @@ body {
 }
 
 .bb-header-user-menu-link.is-primary {
-  background: var(--bb-brand-primary);
+  background: var(--bb-action-primary);
 }
 
 .bb-header-user-menu-link:hover,
@@ -1359,15 +1363,15 @@ body {
   letter-spacing: 0.04em;
   text-transform: uppercase;
   background: var(--bb-brand-primary-soft);
-  color: var(--bb-brand-primary);
+  color: var(--bb-text-brand);
   border: 1px solid var(--bb-brand-primary-border);
 }
 
 .bb-account-avatar:hover,
 .bb-account-avatar:focus-visible {
-  background: var(--bb-brand-primary);
-  color: var(--bb-color-black);
-  border-color: var(--bb-brand-primary);
+  background: var(--bb-action-primary);
+  color: var(--bb-text-inverse);
+  border-color: var(--bb-action-primary);
 }
 
 .bb-mobile-header-panel {
@@ -1777,7 +1781,7 @@ body {
 
 .bb-experience-kicker {
   margin: 0 0 10px;
-  color: #cecece;
+  color: var(--bb-text-brand);
   font-family: var(--bb-font-cta);
   font-size: var(--bb-text-section-kicker);
   font-weight: 600;
@@ -2137,7 +2141,7 @@ body {
 }
 
 .bb-view-all-link {
-  color: var(--bb-brand-primary);
+  color: var(--bb-text-brand);
   font-weight: 700;
   font-size: 0.8rem;
   text-decoration: none;
@@ -2318,7 +2322,7 @@ body {
   height: 42px;
   min-width: 168px;
   padding: 0 28px 0 22px;
-  background: var(--bb-brand-primary);
+  background: var(--bb-action-primary);
   color: #fff;
   font-family: var(--bb-font-display);
   font-size: 14px;
@@ -2361,7 +2365,7 @@ body {
 }
 
 .bb-news-card:hover .bb-news-card-title {
-  color: var(--bb-brand-primary);
+  color: var(--bb-text-brand);
 }
 
 .bb-news-excerpt {
@@ -2529,7 +2533,7 @@ body {
 /* -- Section headers -------------------------------------- */
 .bb-section { max-width: 1200px; margin: 60px auto 0; padding: 0 24px; }
 .bb-section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 28px; padding-bottom: 16px; border-bottom: 1px solid var(--bb-border-default); }
-.bb-section-head .bb-kicker { font-family: var(--bb-font-cta); font-size: var(--bb-text-section-kicker); line-height: var(--bb-line-section-kicker); letter-spacing: 0; text-transform: uppercase; color: #cecece; font-weight: 600; margin: 0 0 10px; display: block; }
+.bb-section-head .bb-kicker { font-family: var(--bb-font-cta); font-size: var(--bb-text-section-kicker); line-height: var(--bb-line-section-kicker); letter-spacing: 0; text-transform: uppercase; color: var(--bb-text-brand); font-weight: 600; margin: 0 0 10px; display: block; }
 .bb-section-title { font-family: var(--bb-font-heading); text-transform: uppercase; font-size: var(--bb-text-section-title); font-weight: 600; letter-spacing: 0; line-height: var(--bb-line-section-title); margin: 0; color: var(--bb-text-primary); }
 
 
@@ -2544,7 +2548,7 @@ body {
 
 /* -- Reviews section -------------------------------------- */
 .bb-pdp-rating-summary { display: flex; align-items: center; gap: 8px; }
-.bb-pdp-rating-score { font-family: var(--bb-font-display); font-size: 28px; font-weight: 700; color: var(--bb-brand-primary); line-height: 1; }
+.bb-pdp-rating-score { font-family: var(--bb-font-display); font-size: 28px; font-weight: 700; color: var(--bb-text-brand); line-height: 1; }
 .bb-pdp-rating-count { font-size: 14px; color: var(--bb-text-muted); }
 .stars { display: inline-flex; gap: 2px; align-items: center; }
 .bb-pdp-review-list { list-style: none; padding: 0; margin: 20px 0 0; display: flex; flex-direction: column; gap: 0; }
@@ -2556,16 +2560,16 @@ body {
 .bb-pdp-review-comment { font-size: 14px; color: var(--bb-text-secondary); margin: 0; line-height: 1.6; }
 /* Write review */
 .bb-review-open-btn { display: inline-flex; align-items: center; gap: 8px; background: transparent; border: 1px solid var(--bb-border-default); color: var(--bb-text-secondary); font-family: var(--bb-font-body); font-size: 14px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 9px 16px; border-radius: var(--bb-radius-none); cursor: pointer; margin-bottom: 20px; transition: all 160ms; }
-.bb-review-open-btn:hover { border-color: var(--bb-brand-primary); color: var(--bb-brand-primary); }
-.bb-review-open-btn svg { color: var(--bb-brand-primary); }
+.bb-review-open-btn:hover { border-color: var(--bb-text-brand); color: var(--bb-text-brand); }
+.bb-review-open-btn svg { color: var(--bb-text-brand); }
 .bb-review-form { background: var(--bb-bg-surface); border: 1px solid var(--bb-border-subtle); border-radius: var(--bb-radius-none); padding: 20px; margin-bottom: 24px; display: flex; flex-direction: column; gap: 14px; }
 .bb-review-form-title { font-family: var(--bb-font-display); font-size: 14px; text-transform: uppercase; letter-spacing: 0.08em; margin: 0; color: var(--bb-text-primary); }
 .bb-review-form-field { display: flex; flex-direction: column; gap: 6px; }
 .bb-review-form-field label { font-size: 14px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--bb-text-muted); }
 .bb-review-star-picker { display: flex; gap: 4px; }
 .bb-review-star-btn { background: none; border: none; padding: 2px; cursor: pointer; color: var(--bb-text-muted); transition: color 100ms; line-height: 0; }
-.bb-review-star-btn.active { color: var(--bb-brand-primary); }
-.bb-review-star-btn:hover { color: var(--bb-brand-primary); }
+.bb-review-star-btn.active { color: var(--bb-text-brand); }
+.bb-review-star-btn:hover { color: var(--bb-text-brand); }
 .bb-review-form-actions { display: flex; gap: 10px; justify-content: flex-end; }
 .bb-review-done { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--bb-state-success-text); background: var(--bb-state-success-bg); border: 1px solid var(--bb-state-success-border); border-radius: var(--bb-radius-none); padding: 12px 16px; margin-bottom: 20px; }
 .bb-pdp-related-header { display: flex; flex-direction: column; align-items: center; text-align: center; margin-bottom: 28px; gap: 8px; }
@@ -2587,8 +2591,8 @@ body {
 /* -- Breadcrumb -------------------------------------------- */
 .bb-breadcrumb { max-width: 1440px; margin: 0 auto; padding: 16px 24px; font-size: 16px; letter-spacing: 0; text-transform: none; color: #717171; display: flex; flex-wrap: wrap; align-items: center; }
 .bb-breadcrumb a { color: #717171; font-weight: 600; text-decoration: none; cursor: pointer; }
-.bb-breadcrumb a:hover { color: var(--bb-brand-primary); }
-.bb-breadcrumb .sep { margin: 0 10px; color: var(--bb-brand-primary); }
+.bb-breadcrumb a:hover { color: var(--bb-text-brand); }
+.bb-breadcrumb .sep { margin: 0 10px; color: var(--bb-text-brand); }
 /* Clear the emblem (150px wide, overflows ~76px below header bar) so the
    breadcrumb's first segment isn't sitting under the red diagonal stripe.
    Emblem is hidden < 768px and fades out once data-header-scrolled - so
@@ -2600,15 +2604,15 @@ html[data-header-scrolled] .bb-breadcrumb { padding-left: 24px; }
 
 /* -- Page head -------------------------------------------- */
 .bb-page-head { max-width: 1440px; margin: 32px auto 28px; padding: 0 24px; border-bottom: 1px solid var(--bb-border-subtle); padding-bottom: 22px; }
-.bb-page-head .kicker { font-size: 14px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--bb-brand-primary); font-weight: 700; display: block; margin-bottom: 8px; }
+.bb-page-head .kicker { font-size: 14px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--bb-text-brand); font-weight: 700; display: block; margin-bottom: 8px; }
 .bb-page-head h1 { font-family: var(--bb-font-display); text-transform: uppercase; font-size: clamp(1.375rem, 5vw, 2.8rem); letter-spacing: 0.01em; line-height: 1.1; margin: 0; color: var(--bb-text-primary); overflow-wrap: anywhere; }
 .bb-page-head .sub { color: var(--bb-text-muted); font-size: 14px; margin-top: 8px; }
 
 /* -- Category Hero Banner — breadcrumb + title (dùng trong PageHero/Breadcrumb) -- */
 .bb-cat-hero-breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.5); margin-bottom: 14px; overflow: hidden; min-width: 0; }
 .bb-cat-hero-breadcrumb a { color: rgba(255,255,255,0.5); text-decoration: none; transition: color 140ms; white-space: nowrap; flex-shrink: 0; }
-.bb-cat-hero-breadcrumb a:hover { color: var(--bb-brand-primary); }
-.bb-cat-hero-breadcrumb span[aria-hidden] { color: var(--bb-brand-primary); white-space: nowrap; flex-shrink: 0; }
+.bb-cat-hero-breadcrumb a:hover { color: var(--bb-brand-primary-on-dark); }
+.bb-cat-hero-breadcrumb span[aria-hidden] { color: var(--bb-brand-primary-on-dark); white-space: nowrap; flex-shrink: 0; }
 .bb-cat-hero-breadcrumb span[aria-current] { color: rgba(255,255,255,0.85); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex-shrink: 1; }
 .bb-cat-hero-title { font-family: var(--bb-font-display); text-transform: uppercase; font-size: clamp(2rem, 4vw, 3.2rem); letter-spacing: 0.02em; line-height: 1.0; margin: 0; color: #fff; }
 
@@ -2618,7 +2622,7 @@ html[data-header-scrolled] .bb-breadcrumb { padding-left: 24px; }
 .bb-cat-seo-prose h1,.bb-cat-seo-prose h2,.bb-cat-seo-prose h3 { font-family: var(--bb-font-display); text-transform: uppercase; letter-spacing: 0; color: var(--bb-text-primary, #000); margin: 1.4em 0 0.5em; font-size: 1.143rem; font-weight: 600; }
 .bb-cat-seo-prose h1 { font-size: 1.4rem; }
 .bb-cat-seo-prose p { margin: 0 0 1em; }
-.bb-cat-seo-prose a { color: var(--bb-brand-primary); text-decoration: none; }
+.bb-cat-seo-prose a { color: var(--bb-text-brand); text-decoration: none; }
 .bb-cat-seo-prose a:hover { text-decoration: underline; }
 .bb-cat-seo-prose strong { color: var(--bb-text-primary, #000); font-weight: 600; }
 .bb-cat-seo-prose ul,.bb-cat-seo-prose ol { padding-left: 1.4em; margin: 0 0 1em; }
@@ -2675,13 +2679,13 @@ html[data-header-scrolled] .bb-breadcrumb { padding-left: 24px; }
 }
 .bb-filter-preset:hover { color: #fff; }
 .bb-filter-preset:hover::before {
-  border-color: var(--bb-brand-primary);
-  background: var(--bb-brand-primary);
+  border-color: var(--bb-text-brand);
+  background: var(--bb-action-primary);
 }
 .bb-filter-preset.active { color: #fff; }
 .bb-filter-preset.active::before {
-  border-color: var(--bb-brand-primary);
-  background: var(--bb-brand-primary);
+  border-color: var(--bb-text-brand);
+  background: var(--bb-action-primary);
 }
 
 /* Color swatch filter */
@@ -2774,7 +2778,7 @@ html[data-header-scrolled] .bb-breadcrumb { padding-left: 24px; }
 
 .bb-cart-breadcrumb li {
   display: inline-block;
-  color: #cecece;
+  color: var(--bb-text-secondary);
 }
 
 .bb-cart-breadcrumb li::before {
@@ -2789,7 +2793,7 @@ html[data-header-scrolled] .bb-breadcrumb { padding-left: 24px; }
 
 .bb-cart-breadcrumb a,
 .bb-cart-breadcrumb span {
-  color: #cecece;
+  color: var(--bb-text-secondary);
   text-decoration: none;
 }
 
@@ -2836,8 +2840,8 @@ html[data-header-scrolled] .bb-breadcrumb { padding-left: 24px; }
 }
 
 .cart-table .woocommerce-error {
-  border-color: var(--bb-brand-primary);
-  color: var(--bb-brand-primary);
+  border-color: var(--bb-text-brand);
+  color: var(--bb-text-brand);
 }
 
 .cart-table .cart-empty.woocommerce-info {
@@ -2853,7 +2857,7 @@ html[data-header-scrolled] .bb-breadcrumb { padding-left: 24px; }
   height: 52px;
   padding: 0 24px;
   border: 0;
-  background: var(--bb-brand-primary);
+  background: var(--bb-action-primary);
   color: #fff;
   font-family: var(--bb-font-cta);
   font-size: 14px;
@@ -2901,7 +2905,7 @@ html[data-header-scrolled] .bb-breadcrumb { padding-left: 24px; }
   width: 20px;
   height: 20px;
   border-radius: 2px;
-  background: var(--bb-brand-primary);
+  background: var(--bb-action-primary);
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16);
   transform: translateY(-50%) rotate(45deg);
 }
@@ -3049,7 +3053,7 @@ html[data-header-scrolled] .bb-breadcrumb { padding-left: 24px; }
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--bb-brand-primary);
+  color: var(--bb-text-brand);
 }
 
 .cart-table .is-mutating {
@@ -3112,7 +3116,7 @@ html[data-header-scrolled] .bb-breadcrumb { padding-left: 24px; }
   min-width: 180px;
   height: 62px;
   padding: 0 30px;
-  background-color: var(--bb-brand-primary);
+  background-color: var(--bb-action-primary);
   color: #fff;
   line-height: 62px;
   text-align: center;
@@ -3175,7 +3179,7 @@ html[data-header-scrolled] .bb-breadcrumb { padding-left: 24px; }
   padding: 14px 20px;
   border: 0;
   border-radius: 0;
-  background: var(--bb-brand-primary);
+  background: var(--bb-action-primary);
   color: #fff;
   font-family: var(--bb-font-cta);
   font-size: 14px;
@@ -3196,7 +3200,7 @@ html[data-header-scrolled] .bb-breadcrumb { padding-left: 24px; }
   margin: 0 10px 10px 0;
   padding: 7px 20px;
   background: #000;
-  color: var(--bb-brand-primary);
+  color: var(--bb-text-brand);
   font-weight: 600;
 }
 
@@ -3207,7 +3211,7 @@ html[data-header-scrolled] .bb-breadcrumb { padding-left: 24px; }
 .bb-cart-page .promotion .apply-code .delete {
   border: 0;
   background: transparent;
-  color: var(--bb-brand-primary);
+  color: var(--bb-text-brand);
   font-size: 18px;
   line-height: 1;
 }
@@ -3246,7 +3250,7 @@ html[data-header-scrolled] .bb-breadcrumb { padding-left: 24px; }
 }
 
 .bb-cart-page .promotion-form .form-group input::placeholder {
-  color: #cecece;
+  color: var(--bb-text-secondary);
 }
 
 .bb-cart-page .promotion-form .form-group button {
@@ -3256,7 +3260,7 @@ html[data-header-scrolled] .bb-breadcrumb { padding-left: 24px; }
   width: 70px;
   height: 52px;
   border: 0;
-  background-color: var(--bb-brand-primary);
+  background-color: var(--bb-action-primary);
   color: #fff;
   font-size: 1.143rem;
   font-weight: 600;
@@ -3280,7 +3284,7 @@ html[data-header-scrolled] .bb-breadcrumb { padding-left: 24px; }
 
 .bb-cart-page .summary.total-summary .total-price {
   margin: 0;
-  color: var(--bb-brand-primary);
+  color: var(--bb-text-brand);
   font-size: 1.714rem;
 }
 
@@ -3357,11 +3361,11 @@ html[data-header-scrolled] .bb-breadcrumb { padding-left: 24px; }
 .bb-checkout-layout { display: grid; grid-template-columns: 1fr 420px; gap: 32px; max-width: 1440px; margin: 0 auto 40px; padding: 0 24px; }
 .bb-stepper { display: flex; gap: 0; margin-bottom: 24px; border-bottom: 1px solid var(--bb-border-subtle); }
 .bb-step { flex: 1; padding: 14px 16px; display: flex; align-items: center; gap: 12px; border-bottom: 3px solid transparent; color: var(--bb-text-muted); cursor: pointer; transition: all 140ms; }
-.bb-step.active { color: var(--bb-text-primary); border-bottom-color: var(--bb-brand-primary); }
+.bb-step.active { color: var(--bb-text-primary); border-bottom-color: var(--bb-text-brand); }
 .bb-step.done { color: var(--bb-text-secondary); }
 .bb-checkout-section { background: var(--bb-bg-surface); border: 1px solid var(--bb-border-subtle); border-radius: var(--bb-radius-none); padding: 22px 24px; margin-bottom: 18px; }
 .bb-checkout-section h3 { font-family: var(--bb-font-display); text-transform: uppercase; font-size: 16px; letter-spacing: 0.04em; margin: 0 0 18px 0; display: flex; align-items: center; gap: 10px; }
-.bb-checkout-section h3 .badge { font-size: 14px; padding: 3px 8px; background: var(--bb-brand-primary); color: #ffffff; border-radius: var(--bb-radius-none); letter-spacing: 0.08em; font-weight: 700; } /* was rgba red on white (3.8:1 fail) → white on brand red (3.92:1) — large bold text, 3:1 OK */
+.bb-checkout-section h3 .badge { font-size: 14px; padding: 3px 8px; background: var(--bb-action-primary); color: #ffffff; border-radius: var(--bb-radius-none); letter-spacing: 0.08em; font-weight: 700; }
 /* WP `.form-control` parity - height 52px, border #cecece, padding 0 20px */
 .bb-order-summary { background: var(--bb-bg-surface); border: 1px solid var(--bb-border-subtle); border-radius: var(--bb-radius-none); padding: 22px; position: sticky; top: calc(var(--bb-header-height) + 34px + 16px); align-self: start; }
 .bb-order-summary h3 { font-family: var(--bb-font-display); text-transform: uppercase; font-size: 15px; letter-spacing: 0.04em; margin: 0 0 16px 0; padding-bottom: 12px; border-bottom: 1px solid var(--bb-border-subtle); color: var(--bb-text-primary); }
@@ -3395,7 +3399,7 @@ html[data-header-scrolled] .bb-breadcrumb { padding-left: 24px; }
 }
 .bb-account-logout {
   flex-shrink: 0; background: none; border: none; cursor: pointer;
-  color: var(--bb-brand-primary); padding: 4px; display: flex;
+  color: var(--bb-text-brand); padding: 4px; display: flex;
   transition: color 140ms;
 }
 .bb-account-logout:hover { color: var(--bb-color-red-700); }
@@ -3416,13 +3420,13 @@ html[data-header-scrolled] .bb-breadcrumb { padding-left: 24px; }
 .bb-account-nav a::before,
 .bb-account-nav button::before {
   content: ""; width: 7px; height: 7px; flex-shrink: 0;
-  background: var(--bb-brand-primary);
+  background: var(--bb-action-primary);
   clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
   opacity: 0; transition: opacity 140ms;
 }
 .bb-account-nav a:hover,
-.bb-account-nav button:hover { color: var(--bb-brand-primary); }
-.bb-account-nav a.active { color: var(--bb-brand-primary); font-weight: 600; }
+.bb-account-nav button:hover { color: var(--bb-text-brand); }
+.bb-account-nav a.active { color: var(--bb-text-brand); font-weight: 600; }
 .bb-account-nav a.active::before { opacity: 1; }
 
 .bb-account-main { min-width: 0; }
@@ -3460,13 +3464,13 @@ html[data-header-scrolled] .bb-breadcrumb { padding-left: 24px; }
 
 /* -- Order success page ------------------------------------ */
 .bb-success { max-width: 720px; margin: 60px auto; padding: 0 24px; text-align: center; }
-.bb-success .kicker { font-size: 14px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--bb-brand-primary); font-weight: 700; margin-bottom: 10px; }
+.bb-success .kicker { font-size: 14px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--bb-text-brand); font-weight: 700; margin-bottom: 10px; }
 .bb-success h1 { font-family: var(--bb-font-display); font-size: 40px; letter-spacing: 0.01em; text-transform: uppercase; margin: 0 0 10px 0; }
 .bb-success p { color: var(--bb-text-muted); margin: 0 0 28px 0; }
 .bb-success .order-card { background: var(--bb-bg-surface); border: 1px solid var(--bb-border-subtle); border-radius: var(--bb-radius-none); padding: 22px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; text-align: left; margin-bottom: 22px; }
 .bb-success .order-card .label { font-size: 14px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--bb-text-muted); margin-bottom: 6px; }
 .bb-success .order-card b { display: block; font-family: var(--bb-font-display); font-size: 16px; color: var(--bb-text-primary); letter-spacing: 0.02em; }
-.bb-success .order-card b.red { color: var(--bb-brand-primary); }
+.bb-success .order-card b.red { color: var(--bb-text-brand); }
 /* WP `.woocommerce-order-overview` parity - flexbox list, separator vertical bars */
 .bb-success .cta-row { display: flex; gap: 10px; justify-content: center; }
 
@@ -3475,7 +3479,7 @@ html[data-header-scrolled] .bb-breadcrumb { padding-left: 24px; }
 .bb-news-page { background: var(--bb-bg-page); }
 .bb-news-hero { max-width: var(--bb-container-xl); margin: 24px auto 28px; padding: 38px 32px; display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 28px; align-items: end; border: 1px solid var(--bb-border-subtle); border-radius: var(--bb-radius-none); background: radial-gradient(circle at 88% 18%, rgba(255, 12, 9,0.22), transparent 28%), radial-gradient(circle at 15% 0%, rgba(255,255,255,0.1), transparent 38%), linear-gradient(145deg, #0d0d0d 0%, #171717 48%, #1f1f1f 100%); overflow: hidden; }
 .bb-news-hero-copy { max-width: 760px; }
-.bb-news-kicker { display: block; color: var(--bb-brand-primary); font-size: 14px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 10px; }
+.bb-news-kicker { display: block; color: var(--bb-text-brand); font-size: 14px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 10px; }
 .bb-news-hero h1 { margin: 0; font-family: var(--bb-font-display); font-size: clamp(2rem, 4vw, 3.5rem); line-height: 1.06; letter-spacing: 0.01em; text-transform: uppercase; color: #fff; }
 .bb-news-hero p { margin: 14px 0 0; max-width: 680px; color: var(--bb-text-secondary); line-height: 1.65; }
 .bb-news-page .bb-news-section { max-width: var(--bb-container-xl); margin: 0 auto 56px; padding: 0 24px; }
@@ -3484,13 +3488,13 @@ html[data-header-scrolled] .bb-breadcrumb { padding-left: 24px; }
 .bb-news-img-wrap { position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: var(--bb-bg-surface-raised); flex-shrink: 0; }
 .bb-news-img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease; }
 .bb-news-card:hover .bb-news-img { transform: scale(1.05); }
-.bb-news-date { position: absolute; top: -21px; left: 0; z-index: 2; display: inline-flex; align-items: center; height: 42px; min-width: 168px; padding: 0 28px 0 22px; background: var(--bb-brand-primary); color: #fff; font-family: var(--bb-font-display); font-size: 14px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; clip-path: polygon(0 0, 100% 0, calc(100% - 18px) 100%, 0 100%); }
+.bb-news-date { position: absolute; top: -21px; left: 0; z-index: 2; display: inline-flex; align-items: center; height: 42px; min-width: 168px; padding: 0 28px 0 22px; background: var(--bb-action-primary); color: #fff; font-family: var(--bb-font-display); font-size: 14px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; clip-path: polygon(0 0, 100% 0, calc(100% - 18px) 100%, 0 100%); }
 .bb-news-body { position: relative; padding: 41px 20px 30px; display: flex; flex-direction: column; gap: 8px; flex: 1; background: var(--bb-bg-surface); }
 .bb-news-body-inside { display: flex; flex-direction: column; gap: 8px; flex: 1; }
-.bb-news-card:hover .bb-news-card-title { color: var(--bb-brand-primary); }
+.bb-news-card:hover .bb-news-card-title { color: var(--bb-text-brand); }
 .bb-news-excerpt { font-size: 14px; color: var(--bb-text-secondary); line-height: 1.55; margin: 0; min-height: 104px; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
 .bb-news-read-more { margin-top: auto; padding-top: 6px; color: var(--bb-text-secondary); font-size: 14px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; transition: color 0.3s ease; }
-.bb-news-card:hover .bb-news-read-more { color: var(--bb-brand-primary); }
+.bb-news-card:hover .bb-news-read-more { color: var(--bb-text-brand); }
 
 /* -- Shared utility: info cards & form panels -------------- */
 
@@ -3501,7 +3505,7 @@ html[data-header-scrolled] .bb-breadcrumb { padding-left: 24px; }
 /* -- Shared utility: alert banners ------------------------ */
 
 /* -- Shared utility: inline state text -------------------- */
-.bb-error-text { color: var(--bb-brand-primary); font-size: var(--bb-text-sm); margin-bottom: 16px; }
+.bb-error-text { color: var(--bb-text-brand); font-size: var(--bb-text-sm); margin-bottom: 16px; }
 .bb-pdp-short-desc { color: var(--bb-text-muted); font-size: var(--bb-text-sm); line-height: 1.65; margin: 0 0 20px; }
 
 /* -- Shared utility: pagination controls ------------------ */
@@ -3515,7 +3519,7 @@ html[data-header-scrolled] .bb-breadcrumb { padding-left: 24px; }
   height: auto;
 }
 .bb-pagination-page[aria-current="page"] {
-  color: var(--bb-brand-primary);
+  color: var(--bb-text-brand);
   pointer-events: none;
   background: transparent;
   border-color: transparent;
@@ -3542,7 +3546,7 @@ html[data-header-scrolled] .bb-breadcrumb { padding-left: 24px; }
 .bb-pdp-share { display: flex; align-items: center; gap: 12px; margin-top: 22px; flex-wrap: wrap; }
 .bb-pdp-share-label { font-size: 15px; font-weight: 600; color: var(--bb-text-secondary); }
 .bb-pdp-share-btn { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 9999px; border: 1px solid var(--bb-border-default); color: var(--bb-text-secondary); transition: color 160ms, border-color 160ms; }
-.bb-pdp-share-btn:hover { color: var(--bb-brand-primary); border-color: var(--bb-brand-primary); }
+.bb-pdp-share-btn:hover { color: var(--bb-text-brand); border-color: var(--bb-text-brand); }
 
 /* "Pick a variant before buying" prompt - sits above the variant chip selector. */
 .bb-pdp-variant-prompt {
@@ -3963,7 +3967,7 @@ img, picture, video, svg, canvas { max-width: 100%; }
   height: 42px;
   padding: 0 20px;
   color: #ffffff;
-  background: var(--bb-brand-primary);
+  background: var(--bb-action-primary);
   border-radius: 0;
   clip-path: none;
   font-family: var(--bb-font-heading);
@@ -3982,7 +3986,7 @@ img, picture, video, svg, canvas { max-width: 100%; }
   bottom: 0;
   width: 25px;
   height: 42px;
-  background: var(--bb-brand-primary);
+  background: var(--bb-action-primary);
   transform: skewX(-20deg);
 }
 
@@ -4253,7 +4257,7 @@ img, picture, video, svg, canvas { max-width: 100%; }
 }
 
 .bb-blog-listing-parity .bb-wp-product-category a:hover {
-  color: var(--bb-brand-primary);
+  color: var(--bb-text-brand);
 }
 
 .bb-blog-listing-parity .bb-wp-product-category .count {
@@ -4404,7 +4408,7 @@ img, picture, video, svg, canvas { max-width: 100%; }
 }
 
 .bb-blog-listing-parity .bb-wp-pagination .current {
-  color: var(--bb-brand-primary);
+  color: var(--bb-text-brand);
 }
 
 .bb-blog-listing-parity .bb-wp-pagination i {
@@ -4595,8 +4599,8 @@ img, picture, video, svg, canvas { max-width: 100%; }
   color: var(--bb-text-secondary);
 }
 .bb-review-open-btn:hover {
-  border-color: var(--bb-brand-primary);
-  color: var(--bb-brand-primary);
+  border-color: var(--bb-text-brand);
+  color: var(--bb-text-brand);
 }
 .bb-review-form {
   background: var(--bb-bg-section);
@@ -4763,7 +4767,7 @@ img, picture, video, svg, canvas { max-width: 100%; }
   padding-bottom: 2.5rem;
 }
 .bb-products-section .bb-kicker {
-  color: #cecece;
+  color: var(--bb-text-brand);
   font-family: var(--bb-font-cta);
   font-size: var(--bb-text-section-kicker);
   line-height: var(--bb-line-section-kicker);
@@ -4828,7 +4832,7 @@ img, picture, video, svg, canvas { max-width: 100%; }
 }
 .bb-fp-sale p {
   line-height: 42px;
-  background: var(--bb-brand-primary);
+  background: var(--bb-action-primary);
   margin: 0;
   color: #fff;
   width: 70px;
@@ -4844,7 +4848,7 @@ img, picture, video, svg, canvas { max-width: 100%; }
   height: 0;
   border-left: 42px solid transparent;
   border-right: 33px solid transparent;
-  border-top: 42px solid var(--bb-brand-primary);
+  border-top: 42px solid var(--bb-action-primary);
   position: absolute;
   top: 0;
   right: -33px;
@@ -4883,7 +4887,7 @@ img, picture, video, svg, canvas { max-width: 100%; }
   color: var(--bb-text-primary);
   text-decoration: none;
 }
-.bb-fp-title a:hover { color: var(--bb-brand-primary); }
+.bb-fp-title a:hover { color: var(--bb-text-brand); }
 
 .bb-fp-price {
   display: flex;
@@ -4926,7 +4930,7 @@ img, picture, video, svg, canvas { max-width: 100%; }
 }
 .bb-fp-pagination .swiper-pagination-bullet-active {
   width: 20px;
-  background: var(--bb-brand-primary);
+  background: var(--bb-action-primary);
   border-radius: 20px;
 }
 
@@ -4951,7 +4955,7 @@ img, picture, video, svg, canvas { max-width: 100%; }
 }
 .bb-article-pagination .swiper-pagination-bullet-active {
   width: 20px;
-  background: var(--bb-brand-primary);
+  background: var(--bb-action-primary);
   border-radius: 20px;
 }
 
@@ -4990,7 +4994,7 @@ a {
    (Button asChild → <a>), whose own variant colors must win. `font-cta`
    is on every Button base class, so it is a reliable button marker. */
 a:not(.font-cta):hover {
-  color: var(--bb-brand-primary);
+  color: var(--bb-text-brand);
 }
 
 .bb-main,
@@ -5036,7 +5040,7 @@ a:not(.font-cta):hover {
 .bb-product-card:hover,
 .bb-fp-item:hover,
 .bb-news-card:hover {
-  border-color: var(--bb-brand-primary);
+  border-color: var(--bb-text-brand);
   box-shadow: var(--bb-shadow-product);
   transform: none;
 }
@@ -5091,7 +5095,7 @@ a:not(.font-cta):hover {
 
 .bb-products-section .bb-kicker,
 .bb-section-head .bb-kicker {
-  color: #cecece;
+  color: var(--bb-text-brand);
   font-family: var(--bb-font-cta);
   font-size: var(--bb-text-section-kicker);
   font-weight: 600;
@@ -5103,18 +5107,16 @@ a:not(.font-cta):hover {
 .bb-link,
 .bb-view-all-link,
 .bb-news-cta-btn,
-.bb-cat-hero-breadcrumb a,
 .bb-breadcrumb a,
 .bb-article-widget-name:hover {
-  color: var(--bb-color-blue);
+  color: var(--bb-link-text);
 }
 
 .bb-link:hover,
 .bb-view-all-link:hover,
 .bb-news-cta-btn:hover,
-.bb-cat-hero-breadcrumb a:hover,
 .bb-breadcrumb a:hover {
-  color: var(--bb-brand-primary);
+  color: var(--bb-text-brand);
 }
 
 /* WP breadcrumb: color #717171, weight 600 — overrides blue-link group above */
@@ -5148,7 +5150,7 @@ a:not(.font-cta):hover {
 .bb-cart-checkout-btn,
 .bb-mini-cart-btn-primary,
 .bb-checkout-1page-actions .bb-cart-checkout-btn {
-  background: var(--bb-brand-primary);
+  background: var(--bb-action-primary);
   color: #ffffff;
   border: 0;
   box-shadow: none;
@@ -5165,7 +5167,7 @@ a:not(.font-cta):hover {
 
 .bb-mini-cart-btn-secondary {
   background: #ffffff;
-  color: var(--bb-brand-primary);
+  color: var(--bb-text-brand);
   border: 2px solid var(--bb-brand-primary);
   border-radius: 0;
   box-shadow: none;
@@ -5173,7 +5175,7 @@ a:not(.font-cta):hover {
 
 .bb-mini-cart-btn-secondary:hover {
   background: var(--bb-color-red-50);
-  color: var(--bb-brand-primary);
+  color: var(--bb-text-brand);
   border-color: var(--bb-brand-primary-hover);
 }
 
@@ -5205,7 +5207,7 @@ a:not(.font-cta):hover {
 .bb-query-input::placeholder,
 .bb-input::placeholder,
 .bb-404-search-input::placeholder {
-  color: #cecece;
+  color: var(--bb-text-secondary);
 }
 
 .bb-query-input:focus,
@@ -5219,7 +5221,7 @@ a:not(.font-cta):hover {
 
 input[type="radio"],
 input[type="checkbox"] {
-  accent-color: var(--bb-brand-primary);
+  accent-color: var(--bb-text-brand);
 }
 
 .bb-hero-fallback,
@@ -5350,7 +5352,7 @@ input[type="checkbox"] {
 
 .bb-product-rating {
   font-size: 14px;
-  color: var(--bb-brand-primary);
+  color: var(--bb-text-brand);
   letter-spacing: 0.1em;
 }
 
@@ -5398,7 +5400,7 @@ input[type="checkbox"] {
 .bb-mini-cart-total b,
 .bb-checkout-summary-card .bb-mini-price,
 .bb-price {
-  color: var(--bb-brand-primary);
+  color: var(--bb-text-brand);
   font-family: var(--bb-font-cta);
   font-size: var(--bb-text-base);
   font-weight: 600;
@@ -5421,7 +5423,7 @@ input[type="checkbox"] {
 .bb-product-tag,
 .bb-fp-sale p,
 .bb-news-date {
-  background: var(--bb-brand-primary);
+  background: var(--bb-action-primary);
   color: #ffffff;
   border-radius: 0;
   font-family: var(--bb-font-cta);
@@ -5679,7 +5681,7 @@ input[type="checkbox"] {
 }
 
 .bb-card-hover:hover {
-  border-color: var(--bb-brand-primary);
+  border-color: var(--bb-text-brand);
   box-shadow: var(--bb-shadow-product);
   transform: none;
 }
@@ -5694,7 +5696,7 @@ input[type="checkbox"] {
 }
 
 .bb-query-input::placeholder {
-  color: #cecece;
+  color: var(--bb-text-secondary);
 }
 
 .bb-query-input:focus,
@@ -5785,7 +5787,7 @@ input[type="checkbox"] {
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #cecece;
+  color: var(--bb-text-secondary);
   transition: color 0.3s ease;
   white-space: nowrap;
   overflow: hidden;
@@ -5833,7 +5835,7 @@ input[type="checkbox"] {
   z-index: var(--bb-z-header, 100);
   width: 52px;
   height: 52px;
-  background: var(--bb-brand-primary);
+  background: var(--bb-action-primary);
   border: none;
   color: #fff;
   cursor: pointer;
@@ -5856,7 +5858,7 @@ input[type="checkbox"] {
 
 /* =========================================================
    RESPONSIVE TYPOGRAPHY — fluid body text scale
-   Áp dụng cho các .bb-* class dùng raw px cố định.
+   Áp dụng cho các .bb-* class dạng raw px cố định.
    Canonical breakpoints: 576px (tablet) / 992px (desktop).
    ========================================================= */
 
@@ -5887,7 +5889,7 @@ input[type="checkbox"] {
 
 .bb-home-products-parity .bb-kicker {
   margin: 0 0 10px;
-  color: #cecece;
+  color: var(--bb-text-brand);
   font-family: var(--bb-font-cta);
   font-size: var(--bb-text-section-kicker);
   font-weight: 600;
@@ -6053,13 +6055,13 @@ input[type="checkbox"] {
 }
 
 .bb-home-products-parity .bb-fp-title a:hover {
-  color: var(--bb-brand-primary);
+  color: var(--bb-text-brand);
 }
 
 .bb-home-products-parity .bb-fp-price {
   display: block;
   margin-top: 0;
-  color: #ff0c09;
+  color: var(--bb-product-price);
   font-family: var(--bb-font-cta);
   font-size: 14px;
   font-weight: 600;
@@ -6075,11 +6077,11 @@ input[type="checkbox"] {
 }
 
 .bb-home-products-parity .bb-fp-price-current {
-  color: #ff0c09;
+  color: var(--bb-product-price);
 }
 
 .bb-home-products-parity .bb-fp-price-old {
-  color: #cecece;
+  color: var(--bb-text-secondary);
   text-decoration: line-through;
 }
 
@@ -6094,7 +6096,7 @@ input[type="checkbox"] {
   width: auto;
   margin: 0;
   padding: 0;
-  background: var(--bb-brand-primary);
+  background: var(--bb-action-primary);
   color: #fff;
   font-family: var(--bb-font-display);
   font-size: 18px;
@@ -6138,7 +6140,7 @@ input[type="checkbox"] {
 .bb-home-products-parity .bb-fp-pagination .swiper-pagination-bullet-active {
   width: 20px;
   border-radius: 100px;
-  background: #ff0c09;
+  background: var(--bb-action-primary);
 }
 
 .bb-home-products-parity .bb-cat-list {
@@ -6354,7 +6356,7 @@ body:has(.bb-article-detail-page) footer .bb-container.relative > button.absolut
 }
 
 .bb-article-detail-parity .blog-meta p.category a {
-  color: #ff0c09;
+  color: var(--bb-text-brand);
   font-weight: 600;
   text-decoration: none;
 }
@@ -6421,7 +6423,7 @@ body:has(.bb-article-detail-page) footer .bb-container.relative > button.absolut
 }
 
 .bb-article-detail-parity #table-of-content .table-of-content-list a:hover {
-  color: #ff0c09;
+  color: var(--bb-text-brand);
 }
 
 .bb-article-detail-parity .bb-article-detail-page .bb-article-wyswyg {
@@ -6629,7 +6631,7 @@ body:has(.bb-article-detail-page) footer .bb-container.relative > button.absolut
 }
 
 .bb-article-detail-parity .news--item-inside a:hover {
-  color: #ff0c09;
+  color: var(--bb-text-brand);
 }
 
 .bb-article-detail-parity .news--item-inside > p:not(.title-post) {
@@ -6800,7 +6802,7 @@ body:has(.bb-article-detail-page) footer .bb-container.relative > button.absolut
 }
 
 .bb-article-detail-page .bb-article-wyswyg a:hover {
-  color: #ff0c09;
+  color: var(--bb-text-brand);
 }
 
 .bb-article-detail-page .bb-article-wyswyg img,
@@ -6979,7 +6981,7 @@ body:has(.bb-home) {
   z-index: 1;
   display: inline-block;
   margin-top: 40px;
-  color: #ff0c09;
+  color: var(--bb-text-brand);
   font-family: var(--bb-font-heading);
   font-size: 17px;
   font-weight: 600;
@@ -7161,7 +7163,8 @@ body:has(.bb-home) {
   width: 66px;
   height: 66px;
   border-radius: 100px;
-  background: #00aeef;
+  background: var(--bb-chat-title-bg);
+  color: var(--bb-chat-title-text);
   border: 0;
   cursor: pointer;
   display: flex;
@@ -7185,7 +7188,7 @@ body:has(.bb-home) {
   height: 82px;
   min-width: 66px;
   border-radius: 100px;
-  background: #00aeef;
+  background: var(--bb-chat-title-bg);
   opacity: 0.2;
   pointer-events: none;
 }
@@ -7348,7 +7351,7 @@ body:has(.bb-home) {
 }
 
 .bb-wp-pdp .bb-breadcrumb a:hover {
-  color: #ff0c09;
+  color: var(--bb-text-brand);
 }
 
 .bb-wp-pdp .bb-breadcrumb .sep {
@@ -7412,7 +7415,7 @@ body:has(.bb-home) {
 }
 
 .bb-wp-gallery-thumb.is-active .bb-wp-gallery-thumb-img {
-  border-color: #cecece;
+  border-color: var(--bb-border-control);
 }
 
 .bb-wp-gallery-thumb-nav {
@@ -7531,7 +7534,7 @@ body:has(.bb-home) {
 }
 
 .bb-wp-pdp .product-information .price p del {
-  color: #cecece;
+  color: var(--bb-text-secondary);
 }
 
 .bb-wp-pdp .product-information .price p ins {
@@ -7548,7 +7551,7 @@ body:has(.bb-home) {
 
 .bb-wp-pdp .product-information .rating-star {
   display: inline-block;
-  color: #ff0c09;
+  color: var(--bb-rating-star);
   font-size: 18px;
   line-height: 1;
   letter-spacing: 0;
@@ -7827,7 +7830,7 @@ body:has(.bb-home) {
   height: 52px;
   border: 0;
   border-radius: 0;
-  background-color: #ff0c09;
+  background-color: var(--bb-action-primary);
   color: #fff;
   font-family: var(--bb-font-body);
   font-size: 16px;
@@ -7891,7 +7894,7 @@ body:has(.bb-home) {
   align-items: center;
   justify-content: center;
   margin-right: 30px;
-  color: #cecece;
+  color: var(--bb-text-secondary);
   font-size: 1.5rem;
   line-height: 1;
   text-decoration: none;
@@ -7899,7 +7902,7 @@ body:has(.bb-home) {
 }
 
 .bb-wp-pdp .social a:hover {
-  color: #ff0c09;
+  color: var(--bb-text-brand);
 }
 
 .bb-wp-pdp .social a svg {
@@ -7956,7 +7959,7 @@ body:has(.bb-home) {
   height: 42px;
   border: 0;
   background: transparent;
-  color: #cecece;
+  color: var(--bb-text-secondary);
   font-family: var(--bb-font-body);
   font-size: 16px;
   font-weight: 600;
@@ -8066,7 +8069,7 @@ body:has(.bb-home) {
 }
 
 .bb-wp-video-list .is-active .video-slide--title {
-  color: #ff0c09;
+  color: var(--bb-text-brand);
 }
 
 .bb-wp-related {
@@ -8206,7 +8209,7 @@ body:has(.bb-home) {
   position: relative;
   width: 70px;
   margin: 0;
-  background: #ff0c09;
+  background: var(--bb-action-primary);
   color: #fff;
   line-height: 42px;
   text-align: center;
@@ -8218,7 +8221,7 @@ body:has(.bb-home) {
   right: -33px;
   width: 0;
   height: 0;
-  border-top: 42px solid #ff0c09;
+  border-top: 42px solid var(--bb-action-primary);
   border-right: 33px solid transparent;
   border-left: 42px solid transparent;
   content: "";
@@ -8280,7 +8283,7 @@ body:has(.bb-home) {
 }
 
 .bb-wp-related .product--item-price {
-  color: #ff0c09;
+  color: var(--bb-product-price);
   font-family: var(--bb-font-cta);
   font-size: 14px;
   font-weight: 600;
@@ -8295,7 +8298,7 @@ body:has(.bb-home) {
 }
 
 .bb-wp-related .product--item-price p.old {
-  color: #cecece;
+  color: var(--bb-text-secondary);
   text-decoration: line-through;
 }
 
@@ -8864,7 +8867,7 @@ html.overlay {
 .bb-product-archive .woocommerce-widget-layered-nav-list li a:hover,
 .bb-product-archive .woocommerce-widget-layered-nav-list li.chosen a,
 .bb-product-archive .woocommerce-widget-layered-nav-list li.active a {
-  color: #ff0c09;
+  color: var(--bb-text-brand);
   font-weight: 600;
 }
 
@@ -8877,7 +8880,7 @@ html.overlay {
   width: 5px;
   height: 5px;
   border-radius: 1px;
-  background-color: #ff0c09;
+  background-color: var(--bb-action-primary);
   transform: rotate(45deg);
 }
 
@@ -9108,11 +9111,11 @@ body:has(.bb-search-results-page) {
 }
 
 .bb-archive-product-title a:hover {
-  color: #ff0c09;
+  color: var(--bb-text-brand);
 }
 
 .bb-archive-product-price {
-  color: #ff0c09;
+  color: var(--bb-product-price);
   font-family: var(--bb-font-cta);
   font-size: 14px;
   font-weight: 600;
@@ -9122,13 +9125,13 @@ body:has(.bb-search-results-page) {
 .bb-archive-product-price p {
   display: inline-block;
   margin: 0 20px 0 0;
-  color: #ff0c09;
+  color: var(--bb-product-price);
   font-size: 14px;
   line-height: 1.214rem;
 }
 
 .bb-archive-product-price p.old {
-  color: #cecece;
+  color: var(--bb-text-secondary);
   text-decoration: line-through;
 }
 
@@ -9139,7 +9142,7 @@ body:has(.bb-search-results-page) {
 }
 
 .bb-archive-rating .text-brand {
-  color: #ff8001;
+  color: var(--bb-rating-star);
 }
 
 .bb-product-archive .woocommerce-info {
@@ -9215,7 +9218,7 @@ body:has(.bb-search-results-page) {
 
 .bb-archive-pagination ul li span.current,
 .bb-archive-pagination ul li a:hover {
-  color: #ff0c09;
+  color: var(--bb-text-brand);
 }
 
 .bb-archive-page-icon {
@@ -9494,7 +9497,7 @@ body:has(.bb-search-results-page) {
 
 .bb-home .block-title p.sub-title {
   margin: 0 0 10px;
-  color: #cecece;
+  color: var(--bb-text-brand);
   font-family: var(--bb-font-cta);
   font-size: var(--bb-text-section-kicker);
   font-weight: 600;
@@ -9627,7 +9630,7 @@ body .bb-home .white.block-title h3 {
 
 .bb-home .category-list .item--category {
   display: none;
-  color: #ff0c09;
+  color: var(--bb-text-brand);
   font-weight: 500;
 }
 
@@ -9644,7 +9647,7 @@ body .bb-home .white.block-title h3 {
 }
 
 .bb-home .category-list .item--btn {
-  color: #ff0c09;
+  color: var(--bb-text-brand);
   font-family: Oswald, sans-serif;
   font-weight: 600;
   text-transform: none;
@@ -9710,7 +9713,7 @@ body .bb-home .white.block-title h3 {
 .bb-home .custom-pagination .swiper-pagination-bullet-active {
   width: 20px;
   border-radius: 100px;
-  background: #ff0c09;
+  background: var(--bb-action-primary);
 }
 
 .bb-home .banner-ads .container {
@@ -9757,7 +9760,7 @@ body .bb-home .white.block-title h3 {
   position: relative;
   margin: 0;
   padding: 0 0 0 20px;
-  background: #ff0c09;
+  background: var(--bb-action-primary);
   color: #fff;
   font-family: Oswald, sans-serif;
   font-weight: 600;
@@ -9771,7 +9774,7 @@ body .bb-home .white.block-title h3 {
   bottom: 0;
   width: 25px;
   height: 42px;
-  background-color: #ff0c09;
+  background-color: var(--bb-action-primary);
   content: "";
   transform: skewX(-20deg);
 }
@@ -9959,7 +9962,7 @@ body .bb-home .white.block-title h3 {
 .bb-home .videos-slide .swiper-pagination-bullet-active {
   width: 20px;
   border-radius: 100px;
-  background: #ff0c09;
+  background: var(--bb-action-primary);
 }
 
 .bb-home .partner-slide .swiper-wrapper {
@@ -10030,7 +10033,7 @@ body .bb-home .white.block-title h3 {
 }
 
 .bb-home .content-bottom.wyswyg a {
-  color: #ff0c09;
+  color: var(--bb-text-brand);
 }
 
 @media (min-width: 576px) {
@@ -10102,7 +10105,7 @@ body .bb-home .white.block-title h3 {
   .bb-home #main-banner .swiper-pagination-bullet-active {
     width: 18px;
     border-radius: 999px;
-    background: var(--bb-brand-primary);
+    background: var(--bb-action-primary);
   }
 
   body .bb-home .block-title h2,
@@ -10952,7 +10955,7 @@ body .bb-home .white.block-title h3 {
   .bb-mobile-cart-empty a,
   .bb-mobile-cart-primary {
     border: 1px solid var(--bb-brand-primary);
-    background: var(--bb-brand-primary);
+    background: var(--bb-action-primary);
     color: var(--bb-text-inverse);
   }
 
@@ -11187,7 +11190,7 @@ body .bb-home .white.block-title h3 {
   .bb-main-banner-kicker::before {
     width: 18px;
     height: 1px;
-    background: var(--bb-brand-primary);
+    background: var(--bb-action-primary);
     content: "";
   }
 
@@ -11208,7 +11211,7 @@ body .bb-home .white.block-title h3 {
     align-items: center;
     margin-top: 18px;
     border: 1px solid var(--bb-brand-primary);
-    background: var(--bb-brand-primary);
+    background: var(--bb-action-primary);
     padding: 0 22px;
     color: var(--bb-text-inverse);
     font-family: var(--bb-font-cta);
@@ -11309,7 +11312,7 @@ body .bb-home .white.block-title h3 {
   .bb-home-products-parity .bb-products-header .bb-kicker::before {
     width: 16px;
     height: 1px;
-    background: var(--bb-brand-primary);
+    background: var(--bb-action-primary);
     content: "";
   }
 
@@ -12411,7 +12414,7 @@ body .bb-home .white.block-title h3 {
     flex: 0 0 34px;
     align-items: center;
     justify-content: center;
-    background: var(--bb-brand-primary);
+    background: var(--bb-action-primary);
     color: var(--bb-text-inverse);
     font-family: var(--bb-font-cta);
   }
@@ -12497,7 +12500,7 @@ body .bb-home .white.block-title h3 {
   }
 
   .bb-checkout-radio-price {
-    color: var(--bb-brand-primary);
+    color: var(--bb-text-brand);
     font-family: var(--bb-font-cta);
     font-weight: 600;
     white-space: nowrap;
@@ -12609,8 +12612,8 @@ body .bb-home .white.block-title h3 {
   }
 
   .bb-account-nav a.active {
-    border-color: var(--bb-brand-primary);
-    color: var(--bb-brand-primary);
+    border-color: var(--bb-action-primary);
+    color: var(--bb-text-brand);
   }
 
   .bb-account-header {
@@ -12701,3 +12704,78 @@ body .bb-home .white.block-title h3 {
   }
 }
 
+/* Contrast normalizers for legacy WP-parity selectors.
+   Keep these after responsive blocks so older hardcoded colors cannot win the cascade. */
+.bb-link,
+.bb-seo-content a,
+.woocommerce-error a,
+.woocommerce-info a {
+  color: var(--bb-link-text);
+}
+
+.bb-link:hover,
+.bb-link:focus-visible,
+.bb-seo-content a:hover,
+.bb-seo-content a:focus-visible,
+.woocommerce-error a:hover,
+.woocommerce-error a:focus-visible,
+.woocommerce-info a:hover,
+.woocommerce-info a:focus-visible {
+  color: var(--bb-text-brand);
+}
+
+.bb-home .block-title p.sub-title,
+.bb-home-products-parity .bb-kicker,
+.bb-home .bb-experience-kicker,
+.bb-products-section .bb-kicker,
+.bb-section-head .bb-kicker {
+  color: var(--bb-text-brand);
+}
+
+.bb-cart-breadcrumb li,
+.bb-cart-breadcrumb a,
+.bb-cart-breadcrumb span {
+  color: var(--bb-text-secondary);
+}
+
+.cart-table .return-to-shop .button,
+.return-to-shop .button.wc-backward {
+  background: var(--bb-action-primary);
+  color: var(--bb-text-inverse);
+}
+
+.cart-table .return-to-shop .button:hover,
+.cart-table .return-to-shop .button:focus-visible,
+.return-to-shop .button.wc-backward:hover,
+.return-to-shop .button.wc-backward:focus-visible {
+  background: var(--bb-action-primary-hover);
+  color: var(--bb-text-inverse);
+}
+
+.bb-fp-price-current,
+.bb-home-products-parity .bb-fp-price-current,
+.bb-archive-product-price,
+.bb-archive-product-price p {
+  color: var(--bb-product-price);
+}
+
+.bb-fp-price-old,
+.bb-home-products-parity .bb-fp-price-old,
+.bb-archive-product-price p.old {
+  color: var(--bb-text-secondary);
+}
+
+.bb-archive-rating .text-brand,
+.bb-archive-rating [class*="text-[var(--bb-rating-star)]"],
+.bb-fp-rating .text-brand {
+  color: var(--bb-rating-star);
+}
+
+body > footer .bg-footer-top h3 button span {
+  color: var(--bb-text-inverse);
+}
+
+body > footer .bg-footer-top a:hover,
+body > footer .bg-footer-top a:focus-visible {
+  color: var(--bb-brand-primary-inverse);
+}

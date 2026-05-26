@@ -271,7 +271,7 @@ function AddressBookContent() {
               {addresses.map((addr, idx) => (
                 <div
                   key={addr.id}
-                  className={`border bg-white p-5 ${addr.isDefault ? "border-[var(--bb-brand-primary-border)]" : "border-border"}`}
+                  className={`border bg-white p-5 ${addr.isDefault ? "border-brand-border" : "border-border"}`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <b className="font-display text-base font-semibold text-foreground">

@@ -59,7 +59,7 @@ export function StockStatus({
   if (variant === "inline") {
     const dotColor =
       rawState === "OUT_OF_STOCK"
-        ? "var(--bb-brand-primary)"
+        ? "var(--bb-state-danger)"
         : rawState === "LOW_STOCK"
           ? "var(--bb-state-warning-text)"
           : rawState === "IN_STOCK"
