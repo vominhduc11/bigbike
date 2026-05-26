@@ -70,9 +70,9 @@
   --admin-color-status-neutral-text: #374151;
 
   /* ─── Typography ────────────────────────────────────────────────────────── */
-  --admin-font-body:    Inter, Exo, system-ui, -apple-system, sans-serif;
-  --admin-font-display: Bungee, Exo, system-ui, sans-serif;
-  --admin-font-mono:    ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
+  --admin-font-body:    Inter, system-ui, -apple-system, sans-serif;
+  --admin-font-display: Inter, system-ui, sans-serif;
+  --admin-font-mono:    'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace;
 
   --admin-text-xs:   0.75rem;    /* 12px   */
   --admin-text-sm:   0.875rem;   /* 14px   */
@@ -140,6 +140,91 @@
   --c-bg-subtle:     var(--admin-color-surface-muted);
   --c-primary:       var(--admin-color-brand-red);
   --c-primary-subtle: var(--admin-color-surface-selected);
+
+  /* ─── Prototype bb-* aliases — light mode ─────────────────────────────────
+     The bb-* component CSS (admin-prototype.css) references these variables.
+     They alias the canonical --admin-* tokens so dark mode flows automatically.
+     ─────────────────────────────────────────────────────────────────────────── */
+  --bb-brand:           var(--admin-color-brand-red);
+  --bb-brand-hover:     var(--admin-color-brand-red-hover);
+  --bb-brand-active:    var(--admin-color-brand-red-active);
+  --bb-brand-subtle:    var(--admin-color-brand-red-subtle);
+  --bb-brand-muted:     var(--admin-color-brand-red-muted);
+
+  --bb-bg:              var(--admin-color-background-app);
+  --bb-page:            var(--admin-color-background-page);
+  --bb-surface:         var(--admin-color-surface-base);
+  --bb-surface-muted:   var(--admin-color-surface-muted);
+  --bb-surface-raised:  var(--admin-color-surface-raised);
+  --bb-surface-hover:   var(--admin-color-surface-hover);
+  --bb-surface-selected:var(--admin-color-surface-selected);
+  --bb-sidebar:         var(--admin-color-background-sidebar);
+  --bb-sidebar-hover:   #1a2230;
+  --bb-sidebar-active:  #20293a;
+
+  --bb-border:          var(--admin-color-border-subtle);
+  --bb-border-strong:   var(--admin-color-border-default);
+  --bb-border-faint:    #eef0f3;
+
+  --bb-text:                var(--admin-color-text-primary);
+  --bb-text-secondary:      var(--admin-color-text-secondary);
+  --bb-text-muted:          var(--admin-color-text-muted);
+  --bb-text-faint:          var(--admin-color-text-placeholder);
+  --bb-text-inverse:        var(--admin-color-text-inverse);
+  --bb-text-onsidebar:      #c9d1d9;
+  --bb-text-onsidebar-dim:  #7d8590;
+
+  --bb-success:         var(--admin-color-status-success-text);
+  --bb-success-bg:      var(--admin-color-status-success-bg);
+  --bb-success-border:  var(--admin-color-status-success-border);
+  --bb-warning:         var(--admin-color-status-warning-text);
+  --bb-warning-bg:      var(--admin-color-status-warning-bg);
+  --bb-warning-border:  var(--admin-color-status-warning-border);
+  --bb-danger:          var(--admin-color-status-danger-text);
+  --bb-danger-bg:       var(--admin-color-status-danger-bg);
+  --bb-danger-border:   var(--admin-color-status-danger-border);
+  --bb-info:            var(--admin-color-status-info-text);
+  --bb-info-bg:         var(--admin-color-status-info-bg);
+  --bb-info-border:     var(--admin-color-status-info-border);
+  --bb-neutral:         var(--admin-color-text-muted);
+  --bb-neutral-bg:      var(--admin-color-status-neutral-bg);
+  --bb-neutral-border:  var(--admin-color-border-subtle);
+
+  --bb-font:      var(--admin-font-body);
+  --bb-font-mono: var(--admin-font-mono);
+
+  --bb-text-xs:   11.5px;
+  --bb-text-sm:   12.5px;
+  --bb-text-base: 13.5px;
+  --bb-text-md:   14.5px;
+  --bb-text-lg:   16px;
+  --bb-text-xl:   19px;
+  --bb-text-2xl:  23px;
+  --bb-text-3xl:  28px;
+
+  --bb-s-1:  var(--admin-space-1);
+  --bb-s-2:  var(--admin-space-2);
+  --bb-s-3:  var(--admin-space-3);
+  --bb-s-4:  var(--admin-space-4);
+  --bb-s-5:  var(--admin-space-5);
+  --bb-s-6:  var(--admin-space-6);
+  --bb-s-8:  var(--admin-space-8);
+  --bb-s-10: var(--admin-space-10);
+
+  --bb-r-xs:   var(--admin-radius-xs);
+  --bb-r-sm:   var(--admin-radius-sm);
+  --bb-r-md:   var(--admin-radius-md);
+  --bb-r-lg:   var(--admin-radius-lg);
+  --bb-r-pill: var(--admin-radius-full);
+
+  --bb-sh-xs: var(--admin-shadow-xs);
+  --bb-sh-sm: var(--admin-shadow-sm);
+  --bb-sh-md: var(--admin-shadow-md);
+  --bb-sh-lg: var(--admin-shadow-lg);
+
+  --bb-sidebar-w:  248px;
+  --bb-topbar-h:   52px;
+  --bb-row-h:      44px;
 }
 
 /* ─── Dark mode token overrides ───────────────────────────────────────────────
@@ -222,4 +307,45 @@
   --admin-shadow-sm: 0 1px 3px rgba(1, 4, 9, 0.40), 0 1px 2px rgba(1, 4, 9, 0.30);
   --admin-shadow-md: 0 4px 16px rgba(1, 4, 9, 0.50), 0 2px 4px rgba(1, 4, 9, 0.30);
   --admin-shadow-lg: 0 20px 40px rgba(1, 4, 9, 0.70), 0 4px 12px rgba(1, 4, 9, 0.40);
+
+  /* ── bb-* overrides for dark mode ─── */
+  --bb-bg:               #010409;
+  --bb-page:             #0d1117;
+  --bb-surface:          var(--admin-color-surface-base);
+  --bb-surface-muted:    var(--admin-color-surface-muted);
+  --bb-surface-raised:   var(--admin-color-surface-raised);
+  --bb-surface-hover:    var(--admin-color-surface-hover);
+  --bb-surface-selected: var(--admin-color-surface-selected);
+  --bb-sidebar:          #0a0d12;
+  --bb-sidebar-hover:    #161b22;
+  --bb-sidebar-active:   #21262d;
+  --bb-border:           var(--admin-color-border-subtle);
+  --bb-border-strong:    var(--admin-color-border-default);
+  --bb-border-faint:     #1a1f25;
+  --bb-text:             var(--admin-color-text-primary);
+  --bb-text-secondary:   #b1bac4;
+  --bb-text-muted:       var(--admin-color-text-muted);
+  --bb-text-faint:       #6e7681;
+  --bb-text-inverse:     #0d1117;
+  --bb-success:          var(--admin-color-status-success-text);
+  --bb-success-bg:       var(--admin-color-status-success-bg);
+  --bb-success-border:   var(--admin-color-status-success-border);
+  --bb-warning:          var(--admin-color-status-warning-text);
+  --bb-warning-bg:       var(--admin-color-status-warning-bg);
+  --bb-warning-border:   var(--admin-color-status-warning-border);
+  --bb-danger:           var(--admin-color-status-danger-text);
+  --bb-danger-bg:        var(--admin-color-status-danger-bg);
+  --bb-danger-border:    var(--admin-color-status-danger-border);
+  --bb-info:             var(--admin-color-status-info-text);
+  --bb-info-bg:          var(--admin-color-status-info-bg);
+  --bb-info-border:      var(--admin-color-status-info-border);
+  --bb-neutral:          var(--admin-color-text-muted);
+  --bb-neutral-bg:       var(--admin-color-status-neutral-bg);
+  --bb-neutral-border:   var(--admin-color-border-subtle);
+  --bb-sh-xs: 0 1px 2px rgba(0,0,0,0.40);
+  --bb-sh-sm: 0 1px 3px rgba(0,0,0,0.50), 0 1px 2px rgba(0,0,0,0.30);
+  --bb-sh-md: 0 4px 12px rgba(0,0,0,0.55), 0 2px 4px rgba(0,0,0,0.35);
+  --bb-sh-lg: 0 16px 32px rgba(0,0,0,0.70), 0 4px 8px rgba(0,0,0,0.40);
+  --bb-brand-subtle: #2a1010;
+  --bb-brand-muted:  rgba(232,40,30,0.18);
 }

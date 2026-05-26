@@ -16,7 +16,6 @@ import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
 
-// Payment transitions mirror backend ALLOWED_PAYMENT_TRANSITIONS map.
 const PAYMENT_TRANSITIONS = {
   UNPAID:    ['PAID', 'CANCELLED'],
   PAID:      ['UNPAID'],
@@ -24,7 +23,6 @@ const PAYMENT_TRANSITIONS = {
   CANCELLED: [],
 }
 
-// Statuses that require a mandatory reason before transitioning.
 const REASON_REQUIRED = new Set(['CANCELLED', 'FAILED'])
 
 function ReasonConfirmModal({ targetStatus, t, onConfirm, onClose }) {
@@ -75,7 +73,6 @@ function ReasonConfirmModal({ targetStatus, t, onConfirm, onClose }) {
   )
 }
 
-// Visual config for order status action buttons.
 const ORDER_STATUS_ACTION = {
   PROCESSING: { labelKey: 'orders.detail.actionProcessing', variant: 'primary',     confirm: false },
   ON_HOLD:    { labelKey: 'orders.detail.actionOnHold',     variant: 'secondary',   confirm: false },
@@ -402,33 +399,29 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
 
   return (
     <div>
-      {/* Screen header */}
-      <div className="screen-header">
-        <div>
-          <p className="eyebrow">
-            <a
-              onClick={(e) => { e.preventDefault(); navigate('/admin/orders') }}
-              style={{ cursor: 'pointer' }}
-            >
+      <div className="bb-screen-header">
+        <div className="bb-screen-title">
+          <p className="bb-screen-eyebrow">
+            <a onClick={(e) => { e.preventDefault(); navigate('/admin/orders') }} style={{ cursor: 'pointer' }}>
               ← {t('orders.detail.backToList')}
             </a>
           </p>
           <h1 style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             {t('orders.detail.eyebrow')}{' '}
-            <span className="mono" style={{ color: 'var(--admin-color-brand-red)' }}>
+            <span className="mono" style={{ color: 'var(--bb-brand)' }}>
               {formatText(order.orderNumber, `#${orderId}`)}
             </span>
             <StatusBadge type="order" status={order.orderStatus} />
             <StatusBadge type="payment" status={order.paymentStatus} />
-            {order.source === 'pos' && <span className="badge badge-neutral">POS</span>}
+            {order.source === 'pos' && <span className="bb-badge bb-badge-neutral">POS</span>}
           </h1>
-          <p className="desc">
+          <p className="bb-muted">
             {t('orders.detail.orderDate')} {formatDateTime(order.createdAt)}
             {' · '}{t('orders.detail.paymentMethod')} <span className="mono">{formatText(order.paymentMethod)}</span>
           </p>
         </div>
-        <div className="actions">
-          <button type="button" className="btn btn-outline" onClick={() => navigate('/admin/orders')}>
+        <div className="bb-screen-actions">
+          <button type="button" className="bb-btn bb-btn-secondary" onClick={() => navigate('/admin/orders')}>
             {t('orders.detail.backToList')}
           </button>
         </div>
@@ -436,13 +429,13 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
 
       {warning && <ReadOnlyBanner warning={warning} />}
 
-      {/* Action panel — allowed status / payment transitions */}
+      {/* Action panel */}
       {canUpdate && (
-        <div className="card mb-4" style={{ borderLeft: '3px solid var(--admin-color-brand-red)' }}>
-          <div className="card-body" style={{ display: 'flex', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
+        <div className="bb-card" style={{ marginBottom: 16, borderLeft: '3px solid var(--bb-brand)' }}>
+          <div className="bb-card-body" style={{ display: 'flex', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
             <div style={{ flex: '1 1 auto', minWidth: 240 }}>
-              <div className="fw-700 mb-2">{t('orders.detail.orderStatus')}</div>
-              <div className="text-xs muted">
+              <div style={{ fontWeight: 700, marginBottom: 6 }}>{t('orders.detail.orderStatus')}</div>
+              <div className="bb-muted" style={{ fontSize: 12.5 }}>
                 {transitionsError
                   ? t('orders.detail.transitionsLoadError')
                   : allowedTransitions.length === 0
@@ -459,42 +452,37 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                   <button
                     key={s}
                     type="button"
-                    className={`btn ${isPrimary ? 'btn-primary' : 'btn-outline'}`}
+                    className={`bb-btn ${isDanger ? 'bb-btn-danger-ghost' : isPrimary ? 'bb-btn-primary' : 'bb-btn-secondary'}`}
                     disabled={saving}
                     onClick={() => handleStatusChange(s)}
-                    style={isDanger ? { color: 'var(--admin-color-status-danger-text)', borderColor: 'var(--admin-color-status-danger-border)' } : {}}
                   >
                     → {getOrderStatusLabel(s, order, t)}
                   </button>
                 )
               })}
               {transitionsError && (
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setTransitionsKey((k) => k + 1)}>
+                <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" onClick={() => setTransitionsKey((k) => k + 1)}>
                   {t('common.retry')}
                 </button>
               )}
             </div>
           </div>
-          {/* Payment transitions */}
           {!['CANCELLED', 'FAILED', 'REFUNDED'].includes(order.orderStatus)
             && (PAYMENT_TRANSITIONS[order.paymentStatus] ?? []).length > 0 && (
-            <div
-              style={{
-                padding: '10px 18px',
-                borderTop: '1px solid var(--admin-color-border-subtle)',
-                background: 'var(--admin-color-surface-muted)',
-                display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
-              }}
-            >
-              <span className="text-xs muted fw-600">{t('orders.detail.paymentStatus')}</span>
+            <div style={{
+              padding: '10px 16px',
+              borderTop: '1px solid var(--bb-border-faint)',
+              background: 'var(--bb-surface-muted)',
+              display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+            }}>
+              <span style={{ fontSize: 12, color: 'var(--bb-text-muted)', fontWeight: 600 }}>{t('orders.detail.paymentStatus')}</span>
               {(PAYMENT_TRANSITIONS[order.paymentStatus] ?? []).map((s) => (
                 <button
                   key={s}
                   type="button"
-                  className="btn btn-outline btn-sm"
+                  className={`bb-btn bb-btn-secondary bb-btn-sm${s === 'CANCELLED' ? ' bb-btn-danger-ghost' : ''}`}
                   disabled={saving}
                   onClick={() => handlePaymentStatusChange(s)}
-                  style={s === 'CANCELLED' ? { color: 'var(--admin-color-status-danger-text)' } : {}}
                 >
                   {PAYMENT_ACTION_LABEL[s] ? t(PAYMENT_ACTION_LABEL[s]) : s}
                 </button>
@@ -504,20 +492,20 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
         </div>
       )}
 
-      <div className="grid-2-1">
-        {/* Left column — items, payments, returns, notes */}
+      <div className="bb-grid-2-1">
+        {/* Left column */}
         <div>
           {/* Items */}
-          <div className="card mb-4">
-            <div className="card-head">
-              <h2>{t('orders.detail.items')} ({(order.items ?? []).length})</h2>
+          <div className="bb-card" style={{ marginBottom: 16 }}>
+            <div className="bb-card-header">
+              <h3>{t('orders.detail.items')} ({(order.items ?? []).length})</h3>
             </div>
-            <div className="card-body card-body--flush">
+            <div className="bb-card-body--flush">
               {(order.items ?? []).length === 0 ? (
-                <div className="state-panel"><p>{t('orders.detail.noItems')}</p></div>
+                <div className="bb-card-body"><p className="bb-muted">{t('orders.detail.noItems')}</p></div>
               ) : (
-                <div className="table-wrap">
-                  <table className="tbl">
+                <div className="bb-table-wrap">
+                  <table className="bb-table">
                     <thead>
                       <tr>
                         <th>{t('orders.detail.colProduct')}</th>
@@ -530,37 +518,36 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                       {(order.items ?? []).map((item) => (
                         <tr key={item.id}>
                           <td>
-                            <div className="fw-600">{formatText(item.productName)}</div>
-                            {item.variantName && <div className="text-xs muted">{item.variantName}</div>}
+                            <div style={{ fontWeight: 600 }}>{formatText(item.productName)}</div>
+                            {item.variantName && <div className="bb-cell-sub">{item.variantName}</div>}
                           </td>
                           <td className="num">{formatCurrencyVnd(item.unitPrice)}</td>
                           <td className="num">×{item.quantity}</td>
-                          <td className="num fw-700">{formatCurrencyVnd(item.lineTotal)}</td>
+                          <td className="num" style={{ fontWeight: 700 }}>{formatCurrencyVnd(item.lineTotal)}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
               )}
-              <div style={{ padding: '14px 18px', borderTop: '1px solid var(--admin-color-border-subtle)', background: 'var(--admin-color-surface-muted)' }}>
-                <dl className="info-grid" style={{ gridTemplateColumns: '1fr auto', gap: '4px 24px', maxWidth: 360, marginLeft: 'auto', fontSize: 13 }}>
-                  <dt>{t('orders.detail.subtotal')}</dt><dd className="num">{formatCurrencyVnd(order.subtotal)}</dd>
+              <div style={{ padding: '14px 16px', borderTop: '1px solid var(--bb-border-faint)', background: 'var(--bb-surface-muted)' }}>
+                <dl className="bb-info-grid" style={{ gridTemplateColumns: '1fr auto', maxWidth: 360, marginLeft: 'auto', gap: '4px 24px', fontSize: 13 }}>
+                  <dt style={{ textTransform: 'none', fontSize: 13, letterSpacing: 0, fontWeight: 400 }}>{t('orders.detail.subtotal')}</dt>
+                  <dd style={{ textAlign: 'right' }}>{formatCurrencyVnd(order.subtotal)}</dd>
                   {order.shippingFee > 0 && (
                     <>
-                      <dt>{t('orders.detail.shippingFee')}</dt>
-                      <dd className="num">{formatCurrencyVnd(order.shippingFee)}</dd>
+                      <dt style={{ textTransform: 'none', fontSize: 13, letterSpacing: 0, fontWeight: 400 }}>{t('orders.detail.shippingFee')}</dt>
+                      <dd style={{ textAlign: 'right' }}>{formatCurrencyVnd(order.shippingFee)}</dd>
                     </>
                   )}
                   {order.discount > 0 && (
                     <>
-                      <dt>{t('orders.detail.discount')}</dt>
-                      <dd className="num text-danger">-{formatCurrencyVnd(order.discount)}</dd>
+                      <dt style={{ textTransform: 'none', fontSize: 13, letterSpacing: 0, fontWeight: 400 }}>{t('orders.detail.discount')}</dt>
+                      <dd style={{ textAlign: 'right', color: 'var(--bb-danger)' }}>-{formatCurrencyVnd(order.discount)}</dd>
                     </>
                   )}
-                  <dt style={{ fontWeight: 700, color: 'var(--admin-color-text-primary)', fontSize: 15, paddingTop: 8 }}>
-                    {t('orders.detail.total')}
-                  </dt>
-                  <dd className="num strong" style={{ fontSize: 18, fontWeight: 800, color: 'var(--admin-color-brand-red)', paddingTop: 8 }}>
+                  <dt style={{ textTransform: 'none', fontWeight: 700, fontSize: 15, paddingTop: 8 }}>{t('orders.detail.total')}</dt>
+                  <dd style={{ textAlign: 'right', fontSize: 18, fontWeight: 800, color: 'var(--bb-brand)', paddingTop: 8 }}>
                     {formatCurrencyVnd(order.total)}
                   </dd>
                 </dl>
@@ -570,11 +557,11 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
 
           {/* Payments */}
           {(order.payments ?? []).length > 0 && (
-            <div className="card mb-4">
-              <div className="card-head"><h2>{t('orders.detail.payments')}</h2></div>
-              <div className="card-body card-body--flush">
-                <div className="table-wrap">
-                  <table className="tbl">
+            <div className="bb-card" style={{ marginBottom: 16 }}>
+              <div className="bb-card-header"><h3>{t('orders.detail.payments')}</h3></div>
+              <div className="bb-card-body--flush">
+                <div className="bb-table-wrap">
+                  <table className="bb-table">
                     <thead>
                       <tr>
                         <th>{t('orders.detail.colPaymentMethod')}</th>
@@ -589,7 +576,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                           <td className="mono">{formatText(p.paymentMethod)}</td>
                           <td>{t(`status.payment.${p.status}`, { defaultValue: p.status })}</td>
                           <td className="num">{formatCurrencyVnd(p.amount)}</td>
-                          <td className="num muted text-xs">{p.paidAt ? formatDateTime(p.paidAt) : '—'}</td>
+                          <td className="num bb-muted">{p.paidAt ? formatDateTime(p.paidAt) : '—'}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -600,23 +587,23 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
           )}
 
           {/* Returns */}
-          <div className="card mb-4">
-            <div className="card-head">
-              <h2>{t('orders.detail.returnsTitle')}</h2>
+          <div className="bb-card" style={{ marginBottom: 16 }}>
+            <div className="bb-card-header">
+              <h3>{t('orders.detail.returnsTitle')}</h3>
               {canUpdate && order.orderStatus === 'COMPLETED' && (
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowCreateReturn(true)}>
+                <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" onClick={() => setShowCreateReturn(true)}>
                   {t('orders.detail.createReturnBtn')}
                 </button>
               )}
             </div>
-            <div className="card-body card-body--flush">
+            <div className="bb-card-body--flush">
               {returnsError ? (
-                <div className="state-panel"><p className="text-danger">{t('orders.detail.returnsLoadError')}</p></div>
+                <div className="bb-card-body"><p style={{ color: 'var(--bb-danger)' }}>{t('orders.detail.returnsLoadError')}</p></div>
               ) : orderReturns.length === 0 ? (
-                <div className="state-panel"><p>{t('orders.detail.returnsEmpty')}</p></div>
+                <div className="bb-card-body"><p className="bb-muted">{t('orders.detail.returnsEmpty')}</p></div>
               ) : (
-                <div className="table-wrap">
-                  <table className="tbl">
+                <div className="bb-table-wrap">
+                  <table className="bb-table">
                     <thead>
                       <tr>
                         <th>{t('orders.detail.colRma')}</th>
@@ -628,7 +615,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                     <tbody>
                       {orderReturns.map((r) => (
                         <tr key={r.id}>
-                          <td className="id-cell">{r.returnNumber}</td>
+                          <td className="mono">{r.returnNumber}</td>
                           <td>{RETURN_REASON_KEY[r.reason] ? t(RETURN_REASON_KEY[r.reason]) : r.reason}</td>
                           <td><StatusBadge type="return" status={RETURN_STATUS_KEY[r.status] ? r.status : 'UNKNOWN'} /></td>
                           <td className="num">{r.refundAmount > 0 ? formatCurrencyVnd(r.refundAmount) : '—'}</td>
@@ -642,16 +629,16 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
           </div>
 
           {/* Notes */}
-          <div className="card mb-4">
-            <div className="card-head"><h2>{t('orders.detail.notes')}</h2></div>
-            <div className="card-body">
+          <div className="bb-card" style={{ marginBottom: 16 }}>
+            <div className="bb-card-header"><h3>{t('orders.detail.notes')}</h3></div>
+            <div className="bb-card-body">
               {(order.notes ?? []).length === 0 ? (
-                <p className="muted text-sm">{t('orders.detail.noNotes')}</p>
+                <p className="bb-muted">{t('orders.detail.noNotes')}</p>
               ) : (
                 <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 12px' }}>
                   {(order.notes ?? []).map((note, i) => (
-                    <li key={note.id ?? i} style={{ borderBottom: '1px solid var(--admin-color-border-subtle)', padding: '8px 0', fontSize: 13 }}>
-                      <span className="muted" style={{ marginRight: 8 }}>
+                    <li key={note.id ?? i} style={{ borderBottom: '1px solid var(--bb-border-faint)', padding: '8px 0', fontSize: 13 }}>
+                      <span className="bb-muted" style={{ marginRight: 8 }}>
                         {note.createdAt ? formatDateTime(note.createdAt) : ''}
                       </span>
                       {note.content}
@@ -678,7 +665,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                       />
                       {t('orders.detail.noteCustomerVisible')}
                     </label>
-                    <button type="submit" className="btn btn-primary btn-sm" disabled={submittingNote || !noteContent.trim()}>
+                    <button type="submit" className="bb-btn bb-btn-primary bb-btn-sm" disabled={submittingNote || !noteContent.trim()}>
                       {t('orders.detail.submitNote')}
                     </button>
                   </div>
@@ -688,13 +675,13 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
           </div>
         </div>
 
-        {/* Right column — customer, refund, fulfillment, timestamps */}
+        {/* Right column */}
         <div>
           {/* Customer */}
-          <div className="card mb-4">
-            <div className="card-head"><h2>{t('orders.detail.customerInfo')}</h2></div>
-            <div className="card-body">
-              <dl className="info-grid">
+          <div className="bb-card" style={{ marginBottom: 16 }}>
+            <div className="bb-card-header"><h3>{t('orders.detail.customerInfo')}</h3></div>
+            <div className="bb-card-body">
+              <dl className="bb-info-grid">
                 <dt>{t('orders.detail.name')}</dt><dd>{formatText(order.customerName)}</dd>
                 <dt>{t('orders.detail.email')}</dt><dd>{formatText(order.customerEmail)}</dd>
                 {order.shippingAddress && (
@@ -716,42 +703,42 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
             </div>
           </div>
 
-          {/* Refund — visible when paymentStatus is PAID */}
+          {/* Refund */}
           {canUpdate && order.paymentStatus === 'PAID' && (
-            <div className="card mb-4">
-              <div className="card-head"><h2>{t('refund.sectionTitle')}</h2></div>
-              <div className="card-body">
-                <dl className="info-grid">
+            <div className="bb-card" style={{ marginBottom: 16 }}>
+              <div className="bb-card-header"><h3>{t('refund.sectionTitle')}</h3></div>
+              <div className="bb-card-body">
+                <dl className="bb-info-grid">
                   <dt>{t('refund.paidAmount')}</dt>
-                  <dd className="strong">{formatCurrencyVnd(order.paidAmount)}</dd>
+                  <dd style={{ fontWeight: 600 }}>{formatCurrencyVnd(order.paidAmount)}</dd>
                   {order.refundAmount > 0 && (
                     <>
                       <dt>{t('refund.alreadyRefunded')}</dt>
-                      <dd className="text-danger strong">{formatCurrencyVnd(order.refundAmount)}</dd>
+                      <dd style={{ color: 'var(--bb-danger)', fontWeight: 600 }}>{formatCurrencyVnd(order.refundAmount)}</dd>
                     </>
                   )}
                 </dl>
-                <button type="button" className="btn btn-danger mt-3" onClick={() => setShowRefundModal(true)}>
+                <button type="button" className="bb-btn bb-btn-danger" style={{ marginTop: 12 }} onClick={() => setShowRefundModal(true)}>
                   {t('refund.buttonCreate')}
                 </button>
                 {order.refundReason && (
-                  <p className="mt-2 text-xs muted">{t('refund.reason')}: {order.refundReason}</p>
+                  <p className="bb-muted" style={{ marginTop: 8, fontSize: 12 }}>{t('refund.reason')}: {order.refundReason}</p>
                 )}
                 {order.refundedAt && (
-                  <p className="text-xs muted">{t('refund.refundedAt')}: {formatDateTime(order.refundedAt)}</p>
+                  <p className="bb-muted" style={{ fontSize: 12 }}>{t('refund.refundedAt')}: {formatDateTime(order.refundedAt)}</p>
                 )}
               </div>
             </div>
           )}
 
-          {/* Fulfillment — delivery orders only */}
+          {/* Fulfillment */}
           {order.fulfillmentType === 'DELIVERY' && (
-            <div className="card mb-4">
-              <div className="card-head"><h2>{t('orders.detail.fulfillment')}</h2></div>
-              <div className="card-body">
-                <dl className="info-grid">
+            <div className="bb-card" style={{ marginBottom: 16 }}>
+              <div className="bb-card-header"><h3>{t('orders.detail.fulfillment')}</h3></div>
+              <div className="bb-card-body">
+                <dl className="bb-info-grid">
                   <dt>{t('orders.detail.fulfillmentStatusLabel')}</dt>
-                  <dd className="fw-600">{ffStatusLabel}</dd>
+                  <dd style={{ fontWeight: 600 }}>{ffStatusLabel}</dd>
                   {order.trackingNumber && (
                     <>
                       <dt>{t('orders.detail.colRma', { defaultValue: 'Mã vận đơn' })}</dt>
@@ -769,22 +756,22 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                 </dl>
 
                 {canUpdate && (
-                  <div className="mt-3">
-                    <div className="flex gap-2 flex-wrap">
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       {(order.fulfillmentStatus == null || order.fulfillmentStatus === 'UNFULFILLED') && (
-                        <button type="button" className="btn btn-outline btn-sm" disabled={fulfillmentSaving}
+                        <button type="button" className="bb-btn bb-btn-secondary bb-btn-sm" disabled={fulfillmentSaving}
                           onClick={() => handleFulfillmentUpdate('PROCESSING')}>
                           {fulfillmentSaving ? t('orders.detail.savingShort') : t('orders.detail.ffStartPreparing')}
                         </button>
                       )}
                       {order.fulfillmentStatus === 'PROCESSING' && (
-                        <button type="button" className="btn btn-outline btn-sm" disabled={fulfillmentSaving}
+                        <button type="button" className="bb-btn bb-btn-secondary bb-btn-sm" disabled={fulfillmentSaving}
                           onClick={() => setShowShipForm((p) => !p)}>
                           {t('orders.detail.ffMarkShipped')}
                         </button>
                       )}
                       {order.fulfillmentStatus === 'SHIPPED' && (
-                        <button type="button" className="btn btn-primary btn-sm" disabled={fulfillmentSaving}
+                        <button type="button" className="bb-btn bb-btn-primary bb-btn-sm" disabled={fulfillmentSaving}
                           onClick={() => handleFulfillmentUpdate('DELIVERED')}>
                           {fulfillmentSaving ? t('orders.detail.savingShort') : t('orders.detail.ffMarkDelivered')}
                         </button>
@@ -792,7 +779,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                     </div>
                     {showShipForm && (
                       <form
-                        className="flex flex-col gap-2 mt-3"
+                        style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}
                         onSubmit={(e) => { e.preventDefault(); handleFulfillmentUpdate('SHIPPED') }}
                       >
                         <Input
@@ -803,7 +790,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                           disabled={fulfillmentSaving}
                           required
                         />
-                        <p className="text-xs muted">{t('orders.detail.trackingHint')}</p>
+                        <p className="bb-muted" style={{ fontSize: 12 }}>{t('orders.detail.trackingHint')}</p>
                         <Input
                           type="text"
                           placeholder={t('orders.detail.carrierPlaceholder')}
@@ -811,11 +798,11 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                           onChange={(e) => setShippingCarrier(e.target.value)}
                           disabled={fulfillmentSaving}
                         />
-                        <div className="flex gap-2">
-                          <button type="submit" className="btn btn-primary btn-sm" disabled={fulfillmentSaving}>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <button type="submit" className="bb-btn bb-btn-primary bb-btn-sm" disabled={fulfillmentSaving}>
                             {fulfillmentSaving ? t('orders.detail.savingShort') : t('orders.detail.ffConfirmShip')}
                           </button>
-                          <button type="button" className="btn btn-outline btn-sm" disabled={fulfillmentSaving}
+                          <button type="button" className="bb-btn bb-btn-secondary bb-btn-sm" disabled={fulfillmentSaving}
                             onClick={() => { setShowShipForm(false); setTrackingNumber(''); setShippingCarrier('') }}>
                             {t('common.cancel')}
                           </button>
@@ -829,10 +816,10 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
           )}
 
           {/* Timestamps */}
-          <div className="card">
-            <div className="card-head"><h2>{t('orders.detail.timestamps')}</h2></div>
-            <div className="card-body">
-              <dl className="info-grid">
+          <div className="bb-card">
+            <div className="bb-card-header"><h3>{t('orders.detail.timestamps')}</h3></div>
+            <div className="bb-card-body">
+              <dl className="bb-info-grid">
                 {order.placedAt && (<><dt>{t('orders.detail.tsPlacedAt')}</dt><dd>{formatDateTime(order.placedAt)}</dd></>)}
                 {order.paidAt && (<><dt>{t('orders.detail.tsPaidAt')}</dt><dd>{formatDateTime(order.paidAt)}</dd></>)}
                 {order.completedAt && (<><dt>{t('orders.detail.tsCompletedAt')}</dt><dd>{formatDateTime(order.completedAt)}</dd></>)}
@@ -844,7 +831,6 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
         </div>
       </div>
 
-      {/* Modals */}
       {showRefundModal && (
         <RefundModal
           orderId={orderId}

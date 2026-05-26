@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
-import { Check, Download, Plus, Search, SlidersHorizontal, Store, X } from 'lucide-react'
+import { Check, Download, Plus, Search, SlidersHorizontal, Store } from 'lucide-react'
+import { BulkActionBar } from '../components/BulkActionBar'
 import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
@@ -63,7 +64,6 @@ export function OrderListScreen({ navigate }) {
   }, [isFirstPage, queryClient])
 
   function updateQuery(partial, options = { resetPage: false }) {
-    // Any query change loads a different result page — drop the stale selection.
     setSelected(new Set())
     setQuery((prev) => {
       const next = { ...prev, ...partial }
@@ -77,7 +77,6 @@ export function OrderListScreen({ navigate }) {
     setQuery(INITIAL_QUERY)
   }
 
-  // Order status as a segmented tab bar — mirrors backend ALLOWED_ORDER_STATUSES.
   const statusTabs = useMemo(() => [
     { key: 'ALL', label: t('common.all') },
     ...ORDER_STATUS_KEYS.map((k) => ({ key: k, label: t(`status.order.${k}`) })),
@@ -103,26 +102,26 @@ export function OrderListScreen({ navigate }) {
 
   return (
     <div>
-      <div className="screen-header">
-        <div>
-          <p className="eyebrow">{t('orders.eyebrow')}</p>
+      <div className="bb-screen-header">
+        <div className="bb-screen-title">
+          <p className="bb-screen-eyebrow">{t('orders.eyebrow')}</p>
           <h1>{t('orders.title')}</h1>
-          <p className="desc">{t('orders.description')}</p>
+          <p className="bb-muted">{t('orders.description')}</p>
         </div>
-        <div className="actions">
+        <div className="bb-screen-actions">
           <button
             type="button"
-            className="btn btn-outline"
+            className="bb-btn bb-btn-secondary"
             onClick={() => exportOrdersCsv({
               status: query.orderStatus !== 'ALL' ? query.orderStatus : undefined,
             })}
           >
             <Download size={14} />{t('common.exportCsv', { defaultValue: 'Xuất CSV' })}
           </button>
-          <button type="button" className="btn btn-outline" onClick={() => navigate('/admin/pos')}>
+          <button type="button" className="bb-btn bb-btn-secondary" onClick={() => navigate('/admin/pos')}>
             <Store size={14} />{t('orders.openPos', { defaultValue: 'Mở POS' })}
           </button>
-          <button type="button" className="btn btn-primary" onClick={() => navigate('/admin/pos')}>
+          <button type="button" className="bb-btn bb-btn-primary" onClick={() => navigate('/admin/pos')}>
             <Plus size={14} />{t('orders.createNew', { defaultValue: 'Tạo đơn mới' })}
           </button>
         </div>
@@ -130,15 +129,15 @@ export function OrderListScreen({ navigate }) {
 
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
 
-      {/* Status tabs — prototype segmented control */}
-      <div className="seg mb-4" role="tablist" aria-label={t('orders.filterStatus')}>
+      {/* Status tabs */}
+      <div className="bb-seg" style={{ marginBottom: 12 }} role="tablist" aria-label={t('orders.filterStatus')}>
         {statusTabs.map((tab) => (
           <button
             key={tab.key}
             type="button"
             role="tab"
             aria-selected={query.orderStatus === tab.key}
-            className={`seg-tab${query.orderStatus === tab.key ? ' active' : ''}`}
+            className={query.orderStatus === tab.key ? 'active' : ''}
             onClick={() => updateQuery({ orderStatus: tab.key }, { resetPage: true })}
           >
             {tab.label}
@@ -147,18 +146,20 @@ export function OrderListScreen({ navigate }) {
       </div>
 
       {/* Filter bar */}
-      <div className="filter-bar">
-        <div className="filter-search">
-          <Search size={14} />
+      <div className="bb-filter-bar">
+        <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
+          <Search size={13} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--bb-text-muted)', pointerEvents: 'none' }} />
           <input
             type="search"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder={t('orders.searchPlaceholder')}
+            className="bb-input"
+            style={{ paddingLeft: 28, width: '100%' }}
           />
         </div>
         <select
-          className="filter-select"
+          className="bb-select"
           value={query.paymentStatus}
           onChange={(e) => updateQuery({ paymentStatus: e.target.value }, { resetPage: true })}
           aria-label={t('orders.filterPaymentStatus')}
@@ -169,7 +170,7 @@ export function OrderListScreen({ navigate }) {
           ))}
         </select>
         <select
-          className="filter-select"
+          className="bb-select"
           value={query.sort}
           onChange={(e) => updateQuery({ sort: e.target.value }, { resetPage: true })}
           aria-label={t('orders.filterSort')}
@@ -179,7 +180,7 @@ export function OrderListScreen({ navigate }) {
           <option value="total:desc">{t('sort.highestValue')}</option>
         </select>
         <select
-          className="filter-select"
+          className="bb-select"
           value={String(query.pageSize)}
           onChange={(e) => updateQuery({ pageSize: Number(e.target.value) }, { resetPage: true })}
           aria-label={t('common.rowsPerPage')}
@@ -188,23 +189,15 @@ export function OrderListScreen({ navigate }) {
           <option value="50">50 / {t('common.page', { defaultValue: 'trang' })}</option>
           <option value="100">100 / {t('common.page', { defaultValue: 'trang' })}</option>
         </select>
-        <button type="button" className="btn btn-ghost btn-sm" onClick={resetFilters}>
+        <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" onClick={resetFilters}>
           <SlidersHorizontal size={13} />{t('orders.clearFilters')}
         </button>
       </div>
 
-      {/* Bulk bar */}
-      {selected.size > 0 && (
-        <div className="bulk-bar">
-          <Check size={16} />
-          <span>{t('orders.bulkSelected', { count: selected.size, defaultValue: `Đã chọn ${selected.size} đơn hàng` })}</span>
-          <div className="bulk-actions">
-            <button type="button" className="btn btn-sm" onClick={() => setSelected(new Set())}>
-              <X size={13} />
-            </button>
-          </div>
-        </div>
-      )}
+      <BulkActionBar
+        selectedCount={selected.size}
+        onClear={() => setSelected(new Set())}
+      />
 
       {state.status === 'error' && (
         <StatePanel tone="danger" title={t('orders.loadError')} description={state.error}
@@ -217,89 +210,85 @@ export function OrderListScreen({ navigate }) {
       )}
 
       {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) && (
-        <div className="card">
-          <div className="card-body card-body--flush">
-            <div className="table-wrap">
-              <table className="tbl">
-                <thead>
-                  <tr>
-                    <th className="checkbox-cell">
-                      <span
-                        className={`cb${allChecked ? ' checked' : ''}`}
-                        role="checkbox"
-                        aria-checked={allChecked}
-                        tabIndex={0}
-                        onClick={toggleAll}
-                        onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleAll() } }}
-                      >
-                        {allChecked && <Check size={11} />}
-                      </span>
-                    </th>
-                    <th>{t('orders.colOrder')}</th>
-                    <th>{t('orders.colCustomer')}</th>
-                    <th>{t('orders.colDate')}</th>
-                    <th className="num">{t('orders.colTotal')}</th>
-                    <th>{t('orders.colPaymentStatus')}</th>
-                    <th>{t('orders.colStatus')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {state.status === 'loading' && items.length === 0 && (
-                    [...Array(8)].map((_, i) => (
-                      <tr key={`sk-${i}`}>
-                        <td colSpan={7}><div className="dash-skeleton-block" style={{ height: 28 }} /></td>
-                      </tr>
-                    ))
-                  )}
-                  {items.map((order) => {
-                    const checked = selected.has(order.id)
-                    return (
-                      <tr key={order.id} className={checked ? 'selected' : ''}>
-                        <td className="checkbox-cell" onClick={(e) => { e.stopPropagation(); toggle(order.id) }}>
-                          <span className={`cb${checked ? ' checked' : ''}`} role="checkbox" aria-checked={checked}>
-                            {checked && <Check size={11} />}
-                          </span>
-                        </td>
-                        <td className="id-cell" onClick={() => navigate(`/admin/orders/${order.id}`)}>
-                          <span className="flex items-center gap-2">
-                            {formatText(order.orderNumber)}
-                            {order.source === 'pos' && <span className="badge badge-neutral">POS</span>}
-                          </span>
-                        </td>
-                        <td onClick={() => navigate(`/admin/orders/${order.id}`)}>
-                          <div className="product-cell">
-                            <div className="info">
-                              <div className="name">{formatText(order.customerName) || formatText(order.customerEmail)}</div>
-                              <div className="sku">{formatText(order.customerEmail)}</div>
-                            </div>
+        <div className="bb-card">
+          <div className="bb-table-wrap">
+            <table className="bb-table">
+              <thead>
+                <tr>
+                  <th className="col-check">
+                    <span
+                      className={`bb-cb${allChecked ? ' checked' : ''}`}
+                      role="checkbox"
+                      aria-checked={allChecked}
+                      tabIndex={0}
+                      onClick={toggleAll}
+                      onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleAll() } }}
+                    >
+                      {allChecked && <Check size={11} />}
+                    </span>
+                  </th>
+                  <th>{t('orders.colOrder')}</th>
+                  <th>{t('orders.colCustomer')}</th>
+                  <th>{t('orders.colDate')}</th>
+                  <th className="num">{t('orders.colTotal')}</th>
+                  <th>{t('orders.colPaymentStatus')}</th>
+                  <th>{t('orders.colStatus')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {state.status === 'loading' && items.length === 0 && (
+                  [...Array(8)].map((_, i) => (
+                    <tr key={`sk-${i}`}>
+                      <td colSpan={7}><div className="bb-skeleton-block" style={{ height: 28 }} /></td>
+                    </tr>
+                  ))
+                )}
+                {items.map((order) => {
+                  const checked = selected.has(order.id)
+                  return (
+                    <tr key={order.id} className={checked ? 'selected' : ''}>
+                      <td className="col-check" onClick={(e) => { e.stopPropagation(); toggle(order.id) }}>
+                        <span className={`bb-cb${checked ? ' checked' : ''}`} role="checkbox" aria-checked={checked}>
+                          {checked && <Check size={11} />}
+                        </span>
+                      </td>
+                      <td className="mono" onClick={() => navigate(`/admin/orders/${order.id}`)}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          {formatText(order.orderNumber)}
+                          {order.source === 'pos' && <span className="bb-badge bb-badge-neutral">POS</span>}
+                        </span>
+                      </td>
+                      <td onClick={() => navigate(`/admin/orders/${order.id}`)}>
+                        <div className="bb-product-cell">
+                          <div>
+                            <div style={{ fontWeight: 500 }}>{formatText(order.customerName) || formatText(order.customerEmail)}</div>
+                            <div className="bb-cell-sub">{formatText(order.customerEmail)}</div>
                           </div>
-                        </td>
-                        <td className="muted text-xs" onClick={() => navigate(`/admin/orders/${order.id}`)}>
-                          {formatDateTime(order.createdAt)}
-                        </td>
-                        <td className="num fw-700" onClick={() => navigate(`/admin/orders/${order.id}`)}>
-                          {formatCurrencyVnd(order.total)}
-                        </td>
-                        <td onClick={() => navigate(`/admin/orders/${order.id}`)}>
-                          <StatusBadge type="payment" status={order.paymentStatus} />
-                        </td>
-                        <td onClick={() => navigate(`/admin/orders/${order.id}`)}>
-                          <StatusBadge type="order" status={order.orderStatus} />
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
+                        </div>
+                      </td>
+                      <td className="bb-muted" onClick={() => navigate(`/admin/orders/${order.id}`)}>
+                        {formatDateTime(order.createdAt)}
+                      </td>
+                      <td className="num" style={{ fontWeight: 700 }} onClick={() => navigate(`/admin/orders/${order.id}`)}>
+                        {formatCurrencyVnd(order.total)}
+                      </td>
+                      <td onClick={() => navigate(`/admin/orders/${order.id}`)}>
+                        <StatusBadge type="payment" status={order.paymentStatus} />
+                      </td>
+                      <td onClick={() => navigate(`/admin/orders/${order.id}`)}>
+                        <StatusBadge type="order" status={order.orderStatus} />
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
           </div>
           {state.status === 'success' && pagination && (
-            <div className="px-[18px] py-3 border-t border-border">
-              <PaginationControls
-                pagination={pagination}
-                onPageChange={(p) => updateQuery({ page: p })}
-              />
-            </div>
+            <PaginationControls
+              pagination={pagination}
+              onPageChange={(p) => updateQuery({ page: p })}
+            />
           )}
         </div>
       )}

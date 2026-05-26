@@ -77,7 +77,7 @@ function ExperienceSlide({
             src={media.bgSrc}
             alt={media.bgAlt}
             className="block w-full max-h-[378px] object-cover"
-            loading="eager"
+            loading={isActive ? "eager" : "lazy"}
             decoding="async"
             draggable={false}
           />
@@ -95,7 +95,7 @@ function ExperienceSlide({
               src={media.productSrc}
               alt={media.productAlt}
               className="bb-exp-product-image mx-auto w-1/2 max-w-[420px] max-[991px]:w-[64%] max-[767px]:w-[62vw] max-[767px]:max-w-[280px] max-[374px]:max-w-[250px]"
-              loading="eager"
+              loading={isActive ? "eager" : "lazy"}
               decoding="async"
               draggable={false}
             />

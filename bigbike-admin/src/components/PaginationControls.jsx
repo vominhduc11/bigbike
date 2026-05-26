@@ -1,7 +1,5 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 
 export function PaginationControls({ pagination, onPageChange }) {
   const { t } = useTranslation()
@@ -21,71 +19,66 @@ export function PaginationControls({ pagination, onPageChange }) {
   }
 
   return (
-    <div className="flex items-center justify-between gap-3 flex-wrap text-sm text-muted-foreground py-2">
-      <span>
+    <div className="bb-table-foot">
+      <span className="bb-muted">
         {t('pagination.items', { count: totalItems })}
         {' · '}
         {t('pagination.page', { page, total: totalPages })}
       </span>
 
-      <div className="flex items-center gap-3 flex-wrap">
+      <div className="bb-row">
         {totalPages > 3 && (
-          <form onSubmit={handleJump} className="flex items-center gap-2">
-            <label
-              htmlFor="pagination-jump"
-              className="text-xs text-muted-foreground whitespace-nowrap"
-            >
+          <form onSubmit={handleJump} className="bb-row" style={{ gap: 6 }}>
+            <span style={{ fontSize: 12, color: 'var(--bb-text-muted)', whiteSpace: 'nowrap' }}>
               {t('pagination.jumpTo')}
-            </label>
-            <Input
-              id="pagination-jump"
+            </span>
+            <input
               type="number"
               min={1}
               max={totalPages}
               value={jumpInput}
               onChange={(e) => setJumpInput(e.target.value)}
-              className="w-16 text-center h-7 text-xs"
+              className="bb-input"
+              style={{ width: 52, height: 26, fontSize: 12, textAlign: 'center' }}
               aria-label={t('pagination.jumpTo')}
             />
-            <Button type="submit" variant="secondary" size="sm" disabled={!jumpInput}>
+            <button type="submit" className="bb-btn bb-btn-secondary bb-btn-sm" disabled={!jumpInput}>
               →
-            </Button>
+            </button>
           </form>
         )}
 
-        <div className="flex items-center gap-1">
-          <Button
-            variant="secondary"
-            size="sm"
+        <div className="bb-pagination">
+          <button
+            className="bb-btn bb-btn-secondary bb-btn-sm"
+            style={{ height: 28 }}
             onClick={() => onPageChange(page - 1)}
             disabled={page <= 1}
           >
             {t('pagination.previous')}
-          </Button>
+          </button>
 
           {totalPages <= 7
             ? Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                <Button
+                <button
                   key={p}
-                  variant={p === page ? 'default' : 'secondary'}
-                  size="sm"
+                  className={p === page ? 'active' : ''}
                   onClick={() => onPageChange(p)}
                   aria-current={p === page ? 'page' : undefined}
-                  className="min-w-[32px]"
                 >
                   {p}
-                </Button>
+                </button>
               ))
             : null}
 
-          <Button
-            variant="secondary"
-            size="sm"
+          <button
+            className="bb-btn bb-btn-secondary bb-btn-sm"
+            style={{ height: 28 }}
             onClick={() => onPageChange(page + 1)}
             disabled={page >= totalPages}
           >
             {t('pagination.next')}
-          </Button>
+          </button>
         </div>
       </div>
     </div>

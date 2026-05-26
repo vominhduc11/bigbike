@@ -10094,20 +10094,6 @@ body .bb-home .white.block-title h3 {
     display: none;
   }
 
-  .bb-home #main-banner .swiper-pagination-bullet {
-    width: 6px;
-    height: 6px;
-    margin: 0 3px;
-    background: rgba(255, 255, 255, 0.45);
-    opacity: 1;
-  }
-
-  .bb-home #main-banner .swiper-pagination-bullet-active {
-    width: 18px;
-    border-radius: 999px;
-    background: var(--bb-action-primary);
-  }
-
   body .bb-home .block-title h2,
   body .bb-home .block-title h3 {
     font-size: var(--bb-text-section-title);
@@ -11125,6 +11111,9 @@ body .bb-home .white.block-title h3 {
     color: var(--bb-text-inverse);
   }
 
+  /* MOBILE HOME DARK SHELL — overridden back to light mode by the later
+     "Mobile whole-site refactor pass" block (search for bb-bg-page / bb-text-primary).
+     Final visual = LIGHT MODE. Tokens here still apply to bottom nav and non-home elements. */
   .bb-home {
     padding-bottom: calc(var(--bb-mobile-nav-height) + env(safe-area-inset-bottom) + 16px);
     background: var(--bb-mobile-shell-bg);
@@ -11141,6 +11130,15 @@ body .bb-home .white.block-title h3 {
 
   .bb-home #main-banner .swiper-slide a,
   .bb-home #main-banner .swiper-slide .bb-main-banner-link {
+    background-image: var(--bb-mobile-banner-bg) !important;
+  }
+
+  /* The <span> inside .bb-main-banner-link carries an inline backgroundImage pointing to
+     desktopSrc, which covers the parent's mobileSrc background. Override it here so mobile
+     shows the correct mobile image. --bb-mobile-banner-bg is set as a CSS custom property
+     on the parent and cascades down. !important is required to beat inline style. */
+  .bb-home #main-banner .swiper-slide a > span,
+  .bb-home #main-banner .swiper-slide .bb-main-banner-link > span {
     background-image: var(--bb-mobile-banner-bg) !important;
   }
 

@@ -246,7 +246,7 @@ function buildFormFromItem(item) {
     id: v.id || '',
     sku: v.sku || '',
     name: v.name || '',
-    imageUrl: v.image?.url || '',
+    imageUrl: v.image?.rawUrl || v.image?.url || '',
     isAvailable: v.isAvailable !== false,
     options: (v.options || []).map((o) => ({
       name: o.name || '',
@@ -256,7 +256,7 @@ function buildFormFromItem(item) {
       _swatchImageUrl: o.swatchImageUrl || null,
       _directSwatchImageId: o.swatchImageId || null,
     })),
-    gallery: (v.gallery || []).map((img) => ({ url: img.url || '' })),
+    gallery: (v.gallery || []).map((img) => ({ url: img.rawUrl || img.url || '' })),
   })))
 
   return {
@@ -284,15 +284,15 @@ function buildFormFromItem(item) {
         : '',
     forceOutOfStock: Boolean(item.forceOutOfStock),
     publishStatus: item.publishStatus,
-    imageUrl: item.image?.url || '',
+    imageUrl: item.image?.rawUrl || item.image?.url || '',
     imageAlt: item.image?.alt || '',
     seoTitle: item.seo?.title || '',
     seoDescription: item.seo?.description || '',
     seoCanonicalUrl: item.seo?.canonicalUrl || '',
-    seoOgImageUrl: item.seo?.ogImage?.url || '',
+    seoOgImageUrl: item.seo?.ogImage?.rawUrl || item.seo?.ogImage?.url || '',
     seoOgImageAlt: item.seo?.ogImage?.alt || '',
     seoNoIndex: Boolean(item.seo?.noIndex),
-    gallery: (item.gallery || []).map((img) => ({ url: img.url || '', alt: img.alt || '' })),
+    gallery: (item.gallery || []).map((img) => ({ url: img.rawUrl || img.url || '', alt: img.alt || '' })),
     videos: (item.videos || []).map((v) => ({
       url: v.url || '',
       title: v.title || '',
@@ -1812,11 +1812,11 @@ function findTabForErrors(sectionErrors) {
 // Map publishStatus → matching .badge variant. Used in ScreenHeader.
 function publishBadgeClass(status) {
   switch (status) {
-    case 'PUBLISHED': return 'badge badge-success'
-    case 'DRAFT':     return 'badge badge-neutral'
-    case 'HIDDEN':    return 'badge badge-orange'
-    case 'TRASH':     return 'badge badge-danger'
-    default:          return 'badge badge-neutral'
+    case 'PUBLISHED': return 'bb-badge bb-badge-success'
+    case 'DRAFT':     return 'bb-badge bb-badge-neutral'
+    case 'HIDDEN':    return 'bb-badge bb-badge-warning'
+    case 'TRASH':     return 'bb-badge bb-badge-danger'
+    default:          return 'bb-badge bb-badge-neutral'
   }
 }
 
@@ -1857,9 +1857,9 @@ function RoleBadge({ role }) {
 // Required sections get a subtle red asterisk after the title instead of a loud "BẮT BUỘC" badge.
 function SectionCard({ title, badge, required, children }) {
   return (
-    <div className="card">
-      <div className="card-head">
-        <h2>
+    <div className="bb-card">
+      <div className="bb-card-header">
+        <h3>
           {title}
           {required && (
             <span
@@ -1868,10 +1868,10 @@ function SectionCard({ title, badge, required, children }) {
               title="Bắt buộc"
             >*</span>
           )}
-        </h2>
+        </h3>
         {badge}
       </div>
-      <div className="card-body">{children}</div>
+      <div className="bb-card-body">{children}</div>
     </div>
   )
 }
@@ -2374,8 +2374,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   }
 
   return (
-    <div className="bb-proto">
-      <Screen maxWidth="1440px">
+    <Screen maxWidth="1440px">
         <ScreenHeader
           eyebrow={t('products.detail.eyebrow')}
           title={isCreate
@@ -2408,7 +2407,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 {t(`status.publish.${form.publishStatus}`, { defaultValue: form.publishStatus })}
               </span>
               {isReadOnly && (
-                <span className="badge badge-warn">
+                <span className="bb-badge bb-badge-warning">
                   <Lock size={11} />
                   {t('products.detail.readOnlyBadge', { defaultValue: 'Chỉ đọc' })}
                 </span>
@@ -3223,7 +3222,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
             onClose={() => setShowMatrixWizard(false)}
           />
         )}
-      </Screen>
-    </div>
+    </Screen>
   )
 }

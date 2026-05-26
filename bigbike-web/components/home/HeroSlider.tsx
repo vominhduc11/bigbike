@@ -22,6 +22,15 @@ type HeroSliderProps = {
   slides: HeroSlide[];
 };
 
+/**
+ * Swiper v8 can reset the wrapper to display:block after hydration, stacking
+ * slides vertically (all off-canvas except the first). CSS rules on the
+ * .bb-main-banner scope (.swiper-wrapper { display:flex } / .swiper-slide
+ * { flex-shrink:0 }) fix this declaratively, but Swiper's own style mutations
+ * can win in some edge cases / versions. This function is an imperative safety
+ * net called on init and each slide change. Remove it once Swiper is upgraded
+ * and the CSS-only approach is confirmed stable across all mobile breakpoints.
+ */
 function enforceHorizontalTrack(swiper: SwiperType | null) {
   if (!swiper?.wrapperEl) return;
 

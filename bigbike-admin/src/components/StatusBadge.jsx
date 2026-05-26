@@ -1,34 +1,28 @@
 import { useTranslation } from 'react-i18next'
 import { normalizePublishStatus, normalizeStockState } from '../lib/contracts'
-import { Badge } from '@/components/ui/badge'
 
-const ORDER_STATUS_VARIANT = {
+const ORDER_STATUS_TONE = {
   PENDING:    'warning',
   ON_HOLD:    'warning',
   PROCESSING: 'info',
   COMPLETED:  'success',
-  CANCELLED:  'danger',
+  CANCELLED:  'neutral',
   FAILED:     'danger',
   REFUNDED:   'warning',
   UNKNOWN:    'muted',
 }
 
-const PAYMENT_STATUS_VARIANT = {
+const PAYMENT_STATUS_TONE = {
   PENDING:   'warning',
   UNPAID:    'warning',
   PAID:      'success',
   REFUNDED:  'warning',
-  CANCELLED: 'danger',
+  CANCELLED: 'neutral',
   FAILED:    'danger',
   UNKNOWN:   'muted',
 }
 
-const VISIBILITY_STATUS_VARIANT = {
-  VISIBLE: 'success',
-  HIDDEN: 'muted',
-}
-
-const RETURN_STATUS_VARIANT = {
+const RETURN_STATUS_TONE = {
   PENDING:    'warning',
   APPROVED:   'info',
   RECEIVED:   'info',
@@ -38,20 +32,20 @@ const RETURN_STATUS_VARIANT = {
   REJECTED:   'danger',
 }
 
-const WARRANTY_STATUS_VARIANT = {
+const WARRANTY_STATUS_TONE = {
   ACTIVE:  'success',
   EXPIRED: 'warning',
   VOIDED:  'danger',
 }
 
-const SERIAL_STATUS_VARIANT = {
+const SERIAL_STATUS_TONE = {
   IN_STOCK:   'success',
   RESERVED:   'info',
-  SOLD:       'muted',
+  SOLD:       'neutral',
   RETURNED:   'warning',
   INSPECTION: 'info',
   DAMAGED:    'danger',
-  SCRAPPED:   'muted',
+  SCRAPPED:   'neutral',
 }
 
 function toneFromPublish(status) {
@@ -73,43 +67,52 @@ function toneFromStock(status) {
   }
 }
 
+function Badge({ tone = 'muted', className, children }) {
+  return (
+    <span className={`bb-badge bb-badge-${tone}${className ? ` ${className}` : ''}`}>
+      <span className="dot" aria-hidden="true" />
+      {children}
+    </span>
+  )
+}
+
 export function StatusBadge({ status, type = 'order', className }) {
   const { t } = useTranslation()
-  let variant = 'muted'
+  let tone = 'muted'
   let label = status
 
   if (type === 'order') {
-    variant = ORDER_STATUS_VARIANT[status] ?? 'muted'
+    tone = ORDER_STATUS_TONE[status] ?? 'muted'
     label = t(`status.order.${status}`, { defaultValue: status })
   } else if (type === 'payment') {
-    variant = PAYMENT_STATUS_VARIANT[status] ?? 'muted'
+    tone = PAYMENT_STATUS_TONE[status] ?? 'muted'
     label = t(`status.payment.${status}`, { defaultValue: status })
   } else if (type === 'visibility') {
     const key = status ? 'VISIBLE' : 'HIDDEN'
-    variant = VISIBILITY_STATUS_VARIANT[key]
+    tone = key === 'VISIBLE' ? 'success' : 'neutral'
     label = key === 'VISIBLE' ? t('common.visible') : t('common.hidden')
   } else if (type === 'return') {
-    variant = RETURN_STATUS_VARIANT[status] ?? 'muted'
+    tone = RETURN_STATUS_TONE[status] ?? 'muted'
     label = t(`returns.status.${status}`, { defaultValue: status })
   } else if (type === 'warranty') {
-    variant = WARRANTY_STATUS_VARIANT[status] ?? 'muted'
+    tone = WARRANTY_STATUS_TONE[status] ?? 'muted'
     label = t(`warranty.status.${status}`, { defaultValue: status })
   } else if (type === 'serial') {
-    variant = SERIAL_STATUS_VARIANT[status] ?? 'muted'
+    tone = SERIAL_STATUS_TONE[status] ?? 'muted'
     label = t(`serial.status.${status}`, { defaultValue: status })
   }
 
-  return <Badge variant={variant} className={className}>{label}</Badge>
+  return <Badge tone={tone} className={className}>{label}</Badge>
 }
 
 export function PublishStatusBadge({ value }) {
   const { t } = useTranslation()
   const status = normalizePublishStatus(value)
-  return <Badge variant={toneFromPublish(status)}>{t(`status.publish.${status}`)}</Badge>
+  return <Badge tone={toneFromPublish(status)}>{t(`status.publish.${status}`)}</Badge>
 }
 
 export function StockStatusBadge({ value }) {
   const { t } = useTranslation()
   const status = normalizeStockState(value)
-  return <Badge variant={toneFromStock(status)}>{t(`status.stock.${status}`)}</Badge>
+  return <Badge tone={toneFromStock(status)}>{t(`status.stock.${status}`)}</Badge>
 }

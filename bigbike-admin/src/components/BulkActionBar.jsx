@@ -1,42 +1,33 @@
 import { X } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
 
-export function BulkActionBar({ selectedCount, onClear, actions = [], closeLabel = 'Clear selection' }) {
+export function BulkActionBar({ selectedCount, onClear, actions = [], closeLabel = 'Bỏ chọn' }) {
   if (!selectedCount) return null
 
   return (
-    <div className="sticky top-0 z-10 mb-3 flex items-center gap-3 rounded-xs bg-primary px-4 py-2.5 text-primary-foreground shadow-md">
-      <span className="flex-1 text-sm font-bold">{selectedCount}</span>
-      <div className="flex gap-1.5">
+    <div className="bb-bulk-bar">
+      <span className="count">{selectedCount} đã chọn</span>
+      <span className="sep" />
+      <div className="bb-row" style={{ gap: 6 }}>
         {actions.map((action, index) => (
-          <Button
+          <button
             key={index}
             type="button"
-            size="sm"
-            variant={action.tone === 'danger' ? 'danger' : 'ghost'}
-            className={cn(
-              'border border-white/30 text-white',
-              action.tone === 'danger'
-                ? 'hover:opacity-80'
-                : 'bg-white/15 hover:bg-white/25',
-            )}
+            className={`bulk-btn${action.tone === 'danger' ? ' danger' : ''}`}
             onClick={action.onClick}
             disabled={action.disabled}
           >
             {action.label}
-          </Button>
+          </button>
         ))}
-        <Button
+        <button
           type="button"
-          size="icon"
-          variant="ghost"
-          className="border border-white/30 bg-white/15 text-white hover:bg-white/25"
+          className="bulk-btn"
           onClick={onClear}
           aria-label={closeLabel}
+          title={closeLabel}
         >
-          <X size={14} />
-        </Button>
+          <X size={13} />
+        </button>
       </div>
     </div>
   )

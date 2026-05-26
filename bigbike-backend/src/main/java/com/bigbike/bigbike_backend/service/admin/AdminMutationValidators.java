@@ -164,8 +164,8 @@ final class AdminMutationValidators {
             return;
         }
 
-        // Relative /media/... paths are served via the internal proxy — always allowed
-        if (normalized.toLowerCase().startsWith("/media/")) {
+        // Relative /media/... and /media-proxy/... paths are served via the internal proxy — always allowed
+        if (normalized.toLowerCase().startsWith("/media/") || normalized.toLowerCase().startsWith("/media-proxy/")) {
             return;
         }
 

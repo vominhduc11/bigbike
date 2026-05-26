@@ -46,9 +46,13 @@ export function FeaturedProductsCarousel({ products }: Props) {
   const currentPage = Math.min(page, Math.max(0, pageCount - 1));
   const offsetGap = currentPage * resolveGap(slidesPerView);
 
+  // On mobile (≤767px) CSS overrides the track to native horizontal scroll
+  // (overflow-x: auto, transform: none !important). Skip JS-driven navigation.
+  const isMobileScroll = slidesPerView <= 2;
+
   if (products.length === 0) return null;
 
-  const hasMultiplePages = pageCount > 1;
+  const hasMultiplePages = !isMobileScroll && pageCount > 1;
   const goPrev = () => setPage((currentPage - 1 + pageCount) % pageCount);
   const goNext = () => setPage((currentPage + 1) % pageCount);
 
@@ -68,7 +72,7 @@ export function FeaturedProductsCarousel({ products }: Props) {
       <div className="bb-fp-viewport relative w-full overflow-hidden">
         <div
           className="bb-fp-page-track"
-          style={{ transform: `translate3d(calc(-${currentPage * 100}% - ${offsetGap}px), 0, 0)` }}
+          style={isMobileScroll ? undefined : { transform: `translate3d(calc(-${currentPage * 100}% - ${offsetGap}px), 0, 0)` }}
         >
           {products.map((product) => (
             <ProductCard key={product.id} product={product} variant="featured" />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import type { Swiper as SwiperType } from "swiper";
 import "swiper/css";
@@ -101,6 +101,7 @@ function VideoModal({
     (video.youtubeId
       ? `https://www.youtube-nocookie.com/embed/${video.youtubeId}?autoplay=1&rel=0`
       : null);
+  const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -111,6 +112,16 @@ function VideoModal({
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose, onPrev, onNext]);
+
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, []);
+
+  useEffect(() => {
+    closeRef.current?.focus();
+  }, []);
 
   return (
     <div
@@ -178,6 +189,7 @@ function VideoModal({
           )}
         </div>
         <button
+          ref={closeRef}
           type="button"
           className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-black/90 focus-visible:outline-[var(--bb-focus-outline)]"
           onClick={onClose}
@@ -199,11 +211,23 @@ export function HomeVideoCarousel({ videos }: Props) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const swiperRef = useRef<SwiperType | null>(null);
+  const triggerRef = useRef<HTMLElement | null>(null);
 
   if (videos.length === 0) return null;
 
   const showControls = videos.length > 1;
   const loopEnabled = false;
+
+  const handleOpen = useCallback((idx: number) => {
+    triggerRef.current = document.activeElement as HTMLElement;
+    setActiveIndex(idx);
+  }, []);
+
+  const handleClose = useCallback(() => {
+    setActiveIndex(null);
+    triggerRef.current?.focus();
+    triggerRef.current = null;
+  }, []);
 
   const handlePrev = () =>
     setActiveIndex((i) => (i !== null ? (i - 1 + videos.length) % videos.length : null));
@@ -234,7 +258,7 @@ export function HomeVideoCarousel({ videos }: Props) {
           >
             {videos.map((video, idx) => (
               <SwiperSlide key={video.id} className="h-auto" suppressHydrationWarning>
-                <VideoCard video={video} onPlay={() => setActiveIndex(idx)} />
+                <VideoCard video={video} onPlay={() => handleOpen(idx)} />
               </SwiperSlide>
             ))}
           </Swiper>
@@ -312,7 +336,7 @@ export function HomeVideoCarousel({ videos }: Props) {
         <VideoModal
           videos={videos}
           activeIndex={activeIndex}
-          onClose={() => setActiveIndex(null)}
+          onClose={handleClose}
           onPrev={handlePrev}
           onNext={handleNext}
         />

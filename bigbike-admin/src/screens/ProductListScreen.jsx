@@ -29,7 +29,6 @@ const INITIAL_QUERY = {
   pageSize: 20,
 }
 
-// Mirror of the homepage block sizes in bigbike-web/app/page.tsx.
 const HOMEPAGE_BLOCK_LIMITS = {
   FEATURED_GRID: 12,
 }
@@ -71,11 +70,10 @@ export function ProductListScreen({ navigate, canUpdate }) {
     setQuery((prev) => ({ ...prev, search: debouncedSearch, page: 1 }))
   }, [debouncedSearch])
 
-  // Close the row overflow menu on any outside click.
   useEffect(() => {
     if (!openMenu) return
     const onClick = (e) => {
-      if (!e.target.closest('.row-menu') && !e.target.closest('[data-row-menu-trigger]')) setOpenMenu(null)
+      if (!e.target.closest('.bb-row-menu') && !e.target.closest('[data-row-menu-trigger]')) setOpenMenu(null)
     }
     document.addEventListener('click', onClick)
     return () => document.removeEventListener('click', onClick)
@@ -171,26 +169,26 @@ export function ProductListScreen({ navigate, canUpdate }) {
 
   return (
     <div>
-      <div className="screen-header">
-        <div>
-          <p className="eyebrow">{t('products.eyebrow')}</p>
+      <div className="bb-screen-header">
+        <div className="bb-screen-title">
+          <p className="bb-screen-eyebrow">{t('products.eyebrow')}</p>
           <h1>{t('products.title')}</h1>
-          <p className="desc">{t('products.description')}</p>
+          <p className="bb-muted">{t('products.description')}</p>
         </div>
-        <div className="actions">
-          <button type="button" className="btn btn-outline" disabled title={t('products.importHint', { defaultValue: 'Nhập CSV' })}>
+        <div className="bb-screen-actions">
+          <button type="button" className="bb-btn bb-btn-secondary" disabled title={t('products.importHint', { defaultValue: 'Nhập CSV' })}>
             <Upload size={14} />{t('products.importCsv', { defaultValue: 'Import CSV' })}
           </button>
           <button
             type="button"
-            className="btn btn-outline"
+            className="bb-btn bb-btn-secondary"
             onClick={() => exportProductsCsv({ publishStatus: query.publishStatus !== 'ALL' ? query.publishStatus : undefined })}
           >
             <Download size={14} />{t('common.exportCsv', { defaultValue: 'Xuất CSV' })}
           </button>
           <button
             type="button"
-            className="btn btn-primary"
+            className="bb-btn bb-btn-primary"
             onClick={() => navigate('/admin/products/new')}
             disabled={!canUpdate}
             title={!canUpdate ? t('products.requirePermission') : undefined}
@@ -202,19 +200,20 @@ export function ProductListScreen({ navigate, canUpdate }) {
 
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
 
-      {/* Filter bar — primary + advanced filters inline as native selects */}
-      <div className="filter-bar">
-        <div className="filter-search">
-          <Search size={14} />
+      <div className="bb-filter-bar">
+        <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
+          <Search size={13} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--bb-text-muted)', pointerEvents: 'none' }} />
           <input
             type="search"
             value={searchInput}
-            onChange={(event) => setSearchInput(event.target.value)}
+            onChange={(e) => setSearchInput(e.target.value)}
             placeholder={t('products.searchPlaceholder')}
+            className="bb-input"
+            style={{ paddingLeft: 28, width: '100%' }}
           />
         </div>
         <select
-          className="filter-select"
+          className="bb-select"
           value={query.categoryId || 'ALL'}
           onChange={(e) => updateQuery({ categoryId: e.target.value === 'ALL' ? '' : e.target.value }, { resetPage: true })}
           aria-label={t('products.filterCategory')}
@@ -223,7 +222,7 @@ export function ProductListScreen({ navigate, canUpdate }) {
           {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
         <select
-          className="filter-select"
+          className="bb-select"
           value={query.brandId || 'ALL'}
           onChange={(e) => updateQuery({ brandId: e.target.value === 'ALL' ? '' : e.target.value }, { resetPage: true })}
           aria-label={t('products.filterBrand')}
@@ -232,7 +231,7 @@ export function ProductListScreen({ navigate, canUpdate }) {
           {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
         </select>
         <select
-          className="filter-select"
+          className="bb-select"
           value={query.publishStatus}
           onChange={(e) => updateQuery({ publishStatus: e.target.value }, { resetPage: true })}
           aria-label={t('products.filterPublish')}
@@ -244,10 +243,9 @@ export function ProductListScreen({ navigate, canUpdate }) {
           <option value="TRASH">{t('status.publish.TRASH')}</option>
         </select>
         <select
-          className="filter-select"
+          className="bb-select"
           value={query.stockState}
           onChange={(e) => updateQuery({ stockState: e.target.value }, { resetPage: true })}
-          title={t('products.filterStock')}
           aria-label={t('products.filterStock')}
         >
           <option value="ALL">{t('products.filterStock')}</option>
@@ -256,7 +254,7 @@ export function ProductListScreen({ navigate, canUpdate }) {
           <option value="OUT_OF_STOCK">{t('status.stock.OUT_OF_STOCK')}</option>
         </select>
         <select
-          className="filter-select"
+          className="bb-select"
           value={query.sort}
           onChange={(e) => updateQuery({ sort: e.target.value }, { resetPage: true })}
           aria-label={t('products.filterSort')}
@@ -305,140 +303,134 @@ export function ProductListScreen({ navigate, canUpdate }) {
       ) : null}
 
       {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) && (
-        <div className="card">
-          <div className="card-body card-body--flush">
-            <div className="table-wrap">
-              <table className="tbl">
-                <thead>
-                  <tr>
-                    <th>{t('products.colProduct')}</th>
-                    <th>SKU</th>
-                    <th className="num">{t('products.colPrice')}</th>
-                    <th>{t('products.colStock')}</th>
-                    <th>{t('products.colHomepage')}</th>
-                    <th>{t('products.colPublish')}</th>
-                    <th>{t('products.colUpdated')}</th>
-                    <th />
-                  </tr>
-                </thead>
-                <tbody>
-                  {state.status === 'loading' && items.length === 0 && (
-                    [...Array(8)].map((_, i) => (
-                      <tr key={`sk-${i}`}>
-                        <td colSpan={8}><div className="dash-skeleton-block" style={{ height: 32 }} /></td>
-                      </tr>
-                    ))
-                  )}
-                  {items.map((product) => {
-                    const isDeleting = deletingId === product.id
-                    const isRestoring = restoringId === product.id
-                    const isTrashed = product.publishStatus === 'TRASH'
-                    const isBusy = isDeleting || isRestoring
-                    const block = product.homepageBlock
-                    return (
-                      <tr key={product.id} onClick={() => navigate(`/admin/products/${product.id}`)}>
-                        <td>
-                          <div className="product-cell">
-                            <span className="thumb thumb-lg">
-                              {product.image?.url ? (
-                                <img
-                                  src={product.image.url}
-                                  alt={product.image.alt || product.name}
-                                  referrerPolicy="no-referrer"
-                                  loading="lazy"
-                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                />
-                              ) : (
-                                <Package size={22} />
-                              )}
-                            </span>
-                            <div className="info">
-                              <div className="name">{formatText(product.name)}</div>
-                            </div>
+        <div className="bb-card">
+          <div className="bb-table-wrap">
+            <table className="bb-table">
+              <thead>
+                <tr>
+                  <th>{t('products.colProduct')}</th>
+                  <th>SKU</th>
+                  <th className="num">{t('products.colPrice')}</th>
+                  <th>{t('products.colStock')}</th>
+                  <th>{t('products.colHomepage')}</th>
+                  <th>{t('products.colPublish')}</th>
+                  <th>{t('products.colUpdated')}</th>
+                  <th className="col-actions" />
+                </tr>
+              </thead>
+              <tbody>
+                {state.status === 'loading' && items.length === 0 && (
+                  [...Array(8)].map((_, i) => (
+                    <tr key={`sk-${i}`}>
+                      <td colSpan={8}><div className="bb-skeleton-block" style={{ height: 32 }} /></td>
+                    </tr>
+                  ))
+                )}
+                {items.map((product) => {
+                  const isDeleting = deletingId === product.id
+                  const isRestoring = restoringId === product.id
+                  const isTrashed = product.publishStatus === 'TRASH'
+                  const isBusy = isDeleting || isRestoring
+                  const block = product.homepageBlock
+                  return (
+                    <tr key={product.id} onClick={() => navigate(`/admin/products/${product.id}`)}>
+                      <td>
+                        <div className="bb-product-cell">
+                          <span className="bb-product-thumb" style={{ width: 40, height: 40 }}>
+                            {product.image?.url ? (
+                              <img
+                                src={product.image.url}
+                                alt={product.image.alt || product.name}
+                                referrerPolicy="no-referrer"
+                                loading="lazy"
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              />
+                            ) : (
+                              <Package size={22} />
+                            )}
+                          </span>
+                          <span>{formatText(product.name)}</span>
+                        </div>
+                      </td>
+                      <td className="mono">{formatText(product.sku, 'SKU TBD')}</td>
+                      <td className="num" style={{ fontWeight: 700 }}>
+                        {formatCurrencyVnd(product.price?.retailPrice)}
+                        {product.price?.salePrice ? (
+                          <div className="bb-cell-sub" style={{ textDecoration: 'line-through' }}>
+                            {formatCurrencyVnd(product.price.salePrice)}
                           </div>
-                        </td>
-                        <td className="id-cell">{formatText(product.sku, 'SKU TBD')}</td>
-                        <td className="num fw-700">
-                          {formatCurrencyVnd(product.price?.retailPrice)}
-                          {product.price?.salePrice ? (
-                            <div className="text-xs muted" style={{ textDecoration: 'line-through' }}>
-                              {formatCurrencyVnd(product.price.salePrice)}
-                            </div>
-                          ) : null}
-                        </td>
-                        <td><StockStatusBadge value={product.stockState} /></td>
-                        <td>
-                          {!block || block === 'NONE' ? (
-                            <span className="muted">—</span>
-                          ) : (
-                            <span className="text-xs fw-600">
-                              {t('products.homepageFeatured')}
-                              {Number.isFinite(product.homepageOrder) ? ` · #${product.homepageOrder}` : ''}
-                            </span>
-                          )}
-                        </td>
-                        <td><PublishStatusBadge value={product.publishStatus} /></td>
-                        <td className="muted text-xs">{formatDateTime(product.updatedAt)}</td>
-                        <td className="actions-cell" onClick={(e) => e.stopPropagation()}>
+                        ) : null}
+                      </td>
+                      <td><StockStatusBadge value={product.stockState} /></td>
+                      <td>
+                        {!block || block === 'NONE' ? (
+                          <span className="bb-muted">—</span>
+                        ) : (
+                          <span style={{ fontSize: 12.5, fontWeight: 600 }}>
+                            {t('products.homepageFeatured')}
+                            {Number.isFinite(product.homepageOrder) ? ` · #${product.homepageOrder}` : ''}
+                          </span>
+                        )}
+                      </td>
+                      <td><PublishStatusBadge value={product.publishStatus} /></td>
+                      <td className="bb-muted">{formatDateTime(product.updatedAt)}</td>
+                      <td className="col-actions" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          className="bb-icon-btn"
+                          title={t('common.edit')}
+                          onClick={() => navigate(`/admin/products/${product.id}`)}
+                        >
+                          <Pencil size={14} />
+                        </button>
+                        <div style={{ position: 'relative', display: 'inline-block' }}>
                           <button
                             type="button"
-                            className="icon-btn"
-                            title={t('common.edit')}
-                            onClick={() => navigate(`/admin/products/${product.id}`)}
+                            className="bb-icon-btn"
+                            data-row-menu-trigger
+                            title={t('common.actions')}
+                            onClick={() => setOpenMenu(openMenu === product.id ? null : product.id)}
                           >
-                            <Pencil size={14} />
+                            <MoreHorizontal size={15} />
                           </button>
-                          <div style={{ position: 'relative', display: 'inline-block' }}>
-                            <button
-                              type="button"
-                              className="icon-btn"
-                              data-row-menu-trigger
-                              title={t('common.actions')}
-                              onClick={() => setOpenMenu(openMenu === product.id ? null : product.id)}
-                            >
-                              <MoreHorizontal size={15} />
-                            </button>
-                            {openMenu === product.id && (
-                              <div className="row-menu">
-                                <button type="button" onClick={() => { setOpenMenu(null); navigate(`/admin/products/${product.id}`) }}>
-                                  <Pencil size={13} />{t('common.edit')}
+                          {openMenu === product.id && (
+                            <div className="bb-row-menu">
+                              <button type="button" onClick={() => { setOpenMenu(null); navigate(`/admin/products/${product.id}`) }}>
+                                <Pencil size={13} />{t('common.edit')}
+                              </button>
+                              {canUpdate && (
+                                <button type="button" onClick={() => { setOpenMenu(null); handleDuplicate(product) }}>
+                                  <Copy size={13} />{t('products.duplicate')}
                                 </button>
-                                {canUpdate && (
-                                  <button type="button" onClick={() => { setOpenMenu(null); handleDuplicate(product) }}>
-                                    <Copy size={13} />{t('products.duplicate')}
+                              )}
+                              {canUpdate && isTrashed && (
+                                <button type="button" disabled={isBusy} onClick={() => { setOpenMenu(null); handleRestore(product) }}>
+                                  <Undo2 size={13} />{isRestoring ? t('products.restoringLabel') : t('products.restore')}
+                                </button>
+                              )}
+                              {canUpdate && !isTrashed && (
+                                <>
+                                  <hr />
+                                  <button type="button" className="danger" disabled={isBusy} onClick={() => { setOpenMenu(null); handleDelete(product) }}>
+                                    <Trash2 size={13} />{isDeleting ? t('products.deletingLabel') : t('common.delete')}
                                   </button>
-                                )}
-                                {canUpdate && isTrashed && (
-                                  <button type="button" disabled={isBusy} onClick={() => { setOpenMenu(null); handleRestore(product) }}>
-                                    <Undo2 size={13} />{isRestoring ? t('products.restoringLabel') : t('products.restore')}
-                                  </button>
-                                )}
-                                {canUpdate && !isTrashed && (
-                                  <>
-                                    <hr />
-                                    <button type="button" className="danger" disabled={isBusy} onClick={() => { setOpenMenu(null); handleDelete(product) }}>
-                                      <Trash2 size={13} />{isDeleting ? t('products.deletingLabel') : t('common.delete')}
-                                    </button>
-                                  </>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
           </div>
           {state.status === 'success' && pagination && (
-            <div className="px-[18px] py-3 border-t border-border">
-              <PaginationControls
-                pagination={pagination}
-                onPageChange={(p) => updateQuery({ page: p })}
-              />
-            </div>
+            <PaginationControls
+              pagination={pagination}
+              onPageChange={(p) => updateQuery({ page: p })}
+            />
           )}
         </div>
       )}

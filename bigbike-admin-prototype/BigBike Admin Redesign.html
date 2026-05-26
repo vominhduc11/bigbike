@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=1280, initial-scale=1"/>
+  <title>BigBike Admin · Redesign</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="tokens.css"/>
+  <style>
+    html, body { background: var(--bb-bg); }
+    body { font-feature-settings: "cv11", "ss01", "tnum"; }
+
+    /* Top-level meta nav (the only chrome the user sees outside the prototype) */
+    .meta-shell { min-height: 100vh; }
+    .meta-stage { background: var(--bb-bg); }
+
+    /* Stage view for the prototype: pad slightly so the user sees this is a prototype, but the prototype itself looks production-like */
+    .stage-frame {
+      border-top: 1px solid var(--bb-border);
+      min-height: calc(100vh - 44px);
+      background: var(--bb-bg);
+    }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<!-- React + Babel (pinned with SRI per system guidance) -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<!-- Modules — global window.* exports keep cross-file scope simple -->
+<script type="text/babel" src="screens.jsx"></script>
+<script type="text/babel" src="prototype.jsx"></script>
+<script type="text/babel" src="designsystem.jsx"></script>
+<script type="text/babel" src="spec.jsx"></script>
+
+<!-- Mount -->
+<script type="text/babel">
+  const { useState, useEffect } = React;
+
+  function MetaNav({ tab, setTab, theme, setTheme }) {
+    return (
+      <div className="bb-meta-tabs">
+        <div className="title">
+          <span className="dot"/>
+          BigBike Admin · Redesign
+        </div>
+        <button className={tab==="prototype"?"active":""} onClick={()=>setTab("prototype")}>Prototype</button>
+        <button className={tab==="ds"?"active":""}        onClick={()=>setTab("ds")}>Design System</button>
+        <button className={tab==="spec"?"active":""}      onClick={()=>setTab("spec")}>Spec &amp; Inventory</button>
+        <div className="right">
+          <span style={{fontSize: 11.5, color: "var(--bb-text-muted)", marginRight: 4}}>{theme === "dark" ? "Dark" : "Light"}</span>
+          <button
+            className="bb-icon-btn"
+            onClick={()=>setTheme(t => t === "dark" ? "light" : "dark")}
+            title="Toggle theme"
+          >
+            {theme === "dark"
+              ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+              : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            }
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  function App() {
+    const [tab, setTab] = useState(() => {
+      try { return localStorage.getItem("bb-tab") || "prototype"; } catch { return "prototype"; }
+    });
+    const [theme, setTheme] = useState(() => {
+      try { return localStorage.getItem("bb-theme") || "light"; } catch { return "light"; }
+    });
+    const [showLogin, setShowLogin] = useState(false);
+
+    useEffect(() => {
+      document.documentElement.setAttribute("data-theme", theme);
+      try { localStorage.setItem("bb-theme", theme); } catch {}
+    }, [theme]);
+
+    useEffect(() => {
+      try { localStorage.setItem("bb-tab", tab); } catch {}
+    }, [tab]);
+
+    return (
+      <div className="meta-shell">
+        <MetaNav tab={tab} setTab={setTab} theme={theme} setTheme={setTheme}/>
+        <div className="stage-frame">
+          {tab === "prototype" && !showLogin && (
+            <window.PrototypeApp onShowLogin={()=>setShowLogin(true)}/>
+          )}
+          {tab === "prototype" && showLogin && (
+            <div style={{position:"relative"}}>
+              <window.LoginScreen onLogin={()=>setShowLogin(false)}/>
+              <button
+                className="bb-btn bb-btn-secondary"
+                onClick={()=>setShowLogin(false)}
+                style={{position:"fixed", top:60, right:24, zIndex:1000}}
+              >← Quay lại prototype</button>
+            </div>
+          )}
+          {tab === "ds"        && <window.DesignSystem/>}
+          {tab === "spec"      && <window.SpecDoc/>}
+        </div>
+      </div>
+    );
+  }
+
+  ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>

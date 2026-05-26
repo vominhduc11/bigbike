@@ -1,20 +1,7 @@
-/**
- * SummaryCardGrid — auto-fit grid wrapping SummaryCard children.
- */
 export function SummaryCardGrid({ children }) {
-  return <div className="summary-card-grid">{children}</div>
+  return <div className="bb-kpi-grid">{children}</div>
 }
 
-/**
- * SummaryCard — KPI / metric card.
- *
- * If `onClick` is provided, the card renders as a <button> and acts as a
- * filter shortcut. If `active` is true, the card is highlighted.
- *
- * `trend` — optional node rendered below the value (e.g. a trend pill).
- *
- * tone: brand | success | warning | danger | info | neutral
- */
 export function SummaryCard({
   label,
   value,
@@ -26,40 +13,32 @@ export function SummaryCard({
   active = false,
   ariaLabel,
 }) {
-  const className = [
-    'summary-card',
-    active ? 'is-active' : null,
+  const cls = [
+    'bb-kpi',
+    onClick ? 'clickable' : '',
+    active ? 'active' : '',
   ].filter(Boolean).join(' ')
 
   const inner = (
     <>
-      <div className="summary-card-head">
-        {icon ? (
-          <span className={`summary-card-icon summary-card-icon--${tone}`} aria-hidden="true">
-            {icon}
-          </span>
-        ) : null}
+      <div className="bb-kpi-head">
         <span>{label}</span>
+        {icon ? (
+          <span className={`bb-kpi-icon ${tone}`} aria-hidden="true">{icon}</span>
+        ) : null}
       </div>
-      <div className="summary-card-value">{value}</div>
-      {trend ? <div className="summary-card-trend">{trend}</div> : null}
-      {hint ? <div className="summary-card-hint">{hint}</div> : null}
+      <div className="bb-kpi-value">{value}</div>
+      {trend ? <div className="bb-kpi-trend">{trend}</div> : null}
+      {hint ? <div className="bb-cell-sub">{hint}</div> : null}
     </>
   )
 
   if (onClick) {
     return (
-      <button
-        type="button"
-        className={className}
-        onClick={onClick}
-        aria-pressed={active}
-        aria-label={ariaLabel}
-      >
+      <button type="button" className={cls} onClick={onClick} aria-pressed={active} aria-label={ariaLabel}>
         {inner}
       </button>
     )
   }
-
-  return <div className={className}>{inner}</div>
+  return <div className={cls}>{inner}</div>
 }

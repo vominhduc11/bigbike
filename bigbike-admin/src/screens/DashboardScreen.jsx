@@ -38,8 +38,6 @@ import {
 
 const PENDING_WARN_THRESHOLD = 5
 
-// Pie/legend colors reference the design tokens so the chart follows
-// light/dark theme instead of carrying hardcoded hex values.
 const ORDER_STATUS_COLORS = {
   PENDING:    'var(--admin-color-status-warning-text)',
   ON_HOLD:    'var(--admin-color-text-muted)',
@@ -50,9 +48,6 @@ const ORDER_STATUS_COLORS = {
   REFUNDED:   'var(--admin-color-text-muted)',
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-// Chart Y-axis: revenue values are scaled to millions so the axis stays readable.
 function fmtAxisMillions(value) {
   if (!value && value !== 0) return ''
   return (value / 1_000_000).toFixed(value >= 10_000_000 ? 0 : 1)
@@ -64,15 +59,13 @@ function fmtIsoDateShort(isoDate) {
   return `${parseInt(d)}/${parseInt(m)}`
 }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
-
 function RevenueTooltip({ active, payload, label, ordersUnit }) {
   if (!active || !payload?.length) return null
   return (
-    <div className="dash-tooltip">
-      <div className="dash-tooltip-date">{fmtIsoDateShort(label)}</div>
+    <div className="bb-dash-tooltip">
+      <div className="bb-dash-tooltip-date">{fmtIsoDateShort(label)}</div>
       {payload.map((p) => (
-        <div key={p.dataKey} className="dash-tooltip-row">
+        <div key={p.dataKey} className="bb-dash-tooltip-row">
           {p.name}: {p.dataKey === 'revenue' ? formatVndShort(p.value) : `${p.value} ${ordersUnit}`}
         </div>
       ))}
@@ -86,17 +79,15 @@ function PieTooltip({ active, payload, orderUnit }) {
   const total = d.payload?.total || 1
   const pct = Math.round((d.value / total) * 100)
   return (
-    <div className="dash-tooltip">
-      <div className="dash-tooltip-name">{d.name}</div>
-      <div className="dash-tooltip-meta">
+    <div className="bb-dash-tooltip">
+      <div className="bb-dash-tooltip-name">{d.name}</div>
+      <div className="bb-dash-tooltip-meta">
         {d.value} {orderUnit} ({pct}%)
       </div>
     </div>
   )
 }
 
-// KPI trend pill — prototype .kpi-trend styling. Renders a clear "no data"
-// fallback rather than fabricating a number when the backend sends null.
 function TrendPill({ direction, label }) {
   const cls = direction === 'up' ? 'up' : direction === 'down' ? 'down' : 'flat'
   const icon =
@@ -104,34 +95,30 @@ function TrendPill({ direction, label }) {
     direction === 'down' ? <TrendingDown size={10} /> :
     <Minus size={10} />
   return (
-    <span className={`kpi-trend ${cls}`}>
+    <span className={`bb-kpi-trend ${cls}`}>
       {icon}{label}
     </span>
   )
 }
 
-// Inline empty state for cards — keeps card framing so nothing looks broken.
 function SectionEmpty({ title, description }) {
   return (
-    <div className="state-panel">
-      <h3>{title}</h3>
+    <div className="bb-state">
+      <h4>{title}</h4>
       {description ? <p>{description}</p> : null}
     </div>
   )
 }
 
 function SkeletonBlock({ height = 280 }) {
-  return <div className="dash-skeleton-block" style={{ height }} />
+  return <div className="bb-skeleton-block" style={{ height }} />
 }
-
-// ── Main screen ───────────────────────────────────────────────────────────────
 
 export function DashboardScreen({ navigate }) {
   const { t, i18n } = useTranslation()
   const { user } = useAuth()
   const [period, setPeriod] = useState('30d')
 
-  // Time-of-day greeting hero — a personable header instead of a generic title.
   const now = new Date()
   const hour = now.getHours()
   const greetingKey =
@@ -149,8 +136,6 @@ export function DashboardScreen({ navigate }) {
     staleTime: 60_000,
   })
 
-  // Side-fetches for the "attention" section. Each is independent and tolerates
-  // failure (returns 0). Cache keys match Receivables/Inventory/Returns screens.
   const { data: arSummary } = useQuery({
     queryKey: ['receivable-summary'],
     queryFn: fetchReceivableSummary,
@@ -197,7 +182,6 @@ export function DashboardScreen({ navigate }) {
   const recentOrders = data?.recentOrders ?? []
   const topProducts = data?.topProducts ?? []
 
-  // ── KPI trend resolution — uses backend-provided fields only ────────────────
   function revenueTrend(kpi) {
     const pct = kpi?.todayRevenuePct
     if (pct == null) return { direction: 'neutral', label: t('dashboard.kpi.trendNoData') }
@@ -214,7 +198,6 @@ export function DashboardScreen({ navigate }) {
     return { direction: 'neutral', label: t('dashboard.kpi.ordersDeltaFlat') }
   }
 
-  // Attention items: only render the ones with count > 0.
   const pendingOrdersCount = data?.kpi.pendingOrders ?? 0
   const overdueCount = arSummary?.countOverdue ?? 0
   const overdueAmount = arSummary?.overdueOutstanding ?? 0
@@ -222,9 +205,8 @@ export function DashboardScreen({ navigate }) {
   const outOfStockCount = invSummary?.outOfStockCount ?? 0
   const pendingReturnsCount = pendingReturns?.pagination?.totalItems ?? 0
 
-  // severity drives color (prototype attn tone) + sort order.
   const SEVERITY_RANK = { high: 0, medium: 1, low: 2 }
-  const SEVERITY_TONE = { high: 'danger', medium: 'warn', low: 'info' }
+  const SEVERITY_TONE = { high: 'danger', medium: 'warning', low: 'info' }
 
   const attentionItems = [
     overdueCount > 0 && {
@@ -273,22 +255,21 @@ export function DashboardScreen({ navigate }) {
 
   return (
     <div>
-      {/* Screen header — prototype eyebrow / greeting / period segment */}
-      <div className="screen-header">
-        <div>
-          <p className="eyebrow">{t('dashboard.eyebrow')}</p>
+      <div className="bb-screen-header">
+        <div className="bb-screen-title">
+          <p className="bb-screen-eyebrow">{t('dashboard.eyebrow')}</p>
           <h1>{t(`dashboard.${greetingKey}`, { name: firstName })}</h1>
-          <p className="desc">{t('dashboard.greetingDesc', { date: todayLabel })}</p>
+          <p className="bb-muted">{t('dashboard.greetingDesc', { date: todayLabel })}</p>
         </div>
-        <div className="actions">
-          <div className="seg" role="tablist" aria-label={t('dashboard.periodLabel')}>
+        <div className="bb-screen-actions">
+          <div className="bb-seg" role="tablist" aria-label={t('dashboard.periodLabel')}>
             {periodTabs.map((tab) => (
               <button
                 key={tab.key}
                 type="button"
                 role="tab"
                 aria-selected={period === tab.key}
-                className={`seg-tab${period === tab.key ? ' active' : ''}`}
+                className={period === tab.key ? 'active' : ''}
                 onClick={() => setPeriod(tab.key)}
               >
                 {tab.label}
@@ -308,16 +289,15 @@ export function DashboardScreen({ navigate }) {
         />
       )}
 
-      {/* Skeleton — initial load only */}
       {state.status === 'loading' && !data && (
         <>
-          <div className="kpi-grid">
+          <div className="bb-kpi-grid">
             {[...Array(4)].map((_, i) => (
               <SkeletonBlock key={i} height={120} />
             ))}
           </div>
           <SkeletonBlock height={84} />
-          <div className="grid-2-1 mb-4">
+          <div className="bb-grid-2-1">
             <SkeletonBlock height={300} />
             <SkeletonBlock height={300} />
           </div>
@@ -326,17 +306,17 @@ export function DashboardScreen({ navigate }) {
 
       {data && (
         <>
-          {/* KPI cards — prototype .kpi-grid */}
-          <div className="kpi-grid">
-            <div className="kpi" onClick={() => navigate('/admin/reports')}>
-              <div className="kpi-head">
-                <span className="kpi-icon red"><CircleDollarSign size={15} /></span>
+          {/* KPI cards */}
+          <div className="bb-kpi-grid">
+            <div className="bb-kpi clickable" onClick={() => navigate('/admin/reports')}>
+              <div className="bb-kpi-head">
                 <span>{t('dashboard.kpi.todayRevenue')}</span>
+                <span className="bb-kpi-icon brand"><CircleDollarSign size={15} /></span>
               </div>
-              <div className="kpi-value">{formatVndShort(data.kpi.todayRevenue)}</div>
-              <div className="kpi-foot">
+              <div className="bb-kpi-value">{formatVndShort(data.kpi.todayRevenue)}</div>
+              <div className="bb-kpi-foot">
                 <TrendPill {...revenueTrend(data.kpi)} />
-                <span className="kpi-foot-label">
+                <span className="bb-kpi-foot-label">
                   {data.kpi.todayPaidRevenue != null
                     ? t('dashboard.kpi.todayPaid', { amount: formatVndShort(data.kpi.todayPaidRevenue) })
                     : t('dashboard.kpi.todayRevenueHint')}
@@ -344,93 +324,91 @@ export function DashboardScreen({ navigate }) {
               </div>
             </div>
 
-            <div className="kpi" onClick={() => navigate('/admin/orders')}>
-              <div className="kpi-head">
-                <span className="kpi-icon blue"><ShoppingBag size={15} /></span>
+            <div className="bb-kpi clickable" onClick={() => navigate('/admin/orders')}>
+              <div className="bb-kpi-head">
                 <span>{t('dashboard.kpi.todayOrders')}</span>
+                <span className="bb-kpi-icon info"><ShoppingBag size={15} /></span>
               </div>
-              <div className="kpi-value">{data.kpi.todayOrders.toLocaleString('vi-VN')}</div>
-              <div className="kpi-foot">
+              <div className="bb-kpi-value">{data.kpi.todayOrders.toLocaleString('vi-VN')}</div>
+              <div className="bb-kpi-foot">
                 <TrendPill {...ordersTrend(data.kpi)} />
-                <span className="kpi-foot-label">{t('dashboard.kpi.todayOrdersHint')}</span>
+                <span className="bb-kpi-foot-label">{t('dashboard.kpi.todayOrdersHint')}</span>
               </div>
             </div>
 
-            <div className="kpi" onClick={() => navigate('/admin/orders')}>
-              <div className="kpi-head">
-                <span className={`kpi-icon ${data.kpi.pendingOrders > PENDING_WARN_THRESHOLD ? 'red' : 'amber'}`}>
+            <div className="bb-kpi clickable" onClick={() => navigate('/admin/orders')}>
+              <div className="bb-kpi-head">
+                <span>{t('dashboard.kpi.pendingOrders')}</span>
+                <span className={`bb-kpi-icon ${data.kpi.pendingOrders > PENDING_WARN_THRESHOLD ? 'danger' : 'warning'}`}>
                   <Clock size={15} />
                 </span>
-                <span>{t('dashboard.kpi.pendingOrders')}</span>
               </div>
-              <div className="kpi-value">{data.kpi.pendingOrders.toLocaleString('vi-VN')}</div>
-              <div className="kpi-foot">
-                <span className="kpi-foot-label">{t('dashboard.kpi.pendingOrdersHint')}</span>
+              <div className="bb-kpi-value">{data.kpi.pendingOrders.toLocaleString('vi-VN')}</div>
+              <div className="bb-kpi-foot">
+                <span className="bb-kpi-foot-label">{t('dashboard.kpi.pendingOrdersHint')}</span>
               </div>
             </div>
 
-            <div className="kpi" onClick={() => navigate('/admin/products')}>
-              <div className="kpi-head">
-                <span className="kpi-icon green"><Package size={15} /></span>
+            <div className="bb-kpi clickable" onClick={() => navigate('/admin/products')}>
+              <div className="bb-kpi-head">
                 <span>{t('dashboard.kpi.activeProducts')}</span>
+                <span className="bb-kpi-icon success"><Package size={15} /></span>
               </div>
-              <div className="kpi-value">{data.kpi.activeProducts.toLocaleString('vi-VN')}</div>
-              <div className="kpi-foot">
-                <span className="kpi-foot-label">{t('dashboard.kpi.activeProductsHint')}</span>
+              <div className="bb-kpi-value">{data.kpi.activeProducts.toLocaleString('vi-VN')}</div>
+              <div className="bb-kpi-foot">
+                <span className="bb-kpi-foot-label">{t('dashboard.kpi.activeProductsHint')}</span>
               </div>
             </div>
           </div>
 
-          {/* Charts row — prototype 2:1 grid */}
-          <div className="grid-2-1 mb-4">
-            <div className="card">
-              <div className="card-head">
+          {/* Charts row — 2:1 layout */}
+          <div className="bb-grid-2-1">
+            <div className="bb-card">
+              <div className="bb-card-header">
                 <div>
-                  <h2>{t('dashboard.revenueChart.title')}</h2>
-                  <p className="sub">{t('dashboard.revenueChart.subtitle')}</p>
+                  <h3>{t('dashboard.revenueChart.title')}</h3>
+                  <p>{t('dashboard.revenueChart.subtitle')}</p>
                 </div>
               </div>
-              <div className="card-body">
+              <div className="bb-card-body">
                 {hasRevenue ? (
-                  <div className="dash-chart-box">
-                    <ResponsiveContainer width="100%" height={260}>
-                      <AreaChart data={revenueData} margin={{ top: 4, right: 16, left: 8, bottom: 0 }}>
-                        <defs>
-                          <linearGradient id="grad-revenue" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="var(--admin-color-brand-red)" stopOpacity={0.18} />
-                            <stop offset="95%" stopColor="var(--admin-color-brand-red)" stopOpacity={0.01} />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="var(--admin-color-border-subtle)" vertical={false} />
-                        <XAxis
-                          dataKey="date"
-                          tick={{ fontSize: 11, fill: 'var(--admin-color-text-secondary)' }}
-                          tickLine={false}
-                          axisLine={false}
-                          interval={Math.max(0, Math.floor(revenueData.length / 6))}
-                          tickFormatter={fmtIsoDateShort}
-                        />
-                        <YAxis
-                          tick={{ fontSize: 11, fill: 'var(--admin-color-text-secondary)' }}
-                          tickLine={false}
-                          axisLine={false}
-                          tickFormatter={fmtAxisMillions}
-                          width={40}
-                        />
-                        <Tooltip content={<RevenueTooltip ordersUnit={t('dashboard.revenueChart.ordersAxis')} />} />
-                        <Area
-                          type="monotone"
-                          dataKey="revenue"
-                          name={t('dashboard.revenueChart.revenue')}
-                          stroke="var(--admin-color-brand-red)"
-                          strokeWidth={2}
-                          fill="url(#grad-revenue)"
-                          dot={false}
-                          activeDot={{ r: 5, strokeWidth: 0 }}
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
+                  <ResponsiveContainer width="100%" height={260}>
+                    <AreaChart data={revenueData} margin={{ top: 4, right: 16, left: 8, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="grad-revenue" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="var(--bb-brand)" stopOpacity={0.18} />
+                          <stop offset="95%" stopColor="var(--bb-brand)" stopOpacity={0.01} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--bb-border-faint)" vertical={false} />
+                      <XAxis
+                        dataKey="date"
+                        tick={{ fontSize: 11, fill: 'var(--bb-text-muted)' }}
+                        tickLine={false}
+                        axisLine={false}
+                        interval={Math.max(0, Math.floor(revenueData.length / 6))}
+                        tickFormatter={fmtIsoDateShort}
+                      />
+                      <YAxis
+                        tick={{ fontSize: 11, fill: 'var(--bb-text-muted)' }}
+                        tickLine={false}
+                        axisLine={false}
+                        tickFormatter={fmtAxisMillions}
+                        width={40}
+                      />
+                      <Tooltip content={<RevenueTooltip ordersUnit={t('dashboard.revenueChart.ordersAxis')} />} />
+                      <Area
+                        type="monotone"
+                        dataKey="revenue"
+                        name={t('dashboard.revenueChart.revenue')}
+                        stroke="var(--bb-brand)"
+                        strokeWidth={2}
+                        fill="url(#grad-revenue)"
+                        dot={false}
+                        activeDot={{ r: 5, strokeWidth: 0 }}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
                 ) : (
                   <SectionEmpty
                     title={t('dashboard.revenueChart.empty')}
@@ -440,18 +418,22 @@ export function DashboardScreen({ navigate }) {
               </div>
             </div>
 
-            <div className="card">
-              <div className="card-head">
-                <h2>{t('dashboard.orderStatusChart.title')}</h2>
+            <div className="bb-card">
+              <div className="bb-card-header">
+                <h3>{t('dashboard.orderStatusChart.title')}</h3>
                 {pieTotal > 0 && (
-                  <button type="button" className="btn-ghost text-xs text-primary-red fw-600" onClick={() => navigate('/admin/orders')}>
+                  <button
+                    type="button"
+                    className="bb-btn bb-btn-ghost bb-btn-sm"
+                    onClick={() => navigate('/admin/orders')}
+                  >
                     {t('dashboard.orderStatusChart.viewAll')} →
                   </button>
                 )}
               </div>
-              <div className="card-body">
+              <div className="bb-card-body">
                 {pieTotal > 0 ? (
-                  <div className="dash-pie-box">
+                  <div>
                     <ResponsiveContainer width="100%" height={200}>
                       <PieChart>
                         <Pie
@@ -477,18 +459,18 @@ export function DashboardScreen({ navigate }) {
                           onClick={() => navigate('/admin/orders')}
                           style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, cursor: 'pointer' }}
                         >
-                          <span style={{ width: 10, height: 10, borderRadius: 3, background: d.color }} />
-                          <span style={{ flex: 1, color: 'var(--admin-color-text-secondary)' }}>{d.name}</span>
-                          <span style={{ fontWeight: 700, color: 'var(--admin-color-text-primary)' }}>
+                          <span style={{ width: 10, height: 10, borderRadius: 3, background: d.color, flexShrink: 0 }} />
+                          <span style={{ flex: 1, color: 'var(--bb-text-muted)' }}>{d.name}</span>
+                          <span style={{ fontWeight: 700, color: 'var(--bb-text)' }}>
                             {d.count}
-                            <span className="muted" style={{ fontWeight: 400, marginLeft: 4 }}>
+                            <span className="bb-muted" style={{ fontWeight: 400, marginLeft: 4 }}>
                               ({pieTotal > 0 ? Math.round((d.count / pieTotal) * 100) : 0}%)
                             </span>
                           </span>
                         </div>
                       ))}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 8, marginTop: 4, borderTop: '1px dashed var(--admin-color-border-default)', fontSize: 13 }}>
-                        <span className="muted">{t('dashboard.orderStatusChart.total')}</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 8, marginTop: 4, borderTop: '1px dashed var(--bb-border)', fontSize: 13 }}>
+                        <span className="bb-muted">{t('dashboard.orderStatusChart.total')}</span>
                         <strong>{pieTotal}</strong>
                       </div>
                     </div>
@@ -500,40 +482,41 @@ export function DashboardScreen({ navigate }) {
             </div>
           </div>
 
-          {/* Attention — prototype .attn-list */}
-          <div className="card mb-4">
-            <div className="card-head">
+          {/* Attention items */}
+          <div className="bb-card" style={{ marginBottom: 16 }}>
+            <div className="bb-card-header">
               <div>
-                <h2>{t('dashboard.attention.title')}</h2>
-                <p className="sub">{t('dashboard.attention.description')}</p>
+                <h3>{t('dashboard.attention.title')}</h3>
+                <p>{t('dashboard.attention.description')}</p>
               </div>
             </div>
-            <div className="card-body">
+            <div className="bb-card-body">
               {attentionItems.length === 0 ? (
                 <SectionEmpty
                   title={t('dashboard.attention.empty')}
                   description={t('dashboard.attention.emptyDesc')}
                 />
               ) : (
-                <div className="attn-list">
+                <div>
                   {attentionItems.map((item) => (
                     <div
                       key={item.key}
-                      className={`attn-item ${SEVERITY_TONE[item.severity]}`}
+                      className="bb-attention-item"
                       onClick={item.onClick}
                       role="button"
                       tabIndex={0}
                       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') item.onClick() }}
                     >
-                      <span className="attn-icon" aria-hidden="true">{item.icon}</span>
-                      <div className="attn-body">
-                        <div className="attn-title">{item.label}</div>
-                        <div className="attn-desc">{item.hint}</div>
+                      <span className={`bb-attention-sev ${SEVERITY_TONE[item.severity]}`} />
+                      <span className="bb-attention-icon" aria-hidden="true">{item.icon}</span>
+                      <div className="bb-attention-body">
+                        <div className="bb-attention-title">{item.label}</div>
+                        <div className="bb-attention-desc">{item.hint}</div>
                       </div>
-                      <span className="attn-count">{item.count}</span>
+                      <span className="bb-attention-count">{item.count}</span>
                       <button
                         type="button"
-                        className="btn btn-ghost btn-sm"
+                        className="bb-btn bb-btn-ghost bb-btn-sm"
                         onClick={(e) => { e.stopPropagation(); item.onClick() }}
                       >
                         {item.cta} →
@@ -545,23 +528,25 @@ export function DashboardScreen({ navigate }) {
             </div>
           </div>
 
-          {/* Tables row — recent orders + top products */}
-          <div className="grid-2">
-            <div className="card">
-              <div className="card-head">
-                <div>
-                  <h2>{t('dashboard.recentOrders.title')}</h2>
-                </div>
+          {/* Recent orders + top products */}
+          <div className="bb-grid-2">
+            <div className="bb-card">
+              <div className="bb-card-header">
+                <h3>{t('dashboard.recentOrders.title')}</h3>
                 {recentOrders.length > 0 && (
-                  <button type="button" className="btn-ghost text-xs text-primary-red fw-600" onClick={() => navigate('/admin/orders')}>
+                  <button
+                    type="button"
+                    className="bb-btn bb-btn-ghost bb-btn-sm"
+                    onClick={() => navigate('/admin/orders')}
+                  >
                     {t('dashboard.recentOrders.viewAll')} →
                   </button>
                 )}
               </div>
-              <div className="card-body card-body--flush">
+              <div className="bb-card-body--flush">
                 {recentOrders.length > 0 ? (
-                  <div className="table-wrap">
-                    <table className="tbl">
+                  <div className="bb-table-wrap">
+                    <table className="bb-table">
                       <thead>
                         <tr>
                           <th>{t('dashboard.recentOrders.orderNumber')}</th>
@@ -573,11 +558,11 @@ export function DashboardScreen({ navigate }) {
                       <tbody>
                         {recentOrders.map((order) => (
                           <tr key={order.id} onClick={() => navigate(`/admin/orders/${order.id}`)}>
-                            <td className="id-cell">{order.orderNumber}</td>
+                            <td className="mono">{order.orderNumber}</td>
                             <td title={order.customerName || order.customerEmail || ''}>
                               {order.customerName || order.customerEmail}
                             </td>
-                            <td className="num fw-600">{formatVndShort(order.total)}</td>
+                            <td className="num" style={{ fontWeight: 600 }}>{formatVndShort(order.total)}</td>
                             <td><StatusBadge type="order" status={order.orderStatus} /></td>
                           </tr>
                         ))}
@@ -585,29 +570,33 @@ export function DashboardScreen({ navigate }) {
                     </table>
                   </div>
                 ) : (
-                  <SectionEmpty
-                    title={t('dashboard.recentOrders.empty')}
-                    description={t('dashboard.recentOrders.emptyDesc')}
-                  />
+                  <div className="bb-card-body">
+                    <SectionEmpty
+                      title={t('dashboard.recentOrders.empty')}
+                      description={t('dashboard.recentOrders.emptyDesc')}
+                    />
+                  </div>
                 )}
               </div>
             </div>
 
-            <div className="card">
-              <div className="card-head">
-                <div>
-                  <h2>{t('dashboard.topProducts.title')}</h2>
-                </div>
+            <div className="bb-card">
+              <div className="bb-card-header">
+                <h3>{t('dashboard.topProducts.title')}</h3>
                 {topProducts.length > 0 && (
-                  <button type="button" className="btn-ghost text-xs text-primary-red fw-600" onClick={() => navigate('/admin/products')}>
+                  <button
+                    type="button"
+                    className="bb-btn bb-btn-ghost bb-btn-sm"
+                    onClick={() => navigate('/admin/products')}
+                  >
                     {t('dashboard.topProducts.viewAll')} →
                   </button>
                 )}
               </div>
-              <div className="card-body card-body--flush">
+              <div className="bb-card-body--flush">
                 {topProducts.length > 0 ? (
-                  <div className="table-wrap">
-                    <table className="tbl">
+                  <div className="bb-table-wrap">
+                    <table className="bb-table">
                       <thead>
                         <tr>
                           <th style={{ width: 36 }}>{t('dashboard.topProducts.rank')}</th>
@@ -617,40 +606,35 @@ export function DashboardScreen({ navigate }) {
                         </tr>
                       </thead>
                       <tbody>
-                        {topProducts.map((product, idx) => {
-                          const top3 = idx < 3
-                          return (
-                            <tr key={product.productId} onClick={() => navigate(`/admin/products/${product.productId}`)}>
-                              <td>
-                                <span style={{
-                                  display: 'inline-flex', width: 22, height: 22, borderRadius: 5,
-                                  alignItems: 'center', justifyContent: 'center',
-                                  background: top3 ? 'var(--admin-color-brand-red-subtle)' : 'var(--admin-color-surface-muted)',
-                                  color: top3 ? 'var(--admin-color-brand-red)' : 'var(--admin-color-text-muted)',
-                                  fontSize: 11, fontWeight: 700,
-                                }}>{idx + 1}</span>
-                              </td>
-                              <td>
-                                <div className="product-cell">
-                                  <span className="thumb"><Package size={18} /></span>
-                                  <div className="info">
-                                    <div className="name" title={product.name}>{product.name}</div>
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="num">{product.units}</td>
-                              <td className="num fw-700 text-primary-red">{formatVndShort(product.revenue)}</td>
-                            </tr>
-                          )
-                        })}
+                        {topProducts.map((product, idx) => (
+                          <tr key={product.productId} onClick={() => navigate(`/admin/products/${product.productId}`)}>
+                            <td>
+                              <span className={`bb-rank${idx < 3 ? ` bb-rank-${idx + 1}` : ''}`}>
+                                {idx + 1}
+                              </span>
+                            </td>
+                            <td>
+                              <div className="bb-product-cell">
+                                <span className="bb-product-thumb"><Package size={18} /></span>
+                                <span title={product.name}>{product.name}</span>
+                              </div>
+                            </td>
+                            <td className="num">{product.units}</td>
+                            <td className="num" style={{ fontWeight: 700, color: 'var(--bb-brand)' }}>
+                              {formatVndShort(product.revenue)}
+                            </td>
+                          </tr>
+                        ))}
                       </tbody>
                     </table>
                   </div>
                 ) : (
-                  <SectionEmpty
-                    title={t('dashboard.topProducts.empty')}
-                    description={t('dashboard.topProducts.emptyDesc')}
-                  />
+                  <div className="bb-card-body">
+                    <SectionEmpty
+                      title={t('dashboard.topProducts.empty')}
+                      description={t('dashboard.topProducts.emptyDesc')}
+                    />
+                  </div>
                 )}
               </div>
             </div>

@@ -103,6 +103,9 @@ export function normalizeImageAsset(input) {
   return {
     id: toTrimmedString(input.id) || undefined,
     url,
+    // rawUrl is the original MinIO URL before proxy-rewriting. Use it for
+    // backend round-trips so edits don't send /media-proxy/... to the API.
+    rawUrl: url !== rawUrl ? rawUrl : undefined,
     alt: toTrimmedString(input.alt) || undefined,
     width: Number.isFinite(input.width) ? Number(input.width) : undefined,
     height: Number.isFinite(input.height) ? Number(input.height) : undefined,
