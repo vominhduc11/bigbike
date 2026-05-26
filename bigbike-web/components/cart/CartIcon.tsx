@@ -9,24 +9,37 @@ import { toCartPath } from "@/lib/utils/routes";
 
 export function CartIcon() {
   const t = useTranslations("Cart");
-  const { closePanel } = useHeaderUi();
+  const { closePanel, openPanel } = useHeaderUi();
   const { cartCount } = useCart();
   const badgeCount = cartCount ?? 0;
   const showBadge = badgeCount > 0;
+  const renderBadge = () =>
+    showBadge ? (
+      <span className="bb-cart-badge">
+        {badgeCount > 99 ? "99+" : badgeCount}
+      </span>
+    ) : null;
 
   return (
-    <Link
-      href={toCartPath()}
-      className="bb-cart-icon-link relative flex h-full items-center justify-center px-3.5 text-white no-underline transition-colors duration-fast hover:text-brand focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand"
-      aria-label={t("iconAria")}
-      onClick={closePanel}
-    >
-      <ShoppingCart size={24} strokeWidth={1.75} aria-hidden />
-      {showBadge && (
-        <span className="bb-cart-badge">
-          {badgeCount > 99 ? "99+" : badgeCount}
-        </span>
-      )}
-    </Link>
+    <>
+      <button
+        type="button"
+        className="bb-cart-icon-link bb-cart-icon-button relative flex h-full items-center justify-center px-3.5 text-white no-underline transition-colors duration-fast hover:text-brand focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand md:hidden"
+        aria-label={t("iconAria")}
+        onClick={() => openPanel("cart")}
+      >
+        <ShoppingCart size={24} strokeWidth={1.75} aria-hidden />
+        {renderBadge()}
+      </button>
+      <Link
+        href={toCartPath()}
+        className="bb-cart-icon-link relative hidden h-full items-center justify-center px-3.5 text-white no-underline transition-colors duration-fast hover:text-brand focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand md:flex"
+        aria-label={t("iconAria")}
+        onClick={closePanel}
+      >
+        <ShoppingCart size={24} strokeWidth={1.75} aria-hidden />
+        {renderBadge()}
+      </Link>
+    </>
   );
 }

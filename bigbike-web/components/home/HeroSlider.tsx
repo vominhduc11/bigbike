@@ -45,10 +45,19 @@ function HeroSlideView({ slide }: { slide: HeroSlide }) {
     "--bb-mobile-banner-bg": `url("${slide.mobileSrc ?? slide.desktopSrc}")`,
   } as CSSProperties & Record<"--bb-mobile-banner-bg", string>;
 
+  const copy = (
+    <div className="bb-main-banner-copy">
+      <p className="bb-main-banner-kicker">{slide.productCode || slide.categoryName || "BIGBIKE"}</p>
+      <h2>{slide.productName || slide.categoryName || "BigBike"}</h2>
+      <span>Mua ngay</span>
+    </div>
+  );
+
   if (!slide.href) {
     return (
       <div className="-swiper-lazy bb-main-banner-link" style={style}>
         <span style={{ backgroundImage: `url("${slide.desktopSrc}")`, backgroundPosition: "top center" }} />
+        {copy}
       </div>
     );
   }
@@ -56,6 +65,7 @@ function HeroSlideView({ slide }: { slide: HeroSlide }) {
   return (
     <Link href={slide.href} className="-swiper-lazy bb-main-banner-link" style={style}>
       <span style={{ backgroundImage: `url("${slide.desktopSrc}")`, backgroundPosition: "top center" }} />
+      {copy}
     </Link>
   );
 }

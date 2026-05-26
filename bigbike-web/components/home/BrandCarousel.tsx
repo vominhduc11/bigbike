@@ -19,8 +19,28 @@ export function BrandCarousel({ brands }: Props) {
 
   return (
     <div className="container">
+      <div className="bb-brand-mobile-grid md:hidden">
+        {brands.slice(0, 8).map((b) => {
+          const logo = b.logo?.url
+            ? toLegacyWpMediaUrl(resolveMediaUrl(b.logo.url.trim()))
+            : null;
+          return (
+            <Link key={b.id} href={toBrandPath(b.slug)} className="bb-brand-mobile-cell">
+              {logo ? (
+                <img
+                  src={logo}
+                  alt={safeText(b.logo?.alt, b.name)}
+                  loading="lazy"
+                />
+              ) : (
+                <span>{b.name}</span>
+              )}
+            </Link>
+          );
+        })}
+      </div>
       <Swiper
-        className="swiper-container"
+        className="swiper-container hidden md:block"
         speed={1000}
         slidesPerView={2}
         spaceBetween={13}
