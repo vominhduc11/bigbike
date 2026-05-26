@@ -10067,18 +10067,6 @@ body .bb-home .white.block-title h3 {
 }
 
 @media (max-width: 767px) {
-  .bb-home #main-banner {
-    height: 480px;
-    min-height: 480px;
-  }
-
-  .bb-home #main-banner .swiper-slide a,
-  .bb-home #main-banner .swiper-slide .bb-main-banner-link {
-    height: 480px;
-    min-height: 480px;
-    background-image: var(--bb-mobile-banner-bg) !important;
-  }
-
   .bb-home #main-banner .swiper-pagination {
     top: 14px;
     right: 14px;
@@ -11138,9 +11126,14 @@ body .bb-home .white.block-title h3 {
   .bb-home #main-banner,
   .bb-home #main-banner .swiper-slide a,
   .bb-home #main-banner .swiper-slide .bb-main-banner-link {
-    height: 460px;
-    min-height: 460px;
+    height: clamp(240px, 50vh, 380px);
+    min-height: 240px;
     background-color: var(--bb-mobile-shell-bg);
+  }
+
+  .bb-home #main-banner .swiper-slide a,
+  .bb-home #main-banner .swiper-slide .bb-main-banner-link {
+    background-image: var(--bb-mobile-banner-bg) !important;
   }
 
   .bb-main-banner-link {
@@ -11261,8 +11254,21 @@ body .bb-home .white.block-title h3 {
   }
 
   .bb-home-mobile-trust {
+    position: relative;
     border-color: var(--bb-mobile-shell-border);
     background: var(--bb-mobile-shell-surface-2);
+  }
+
+  .bb-home-mobile-trust::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 48px;
+    background: linear-gradient(to right, transparent, var(--bb-mobile-shell-surface-2));
+    pointer-events: none;
+    z-index: 1;
   }
 
   .bb-home-mobile-trust-card .text-muted-foreground,
@@ -11363,6 +11369,22 @@ body .bb-home .white.block-title h3 {
   .bb-home-products-parity .bb-fp-arrow,
   .bb-home-products-parity .bb-fp-pagination {
     display: none;
+  }
+
+  .bb-home-products-parity .bb-fp-carousel {
+    position: relative;
+  }
+
+  .bb-home-products-parity .bb-fp-carousel::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 6px;
+    width: 48px;
+    background: linear-gradient(to right, transparent, var(--bb-mobile-shell-bg));
+    pointer-events: none;
+    z-index: 1;
   }
 
   .bb-home .banner-ads {

@@ -133,16 +133,20 @@ export function HeroSlider({ slides }: HeroSliderProps) {
         <>
           <button
             type="button"
-            className="swiper-button-prev"
+            className="bb-main-banner-arrow bb-main-banner-arrow-prev"
             onClick={() => swiperRef.current?.slidePrev()}
             aria-label="Slide trước"
-          />
+          >
+            &#8249;
+          </button>
           <button
             type="button"
-            className="swiper-button-next"
+            className="bb-main-banner-arrow bb-main-banner-arrow-next"
             onClick={() => swiperRef.current?.slideNext()}
             aria-label="Slide tiếp"
-          />
+          >
+            &#8250;
+          </button>
           <div
             className="swiper-pagination"
             product-code={activeSlide.productCode || activeSlide.categoryName || "BIGBIKE"}

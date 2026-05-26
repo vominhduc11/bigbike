@@ -12,7 +12,7 @@ const TRUST: TrustItem[] = [
   { Icon: RefreshCcw, title: "Đổi trả 7 ngày", sub: "Miễn phí vận chuyển" },
   { Icon: Headset, title: "Tư vấn size", sub: "Hotline 24/7" },
   { Icon: Truck, title: "Giao toàn quốc", sub: "Nội thành 2h" },
-  { Icon: Zap, title: "Bảo hành chính hãng", sub: "Up to 5 năm" },
+  { Icon: Zap, title: "Bảo hành chính hãng", sub: "Tối đa 5 năm" },
 ];
 
 export function MobileTrustSignals() {

@@ -115,8 +115,7 @@ export function ProductCard({ product, variant = "compact" }: ProductCardProps) 
           )}
           <div className="bb-fp-cart">
             <Link href={href}>
-              <i className="fal fa-shopping-cart" aria-hidden="true" />
-              THÊM VÀO GIỎ HÀNG
+              XEM CHI TIẾT
             </Link>
           </div>
         </div>

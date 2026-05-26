@@ -537,7 +537,7 @@ export default async function HomePage() {
         <div className="news pt-60 bb-home-news-parity">
           <div className="container">
             <div className="block-title text-center pb-40">
-              <p className="sub-title">Tin tức mới update</p>
+              <p className="sub-title">Tin tức & cập nhật</p>
               <h2>Cập nhật xu hướng cùng BigBike</h2>
             </div>
             <div className="news-list">
@@ -555,7 +555,7 @@ export default async function HomePage() {
         <section className="videos-slide relative bg-background pt-[80px]" aria-labelledby="home-video-heading">
           <div className="videos-slide--inner relative bg-[url('/wp/video-bg.jpg')] bg-cover bg-center bg-no-repeat pb-[90px]">
             <div className="relative z-[1] mx-auto w-full max-w-[1200px] px-[15px]">
-              <div className="pb-[70px] pt-[90px] text-center text-white max-[575px]:pb-10 max-[575px]:pt-12">
+              <div className="pb-[70px] pt-[90px] text-center text-white max-[767px]:pb-10 max-[767px]:pt-12">
                 <h2
                   id="home-video-heading"
                   className="bb-home-video-title"

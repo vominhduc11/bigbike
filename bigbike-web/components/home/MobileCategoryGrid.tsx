@@ -27,7 +27,7 @@ export function MobileCategoryGrid({ categories }: { categories: Category[] }) {
               href={toCategoryPath(category.slug)}
               className="bb-home-mobile-category-card block overflow-hidden border border-border"
             >
-              <div className="bb-home-mobile-category-image relative h-[130px] w-full">
+              <div className="bb-home-mobile-category-image relative aspect-[4/3] w-full">
                 <Image
                   src={src}
                   alt={name}
