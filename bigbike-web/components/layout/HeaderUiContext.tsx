@@ -114,6 +114,7 @@ export function HeaderUiProvider({ children }: { children: ReactNode }) {
       ".bb-home .bb-home-news-parity",
       ".bb-home .videos-slide",
       ".bb-home .partner-slide",
+      ".bb-home .content-bottom",
     ];
     const visibleByElement = new Map<Element, boolean>();
     let observer: IntersectionObserver | null = null;

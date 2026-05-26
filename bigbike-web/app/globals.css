@@ -13184,3 +13184,209 @@ html[data-bb-keyboard-focus] .bb-floating-chat-anchor {
     padding-bottom: calc(18px + var(--bb-mobile-nav-height) + env(safe-area-inset-bottom));
   }
 }
+
+/* Homepage mobile polish pass. Keep this block late in the cascade so it can
+   normalize the legacy WP parity rules without changing desktop composition. */
+@media (max-width: 767px) {
+  .bb-home #main-banner .bb-main-banner-link::after,
+  .bb-home #main-banner .bb-main-banner-copy {
+    display: none;
+  }
+
+  .bb-home-mobile-categories {
+    padding: 20px 0 4px;
+  }
+
+  .bb-home-mobile-category-grid {
+    gap: 10px;
+    padding-inline: var(--bb-mobile-page-x);
+  }
+
+  .bb-home-mobile-category-card {
+    min-width: 0;
+  }
+
+  .bb-home-mobile-category-image img {
+    object-fit: contain !important;
+  }
+
+  .bb-home .bb-experience {
+    padding-top: 32px;
+  }
+
+  .bb-home .bb-experience-header {
+    padding-bottom: 16px;
+  }
+
+  .bb-home .bb-experience-title {
+    font-size: clamp(34px, 9vw, 40px);
+    line-height: 1.08;
+  }
+
+  .bb-home .bb-experience-desc {
+    font-size: 15px;
+    line-height: 1.55;
+  }
+
+  .bb-home .bb-exp-slide-content {
+    margin-top: -18%;
+  }
+
+  .bb-home .bb-exp-slide-title {
+    max-width: min(280px, 78vw);
+    margin-inline: auto;
+    font-size: 18px;
+    line-height: 1.25;
+  }
+
+  .bb-home .bb-exp-slide-link {
+    width: 150px;
+    font-size: 14px;
+    line-height: 44px;
+  }
+
+  .bb-home .videos-slide--inner {
+    background-color: var(--bb-bg-surface-dark);
+  }
+
+  .bb-home .videos-slide div:has(> .bb-home-video-title) {
+    padding-top: 40px;
+    padding-bottom: 24px;
+  }
+
+  .bb-home .videos-slide .bb-home-video-title {
+    color: var(--bb-text-inverse);
+    font-size: clamp(30px, 8vw, 38px);
+    line-height: 1.12;
+  }
+
+  .bb-home .partner-slide {
+    padding: 32px var(--bb-mobile-page-x) 24px;
+  }
+
+  .bb-brand-mobile-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    border: 0;
+    background: transparent;
+  }
+
+  .bb-brand-mobile-cell {
+    min-height: 78px;
+    aspect-ratio: auto;
+    border: 1px solid var(--bb-border-subtle);
+    padding: 10px;
+  }
+
+  .bb-brand-mobile-cell img {
+    max-width: 86%;
+    max-height: 44px;
+    padding: 0;
+    filter: none;
+  }
+
+  .bb-brand-mobile-cell span {
+    display: flex;
+    min-height: 42px;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    border: 1px dashed var(--bb-border-default);
+    background: var(--bb-bg-surface-raised);
+    padding: 4px 6px;
+    color: var(--bb-text-secondary);
+  }
+
+  .bb-home .content-bottom.bb-seo-content {
+    padding: 32px 0;
+  }
+
+  .bb-home .content-bottom.bb-seo-content .container {
+    padding-inline: var(--bb-mobile-page-x);
+  }
+
+  .bb-home .content-bottom.bb-seo-content h1,
+  .bb-home .content-bottom.bb-seo-content h2,
+  .bb-home .content-bottom.bb-seo-content h3,
+  .bb-home .content-bottom.bb-seo-content h4,
+  .bb-home .content-bottom.bb-seo-content h5,
+  .bb-home .content-bottom.bb-seo-content h6,
+  .bb-home .content-bottom.bb-seo-content p,
+  .bb-home .content-bottom.bb-seo-content li,
+  .bb-home .content-bottom.bb-seo-content ul,
+  .bb-home .content-bottom.bb-seo-content ol {
+    text-align: left !important;
+  }
+
+  .bb-home .content-bottom.bb-seo-content h1,
+  .bb-home .content-bottom.bb-seo-content .bb-seo-content-body > h2:first-child {
+    font-size: 28px;
+    line-height: 1.2;
+  }
+
+  .bb-home .content-bottom.bb-seo-content h2 {
+    font-size: 26px;
+    line-height: 1.25;
+  }
+
+  .bb-home .content-bottom.bb-seo-content h3,
+  .bb-home .content-bottom.bb-seo-content h4,
+  .bb-home .content-bottom.bb-seo-content h5,
+  .bb-home .content-bottom.bb-seo-content h6 {
+    font-size: 20px;
+    line-height: 1.3;
+  }
+
+  .bb-home .content-bottom.bb-seo-content p,
+  .bb-home .content-bottom.bb-seo-content li {
+    font-size: 16px;
+    line-height: 1.7;
+  }
+
+  .bb-home .content-bottom.bb-seo-content ul,
+  .bb-home .content-bottom.bb-seo-content ol {
+    margin: 0 0 16px;
+    padding-left: 1.25rem;
+  }
+
+  .bb-home .content-bottom.bb-seo-content li {
+    margin-bottom: 8px;
+  }
+
+  .bb-home .content-bottom.bb-seo-content a {
+    color: var(--bb-link-text);
+    overflow-wrap: anywhere;
+  }
+
+  .bb-home .content-bottom.bb-seo-content .has-text-align-justify,
+  .bb-home .content-bottom.bb-seo-content .has-text-align-center,
+  .bb-home .content-bottom.bb-seo-content .has-text-align-right {
+    text-align: left !important;
+  }
+
+  body > footer .bg-footer-top a[href^="tel:"] {
+    font-size: clamp(24px, 6vw, 28px);
+  }
+
+  body > footer .bg-footer-top a[href^="mailto:"] {
+    font-size: clamp(20px, 5.2vw, 24px);
+  }
+}
+
+@media (min-width: 430px) and (max-width: 599px) {
+  .bb-brand-mobile-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 600px) and (max-width: 767px) {
+  .bb-brand-mobile-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 374px) {
+  .bb-home .bb-exp-slide-content {
+    margin-top: -14%;
+  }
+}

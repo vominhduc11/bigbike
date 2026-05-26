@@ -53,14 +53,14 @@ function VideoCard({ video, onPlay }: { video: HomeVideo; onPlay: () => void }) 
       onClick={onPlay}
       aria-label={`Xem video: ${title}`}
     >
-      <div className="relative w-full overflow-hidden bg-brand [aspect-ratio:9/16]">
+      <div className="relative mx-auto w-full max-w-[360px] overflow-hidden bg-brand aspect-[4/5] md:max-w-none md:aspect-[9/16]">
         {thumbSrc ? (
           <Image
             key={thumbSrc}
             src={thumbSrc}
             alt={safeText(video.thumbnail?.alt, title)}
             fill
-            className="object-cover opacity-70 transition-transform duration-300 group-hover:scale-[1.03]"
+            className="object-cover opacity-90 transition-transform duration-300 group-hover:scale-[1.03]"
             sizes="(max-width: 600px) calc(100vw - 30px), (max-width: 900px) 45vw, (max-width: 1200px) 32vw, 240px"
             onError={() => setThumbIdx((prev) => prev + 1)}
           />
@@ -73,8 +73,8 @@ function VideoCard({ video, onPlay }: { video: HomeVideo; onPlay: () => void }) 
         )}
         <PlayIcon />
       </div>
-      <div className="min-h-[104px] bg-black px-5 py-7 max-[767px]:px-4">
-        <p className="m-0 overflow-hidden normal-case font-display text-[18px] font-semibold leading-[1.5] text-white [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
+      <div className="min-h-[104px] bg-black px-5 py-7 max-[767px]:min-h-[76px] max-[767px]:px-4 max-[767px]:py-4">
+        <p className="m-0 overflow-hidden normal-case font-display text-[18px] font-semibold leading-[1.5] text-white [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] max-[767px]:text-[16px] max-[767px]:leading-[1.35]">
           {title}
         </p>
       </div>
@@ -284,7 +284,7 @@ export function HomeVideoCarousel({ videos }: Props) {
       </div>
 
       {showControls && videos.length > 1 && (
-        <div className="mt-[30px] flex items-center justify-center gap-[10px]" aria-label="Chuyển slide video">
+        <div className="mt-[30px] flex items-center justify-center gap-[10px] max-[767px]:mt-5" aria-label="Chuyển slide video">
           {videos.map((_, idx) => (
             <button
               key={idx}

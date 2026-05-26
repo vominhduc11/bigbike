@@ -45,11 +45,11 @@ function splitHeading(value: string): string[] {
 
 function ContactIcon({ icon }: { icon: FooterContact["icon"] }) {
   return (
-    <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-[3px] border-2 border-brand-inverse text-brand-inverse md:h-[34px] md:w-[34px]">
+    <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-[3px] border-2 border-brand-inverse text-brand-inverse md:mt-1 md:h-[34px] md:w-[34px]">
       {icon === "phone" ? (
-        <PhoneCall size={22} strokeWidth={2.1} aria-hidden="true" />
+        <PhoneCall size={20} strokeWidth={2.1} aria-hidden="true" />
       ) : (
-        <Mail size={24} strokeWidth={2.1} aria-hidden="true" />
+        <Mail size={20} strokeWidth={2.1} aria-hidden="true" />
       )}
     </span>
   );
@@ -146,11 +146,11 @@ export async function SiteFooter() {
 
   return (
     <footer className="bg-black text-white">
-      <div className="bg-footer-top py-[60px] max-md:pb-0">
+      <div className="bg-footer-top py-[60px] max-md:pb-0 max-md:pt-9">
         <div className="bb-container">
-          <div className="grid grid-cols-1 gap-10 md:grid-cols-12">
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-12 md:gap-10">
             <div className="md:col-span-7">
-              <h2 className="m-0 mb-10 font-cta text-[2.875rem] font-medium uppercase leading-[1.2] text-white md:mb-[2.857rem] md:text-[3.429rem] md:leading-[4.143rem] lg:max-w-[43rem]">
+              <h2 className="m-0 mb-7 font-cta text-[2.25rem] font-medium uppercase leading-[1.12] text-white md:mb-[2.857rem] md:text-[3.429rem] md:leading-[4.143rem] lg:max-w-[43rem]">
                 {splitHeading(footerTagline).map((line) => (
                   <span key={line} className="block">
                     {line}
@@ -169,10 +169,14 @@ export async function SiteFooter() {
                     <a
                       key={item.id}
                       href={href}
-                      className="flex items-start gap-5 font-cta text-[2rem] font-medium leading-[1.18] text-white no-underline transition-colors hover:text-brand-inverse md:text-[2.143rem]"
+                      className={`flex min-w-0 items-start gap-3.5 font-cta font-medium text-white no-underline transition-colors hover:text-brand-inverse md:gap-5 md:text-[2.143rem] ${
+                        isEmail
+                          ? "text-[1.375rem] leading-[1.2]"
+                          : "text-[1.625rem] leading-[1.14]"
+                      }`}
                     >
                       <ContactIcon icon={item.icon} />
-                      <span>{item.label}</span>
+                      <span className="min-w-0 [overflow-wrap:anywhere]">{item.label}</span>
                     </a>
                   );
                 })}
@@ -186,7 +190,7 @@ export async function SiteFooter() {
 
             <div className="md:col-span-5">
               {footerDescription ? (
-                <p className="m-0 mb-[2.286rem] text-base leading-[1.786rem] text-white">
+                <p className="m-0 mb-7 text-[15px] leading-[1.65] text-white md:mb-[2.286rem] md:text-base md:leading-[1.786rem]">
                   {footerDescription}
                 </p>
               ) : null}
@@ -256,27 +260,27 @@ export async function SiteFooter() {
         </div>
       </div>
 
-      <div className="bg-black py-[30px] max-md:pb-[15px] max-md:pt-0">
+      <div className="bg-black py-[30px] max-md:pb-[calc(20px_+_var(--bb-mobile-nav-height)_+_env(safe-area-inset-bottom))] max-md:pt-6">
         <div className="bb-container relative">
           <ScrollToTopButton />
-          <div className="grid grid-cols-1 items-center md:grid-cols-12 max-md:grid-cols-3">
-            <div className="md:col-span-2 max-md:order-2 max-md:col-span-1 max-md:pt-[15px]">
+          <div className="grid grid-cols-1 items-center gap-5 md:grid-cols-12 md:gap-0">
+            <div className="md:col-span-2 max-md:order-2">
               <Image
                 src="/wp/logo-footer.png"
                 alt={siteName}
                 width={200}
                 height={66}
-                className="block h-auto w-[132px] max-md:w-[120px]"
+                className="block h-auto w-[132px] max-md:w-[118px]"
               />
             </div>
 
-            <div className="md:col-span-4 max-md:order-1 max-md:col-span-2 max-md:pt-[15px]">
-              <p className="m-0 text-base text-white max-md:text-sm">
+            <div className="md:col-span-4 max-md:order-3">
+              <p className="m-0 max-w-[22rem] text-sm leading-[1.45] text-white md:text-base">
                 {t("copyright", { year })}
               </p>
             </div>
 
-            <div className="md:col-span-6 max-md:order-0 max-md:col-span-3 max-md:bg-footer-top max-md:pr-[33.333333%]">
+            <div className="md:col-span-6 max-md:order-1 max-md:bg-footer-top max-md:pr-14">
               {bctUrl ? (
                 <div>
                   <a
@@ -285,7 +289,7 @@ export async function SiteFooter() {
                     rel="noopener noreferrer"
                     aria-label="BCT"
                   >
-                    <div className="mb-2.5 block w-[200px] md:w-[250px]">
+                    <div className="mb-2.5 block w-[170px] md:w-[250px]">
                       <BctBadge alt="BCT" height={95} />
                     </div>
                   </a>

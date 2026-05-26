@@ -38,6 +38,10 @@ function enforceHorizontalTrack(swiper: SwiperType | null) {
 }
 
 function HeroSlideView({ slide }: { slide: HeroSlide }) {
+  const slideLabel =
+    [slide.productName || slide.categoryName || slide.alt || "BigBike", slide.productCode]
+      .filter(Boolean)
+      .join(" - ");
   const style = {
     backgroundImage: `url("${slide.desktopSrc}")`,
     backgroundSize: "cover",
@@ -55,7 +59,7 @@ function HeroSlideView({ slide }: { slide: HeroSlide }) {
 
   if (!slide.href) {
     return (
-      <div className="-swiper-lazy bb-main-banner-link" style={style}>
+      <div className="-swiper-lazy bb-main-banner-link" style={style} aria-label={slideLabel}>
         <span style={{ backgroundImage: `url("${slide.desktopSrc}")`, backgroundPosition: "top center" }} />
         {copy}
       </div>
@@ -63,7 +67,12 @@ function HeroSlideView({ slide }: { slide: HeroSlide }) {
   }
 
   return (
-    <Link href={slide.href} className="-swiper-lazy bb-main-banner-link" style={style}>
+    <Link
+      href={slide.href}
+      className="-swiper-lazy bb-main-banner-link"
+      style={style}
+      aria-label={slideLabel}
+    >
       <span style={{ backgroundImage: `url("${slide.desktopSrc}")`, backgroundPosition: "top center" }} />
       {copy}
     </Link>

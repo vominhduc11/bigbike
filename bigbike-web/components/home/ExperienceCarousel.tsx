@@ -94,7 +94,7 @@ function ExperienceSlide({
             <img
               src={media.productSrc}
               alt={media.productAlt}
-              className="mx-auto w-1/2 max-w-none max-[991px]:w-4/5"
+              className="bb-exp-product-image mx-auto w-1/2 max-w-[420px] max-[991px]:w-[64%] max-[767px]:w-[62vw] max-[767px]:max-w-[280px] max-[374px]:max-w-[250px]"
               loading="eager"
               decoding="async"
               draggable={false}
@@ -106,7 +106,7 @@ function ExperienceSlide({
           <h3 className="bb-exp-slide-title">
             {media.title}
           </h3>
-          <div className="pt-[40px] text-center">
+          <div className="pt-[40px] text-center max-[767px]:pt-4">
             <Link
               href={toArticlePath(article.slug)}
               className="bb-exp-slide-link"
