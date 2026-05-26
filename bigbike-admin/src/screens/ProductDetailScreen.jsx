@@ -34,7 +34,7 @@ import { Textarea } from '@/components/ui/textarea'
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
 } from '@/components/ui/dropdown-menu'
-import { cn } from '@/lib/utils'
+import { cn, generateId } from '@/lib/utils'
 
 // Matches YouTube IDs across watch, share, embed, and shorts URLs.
 function extractYouTubeId(url) {
@@ -244,7 +244,7 @@ function buildFormFromItem(item) {
   if (!item) return buildEmptyForm()
 
   const variants = withColorScopedMedia((item.variants || []).map((v) => ({
-    _key: v.id || crypto.randomUUID(),
+    _key: v.id || generateId(),
     id: v.id || '',
     sku: v.sku || '',
     name: v.name || '',
@@ -304,7 +304,7 @@ function buildFormFromItem(item) {
       thumbnailUrl: v.thumbnail?.url || '',
     })),
     specifications: (item.specifications || []).map((s) => ({
-      _key: crypto.randomUUID(),
+      _key: generateId(),
       name: s.name || '',
       value: s.value || '',
       groupName: s.group || '',
@@ -313,7 +313,7 @@ function buildFormFromItem(item) {
       groupNameEn: s.groupEn || '',
     })),
     faqs: (item.faqs || []).map((f) => ({
-      _key: crypto.randomUUID(),
+      _key: generateId(),
       question: f.question || '',
       answer: f.answer || '',
       questionEn: f.questionEn || '',
@@ -804,7 +804,7 @@ function SpecificationsEditor({ items, onChange, disabled, validationErrors, con
   }
   function addItem() {
     onChange([...items, {
-      _key: crypto.randomUUID(),
+      _key: generateId(),
       name: '', value: '', groupName: '',
       nameEn: '', valueEn: '', groupNameEn: '',
     }])
@@ -898,7 +898,7 @@ function FaqEditor({ items, onChange, disabled, validationErrors, contentLang = 
     onChange(next)
   }
   function addItem() {
-    onChange([...items, { _key: crypto.randomUUID(), question: '', answer: '', questionEn: '', answerEn: '' }])
+    onChange([...items, { _key: generateId(), question: '', answer: '', questionEn: '', answerEn: '' }])
   }
   function removeItem(index) {
     onChange(items.filter((_, i) => i !== index))
@@ -1398,7 +1398,7 @@ function VariantsEditor({ items, onChange, disabled, validationErrors = {}, onOp
 
   function buildEmptyVariant() {
     return {
-      _key: crypto.randomUUID(),
+      _key: generateId(),
       id: '',
       sku: '',
       name: '',
@@ -1434,7 +1434,7 @@ function VariantsEditor({ items, onChange, disabled, validationErrors = {}, onOp
 
     const copy = {
       ...original,
-      _key: crypto.randomUUID(),
+      _key: generateId(),
       id: '',
       sku: makeCopySku(original.sku),
       name: original.name ? t('products.detail.variant.copySuffixTemplate', { name: original.name }) : '',
@@ -1647,7 +1647,7 @@ function VariantMatrixWizard({ onGenerate, onClose }) {
     if (estimatedCount > MATRIX_HARD_CAP) return
     const combos = cartesian(parsed.map((a) => a.values.map((v) => ({ name: a.name, value: v }))))
     const newVariants = combos.map((combo) => ({
-      _key: crypto.randomUUID(),
+      _key: generateId(),
       id: '',
       sku: '',
       name: combo.map((o) => o.value).join(' - '),
@@ -2075,7 +2075,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
           homepageBlock: 'NONE',
           homepageOrder: '',
           // Clear variants IDs so they create as new
-          variants: base.variants.map((v) => ({ ...v, _key: crypto.randomUUID(), id: '' })),
+          variants: base.variants.map((v) => ({ ...v, _key: generateId(), id: '' })),
         }
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setForm(duplicated)

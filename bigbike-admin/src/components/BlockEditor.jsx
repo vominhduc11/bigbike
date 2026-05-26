@@ -9,12 +9,12 @@ import {
 import { MediaPickerModal } from './MediaPickerModal'
 import { VideoPickerModal } from './VideoPickerModal'
 import { RichTextEditor } from './RichTextEditor'
-import { cn } from '@/lib/utils'
+import { cn, generateId } from '@/lib/utils'
 
 const BLOCK_TYPES = ['heading', 'paragraph', 'list', 'image', 'video', 'callout', 'divider']
 
 function createBlock(type) {
-  const base = { _key: crypto.randomUUID(), type }
+  const base = { _key: generateId(), type }
   switch (type) {
     case 'heading':   return { ...base, level: 2, text: '' }
     case 'paragraph': return { ...base, html: '' }
@@ -334,7 +334,7 @@ export function BlockEditor({ value, onChange, disabled, hasError, fallbackHtml 
   }
 
   function duplicateBlock(index) {
-    const copy = { ...blocks[index], _key: crypto.randomUUID() }
+    const copy = { ...blocks[index], _key: generateId() }
     const next = [...blocks]
     next.splice(index + 1, 0, copy)
     onChange(next)

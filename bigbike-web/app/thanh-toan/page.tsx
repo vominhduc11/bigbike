@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { cn } from "@/lib/utils";
+import { cn, generateId } from "@/lib/utils";
 import { submitCheckout } from "@/lib/api/client-api";
 import { useCart } from "@/lib/cart-context";
 import { useAddresses, useCartQuery, useCheckoutOptions, useProfile } from "@/lib/query/hooks";
@@ -92,7 +92,7 @@ export default function CheckoutPage() {
   const [pendingOrderNav, setPendingOrderNav] = useState<{ orderNumber: string; orderKey: string } | null>(null);
   const [gtmFired, setGtmFired] = useState(false);
   const [customerNote, setCustomerNote] = useState("");
-  const idempotencyKey = useRef<string>(crypto.randomUUID());
+  const idempotencyKey = useRef<string>(generateId());
   const hasPrefilledRef = useRef(false);
 
   const { data: cart, isLoading: cartLoading, error: cartError } = useCartQuery();

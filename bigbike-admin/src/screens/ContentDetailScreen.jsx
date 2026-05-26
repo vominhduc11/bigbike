@@ -26,7 +26,7 @@ import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
+import { cn, generateId } from '@/lib/utils'
 
 function normalizeContentType(value) {
   return String(value || '').toUpperCase() === 'PAGE' ? 'PAGE' : 'ARTICLE'
@@ -173,7 +173,7 @@ function buildFormFromItem(contentType, item) {
     productImageUrl: item.productImage?.url || '',
     productImageAlt: item.productImage?.alt || '',
     bodyBlocks: Array.isArray(item.bodyBlocks)
-      ? item.bodyBlocks.map((b) => (b._key ? b : { ...b, _key: crypto.randomUUID() }))
+      ? item.bodyBlocks.map((b) => (b._key ? b : { ...b, _key: generateId() }))
       : null,
     tags: Array.isArray(item.tags) ? item.tags.join(', ') : '',
     relatedProductIds: Array.isArray(item.relatedProducts)

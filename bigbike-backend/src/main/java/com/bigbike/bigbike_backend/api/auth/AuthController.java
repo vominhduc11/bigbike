@@ -17,6 +17,7 @@ import jakarta.validation.Valid;
 import java.util.Arrays;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,6 +33,9 @@ public class AuthController {
 
     static final String REFRESH_COOKIE = "bb_admin_refresh";
     private static final int REFRESH_COOKIE_MAX_AGE = 7 * 24 * 60 * 60; // 7 days
+
+    @Value("${bigbike.cookies.secure:true}")
+    private boolean cookiesSecure;
 
     private final AdminAuthService adminAuthService;
     private final DevAdminAuthService devAdminAuthService;
@@ -99,7 +103,7 @@ public class AuthController {
         if (refreshToken == null) return;
         Cookie cookie = new Cookie(REFRESH_COOKIE, refreshToken);
         cookie.setHttpOnly(true);
-        cookie.setSecure(true);    // HTTPS only — nginx should enforce this in prod
+        cookie.setSecure(cookiesSecure);
         cookie.setPath("/api/v1/auth");
         cookie.setMaxAge(REFRESH_COOKIE_MAX_AGE);
         cookie.setAttribute("SameSite", "Lax"); // same eTLD+1 (admin.bigbike.vn → api.bigbike.vn)
@@ -109,7 +113,7 @@ public class AuthController {
     private void clearRefreshCookie(HttpServletResponse response) {
         Cookie cookie = new Cookie(REFRESH_COOKIE, "");
         cookie.setHttpOnly(true);
-        cookie.setSecure(true);
+        cookie.setSecure(cookiesSecure);
         cookie.setPath("/api/v1/auth");
         cookie.setMaxAge(0);
         cookie.setAttribute("SameSite", "Lax"); // must match setRefreshCookie (RBAUD-010)

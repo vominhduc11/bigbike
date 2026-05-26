@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Alert } from '@/components/ui/alert'
+import { generateId } from '@/lib/utils'
 
 const PAYMENT_METHODS = ['CASH', 'CARD_TERMINAL', 'CREDIT']
 
@@ -43,7 +44,7 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
   const [error, setError] = useState('')
   const [couponCode, setCouponCode] = useState('')
   const [idempotencyKey] = useState(() =>
-    typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`
+    generateId()
   )
 
   // Walk-in customer link (CASH / CARD_TERMINAL)
