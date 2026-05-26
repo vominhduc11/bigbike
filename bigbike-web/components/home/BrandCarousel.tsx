@@ -20,7 +20,7 @@ export function BrandCarousel({ brands }: Props) {
   return (
     <div className="container">
       <div className="bb-brand-mobile-grid md:hidden">
-        {brands.slice(0, 8).map((b) => {
+        {brands.map((b) => {
           const logo = b.logo?.url
             ? toLegacyWpMediaUrl(resolveMediaUrl(b.logo.url.trim()))
             : null;
@@ -39,20 +39,21 @@ export function BrandCarousel({ brands }: Props) {
           );
         })}
       </div>
-      <Swiper
-        className="swiper-container hidden md:block"
-        speed={1000}
-        slidesPerView={2}
-        spaceBetween={13}
-        watchOverflow
-        breakpoints={{
-          767: { slidesPerView: 5, spaceBetween: 40 },
-        }}
-      >
-        {brands.map((b, index) => {
-          const logo = b.logo?.url
-            ? toLegacyWpMediaUrl(resolveMediaUrl(b.logo.url.trim()))
-            : null;
+      <div className="hidden md:block">
+        <Swiper
+          className="swiper-container"
+          speed={1000}
+          slidesPerView={2}
+          spaceBetween={13}
+          watchOverflow
+          breakpoints={{
+            767: { slidesPerView: 5, spaceBetween: 40 },
+          }}
+        >
+          {brands.map((b, index) => {
+            const logo = b.logo?.url
+              ? toLegacyWpMediaUrl(resolveMediaUrl(b.logo.url.trim()))
+              : null;
             return (
               <SwiperSlide key={b.id}>
                 <Link href={toBrandPath(b.slug)}>
@@ -75,7 +76,8 @@ export function BrandCarousel({ brands }: Props) {
               </SwiperSlide>
             );
           })}
-      </Swiper>
+        </Swiper>
+      </div>
     </div>
   );
 }

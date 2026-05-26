@@ -61,7 +61,7 @@ export function StockStatus({
       rawState === "OUT_OF_STOCK"
         ? "var(--bb-brand-primary)"
         : rawState === "LOW_STOCK"
-          ? "var(--bb-color-warning)"
+          ? "var(--bb-state-warning-text)"
           : rawState === "IN_STOCK"
             ? "var(--bb-state-success)"
             : "var(--bb-text-muted)";

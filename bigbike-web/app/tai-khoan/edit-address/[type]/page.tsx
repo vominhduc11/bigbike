@@ -315,7 +315,7 @@ function AddressBookContent() {
                       <button
                         type="button"
                         onClick={() => handleSetDefault(addr)}
-                        className="text-sm font-bold uppercase tracking-[0.04em] text-[#7c3aed] hover:underline"
+                        className="text-sm font-bold uppercase tracking-[0.04em] text-[var(--bb-discount)] hover:underline"
                       >
                         {t("setDefaultButton")}
                       </button>

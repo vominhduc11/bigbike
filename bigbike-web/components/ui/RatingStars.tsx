@@ -15,7 +15,7 @@ export function RatingStars({ value }: RatingStarsProps) {
     >
       <span aria-hidden="true">☆☆☆☆☆</span>
       <span
-        className="absolute inset-y-0 left-0 overflow-hidden whitespace-nowrap text-brand"
+        className="absolute inset-y-0 left-0 overflow-hidden whitespace-nowrap text-[var(--bb-rating-star)]"
         style={{ width: `${(normalized / 5) * 100}%` }}
         aria-hidden="true"
       >

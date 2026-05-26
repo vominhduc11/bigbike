@@ -425,12 +425,9 @@ export default async function HomePage() {
         </div>
       )}
 
-      <div className="hidden md:block">
-        <HomeCategoryHighlights items={homeHighlights} />
-      </div>
+      <HomeCategoryHighlights items={homeHighlights} />
 
       {(aboutSubtitle || aboutTitle || aboutMarkup) && (
-        <div className="hidden md:block">
         <div className="about-bigbike">
           <div className="container">
             {(aboutSubtitle || aboutTitle) && (
@@ -446,7 +443,6 @@ export default async function HomePage() {
               />
             ) : null}
           </div>
-        </div>
         </div>
       )}
 

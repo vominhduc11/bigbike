@@ -426,6 +426,7 @@
   },
   "Checkout": {
     "title": "Checkout",
+    "loading": "Loading checkout...",
     "step1Title": "Shipping information",
     "step2Title": "Payment information",
     "summaryTitle": "Order summary",

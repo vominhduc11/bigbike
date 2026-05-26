@@ -426,6 +426,7 @@
   },
   "Checkout": {
     "title": "Thanh toán",
+    "loading": "Đang tải thông tin thanh toán...",
     "step1Title": "Thông tin giao hàng",
     "step2Title": "Thông tin thanh toán",
     "summaryTitle": "Thông tin đơn đặt hàng",

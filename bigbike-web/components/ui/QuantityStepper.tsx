@@ -42,7 +42,7 @@ export function QuantityStepper({
   return (
     <div
       className={cn(
-        "inline-flex items-stretch border border-border bg-white",
+        "inline-flex items-stretch border border-border-control bg-white",
         disabled && "opacity-60",
         className,
       )}
@@ -69,7 +69,7 @@ export function QuantityStepper({
           if (Number.isFinite(n)) onChange(clamp(n));
         }}
         className={cn(
-          "w-10 min-h-[44px] border-x border-border bg-transparent text-center",
+          "w-10 min-h-[44px] border-x border-border-control bg-transparent text-center",
           "font-bold text-sm text-foreground outline-none focus-visible:bg-secondary",
           "disabled:cursor-not-allowed",
           "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",

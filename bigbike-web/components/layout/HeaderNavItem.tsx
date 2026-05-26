@@ -53,7 +53,7 @@ function SubMenu({
             <Link
               href={normalizeMenuUrl(child.url)}
               className={cn(
-                "flex items-center gap-2 px-[30px] py-[15px] font-heading text-[14px] font-semibold leading-[1.3] text-[#6f6f6f] no-underline transition-colors duration-300 hover:text-brand",
+                "flex items-center gap-2 px-[30px] py-[15px] font-heading text-[14px] font-semibold leading-[1.3] text-muted-foreground no-underline transition-colors duration-300 hover:text-brand",
                 active && "text-brand",
               )}
               target={child.openInNewTab ? "_blank" : undefined}
@@ -88,7 +88,7 @@ function SubMenu({
 const menuDelay: [number, number] = [0, 0];
 
 const navLinkBase =
-  "bb-header-nav-link flex h-full items-center whitespace-nowrap font-cta text-17 font-semibold uppercase no-underline text-white transition-colors duration-150 hover:text-brand";
+  "bb-header-nav-link flex h-full items-center whitespace-nowrap font-cta text-17 font-semibold uppercase no-underline text-white transition-colors duration-150 hover:text-brand-on-dark";
 
 export function HeaderNavItem({ node }: HeaderNavItemProps) {
   const pathname = usePathname();
@@ -169,7 +169,7 @@ export function HeaderNavItem({ node }: HeaderNavItemProps) {
       >
         <Link
           href={href}
-          className={cn(navLinkBase, node.cssClass, active && "text-brand")}
+          className={cn(navLinkBase, node.cssClass, active && "text-brand-on-dark")}
           target={node.openInNewTab ? "_blank" : undefined}
           rel={node.openInNewTab ? "noreferrer" : undefined}
           aria-current={active ? "page" : undefined}
@@ -199,7 +199,7 @@ export function HeaderNavItem({ node }: HeaderNavItemProps) {
     >
       <Link
         href={href}
-        className={cn(navLinkBase, node.cssClass, active && "text-brand")}
+        className={cn(navLinkBase, node.cssClass, active && "text-brand-on-dark")}
         target={node.openInNewTab ? "_blank" : undefined}
         rel={node.openInNewTab ? "noreferrer" : undefined}
         aria-current={active ? "page" : undefined}

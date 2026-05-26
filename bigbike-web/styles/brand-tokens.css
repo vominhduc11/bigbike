@@ -12,8 +12,10 @@
   --bb-color-red-500: #ff0c09;
   --bb-color-red-600: #e50a07;
   --bb-color-red-700: #cc0906;
+  --bb-color-red-800: #b70805;
 
   --bb-color-blue: #007bff;
+  --bb-color-blue-700: #005fcc;
   --bb-color-cyan: #00bfff;
   --bb-color-warning: #fcb900;
   --bb-color-purple: #6100d1;
@@ -27,6 +29,7 @@
   --bb-color-gray-200: #dddddd;
   --bb-color-gray-300: #cecece;
   --bb-color-gray-400: #abb8c3;
+  --bb-color-gray-450: #8a8a8a;
   --bb-color-gray-500: #6f6f6f;
   --bb-color-white: #ffffff;
 
@@ -34,8 +37,15 @@
   --bb-brand-primary: var(--bb-color-red-500);
   --bb-brand-primary-hover: var(--bb-color-red-600);
   --bb-brand-primary-active: var(--bb-color-red-700);
+  --bb-brand-primary-aa: var(--bb-color-red-700);
+  --bb-brand-primary-aa-hover: var(--bb-color-red-800);
+  --bb-brand-primary-on-dark: var(--bb-color-red-500);
+  --bb-brand-primary-inverse: #ff7f7a;
   --bb-brand-primary-soft: rgba(255, 12, 9, 0.08);
   --bb-brand-primary-border: rgba(255, 12, 9, 0.36);
+  --bb-action-primary: var(--bb-brand-primary-aa);
+  --bb-action-primary-hover: var(--bb-brand-primary-aa-hover);
+  --bb-link-text: var(--bb-color-blue-700);
 
   /* Light-first (WP-parity): page and sections are white */
   --bb-bg-page: var(--bb-color-white);
@@ -54,16 +64,19 @@
   --bb-text-secondary: var(--bb-color-gray-500);
   /* gray-400 (#abb8c3) = ~1.9:1 on white — fails WCAG AA. Use gray-500 (#6f6f6f) = 4.59:1. */
   --bb-text-muted: var(--bb-color-gray-500);
-  --bb-text-disabled: var(--bb-color-gray-400);
+  --bb-text-disabled: var(--bb-color-gray-450);
   /* Text on dark surfaces (header, footer, drawers) */
   --bb-text-inverse: var(--bb-color-white);
   --bb-text-inverse-secondary: var(--bb-color-gray-300);
   --bb-text-inverse-muted: var(--bb-color-gray-400); /* gray-400 (#abb8c3) = ~4.7:1 on #141414, passes WCAG AA */
-  --bb-text-brand: var(--bb-brand-primary);
+  /* Use AA-safe brand text on light surfaces; keep --bb-brand-primary as the canonical red primitive. */
+  --bb-text-brand: var(--bb-brand-primary-aa);
 
   --bb-border-subtle: var(--bb-color-gray-200);
   --bb-border-default: var(--bb-color-gray-300);
   --bb-border-strong: var(--bb-color-gray-400);
+  --bb-border-control: var(--bb-color-gray-450);
+  --bb-border-control-hover: var(--bb-color-gray-500);
   --bb-border-brand: var(--bb-brand-primary-border);
 
   --bb-overlay-gradient: linear-gradient(
@@ -81,14 +94,17 @@
   --bb-state-warning-bg: rgba(252, 185, 0, 0.2);
   --bb-state-warning-border: rgba(252, 185, 0, 0.4);
   --bb-state-warning-text: #7a5800;
-  --bb-state-danger: var(--bb-brand-primary);
+  --bb-state-danger: var(--bb-action-primary);
   --bb-state-danger-bg: var(--bb-color-red-50);
   --bb-state-danger-border: var(--bb-brand-primary-border);
-  --bb-state-info: var(--bb-color-blue);
-  --bb-state-info-bg: rgba(0, 123, 255, 0.12);
-  --bb-state-info-border: rgba(0, 123, 255, 0.32);
+  --bb-state-info: var(--bb-link-text);
+  --bb-state-info-bg: rgba(0, 95, 204, 0.12);
+  --bb-state-info-border: rgba(0, 95, 204, 0.36);
 
-  --bb-product-price: var(--bb-brand-primary);
+  --bb-product-price: var(--bb-brand-primary-aa);
+  --bb-rating-star: #b45309;
+  --bb-chat-title-bg: var(--bb-color-cyan);
+  --bb-chat-title-text: var(--bb-color-black);
   /* Cart discount/coupon savings — WP parity (.summary--items .discount) */
   --bb-discount: var(--bb-color-purple);
 
@@ -183,8 +199,8 @@
   --bb-radius-input: 0;
 
   /* Borders, focus, depth */
-  --bb-focus-ring: 0 0 0 3px rgba(0, 123, 255, 0.1);
-  --bb-focus-outline: 2px solid var(--bb-color-blue);
+  --bb-focus-ring: 0 0 0 3px rgba(0, 95, 204, 0.14);
+  --bb-focus-outline: 2px solid var(--bb-link-text);
   --bb-overlay-modal: rgba(0, 0, 0, 0.72);
 
   --bb-shadow-sm: none;
@@ -320,7 +336,7 @@
 .bb-richtext h4 { font-size: var(--bb-text-lg); }
 .bb-richtext p { margin-bottom: var(--bb-space-4); }
 .bb-richtext a {
-  color: var(--bb-color-blue);
+  color: var(--bb-link-text);
   text-decoration: underline;
   text-underline-offset: 2px;
 }

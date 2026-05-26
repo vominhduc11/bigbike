@@ -15,12 +15,12 @@ function isHomePath(pathname: string) {
 function tabClass(active: boolean) {
   return cn(
     "bb-bottom-nav-item relative flex min-h-14 min-w-14 flex-col items-center justify-center gap-1 px-1",
-    active ? "text-brand" : "text-muted-foreground",
+    active ? "text-brand-on-dark" : "text-muted-foreground",
   );
 }
 
 function ActiveBar() {
-  return <span className="absolute left-1/2 top-0 h-0.5 w-6 -translate-x-1/2 bg-brand" />;
+  return <span className="absolute left-1/2 top-0 h-0.5 w-6 -translate-x-1/2 bg-brand-on-dark" />;
 }
 
 export function MobileBottomNav() {

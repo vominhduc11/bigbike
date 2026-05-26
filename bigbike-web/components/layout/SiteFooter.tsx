@@ -45,7 +45,7 @@ function splitHeading(value: string): string[] {
 
 function ContactIcon({ icon }: { icon: FooterContact["icon"] }) {
   return (
-    <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-[3px] border-2 border-brand text-brand md:h-[34px] md:w-[34px]">
+    <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-[3px] border-2 border-brand-inverse text-brand-inverse md:h-[34px] md:w-[34px]">
       {icon === "phone" ? (
         <PhoneCall size={22} strokeWidth={2.1} aria-hidden="true" />
       ) : (
@@ -169,7 +169,7 @@ export async function SiteFooter() {
                     <a
                       key={item.id}
                       href={href}
-                      className="flex items-start gap-5 font-cta text-[2rem] font-medium leading-[1.18] text-white no-underline transition-colors hover:text-brand md:text-[2.143rem]"
+                      className="flex items-start gap-5 font-cta text-[2rem] font-medium leading-[1.18] text-white no-underline transition-colors hover:text-brand-inverse md:text-[2.143rem]"
                     >
                       <ContactIcon icon={item.icon} />
                       <span>{item.label}</span>
@@ -203,14 +203,14 @@ export async function SiteFooter() {
                                 href={item.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-base leading-[1.45] text-white no-underline transition-colors hover:text-brand"
+                                className="text-base leading-[1.45] text-white no-underline transition-colors hover:text-brand-inverse"
                               >
                                 {item.label}
                               </a>
                             ) : (
                               <Link
                                 href={item.url}
-                                className="text-base leading-[1.45] text-white no-underline transition-colors hover:text-brand"
+                                className="text-base leading-[1.45] text-white no-underline transition-colors hover:text-brand-inverse"
                               >
                                 {item.label}
                               </Link>
@@ -236,7 +236,7 @@ export async function SiteFooter() {
                               href={item.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-block text-base leading-none text-white no-underline transition-colors hover:text-brand"
+                              className="inline-block text-base leading-none text-white no-underline transition-colors hover:text-brand-inverse"
                             >
                               {item.label}
                             </a>
