@@ -24,7 +24,7 @@ export function CartIcon() {
     <>
       <button
         type="button"
-        className="bb-cart-icon-link bb-cart-icon-button relative flex h-full items-center justify-center px-3.5 text-white no-underline transition-colors duration-fast hover:text-brand focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand md:hidden"
+        className="bb-cart-icon-link bb-cart-icon-button relative flex h-full items-center justify-center px-3.5 text-white no-underline transition-colors duration-fast hover:text-brand focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand hidden"
         aria-label={t("iconAria")}
         onClick={() => openPanel("cart")}
       >

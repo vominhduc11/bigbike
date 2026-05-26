@@ -189,7 +189,7 @@ export function MobileHeaderMenu({
     <>
       <button
         className={cn(
-          "bb-icon-btn bb-menu-toggle min-[1261px]:!hidden",
+          "bb-icon-btn bb-menu-toggle hidden md:block min-[1261px]:!hidden",
           open && "is-active",
         )}
         aria-label={t("mobileMenuOpenAriaLabel")}

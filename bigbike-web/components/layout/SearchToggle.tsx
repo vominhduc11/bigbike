@@ -75,7 +75,7 @@ export function SearchToggle() {
       <Button
         variant="ghost"
         className={cn(
-          "bb-icon-btn bb-header-search-trigger",
+          "bb-icon-btn bb-header-search-trigger hidden md:flex",
           open && "is-active",
         )}
         aria-label={t("toggleAriaLabel")}
