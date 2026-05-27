@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Swiper, SwiperSlide } from "swiper/react";
 import type { Swiper as SwiperType } from "swiper";
 import "swiper/css";
@@ -130,13 +131,17 @@ function VideoModal({
     closeRef.current?.focus();
   }, []);
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  const modal = (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4 animate-in fade-in-0 duration-200"
+      className="fixed inset-0 flex items-center justify-center bg-black/80 p-4 animate-in fade-in-0 duration-200"
+      style={{ zIndex: 2147483647, isolation: "isolate" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       role="dialog"
       aria-modal="true"
       aria-label={title}
+      data-bb-video-modal="true"
     >
       <div
         className="relative bg-black shadow-2xl animate-in fade-in-0 zoom-in-95 duration-200"
@@ -212,6 +217,8 @@ function VideoModal({
       </div>
     </div>
   );
+
+  return createPortal(modal, document.body);
 }
 
 export function HomeVideoCarousel({ videos }: Props) {
