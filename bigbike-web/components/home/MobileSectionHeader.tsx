@@ -10,7 +10,7 @@ type Props = {
 
 export function MobileSectionHeader({ kicker, title, href, linkText = "Xem tất cả" }: Props) {
   return (
-    <div className="bb-mobile-section-header flex items-end justify-between gap-2.5 px-3.5 mb-3.5">
+    <div className="bb-mobile-section-header flex items-end justify-between gap-2.5 px-6 mb-3.5">
       <div>
         <div className="bb-mobile-section-kicker flex items-center gap-2 mb-1">
           <span className="inline-block h-px w-4 bg-brand" />

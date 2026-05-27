@@ -13175,15 +13175,6 @@ html[data-bb-keyboard-focus] .bb-floating-chat-anchor {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 
-  .bb-home-mobile-categories {
-    padding: 28px 0 8px;
-  }
-
-  .bb-home-mobile-category-grid {
-    gap: 12px;
-    padding-inline: 24px;
-  }
-
   .bb-home-mobile-category-card {
     background: var(--bb-bg-surface);
     color: var(--bb-text-primary);
@@ -13199,9 +13190,7 @@ html[data-bb-keyboard-focus] .bb-floating-chat-anchor {
     padding: 12px;
   }
 
-  .bb-home-mobile-category-card .text-foreground,
-  .bb-home-mobile-category-card span,
-  .bb-home-mobile-category-card div {
+  .bb-home-mobile-category-card .text-foreground {
     color: var(--bb-text-primary);
   }
 

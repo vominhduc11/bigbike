@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Category } from "@/lib/contracts/public";
 import { resolveMediaUrl, safeText } from "@/lib/utils/format";
-import { toCategoryPath, toProductListPath } from "@/lib/utils/routes";
+import { toCategoryListPath, toCategoryPath } from "@/lib/utils/routes";
 import { MobileSectionHeader } from "./MobileSectionHeader";
 
 export function MobileCategoryGrid({ categories }: { categories: Category[] }) {
@@ -10,13 +10,13 @@ export function MobileCategoryGrid({ categories }: { categories: Category[] }) {
   if (items.length === 0) return null;
 
   return (
-    <section className="bb-home-mobile-categories pt-6 pb-1">
+    <section className="bb-home-mobile-categories">
       <MobileSectionHeader
         kicker="DANH MỤC"
         title="MUA SẮM THEO LOẠI"
-        href={toProductListPath()}
+        href={toCategoryListPath()}
       />
-      <div className="bb-home-mobile-category-grid grid grid-cols-2 gap-2.5 px-3.5 min-[600px]:grid-cols-3">
+      <div className="bb-home-mobile-category-grid grid grid-cols-2 min-[600px]:grid-cols-3">
         {items.map((category) => {
           const imgAsset = category.image ?? category.icon;
           const src = resolveMediaUrl(imgAsset?.url?.trim()) || "/wp/category-fallback.png";
