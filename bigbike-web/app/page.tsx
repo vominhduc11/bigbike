@@ -387,7 +387,7 @@ export default async function HomePage() {
   const newsArticles = newsArticlesResult.data;
   const carouselProducts = carouselProductsResult.data;
   const homeHighlights = homeHighlightsResult.data ?? [];
-  const homeVideos = (homeVideosResult.data ?? []).filter(isRenderableHomeVideo).slice(0, 5);
+  const homeVideos = (homeVideosResult.data ?? []).filter(isRenderableHomeVideo);
   const aboutMarkup = aboutHtml
     ? sanitizeRichHtml(aboutHtml, { allowInlineStyles: true, rewriteMediaUrls: true })
     : "";
