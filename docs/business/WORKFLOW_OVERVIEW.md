@@ -50,6 +50,22 @@
 | 3 | System | Reject unsupported/empty/fake MIME uploads, including SVG | `CONFIRMED_FROM_CODE` | `AdminMediaP0Test.java` |
 | 4 | System | Persist media metadata and storage reference | `CONFIRMED_FROM_CODE` | `AdminMediaService.java` |
 
+## Header Navigation — Desktop Mega Menu (2026-05-27)
+
+**Quyết định:** Header desktop "Tất cả sản phẩm" chuyển từ flyout dọc nhiều cấp sang **mega menu sidebar + panel** từ phiên bản 2026-05-27.
+
+**Lý do:** Menu thực tế sâu 4 cấp (L1 → 9 nhóm L2 → 17 danh mục L3 → 4 mục L4). Flyout dọc cho cấu trúc này đẩy cột cấp 4 ra ~1200px chiều ngang, gây overflow viewport, scrollbar ngang, và mất hover khi rê chéo — không khắc phục được triệt để bằng collision detection.
+
+**Layout mới (desktop ≥1261px):**
+- Hover "Tất cả sản phẩm" → mega panel rộng container (75rem) hiện ngay dưới header.
+- **Sidebar trái:** 9 nhóm L2 dạng danh sách dọc. Nhóm có con → hover/focus đổi nội dung panel phải. Nhóm leaf → link điều hướng trực tiếp.
+- **Panel phải:** L3 dạng grid nhiều cột. L4 hiện dạng sub-list thụt lề dưới L3 cha (không dùng flyout thêm cấp).
+- Default-active: nhóm L2 đầu tiên có con.
+
+**Mobile (≤1260px):** Giữ nguyên accordion (`MobileHeaderMenu`), không thay đổi.
+
+**Lý do khác WP gốc (WP dùng flyout dọc):** UX > bám WP khi menu sâu 4 cấp. Quyết định này do chủ dự án xác nhận ngày 2026-05-27.
+
 ## Address Workflow
 
 | Step | Actor | Current flow | Status | Evidence |

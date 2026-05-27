@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const DROPDOWN_EXIT_MS = 200;
+const CLOSE_DELAY_MS = 120;
 
 import type { PublicMenuItem } from "@/lib/contracts/public";
 import { normalizeMenuUrl, isActivePath } from "@/lib/utils/nav";
@@ -22,287 +23,248 @@ function isNodeActive(pathname: string | null, node: HeaderNavNode): boolean {
   return node.children.some((child) => isNodeActive(pathname, child));
 }
 
-// Reads the CSS custom property --bb-header-height from :root (80px desktop).
-function getHeaderHeight(): number {
-  const raw = getComputedStyle(document.documentElement)
-    .getPropertyValue("--bb-header-height")
-    .trim();
-  // Value is e.g. "5rem" or "80px"
-  if (raw.endsWith("rem")) {
-    return parseFloat(raw) * parseFloat(getComputedStyle(document.documentElement).fontSize);
-  }
-  return parseFloat(raw) || 80;
-}
+// ─── MegaPanel ───────────────────────────────────────────────────────────────
+// Right side: L3 grid for one L2 group. L4 renders as indented sub-list.
 
-// Repositions a flyout <ul> to stay within the viewport.
-// Call inside requestAnimationFrame AFTER the element is display:block so layout is settled.
-function repositionFlyout(el: HTMLUListElement) {
-  // Reset inline styles so we measure from the CSS natural position
-  el.style.left = "";
-  el.style.right = "";
-  el.style.top = "";
-  el.style.maxHeight = "";
-  // Always clip x — never show horizontal scrollbar regardless of content
-  el.style.overflowX = "hidden";
-  el.style.overflowY = "";
-
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const headerH = getHeaderHeight();
-  // Usable vertical space: from just below header to 8px above viewport bottom
-  const topBound = headerH + 4;
-  const bottomBound = vh - 8;
-
-  const r = el.getBoundingClientRect();
-
-  // Flip left when overflowing right edge
-  if (r.right > vw - 8) {
-    el.style.left = "auto";
-    el.style.right = "100%";
-  }
-
-  // Re-measure after potential flip
-  const r2 = el.getBoundingClientRect();
-
-  if (r2.bottom > bottomBound) {
-    // How much to shift up, but never above topBound
-    const shift = Math.min(r2.bottom - bottomBound, r2.top - topBound);
-    if (shift > 0) {
-      el.style.top = `-${shift}px`;
-    }
-    // Re-measure after shift; if still overflowing, constrain height with vertical scroll
-    const r3 = el.getBoundingClientRect();
-    if (r3.bottom > bottomBound) {
-      const available = bottomBound - r3.top;
-      if (available > 80) {
-        el.style.maxHeight = `${available}px`;
-        el.style.overflowY = "auto";
-      }
-    }
-  }
-}
-
-function NestedSubMenu({
-  nodes,
+function MegaPanel({
+  group,
   onItemClick,
   pathname,
+  active,
 }: {
-  nodes: HeaderNavNode[];
+  group: HeaderNavNode;
   onItemClick: () => void;
   pathname: string | null;
+  active: boolean;
 }) {
-  const listRef = useRef<HTMLUListElement>(null);
-
-  useEffect(() => {
-    const el = listRef.current;
-    if (!el) return;
-    const parent = el.closest<HTMLElement>(".bb-nested-group");
-    if (!parent) return;
-
-    let rafId = 0;
-
-    function onMouseEnter() {
-      if (!el) return;
-      // Defer one rAF so the browser has painted the display:block state
-      // before we call getBoundingClientRect().
-      cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(() => repositionFlyout(el));
-    }
-
-    function onMouseLeave() {
-      cancelAnimationFrame(rafId);
-      if (!el) return;
-      el.style.left = "";
-      el.style.right = "";
-      el.style.top = "";
-      el.style.maxHeight = "";
-      el.style.overflowX = "hidden";
-      el.style.overflowY = "";
-    }
-
-    parent.addEventListener("mouseenter", onMouseEnter);
-    parent.addEventListener("mouseleave", onMouseLeave);
-    return () => {
-      cancelAnimationFrame(rafId);
-      parent.removeEventListener("mouseenter", onMouseEnter);
-      parent.removeEventListener("mouseleave", onMouseLeave);
-    };
-  }, []);
-
   return (
-    <ul
-      ref={listRef}
-      className="absolute left-full top-0 z-[680] m-0 hidden w-[300px] list-none overflow-x-hidden bg-white p-0 text-left shadow-dropdown group-hover/nested:block"
-    >
-      {nodes.map((child) => {
-        const hasChildren = child.children.length > 0;
-        const active = isNodeActive(pathname, child);
-
-        return (
-          <li
-            key={child.id}
-            className={cn(
-              "relative border-b border-border last:border-b-0",
-              hasChildren && "group/nested bb-nested-group",
-            )}
-          >
-            <Link
-              href={normalizeMenuUrl(child.url)}
-              className={cn(
-                "flex items-center gap-2.5 px-[30px] py-[15px] font-heading text-[14px] font-semibold leading-[1.3] text-muted-foreground no-underline transition-colors duration-300 hover:text-brand",
-                active && "text-brand",
-              )}
-              target={child.openInNewTab ? "_blank" : undefined}
-              rel={child.openInNewTab ? "noreferrer" : undefined}
-              onClick={onItemClick}
-            >
-              {child.iconUrl && (
-                <span
-                  className="bb-submenu-icon"
-                  style={{
-                    maskImage: `url(${child.iconUrl})`,
-                    WebkitMaskImage: `url(${child.iconUrl})`,
-                  }}
-                  aria-hidden="true"
-                />
-              )}
-              <span className="min-w-0 flex-1">{child.label}</span>
-              {hasChildren && (
-                <ChevronDown
-                  size={13}
-                  strokeWidth={2.5}
-                  aria-hidden="true"
-                  className="-rotate-90 ml-auto shrink-0 text-muted-foreground"
-                />
-              )}
-            </Link>
-            {hasChildren && (
-              <NestedSubMenu
-                nodes={child.children}
-                onItemClick={onItemClick}
-                pathname={pathname}
-              />
-            )}
-          </li>
-        );
-      })}
-    </ul>
+    <div className={cn("flex-1 p-6", active ? "block" : "hidden")}>
+      {group.children.length === 0 ? (
+        <p className="font-heading text-[13px] text-muted-foreground">{group.label}</p>
+      ) : (
+        <ul className="m-0 list-none columns-2 gap-x-8 p-0 xl:columns-3">
+          {group.children.map((cat) => {
+            const catActive = isNodeActive(pathname, cat);
+            const hasL4 = cat.children.length > 0;
+            return (
+              <li key={cat.id} className="mb-5 break-inside-avoid">
+                <Link
+                  href={normalizeMenuUrl(cat.url)}
+                  className={cn(
+                    "mb-1.5 flex items-center gap-2 font-heading text-[13px] font-bold uppercase tracking-wide text-foreground no-underline transition-colors duration-150 hover:text-brand",
+                    catActive && "text-brand",
+                  )}
+                  target={cat.openInNewTab ? "_blank" : undefined}
+                  rel={cat.openInNewTab ? "noreferrer" : undefined}
+                  onClick={onItemClick}
+                >
+                  {cat.iconUrl && (
+                    <span
+                      className="bb-submenu-icon shrink-0"
+                      style={{
+                        maskImage: `url(${cat.iconUrl})`,
+                        WebkitMaskImage: `url(${cat.iconUrl})`,
+                      }}
+                      aria-hidden="true"
+                    />
+                  )}
+                  {cat.label}
+                </Link>
+                {hasL4 && (
+                  <ul className="m-0 list-none p-0">
+                    {cat.children.map((item) => {
+                      const itemActive = isActivePath(pathname, normalizeMenuUrl(item.url));
+                      return (
+                        <li key={item.id}>
+                          <Link
+                            href={normalizeMenuUrl(item.url)}
+                            className={cn(
+                              "block py-0.5 font-heading text-[12px] text-muted-foreground no-underline transition-colors duration-150 hover:text-brand",
+                              itemActive && "text-brand",
+                            )}
+                            target={item.openInNewTab ? "_blank" : undefined}
+                            rel={item.openInNewTab ? "noreferrer" : undefined}
+                            onClick={onItemClick}
+                          >
+                            {item.label}
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
   );
 }
 
-function SubMenu({
-  nodes,
+// ─── MegaSidebar ─────────────────────────────────────────────────────────────
+// Left column: L2 groups. Hover/focus activates right panel.
+// Leaf groups (no children) are plain navigation links.
+
+function MegaSidebar({
+  groups,
+  activeId,
+  onActivate,
   onItemClick,
   pathname,
 }: {
-  nodes: HeaderNavNode[];
+  groups: HeaderNavNode[];
+  activeId: string;
+  onActivate: (id: string) => void;
   onItemClick: () => void;
   pathname: string | null;
 }) {
-  const listRef = useRef<HTMLUListElement>(null);
-
-  useEffect(() => {
-    const el = listRef.current;
-    if (!el) return;
-
-    let rafId = 0;
-
-    function clampBottom() {
-      if (!el) return;
-      el.style.maxHeight = "";
-      el.style.overflowY = "";
-      // Always hide horizontal overflow — submenu width is fixed at 300px
-      el.style.overflowX = "hidden";
-
-      const rect = el.getBoundingClientRect();
-      const vh = window.innerHeight;
-      const bottomBound = vh - 8;
-
-      if (rect.bottom > bottomBound) {
-        // Use rect.top (actual position after [data-dropdown] animation settled)
-        const available = bottomBound - rect.top;
-        if (available > 80) {
-          el.style.maxHeight = `${available}px`;
-          el.style.overflowY = "auto";
-        }
-      }
-    }
-
-    // Two rAFs: first lets [data-dropdown] opacity/transform transition start,
-    // second ensures layout is fully settled before measuring.
-    rafId = requestAnimationFrame(() => {
-      rafId = requestAnimationFrame(clampBottom);
-    });
-
-    window.addEventListener("resize", clampBottom);
-    return () => {
-      cancelAnimationFrame(rafId);
-      window.removeEventListener("resize", clampBottom);
-    };
-  }, []);
-
   return (
-    <ul
-      ref={listRef}
-      className="relative m-0 w-[300px] list-none overflow-x-hidden bg-white p-0 text-left shadow-dropdown"
+    <nav
+      aria-label="Danh mục sản phẩm"
+      className="w-52 shrink-0 border-r border-border bg-[#f9f9f9] py-3 xl:w-60"
     >
-      {nodes.map((child) => {
-        const hasChildren = child.children.length > 0;
-        const active = isNodeActive(pathname, child);
+      <ul className="m-0 list-none p-0">
+        {groups.map((group) => {
+          const hasChildren = group.children.length > 0;
+          const isActive = group.id === activeId;
+          const groupPathActive = isNodeActive(pathname, group);
 
-        return (
-          <li
-            key={child.id}
-            className={cn(
-              "relative border-b border-border last:border-b-0",
-              hasChildren && "group/nested bb-nested-group",
-            )}
-          >
-            <Link
-              href={normalizeMenuUrl(child.url)}
-              className={cn(
-                "flex items-center gap-2.5 px-[30px] py-[15px] font-heading text-[14px] font-semibold leading-[1.3] text-muted-foreground no-underline transition-colors duration-300 hover:text-brand",
-                active && "text-brand",
-              )}
-              target={child.openInNewTab ? "_blank" : undefined}
-              rel={child.openInNewTab ? "noreferrer" : undefined}
-              onClick={onItemClick}
-            >
-              {child.iconUrl && (
-                <span
-                  className="bb-submenu-icon"
-                  style={{
-                    maskImage: `url(${child.iconUrl})`,
-                    WebkitMaskImage: `url(${child.iconUrl})`,
-                  }}
-                  aria-hidden="true"
-                />
-              )}
-              <span className="min-w-0 flex-1">{child.label}</span>
-              {hasChildren && (
-                <ChevronDown
+          if (!hasChildren) {
+            return (
+              <li key={group.id}>
+                <Link
+                  href={normalizeMenuUrl(group.url)}
+                  className={cn(
+                    "flex w-full items-center gap-2.5 px-5 py-3 font-heading text-[13px] font-semibold text-foreground no-underline transition-colors duration-150 hover:bg-white hover:text-brand",
+                    groupPathActive && "text-brand",
+                  )}
+                  target={group.openInNewTab ? "_blank" : undefined}
+                  rel={group.openInNewTab ? "noreferrer" : undefined}
+                  onClick={onItemClick}
+                >
+                  {group.iconUrl && (
+                    <span
+                      className="bb-submenu-icon shrink-0"
+                      style={{
+                        maskImage: `url(${group.iconUrl})`,
+                        WebkitMaskImage: `url(${group.iconUrl})`,
+                      }}
+                      aria-hidden="true"
+                    />
+                  )}
+                  <span className="min-w-0 flex-1">{group.label}</span>
+                </Link>
+              </li>
+            );
+          }
+
+          return (
+            <li key={group.id}>
+              <button
+                type="button"
+                className={cn(
+                  "flex w-full items-center gap-2.5 px-5 py-3 font-heading text-[13px] font-semibold text-foreground transition-colors duration-150 hover:bg-white hover:text-brand",
+                  isActive && "bg-white text-brand",
+                  groupPathActive && "text-brand",
+                )}
+                onMouseEnter={() => onActivate(group.id)}
+                onFocus={() => onActivate(group.id)}
+                aria-expanded={isActive}
+              >
+                {group.iconUrl && (
+                  <span
+                    className="bb-submenu-icon shrink-0"
+                    style={{
+                      maskImage: `url(${group.iconUrl})`,
+                      WebkitMaskImage: `url(${group.iconUrl})`,
+                    }}
+                    aria-hidden="true"
+                  />
+                )}
+                <span className="min-w-0 flex-1 text-left">{group.label}</span>
+                <ChevronRight
                   size={13}
                   strokeWidth={2.5}
                   aria-hidden="true"
-                  className="-rotate-90 ml-auto shrink-0 text-muted-foreground"
+                  className={cn(
+                    "ml-auto shrink-0 transition-colors duration-150",
+                    isActive ? "text-brand" : "text-muted-foreground",
+                  )}
                 />
-              )}
-            </Link>
-            {hasChildren && (
-              <NestedSubMenu
-                nodes={child.children}
-                onItemClick={onItemClick}
-                pathname={pathname}
-              />
-            )}
-          </li>
-        );
-      })}
-    </ul>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
   );
 }
 
-const menuDelay: [number, number] = [0, 120];
+// ─── MegaMenu ────────────────────────────────────────────────────────────────
+// Container: owns activeGroupId, renders sidebar + all panels side-by-side.
+// Wrapped by the existing [data-dropdown] / is-visible animation mechanism.
+
+function MegaMenu({
+  id,
+  node,
+  visible,
+  onItemClick,
+  pathname,
+}: {
+  id: string;
+  node: HeaderNavNode;
+  visible: boolean;
+  onItemClick: () => void;
+  pathname: string | null;
+}) {
+  const defaultActiveId =
+    node.children.find((c) => c.children.length > 0)?.id ?? node.children[0]?.id ?? "";
+  const [activeId, setActiveId] = useState(defaultActiveId);
+
+  return (
+    <div
+      id={id}
+      data-dropdown
+      className={cn(
+        "fixed left-1/2 -translate-x-1/2",
+        "top-[var(--bb-header-height)]",
+        "z-[var(--bb-z-dropdown)]",
+        "w-[min(75rem,calc(100vw-2rem))]",
+        "max-h-[calc(100vh-var(--bb-header-height)-0.5rem)] overflow-y-auto overflow-x-hidden",
+        "bg-white shadow-dropdown",
+        visible && "is-visible",
+      )}
+      role="menu"
+      aria-label={node.label}
+    >
+      <div className="flex min-h-[320px]">
+        <MegaSidebar
+          groups={node.children}
+          activeId={activeId}
+          onActivate={setActiveId}
+          onItemClick={onItemClick}
+          pathname={pathname}
+        />
+        <div className="min-w-0 flex-1">
+          {node.children.map((group) => (
+            <MegaPanel
+              key={group.id}
+              group={group}
+              onItemClick={onItemClick}
+              pathname={pathname}
+              active={group.id === activeId}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── HeaderNavItem ────────────────────────────────────────────────────────────
+
+const menuDelay: [number, number] = [0, CLOSE_DELAY_MS];
 
 const navLinkBase =
   "bb-header-nav-link flex h-full items-center whitespace-nowrap font-cta text-17 font-semibold uppercase no-underline text-white transition-colors duration-150 hover:text-brand-on-dark";
@@ -324,18 +286,9 @@ export function HeaderNavItem({ node }: HeaderNavItemProps) {
   const menuId = useId();
 
   const clearTimers = useCallback(() => {
-    if (openTimerRef.current) {
-      clearTimeout(openTimerRef.current);
-      openTimerRef.current = null;
-    }
-    if (closeTimerRef.current) {
-      clearTimeout(closeTimerRef.current);
-      closeTimerRef.current = null;
-    }
-    if (exitTimerRef.current) {
-      clearTimeout(exitTimerRef.current);
-      exitTimerRef.current = null;
-    }
+    if (openTimerRef.current) { clearTimeout(openTimerRef.current); openTimerRef.current = null; }
+    if (closeTimerRef.current) { clearTimeout(closeTimerRef.current); closeTimerRef.current = null; }
+    if (exitTimerRef.current) { clearTimeout(exitTimerRef.current); exitTimerRef.current = null; }
   }, []);
 
   const openMenu = useCallback(
@@ -346,10 +299,7 @@ export function HeaderNavItem({ node }: HeaderNavItemProps) {
         setMounted(true);
         requestAnimationFrame(() => setVisible(true));
       };
-      if (immediate) {
-        doOpen();
-        return;
-      }
+      if (immediate) { doOpen(); return; }
       openTimerRef.current = setTimeout(doOpen, menuDelay[0]);
     },
     [clearTimers],
@@ -382,12 +332,11 @@ export function HeaderNavItem({ node }: HeaderNavItemProps) {
 
   useEffect(() => () => clearTimers(), [clearTimers]);
 
-  // Signal html element when nav dropdown is open so floating chat can hide
+  // Signal html so floating chat hides while nav dropdown is open
   useEffect(() => {
     if (open) {
       document.documentElement.setAttribute("data-bb-nav-dropdown-open", "");
     } else {
-      // Only remove if no sibling nav dropdown is open
       const anyOpen = document.querySelector(".bb-header-nav-item.is-open");
       if (!anyOpen) {
         document.documentElement.removeAttribute("data-bb-nav-dropdown-open");
@@ -395,28 +344,22 @@ export function HeaderNavItem({ node }: HeaderNavItemProps) {
     }
   }, [open]);
 
+  // Close on outside pointer-down
   useEffect(() => {
     if (!open) return;
-
     function onPointerDown(event: PointerEvent) {
       const target = event.target;
       if (!(target instanceof Node)) return;
       if (wrapperRef.current?.contains(target)) return;
       closeMenu();
     }
-
     document.addEventListener("pointerdown", onPointerDown);
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, [open, closeMenu]);
 
   if (!hasChildren) {
     return (
-      <li
-        className={cn(
-          "bb-header-nav-item relative flex h-full list-none items-stretch",
-          active && "is-active",
-        )}
-      >
+      <li className={cn("bb-header-nav-item relative flex h-full list-none items-stretch", active && "is-active")}>
         <Link
           href={href}
           className={cn(navLinkBase, node.cssClass, active && "text-brand-on-dark")}
@@ -457,11 +400,7 @@ export function HeaderNavItem({ node }: HeaderNavItemProps) {
         aria-expanded={open}
         aria-controls={menuId}
         onKeyDown={(e) => {
-          if (e.key === "Escape") {
-            e.preventDefault();
-            closeMenu();
-            return;
-          }
+          if (e.key === "Escape") { e.preventDefault(); closeMenu(); return; }
           if (e.key === "ArrowDown") {
             e.preventDefault();
             openMenu(true);
@@ -478,9 +417,13 @@ export function HeaderNavItem({ node }: HeaderNavItemProps) {
       </Link>
 
       {mounted && (
-        <div id={menuId} data-dropdown className={visible ? "is-visible" : ""}>
-          <SubMenu nodes={node.children} onItemClick={closeMenu} pathname={pathname} />
-        </div>
+        <MegaMenu
+          id={menuId}
+          node={node}
+          visible={visible}
+          onItemClick={closeMenu}
+          pathname={pathname}
+        />
       )}
     </li>
   );
