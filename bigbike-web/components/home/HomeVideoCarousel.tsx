@@ -121,9 +121,14 @@ function VideoModal({
   }, [onClose, onPrev, onNext]);
 
   useEffect(() => {
-    const prev = document.body.style.overflow;
+    const prevBody = document.body.style.overflow;
+    const prevHtml = document.documentElement.style.overflow;
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevBody;
+      document.documentElement.style.overflow = prevHtml;
+    };
   }, []);
 
   useEffect(() => {
@@ -134,17 +139,116 @@ function VideoModal({
 
   const modal = (
     <div
-      className="fixed inset-0 flex items-center justify-center bg-black/80 p-4 animate-in fade-in-0 duration-200"
-      style={{ zIndex: 2147483647, isolation: "isolate" }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      className="fixed inset-0 flex items-center justify-center animate-in fade-in-0 duration-200"
+      style={{
+        zIndex: 2147483647,
+        isolation: "isolate",
+        background: "rgba(0,0,0,0.88)",
+        backdropFilter: "blur(3px)",
+        WebkitBackdropFilter: "blur(3px)",
+      }}
       role="dialog"
       aria-modal="true"
       aria-label={title}
       data-bb-video-modal="true"
     >
+      {/* Close button — outside the video frame, top-right of overlay */}
+      <button
+        ref={closeRef}
+        type="button"
+        onClick={onClose}
+        aria-label="Đóng video"
+        style={{
+          position: "fixed",
+          top: 16,
+          right: 16,
+          zIndex: 10,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: 44,
+          height: 44,
+          borderRadius: 9999,
+          background: "rgba(0,0,0,0.72)",
+          border: "1px solid rgba(255,255,255,0.25)",
+          color: "#fff",
+          cursor: "pointer",
+          boxShadow: "0 2px 12px rgba(0,0,0,0.5)",
+          outline: "none",
+        }}
+        className="focus-visible:outline-[var(--bb-focus-outline)] focus-visible:outline-offset-2"
+      >
+        <X className="h-5 w-5" />
+      </button>
+
+      {/* Prev/Next — outside the video frame, flanking the card */}
+      {videos.length > 1 && (
+        <>
+          <button
+            type="button"
+            onClick={onPrev}
+            aria-label="Video trước"
+            style={{
+              position: "fixed",
+              left: 12,
+              top: "50%",
+              transform: "translateY(-50%)",
+              zIndex: 10,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 48,
+              height: 48,
+              borderRadius: 9999,
+              background: "rgba(0,0,0,0.65)",
+              border: "1px solid rgba(255,255,255,0.25)",
+              color: "#fff",
+              cursor: "pointer",
+              boxShadow: "0 2px 12px rgba(0,0,0,0.45)",
+              outline: "none",
+            }}
+            className="focus-visible:outline-[var(--bb-focus-outline)] focus-visible:outline-offset-2 hover:bg-[rgba(0,0,0,0.85)]"
+          >
+            <svg className="h-6 w-4 shrink-0" viewBox="0 0 27 44" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M22 2 L4 22 L22 42" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            onClick={onNext}
+            aria-label="Video tiếp theo"
+            style={{
+              position: "fixed",
+              right: 12,
+              top: "50%",
+              transform: "translateY(-50%)",
+              zIndex: 10,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 48,
+              height: 48,
+              borderRadius: 9999,
+              background: "rgba(0,0,0,0.65)",
+              border: "1px solid rgba(255,255,255,0.25)",
+              color: "#fff",
+              cursor: "pointer",
+              boxShadow: "0 2px 12px rgba(0,0,0,0.45)",
+              outline: "none",
+            }}
+            className="focus-visible:outline-[var(--bb-focus-outline)] focus-visible:outline-offset-2 hover:bg-[rgba(0,0,0,0.85)]"
+          >
+            <svg className="h-6 w-4 shrink-0" viewBox="0 0 27 44" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M5 2 L23 22 L5 42" />
+            </svg>
+          </button>
+        </>
+      )}
+
+      {/* Video card — clicks here do NOT close modal */}
       <div
         className="relative bg-black shadow-2xl animate-in fade-in-0 zoom-in-95 duration-200"
-        style={{ width: "min(420px, calc(100vw - 32px), calc((90vh - 80px) * 9 / 16))" }}
+        style={{ width: "min(420px, calc(100vw - 32px), calc((85vh - 60px) * 9 / 16))" }}
       >
         <div className="relative w-full [aspect-ratio:9/16]">
           {embedSrc ? (
@@ -156,61 +260,7 @@ function VideoModal({
               title={title}
             />
           ) : null}
-          {videos.length > 1 && (
-            <>
-              <button
-                type="button"
-                className="absolute left-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center bg-black/60 text-white transition-colors hover:bg-black/80 focus-visible:outline-[var(--bb-focus-outline)]"
-                style={{ borderRadius: 9999 }}
-                onClick={onPrev}
-                aria-label="Video trước"
-              >
-                <svg
-                  className="h-6 w-4 shrink-0"
-                  viewBox="0 0 27 44"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.25"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M22 2 L4 22 L22 42" />
-                </svg>
-              </button>
-              <button
-                type="button"
-                className="absolute right-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center bg-black/60 text-white transition-colors hover:bg-black/80 focus-visible:outline-[var(--bb-focus-outline)]"
-                style={{ borderRadius: 9999 }}
-                onClick={onNext}
-                aria-label="Video tiếp theo"
-              >
-                <svg
-                  className="h-6 w-4 shrink-0"
-                  viewBox="0 0 27 44"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.25"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M5 2 L23 22 L5 42" />
-                </svg>
-              </button>
-            </>
-          )}
         </div>
-        <button
-          ref={closeRef}
-          type="button"
-          className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center bg-black/60 text-white transition-colors hover:bg-black/90 focus-visible:outline-[var(--bb-focus-outline)]"
-          style={{ borderRadius: 9999 }}
-          onClick={onClose}
-          aria-label="Đóng video"
-        >
-          <X className="h-5 w-5" />
-        </button>
         {title && (
           <div className="px-5 py-4">
             <p className="m-0 font-display text-[18px] font-semibold text-white">{title}</p>
