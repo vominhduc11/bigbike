@@ -907,6 +907,10 @@ body {
 }
 
 [data-dropdown] {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 680;
   opacity: 0;
   transform: translateY(6px);
   transition: opacity 0.2s ease, transform 0.2s ease;
@@ -12960,7 +12964,8 @@ body > footer .bg-footer-top a:focus-visible {
 }
 
 html[data-bb-header-panel] .bb-floating-chat-anchor,
-html[data-bb-keyboard-focus] .bb-floating-chat-anchor {
+html[data-bb-keyboard-focus] .bb-floating-chat-anchor,
+html[data-bb-nav-dropdown-open] .bb-floating-chat-anchor {
   display: none !important;
 }
 
