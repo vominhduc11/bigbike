@@ -8,6 +8,7 @@ import Image from "next/image";
 import { X } from "lucide-react";
 import type { HomeVideo } from "@/lib/contracts/public";
 import { resolveMediaUrl, safeText } from "@/lib/utils/format";
+import { cn } from "@/lib/utils";
 
 type Props = { videos: HomeVideo[] };
 
@@ -222,11 +223,13 @@ export function HomeVideoCarousel({ videos }: Props) {
   const triggerRef = useRef<HTMLElement | null>(null);
 
   const syncViewportState = useCallback(
-    (swiper?: SwiperType | null) => {
-      const width = swiper?.width ?? (typeof window === "undefined" ? 0 : window.innerWidth);
+    (_swiper?: SwiperType | null) => {
+      const width = typeof window === "undefined" ? 0 : window.innerWidth;
       const nextVisibleSlides = getVisibleVideoSlides(width);
+      const nextMaxSlideIndex = Math.max(0, videos.length - nextVisibleSlides);
       setVisibleSlides(nextVisibleSlides);
       setCanScroll(videos.length > nextVisibleSlides);
+      setSelectedIndex((prev) => Math.min(prev, nextMaxSlideIndex));
     },
     [videos.length],
   );
@@ -259,7 +262,6 @@ export function HomeVideoCarousel({ videos }: Props) {
 
   if (videos.length === 0) return null;
 
-  const loopEnabled = false;
   const maxSlideIndex = Math.max(0, videos.length - visibleSlides);
   const dotCount = canScroll ? maxSlideIndex + 1 : 0;
   const activeDotIndex = Math.min(selectedIndex, maxSlideIndex);
@@ -284,7 +286,7 @@ export function HomeVideoCarousel({ videos }: Props) {
             onResize={(s) => {
               syncViewportState(s);
             }}
-            loop={loopEnabled}
+            loop={false}
             speed={1000}
             slidesPerView={1}
             spaceBetween={0}
@@ -356,23 +358,17 @@ export function HomeVideoCarousel({ videos }: Props) {
                 type="button"
                 className="flex h-[var(--bb-touch-target)] min-w-[20px] cursor-pointer items-center justify-center border-0 bg-transparent p-0 focus-visible:outline-[var(--bb-focus-outline)] focus-visible:outline-offset-2"
                 onClick={() => {
-                  if (loopEnabled) swiperRef.current?.slideToLoop(idx);
-                  else swiperRef.current?.slideTo(idx);
+                  swiperRef.current?.slideTo(idx);
                 }}
                 aria-label={`Đến nhóm video ${idx + 1}`}
                 aria-current={isSelected ? "true" : undefined}
               >
                 <span
                   aria-hidden="true"
-                  style={{
-                    display: "block",
-                    width: isSelected ? 24 : 12,
-                    height: 12,
-                    borderRadius: 9999,
-                    flexShrink: 0,
-                    backgroundColor: isSelected ? "var(--bb-action-primary)" : "#ffffff",
-                    transition: "width 300ms ease, background-color 300ms ease",
-                  }}
+                  className={cn(
+                    "block h-[10px] w-[10px] rounded-full transition-colors duration-300",
+                    isSelected ? "bg-brand" : "bg-white",
+                  )}
                 />
               </button>
             );
