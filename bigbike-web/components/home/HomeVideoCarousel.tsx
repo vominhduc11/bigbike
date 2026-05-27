@@ -210,13 +210,9 @@ function VideoModal({
 export function HomeVideoCarousel({ videos }: Props) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [canScroll, setCanScroll] = useState(videos.length > 1);
   const swiperRef = useRef<SwiperType | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
-
-  if (videos.length === 0) return null;
-
-  const showControls = videos.length > 1;
-  const loopEnabled = false;
 
   const handleOpen = useCallback((idx: number) => {
     triggerRef.current = document.activeElement as HTMLElement;
@@ -229,10 +225,16 @@ export function HomeVideoCarousel({ videos }: Props) {
     triggerRef.current = null;
   }, []);
 
-  const handlePrev = () =>
-    setActiveIndex((i) => (i !== null ? (i - 1 + videos.length) % videos.length : null));
-  const handleNext = () =>
-    setActiveIndex((i) => (i !== null ? (i + 1) % videos.length : null));
+  const handlePrev = useCallback(() =>
+    setActiveIndex((i) => (i !== null ? (i - 1 + videos.length) % videos.length : null)),
+  [videos.length]);
+  const handleNext = useCallback(() =>
+    setActiveIndex((i) => (i !== null ? (i + 1) % videos.length : null)),
+  [videos.length]);
+
+  if (videos.length === 0) return null;
+
+  const loopEnabled = false;
 
   return (
     <>
@@ -242,9 +244,13 @@ export function HomeVideoCarousel({ videos }: Props) {
             onSwiper={(s) => {
               swiperRef.current = s;
               setSelectedIndex(s.realIndex);
+              setCanScroll(!s.isLocked);
             }}
             onSlideChange={(s) => {
               setSelectedIndex(s.realIndex);
+            }}
+            onBreakpoint={(s) => {
+              setCanScroll(!s.isLocked);
             }}
             loop={loopEnabled}
             speed={1000}
@@ -263,7 +269,7 @@ export function HomeVideoCarousel({ videos }: Props) {
             ))}
           </Swiper>
         </div>
-        {showControls && (
+        {canScroll && (
           <>
             <button
               type="button"
@@ -307,7 +313,7 @@ export function HomeVideoCarousel({ videos }: Props) {
         )}
       </div>
 
-      {showControls && videos.length > 1 && (
+      {videos.length > 1 && (
         <div className="mt-[30px] flex items-center justify-center gap-[10px] max-[767px]:mt-5" aria-label="Chuyển slide video">
           {videos.map((_, idx) => (
             <button
@@ -323,8 +329,8 @@ export function HomeVideoCarousel({ videos }: Props) {
             >
               <span
                 className={cn(
-                  "block h-[10px] w-[10px] rounded-full bg-white transition-[width,background-color] duration-300",
-                  idx === selectedIndex && "w-5 bg-brand",
+                  "block h-[10px] w-[10px] rounded-full bg-white transition-colors duration-300",
+                  idx === selectedIndex && "bg-brand",
                 )}
               />
             </button>
