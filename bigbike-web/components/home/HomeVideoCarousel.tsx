@@ -216,33 +216,28 @@ function VideoModal({
 export function HomeVideoCarousel({ videos }: Props) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [visibleSlides, setVisibleSlides] = useState(1);
   const [canScroll, setCanScroll] = useState(videos.length > 1);
   const swiperRef = useRef<SwiperType | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
 
-  const shouldShowControls = useCallback(
+  const syncViewportState = useCallback(
     (swiper?: SwiperType | null) => {
       const width = swiper?.width ?? (typeof window === "undefined" ? 0 : window.innerWidth);
-      const visibleSlides = getVisibleVideoSlides(width);
-      return videos.length > visibleSlides;
+      const nextVisibleSlides = getVisibleVideoSlides(width);
+      setVisibleSlides(nextVisibleSlides);
+      setCanScroll(videos.length > nextVisibleSlides);
     },
     [videos.length],
   );
 
-  const syncCanScroll = useCallback(
-    (swiper?: SwiperType | null) => {
-      setCanScroll(shouldShowControls(swiper ?? swiperRef.current));
-    },
-    [shouldShowControls],
-  );
-
   useEffect(() => {
-    syncCanScroll(swiperRef.current);
+    syncViewportState(swiperRef.current);
 
-    const handleResize = () => syncCanScroll(swiperRef.current);
+    const handleResize = () => syncViewportState(swiperRef.current);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, [syncCanScroll]);
+  }, [syncViewportState]);
 
   const handleOpen = useCallback((idx: number) => {
     triggerRef.current = document.activeElement as HTMLElement;
@@ -265,6 +260,10 @@ export function HomeVideoCarousel({ videos }: Props) {
   if (videos.length === 0) return null;
 
   const loopEnabled = false;
+  const maxSlideIndex = Math.max(0, videos.length - visibleSlides);
+  const dotCount = canScroll ? maxSlideIndex + 1 : 0;
+  const activeDotIndex = Math.min(selectedIndex, maxSlideIndex);
+  const paginationDots = Array.from({ length: dotCount }, (_, idx) => idx);
 
   return (
     <>
@@ -274,16 +273,16 @@ export function HomeVideoCarousel({ videos }: Props) {
             onSwiper={(s) => {
               swiperRef.current = s;
               setSelectedIndex(s.realIndex);
-              syncCanScroll(s);
+              syncViewportState(s);
             }}
             onSlideChange={(s) => {
               setSelectedIndex(s.realIndex);
             }}
             onBreakpoint={(s) => {
-              syncCanScroll(s);
+              syncViewportState(s);
             }}
             onResize={(s) => {
-              syncCanScroll(s);
+              syncViewportState(s);
             }}
             loop={loopEnabled}
             speed={1000}
@@ -346,10 +345,10 @@ export function HomeVideoCarousel({ videos }: Props) {
         )}
       </div>
 
-      {canScroll && videos.length > 1 && (
+      {canScroll && dotCount > 1 && (
         <div className="mt-[30px] flex items-center justify-center gap-[6px] max-[767px]:mt-5" aria-label="Chuyển slide video">
-          {videos.map((_, idx) => {
-            const isSelected = idx === selectedIndex;
+          {paginationDots.map((idx) => {
+            const isSelected = idx === activeDotIndex;
 
             return (
               <button
@@ -360,7 +359,7 @@ export function HomeVideoCarousel({ videos }: Props) {
                   if (loopEnabled) swiperRef.current?.slideToLoop(idx);
                   else swiperRef.current?.slideTo(idx);
                 }}
-                aria-label={`Đến slide ${idx + 1}`}
+                aria-label={`Đến nhóm video ${idx + 1}`}
                 aria-current={isSelected ? "true" : undefined}
               >
                 <span
