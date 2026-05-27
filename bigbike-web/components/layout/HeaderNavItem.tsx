@@ -53,14 +53,24 @@ function SubMenu({
             <Link
               href={normalizeMenuUrl(child.url)}
               className={cn(
-                "flex items-center gap-2 px-[30px] py-[15px] font-heading text-[14px] font-semibold leading-[1.3] text-muted-foreground no-underline transition-colors duration-300 hover:text-brand",
+                "flex items-center gap-2.5 px-[30px] py-[15px] font-heading text-[14px] font-semibold leading-[1.3] text-muted-foreground no-underline transition-colors duration-300 hover:text-brand",
                 active && "text-brand",
               )}
               target={child.openInNewTab ? "_blank" : undefined}
               rel={child.openInNewTab ? "noreferrer" : undefined}
               onClick={onItemClick}
             >
-              {child.label}
+              {child.iconUrl && (
+                <span
+                  className="bb-submenu-icon"
+                  style={{
+                    maskImage: `url(${child.iconUrl})`,
+                    WebkitMaskImage: `url(${child.iconUrl})`,
+                  }}
+                  aria-hidden="true"
+                />
+              )}
+              <span className="min-w-0 flex-1">{child.label}</span>
               {hasChildren && (
                 <ChevronDown
                   size={13}

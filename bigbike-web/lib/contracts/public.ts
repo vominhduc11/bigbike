@@ -341,6 +341,13 @@ export type PublicMenuItem = {
   sortOrder: number;
   openInNewTab: boolean;
   cssClass: string | null;
+  /**
+   * Icon URL resolved by the backend from category slug in the URL.
+   * Null for non-category menu items. Static WP parity mapping via
+   * /wp/icon-N.svg in Next.js public folder.
+   * TODO: populated from CategoryEntity.iconUrl when DB icons are set.
+   */
+  iconUrl?: string | null;
 };
 
 export type PublicMenu = {

@@ -49,6 +49,39 @@ public class AdminMenuService {
     private static final Set<String> ALLOWED_MENU_STATUSES = Set.of("ACTIVE", "INACTIVE");
     private static final Set<String> ALLOWED_ITEM_STATUSES = Set.of("ACTIVE", "INACTIVE");
 
+    // Legacy WP parity: maps category slug → static icon path in Next.js /public/wp/.
+    // WP used CSS ::before mask-image keyed to category-slug CSS classes on menu <li>.
+    // TODO: replace with CategoryEntity.iconUrl DB lookup when category icons are populated.
+    private static final String CATEGORY_URL_PREFIX = "/danh-muc-san-pham/";
+    private static final Map<String, String> CATEGORY_SLUG_ICON_MAP;
+
+    static {
+        Map<String, String> m = new HashMap<>();
+        m.put("non-bao-hiem-moto",                             "/wp/icon-2.svg");
+        m.put("quan-ao-bao-ho-moto",                           "/wp/icon-3.svg");
+        m.put("gang-tay",                                      "/wp/icon-4.svg");
+        m.put("giay-bao-ho",                                   "/wp/icon-5.svg");
+        m.put("giap-bao-ho-tay-chan-dai-lung-phu-kien-giap",   "/wp/icon-6.svg");
+        m.put("balo-deo-lung-tui-deo-tui-treo-xe",             "/wp/icon-7.svg");
+        m.put("tai-nghe-bluetooth-mu-bao-hiem",                "/wp/icon-8.svg");
+        m.put("tai-nghe-bluetooth-gan-mu-bao-hiem",            "/wp/icon-8.svg");
+        m.put("phu-kien-di-mua",                               "/wp/icon-9.svg");
+        m.put("san-pham-khuyen-mai",                           "/wp/icon-10.svg");
+        m.put("phu-kien-khac",                                 "/wp/icon-10.svg");
+        CATEGORY_SLUG_ICON_MAP = Map.copyOf(m);
+    }
+
+    private static String resolveMenuIconUrl(String url) {
+        if (url == null || url.isBlank()) return null;
+        String path = url.trim();
+        int q = path.indexOf('?');
+        if (q != -1) path = path.substring(0, q);
+        if (!path.startsWith(CATEGORY_URL_PREFIX)) return null;
+        String slug = path.substring(CATEGORY_URL_PREFIX.length());
+        if (slug.endsWith("/")) slug = slug.substring(0, slug.length() - 1);
+        return CATEGORY_SLUG_ICON_MAP.get(slug.toLowerCase(Locale.ROOT));
+    }
+
     private final MenuJpaRepository menuRepo;
     private final MenuItemJpaRepository menuItemRepo;
     private final AuditLogJpaRepository auditLogRepo;
@@ -414,7 +447,8 @@ public class AdminMenuService {
                 .sorted(Comparator.comparingInt(MenuItemEntity::getSortOrder))
                 .map(i -> new PublicMenuItemResponse(
                         i.getId(), i.getParentId(), i.getLabel(), i.getUrl(),
-                        i.getSortOrder(), i.isOpenInNewTab(), i.getCssClass()))
+                        i.getSortOrder(), i.isOpenInNewTab(), i.getCssClass(),
+                        resolveMenuIconUrl(i.getUrl())))
                 .toList();
 
         return new PublicMenuResponse(menu.getLocation(), menu.getName(), items);

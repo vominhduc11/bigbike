@@ -93,9 +93,23 @@ function MobileNavBranch({
     return (
       <Link
         href={href}
-        className={cn(`bb-mobile-nav-link bb-mobile-nav-depth-${depth}`, active && "active")}
+        className={cn(
+          `bb-mobile-nav-link bb-mobile-nav-depth-${depth}`,
+          node.iconUrl && "gap-2.5",
+          active && "active",
+        )}
         onClick={onNavigate}
       >
+        {node.iconUrl && (
+          <span
+            className="bb-submenu-icon"
+            style={{
+              maskImage: `url(${node.iconUrl})`,
+              WebkitMaskImage: `url(${node.iconUrl})`,
+            }}
+            aria-hidden="true"
+          />
+        )}
         {node.label}
       </Link>
     );
@@ -106,9 +120,19 @@ function MobileNavBranch({
       <div className={`bb-mobile-nav-row bb-mobile-nav-depth-${depth}`}>
         <Link
           href={href}
-          className={cn("bb-mobile-nav-link", active && "active")}
+          className={cn("bb-mobile-nav-link", node.iconUrl && "gap-2.5", active && "active")}
           onClick={onNavigate}
         >
+          {node.iconUrl && (
+            <span
+              className="bb-submenu-icon"
+              style={{
+                maskImage: `url(${node.iconUrl})`,
+                WebkitMaskImage: `url(${node.iconUrl})`,
+              }}
+              aria-hidden="true"
+            />
+          )}
           {node.label}
         </Link>
         <button
