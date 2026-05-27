@@ -126,11 +126,11 @@ export function ShippingScreen({ canUpdate }) {
 
   return (
     <div>
-      <div className="screen-header">
-        <div>
-          <p className="eyebrow">{t('shipping.eyebrow')}</p>
+      <div className="bb-screen-header">
+        <div className="bb-screen-title">
+          <p className="bb-screen-eyebrow">{t('shipping.eyebrow')}</p>
           <h1>{t('shipping.title')}</h1>
-          <p className="desc">{t('shipping.description')}</p>
+          <p className="bb-muted">{t('shipping.description')}</p>
         </div>
       </div>
 
@@ -172,9 +172,9 @@ export function ShippingScreen({ canUpdate }) {
               <>
                 {/* Add/edit method form */}
                 {showMethodForm && (
-                  <div className="card mb-4">
-                    <div className="card-head"><h2>{editMethodId ? t('common.edit') : t('shipping.addMethod')}</h2></div>
-                    <form onSubmit={handleMethodSubmit} className="card-body">
+                  <div className="bb-card mb-4">
+                    <div className="bb-card-header"><h3>{editMethodId ? t('common.edit') : t('shipping.addMethod')}</h3></div>
+                    <form onSubmit={handleMethodSubmit} className="bb-card-body">
                       {methodFormError && <Alert tone="danger" size="sm" className="mb-3">{methodFormError}</Alert>}
                       <div className="grid-2">
                         <label className="form-field" style={{ gridColumn: '1 / -1' }}>
@@ -207,8 +207,8 @@ export function ShippingScreen({ canUpdate }) {
                 )}
 
                 {/* Methods card */}
-                <div className="card">
-                  <div className="card-head">
+                <div className="bb-card">
+                  <div className="bb-card-header">
                     <div>
                       <h2>{selectedZone?.name}</h2>
                       <p className="sub">{t('shipping.methodsTitle')}</p>
@@ -216,14 +216,14 @@ export function ShippingScreen({ canUpdate }) {
                     {canUpdate && (
                       <button
                         type="button"
-                        className="btn btn-primary btn-sm"
+                        className="bb-btn bb-btn-primary bb-btn-sm"
                         onClick={() => { setEditMethodId(null); setMethodForm(EMPTY_METHOD_FORM); setShowMethodForm(!showMethodForm) }}
                       >
                         {showMethodForm ? t('common.cancel') : t('shipping.addMethod')}
                       </button>
                     )}
                   </div>
-                  <div className="card-body card-body--flush">
+                  <div className="bb-card-body bb-card-body--flush">
                     {methodsStatus === 'loading' && (
                       <div className="state-panel"><p>{t('shipping.loading')}</p></div>
                     )}
@@ -237,8 +237,8 @@ export function ShippingScreen({ canUpdate }) {
                       </div>
                     )}
                     {methodsStatus === 'success' && methods.length > 0 && (
-                      <div className="table-wrap">
-                        <table className="tbl">
+                      <div className="bb-table-wrap">
+                        <table className="bb-table">
                           <thead>
                             <tr>
                               <th>{t('shipping.colTitle')}</th>
@@ -253,20 +253,20 @@ export function ShippingScreen({ canUpdate }) {
                                 <td className="fw-600">{m.title}</td>
                                 <td className="num">{formatCurrencyVnd(m.cost)}</td>
                                 <td>
-                                  <span className={`badge ${m.enabled ? 'badge-success' : 'badge-neutral'}`}>
+                                  <span className={`bb-badge ${m.enabled ? 'bb-badge-success' : 'bb-badge-neutral'}`}>
                                     <span className="dot" />{m.enabled ? t('common.on') : t('common.off')}
                                   </span>
                                 </td>
                                 {canUpdate && (
-                                  <td className="actions-cell">
+                                  <td className="col-actions">
                                     <button
                                       type="button"
-                                      className="btn btn-ghost btn-sm"
+                                      className="bb-btn bb-btn-ghost bb-btn-sm"
                                       onClick={() => { setEditMethodId(m.id); setMethodForm({ title: m.title, description: m.description || '', cost: String(m.cost), freeShippingThreshold: m.freeShippingThreshold != null ? String(m.freeShippingThreshold) : '', enabled: m.enabled }); setShowMethodForm(true) }}
                                     >
                                       {t('common.edit')}
                                     </button>
-                                    <button type="button" className="btn btn-ghost btn-sm text-danger" onClick={() => handleDeleteMethod(m.id)}>
+                                    <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm text-danger" onClick={() => handleDeleteMethod(m.id)}>
                                       {t('common.delete')}
                                     </button>
                                   </td>

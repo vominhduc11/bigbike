@@ -61,15 +61,15 @@ function SliderCard({ slider, canUpdate, onEdit, onDelete, onToggleActive }) {
     <div
       ref={setNodeRef}
       style={{ ...style, opacity: slider.isActive === false ? 0.55 : style.opacity }}
-      className="card"
+      className="bb-card"
     >
-      <div className="card-body" style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '12px 16px' }}>
+      <div className="bb-card-body" style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '12px 16px' }}>
         {canUpdate && (
           <button
             type="button"
             {...attributes}
             {...listeners}
-            className="icon-btn"
+            className="bb-icon-btn"
             style={{ cursor: 'grab', touchAction: 'none', flexShrink: 0 }}
             title={t('sliders.dragToReorder', { defaultValue: 'Kéo để sắp xếp' })}
             aria-label={t('sliders.dragToReorder', { defaultValue: 'Kéo để sắp xếp' })}
@@ -99,19 +99,19 @@ function SliderCard({ slider, canUpdate, onEdit, onDelete, onToggleActive }) {
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="flex items-center gap-2 mb-2" style={{ flexWrap: 'wrap' }}>
-            <span className="fw-700 text-sm">#{slider.sortOrder} · {slider.location}</span>
-            <span className={`badge ${slider.isActive !== false ? 'badge-success' : 'badge-neutral'}`}>
+            <span style={{ fontWeight: 700, fontSize: 14 }}>#{slider.sortOrder} · {slider.location}</span>
+            <span className={`bb-badge ${slider.isActive !== false ? 'bb-badge-success' : 'bb-badge-neutral'}`}>
               <span className="dot" />
               {slider.isActive !== false ? t('sliders.statusActive') : t('sliders.statusInactive')}
             </span>
           </div>
           {slider.externalLink && (
-            <p className="text-xs muted" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>
+            <p className="bb-muted" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0, fontSize: 12 }}>
               {t('sliders.linkLabel')} {slider.externalLink}
             </p>
           )}
           {slider.productId && (
-            <p className="text-xs muted" style={{ margin: 0 }}>
+            <p className="bb-muted" style={{ margin: 0, fontSize: 12 }}>
               {t('sliders.productLabel')} {slider.productId}
             </p>
           )}
@@ -119,13 +119,13 @@ function SliderCard({ slider, canUpdate, onEdit, onDelete, onToggleActive }) {
 
         {canUpdate && (
           <div className="flex gap-2" style={{ flexShrink: 0, alignItems: 'flex-start' }}>
-            <button type="button" className="btn btn-outline btn-sm" onClick={() => onToggleActive(slider)}>
+            <button type="button" className="bb-btn bb-btn-secondary bb-btn-sm" onClick={() => onToggleActive(slider)}>
               {slider.isActive !== false ? t('common.disable') : t('common.enable')}
             </button>
-            <button type="button" className="btn btn-outline btn-sm" onClick={() => onEdit(slider)}>
+            <button type="button" className="bb-btn bb-btn-secondary bb-btn-sm" onClick={() => onEdit(slider)}>
               {t('common.edit')}
             </button>
-            <button type="button" className="btn btn-outline btn-sm text-danger" onClick={() => onDelete(slider.id)}>
+            <button type="button" className="bb-btn bb-btn-secondary bb-btn-sm" style={{ color: 'var(--bb-danger)' }} onClick={() => onDelete(slider.id)}>
               {t('common.delete')}
             </button>
           </div>
@@ -332,17 +332,17 @@ export function SliderListScreen({ canUpdate }) {
 
   return (
     <div>
-      <div className="screen-header">
-        <div>
-          <p className="eyebrow">{t('sliders.eyebrow')}</p>
+      <div className="bb-screen-header">
+        <div className="bb-screen-title">
+          <p className="bb-screen-eyebrow">{t('sliders.eyebrow')}</p>
           <h1>{t('sliders.title')}</h1>
-          <p className="desc">{t('sliders.description')}</p>
+          <p className="bb-muted">{t('sliders.description')}</p>
         </div>
         {canUpdate && (
-          <div className="actions">
+          <div className="bb-screen-actions">
             <button
               type="button"
-              className="btn btn-primary"
+              className="bb-btn bb-btn-primary"
               onClick={() => { if (showForm && !editingId) { closeForm() } else { openAddForm() } }}
             >
               {showForm && !editingId ? t('common.cancel') : t('sliders.addBtn')}
@@ -353,9 +353,9 @@ export function SliderListScreen({ canUpdate }) {
 
       {warning ? <ReadOnlyBanner warning={warning} /> : null}
 
-      <div className="filter-bar">
+      <div className="bb-filter-bar">
         <select
-          className="filter-select"
+          className="bb-select"
           value={location}
           onChange={(e) => { setLocation(e.target.value); closeForm() }}
           aria-label={t('sliders.filterLocation')}
@@ -365,9 +365,9 @@ export function SliderListScreen({ canUpdate }) {
       </div>
 
       {showForm && (
-        <div className="card mb-4">
-          <div className="card-head"><h2>{editingId ? t('sliders.editFormTitle') : t('sliders.formTitle')}</h2></div>
-          <form onSubmit={handleSubmit} className="card-body">
+        <div className="bb-card mb-4">
+          <div className="bb-card-header"><h2>{editingId ? t('sliders.editFormTitle') : t('sliders.formTitle')}</h2></div>
+          <form onSubmit={handleSubmit} className="bb-card-body">
             {formError && <p className="mb-3 text-danger">{formError}</p>}
             <div className="grid-2">
               <label className="form-field">

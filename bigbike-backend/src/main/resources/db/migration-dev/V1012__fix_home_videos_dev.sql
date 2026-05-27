@@ -4,6 +4,7 @@ DELETE FROM home_videos WHERE id IN (
 );
 
 -- 5 BigBike YouTube Shorts thật (WP post_dates 2025-05-20, sorted newest-first = sort_order 1)
+-- ON CONFLICT DO NOTHING: nếu sort_order đã tồn tại (do migration trước đã seed hv-wp-*) thì bỏ qua
 INSERT INTO home_videos (id, sort_order, title, video_url, youtube_id, thumbnail, is_active, created_at, updated_at)
 VALUES
   ('hv-shorts-001', 1,
@@ -34,4 +35,5 @@ VALUES
    'giáp komine lv2 tay vai',
    'https://youtube.com/shorts/JHumQ66WtTI',
    'JHumQ66WtTI',
-   NULL, TRUE, NOW(), NOW());
+   NULL, TRUE, NOW(), NOW())
+ON CONFLICT ON CONSTRAINT uq_home_videos_sort_order DO NOTHING;

@@ -19,13 +19,12 @@ import { Button } from '@/components/ui/button'
 
 const PAYMENT_METHODS = ['CASH', 'BANK_TRANSFER', 'CARD_TERMINAL', 'OTHER']
 const TAB_KEYS = ['ALL', 'OPEN', 'OVERDUE', 'CLOSED']
-// AR status → prototype badge class.
 const AR_STATUS_BADGE = {
-  OPEN: 'badge-info',
-  PARTIALLY_PAID: 'badge-warn',
-  OVERDUE: 'badge-danger',
-  CLOSED: 'badge-success',
-  WRITTEN_OFF: 'badge-neutral',
+  OPEN: 'bb-badge-info',
+  PARTIALLY_PAID: 'bb-badge-warning',
+  OVERDUE: 'bb-badge-danger',
+  CLOSED: 'bb-badge-success',
+  WRITTEN_OFF: 'bb-badge-neutral',
 }
 
 function formatCurrency(amount, locale) {
@@ -35,7 +34,7 @@ function formatCurrency(amount, locale) {
 
 function StatusBadge({ status, t }) {
   return (
-    <span className={`badge ${AR_STATUS_BADGE[status] || 'badge-neutral'}`}>
+    <span className={`bb-badge ${AR_STATUS_BADGE[status] || 'bb-badge-neutral'}`}>
       {t(`receivables.statusLabel.${status}`, { defaultValue: status })}
     </span>
   )
@@ -83,59 +82,59 @@ export function ReceivablesListScreen({ navigate, canRecordPayment, canWriteOff 
 
   return (
     <div>
-      <div className="screen-header">
-        <div>
-          <p className="eyebrow">{t('receivables.eyebrow')}</p>
+      <div className="bb-screen-header">
+        <div className="bb-screen-title">
+          <p className="bb-screen-eyebrow">{t('receivables.eyebrow')}</p>
           <h1>{t('receivables.title')}</h1>
-          <p className="desc">{t('receivables.description')}</p>
+          <p className="bb-muted">{t('receivables.description')}</p>
         </div>
       </div>
 
       {/* KPI cards — clicking one switches the status filter */}
-      <div className="kpi-grid">
-        <div className="kpi" onClick={() => handleTabChange('ALL')}>
-          <div className="kpi-head">
-            <span className="kpi-icon red"><Wallet size={15} /></span>
+      <div className="bb-kpi-grid">
+        <div className="bb-kpi" style={{ cursor: 'pointer' }} onClick={() => handleTabChange('ALL')}>
+          <div className="bb-kpi-head">
+            <span className="bb-kpi-icon danger"><Wallet size={15} /></span>
             <span>{t('receivables.kpi.totalOutstanding')}</span>
           </div>
-          <div className="kpi-value">{formatCurrency(summary.totalOutstanding, locale)}</div>
-          <div className="kpi-foot"><span className="kpi-foot-label">{t('receivables.kpi.totalOutstandingHint')}</span></div>
+          <div className="bb-kpi-value">{formatCurrency(summary.totalOutstanding, locale)}</div>
+          <div className="bb-kpi-foot"><span className="bb-kpi-foot-label">{t('receivables.kpi.totalOutstandingHint')}</span></div>
         </div>
-        <div className="kpi" onClick={() => handleTabChange('OVERDUE')}>
-          <div className="kpi-head">
-            <span className="kpi-icon amber"><AlertTriangle size={15} /></span>
+        <div className="bb-kpi" style={{ cursor: 'pointer' }} onClick={() => handleTabChange('OVERDUE')}>
+          <div className="bb-kpi-head">
+            <span className="bb-kpi-icon warning"><AlertTriangle size={15} /></span>
             <span>{t('receivables.kpi.overdueOutstanding')}</span>
           </div>
-          <div className="kpi-value">{formatCurrency(summary.overdueOutstanding, locale)}</div>
-          <div className="kpi-foot"><span className="kpi-foot-label">{t('receivables.kpi.overdueOutstandingHint')}</span></div>
+          <div className="bb-kpi-value">{formatCurrency(summary.overdueOutstanding, locale)}</div>
+          <div className="bb-kpi-foot"><span className="bb-kpi-foot-label">{t('receivables.kpi.overdueOutstandingHint')}</span></div>
         </div>
-        <div className="kpi" onClick={() => handleTabChange('OPEN')}>
-          <div className="kpi-head">
-            <span className="kpi-icon blue"><Clock size={15} /></span>
+        <div className="bb-kpi" style={{ cursor: 'pointer' }} onClick={() => handleTabChange('OPEN')}>
+          <div className="bb-kpi-head">
+            <span className="bb-kpi-icon info"><Clock size={15} /></span>
             <span>{t('receivables.kpi.countOpen')}</span>
           </div>
-          <div className="kpi-value">{summary.countOpen ?? 0}</div>
-          <div className="kpi-foot"><span className="kpi-foot-label">{t('receivables.kpi.countOpenHint')}</span></div>
+          <div className="bb-kpi-value">{summary.countOpen ?? 0}</div>
+          <div className="bb-kpi-foot"><span className="bb-kpi-foot-label">{t('receivables.kpi.countOpenHint')}</span></div>
         </div>
-        <div className="kpi" onClick={() => setUrlQuery({ status: 'WRITTEN_OFF', page: 1 })}>
-          <div className="kpi-head">
-            <span className="kpi-icon gray"><FileX size={15} /></span>
+        <div className="bb-kpi" style={{ cursor: 'pointer' }} onClick={() => setUrlQuery({ status: 'WRITTEN_OFF', page: 1 })}>
+          <div className="bb-kpi-head">
+            <span className="bb-kpi-icon"><FileX size={15} /></span>
             <span>{t('receivables.kpi.writtenOffTotal')}</span>
           </div>
-          <div className="kpi-value">{formatCurrency(summary.writtenOffTotal, locale)}</div>
-          <div className="kpi-foot"><span className="kpi-foot-label">{t('receivables.kpi.writtenOffTotalHint')}</span></div>
+          <div className="bb-kpi-value">{formatCurrency(summary.writtenOffTotal, locale)}</div>
+          <div className="bb-kpi-foot"><span className="bb-kpi-foot-label">{t('receivables.kpi.writtenOffTotalHint')}</span></div>
         </div>
       </div>
 
       {/* Status tabs */}
-      <div className="seg mb-4" role="tablist" aria-label={t('receivables.title')}>
+      <div className="bb-seg" style={{ marginBottom: 16 }} role="tablist" aria-label={t('receivables.title')}>
         {TAB_KEYS.map((key) => (
           <button
             key={key}
             type="button"
             role="tab"
             aria-selected={activeTab === key}
-            className={`seg-tab${activeTab === key ? ' active' : ''}`}
+            className={activeTab === key ? 'active' : ''}
             onClick={() => handleTabChange(key)}
           >
             {t(`receivables.tabs.${key}`)}
@@ -143,14 +142,16 @@ export function ReceivablesListScreen({ navigate, canRecordPayment, canWriteOff 
         ))}
       </div>
 
-      <div className="filter-bar">
-        <div className="filter-search">
-          <Search size={14} />
+      <div className="bb-filter-bar">
+        <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
+          <Search size={13} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--bb-text-muted)', pointerEvents: 'none' }} />
           <input
             type="search"
             placeholder={t('receivables.filterSearchPlaceholder')}
             value={urlQuery.search || ''}
             onChange={handleSearch}
+            className="bb-input"
+            style={{ paddingLeft: 28, width: '100%' }}
           />
         </div>
       </div>
@@ -163,10 +164,10 @@ export function ReceivablesListScreen({ navigate, canRecordPayment, canWriteOff 
       )}
 
       {!isLoading && !isError && items.length > 0 && (
-        <div className="card">
-          <div className="card-body card-body--flush">
-            <div className="table-wrap">
-              <table className="tbl">
+        <div className="bb-card">
+          <div className="bb-card-body bb-card-body--flush">
+            <div className="bb-table-wrap">
+              <table className="bb-table">
                 <thead>
                   <tr>
                     <th>{t('receivables.col.orderNumber')}</th>
@@ -185,36 +186,37 @@ export function ReceivablesListScreen({ navigate, canRecordPayment, canWriteOff 
                     const closed = ['CLOSED', 'WRITTEN_OFF'].includes(item.status)
                     return (
                       <tr key={item.id} onClick={() => navigate(`/admin/receivables/${item.id}`)}>
-                        <td className="id-cell">{item.orderNumber || (item.orderId ? item.orderId.slice(0, 8) : '—')}</td>
+                        <td className="mono">{item.orderNumber || (item.orderId ? item.orderId.slice(0, 8) : '—')}</td>
                         <td>{item.customerName || '—'}</td>
-                        <td className="text-xs">{item.customerPhone || '—'}</td>
+                        <td style={{ fontSize: 12 }}>{item.customerPhone || '—'}</td>
                         <td className="num">{formatCurrency(item.originalAmount, locale)}</td>
                         <td className="num">{formatCurrency(item.paidAmount, locale)}</td>
-                        <td className="num fw-700">
+                        <td className="num" style={{ fontWeight: 700 }}>
                           <span className={item.outstandingAmount > 0 ? 'text-danger' : ''}>
                             {formatCurrency(item.outstandingAmount, locale)}
                           </span>
                         </td>
-                        <td className="text-xs">
+                        <td style={{ fontSize: 12 }}>
                           <div>{item.dueDate || '—'}</div>
                           {item.overdueDays != null && (
-                            <div className="text-danger fw-600">
+                            <div className="text-danger" style={{ fontWeight: 600 }}>
                               {t('receivables.overdueDays', { days: item.overdueDays })}
                             </div>
                           )}
                         </td>
                         <td><StatusBadge status={item.status} t={t} /></td>
-                        <td className="actions-cell" onClick={(e) => e.stopPropagation()}>
+                        <td className="col-actions" onClick={(e) => e.stopPropagation()}>
                           <div className="flex gap-1 justify-end" style={{ flexWrap: 'wrap' }}>
                             {canRecordPayment && !closed && (
-                              <button type="button" className="btn btn-primary btn-sm" onClick={() => setPaymentTarget(item)}>
+                              <button type="button" className="bb-btn bb-btn-primary bb-btn-sm" onClick={() => setPaymentTarget(item)}>
                                 {t('receivables.btn.recordPayment')}
                               </button>
                             )}
                             {canWriteOff && !closed && (
                               <button
                                 type="button"
-                                className="btn btn-outline btn-sm text-danger"
+                                className="bb-btn bb-btn-ghost bb-btn-sm"
+                                style={{ color: 'var(--bb-danger)' }}
                                 onClick={() => setWriteOffTarget(item)}
                                 title={t('receivables.btn.writeOffTooltip')}
                               >
@@ -231,12 +233,10 @@ export function ReceivablesListScreen({ navigate, canRecordPayment, canWriteOff 
             </div>
           </div>
           {pagination && (
-            <div className="px-[18px] py-3 border-t border-border">
-              <PaginationControls
-                pagination={pagination}
-                onPageChange={handlePage}
-              />
-            </div>
+            <PaginationControls
+              pagination={pagination}
+              onPageChange={handlePage}
+            />
           )}
         </div>
       )}

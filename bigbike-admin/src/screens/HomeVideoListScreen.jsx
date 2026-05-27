@@ -135,7 +135,7 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPrevi
         ...(selected ? { borderColor: 'var(--admin-color-brand-red)', background: 'var(--admin-color-surface-selected)' } : {}),
         display: 'flex', gap: 12, alignItems: 'flex-start', padding: '12px 16px',
       }}
-      className="card"
+      className="bb-card"
     >
       {canUpdate && (
         <div className="flex items-center gap-1 shrink-0">
@@ -179,14 +179,14 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPrevi
       </button>
 
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div className="fw-700 text-sm mb-1" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <div className="font-bold text-sm mb-1" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {video.title}
         </div>
-        <div className="text-xs muted" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <div className="text-xs bb-muted" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {video.videoUrl}
         </div>
         <div className="mt-1">
-          <span className={`badge ${video.isActive ? 'badge-success' : 'badge-neutral'}`}>
+          <span className={`bb-badge ${video.isActive ? 'bb-badge-success' : 'bb-badge-neutral'}`}>
             {video.isActive ? t('homeVideos.statusVisible') : t('homeVideos.statusHidden')}
           </span>
         </div>
@@ -194,13 +194,13 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPrevi
 
       {canUpdate && (
         <div className="flex gap-2" style={{ flexShrink: 0 }}>
-          <button type="button" className="btn btn-outline btn-sm" onClick={() => onToggleActive(video)}>
+          <button type="button" className="bb-btn bb-btn-secondary bb-btn-sm" onClick={() => onToggleActive(video)}>
             {video.isActive ? t('homeVideos.hideAction') : t('homeVideos.showAction')}
           </button>
-          <button type="button" className="btn btn-outline btn-sm" onClick={() => onEdit(video)}>
+          <button type="button" className="bb-btn bb-btn-secondary bb-btn-sm" onClick={() => onEdit(video)}>
             {t('common.edit')}
           </button>
-          <button type="button" className="btn btn-outline btn-sm text-danger" onClick={() => onDelete(video.id)}>
+          <button type="button" className="bb-btn bb-btn-secondary bb-btn-sm" style={{ color: 'var(--bb-danger)' }} onClick={() => onDelete(video.id)}>
             {t('common.delete')}
           </button>
         </div>
@@ -551,17 +551,17 @@ export function HomeVideoListScreen({ canUpdate }) {
     <div>
       {!canUpdate && <ReadOnlyBanner />}
 
-      <div className="screen-header">
-        <div>
-          <p className="eyebrow">{t('homeVideos.eyebrow', { defaultValue: 'Nội dung' })}</p>
+      <div className="bb-screen-header">
+        <div className="bb-screen-title">
+          <p className="bb-screen-eyebrow">{t('homeVideos.eyebrow', { defaultValue: 'Nội dung' })}</p>
           <h1>{t('homeVideos.title')}</h1>
-          <p className="desc">{t('homeVideos.description', { defaultValue: 'Quản lý video hiển thị trên trang chủ.' })}</p>
+          <p className="bb-muted">{t('homeVideos.description', { defaultValue: 'Quản lý video hiển thị trên trang chủ.' })}</p>
         </div>
         {canUpdate && !showForm && (
-          <div className="actions">
+          <div className="bb-screen-actions">
             <button
               type="button"
-              className="btn btn-primary"
+              className="bb-btn bb-btn-primary"
               onClick={() => { setShowForm(true); setEditingVideo(null); setForm(EMPTY_FORM); setFormError('') }}
             >
               {t('homeVideos.addButton')}
@@ -571,11 +571,11 @@ export function HomeVideoListScreen({ canUpdate }) {
       </div>
 
       {showForm && (
-        <div className="card mb-4">
-          <div className="card-head">
+        <div className="bb-card mb-4">
+          <div className="bb-card-header">
             <h2>{editingVideo ? t('homeVideos.editTitle') : t('homeVideos.createTitle')}</h2>
           </div>
-          <form onSubmit={handleSubmit} className="card-body flex flex-col gap-3">
+          <form onSubmit={handleSubmit} className="bb-card-body flex flex-col gap-3">
           {formError ? (
             <p className="text-danger m-0">{formError}</p>
           ) : null}

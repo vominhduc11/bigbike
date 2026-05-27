@@ -6,13 +6,13 @@ import { fetchReceivableDetail } from '../lib/adminApi'
 import { StatePanel } from '../components/StatePanel'
 import { RecordPaymentModal, WriteOffModal } from './ReceivablesListScreen'
 
-// AR status → prototype badge class.
+// AR status → bb-badge class.
 const AR_STATUS_BADGE = {
-  OPEN: 'badge-info',
-  PARTIALLY_PAID: 'badge-warn',
-  OVERDUE: 'badge-danger',
-  CLOSED: 'badge-success',
-  WRITTEN_OFF: 'badge-neutral',
+  OPEN: 'bb-badge-info',
+  PARTIALLY_PAID: 'bb-badge-warning',
+  OVERDUE: 'bb-badge-danger',
+  CLOSED: 'bb-badge-success',
+  WRITTEN_OFF: 'bb-badge-neutral',
 }
 
 function formatCurrency(amount, locale) {
@@ -22,7 +22,7 @@ function formatCurrency(amount, locale) {
 
 function StatusBadge({ status, t }) {
   return (
-    <span className={`badge ${AR_STATUS_BADGE[status] || 'badge-neutral'}`}>
+    <span className={`bb-badge ${AR_STATUS_BADGE[status] || 'bb-badge-neutral'}`}>
       {t(`receivables.statusLabel.${status}`, { defaultValue: status })}
     </span>
   )
@@ -70,9 +70,9 @@ export function ReceivableDetailScreen({ receivableId, navigate, canRecordPaymen
 
   return (
     <div>
-      <div className="screen-header">
-        <div>
-          <p className="eyebrow">
+      <div className="bb-screen-header">
+        <div className="bb-screen-title">
+          <p className="bb-screen-eyebrow">
             <a onClick={(e) => { e.preventDefault(); navigate('/admin/receivables') }} style={{ cursor: 'pointer' }}>
               ← {t('receivables.detail.backToList')}
             </a>
@@ -88,37 +88,37 @@ export function ReceivableDetailScreen({ receivableId, navigate, canRecordPaymen
       </div>
 
       {/* KPI cards */}
-      <div className="kpi-grid">
-        <div className="kpi">
-          <div className="kpi-head"><span className="kpi-icon blue"><Receipt size={15} /></span><span>{t('receivables.detail.kpiOriginalAmount')}</span></div>
-          <div className="kpi-value">{formatCurrency(ar.originalAmount, locale)}</div>
+      <div className="bb-kpi-grid">
+        <div className="bb-kpi">
+          <div className="bb-kpi-head"><span className="bb-kpi-icon info"><Receipt size={15} /></span><span>{t('receivables.detail.kpiOriginalAmount')}</span></div>
+          <div className="bb-kpi-value">{formatCurrency(ar.originalAmount, locale)}</div>
         </div>
-        <div className="kpi">
-          <div className="kpi-head"><span className="kpi-icon green"><Wallet size={15} /></span><span>{t('receivables.detail.kpiPaidAmount')}</span></div>
-          <div className="kpi-value">{formatCurrency(ar.paidAmount, locale)}</div>
+        <div className="bb-kpi">
+          <div className="bb-kpi-head"><span className="bb-kpi-icon success"><Wallet size={15} /></span><span>{t('receivables.detail.kpiPaidAmount')}</span></div>
+          <div className="bb-kpi-value">{formatCurrency(ar.paidAmount, locale)}</div>
         </div>
-        <div className="kpi">
-          <div className="kpi-head">
-            <span className={`kpi-icon ${ar.outstandingAmount > 0 ? 'red' : 'gray'}`}><AlertTriangle size={15} /></span>
+        <div className="bb-kpi">
+          <div className="bb-kpi-head">
+            <span className={`bb-kpi-icon ${ar.outstandingAmount > 0 ? 'danger' : ''}`}><AlertTriangle size={15} /></span>
             <span>{t('receivables.detail.kpiOutstandingAmount')}</span>
           </div>
-          <div className="kpi-value">{formatCurrency(ar.outstandingAmount, locale)}</div>
+          <div className="bb-kpi-value">{formatCurrency(ar.outstandingAmount, locale)}</div>
         </div>
-        <div className="kpi">
-          <div className="kpi-head">
-            <span className={`kpi-icon ${ar.overdueDays != null ? 'red' : 'amber'}`}><CalendarClock size={15} /></span>
+        <div className="bb-kpi">
+          <div className="bb-kpi-head">
+            <span className={`bb-kpi-icon ${ar.overdueDays != null ? 'danger' : 'warning'}`}><CalendarClock size={15} /></span>
             <span>{t('receivables.detail.kpiDueDate')}</span>
           </div>
-          <div className="kpi-value">{ar.dueDate || '—'}</div>
-          <div className="kpi-foot"><span className="kpi-foot-label">{dueDateHint(ar, t)}</span></div>
+          <div className="bb-kpi-value">{ar.dueDate || '—'}</div>
+          <div className="bb-kpi-foot"><span className="bb-kpi-foot-label">{dueDateHint(ar, t)}</span></div>
         </div>
       </div>
 
       <div className="grid-2">
         {/* Financial */}
-        <div className="card">
-          <div className="card-head"><h2>{t('receivables.detail.sectionFinancial')}</h2></div>
-          <div className="card-body">
+        <div className="bb-card">
+          <div className="bb-card-header"><h2>{t('receivables.detail.sectionFinancial')}</h2></div>
+          <div className="bb-card-body">
             <dl className="info-grid">
               <dt>{t('receivables.detail.rowOriginalAmount')}</dt>
               <dd>{formatCurrency(ar.originalAmount, locale)}</dd>
@@ -153,9 +153,9 @@ export function ReceivableDetailScreen({ receivableId, navigate, canRecordPaymen
         </div>
 
         {/* Customer */}
-        <div className="card">
-          <div className="card-head"><h2>{t('receivables.detail.sectionCustomer')}</h2></div>
-          <div className="card-body">
+        <div className="bb-card">
+          <div className="bb-card-header"><h2>{t('receivables.detail.sectionCustomer')}</h2></div>
+          <div className="bb-card-body">
             <dl className="info-grid">
               <dt>{t('receivables.detail.rowCustomerName')}</dt>
               <dd>{ar.customerName || '—'}</dd>
@@ -167,7 +167,8 @@ export function ReceivableDetailScreen({ receivableId, navigate, canRecordPaymen
                   <dd>
                     <button
                       type="button"
-                      className="btn-ghost text-xs text-primary-red fw-600"
+                      className="text-xs font-semibold"
+                      style={{ color: 'var(--bb-brand)', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
                       onClick={() => navigate(`/admin/customers/${ar.customerId}`)}
                     >
                       {t('receivables.detail.viewProfile')}
@@ -191,9 +192,9 @@ export function ReceivableDetailScreen({ receivableId, navigate, canRecordPaymen
       </div>
 
       {(ar.note || ar.writeOffReason) && (
-        <div className="card mt-4">
-          <div className="card-head"><h2>{t('receivables.detail.sectionNotes')}</h2></div>
-          <div className="card-body">
+        <div className="bb-card mt-4">
+          <div className="bb-card-header"><h2>{t('receivables.detail.sectionNotes')}</h2></div>
+          <div className="bb-card-body">
             {ar.note && <p className="mb-3">{ar.note}</p>}
             {ar.writeOffReason && (
               <div
@@ -219,17 +220,18 @@ export function ReceivableDetailScreen({ receivableId, navigate, canRecordPaymen
       )}
 
       {showActions && (
-        <div className="card mt-4">
-          <div className="card-body" style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+        <div className="bb-card mt-4">
+          <div className="bb-card-body" style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
             {canRecordPayment && (
-              <button type="button" className="btn btn-primary" onClick={() => setPaymentTarget(ar)}>
+              <button type="button" className="bb-btn bb-btn-primary" onClick={() => setPaymentTarget(ar)}>
                 {t('receivables.detail.recordPaymentBtn')}
               </button>
             )}
             {canWriteOff && (
               <button
                 type="button"
-                className="btn btn-outline text-danger"
+                className="bb-btn bb-btn-secondary"
+                style={{ color: 'var(--bb-danger)' }}
                 onClick={() => setWriteOffTarget(ar)}
                 title={t('receivables.btn.writeOffTooltip')}
               >

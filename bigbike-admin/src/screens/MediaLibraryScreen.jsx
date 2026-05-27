@@ -358,16 +358,16 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
         </div>
       )}
 
-      <div className="screen-header">
-        <div>
-          <p className="eyebrow">{t('media.eyebrow')}</p>
+      <div className="bb-screen-header">
+        <div className="bb-screen-title">
+          <p className="bb-screen-eyebrow">{t('media.eyebrow')}</p>
           <h1>{t('media.title')}</h1>
-          <p className="desc">{t('media.description')}</p>
+          <p className="bb-muted">{t('media.description')}</p>
         </div>
-        <div className="actions">
+        <div className="bb-screen-actions">
           <button
             type="button"
-            className={isTrash ? 'btn btn-primary' : 'btn btn-outline'}
+            className={isTrash ? 'bb-btn bb-btn-primary' : 'bb-btn bb-btn-secondary'}
             onClick={() => updateQuery({ status: isTrash ? 'ACTIVE' : 'DELETED' })}
             title={t('media.trashShortcut')}
           >
@@ -378,7 +378,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
             <>
               <input ref={fileInputRef} type="file" multiple accept={ALLOWED_MIME.join(',')}
                 className="hidden" onChange={handleFileChange} />
-              <button type="button" className="btn btn-primary" onClick={() => fileInputRef.current?.click()}>
+              <button type="button" className="bb-btn bb-btn-primary" onClick={() => fileInputRef.current?.click()}>
                 <Upload size={14} />
                 {t('common.upload')}
               </button>

@@ -290,26 +290,28 @@ export function SerialListScreen({ canUpdate = false, canReadWarranty = false })
 
   return (
     <div>
-      <div className="screen-header">
-        <div>
-          <p className="eyebrow">{t('serial.eyebrow')}</p>
+      <div className="bb-screen-header">
+        <div className="bb-screen-title">
+          <p className="bb-screen-eyebrow">{t('serial.eyebrow')}</p>
           <h1>{t('serial.title')}</h1>
-          <p className="desc">{t('serial.description')}</p>
+          <p className="bb-muted">{t('serial.description')}</p>
         </div>
       </div>
 
-      <div className="filter-bar">
-        <div className="filter-search">
-          <Search size={14} />
+      <div className="bb-filter-bar">
+        <div style={{ position: 'relative' }}>
+          <Search size={14} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--bb-text-muted)', pointerEvents: 'none' }} />
           <input
             type="search"
+            className="bb-input"
+            style={{ paddingLeft: 28 }}
             placeholder={t('serial.searchPlaceholder')}
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
           />
         </div>
         <select
-          className="filter-select"
+          className="bb-select"
           value={query.status}
           onChange={(e) => setQuery((q) => ({ ...q, status: e.target.value, page: 1 }))}
           aria-label={t('serial.filterStatus')}
@@ -336,10 +338,10 @@ export function SerialListScreen({ canUpdate = false, canReadWarranty = false })
       )}
 
       {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) && (
-        <div className="card">
-          <div className="card-body card-body--flush">
-            <div className="table-wrap">
-              <table className="tbl">
+        <div className="bb-card">
+          <div className="bb-card-body bb-card-body--flush">
+            <div className="bb-table-wrap">
+              <table className="bb-table">
                 <thead>
                   <tr>
                     <th>{t('serial.colSerialNumber')}</th>
@@ -359,14 +361,14 @@ export function SerialListScreen({ canUpdate = false, canReadWarranty = false })
                   )}
                   {items.map((item) => (
                     <tr key={item.id} onClick={() => setSelected(item)}>
-                      <td className="id-cell">{item.serialNumber}</td>
+                      <td className="mono">{item.serialNumber}</td>
                       <td>
-                        <div className="fw-600">{item.productName || '—'}</div>
-                        {item.variantName && <div className="text-xs muted">{item.variantName}</div>}
+                        <div style={{ fontWeight: 600 }}>{item.productName || '—'}</div>
+                        {item.variantName && <div className="bb-muted" style={{ fontSize: 12 }}>{item.variantName}</div>}
                       </td>
                       <td><SerialStatusPill status={item.status} /></td>
-                      <td className="num muted text-xs">{formatDate(item.receivedAt)}</td>
-                      <td className="num text-xs">{formatDate(item.soldAt)}</td>
+                      <td className="num bb-muted" style={{ fontSize: 12 }}>{formatDate(item.receivedAt)}</td>
+                      <td className="num" style={{ fontSize: 12 }}>{formatDate(item.soldAt)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -374,12 +376,10 @@ export function SerialListScreen({ canUpdate = false, canReadWarranty = false })
             </div>
           </div>
           {state.status === 'success' && pagination && (
-            <div className="px-[18px] py-3 border-t border-border">
-              <PaginationControls
-                pagination={pagination}
-                onPageChange={(p) => setQuery((q) => ({ ...q, page: p }))}
-              />
-            </div>
+            <PaginationControls
+              pagination={pagination}
+              onPageChange={(p) => setQuery((q) => ({ ...q, page: p }))}
+            />
           )}
         </div>
       )}

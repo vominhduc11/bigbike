@@ -127,8 +127,8 @@ function ColorAttributeSection({ attribute, canUpdate }) {
           onClose={() => setPickerValueId(null)}
         />
       )}
-      <div className="table-wrap">
-        <table className="tbl">
+      <div className="bb-table-wrap">
+        <table className="bb-table">
           <thead>
             <tr>
               <th style={{ width: 64 }}>{t('attributes.colPreview')}</th>
@@ -178,7 +178,7 @@ function ColorAttributeSection({ attribute, canUpdate }) {
                       {canUpdate && (
                         <button
                           type="button"
-                          className="btn btn-sm btn-secondary"
+                          className="bb-btn bb-btn-secondary bb-btn-sm"
                           onClick={() => setPickerValueId(value.id)}
                         >
                           <Image size={12} />
@@ -188,7 +188,7 @@ function ColorAttributeSection({ attribute, canUpdate }) {
                       {canUpdate && draftUrl && (
                         <button
                           type="button"
-                          className="btn btn-sm btn-ghost"
+                          className="bb-btn bb-btn-ghost bb-btn-sm"
                           title={t('common.remove', { defaultValue: 'Xoá' })}
                           onClick={() => setDraft(value.id, 'swatchImageUrl', '')}
                         >
@@ -201,7 +201,7 @@ function ColorAttributeSection({ attribute, canUpdate }) {
                     <td>
                       <button
                         type="button"
-                        className="btn btn-sm btn-primary"
+                        className="bb-btn bb-btn-primary bb-btn-sm"
                         disabled={isSaving}
                         onClick={() => handleSave(value)}
                       >
@@ -232,11 +232,11 @@ export function AttributeListScreen({ canUpdate }) {
 
   return (
     <div>
-      <div className="screen-header">
-        <div>
-          <p className="eyebrow">{t('attributes.eyebrow', { defaultValue: 'Catalog' })}</p>
+      <div className="bb-screen-header">
+        <div className="bb-screen-title">
+          <p className="bb-screen-eyebrow">{t('attributes.eyebrow', { defaultValue: 'Catalog' })}</p>
           <h1>{t('attributes.title')}</h1>
-          <p className="desc">{t('attributes.description', { defaultValue: 'Quản lý swatch ảnh và mã màu cho các thuộc tính màu sắc sản phẩm.' })}</p>
+          <p className="bb-muted">{t('attributes.description', { defaultValue: 'Quản lý swatch ảnh và mã màu cho các thuộc tính màu sắc sản phẩm.' })}</p>
         </div>
       </div>
 
@@ -265,26 +265,26 @@ export function AttributeListScreen({ canUpdate }) {
           )}
 
           {colorAttributes.map((attr) => (
-            <div key={attr.id} className="card" style={{ marginBottom: 16 }}>
-              <div className="card-header" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div key={attr.id} className="bb-card" style={{ marginBottom: 16 }}>
+              <div className="bb-card-header" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Palette size={16} />
                 <strong>{attr.name}</strong>
-                <span className="text-muted" style={{ fontSize: 12 }}>({attr.code} · {attr.valueCount} {t('attributes.values', { defaultValue: 'màu' })})</span>
+                <span className="bb-muted" style={{ fontSize: 12 }}>({attr.code} · {attr.valueCount} {t('attributes.values', { defaultValue: 'màu' })})</span>
               </div>
-              <div className="card-body card-body--flush">
+              <div className="bb-card-body bb-card-body--flush">
                 <ColorAttributeSection attribute={attr} canUpdate={canUpdate} />
               </div>
             </div>
           ))}
 
           {otherAttributes.length > 0 && (
-            <div className="card">
-              <div className="card-header">
+            <div className="bb-card">
+              <div className="bb-card-header">
                 <strong>{t('attributes.otherTitle', { defaultValue: 'Thuộc tính khác' })}</strong>
               </div>
-              <div className="card-body card-body--flush">
-                <div className="table-wrap">
-                  <table className="tbl">
+              <div className="bb-card-body bb-card-body--flush">
+                <div className="bb-table-wrap">
+                  <table className="bb-table">
                     <thead>
                       <tr>
                         <th>{t('attributes.colName', { defaultValue: 'Tên' })}</th>

@@ -978,11 +978,11 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
 
   return (
     <div>
-      <div className="screen-header">
-        <div>
-          <p className="eyebrow">{t('roles.eyebrow')}</p>
+      <div className="bb-screen-header">
+        <div className="bb-screen-title">
+          <p className="bb-screen-eyebrow">{t('roles.eyebrow')}</p>
           <h1>{t('roles.title')}</h1>
-          <p className="desc">{t('roles.description')}</p>
+          <p className="bb-muted">{t('roles.description')}</p>
         </div>
       </div>
 

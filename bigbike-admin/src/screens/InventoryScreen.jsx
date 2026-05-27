@@ -102,34 +102,34 @@ function SummaryBanner({ summary }) {
     summary.totalItems - (summary.lowStockCount || 0) - (summary.outOfStockCount || 0),
   )
   return (
-    <div className="kpi-grid">
-      <div className="kpi">
-        <div className="kpi-head">
-          <span className="kpi-icon blue"><Package size={15} /></span>
+    <div className="bb-kpi-grid">
+      <div className="bb-kpi">
+        <div className="bb-kpi-head">
+          <span className="bb-kpi-icon info"><Package size={15} /></span>
           <span>{t('inventory.summary.totalItems')}</span>
         </div>
-        <div className="kpi-value">{summary.totalItems.toLocaleString('vi-VN')}</div>
+        <div className="bb-kpi-value">{summary.totalItems.toLocaleString('vi-VN')}</div>
       </div>
-      <div className="kpi">
-        <div className="kpi-head">
-          <span className="kpi-icon green"><CheckCircle size={15} /></span>
+      <div className="bb-kpi">
+        <div className="bb-kpi-head">
+          <span className="bb-kpi-icon success"><CheckCircle size={15} /></span>
           <span>IN_STOCK</span>
         </div>
-        <div className="kpi-value">{inStock.toLocaleString('vi-VN')}</div>
+        <div className="bb-kpi-value">{inStock.toLocaleString('vi-VN')}</div>
       </div>
-      <div className="kpi">
-        <div className="kpi-head">
-          <span className="kpi-icon amber"><AlertTriangle size={15} /></span>
+      <div className="bb-kpi">
+        <div className="bb-kpi-head">
+          <span className="bb-kpi-icon warning"><AlertTriangle size={15} /></span>
           <span>{t('inventory.summary.lowStock')}</span>
         </div>
-        <div className="kpi-value">{(summary.lowStockCount || 0).toLocaleString('vi-VN')}</div>
+        <div className="bb-kpi-value">{(summary.lowStockCount || 0).toLocaleString('vi-VN')}</div>
       </div>
-      <div className="kpi">
-        <div className="kpi-head">
-          <span className="kpi-icon red"><XCircle size={15} /></span>
+      <div className="bb-kpi">
+        <div className="bb-kpi-head">
+          <span className="bb-kpi-icon danger"><XCircle size={15} /></span>
           <span>{t('inventory.summary.outOfStock')}</span>
         </div>
-        <div className="kpi-value">{(summary.outOfStockCount || 0).toLocaleString('vi-VN')}</div>
+        <div className="bb-kpi-value">{(summary.outOfStockCount || 0).toLocaleString('vi-VN')}</div>
       </div>
     </div>
   )
@@ -973,7 +973,7 @@ function AddSerialsPanel({ item, onSuccess }) {
       )}
 
       <div className="flex gap-2 items-center flex-wrap">
-        <button type="submit" className="btn btn-primary" disabled={submitting || validCount === 0}>
+        <button type="submit" className="bb-btn bb-btn-primary" disabled={submitting || validCount === 0}>
           {submitting ? 'Đang nhập…' : `Nhập ${validCount} serial`}
         </button>
       </div>
@@ -1705,16 +1705,16 @@ export function InventoryScreen({ canUpdate = false }) {
 
   return (
     <div>
-      <div className="screen-header">
-        <div>
-          <p className="eyebrow">{t('inventory.eyebrow')}</p>
+      <div className="bb-screen-header">
+        <div className="bb-screen-title">
+          <p className="bb-screen-eyebrow">{t('inventory.eyebrow')}</p>
           <h1>{t('inventory.title')}</h1>
-          <p className="desc">{t('inventory.description')}</p>
+          <p className="bb-muted">{t('inventory.description')}</p>
         </div>
-        <div className="actions">
+        <div className="bb-screen-actions">
           <button
             type="button"
-            className="btn btn-outline"
+            className="bb-btn bb-btn-secondary"
             disabled={csvDownloading}
             onClick={() => {
               setCsvDownloading(true)
@@ -1745,18 +1745,20 @@ export function InventoryScreen({ canUpdate = false }) {
 
       {state.warning && <ReadOnlyBanner warning={state.warning} />}
 
-      <div className="filter-bar">
-        <div className="filter-search">
-          <Search size={14} />
+      <div className="bb-filter-bar">
+        <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
+          <Search size={13} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--bb-text-muted)', pointerEvents: 'none' }} />
           <input
             type="search"
             placeholder={t('inventory.searchPlaceholder')}
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
+            className="bb-input"
+            style={{ paddingLeft: 28, width: '100%' }}
           />
         </div>
         <select
-          className="filter-select"
+          className="bb-select"
           value={query.stockState}
           onChange={(e) => setQuery((q) => ({ ...q, stockState: e.target.value, page: 1 }))}
           aria-label={t('inventory.filterStock')}
@@ -1775,8 +1777,8 @@ export function InventoryScreen({ canUpdate = false }) {
         <StatePanel tone="neutral" title={t('inventory.empty')} description={t('inventory.emptyDesc')} />
       )}
       {(state.status === 'loading' || (state.status === 'success' && state.items.length > 0)) && (
-        <div className="card">
-          <div className="card-body card-body--flush">
+        <div className="bb-card">
+          <div className="bb-card-body bb-card-body--flush">
             <InventoryGroupedTable
               groups={state.items}
               loading={state.status === 'loading'}

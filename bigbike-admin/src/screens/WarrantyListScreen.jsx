@@ -137,26 +137,28 @@ export function WarrantyListScreen({ canUpdate }) {
 
   return (
     <div>
-      <div className="screen-header">
-        <div>
-          <p className="eyebrow">{t('warranty.eyebrow')}</p>
+      <div className="bb-screen-header">
+        <div className="bb-screen-title">
+          <p className="bb-screen-eyebrow">{t('warranty.eyebrow')}</p>
           <h1>{t('warranty.title')}</h1>
-          <p className="desc">{t('warranty.description')}</p>
+          <p className="bb-muted">{t('warranty.description')}</p>
         </div>
       </div>
 
-      <div className="filter-bar">
-        <div className="filter-search">
-          <Search size={14} />
+      <div className="bb-filter-bar">
+        <div style={{ position: 'relative' }}>
+          <Search size={14} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--bb-text-muted)', pointerEvents: 'none' }} />
           <input
             type="search"
+            className="bb-input"
+            style={{ paddingLeft: 28 }}
             placeholder={t('warranty.searchPlaceholder')}
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
           />
         </div>
         <select
-          className="filter-select"
+          className="bb-select"
           value={query.status}
           onChange={(e) => setQuery((q) => ({ ...q, status: e.target.value, page: 1 }))}
           aria-label={t('warranty.filterStatus')}
@@ -178,10 +180,10 @@ export function WarrantyListScreen({ canUpdate }) {
       )}
 
       {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) && (
-        <div className="card">
-          <div className="card-body card-body--flush">
-            <div className="table-wrap">
-              <table className="tbl">
+        <div className="bb-card">
+          <div className="bb-card-body bb-card-body--flush">
+            <div className="bb-table-wrap">
+              <table className="bb-table">
                 <thead>
                   <tr>
                     <th>{t('warranty.colCustomerEmail')}</th>
@@ -208,9 +210,9 @@ export function WarrantyListScreen({ canUpdate }) {
                       <td className="text-xs">{formatDate(r.startDate)}</td>
                       <td className="text-xs">{formatDate(r.endDate)}</td>
                       <td><StatusBadge type="warranty" status={r.status} /></td>
-                      <td className="muted text-xs">{formatDateTime(r.createdAt)}</td>
-                      <td className="actions-cell" onClick={(e) => e.stopPropagation()}>
-                        <button type="button" className="btn btn-ghost btn-sm" onClick={() => setDetailItem(r)}>
+                      <td className="bb-muted" style={{ fontSize: 12 }}>{formatDateTime(r.createdAt)}</td>
+                      <td className="col-actions" onClick={(e) => e.stopPropagation()}>
+                        <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" onClick={() => setDetailItem(r)}>
                           {t('warranty.viewBtn')}
                         </button>
                       </td>
@@ -221,12 +223,10 @@ export function WarrantyListScreen({ canUpdate }) {
             </div>
           </div>
           {state.status === 'success' && pagination && (
-            <div className="px-[18px] py-3 border-t border-border">
-              <PaginationControls
-                pagination={pagination}
-                onPageChange={(p) => setQuery((q) => ({ ...q, page: p }))}
-              />
-            </div>
+            <PaginationControls
+              pagination={pagination}
+              onPageChange={(p) => setQuery((q) => ({ ...q, page: p }))}
+            />
           )}
         </div>
       )}

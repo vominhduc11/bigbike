@@ -11,7 +11,7 @@ import { Alert } from '@/components/ui/alert'
 import { PaginationControls } from '../components/PaginationControls'
 
 const STATUS_OPTIONS = ['ALL', 'APPROVED', 'PENDING', 'SPAM', 'TRASH']
-const STATUS_BADGE = { APPROVED: 'badge-success', PENDING: 'badge-warn', SPAM: 'badge-neutral', TRASH: 'badge-neutral' }
+const STATUS_BADGE = { APPROVED: 'bb-badge-success', PENDING: 'bb-badge-warning', SPAM: 'bb-badge-neutral', TRASH: 'bb-badge-neutral' }
 const AVATAR_VARIANTS = ['', 'b', 'c', 'd', 'e', 'f']
 
 const INITIAL_QUERY = { search: '', status: 'ALL', page: 1, pageSize: 20 }
@@ -117,11 +117,11 @@ export function ReviewListScreen({ navigate, canUpdate }) {
 
   return (
     <div>
-      <div className="screen-header">
-        <div>
-          <p className="eyebrow">{t('reviews.eyebrow')}</p>
+      <div className="bb-screen-header">
+        <div className="bb-screen-title">
+          <p className="bb-screen-eyebrow">{t('reviews.eyebrow')}</p>
           <h1>{t('reviews.title')}</h1>
-          <p className="desc">{t('reviews.description')}</p>
+          <p className="bb-muted">{t('reviews.description')}</p>
         </div>
       </div>
 
@@ -135,9 +135,9 @@ export function ReviewListScreen({ navigate, canUpdate }) {
 
       {/* Summary + attention cards */}
       <div className="grid-2-1 mb-4">
-        <div className="card">
-          <div className="card-head"><h2>{t('reviews.summaryTitle', { defaultValue: 'Tổng quan đánh giá' })}</h2></div>
-          <div className="card-body">
+        <div className="bb-card">
+          <div className="bb-card-header"><h2>{t('reviews.summaryTitle', { defaultValue: 'Tổng quan đánh giá' })}</h2></div>
+          <div className="bb-card-body">
             <div className="review-summary">
               <div className="text-center">
                 <div className="rating-big">{avg}</div>
@@ -161,9 +161,9 @@ export function ReviewListScreen({ navigate, canUpdate }) {
           </div>
         </div>
 
-        <div className="card">
-          <div className="card-head"><h2>{t('reviews.needsAction', { defaultValue: 'Cần xử lý' })}</h2></div>
-          <div className="card-body">
+        <div className="bb-card">
+          <div className="bb-card-header"><h2>{t('reviews.needsAction', { defaultValue: 'Cần xử lý' })}</h2></div>
+          <div className="bb-card-body">
             <div className="attn-list">
               <div className="attn-item warn">
                 <span className="attn-icon"><MessageSquare size={16} /></span>
@@ -193,14 +193,14 @@ export function ReviewListScreen({ navigate, canUpdate }) {
       </div>
 
       {/* Status tabs */}
-      <div className="seg mb-4" role="tablist" aria-label={t('reviews.filterStatus')}>
+      <div className="bb-seg" style={{ marginBottom: 16 }} role="tablist" aria-label={t('reviews.filterStatus')}>
         {STATUS_OPTIONS.map((status) => (
           <button
             key={status}
             type="button"
             role="tab"
             aria-selected={query.status === status}
-            className={`seg-tab${query.status === status ? ' active' : ''}`}
+            className={query.status === status ? 'active' : ''}
             onClick={() => updateQuery({ status }, { resetPage: true })}
           >
             {status === 'ALL' ? t('common.all') : statusLabel(status, t)}
@@ -209,11 +209,13 @@ export function ReviewListScreen({ navigate, canUpdate }) {
       </div>
 
       {/* Search */}
-      <div className="filter-bar">
-        <div className="filter-search">
-          <Search size={14} />
+      <div className="bb-filter-bar">
+        <div style={{ position: 'relative' }}>
+          <Search size={14} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--bb-text-muted)', pointerEvents: 'none' }} />
           <input
             type="search"
+            className="bb-input"
+            style={{ paddingLeft: 28 }}
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
             placeholder={t('reviews.searchPlaceholder')}
@@ -245,8 +247,8 @@ export function ReviewListScreen({ navigate, canUpdate }) {
         <div className="flex flex-col gap-3">
           {state.status === 'loading' && items.length === 0 && (
             [...Array(3)].map((_, i) => (
-              <div className="card" key={`sk-${i}`}>
-                <div className="card-body">
+              <div className="bb-card" key={`sk-${i}`}>
+                <div className="bb-card-body">
                   <div className="dash-skeleton-block" style={{ height: 72 }} />
                 </div>
               </div>
@@ -255,27 +257,26 @@ export function ReviewListScreen({ navigate, canUpdate }) {
           {items.map((r, i) => {
             const author = formatText(r.authorName) || t('reviews.unknownAuthor', { defaultValue: 'Khách hàng' })
             return (
-              <div className="card" key={r.id}>
-                <div className="card-body">
+              <div className="bb-card" key={r.id}>
+                <div className="bb-card-body">
                   <div className="flex items-center gap-3 mb-3">
                     <span className={`avatar-text ${AVATAR_VARIANTS[i % AVATAR_VARIANTS.length]}`}>
                       {author.charAt(0).toUpperCase()}
                     </span>
                     <div style={{ flex: 1 }}>
-                      <div className="fw-700">{author}</div>
-                      <div className="text-xs muted">
+                      <div style={{ fontWeight: 700 }}>{author}</div>
+                      <div className="bb-muted" style={{ fontSize: 12 }}>
                         {t('reviews.colProduct')}:{' '}
                         {r.productId ? (
                           <button
                             type="button"
-                            className="fw-600"
-                            style={{ color: 'var(--admin-color-text-primary)', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+                            style={{ fontWeight: 600, color: 'var(--admin-color-text-primary)', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
                             onClick={() => navigate(`/admin/products/${r.productId}`)}
                           >
                             {formatText(r.productName, r.productId)}
                           </button>
                         ) : (
-                          <span className="fw-600" style={{ color: 'var(--admin-color-text-primary)' }}>
+                          <span style={{ fontWeight: 600, color: 'var(--admin-color-text-primary)' }}>
                             {formatText(r.productName, t('reviews.unknownProduct'))}
                           </span>
                         )}
@@ -283,29 +284,29 @@ export function ReviewListScreen({ navigate, canUpdate }) {
                       </div>
                     </div>
                     <Stars n={Math.round(r.rating)} />
-                    <span className={`badge ${STATUS_BADGE[r.status] || 'badge-neutral'}`}>
+                    <span className={`bb-badge ${STATUS_BADGE[r.status] || 'bb-badge-neutral'}`}>
                       {statusLabel(r.status, t)}
                     </span>
                   </div>
                   <p style={{ margin: 0, color: 'var(--admin-color-text-secondary)', fontSize: 14, lineHeight: 1.55 }}>
-                    “{r.body?.slice(0, 400)}{r.body?.length > 400 ? '…' : ''}”
+                    "{r.body?.slice(0, 400)}{r.body?.length > 400 ? '…' : ''}"
                   </p>
                   <div className="flex gap-2 mt-3">
-                    <button type="button" className="btn btn-outline btn-sm" onClick={() => navigate(`/admin/reviews/${r.id}`)}>
+                    <button type="button" className="bb-btn bb-btn-secondary bb-btn-sm" onClick={() => navigate(`/admin/reviews/${r.id}`)}>
                       <Eye size={13} />{t('reviews.view')}
                     </button>
                     {canUpdate && r.status !== 'APPROVED' && (
-                      <button type="button" className="btn btn-primary btn-sm" onClick={() => handleStatusChange(r, 'APPROVED')}>
+                      <button type="button" className="bb-btn bb-btn-primary bb-btn-sm" onClick={() => handleStatusChange(r, 'APPROVED')}>
                         <Check size={13} />{t('reviews.approve')}
                       </button>
                     )}
                     {canUpdate && r.status !== 'SPAM' && (
-                      <button type="button" className="btn btn-ghost btn-sm text-danger" onClick={() => handleStatusChange(r, 'SPAM')}>
+                      <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" style={{ color: 'var(--bb-danger)' }} onClick={() => handleStatusChange(r, 'SPAM')}>
                         <EyeOff size={13} />{t('reviews.spam')}
                       </button>
                     )}
                     {canUpdate && (
-                      <button type="button" className="btn btn-ghost btn-sm text-danger" onClick={() => handleDelete(r.id)}>
+                      <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" style={{ color: 'var(--bb-danger)' }} onClick={() => handleDelete(r.id)}>
                         {t('common.delete')}
                       </button>
                     )}

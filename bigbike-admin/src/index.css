@@ -104,7 +104,6 @@ body {
   background: var(--admin-color-background-app);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow: hidden;
 }
 
 button,
@@ -120,8 +119,7 @@ a {
 }
 
 #root {
-  height: 100dvh;
-  overflow: hidden;
+  min-height: 100dvh;
 }
 
 /* ─── Global scrollbar ───────────────────────────────────────────────────────*/

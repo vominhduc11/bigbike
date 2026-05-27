@@ -876,31 +876,30 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit, canOverri
 
   return (
     <div>
-      <div className="screen-header" style={{ marginBottom: 16 }}>
-        <div>
-          <p className="eyebrow">{t('pos.eyebrow')}</p>
+      <div className="bb-screen-header">
+        <div className="bb-screen-title">
+          <p className="bb-screen-eyebrow">{t('pos.eyebrow')}</p>
           <h1>{t('pos.title')}</h1>
-          <p className="desc">{t('pos.searchHint')}</p>
+          <p className="bb-muted">{t('pos.searchHint')}</p>
         </div>
       </div>
 
-      <div className="pos-shell">
+      <div className="pos-layout">
         {/* Product picker */}
-        <div className="flex flex-col gap-3">
-          <div className="filter-bar" style={{ margin: 0 }}>
-            <div className="filter-search">
-              <Search size={14} />
-              <input
-                placeholder={t('pos.searchPlaceholder')}
-                value={q}
-                onChange={(e) => handleSearchChange(e.target.value)}
-                autoFocus
-              />
-            </div>
+        <div className="pos-search-col">
+          <div className="pos-search-wrap">
+            <span className="pos-search-icon"><Search size={14} /></span>
+            <input
+              className="bb-input pos-search-input"
+              placeholder={t('pos.searchPlaceholder')}
+              value={q}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              autoFocus
+            />
           </div>
 
           {searching && (
-            <p className="py-2 muted text-sm">{t('common.loading')}...</p>
+            <div className="pos-empty-hint">{t('common.loading')}…</div>
           )}
 
           {!searching && results.length === 0 && dq.trim() && (
@@ -908,13 +907,13 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit, canOverri
           )}
 
           {!searching && results.length === 0 && !dq.trim() && (
-            <div className="state-panel">
-              <div className="icon"><Search size={22} /></div>
-              <p>{t('pos.searchHint')}</p>
+            <div className="pos-empty-hint">
+              <Search size={28} />
+              <span>{t('pos.searchHint')}</span>
             </div>
           )}
 
-          <div className="pos-cards">
+          <div className="pos-product-grid">
             {results.map((product) =>
               (product.variants || []).filter((v) => v.stockQuantity === null || v.stockQuantity > 0).map((variant) => {
                 const displayPrice = priceOf(variant.price ?? product.price)
@@ -924,7 +923,7 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit, canOverri
                 return (
                   <div
                     key={variant.id ?? ('p:' + product.id)}
-                    className="pos-card"
+                    className="pos-product-card"
                     role="button"
                     tabIndex={disabled ? -1 : 0}
                     aria-disabled={disabled}
@@ -937,20 +936,20 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit, canOverri
                       }
                     }}
                   >
-                    <div className="thumb-img">
+                    <div className="pos-product-img" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--admin-color-text-muted)' }}>
                       {product.image?.url
-                        ? <img src={product.image.url} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 7 }} />
+                        ? <img src={product.image.url} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         : <ShoppingCart size={28} />}
                     </div>
-                    {variant.sku && <div className="sku">{variant.sku}</div>}
-                    <div className="name">{product.name}</div>
-                    {variantLabel && <div className="text-xs muted">{variantLabel}</div>}
-                    <div className="flex justify-between items-center mt-2">
-                      <div className="price">{formatCurrencyVnd(displayPrice)}</div>
+                    <div className="pos-product-info">
+                      {variant.sku && <div className="pos-product-attrs">{variant.sku}</div>}
+                      <div className="pos-product-name">{product.name}</div>
+                      {variantLabel && <div className="pos-product-attrs">{variantLabel}</div>}
+                      <div className="pos-product-price">{formatCurrencyVnd(displayPrice)}</div>
                       {outOfStock
-                        ? <span className="badge badge-danger">{t('pos.outOfStock', { defaultValue: 'Hết' })}</span>
+                        ? <div className="pos-product-stock out">{t('pos.outOfStock', { defaultValue: 'Hết hàng' })}</div>
                         : variant.stockQuantity != null
-                          ? <span className="text-xs muted">{t('pos.inStock', { count: variant.stockQuantity, defaultValue: `Còn ${variant.stockQuantity}` })}</span>
+                          ? <div className="pos-product-stock">{t('pos.inStock', { count: variant.stockQuantity, defaultValue: `Còn ${variant.stockQuantity}` })}</div>
                           : null}
                     </div>
                   </div>
@@ -961,40 +960,40 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit, canOverri
         </div>
 
         {/* Cart */}
-        <div className="pos-cart">
-          <div className="pos-cart-head">
-            <div className="flex justify-between items-center">
-              <div className="fw-700 text-lg">{t('pos.cart')} ({cart.length})</div>
-              {cart.length > 0 && (
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-sm"
-                  onClick={async () => {
-                    if (await showConfirm('Xoá toàn bộ giỏ hàng?', 'Xoá giỏ hàng')) {
-                      setCart([])
-                      try { localStorage.removeItem(POS_CART_KEY) } catch { /* ignore */ }
-                    }
-                  }}
-                >
-                  <Trash2 size={13} />{t('pos.clearCart', { defaultValue: 'Xoá hết' })}
-                </button>
-              )}
-            </div>
+        <div className="pos-cart-col">
+          <div className="pos-cart-header">
+            <span style={{ flex: 1 }}>{t('pos.cart')} ({cart.length})</span>
+            {cart.length > 0 && (
+              <button
+                type="button"
+                className="bb-btn bb-btn-ghost bb-btn-sm"
+                onClick={async () => {
+                  if (await showConfirm('Xoá toàn bộ giỏ hàng?', 'Xoá giỏ hàng')) {
+                    setCart([])
+                    try { localStorage.removeItem(POS_CART_KEY) } catch { /* ignore */ }
+                  }
+                }}
+              >
+                <Trash2 size={13} />{t('pos.clearCart', { defaultValue: 'Xoá hết' })}
+              </button>
+            )}
           </div>
 
           <div className="pos-cart-items">
             {cart.length === 0 ? (
-              <div className="state-panel">
-                <div className="icon"><ShoppingCart size={22} /></div>
-                <h3>{t('pos.cartEmpty')}</h3>
-                <p>{t('pos.searchHint')}</p>
+              <div className="pos-cart-empty">
+                <ShoppingCart size={28} />
+                <strong>{t('pos.cartEmpty')}</strong>
+                <span>{t('pos.searchHint')}</span>
               </div>
             ) : cart.map((item) => (
               <div key={item.cartKey} className="pos-cart-item">
-                <div>
-                  <div className="name">{item.productName}</div>
-                  <div className="meta">
-                    {(item.variantName || item.sku) && <>{item.variantName || item.sku} · </>}
+                <div className="pos-cart-item-info">
+                  <div className="pos-cart-item-name">{item.productName}</div>
+                  {(item.variantName || item.sku) && (
+                    <div className="pos-cart-item-sku">{item.variantName || item.sku}</div>
+                  )}
+                  <div className="pos-cart-item-price">
                     {editingPriceId === item.cartKey ? (
                       <Input
                         ref={priceInputRef}
@@ -1013,16 +1012,16 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit, canOverri
                       <>
                         {formatCurrencyVnd(effectivePrice(item))}
                         {item.overriddenPrice != null && (
-                          <span className="muted" style={{ textDecoration: 'line-through', marginLeft: 4 }}>
+                          <span style={{ textDecoration: 'line-through', marginLeft: 4, color: 'var(--admin-color-text-muted)' }}>
                             {formatCurrencyVnd(item.price)}
                           </span>
                         )}
                         {canOverridePrice && (
                           <button
                             type="button"
-                            className="icon-btn"
+                            className="bb-icon-btn"
                             title="Sửa giá"
-                            style={{ width: 22, height: 22, marginLeft: 4 }}
+                            style={{ width: 20, height: 20, marginLeft: 4 }}
                             onClick={() => startEditPrice(item)}
                           >
                             <Pencil size={11} />
@@ -1032,14 +1031,14 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit, canOverri
                     )}
                   </div>
                 </div>
-                <div className="qty-stepper">
-                  <button type="button" onClick={() => updateQty(item.cartKey, -1)}><Minus size={12} /></button>
-                  <span className="v">{item.qty}</span>
-                  <button type="button" onClick={() => updateQty(item.cartKey, 1)}><Plus size={12} /></button>
+                <div className="pos-cart-item-qty">
+                  <button type="button" className="bb-btn bb-btn-secondary" style={{ width: 24, height: 24, padding: 0, minWidth: 24 }} onClick={() => updateQty(item.cartKey, -1)}><Minus size={12} /></button>
+                  <span style={{ minWidth: 20, textAlign: 'center', fontSize: 'var(--admin-text-sm)', fontWeight: 600 }}>{item.qty}</span>
+                  <button type="button" className="bb-btn bb-btn-secondary" style={{ width: 24, height: 24, padding: 0, minWidth: 24 }} onClick={() => updateQty(item.cartKey, 1)}><Plus size={12} /></button>
                 </div>
-                <div className="text-right">
-                  <div className="fw-700 text-sm">{formatCurrencyVnd(effectivePrice(item) * item.qty)}</div>
-                  <button type="button" className="btn-ghost text-xs muted" onClick={() => removeFromCart(item.cartKey)}>
+                <div className="pos-cart-item-subtotal" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+                  <span>{formatCurrencyVnd(effectivePrice(item) * item.qty)}</span>
+                  <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" style={{ fontSize: 11, padding: '0 6px', height: 20 }} onClick={() => removeFromCart(item.cartKey)}>
                     {t('common.delete')}
                   </button>
                 </div>
@@ -1047,21 +1046,18 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit, canOverri
             ))}
           </div>
 
-          <div className="pos-cart-totals">
-            <div className="pos-tot-row">
+          <div className="pos-cart-footer">
+            <div className="pos-cart-total" style={{ fontSize: 'var(--admin-text-sm)', fontWeight: 400 }}>
               <span>{t('pos.itemCount', { count: cart.length, defaultValue: `Tạm tính (${cart.length} mục)` })}</span>
               <span>{formatCurrencyVnd(total)}</span>
             </div>
-            <div className="pos-tot-row grand">
+            <div className="pos-cart-total">
               <span>{t('pos.total')}</span>
-              <span style={{ color: 'var(--admin-color-brand-red)' }}>{formatCurrencyVnd(total)}</span>
+              <strong style={{ color: 'var(--admin-color-brand-red)' }}>{formatCurrencyVnd(total)}</strong>
             </div>
-          </div>
-
-          <div className="pos-cart-foot">
             <button
               type="button"
-              className="btn btn-primary btn-lg"
+              className="pos-checkout-btn bb-btn bb-btn-primary"
               disabled={cart.length === 0 || !canUpdate}
               onClick={() => setModal('payment')}
             >

@@ -445,9 +445,9 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
 
   return (
     <div>
-      <div className="screen-header">
-        <div>
-          <p className="eyebrow">
+      <div className="bb-screen-header">
+        <div className="bb-screen-title">
+          <p className="bb-screen-eyebrow">
             <a onClick={(e) => { e.preventDefault(); navigate('/admin/categories') }} style={{ cursor: 'pointer' }}>
               ← {t('categories.detail.backToList')}
             </a>
@@ -457,27 +457,27 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
             {!isCreate && state.item && <StatusBadge type="visibility" status={state.item.isVisible} />}
           </h1>
           {breadcrumbPath && (
-            <p className="desc">
+            <p className="bb-muted">
               {breadcrumbPath} / <strong>{state.item?.name}</strong>
             </p>
           )}
           {!isCreate && state.item && (
             <div className="flex items-center gap-3 mt-2" style={{ flexWrap: 'wrap' }}>
               {productsTotal > 0 && (
-                <span className="text-xs muted flex items-center gap-1">
+                <span className="bb-muted flex items-center gap-1" style={{ fontSize: 12 }}>
                   <Package size={13} aria-hidden="true" />
                   {t('categories.detail.productCount', { count: productsTotal })}
                 </span>
               )}
               {state.item.updatedAt && (
-                <span className="text-xs muted" title={`${t('common.lastUpdated')} ${formatDateTime(state.item.updatedAt)}`}>
+                <span className="bb-muted" style={{ fontSize: 12 }} title={`${t('common.lastUpdated')} ${formatDateTime(state.item.updatedAt)}`}>
                   {t('common.lastUpdated')} {formatRelativeTime(state.item.updatedAt, t)}
                 </span>
               )}
               <button
                 type="button"
-                className="text-xs muted flex items-center gap-1"
-                style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                className="bb-muted flex items-center gap-1"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12 }}
                 onClick={handleCopyId}
                 title={t('categories.detail.copyId')}
               >
@@ -488,10 +488,10 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
             </div>
           )}
         </div>
-        <div className="actions">
+        <div className="bb-screen-actions">
           {!isCreate && state.item?.slug && (
             <a
-              className="btn btn-outline"
+              className="bb-btn bb-btn-secondary"
               href={`${STOREFRONT_BASE}/${state.item.slug}`}
               target="_blank"
               rel="noopener noreferrer"
@@ -501,7 +501,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
               {t('categories.detail.viewOnSite')}
             </a>
           )}
-          <button type="submit" form="category-form" className="btn btn-primary" disabled={isReadOnly || !isDirty}>
+          <button type="submit" form="category-form" className="bb-btn bb-btn-primary" disabled={isReadOnly || !isDirty}>
             {isSubmitting
               ? t('common.saving')
               : isCreate ? t('categories.detail.createBtn') : t('categories.detail.saveBtn')}
@@ -529,17 +529,17 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
             <strong>{t('categories.detail.menuNoticeTitle')}</strong>
             <p style={{ margin: '4px 0 6px' }}>{t('categories.detail.menuNoticeDesc')}</p>
             <div className="flex gap-2">
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => navigate('/admin/menus')}>
+              <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" onClick={() => navigate('/admin/menus')}>
                 {t('categories.detail.menuNoticeAction')}
               </button>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={handleDismissMenuNotice}>
+              <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" onClick={handleDismissMenuNotice}>
                 {t('categories.detail.menuNoticeDismiss')}
               </button>
             </div>
           </div>
           <button
             type="button"
-            className="icon-btn"
+            className="bb-icon-btn"
             aria-label={t('categories.detail.menuNoticeDismiss')}
             onClick={handleDismissMenuNotice}
           >
@@ -559,8 +559,8 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
         }}
       >
         {/* Thông tin cơ bản */}
-        <div className="card mb-4">
-          <div className="card-head">
+        <div className="bb-card mb-4">
+          <div className="bb-card-header">
             <div>
               <h2>{t('categories.sectionBasic')}</h2>
               <p className="sub">{t('categories.sectionBasicDesc')}</p>
@@ -572,7 +572,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
               items={[{ key: 'vi', label: 'VI' }, { key: 'en', label: 'EN' }]}
             />
           </div>
-          <div className="card-body">
+          <div className="bb-card-body">
             <div className="grid-2">
               <label className="form-field" data-field="name">
                 <span>
@@ -664,9 +664,9 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
         </div>
 
         {/* Slug */}
-        <div className="card mb-4">
-          <div className="card-head"><h2>{t('categories.detail.slug')}</h2></div>
-          <div className="card-body">
+        <div className="bb-card mb-4">
+          <div className="bb-card-header"><h2>{t('categories.detail.slug')}</h2></div>
+          <div className="bb-card-body">
             <label className="form-field" data-field="slug">
               <span>{t('categories.detail.slug')}</span>
               <Input
@@ -685,8 +685,8 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
 
         {/* Products in category */}
         {!isCreate && state.item && (
-          <div className="card mb-4">
-            <div className="card-head">
+          <div className="bb-card mb-4">
+            <div className="bb-card-header">
               <div>
                 <h2>{t('categories.detail.productsSectionTitle', { count: productsTotal })}</h2>
                 <p className="sub">{t('categories.detail.productsSectionDesc')}</p>
@@ -694,19 +694,19 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
               {productsTotal > 0 && (
                 <button
                   type="button"
-                  className="btn btn-ghost btn-sm"
+                  className="bb-btn bb-btn-ghost bb-btn-sm"
                   onClick={() => navigate(`/admin/products?categoryId=${state.item.id}`)}
                 >
                   {t('categories.detail.productsViewAll', { count: productsTotal })}
                 </button>
               )}
             </div>
-            <div className="card-body card-body--flush">
+            <div className="bb-card-body bb-card-body--flush">
               {productsList.length === 0 ? (
-                <div className="state-panel"><p>{t('categories.detail.productsEmpty')}</p></div>
+                <div style={{ textAlign: 'center', padding: '24px 16px', color: 'var(--bb-text-muted)' }}><p>{t('categories.detail.productsEmpty')}</p></div>
               ) : (
-                <div className="table-wrap">
-                  <table className="tbl">
+                <div className="bb-table-wrap">
+                  <table className="bb-table">
                     <tbody>
                       {productsList.map((p) => (
                         <tr key={p.id} onClick={() => navigate(`/admin/products/${p.id}`)}>
@@ -724,7 +724,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                               </div>
                             </div>
                           </td>
-                          <td className="actions-cell"><PublishStatusBadge value={p.publishStatus} /></td>
+                          <td className="col-actions"><PublishStatusBadge value={p.publishStatus} /></td>
                         </tr>
                       ))}
                     </tbody>
@@ -737,16 +737,16 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
 
         {/* Danger zone */}
         {!isCreate && canUpdate && (
-          <div className="card" style={{ borderColor: 'var(--admin-color-status-danger-border)' }}>
-            <div className="card-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+          <div className="bb-card" style={{ borderColor: 'var(--admin-color-status-danger-border)' }}>
+            <div className="bb-card-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
               <div>
                 <strong className="flex items-center gap-2 text-danger">
                   <AlertTriangle size={14} aria-hidden="true" />
                   {t('categories.detail.dangerZoneTitle')}
                 </strong>
-                <p className="text-sm muted" style={{ margin: '4px 0 0' }}>{t('categories.detail.dangerZoneDesc')}</p>
+                <p className="bb-muted" style={{ margin: '4px 0 0', fontSize: 12 }}>{t('categories.detail.dangerZoneDesc')}</p>
               </div>
-              <button type="button" className="btn btn-danger" onClick={handleHardDelete} disabled={hardDeleteMutation.isPending}>
+              <button type="button" className="bb-btn bb-btn-danger" onClick={handleHardDelete} disabled={hardDeleteMutation.isPending}>
                 {t('categories.detail.hardDeleteBtn')}
               </button>
             </div>

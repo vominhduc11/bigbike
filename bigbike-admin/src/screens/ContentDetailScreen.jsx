@@ -68,14 +68,14 @@ function findTabForErrors(sectionErrors) {
   return null
 }
 
-// Map publishStatus → matching .badge variant. Used in ScreenHeader.
+// Map publishStatus → matching .bb-badge variant. Used in ScreenHeader.
 function publishBadgeClass(status) {
   switch (status) {
-    case 'PUBLISHED': return 'badge badge-success'
-    case 'DRAFT':     return 'badge badge-neutral'
-    case 'HIDDEN':    return 'badge badge-orange'
-    case 'TRASH':     return 'badge badge-danger'
-    default:          return 'badge badge-neutral'
+    case 'PUBLISHED': return 'bb-badge bb-badge-success'
+    case 'DRAFT':     return 'bb-badge bb-badge-neutral'
+    case 'HIDDEN':    return 'bb-badge bb-badge-warning'
+    case 'TRASH':     return 'bb-badge bb-badge-danger'
+    default:          return 'bb-badge bb-badge-neutral'
   }
 }
 
@@ -83,8 +83,8 @@ function publishBadgeClass(status) {
 // Required sections get a subtle red asterisk after the title instead of a loud "BẮT BUỘC" badge.
 function SectionCard({ title, badge, required, children }) {
   return (
-    <div className="card">
-      <div className="card-head">
+    <div className="bb-card">
+      <div className="bb-card-header">
         <h2>
           {title}
           {required && (
@@ -97,7 +97,7 @@ function SectionCard({ title, badge, required, children }) {
         </h2>
         {badge}
       </div>
-      <div className="card-body">{children}</div>
+      <div className="bb-card-body">{children}</div>
     </div>
   )
 }
@@ -586,7 +586,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                 {t(`status.publish.${form.publishStatus}`, { defaultValue: form.publishStatus })}
               </span>
               {isReadOnly && (
-                <span className="badge badge-warn">
+                <span className="bb-badge bb-badge-warning">
                   <Lock size={11} />
                   {t('content.detail.readOnlyBadge', { defaultValue: 'Chỉ đọc' })}
                 </span>

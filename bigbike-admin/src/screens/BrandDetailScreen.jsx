@@ -257,21 +257,22 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
 
   return (
     <div>
-      <div className="screen-header">
-        <div>
-          <p className="eyebrow">
+      <div className="bb-screen-header">
+        <div className="bb-screen-title">
+          <p className="bb-screen-eyebrow">
             <a onClick={(e) => { e.preventDefault(); navigate('/admin/brands') }} style={{ cursor: 'pointer' }}>
               ← {t('brands.detail.backToList')}
             </a>
           </p>
           <h1>{isCreate ? t('brands.detail.createTitle') : t('brands.detail.editTitle')}</h1>
-          <p className="desc">{isCreate ? t('brands.detail.createDesc') : t('brands.detail.editDesc')}</p>
+          <p className="bb-muted">{isCreate ? t('brands.detail.createDesc') : t('brands.detail.editDesc')}</p>
         </div>
-        <div className="actions">
+        <div className="bb-screen-actions">
           {!isCreate && canUpdate && (
             <button
               type="button"
-              className="btn btn-outline text-danger"
+              className="bb-btn bb-btn-secondary"
+              style={{ color: 'var(--bb-danger)' }}
               disabled={isSubmitting}
               onClick={async () => {
                 const confirmed = await showConfirm(
@@ -289,7 +290,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
           <button
             type="submit"
             form="brand-form"
-            className="btn btn-primary"
+            className="bb-btn bb-btn-primary"
             disabled={isReadOnly || !isDirty}
           >
             {isSubmitting
@@ -323,8 +324,8 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
         }}
       >
         {/* Thông tin cơ bản */}
-        <div className="card mb-4">
-          <div className="card-head">
+        <div className="bb-card mb-4">
+          <div className="bb-card-header">
             <h2>{t('brands.detail.sectionBasic')}</h2>
             <Tabs
               ariaLabel={t('brands.detail.contentLanguageAriaLabel', { defaultValue: 'Ngôn ngữ nội dung' })}
@@ -333,7 +334,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
               items={[{ key: 'vi', label: 'VI' }, { key: 'en', label: 'EN' }]}
             />
           </div>
-          <div className="card-body">
+          <div className="bb-card-body">
             <div className="grid-2">
               <label className="form-field">
                 <span>{t('brands.detail.slug')}</span>
@@ -378,9 +379,9 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
         </div>
 
         {/* Hình ảnh */}
-        <div className="card">
-          <div className="card-head"><h2>{t('brands.detail.sectionMedia')}</h2></div>
-          <div className="card-body">
+        <div className="bb-card">
+          <div className="bb-card-header"><h2>{t('brands.detail.sectionMedia')}</h2></div>
+          <div className="bb-card-body">
             <div className="grid-2">
               <div className="form-field" style={{ gridColumn: '1 / -1' }}>
                 <span>{t('brands.detail.logoUrl')}</span>
@@ -407,8 +408,8 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
             </div>
           </div>
           {!isCreate && state.item?.updatedAt && (
-            <div className="card-foot">
-              <span>{t('common.lastUpdated')} {formatDateTime(state.item.updatedAt)}</span>
+            <div className="px-4 py-2.5 border-t border-border text-xs bb-muted">
+              {t('common.lastUpdated')} {formatDateTime(state.item.updatedAt)}
             </div>
           )}
         </div>

@@ -107,17 +107,19 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
   const review = state.item
 
   return (
-    <section className="screen">
-      <header className="screen-header">
-        <div>
-          <p className="eyebrow">{t('reviews.eyebrow')}</p>
+    <div>
+      <div className="bb-screen-header">
+        <div className="bb-screen-title">
+          <p className="bb-screen-eyebrow">{t('reviews.eyebrow')}</p>
           <h1>{t('reviews.detail.title')}</h1>
-          <p>{formatText(review.productName, review.productId || t('reviews.unknownProduct'))}</p>
+          <p className="bb-muted">{formatText(review.productName, review.productId || t('reviews.unknownProduct'))}</p>
         </div>
-        <Button variant="secondary" type="button" onClick={() => navigate('/admin/reviews')}>
-          {t('reviews.detail.backToList')}
-        </Button>
-      </header>
+        <div className="bb-screen-actions">
+          <Button variant="secondary" type="button" onClick={() => navigate('/admin/reviews')}>
+            {t('reviews.detail.backToList')}
+          </Button>
+        </div>
+      </div>
 
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
 
@@ -153,7 +155,7 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
         </DetailSection>
 
         <DetailSection title={t('reviews.detail.sectionActions')}>
-          <div className="row-actions justify-start flex-wrap">
+          <div className="flex gap-2 flex-wrap">
             {canUpdate && review.status !== 'APPROVED' ? (
               <Button variant="secondary" type="button" disabled={busy} onClick={() => handleStatusChange('APPROVED')}>
                 {t('reviews.approve')}
@@ -172,6 +174,6 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
           </div>
         </DetailSection>
       </div>
-    </section>
+    </div>
   )
 }

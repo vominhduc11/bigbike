@@ -30,14 +30,14 @@ function RevenueTooltip({ active, payload, label, locale }) {
   )
 }
 
-// Ranked table card — prototype .tbl with a leading rank cell.
+// Ranked table card — bb-* classes.
 function RankTable({ title, rows, cols, noDataLabel }) {
   return (
-    <div className="card">
-      <div className="card-head"><h2>{title}</h2></div>
-      <div className="card-body card-body--flush">
-        <div className="table-wrap">
-          <table className="tbl">
+    <div className="bb-card">
+      <div className="bb-card-header"><h2>{title}</h2></div>
+      <div className="bb-card-body bb-card-body--flush">
+        <div className="bb-table-wrap">
+          <table className="bb-table">
             <thead>
               <tr>
                 <th style={{ width: 36 }}>#</th>
@@ -47,11 +47,11 @@ function RankTable({ title, rows, cols, noDataLabel }) {
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={cols.length + 1} className="text-center muted text-sm">{noDataLabel}</td>
+                  <td colSpan={cols.length + 1} className="text-center bb-muted" style={{ fontSize: 14 }}>{noDataLabel}</td>
                 </tr>
               ) : rows.map((row, idx) => (
                 <tr key={idx}>
-                  <td className="muted">{idx + 1}</td>
+                  <td className="bb-muted">{idx + 1}</td>
                   {cols.map((c) => (
                     <td key={c.key} className={c.right ? 'num' : undefined}>
                       {c.render ? c.render(row) : row[c.key]}
@@ -129,21 +129,21 @@ export function ReportsScreen() {
 
   return (
     <div>
-      <div className="screen-header">
-        <div>
-          <p className="eyebrow">{t('reports.eyebrow')}</p>
+      <div className="bb-screen-header">
+        <div className="bb-screen-title">
+          <p className="bb-screen-eyebrow">{t('reports.eyebrow')}</p>
           <h1>{t('reports.title')}</h1>
-          <p className="desc">{t('reports.description')}</p>
+          <p className="bb-muted">{t('reports.description')}</p>
         </div>
-        <div className="actions">
-          <div className="seg" role="tablist" aria-label={t('reports.title')}>
+        <div className="bb-screen-actions">
+          <div className="bb-seg" role="tablist" aria-label={t('reports.title')}>
             {presetTabs.map((tab) => (
               <button
                 key={tab.key}
                 type="button"
                 role="tab"
                 aria-selected={preset === tab.key}
-                className={`seg-tab${preset === tab.key ? ' active' : ''}`}
+                className={preset === tab.key ? 'active' : ''}
                 onClick={() => setPreset(tab.key)}
               >
                 {tab.label}
@@ -154,14 +154,14 @@ export function ReportsScreen() {
             <>
               <input
                 type="date"
-                className="filter-input"
+                className="bb-input"
                 value={customFrom}
                 onChange={(e) => setCustomFrom(e.target.value)}
               />
-              <span className="muted text-sm" style={{ alignSelf: 'center' }}>→</span>
+              <span className="bb-muted" style={{ alignSelf: 'center', fontSize: 14 }}>→</span>
               <input
                 type="date"
-                className="filter-input"
+                className="bb-input"
                 value={customTo}
                 onChange={(e) => setCustomTo(e.target.value)}
               />
@@ -169,13 +169,13 @@ export function ReportsScreen() {
           )}
           <button
             type="button"
-            className="btn btn-primary"
+            className="bb-btn bb-btn-primary"
             onClick={() => exportOrdersCsv({ from: exportFrom, to: exportTo })}
           >
             <Download size={14} />{t('reports.exportOrders')}
           </button>
           {preset !== 'custom' && (
-            <button type="button" className="btn btn-outline" onClick={() => setPreset('custom')}>
+            <button type="button" className="bb-btn bb-btn-secondary" onClick={() => setPreset('custom')}>
               <Calendar size={14} />{t('reports.presetCustom')}
             </button>
           )}
@@ -195,27 +195,27 @@ export function ReportsScreen() {
       {state.status === 'success' && state.data && (
         <>
           {/* KPI row */}
-          <div className="kpi-grid">
+          <div className="bb-kpi-grid">
             {[
-              { label: t('reports.kpiGmv'), value: formatCurrencyVnd(state.data.summary.grossOrderValue, locale), icon: 'red' },
-              { label: t('reports.kpiPaidRevenue'), value: formatCurrencyVnd(state.data.summary.paidRevenue, locale), icon: 'green' },
-              { label: t('reports.kpiRefund'), value: formatCurrencyVnd(state.data.summary.refundAmount, locale), icon: 'amber' },
-              { label: t('reports.kpiNetRevenue'), value: formatCurrencyVnd(state.data.summary.netRevenue, locale), icon: 'blue' },
-              { label: t('reports.kpiOrderCount'), value: state.data.summary.orderCount.toLocaleString(locale), icon: 'purple' },
-              { label: t('reports.kpiAov'), value: formatCurrencyVnd(state.data.summary.avgOrderValue, locale), icon: 'gray' },
+              { label: t('reports.kpiGmv'), value: formatCurrencyVnd(state.data.summary.grossOrderValue, locale), color: 'danger' },
+              { label: t('reports.kpiPaidRevenue'), value: formatCurrencyVnd(state.data.summary.paidRevenue, locale), color: 'success' },
+              { label: t('reports.kpiRefund'), value: formatCurrencyVnd(state.data.summary.refundAmount, locale), color: 'warning' },
+              { label: t('reports.kpiNetRevenue'), value: formatCurrencyVnd(state.data.summary.netRevenue, locale), color: 'info' },
+              { label: t('reports.kpiOrderCount'), value: state.data.summary.orderCount.toLocaleString(locale), color: 'info' },
+              { label: t('reports.kpiAov'), value: formatCurrencyVnd(state.data.summary.avgOrderValue, locale), color: '' },
             ].map((k) => (
-              <div className="kpi" key={k.label}>
-                <div className="kpi-head"><span>{k.label}</span></div>
-                <div className="kpi-value">{k.value}</div>
+              <div className="bb-kpi" key={k.label}>
+                <div className="bb-kpi-head"><span>{k.label}</span></div>
+                <div className="bb-kpi-value">{k.value}</div>
               </div>
             ))}
           </div>
 
           {/* Revenue trend chart */}
           {state.data.dailyRevenue?.length > 1 && (
-            <div className="card mb-4">
-              <div className="card-head"><h2>{t('reports.chartDailyRevenue')}</h2></div>
-              <div className="card-body">
+            <div className="bb-card mb-4">
+              <div className="bb-card-header"><h2>{t('reports.chartDailyRevenue')}</h2></div>
+              <div className="bb-card-body">
                 <ResponsiveContainer width="100%" height={240}>
                   <AreaChart data={state.data.dailyRevenue} margin={{ left: 10, right: 10, top: 4, bottom: 0 }}>
                     <defs>
@@ -258,9 +258,9 @@ export function ReportsScreen() {
 
           {/* Top products bar chart */}
           {state.data.topProducts?.length > 0 && (
-            <div className="card mb-4">
-              <div className="card-head"><h2>{t('reports.chartTopProducts')}</h2></div>
-              <div className="card-body">
+            <div className="bb-card mb-4">
+              <div className="bb-card-header"><h2>{t('reports.chartTopProducts')}</h2></div>
+              <div className="bb-card-body">
                 <ResponsiveContainer width="100%" height={200}>
                   <BarChart
                     data={state.data.topProducts.slice(0, 5)}

@@ -68,19 +68,19 @@ export function ContentListScreen({ navigate, canUpdate }) {
 
   return (
     <div>
-      <div className="screen-header">
-        <div>
-          <p className="eyebrow">{t('content.eyebrow')}</p>
+      <div className="bb-screen-header">
+        <div className="bb-screen-title">
+          <p className="bb-screen-eyebrow">{t('content.eyebrow')}</p>
           <h1>{t('content.title')}</h1>
-          <p className="desc">{t('content.description')}</p>
+          <p className="bb-muted">{t('content.description')}</p>
         </div>
-        <div className="actions">
-          <button type="button" className="btn btn-outline" disabled title={t('common.exportCsv', { defaultValue: 'Xuất CSV' })}>
+        <div className="bb-screen-actions">
+          <button type="button" className="bb-btn bb-btn-secondary" disabled title={t('common.exportCsv', { defaultValue: 'Xuất CSV' })}>
             <Download size={14} />{t('common.exportCsv', { defaultValue: 'Xuất CSV' })}
           </button>
           <button
             type="button"
-            className="btn btn-primary"
+            className="bb-btn bb-btn-primary"
             disabled={!canUpdate}
             onClick={() => navigate(createIsPage ? '/admin/content/pages/new' : '/admin/content/articles/new')}
           >
@@ -93,14 +93,14 @@ export function ContentListScreen({ navigate, canUpdate }) {
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
 
       {/* Type tabs — prototype segmented control */}
-      <div className="seg mb-4" role="tablist" aria-label={t('content.filterType')}>
+      <div className="bb-seg" style={{ marginBottom: 16 }} role="tablist" aria-label={t('content.filterType')}>
         {typeTabs.map((tab) => (
           <button
             key={tab.key}
             type="button"
             role="tab"
             aria-selected={query.type === tab.key}
-            className={`seg-tab${query.type === tab.key ? ' active' : ''}`}
+            className={query.type === tab.key ? 'active' : ''}
             onClick={() => updateQuery({ type: tab.key }, { resetPage: true })}
           >
             {tab.label}
@@ -109,18 +109,20 @@ export function ContentListScreen({ navigate, canUpdate }) {
       </div>
 
       {/* Filter bar */}
-      <div className="filter-bar">
-        <div className="filter-search">
-          <Search size={14} />
+      <div className="bb-filter-bar">
+        <div style={{ position: 'relative' }}>
+          <Search size={14} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--bb-text-muted)', pointerEvents: 'none' }} />
           <input
             type="search"
+            className="bb-input"
+            style={{ paddingLeft: 28 }}
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
             placeholder={t('content.searchPlaceholder')}
           />
         </div>
         <select
-          className="filter-select"
+          className="bb-select"
           value={query.publishStatus}
           onChange={(e) => updateQuery({ publishStatus: e.target.value }, { resetPage: true })}
           aria-label={t('content.filterPublish')}
@@ -154,10 +156,10 @@ export function ContentListScreen({ navigate, canUpdate }) {
       ) : null}
 
       {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) && (
-        <div className="card">
-          <div className="card-body card-body--flush">
-            <div className="table-wrap">
-              <table className="tbl">
+        <div className="bb-card">
+          <div className="bb-card-body bb-card-body--flush">
+            <div className="bb-table-wrap">
+              <table className="bb-table">
                 <thead>
                   <tr>
                     <th>{t('content.colContent')}</th>
@@ -200,16 +202,16 @@ export function ContentListScreen({ navigate, canUpdate }) {
                           </div>
                         </td>
                         <td>
-                          <span className={`badge ${isPage ? 'badge-neutral' : 'badge-info'}`}>
+                          <span className={`bb-badge ${isPage ? 'bb-badge-neutral' : 'bb-badge-info'}`}>
                             {isPage ? t('content.typePage') : t('content.typeArticle')}
                           </span>
                         </td>
                         <td><PublishStatusBadge value={item.publishStatus} /></td>
-                        <td className="muted text-xs">{formatDateTime(item.updatedAt)}</td>
-                        <td className="actions-cell" onClick={(e) => e.stopPropagation()}>
+                        <td className="bb-muted" style={{ fontSize: 12 }}>{formatDateTime(item.updatedAt)}</td>
+                        <td className="col-actions" onClick={(e) => e.stopPropagation()}>
                           <button
                             type="button"
-                            className="icon-btn"
+                            className="bb-icon-btn"
                             title={t('common.edit')}
                             onClick={() => navigate(editPath)}
                           >
@@ -224,12 +226,10 @@ export function ContentListScreen({ navigate, canUpdate }) {
             </div>
           </div>
           {state.status === 'success' && pagination && (
-            <div className="px-[18px] py-3 border-t border-border">
-              <PaginationControls
-                pagination={pagination}
-                onPageChange={(p) => updateQuery({ page: p })}
-              />
-            </div>
+            <PaginationControls
+              pagination={pagination}
+              onPageChange={(p) => updateQuery({ page: p })}
+            />
           )}
         </div>
       )}

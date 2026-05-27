@@ -13,8 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input'
 
 // Coupon status → prototype badge palette.
-const STATUS_BADGE = { ACTIVE: 'badge-success', INACTIVE: 'badge-neutral', EXPIRED: 'badge-danger', ARCHIVED: 'badge-neutral' }
-const CHANNEL_BADGE = { ALL: 'badge-neutral', ONLINE: 'badge-info', POS: 'badge-warn' }
+const STATUS_BADGE = { ACTIVE: 'bb-badge-success', INACTIVE: 'bb-badge-neutral', EXPIRED: 'bb-badge-danger', ARCHIVED: 'bb-badge-neutral' }
+const CHANNEL_BADGE = { ALL: 'bb-badge-neutral', ONLINE: 'bb-badge-info', POS: 'bb-badge-warning' }
 const CHANNEL_LABELS = { ALL: 'Tất cả kênh', ONLINE: 'Chỉ online', POS: 'Chỉ tại quầy' }
 
 const INITIAL_QUERY = { search: '', status: 'ALL', page: 1, pageSize: 10 }
@@ -36,14 +36,14 @@ function CouponStatusBadge({ value }) {
     ARCHIVED: t('coupons.statusArchived'),
   }
   return (
-    <span className={`badge ${STATUS_BADGE[value] || 'badge-neutral'}`}>
-      <span className="dot" />{labels[value] ?? value}
+    <span className={`bb-badge ${STATUS_BADGE[value] || 'bb-badge-neutral'}`}>
+      {labels[value] ?? value}
     </span>
   )
 }
 
 function ChannelBadge({ value }) {
-  return <span className={`badge ${CHANNEL_BADGE[value] || 'badge-neutral'}`}>{CHANNEL_LABELS[value] ?? value}</span>
+  return <span className={`bb-badge ${CHANNEL_BADGE[value] || 'bb-badge-neutral'}`}>{CHANNEL_LABELS[value] ?? value}</span>
 }
 
 export function CouponListScreen({ canUpdate }) {
@@ -206,24 +206,24 @@ export function CouponListScreen({ canUpdate }) {
 
   return (
     <div>
-      <div className="screen-header">
-        <div>
-          <p className="eyebrow">{t('coupons.eyebrow')}</p>
+      <div className="bb-screen-header">
+        <div className="bb-screen-title">
+          <p className="bb-screen-eyebrow">{t('coupons.eyebrow')}</p>
           <h1>{t('coupons.title')}</h1>
-          <p className="desc">{t('coupons.description')}</p>
+          <p className="bb-muted">{t('coupons.description')}</p>
         </div>
         {canUpdate && (
-          <div className="actions">
+          <div className="bb-screen-actions">
             <button
               type="button"
-              className="btn btn-outline"
+              className="bb-btn bb-btn-secondary"
               onClick={() => { setBulkOpen(!bulkOpen); setBulkConfirm(false); setShowForm(false) }}
             >
               <Send size={14} />{bulkOpen ? t('common.cancel') : 'Gửi mã hàng loạt'}
             </button>
             <button
               type="button"
-              className="btn btn-primary"
+              className="bb-btn bb-btn-primary"
               onClick={() => { setShowForm(!showForm); setBulkOpen(false) }}
             >
               <Plus size={14} />{showForm ? t('common.cancel') : t('coupons.createBtn')}
@@ -240,14 +240,14 @@ export function CouponListScreen({ canUpdate }) {
 
       {/* Bulk gift form */}
       {bulkOpen && (
-        <div className="card mb-4">
-          <div className="card-head">
+        <div className="bb-card mb-4">
+          <div className="bb-card-header">
             <div>
               <h2>Gửi mã giảm giá đến toàn bộ khách hàng</h2>
               <p className="sub">Mỗi khách hàng có tài khoản và email sẽ nhận một mã riêng. Email gửi tự động sau khi xác nhận.</p>
             </div>
           </div>
-          <form onSubmit={handleBulkSend} className="card-body">
+          <form onSubmit={handleBulkSend} className="bb-card-body">
             <div className="grid-2">
               <label className="form-field">
                 <span>Loại giảm giá</span>
@@ -301,8 +301,8 @@ export function CouponListScreen({ canUpdate }) {
               </Alert>
             )}
             <div className="mt-4 flex gap-2">
-              <button type="submit" className="btn btn-primary" disabled={bulkSaving}>{bulkConfirm ? 'Xác nhận gửi' : 'Tiếp tục'}</button>
-              <button type="button" className="btn btn-outline"
+              <button type="submit" className="bb-btn bb-btn-primary" disabled={bulkSaving}>{bulkConfirm ? 'Xác nhận gửi' : 'Tiếp tục'}</button>
+              <button type="button" className="bb-btn bb-btn-secondary"
                 onClick={() => { setBulkOpen(false); setBulkForm(EMPTY_BULK_FORM); setBulkConfirm(false) }}
                 disabled={bulkSaving}>Hủy</button>
             </div>
@@ -312,9 +312,9 @@ export function CouponListScreen({ canUpdate }) {
 
       {/* Create form */}
       {showForm && (
-        <div className="card mb-4">
-          <div className="card-head"><h2>{t('coupons.createTitle')}</h2></div>
-          <form onSubmit={handleCreate} className="card-body">
+        <div className="bb-card mb-4">
+          <div className="bb-card-header"><h2>{t('coupons.createTitle')}</h2></div>
+          <form onSubmit={handleCreate} className="bb-card-body">
             {formError && <Alert tone="danger" size="sm" className="mb-3">{formError}</Alert>}
             <div className="grid-2">
               <label className="form-field">
@@ -366,8 +366,8 @@ export function CouponListScreen({ canUpdate }) {
               </label>
             </div>
             <div className="mt-4 flex gap-2">
-              <button type="submit" className="btn btn-primary" disabled={formSaving}>{formSaving ? t('common.saving') : t('coupons.createBtn')}</button>
-              <button type="button" className="btn btn-outline" onClick={() => { setShowForm(false); setForm(EMPTY_FORM); setFormError(''); setFormFieldErrors({}) }}>{t('common.cancel')}</button>
+              <button type="submit" className="bb-btn bb-btn-primary" disabled={formSaving}>{formSaving ? t('common.saving') : t('coupons.createBtn')}</button>
+              <button type="button" className="bb-btn bb-btn-secondary" onClick={() => { setShowForm(false); setForm(EMPTY_FORM); setFormError(''); setFormFieldErrors({}) }}>{t('common.cancel')}</button>
             </div>
           </form>
         </div>
@@ -375,9 +375,9 @@ export function CouponListScreen({ canUpdate }) {
 
       {/* Edit form */}
       {editCoupon && (
-        <div className="card mb-4" style={{ borderColor: 'var(--admin-color-brand-red)' }}>
-          <div className="card-head"><h2>{t('coupons.editTitle', { code: editCoupon.code })}</h2></div>
-          <form onSubmit={handleEdit} className="card-body">
+        <div className="bb-card mb-4" style={{ borderColor: 'var(--admin-color-brand-red)' }}>
+          <div className="bb-card-header"><h2>{t('coupons.editTitle', { code: editCoupon.code })}</h2></div>
+          <form onSubmit={handleEdit} className="bb-card-body">
             {editError && <Alert tone="danger" size="sm" className="mb-3">{editError}</Alert>}
             <div className="grid-2">
               <label className="form-field">
@@ -419,8 +419,8 @@ export function CouponListScreen({ canUpdate }) {
               </label>
             </div>
             <div className="mt-4 flex gap-2">
-              <button type="submit" className="btn btn-primary" disabled={editSaving}>{editSaving ? t('common.saving') : t('coupons.saveBtn')}</button>
-              <button type="button" className="btn btn-outline" onClick={() => setEditCoupon(null)}>{t('common.cancel')}</button>
+              <button type="submit" className="bb-btn bb-btn-primary" disabled={editSaving}>{editSaving ? t('common.saving') : t('coupons.saveBtn')}</button>
+              <button type="button" className="bb-btn bb-btn-secondary" onClick={() => setEditCoupon(null)}>{t('common.cancel')}</button>
             </div>
           </form>
         </div>
@@ -429,14 +429,14 @@ export function CouponListScreen({ canUpdate }) {
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
 
       {/* Filter bar */}
-      <div className="filter-bar">
-        <div className="filter-search">
-          <Search size={14} />
-          <input type="search" value={searchInput}
+      <div className="bb-filter-bar">
+        <div style={{ position: 'relative' }}>
+          <Search size={14} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--bb-text-muted)', pointerEvents: 'none' }} />
+          <input type="search" className="bb-input" style={{ paddingLeft: 28 }} value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)} placeholder={t('coupons.searchPlaceholder')} />
         </div>
         <select
-          className="filter-select"
+          className="bb-select"
           value={query.status}
           onChange={(e) => updateQuery({ status: e.target.value }, { resetPage: true })}
           aria-label={t('coupons.filterStatus')}
@@ -458,10 +458,10 @@ export function CouponListScreen({ canUpdate }) {
       )}
 
       {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) && (
-        <div className="card">
-          <div className="card-body card-body--flush">
-            <div className="table-wrap">
-              <table className="tbl">
+        <div className="bb-card">
+          <div className="bb-card-body bb-card-body--flush">
+            <div className="bb-table-wrap">
+              <table className="bb-table">
                 <thead>
                   <tr>
                     <th>{t('coupons.colCode')}</th>
@@ -488,11 +488,11 @@ export function CouponListScreen({ canUpdate }) {
                     return (
                       <tr key={c.id}>
                         <td>
-                          <span className="id-cell" style={{ fontSize: 13, color: 'var(--admin-color-brand-red)' }}>{c.code}</span>
+                          <span className="mono" style={{ fontSize: 13, color: 'var(--admin-color-brand-red)' }}>{c.code}</span>
                         </td>
                         <td>{c.name || '—'}</td>
                         <td>
-                          <span className="badge badge-info">
+                          <span className="bb-badge bb-badge-info">
                             {c.discountType === 'PERCENT' ? `-${c.discountValue}%` : `-${formatCurrencyVnd(c.discountValue)}`}
                           </span>
                         </td>
@@ -501,23 +501,23 @@ export function CouponListScreen({ canUpdate }) {
                           {c.maxUsage ? (
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                               <div className="stock-bar"><div style={{ width: pct + '%' }} /></div>
-                              <span className="text-xs muted">{pct.toFixed(0)}%</span>
+                              <span className="bb-muted" style={{ fontSize: 12 }}>{pct.toFixed(0)}%</span>
                             </div>
                           ) : (
-                            <span className="text-xs muted">—</span>
+                            <span className="bb-muted" style={{ fontSize: 12 }}>—</span>
                           )}
                         </td>
                         <td><ChannelBadge value={c.channel || 'ALL'} /></td>
-                        <td className="muted text-xs">{formatDateTime(c.expiresAt)}</td>
+                        <td className="bb-muted" style={{ fontSize: 12 }}>{formatDateTime(c.expiresAt)}</td>
                         <td><CouponStatusBadge value={c.status} /></td>
                         {canUpdate && (
-                          <td className="actions-cell">
-                            <button type="button" className="icon-btn" title={t('common.edit')} onClick={() => openEdit(c)}>
+                          <td className="col-actions">
+                            <button type="button" className="bb-icon-btn" title={t('common.edit')} onClick={() => openEdit(c)}>
                               <Pencil size={14} />
                             </button>
                             <button
                               type="button"
-                              className="icon-btn"
+                              className="bb-icon-btn"
                               title={c.status === 'ACTIVE' ? t('common.disable') : t('common.enable')}
                               onClick={() => handleToggleStatus(c)}
                             >
@@ -533,12 +533,10 @@ export function CouponListScreen({ canUpdate }) {
             </div>
           </div>
           {state.status === 'success' && state.pagination && (
-            <div className="px-[18px] py-3 border-t border-border">
-              <PaginationControls
-                pagination={state.pagination}
-                onPageChange={(p) => updateQuery({ page: p })}
-              />
-            </div>
+            <PaginationControls
+              pagination={state.pagination}
+              onPageChange={(p) => updateQuery({ page: p })}
+            />
           )}
         </div>
       )}

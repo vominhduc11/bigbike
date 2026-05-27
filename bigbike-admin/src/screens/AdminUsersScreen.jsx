@@ -33,34 +33,34 @@ const STATUS_META = {
   SUSPENDED: { labelKey: 'adminUsers.statusSuspended' },
 }
 
-// Role → prototype badge palette.
+// Role → bb-badge palette.
 const ROLE_BADGE = {
-  SUPER_ADMIN: 'badge-danger',
-  ADMIN: 'badge-info',
-  SHOP_MANAGER: 'badge-info',
-  EDITOR: 'badge-neutral',
-  AUTHOR: 'badge-info',
-  CONTRIBUTOR: 'badge-neutral',
-  SEO_EDITOR: 'badge-success',
+  SUPER_ADMIN: 'bb-badge-danger',
+  ADMIN: 'bb-badge-info',
+  SHOP_MANAGER: 'bb-badge-info',
+  EDITOR: 'bb-badge-neutral',
+  AUTHOR: 'bb-badge-info',
+  CONTRIBUTOR: 'bb-badge-neutral',
+  SEO_EDITOR: 'bb-badge-success',
 }
 const STATUS_BADGE = {
-  ACTIVE: 'badge-success',
-  DISABLED: 'badge-danger',
-  SUSPENDED: 'badge-warn',
+  ACTIVE: 'bb-badge-success',
+  DISABLED: 'bb-badge-danger',
+  SUSPENDED: 'bb-badge-warning',
 }
 const AVATAR_VARIANTS = ['', 'b', 'c', 'd', 'e', 'f']
 
 function RoleBadge({ role, t }) {
   const meta = ROLE_META[role]
   const label = meta ? t(meta.labelKey) : role
-  return <span className={`badge ${ROLE_BADGE[role] || 'badge-neutral'}`}>{label || '—'}</span>
+  return <span className={`bb-badge ${ROLE_BADGE[role] || 'bb-badge-neutral'}`}>{label || '—'}</span>
 }
 
 function UserStatusBadge({ status, t }) {
   const meta = STATUS_META[status]
   const label = meta ? t(meta.labelKey) : status
   return (
-    <span className={`badge ${STATUS_BADGE[status] || 'badge-neutral'}`}>
+    <span className={`bb-badge ${STATUS_BADGE[status] || 'bb-badge-neutral'}`}>
       <span className="dot" />{label || '—'}
     </span>
   )
@@ -264,15 +264,15 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
 
   return (
     <div>
-      <div className="screen-header">
-        <div>
-          <p className="eyebrow">{t('adminUsers.eyebrow')}</p>
+      <div className="bb-screen-header">
+        <div className="bb-screen-title">
+          <p className="bb-screen-eyebrow">{t('adminUsers.eyebrow')}</p>
           <h1>{t('adminUsers.title')}</h1>
-          <p className="desc">{t('adminUsers.description')}</p>
+          <p className="bb-muted">{t('adminUsers.description')}</p>
         </div>
         {canUpdate && (
-          <div className="actions">
-            <button type="button" className="btn btn-primary" onClick={openCreate}>
+          <div className="bb-screen-actions">
+            <button type="button" className="bb-btn bb-btn-primary" onClick={openCreate}>
               <UserPlus size={14} />{t('adminUsers.createBtn')}
             </button>
           </div>
@@ -281,18 +281,20 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
 
       {listState.warning ? <ReadOnlyBanner warning={listState.warning} /> : null}
 
-      <div className="filter-bar">
-        <div className="filter-search">
-          <Search size={14} />
+      <div className="bb-filter-bar">
+        <div style={{ position: 'relative' }}>
+          <Search size={14} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--bb-text-muted)', pointerEvents: 'none' }} />
           <input
             type="search"
+            className="bb-input"
+            style={{ paddingLeft: 28 }}
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder={t('adminUsers.searchPlaceholder')}
           />
         </div>
         <select
-          className="filter-select"
+          className="bb-select"
           value={roleFilter}
           onChange={(e) => handleFilterChange('role', e.target.value)}
           aria-label={t('adminUsers.filterRole')}
@@ -304,7 +306,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
           })}
         </select>
         <select
-          className="filter-select"
+          className="bb-select"
           value={statusFilter}
           onChange={(e) => handleFilterChange('status', e.target.value)}
           aria-label={t('adminUsers.filterStatus')}
@@ -346,10 +348,10 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
       )}
 
       {(listState.status === 'loading' || (listState.status === 'success' && items.length > 0)) && (
-        <div className="card">
-          <div className="card-body card-body--flush">
-            <div className="table-wrap">
-              <table className="tbl">
+        <div className="bb-card">
+          <div className="bb-card-body bb-card-body--flush">
+            <div className="bb-table-wrap">
+              <table className="bb-table">
                 <thead>
                   <tr>
                     <th>{t('adminUsers.colUser')}</th>
@@ -386,15 +388,15 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
                         </td>
                         <td><RoleBadge role={u.role} t={t} /></td>
                         <td><UserStatusBadge status={u.status} t={t} /></td>
-                        <td className="muted text-xs">
+                        <td className="bb-muted" style={{ fontSize: 12 }}>
                           {u.lastLoginAt ? formatDateTime(u.lastLoginAt) : t('adminUsers.notLastLogin')}
                         </td>
                         {canUpdate && (
-                          <td className="actions-cell">
-                            <button type="button" className="icon-btn" title={t('common.edit')} onClick={() => openEdit(u)}>
+                          <td className="col-actions">
+                            <button type="button" className="bb-icon-btn" title={t('common.edit')} onClick={() => openEdit(u)}>
                               <Pencil size={14} />
                             </button>
-                            <button type="button" className="icon-btn" title={t('common.edit')} onClick={() => openEdit(u)}>
+                            <button type="button" className="bb-icon-btn" title={t('common.edit')} onClick={() => openEdit(u)}>
                               <MoreHorizontal size={15} />
                             </button>
                           </td>
@@ -407,12 +409,10 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
             </div>
           </div>
           {listState.status === 'success' && listState.pagination && (
-            <div className="px-[18px] py-3 border-t border-border">
-              <PaginationControls
-                pagination={listState.pagination}
-                onPageChange={(newPage) => setQuery((p) => ({ ...p, page: newPage }))}
-              />
-            </div>
+            <PaginationControls
+              pagination={listState.pagination}
+              onPageChange={(newPage) => setQuery((p) => ({ ...p, page: newPage }))}
+            />
           )}
         </div>
       )}

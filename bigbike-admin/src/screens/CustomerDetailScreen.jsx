@@ -200,17 +200,19 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
   const { customer } = state
 
   return (
-    <section className="screen">
-      <header className="screen-header">
-        <div>
-          <p className="eyebrow">{t('customers.detail.eyebrow')}</p>
+    <div>
+      <div className="bb-screen-header">
+        <div className="bb-screen-title">
+          <p className="bb-screen-eyebrow">{t('customers.detail.eyebrow')}</p>
           <h1>{formatText(customer.fullName)}</h1>
-          <p>{formatText(customer.email)}</p>
+          <p className="bb-muted">{formatText(customer.email)}</p>
         </div>
-        <Button variant="outline" onClick={() => navigate('/admin/customers')}>
-          {t('customers.detail.backToList')}
-        </Button>
-      </header>
+        <div className="bb-screen-actions">
+          <Button variant="outline" onClick={() => navigate('/admin/customers')}>
+            {t('customers.detail.backToList')}
+          </Button>
+        </div>
+      </div>
 
       {state.warning && <ReadOnlyBanner warning={state.warning} />}
 
@@ -592,6 +594,6 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
           </DetailSection>
         </div>
       )}
-    </section>
+    </div>
   )
 }

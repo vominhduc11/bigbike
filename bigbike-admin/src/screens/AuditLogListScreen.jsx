@@ -638,16 +638,16 @@ export function AuditLogListScreen() {
 
   return (
     <div>
-      <div className="screen-header">
-        <div>
-          <p className="eyebrow">{t('auditLog.eyebrow')}</p>
+      <div className="bb-screen-header">
+        <div className="bb-screen-title">
+          <p className="bb-screen-eyebrow">{t('auditLog.eyebrow')}</p>
           <h1>{t('auditLog.title')}</h1>
-          <p className="desc">{t('auditLog.description')}</p>
+          <p className="bb-muted">{t('auditLog.description')}</p>
         </div>
-        <div className="actions">
+        <div className="bb-screen-actions">
           <button
             type="button"
-            className="btn btn-outline"
+            className="bb-btn bb-btn-secondary"
             onClick={handleExport}
             disabled={state.items.length === 0}
             title={
@@ -664,7 +664,7 @@ export function AuditLogListScreen() {
       {state.warning && <ReadOnlyBanner warning={state.warning} />}
 
       {/* ── Desktop filter bar — 2-row layout (#3) ── */}
-      <section className="filter-bar audit-filter-bar">
+      <section className="bb-filter-bar audit-filter-bar">
         {/* Row 1: search + module + actor + page size */}
         <div className="audit-filter-row">
           <label className="audit-filter-search-group">

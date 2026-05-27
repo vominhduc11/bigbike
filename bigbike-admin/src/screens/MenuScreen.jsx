@@ -615,11 +615,11 @@ export function MenuScreen({ canUpdate }) {
   return (
     <div>
       {/* ── Header (no create-menu CTA — slots are fixed) ── */}
-      <div className="screen-header">
-        <div>
-          <p className="eyebrow">{t('menus.eyebrow')}</p>
+      <div className="bb-screen-header">
+        <div className="bb-screen-title">
+          <p className="bb-screen-eyebrow">{t('menus.eyebrow')}</p>
           <h1>{t('menus.title')}</h1>
-          <p className="desc">{t('menus.description')}</p>
+          <p className="bb-muted">{t('menus.description')}</p>
         </div>
       </div>
 

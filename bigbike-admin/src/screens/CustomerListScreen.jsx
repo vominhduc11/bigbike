@@ -11,24 +11,22 @@ import { useAdminList } from '../lib/useAdminList'
 import { useDebounce } from '../lib/useDebounce'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 
-// Customer account status → prototype badge palette.
 const STATUS_BADGE = {
-  ACTIVE: 'badge-success',
-  PENDING: 'badge-warn',
-  DISABLED: 'badge-neutral',
-  BLOCKED: 'badge-danger',
-  UNKNOWN: 'badge-neutral',
+  ACTIVE: 'bb-badge-success',
+  PENDING: 'bb-badge-warning',
+  DISABLED: 'bb-badge-neutral',
+  BLOCKED: 'bb-badge-danger',
+  UNKNOWN: 'bb-badge-neutral',
 }
-// Avatar gradient variants — cycle so adjacent rows differ.
 const AVATAR_VARIANTS = ['', 'b', 'c', 'd', 'e', 'f']
 
 const INITIAL_QUERY = { search: '', status: 'ALL', page: 1, pageSize: 10 }
 
 function CustomerStatusBadge({ value }) {
   const { t } = useTranslation()
-  const cls = STATUS_BADGE[value] || 'badge-neutral'
+  const cls = STATUS_BADGE[value] || 'bb-badge-neutral'
   return (
-    <span className={`badge ${cls}`}>
+    <span className={`bb-badge ${cls}`}>
       <span className="dot" />
       {t(`status.customer.${value}`, { defaultValue: value })}
     </span>
@@ -75,16 +73,16 @@ export function CustomerListScreen({ navigate }) {
 
   return (
     <div>
-      <div className="screen-header">
-        <div>
-          <p className="eyebrow">{t('customers.eyebrow')}</p>
+      <div className="bb-screen-header">
+        <div className="bb-screen-title">
+          <p className="bb-screen-eyebrow">{t('customers.eyebrow')}</p>
           <h1>{t('customers.title')}</h1>
-          <p className="desc">{t('customers.description')}</p>
+          <p className="bb-muted">{t('customers.description')}</p>
         </div>
-        <div className="actions">
+        <div className="bb-screen-actions">
           <button
             type="button"
-            className="btn btn-outline"
+            className="bb-btn bb-btn-secondary"
             onClick={() => exportCustomersCsv({ status: query.status !== 'ALL' ? query.status : undefined })}
           >
             <Download size={14} />{t('common.exportCsv', { defaultValue: 'Xuất CSV' })}
@@ -93,56 +91,58 @@ export function CustomerListScreen({ navigate }) {
       </div>
 
       {summary ? (
-        <div className="kpi-grid">
-          <div className="kpi">
-            <div className="kpi-head">
-              <span className="kpi-icon red"><Users size={15} /></span>
+        <div className="bb-kpi-grid">
+          <div className="bb-kpi">
+            <div className="bb-kpi-head">
+              <span className="bb-kpi-icon danger"><Users size={15} /></span>
               <span>{t('customers.kpi.total')}</span>
             </div>
-            <div className="kpi-value">{summary.total.toLocaleString(i18n.language)}</div>
-            <div className="kpi-foot"><span className="kpi-foot-label">{t('customers.kpi.totalHint')}</span></div>
+            <div className="bb-kpi-value">{summary.total.toLocaleString(i18n.language)}</div>
+            <div className="bb-kpi-foot"><span className="bb-kpi-foot-label">{t('customers.kpi.totalHint')}</span></div>
           </div>
-          <div className="kpi">
-            <div className="kpi-head">
-              <span className="kpi-icon amber"><Crown size={15} /></span>
+          <div className="bb-kpi">
+            <div className="bb-kpi-head">
+              <span className="bb-kpi-icon warning"><Crown size={15} /></span>
               <span>{t('customers.kpi.vip')}</span>
             </div>
-            <div className="kpi-value">{summary.vip.toLocaleString(i18n.language)}</div>
-            <div className="kpi-foot"><span className="kpi-foot-label">{t('customers.kpi.vipHint')}</span></div>
+            <div className="bb-kpi-value">{summary.vip.toLocaleString(i18n.language)}</div>
+            <div className="bb-kpi-foot"><span className="bb-kpi-foot-label">{t('customers.kpi.vipHint')}</span></div>
           </div>
-          <div className="kpi">
-            <div className="kpi-head">
-              <span className="kpi-icon blue"><UserPlus size={15} /></span>
+          <div className="bb-kpi">
+            <div className="bb-kpi-head">
+              <span className="bb-kpi-icon info"><UserPlus size={15} /></span>
               <span>{t('customers.kpi.new30d')}</span>
             </div>
-            <div className="kpi-value">{summary.newLast30Days.toLocaleString(i18n.language)}</div>
-            <div className="kpi-foot"><span className="kpi-foot-label">{t('customers.kpi.new30dHint')}</span></div>
+            <div className="bb-kpi-value">{summary.newLast30Days.toLocaleString(i18n.language)}</div>
+            <div className="bb-kpi-foot"><span className="bb-kpi-foot-label">{t('customers.kpi.new30dHint')}</span></div>
           </div>
-          <div className="kpi">
-            <div className="kpi-head">
-              <span className="kpi-icon green"><UserCheck size={15} /></span>
+          <div className="bb-kpi">
+            <div className="bb-kpi-head">
+              <span className="bb-kpi-icon success"><UserCheck size={15} /></span>
               <span>{t('customers.kpi.active')}</span>
             </div>
-            <div className="kpi-value">{summary.active.toLocaleString(i18n.language)}</div>
-            <div className="kpi-foot"><span className="kpi-foot-label">{t('customers.kpi.activeHint')}</span></div>
+            <div className="bb-kpi-value">{summary.active.toLocaleString(i18n.language)}</div>
+            <div className="bb-kpi-foot"><span className="bb-kpi-foot-label">{t('customers.kpi.activeHint')}</span></div>
           </div>
         </div>
       ) : null}
 
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
 
-      <div className="filter-bar">
-        <div className="filter-search">
-          <Search size={14} />
+      <div className="bb-filter-bar">
+        <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
+          <Search size={13} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--bb-text-muted)', pointerEvents: 'none' }} />
           <input
             type="search"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder={t('customers.searchPlaceholder')}
+            className="bb-input"
+            style={{ paddingLeft: 28, width: '100%' }}
           />
         </div>
         <select
-          className="filter-select"
+          className="bb-select"
           value={query.status}
           onChange={(e) => updateQuery({ status: e.target.value }, { resetPage: true })}
           aria-label={t('customers.filterStatus')}
@@ -165,10 +165,10 @@ export function CustomerListScreen({ navigate }) {
       )}
 
       {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) && (
-        <div className="card">
-          <div className="card-body card-body--flush">
-            <div className="table-wrap">
-              <table className="tbl">
+        <div className="bb-card">
+          <div className="bb-card-body bb-card-body--flush">
+            <div className="bb-table-wrap">
+              <table className="bb-table">
                 <thead>
                   <tr>
                     <th>{t('customers.colCustomer')}</th>
@@ -183,7 +183,7 @@ export function CustomerListScreen({ navigate }) {
                   {state.status === 'loading' && items.length === 0 && (
                     [...Array(6)].map((_, i) => (
                       <tr key={`sk-${i}`}>
-                        <td colSpan={6}><div className="dash-skeleton-block" style={{ height: 28 }} /></td>
+                        <td colSpan={6}><div className="bb-skeleton-block" style={{ height: 28 }} /></td>
                       </tr>
                     ))
                   )}
@@ -193,19 +193,19 @@ export function CustomerListScreen({ navigate }) {
                     return (
                       <tr key={c.id} onClick={() => navigate(`/admin/customers/${c.id}`)}>
                         <td>
-                          <div className="product-cell">
-                            <span className={`avatar-text ${AVATAR_VARIANTS[i % AVATAR_VARIANTS.length]}`}>{initial}</span>
-                            <div className="info">
-                              <div className="name">{name}</div>
-                              <div className="sku" style={{ fontFamily: 'inherit' }}>{formatText(c.email)}</div>
-                            </div>
+                          <div className="bb-product-cell">
+                            <span className="bb-product-thumb">{initial}</span>
+                            <span>
+                              <div>{name}</div>
+                              <div className="bb-cell-sub">{formatText(c.email)}</div>
+                            </span>
                           </div>
                         </td>
                         <td>{formatText(c.phone)}</td>
                         <td><CustomerStatusBadge value={c.status} /></td>
                         <td className="num">{c.orderCount}</td>
-                        <td className="num fw-700">{formatCurrencyVnd(c.totalSpent)}</td>
-                        <td className="muted text-xs">{formatDateTime(c.createdAt)}</td>
+                        <td className="num" style={{ fontWeight: 700 }}>{formatCurrencyVnd(c.totalSpent)}</td>
+                        <td className="bb-muted" style={{ fontSize: 12 }}>{formatDateTime(c.createdAt)}</td>
                       </tr>
                     )
                   })}
@@ -214,12 +214,10 @@ export function CustomerListScreen({ navigate }) {
             </div>
           </div>
           {state.status === 'success' && pagination && (
-            <div className="px-[18px] py-3 border-t border-border">
-              <PaginationControls
-                pagination={pagination}
-                onPageChange={(p) => updateQuery({ page: p })}
-              />
-            </div>
+            <PaginationControls
+              pagination={pagination}
+              onPageChange={(p) => updateQuery({ page: p })}
+            />
           )}
         </div>
       )}

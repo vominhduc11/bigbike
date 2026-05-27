@@ -196,15 +196,15 @@ export function RedirectListScreen({ canUpdate }) {
 
   return (
     <div>
-      <div className="screen-header">
-        <div>
-          <p className="eyebrow">{t('nav.redirects', { defaultValue: 'Chuyển hướng' })}</p>
+      <div className="bb-screen-header">
+        <div className="bb-screen-title">
+          <p className="bb-screen-eyebrow">{t('nav.redirects', { defaultValue: 'Chuyển hướng' })}</p>
           <h1>{t('redirects.title', { defaultValue: 'Chuyển hướng' })}</h1>
-          <p className="desc">{t('redirects.description', { defaultValue: 'Quản lý chuyển hướng SEO và ánh xạ URL cũ.' })}</p>
+          <p className="bb-muted">{t('redirects.description', { defaultValue: 'Quản lý chuyển hướng SEO và ánh xạ URL cũ.' })}</p>
         </div>
         {canUpdate && (
-          <div className="actions">
-            <button type="button" className="btn btn-primary" onClick={openCreateForm}>
+          <div className="bb-screen-actions">
+            <button type="button" className="bb-btn bb-btn-primary" onClick={openCreateForm}>
               <Plus size={14} />{t('redirects.createBtn', { defaultValue: 'Tạo chuyển hướng' })}
             </button>
           </div>
@@ -215,15 +215,15 @@ export function RedirectListScreen({ canUpdate }) {
 
       {/* Inline create/edit form */}
       {showForm && (
-        <div className="card mb-4">
-          <div className="card-head">
+        <div className="bb-card mb-4">
+          <div className="bb-card-header">
             <h2>
               {editingRedirect
                 ? t('redirects.editTitle', { defaultValue: 'Sửa chuyển hướng' })
                 : t('redirects.createTitle', { defaultValue: 'Tạo chuyển hướng' })}
             </h2>
           </div>
-          <form onSubmit={handleSubmit} className="card-body">
+          <form onSubmit={handleSubmit} className="bb-card-body">
             {formError && <Alert tone="danger" size="sm" className="mb-3">{formError}</Alert>}
             <div className="grid-2">
               <label className="form-field">
@@ -282,18 +282,20 @@ export function RedirectListScreen({ canUpdate }) {
         </div>
       )}
 
-      <div className="filter-bar">
-        <div className="filter-search">
-          <Search size={14} />
+      <div className="bb-filter-bar">
+        <div style={{ position: 'relative' }}>
+          <Search size={14} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--bb-text-muted)', pointerEvents: 'none' }} />
           <input
             type="search"
+            className="bb-input"
+            style={{ paddingLeft: 28 }}
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder={t('redirects.searchPlaceholder', { defaultValue: 'Nguồn, đích, ghi chú, legacy ID' })}
           />
         </div>
         <select
-          className="filter-select"
+          className="bb-select"
           value={query.enabled}
           onChange={(e) => updateQuery({ enabled: e.target.value }, { resetPage: true })}
           aria-label={t('redirects.filterEnabled', { defaultValue: 'Bật' })}
@@ -303,7 +305,7 @@ export function RedirectListScreen({ canUpdate }) {
           <option value="false">{t('common.off')}</option>
         </select>
         <select
-          className="filter-select"
+          className="bb-select"
           value={query.statusCode}
           onChange={(e) => updateQuery({ statusCode: e.target.value }, { resetPage: true })}
           aria-label={t('redirects.filterStatusCode', { defaultValue: 'Mã trạng thái' })}
@@ -337,10 +339,10 @@ export function RedirectListScreen({ canUpdate }) {
       )}
 
       {(isLoading || items.length > 0) && (
-        <div className="card">
-          <div className="card-body card-body--flush">
-            <div className="table-wrap">
-              <table className="tbl">
+        <div className="bb-card">
+          <div className="bb-card-body bb-card-body--flush">
+            <div className="bb-table-wrap">
+              <table className="bb-table">
                 <thead>
                   <tr>
                     <th>{t('redirects.colSource', { defaultValue: 'Nguồn' })}</th>
@@ -363,7 +365,7 @@ export function RedirectListScreen({ canUpdate }) {
                   )}
                   {items.map((redirect) => (
                     <tr key={redirect.id}>
-                      <td className="id-cell" style={{ wordBreak: 'break-all' }}>{redirect.sourcePattern}</td>
+                      <td className="mono" style={{ wordBreak: 'break-all' }}>{redirect.sourcePattern}</td>
                       <td style={{ wordBreak: 'break-all' }}>
                         <ExternalLink size={12} style={{ display: 'inline', marginRight: 4, verticalAlign: 'text-bottom' }} />
                         {redirect.targetUrl}
@@ -371,18 +373,18 @@ export function RedirectListScreen({ canUpdate }) {
                       <td>{normalizeRedirectTypeLabel(redirect.redirectType, t)}</td>
                       <td>{STATUS_CODE_LABELS[redirect.statusCode] || String(redirect.statusCode || '')}</td>
                       <td>
-                        <span className={`badge ${redirect.enabled !== false ? 'badge-success' : 'badge-neutral'}`}>
+                        <span className={`bb-badge ${redirect.enabled !== false ? 'bb-badge-success' : 'bb-badge-neutral'}`}>
                           {redirect.enabled !== false ? t('common.on') : t('common.off')}
                         </span>
                       </td>
                       <td className="num">{redirect.hitCount ?? 0}</td>
-                      <td className="muted text-xs">{formatDateTime(redirect.updatedAt)}</td>
+                      <td className="bb-muted" style={{ fontSize: 12 }}>{formatDateTime(redirect.updatedAt)}</td>
                       {canUpdate && (
-                        <td className="actions-cell">
-                          <button type="button" className="icon-btn" title={t('common.edit')} onClick={() => openEditForm(redirect)}>
+                        <td className="col-actions">
+                          <button type="button" className="bb-icon-btn" title={t('common.edit')} onClick={() => openEditForm(redirect)}>
                             <Pencil size={14} />
                           </button>
-                          <button type="button" className="icon-btn" title={t('common.delete')} onClick={() => handleDelete(redirect)}>
+                          <button type="button" className="bb-icon-btn" title={t('common.delete')} onClick={() => handleDelete(redirect)}>
                             <Trash2 size={14} />
                           </button>
                         </td>
@@ -394,12 +396,10 @@ export function RedirectListScreen({ canUpdate }) {
             </div>
           </div>
           {pagination && (
-            <div className="px-[18px] py-3 border-t border-border">
-              <PaginationControls
-                pagination={pagination}
-                onPageChange={(p) => updateQuery({ page: p })}
-              />
-            </div>
+            <PaginationControls
+              pagination={pagination}
+              onPageChange={(p) => updateQuery({ page: p })}
+            />
           )}
         </div>
       )}

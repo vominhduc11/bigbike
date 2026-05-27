@@ -12,7 +12,6 @@ import { ImageUrlInput } from '../components/ImageUrlInput'
 import { fetchSettings, batchUpdateSettings } from '../lib/adminApi'
 import { sanitizeHtml } from '../lib/sanitizeHtml'
 import { showConfirm } from '../lib/confirm'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -270,7 +269,7 @@ function SettingField({ setting, canUpdate, draft, error, onChange }) {
       )}
 
       {error && (
-        <span id={`err-${setting.key}`} className="hint text-danger">{error}</span>
+        <span id={`err-${setting.key}`} className="bb-muted" style={{ color: 'var(--bb-danger)' }}>{error}</span>
       )}
     </div>
   )
@@ -287,9 +286,9 @@ function SettingTabPanel({ title, items, canUpdate, drafts, errors, onDraftChang
   const hasError = items.some((s) => errors[s.key])
 
   return (
-    <div className="card">
-      <div className="card-head"><h2>{title}</h2></div>
-      <div className="card-body">
+    <div className="bb-card">
+      <div className="bb-card-header"><h3>{title}</h3></div>
+      <div className="bb-card-body">
         {items.map((setting) => (
           <SettingField
             key={setting.key}
@@ -303,16 +302,16 @@ function SettingTabPanel({ title, items, canUpdate, drafts, errors, onDraftChang
       </div>
 
       {canUpdate && dirtyCount > 0 && (
-        <div className="card-foot">
+        <div className="card-foot" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '12px 16px', borderTop: '1px solid var(--bb-border-faint)' }}>
           <span className="settings-unsaved-hint">
             <AlertCircle size={14} />
             {t('settings.unsavedCount', { count: dirtyCount })}
           </span>
           <div className="flex gap-2">
-            <button type="button" className="btn btn-outline btn-sm" onClick={onDiscard} disabled={saving}>
+            <button type="button" className="bb-btn bb-btn-secondary bb-btn-sm" onClick={onDiscard} disabled={saving}>
               {t('common.cancel')}
             </button>
-            <button type="button" className="btn btn-primary btn-sm" onClick={onSave} disabled={saving || hasError}>
+            <button type="button" className="bb-btn bb-btn-primary bb-btn-sm" onClick={onSave} disabled={saving || hasError}>
               {t('settings.saveCount', { count: dirtyCount })}
             </button>
           </div>
@@ -470,11 +469,11 @@ export function SettingsScreen({ canUpdate }) {
 
   return (
     <div>
-      <div className="screen-header">
-        <div>
-          <p className="eyebrow">{t('settings.eyebrow')}</p>
+      <div className="bb-screen-header">
+        <div className="bb-screen-title">
+          <p className="bb-screen-eyebrow">{t('settings.eyebrow')}</p>
           <h1>{t('settings.title')}</h1>
-          <p className="desc">{t('settings.description')}</p>
+          <p className="bb-muted">{t('settings.description')}</p>
         </div>
       </div>
 
@@ -483,7 +482,7 @@ export function SettingsScreen({ canUpdate }) {
       {state.items.length === 0 ? (
         <StatePanel tone="neutral" title={t('settings.noSettings')} description={t('settings.noSettingsDesc')} />
       ) : (
-        <div className="settings-shell">
+        <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: 24 }}>
           {/* Tab sidebar — prototype .settings-nav */}
           <nav className="settings-nav" aria-label={t('settings.tabsAria')}>
             {[...groups.entries()].map(([group, items]) => {
@@ -504,7 +503,7 @@ export function SettingsScreen({ canUpdate }) {
                   <Icon size={15} />
                   <span style={{ flex: 1 }}>{label}</span>
                   {dirtyInGroup > 0 && (
-                    <span className="badge badge-warn" aria-label={t('settings.tabChangeCount', { count: dirtyInGroup })}>
+                    <span className="bb-badge bb-badge-warning" aria-label={t('settings.tabChangeCount', { count: dirtyInGroup })}>
                       {dirtyInGroup}
                     </span>
                   )}

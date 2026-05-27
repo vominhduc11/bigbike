@@ -58,16 +58,16 @@ export function BrandListScreen({ navigate, canUpdate }) {
 
   return (
     <div>
-      <div className="screen-header">
-        <div>
-          <p className="eyebrow">{t('brands.eyebrow')}</p>
+      <div className="bb-screen-header">
+        <div className="bb-screen-title">
+          <p className="bb-screen-eyebrow">{t('brands.eyebrow')}</p>
           <h1>{t('brands.title')}</h1>
-          <p className="desc">{t('brands.description')}</p>
+          <p className="bb-muted">{t('brands.description')}</p>
         </div>
-        <div className="actions">
+        <div className="bb-screen-actions">
           <button
             type="button"
-            className="btn btn-primary"
+            className="bb-btn bb-btn-primary"
             onClick={() => navigate('/admin/brands/new')}
             disabled={!canUpdate}
           >
@@ -78,18 +78,20 @@ export function BrandListScreen({ navigate, canUpdate }) {
 
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
 
-      <div className="filter-bar">
-        <div className="filter-search">
-          <Search size={14} />
+      <div className="bb-filter-bar">
+        <div style={{ position: 'relative' }}>
+          <Search size={14} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--bb-text-muted)', pointerEvents: 'none' }} />
           <input
             type="search"
+            className="bb-input"
+            style={{ paddingLeft: 28 }}
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
             placeholder={t('brands.searchPlaceholder')}
           />
         </div>
         <select
-          className="filter-select"
+          className="bb-select"
           value={query.visibility}
           onChange={(e) => updateQuery({ visibility: e.target.value }, { resetPage: true })}
           aria-label={t('brands.filterVisibility')}
@@ -99,7 +101,7 @@ export function BrandListScreen({ navigate, canUpdate }) {
           <option value="HIDDEN">{t('common.hidden')}</option>
         </select>
         <select
-          className="filter-select"
+          className="bb-select"
           value={query.sort}
           onChange={(e) => updateQuery({ sort: e.target.value }, { resetPage: true })}
           aria-label={t('brands.filterSort')}
@@ -131,10 +133,10 @@ export function BrandListScreen({ navigate, canUpdate }) {
       ) : null}
 
       {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) && (
-        <div className="card">
-          <div className="card-body card-body--flush">
-            <div className="table-wrap">
-              <table className="tbl">
+        <div className="bb-card">
+          <div className="bb-card-body bb-card-body--flush">
+            <div className="bb-table-wrap">
+              <table className="bb-table">
                 <thead>
                   <tr>
                     <th>{t('brands.colBrand')}</th>
@@ -173,13 +175,13 @@ export function BrandListScreen({ navigate, canUpdate }) {
                           </div>
                         </div>
                       </td>
-                      <td className="muted text-sm">{stripHtml(brand.description)}</td>
+                      <td className="bb-muted">{stripHtml(brand.description)}</td>
                       <td><StatusBadge type="visibility" status={brand.isVisible} /></td>
-                      <td className="muted text-xs">{formatDateTime(brand.updatedAt)}</td>
-                      <td className="actions-cell" onClick={(e) => e.stopPropagation()}>
+                      <td className="bb-muted" style={{ fontSize: 12 }}>{formatDateTime(brand.updatedAt)}</td>
+                      <td className="col-actions" onClick={(e) => e.stopPropagation()}>
                         <button
                           type="button"
-                          className="icon-btn"
+                          className="bb-icon-btn"
                           title={t('common.edit')}
                           onClick={() => navigate(`/admin/brands/${brand.id}`)}
                         >
@@ -193,12 +195,10 @@ export function BrandListScreen({ navigate, canUpdate }) {
             </div>
           </div>
           {state.status === 'success' && pagination && (
-            <div className="px-[18px] py-3 border-t border-border">
-              <PaginationControls
-                pagination={pagination}
-                onPageChange={(p) => updateQuery({ page: p })}
-              />
-            </div>
+            <PaginationControls
+              pagination={pagination}
+              onPageChange={(p) => updateQuery({ page: p })}
+            />
           )}
         </div>
       )}

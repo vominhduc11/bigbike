@@ -708,16 +708,16 @@ export function CategoryListScreen({ navigate, canUpdate }) {
 
   return (
     <div>
-      <div className="screen-header">
-        <div>
-          <p className="eyebrow">{t('categories.eyebrow')}</p>
+      <div className="bb-screen-header">
+        <div className="bb-screen-title">
+          <p className="bb-screen-eyebrow">{t('categories.eyebrow')}</p>
           <h1>{t('categories.title')}</h1>
-          <p className="desc">{t('categories.description')}</p>
+          <p className="bb-muted">{t('categories.description')}</p>
         </div>
-        <div className="actions">
+        <div className="bb-screen-actions">
           <button
             type="button"
-            className="btn btn-primary"
+            className="bb-btn bb-btn-primary"
             onClick={() => navigate('/admin/categories/new')}
             disabled={!canUpdate}
           >
@@ -728,20 +728,22 @@ export function CategoryListScreen({ navigate, canUpdate }) {
 
       {paginatedState.warning ? <ReadOnlyBanner warning={paginatedState.warning} /> : null}
 
-      <div className="filter-bar">
-        <div className="filter-search">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <div className="bb-filter-bar">
+        <div style={{ position: 'relative' }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--bb-text-muted)', pointerEvents: 'none' }}>
             <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
           </svg>
           <input
             type="search"
+            className="bb-input"
+            style={{ paddingLeft: 28 }}
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
             placeholder={t('categories.searchPlaceholder')}
           />
         </div>
         <select
-          className="filter-select"
+          className="bb-select"
           value={query.visibility}
           onChange={(e) => updateQuery({ visibility: e.target.value }, { resetPage: true })}
           aria-label={t('categories.filterVisibility')}
@@ -751,7 +753,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
           <option value="HIDDEN">{t('categories.filterVisibilityHidden')}</option>
         </select>
         <select
-          className="filter-select"
+          className="bb-select"
           value={query.sort}
           onChange={(e) => updateQuery({ sort: e.target.value }, { resetPage: true })}
           aria-label={t('categories.filterSort')}
@@ -763,10 +765,10 @@ export function CategoryListScreen({ navigate, canUpdate }) {
         </select>
         {useTreeMode && (
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
-            <button type="button" className="btn btn-ghost btn-sm" onClick={expandAll}>
+            <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" onClick={expandAll}>
               {t('categories.expandAll')}
             </button>
-            <button type="button" className="btn btn-ghost btn-sm" onClick={collapseAll}>
+            <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" onClick={collapseAll}>
               {t('categories.collapseAll')}
             </button>
           </div>
