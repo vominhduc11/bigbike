@@ -291,9 +291,11 @@ function WpNewsCard({ article }: { article: Article }) {
           </Link>
         </div>
         <div className="news--item-desc">
-          <div className="news-date">
-            <p>{dateStr}</p>
-          </div>
+          {dateStr && (
+            <div className="news-date">
+              <p>{dateStr}</p>
+            </div>
+          )}
           <div className="news--item-inside">
             <p className="title-post">
               <Link href={href}>{title}</Link>

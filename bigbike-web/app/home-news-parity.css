@@ -140,12 +140,6 @@ body .bb-home .bb-home-news-parity .block-title h2 {
   }
 }
 
-@media (min-width: 768px) and (max-width: 899px) {
-  .bb-home .bb-home-news-parity .row > .col-md-4 {
-    flex: 0 0 50%;
-    max-width: 50%;
-  }
-}
 
 /* ── Responsive: mobile < 768px ── */
 @media (max-width: 767px) {
