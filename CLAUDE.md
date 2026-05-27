@@ -116,7 +116,35 @@ Chi tiết: [AGENTS.md](AGENTS.md) — Section 6.5.
 - ❌ Hardcode hex màu / spacing px thay vì dùng Tailwind token.
 - ❌ Tạo component mới khi component tương đương đã tồn tại trong các thư mục `components/` trên.
 
-Chi tiết đầy đủ: [AGENTS.md](AGENTS.md) — Section 6.1 (stack), Section 6.3 (inline Tailwind), Section 6.4 (component reuse), Section 6.5 (encoding/tiếng Việt).
+Chi tiết đầy đủ: [AGENTS.md](AGENTS.md) — Section 6.1 (stack), Section 6.3 (inline Tailwind), Section 6.4 (component reuse), Section 6.5 (encoding/tiếng Việt), Section 6.6 (CSS hygiene / dead code).
+
+---
+
+## ⚠️ CSS Hygiene — không để dead code, xóa ngay khi phát hiện
+
+**Dead CSS** = class định nghĩa trong `.css` nhưng không có JSX/JS nào reference.
+
+**Quy tắc bắt buộc:**
+1. Mỗi class CSS mới phải được dùng ngay trong cùng commit — không "placeholder".
+2. Phát hiện class nghi ngờ dead → **grep xác nhận trước**, không xóa chỉ dựa trên tên/cảm giác.
+3. Grep ra 0 kết quả → dead → **xóa ngay**, không ghi TODO.
+
+```bash
+# Verify trước khi xóa
+grep -rn "ten-class" bigbike-admin/src --include="*.jsx" --include="*.tsx" --include="*.js"
+```
+
+**`bigbike-admin` có hai hệ CSS song song — không nhầm:**
+- `index.css` + `admin-layout.css` → hệ mới, production, active.
+- `admin-prototype.css` → hệ cũ `bb-*`, **vẫn đang dùng** bởi `AdminShell`, `DashboardScreen`, `LoginScreen`. Không giả định dead mà không grep. Không thêm class mới vào file này.
+
+**Cấm:**
+- ❌ Viết CSS class mà không có JSX dùng ngay.
+- ❌ Kết luận dead mà không grep xác nhận.
+- ❌ Phát hiện dead CSS → không xóa ngay (TODO "sẽ xóa sau" là không đủ).
+- ❌ Thêm class mới vào `admin-prototype.css`.
+
+Chi tiết đầy đủ: [AGENTS.md](AGENTS.md) — Section 6.6.
 
 ---
 

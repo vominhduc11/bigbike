@@ -59,10 +59,28 @@ Domain context (products, brand identity, actors): xem [docs/business/PROJECT_OV
 - `docs/business/` mâu thuẫn `docs/engineering/` → **business docs thắng**, engineering cần sửa.
 - `docs/engineering/` mâu thuẫn code → check report trong `docs/audits/`; mặc định docs là source of truth nếu chưa có verdict.
 
+### "Refactor nội tại" — ranh giới rõ ràng
+
+Điều kiện miễn doc-update: refactor **không ảnh hưởng** bất kỳ thứ nào sau đây từ góc nhìn bên ngoài service.
+
+| IS "nội tại" (miễn đọc/update docs) | NOT "nội tại" (phải đọc docs và update nếu cần) |
+|---|---|
+| Rename private method / biến local | Rename public API endpoint, path param, query param |
+| Extract private helper trong cùng class/file | Rename field trong DTO / Response / entity |
+| Tối ưu query (same result set) | Rename enum value (ảnh hưởng data contract) |
+| Refactor logic thuần computational (không đổi output) | Thêm / bỏ / đổi type field entity hoặc DTO |
+| Improve logging / error message nội bộ | Thêm / bỏ / đổi HTTP method, status code |
+| Clean up dead code không có caller ngoài service | Thêm / bỏ permission check hoặc role |
+| Move class sang package nội bộ (không đổi interface) | Thêm / bỏ validation constraint trên DTO public |
+| | Thay đổi state transition logic |
+| | Thay đổi deployment config / env / secret |
+
+Nếu không chắc → **treat as "not nội tại"** và đọc docs liên quan trước.
+
 ### Cấm
 
 - ❌ Sửa code mà không đọc docs liên quan.
-- ❌ Đẩy code mà docs không phản ánh thay đổi (trừ refactor nội tại không ảnh hưởng API / contract / data / permission / state / deployment).
+- ❌ Đẩy code mà docs không phản ánh thay đổi (trừ refactor nội tại — xem bảng ranh giới trên).
 - ❌ Tự suy diễn rule khi docs ghi `NEEDS_VERIFICATION` / `NOT_FOUND_IN_REPO` / `CONFLICTING_EVIDENCE`.
 - ❌ "Code-first, doc-fix-later" trừ khi user explicitly cho phép.
 - ❌ Tự "fix" cái đã được report/audit flag là code bug — đó là task riêng có ngữ cảnh riêng.
@@ -158,6 +176,22 @@ bigbike_vn__2026_04_17/sqldump.sql  # Schema-only reference
 ```
 
 **Không commit** raw WordPress source, raw SQL dump data, `wp-config.php` secret values, user data, order data, customer email/phone/address, password hash, session, token, API key, webhook secret, hoặc order key values.
+
+### 3.6 Khi thay đổi `bigbike_mobile`
+
+> **Production scope**: `NEEDS_VERIFICATION` — xem [docs/business/PROJECT_OVERVIEW.md](docs/business/PROJECT_OVERVIEW.md) để confirm scope trước khi implement feature lớn.
+
+| Bạn đang sửa | Đọc (chỉ section liên quan) |
+|---|---|
+| Gọi API / response shape | `docs/engineering/API_CONTRACT.md` section endpoint đó; `docs/engineering/DATA_CONTRACT.md` section field liên quan |
+| Auth / session | `docs/engineering/API_CONTRACT.md` section auth; `docs/engineering/PERMISSION_MATRIX.md` |
+| Business flow | `docs/business/WORKFLOW_OVERVIEW.md` section liên quan |
+| Business rule | `docs/business/BUSINESS_RULES.md` section rule liên quan |
+| Feature / module scope | `docs/business/MODULE_CATALOG.md` |
+
+Dùng cho: Flutter mobile companion app — screens, API calls, state management, navigation.
+
+**Lưu ý**: `bigbike_mobile` dùng Flutter/Dart. Section 6 (React/Tailwind/shadcn) và Section 7 (Spring Boot/Lombok/MapStruct) không áp dụng cho mobile code. Docs-First Contract (Section 2) và global rules (Section 5) áp dụng bình thường.
 
 ---
 
@@ -505,6 +539,60 @@ toast.error("Không thể hủy đơn hàng")
 - ❌ File source lưu encoding khác UTF-8.
 - ❌ Comment / log tiếng Việt không dấu.
 
+### 6.6 CSS hygiene — không để dead code, xóa ngay khi phát hiện
+
+**Dead CSS** = class được định nghĩa trong file `.css` nhưng không có reference nào trong bất kỳ `.jsx` / `.tsx` / `.js` nào. Dead CSS gây confusion và làm file ngày càng phình ra vô ích.
+
+#### Nguyên tắc phòng ngừa
+
+Mỗi class CSS mới phải được dùng ngay trong cùng commit. Nếu viết class vào `.css` mà không có JSX nào reference → đó là mistake ngay tại điểm viết.
+
+**Ngoại lệ được phép — không tính là dead:**
+- Selector của third-party lib (ProseMirror `.tiptap`, Recharts `.recharts-*`, react-day-picker `.rdp-*`) — lib inject class vào DOM lúc runtime.
+- State/modifier class set qua `classList.add` / `element.className = ...` trong JS thuần — grep JSX bỏ sót.
+- `@keyframes` — chỉ dead nếu không có `animation:` hoặc `animation-name:` reference đến tên đó trong cùng file CSS.
+
+#### Quy trình bắt buộc khi nghi ngờ dead CSS
+
+Trước khi kết luận dead, **phải grep xác nhận**:
+
+```bash
+# Kiểm tra class cụ thể (chạy từ root repo)
+grep -rn "ten-class" bigbike-admin/src --include="*.jsx" --include="*.tsx" --include="*.js"
+grep -rn "ten-class" bigbike-web    --include="*.jsx" --include="*.tsx" --include="*.js" --include="*.ts"
+```
+
+- Grep ra **kết quả** → class đang dùng → giữ nguyên.
+- Grep ra **0 kết quả** → dead → **xóa ngay trong cùng task**, không ghi TODO.
+
+#### Kiến trúc CSS bigbike-admin — hai hệ song song
+
+`bigbike-admin` chạy **hai hệ CSS song song**. Không được nhầm lẫn về trạng thái của từng file:
+
+| File | Hệ | Prefix class | Trạng thái |
+|---|---|---|---|
+| `src/index.css` | Mới — production | không prefix (`sidebar`, `admin-table`, `screen`, …) | Active |
+| `src/styles/admin-layout.css` | Mới — production | không prefix (`summary-card`, `seg-tabs`, `dash-*`, …) | Active |
+| `src/styles/admin-prototype.css` | Cũ — prototype ported | `bb-*` | **Vẫn active** — dùng bởi `AdminShell`, `DashboardScreen`, `LoginScreen` và nhiều screen khác. **KHÔNG giả định dead mà không grep.** |
+| `src/styles/admin-tokens.css` | Design tokens | `--bb-*`, `--admin-*` CSS variables | Active |
+
+**Đặc biệt với `bb-*` class**: Phần lớn `bb-*` đang được dùng nặng (`bb-sidebar`, `bb-nav-link`, `bb-kpi`, `bb-card`, `bb-table`, `bb-btn`, `bb-screen-header`, …). Một số đã được xác nhận dead và xóa (tháng 5/2026): `bb-search`, `bb-checkbox`, `bb-radio`, `bb-switch`, `bb-tabs`, `bb-detail-grid`, `bb-detail-grid-wide`, `bb-timeline`. Không xóa thêm mà không grep.
+
+#### Khi thêm class mới vào file CSS
+
+1. Tailwind không làm được? → mới viết CSS (xem Section 6.3).
+2. Viết class → **ngay lập tức viết JSX reference trong cùng commit**.
+3. Class chỉ dùng một chỗ duy nhất → không cần CSS, dùng Tailwind inline.
+4. Class mới trong `admin-prototype.css` → **không được thêm** — đây là file legacy. Thêm vào `admin-layout.css` hoặc `index.css` thay thế.
+
+**Cấm:**
+- ❌ Viết CSS class vào `.css` mà không có JSX nào dùng ngay.
+- ❌ "Placeholder" class — "sẽ dùng sau" không được tồn tại.
+- ❌ Copy cả block CSS từ nơi khác rồi chỉ dùng một phần, bỏ phần còn lại.
+- ❌ Kết luận dead mà không grep xác nhận.
+- ❌ Phát hiện dead CSS → ghi TODO "sẽ xóa sau" — phải xóa ngay.
+- ❌ Thêm class mới vào `admin-prototype.css` (file legacy, chỉ đọc để maintain).
+
 ---
 
 ## 7. Backend Stack — Spring Boot + Lombok + MapStruct + Bean Validation
@@ -673,12 +761,48 @@ public @interface ValidVietnamesePhone {
 - ❌ Validate lại ở service những gì đã được Bean Validation check ở boundary — không duplicate.
 - ❌ Throw exception thủ công thay vì để `MethodArgumentNotValidException` handler xử lý tập trung.
 
-### 7.4 Backend coding standards
+### 7.4 Global exception handler — `@ControllerAdvice` tập trung
+
+Mọi exception từ controller và service đều phải được xử lý bởi **một** global exception handler dùng `@ControllerAdvice`. Không catch/format exception thủ công trong từng controller.
+
+**Vị trí**: package `exception/` hoặc `handler/` (ví dụ `com.bigbike.common.exception.GlobalExceptionHandler`).
+
+```java
+@ControllerAdvice
+@Slf4j
+public class GlobalExceptionHandler {
+
+    // Bean Validation failure → 422
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<?> handleValidation(MethodArgumentNotValidException ex) {
+        // format theo Section 9.1 error shape, code = "VALIDATION_ERROR"
+    }
+
+    // Custom business exception → 4xx
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<?> handleBusiness(BusinessException ex) { ... }
+
+    // Fallback → 500, không expose message/stack trace
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<?> handleGeneric(Exception ex) {
+        log.error("Unhandled exception", ex);
+        // trả message generic, KHÔNG expose ex.getMessage() hay stack trace
+    }
+}
+```
+
+**Cấm:**
+- ❌ `try { } catch (Exception e) { return ResponseEntity.status(500).body(e.getMessage()); }` trong controller.
+- ❌ Service bắt exception để format HTTP response — service chỉ `throw`.
+- ❌ Expose stack trace hoặc raw `ex.getMessage()` trong response body.
+- ❌ Nhiều hơn một `@ControllerAdvice` class xử lý cùng exception type mà không có `@Order`.
+
+### 7.5 Backend coding standards
 
 - Validate request DTO bằng Bean Validation (xem 7.3), không thủ công.
 - Service layer xử lý business validation (rule không thuộc constraint annotation).
 - Enforce permissions server-side cho mọi admin endpoint.
-- Trả về standard error shape (xem Section 9.1).
+- Trả về standard error shape (xem Section 9.1) qua global exception handler (xem 7.4).
 - Avoid leaking internals (stack trace, raw exception message).
 - Transaction quanh state change cần atomicity.
 - Preserve order snapshots (xem Section 8.3).
@@ -854,6 +978,12 @@ Không biến admin thành biker poster gallery.
 **Purpose:** Business enforcement, API, data persistence, auth/permission, status transition, validation, integration boundary.
 
 **Rules:** Validate mọi incoming data. Enforce permission. Never trust frontend total. Never expose secret. Align response với contract. Consistent error shape. Reject invalid state transition. Preserve order snapshot. Stack theo Section 7.
+
+### 15.4 `bigbike_mobile`
+
+**Purpose:** Flutter mobile companion app (production scope `NEEDS_VERIFICATION` — xem [docs/business/PROJECT_OVERVIEW.md](docs/business/PROJECT_OVERVIEW.md)).
+
+**Rules:** Gọi đúng API theo `API_CONTRACT.md`. Không trust client-side total hay permission. Handle network failure gracefully. Dùng docs mapping Section 3.6 trước khi sửa. Section 6 (React stack) và Section 7 (Spring Boot stack) không áp dụng — Docs-First Contract (Section 2) và Section 5 áp dụng bình thường.
 
 ---
 
