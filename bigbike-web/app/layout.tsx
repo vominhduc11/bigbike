@@ -106,7 +106,7 @@ export default async function RootLayout({
                     <MobileCartSheet />
                     <SiteFooter />
                     <CompareBar />
-                    <div className="bb-floating-chat-anchor fixed bottom-[max(80px,calc(env(safe-area-inset-bottom)+80px))] md:bottom-[max(50px,env(safe-area-inset-bottom))] right-[max(50px,env(safe-area-inset-right))] z-[var(--bb-z-overlay)] pointer-events-none [&>*]:pointer-events-auto [[data-scroll-locked]_&]:hidden">
+                    <div className="bb-floating-chat-anchor fixed bottom-[max(80px,calc(env(safe-area-inset-bottom)+80px))] md:bottom-[max(24px,env(safe-area-inset-bottom))] right-[max(20px,env(safe-area-inset-right))] md:right-[max(24px,env(safe-area-inset-right))] z-[var(--bb-z-overlay)] pointer-events-none [&>*]:pointer-events-auto [[data-scroll-locked]_&]:hidden">
                       <FloatingChatLoader />
                     </div>
                   </CompareProvider>

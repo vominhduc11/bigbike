@@ -26,7 +26,7 @@ function PlayIcon() {
       className="pointer-events-none absolute left-1/2 top-1/2 z-[3] -translate-x-1/2 -translate-y-1/2 text-white transition-transform duration-300 group-hover:scale-[1.03]"
     >
       <svg
-        className="ml-1 h-10 w-10 shrink-0 drop-shadow-[0_2px_12px_rgba(0,0,0,0.45)] max-[575px]:h-9 max-[575px]:w-9"
+        className="ml-1 h-10 w-10 shrink-0 drop-shadow-[0_2px_12px_rgba(0,0,0,0.45)] max-[599px]:h-9 max-[599px]:w-9"
         viewBox="0 0 14 16"
         fill="currentColor"
         aria-hidden="true"
@@ -60,7 +60,8 @@ function VideoCard({ video, onPlay }: { video: HomeVideo; onPlay: () => void }) 
       onClick={onPlay}
       aria-label={`Xem video: ${title}`}
     >
-      <div className="relative mx-auto w-full max-w-[360px] overflow-hidden bg-brand aspect-[4/5] md:max-w-none md:aspect-[9/16]">
+      {/* Thumbnail — 9:16 cho mọi breakpoint để nhất quán với video Shorts/dọc */}
+      <div className="relative w-full overflow-hidden bg-brand [aspect-ratio:9/16]">
         {thumbSrc ? (
           <Image
             key={thumbSrc}
@@ -68,7 +69,7 @@ function VideoCard({ video, onPlay }: { video: HomeVideo; onPlay: () => void }) 
             alt={safeText(video.thumbnail?.alt, title)}
             fill
             className="object-cover opacity-90 transition-transform duration-300 group-hover:scale-[1.03]"
-            sizes="(max-width: 600px) calc(100vw - 30px), (max-width: 900px) 45vw, (max-width: 1200px) 32vw, 240px"
+            sizes="(max-width: 599px) calc(100vw - 30px), (max-width: 899px) 45vw, (max-width: 1199px) 32vw, 240px"
             onError={() => setThumbIdx((prev) => prev + 1)}
           />
         ) : (
@@ -80,11 +81,66 @@ function VideoCard({ video, onPlay }: { video: HomeVideo; onPlay: () => void }) 
         )}
         <PlayIcon />
       </div>
-      <div className="min-h-[104px] bg-black px-5 py-7 max-[767px]:min-h-[76px] max-[767px]:px-4 max-[767px]:py-4">
-        <p className="m-0 overflow-hidden normal-case font-display text-[18px] font-semibold leading-[1.5] text-white [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] max-[767px]:text-[16px] max-[767px]:leading-[1.35]">
+      {/* Footer title — compact ở mobile, đủ rộng trên tablet/desktop */}
+      <div className="bg-black px-3 py-3 min-[600px]:px-4 min-[600px]:py-4">
+        <p className="m-0 overflow-hidden normal-case font-display text-[13px] font-semibold leading-[1.4] text-white [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] min-[600px]:text-[14px] min-[900px]:text-[15px] min-[900px]:leading-[1.45]">
           {title}
         </p>
       </div>
+    </button>
+  );
+}
+
+function ArrowButton({
+  direction,
+  onClick,
+  label,
+}: {
+  direction: "prev" | "next";
+  onClick: () => void;
+  label: string;
+}) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className="absolute top-1/2 z-[4] -translate-y-1/2 appearance-none focus-visible:outline-[var(--bb-focus-outline)] focus-visible:outline-offset-2"
+      style={{
+        [direction === "prev" ? "left" : "right"]: 6,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: 44,
+        height: 44,
+        borderRadius: 9999,
+        background: hovered ? "rgba(0,0,0,0.65)" : "rgba(0,0,0,0.42)",
+        border: "1px solid rgba(255,255,255,0.22)",
+        color: "#fff",
+        cursor: "pointer",
+        boxShadow: "0 2px 10px rgba(0,0,0,0.35)",
+        transition: "background 140ms ease",
+        padding: 0,
+      }}
+    >
+      <svg
+        style={{ width: 13, height: 22, flexShrink: 0 }}
+        viewBox="0 0 27 44"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        {direction === "prev"
+          ? <path d="M22 2 L4 22 L22 42" />
+          : <path d="M5 2 L23 22 L5 42" />
+        }
+      </svg>
     </button>
   );
 }
@@ -109,6 +165,14 @@ function VideoModal({
       ? `https://www.youtube-nocookie.com/embed/${video.youtubeId}?autoplay=1&rel=0`
       : null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 600);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -137,6 +201,12 @@ function VideoModal({
 
   if (typeof document === "undefined") return null;
 
+  // Trên mobile: prev/next nhỏ hơn và đặt ở bottom overlay, tránh đè video
+  const navSize = isMobile ? 40 : 48;
+  const navBottom = isMobile ? 20 : undefined;
+  const navTop = isMobile ? undefined : "50%";
+  const navTransform = isMobile ? undefined : "translateY(-50%)";
+
   const modal = (
     <div
       className="fixed inset-0 flex items-center justify-center animate-in fade-in-0 duration-200"
@@ -152,7 +222,7 @@ function VideoModal({
       aria-label={title}
       data-bb-video-modal="true"
     >
-      {/* Close button — outside the video frame, top-right of overlay */}
+      {/* Close — top-right, luôn dễ bấm */}
       <button
         ref={closeRef}
         type="button"
@@ -160,8 +230,8 @@ function VideoModal({
         aria-label="Đóng video"
         style={{
           position: "fixed",
-          top: 16,
-          right: 16,
+          top: 12,
+          right: 12,
           zIndex: 10,
           display: "flex",
           alignItems: "center",
@@ -181,7 +251,7 @@ function VideoModal({
         <X className="h-5 w-5" />
       </button>
 
-      {/* Prev/Next — outside the video frame, flanking the card */}
+      {/* Prev/Next — trên mobile đặt bottom center, trên desktop flanking bên cạnh */}
       {videos.length > 1 && (
         <>
           <button
@@ -190,15 +260,16 @@ function VideoModal({
             aria-label="Video trước"
             style={{
               position: "fixed",
-              left: 12,
-              top: "50%",
-              transform: "translateY(-50%)",
+              left: isMobile ? "calc(50% - 56px)" : 12,
+              bottom: navBottom,
+              top: navTop,
+              transform: navTransform,
               zIndex: 10,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              width: 48,
-              height: 48,
+              width: navSize,
+              height: navSize,
               borderRadius: 9999,
               background: "rgba(0,0,0,0.65)",
               border: "1px solid rgba(255,255,255,0.25)",
@@ -207,9 +278,9 @@ function VideoModal({
               boxShadow: "0 2px 12px rgba(0,0,0,0.45)",
               outline: "none",
             }}
-            className="focus-visible:outline-[var(--bb-focus-outline)] focus-visible:outline-offset-2 hover:bg-[rgba(0,0,0,0.85)]"
+            className="focus-visible:outline-[var(--bb-focus-outline)] focus-visible:outline-offset-2"
           >
-            <svg className="h-6 w-4 shrink-0" viewBox="0 0 27 44" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <svg style={{ width: 14, height: 22, flexShrink: 0 }} viewBox="0 0 27 44" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M22 2 L4 22 L22 42" />
             </svg>
           </button>
@@ -219,15 +290,16 @@ function VideoModal({
             aria-label="Video tiếp theo"
             style={{
               position: "fixed",
-              right: 12,
-              top: "50%",
-              transform: "translateY(-50%)",
+              right: isMobile ? "calc(50% - 56px)" : 12,
+              bottom: navBottom,
+              top: navTop,
+              transform: navTransform,
               zIndex: 10,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              width: 48,
-              height: 48,
+              width: navSize,
+              height: navSize,
               borderRadius: 9999,
               background: "rgba(0,0,0,0.65)",
               border: "1px solid rgba(255,255,255,0.25)",
@@ -236,16 +308,16 @@ function VideoModal({
               boxShadow: "0 2px 12px rgba(0,0,0,0.45)",
               outline: "none",
             }}
-            className="focus-visible:outline-[var(--bb-focus-outline)] focus-visible:outline-offset-2 hover:bg-[rgba(0,0,0,0.85)]"
+            className="focus-visible:outline-[var(--bb-focus-outline)] focus-visible:outline-offset-2"
           >
-            <svg className="h-6 w-4 shrink-0" viewBox="0 0 27 44" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <svg style={{ width: 14, height: 22, flexShrink: 0 }} viewBox="0 0 27 44" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M5 2 L23 22 L5 42" />
             </svg>
           </button>
         </>
       )}
 
-      {/* Video card — clicks here do NOT close modal */}
+      {/* Video card */}
       <div
         className="relative bg-black shadow-2xl animate-in fade-in-0 zoom-in-95 duration-200"
         style={{ width: "min(420px, calc(100vw - 32px), calc((85vh - 60px) * 9 / 16))" }}
@@ -262,8 +334,8 @@ function VideoModal({
           ) : null}
         </div>
         {title && (
-          <div className="px-5 py-4">
-            <p className="m-0 font-display text-[18px] font-semibold text-white">{title}</p>
+          <div className="px-4 py-3">
+            <p className="m-0 font-display text-[15px] font-semibold text-white">{title}</p>
           </div>
         )}
       </div>
@@ -326,6 +398,9 @@ export function HomeVideoCarousel({ videos }: Props) {
   const activeDotIndex = Math.min(selectedIndex, maxSlideIndex);
   const paginationDots = Array.from({ length: dotCount }, (_, idx) => idx);
 
+  // Arrows chỉ hiện từ 900px — tablet nhỏ (768-899) ưu tiên swipe
+  const showArrows = canScroll;
+
   return (
     <>
       <div className="relative">
@@ -348,9 +423,9 @@ export function HomeVideoCarousel({ videos }: Props) {
             loop={false}
             speed={1000}
             slidesPerView={1}
-            spaceBetween={0}
+            spaceBetween={12}
             breakpoints={{
-              600: { slidesPerView: 2, spaceBetween: 16 },
+              600: { slidesPerView: 2, spaceBetween: 14 },
               900: { slidesPerView: 3, spaceBetween: 16 },
               1200: { slidesPerView: 5, spaceBetween: 16 },
             }}
@@ -362,60 +437,41 @@ export function HomeVideoCarousel({ videos }: Props) {
             ))}
           </Swiper>
         </div>
-        {canScroll && (
+
+        {/* Arrows: ẩn mobile (<600px), ẩn tablet nhỏ (600-899px), hiện từ 900px */}
+        {showArrows && (
           <>
-            <button
-              type="button"
-              className="absolute left-[-98px] top-1/2 z-[4] flex h-[50px] w-[50px] -translate-y-1/2 appearance-none items-center justify-center border-0 bg-transparent p-0 text-white shadow-none transition-opacity duration-150 hover:opacity-80 focus-visible:outline-[var(--bb-focus-outline)] focus-visible:outline-offset-4 max-[1399px]:left-3 max-[767px]:hidden"
-              onClick={() => swiperRef.current?.slidePrev()}
-              aria-label="Video trước"
-            >
-              <svg
-                className="h-[44px] w-[28px] shrink-0"
-                viewBox="0 0 27 44"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.25"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M22 2 L4 22 L22 42" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              className="absolute right-[-98px] top-1/2 z-[4] flex h-[50px] w-[50px] -translate-y-1/2 appearance-none items-center justify-center border-0 bg-transparent p-0 text-white shadow-none transition-opacity duration-150 hover:opacity-80 focus-visible:outline-[var(--bb-focus-outline)] focus-visible:outline-offset-4 max-[1399px]:right-3 max-[767px]:hidden"
-              onClick={() => swiperRef.current?.slideNext()}
-              aria-label="Video tiếp"
-            >
-              <svg
-                className="h-[44px] w-[28px] shrink-0"
-                viewBox="0 0 27 44"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.25"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M5 2 L23 22 L5 42" />
-              </svg>
-            </button>
+            <div className="max-[899px]:hidden">
+              <ArrowButton
+                direction="prev"
+                onClick={() => swiperRef.current?.slidePrev()}
+                label="Video trước"
+              />
+            </div>
+            <div className="max-[899px]:hidden">
+              <ArrowButton
+                direction="next"
+                onClick={() => swiperRef.current?.slideNext()}
+                label="Video tiếp"
+              />
+            </div>
           </>
         )}
       </div>
 
+      {/* Dots: hiện khi canScroll và có ≥2 dots */}
       {canScroll && dotCount > 1 && (
-        <div className="mt-[30px] flex items-center justify-center gap-[6px] max-[767px]:mt-5" aria-label="Chuyển slide video">
+        <div
+          className="mt-6 flex items-center justify-center gap-[6px] min-[600px]:mt-7 min-[900px]:mt-[30px]"
+          aria-label="Chuyển slide video"
+        >
           {paginationDots.map((idx) => {
             const isSelected = idx === activeDotIndex;
-
             return (
               <button
                 key={idx}
                 type="button"
-                className="flex h-[var(--bb-touch-target)] min-w-[20px] cursor-pointer items-center justify-center border-0 bg-transparent p-0 focus-visible:outline-[var(--bb-focus-outline)] focus-visible:outline-offset-2"
+                className="flex h-[44px] min-w-[24px] cursor-pointer items-center justify-center border-0 bg-transparent p-0 focus-visible:outline-[var(--bb-focus-outline)] focus-visible:outline-offset-2"
                 onClick={() => {
                   swiperRef.current?.slideTo(idx);
                 }}
@@ -426,12 +482,12 @@ export function HomeVideoCarousel({ videos }: Props) {
                   aria-hidden="true"
                   style={{
                     display: "block",
-                    width: isSelected ? 24 : 12,
-                    height: 12,
+                    width: isSelected ? 24 : 10,
+                    height: 10,
                     borderRadius: 9999,
                     flexShrink: 0,
-                    backgroundColor: isSelected ? "var(--bb-action-primary)" : "#ffffff",
-                    transition: "width 300ms ease, background-color 300ms ease",
+                    backgroundColor: isSelected ? "var(--bb-action-primary)" : "rgba(255,255,255,0.85)",
+                    transition: "width 280ms ease, background-color 280ms ease",
                   }}
                 />
               </button>

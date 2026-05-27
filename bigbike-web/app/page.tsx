@@ -545,10 +545,10 @@ export default async function HomePage() {
       )}
 
       {homeVideos.length > 0 && (
-        <section className="videos-slide relative bg-background pt-[80px]" aria-labelledby="home-video-heading">
-          <div className="videos-slide--inner relative bg-[url('/wp/video-bg.jpg')] bg-cover bg-center bg-no-repeat pb-[90px]">
+        <section className="videos-slide relative bg-background pt-[50px] min-[768px]:pt-[80px]" aria-labelledby="home-video-heading">
+          <div className="videos-slide--inner relative bg-[url('/wp/video-bg.jpg')] bg-cover bg-center bg-no-repeat pb-[60px] min-[768px]:pb-[90px] before:absolute before:inset-0 before:bg-black/40 before:content-['']">
             <div className="relative z-[1] mx-auto w-full max-w-[1200px] px-[15px]">
-              <div className="pb-[70px] pt-[90px] text-center text-white max-[767px]:pb-10 max-[767px]:pt-12">
+              <div className="pb-[50px] pt-[60px] text-center text-white min-[768px]:pb-[70px] min-[768px]:pt-[90px]">
                 <h2
                   id="home-video-heading"
                   className="bb-home-video-title"
