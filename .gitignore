@@ -23,7 +23,7 @@ output/
 backups/
 
 # Local agent/tooling state
-.claude/
+# .claude/
 
 # Temporary local dev data (Docker volume mounts, pgdata, etc.)
 .tmp/
