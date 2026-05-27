@@ -312,7 +312,7 @@ export function HomeVideoCarousel({ videos }: Props) {
         )}
       </div>
 
-      {videos.length > 1 && (
+      {canScroll && videos.length > 1 && (
         <div className="mt-[30px] flex items-center justify-center gap-[6px] max-[767px]:mt-5" aria-label="Chuyển slide video">
           {videos.map((_, idx) => {
             const isSelected = idx === selectedIndex;
