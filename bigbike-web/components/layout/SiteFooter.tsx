@@ -45,14 +45,38 @@ function splitHeading(value: string): string[] {
 
 function ContactIcon({ icon }: { icon: FooterContact["icon"] }) {
   return (
-    <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-[3px] border-2 border-brand-inverse text-brand-inverse md:mt-1 md:h-[34px] md:w-[34px]">
+    <span className="mt-0.5 shrink-0 text-brand-inverse md:mt-1" aria-hidden="true">
       {icon === "phone" ? (
-        <PhoneCall size={20} strokeWidth={2.1} aria-hidden="true" />
+        <PhoneCall size={22} strokeWidth={2} />
       ) : (
-        <Mail size={20} strokeWidth={2.1} aria-hidden="true" />
+        <Mail size={22} strokeWidth={2} />
       )}
     </span>
   );
+}
+
+const SOCIAL_ICON_IDS = new Set(["facebook"]);
+
+function hasSocialIcon(id: string): boolean {
+  return SOCIAL_ICON_IDS.has(id);
+}
+
+function SocialIcon({ id }: { id: string }) {
+  if (id === "facebook") {
+    return (
+      <svg
+        className="absolute left-0 top-1/2 -translate-y-1/2 text-brand-inverse"
+        width="18"
+        height="18"
+        viewBox="0 0 320 512"
+        fill="currentColor"
+        aria-hidden="true"
+      >
+        <path d="M279.14 288l14.22-92.66h-88.91v-60.13c0-25.35 12.42-50.06 52.24-50.06h40.42V6.26S260.43 0 225.36 0c-73.22 0-121.08 44.38-121.08 124.72v70.62H22.89V288h81.39v224h100.17V288z" />
+      </svg>
+    );
+  }
+  return null;
 }
 
 function buildFooterLinks(
@@ -126,6 +150,12 @@ export async function SiteFooter() {
       icon: "phone" as const,
     },
     {
+      id: "hotline-3",
+      label: pickSetting(settings, ["hotline_3"]),
+      hrefValue: pickSetting(settings, ["hotline_3"]),
+      icon: "phone" as const,
+    },
+    {
       id: "email",
       label: pickSetting(settings, ["contact_email"]),
       hrefValue: pickSetting(settings, ["contact_email"]),
@@ -135,7 +165,6 @@ export async function SiteFooter() {
 
   const footerLinks = buildFooterLinks(menuResult.data?.items ?? []);
   const socialLinks = buildSocialLinks(settings);
-  const year = new Date().getFullYear();
 
   if (!menuResult.data) {
     console.warn(
@@ -235,13 +264,14 @@ export async function SiteFooter() {
                     {socialLinks.length > 0 ? (
                       <ul className="m-0 list-none p-0">
                         {socialLinks.map((item) => (
-                          <li key={item.id} className="mb-[1.1rem] last:mb-0">
+                          <li key={item.id} className="mb-[1.571rem] last:mb-0">
                             <a
                               href={item.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-block text-base leading-none text-white no-underline transition-colors hover:text-brand-inverse"
+                              className={`inline-block text-base leading-none text-white no-underline transition-colors hover:text-brand-inverse ${hasSocialIcon(item.id) ? "relative pl-[2.857rem]" : ""}`}
                             >
+                              <SocialIcon id={item.id} />
                               {item.label}
                             </a>
                           </li>
@@ -276,23 +306,25 @@ export async function SiteFooter() {
 
             <div className="md:col-span-4 max-md:order-3">
               <p className="m-0 max-w-[22rem] text-sm leading-[1.45] text-white md:text-base">
-                {t("copyright", { year })}
+                {t("copyright")}
               </p>
             </div>
 
             <div className="md:col-span-6 max-md:order-1 max-md:bg-footer-top max-md:pr-14">
               {bctUrl ? (
-                <div>
+                <div className="md:relative md:pl-[138px]">
                   <a
                     href={bctUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    aria-label="BCT"
+                    aria-label="Đã thông báo Bộ Công Thương"
+                    className="mb-3 block md:absolute md:left-0 md:top-0 md:mb-0"
                   >
-                    <div className="mb-2.5 block w-[170px] md:w-[250px]">
-                      <BctBadge alt="BCT" height={95} />
-                    </div>
+                    <BctBadge alt="Đã thông báo Bộ Công Thương" height={40} />
                   </a>
+                  <p className="m-0 mt-[10px] text-sm leading-5 text-[#7e7e7e] md:mt-0">
+                    {t("businessReg")}
+                  </p>
                 </div>
               ) : null}
             </div>

@@ -83,6 +83,9 @@ public class SettingDefinitionRegistry {
                 SettingDefinition.builder("hotline_2", "contact", SettingValueType.PHONE)
                         .publicAllowed()
                         .description("Hotline phụ hiển thị trên footer.").build(),
+                SettingDefinition.builder("hotline_3", "contact", SettingValueType.PHONE)
+                        .publicAllowed()
+                        .description("Hotline thứ ba hiển thị trên footer.").build(),
                 SettingDefinition.builder("facebook_url", "contact", SettingValueType.URL)
                         .publicAllowed()
                         .description("URL Facebook page.").build(),

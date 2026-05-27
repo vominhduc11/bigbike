@@ -12909,7 +12909,7 @@ body .bb-home .white.block-title h3 {
 }
 
 body > footer .bg-footer-top h3 button span {
-  color: var(--bb-text-inverse);
+  color: var(--bb-brand-primary-on-dark);
 }
 
 body > footer .bg-footer-top a:hover,

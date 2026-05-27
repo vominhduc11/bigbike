@@ -15,7 +15,7 @@ export function BctBadge({ alt, height }: BctBadgeProps) {
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src="/bct-logo.png"
+      src="/wp/license.png"
       alt={alt}
       height={height}
       loading="lazy"

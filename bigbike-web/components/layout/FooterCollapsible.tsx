@@ -15,8 +15,8 @@ export function FooterCollapsible({ title, children }: { title: string; children
           aria-expanded={open}
           className="flex min-h-[44px] w-full items-center justify-between gap-2 text-left md:min-h-0 md:cursor-default"
         >
-          <span className="font-body text-base font-medium uppercase text-white md:text-[1.143rem]">{title}</span>
-          <span className="text-xl leading-none text-white md:hidden" aria-hidden="true">
+          <span className="font-body text-base font-medium uppercase text-brand-on-dark md:text-[1.143rem]">{title}</span>
+          <span className="text-xl leading-none text-brand-on-dark md:hidden" aria-hidden="true">
             {open ? "−" : "+"}
           </span>
         </button>
