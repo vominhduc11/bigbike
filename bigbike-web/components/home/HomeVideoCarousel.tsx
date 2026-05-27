@@ -11,6 +11,13 @@ import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 
 type Props = { videos: HomeVideo[] };
 
+function getVisibleVideoSlides(width: number): number {
+  if (width >= 1200) return 5;
+  if (width >= 900) return 3;
+  if (width >= 600) return 2;
+  return 1;
+}
+
 function PlayIcon() {
   return (
     <span
@@ -213,6 +220,30 @@ export function HomeVideoCarousel({ videos }: Props) {
   const swiperRef = useRef<SwiperType | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
 
+  const shouldShowControls = useCallback(
+    (swiper?: SwiperType | null) => {
+      const width = swiper?.width ?? (typeof window === "undefined" ? 0 : window.innerWidth);
+      const visibleSlides = getVisibleVideoSlides(width);
+      return videos.length > visibleSlides;
+    },
+    [videos.length],
+  );
+
+  const syncCanScroll = useCallback(
+    (swiper?: SwiperType | null) => {
+      setCanScroll(shouldShowControls(swiper ?? swiperRef.current));
+    },
+    [shouldShowControls],
+  );
+
+  useEffect(() => {
+    syncCanScroll(swiperRef.current);
+
+    const handleResize = () => syncCanScroll(swiperRef.current);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [syncCanScroll]);
+
   const handleOpen = useCallback((idx: number) => {
     triggerRef.current = document.activeElement as HTMLElement;
     setActiveIndex(idx);
@@ -243,13 +274,16 @@ export function HomeVideoCarousel({ videos }: Props) {
             onSwiper={(s) => {
               swiperRef.current = s;
               setSelectedIndex(s.realIndex);
-              setCanScroll(!s.isLocked);
+              syncCanScroll(s);
             }}
             onSlideChange={(s) => {
               setSelectedIndex(s.realIndex);
             }}
             onBreakpoint={(s) => {
-              setCanScroll(!s.isLocked);
+              syncCanScroll(s);
+            }}
+            onResize={(s) => {
+              syncCanScroll(s);
             }}
             loop={loopEnabled}
             speed={1000}
