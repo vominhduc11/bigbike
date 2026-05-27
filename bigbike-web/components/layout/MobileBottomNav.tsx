@@ -38,7 +38,7 @@ export function MobileBottomNav() {
 
   return (
     <nav
-      className="bb-bottom-nav fixed bottom-0 left-0 right-0 z-40 border-t backdrop-blur-md md:hidden"
+      className="bb-bottom-nav fixed bottom-0 left-0 right-0 border-t backdrop-blur-md md:hidden"
       style={{ paddingBottom: "max(8px, env(safe-area-inset-bottom))" }}
       aria-label="Điều hướng chính"
     >

@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "bigbike-admin",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "bigbike-admin", "--", "--port", "4002"],
+      "port": 4002,
+      "autoPort": false
+    }
+  ]
+}

@@ -2091,11 +2091,6 @@ body {
 }
 
 @media (max-width: 767px) {
-  .bb-main-banner {
-    height: 480px;
-    min-height: 480px;
-  }
-
   .bb-main-banner-pagination {
     display: none;
   }
@@ -5655,7 +5650,7 @@ input[type="checkbox"] {
   border-radius: 0;
 }
 
-.bb-theme :is(.bb-round, .bb-site-header .bb-cart-badge, .bb-wishlist-btn, .bb-contact-icon, .bb-checkout-step-title h3 span, .bb-mini-thumb .qty-badge, .bb-account-avatar, .bb-order-tl-dot, .bb-timeline-dot, .bb-success-icon, .bb-skel--circle, .swiper-pagination-bullet, .bb-slider-dot, .bb-video-play-btn-ring) {
+.bb-theme :is(.bb-round, .bb-site-header .bb-cart-badge, .bb-wishlist-btn, .bb-contact-icon, .bb-checkout-step-title h3 span, .bb-mini-thumb .qty-badge, .bb-account-avatar, .bb-order-tl-dot, .bb-timeline-dot, .bb-success-icon, .bb-skel--circle, .swiper-pagination-bullet, .bb-slider-dot, .bb-video-play-btn-ring, .b24-widget-button-block, .b24-widget-button-inner-block, .b24-widget-button-inner-mask) {
   border-radius: 50%;
 }
 
@@ -12825,6 +12820,11 @@ html[data-bb-keyboard-focus] .bb-floating-chat-anchor {
   display: none !important;
 }
 
+/* FAB nổi trên mọi UI thường — portal panel tự quản lý z-index riêng qua createPortal */
+.bb-floating-chat-anchor {
+  z-index: 660;
+}
+
 @media (max-width: 767px) {
   html,
   body {
@@ -12854,7 +12854,7 @@ html[data-bb-keyboard-focus] .bb-floating-chat-anchor {
   .bb-floating-chat-anchor {
     right: max(16px, env(safe-area-inset-right)) !important;
     bottom: calc(var(--bb-mobile-nav-height) + env(safe-area-inset-bottom) + 16px) !important;
-    z-index: calc(var(--bb-z-header) + 1) !important;
+    z-index: 660 !important;
   }
 
   .bb-floating-chat-anchor .b24-widget-button-block,

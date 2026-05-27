@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef, type ReactElement } from "react";
+import { useState, useEffect, useRef, useCallback, type ReactElement } from "react";
+import { createPortal } from "react-dom";
 
 type FloatingChatProps = {
   hotline?: string;
@@ -85,10 +86,7 @@ function IconToggleClose() {
 
 function extractDisplayValue(url: string): string {
   const match = /\/([^/?#]+)(?:[?#].*)?$/.exec(url);
-  if (match?.[1]) {
-    return match[1];
-  }
-
+  if (match?.[1]) return match[1];
   try {
     return new URL(url).hostname.replace(/^www\./i, "");
   } catch {
@@ -96,20 +94,139 @@ function extractDisplayValue(url: string): string {
   }
 }
 
+// Toàn bộ overlay (backdrop + panel + FAB) render qua portal khi mở
+// → FAB button luôn nổi trên mọi thứ, chỉ bấm FAB mới đóng được
+function ChatOverlay({
+  items,
+  onClose,
+  onToggle,
+}: {
+  items: ContactItem[];
+  onClose: () => void;
+  onToggle: () => void;
+}) {
+  // Scroll lock
+  useEffect(() => {
+    const prevBody = document.body.style.overflow;
+    const prevHtml = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevBody;
+      document.documentElement.style.overflow = prevHtml;
+    };
+  }, []);
+
+  // Escape đóng
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  if (typeof document === "undefined") return null;
+
+  const BOTTOM_FAB = "max(20px, calc(env(safe-area-inset-bottom) + 20px))";
+  const RIGHT_FAB  = "max(20px, env(safe-area-inset-right))";
+
+  const portal = (
+    <>
+      {/* Backdrop — KHÔNG có onClick, chỉ là màn hình mờ */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 2147483644,
+          background: "rgba(0,0,0,0.45)",
+          backdropFilter: "blur(2px)",
+          WebkitBackdropFilter: "blur(2px)",
+        }}
+      />
+
+      {/* Contact panel */}
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Liên hệ hỗ trợ"
+        style={{
+          position: "fixed",
+          bottom: "max(96px, calc(env(safe-area-inset-bottom) + 96px))",
+          right: RIGHT_FAB,
+          zIndex: 2147483645,
+          background: "#fff",
+          borderRadius: 8,
+          boxShadow: "0 4px 24px rgba(0,0,0,0.18)",
+          overflow: "hidden",
+          minWidth: 220,
+        }}
+      >
+        {items.map((item) => (
+          <a
+            key={item.key}
+            href={item.href}
+            className="sudovn-btn-social-item bb-chat-item"
+            target="_blank"
+            rel="nofollow noreferrer"
+            style={{ textDecoration: "none", display: "block" }}
+          >
+            <div className="sudovn-btn-social-item-icon bb-chat-item-icon">{item.icon}</div>
+            <div className="sudovn-btn-social-item-label bb-chat-item-label">
+              {item.label}: <strong>{item.value}</strong>
+            </div>
+          </a>
+        ))}
+      </div>
+
+      {/* FAB button — trong portal, z cao nhất, chỉ nó mới đóng được overlay */}
+      <div
+        style={{
+          position: "fixed",
+          bottom: BOTTOM_FAB,
+          right: RIGHT_FAB,
+          zIndex: 2147483647,
+        }}
+      >
+        <div className="b24-widget-button-inner-container">
+          <div className="b24-widget-button-inner-mask" aria-hidden="true" />
+          <div className="b24-widget-button-block">
+            <button
+              type="button"
+              className="b24-widget-button-inner-block b24-widget-button-bottom"
+              onClick={onToggle}
+              aria-label="Đóng hỗ trợ"
+              aria-expanded={true}
+              aria-haspopup="dialog"
+            >
+              <div className="b24-widget-button-icon-container">
+                <div className="b24-widget-button-inner-item b24-widget-button-icon-animation">
+                  <IconToggleOpen />
+                </div>
+                <div className="b24-widget-button-inner-item b24-widget-button-close">
+                  <IconToggleClose />
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+
+  return createPortal(portal, document.body);
+}
+
 export function FloatingChat({ hotline, zaloUrl, messengerUrl }: Readonly<FloatingChatProps>) {
   const [isOpen, setIsOpen] = useState(false);
-  const wrapperRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    function handleOutside(e: MouseEvent) {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleOutside);
-    return () => document.removeEventListener("mousedown", handleOutside);
-  }, [isOpen]);
+  const handleOpen = useCallback(() => setIsOpen(true), []);
+
+  const handleClose = useCallback(() => {
+    setIsOpen(false);
+    // Restore focus về FAB button sau khi đóng
+    setTimeout(() => triggerRef.current?.focus(), 0);
+  }, []);
 
   const items: ContactItem[] = [];
 
@@ -150,73 +267,50 @@ export function FloatingChat({ hotline, zaloUrl, messengerUrl }: Readonly<Floati
 
   return (
     <>
-      {/* Full-screen overlay — position:fixed escapes parent stacking, closes popup on click */}
-      <div
-        id="sudovn-btn-shadow"
-        className={`b24-widget-button-shadow${isOpen ? " b24-widget-button-show" : ""}`}
-        onClick={() => setIsOpen(false)}
-        aria-hidden="true"
-      />
-
-      {/* Main wrapper — flex column-reverse: toggle button at bottom, social above, title floats beside button via CSS */}
-      <div
-        ref={wrapperRef}
-        id="sudovn-btn-wrapper"
-        dir="ltr"
-        className={`bb-chat-float b24-widget-button-visible${isOpen ? " b24-widget-button-bottom" : ""}`}
-      >
-        {/* Title — positioned beside toggle button via position:relative + bottom/right in CSS */}
-        <div id="sudovn-btn-title" className="bb-chat-title">
-          Bạn cần hỗ trợ?
-        </div>
-
-        {/* Social popup — absolute, appears above the toggle button */}
+      {/* FAB trong anchor — chỉ hiện khi đóng. Khi mở, FAB chuyển vào portal */}
+      {!isOpen && (
         <div
-          id="sudovn-btn-social"
-          className={`bb-chat-social${isOpen ? " b24-widget-button-show" : ""}`}
+          id="sudovn-btn-wrapper"
+          dir="ltr"
+          className="bb-chat-float b24-widget-button-visible"
         >
-          {items.map((item) => (
-            <a
-              key={item.key}
-              href={item.href}
-              className="sudovn-btn-social-item bb-chat-item"
-              target="_blank"
-              rel="nofollow noreferrer"
-            >
-              <div className="sudovn-btn-social-item-icon bb-chat-item-icon">{item.icon}</div>
-              <div className="sudovn-btn-social-item-label bb-chat-item-label">
-                {item.label}: <strong>{item.value}</strong>
-              </div>
-            </a>
-          ))}
-        </div>
-
-        {/* Toggle button area */}
-        <div className="b24-widget-button-inner-container" id="sudovn-btn-inner-container">
-          <div className="b24-widget-button-inner-mask" aria-hidden="true" />
-          {/* Circle clip wrapper */}
-          <div className="b24-widget-button-block">
-            <button
-              type="button"
-              className="b24-widget-button-inner-block"
-              onClick={() => setIsOpen((v) => !v)}
-              aria-label={isOpen ? "Đóng hỗ trợ" : "Mở hỗ trợ"}
-              aria-expanded={isOpen}
-            >
-              <div className="b24-widget-button-icon-container" id="sudovn-btn-icon-container">
-                {/* Chat icon — CSS shows this by default, hides when b24-widget-button-bottom */}
-                <div className="b24-widget-button-inner-item b24-widget-button-icon-animation">
-                  <IconToggleOpen />
+          <div id="sudovn-btn-title" className="bb-chat-title">
+            Bạn cần hỗ trợ?
+          </div>
+          <div className="b24-widget-button-inner-container" id="sudovn-btn-inner-container">
+            <div className="b24-widget-button-inner-mask" aria-hidden="true" />
+            <div className="b24-widget-button-block">
+              <button
+                ref={triggerRef}
+                type="button"
+                className="b24-widget-button-inner-block"
+                onClick={handleOpen}
+                aria-label="Mở hỗ trợ"
+                aria-expanded={false}
+                aria-haspopup="dialog"
+              >
+                <div className="b24-widget-button-icon-container" id="sudovn-btn-icon-container">
+                  <div className="b24-widget-button-inner-item b24-widget-button-icon-animation">
+                    <IconToggleOpen />
+                  </div>
+                  <div className="b24-widget-button-inner-item b24-widget-button-close" id="sudovn-btn-close">
+                    <IconToggleClose />
+                  </div>
                 </div>
-                {/* Close icon — CSS shows this when b24-widget-button-bottom */}
-                <div className="b24-widget-button-inner-item b24-widget-button-close" id="sudovn-btn-close">
-                  <IconToggleClose />
-                </div>
-              </div>
-            </button>
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Khi mở: backdrop + panel + FAB (với icon X) đều trong portal — nổi trên tất cả */}
+      {isOpen && (
+        <ChatOverlay
+          items={items}
+          onClose={handleClose}
+          onToggle={handleClose}
+        />
+      )}
     </>
   );
 }
