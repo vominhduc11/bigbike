@@ -9,7 +9,6 @@ import Image from "next/image";
 import { X } from "lucide-react";
 import type { HomeVideo } from "@/lib/contracts/public";
 import { resolveMediaUrl, safeText } from "@/lib/utils/format";
-import { cn } from "@/lib/utils";
 
 type Props = { videos: HomeVideo[] };
 
@@ -161,7 +160,8 @@ function VideoModal({
             <>
               <button
                 type="button"
-                className="absolute left-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-black/80 focus-visible:outline-[var(--bb-focus-outline)]"
+                className="absolute left-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center bg-black/60 text-white transition-colors hover:bg-black/80 focus-visible:outline-[var(--bb-focus-outline)]"
+                style={{ borderRadius: 9999 }}
                 onClick={onPrev}
                 aria-label="Video trước"
               >
@@ -180,7 +180,8 @@ function VideoModal({
               </button>
               <button
                 type="button"
-                className="absolute right-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-black/80 focus-visible:outline-[var(--bb-focus-outline)]"
+                className="absolute right-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center bg-black/60 text-white transition-colors hover:bg-black/80 focus-visible:outline-[var(--bb-focus-outline)]"
+                style={{ borderRadius: 9999 }}
                 onClick={onNext}
                 aria-label="Video tiếp theo"
               >
@@ -203,7 +204,8 @@ function VideoModal({
         <button
           ref={closeRef}
           type="button"
-          className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-black/90 focus-visible:outline-[var(--bb-focus-outline)]"
+          className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center bg-black/60 text-white transition-colors hover:bg-black/90 focus-visible:outline-[var(--bb-focus-outline)]"
+          style={{ borderRadius: 9999 }}
           onClick={onClose}
           aria-label="Đóng video"
         >
@@ -372,10 +374,15 @@ export function HomeVideoCarousel({ videos }: Props) {
               >
                 <span
                   aria-hidden="true"
-                  className={cn(
-                    "block h-[10px] w-[10px] rounded-full transition-colors duration-300",
-                    isSelected ? "bg-brand" : "bg-white",
-                  )}
+                  style={{
+                    display: "block",
+                    width: isSelected ? 24 : 12,
+                    height: 12,
+                    borderRadius: 9999,
+                    flexShrink: 0,
+                    backgroundColor: isSelected ? "var(--bb-action-primary)" : "#ffffff",
+                    transition: "width 300ms ease, background-color 300ms ease",
+                  }}
                 />
               </button>
             );
