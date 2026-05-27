@@ -8,7 +8,6 @@ import Image from "next/image";
 import { X } from "lucide-react";
 import type { HomeVideo } from "@/lib/contracts/public";
 import { resolveMediaUrl, safeText } from "@/lib/utils/format";
-import { cn } from "@/lib/utils";
 
 type Props = { videos: HomeVideo[] };
 
@@ -314,27 +313,37 @@ export function HomeVideoCarousel({ videos }: Props) {
       </div>
 
       {videos.length > 1 && (
-        <div className="mt-[30px] flex items-center justify-center gap-[10px] max-[767px]:mt-5" aria-label="Chuyển slide video">
-          {videos.map((_, idx) => (
-            <button
-              key={idx}
-              type="button"
-              className="flex h-[var(--bb-touch-target)] w-5 cursor-pointer items-center justify-center border-0 bg-transparent p-0 focus-visible:outline-[var(--bb-focus-outline)] focus-visible:outline-offset-2"
-              onClick={() => {
-                if (loopEnabled) swiperRef.current?.slideToLoop(idx);
-                else swiperRef.current?.slideTo(idx);
-              }}
-              aria-label={`Đến slide ${idx + 1}`}
-              aria-current={idx === selectedIndex ? "true" : undefined}
-            >
-              <span
-                className={cn(
-                  "block h-[10px] w-[10px] rounded-full bg-white transition-colors duration-300",
-                  idx === selectedIndex && "bg-brand",
-                )}
-              />
-            </button>
-          ))}
+        <div className="mt-[30px] flex items-center justify-center gap-[6px] max-[767px]:mt-5" aria-label="Chuyển slide video">
+          {videos.map((_, idx) => {
+            const isSelected = idx === selectedIndex;
+
+            return (
+              <button
+                key={idx}
+                type="button"
+                className="flex h-[var(--bb-touch-target)] min-w-[20px] cursor-pointer items-center justify-center border-0 bg-transparent p-0 focus-visible:outline-[var(--bb-focus-outline)] focus-visible:outline-offset-2"
+                onClick={() => {
+                  if (loopEnabled) swiperRef.current?.slideToLoop(idx);
+                  else swiperRef.current?.slideTo(idx);
+                }}
+                aria-label={`Đến slide ${idx + 1}`}
+                aria-current={isSelected ? "true" : undefined}
+              >
+                <span
+                  aria-hidden="true"
+                  style={{
+                    display: "block",
+                    width: isSelected ? 24 : 12,
+                    height: 12,
+                    borderRadius: 9999,
+                    flexShrink: 0,
+                    backgroundColor: isSelected ? "var(--bb-action-primary)" : "#ffffff",
+                    transition: "width 300ms ease, background-color 300ms ease",
+                  }}
+                />
+              </button>
+            );
+          })}
         </div>
       )}
 
