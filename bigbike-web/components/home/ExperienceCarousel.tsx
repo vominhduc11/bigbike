@@ -76,7 +76,7 @@ function ExperienceSlide({
           <img
             src={media.bgSrc}
             alt={media.bgAlt}
-            className="block w-full max-h-[378px] object-cover"
+            className="block w-full max-h-[378px] max-[767px]:max-h-[220px] object-cover"
             loading={isActive ? "eager" : "lazy"}
             decoding="async"
             draggable={false}
@@ -94,7 +94,7 @@ function ExperienceSlide({
             <img
               src={media.productSrc}
               alt={media.productAlt}
-              className="bb-exp-product-image mx-auto w-1/2 max-w-[420px] max-[991px]:w-[64%] max-[767px]:w-[62vw] max-[767px]:max-w-[280px] max-[374px]:max-w-[250px]"
+              className="bb-exp-product-image mx-auto w-1/2 max-w-[420px] max-[991px]:w-[64%] max-[767px]:w-[52vw] max-[767px]:max-w-[230px] max-[374px]:max-w-[210px]"
               loading={isActive ? "eager" : "lazy"}
               decoding="async"
               draggable={false}
@@ -102,11 +102,11 @@ function ExperienceSlide({
           </div>
         ) : null}
 
-        <div className="text-center max-[767px]:mt-5">
+        <div className="text-center max-[767px]:mt-3">
           <h3 className="bb-exp-slide-title">
             {media.title}
           </h3>
-          <div className="pt-[40px] text-center max-[767px]:pt-4">
+          <div className="pt-[40px] text-center max-[767px]:pt-3">
             <Link
               href={toArticlePath(article.slug)}
               className="bb-exp-slide-link"
@@ -131,8 +131,8 @@ export function ExperienceCarousel({ articles }: Props) {
     <Swiper
       className="bb-exp-carousel w-full touch-pan-y pb-[40px] [&_.swiper-slide]:h-auto [&_.swiper-slide]:cursor-pointer"
       speed={1000}
-      slidesPerView={1.2}
-      spaceBetween={13}
+      slidesPerView={1.1}
+      spaceBetween={12}
       centeredSlides
       loop={hasSideSlides}
       initialSlide={hasSideSlides ? articles.length - 1 : 0}

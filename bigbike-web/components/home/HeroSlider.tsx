@@ -69,7 +69,6 @@ function HeroSlideView({ slide }: { slide: HeroSlide }) {
   if (!slide.href) {
     return (
       <div className="-swiper-lazy bb-main-banner-link" style={style} aria-label={slideLabel}>
-        <span style={{ backgroundImage: `url("${slide.desktopSrc}")`, backgroundPosition: "top center" }} />
         {copy}
       </div>
     );
@@ -82,7 +81,6 @@ function HeroSlideView({ slide }: { slide: HeroSlide }) {
       style={style}
       aria-label={slideLabel}
     >
-      <span style={{ backgroundImage: `url("${slide.desktopSrc}")`, backgroundPosition: "top center" }} />
       {copy}
     </Link>
   );
@@ -109,8 +107,6 @@ export function HeroSlider({ slides }: HeroSliderProps) {
   if (count === 0) {
     return null;
   }
-
-  const activeSlide = slides[activeIndex] ?? slides[0];
 
   return (
     <div
@@ -155,7 +151,9 @@ export function HeroSlider({ slides }: HeroSliderProps) {
             onClick={() => swiperRef.current?.slidePrev()}
             aria-label="Slide trước"
           >
-            &#8249;
+            <svg width="20" height="40" viewBox="0 0 20 40" fill="none" aria-hidden="true">
+              <polyline points="16,4 4,20 16,36" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </button>
           <button
             type="button"
@@ -163,13 +161,12 @@ export function HeroSlider({ slides }: HeroSliderProps) {
             onClick={() => swiperRef.current?.slideNext()}
             aria-label="Slide tiếp"
           >
-            &#8250;
+            <svg width="20" height="40" viewBox="0 0 20 40" fill="none" aria-hidden="true">
+              <polyline points="4,4 16,20 4,36" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </button>
-          <div
-            className="swiper-pagination"
-            product-code={activeSlide.productCode || activeSlide.categoryName || "BIGBIKE"}
-          >
-            {activeIndex + 1} / {count}
+          <div className="bb-main-banner-pagination">
+            <span>{activeIndex + 1}/{count}</span>
           </div>
         </>
       ) : null}

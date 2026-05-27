@@ -6,6 +6,8 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+const DROPDOWN_EXIT_MS = 200;
+
 import type { PublicMenuItem } from "@/lib/contracts/public";
 import { normalizeMenuUrl, isActivePath } from "@/lib/utils/nav";
 
@@ -107,9 +109,12 @@ export function HeaderNavItem({ node }: HeaderNavItemProps) {
   const active = isNodeActive(pathname, node);
 
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [visible, setVisible] = useState(false);
   const wrapperRef = useRef<HTMLLIElement>(null);
   const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pathnameRef = useRef(pathname);
   const menuId = useId();
 
@@ -122,16 +127,25 @@ export function HeaderNavItem({ node }: HeaderNavItemProps) {
       clearTimeout(closeTimerRef.current);
       closeTimerRef.current = null;
     }
+    if (exitTimerRef.current) {
+      clearTimeout(exitTimerRef.current);
+      exitTimerRef.current = null;
+    }
   }, []);
 
   const openMenu = useCallback(
     (immediate = false) => {
       clearTimers();
-      if (immediate) {
+      const doOpen = () => {
         setOpen(true);
+        setMounted(true);
+        requestAnimationFrame(() => setVisible(true));
+      };
+      if (immediate) {
+        doOpen();
         return;
       }
-      openTimerRef.current = setTimeout(() => setOpen(true), menuDelay[0]);
+      openTimerRef.current = setTimeout(doOpen, menuDelay[0]);
     },
     [clearTimers],
   );
@@ -139,11 +153,17 @@ export function HeaderNavItem({ node }: HeaderNavItemProps) {
   const closeMenu = useCallback(() => {
     clearTimers();
     setOpen(false);
+    setVisible(false);
+    exitTimerRef.current = setTimeout(() => setMounted(false), DROPDOWN_EXIT_MS);
   }, [clearTimers]);
 
   const scheduleCloseMenu = useCallback(() => {
     clearTimers();
-    closeTimerRef.current = setTimeout(() => setOpen(false), menuDelay[1]);
+    closeTimerRef.current = setTimeout(() => {
+      setOpen(false);
+      setVisible(false);
+      exitTimerRef.current = setTimeout(() => setMounted(false), DROPDOWN_EXIT_MS);
+    }, menuDelay[1]);
   }, [clearTimers]);
 
   useEffect(() => {
@@ -151,6 +171,8 @@ export function HeaderNavItem({ node }: HeaderNavItemProps) {
     pathnameRef.current = pathname;
     clearTimers();
     setOpen(false);
+    setVisible(false);
+    setMounted(false);
   }, [pathname, clearTimers]);
 
   useEffect(() => () => clearTimers(), [clearTimers]);
@@ -237,8 +259,8 @@ export function HeaderNavItem({ node }: HeaderNavItemProps) {
         {node.label}
       </Link>
 
-      {open && (
-        <div id={menuId} data-dropdown>
+      {mounted && (
+        <div id={menuId} data-dropdown className={visible ? "is-visible" : ""}>
           <SubMenu nodes={node.children} onItemClick={closeMenu} pathname={pathname} />
         </div>
       )}

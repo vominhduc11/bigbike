@@ -12,6 +12,8 @@ import {
   toRegisterPath,
 } from "@/lib/utils/routes";
 
+const CLOSE_DELAY_MS = 100;
+
 function UserIcon() {
   return (
     <svg
@@ -39,7 +41,23 @@ export function HeaderUserMenu() {
   const [loggingOut, setLoggingOut] = useState(false);
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const loginHref = getSafeLoginHref(pathname);
+
+  function scheduleClose() {
+    closeTimerRef.current = setTimeout(() => setOpen(false), CLOSE_DELAY_MS);
+  }
+
+  function cancelClose() {
+    if (closeTimerRef.current !== null) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+  }
+
+  useEffect(() => {
+    return () => cancelClose();
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -51,8 +69,16 @@ export function HeaderUserMenu() {
       setOpen(false);
     }
 
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+
     document.addEventListener("pointerdown", handlePointerDown);
-    return () => document.removeEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
   }, [open]);
 
   function handleBlur(event: React.FocusEvent<HTMLDivElement>) {
@@ -95,8 +121,8 @@ export function HeaderUserMenu() {
     <div
       ref={wrapperRef}
       className="bb-header-user max-[1260px]:hidden"
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
+      onMouseEnter={() => { cancelClose(); setOpen(true); }}
+      onMouseLeave={scheduleClose}
       onBlurCapture={handleBlur}
     >
       {auth.status === "authenticated" ? (
@@ -109,7 +135,7 @@ export function HeaderUserMenu() {
             onClick={() => setOpen((current) => !current)}
             onFocus={() => setOpen(true)}
           >
-            <span className="bb-header-user-greeting">HEY YO!....</span>
+            <span className="bb-header-user-greeting">{t("loggedInGreeting")}</span>
             <span className="bb-header-user-name" title={auth.profile.email}>
               {displayName}
             </span>

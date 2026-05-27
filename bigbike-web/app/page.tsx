@@ -547,13 +547,19 @@ export default async function HomePage() {
       )}
 
       {homeVideos.length > 0 && (
-        <section className="videos-slide relative bg-background pt-[50px] min-[768px]:pt-[80px]" aria-labelledby="home-video-heading">
-          <div className="videos-slide--inner relative bg-[url('/wp/video-bg.jpg')] bg-cover bg-center bg-no-repeat pb-[60px] min-[768px]:pb-[90px] before:absolute before:inset-0 before:bg-black/40 before:content-['']">
+        <section className="videos-slide" aria-labelledby="home-video-heading">
+          {/*
+            Overlay strategy:
+            - Layer 1 (before): solid dark base ở bottom-up để nền không flat
+            - Layer 2 (after):  gradient top-down nhẹ để title area tối hơn, cards nổi
+            Tổng mức tối ~60% — giữ mood mạnh mẽ nhưng sharp hơn black/40 cũ
+          */}
+          <div className="videos-slide--inner relative bg-[url('/wp/video-bg.jpg')] bg-cover bg-center bg-no-repeat before:absolute before:inset-0 before:bg-black/55 before:content-[''] after:absolute after:inset-0 after:bg-gradient-to-b after:from-black/30 after:via-transparent after:to-black/25 after:content-['']">
             <div className="relative z-[1] mx-auto w-full max-w-[1200px] px-[15px]">
-              <div className="pb-[50px] pt-[60px] text-center text-white min-[768px]:pb-[70px] min-[768px]:pt-[90px]">
+              <div className="text-center text-white">
                 <h2
                   id="home-video-heading"
-                  className="bb-home-video-title"
+                  className="bb-home-video-title drop-shadow-[0_2px_12px_rgba(0,0,0,0.6)]"
                 >
                   Trải nghiệm sản phẩm cùng BigBike.vn
                 </h2>

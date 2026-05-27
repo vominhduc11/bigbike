@@ -150,20 +150,18 @@ function MobileNavBranch({
         </button>
       </div>
 
-      {childOpen && (
-        <div className="bb-mobile-nav-children">
-          {node.children.map((child) => (
-            <MobileNavBranch
-              key={child.id}
-              node={child}
-              pathname={pathname}
-              onNavigate={onNavigate}
-              depth={depth + 1}
-              t={t}
-            />
-          ))}
-        </div>
-      )}
+      <div className={cn("bb-mobile-nav-children", childOpen && "is-open")}>
+        {node.children.map((child) => (
+          <MobileNavBranch
+            key={child.id}
+            node={child}
+            pathname={pathname}
+            onNavigate={onNavigate}
+            depth={depth + 1}
+            t={t}
+          />
+        ))}
+      </div>
     </div>
   );
 }

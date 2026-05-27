@@ -14,8 +14,8 @@ type Props = { videos: HomeVideo[] };
 
 function getVisibleVideoSlides(width: number): number {
   if (width >= 1200) return 5;
-  if (width >= 900) return 3;
-  if (width >= 600) return 2;
+  if (width >= 768) return 3;
+  if (width >= 480) return 2;
   return 1;
 }
 
@@ -60,8 +60,8 @@ function VideoCard({ video, onPlay }: { video: HomeVideo; onPlay: () => void }) 
       onClick={onPlay}
       aria-label={`Xem video: ${title}`}
     >
-      {/* Thumbnail — 9:16 cho mọi breakpoint để nhất quán với video Shorts/dọc */}
-      <div className="relative w-full overflow-hidden bg-brand [aspect-ratio:9/16]">
+      {/* Thumbnail — 9:16 aspect ratio, max-height cap ở tablet để tránh card quá cao */}
+      <div className="relative w-full overflow-hidden bg-brand [aspect-ratio:9/16] max-[479px]:[max-height:72vw] min-[480px]:max-[1199px]:[max-height:260px]">
         {thumbSrc ? (
           <Image
             key={thumbSrc}
@@ -69,7 +69,7 @@ function VideoCard({ video, onPlay }: { video: HomeVideo; onPlay: () => void }) 
             alt={safeText(video.thumbnail?.alt, title)}
             fill
             className="object-cover opacity-90 transition-transform duration-300 group-hover:scale-[1.03]"
-            sizes="(max-width: 599px) calc(100vw - 30px), (max-width: 899px) 45vw, (max-width: 1199px) 32vw, 240px"
+            sizes="(max-width: 479px) calc(100vw - 30px), (max-width: 767px) 48vw, (max-width: 1199px) 32vw, 240px"
             onError={() => setThumbIdx((prev) => prev + 1)}
           />
         ) : (
@@ -100,34 +100,23 @@ function ArrowButton({
   onClick: () => void;
   label: string;
 }) {
-  const [hovered, setHovered] = useState(false);
   return (
     <button
       type="button"
       onClick={onClick}
       aria-label={label}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      className="absolute top-1/2 z-[4] -translate-y-1/2 appearance-none focus-visible:outline-[var(--bb-focus-outline)] focus-visible:outline-offset-2"
-      style={{
-        [direction === "prev" ? "left" : "right"]: 6,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        width: 44,
-        height: 44,
-        borderRadius: 9999,
-        background: hovered ? "rgba(0,0,0,0.65)" : "rgba(0,0,0,0.42)",
-        border: "1px solid rgba(255,255,255,0.22)",
-        color: "#fff",
-        cursor: "pointer",
-        boxShadow: "0 2px 10px rgba(0,0,0,0.35)",
-        transition: "background 140ms ease",
-        padding: 0,
-      }}
+      className={[
+        "group flex items-center justify-center appearance-none",
+        "w-10 h-10 rounded-full",
+        "bg-black/50 border border-white/20 text-white",
+        "shadow-[0_2px_12px_rgba(0,0,0,0.45)]",
+        "transition-colors duration-150",
+        "hover:bg-black/75 hover:border-white/40",
+        "focus-visible:outline-[var(--bb-focus-outline)] focus-visible:outline-offset-2",
+      ].join(" ")}
     >
       <svg
-        style={{ width: 13, height: 22, flexShrink: 0 }}
+        style={{ width: 11, height: 20, flexShrink: 0 }}
         viewBox="0 0 27 44"
         fill="none"
         stroke="currentColor"
@@ -403,8 +392,22 @@ export function HomeVideoCarousel({ videos }: Props) {
 
   return (
     <>
-      <div className="relative">
-        <div className="overflow-hidden">
+      {/* Layout: arrows ở hai bên container, không đè lên carousel */}
+      <div className="flex items-center gap-2 min-[768px]:gap-3 min-[1200px]:gap-4">
+        {/* Prev arrow — chỉ render từ 768px, chiếm không gian cố định để không shift layout */}
+        <div className="hidden min-[768px]:block shrink-0">
+          {showArrows ? (
+            <ArrowButton
+              direction="prev"
+              onClick={() => swiperRef.current?.slidePrev()}
+              label="Video trước"
+            />
+          ) : (
+            <div className="w-10" aria-hidden="true" />
+          )}
+        </div>
+
+        <div className="min-w-0 flex-1 overflow-hidden">
           <Swiper
             onSwiper={(s) => {
               swiperRef.current = s;
@@ -425,8 +428,8 @@ export function HomeVideoCarousel({ videos }: Props) {
             slidesPerView={1}
             spaceBetween={12}
             breakpoints={{
-              600: { slidesPerView: 2, spaceBetween: 14 },
-              900: { slidesPerView: 3, spaceBetween: 16 },
+              480: { slidesPerView: 2, spaceBetween: 12 },
+              768: { slidesPerView: 3, spaceBetween: 14 },
               1200: { slidesPerView: 5, spaceBetween: 16 },
             }}
           >
@@ -438,31 +441,24 @@ export function HomeVideoCarousel({ videos }: Props) {
           </Swiper>
         </div>
 
-        {/* Arrows: ẩn mobile (<600px), ẩn tablet nhỏ (600-899px), hiện từ 900px */}
-        {showArrows && (
-          <>
-            <div className="max-[899px]:hidden">
-              <ArrowButton
-                direction="prev"
-                onClick={() => swiperRef.current?.slidePrev()}
-                label="Video trước"
-              />
-            </div>
-            <div className="max-[899px]:hidden">
-              <ArrowButton
-                direction="next"
-                onClick={() => swiperRef.current?.slideNext()}
-                label="Video tiếp"
-              />
-            </div>
-          </>
-        )}
+        {/* Next arrow — chỉ render từ 768px */}
+        <div className="hidden min-[768px]:block shrink-0">
+          {showArrows ? (
+            <ArrowButton
+              direction="next"
+              onClick={() => swiperRef.current?.slideNext()}
+              label="Video tiếp"
+            />
+          ) : (
+            <div className="w-10" aria-hidden="true" />
+          )}
+        </div>
       </div>
 
       {/* Dots: hiện khi canScroll và có ≥2 dots */}
       {canScroll && dotCount > 1 && (
         <div
-          className="mt-6 flex items-center justify-center gap-[6px] min-[600px]:mt-7 min-[900px]:mt-[30px]"
+          className="mt-4 flex items-center justify-center gap-[6px] min-[600px]:mt-5 min-[900px]:mt-6"
           aria-label="Chuyển slide video"
         >
           {paginationDots.map((idx) => {
