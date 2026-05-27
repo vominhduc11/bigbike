@@ -57,6 +57,7 @@ export function ProductTabs({ sections }: { sections: ProductTabSection[] }) {
             role="tabpanel"
             aria-labelledby={toWpTabButtonId(section.id)}
             className={`tab-panel fade wyswyg${activeId === section.id ? " show active" : ""}`}
+            data-label={section.label}
             hidden={activeId !== section.id}
           >
             {section.content}

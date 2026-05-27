@@ -8463,12 +8463,12 @@ body:has(.bb-home) {
     gap: 24px;
   }
 
-  .bb-wp-pdp-info-col {
+  .bb-wp-pdp-gallery-col {
     order: 1;
     width: 100%;
   }
 
-  .bb-wp-pdp-gallery-col {
+  .bb-wp-pdp-info-col {
     order: 2;
     width: 100%;
   }
@@ -8594,6 +8594,235 @@ body:has(.bb-home) {
     flex-basis: calc((100% - 32px) / 3);
     width: calc((100% - 32px) / 3);
   }
+}
+
+/* ---------------------------------------------------------
+   PDP Anchor Nav + Sticky CTA + Scroll Sections (mobile)
+   --------------------------------------------------------- */
+
+/* Base: hidden on desktop, revealed only on mobile */
+.bb-pdp-anchor-nav {
+  display: none;
+}
+
+.bb-pdp-sticky-cta {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  /* ---- Anchor nav ---- */
+  .bb-pdp-anchor-nav {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    background: #fff;
+    border-bottom: 1px solid var(--bb-border-subtle);
+    position: fixed;
+    top: var(--bb-header-height);
+    left: 0;
+    right: 0;
+    z-index: 40;
+    padding: 0 8px;
+    gap: 0;
+    transform: translateY(-100%);
+    transition: transform 200ms ease;
+    pointer-events: none;
+  }
+
+  .bb-pdp-anchor-nav.is-visible {
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .bb-pdp-anchor-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .bb-pdp-anchor-btn {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+    padding: 10px 14px;
+    border: none;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    color: var(--bb-text-secondary);
+    font-family: var(--bb-font-body);
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    cursor: pointer;
+    margin-bottom: -1px;
+    min-height: 44px;
+  }
+
+  .bb-pdp-anchor-btn.is-active {
+    color: var(--bb-text-brand);
+    border-bottom-color: var(--bb-action-primary);
+  }
+
+  /* ---- Sticky CTA ---- */
+  .bb-pdp-sticky-cta {
+    display: flex;
+    gap: 10px;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    padding: 10px 16px;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    background: #fff;
+    border-top: 1px solid var(--bb-border-subtle);
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+    transform: translateY(calc(100% + 1px));
+    transition: transform 200ms ease;
+    pointer-events: none;
+  }
+
+  .bb-pdp-sticky-cta.is-visible {
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .bb-pdp-sticky-add {
+    flex: 1;
+    height: 48px;
+    border: none;
+    border-radius: 0;
+    background: var(--bb-action-primary);
+    color: #fff;
+    font-family: var(--bb-font-body);
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+  }
+
+  .bb-pdp-sticky-add:active {
+    opacity: 0.85;
+  }
+
+  .bb-pdp-sticky-consult {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 48px;
+    padding: 0 16px;
+    border: 2px solid #000;
+    border-radius: 0;
+    color: #000;
+    font-family: var(--bb-font-body);
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  /* Bottom padding so sticky CTA never covers last content */
+  .bb-wp-pdp {
+    padding-bottom: 80px;
+  }
+
+  /* ---- Scroll sections (tabs → continuous on mobile) ---- */
+  .bb-wp-pdp .bb-wp-tabs {
+    margin-top: 0;
+    padding-top: 0;
+  }
+
+  .bb-wp-pdp .bb-wp-tabs .tabs-nav {
+    display: none;
+  }
+
+  /* Override browser hidden attribute so all panels show on mobile */
+  .bb-wp-pdp .bb-wp-tabs .tab-panel[hidden] {
+    display: block !important;
+  }
+
+  .bb-wp-pdp .bb-wp-tabs .tab-panel {
+    padding-top: 24px;
+    padding-bottom: 4px;
+    border-top: 3px solid var(--bb-border-subtle);
+    margin-top: 0;
+    scroll-margin-top: calc(var(--bb-header-height) + 52px);
+  }
+
+  /* Section title injected from data-label attribute */
+  .bb-wp-pdp .bb-wp-tabs .tab-panel::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 16px;
+    font-family: var(--bb-font-display);
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--bb-text-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    line-height: 1.2;
+  }
+
+  .bb-wp-pdp .bb-wp-tabs .tab-panel:first-child {
+    border-top: none;
+    padding-top: 0;
+  }
+}
+
+/* ---- FAQ accordion (shown in tabs on desktop, scroll sections on mobile) ---- */
+.bb-pdp-faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.bb-pdp-faq-item {
+  border-bottom: 1px solid var(--bb-border-subtle);
+}
+
+.bb-pdp-faq-item:first-child {
+  border-top: 1px solid var(--bb-border-subtle);
+}
+
+.bb-pdp-faq-q {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--bb-text-primary);
+  line-height: 1.45;
+  cursor: pointer;
+  list-style: none;
+}
+
+.bb-pdp-faq-q::-webkit-details-marker {
+  display: none;
+}
+
+.bb-pdp-faq-q::after {
+  content: "+";
+  flex-shrink: 0;
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--bb-text-secondary);
+  line-height: 1;
+}
+
+.bb-pdp-faq-item[open] .bb-pdp-faq-q::after {
+  content: "−";
+}
+
+.bb-pdp-faq-a {
+  padding: 0 0 14px;
+  font-size: 14px;
+  color: var(--bb-text-secondary);
+  line-height: 1.7;
 }
 
 /* ============================================================

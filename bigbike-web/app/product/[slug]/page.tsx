@@ -7,6 +7,8 @@ import { ProductTabs } from "@/components/catalog/ProductTabs";
 import { ProductSpecTable } from "@/components/catalog/ProductSpecTable";
 import { ProductVideosTab } from "@/components/catalog/ProductVideosTab";
 import { PdpRelatedProductsCarousel } from "@/components/catalog/PdpRelatedProductsCarousel";
+import { MobilePdpAnchorNav } from "@/components/catalog/MobilePdpAnchorNav";
+import { MobileStickyPurchaseBar } from "@/components/catalog/MobileStickyPurchaseBar";
 import { AnalyticsView } from "@/components/analytics/AnalyticsView";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -121,6 +123,7 @@ export default async function ProductDetailPage({
   const specs = safeArray(product.specifications);
   const faqs = safeArray(product.faqs);
   const instagramUrl = pickSetting(settings, ["instagram_url"]);
+  const zaloUrl = pickSetting(settings, ["zalo_url"]);
 
   const effectiveCategory =
     product.category?.slug === "chua-phan-loai" ? null : (product.category ?? null);
@@ -158,7 +161,7 @@ export default async function ProductDetailPage({
   if (richHasContent(sanitizedDescription)) {
     sections.push({
       id: "tab-description",
-      label: "Mô tả",
+      label: tProduct("tabs.description"),
       content: (
         <article
           className="bb-richtext"
@@ -168,17 +171,49 @@ export default async function ProductDetailPage({
     });
   }
 
-  sections.push({
-    id: "tab-videos",
-    label: "Videos",
-    content: <ProductVideosTab videos={videos} />,
-  });
+  if (videos.length > 0) {
+    sections.push({
+      id: "tab-videos",
+      label: "Videos",
+      content: <ProductVideosTab videos={videos} />,
+    });
+  }
 
-  sections.push({
-    id: "tab-more_infomation",
-    label: "Thông số kĩ thuật",
-    content: <ProductSpecTable specifications={specs} />,
-  });
+  if (specs.length > 0) {
+    sections.push({
+      id: "tab-more_infomation",
+      label: tProduct("tabs.specs"),
+      content: <ProductSpecTable specifications={specs} />,
+    });
+  }
+
+  if (faqs.length > 0) {
+    sections.push({
+      id: "tab-faq",
+      label: tProduct("faqs"),
+      content: (
+        <div className="bb-pdp-faq-list">
+          {faqs.map((faq, index) => (
+            <details key={index} className="bb-pdp-faq-item">
+              <summary className="bb-pdp-faq-q">{faq.question}</summary>
+              <div className="bb-pdp-faq-a">{faq.answer}</div>
+            </details>
+          ))}
+        </div>
+      ),
+    });
+  }
+
+  const anchorItems = [
+    ...(richHasContent(sanitizedDescription)
+      ? [{ id: "tab-description", label: "Mô tả" }]
+      : []),
+    ...(videos.length > 0 ? [{ id: "tab-videos", label: "Videos" }] : []),
+    ...(specs.length > 0
+      ? [{ id: "tab-more_infomation", label: "Thông số" }]
+      : []),
+    ...(faqs.length > 0 ? [{ id: "tab-faq", label: tProduct("faqs") }] : []),
+  ];
 
   return (
     <>
@@ -235,11 +270,18 @@ export default async function ProductDetailPage({
           />
         </div>
 
+        {anchorItems.length > 0 && <MobilePdpAnchorNav items={anchorItems} />}
+
         <ProductTabs sections={sections} />
 
         {relatedProducts.length > 0 && (
           <PdpRelatedProductsCarousel products={relatedProducts} />
         )}
+
+        <MobileStickyPurchaseBar
+          addToCartLabel={tProduct("buyBox.addToCartShort")}
+          zaloUrl={zaloUrl || undefined}
+        />
       </div>
     </>
   );
