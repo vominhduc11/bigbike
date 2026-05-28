@@ -61,7 +61,7 @@ function DeliveryIcon({ name }: { name: DeliveryItem["icon"] }) {
 export function ProductDeliveryInfo() {
   const t = useTranslations("Product.delivery");
   return (
-    <ul className="grid grid-cols-2 gap-3">
+    <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:gap-4">
       {ITEMS.map((item) => (
         <li
           key={item.titleKey}

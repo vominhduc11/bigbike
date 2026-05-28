@@ -163,13 +163,33 @@ Quy tắc:
 
 ## Responsive
 
-| Breakpoint | Hành vi |
+### Breakpoint policy (canonical — áp dụng cho rule mới)
+
+| Token / prefix Tailwind | px | Dùng khi |
+|---|---|---|
+| _(default)_ | < 640px | mobile — 1 cột, padding 16px |
+| `sm:` | ≥ 640px | tablet nhỏ — 2 cột nhẹ, padding 24px |
+| `md:` | ≥ 768px | tablet — layout 2 cột ổn định |
+| `lg:` | ≥ 1024px | desktop — 3 cột / sidebar, padding 32px |
+| `xl:` | ≥ 1280px | large desktop — grid mở rộng |
+| `2xl:` | ≥ 1536px | extra-large — điều chỉnh spacing/type scale |
+| `3xl:` | ≥ 1920px | ultra-wide — **chỉ dùng khi thật sự cần** layout full-bleed hoặc container override |
+
+Container max-width: `--bb-container-xl` = `75rem` (1200px) — áp dụng cho mọi breakpoint.
+
+> **Quy tắc:** Rule mới phải dùng Tailwind prefix (`sm:`/`md:`/`lg:`/`xl:`/`2xl:`/`3xl:`) hoặc các giá trị pixel tương ứng trong media query. Không thêm breakpoint ad-hoc mới.
+
+### Legacy breakpoints (giữ nguyên, không ép đổi hàng loạt)
+
+| Giá trị | Lý do tồn tại |
 |---|---|
-| 320-575px | 1 cột, padding 16px, hero title 18px |
-| 576-767px | 2 cột nhẹ, padding 24px |
-| 768-991px | 2 cột/tablet, padding 24px |
-| 992px+ | 3 cột/sidebar ổn định, padding 32px |
-| 1200px+ | Container centered 1200px |
+| `575px` / `576px` | WP-parity typography scale từ brand-tokens.css — đổi sang 640px cần visual regression test |
+| `767px` / `768px` | Bootstrap 3 mobile boundary từ WP theme — trùng Tailwind `md:` nhưng off-by-one |
+| `900px` / `991px` / `992px` | WP two-column layout threshold — đổi sang `lg: 1024px` cần review layout |
+| `600px` | Homepage legacy selector — đổi sang 640px risk regression trên phone 360-600px |
+| `1260px` | Nav flyout clamp threshold — specific to nav overflow fix |
+
+Các breakpoint legacy được annotate trong globals.css với comment `/* BP note: ... */`.
 
 ---
 

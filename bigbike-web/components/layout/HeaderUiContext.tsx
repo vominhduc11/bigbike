@@ -118,6 +118,7 @@ export function HeaderUiProvider({ children }: { children: ReactNode }) {
     ];
     const visibleByElement = new Map<Element, boolean>();
     let observer: IntersectionObserver | null = null;
+    let footerEl: Element | null = null;
 
     function updateSensitiveAttr() {
       const hasSensitiveVisible = Array.from(visibleByElement.values()).some(Boolean);
@@ -125,6 +126,15 @@ export function HeaderUiProvider({ children }: { children: ReactNode }) {
         document.documentElement.setAttribute("data-bb-chat-sensitive", "");
       } else {
         document.documentElement.removeAttribute("data-bb-chat-sensitive");
+      }
+
+      // Footer-only signal — hides the floating chat on every breakpoint when the
+      // footer is in view (the broad chat-sensitive flag above is mobile-only by design).
+      const footerVisible = footerEl ? visibleByElement.get(footerEl) === true : false;
+      if (footerVisible) {
+        document.documentElement.setAttribute("data-bb-footer-visible", "");
+      } else {
+        document.documentElement.removeAttribute("data-bb-footer-visible");
       }
     }
 
@@ -134,6 +144,8 @@ export function HeaderUiProvider({ children }: { children: ReactNode }) {
       );
 
       if (elements.length === 0) return;
+
+      footerEl = document.querySelector("footer");
 
       observer = new IntersectionObserver(
         (entries) => {
@@ -159,6 +171,7 @@ export function HeaderUiProvider({ children }: { children: ReactNode }) {
       window.clearTimeout(timer);
       observer?.disconnect();
       document.documentElement.removeAttribute("data-bb-chat-sensitive");
+      document.documentElement.removeAttribute("data-bb-footer-visible");
     };
   }, [pathname]);
 

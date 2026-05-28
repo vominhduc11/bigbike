@@ -108,6 +108,12 @@
   /* Duration utilities */
   --duration-fast:   var(--bb-duration-fast);
   --duration-normal: var(--bb-duration-normal);
+
+  /* Breakpoint — ultra-wide only. sm/md/lg/xl/2xl use Tailwind defaults (640/768/1024/1280/1536px).
+     3xl: 1920px is the only custom breakpoint; use it ONLY for layout rules that genuinely need
+     ultra-wide treatment (e.g. full-bleed hero, max-width container overrides at 1920px+).
+     New rules must use canonical values: sm/md/lg/xl/2xl/3xl — not raw px media queries. */
+  --breakpoint-3xl: 120rem; /* 1920px */
 }
 
 /* Keyframes for Accordion */
@@ -6273,6 +6279,59 @@ input[type="checkbox"] {
   margin-top: 130px;
 }
 
+/* Featured products: desktop image frame + large-desktop expansion ───────────────
+   These rules layer on top of the WP-parity base above.
+   Breakpoints: 768px (desktop floor) / 1536px (2xl) / 1920px (ultra-wide).          */
+
+/* ≥768px: square thumb so all cards share the same image height.
+   Absolute-position the img inside the link fills the aspect-ratio box.
+   Cart overlay (.bb-fp-cart) and discount badge (.bb-fp-sale) remain
+   position:absolute relative to .bb-fp-thumb — unaffected.
+   Title min-height guards price/rating vertical alignment across cards. */
+@media (min-width: 768px) {
+  .bb-home-products-parity .bb-fp-thumb {
+    aspect-ratio: 1 / 1;
+    min-height: unset;
+  }
+  .bb-home-products-parity .bb-fp-thumb-link {
+    height: 100%;
+    min-height: unset;
+  }
+  .bb-home-products-parity .bb-fp-thumb img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .bb-home-products-parity .bb-fp-title {
+    min-height: 3rem; /* 2 title lines @ 1rem / 1.5 lh */
+  }
+}
+
+/* ≥1536px (Tailwind 2xl): expand section container beyond global 1200px cap,
+   switch to 5 items per row.
+   Math: container max 85rem = 1360px; at 1536px viewport → 88px each side.
+   Arrow guard: arrows at −64px leave 24px clearance — within the white section bg. */
+@media (min-width: 1536px) {
+  .bb-home-products-parity .bb-container {
+    width: min(100% - calc(var(--bb-page-padding-desktop) * 2), 85rem);
+  }
+  .bb-home-products-parity .bb-fp-item {
+    flex: 0 0 calc((100% - 120px) / 5); /* 5 items × 4 gaps × 30px = 120px */
+  }
+  .bb-home-products-parity .bb-fp-pagination {
+    margin-top: 40px;
+  }
+}
+
+/* ≥1920px (ultra-wide / 3xl): widen to 1600px (100rem).
+   160px each side → arrow clearance of 96px, ample breathing room. */
+@media (min-width: 1920px) {
+  .bb-home-products-parity .bb-container {
+    width: min(100% - calc(var(--bb-page-padding-desktop) * 2), 100rem);
+  }
+}
+
 .bb-article-wp-breadcrumb {
   margin: 0;
   padding: 0;
@@ -10587,6 +10646,24 @@ body .bb-home .white.block-title h3 {
   padding-bottom: 60px;
 }
 
+/* -- Experience carousel: desktop/tablet vertical breathing room ----------
+   On the active slide the product + title + button block is pulled up over
+   the cover band with a negative margin, so the block's natural bottom (the
+   "XEM CHI TIẾT" button) lands right at the edge of the carousel's clipped
+   box. That left the button flush against the section bottom and let the
+   news block crowd directly under it. Reserve space below the button so it
+   sits safely inside the carousel, and give the carousel a clear gap before
+   the news section. Mobile keeps autoHeight + its own spacing (≤767px). */
+@media (min-width: 768px) {
+  .bb-home .bb-exp-slide-content {
+    padding-bottom: 56px;
+  }
+
+  .bb-home .bb-exp-carousel {
+    padding-bottom: 64px;
+  }
+}
+
 @media (min-width: 768px) and (max-width: 1023px) {
   .bb-home .category-list {
     padding-top: 52px;
@@ -13190,7 +13267,8 @@ body > footer .bg-footer-top a:focus-visible {
 
 html[data-bb-header-panel] .bb-floating-chat-anchor,
 html[data-bb-keyboard-focus] .bb-floating-chat-anchor,
-html[data-bb-nav-dropdown-open] .bb-floating-chat-anchor {
+html[data-bb-nav-dropdown-open] .bb-floating-chat-anchor,
+html[data-bb-footer-visible] .bb-floating-chat-anchor {
   display: none !important;
 }
 
@@ -13752,5 +13830,117 @@ html[data-bb-nav-dropdown-open] .bb-floating-chat-anchor {
 @media (max-width: 374px) {
   .bb-home .bb-exp-slide-content {
     margin-top: -14%;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   LARGE-DESKTOP RESPONSIVE EXPANSION — project-wide
+   Canonical breakpoints: 1536px (2xl) → expand; 1920px (3xl) → wider.
+
+   Tier 1  Token via --bb-container-xl: all .bb-container auto-respond
+   Tier 2  Homepage legacy WP .container (not using the token)
+   Tier 3  Page layouts hard-coded at 1440px: push further
+   Tier 4  Selectors hard-coded at 1200px instead of using the token
+   Tier 5  Account layout (1280px sidebar grid)
+
+   NOT changed:
+   - Inner text-copy widths (970px, 68ch) — narrow column is correct for reading
+   - WP legacy 1140px parity rules — require separate visual regression pass
+   ══════════════════════════════════════════════════════════════════════ */
+
+@media (min-width: 1536px) {
+  /* Tier 1 — token: .bb-container expands globally */
+  :root {
+    --bb-container-xl: 85rem; /* 1360px */
+  }
+
+  /* Tier 2 — homepage WP legacy .container */
+  .bb-home .container {
+    max-width: 1360px;
+  }
+
+  /* Tier 3 — layouts already at 1440px */
+  .bb-pdp,
+  .bb-pdp-below,
+  .bb-checkout-layout,
+  .bb-breadcrumb,
+  .bb-page-head,
+  .bb-news-page .bb-news-section {
+    max-width: 1480px;
+  }
+
+  /* Tier 4 — selectors that hard-code 1200px instead of using the token */
+  .bb-section,
+  .bb-pdp-content-bottom > *,
+  .bb-news-section--home .bb-container,
+  .bb-blog-listing-parity .bb-container,
+  .bb-article-detail-parity .container,
+  .bb-seo-content .bb-container {
+    max-width: 1360px;
+  }
+
+  /* Tier 5 — account layout (282px fixed sidebar + fluid main) */
+  .bb-account-layout {
+    max-width: 1400px;
+  }
+}
+
+@media (min-width: 1920px) {
+  /* Tier 1 */
+  :root {
+    --bb-container-xl: 100rem; /* 1600px */
+  }
+
+  /* Tier 2 */
+  .bb-home .container {
+    max-width: 1600px;
+  }
+
+  /* Tier 3 */
+  .bb-pdp,
+  .bb-pdp-below,
+  .bb-checkout-layout,
+  .bb-breadcrumb,
+  .bb-page-head,
+  .bb-news-page .bb-news-section {
+    max-width: 1760px;
+  }
+
+  /* Tier 4 */
+  .bb-section,
+  .bb-pdp-content-bottom > *,
+  .bb-news-section--home .bb-container,
+  .bb-blog-listing-parity .bb-container,
+  .bb-article-detail-parity .container,
+  .bb-seo-content .bb-container {
+    max-width: 1600px;
+  }
+
+  /* Tier 5 */
+  .bb-account-layout {
+    max-width: 1560px;
+  }
+}
+
+/* WP-parity archive + PDP containers (Bootstrap 1140px base) */
+@media (min-width: 1536px) {
+  .bb-product-archive .bb-wp-container,
+  .bb-product-archive .container.bb-wp-container,
+  .bb-wp-pdp .bb-breadcrumb,
+  .bb-wp-pdp-layout,
+  .bb-wp-tabs,
+  .bb-wp-related {
+    max-width: 1360px;
+  }
+}
+
+@media (min-width: 1920px) {
+  .bb-product-archive .bb-wp-container,
+  .bb-product-archive .container.bb-wp-container,
+  .bb-wp-pdp .bb-breadcrumb,
+  .bb-wp-pdp-layout,
+  .bb-wp-tabs,
+  .bb-wp-related {
+    max-width: 1600px;
   }
 }

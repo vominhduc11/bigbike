@@ -17,6 +17,8 @@
 /qa-screenshots/
 /output/
 /_bbtmp-*
+/playwright-report/
+/test-results/
 
 # next.js
 /.next/

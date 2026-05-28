@@ -85,7 +85,7 @@ export function AccountShell({ children, loginRedirect }: Props) {
   return (
     <AccountRefreshContext.Provider value={refreshProfile}>
       <AccountContext.Provider value={profile}>
-        <nav aria-label="Breadcrumb" className="mx-auto max-w-[1280px] px-6 pt-4 pb-1 text-sm text-muted-foreground">
+        <nav aria-label="Breadcrumb" className="mx-auto max-w-[1280px] px-6 pt-4 pb-1 text-sm text-muted-foreground 2xl:max-w-[1400px] 3xl:max-w-[1560px]">
           <Link href="/" className="hover:text-brand">
             {t("breadcrumbHome")}
           </Link>

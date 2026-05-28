@@ -162,7 +162,7 @@ export default async function AboutPage() {
       />
       <section className="bb-page">
         <div className="bb-container">
-          <div className="grid grid-cols-1 items-start gap-6 pb-10 lg:grid-cols-[4fr_5fr_3fr] lg:gap-[30px]">
+          <div className="grid grid-cols-1 items-start gap-6 pb-10 lg:grid-cols-[4fr_5fr_3fr] lg:gap-[30px] xl:gap-[48px] 2xl:gap-[60px]">
             <div>
               <h3 className="mb-4 font-display text-26 font-semibold uppercase text-foreground">
                 {t("aboutBigbike")}
@@ -208,7 +208,7 @@ export default async function AboutPage() {
             ) : null}
           </div>
 
-          <div className="grid grid-cols-1 items-start gap-[30px] py-[60px] lg:grid-cols-[4fr_8fr]">
+          <div className="grid grid-cols-1 items-start gap-[30px] py-[60px] lg:grid-cols-[4fr_8fr] xl:gap-[48px] xl:py-[80px] 2xl:py-[100px]">
             <div>
               <h3 className="mb-4 font-display text-26 font-semibold uppercase leading-tight text-foreground">
                 {t("aboutQualityTitle")}

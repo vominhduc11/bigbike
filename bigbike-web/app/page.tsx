@@ -499,7 +499,7 @@ export default async function HomePage() {
       {expArticles.length > 0 && (
         <section className="bb-experience bb-experience--home" aria-labelledby="home-exp-heading">
           {(expSubtitle || expTitle || expDesc) && (
-            <div className="mx-auto w-full max-w-[1200px] px-[15px]">
+            <div className="mx-auto w-full max-w-[var(--bb-container-xl)] px-[15px]">
               <div className="bb-experience-header text-center">
                 {expSubtitle ? (
                   <p className="bb-experience-kicker">
@@ -555,13 +555,17 @@ export default async function HomePage() {
             Tổng mức tối ~60% — giữ mood mạnh mẽ nhưng sharp hơn black/40 cũ
           */}
           <div className="videos-slide--inner relative bg-[url('/wp/video-bg.jpg')] bg-cover bg-center bg-no-repeat before:absolute before:inset-0 before:bg-black/55 before:content-[''] after:absolute after:inset-0 after:bg-gradient-to-b after:from-black/30 after:via-transparent after:to-black/25 after:content-['']">
-            <div className="relative z-[1] mx-auto w-full max-w-[1200px] px-[15px]">
+            <div className="relative z-[1] mx-auto w-full max-w-[var(--bb-container-xl)] px-[15px]">
               <div className="text-center text-white">
                 <h2
                   id="home-video-heading"
                   className="bb-home-video-title drop-shadow-[0_2px_12px_rgba(0,0,0,0.6)]"
                 >
-                  Trải nghiệm sản phẩm cùng BigBike.vn
+                  {/* Tách thành 2 cụm nghĩa, mỗi cụm không xuống dòng giữa chừng:
+                      desktop lớn cho ra "TRẢI NGHIỆM SẢN PHẨM" / "CÙNG BIGBIKE.VN",
+                      không bao giờ tách "SẢN PHẨM"; viewport hẹp vẫn wrap theo cụm gọn. */}
+                  <span className="whitespace-nowrap">Trải nghiệm sản phẩm</span>{" "}
+                  <span className="whitespace-nowrap">cùng BigBike.vn</span>
                 </h2>
               </div>
               <HomeVideoCarousel videos={homeVideos} />

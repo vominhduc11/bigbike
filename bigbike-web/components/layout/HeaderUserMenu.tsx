@@ -105,7 +105,7 @@ export function HeaderUserMenu() {
         type="button"
         disabled
         aria-label={t("accountAriaLabel")}
-        className="hidden min-h-[var(--bb-header-height)] items-center justify-center px-3 text-white/40 cursor-default min-[768px]:inline-flex"
+        className="hidden min-h-[var(--bb-header-height)] items-center justify-center px-3 text-white/40 cursor-default md:inline-flex"
       >
         <UserIcon />
       </button>

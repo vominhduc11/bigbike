@@ -110,7 +110,7 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
         </table>
       </div>
 
-      <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2">
+      <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2 xl:gap-8">
         <section>
           <h2 className="mb-3 font-heading text-base font-semibold uppercase text-foreground">{t("billingAddress")}</h2>
           {billingAddress ? (

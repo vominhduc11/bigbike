@@ -160,7 +160,7 @@ export function HomeSkeleton() {
 
         {/* Featured 3-tile — nhãn danh mục + tên + nút "Mua ngay" */}
         <div className="bb-section">
-          <div className="grid grid-cols-3 gap-4 py-[var(--bb-space-12)] max-[900px]:grid-cols-2 max-[600px]:grid-cols-1">
+          <div className="grid grid-cols-1 gap-4 py-[var(--bb-space-12)] sm:grid-cols-2 lg:grid-cols-3 xl:gap-6 2xl:gap-8">
             {Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="flex min-h-[200px] flex-col justify-center gap-3 bg-muted p-6">
                 <SkelText w="35%" />
@@ -496,7 +496,7 @@ export function ArticleDetailSkeleton({ label = "Loading article" }: { label?: s
         className="relative mb-[90px] bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: "url('/wp/page-title-bg.png')" }}
       >
-        <div className="mx-auto w-full max-w-[1200px] px-[15px]">
+        <div className="mx-auto w-full max-w-[var(--bb-container-xl)] px-[15px]">
           <div className="-mx-[15px] flex min-h-[450px] flex-wrap items-center">
             <div className="relative w-full px-[15px] md:w-1/2">
               <SkelTitle w="82%" h="1.8em" />
@@ -509,7 +509,7 @@ export function ArticleDetailSkeleton({ label = "Loading article" }: { label?: s
         </div>
       </section>
       <div className="pb-10">
-        <div className="mx-auto w-full max-w-[1200px] px-[15px]">
+        <div className="mx-auto w-full max-w-[var(--bb-container-xl)] px-[15px]">
           <div className="-mx-[15px] flex flex-wrap">
             <div className="relative w-full px-[15px]">
               <div className="bb-skel-stack">

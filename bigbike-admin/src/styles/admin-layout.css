@@ -15,9 +15,17 @@
      - .show-on-*, .hide-on-* responsive utilities
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ─── Breakpoints (consumed via media queries below) ─────────────────────────
-   --bp-tablet:  ≤1024px  (compact tables, sidebar overlay)
-   --bp-mobile:  ≤640px   (cards replace tables)
+/* ─── Breakpoint policy — BigBike Admin ──────────────────────────────────────
+   xs / mobile       < 640px    cards replace tables, stacked filters, grids collapse
+   tablet            < 900px    sidebar drawer + hamburger          (index.css)
+   compact-sidebar   901–1200px icon-only 64px sidebar              (index.css)
+   desktop           ≥ 1201px   full 260px sidebar
+   large desktop     ≥ 1280px   Tailwind xl — content area 972px, no issues
+   wide desktop      ≥ 1536px   Tailwind 2xl — content area 1228px, still under 1400px cap
+   ultra-wide        ≥ 1920px   screen max-width expands to 1700px  (index.css)
+
+   Tailwind prefixes in use in screens:  sm: (640px)  md: (768px)  lg: (1024px)
+   Custom CSS breakpoints:               640px · 900px · 901–1200px · 1920px
    ───────────────────────────────────────────────────────────────────────────*/
 
 /* ═══════════════════════════════════════════════════════════════════════════

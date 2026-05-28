@@ -18,6 +18,8 @@ export function BctBadge({ alt, height }: BctBadgeProps) {
       src="/wp/license.png"
       alt={alt}
       height={height}
+      // Tailwind preflight `img { height: auto }` overrides the HTML attribute — inline style wins.
+      style={{ height: `${height}px`, width: 'auto' }}
       loading="lazy"
       onError={() => setHidden(true)}
     />

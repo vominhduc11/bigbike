@@ -67,7 +67,7 @@ function AddressForm({ editing, accountEmail, saving, error, onSubmit }: Address
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-x-6 gap-y-[18px] sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-x-6 gap-y-[18px] sm:grid-cols-2 xl:gap-x-8">
         <div className="flex flex-col gap-1.5">
           <label className={LEGACY_LABEL}>{t("fullNameLabel")}<ReqMark /></label>
           <Input
@@ -105,7 +105,7 @@ function AddressForm({ editing, accountEmail, saving, error, onSubmit }: Address
             placeholder={t("addressPlaceholder")}
           />
         </div>
-        <div className="sm:col-span-2 grid grid-cols-1 gap-x-6 gap-y-[18px] sm:grid-cols-3">
+        <div className="sm:col-span-2 grid grid-cols-1 gap-x-6 gap-y-[18px] sm:grid-cols-3 xl:gap-x-8">
           {vnError && (
             <p className="sm:col-span-3 text-sm text-destructive">{vnError}</p>
           )}
@@ -254,7 +254,7 @@ function AddressBookContent() {
       )}
 
       {loading ? (
-        <div className="grid grid-cols-1 gap-[18px] sm:grid-cols-2" aria-busy="true">
+        <div className="grid grid-cols-1 gap-[18px] sm:grid-cols-2 xl:gap-6" aria-busy="true">
           {[1, 2].map((i) => (
             <div key={i} className="border border-border p-5">
               <span className="bb-skel bb-skel--title bb-skel-w-50" />
@@ -267,7 +267,7 @@ function AddressBookContent() {
       ) : (
         <>
           {addresses.length > 0 && (
-            <div className="grid grid-cols-1 gap-[18px] sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-[18px] sm:grid-cols-2 xl:gap-6">
               {addresses.map((addr, idx) => (
                 <div
                   key={addr.id}

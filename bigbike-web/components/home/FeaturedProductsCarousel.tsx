@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 type Props = { products: Product[] };
 
 function resolveSlidesPerView(width: number) {
+  if (width >= 1536) return 5;
   if (width >= 767) return 4;
   if (width >= 380) return 2;
   return 1;

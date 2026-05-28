@@ -81,9 +81,10 @@ function VideoCard({ video, onPlay }: { video: HomeVideo; onPlay: () => void }) 
         )}
         <PlayIcon />
       </div>
-      {/* Footer title — compact ở mobile, đủ rộng trên tablet/desktop */}
+      {/* Footer title — compact ở mobile; từ tablet trở lên reserve 2 dòng (min-h)
+          để mọi card cao bằng nhau, và to/đậm hơn trên desktop lớn cho dễ đọc */}
       <div className="bg-black px-3 py-3 min-[600px]:px-4 min-[600px]:py-4">
-        <p className="m-0 overflow-hidden normal-case font-display text-[13px] font-semibold leading-[1.4] text-white [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] min-[600px]:text-[14px] min-[900px]:text-[15px] min-[900px]:leading-[1.45]">
+        <p className="m-0 overflow-hidden normal-case font-display text-[13px] font-semibold leading-[1.4] text-white [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] min-[600px]:min-h-[2.9em] min-[600px]:text-[14px] min-[900px]:text-[15px] min-[900px]:leading-[1.45] min-[1200px]:text-[17px]">
           {title}
         </p>
       </div>
@@ -154,6 +155,7 @@ function VideoModal({
       ? `https://www.youtube-nocookie.com/embed/${video.youtubeId}?autoplay=1&rel=0`
       : null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -165,9 +167,41 @@ function VideoModal({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-      else if (e.key === "ArrowLeft") onPrev();
-      else if (e.key === "ArrowRight") onNext();
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (e.key === "ArrowLeft") {
+        onPrev();
+        return;
+      }
+      if (e.key === "ArrowRight") {
+        onNext();
+        return;
+      }
+      // Focus trap — giữ Tab/Shift+Tab quay vòng trong modal, không lọt ra page sau lưng
+      if (e.key === "Tab") {
+        const root = dialogRef.current;
+        if (!root) return;
+        const focusables = Array.from(
+          root.querySelectorAll<HTMLElement>(
+            'button:not([disabled]), a[href], iframe, [tabindex]:not([tabindex="-1"])',
+          ),
+        ).filter((el) => el.offsetParent !== null || el.tagName === "IFRAME");
+        if (focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        const active = document.activeElement as HTMLElement | null;
+        if (e.shiftKey) {
+          if (active === first || !root.contains(active)) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else if (active === last || !root.contains(active)) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
@@ -198,6 +232,7 @@ function VideoModal({
 
   const modal = (
     <div
+      ref={dialogRef}
       className="fixed inset-0 flex items-center justify-center animate-in fade-in-0 duration-200"
       style={{
         zIndex: 2147483647,
@@ -387,15 +422,17 @@ export function HomeVideoCarousel({ videos }: Props) {
   const activeDotIndex = Math.min(selectedIndex, maxSlideIndex);
   const paginationDots = Array.from({ length: dotCount }, (_, idx) => idx);
 
-  // Arrows chỉ hiện từ 900px — tablet nhỏ (768-899) ưu tiên swipe
+  // Mũi tên hiện từ 768px (tablet trở lên) qua wrapper `hidden md:block` bên dưới;
+  // dưới 768px ẩn mũi tên, ưu tiên swipe. showArrows chỉ quyết định render mũi tên
+  // hay placeholder giữ chỗ (true khi còn đủ video để cuộn).
   const showArrows = canScroll;
 
   return (
     <>
       {/* Layout: arrows ở hai bên container, không đè lên carousel */}
-      <div className="flex items-center gap-2 min-[768px]:gap-3 min-[1200px]:gap-4">
+      <div className="flex items-center gap-2 md:gap-3 min-[1200px]:gap-4">
         {/* Prev arrow — chỉ render từ 768px, chiếm không gian cố định để không shift layout */}
-        <div className="hidden min-[768px]:block shrink-0">
+        <div className="hidden md:block shrink-0">
           {showArrows ? (
             <ArrowButton
               direction="prev"
@@ -442,7 +479,7 @@ export function HomeVideoCarousel({ videos }: Props) {
         </div>
 
         {/* Next arrow — chỉ render từ 768px */}
-        <div className="hidden min-[768px]:block shrink-0">
+        <div className="hidden md:block shrink-0">
           {showArrows ? (
             <ArrowButton
               direction="next"

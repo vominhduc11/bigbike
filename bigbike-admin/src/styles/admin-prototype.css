@@ -296,6 +296,10 @@
   gap: 8px;
   align-items: center;
   flex-shrink: 0;
+  /* Wrap so multiple header buttons reflow onto a second line on narrow screens
+     instead of overflowing the page (no effect when there is room on desktop). */
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 /* ─── Buttons ───────────────────────────────────────────────────────────────── */
@@ -1152,6 +1156,38 @@ dl.bb-info-grid dd { color: var(--bb-text); }
 
 @media (min-width: 1400px) {
   .bb-kpi-grid { grid-template-columns: repeat(6, 1fr); }
+}
+
+/* ─── Responsive overflow fixes ──────────────────────────────────────────────
+   The rendered shell uses these bb-* prototype classes, so these rules keep the
+   page from scrolling sideways on tablet/mobile (matching the breakpoint policy
+   documented in admin-layout.css). */
+
+/* Segmented tabs (e.g. order status filter): was inline-flex with overflow-x
+   but no width cap, so the row widened the whole page instead of scrolling. */
+.bb-seg { max-width: 100%; }
+
+/* Cards inside 2-up / 2fr·1fr grids must shrink below their content width
+   (charts/tables) instead of forcing the grid track — and therefore the page —
+   wider than the content area. */
+.bb-card { min-width: 0; }
+
+/* Dashboard / order-detail two-column grids stack on tablet so their cards get
+   full width (only DashboardScreen + OrderDetailScreen use these classes). */
+@media (max-width: 1024px) {
+  .bb-grid-2-1,
+  .bb-grid-2 { grid-template-columns: 1fr; }
+}
+
+/* Topbar: on the drawer breakpoint, collapse identity + status to icons so the
+   control row fits narrow screens. Full name/role stay in the user dropdown and
+   the sidebar foot; connection status stays in the sidebar foot. */
+@media (max-width: 900px) {
+  .bb-topbar { padding: 0 12px; gap: 8px; }
+  .bb-pill-live { display: none; }
+  .bb-user-chip { padding: 4px; }
+  .bb-user-chip .name,
+  .bb-user-chip .role { display: none; }
 }
 
 /* ─── Hamburger (desktop hidden) ───────────────────────────────────────────── */

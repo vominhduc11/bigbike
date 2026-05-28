@@ -1258,6 +1258,16 @@ a {
   }
 }
 
+/* ── Ultra-wide (≥1920px): expand screen container ──
+   At 1920px viewport the content area is 1612px (1920 - 260px sidebar - 48px padding).
+   The default 1400px cap wastes ~106px on each side. Bump max-width to better use
+   the available space on large monitors without going fully edge-to-edge. */
+@media (min-width: 1920px) {
+  .screen { max-width: 1700px; }
+
+  .page-content { padding: var(--admin-space-8); }
+}
+
 /* ─── Global animation ───────────────────────────────────────────────────────*/
 @keyframes spin {
   to { transform: rotate(360deg); }

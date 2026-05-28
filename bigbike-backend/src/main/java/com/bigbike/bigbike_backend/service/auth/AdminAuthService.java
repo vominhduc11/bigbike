@@ -54,6 +54,11 @@ public class AdminAuthService {
 
     @Transactional
     public TokenResponse refresh(String rawRefreshToken, HttpServletRequest request) {
+        // No cookie and no body token → caller is unauthenticated, not a server fault.
+        // Guard before hashing (hashToken(null) would NPE → 500); mirror logout()'s guard.
+        if (rawRefreshToken == null || rawRefreshToken.isBlank()) {
+            throw new UnauthorizedException("Missing refresh token.");
+        }
         String tokenHash = jwtService.hashToken(rawRefreshToken);
         AdminRefreshTokenEntity stored = refreshTokenRepo.findByTokenHash(tokenHash)
                 .orElseThrow(() -> new UnauthorizedException("Invalid refresh token."));

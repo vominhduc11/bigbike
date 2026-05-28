@@ -14,7 +14,7 @@ export function ArticleProducts({ products, title }: ArticleProductsProps) {
       <h2 className="font-display text-lg font-semibold uppercase tracking-[0.08em] text-foreground text-center m-0 mb-6">
         {title}
       </h2>
-      <div className="grid grid-cols-2 gap-4 sm:gap-6 md:grid-cols-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:gap-6 md:grid-cols-3 lg:grid-cols-4 xl:gap-8">
         {products.map((product) => (
           <ProductCard key={product.id} product={product} variant="featured" />
         ))}
