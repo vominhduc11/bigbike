@@ -283,9 +283,6 @@ final class AdminMutationValidators {
         if (trimToNull(entity.getSeoCanonicalUrl()) == null) {
             errors.add(new ApiErrorDetail("seoCanonicalUrl", REQUIRED, "SEO canonical URL is required to publish."));
         }
-        if (trimToNull(entity.getShortDescription()) == null) {
-            errors.add(new ApiErrorDetail("shortDescription", REQUIRED, "Short description is required to publish."));
-        }
     }
 
     static void throwIfPublishErrors(List<ApiErrorDetail> errors) {

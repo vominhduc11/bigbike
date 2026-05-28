@@ -68,7 +68,6 @@ public class PageEntity {
     private Integer seoOgImageWidth;
     private Integer seoOgImageHeight;
     private String seoOgImageMimeType;
-    private Boolean seoNoIndex;
 
     @Column(name = "hero_image_url", columnDefinition = "text")
     private String heroImageUrl;

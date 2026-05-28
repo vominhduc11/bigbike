@@ -42,26 +42,20 @@ function toInt(value) {
 export function createProductSchema(t, isCreate = false) {
   return z
     .object({
-      slug: slugField(t),
-      name: z.string().min(1, t('products.detail.errNameRequired')),
-      categoryId: z.string().min(1, t('products.detail.errCategoryRequired')),
-      // Short description shows up directly on the PDP under the title.
-      // Allow empty (optional) but if provided, demand enough characters
-      // to actually describe the product — placeholder strings like
-      // "abcde" / "test" leak into production otherwise.
+      slug: isCreate ? slugField(t) : z.string().regex(SLUG_REGEX, t('products.detail.errSlugFormat')).optional().or(z.literal('')),
+      name: isCreate ? z.string().min(1, t('products.detail.errNameRequired')) : z.string().optional(),
+      categoryId: isCreate ? z.string().min(1, t('products.detail.errCategoryRequired')) : z.string().optional(),
       shortDescription: z.string().optional(),
-      contentBottom: z.string().optional(),
       retailPrice: z.string().optional(),
       compareAtPrice: z.string().optional(),
       salePrice: z.string().optional(),
-      publishStatus: z.string().min(1, t('products.detail.errPublishRequired')),
+      publishStatus: isCreate ? z.string().min(1, t('products.detail.errPublishRequired')) : z.string().optional(),
       imageUrl: z.string().optional(),
       seoTitle: z.string().optional(),
       seoDescription: z.string().optional(),
       seoCanonicalUrl: z.string().optional(),
       seoOgImageUrl: z.string().optional(),
       seoOgImageAlt: z.string().optional(),
-      seoNoIndex: z.boolean().optional(),
       gallery: z.array(z.object({ url: z.string(), alt: z.string().optional() })).optional(),
       videos: z.array(z.object({
         url: z.string(),
@@ -92,7 +86,6 @@ export function createProductSchema(t, isCreate = false) {
           name: z.string().optional(),
           shortDescription: z.string().optional(),
           description: z.string().optional(),
-          contentBottom: z.string().optional(),
           installationGuide: z.string().optional(),
           seoTitle: z.string().optional(),
           seoDescription: z.string().optional(),
@@ -305,7 +298,6 @@ export function createCategorySchema(t) {
       seoCanonicalUrl: z.string().optional(),
       seoOgImageUrl: z.string().optional(),
       seoOgImageAlt: z.string().optional(),
-      seoNoIndex: z.boolean().optional(),
     })
     .superRefine((data, ctx) => {
       const s = String(data.slug || '').trim()

@@ -14,7 +14,6 @@ public record ProductTranslations(ProductContent en) {
             String name,
             String shortDescription,
             String description,
-            String contentBottom,
             String promotionContent,
             String installationGuide,
             String seoTitle,

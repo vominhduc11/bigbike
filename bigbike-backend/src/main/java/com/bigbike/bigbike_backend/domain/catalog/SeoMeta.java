@@ -4,8 +4,7 @@ public record SeoMeta(
         String title,
         String description,
         String canonicalUrl,
-        ImageAsset ogImage,
-        Boolean noIndex
+        ImageAsset ogImage
 ) {
 }
 

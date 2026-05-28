@@ -147,9 +147,6 @@ public class ProductEntity {
     @Column(name = "rating_count")
     private Integer ratingCount;
 
-    @Column(name = "content_bottom", columnDefinition = "text")
-    private String contentBottom;
-
     @Column(name = "promotion_content", columnDefinition = "text")
     private String promotionContent;
 
@@ -179,7 +176,6 @@ public class ProductEntity {
     private Integer seoOgImageWidth;
     private Integer seoOgImageHeight;
     private String seoOgImageMimeType;
-    private Boolean seoNoIndex;
 
     // Optional English content (V136). Vietnamese stays on the columns above (canonical).
     // Null = no English; reads fall back to the Vietnamese column field-by-field.
@@ -191,9 +187,6 @@ public class ProductEntity {
 
     @Column(name = "description_en", columnDefinition = "text")
     private String descriptionEn;
-
-    @Column(name = "content_bottom_en", columnDefinition = "text")
-    private String contentBottomEn;
 
     @Column(name = "promotion_content_en", columnDefinition = "text")
     private String promotionContentEn;

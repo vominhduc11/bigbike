@@ -141,7 +141,6 @@ function buildEmptyForm(contentType) {
     seoTitle: '',
     seoDescription: '',
     seoCanonicalUrl: '',
-    seoNoIndex: false,
     heroImageUrl: '',
     heroImageAlt: '',
     heroTitle: '',
@@ -187,7 +186,6 @@ function buildFormFromItem(contentType, item) {
     seoTitle: item.seo?.title || '',
     seoDescription: item.seo?.description || '',
     seoCanonicalUrl: item.seo?.canonicalUrl || '',
-    seoNoIndex: Boolean(item.seo?.noIndex),
     heroImageUrl: item.heroImage?.url || '',
     heroImageAlt: item.heroImage?.alt || '',
     heroTitle: item.heroTitle || '',
@@ -278,7 +276,6 @@ function toPayload(form, isCreate) {
     title: form.seoTitle.trim() || null,
     description: form.seoDescription.trim() || null,
     canonicalUrl: form.seoCanonicalUrl.trim() || null,
-    noIndex: Boolean(form.seoNoIndex),
   }
 
   payload.translations = {
@@ -954,14 +951,6 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                     />
                   </Field>
 
-                  <label className="md:col-span-2 flex items-start gap-2.5 p-2.5 border border-border text-sm cursor-pointer hover:bg-muted">
-                    <Checkbox
-                      checked={form.seoNoIndex}
-                      onCheckedChange={(checked) => updateField('seoNoIndex', checked)}
-                      disabled={isReadOnly}
-                    />
-                    <span>{t('content.detail.seoNoIndex', { defaultValue: 'Không cho công cụ tìm kiếm lập chỉ mục (noindex)' })}</span>
-                  </label>
                 </div>
               </SectionCard>
 

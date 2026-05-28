@@ -71,11 +71,11 @@ export async function generateMetadata({ params }: ArticleDetailPageProps): Prom
 
   const article = result.data;
   return buildPublicMetadata({
-    title: article.title,
-    description: article.excerpt ?? t("articleDefaultDescription"),
-    canonicalPath: toArticlePath(article.slug),
-    noIndex: false,
-    ogImage: article.coverImage?.url ?? undefined,
+    title: article.seo?.title ?? article.title,
+    description: article.seo?.description ?? article.excerpt ?? t("articleDefaultDescription"),
+    canonicalPath: article.seo?.canonicalUrl ?? toArticlePath(article.slug),
+    noIndex: article.seo?.noIndex ?? false,
+    ogImage: article.seo?.ogImage?.url ?? article.coverImage?.url ?? undefined,
     ogType: "article",
   });
 }

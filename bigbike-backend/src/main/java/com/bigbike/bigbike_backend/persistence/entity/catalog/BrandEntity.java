@@ -54,7 +54,6 @@ public class BrandEntity {
     private Integer seoOgImageWidth;
     private Integer seoOgImageHeight;
     private String seoOgImageMimeType;
-    private Boolean seoNoIndex;
 
     private String nameEn;
 
@@ -241,14 +240,6 @@ public class BrandEntity {
 
     public void setSeoOgImageMimeType(String seoOgImageMimeType) {
         this.seoOgImageMimeType = seoOgImageMimeType;
-    }
-
-    public Boolean getSeoNoIndex() {
-        return seoNoIndex;
-    }
-
-    public void setSeoNoIndex(Boolean seoNoIndex) {
-        this.seoNoIndex = seoNoIndex;
     }
 
     public String getNameEn() {

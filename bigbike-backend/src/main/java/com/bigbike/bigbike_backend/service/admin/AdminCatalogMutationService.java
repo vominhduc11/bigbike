@@ -811,9 +811,6 @@ public class AdminCatalogMutationService {
         }
         // Phase 2D: review moderation owns rating cache recomputation, so
         // product mutations must not write rating/ratingCount directly.
-        if (create || request.isContentBottomPresent()) {
-            entity.setContentBottom(AdminMutationValidators.trimToNull(request.getContentBottom()));
-        }
         if (create || request.isPromotionContentPresent()) {
             entity.setPromotionContent(AdminMutationValidators.trimToNull(request.getPromotionContent()));
         }
@@ -960,7 +957,6 @@ public class AdminCatalogMutationService {
         entity.setNameEn(en == null ? null : AdminMutationValidators.trimToNull(en.getName()));
         entity.setShortDescriptionEn(en == null ? null : AdminMutationValidators.trimToNull(en.getShortDescription()));
         entity.setDescriptionEn(en == null ? null : AdminMutationValidators.trimToNull(en.getDescription()));
-        entity.setContentBottomEn(en == null ? null : AdminMutationValidators.trimToNull(en.getContentBottom()));
         entity.setPromotionContentEn(en == null ? null : AdminMutationValidators.trimToNull(en.getPromotionContent()));
         entity.setInstallationGuideEn(en == null ? null : AdminMutationValidators.trimToNull(en.getInstallationGuide()));
         entity.setSeoTitleEn(en == null ? null : AdminMutationValidators.trimToNull(en.getSeoTitle()));
@@ -1467,7 +1463,6 @@ public class AdminCatalogMutationService {
         entity.setSeoTitle(AdminMutationValidators.trimToNull(request.getTitle()));
         entity.setSeoDescription(AdminMutationValidators.trimToNull(request.getDescription()));
         entity.setSeoCanonicalUrl(AdminMutationValidators.trimToNull(request.getCanonicalUrl()));
-        entity.setSeoNoIndex(request.getNoIndex());
 
         if (request.getOgImage() == null) {
             entity.setSeoOgImageId(null);
@@ -1497,14 +1492,12 @@ public class AdminCatalogMutationService {
         entity.setSeoOgImageWidth(null);
         entity.setSeoOgImageHeight(null);
         entity.setSeoOgImageMimeType(null);
-        entity.setSeoNoIndex(null);
     }
 
     private static void applySeo(CategoryEntity entity, SeoMetaRequest request) {
         entity.setSeoTitle(AdminMutationValidators.trimToNull(request.getTitle()));
         entity.setSeoDescription(AdminMutationValidators.trimToNull(request.getDescription()));
         entity.setSeoCanonicalUrl(AdminMutationValidators.trimToNull(request.getCanonicalUrl()));
-        entity.setSeoNoIndex(request.getNoIndex());
 
         if (request.getOgImage() == null) {
             entity.setSeoOgImageId(null);
@@ -1534,14 +1527,12 @@ public class AdminCatalogMutationService {
         entity.setSeoOgImageWidth(null);
         entity.setSeoOgImageHeight(null);
         entity.setSeoOgImageMimeType(null);
-        entity.setSeoNoIndex(null);
     }
 
     private static void applySeo(BrandEntity entity, SeoMetaRequest request) {
         entity.setSeoTitle(AdminMutationValidators.trimToNull(request.getTitle()));
         entity.setSeoDescription(AdminMutationValidators.trimToNull(request.getDescription()));
         entity.setSeoCanonicalUrl(AdminMutationValidators.trimToNull(request.getCanonicalUrl()));
-        entity.setSeoNoIndex(request.getNoIndex());
 
         if (request.getOgImage() == null) {
             entity.setSeoOgImageId(null);
@@ -1578,7 +1569,6 @@ public class AdminCatalogMutationService {
         entity.setSeoOgImageWidth(null);
         entity.setSeoOgImageHeight(null);
         entity.setSeoOgImageMimeType(null);
-        entity.setSeoNoIndex(null);
     }
 
     private void revalidateProduct(ProductEntity entity, String previousSlug) {

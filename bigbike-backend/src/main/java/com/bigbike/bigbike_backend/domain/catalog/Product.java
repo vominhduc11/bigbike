@@ -32,8 +32,6 @@ public record Product(
         java.math.BigDecimal rating,
         /** Denormalized cache of the approved-review count used by product list/detail reads. */
         Integer ratingCount,
-        /** Long-form rich-HTML SEO copy rendered at the bottom of PDP. */
-        String contentBottom,
         /** Rich-HTML promotion copy rendered in the PDP "Khuyến mãi" tab. */
         String promotionContent,
         /** Rich-HTML installation guide rendered in PDP section "03 Hướng dẫn lắp đặt". Detail-only. */

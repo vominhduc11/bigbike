@@ -166,7 +166,6 @@ public class CatalogReadService {
                 p.homepageOrder(),
                 p.rating(),
                 p.ratingCount(),
-                null,                       // contentBottom — detail only
                 null,                       // promotionContent — detail only
                 null,                       // installationGuide — detail only
                 List.of(),                  // faqs — detail only

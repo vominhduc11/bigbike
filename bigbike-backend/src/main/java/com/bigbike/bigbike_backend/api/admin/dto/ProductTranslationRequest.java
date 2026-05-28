@@ -41,9 +41,6 @@ public class ProductTranslationRequest {
         @Size(max = 20000, message = "English description is too long.")
         private String description;
 
-        @Size(max = 50000, message = "English content bottom is too long.")
-        private String contentBottom;
-
         @Size(max = 50000, message = "English promotion content is too long.")
         private String promotionContent;
 

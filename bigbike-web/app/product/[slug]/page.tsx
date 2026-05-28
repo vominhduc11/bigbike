@@ -77,11 +77,11 @@ export async function generateMetadata({
   }
 
   return buildPublicMetadata({
-    title: product.name,
-    description: product.shortDescription ?? tMeta("defaultDescription"),
-    canonicalPath: toProductPath(product.slug),
-    noIndex: false,
-    ogImage: product.image?.url ?? undefined,
+    title: product.seo?.title ?? product.name,
+    description: product.seo?.description ?? product.shortDescription ?? tMeta("defaultDescription"),
+    canonicalPath: product.seo?.canonicalUrl ?? toProductPath(product.slug),
+    noIndex: product.seo?.noIndex ?? false,
+    ogImage: product.seo?.ogImage?.url ?? product.image?.url ?? undefined,
     ogType: "website",
   });
 }

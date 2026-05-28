@@ -34,7 +34,6 @@ function buildEmptyForm() {
     seoTitle: '',
     seoDescription: '',
     seoCanonicalUrl: '',
-    seoNoIndex: false,
     translations: { en: { name: '', description: '', seoTitle: '', seoDescription: '' } },
   }
 }
@@ -53,7 +52,6 @@ function buildFormFromItem(item) {
     seoTitle: item.seo?.title || '',
     seoDescription: item.seo?.description || '',
     seoCanonicalUrl: item.seo?.canonicalUrl || '',
-    seoNoIndex: Boolean(item.seo?.noIndex),
     translations: {
       en: {
         name: item.translations?.en?.name || '',
@@ -85,14 +83,12 @@ function toPayload(form) {
   if (
     form.seoTitle.trim() ||
     form.seoDescription.trim() ||
-    form.seoCanonicalUrl.trim() ||
-    form.seoNoIndex
+    form.seoCanonicalUrl.trim()
   ) {
     payload.seo = {
       title: form.seoTitle.trim() || undefined,
       description: form.seoDescription.trim() || undefined,
       canonicalUrl: form.seoCanonicalUrl.trim() || undefined,
-      noIndex: Boolean(form.seoNoIndex),
     }
   }
 

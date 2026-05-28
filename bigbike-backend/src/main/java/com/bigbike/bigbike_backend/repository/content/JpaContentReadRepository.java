@@ -224,8 +224,7 @@ public class JpaContentReadRepository implements ContentReadRepository {
                         entity.getSeoOgImageAlt(),
                         entity.getSeoOgImageWidth(),
                         entity.getSeoOgImageHeight(),
-                        entity.getSeoOgImageMimeType(),
-                        entity.getSeoNoIndex()
+                        entity.getSeoOgImageMimeType()
                 ),
                 includeTranslations ? toArticleTranslations(entity) : null,
                 entity.getPublishedAt(),
@@ -340,8 +339,7 @@ public class JpaContentReadRepository implements ContentReadRepository {
                         entity.getSeoOgImageAlt(),
                         entity.getSeoOgImageWidth(),
                         entity.getSeoOgImageHeight(),
-                        entity.getSeoOgImageMimeType(),
-                        entity.getSeoNoIndex()
+                        entity.getSeoOgImageMimeType()
                 ),
                 entity.getHeroImageUrl(),
                 entity.getHeroImageAlt(),
@@ -403,19 +401,16 @@ public class JpaContentReadRepository implements ContentReadRepository {
     private static SeoMeta toSeoMeta(
             String title, String description, String canonicalUrl,
             String ogImageId, String ogImageUrl, String ogImageAlt,
-            Integer ogImageWidth, Integer ogImageHeight, String ogImageMimeType,
-            Boolean noIndex) {
+            Integer ogImageWidth, Integer ogImageHeight, String ogImageMimeType) {
         if ((title == null || title.isBlank())
                 && (description == null || description.isBlank())
                 && (canonicalUrl == null || canonicalUrl.isBlank())
-                && (ogImageUrl == null || ogImageUrl.isBlank())
-                && noIndex == null) {
+                && (ogImageUrl == null || ogImageUrl.isBlank())) {
             return null;
         }
         return new SeoMeta(
                 title, description, canonicalUrl,
-                toImageAsset(ogImageId, ogImageUrl, ogImageAlt, ogImageWidth, ogImageHeight, ogImageMimeType),
-                noIndex);
+                toImageAsset(ogImageId, ogImageUrl, ogImageAlt, ogImageWidth, ogImageHeight, ogImageMimeType));
     }
 
     private static String normalizeQuery(String q) {

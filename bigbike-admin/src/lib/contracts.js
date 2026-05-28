@@ -142,7 +142,6 @@ export function normalizeSeoMeta(input) {
     description: toTrimmedString(input.description) || undefined,
     canonicalUrl: toTrimmedString(input.canonicalUrl) || undefined,
     ogImage: normalizeImageAsset(input.ogImage),
-    noIndex: typeof input.noIndex === 'boolean' ? input.noIndex : undefined,
   }
 
   const hasValues = Object.values(seo).some((value) => value !== undefined)

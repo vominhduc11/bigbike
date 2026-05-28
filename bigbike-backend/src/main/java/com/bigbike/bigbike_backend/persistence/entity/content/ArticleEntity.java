@@ -122,7 +122,6 @@ public class ArticleEntity {
     private Integer seoOgImageWidth;
     private Integer seoOgImageHeight;
     private String seoOgImageMimeType;
-    private Boolean seoNoIndex;
 
     // English translations (V138) — nullable; storefront falls back to VI per ARTICLE_RULE_002
     private String titleEn;

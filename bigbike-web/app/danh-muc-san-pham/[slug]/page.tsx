@@ -98,15 +98,19 @@ export async function generateMetadata({ params, searchParams }: CategoryDetailP
   const defaultDescription = tCatalog("categoryDefaultDescription");
 
   return buildPublicMetadata({
-    title: buildCatalogTitle(category.name, {
-      page,
-      minPrice: minPrice ? Number(minPrice) : undefined,
-      maxPrice: maxPrice ? Number(maxPrice) : undefined,
-      colorName: color,
-    }),
-    description: category.description
-      ? category.description.replace(/<[^>]+>/g, " ").replace(/\s{2,}/g, " ").trim().slice(0, 160) || defaultDescription
-      : defaultDescription,
+    title:
+      category.seo?.title ??
+      buildCatalogTitle(category.name, {
+        page,
+        minPrice: minPrice ? Number(minPrice) : undefined,
+        maxPrice: maxPrice ? Number(maxPrice) : undefined,
+        colorName: color,
+      }),
+    description:
+      category.seo?.description ??
+      (category.description
+        ? category.description.replace(/<[^>]+>/g, " ").replace(/\s{2,}/g, " ").trim().slice(0, 160) || defaultDescription
+        : defaultDescription),
     canonicalPath: toCategoryPath(category.slug),
     noIndex:
       page > 1 ||
@@ -116,7 +120,7 @@ export async function generateMetadata({ params, searchParams }: CategoryDetailP
       Boolean(minPrice) ||
       Boolean(maxPrice) ||
       Boolean(orderby && orderby !== DEFAULT_WP_ORDERBY),
-    ogImage: (category.image ?? category.icon)?.url ?? undefined,
+    ogImage: category.seo?.ogImage?.url ?? (category.image ?? category.icon)?.url ?? undefined,
   });
 }
 

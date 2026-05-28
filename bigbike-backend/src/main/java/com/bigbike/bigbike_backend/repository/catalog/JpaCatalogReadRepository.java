@@ -408,7 +408,6 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 entity.getHomepageOrder(),
                 entity.getRating(),
                 entity.getRatingCount(),
-                pick(entity.getContentBottom(), entity.getContentBottomEn(), locale),
                 pick(entity.getPromotionContent(), entity.getPromotionContentEn(), locale),
                 pick(entity.getInstallationGuide(), entity.getInstallationGuideEn(), locale),
                 toFaqs(entity, publicView, locale),
@@ -423,8 +422,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         entity.getSeoOgImageAlt(),
                         entity.getSeoOgImageWidth(),
                         entity.getSeoOgImageHeight(),
-                        entity.getSeoOgImageMimeType(),
-                        entity.getSeoNoIndex()
+                        entity.getSeoOgImageMimeType()
                 ),
                 publicView ? null : toTranslations(entity),
                 entity.getCreatedAt(),
@@ -474,8 +472,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         entity.getSeoOgImageAlt(),
                         entity.getSeoOgImageWidth(),
                         entity.getSeoOgImageHeight(),
-                        entity.getSeoOgImageMimeType(),
-                        entity.getSeoNoIndex()
+                        entity.getSeoOgImageMimeType()
                 ),
                 entity.isVisible(),
                 entity.getShowOnHomepage(),
@@ -534,8 +531,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         entity.getSeoOgImageAlt(),
                         entity.getSeoOgImageWidth(),
                         entity.getSeoOgImageHeight(),
-                        entity.getSeoOgImageMimeType(),
-                        entity.getSeoNoIndex()
+                        entity.getSeoOgImageMimeType()
                 ),
                 entity.isVisible(),
                 includeTranslations ? toBrandTranslations(entity) : null,
@@ -645,7 +641,6 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         boolean anyEnglish = isPresent(entity.getNameEn())
                 || isPresent(entity.getShortDescriptionEn())
                 || isPresent(entity.getDescriptionEn())
-                || isPresent(entity.getContentBottomEn())
                 || isPresent(entity.getPromotionContentEn())
                 || isPresent(entity.getInstallationGuideEn())
                 || isPresent(entity.getSeoTitleEn())
@@ -657,7 +652,6 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 entity.getNameEn(),
                 entity.getShortDescriptionEn(),
                 entity.getDescriptionEn(),
-                entity.getContentBottomEn(),
                 entity.getPromotionContentEn(),
                 entity.getInstallationGuideEn(),
                 entity.getSeoTitleEn(),
@@ -989,14 +983,12 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
             String ogImageAlt,
             Integer ogImageWidth,
             Integer ogImageHeight,
-            String ogImageMimeType,
-            Boolean noIndex
+            String ogImageMimeType
     ) {
         if ((title == null || title.isBlank())
                 && (description == null || description.isBlank())
                 && (canonicalUrl == null || canonicalUrl.isBlank())
-                && (ogImageUrl == null || ogImageUrl.isBlank())
-                && noIndex == null) {
+                && (ogImageUrl == null || ogImageUrl.isBlank())) {
             return null;
         }
 
@@ -1004,8 +996,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 title,
                 description,
                 canonicalUrl,
-                toImageAsset(ogImageId, ogImageUrl, ogImageAlt, ogImageWidth, ogImageHeight, ogImageMimeType),
-                noIndex
+                toImageAsset(ogImageId, ogImageUrl, ogImageAlt, ogImageWidth, ogImageHeight, ogImageMimeType)
         );
     }
 }

@@ -79,13 +79,14 @@ export async function generateMetadata({ params, searchParams }: BrandDetailPage
 
   return buildPublicMetadata({
     title:
+      brand.seo?.title ??
       buildCatalogTitle(brand.name, {
         page,
         minPrice: minPrice ? Number(minPrice) : undefined,
         maxPrice: maxPrice ? Number(maxPrice) : undefined,
         colorName: color,
       }),
-    description: brand.description ?? "Chi tiết thương hiệu BigBike.",
+    description: brand.seo?.description ?? brand.description ?? "Chi tiết thương hiệu BigBike.",
     canonicalPath: toBrandPath(brand.slug),
     noIndex:
       page > 1 ||
@@ -95,7 +96,7 @@ export async function generateMetadata({ params, searchParams }: BrandDetailPage
       Boolean(minPrice) ||
       Boolean(maxPrice) ||
       Boolean(orderby && orderby !== DEFAULT_WP_ORDERBY),
-    ogImage: brand.logo?.url ?? undefined,
+    ogImage: brand.seo?.ogImage?.url ?? brand.logo?.url ?? undefined,
   });
 }
 

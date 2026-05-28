@@ -88,8 +88,7 @@ public class AdminPosController extends AdminControllerSupport {
                             detail.specifications(), detail.stockState(), detail.stockQuantity(),
                             detail.forceOutOfStock(), detail.publishStatus(),
                             detail.homepageBlock(), detail.homepageOrder(),
-                            detail.rating(), detail.ratingCount(), detail.contentBottom(),
-                            detail.promotionContent(), detail.installationGuide(),
+                            detail.rating(), detail.ratingCount(), detail.promotionContent(), detail.installationGuide(),
                             detail.faqs(), detail.relatedProducts(), detail.descriptionBlocks(),
                             detail.seo(), detail.translations(), detail.createdAt(), detail.updatedAt());
                 })

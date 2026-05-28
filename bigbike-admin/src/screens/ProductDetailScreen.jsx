@@ -125,10 +125,11 @@ function getPublishReadiness(form, t) {
     { id: 'category',  label: t('products.detail.checklist.category'),  ok: Boolean(form.categoryId),                                               required: true  },
     { id: 'image',     label: t('products.detail.checklist.image'),     ok: Boolean(form.imageUrl?.trim()),                                         required: true  },
     { id: 'price',     label: t('products.detail.checklist.price'),     ok: Boolean(form.retailPrice?.trim()) && Number(form.retailPrice) > 0,      required: true  },
-    { id: 'shortDesc', label: t('products.detail.checklist.shortDesc'), ok: Boolean(form.shortDescription?.trim()),                                 required: true  },
-    { id: 'seoTitle',  label: t('products.detail.checklist.seoTitle'),  ok: Boolean(form.seoTitle?.trim()),                                         required: true  },
-    { id: 'seoDesc',   label: t('products.detail.checklist.seoDesc'),   ok: Boolean(form.seoDescription?.trim()),                                   required: true  },
-    { id: 'desc',      label: t('products.detail.checklist.desc'),      ok: (form.description?.trim().length ?? 0) > 50,                            required: false },
+    { id: 'shortDesc',    label: t('products.detail.checklist.shortDesc'),    ok: Boolean(form.shortDescription?.trim()),    required: false },
+    { id: 'seoTitle',     label: t('products.detail.checklist.seoTitle'),     ok: Boolean(form.seoTitle?.trim()),           required: true  },
+    { id: 'seoDesc',      label: t('products.detail.checklist.seoDesc'),      ok: Boolean(form.seoDescription?.trim()),     required: true  },
+    { id: 'seoCanonical', label: t('products.detail.checklist.seoCanonical'), ok: Boolean(form.seoCanonicalUrl?.trim()),    required: true  },
+    { id: 'desc',         label: t('products.detail.checklist.desc'),         ok: (Array.isArray(form.descriptionBlocks) ? form.descriptionBlocks.length > 0 : (form.description?.trim().length ?? 0) > 0),  required: false },
   ]
 
   return items
@@ -184,7 +185,6 @@ function buildEmptyForm() {
     shortDescription: '',
     description: '',
     descriptionBlocks: null,
-    contentBottom: '',
     installationGuide: '',
     brandId: '',
     categoryId: '',
@@ -196,11 +196,11 @@ function buildEmptyForm() {
     imageUrl: '',
     imageAlt: '',
     seoTitle: '',
+    seoTitleManuallyEdited: false,
     seoDescription: '',
     seoCanonicalUrl: '',
     seoOgImageUrl: '',
     seoOgImageAlt: '',
-    seoNoIndex: false,
     gallery: [],
     videos: [],
     specifications: [],
@@ -219,7 +219,6 @@ function buildEmptyTranslation() {
     name: '',
     shortDescription: '',
     description: '',
-    contentBottom: '',
     installationGuide: '',
     seoTitle: '',
     seoDescription: '',
@@ -266,7 +265,6 @@ function buildFormFromItem(item) {
     shortDescription: item.shortDescription || '',
     description: item.description || '',
     descriptionBlocks: item.descriptionBlocks ?? null,
-    contentBottom: item.contentBottom || '',
     installationGuide: item.installationGuide || '',
     brandId: item.brandId || item.brand?.id || '',
     categoryId: item.categoryId || item.category?.id || item.categories?.[0]?.id || '',
@@ -287,11 +285,11 @@ function buildFormFromItem(item) {
     imageUrl: item.image?.rawUrl || item.image?.url || '',
     imageAlt: item.image?.alt || '',
     seoTitle: item.seo?.title || '',
+    seoTitleManuallyEdited: Boolean(item.seo?.title),
     seoDescription: item.seo?.description || '',
     seoCanonicalUrl: item.seo?.canonicalUrl || '',
     seoOgImageUrl: item.seo?.ogImage?.rawUrl || item.seo?.ogImage?.url || '',
     seoOgImageAlt: item.seo?.ogImage?.alt || '',
-    seoNoIndex: Boolean(item.seo?.noIndex),
     gallery: (item.gallery || []).map((img) => ({ url: img.rawUrl || img.url || '', alt: img.alt || '' })),
     videos: (item.videos || []).map((v) => ({
       url: v.url || '',
@@ -367,8 +365,7 @@ function toPayload(form) {
     form.seoDescription.trim() ||
     form.seoCanonicalUrl.trim() ||
     form.seoOgImageUrl.trim() ||
-    form.seoOgImageAlt.trim() ||
-    form.seoNoIndex
+    form.seoOgImageAlt.trim()
 
   const payload = {
     sku: form.sku.trim() || null,
@@ -376,7 +373,6 @@ function toPayload(form) {
     name: form.name.trim(),
     shortDescription: form.shortDescription.trim() || undefined,
     description: Array.isArray(form.descriptionBlocks) ? undefined : (form.description.trim() || undefined),
-    contentBottom: form.contentBottom.trim() ? form.contentBottom.trim() : null,
     installationGuide: form.installationGuide.trim() ? form.installationGuide.trim() : null,
     brandId: form.brandId.trim() || undefined,
     categoryId: form.categoryId.trim(),
@@ -396,7 +392,6 @@ function toPayload(form) {
           ogImage: form.seoOgImageUrl.trim()
             ? { url: form.seoOgImageUrl.trim(), alt: form.seoOgImageAlt.trim() || undefined }
             : null,
-          noIndex: Boolean(form.seoNoIndex),
         }
       : null,
     // Always include image — null signals "clear the primary image".
@@ -1756,7 +1751,6 @@ const SECTION_DEFS = [
   { id: 'section-pricing',        key: 'pricing',       icon: 'Tag',        labelKey: 'products.detail.sectionPricing',       required: true  },
   { id: 'section-media',          key: 'media',         icon: 'Image',      labelKey: 'products.detail.mainImageTitle',       required: true  },
   { id: 'section-seo',            key: 'seo',           icon: 'Search',     labelKey: 'products.detail.sectionSeo',           required: false },
-  { id: 'section-content-bottom', key: 'contentBottom', icon: 'LayoutList', labelKey: 'products.detail.sectionContentBottom', required: false },
   { id: 'section-gallery',        key: 'gallery',       icon: 'Images',     labelKey: 'products.detail.gallerySectionTitle',  required: false },
   { id: 'section-videos',         key: 'videos',        icon: 'Video',      labelKey: 'products.detail.videoSectionTitle',    required: false },
   { id: 'section-specs',          key: 'specs',         icon: 'ListChecks', labelKey: 'products.detail.specsSectionTitle',     required: false },
@@ -1770,7 +1764,7 @@ const SECTION_DEFS = [
 // `general` holds the three required sections so users can publish from a single tab.
 const TAB_SECTIONS = {
   general:  ['basic', 'pricing', 'media'],
-  content:  ['seo', 'contentBottom', 'gallery', 'videos'],
+  content:  ['seo', 'gallery', 'videos'],
   details:  ['specs', 'installation', 'faqs'],
   variants: ['variants', 'related'],
 }
@@ -1782,7 +1776,6 @@ const SECTION_FIELD_PREFIXES = {
   pricing:       ['retailPrice','compareAtPrice','salePrice'],
   media:         ['imageUrl'],
   seo:           ['seoTitle','seoDescription','seoCanonicalUrl','seoOgImageUrl','seoOgImageAlt'],
-  contentBottom: ['contentBottom'],
   gallery:       ['gallery'],
   videos:        ['videos'],
   specs:         ['specifications'],
@@ -2108,7 +2101,17 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   }, [isDirty])
 
   function updateField(field, value) {
-    setForm((previous) => ({ ...previous, [field]: value }))
+    setForm((previous) => {
+      const next = { ...previous, [field]: value }
+      // Auto-sync name → seoTitle while admin hasn't manually edited seoTitle
+      if (field === 'name' && !previous.seoTitleManuallyEdited) {
+        next.seoTitle = value
+      }
+      if (field === 'seoTitle') {
+        next.seoTitleManuallyEdited = true
+      }
+      return next
+    })
     setIsDirty(true)
     setValidationErrors((previous) => {
       if (!previous[field]) return previous
@@ -2336,8 +2339,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   const seoChecks = [
     { ok: !!form.seoTitle && form.seoTitle.length >= 30 && form.seoTitle.length <= 60, label: t('products.detail.seoCheckTitle', { defaultValue: 'Title Tag 30–60 ký tự' }) },
     { ok: !!form.seoDescription && form.seoDescription.length >= 140 && form.seoDescription.length <= 160, label: t('products.detail.seoCheckDesc', { defaultValue: 'Meta Description 140–160 ký tự' }) },
-    { ok: /\d/.test(form.seoDescription || ''), label: t('products.detail.seoCheckPrice', { defaultValue: 'Meta có giá (con số)' }) },
-    { ok: /bảo hành|warranty/i.test(form.seoDescription || ''), label: t('products.detail.seoCheckWarranty', { defaultValue: 'Meta có "bảo hành"' }) },
     { ok: !!form.slug && /^[a-z0-9-]+$/.test(form.slug), label: t('products.detail.seoCheckSlug', { defaultValue: 'Slug chữ thường, không dấu, dùng "-"' }) },
     { ok: !!form.imageUrl && !!form.imageAlt, label: t('products.detail.seoCheckImageAlt', { defaultValue: 'Ảnh đại diện có alt text' }) },
     { ok: !!form.seoOgImageUrl, label: t('products.detail.seoCheckOg', { defaultValue: 'OG image cho chia sẻ MXH' }) },
@@ -2801,8 +2802,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     <span>{t('products.detail.serpPreview', { defaultValue: 'Xem trước trên Google' })}</span>
                   </div>
                   <div className="text-xs text-[#5f6368] break-all mb-1">
-                    https://bigbike.vn
-                    <span className="text-[#70757a]"> › sp › {form.slug || 'duong-dan-san-pham'}</span>
+                    {form.seoCanonicalUrl?.trim() || `https://bigbike.vn/product/${form.slug || 'duong-dan-san-pham'}`}
                   </div>
                   <div className="text-lg leading-snug text-[#1a0dab] break-words mb-1">
                     {(form.seoTitle || form.name || t('products.detail.serpTitleFallback', { defaultValue: 'Tiêu đề sản phẩm trên Google' })).slice(0, 60)}
@@ -2856,7 +2856,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     />
                   </Field>
 
-                  <Field full label={t('products.detail.seoOgImageUrl')} error={validationErrors.seoOgImageAlt}>
+                  <Field full label={t('products.detail.seoOgImageUrl')} error={validationErrors.seoOgImageUrl}>
                     <ImageUrlInput
                       value={form.seoOgImageUrl}
                       onChange={(url) => updateField('seoOgImageUrl', url)}
@@ -2867,14 +2867,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     />
                   </Field>
 
-                  <label className="md:col-span-2 flex items-start gap-2.5 p-2.5 border border-border text-sm cursor-pointer hover:bg-muted">
-                    <Checkbox
-                      checked={form.seoNoIndex}
-                      onCheckedChange={(checked) => updateField('seoNoIndex', checked)}
-                      disabled={isReadOnly}
-                    />
-                    <span>{t('products.detail.seoNoIndex')}</span>
-                  </label>
+
                 </div>
 
                 {/* SEO checklist */}
@@ -2904,24 +2897,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     ))}
                   </div>
                 </div>
-              </SectionCard>
-
-              {/* ── Card: Nội dung dưới ── */}
-              <SectionCard title={t('products.detail.sectionContentBottom')} badge={<RoleBadge role="content" />}>
-                <RichTextEditor
-                  key={`contentBottom-${contentLang}`}
-                  value={langValue('contentBottom')}
-                  onChange={(html) => langChange('contentBottom', html)}
-                  placeholder={t('products.detail.contentBottom')}
-                  disabled={isReadOnly}
-                  hasError={Boolean(validationErrors.contentBottom)}
-                  enableImagePicker
-                />
-                {validationErrors.contentBottom && (
-                  <span className="text-xs text-[var(--admin-color-status-danger-text)] font-semibold mt-2 block">
-                    {validationErrors.contentBottom}
-                  </span>
-                )}
               </SectionCard>
 
               {/* ── Card: Gallery ── */}

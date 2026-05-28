@@ -26,6 +26,4 @@ public class SeoMetaRequest {
 
     @Valid
     private ImageAssetRequest ogImage;
-
-    private Boolean noIndex;
 }

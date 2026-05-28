@@ -62,10 +62,6 @@ public class UpsertProductRequest {
     // They are intentionally absent from this request DTO. Sending them in JSON is ignored
     // because Jackson will find no matching setter. Phase 2D handles rating recomputation.
 
-    @Size(max = 50000, message = "Content bottom is too long.")
-    private String contentBottom;
-    private boolean contentBottomPresent = false;
-
     @Size(max = 50000, message = "Promotion content is too long.")
     private String promotionContent;
     private boolean promotionContentPresent = false;
@@ -280,19 +276,6 @@ public class UpsertProductRequest {
 
     public boolean isHomepageOrderPresent() {
         return homepageOrderPresent;
-    }
-
-    public String getContentBottom() {
-        return contentBottom;
-    }
-
-    public void setContentBottom(String contentBottom) {
-        this.contentBottom = contentBottom;
-        this.contentBottomPresent = true;
-    }
-
-    public boolean isContentBottomPresent() {
-        return contentBottomPresent;
     }
 
     public String getPromotionContent() {

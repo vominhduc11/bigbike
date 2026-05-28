@@ -15,10 +15,10 @@ WHERE  setting_key   = 'hotline_2';
 
 -- Third hotline: 0906 902 404 - Mr. Trí
 INSERT INTO site_settings (id, setting_key, setting_value, setting_group, is_public, description, created_at, updated_at)
-SELECT '00000000-0000-0000-0000-000000000539', 'hotline_3',
-       '0906 902 404 - Mr. Trí', 'contact', true,
-       'Third hotline number displayed in the footer.', now(), now()
-WHERE NOT EXISTS (SELECT 1 FROM site_settings WHERE setting_key = 'hotline_3');
+VALUES ('00000000-0000-0000-0000-000000000539', 'hotline_3',
+        '0906 902 404 - Mr. Trí', 'contact', true,
+        'Third hotline number displayed in the footer.', now(), now())
+ON CONFLICT DO NOTHING;
 
 -- Contact email: bigbikevnshop@gmail.com
 UPDATE site_settings

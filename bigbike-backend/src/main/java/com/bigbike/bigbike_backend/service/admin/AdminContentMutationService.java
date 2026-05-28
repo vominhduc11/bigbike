@@ -669,7 +669,6 @@ public class AdminContentMutationService {
         entity.setSeoTitle(AdminMutationValidators.trimToNull(request.getTitle()));
         entity.setSeoDescription(AdminMutationValidators.trimToNull(request.getDescription()));
         entity.setSeoCanonicalUrl(AdminMutationValidators.trimToNull(request.getCanonicalUrl()));
-        entity.setSeoNoIndex(request.getNoIndex());
 
         if (request.getOgImage() == null) {
             entity.setSeoOgImageId(null);
@@ -699,14 +698,12 @@ public class AdminContentMutationService {
         entity.setSeoOgImageWidth(null);
         entity.setSeoOgImageHeight(null);
         entity.setSeoOgImageMimeType(null);
-        entity.setSeoNoIndex(null);
     }
 
     private static void applySeo(PageEntity entity, SeoMetaRequest request) {
         entity.setSeoTitle(AdminMutationValidators.trimToNull(request.getTitle()));
         entity.setSeoDescription(AdminMutationValidators.trimToNull(request.getDescription()));
         entity.setSeoCanonicalUrl(AdminMutationValidators.trimToNull(request.getCanonicalUrl()));
-        entity.setSeoNoIndex(request.getNoIndex());
 
         if (request.getOgImage() == null) {
             entity.setSeoOgImageId(null);
@@ -746,7 +743,6 @@ public class AdminContentMutationService {
         entity.setSeoOgImageWidth(null);
         entity.setSeoOgImageHeight(null);
         entity.setSeoOgImageMimeType(null);
-        entity.setSeoNoIndex(null);
     }
 
     private static AdminContentItem toAdminContentItem(Article article) {
