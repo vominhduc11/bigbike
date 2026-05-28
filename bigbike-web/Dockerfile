@@ -1,8 +1,10 @@
+# syntax=docker/dockerfile:1.7
 # ---- Deps stage ----
 FROM node:20-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm install --prefer-offline
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --prefer-offline --no-audit --no-fund
 
 # ---- Builder stage ----
 FROM node:20-alpine AS builder
@@ -25,7 +27,8 @@ ARG NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ENV NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
 # Next 16 defaults `next build` to Turbopack, whose native bindings are unavailable
 # on this Alpine/musl (linux-x64) image — fall back to the Webpack builder.
-RUN npm run build -- --webpack
+RUN --mount=type=cache,target=/app/.next/cache \
+    npm run build -- --webpack
 
 # ---- Runner stage ----
 FROM node:20-alpine AS runner

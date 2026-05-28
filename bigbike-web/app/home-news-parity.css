@@ -141,6 +141,23 @@ body .bb-home .bb-home-news-parity .block-title h2 {
 }
 
 
+/* ── 4xl wide-screen workstation (≥ 2560px): scale type + image up so the
+   3-column news strip fills the wider Tier 2 container (2240px). ── */
+@media (min-width: 2560px) {
+  body .bb-home .bb-home-news-parity .block-title h2 {
+    font-size: 56px;
+  }
+
+  .bb-home .bb-home-news-parity .news-list .news--item-thumbnail a img {
+    height: 260px;
+  }
+
+  .bb-home .bb-home-news-parity .news--item-inside .title-post {
+    font-size: 22px;
+    line-height: 28px;
+  }
+}
+
 /* ── Responsive: mobile < 768px ── */
 @media (max-width: 767px) {
   body .bb-home .bb-home-news-parity .block-title h2 {

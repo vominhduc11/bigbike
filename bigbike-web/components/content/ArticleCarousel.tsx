@@ -59,6 +59,8 @@ export function ArticleCarousel({ articles }: Props) {
             [BB_BREAKPOINTS.xs]: { slidesPerView: 1.05, slidesPerGroup: 1, spaceBetween: 16 },
             [BB_BREAKPOINTS.sm]: { slidesPerView: 2, slidesPerGroup: 2, spaceBetween: 22 },
             [BB_BREAKPOINTS.lg]: { slidesPerView: 3, slidesPerGroup: 3, spaceBetween: 24 },
+            [BB_BREAKPOINTS.xxxl]: { slidesPerView: 4, slidesPerGroup: 4, spaceBetween: 28 },
+            [BB_BREAKPOINTS.xxxxl]: { slidesPerView: 5, slidesPerGroup: 5, spaceBetween: 32 },
           }}
         >
           {articles.map((a) => (

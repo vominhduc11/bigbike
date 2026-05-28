@@ -252,16 +252,7 @@ export default async function CategoryDetailPage({
     ? sanitizeRichHtml(category.description, { rewriteMediaUrls: true })
     : null;
 
-  const heroBreadcrumb = [
-    { label: "Bigbike.vn", href: toHomePath() },
-    ...(parentCategory
-      ? [{
-          label: safeText(parentCategory.name, tCatalog("parentCategoryFallback")),
-          href: toCategoryPath(parentCategory.slug),
-        }]
-      : []),
-    { label: categoryName },
-  ];
+  const heroBreadcrumb = [{ label: "Bigbike.vn", href: toHomePath() }];
 
   return (
     <div className="bb-product-archive archive tax-product_cat">

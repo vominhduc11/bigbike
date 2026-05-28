@@ -1,8 +1,10 @@
+# syntax=docker/dockerfile:1.7
 # ---- Build stage ----
 FROM node:24-alpine AS builder
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci --prefer-offline
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --prefer-offline --no-audit --no-fund
 COPY . .
 
 # Vite bakes env vars into the bundle at build time, not runtime.

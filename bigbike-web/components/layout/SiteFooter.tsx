@@ -257,7 +257,7 @@ export async function SiteFooter() {
 
             <div className="md:col-span-5">
               {footerDescription ? (
-                <p className="m-0 mb-7 text-[15px] leading-[1.65] text-white md:mb-[2.286rem] md:text-base md:leading-[1.786rem]">
+                <p className="m-0 mb-7 text-[15px] leading-[1.65] text-white md:mb-[2.286rem] md:max-w-[40rem] md:text-base md:leading-[1.786rem]">
                   {footerDescription}
                 </p>
               ) : null}
@@ -340,13 +340,13 @@ export async function SiteFooter() {
                 alt={siteName}
                 width={200}
                 height={66}
-                className="block h-auto w-[132px] max-md:w-[118px]"
+                className="block h-auto w-[132px] max-md:w-[118px] 3xl:w-[160px] 4xl:w-[180px]"
               />
             </div>
 
             <div className="md:col-span-4 max-md:order-2">
               <p className="m-0 max-w-[22rem] text-sm leading-[1.45] text-white md:text-base">
-                {t("copyright")}
+                {t("copyright", { year: new Date().getFullYear() })}
               </p>
             </div>
 

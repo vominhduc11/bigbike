@@ -12,6 +12,7 @@ type PdpRelatedProductsCarouselProps = {
 };
 
 function getColumns(width: number) {
+  if (width >= 2560) return 5;
   if (width >= 767) return 4;
   if (width >= 420) return 2;
   return 1;

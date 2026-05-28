@@ -9,6 +9,7 @@ import { performLogout, refreshAuth, useAuth } from "@/lib/auth/auth-store";
 import type { CustomerProfile } from "@/lib/contracts/commerce";
 import { toLoginPath } from "@/lib/utils/routes";
 import { AccountLayoutSkeleton } from "@/components/ui/Skeletons";
+import { Breadcrumb, type BreadcrumbItem } from "@/components/ui/Breadcrumb";
 
 const AccountContext = createContext<CustomerProfile | null>(null);
 const AccountRefreshContext = createContext<(() => Promise<void>) | null>(null);
@@ -82,24 +83,18 @@ export function AccountShell({ children, loginRedirect }: Props) {
     await refreshAuth();
   }
 
+  const breadcrumbItems: BreadcrumbItem[] = [
+    { label: t("breadcrumbHome"), href: "/" },
+    { label: t("breadcrumbAccount"), href: "/tai-khoan/" },
+    ...(activeNav && !("exact" in activeNav && activeNav.exact)
+      ? [{ label: tNav(activeNav.labelKey) }]
+      : []),
+  ];
+
   return (
     <AccountRefreshContext.Provider value={refreshProfile}>
       <AccountContext.Provider value={profile}>
-        <nav aria-label="Breadcrumb" className="mx-auto max-w-[1280px] px-6 pt-4 pb-1 text-sm text-muted-foreground 2xl:max-w-[1400px] 3xl:max-w-[1560px]">
-          <Link href="/" className="hover:text-brand">
-            {t("breadcrumbHome")}
-          </Link>
-          <span className="mx-1.5">/</span>
-          <Link href="/tai-khoan/" className="hover:text-brand">
-            {t("breadcrumbAccount")}
-          </Link>
-          {activeNav && !("exact" in activeNav && activeNav.exact) && (
-            <>
-              <span className="mx-1.5">/</span>
-              <span className="text-foreground">{tNav(activeNav.labelKey)}</span>
-            </>
-          )}
-        </nav>
+        <Breadcrumb items={breadcrumbItems} variant="onLight" />
 
         <div className="bb-account-layout">
           <aside className="bb-account-sidebar">

@@ -45,7 +45,8 @@ export function PageHero(props: PageHeroProps) {
 }
 
 /* Variant `welcome` — banner chào mừng (gioi-thieu): nền núi đỏ + chữ chìm,
-   ảnh sản phẩm cut-out tràn xuống nền trắng bên dưới. */
+   ảnh sản phẩm cut-out tràn xuống nền trắng bên dưới.
+   Heights: md=450, 3xl=520, 4xl=600 (linear interpolation across tier range). */
 function WelcomeHero({ title, watermark, illustration }: PageHeroProps) {
   // Ảnh cut-out: ưu tiên ảnh hero của trang; fallback ảnh gear có sẵn trong repo.
   const customSrc = illustration?.src?.trim()
@@ -58,7 +59,7 @@ function WelcomeHero({ title, watermark, illustration }: PageHeroProps) {
     <header className="relative bg-[var(--bb-bg-page)]">
       {/* Banner nền núi đỏ — mood racing. Cắt chéo đáy bằng clip-path; cùng ảnh
           và cùng khung hình với hero `contact` để zoom nền đồng nhất. */}
-      <div className="relative h-[300px] overflow-hidden md:h-[450px] [clip-path:polygon(0_0,100%_0,100%_75%,0_100%)]">
+      <div className="relative h-[300px] overflow-hidden md:h-[450px] 3xl:h-[520px] 4xl:h-[600px] [clip-path:polygon(0_0,100%_0,100%_75%,0_100%)]">
         <Image
           src={WP_HERO_BG_SOLID}
           alt=""
@@ -73,7 +74,7 @@ function WelcomeHero({ title, watermark, illustration }: PageHeroProps) {
         <div className="absolute inset-0 bg-gradient-to-b from-brand/35 via-brand/15 to-transparent mix-blend-multiply" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/15 to-transparent" />
         {/* Watermark mờ + headline, đặt ~1/3 trên để chừa chỗ cho ảnh cut-out. */}
-        <div className="absolute left-1/2 top-[100px] -translate-x-1/2 px-4 text-center md:top-[143px]">
+        <div className="absolute left-1/2 top-[100px] -translate-x-1/2 px-4 text-center md:top-[143px] 3xl:top-[170px] 4xl:top-[200px]">
           {watermark ? (
             <span
               aria-hidden="true"
@@ -94,7 +95,7 @@ function WelcomeHero({ title, watermark, illustration }: PageHeroProps) {
         <img
           src={illustrationSrc}
           alt={illustrationAlt}
-          className="-mt-[136px] max-h-[240px] w-auto max-w-[80%] object-contain drop-shadow-[0_18px_26px_rgba(0,0,0,0.4)] md:-mt-[182px] md:max-h-[300px]"
+          className="-mt-[136px] max-h-[240px] w-auto max-w-[80%] object-contain drop-shadow-[0_18px_26px_rgba(0,0,0,0.4)] md:-mt-[182px] md:max-h-[300px] 3xl:-mt-[210px] 3xl:max-h-[360px] 4xl:-mt-[240px] 4xl:max-h-[420px]"
         />
       </div>
     </header>
@@ -102,7 +103,8 @@ function WelcomeHero({ title, watermark, illustration }: PageHeroProps) {
 }
 
 /* Variant `contact` (mặc định) — banner cắt chéo: ảnh nền + clip-path chéo,
-   tiêu đề căn trái + breadcrumb, ảnh minh hoạ tuỳ chọn đặt bên phải. */
+   tiêu đề căn trái + breadcrumb, ảnh minh hoạ tuỳ chọn đặt bên phải.
+   Heights: md=450 (no illus) / md=560 (with illus), 3xl=+70px, 4xl=+150px vs md. */
 function ContactHero({ imageUrl, imageAlt, title, breadcrumb, illustration }: PageHeroProps) {
   const trimmedUrl = imageUrl?.trim();
   // Không có ảnh riêng → fallback bản banner đặc để clip-path cắt chéo gọn,
@@ -113,9 +115,9 @@ function ContactHero({ imageUrl, imageAlt, title, breadcrumb, illustration }: Pa
   // Trang truyền ảnh straddle (vd điện thoại) → cần thêm khoảng dưới banner;
   // còn lại dùng ảnh gear mặc định nằm gọn trong banner → cao bằng banner.
   return (
-    <div className={`relative h-[300px] ${passedIllustration ? "md:h-[560px]" : "md:h-[450px]"}`}>
+    <div className={`relative h-[300px] ${passedIllustration ? "md:h-[560px] 3xl:h-[640px] 4xl:h-[760px]" : "md:h-[450px] 3xl:h-[520px] 4xl:h-[600px]"}`}>
       {/* Banner ảnh nền, cắt chéo đáy bằng clip-path. */}
-      <div className="absolute inset-x-0 top-0 h-[300px] overflow-hidden bg-black md:h-[450px] [clip-path:polygon(0_0,100%_0,100%_75%,0_100%)]">
+      <div className="absolute inset-x-0 top-0 h-[300px] overflow-hidden bg-black md:h-[450px] 3xl:h-[520px] 4xl:h-[600px] [clip-path:polygon(0_0,100%_0,100%_75%,0_100%)]">
         <Image
           src={bgSrc}
           alt={safeText(imageAlt, title)}
@@ -127,7 +129,7 @@ function ContactHero({ imageUrl, imageAlt, title, breadcrumb, illustration }: Pa
         <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/35 to-transparent" />
       </div>
 
-      <div className="absolute inset-x-0 top-0 flex h-[300px] items-center md:h-[450px]">
+      <div className="absolute inset-x-0 top-0 flex h-[300px] items-center md:h-[450px] 3xl:h-[520px] 4xl:h-[600px]">
         <div className="bb-container">
           <h1 className="bb-cat-hero-title" style={{ fontSize: "clamp(2.5rem, 5vw, 4.375rem)", lineHeight: 1.05 }}>
             {title}
@@ -138,7 +140,7 @@ function ContactHero({ imageUrl, imageAlt, title, breadcrumb, illustration }: Pa
 
       {passedIllustration ? (
         /* Ảnh trang tự truyền — kiểu cao, vắt qua mép cắt (vd điện thoại trang Liên hệ). */
-        <div className="absolute right-[4%] top-[34px] z-10 hidden w-[340px] md:block" aria-hidden="true">
+        <div className="absolute right-[4%] top-[34px] z-10 hidden w-[340px] md:block 3xl:top-[50px] 3xl:w-[400px] 4xl:top-[60px] 4xl:w-[460px]" aria-hidden="true">
           <Image
             src={passedIllustration}
             alt=""
@@ -150,7 +152,7 @@ function ContactHero({ imageUrl, imageAlt, title, breadcrumb, illustration }: Pa
         </div>
       ) : (
         /* Mặc định — ảnh gear cut-out ở góc phải, vắt qua đường cắt chéo. */
-        <div className="pointer-events-none absolute right-[3%] bottom-0 z-10 hidden w-[220px] md:block lg:w-[300px]" aria-hidden="true">
+        <div className="pointer-events-none absolute right-[3%] bottom-0 z-10 hidden w-[220px] md:block lg:w-[300px] 3xl:w-[360px] 4xl:w-[420px]" aria-hidden="true">
           <Image
             src={WP_HERO_ILLUSTRATION}
             alt=""

@@ -2,3 +2,27 @@ node_modules
 dist
 .env*
 *.local
+
+# VCS / IDE / OS
+.git
+.gitignore
+.gitattributes
+.vscode
+.idea
+.DS_Store
+
+# Tests / e2e
+e2e
+playwright.config.ts
+playwright-report
+test-results
+
+# Docs & logs
+*.md
+coverage
+*.log
+npm-debug.log*
+
+# Dev tooling
+.eslintcache
+.turbo

@@ -173,11 +173,12 @@ Quy tắc:
 | `lg:` | ≥ 1024px | desktop — 3 cột / sidebar, padding 32px |
 | `xl:` | ≥ 1280px | large desktop — grid mở rộng |
 | `2xl:` | ≥ 1536px | extra-large — điều chỉnh spacing/type scale |
-| `3xl:` | ≥ 1920px | ultra-wide — **chỉ dùng khi thật sự cần** layout full-bleed hoặc container override |
+| `3xl:` | ≥ 1920px | ultra-wide — full-bleed hero, container override 1600px |
+| `4xl:` | ≥ 2560px | wide-screen workstation / 32:9 super-ultrawide / showroom TV — container 2240px, grid sản phẩm 6 cột |
 
-Container max-width: `--bb-container-xl` = `75rem` (1200px) — áp dụng cho mọi breakpoint.
+Container max-width: `--bb-container-xl` co giãn theo tier — `75rem` (1200px) mặc định → `85rem` (1360px) tại `2xl` → `100rem` (1600px) tại `3xl` → `140rem` (2240px) tại `4xl`. Override tập trung trong block `LARGE-DESKTOP RESPONSIVE EXPANSION` của `globals.css`.
 
-> **Quy tắc:** Rule mới phải dùng Tailwind prefix (`sm:`/`md:`/`lg:`/`xl:`/`2xl:`/`3xl:`) hoặc các giá trị pixel tương ứng trong media query. Không thêm breakpoint ad-hoc mới.
+> **Quy tắc:** Rule mới phải dùng Tailwind prefix (`sm:`/`md:`/`lg:`/`xl:`/`2xl:`/`3xl:`/`4xl:`) hoặc các giá trị pixel tương ứng trong media query. Không thêm breakpoint ad-hoc mới ngoài 7 tier trên. Khi thêm class `4xl:`, kiểm tra rằng container/grid cha cũng đã có rule tương ứng để tránh layout lệch ở viewport ≥ 2560px.
 
 ### Legacy breakpoints (giữ nguyên, không ép đổi hàng loạt)
 

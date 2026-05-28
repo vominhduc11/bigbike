@@ -50,7 +50,6 @@ export function WarrantyContent() {
     <div className="bb-container max-w-[560px] py-10">
       <div className="mb-7 pb-[22px] border-b border-border">
         <span className="text-sm tracking-[0.18em] uppercase text-brand font-bold block mb-2">{t("kicker")}</span>
-        <h1 className="font-display uppercase text-[clamp(1.375rem,5vw,2.8rem)] tracking-[0.01em] leading-[1.1] m-0 text-foreground">{t("heading")}</h1>
         <p className="text-muted-foreground text-sm mt-2 m-0">{t("subheading")}</p>
       </div>
 

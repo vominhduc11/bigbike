@@ -48,6 +48,8 @@ export function BrandCarousel({ brands }: Props) {
           watchOverflow
           breakpoints={{
             767: { slidesPerView: 5, spaceBetween: 40 },
+            1920: { slidesPerView: 6, spaceBetween: 48 },
+            2560: { slidesPerView: 7, spaceBetween: 56 },
           }}
         >
           {brands.map((b, index) => {

@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { PageHero } from "@/components/layout/PageHero";
 import { listArticles, listContentCategories, listPublicSettings } from "@/lib/api/public-api";
 import type { Article, ContentCategoryWithCount } from "@/lib/contracts/public";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
-import { resolveMediaUrl } from "@/lib/utils/format";
 import { readHeroSettings } from "@/lib/utils/page-hero";
 import {
   buildQueryString,
@@ -47,7 +46,11 @@ export async function generateMetadata({ searchParams }: ArticleListPageProps): 
 }
 
 export default async function ArticleListPage({ searchParams }: ArticleListPageProps) {
-  const params = await searchParams;
+  const [params, t, tBreadcrumb] = await Promise.all([
+    searchParams,
+    getTranslations("Blog"),
+    getTranslations("Breadcrumb"),
+  ]);
 
   const pageParsed = parsePositiveIntParam(params.paged ?? params.page, {
     defaultValue: 1,
@@ -77,7 +80,13 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
   if (validationErrors.length > 0) {
     return (
       <div className="bb-blog-listing-parity">
-        <WpPageTitle title="Tin tức" />
+        <PageHero
+          title={t("title")}
+          breadcrumb={[
+            { label: tBreadcrumb("home"), href: toHomePath() },
+            { label: t("breadcrumb") },
+          ]}
+        />
         <div id="main-content" className="bb-wp-main-content">
           <div className="bb-container container">
             <WpNoResults query={qParsed.value} />
@@ -124,10 +133,22 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
 
   return (
     <div className="bb-blog-listing-parity">
-      <WpPageTitle
+      <PageHero
         title={pageTitle}
         imageUrl={heroSettings.imageUrl}
         imageAlt={heroSettings.imageAlt}
+        breadcrumb={
+          activeCategory
+            ? [
+                { label: tBreadcrumb("home"), href: toHomePath() },
+                { label: t("breadcrumb"), href: toArticleListPath() },
+                { label: activeCategory.name },
+              ]
+            : [
+                { label: tBreadcrumb("home"), href: toHomePath() },
+                { label: t("breadcrumb") },
+              ]
+        }
       />
 
       <div id="main-content" className="bb-wp-main-content">
@@ -172,60 +193,6 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
         </div>
       </div>
     </div>
-  );
-}
-
-function WpPageTitle({
-  title,
-  imageUrl,
-  imageAlt,
-}: {
-  title: string;
-  imageUrl?: string | null;
-  imageAlt?: string | null;
-}) {
-  const backgroundSrc = imageUrl?.trim() ? resolveMediaUrl(imageUrl.trim()) : "/wp/page-title-bg.png";
-  const backgroundAlt = imageAlt?.trim() || title;
-
-  return (
-    <section
-      className="bb-wp-page-title page-title"
-      style={{ backgroundImage: `url('${backgroundSrc}')` }}
-      aria-label={backgroundAlt}
-    >
-      <div className="bb-container container">
-        <div className="bb-wp-page-title-row row align-items-center">
-          <div className="bb-wp-page-title-copy col-md-6">
-            <h1>{title}</h1>
-            <nav className="bb-wp-breadcrumb breadcrumb" aria-label="Breadcrumb">
-              <ul>
-                <li>
-                  <Link href={toHomePath()} className="home">
-                    <span>Bigbike.vn</span>
-                  </Link>
-                </li>
-                <li>
-                  <span className="archive taxonomy category current-item" aria-current="page">
-                    {title}
-                  </span>
-                </li>
-              </ul>
-            </nav>
-          </div>
-        </div>
-        <div className="bb-wp-page-title-img img text-right">
-          <Image
-            src="/wp/mu-bao-hiem.png"
-            alt={title}
-            width={420}
-            height={300}
-            priority
-            unoptimized
-            style={{ width: "auto", height: "auto" }}
-          />
-        </div>
-      </div>
-    </section>
   );
 }
 

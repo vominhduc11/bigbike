@@ -32,7 +32,7 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio_admin}
       MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD must be set - see .env.example}"
     ports:
-      - "127.0.0.1:9000:9000"
+      - "0.0.0.0:9000:9000"
       - "127.0.0.1:9001:9001"
     volumes:
       - minio_data:/data
@@ -113,11 +113,11 @@ services:
       dockerfile: Dockerfile
       args:
         # Bake MinIO origin into CSP img-src at build time.
-        # Browser accesses MinIO via the host-mapped port localhost:9000.
-        BIGBIKE_LEGACY_UPLOADS_BASE: http://localhost:9000/bigbike-media/wp-uploads
+        # Set BIGBIKE_LEGACY_UPLOADS_BASE in .env to your browser-reachable MinIO URL.
+        BIGBIKE_LEGACY_UPLOADS_BASE: ${BIGBIKE_LEGACY_UPLOADS_BASE:-http://localhost:9000/bigbike-media/wp-uploads}
         # Server-side rewrite destination: Next.js server (inside Docker) must reach
         # MinIO via the internal Docker network name, not localhost.
-        BIGBIKE_MEDIA_INTERNAL_URL: http://minio:9000/bigbike-media/wp-uploads
+        BIGBIKE_MEDIA_INTERNAL_URL: ${BIGBIKE_MEDIA_INTERNAL_URL:-http://minio:9000/bigbike-media/wp-uploads}
         # NEXT_PUBLIC_ vars are baked into the client bundle at build time.
         # For local dev localhost:8080 is correct (port-mapped backend).
         # For production set NEXT_PUBLIC_API_BASE_URL=https://api.bigbike.vn in .env.

@@ -1,10 +1,14 @@
+# syntax=docker/dockerfile:1.7
 # ---- Build stage ----
 FROM maven:3.9-eclipse-temurin-17 AS builder
 WORKDIR /build
 COPY pom.xml .
-RUN mvn dependency:go-offline -q
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn -B -q dependency:go-offline
 COPY src ./src
-RUN mvn package -DskipTests -q
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn -B -q package -DskipTests && \
+    cp target/bigbike-backend-0.0.1-SNAPSHOT.jar /build/app.jar
 
 # ---- Runtime stage ----
 FROM eclipse-temurin:17-jre-alpine AS runner
@@ -13,7 +17,7 @@ WORKDIR /app
 RUN addgroup -S bigbike && adduser -S bigbike -G bigbike
 USER bigbike
 
-COPY --from=builder /build/target/bigbike-backend-0.0.1-SNAPSHOT.jar app.jar
+COPY --from=builder /build/app.jar app.jar
 
 EXPOSE 8080
 

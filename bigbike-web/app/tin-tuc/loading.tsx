@@ -5,19 +5,16 @@ export default async function ArticleListLoading() {
 
   return (
     <div className="bb-blog-listing-parity" aria-label={t("loading")}>
-      <section
-        className="bb-wp-page-title page-title"
-        style={{ backgroundImage: "url('/wp/page-title-bg.png')" }}
-      >
-        <div className="bb-container container">
-          <div className="bb-wp-page-title-row row align-items-center">
-            <div className="bb-wp-page-title-copy col-md-6 bb-skel-stack">
-              <div className="bb-skel bb-skel--title bb-skel-w-50" />
-              <div className="bb-skel bb-skel--text bb-skel-w-40" />
-            </div>
+      {/* Hero skeleton — match PageHero contact variant: height + clip-path. */}
+      <div className="relative h-[300px] md:h-[450px] 3xl:h-[520px] 4xl:h-[600px]">
+        <div className="absolute inset-x-0 top-0 h-[300px] overflow-hidden bg-black md:h-[450px] 3xl:h-[520px] 4xl:h-[600px] [clip-path:polygon(0_0,100%_0,100%_75%,0_100%)]" />
+        <div className="absolute inset-x-0 top-0 flex h-[300px] items-center md:h-[450px] 3xl:h-[520px] 4xl:h-[600px]">
+          <div className="bb-container">
+            <div className="h-10 md:h-14 w-2/3 max-w-[28rem] bg-white/15" />
+            <div className="mt-5 h-4 w-40 bg-white/15" />
           </div>
         </div>
-      </section>
+      </div>
 
       <div id="main-content" className="bb-wp-main-content">
         <div className="bb-container container">

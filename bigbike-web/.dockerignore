@@ -7,3 +7,24 @@ e2e
 playwright.config.ts
 playwright-report
 test-results
+
+# VCS / IDE / OS
+.git
+.gitignore
+.gitattributes
+.vscode
+.idea
+.DS_Store
+
+# Docs & logs (not needed inside the image)
+*.md
+!public/**/*.md
+coverage
+*.log
+npm-debug.log*
+
+# Dev tooling
+.eslintcache
+.turbo
+.vercel
+_footer-shot.mjs

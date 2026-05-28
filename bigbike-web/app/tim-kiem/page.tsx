@@ -28,10 +28,9 @@ export async function generateMetadata({ searchParams }: SearchPageProps): Promi
 }
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
-  const [params, t, tBreadcrumb] = await Promise.all([
+  const [params, t] = await Promise.all([
     searchParams,
     getTranslations("Search"),
-    getTranslations("Breadcrumb"),
   ]);
   const qParsed = parseTextParam(readSearchParamAlias(params, "s", "q"), 200);
   const pageParsed = parsePositiveIntParam(readSearchParamAlias(params, "paged", "page"), {
@@ -43,17 +42,13 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
   const query = qParsed.value?.trim() ?? "";
   const heroTitle = query ? `Kết quả tìm kiếm: “${query}”` : t("title");
-  const breadcrumbCurrent = query ? `Search results for '${query}'` : t("breadcrumb");
   const page = pageParsed.value;
 
   return (
     <div className="bb-product-archive bb-search-results-page search search-results">
       <ProductArchiveHero
         title={heroTitle}
-        breadcrumb={[
-          { label: tBreadcrumb("home"), href: toHomePath() },
-          { label: breadcrumbCurrent },
-        ]}
+        breadcrumb={[{ label: "Bigbike.vn", href: toHomePath() }]}
       />
 
       <div id="main-content" className="page_search bb-search-main">

@@ -28,7 +28,7 @@ import {
   readSearchParamAlias,
   readSingleSearchParam,
 } from "@/lib/utils/query";
-import { toBrandPath, toHomePath, toBrandListPath } from "@/lib/utils/routes";
+import { toBrandPath, toHomePath } from "@/lib/utils/routes";
 import { isValidSlug } from "@/lib/utils/slug";
 
 export const dynamic = "force-dynamic";
@@ -212,11 +212,7 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
         imageUrl={brand.bannerImage?.url}
         imageAlt={brand.bannerImage?.alt ?? brandName}
         title={brandName}
-        breadcrumb={[
-          { label: "Trang chủ", href: toHomePath() },
-          { label: "Thương hiệu", href: toBrandListPath() },
-          { label: brandName },
-        ]}
+        breadcrumb={[{ label: "Bigbike.vn", href: toHomePath() }]}
       />
 
       <ProductArchiveLayout

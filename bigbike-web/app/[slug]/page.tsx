@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
+import { PageHero } from "@/components/layout/PageHero";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { getPageBySlug } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { formatDate, safeText } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
-import { toPagePath } from "@/lib/utils/routes";
+import { toHomePath, toPagePath } from "@/lib/utils/routes";
 import { isValidSlug } from "@/lib/utils/slug";
 
 type StaticPageDetailProps = {
@@ -45,7 +46,11 @@ export async function generateMetadata({ params }: StaticPageDetailProps): Promi
 }
 
 export default async function StaticPageDetail({ params }: StaticPageDetailProps) {
-  const [{ slug }, t] = await Promise.all([params, getTranslations("StaticPage")]);
+  const [{ slug }, t, tBreadcrumb] = await Promise.all([
+    params,
+    getTranslations("StaticPage"),
+    getTranslations("Breadcrumb"),
+  ]);
   if (!isValidSlug(slug)) {
     notFound();
   }
@@ -66,24 +71,32 @@ export default async function StaticPageDetail({ params }: StaticPageDetailProps
   }
 
   const page = result.data;
+  const pageTitle = safeText(page.title, t("contentFallback"));
 
   return (
-    <section className="bb-page">
-      <div className="bb-container">
-        <header>
-          <h1>{safeText(page.title, t("contentFallback"))}</h1>
-        </header>
-
-        <article
-          className="bb-richtext bb-section"
-          dangerouslySetInnerHTML={{
-            __html: sanitizeRichHtml(page.body),
-          }}
-        />
-        <p className="text-muted-foreground text-sm mt-4">
-          {t("updatedAt", { date: formatDate(page.updatedAt) })}
-        </p>
-      </div>
-    </section>
+    <>
+      <PageHero
+        imageUrl={page.heroImageUrl}
+        imageAlt={page.heroImageAlt}
+        title={page.heroTitle ?? pageTitle}
+        breadcrumb={[
+          { label: tBreadcrumb("home"), href: toHomePath() },
+          { label: pageTitle },
+        ]}
+      />
+      <section className="bb-page">
+        <div className="bb-container pt-8 pb-[60px]">
+          <article
+            className="bb-richtext"
+            dangerouslySetInnerHTML={{
+              __html: sanitizeRichHtml(page.body),
+            }}
+          />
+          <p className="text-muted-foreground text-sm mt-4">
+            {t("updatedAt", { date: formatDate(page.updatedAt) })}
+          </p>
+        </div>
+      </section>
+    </>
   );
 }

@@ -465,9 +465,12 @@ export function HomeVideoCarousel({ videos }: Props) {
             slidesPerView={1}
             spaceBetween={12}
             breakpoints={{
-              480: { slidesPerView: 2, spaceBetween: 12 },
-              768: { slidesPerView: 3, spaceBetween: 14 },
-              1200: { slidesPerView: 5, spaceBetween: 16 },
+              480:  { slidesPerView: 2, spaceBetween: 12 },
+              768:  { slidesPerView: 3, spaceBetween: 14 },
+              1024: { slidesPerView: 4, spaceBetween: 16 }, // lg: (was 1200→5, non-canonical)
+              1280: { slidesPerView: 5, spaceBetween: 16 }, // xl:
+              1920: { slidesPerView: 6, spaceBetween: 20 }, // 3xl:
+              2560: { slidesPerView: 7, spaceBetween: 24 }, // 4xl:
             }}
           >
             {videos.map((video, idx) => (

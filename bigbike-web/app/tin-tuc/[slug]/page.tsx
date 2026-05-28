@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 
+import { PageHero } from "@/components/layout/PageHero";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { getArticleBySlug, listArticles, listPublicSettings } from "@/lib/api/public-api";
 import type { Article } from "@/lib/contracts/public";
@@ -15,6 +15,7 @@ import {
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { safeText } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
+import { readHeroSettings } from "@/lib/utils/page-hero";
 import { pickSetting } from "@/lib/utils/settings";
 import {
   toArticleListPath,
@@ -80,9 +81,10 @@ export async function generateMetadata({ params }: ArticleDetailPageProps): Prom
 }
 
 export default async function ArticleDetailPage({ params }: ArticleDetailPageProps) {
-  const [{ slug = "" }, t] = await Promise.all([
+  const [{ slug = "" }, t, tBreadcrumb] = await Promise.all([
     params,
     getTranslations("Blog"),
+    getTranslations("Breadcrumb"),
   ]);
   if (!isValidSlug(slug)) {
     notFound();
@@ -111,6 +113,7 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
     Promise.resolve(serializeJsonLd(buildArticleBreadcrumbJsonLd(article))),
   ]);
   const siteName = pickSetting(settingsResult.data ?? [], ["site_name"]);
+  const heroSettings = readHeroSettings(settingsResult.data ?? [], "hero_news");
   const articleJsonLd = serializeJsonLd(buildArticleJsonLd(article, siteName || undefined));
 
   const articleTitle = safeText(article.title, t("articleTitleFallback"));
@@ -135,34 +138,17 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: articleJsonLd }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }} />
 
-      <section
-        className="bb-article-wp-hero page-title"
-        style={{ backgroundImage: "url('/wp/page-title-bg.png')" }}
-      >
-        <div className="container">
-          <div className="row align-items-center">
-            <div className="col-md-6">
-              <h1>{articleTitle}</h1>
-              <nav className="breadcrumb" aria-label="Breadcrumb">
-                <ul>
-                  <li>
-                    <Link href={toHomePath()}>Bigbike.vn</Link>
-                  </li>
-                  <li>
-                    <Link href={categoryHref}>{categoryLabel}</Link>
-                  </li>
-                  <li>
-                    <span aria-current="page">{articleTitle}</span>
-                  </li>
-                </ul>
-              </nav>
-            </div>
-          </div>
-          <div className="img text-right" aria-hidden="true">
-            <Image src="/wp/mu-bao-hiem.png" alt="" width={420} height={300} priority />
-          </div>
-        </div>
-      </section>
+      <PageHero
+        title={articleTitle}
+        imageUrl={heroSettings.imageUrl}
+        imageAlt={heroSettings.imageAlt}
+        breadcrumb={[
+          { label: tBreadcrumb("home"), href: toHomePath() },
+          { label: t("breadcrumb"), href: toArticleListPath() },
+          { label: categoryLabel, href: categoryHref },
+          { label: articleTitle },
+        ]}
+      />
 
       <main id="main-content" className="bb-article-detail-page">
         <div className="container">

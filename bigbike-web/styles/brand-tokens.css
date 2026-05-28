@@ -180,7 +180,8 @@
   --bb-section-y: 4.5rem;
 
   /* Layout */
-  --bb-container-xl: 75rem;
+  --bb-container-xl: 75rem;   /* 1200px — main content rail, overridden at 2xl/3xl/4xl in globals.css */
+  --bb-container-wide: 90rem; /* 1440px — PDP / breadcrumb / page-head / news / checkout */
   --bb-page-padding-mobile: var(--bb-space-4);
   --bb-page-padding-tablet: var(--bb-space-6);
   --bb-page-padding-desktop: var(--bb-space-8);
@@ -411,6 +412,31 @@
     --bb-text-section-title: 42px;
     --bb-line-section-title: 50px;
     --bb-section-y: 3.25rem;
+  }
+}
+
+/* ≥1920px (3xl): scale display/heading tokens up ~1.15x so headings and section
+   titles feel proportional inside the wider 1600px container. Body text stays
+   at 16px — long-form reading does not benefit from larger base size. */
+@media (min-width: 1920px) {
+  :root {
+    --bb-text-hero: 35px;
+    --bb-text-section-title: 58px;
+    --bb-line-section-title: 68px;
+    --bb-text-h1: 38px;
+    --bb-text-h2: 28px;
+  }
+}
+
+/* ≥2560px (4xl): scale further ~1.25x from base to fill the 2240px container.
+   Still conservative — avoids "poster" feel on showroom/workstation displays. */
+@media (min-width: 2560px) {
+  :root {
+    --bb-text-hero: 38px;
+    --bb-text-section-title: 64px;
+    --bb-line-section-title: 76px;
+    --bb-text-h1: 42px;
+    --bb-text-h2: 32px;
   }
 }
 

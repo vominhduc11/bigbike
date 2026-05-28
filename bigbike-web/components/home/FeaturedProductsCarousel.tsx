@@ -10,14 +10,17 @@ import { cn } from "@/lib/utils";
 type Props = { products: Product[] };
 
 function resolveSlidesPerView(width: number) {
+  if (width >= 2560) return 6;
   if (width >= 1536) return 5;
-  if (width >= 767) return 4;
-  if (width >= 380) return 2;
+  if (width >= 1024) return 4;  // desktop lg+ (was 767 — too many cards at tablet)
+  if (width >= 640)  return 3;  // tablet sm-md: 3 cards fits ~720px comfortably
+  if (width >= 380)  return 2;
   return 1;
 }
 
 function resolveGap(slidesPerView: number) {
   if (slidesPerView >= 4) return 30;
+  if (slidesPerView === 3) return 24;
   if (slidesPerView === 2) return 20;
   return 0;
 }
