@@ -497,7 +497,40 @@
     "shippingZoneMismatch": "Không giao đến tỉnh/thành phố đã chọn",
     "noteLabel": "Ghi chú đơn hàng",
     "notePlaceholder": "Yêu cầu đặc biệt về giao hàng (không bắt buộc)",
-    "errorEmailRequiredForBacs": "Vui lòng nhập email để nhận thông tin chuyển khoản."
+    "errorEmailRequiredForBacs": "Vui lòng nhập email để nhận thông tin chuyển khoản.",
+    "quickbuy": {
+      "title": "Mua nhanh",
+      "subtitle": "Điền thông tin để chúng tôi liên hệ giao hàng",
+      "contactSection": "Thông tin liên hệ",
+      "addressSection": "Địa chỉ nhận hàng",
+      "paymentSection": "Phương thức thanh toán",
+      "fullName": "Họ và tên",
+      "phone": "Số điện thoại",
+      "email": "Email",
+      "line1": "Số nhà, tên đường",
+      "quantity": "Số lượng",
+      "note": "Ghi chú (tuỳ chọn)",
+      "notePlaceholder": "Ví dụ: giao giờ hành chính",
+      "paymentBacsHint": "Sau khi đặt, chúng tôi sẽ gửi thông tin tài khoản",
+      "submit": "Đặt hàng",
+      "submitting": "Đang đặt...",
+      "cancel": "Huỷ",
+      "errSubmitFailed": "Đặt hàng thất bại, vui lòng thử lại",
+      "summarySubtotal": "Tạm tính",
+      "summaryShipping": "Phí giao hàng",
+      "summaryShippingFree": "Miễn phí",
+      "summaryShippingSelectProvince": "Chọn tỉnh/thành để xem",
+      "summaryShippingUnknown": "Tính khi đặt hàng",
+      "summaryTotal": "Tổng cộng",
+      "success": {
+        "title": "Đặt hàng thành công",
+        "orderNumber": "Mã đơn: #{orderNumber}",
+        "willContact": "Chúng tôi sẽ liên hệ xác nhận trong vòng 24 giờ.",
+        "bacsHint": "Vui lòng chuyển khoản theo thông tin trong trang xác nhận đơn.",
+        "viewOrder": "Xem đơn hàng",
+        "continueShopping": "Tiếp tục mua sắm"
+      }
+    }
   },
   "Account": {
     "nav": {

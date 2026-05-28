@@ -88,13 +88,10 @@ class AdminReadApiTest {
         create.setCategoryId("cat_helmet");
         create.setRetailPrice(new BigDecimal("2500000"));
         create.setPublishStatus(PublishStatus.DRAFT);
-        create.setContentBottom("<p>Phase 3 read content " + suffix + "</p>");
-
         SeoMetaRequest seo = new SeoMetaRequest();
         seo.setTitle("Phase 3 read SEO title " + suffix);
         seo.setDescription("Phase 3 read SEO description " + suffix);
         seo.setCanonicalUrl(canonicalUrl);
-        seo.setNoIndex(Boolean.TRUE);
         ImageAssetRequest ogImage = new ImageAssetRequest();
         ogImage.setUrl(ogImageUrl);
         ogImage.setAlt("Phase 3 read OG image " + suffix);

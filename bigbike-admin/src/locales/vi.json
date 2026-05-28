@@ -1562,7 +1562,7 @@
     "formTitle": "Tiêu đề",
     "formCost": "Phí (VND)",
     "formMinOrder": "Đơn tối thiểu",
-    "formDescription": "Mô tả",
+
     "formFreeThreshold": "Miễn phí ship từ",
     "formFreeThresholdHint": "Để trống hoặc 0 nếu không áp dụng miễn phí ship",
     "invalidMethodCode": "Mã chỉ được chứa chữ thường, số, dấu gạch dưới hoặc gạch ngang.",
@@ -1573,7 +1573,9 @@
     "colTitle": "Tiêu đề",
     "colCost": "Phí",
     "colMinOrder": "Đơn tối thiểu",
-    "colStatus": "Trạng thái"
+    "colStatus": "Trạng thái",
+    "noMethods": "Chưa có phương thức giao hàng nào cho vùng này.",
+    "methodsLoadError": "Không thể tải phương thức giao hàng."
   },
   "reviews": {
     "eyebrow": "Danh mục",

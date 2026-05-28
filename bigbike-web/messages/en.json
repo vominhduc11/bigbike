@@ -497,7 +497,40 @@
     "shippingZoneMismatch": "Not available for the selected province",
     "noteLabel": "Order Note",
     "notePlaceholder": "Special delivery instructions (optional)",
-    "errorEmailRequiredForBacs": "Please enter your email to receive bank transfer details."
+    "errorEmailRequiredForBacs": "Please enter your email to receive bank transfer details.",
+    "quickbuy": {
+      "title": "Quick Order",
+      "subtitle": "Fill in your details and we'll arrange delivery",
+      "contactSection": "Contact Information",
+      "addressSection": "Delivery Address",
+      "paymentSection": "Payment Method",
+      "fullName": "Full name",
+      "phone": "Phone number",
+      "email": "Email",
+      "line1": "Street address",
+      "quantity": "Quantity",
+      "note": "Order note (optional)",
+      "notePlaceholder": "E.g. deliver during business hours",
+      "paymentBacsHint": "We will send bank transfer details after you place the order",
+      "submit": "Place order",
+      "submitting": "Placing order...",
+      "cancel": "Cancel",
+      "errSubmitFailed": "Order failed, please try again",
+      "summarySubtotal": "Subtotal",
+      "summaryShipping": "Shipping",
+      "summaryShippingFree": "Free",
+      "summaryShippingSelectProvince": "Select province to view",
+      "summaryShippingUnknown": "Calculated at checkout",
+      "summaryTotal": "Total",
+      "success": {
+        "title": "Order placed successfully",
+        "orderNumber": "Order: #{orderNumber}",
+        "willContact": "We will contact you to confirm within 24 hours.",
+        "bacsHint": "Please transfer payment using the details on the order confirmation page.",
+        "viewOrder": "View order",
+        "continueShopping": "Continue shopping"
+      }
+    }
   },
   "Account": {
     "nav": {

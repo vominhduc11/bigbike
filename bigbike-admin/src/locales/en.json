@@ -1562,7 +1562,7 @@
     "formTitle": "Title",
     "formCost": "Cost (VND)",
     "formMinOrder": "Min order",
-    "formDescription": "Description",
+
     "formFreeThreshold": "Free shipping from",
     "formFreeThresholdHint": "Leave blank or 0 to disable free shipping",
     "invalidMethodCode": "Method code must contain only lowercase letters, digits, underscores, or hyphens.",
@@ -1573,7 +1573,9 @@
     "colTitle": "Title",
     "colCost": "Cost",
     "colMinOrder": "Min order",
-    "colStatus": "Status"
+    "colStatus": "Status",
+    "noMethods": "No delivery methods configured for this zone.",
+    "methodsLoadError": "Could not load delivery methods."
   },
   "reviews": {
     "eyebrow": "Catalog",

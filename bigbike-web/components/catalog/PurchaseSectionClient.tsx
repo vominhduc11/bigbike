@@ -6,6 +6,8 @@ import { useTranslations } from "next-intl";
 import { ProductGallery } from "./ProductGallery";
 import { PricingPanel } from "./PricingPanel";
 import { StockStatus } from "./StockStatus";
+import { QuickBuyModal } from "./QuickBuyModal";
+import { QuickBuySuccessModal } from "./QuickBuySuccessModal";
 import type { PricingData } from "./PricingPanel";
 import type { StockData } from "./StockStatus";
 import { VariantSelector } from "./VariantSelector";
@@ -150,6 +152,7 @@ export function PurchaseSectionClient({
   const [quantity, setQuantity] = useState(1);
   const [addLoading, setAddLoading] = useState(false);
   const [quickBuyOpen, setQuickBuyOpen] = useState(false);
+  const [successOrder, setSuccessOrder] = useState<{ orderNumber: string; orderKey: string; paymentMethod: string } | null>(null);
   const [addError, setAddError] = useState("");
 
   const { data: snapshot, isLoading: snapshotLoading } =
@@ -329,34 +332,34 @@ export function PurchaseSectionClient({
                   !isAvailable && "disabled",
                 )}
                 disabled={!isAvailable}
-                onClick={() => setQuickBuyOpen((open) => !open)}
+                onClick={() => setQuickBuyOpen(true)}
               >
                 {t("buyNow")}
               </button>
             </div>
           </div>
 
-          {quickBuyOpen && (
-            <div className="quickbuy-box js-quickbuy-box">
-              <form
-                className="Form quickbuyform js-quickbuyform js-form-submit-data"
-                onSubmit={(event) => event.preventDefault()}
-              >
-                <input type="hidden" name="action" value="woopanel_quickbuy" />
-                <input type="hidden" name="product_id" value={productId} />
-                {selectedVariant?.id && (
-                  <input type="hidden" name="variation_id" value={selectedVariant.id} />
-                )}
-                <input type="text" name="name" placeholder="Tên của bạn" />
-                <input type="tel" name="phone" placeholder="Số điện thoại" />
-                <input type="email" name="email" placeholder="Email" />
-                <input type="text" name="address" placeholder="Địa chỉ nhận hàng" />
-                <button type="submit" className="btn">
-                  Đặt hàng
-                </button>
-              </form>
-            </div>
-          )}
+          <QuickBuyModal
+            open={quickBuyOpen}
+            onClose={() => setQuickBuyOpen(false)}
+            productId={productId}
+            productName={productName}
+            selectedVariantId={selectedVariant?.id ?? null}
+            variantLabel={selectedVariant?.name ?? null}
+            unitPrice={
+              (snapshot?.pricing?.salePrice ?? snapshot?.pricing?.retailPrice) ??
+              (fallbackPrice?.salePrice ?? fallbackPrice?.retailPrice) ??
+              null
+            }
+            onSuccess={(order) => {
+              setQuickBuyOpen(false);
+              setSuccessOrder(order);
+            }}
+          />
+          <QuickBuySuccessModal
+            order={successOrder}
+            onClose={() => setSuccessOrder(null)}
+          />
 
           {addError && (
             <p className="bb-error-text bb-wp-cart-error" role="alert">

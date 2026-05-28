@@ -58,8 +58,7 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
                         "Cách Chọn Mũ Fullface Phù Hợp",
                         "Hướng dẫn chọn mũ fullface cho biker.",
                         "https://bigbike.vn/tin-tuc/chon-mu-fullface-phu-hop.html",
-                        null,
-                        false
+                        null
                 ),
                 null,
                 Instant.parse("2026-04-10T03:00:00Z"),
@@ -93,8 +92,7 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
                         "Xu Hướng Đồ Bảo Hộ 2026",
                         "Tin tức và phân tích xu hướng đồ bảo hộ biker 2026.",
                         "https://bigbike.vn/tin-tuc/xu-huong-do-bao-ho-2026.html",
-                        null,
-                        false
+                        null
                 ),
                 null,
                 Instant.parse("2026-04-15T03:00:00Z"),
@@ -118,8 +116,7 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
                         "Giới Thiệu BigBike",
                         "Thông tin về BigBike.",
                         "https://bigbike.vn/gioi-thieu/",
-                        null,
-                        false
+                        null
                 ),
                 null,
                 null,
@@ -145,8 +142,7 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
                         "Chính Sách Bảo Hành",
                         "Chính sách bảo hành tại BigBike.",
                         "https://bigbike.vn/chinh-sach-bao-hanh/",
-                        null,
-                        false
+                        null
                 ),
                 null,
                 null,

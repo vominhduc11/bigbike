@@ -158,13 +158,12 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 entity.getHomepageOrder(),
                 entity.getRating(),
                 entity.getRatingCount(),
-                null,
-                null,
+                null,                       // promotionContent — detail only
                 null,                       // installationGuide — detail only
                 List.of(),                  // faqs — detail only
                 List.of(),                  // relatedProducts — detail only
                 null,                       // descriptionBlocks — detail only
-                null,
+                null,                       // seo — detail only
                 null,                       // translations — detail only (admin detail read)
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()

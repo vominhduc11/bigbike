@@ -3878,6 +3878,19 @@ html, body { overflow-x: hidden; }
    body while the scrollbar on html stays visible — creating a visible gap on open/close. */
 html { scrollbar-gutter: stable; }
 
+/* Global scrollbar — thin, brand-neutral, consistent across Chrome/Edge/Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--bb-color-gray-300) transparent;
+}
+*::-webkit-scrollbar { width: 6px; height: 6px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: var(--bb-color-gray-300);
+  border-radius: 3px;
+}
+*::-webkit-scrollbar-thumb:hover { background: var(--bb-color-gray-450); }
+
 /* Radix Dialog/Sheet uses react-remove-scroll, which compensates for the
    scrollbar by adding margin-right to body. The root already reserves that
    space via scrollbar-gutter, so the extra margin creates a second 15px gap
@@ -7984,31 +7997,6 @@ html[data-header-scrolled] .bb-wp-pdp .bb-breadcrumb { padding-left: 15px; }
   cursor: not-allowed;
 }
 
-.bb-wp-pdp .quickbuy-box {
-  margin-top: 20px;
-}
-
-.bb-wp-pdp .quickbuyform {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.bb-wp-pdp .quickbuyform input {
-  width: 100%;
-  height: 40px;
-  border: 2px solid #000;
-  border-radius: 0;
-  padding: 0 10px;
-  font-size: 14px;
-}
-
-.bb-wp-pdp .quickbuyform .btn {
-  max-width: 255px;
-  height: 45px;
-  background: #000;
-  line-height: 45px;
-}
 
 .bb-wp-cart-error {
   margin: 10px 0 0;
@@ -12459,17 +12447,12 @@ body .bb-home .white.block-title h3 {
     margin-top: 12px;
   }
 
-  .bb-wp-pdp .product-information .add-to-cart .btn,
-  .bb-wp-pdp .quickbuyform .btn {
+  .bb-wp-pdp .product-information .add-to-cart .btn {
     min-height: 52px;
     font-family: var(--bb-font-cta);
     font-size: 14px;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-  }
-
-  .bb-wp-pdp .quickbuyform input {
-    min-height: var(--bb-touch-target);
   }
 
   .bb-wp-pdp .social {

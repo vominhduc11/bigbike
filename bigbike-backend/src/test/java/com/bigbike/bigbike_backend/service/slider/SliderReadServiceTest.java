@@ -62,17 +62,16 @@ class SliderReadServiceTest {
                         null,
                         PublishStatus.PUBLISHED,
                         com.bigbike.bigbike_backend.domain.catalog.HomepageBlock.FEATURED_GRID,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        List.of(),
-                        List.of(),
+                        null,       // homepageOrder
+                        null,       // rating
+                        null,       // ratingCount
+                        null,       // promotionContent
+                        null,       // installationGuide
+                        List.of(),  // faqs
+                        List.of(),  // relatedProducts
                         null,       // descriptionBlocks
-                        null,
-                        null,
+                        null,       // seo
+                        null,       // translations
                         Instant.now(),
                         Instant.now()
                 )));

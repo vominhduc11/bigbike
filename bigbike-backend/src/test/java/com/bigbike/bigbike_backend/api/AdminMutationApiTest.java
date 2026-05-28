@@ -249,13 +249,11 @@ class AdminMutationApiTest {
         ProductEntity created = productJpaRepository.findBySlug(slug)
                 .orElseThrow(() -> new IllegalStateException("Expected created product."));
 
-        assertThat(created.getContentBottom()).isEqualTo("<p>Phase 3 SEO content " + suffix + "</p>");
         assertThat(created.getSeoTitle()).isEqualTo("Phase 3 SEO title " + suffix);
         assertThat(created.getSeoDescription()).isEqualTo("Phase 3 SEO description " + suffix);
         assertThat(created.getSeoCanonicalUrl()).isEqualTo(canonicalUrl);
         assertThat(created.getSeoOgImageUrl()).isEqualTo(imageUrl);
         assertThat(created.getSeoOgImageAlt()).isEqualTo("Phase 3 SEO OG image " + suffix);
-        assertThat(created.getSeoNoIndex()).isTrue();
 
         String updatePayload = """
                 {
@@ -296,13 +294,11 @@ class AdminMutationApiTest {
 
         ProductEntity updated = productJpaRepository.findById(created.getId())
                 .orElseThrow(() -> new IllegalStateException("Expected updated product."));
-        assertThat(updated.getContentBottom()).isEqualTo("<p>Phase 3 SEO content updated " + suffix + "</p>");
         assertThat(updated.getSeoTitle()).isEqualTo("Phase 3 SEO title updated " + suffix);
         assertThat(updated.getSeoDescription()).isEqualTo("Phase 3 SEO description updated " + suffix);
         assertThat(updated.getSeoCanonicalUrl()).isEqualTo("https://bigbike.vn/products/" + slug + "-updated");
         assertThat(updated.getSeoOgImageUrl()).isEqualTo(MEDIA_PUBLIC_BASE_URL + "/wp-uploads/products/" + slug + "-seo-updated.jpg");
         assertThat(updated.getSeoOgImageAlt()).isEqualTo("Phase 3 SEO OG image updated " + suffix);
-        assertThat(updated.getSeoNoIndex()).isFalse();
 
         mockMvc.perform(patch("/api/v1/admin/products/{id}", created.getId())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -317,13 +313,11 @@ class AdminMutationApiTest {
 
         ProductEntity seoCleared = productJpaRepository.findById(created.getId())
                 .orElseThrow(() -> new IllegalStateException("Expected SEO-cleared product."));
-        assertThat(seoCleared.getContentBottom()).isEqualTo("<p>Phase 3 SEO content updated " + suffix + "</p>");
         assertThat(seoCleared.getSeoTitle()).isNull();
         assertThat(seoCleared.getSeoDescription()).isNull();
         assertThat(seoCleared.getSeoCanonicalUrl()).isNull();
         assertThat(seoCleared.getSeoOgImageUrl()).isNull();
         assertThat(seoCleared.getSeoOgImageAlt()).isNull();
-        assertThat(seoCleared.getSeoNoIndex()).isNull();
     }
 
     @Test
@@ -897,7 +891,6 @@ class AdminMutationApiTest {
         assertThat(created.getSeoTitle()).isEqualTo("Cat SEO title " + suffix);
         assertThat(created.getSeoOgImageUrl()).isEqualTo(ogUrl);
         assertThat(created.getSeoOgImageAlt()).isEqualTo("Cat OG alt " + suffix);
-        assertThat(created.getSeoNoIndex()).isTrue();
 
         // Reload via GET — verify the same shape comes back
         mockMvc.perform(get("/api/v1/admin/categories/{id}", created.getId())
@@ -923,7 +916,6 @@ class AdminMutationApiTest {
         assertThat(cleared.getSeoCanonicalUrl()).isNull();
         assertThat(cleared.getSeoOgImageUrl()).isNull();
         assertThat(cleared.getSeoOgImageAlt()).isNull();
-        assertThat(cleared.getSeoNoIndex()).isNull();
     }
 
     // ── Brand hardening tests ─────────────────────────────────────────────────
