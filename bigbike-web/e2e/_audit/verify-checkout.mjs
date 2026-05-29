@@ -1,0 +1,31 @@
+import { chromium } from "@playwright/test";
+import { mkdirSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const OUT = join(__dirname, "out", "mobile", "verify");
+mkdirSync(OUT, { recursive: true });
+const BASE = process.env.BB_BASE || "http://localhost:3001";
+const browser = await chromium.launch();
+const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true,
+  userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1" });
+const page = await ctx.newPage();
+const missing = [];
+page.on("console", (m) => { const t = m.text(); if (m.type() === "error" && /MISSING_MESSAGE/.test(t)) missing.push(t.slice(0, 120)); });
+await page.goto(BASE + "/dang-nhap", { waitUntil: "load" });
+await page.waitForTimeout(800);
+await page.fill("#login-username", process.env.BB_EMAIL || "duc237022@gmail.com");
+await page.fill("#login-password", process.env.BB_PASS || "12345678");
+await page.click("button[type='submit']");
+await page.waitForTimeout(3500);
+await page.goto(BASE + "/thanh-toan", { waitUntil: "load" });
+await page.waitForTimeout(2500);
+// select a payment method to surface its description
+await page.click(".wc_payment_method label, input[name][id^='payment_method']").catch(() => {});
+await page.waitForTimeout(800);
+await page.screenshot({ path: join(OUT, "checkout-after.png"), fullPage: true });
+const rawKeyText = await page.evaluate(() => (document.body.innerText.match(/Checkout\.[A-Za-z.]+/g) || []).slice(0, 10));
+console.log("MISSING_MESSAGE errors:", missing.length);
+if (missing.length) console.log([...new Set(missing)].join("\n"));
+console.log("raw 'Checkout.x' text visible on page:", JSON.stringify(rawKeyText));
+await browser.close();

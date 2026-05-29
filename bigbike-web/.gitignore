@@ -19,6 +19,7 @@
 /_bbtmp-*
 /playwright-report/
 /test-results/
+/e2e/_audit/out/
 
 # next.js
 /.next/
