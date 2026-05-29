@@ -431,6 +431,8 @@
     "step1Title": "Shipping information",
     "step2Title": "Payment information",
     "summaryTitle": "Order summary",
+    "orderProducts": "Product",
+    "orderSubtotal": "Subtotal",
     "summaryInvoice": "Invoice",
     "summarySubtotal": "Subtotal:",
     "summaryShipping": "Shipping:",
@@ -492,11 +494,17 @@
       "EMPTY": "—",
       "UNKNOWN": "{method}"
     },
+    "paymentDescription": {
+      "COD": "Pay with cash upon delivery.",
+      "BACS": "Make your payment directly into our bank account. Please use your name and order number as the payment reference."
+    },
     "shippingMethodSectionTitle": "Shipping Method",
     "shippingMethodFree": "Free",
     "shippingZoneMismatch": "Not available for the selected province",
     "noteLabel": "Order Note",
+    "noteOptional": "(optional)",
     "notePlaceholder": "Special delivery instructions (optional)",
+    "required": "Required",
     "errorEmailRequiredForBacs": "Please enter your email to receive bank transfer details.",
     "quickbuy": {
       "title": "Quick Order",

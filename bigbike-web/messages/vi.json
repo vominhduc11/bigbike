@@ -431,6 +431,8 @@
     "step1Title": "Thông tin giao hàng",
     "step2Title": "Thông tin thanh toán",
     "summaryTitle": "Thông tin đơn đặt hàng",
+    "orderProducts": "Sản phẩm",
+    "orderSubtotal": "Tạm tính",
     "summaryInvoice": "Hoá đơn",
     "summarySubtotal": "Tạm tính:",
     "summaryShipping": "Phí giao hàng:",
@@ -492,11 +494,17 @@
       "EMPTY": "—",
       "UNKNOWN": "{method}"
     },
+    "paymentDescription": {
+      "COD": "Thanh toán bằng tiền mặt khi nhận hàng.",
+      "BACS": "Chuyển khoản trực tiếp vào tài khoản ngân hàng của cửa hàng. Vui lòng ghi rõ tên khách hàng và mã đơn hàng trong nội dung chuyển khoản."
+    },
     "shippingMethodSectionTitle": "Phương thức vận chuyển",
     "shippingMethodFree": "Miễn phí",
     "shippingZoneMismatch": "Không giao đến tỉnh/thành phố đã chọn",
     "noteLabel": "Ghi chú đơn hàng",
+    "noteOptional": "(không bắt buộc)",
     "notePlaceholder": "Yêu cầu đặc biệt về giao hàng (không bắt buộc)",
+    "required": "Bắt buộc",
     "errorEmailRequiredForBacs": "Vui lòng nhập email để nhận thông tin chuyển khoản.",
     "quickbuy": {
       "title": "Mua nhanh",
