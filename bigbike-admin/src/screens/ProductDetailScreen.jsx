@@ -35,6 +35,7 @@ import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
 } from '@/components/ui/dropdown-menu'
 import { cn, generateId } from '@/lib/utils'
+import { resolveDisplayUrl } from '@/lib/contracts'
 
 // Matches YouTube IDs across watch, share, embed, and shorts URLs.
 function extractYouTubeId(url) {
@@ -513,6 +514,7 @@ function GalleryCard({ item, onUpdate, onRemove, disabled, urlError }) {
   const { t } = useTranslation()
   const [pickerOpen, setPickerOpen] = useState(false)
   const trimmed = item.url.trim()
+  const displayUrl = resolveDisplayUrl(trimmed)
   const thumbState = trimmed ? 'ok' : 'empty'
 
   return (
@@ -525,7 +527,7 @@ function GalleryCard({ item, onUpdate, onRemove, disabled, urlError }) {
         onKeyDown={(e) => e.key === 'Enter' && !disabled && setPickerOpen(true)}
         aria-label={t('products.detail.gallery.pickImage')}
       >
-        {thumbState === 'ok' && <img src={trimmed} alt="" loading="eager" />}
+        {thumbState === 'ok' && <img src={displayUrl} alt="" loading="eager" />}
         {thumbState === 'loading' && <span className="gallery-thumb-status">⋯</span>}
         {thumbState === 'error' && <span className="gallery-thumb-status gallery-thumb-error">!</span>}
         {thumbState === 'empty' && <span className="gallery-thumb-status">🖼</span>}
@@ -2856,7 +2858,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     />
                   </Field>
 
-                  <Field full label={t('products.detail.seoOgImageUrl')} error={validationErrors.seoOgImageUrl}>
+                  <Field full label={t('products.detail.seoOgImageUrl')} hint="1200×630px (chuẩn mạng xã hội)." error={validationErrors.seoOgImageUrl}>
                     <ImageUrlInput
                       value={form.seoOgImageUrl}
                       onChange={(url) => updateField('seoOgImageUrl', url)}
@@ -3049,7 +3051,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     {form.relatedProductChips.map((chip) => (
                       <span key={chip.id} className="chip">
                         {chip.imageUrl && (
-                          <img src={chip.imageUrl} alt="" className="w-5 h-5 object-cover" />
+                          <img src={resolveDisplayUrl(chip.imageUrl)} alt="" className="w-5 h-5 object-cover" />
                         )}
                         <strong>{chip.name}</strong>
                         {!isReadOnly && (

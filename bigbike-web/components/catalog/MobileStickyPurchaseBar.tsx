@@ -5,14 +5,18 @@ import { cn } from "@/lib/utils";
 
 type MobileStickyPurchaseBarProps = {
   addToCartLabel: string;
+  soldOutLabel: string;
   zaloUrl?: string;
 };
 
 export function MobileStickyPurchaseBar({
   addToCartLabel,
+  soldOutLabel,
   zaloUrl,
 }: MobileStickyPurchaseBarProps) {
   const [visible, setVisible] = useState(false);
+  const [disabled, setDisabled] = useState(false);
+  const [soldOut, setSoldOut] = useState(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
   useEffect(() => {
@@ -30,6 +34,26 @@ export function MobileStickyPurchaseBar({
     return () => {
       observerRef.current?.disconnect();
     };
+  }, []);
+
+  // Mirror the inline add-to-cart button's enabled/sold-out state so the sticky
+  // CTA never reads as an actionable red bar when the product can't be added.
+  useEffect(() => {
+    const btn = document.querySelector<HTMLButtonElement>(".js-add-to-cart-btn");
+    if (!btn) return;
+
+    const sync = () => {
+      setDisabled(btn.disabled);
+      setSoldOut(btn.dataset.soldout === "true");
+    };
+    sync();
+
+    const observer = new MutationObserver(sync);
+    observer.observe(btn, {
+      attributes: true,
+      attributeFilter: ["disabled", "data-soldout"],
+    });
+    return () => observer.disconnect();
   }, []);
 
   function handleAddToCart() {
@@ -56,6 +80,8 @@ export function MobileStickyPurchaseBar({
     }
   }
 
+  const label = soldOut ? soldOutLabel : addToCartLabel;
+
   return (
     <div
       className={cn("bb-pdp-sticky-cta", visible && "is-visible")}
@@ -63,12 +89,13 @@ export function MobileStickyPurchaseBar({
     >
       <button
         type="button"
-        className="bb-pdp-sticky-add"
+        className={cn("bb-pdp-sticky-add", disabled && "is-disabled")}
         onClick={handleAddToCart}
-        aria-label={addToCartLabel}
+        aria-label={label}
+        aria-disabled={disabled}
         tabIndex={visible ? 0 : -1}
       >
-        {addToCartLabel}
+        {label}
       </button>
 
       {zaloUrl ? (

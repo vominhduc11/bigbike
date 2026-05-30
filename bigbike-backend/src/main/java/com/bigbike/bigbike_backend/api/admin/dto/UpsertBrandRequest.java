@@ -34,6 +34,9 @@ public class UpsertBrandRequest {
     private ImageAssetRequest banner;
 
     @Valid
+    private ImageAssetRequest mobileBanner;
+
+    @Valid
     private SeoMetaRequest seo;
 
     private Boolean visible;

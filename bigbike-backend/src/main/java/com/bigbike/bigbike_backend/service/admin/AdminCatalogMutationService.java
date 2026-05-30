@@ -1295,6 +1295,26 @@ public class AdminCatalogMutationService {
             clearIcon(entity);
         }
 
+        if (request.getBanner() != null) {
+            if (AdminMutationValidators.trimToNull(request.getBanner().getUrl()) != null) {
+                applyBanner(entity, request.getBanner());
+            } else {
+                clearBanner(entity);
+            }
+        } else if (create) {
+            clearBanner(entity);
+        }
+
+        if (request.getMobileBanner() != null) {
+            if (AdminMutationValidators.trimToNull(request.getMobileBanner().getUrl()) != null) {
+                applyMobileBanner(entity, request.getMobileBanner());
+            } else {
+                clearMobileBanner(entity);
+            }
+        } else if (create) {
+            clearMobileBanner(entity);
+        }
+
         if (request.getSeo() != null) {
             applySeo(entity, request.getSeo());
         } else if (create) {
@@ -1346,6 +1366,12 @@ public class AdminCatalogMutationService {
             applyBanner(entity, request.getBanner());
         } else if (create) {
             clearBanner(entity);
+        }
+
+        if (request.getMobileBanner() != null) {
+            applyMobileBanner(entity, request.getMobileBanner());
+        } else if (create) {
+            clearMobileBanner(entity);
         }
 
         if (request.getSeo() != null) {
@@ -1406,6 +1432,26 @@ public class AdminCatalogMutationService {
         entity.setImageMimeType(null);
     }
 
+    private static void applyBanner(CategoryEntity entity, ImageAssetRequest request) {
+        entity.setBannerUrl(AdminMutationValidators.trimToNull(request.getUrl()));
+        entity.setBannerAlt(AdminMutationValidators.trimToNull(request.getAlt()));
+    }
+
+    private static void clearBanner(CategoryEntity entity) {
+        entity.setBannerUrl(null);
+        entity.setBannerAlt(null);
+    }
+
+    private static void applyMobileBanner(CategoryEntity entity, ImageAssetRequest request) {
+        entity.setMobileBannerUrl(AdminMutationValidators.trimToNull(request.getUrl()));
+        entity.setMobileBannerAlt(AdminMutationValidators.trimToNull(request.getAlt()));
+    }
+
+    private static void clearMobileBanner(CategoryEntity entity) {
+        entity.setMobileBannerUrl(null);
+        entity.setMobileBannerAlt(null);
+    }
+
     private static void applyIcon(CategoryEntity entity, ImageAssetRequest request) {
         entity.setIconId(null);
         entity.setIconUrl(AdminMutationValidators.trimToNull(request.getUrl()));
@@ -1457,6 +1503,16 @@ public class AdminCatalogMutationService {
     private static void clearBanner(BrandEntity entity) {
         entity.setBannerUrl(null);
         entity.setBannerAlt(null);
+    }
+
+    private static void applyMobileBanner(BrandEntity entity, ImageAssetRequest request) {
+        entity.setMobileBannerUrl(AdminMutationValidators.trimToNull(request.getUrl()));
+        entity.setMobileBannerAlt(AdminMutationValidators.trimToNull(request.getAlt()));
+    }
+
+    private static void clearMobileBanner(BrandEntity entity) {
+        entity.setMobileBannerUrl(null);
+        entity.setMobileBannerAlt(null);
     }
 
     private static void applySeo(ProductEntity entity, SeoMetaRequest request) {

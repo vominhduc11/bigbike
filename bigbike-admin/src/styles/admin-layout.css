@@ -900,3 +900,77 @@ button.summary-card:focus-visible {
   gap: 6px;
   color: var(--admin-color-status-warning-text);
 }
+
+/* ── Settings sidebar navigation ─────────────────────────────────────────── */
+.settings-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settings-nav button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px var(--admin-space-3);
+  border: none;
+  background: transparent;
+  color: var(--admin-color-text-secondary);
+  font-size: var(--admin-text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  border-radius: var(--admin-radius-sm);
+  transition: background-color var(--admin-transition-fast),
+              color var(--admin-transition-fast);
+  position: relative;
+}
+
+.settings-nav button:hover:not(.active) {
+  background: var(--admin-color-surface-hover);
+  color: var(--admin-color-text-primary);
+}
+
+.settings-nav button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--admin-color-brand-red-muted);
+}
+
+.settings-nav button.active {
+  background: var(--admin-color-surface-base);
+  color: var(--admin-color-text-primary);
+  font-weight: 600;
+  box-shadow: var(--admin-shadow-xs);
+}
+
+.settings-nav button.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  background: var(--admin-color-brand-red);
+  border-radius: 0 var(--admin-radius-sm) var(--admin-radius-sm) 0;
+}
+
+.settings-nav button svg {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.settings-nav button.active svg {
+  opacity: 1;
+}
+
+/* ── Settings card footer (save / discard action bar) ─────────────────────── */
+.card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-2);
+  padding: var(--admin-space-3) var(--admin-space-4);
+  border-top: 1px solid var(--admin-color-border-subtle);
+}

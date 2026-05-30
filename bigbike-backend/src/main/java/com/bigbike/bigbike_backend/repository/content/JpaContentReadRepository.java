@@ -89,6 +89,32 @@ public class JpaContentReadRepository implements ContentReadRepository {
         return articleJpaRepository.findAll().stream().map(e -> toDomain(e, "vi", false)).toList();
     }
 
+    @Override
+    public List<Article> searchPublishedArticles(java.util.List<String> tokens, int limit) {
+        org.springframework.data.jpa.domain.Specification<ArticleEntity> spec = (root, query, cb) -> {
+            java.util.List<jakarta.persistence.criteria.Predicate> preds = new java.util.ArrayList<>();
+            preds.add(cb.equal(root.get("publishStatus"), PublishStatus.PUBLISHED));
+            for (String token : tokens) {
+                String like = "%" + token.toLowerCase(java.util.Locale.ROOT) + "%";
+                preds.add(cb.or(
+                        cb.like(cb.lower(root.get("title")), like),
+                        cb.like(cb.lower(cb.coalesce(root.get("excerpt"), "")), like)));
+            }
+            return cb.and(preds.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        };
+        List<String> ids = articleJpaRepository
+                .findAll(spec, org.springframework.data.domain.PageRequest.of(0, limit))
+                .getContent()
+                .stream()
+                .map(ArticleEntity::getId)
+                .toList();
+        if (ids.isEmpty()) return List.of();
+        return articleJpaRepository.findWithAssociationsByIdIn(ids)
+                .stream()
+                .map(e -> toDomain(e, "vi", false))
+                .toList();
+    }
+
     // --- DB-paginated public listing ---
 
     @Override

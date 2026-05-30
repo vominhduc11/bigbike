@@ -77,6 +77,7 @@
     "fallbackNav": {
       "home": "Home",
       "products": "Products",
+      "categories": "Categories",
       "brands": "Brands",
       "news": "News",
       "contact": "Contact"
@@ -556,6 +557,11 @@
     "logoutConfirm": "Sign out of your account?",
     "dashboardGreeting": "Hello <strong>{name}</strong>.",
     "dashboardIntro": "From your account page you can view your <orders>recent orders</orders>, manage your <addresses>shipping and billing addresses</addresses>, and edit your <account>password and account details</account>.",
+    "dashboardCards": {
+      "ordersDesc": "Track the status and history of your orders",
+      "addressesDesc": "Manage your shipping and billing addresses",
+      "infoDesc": "Update your personal details and change your password"
+    },
     "menuAria": "Account menu",
     "sectionSwitcherAria": "Switch account section",
     "sectionSwitcherPlaceholder": "Pick a section",
@@ -956,7 +962,13 @@
     "footerMove": "Navigate",
     "footerSelect": "Select",
     "footerClose": "Close",
-    "footerBrowse": "browse all products →"
+    "footerBrowse": "browse all products →",
+    "quickSearchesHeading": "Suggested searches",
+    "trendingHeading": "Trending",
+    "popularCategoriesHeading": "Popular categories",
+    "quickSearchSuggestions": ["fullface motorcycle helmet", "touring jacket", "carbon gloves", "moto boots"],
+    "trendingSearches": ["Shoei", "Alpinestars", "Dainese", "AGV", "waterproof touring"],
+    "popularCategories": ["Helmets", "Jackets", "Gloves", "Accessories"]
   },
   "Compare": {
     "title": "Compare products",

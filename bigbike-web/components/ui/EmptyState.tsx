@@ -12,9 +12,9 @@ export function EmptyState({ title, description, action }: EmptyStateProps) {
       className="bb-empty-state grid justify-items-center gap-3 border border-border bg-card p-6 text-center"
       aria-live="polite"
     >
-      <h2 className="font-heading text-base font-semibold uppercase text-foreground m-0">
+      <p className="font-heading text-base font-semibold uppercase text-foreground m-0">
         {title}
-      </h2>
+      </p>
       <p className="m-0 text-muted-foreground">{description}</p>
       {action}
     </section>

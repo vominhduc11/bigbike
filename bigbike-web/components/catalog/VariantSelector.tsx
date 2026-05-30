@@ -2,7 +2,7 @@
 
 import type { CSSProperties } from "react";
 import { useTranslations } from "next-intl";
-import { safeText } from "@/lib/utils/format";
+import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 import {
   findMatchingVariant,
   isColorAttribute,
@@ -163,7 +163,10 @@ export function VariantSelector({
                     findMatchingVariant(variants, probeSelection);
                   const active = normalizeValue(currentValue) === normalizeValue(value);
                   const available = Boolean(candidate?.isAvailable);
-                  const effectiveImageUrl = swatchImageUrl || variantImageUrl;
+                  // Normalise to the same-origin /wp-content/uploads proxy (like
+                  // the gallery) so the swatch image isn't blocked by CSP when the
+                  // raw MinIO origin isn't in img-src.
+                  const effectiveImageUrl = resolveMediaUrl(swatchImageUrl || variantImageUrl);
                   let swatchStyle: CSSProperties | undefined;
                   if (isColorGroup && effectiveImageUrl) {
                     swatchStyle = { backgroundImage: `url(${effectiveImageUrl})` };

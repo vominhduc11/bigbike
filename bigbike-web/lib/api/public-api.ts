@@ -482,3 +482,16 @@ export async function search(query: SearchQuery): Promise<DataResult<SearchResul
   }
 }
 
+export async function searchSuggest(query: Pick<SearchQuery, "q" | "limit">): Promise<DataResult<SearchResults>> {
+  try {
+    const response = await requestJson<ApiDataResponse<SearchResults>>(
+      "/api/v1/search-suggest",
+      { q: query.q, limit: query.limit ?? 6 },
+      0,
+    );
+    return { data: response.data, error: null };
+  } catch (error) {
+    return { data: null, error: toClientError(error) };
+  }
+}
+

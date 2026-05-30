@@ -171,23 +171,42 @@ const KEY_LABELS_VI = {
   default_warranty_months: 'Thời hạn bảo hành mặc định khi tạo phiếu (tháng)',
   serial_inventory_only: 'Chỉ bán sản phẩm có serial đã nhập kho (true/false)',
   // public_hero — Tất cả sản phẩm
-  hero_products_image_url: 'Ảnh hero — trang Tất cả sản phẩm',
+  hero_products_image_url: 'Ảnh hero — trang Tất cả sản phẩm (desktop)',
+  hero_products_mobile_image_url: 'Ảnh hero — trang Tất cả sản phẩm (mobile)',
   hero_products_image_alt: 'Alt ảnh hero — Tất cả sản phẩm',
   hero_products_title: 'Tiêu đề hero — Tất cả sản phẩm',
   hero_products_description: 'Mô tả hero — Tất cả sản phẩm',
   hero_products_kicker: 'Kicker hero — Tất cả sản phẩm',
   // public_hero — Thương hiệu
-  hero_brands_image_url: 'Ảnh hero — trang Thương hiệu',
+  hero_brands_image_url: 'Ảnh hero — trang Thương hiệu (desktop)',
+  hero_brands_mobile_image_url: 'Ảnh hero — trang Thương hiệu (mobile)',
   hero_brands_image_alt: 'Alt ảnh hero — Thương hiệu',
   hero_brands_title: 'Tiêu đề hero — Thương hiệu',
   hero_brands_description: 'Mô tả hero — Thương hiệu',
   hero_brands_kicker: 'Kicker hero — Thương hiệu',
   // public_hero — Tin tức
-  hero_news_image_url: 'Ảnh hero — trang Tin tức',
+  hero_news_image_url: 'Ảnh hero — trang Tin tức (desktop)',
+  hero_news_mobile_image_url: 'Ảnh hero — trang Tin tức (mobile)',
   hero_news_image_alt: 'Alt ảnh hero — Tin tức',
   hero_news_title: 'Tiêu đề hero — Tin tức',
   hero_news_description: 'Mô tả hero — Tin tức',
   hero_news_kicker: 'Kicker hero — Tin tức',
+  // global hero defaults
+  hero_default_bg_url: 'Ảnh nền mặc định hero (dùng khi trang không có ảnh riêng)',
+  hero_default_illustration_url: 'Ảnh gear mặc định hero (dùng khi trang không có ảnh minh hoạ riêng)',
+}
+
+const KEY_HINTS_VI = {
+  promo_image_url:          'Ảnh nằm ngang, ví dụ 1200×400px.',
+  og_image_url:             '1200×630px (chuẩn mạng xã hội).',
+  hero_products_image_url:         'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
+  hero_products_mobile_image_url:  'Ảnh dọc hoặc vuông, ví dụ 768×900px.',
+  hero_brands_image_url:           'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
+  hero_brands_mobile_image_url:    'Ảnh dọc hoặc vuông, ví dụ 768×900px.',
+  hero_news_image_url:             'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
+  hero_news_mobile_image_url:      'Ảnh dọc hoặc vuông, ví dụ 768×900px.',
+  hero_default_bg_url:             'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
+  hero_default_illustration_url:   'PNG nền trong, tỷ lệ gần vuông ~700×600px.',
 }
 
 const FALLBACK_META = { icon: Settings, labelKey: null }
@@ -235,11 +254,16 @@ function SettingField({ setting, canUpdate, draft, error, onChange }) {
             enableImagePicker
           />
         ) : isImage ? (
-          <ImageUrlInput
-            value={currentValue}
-            onChange={(url) => onChange(setting.key, url)}
-            error={error}
-          />
+          <>
+            <ImageUrlInput
+              value={currentValue}
+              onChange={(url) => onChange(setting.key, url)}
+              error={error}
+            />
+            {KEY_HINTS_VI[setting.key] && (
+              <span className="hint">{KEY_HINTS_VI[setting.key]}</span>
+            )}
+          </>
         ) : (
           <Input
             className={error ? 'border-danger' : undefined}
@@ -302,7 +326,7 @@ function SettingTabPanel({ title, items, canUpdate, drafts, errors, onDraftChang
       </div>
 
       {canUpdate && dirtyCount > 0 && (
-        <div className="card-foot" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '12px 16px', borderTop: '1px solid var(--bb-border-faint)' }}>
+        <div className="card-foot">
           <span className="settings-unsaved-hint">
             <AlertCircle size={14} />
             {t('settings.unsavedCount', { count: dirtyCount })}

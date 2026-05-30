@@ -207,7 +207,7 @@ export function QuickBuyModal({
 
               {/* Thông tin liên hệ */}
               <section>
-                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+                <p className="text-xs font-semibold uppercase tracking-display text-muted-foreground mb-3">
                   {tQb("contactSection")}
                 </p>
                 <div className="flex flex-col gap-3">
@@ -255,7 +255,7 @@ export function QuickBuyModal({
 
               {/* Địa chỉ nhận hàng */}
               <section>
-                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+                <p className="text-xs font-semibold uppercase tracking-display text-muted-foreground mb-3">
                   {tQb("addressSection")}
                 </p>
                 <div className="flex flex-col gap-3">
@@ -337,7 +337,7 @@ export function QuickBuyModal({
 
               {/* Phương thức thanh toán */}
               <section>
-                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+                <p className="text-xs font-semibold uppercase tracking-display text-muted-foreground mb-3">
                   {tQb("paymentSection")}
                 </p>
                 <div className="flex flex-col gap-2">
@@ -414,7 +414,7 @@ export function QuickBuyModal({
                 </div>
                 <div className="flex justify-between px-3 py-2 border-b border-border">
                   <span className="text-muted-foreground">{tQb("summaryShipping")}</span>
-                  <span className={cn("font-medium tabular-nums", shippingEstimate?.isFree && "text-green-600")}>
+                  <span className={cn("font-medium tabular-nums", shippingEstimate?.isFree && "text-state-success-text")}>
                     {!province
                       ? <span className="text-muted-foreground text-xs">{tQb("summaryShippingSelectProvince")}</span>
                       : shippingEstimate == null

@@ -33,13 +33,13 @@ export function CompareClient() {
     .filter((p): p is Product => Boolean(p));
 
   return (
-    <section className="bb-page">
+    <section className="bb-page bb-compare-page">
       <div className="bb-container pb-28">
         <header className="mb-6">
-          <p className="font-heading text-xs font-semibold uppercase tracking-[0.12em] text-brand">
+          <p className="font-heading text-xs font-semibold uppercase tracking-display text-brand">
             {t("kicker")}
           </p>
-          <h1 className="font-display text-2xl font-semibold uppercase text-foreground">
+          <h1 className="font-display text-26 font-semibold uppercase text-foreground">
             {t("heading")}
           </h1>
           <p className="mt-1 text-muted-foreground">

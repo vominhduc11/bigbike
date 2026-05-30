@@ -125,7 +125,7 @@ export function ComparisonTable({ products }: ComparisonTableProps) {
       <table className="w-full min-w-[600px] border-collapse text-sm">
         <thead>
           <tr>
-            <th className="sticky left-0 z-[1] min-w-[120px] bg-muted px-3 py-3 text-left align-bottom font-heading text-xs font-semibold uppercase tracking-[0.06em] text-muted-foreground">
+            <th className="sticky left-0 z-[1] min-w-[120px] bg-muted px-3 py-3 text-left align-bottom font-heading text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               {t("tableProductCol")}
             </th>
             {products.map((product) => {
@@ -223,7 +223,7 @@ export function ComparisonTable({ products }: ComparisonTableProps) {
                     <tr>
                       <th
                         colSpan={colCount}
-                        className="border-t border-border bg-secondary px-3 py-2 text-left font-heading text-xs font-semibold uppercase tracking-[0.06em] text-foreground"
+                        className="border-t border-border bg-secondary px-3 py-2 text-left font-heading text-xs font-semibold uppercase tracking-wide text-foreground"
                       >
                         {specKey.group}
                       </th>
@@ -268,14 +268,14 @@ export function ComparisonTable({ products }: ComparisonTableProps) {
                       <button
                         type="button"
                         onClick={() => handleAddToCart(product)}
-                        className="bg-brand px-3 py-2 text-center font-heading text-xs font-semibold uppercase tracking-[0.04em] text-white transition-colors hover:bg-brand-hover"
+                        className="bg-brand px-3 py-2 text-center font-heading text-xs font-semibold uppercase tracking-wide text-white transition-colors hover:bg-brand-hover"
                       >
                         {t("addToCart")}
                       </button>
                     )}
                     <Link
                       href={toProductPath(product.slug)}
-                      className="border border-border px-3 py-2 text-center font-heading text-xs font-semibold uppercase tracking-[0.04em] text-foreground transition-colors hover:border-brand hover:text-brand"
+                      className="border border-border px-3 py-2 text-center font-heading text-xs font-semibold uppercase tracking-wide text-foreground transition-colors hover:border-brand hover:text-brand"
                     >
                       {t("viewProduct")}
                     </Link>

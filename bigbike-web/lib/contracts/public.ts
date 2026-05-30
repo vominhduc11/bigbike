@@ -225,6 +225,8 @@ export type Category = {
   parentId?: string | null;
   image?: ImageAsset;
   icon?: ImageAsset;
+  bannerImage?: ImageAsset;
+  mobileBannerImage?: ImageAsset;
   seo?: SeoMeta;
   isVisible: boolean;
   showOnHomepage?: boolean | null;
@@ -240,6 +242,7 @@ export type Brand = {
   description?: string;
   logo?: ImageAsset;
   bannerImage?: ImageAsset;
+  mobileBannerImage?: ImageAsset;
   seo?: SeoMeta;
   isVisible: boolean;
   createdAt: string;

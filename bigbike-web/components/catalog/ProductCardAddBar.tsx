@@ -43,7 +43,7 @@ export function ProductCardAddBar({ productId, hasVariants, slug, stockState }: 
   return (
     <button
       type="button"
-      className="absolute left-0 right-0 bottom-0 bg-black text-white py-3.5 text-center font-display text-sm font-semibold tracking-[0.08em] uppercase translate-y-full transition-[transform,background-color] duration-[320ms] z-[2] cursor-pointer w-full hover:bg-brand-active [@media(hover:none)]:translate-y-0 [@media(pointer:coarse)]:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed"
+      className="absolute left-0 right-0 bottom-0 bg-black text-white py-3.5 text-center font-display text-sm font-semibold tracking-display uppercase translate-y-full transition-[transform,background-color] duration-[320ms] z-[2] cursor-pointer w-full hover:bg-brand-active [@media(hover:none)]:translate-y-0 [@media(pointer:coarse)]:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed"
       disabled={busy || isOutOfStock}
       onClick={handleClick}
     >

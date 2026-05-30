@@ -52,6 +52,16 @@ public class CategoryEntity {
     private Integer iconHeight;
     private String iconMimeType;
 
+    @Column(columnDefinition = "text")
+    private String bannerUrl;
+
+    private String bannerAlt;
+
+    @Column(columnDefinition = "text")
+    private String mobileBannerUrl;
+
+    private String mobileBannerAlt;
+
     private String seoTitle;
 
     @Column(columnDefinition = "text")
@@ -233,6 +243,38 @@ public class CategoryEntity {
 
     public void setIconMimeType(String iconMimeType) {
         this.iconMimeType = iconMimeType;
+    }
+
+    public String getBannerUrl() {
+        return bannerUrl;
+    }
+
+    public void setBannerUrl(String bannerUrl) {
+        this.bannerUrl = bannerUrl;
+    }
+
+    public String getBannerAlt() {
+        return bannerAlt;
+    }
+
+    public void setBannerAlt(String bannerAlt) {
+        this.bannerAlt = bannerAlt;
+    }
+
+    public String getMobileBannerUrl() {
+        return mobileBannerUrl;
+    }
+
+    public void setMobileBannerUrl(String mobileBannerUrl) {
+        this.mobileBannerUrl = mobileBannerUrl;
+    }
+
+    public String getMobileBannerAlt() {
+        return mobileBannerAlt;
+    }
+
+    public void setMobileBannerAlt(String mobileBannerAlt) {
+        this.mobileBannerAlt = mobileBannerAlt;
     }
 
     public String getSeoTitle() {

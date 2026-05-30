@@ -748,7 +748,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
               <SectionCard title={t('content.detail.sectionMedia')}>
                 {isArticle ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Field full label={t('content.detail.coverImageUrl')}>
+                    <Field full label={t('content.detail.coverImageUrl')} hint={t('content.detail.coverImageUrlHint')}>
                       <ImageUrlInput
                         value={form.coverImageUrl}
                         onChange={(url) => updateField('coverImageUrl', url)}
@@ -759,7 +759,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                       />
                     </Field>
 
-                    <Field full label={t('content.detail.productImageUrl')}>
+                    <Field full label={t('content.detail.productImageUrl')} hint={t('content.detail.productImageUrlHint')}>
                       <ImageUrlInput
                         value={form.productImageUrl}
                         onChange={(url) => updateField('productImageUrl', url)}

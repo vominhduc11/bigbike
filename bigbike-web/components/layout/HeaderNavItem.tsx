@@ -40,7 +40,7 @@ function MegaPanel({
   return (
     <div className={cn("flex-1 p-6", active ? "block" : "hidden")}>
       {group.children.length === 0 ? (
-        <p className="font-heading text-[13px] text-muted-foreground">{group.label}</p>
+        <p className="font-nav text-[13px] text-muted-foreground">{group.label}</p>
       ) : (
         <ul className="m-0 list-none columns-2 gap-x-8 p-0 xl:columns-3">
           {group.children.map((cat) => {
@@ -51,7 +51,7 @@ function MegaPanel({
                 <Link
                   href={normalizeMenuUrl(cat.url)}
                   className={cn(
-                    "mb-1.5 flex items-center gap-2 font-heading text-[13px] font-bold uppercase tracking-wide text-foreground no-underline transition-colors duration-150 hover:text-brand",
+                    "mb-1.5 flex items-center gap-2 font-nav text-[13px] font-bold uppercase tracking-wide text-foreground no-underline transition-colors duration-150 hover:text-brand",
                     catActive && "text-brand",
                   )}
                   target={cat.openInNewTab ? "_blank" : undefined}
@@ -79,7 +79,7 @@ function MegaPanel({
                           <Link
                             href={normalizeMenuUrl(item.url)}
                             className={cn(
-                              "block py-0.5 font-heading text-[12px] text-muted-foreground no-underline transition-colors duration-150 hover:text-brand",
+                              "block py-0.5 font-nav text-xs text-muted-foreground no-underline transition-colors duration-150 hover:text-brand",
                               itemActive && "text-brand",
                             )}
                             target={item.openInNewTab ? "_blank" : undefined}
@@ -136,7 +136,7 @@ function MegaSidebar({
                 <Link
                   href={normalizeMenuUrl(group.url)}
                   className={cn(
-                    "flex w-full items-center gap-2.5 px-5 py-3 font-heading text-[13px] font-semibold text-foreground no-underline transition-colors duration-150 hover:bg-white hover:text-brand",
+                    "flex w-full items-center gap-2.5 px-5 py-3 font-nav text-[13px] font-semibold text-foreground no-underline transition-colors duration-150 hover:bg-white hover:text-brand",
                     groupPathActive && "text-brand",
                   )}
                   target={group.openInNewTab ? "_blank" : undefined}
@@ -164,7 +164,7 @@ function MegaSidebar({
               <button
                 type="button"
                 className={cn(
-                  "flex w-full items-center gap-2.5 px-5 py-3 font-heading text-[13px] font-semibold text-foreground transition-colors duration-150 hover:bg-white hover:text-brand",
+                  "flex w-full items-center gap-2.5 px-5 py-3 font-nav text-[13px] font-semibold text-foreground transition-colors duration-150 hover:bg-white hover:text-brand",
                   isActive && "bg-white text-brand",
                   groupPathActive && "text-brand",
                 )}

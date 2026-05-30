@@ -63,6 +63,8 @@ function buildEmptyForm() {
     showOnHomepage: false,
     sortOrder: '',
     imageUrl: '',
+    bannerImageUrl: '',
+    bannerMobileImageUrl: '',
     seoTitle: '',
     seoDescription: '',
     seoCanonicalUrl: '',
@@ -81,6 +83,8 @@ function buildFormFromItem(item) {
     showOnHomepage: Boolean(item.showOnHomepage),
     sortOrder: item.sortOrder != null ? String(item.sortOrder) : '',
     imageUrl: item.image?.url || '',
+    bannerImageUrl: item.bannerImage?.url || '',
+    bannerMobileImageUrl: item.mobileBannerImage?.url || '',
     seoTitle: item.seo?.title || '',
     seoDescription: item.seo?.description || '',
     seoCanonicalUrl: item.seo?.canonicalUrl || '',
@@ -109,6 +113,12 @@ function toPayload(form) {
 
   const imageUrl = form.imageUrl.trim()
   payload.image = imageUrl ? { url: imageUrl, alt: form.name.trim() || undefined } : { url: null }
+
+  const bannerImageUrl = form.bannerImageUrl.trim()
+  payload.banner = bannerImageUrl ? { url: bannerImageUrl } : { url: null }
+
+  const bannerMobileImageUrl = form.bannerMobileImageUrl.trim()
+  payload.mobileBanner = bannerMobileImageUrl ? { url: bannerMobileImageUrl } : { url: null }
 
   const seoTitle = form.seoTitle.trim()
   const seoDescription = form.seoDescription.trim()
@@ -622,6 +632,27 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                   disabled={isReadOnly}
                   error={validationErrors.imageUrl}
                 />
+                <span className="hint">{t('categories.detail.imageUrlHint')}</span>
+              </div>
+              <div className="form-field" data-field="bannerImageUrl" style={{ gridColumn: '1 / -1' }}>
+                <span>{t('categories.detail.bannerImageUrl')}</span>
+                <ImageUrlInput
+                  value={form.bannerImageUrl}
+                  onChange={(url) => updateField('bannerImageUrl', url)}
+                  disabled={isReadOnly}
+                  error={validationErrors.bannerImageUrl}
+                />
+                <span className="hint">{t('categories.detail.bannerImageUrlHint')}</span>
+              </div>
+              <div className="form-field" data-field="bannerMobileImageUrl" style={{ gridColumn: '1 / -1' }}>
+                <span>{t('categories.detail.bannerMobileImageUrl')}</span>
+                <ImageUrlInput
+                  value={form.bannerMobileImageUrl}
+                  onChange={(url) => updateField('bannerMobileImageUrl', url)}
+                  disabled={isReadOnly}
+                  error={validationErrors.bannerMobileImageUrl}
+                />
+                <span className="hint">{t('categories.detail.bannerMobileImageUrlHint')}</span>
               </div>
               <label className="flex items-center gap-2.5 p-2.5 border border-border text-sm cursor-pointer hover:bg-muted w-fit">
                 <Checkbox

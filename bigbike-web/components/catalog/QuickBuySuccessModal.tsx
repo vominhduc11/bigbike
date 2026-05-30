@@ -37,7 +37,7 @@ export function QuickBuySuccessModal({ order, onClose }: Props) {
         <DialogHeader>
           <div className="flex flex-col items-center gap-3 py-2">
             <div className="flex items-center justify-center w-12 h-12 rounded-full bg-green-100">
-              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" aria-hidden="true">
+              <svg className="w-6 h-6 text-state-success-text" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             </div>
@@ -53,7 +53,7 @@ export function QuickBuySuccessModal({ order, onClose }: Props) {
           )}
           <p className="text-sm text-muted-foreground">{t("success.willContact")}</p>
           {order?.paymentMethod === "BACS" && (
-            <p className="text-sm text-amber-700 bg-amber-50 px-3 py-2 border border-amber-200">
+            <p className="text-sm text-state-warning-text bg-[var(--bb-state-warning-bg)] px-3 py-2 border border-[var(--bb-state-warning-border)]">
               {t("success.bacsHint")}
             </p>
           )}

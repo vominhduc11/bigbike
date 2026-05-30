@@ -31,6 +31,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/media-proxy/, '/bigbike-media'),
       },
+      '/media': {
+        target: 'http://localhost:9000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/media/, '/bigbike-media'),
+      },
     },
   },
 })

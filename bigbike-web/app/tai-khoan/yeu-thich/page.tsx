@@ -16,7 +16,7 @@ function WishlistContent() {
   return (
     <>
       <div className="flex justify-between items-end mb-5 pb-4 border-b border-border">
-        <h2 className="font-display uppercase text-26 tracking-[0.01em] m-0 text-foreground">{t("heading")}</h2>
+        <h2 className="font-display uppercase text-26 tracking-wide m-0 text-foreground">{t("heading")}</h2>
       </div>
 
       {error && <p className="text-brand text-sm mb-4 m-0">{(error as Error).message}</p>}

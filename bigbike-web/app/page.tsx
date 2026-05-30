@@ -46,6 +46,7 @@ import { sanitizeRichHtml } from "@/lib/utils/html";
 import { pickSetting } from "@/lib/utils/settings";
 import {
   toArticlePath,
+  toBrandListPath,
   toCategoryPath,
   toHomePath,
   toProductListPath,
@@ -129,10 +130,9 @@ function WpCategoryListItem({ category }: { category: Category }) {
         <Image
           src={src}
           alt=""
-          width={60}
-          height={60}
-          sizes="60px"
-          className="bb-cat-list-icon"
+          width={96}
+          height={96}
+          sizes="(min-width: 2560px) 88px, (min-width: 1536px) 80px, 72px"
         />
       </span>
       <span className="bb-cat-list-desc">{name}</span>
@@ -460,7 +460,7 @@ export default async function HomePage() {
                   <MobileCategoryGrid categories={categoriesResult.data} />
                 </div>
                 <div className="hidden md:block">
-                  <div className="bb-cat-list mb-[10px]" aria-label="Danh mục sản phẩm">
+                  <div className="bb-cat-list" aria-label="Danh mục sản phẩm">
                     {categoriesResult.data.map((category) => (
                       <WpCategoryListItem key={category.id} category={category} />
                     ))}
@@ -576,7 +576,7 @@ export default async function HomePage() {
 
       {brandsResult.data.length > 0 && (
         <div className="partner-slide pt-120 pb-120">
-          <BrandCarousel brands={brandsResult.data} />
+          <BrandCarousel brands={brandsResult.data} viewAllHref={toBrandListPath()} />
         </div>
       )}
 

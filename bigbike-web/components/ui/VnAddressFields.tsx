@@ -27,7 +27,7 @@ type VnAddressFieldsProps = {
   selectContentClassName?: string;
 };
 
-export function VnAddressFields({ value, onChange, required, labelClassName = "text-sm font-semibold tracking-[0.06em] uppercase text-muted-foreground", selectContentClassName }: VnAddressFieldsProps) {
+export function VnAddressFields({ value, onChange, required, labelClassName = "text-sm font-semibold tracking-wide uppercase text-muted-foreground", selectContentClassName }: VnAddressFieldsProps) {
   const selectedProvince = useMemo(
     () => VN_PROVINCES.find((p) => p.name === value.province) ?? null,
     [value.province],

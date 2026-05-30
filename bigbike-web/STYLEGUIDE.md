@@ -16,9 +16,8 @@
 | Link / tương tác phụ | Xanh `#007BFF` |
 | Chat / hỗ trợ | Cyan `#00BFFF`, nút tròn cố định góc phải dưới |
 | Bo góc | `0px` cho mọi component thường; chỉ phần tử tròn thật sự dùng `50%` |
-| Font body | Barlow |
-| Font heading / CTA | Oswald |
-| Font layout dày đặc | Barlow Condensed |
+| Font body / link | Barlow |
+| Font heading / display / nav / CTA / label | Barlow Condensed (UPPERCASE) — **Oswald đã gỡ bỏ** |
 | Card | Nền trắng, chữ đen, border `#DDDDDD`, không shadow ở trạng thái nghỉ |
 | Product card | Ảnh vuông 1:1, hover border đỏ + shadow nhẹ đỏ |
 | Copy | Tiếng Việt đầy đủ dấu; CTA và heading thường viết HOA |
@@ -81,26 +80,55 @@ Accessibility mappings:
 
 ## Typography
 
-| Vai trò | Font | Size | Weight | Line height |
+> Source of truth chi tiết: [`docs/TYPOGRAPHY.md`](docs/TYPOGRAPHY.md) — superfamily Barlow, fluid `clamp()`. **Oswald đã gỡ bỏ.** Một token = một `clamp()`; KHÔNG override font-size theo breakpoint.
+
+Superfamily **Barlow**: Barlow Condensed cho mọi display/heading/nav/CTA/label (UPPERCASE); Barlow cho body/link. Size fluid qua token `--fs-*` (rem + clamp).
+
+| Vai trò | Font | Size (sàn→trần) | Weight | Line height |
 |---|---|---:|---:|---:|
-| Display / H1 | Oswald | 32px | 600 | 1.08 |
-| H2 | Oswald | 24px | 600 | 1.5 |
-| H3–H6 | Barlow Condensed | 18px | 600 | 1.1 |
-| Body | Barlow | 16px | 400 | 1.5 |
-| Button / CTA | Barlow Condensed | 16px | 600 | 1 |
+| Display / H1 | Barlow Condensed | 30→56px (`--fs-h1`) | 600 (700 nhấn) | 1.1 |
+| H2 | Barlow Condensed | 24→40px (`--fs-h2`) | 600 (700 nhấn) | 1.2 |
+| H3–H6 | Barlow Condensed | 20→30px (`--fs-h3`); richtext h3–h6 giữ 18px (`--bb-text-h3`) | 600 | 1.2 |
+| Section title | Barlow Condensed | 30→50px (`--bb-text-section-title`) | 600 | 1.2 |
+| Body | Barlow | 16→18px (`--fs-body`) | 400 | 1.6 |
+| Button / CTA | Barlow Condensed | 15→16px | 600 | 1.2 |
 | Nav | Barlow Condensed | 17px | 600 | 1 |
-| Link (body) | Barlow | 16px | 400 | 1.5 |
-| Meta / badge | Barlow Condensed | 12px | 600 | 1 |
-| News title | Oswald | 20px | 600 | 1.5 |
+| Link (body) | Barlow | 16→18px | 400 | 1.6 |
+| Meta / badge | Barlow Condensed | 12→13px | 600 | 1.4 |
+| News title | Barlow Condensed | 20px (`--bb-text-news-title`) | 600 | 1.2 |
 | Price | Barlow Condensed | 16px | 600 | 1.5 |
-| Footer slogan | Barlow Condensed | 3.429rem | 500 | 4.143rem |
+| Footer slogan | Barlow Condensed | 46→54.86px | 500 | 1.2 |
 
 Quy tắc:
 
-- Heading, nav, badge, CTA: uppercase.
-- Body text dùng sentence case.
-- Không dùng letter-spacing âm.
+- Heading, nav, badge, CTA: uppercase + Barlow Condensed.
+- Body text dùng sentence case + Barlow.
+- Không dùng letter-spacing âm (trừ display token theo `docs/TYPOGRAPHY.md`).
+- Letter-spacing chuẩn hóa về 3 token: `tracking-normal` (0) mặc định, `tracking-wide` (0.04em) cho uppercase nav/button/kicker, `tracking-display` (0.08em) cho eyebrow nổi bật. KHÔNG dùng arbitrary `tracking-[…]` hay thêm bậc mới (`tracking-wider/widest`).
 - Không render chữ trắng nhỏ hơn 16px trên nền tối, trừ meta phụ có màu `#CECECE`.
+- Form input dùng `--fs-body` (≥16px) → tránh iOS auto-zoom.
+
+### Tailwind font-size utilities
+
+Token cỡ chữ expose thành Tailwind utility trong `app/globals.css` (`@theme inline`). Heading cấp trang phải dùng **utility token** — KHÔNG dùng `text-2xl`/`text-3xl` cố định hay arbitrary `text-[26px]`.
+
+**Canonical fluid scale (dùng cho component mới / refactor)** — map tới `--fs-*` (một clamp, fluid mobile→ultra-wide):
+
+| Utility | Token nguồn |
+|---|---|
+| `text-display-xl` / `text-display` | `--fs-display-xl` / `--fs-display` |
+| `text-h1` / `text-h2` / `text-h3` / `text-h4` | `--fs-h1…h4` (canonical; KHÔNG qua `--bb-text-*`) |
+| `text-body-lg` / `text-body` | `--fs-body-lg` / `--fs-body` |
+| `text-button` / `text-caption` / `text-overline` | `--fs-button` / `--fs-caption` / `--fs-overline` |
+
+**Legacy WP-parity (đang migrate dần, vẫn dùng được):**
+
+| Utility | Token nguồn |
+|---|---|
+| `text-section-title` / `text-hero` | `--bb-text-section-title` (30→50px) / `--bb-text-hero` (18→30px) — đã fluid qua clamp |
+| `text-news-title` / `text-product-title` | `--bb-text-news-title` (20px) / `--bb-text-product-title` (16px) — cố định |
+| `text-22` / `text-26` / `text-32` / `text-40` / `text-50` | `--bb-text-22…50` — numeric WP, vẫn step theo breakpoint |
+| `text-9` / `text-10` / `text-11` / `text-13` / `text-15` / `text-17` | `--bb-text-9…17` (12–17px) — cố định, chỉ cho meta / label phụ |
 
 ---
 
@@ -118,10 +146,21 @@ Quy tắc:
 
 - Nền trắng, chữ đen, padding 20px, border `1px solid #DDDDDD`, radius `0`.
 - Ảnh vuông 1:1, full width.
-- Title: Oswald 18/600/20.
+- Title: Barlow Condensed 18/600/20.
 - Price: Barlow Condensed 16/600, đỏ `#FF0C09`.
 - Hover: border đỏ, shadow `0 4px 12px rgba(255,12,9,0.1)`.
 - Add-to-cart bar: đen, chữ trắng, trượt lên khi hover; trên touch luôn hiện.
+
+### Category Tiles (lưới danh mục trang chủ)
+
+- Component: `.bb-cat-list` — chỉ hiện ở desktop (`hidden md:block`, ≥ 768px). Mobile dùng `MobileCategoryGrid` (2–3 cột).
+- Cột theo breakpoint: 2 (≤ 575) · 3 (≤ 767) · 4 (desktop) · **6 (4xl ≥ 2560)**. Số cột là ước của 12 danh mục để hàng luôn đầy (12 item ở 4xl = 6 × 2 hàng).
+- Divider: đường kẻ 1px grey `#CECECE` vẽ bằng **border trên từng tile** (border-right + border-bottom) + border top/left trên grid — **không** dùng nền xám lấp `gap`. Hàng cuối thiếu item sẽ không sinh mảng xám.
+- Tile: nền trắng, cao 290px, radius `0`, không shadow ở trạng thái nghỉ.
+- Icon: wrapper cố định 72px → 80px (≥ 1536) → 88px (≥ 2560), `object-contain`, căn giữa.
+- Label: Barlow Condensed, UPPERCASE, weight 600, 17 → 18 (≥ 1536) → 20px (≥ 2560), clamp tối đa 2 dòng.
+- Hover: ảnh đỏ `cat-hover.jpg` phủ kín tile (200ms), icon invert trắng + scale `1.06`, label trắng.
+- Active: icon scale `0.97`. Focus-visible: outline `2px solid var(--bb-link-text)` (`#005FCC`), offset `-3px`.
 
 ### Inputs
 

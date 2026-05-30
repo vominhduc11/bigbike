@@ -13,9 +13,9 @@ export type StatusTone = "success" | "warning" | "danger" | "info" | "neutral";
 
 const TONE_CLASS: Record<StatusTone, string> = {
   success:
-    "bg-[var(--bb-state-success-bg)] text-[var(--bb-state-success-text)] border-[var(--bb-state-success-border)]",
+    "bg-[var(--bb-state-success-bg)] text-state-success-text border-[var(--bb-state-success-border)]",
   warning:
-    "bg-[var(--bb-state-warning-bg)] text-[var(--bb-state-warning-text)] border-[var(--bb-state-warning-border)]",
+    "bg-[var(--bb-state-warning-bg)] text-state-warning-text border-[var(--bb-state-warning-border)]",
   danger:
     "bg-[var(--bb-state-danger-bg)] text-destructive border-[var(--bb-state-danger-border)]",
   info:
@@ -34,7 +34,7 @@ export function StatusBadge({ tone, children, className }: StatusBadgeProps) {
   return (
     <span
       className={cn(
-        "inline-block border font-bold uppercase text-sm leading-none tracking-[0.1em] py-1.5 px-2.5",
+        "inline-block border font-bold uppercase text-sm leading-none tracking-display py-1.5 px-2.5",
         TONE_CLASS[tone],
         className,
       )}

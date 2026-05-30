@@ -19,7 +19,7 @@ import {
   wpOrderbyToProductSort,
 } from "@/lib/utils/catalog-sort";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
-import { readHeroSettings } from "@/lib/utils/page-hero";
+import { readDefaultHeroAssets, readHeroSettings } from "@/lib/utils/page-hero";
 import { toHomePath, toProductListPath } from "@/lib/utils/routes";
 import {
   buildQueryString,
@@ -80,7 +80,10 @@ export async function generateMetadata({ searchParams }: ProductListPageProps): 
 
 export default async function ProductListPage({ searchParams }: ProductListPageProps) {
   const params = await searchParams;
-  const tCatalog = await getTranslations("Catalog");
+  const [tCatalog, tBreadcrumb] = await Promise.all([
+    getTranslations("Catalog"),
+    getTranslations("Breadcrumb"),
+  ]);
 
   const pageParsed = parsePositiveIntParam(readSearchParamAlias(params, "page", "paged"), {
     defaultValue: 1,
@@ -134,7 +137,13 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
   if (validationErrors.length > 0) {
     return (
       <div className="bb-product-archive archive post-type-archive-product">
-        <ProductArchiveHero title={tCatalog("allProducts")} breadcrumb={[{ label: "Bigbike.vn", href: toHomePath() }]} />
+        <ProductArchiveHero
+          title={tCatalog("allProducts")}
+          breadcrumb={[
+            { label: tBreadcrumb("home"), href: toHomePath() },
+            { label: tCatalog("allProducts") },
+          ]}
+        />
         <div id="main-content" className="bb-archive-main">
           <div className="container bb-wp-container">
             <p className="woocommerce-info">{validationErrors.join(" ")}</p>
@@ -163,6 +172,7 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
     listPublicSettings(),
   ]);
   const heroSettings = readHeroSettings(settingsResult.data ?? [], "hero_products");
+  const defaultHero = readDefaultHeroAssets(settingsResult.data ?? []);
 
   const pagination = result.pagination;
   const currentFilters = {
@@ -178,9 +188,15 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
     <div className="bb-product-archive archive post-type-archive-product">
       <ProductArchiveHero
         title={heroSettings.title ?? tCatalog("allProducts")}
-        breadcrumb={[{ label: "Bigbike.vn", href: toHomePath() }]}
+        breadcrumb={[
+          { label: tBreadcrumb("home"), href: toHomePath() },
+          { label: heroSettings.title ?? tCatalog("allProducts") },
+        ]}
         imageUrl={heroSettings.imageUrl}
+        mobileImageUrl={heroSettings.mobileImageUrl}
         imageAlt={heroSettings.imageAlt}
+        defaultBgUrl={defaultHero.defaultBgUrl}
+        defaultIllustrationUrl={defaultHero.defaultIllustrationUrl}
       />
 
       <ProductArchiveLayout

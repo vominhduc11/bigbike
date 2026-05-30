@@ -234,7 +234,7 @@ export function ProductCard({ product, variant = "compact" }: ProductCardProps) 
           <h3 className="font-heading text-[18px] font-semibold uppercase leading-[1.08] text-foreground">
             {name}
           </h3>
-          <span className="mt-14 inline-flex w-fit font-heading text-[17px] font-semibold uppercase leading-none text-brand max-[600px]:mt-10">
+          <span className="mt-14 inline-flex w-fit font-heading text-17 font-semibold uppercase leading-none text-brand max-[600px]:mt-10">
             {tProduct("buyNow").toUpperCase()}
           </span>
         </div>

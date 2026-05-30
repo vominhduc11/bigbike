@@ -66,7 +66,7 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
         <div className="bb-news-body">
           <span className="bb-news-date">{publishedDate}</span>
           <div className="bb-news-body-inside">
-            <p className="m-0 text-sm font-bold uppercase tracking-[0.14em] text-brand">{category}</p>
+            <p className="m-0 text-sm font-bold uppercase tracking-display text-brand">{category}</p>
             <h3 className="bb-news-card-title">{title}</h3>
             <p className="bb-news-excerpt">{excerpt}</p>
           </div>
@@ -94,15 +94,15 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
       <div
         className="relative pt-[41px] px-[34px] pb-[30px] flex flex-col gap-2 flex-1 bg-card justify-center"
       >
-        <span className="absolute -top-[21px] left-0 z-[2] inline-flex items-center h-[42px] min-w-[168px] pl-[22px] pr-[28px] bg-brand text-white font-display text-sm font-bold tracking-[0.04em] uppercase whitespace-nowrap [clip-path:polygon(0_0,100%_0,calc(100%-18px)_100%,0_100%)]">
+        <span className="absolute -top-[21px] left-0 z-[2] inline-flex items-center h-[42px] min-w-[168px] pl-[22px] pr-[28px] bg-brand text-white font-display text-sm font-bold tracking-wide uppercase whitespace-nowrap [clip-path:polygon(0_0,100%_0,calc(100%-18px)_100%,0_100%)]">
           {publishedDate}
         </span>
         <div className="flex flex-col gap-2 flex-1">
-          <p className="text-sm font-bold tracking-[0.14em] uppercase text-brand m-0">
+          <p className="text-sm font-bold tracking-display uppercase text-brand m-0">
             {category}
           </p>
           <h3
-            className="font-display font-semibold uppercase tracking-[0.02em] text-foreground leading-[1.12] m-0 transition-colors duration-300 group-hover:text-brand line-clamp-3 text-[clamp(1.4rem,2.6vw,2.3rem)]"
+            className="font-display font-semibold uppercase tracking-wide text-foreground leading-[1.12] m-0 transition-colors duration-300 group-hover:text-brand line-clamp-3 text-h4"
           >
             {title}
           </h3>
@@ -111,7 +111,7 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
           >
             {excerpt}
           </p>
-          <span className="mt-auto pt-[6px] text-muted-foreground text-sm font-bold tracking-[0.12em] uppercase transition-colors duration-300 group-hover:text-brand">
+          <span className="mt-auto pt-[6px] text-muted-foreground text-sm font-bold tracking-display uppercase transition-colors duration-300 group-hover:text-brand">
             {t("articleReadMore")}
           </span>
         </div>

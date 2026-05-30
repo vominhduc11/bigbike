@@ -107,7 +107,7 @@ export default async function ContactPage() {
 
           <div className="grid grid-cols-1 items-start gap-10 pb-[60px] pt-8 lg:grid-cols-2 lg:gap-[60px]">
             <div className="min-w-0">
-              <h2 className="mb-6 font-display text-[26px] font-semibold text-foreground">
+              <h2 className="mb-6 font-display text-26 font-semibold text-foreground">
                 {t("contactInfoHeading")}
               </h2>
               <ContactInfoList
@@ -186,7 +186,7 @@ export default async function ContactPage() {
 
             {(mapEmbedSrc || address || hotline) ? (
               <div className="min-w-0">
-                <h2 className="mb-6 font-display text-[26px] font-semibold text-foreground">
+                <h2 className="mb-6 font-display text-26 font-semibold text-foreground">
                   {t("storeSystemHeading")}
                 </h2>
                 {mapEmbedSrc ? (

@@ -27,8 +27,10 @@ export function CartIcon() {
       aria-label={t("iconAria")}
       onClick={closePanel}
     >
-      <ShoppingCart size={24} strokeWidth={1.75} aria-hidden />
-      {renderBadge()}
+      <span className="relative inline-flex">
+        <ShoppingCart size={24} strokeWidth={1.75} aria-hidden />
+        {renderBadge()}
+      </span>
     </Link>
   );
 }

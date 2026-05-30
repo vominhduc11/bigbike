@@ -7,12 +7,28 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface ArticleJpaRepository extends JpaRepository<ArticleEntity, String> {
+public interface ArticleJpaRepository extends JpaRepository<ArticleEntity, String>, JpaSpecificationExecutor<ArticleEntity> {
 
     Optional<ArticleEntity> findBySlug(String slug);
+
+    /** Public search: DB-level filter on title + excerpt to avoid full-table scan. */
+    @Query("""
+        SELECT a FROM ArticleEntity a
+        LEFT JOIN FETCH a.author
+        LEFT JOIN FETCH a.category
+        WHERE a.publishStatus = :status
+          AND (LOWER(a.title) LIKE LOWER(CONCAT('%', CAST(:term AS string), '%'))
+            OR LOWER(COALESCE(a.excerpt, '')) LIKE LOWER(CONCAT('%', CAST(:term AS string), '%')))
+        ORDER BY a.publishedAt DESC
+        """)
+    List<ArticleEntity> searchPublished(
+            @Param("term") String term,
+            @Param("status") PublishStatus status,
+            Pageable pageable);
 
     /**
      * Paginated article IDs for the public listing.

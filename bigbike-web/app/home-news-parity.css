@@ -69,7 +69,7 @@ body .bb-home .bb-home-news-parity .block-title h2 {
   padding: 0 0 0 20px;
   background: var(--bb-action-primary);
   color: var(--bb-text-inverse);
-  font-family: "Oswald", var(--bb-font-heading, sans-serif);
+  font-family: var(--bb-font-heading, "Barlow Condensed", sans-serif);
   font-size: 14px;
   font-weight: 600;
   line-height: 42px;
@@ -102,7 +102,7 @@ body .bb-home .bb-home-news-parity .block-title h2 {
    Our JSX uses .title-post inside <p> — we target that class. ── */
 .bb-home .bb-home-news-parity .news--item-inside .title-post {
   margin: 0 0 5px;
-  font-family: "Oswald", var(--bb-font-heading, sans-serif);
+  font-family: var(--bb-font-heading, "Barlow Condensed", sans-serif);
   font-size: 20px;
   font-weight: 600;
   line-height: 24px;
@@ -141,15 +141,39 @@ body .bb-home .bb-home-news-parity .block-title h2 {
 }
 
 
-/* ── 4xl wide-screen workstation (≥ 2560px): scale type + image up so the
-   3-column news strip fills the wider Tier 2 container (2240px). ── */
+/* ── 3xl Full HD (≥ 1920px): widen container to Tier 1 (1600px / 100rem) — same
+   tier as bb-home-products-parity. Overrides .bb-home .container max-width:1200px
+   from globals.css which otherwise leaves ~360px empty on each side. ── */
+@media (min-width: 1920px) {
+  .bb-home .bb-home-news-parity .container {
+    max-width: none;
+    width: min(100% - calc(var(--bb-page-padding-desktop) * 2), 100rem);
+  }
+
+  body .bb-home .bb-home-news-parity .block-title h2 {
+    font-size: 50px;
+  }
+
+  .bb-home .bb-home-news-parity .news-list .news--item-thumbnail a img {
+    height: 290px;
+  }
+}
+
+/* ── 4xl wide-screen workstation (≥ 2560px): widen container to Tier 2 (2240px)
+   and scale type + image to fill it. Overrides .bb-home .container max-width:1200px
+   from globals.css which otherwise leaves ~680px empty on each side. ── */
 @media (min-width: 2560px) {
+  .bb-home .bb-home-news-parity .container {
+    max-width: none;
+    width: min(100% - calc(var(--bb-page-padding-desktop) * 2), 140rem);
+  }
+
   body .bb-home .bb-home-news-parity .block-title h2 {
     font-size: 56px;
   }
 
   .bb-home .bb-home-news-parity .news-list .news--item-thumbnail a img {
-    height: 260px;
+    height: 400px;
   }
 
   .bb-home .bb-home-news-parity .news--item-inside .title-post {

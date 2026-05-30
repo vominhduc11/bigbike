@@ -110,6 +110,27 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     }
 
     @Override
+    public List<Product> searchPublishedProducts(java.util.List<String> tokens, String locale, int limit) {
+        Specification<ProductEntity> spec = (root, query, cb) -> {
+            java.util.List<Predicate> preds = new ArrayList<>();
+            preds.add(cb.equal(root.get("publishStatus"), PublishStatus.PUBLISHED));
+            for (String token : tokens) {
+                String like = "%" + token.toLowerCase(Locale.ROOT) + "%";
+                preds.add(cb.or(
+                        cb.like(cb.lower(root.get("name")), like),
+                        cb.like(cb.lower(cb.coalesce(root.get("shortDescription"), "")), like)));
+            }
+            return cb.and(preds.toArray(new Predicate[0]));
+        };
+        return productJpaRepository
+                .findAll(spec, org.springframework.data.domain.PageRequest.of(0, limit))
+                .getContent()
+                .stream()
+                .map(entity -> toDomainPublicView(entity, locale))
+                .toList();
+    }
+
+    @Override
     public List<Product> findProductsFiltered(String query, String publishStatus, String stockState, String brandId, String categoryId) {
         Specification<ProductEntity> spec = buildProductSpec(query, publishStatus, stockState, brandId, categoryId);
         return productJpaRepository.findAll(spec).stream()
@@ -462,6 +483,8 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         entity.getIconHeight(),
                         entity.getIconMimeType()
                 ),
+                toImageAsset(null, entity.getBannerUrl(), entity.getBannerAlt(), null, null, null),
+                toImageAsset(null, entity.getMobileBannerUrl(), entity.getMobileBannerAlt(), null, null, null),
                 toSeoMeta(
                         pick(entity.getSeoTitle(), entity.getSeoTitleEn(), locale),
                         pick(entity.getSeoDescription(), entity.getSeoDescriptionEn(), locale),
@@ -521,6 +544,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         entity.getLogoMimeType()
                 ),
                 toImageAsset(null, entity.getBannerUrl(), entity.getBannerAlt(), null, null, null),
+                toImageAsset(null, entity.getMobileBannerUrl(), entity.getMobileBannerAlt(), null, null, null),
                 toSeoMeta(
                         pick(entity.getSeoTitle(), entity.getSeoTitleEn(), locale),
                         pick(entity.getSeoDescription(), entity.getSeoDescriptionEn(), locale),

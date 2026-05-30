@@ -18,9 +18,9 @@ export function ErrorState({ title, message, retryHref }: ErrorStateProps) {
       role="alert"
       aria-live="assertive"
     >
-      <h2 className="font-heading text-base font-semibold uppercase text-foreground m-0">
+      <p className="font-heading text-base font-semibold uppercase text-foreground m-0">
         {title ?? t("errorTitle")}
-      </h2>
+      </p>
       <p className="m-0 text-muted-foreground">{message}</p>
       {retryHref ? (
         <Button asChild variant="primary">

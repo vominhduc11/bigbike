@@ -142,14 +142,16 @@ export function ProductGallery({
 
       <div className="bb-wp-gallery-main-wrap">
         <div className="bb-wp-gallery-main">
-          <MediaImage
-            image={selectedImage}
-            altFallback={altFallback}
-            priority
-            width={1200}
-            height={1200}
-            className="bb-wp-gallery-main-img"
-          />
+          <div key={selectedImage?.url ?? selectedIndex} className="bb-wp-gallery-main-img-anim">
+            <MediaImage
+              image={selectedImage}
+              altFallback={altFallback}
+              priority
+              width={1200}
+              height={1200}
+              className="bb-wp-gallery-main-img"
+            />
+          </div>
         </div>
 
         {count > 1 && (

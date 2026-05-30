@@ -25,7 +25,7 @@ export function CompareBar() {
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-white shadow-[0_-4px_14px_rgba(0,0,0,0.1)] pb-[env(safe-area-inset-bottom)]">
       <div className="mx-auto flex max-w-[var(--bb-container-xl)] items-center gap-3 px-4 py-2.5 pr-[84px]">
-        <span className="hidden shrink-0 font-heading text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground sm:block">
+        <span className="hidden shrink-0 font-heading text-xs font-semibold uppercase tracking-display text-muted-foreground sm:block">
           {t("barLabel")}
         </span>
 
@@ -89,7 +89,7 @@ export function CompareBar() {
           aria-disabled={!canCompare}
           tabIndex={canCompare ? undefined : -1}
           className={cn(
-            "shrink-0 whitespace-nowrap bg-brand px-4 py-2.5 font-heading text-sm font-semibold uppercase tracking-[0.04em] text-white transition-colors hover:bg-brand-hover",
+            "shrink-0 whitespace-nowrap bg-brand px-4 py-2.5 font-heading text-sm font-semibold uppercase tracking-wide text-white transition-colors hover:bg-brand-hover",
             !canCompare && "pointer-events-none opacity-50",
           )}
         >

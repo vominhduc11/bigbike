@@ -12,7 +12,9 @@ import {
   listBrands,
   listCategories,
   listProducts,
+  listPublicSettings,
 } from "@/lib/api/public-api";
+import { readDefaultHeroAssets } from "@/lib/utils/page-hero";
 import { buildCatalogTitle } from "@/lib/utils/catalog";
 import {
   DEFAULT_WP_ORDERBY,
@@ -218,6 +220,7 @@ export default async function CategoryDetailPage({
     brandsResult,
     allCategoriesResult,
     facetsResult,
+    settingsResult,
   ] = await Promise.all([
     listProducts({
       page: pageParsed.value,
@@ -234,7 +237,9 @@ export default async function CategoryDetailPage({
     listBrands({ page: 1, size: 100, sort: "name:asc" }),
     listCategories({ page: 1, size: 100, sort: "sortOrder:asc" }),
     getCatalogFacets({ category: category.slug, q: qParsed.value }),
+    listPublicSettings(),
   ]);
+  const defaultHero = readDefaultHeroAssets(settingsResult.data ?? []);
   const canonicalPath = toCategoryPath(category.slug);
   const allCategories = allCategoriesResult.data ?? [];
   const parentCategory = category.parentId
@@ -256,7 +261,13 @@ export default async function CategoryDetailPage({
     ? sanitizeRichHtml(category.description, { rewriteMediaUrls: true })
     : null;
 
-  const heroBreadcrumb = [{ label: "Bigbike.vn", href: toHomePath() }];
+  const heroBreadcrumb = [
+    { label: "Trang chủ", href: toHomePath() },
+    ...(parentCategory
+      ? [{ label: safeText(parentCategory.name, "Danh mục"), href: toCategoryPath(parentCategory.slug) }]
+      : []),
+    { label: categoryName },
+  ];
 
   return (
     <div className="bb-product-archive archive tax-product_cat">
@@ -264,8 +275,13 @@ export default async function CategoryDetailPage({
       <ProductArchiveHero
         title={categoryName}
         breadcrumb={heroBreadcrumb}
+        imageUrl={category.bannerImage?.url}
+        mobileImageUrl={category.mobileBannerImage?.url}
+        imageAlt={category.bannerImage?.alt ?? categoryName}
         illustrationUrl={(category.image ?? category.icon)?.url}
         illustrationAlt={(category.image ?? category.icon)?.alt ?? categoryName}
+        defaultBgUrl={defaultHero.defaultBgUrl}
+        defaultIllustrationUrl={defaultHero.defaultIllustrationUrl}
       />
 
       <ProductArchiveLayout

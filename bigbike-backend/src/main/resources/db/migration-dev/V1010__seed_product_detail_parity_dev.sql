@@ -27,7 +27,6 @@ set publish_status = 'PUBLISHED',
     rating = 5.00,
     rating_count = coalesce(rating_count, 5),
     short_description = 'Áp dụng trả góp lãi suất 0%. Bảo hành chính hãng 2 năm tại BigBike. Chất liệu full carbon nặng khoảng 1350g, đạt chuẩn an toàn ECE/R22-05 và phù hợp nhu cầu đi phố, touring lẫn phượt xa.',
-    content_bottom = '<p>BigBike cung cấp mũ bảo hiểm LS2 chính hãng cùng đầy đủ phụ kiện bảo hộ cho biker. Sản phẩm được kiểm tra hình ảnh, size và tình trạng trước khi tư vấn giao cho khách.</p><p>Khách hàng có thể tham khảo thêm các dòng mũ LS2 Challenger, phụ kiện kính thay, pinlock, găng tay và áo bảo hộ để hoàn thiện bộ gear an toàn cho từng hành trình.</p>',
     updated_at = now()
 where id = 'wp-prod-6093'
 and (
@@ -41,7 +40,6 @@ and (
     or height_cm is distinct from 40.0000
     or rating_count is null
     or short_description is distinct from 'Áp dụng trả góp lãi suất 0%. Bảo hành chính hãng 2 năm tại BigBike. Chất liệu full carbon nặng khoảng 1350g, đạt chuẩn an toàn ECE/R22-05 và phù hợp nhu cầu đi phố, touring lẫn phượt xa.'
-    or content_bottom is null
 );
 
 update product_variants

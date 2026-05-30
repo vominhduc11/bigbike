@@ -424,9 +424,9 @@ export function HomeVideoListScreen({ canUpdate }) {
       queryClient.invalidateQueries({ queryKey: ['home-videos'] })
       setLocalItems(null)
       setSelectedIds(new Set())
-      toast.success(isActive ? `Đã hiện ${selectedIds.size} video` : `Đã ẩn ${selectedIds.size} video`)
+      toast.success(isActive ? t('homeVideos.bulkShowSuccess', { count: selectedIds.size }) : t('homeVideos.bulkHideSuccess', { count: selectedIds.size }))
     } catch {
-      toast.error('Có lỗi xảy ra, vui lòng thử lại')
+      toast.error(t('homeVideos.bulkActionError'))
     } finally {
       setIsBulkBusy(false)
     }
@@ -434,7 +434,7 @@ export function HomeVideoListScreen({ canUpdate }) {
 
   async function handleBulkDelete() {
     const count = selectedIds.size
-    const confirmed = await showConfirm(`Xoá ${count} video đã chọn? Thao tác này không thể hoàn tác.`, 'Xoá hàng loạt')
+    const confirmed = await showConfirm(t('homeVideos.bulkDeleteConfirm', { count }), t('homeVideos.bulkDeleteConfirmTitle'))
     if (!confirmed) return
     setIsBulkBusy(true)
     try {
@@ -442,9 +442,9 @@ export function HomeVideoListScreen({ canUpdate }) {
       queryClient.invalidateQueries({ queryKey: ['home-videos'] })
       setLocalItems(null)
       setSelectedIds(new Set())
-      toast.success(`Đã xoá ${count} video`)
+      toast.success(t('homeVideos.bulkDeleteSuccess', { count }))
     } catch {
-      toast.error('Có lỗi xảy ra, vui lòng thử lại')
+      toast.error(t('homeVideos.bulkActionError'))
     } finally {
       setIsBulkBusy(false)
     }
@@ -671,6 +671,7 @@ export function HomeVideoListScreen({ canUpdate }) {
               alt={form.thumbnailAlt}
               onAltChange={(alt) => setForm((prev) => ({ ...prev, thumbnailAlt: alt }))}
             />
+            <span className="text-xs text-muted-foreground font-normal">{t('homeVideos.formThumbnailHint')}</span>
           </div>
 
           <label className="flex items-center gap-2 text-sm font-semibold cursor-pointer">

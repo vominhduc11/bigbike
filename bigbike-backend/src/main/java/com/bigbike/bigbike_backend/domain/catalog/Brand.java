@@ -9,6 +9,7 @@ public record Brand(
         String description,
         ImageAsset logo,
         ImageAsset bannerImage,
+        ImageAsset mobileBannerImage,
         SeoMeta seo,
         boolean isVisible,
         /** Raw English content — non-null only on admin detail reads (V137). */

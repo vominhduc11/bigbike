@@ -35,7 +35,9 @@ function normalizeLegacyUploadUrl(url: string | null | undefined): string | null
 function expandForSwiperLoop(articles: Article[]): Article[] {
   if (articles.length <= 1) return articles;
   const expanded = [...articles];
-  while (expanded.length < 6) expanded.push(...articles);
+  // Loop + centeredSlides needs ~2x the largest slidesPerView worth of real
+  // slides to clone from without leaving gaps. Largest is 4.43 at 4xl -> >=10.
+  while (expanded.length < 10) expanded.push(...articles);
   return expanded;
 }
 
@@ -140,8 +142,28 @@ export function ExperienceCarousel({ articles }: Props) {
       autoHeight
       watchOverflow
       breakpoints={{
-        767: {
+        // 768 aligns with the CSS @media (min-width: 768px) / (max-width: 767px)
+        // boundary used throughout globals.css. Using 767 caused a 1px window
+        // where Swiper entered desktop mode (2.43 slides, autoHeight:false) but
+        // the CSS still applied mobile overrides (margin-top:-18%, no
+        // height:auto !important on wrapper), which could clip slide content.
+        768: {
           slidesPerView: 2.43,
+          spaceBetween: 40,
+          autoHeight: false,
+        },
+        // 3xl — keep each card near its 2xl size instead of letting it grow.
+        // autoHeight must be re-stated: Swiper breakpoints override base params,
+        // they do NOT inherit from the 768 tier.
+        1920: {
+          slidesPerView: 3.43,
+          spaceBetween: 40,
+          autoHeight: false,
+        },
+        // 4xl — same .43 peek ratio as 2xl. Without this each slide ballooned to
+        // ~1050px wide, which over-pulled the mt-[-32%] product overlay.
+        2560: {
+          slidesPerView: 4.43,
           spaceBetween: 40,
           autoHeight: false,
         },

@@ -2,7 +2,8 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { PageHero } from "@/components/layout/PageHero";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { getPageBySlug, getPublicMenu } from "@/lib/api/public-api";
+import { getPageBySlug, getPublicMenu, listPublicSettings } from "@/lib/api/public-api";
+import { readDefaultHeroAssets } from "@/lib/utils/page-hero";
 import { formatDate, safeText } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import { toHomePath } from "@/lib/utils/routes";
@@ -79,10 +80,12 @@ export function resolveGuideRoute(subSegments?: string[]): GuideRoute {
 }
 
 export async function GuidePage({ subSegments }: GuidePageProps) {
-  const [t, tBreadcrumb] = await Promise.all([
+  const [t, tBreadcrumb, settingsResult] = await Promise.all([
     getTranslations("Guide"),
     getTranslations("Breadcrumb"),
+    listPublicSettings(),
   ]);
+  const defaultHero = readDefaultHeroAssets(settingsResult.data ?? []);
   const isRoot = !subSegments || subSegments.length === 0;
 
   // Root landing: static index without CMS dependency (CMS page "huong-dan" may not exist)
@@ -91,6 +94,8 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
       <>
         <PageHero
           title={t("heroTitle")}
+          defaultBgUrl={defaultHero.defaultBgUrl}
+          defaultIllustrationUrl={defaultHero.defaultIllustrationUrl}
           breadcrumb={[
             { label: tBreadcrumb("home"), href: toHomePath() },
             { label: t("breadcrumb") },
@@ -105,7 +110,7 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
                 href={guide.path}
                 className="group block bg-card border border-border p-6 no-underline text-inherit transition-colors duration-200 hover:border-brand"
               >
-                <h2 className="font-display text-lg uppercase tracking-[0.02em] m-0 mb-2 leading-snug transition-colors duration-200 group-hover:text-brand">
+                <h2 className="font-display text-lg uppercase tracking-wide m-0 mb-2 leading-snug transition-colors duration-200 group-hover:text-brand">
                   {t(guide.titleKey)}
                 </h2>
                 <p className="text-sm text-muted-foreground m-0 leading-relaxed">{t(guide.descriptionKey)}</p>
@@ -145,6 +150,8 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
         imageUrl={page.heroImageUrl}
         imageAlt={page.heroImageAlt}
         title={page.heroTitle ?? pageTitle}
+        defaultBgUrl={defaultHero.defaultBgUrl}
+        defaultIllustrationUrl={defaultHero.defaultIllustrationUrl}
         breadcrumb={[
           { label: tBreadcrumb("home"), href: toHomePath() },
           { label: t("breadcrumb"), href: "/huong-dan/" },

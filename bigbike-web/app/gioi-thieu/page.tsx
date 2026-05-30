@@ -159,6 +159,7 @@ export default async function AboutPage() {
         title={pageTitle}
         watermark="BigBike"
         illustration={{ src: page.heroImageUrl, alt: page.heroImageAlt }}
+        defaultBgUrl={pickSetting(settings, ["hero_default_bg_url"]) || null}
       />
       <section className="bb-page">
         <div className="bb-container">

@@ -10,6 +10,8 @@ public record Category(
         String parentId,
         ImageAsset image,
         ImageAsset icon,
+        ImageAsset bannerImage,
+        ImageAsset mobileBannerImage,
         SeoMeta seo,
         boolean isVisible,
         Boolean showOnHomepage,

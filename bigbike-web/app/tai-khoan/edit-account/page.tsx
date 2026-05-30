@@ -88,7 +88,7 @@ function EditAccountContent() {
       </p>
 
       {success && (
-        <div className="bg-[var(--bb-state-success-bg)] border border-[var(--bb-state-success-border)] p-[12px_16px] mb-5 text-sm text-[var(--bb-state-success-text)]">
+        <div className="bg-[var(--bb-state-success-bg)] border border-[var(--bb-state-success-border)] p-[12px_16px] mb-5 text-sm text-state-success-text">
           {t("successUpdated")}
         </div>
       )}

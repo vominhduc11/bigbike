@@ -164,7 +164,7 @@ const DropdownMenuShortcut = ({
   ...props
 }: React.HTMLAttributes<HTMLSpanElement>) => (
   <span
-    className={cn("ml-auto text-sm tracking-widest text-muted-foreground", className)}
+    className={cn("ml-auto text-sm tracking-display text-muted-foreground", className)}
     {...props}
   />
 );

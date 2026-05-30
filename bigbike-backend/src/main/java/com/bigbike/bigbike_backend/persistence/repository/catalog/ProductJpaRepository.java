@@ -138,6 +138,19 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Strin
         """)
     List<ProductEntity> findByIdsWithVariants(@Param("ids") List<String> ids);
 
+    /** Public search: DB-level filter on name + shortDescription to avoid full-table scan. */
+    @Query("""
+        SELECT p FROM ProductEntity p
+        WHERE p.publishStatus = :status
+          AND (LOWER(p.name) LIKE LOWER(CONCAT('%', :term, '%'))
+            OR LOWER(COALESCE(p.shortDescription, '')) LIKE LOWER(CONCAT('%', :term, '%')))
+        ORDER BY p.name ASC
+        """)
+    List<ProductEntity> searchPublished(
+            @Param("term") String term,
+            @Param("status") PublishStatus status,
+            org.springframework.data.domain.Pageable pageable);
+
     List<ProductEntity> findByHomepageBlockIn(Collection<HomepageBlock> blocks);
 
     @Query("SELECT p.slug FROM ProductEntity p WHERE p.id IN :ids AND p.slug IS NOT NULL")

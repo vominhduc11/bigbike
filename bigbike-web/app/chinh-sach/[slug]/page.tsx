@@ -4,7 +4,8 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { PageHero } from "@/components/layout/PageHero";
 import { PolicySidebar } from "@/components/layout/PolicySidebar";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { getPageBySlug } from "@/lib/api/public-api";
+import { getPageBySlug, listPublicSettings } from "@/lib/api/public-api";
+import { readDefaultHeroAssets } from "@/lib/utils/page-hero";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { formatDate, safeText } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
@@ -70,7 +71,11 @@ export default async function PolicyPage({ params }: Props) {
   if (!backendSlug) notFound();
 
   const locale = await getLocale();
-  const result = await getPageBySlug(backendSlug, locale);
+  const [result, settingsResult] = await Promise.all([
+    getPageBySlug(backendSlug, locale),
+    listPublicSettings(),
+  ]);
+  const defaultHero = readDefaultHeroAssets(settingsResult.data ?? []);
   if (!result.data && result.error?.status === 404) {
     notFound();
   }
@@ -95,6 +100,8 @@ export default async function PolicyPage({ params }: Props) {
         imageUrl={page.heroImageUrl}
         imageAlt={page.heroImageAlt}
         title={page.heroTitle ?? pageTitle}
+        defaultBgUrl={defaultHero.defaultBgUrl}
+        defaultIllustrationUrl={defaultHero.defaultIllustrationUrl}
         breadcrumb={[
           { label: tBreadcrumb("home"), href: toHomePath() },
           { label: t("policy.title") },

@@ -5,7 +5,7 @@ import { PageHero } from "@/components/layout/PageHero";
 import { listArticles, listContentCategories, listPublicSettings } from "@/lib/api/public-api";
 import type { Article, ContentCategoryWithCount } from "@/lib/contracts/public";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
-import { readHeroSettings } from "@/lib/utils/page-hero";
+import { readDefaultHeroAssets, readHeroSettings } from "@/lib/utils/page-hero";
 import {
   buildQueryString,
   collectErrors,
@@ -110,6 +110,7 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
 
   const sidebarCategories = categoriesResult.data.filter((cat) => cat.articleCount > 0);
   const heroSettings = readHeroSettings(settingsResult.data ?? [], "hero_news");
+  const defaultHero = readDefaultHeroAssets(settingsResult.data ?? []);
   const activeCategory = sidebarCategories.find((cat) => cat.slug === categoryParsed.value);
   const basePageTitle = activeCategory?.name ?? heroSettings.title ?? "Tin tức";
   const pageTitle =
@@ -136,7 +137,10 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
       <PageHero
         title={pageTitle}
         imageUrl={heroSettings.imageUrl}
+        mobileImageUrl={heroSettings.mobileImageUrl}
         imageAlt={heroSettings.imageAlt}
+        defaultBgUrl={defaultHero.defaultBgUrl}
+        defaultIllustrationUrl={defaultHero.defaultIllustrationUrl}
         breadcrumb={
           activeCategory
             ? [

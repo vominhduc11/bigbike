@@ -45,6 +45,8 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                         "image/jpeg"
                 ),
                 null,
+                null,
+                null,
                 new SeoMeta(
                         "Mũ bảo hiểm BigBike",
                         "Danh mục mũ bảo hiểm cho biker.",
@@ -73,6 +75,8 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                         800,
                         "image/jpeg"
                 ),
+                null,
+                null,
                 null,
                 new SeoMeta(
                         "Áo giáp bảo hộ BigBike",
@@ -104,6 +108,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                         "image/png"
                 ),
                 null,
+                null,
                 new SeoMeta(
                         "Thương hiệu LS2",
                         "Sản phẩm LS2 tại BigBike.",
@@ -129,6 +134,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                         260,
                         "image/png"
                 ),
+                null,
                 null,
                 new SeoMeta(
                         "Thương hiệu KYT",
@@ -365,6 +371,19 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
         // for interface parity but not resolved (no _en data in the fixtures).
         return products.stream()
                 .filter(p -> p.publishStatus() == PublishStatus.PUBLISHED)
+                .toList();
+    }
+
+    @Override
+    public List<Product> searchPublishedProducts(java.util.List<String> tokens, String locale, int limit) {
+        return products.stream()
+                .filter(p -> p.publishStatus() == PublishStatus.PUBLISHED)
+                .filter(p -> tokens == null || tokens.isEmpty() || tokens.stream().allMatch(t -> {
+                    String term = t.toLowerCase(java.util.Locale.ROOT);
+                    return (p.name() != null && p.name().toLowerCase(java.util.Locale.ROOT).contains(term))
+                            || (p.shortDescription() != null && p.shortDescription().toLowerCase(java.util.Locale.ROOT).contains(term));
+                }))
+                .limit(limit)
                 .toList();
     }
 

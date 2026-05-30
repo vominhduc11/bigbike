@@ -270,7 +270,7 @@ export default async function ProductDetailPage({
           />
         </div>
 
-        {anchorItems.length > 0 && <MobilePdpAnchorNav items={anchorItems} />}
+        {anchorItems.length > 1 && <MobilePdpAnchorNav items={anchorItems} />}
 
         <ProductTabs sections={sections} />
 
@@ -280,6 +280,7 @@ export default async function ProductDetailPage({
 
         <MobileStickyPurchaseBar
           addToCartLabel={tProduct("buyBox.addToCartShort")}
+          soldOutLabel={tProduct("buyBox.soldOut")}
           zaloUrl={zaloUrl || undefined}
         />
       </div>

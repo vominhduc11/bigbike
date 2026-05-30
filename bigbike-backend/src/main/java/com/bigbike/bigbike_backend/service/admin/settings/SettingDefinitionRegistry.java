@@ -144,6 +144,9 @@ public class SettingDefinitionRegistry {
                 SettingDefinition.builder("hero_products_image_url", "public_hero", SettingValueType.IMAGE_URL)
                         .publicAllowed()
                         .description("Ảnh nền hero trang Tất cả sản phẩm (/san-pham).").build(),
+                SettingDefinition.builder("hero_products_mobile_image_url", "public_hero", SettingValueType.IMAGE_URL)
+                        .publicAllowed()
+                        .description("Ảnh mobile hero trang Tất cả sản phẩm — portrait ~768×900px cho viewport ≤767px.").build(),
                 SettingDefinition.builder("hero_products_image_alt", "public_hero", SettingValueType.STRING)
                         .publicAllowed()
                         .description("Alt text ảnh hero trang Tất cả sản phẩm.").build(),
@@ -160,6 +163,9 @@ public class SettingDefinitionRegistry {
                 SettingDefinition.builder("hero_brands_image_url", "public_hero", SettingValueType.IMAGE_URL)
                         .publicAllowed()
                         .description("Ảnh nền hero trang Thương hiệu (/brands).").build(),
+                SettingDefinition.builder("hero_brands_mobile_image_url", "public_hero", SettingValueType.IMAGE_URL)
+                        .publicAllowed()
+                        .description("Ảnh mobile hero trang Thương hiệu — portrait ~768×900px cho viewport ≤767px.").build(),
                 SettingDefinition.builder("hero_brands_image_alt", "public_hero", SettingValueType.STRING)
                         .publicAllowed()
                         .description("Alt text ảnh hero trang Thương hiệu.").build(),
@@ -176,6 +182,9 @@ public class SettingDefinitionRegistry {
                 SettingDefinition.builder("hero_news_image_url", "public_hero", SettingValueType.IMAGE_URL)
                         .publicAllowed()
                         .description("Ảnh nền hero trang Tin tức (/tin-tuc).").build(),
+                SettingDefinition.builder("hero_news_mobile_image_url", "public_hero", SettingValueType.IMAGE_URL)
+                        .publicAllowed()
+                        .description("Ảnh mobile hero trang Tin tức — portrait ~768×900px cho viewport ≤767px.").build(),
                 SettingDefinition.builder("hero_news_image_alt", "public_hero", SettingValueType.STRING)
                         .publicAllowed()
                         .description("Alt text ảnh hero trang Tin tức.").build(),
@@ -188,6 +197,14 @@ public class SettingDefinitionRegistry {
                 SettingDefinition.builder("hero_news_kicker", "public_hero", SettingValueType.STRING)
                         .publicAllowed()
                         .description("Kicker hero trang Tin tức.").build(),
+
+                // ── GLOBAL HERO DEFAULTS ──
+                SettingDefinition.builder("hero_default_bg_url", "public_hero", SettingValueType.IMAGE_URL)
+                        .publicAllowed()
+                        .description("Ảnh nền mặc định cho hero banner khi trang không cấu hình ảnh riêng. Ảnh nằm ngang, ví dụ 1920×600px.").build(),
+                SettingDefinition.builder("hero_default_illustration_url", "public_hero", SettingValueType.IMAGE_URL)
+                        .publicAllowed()
+                        .description("Ảnh minh hoạ cut-out mặc định góc phải hero (thay ảnh gear cố định). PNG nền trong, tỷ lệ ~700×600px.").build(),
 
                 // ── SEO ──
                 SettingDefinition.builder("seo_home_title", "seo", SettingValueType.STRING)

@@ -77,7 +77,7 @@ export default function VerifyEmailPage() {
               {isLoggedIn ? (
                 <div className="grid gap-3">
                   {resendStatus === "sent" ? (
-                    <p className="m-0 border border-[var(--bb-state-success-border)] bg-[var(--bb-state-success-bg)] p-3 text-sm text-[var(--bb-state-success-text)]">
+                    <p className="m-0 border border-[var(--bb-state-success-border)] bg-[var(--bb-state-success-bg)] p-3 text-sm text-state-success-text">
                       {resendMsg}
                     </p>
                   ) : (
@@ -127,7 +127,7 @@ export default function VerifyEmailPage() {
                 </Button>
               )}
               {resendStatus === "sent" && (
-                <p className="mt-4 border border-[var(--bb-state-success-border)] bg-[var(--bb-state-success-bg)] p-3 text-sm text-[var(--bb-state-success-text)]">
+                <p className="mt-4 border border-[var(--bb-state-success-border)] bg-[var(--bb-state-success-bg)] p-3 text-sm text-state-success-text">
                   {resendMsg}
                 </p>
               )}

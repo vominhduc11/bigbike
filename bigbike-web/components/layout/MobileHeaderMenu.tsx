@@ -151,16 +151,18 @@ function MobileNavBranch({
       </div>
 
       <div className={cn("bb-mobile-nav-children", childOpen && "is-open")}>
-        {node.children.map((child) => (
-          <MobileNavBranch
-            key={child.id}
-            node={child}
-            pathname={pathname}
-            onNavigate={onNavigate}
-            depth={depth + 1}
-            t={t}
-          />
-        ))}
+        <div>
+          {node.children.map((child) => (
+            <MobileNavBranch
+              key={child.id}
+              node={child}
+              pathname={pathname}
+              onNavigate={onNavigate}
+              depth={depth + 1}
+              t={t}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -197,10 +199,18 @@ export function MobileHeaderMenu({
 
   useEffect(() => {
     if (!open) return;
-
     const timer = window.setTimeout(() => closeButtonRef.current?.focus(), 80);
     return () => window.clearTimeout(timer);
   }, [open]);
+
+  useEffect(() => {
+    const mql = window.matchMedia("(min-width: 1261px)");
+    function onBreakpointChange(e: MediaQueryListEvent) {
+      if (e.matches) closePanel();
+    }
+    mql.addEventListener("change", onBreakpointChange);
+    return () => mql.removeEventListener("change", onBreakpointChange);
+  }, [closePanel]);
 
   function close() {
     closePanel();
@@ -230,16 +240,17 @@ export function MobileHeaderMenu({
         <MenuIcon />
       </button>
 
+      <button
+        type="button"
+        className={cn("bb-mobile-header-overlay min-[1261px]:hidden", open && "is-open")}
+        aria-label={t("closeDrawer")}
+        onClick={close}
+      />
+
       <div
         className={cn("bb-mobile-header-panel min-[1261px]:hidden", open && "is-open")}
         aria-hidden={!open}
       >
-        <button
-          type="button"
-          className="bb-mobile-header-overlay"
-          aria-label={t("closeDrawer")}
-          onClick={close}
-        />
 
         <div className="bb-mobile-header-drawer" role="dialog" aria-modal="true" aria-label={menuLabel || "BIGBIKE MENU"}>
           <div className="bb-mobile-drawer-head">
@@ -254,7 +265,7 @@ export function MobileHeaderMenu({
           {auth.status === "authenticated" ? (
             <div className="bb-mobile-header-account is-authenticated">
               <div className="bb-mobile-header-account-copy">
-                <p>HEY YO!....</p>
+                <p>{t("loggedInGreeting")}</p>
                 <span title={auth.profile.email}>
                   {auth.profile.displayName?.trim() || auth.profile.email}
                 </span>
@@ -274,7 +285,7 @@ export function MobileHeaderMenu({
             </div>
           ) : (
             <div className="bb-mobile-header-account">
-              <UserCircle2 size={40} aria-hidden className="shrink-0 text-white" />
+              <UserCircle2 size={40} aria-hidden className="shrink-0" />
               <div className="bb-mobile-header-auth-links">
                 <Link href={toRegisterPath()} onClick={close}>
                   {t("register")}

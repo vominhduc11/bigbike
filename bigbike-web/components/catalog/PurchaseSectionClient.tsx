@@ -233,13 +233,21 @@ export function PurchaseSectionClient({
   }
 
   const busy = addLoading;
+  // Whole product is sold out when forced out of stock, when every variant is
+  // out of stock, or when the resolved (product- or selected-variant-level)
+  // stock state is OUT_OF_STOCK. Keyed off stockState, not `isAvailable` — the
+  // latter only means the variant combination exists, not that it's in stock.
+  const allVariantsOut =
+    hasVariants && variants.every((v) => v.stockState === "OUT_OF_STOCK");
+  const soldOut =
+    Boolean(snapshot?.stock?.forceOutOfStock) ||
+    allVariantsOut ||
+    (!requiresVariantSelection && effectiveStockState === "OUT_OF_STOCK");
   const addToCartLabel = addLoading
     ? t("adding")
-    : requiresVariantSelection
-      ? t("addToCart")
-      : isAvailable
-        ? t("addToCart")
-        : t("soldOut");
+    : soldOut
+      ? t("soldOut")
+      : t("addToCart");
 
   return (
     <>
@@ -320,6 +328,7 @@ export function PurchaseSectionClient({
                 )}
                 onClick={handleAddToCart}
                 disabled={busy || !isAvailable}
+                data-soldout={soldOut ? "true" : undefined}
               >
                 {addToCartLabel}
               </button>

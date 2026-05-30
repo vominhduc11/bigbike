@@ -4,7 +4,13 @@
  *
  * Visits each route × viewport, queries required selectors, dumps
  * window.getComputedStyle() for all required CSS properties, and
- * compares against the WP-parity baseline from the audit/fix reports.
+ * compares against the typography baseline.
+ *
+ * BASELINE (updated): migrated to the MD typography system —
+ * docs/TYPOGRAPHY.md (superfamily Barlow). Display/heading expect
+ * "Barlow Condensed" (Oswald removed); body is fluid 16→18px.
+ * Selector-level px sizes (.bb-section-title, .bb-product-name, …)
+ * are still on their WP-parity values pending incremental migration.
  *
  * Usage:
  *   BASE_URL=http://localhost:3000 node scripts/verify-typography-computed.mjs
@@ -111,9 +117,10 @@ const EXPECTED_CHECKS = [
     checks: [
       {
         prop: "font-size",
-        expected: "16px",
-        matchType: "exact",
-        note: "WP main.css body{font-size:16px}",
+        expected: "17",
+        matchType: "approx",
+        tolerance: 1.6,
+        note: "MD fluid --fs-body: 16px @375 → 18px @1440 (rem-based)",
       },
       {
         prop: "color",
@@ -123,10 +130,10 @@ const EXPECTED_CHECKS = [
       },
       {
         prop: "line-height",
-        expected: "24px",
+        expected: "25.5",
         matchType: "approx",
-        tolerance: 0.5,
-        note: "WP main.css body{line-height:1.5} → 16×1.5=24px",
+        tolerance: 2,
+        note: "line-height 1.5 × fluid body (16→18px) → 24→27px",
       },
       {
         prop: "font-family",
@@ -207,7 +214,7 @@ const EXPECTED_CHECKS = [
     checks: [
       {
         prop: "font-family",
-        expected: "Oswald",
+        expected: "Barlow Condensed",
         matchType: "contains",
         note: "WP custom.css sub-menu li a{font-family:Oswald}",
       },
@@ -239,7 +246,7 @@ const EXPECTED_CHECKS = [
     checks: [
       {
         prop: "font-family",
-        expected: "Oswald",
+        expected: "Barlow Condensed",
         matchType: "contains",
         note: "WP custom.css .product--item-title{font-family:Oswald}",
       },
@@ -271,7 +278,7 @@ const EXPECTED_CHECKS = [
     checks: [
       {
         prop: "font-family",
-        expected: "Oswald",
+        expected: "Barlow Condensed",
         matchType: "contains",
         note: "WP custom.css .product--item-price{font-family:Oswald}",
       },
@@ -303,7 +310,7 @@ const EXPECTED_CHECKS = [
     checks: [
       {
         prop: "font-family",
-        expected: "Oswald",
+        expected: "Barlow Condensed",
         matchType: "contains",
         note: "WP custom.css .block-title h3{font-family:Oswald}",
       },
@@ -395,7 +402,7 @@ const EXPECTED_CHECKS = [
     checks: [
       {
         prop: "font-family",
-        expected: "Oswald",
+        expected: "Barlow Condensed",
         matchType: "contains",
         note: "Footer section headings use --bb-font-display (Oswald)",
       },
@@ -421,7 +428,7 @@ const EXPECTED_CHECKS = [
     checks: [
       {
         prop: "font-family",
-        expected: "Oswald",
+        expected: "Barlow Condensed",
         matchType: "contains",
         note: "Footer brand heading uses --bb-font-display (Oswald)",
       },
@@ -529,7 +536,7 @@ const EXPECTED_CHECKS = [
     checks: [
       {
         prop: "font-family",
-        expected: "Oswald",
+        expected: "Barlow Condensed",
         matchType: "contains",
         note: "Page title uses --bb-font-heading (Oswald after remap)",
       },
@@ -551,7 +558,7 @@ const EXPECTED_CHECKS = [
     checks: [
       {
         prop: "font-family",
-        expected: "Oswald",
+        expected: "Barlow Condensed",
         matchType: "contains",
         note: "Related products title uses --bb-font-display (Oswald)",
       },

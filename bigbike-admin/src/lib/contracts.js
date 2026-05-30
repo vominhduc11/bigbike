@@ -64,19 +64,31 @@ function toInteger(value, fallback = 0) {
 
 // Rewrites MinIO URLs (both Docker-internal and localhost) to the nginx-proxied
 // /media-proxy/... path so the browser can load them.
-// Handles two origin forms stored in the DB:
-//   - http://minio:9000/...  (set by migration runner inside Docker)
-//   - http://localhost:9000/... (set by migration when MINIO_ENDPOINT=localhost)
+// Handles three origin forms stored in the DB:
+//   - http://minio:9000/...       (set by migration runner inside Docker)
+//   - http://localhost:9000/...   (set by migration when MINIO_ENDPOINT=localhost)
+//   - http://103.1.236.148:9000/... (legacy data imported from production MinIO)
 // VITE_MINIO_INTERNAL_ORIGIN overrides the primary internal origin (default: http://minio:9000).
+// VITE_MINIO_EXTRA_ORIGINS is a comma-separated list of additional origins to rewrite.
 const _MINIO_INTERNAL_ORIGIN = (
   import.meta.env.VITE_MINIO_INTERNAL_ORIGIN || 'http://minio:9000'
 ).replace(/\/$/, '')
 
 const _MINIO_LOCALHOST_ORIGIN = 'http://localhost:9000'
 
+const _MINIO_EXTRA_ORIGINS = (import.meta.env.VITE_MINIO_EXTRA_ORIGINS || 'http://103.1.236.148:9000')
+  .split(',')
+  .map((o) => o.trim().replace(/\/$/, ''))
+  .filter(Boolean)
+
+export function resolveDisplayUrl(url) {
+  if (!url || typeof url !== 'string') return url
+  return rewriteInternalMinioUrl(url)
+}
+
 function rewriteInternalMinioUrl(url) {
   let rest = null
-  for (const origin of [_MINIO_INTERNAL_ORIGIN, _MINIO_LOCALHOST_ORIGIN]) {
+  for (const origin of [_MINIO_INTERNAL_ORIGIN, _MINIO_LOCALHOST_ORIGIN, ..._MINIO_EXTRA_ORIGINS]) {
     const prefix = origin + '/'
     if (url.startsWith(prefix)) {
       rest = url.slice(prefix.length)
@@ -389,6 +401,8 @@ export function normalizeCategory(input) {
     parentId: toTrimmedString(source.parentId) || undefined,
     image: normalizeImageAsset(source.image),
     icon: normalizeImageAsset(source.icon),
+    bannerImage: normalizeImageAsset(source.bannerImage),
+    mobileBannerImage: normalizeImageAsset(source.mobileBannerImage),
     seo: normalizeSeoMeta(source.seo),
     isVisible: source.isVisible !== false,
     showOnHomepage: source.showOnHomepage === true,
@@ -418,6 +432,7 @@ export function normalizeBrand(input) {
     description: toTrimmedString(source.description) || undefined,
     logo: normalizeImageAsset(source.logo),
     bannerImage: normalizeImageAsset(source.bannerImage),
+    mobileBannerImage: normalizeImageAsset(source.mobileBannerImage),
     seo: normalizeSeoMeta(source.seo),
     isVisible: source.isVisible !== false,
     translations: {

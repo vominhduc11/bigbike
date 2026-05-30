@@ -38,7 +38,7 @@ export function RecentlyViewedSection({ currentProductId, currentProduct }: Prop
     <section className="mt-12 border-t border-[color:var(--bb-border-default)] pt-9">
       <div className="mb-[18px]">
         <p className="bb-kicker">{tRecent("kicker")}</p>
-        <h2 className="mt-1 mb-0 font-heading text-[clamp(1.1rem,2vw,1.4rem)] font-semibold uppercase leading-normal text-foreground">
+        <h2 className="mt-1 mb-0 font-heading text-h4 font-semibold uppercase leading-normal text-foreground">
           {tRecent("heading")}
         </h2>
       </div>
@@ -66,11 +66,11 @@ export function RecentlyViewedSection({ currentProductId, currentProduct }: Prop
               </div>
               <div className="flex flex-col gap-[3px] px-2.5 pt-2 pb-2.5">
                 {p.categoryName && (
-                  <p className="m-0 text-sm font-bold uppercase tracking-[0.12em] text-brand">
+                  <p className="m-0 text-sm font-bold uppercase tracking-display text-brand">
                     {p.categoryName}
                   </p>
                 )}
-                <p className="m-0 line-clamp-2 text-sm font-bold uppercase leading-[1.35] tracking-[0.03em] text-foreground">
+                <p className="m-0 line-clamp-2 text-sm font-bold uppercase leading-[1.35] tracking-wide text-foreground">
                   {p.name}
                 </p>
                 {p.price != null && p.price > 0 && (

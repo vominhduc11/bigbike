@@ -6,7 +6,7 @@ import { applyCoupon, fetchCart, removeCoupon, removeCartItem, updateCartItem } 
 import type { Cart, CartItem } from "@/lib/contracts/commerce";
 import { pushDataLayer } from "@/lib/analytics";
 import { formatVnd } from "@/lib/utils/format";
-import { toCategoryListPath, toCheckoutPath } from "@/lib/utils/routes";
+import { toProductListPath, toCheckoutPath } from "@/lib/utils/routes";
 import { MediaImage } from "@/components/ui/MediaImage";
 
 const COPY = {
@@ -250,7 +250,7 @@ export default function CartPage() {
   const hasItems = cart.items.length > 0;
   const itemCount = cart.items.reduce((sum, i) => sum + i.quantity, 0);
   const hasUnavailable = cart.items.some((i) => !i.available);
-  const continueHref = toCategoryListPath();
+  const continueHref = toProductListPath();
 
   return (
     <div id="main-content" className="bb-cart-page">

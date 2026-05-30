@@ -22,6 +22,12 @@ public interface CatalogReadRepository {
      */
     List<Product> findAllPublishedProducts(String locale);
 
+    /**
+     * DB-level token-AND search against name + shortDescription.
+     * Each token must match at least one field — "ba lo" → ["ba","lo"] finds "balo".
+     */
+    List<Product> searchPublishedProducts(java.util.List<String> tokens, String locale, int limit);
+
     List<Product> findProductsFiltered(String query, String publishStatus, String stockState, String brandId, String categoryId);
 
     Optional<Product> findProductBySlug(String slug, String locale);

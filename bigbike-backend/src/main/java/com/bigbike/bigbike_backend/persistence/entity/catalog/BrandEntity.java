@@ -37,6 +37,11 @@ public class BrandEntity {
 
     private String bannerAlt;
 
+    @Column(columnDefinition = "text")
+    private String mobileBannerUrl;
+
+    private String mobileBannerAlt;
+
     private String seoTitle;
 
     @Column(columnDefinition = "text")
@@ -168,6 +173,22 @@ public class BrandEntity {
 
     public void setBannerAlt(String bannerAlt) {
         this.bannerAlt = bannerAlt;
+    }
+
+    public String getMobileBannerUrl() {
+        return mobileBannerUrl;
+    }
+
+    public void setMobileBannerUrl(String mobileBannerUrl) {
+        this.mobileBannerUrl = mobileBannerUrl;
+    }
+
+    public String getMobileBannerAlt() {
+        return mobileBannerAlt;
+    }
+
+    public void setMobileBannerAlt(String mobileBannerAlt) {
+        this.mobileBannerAlt = mobileBannerAlt;
     }
 
     public String getSeoTitle() {

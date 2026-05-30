@@ -58,7 +58,7 @@ public class PublicSearchController {
 
     /**
      * Lightweight typeahead endpoint used by mobile (and the web BFF). Returns up to {@code limit}
-     * product matches; an empty result for short queries (&lt; 2 chars) keeps the endpoint cheap.
+     * product matches; returns empty for blank queries.
      */
     @GetMapping("/search-suggest")
     public ApiDataResponse<SearchPayload> searchSuggest(
@@ -67,16 +67,16 @@ public class PublicSearchController {
             HttpServletRequest request
     ) {
         String trimmed = q == null ? "" : q.strip();
-        if (trimmed.length() < 2) {
+        if (trimmed.isEmpty()) {
             return apiResponseFactory.data(
                     new SearchPayload(trimmed, List.of(), List.of()),
                     request
             );
         }
-        int resolvedLimit = limit == null ? 6 : limit;
-        SearchResults results = searchService.search(trimmed, Set.of("product"), resolvedLimit);
+        int resolvedLimit = limit == null ? 8 : limit;
+        SearchResults results = searchService.search(trimmed, null, resolvedLimit);
         return apiResponseFactory.data(
-                new SearchPayload(trimmed, results.products(), List.of()),
+                new SearchPayload(trimmed, results.products(), results.articles()),
                 request
         );
     }

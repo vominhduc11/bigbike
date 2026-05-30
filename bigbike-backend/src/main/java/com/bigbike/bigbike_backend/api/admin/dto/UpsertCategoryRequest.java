@@ -41,6 +41,12 @@ public class UpsertCategoryRequest {
     private ImageAssetRequest icon;
 
     @Valid
+    private ImageAssetRequest banner;
+
+    @Valid
+    private ImageAssetRequest mobileBanner;
+
+    @Valid
     private SeoMetaRequest seo;
 
     @Valid

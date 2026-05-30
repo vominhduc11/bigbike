@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { CSSProperties } from "react";
 import Link from "next/link";
 import { Swiper, SwiperSlide } from "swiper/react";
 import type { Swiper as SwiperType } from "swiper";
@@ -24,12 +23,8 @@ type HeroSliderProps = {
 
 /**
  * Swiper v8 can reset the wrapper to display:block after hydration, stacking
- * slides vertically (all off-canvas except the first). CSS rules on the
- * .bb-main-banner scope (.swiper-wrapper { display:flex } / .swiper-slide
- * { flex-shrink:0 }) fix this declaratively, but Swiper's own style mutations
- * can win in some edge cases / versions. This function is an imperative safety
- * net called on init and each slide change. Remove it once Swiper is upgraded
- * and the CSS-only approach is confirmed stable across all mobile breakpoints.
+ * slides vertically. This enforces the horizontal flex track declaratively.
+ * img fill is handled by CSS min-height: 56.25vw on .bb-main-banner-img.
  */
 function enforceHorizontalTrack(swiper: SwiperType | null) {
   if (!swiper?.wrapperEl) return;
@@ -37,11 +32,9 @@ function enforceHorizontalTrack(swiper: SwiperType | null) {
   swiper.wrapperEl.style.display = "flex";
   swiper.wrapperEl.style.flexDirection = "row";
   swiper.wrapperEl.style.flexWrap = "nowrap";
-  swiper.wrapperEl.style.height = "100%";
 
   Array.from(swiper.wrapperEl.children).forEach((child) => {
     if (!(child instanceof HTMLElement)) return;
-    child.style.height = "100%";
     child.style.flexShrink = "0";
   });
 }
@@ -51,24 +44,36 @@ function HeroSlideView({ slide }: { slide: HeroSlide }) {
     [slide.productName || slide.categoryName || slide.alt || "BigBike", slide.productCode]
       .filter(Boolean)
       .join(" - ");
-  const style = {
-    backgroundImage: `url("${slide.desktopSrc}")`,
-    backgroundSize: "cover",
-    backgroundPosition: "top center",
-    "--bb-mobile-banner-bg": `url("${slide.mobileSrc ?? slide.desktopSrc}")`,
-  } as CSSProperties & Record<"--bb-mobile-banner-bg", string>;
+
+  const hasMobileImg = Boolean(slide.mobileSrc && slide.mobileSrc !== slide.desktopSrc);
+
+  const picture = (
+    <picture className="bb-main-banner-picture">
+      {hasMobileImg && (
+        <source media="(max-width: 767px)" srcSet={slide.mobileSrc} />
+      )}
+      <img
+        src={slide.desktopSrc}
+        alt={slide.alt}
+        className="bb-main-banner-img"
+        loading="eager"
+        draggable={false}
+      />
+    </picture>
+  );
 
   const copy = (
     <div className="bb-main-banner-copy">
       <p className="bb-main-banner-kicker">{slide.productCode || slide.categoryName || "BIGBIKE"}</p>
-      <h2>{slide.productName || slide.categoryName || "BigBike"}</h2>
+      <p className="bb-main-banner-title">{slide.productName || slide.categoryName || "BigBike"}</p>
       <span>Mua ngay</span>
     </div>
   );
 
   if (!slide.href) {
     return (
-      <div className="-swiper-lazy bb-main-banner-link" style={style} aria-label={slideLabel}>
+      <div className="-swiper-lazy bb-main-banner-link" aria-label={slideLabel}>
+        {picture}
         {copy}
       </div>
     );
@@ -78,9 +83,9 @@ function HeroSlideView({ slide }: { slide: HeroSlide }) {
     <Link
       href={slide.href}
       className="-swiper-lazy bb-main-banner-link"
-      style={style}
       aria-label={slideLabel}
     >
+      {picture}
       {copy}
     </Link>
   );
@@ -95,6 +100,7 @@ export function HeroSlider({ slides }: HeroSliderProps) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
+
 
   const count = slides.length;
 
@@ -127,12 +133,12 @@ export function HeroSlider({ slides }: HeroSliderProps) {
             enforceHorizontalTrack(swiper);
             setActiveIndex(swiper.realIndex);
           }}
-          style={{ width: "100%", height: "100%" }}
+          style={{ width: "100%" }}
         >
           {slides.map((slide) => (
             <SwiperSlide
               key={slide.id}
-              style={{ width: "100%", height: "100%" }}
+              style={{ width: "100%" }}
               product-code={slide.productCode || slide.categoryName || "BIGBIKE"}
             >
               <HeroSlideView slide={slide} />

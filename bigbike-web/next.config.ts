@@ -154,6 +154,24 @@ const MEDIA_ORIGIN = (() => {
   try { return new URL(LEGACY_UPLOADS_BASE).origin; } catch { return ""; }
 })();
 
+// Dynamic next/image remotePattern from BIGBIKE_LEGACY_UPLOADS_BASE.
+// Needed when MinIO runs on a network IP (e.g. 103.1.236.148) instead of localhost.
+// Returns null when the hostname is localhost or https (already covered by static entries).
+const dynamicMediaPattern = (() => {
+  try {
+    const parsed = new URL(LEGACY_UPLOADS_BASE);
+    if (parsed.hostname === "localhost" || parsed.protocol === "https:") return null;
+    return {
+      protocol: parsed.protocol.replace(/:$/, "") as "http" | "https",
+      hostname: parsed.hostname,
+      ...(parsed.port ? { port: parsed.port } : {}),
+      pathname: "/**",
+    };
+  } catch {
+    return null;
+  }
+})();
+
 
 const nextConfig: NextConfig = {
   output: "standalone",
@@ -196,6 +214,8 @@ const nextConfig: NextConfig = {
         hostname: "img.youtube.com",
         pathname: "/vi/**",
       },
+      // Dynamic: MinIO on any network IP configured via BIGBIKE_LEGACY_UPLOADS_BASE
+      ...(dynamicMediaPattern ? [dynamicMediaPattern] : []),
     ],
   },
   async redirects() {
@@ -207,10 +227,9 @@ const nextConfig: NextConfig = {
         destination: "/",
         permanent: true,
       },
-      // /san-pham.html → danh-muc-san-pham.html keeps one extra alias working.
       {
         source: "/san-pham.html",
-        destination: "/danh-muc-san-pham.html",
+        destination: "/san-pham/",
         permanent: true,
       },
       // Category slugs renamed in migration — must precede the generic /{slug}.html→/{slug}/ CSV rule.
@@ -236,22 +255,22 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/phu-kien-khac.html",
-        destination: "/danh-muc-san-pham/",
+        destination: "/san-pham/",
         permanent: true,
       },
       {
         source: "/phu-kien-khac",
-        destination: "/danh-muc-san-pham/",
+        destination: "/san-pham/",
         permanent: true,
       },
       {
         source: "/san-pham-khuyen-mai.html",
-        destination: "/danh-muc-san-pham/",
+        destination: "/san-pham/",
         permanent: true,
       },
       {
         source: "/san-pham-khuyen-mai",
-        destination: "/danh-muc-san-pham/",
+        destination: "/san-pham/",
         permanent: true,
       },
       ...csvRedirectRules,

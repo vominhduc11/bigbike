@@ -98,6 +98,15 @@ export function AccountShell({ children, loginRedirect }: Props) {
 
         <div className="bb-account-layout">
           <aside className="bb-account-sidebar">
+            <div className="bb-account-user">
+              <div className="bb-account-avatar" aria-hidden="true">
+                {(profile.displayName?.[0] ?? profile.email?.[0] ?? "U").toUpperCase()}
+              </div>
+              <div className="bb-account-user-info">
+                <b>{profile.displayName ?? profile.email?.split("@")[0]}</b>
+                <span>{profile.email}</span>
+              </div>
+            </div>
             <nav className="bb-account-nav" aria-label={t("menuAria")}>
               {NAV.map((item) => (
                 <Link key={item.href} href={item.href} className={navIsActive(item, pathname) ? "active" : undefined}>

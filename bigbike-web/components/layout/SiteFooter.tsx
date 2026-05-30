@@ -362,7 +362,7 @@ export async function SiteFooter() {
                   >
                     <BctBadge alt="Đã thông báo Bộ Công Thương" height={40} />
                   </a>
-                  <p className="m-0 mt-[10px] text-sm leading-5 text-[#7e7e7e] md:mt-0">
+                  <p className="m-0 mt-[10px] text-sm leading-5 text-muted-foreground md:mt-0">
                     {t("businessReg")}
                   </p>
                 </div>

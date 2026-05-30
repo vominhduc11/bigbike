@@ -6,7 +6,8 @@ import { ProductArchiveLayout } from "@/components/catalog/ProductArchiveLayout"
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { PaginationNav } from "@/components/ui/PaginationNav";
-import { PRODUCT_SORT_VALUES, getBrandBySlug, listBrands, listCategories, listProducts } from "@/lib/api/public-api";
+import { PRODUCT_SORT_VALUES, getBrandBySlug, listBrands, listCategories, listProducts, listPublicSettings } from "@/lib/api/public-api";
+import { readDefaultHeroAssets } from "@/lib/utils/page-hero";
 import { buildCatalogTitle } from "@/lib/utils/catalog";
 import {
   DEFAULT_WP_ORDERBY,
@@ -28,7 +29,7 @@ import {
   readSearchParamAlias,
   readSingleSearchParam,
 } from "@/lib/utils/query";
-import { toBrandPath, toHomePath } from "@/lib/utils/routes";
+import { toBrandListPath, toBrandPath, toHomePath } from "@/lib/utils/routes";
 import { isValidSlug } from "@/lib/utils/slug";
 
 export const dynamic = "force-dynamic";
@@ -164,7 +165,7 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
   }
 
   const locale = await getLocale();
-  const [brandResult, productsResult, categoriesResult] = await Promise.all([
+  const [brandResult, productsResult, categoriesResult, settingsResult] = await Promise.all([
     getBrandBySlug(slug, locale),
     listProducts({
       page: pageParsed.value,
@@ -178,7 +179,9 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
       lang: locale,
     }),
     listCategories({ page: 1, size: 100, sort: "sortOrder:asc" }),
+    listPublicSettings(),
   ]);
+  const defaultHero = readDefaultHeroAssets(settingsResult.data ?? []);
 
   if (!brandResult.data && brandResult.error?.status === 404) {
     notFound();
@@ -211,9 +214,16 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }} />
       <ProductArchiveHero
         imageUrl={brand.bannerImage?.url}
+        mobileImageUrl={brand.mobileBannerImage?.url}
         imageAlt={brand.bannerImage?.alt ?? brandName}
         title={brandName}
-        breadcrumb={[{ label: "Bigbike.vn", href: toHomePath() }]}
+        defaultBgUrl={defaultHero.defaultBgUrl}
+        defaultIllustrationUrl={defaultHero.defaultIllustrationUrl}
+        breadcrumb={[
+          { label: "Trang chủ", href: toHomePath() },
+          { label: "Thương hiệu", href: toBrandListPath() },
+          { label: brandName },
+        ]}
       />
 
       <ProductArchiveLayout
@@ -232,7 +242,7 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
         {productsResult.error && productsResult.data.length === 0 ? (
           <ErrorState message={productsResult.error.message} retryHref={canonicalPath} />
         ) : productsResult.data.length === 0 ? (
-          <p className="woocommerce-info">No products were found matching your selection.</p>
+          <p className="woocommerce-info">Không tìm thấy sản phẩm phù hợp.</p>
         ) : (
           <>
             <div className="row bb-wp-row bb-product-grid">

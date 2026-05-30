@@ -137,7 +137,7 @@ function OrderDetails({
 
   return (
     <section className="woocommerce-order-details">
-      <h2 className="woocommerce-order-details__title m-0 mb-5 font-display text-2xl font-semibold uppercase text-foreground">
+      <h2 className="woocommerce-order-details__title m-0 mb-5 font-display text-26 font-semibold uppercase text-foreground">
         {t("orderDetailsTitle")}
       </h2>
       <div className="overflow-x-auto">
@@ -224,7 +224,7 @@ function AddressColumn({ title, address }: { title: string; address: OrderAddres
 
   return (
     <div className="woocommerce-column woocommerce-column--1 woocommerce-column--billing-address col-1">
-      <h2 className="woocommerce-column__title m-0 mb-4 font-display text-2xl font-semibold uppercase text-foreground">
+      <h2 className="woocommerce-column__title m-0 mb-4 font-display text-26 font-semibold uppercase text-foreground">
         {title}
       </h2>
       <address className="m-0 border border-border p-4 not-italic leading-7 text-foreground">

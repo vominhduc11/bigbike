@@ -15,7 +15,7 @@ import {
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { safeText } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
-import { readHeroSettings } from "@/lib/utils/page-hero";
+import { readDefaultHeroAssets, readHeroSettings } from "@/lib/utils/page-hero";
 import { pickSetting } from "@/lib/utils/settings";
 import {
   toArticleListPath,
@@ -114,6 +114,7 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
   ]);
   const siteName = pickSetting(settingsResult.data ?? [], ["site_name"]);
   const heroSettings = readHeroSettings(settingsResult.data ?? [], "hero_news");
+  const defaultHero = readDefaultHeroAssets(settingsResult.data ?? []);
   const articleJsonLd = serializeJsonLd(buildArticleJsonLd(article, siteName || undefined));
 
   const articleTitle = safeText(article.title, t("articleTitleFallback"));
@@ -142,6 +143,8 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
         title={articleTitle}
         imageUrl={heroSettings.imageUrl}
         imageAlt={heroSettings.imageAlt}
+        defaultBgUrl={defaultHero.defaultBgUrl}
+        defaultIllustrationUrl={defaultHero.defaultIllustrationUrl}
         breadcrumb={[
           { label: tBreadcrumb("home"), href: toHomePath() },
           { label: t("breadcrumb"), href: toArticleListPath() },

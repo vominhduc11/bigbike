@@ -13,9 +13,12 @@ import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 type Props = { videos: HomeVideo[] };
 
 function getVisibleVideoSlides(width: number): number {
-  if (width >= 1200) return 5;
-  if (width >= 768) return 3;
-  if (width >= 480) return 2;
+  if (width >= 2560) return 7;
+  if (width >= 1920) return 6;
+  if (width >= 1280) return 5;
+  if (width >= 1024) return 4;
+  if (width >= 768)  return 3;
+  if (width >= 480)  return 2;
   return 1;
 }
 
@@ -74,7 +77,7 @@ function VideoCard({ video, onPlay }: { video: HomeVideo; onPlay: () => void }) 
           />
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2.5 bg-brand" aria-hidden="true">
-            <span className="font-display text-2xl font-extrabold uppercase tracking-[0.22em] text-white/80">
+            <span className="font-display text-2xl font-bold uppercase tracking-display text-white/80">
               BIGBIKE
             </span>
           </div>
@@ -84,7 +87,7 @@ function VideoCard({ video, onPlay }: { video: HomeVideo; onPlay: () => void }) 
       {/* Footer title — compact ở mobile; từ tablet trở lên reserve 2 dòng (min-h)
           để mọi card cao bằng nhau, và to/đậm hơn trên desktop lớn cho dễ đọc */}
       <div className="bg-black px-3 py-3 min-[600px]:px-4 min-[600px]:py-4">
-        <p className="m-0 overflow-hidden normal-case font-display text-[13px] font-semibold leading-[1.4] text-white [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] min-[600px]:min-h-[2.9em] min-[600px]:text-[14px] min-[900px]:text-[15px] min-[900px]:leading-[1.45] min-[1200px]:text-[17px]">
+        <p className="m-0 overflow-hidden normal-case font-body text-[13px] font-semibold leading-[1.4] text-white line-clamp-2 min-[600px]:min-h-[2.9em] min-[600px]:text-[14px] min-[900px]:text-[15px] min-[900px]:leading-[1.45] min-[1200px]:text-[17px]">
           {title}
         </p>
       </div>
@@ -359,7 +362,7 @@ function VideoModal({
         </div>
         {title && (
           <div className="px-4 py-3">
-            <p className="m-0 font-display text-[15px] font-semibold text-white">{title}</p>
+            <p className="m-0 font-body text-15 font-semibold text-white">{title}</p>
           </div>
         )}
       </div>
@@ -467,10 +470,10 @@ export function HomeVideoCarousel({ videos }: Props) {
             breakpoints={{
               480:  { slidesPerView: 2, spaceBetween: 12 },
               768:  { slidesPerView: 3, spaceBetween: 14 },
-              1024: { slidesPerView: 4, spaceBetween: 16 }, // lg: (was 1200→5, non-canonical)
-              1280: { slidesPerView: 5, spaceBetween: 16 }, // xl:
-              1920: { slidesPerView: 6, spaceBetween: 20 }, // 3xl:
-              2560: { slidesPerView: 7, spaceBetween: 24 }, // 4xl:
+              1024: { slidesPerView: 4, spaceBetween: 16 },
+              1280: { slidesPerView: 5, spaceBetween: 16 },
+              1920: { slidesPerView: 6, spaceBetween: 20 },
+              2560: { slidesPerView: 7, spaceBetween: 24 },
             }}
           >
             {videos.map((video, idx) => (

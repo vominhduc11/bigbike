@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { MediaPickerModal } from './MediaPickerModal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { resolveDisplayUrl } from '@/lib/contracts'
 
 function IconLibrary() {
   return (
@@ -18,7 +19,7 @@ function ImagePreview({ url }) {
   const { t } = useTranslation()
   const [ok, setOk] = useState(false)
   const [loading, setLoading] = useState(false)
-  const trimmed = url.trim()
+  const trimmed = resolveDisplayUrl(url.trim())
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect

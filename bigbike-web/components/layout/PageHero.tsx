@@ -27,6 +27,8 @@ export type PageHeroProps = {
    */
   variant?: PageHeroVariant;
   imageUrl?: string | null;
+  /** Ảnh riêng cho viewport ≤767px (portrait ~768×900). AR mobile 1.3 vs desktop 3.2 — cần art direction. */
+  mobileImageUrl?: string | null;
   imageAlt?: string | null;
   title: string;
   breadcrumb?: PageHeroBreadcrumbItem[];
@@ -34,6 +36,12 @@ export type PageHeroProps = {
   watermark?: string | null;
   /** Ảnh minh hoạ nổi trước banner — variant `welcome` (tràn xuống giữa) và `contact` (đặt bên phải). */
   illustration?: PageHeroIllustration | null;
+  /** Ẩn ảnh gear mặc định khi trang không có ảnh minh hoạ riêng. Mặc định true. */
+  showDefaultIllustration?: boolean;
+  /** Override ảnh nền mặc định (WP_HERO_BG_SOLID) khi trang không truyền imageUrl riêng. */
+  defaultBgUrl?: string | null;
+  /** Override ảnh gear mặc định (WP_HERO_ILLUSTRATION) khi không có illustration tùy chỉnh. */
+  defaultIllustrationUrl?: string | null;
 };
 
 export function PageHero(props: PageHeroProps) {
@@ -47,7 +55,7 @@ export function PageHero(props: PageHeroProps) {
 /* Variant `welcome` — banner chào mừng (gioi-thieu): nền núi đỏ + chữ chìm,
    ảnh sản phẩm cut-out tràn xuống nền trắng bên dưới.
    Heights: md=450, 3xl=520, 4xl=600 (linear interpolation across tier range). */
-function WelcomeHero({ title, watermark, illustration }: PageHeroProps) {
+function WelcomeHero({ title, watermark, illustration, imageUrl, defaultBgUrl }: PageHeroProps) {
   // Ảnh cut-out: ưu tiên ảnh hero của trang; fallback ảnh gear có sẵn trong repo.
   const customSrc = illustration?.src?.trim()
     ? resolveMediaUrl(illustration.src.trim())
@@ -55,13 +63,15 @@ function WelcomeHero({ title, watermark, illustration }: PageHeroProps) {
   const illustrationSrc = customSrc || WP_HERO_ILLUSTRATION;
   const illustrationAlt = safeText(illustration?.alt, "Đồ bảo hộ moto BigBike");
 
+  const trimmedBg = imageUrl?.trim() || defaultBgUrl?.trim();
+  const bgSrc = (trimmedBg ? resolveMediaUrl(trimmedBg) : null) || WP_HERO_BG_SOLID;
+
   return (
     <header className="relative bg-[var(--bb-bg-page)]">
-      {/* Banner nền núi đỏ — mood racing. Cắt chéo đáy bằng clip-path; cùng ảnh
-          và cùng khung hình với hero `contact` để zoom nền đồng nhất. */}
+      {/* Banner nền — ưu tiên imageUrl của trang, rồi defaultBgUrl từ settings, cuối cùng fallback solid. */}
       <div className="relative h-[300px] overflow-hidden md:h-[450px] 3xl:h-[520px] 4xl:h-[600px] [clip-path:polygon(0_0,100%_0,100%_75%,0_100%)]">
         <Image
-          src={WP_HERO_BG_SOLID}
+          src={bgSrc}
           alt=""
           fill
           priority
@@ -78,12 +88,12 @@ function WelcomeHero({ title, watermark, illustration }: PageHeroProps) {
           {watermark ? (
             <span
               aria-hidden="true"
-              className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 select-none whitespace-nowrap font-display font-bold uppercase leading-none tracking-[0.06em] text-white/[0.07] text-[clamp(64px,19vw,200px)]"
+              className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 select-none whitespace-nowrap font-display font-bold uppercase leading-none tracking-wide text-white/[0.07] text-[clamp(64px,19vw,200px)]"
             >
               {watermark}
             </span>
           ) : null}
-          <h1 className="relative m-0 whitespace-nowrap font-display text-xl font-bold uppercase leading-tight tracking-wide text-white [text-shadow:0_2px_14px_rgba(0,0,0,0.7)] sm:text-3xl lg:text-5xl">
+          <h1 className="relative m-0 font-display text-xl font-bold uppercase leading-tight tracking-wide text-white [text-shadow:0_2px_14px_rgba(0,0,0,0.7)] sm:text-3xl lg:text-5xl">
             {title}
           </h1>
         </div>
@@ -105,12 +115,18 @@ function WelcomeHero({ title, watermark, illustration }: PageHeroProps) {
 /* Variant `contact` (mặc định) — banner cắt chéo: ảnh nền + clip-path chéo,
    tiêu đề căn trái + breadcrumb, ảnh minh hoạ tuỳ chọn đặt bên phải.
    Heights: md=450 (no illus) / md=560 (with illus), 3xl=+70px, 4xl=+150px vs md. */
-function ContactHero({ imageUrl, imageAlt, title, breadcrumb, illustration }: PageHeroProps) {
+function ContactHero({ imageUrl, mobileImageUrl, imageAlt, title, breadcrumb, illustration, showDefaultIllustration = true, defaultBgUrl, defaultIllustrationUrl }: PageHeroProps) {
   const trimmedUrl = imageUrl?.trim();
-  // Không có ảnh riêng → fallback bản banner đặc để clip-path cắt chéo gọn,
-  // không lộ mảng đen do lát cắt trong suốt của ảnh PNG gốc.
-  const bgSrc = (trimmedUrl ? resolveMediaUrl(trimmedUrl) : null) || WP_HERO_BG_SOLID;
-  const passedIllustration = illustration?.src?.trim() || null;
+  const trimmedMobileUrl = mobileImageUrl?.trim();
+  // Ưu tiên: imageUrl của trang → defaultBgUrl từ settings → fallback solid.
+  const trimmedDefaultBg = defaultBgUrl?.trim();
+  const bgSrc = (trimmedUrl ? resolveMediaUrl(trimmedUrl) : null)
+    || (trimmedDefaultBg ? resolveMediaUrl(trimmedDefaultBg) : null)
+    || WP_HERO_BG_SOLID;
+  const mobileSrc = trimmedMobileUrl ? resolveMediaUrl(trimmedMobileUrl) : null;
+  const passedIllustration = illustration?.src?.trim()
+    ? (resolveMediaUrl(illustration.src.trim()) ?? illustration.src.trim())
+    : null;
 
   // Trang truyền ảnh straddle (vd điện thoại) → cần thêm khoảng dưới banner;
   // còn lại dùng ảnh gear mặc định nằm gọn trong banner → cao bằng banner.
@@ -118,23 +134,37 @@ function ContactHero({ imageUrl, imageAlt, title, breadcrumb, illustration }: Pa
     <div className={`relative h-[300px] ${passedIllustration ? "md:h-[560px] 3xl:h-[640px] 4xl:h-[760px]" : "md:h-[450px] 3xl:h-[520px] 4xl:h-[600px]"}`}>
       {/* Banner ảnh nền, cắt chéo đáy bằng clip-path. */}
       <div className="absolute inset-x-0 top-0 h-[300px] overflow-hidden bg-black md:h-[450px] 3xl:h-[520px] 4xl:h-[600px] [clip-path:polygon(0_0,100%_0,100%_75%,0_100%)]">
-        <Image
-          src={bgSrc}
-          alt={safeText(imageAlt, title)}
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover"
-        />
+        {mobileSrc ? (
+          /* Art direction: ảnh mobile portrait ≤767px, ảnh desktop landscape 768px+. */
+          // eslint-disable-next-line @next/next/no-img-element
+          <picture className="absolute inset-0">
+            <source media="(max-width: 767px)" srcSet={mobileSrc} />
+            <img
+              src={bgSrc}
+              alt={safeText(imageAlt, title)}
+              fetchPriority="high"
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          </picture>
+        ) : (
+          <Image
+            src={bgSrc}
+            alt={safeText(imageAlt, title)}
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover"
+          />
+        )}
         <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/35 to-transparent" />
       </div>
 
       <div className="absolute inset-x-0 top-0 flex h-[300px] items-center md:h-[450px] 3xl:h-[520px] 4xl:h-[600px]">
         <div className="bb-container">
-          <h1 className="bb-cat-hero-title" style={{ fontSize: "clamp(2.5rem, 5vw, 4.375rem)", lineHeight: 1.05 }}>
+          <Breadcrumb items={breadcrumb ?? []} variant="onHero" />
+          <h1 className="bb-cat-hero-title">
             {title}
           </h1>
-          <Breadcrumb items={breadcrumb ?? []} variant="onHero" className="mt-4" />
         </div>
       </div>
 
@@ -150,18 +180,18 @@ function ContactHero({ imageUrl, imageAlt, title, breadcrumb, illustration }: Pa
             priority
           />
         </div>
-      ) : (
+      ) : showDefaultIllustration ? (
         /* Mặc định — ảnh gear cut-out ở góc phải, vắt qua đường cắt chéo. */
         <div className="pointer-events-none absolute right-[3%] bottom-0 z-10 hidden w-[220px] md:block lg:w-[300px] 3xl:w-[360px] 4xl:w-[420px]" aria-hidden="true">
           <Image
-            src={WP_HERO_ILLUSTRATION}
+            src={(defaultIllustrationUrl?.trim() ? resolveMediaUrl(defaultIllustrationUrl.trim()) : null) || WP_HERO_ILLUSTRATION}
             alt=""
             width={700}
             height={627}
             className="h-auto w-full drop-shadow-[0_14px_22px_rgba(0,0,0,0.45)]"
           />
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -13,16 +13,16 @@ const badgeVariants = cva(
         outline: "bg-transparent text-foreground border border-border",
         sale: "bg-primary text-primary-foreground",
         "stock-in":
-          "bg-[var(--bb-state-success-bg)] text-[var(--bb-state-success-text)] border border-[var(--bb-state-success-border)]",
+          "bg-[var(--bb-state-success-bg)] text-state-success-text border border-[var(--bb-state-success-border)]",
         "stock-low": "bg-[var(--bb-state-warning)] text-foreground",
         "stock-out": "bg-primary text-primary-foreground",
         preorder: "bg-info text-info-foreground",
         destructive: "bg-destructive text-destructive-foreground",
         info: "bg-info/10 text-info border border-info/30",
         warning:
-          "bg-[var(--bb-state-warning-bg)] text-[var(--bb-state-warning-text)] border border-[var(--bb-state-warning-border)]",
+          "bg-[var(--bb-state-warning-bg)] text-state-warning-text border border-[var(--bb-state-warning-border)]",
         success:
-          "bg-[var(--bb-state-success-bg)] text-[var(--bb-state-success-text)] border border-[var(--bb-state-success-border)]",
+          "bg-[var(--bb-state-success-bg)] text-state-success-text border border-[var(--bb-state-success-border)]",
       },
     },
     defaultVariants: {

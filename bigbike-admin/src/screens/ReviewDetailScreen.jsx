@@ -10,11 +10,11 @@ import { formatDateTime, formatText } from '../lib/formatters'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 
-const STATUS_TONES = { APPROVED: 'success', PENDING: 'warning', SPAM: 'neutral', TRASH: 'neutral' }
+const STATUS_VARIANTS = { APPROVED: 'success', PENDING: 'warning', SPAM: 'muted', TRASH: 'muted' }
 
 function ReviewStatusBadge({ review, t }) {
   return (
-    <Badge variant={STATUS_TONES[review.status] || 'neutral' === 'neutral' ? 'muted' : STATUS_TONES[review.status] || 'neutral'}>
+    <Badge variant={STATUS_VARIANTS[review.status] ?? 'muted'}>
       {t(`reviews.status${review.status.charAt(0) + review.status.slice(1).toLowerCase()}`, {
         defaultValue: review.status,
       })}

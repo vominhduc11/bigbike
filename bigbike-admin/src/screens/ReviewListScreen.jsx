@@ -12,14 +12,20 @@ import { PaginationControls } from '../components/PaginationControls'
 
 const STATUS_OPTIONS = ['ALL', 'APPROVED', 'PENDING', 'SPAM', 'TRASH']
 const STATUS_BADGE = { APPROVED: 'bb-badge-success', PENDING: 'bb-badge-warning', SPAM: 'bb-badge-neutral', TRASH: 'bb-badge-neutral' }
-const AVATAR_VARIANTS = ['', 'b', 'c', 'd', 'e', 'f']
+const AVATAR_COLORS = [
+  'bg-primary text-primary-foreground',
+  'bg-info-bg text-info',
+  'bg-success-bg text-success',
+  'bg-warning-bg text-warning',
+  'bg-danger-bg text-danger',
+  'bg-secondary text-secondary-foreground',
+]
 
 const INITIAL_QUERY = { search: '', status: 'ALL', page: 1, pageSize: 20 }
 
-// Five-star row — filled stars in amber, the rest in the muted border colour.
 function Stars({ n, of = 5 }) {
   return (
-    <span className="stars">
+    <span className="inline-flex gap-px">
       {Array.from({ length: of }).map((_, i) => (
         <span key={i} style={{ color: i < n ? '#fbbf24' : 'var(--admin-color-border-default)' }}>★</span>
       ))}
@@ -134,26 +140,26 @@ export function ReviewListScreen({ navigate, canUpdate }) {
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
 
       {/* Summary + attention cards */}
-      <div className="grid-2-1 mb-4">
+      <div className="bb-grid-2-1 mb-4">
         <div className="bb-card">
           <div className="bb-card-header"><h2>{t('reviews.summaryTitle', { defaultValue: 'Tổng quan đánh giá' })}</h2></div>
           <div className="bb-card-body">
-            <div className="review-summary">
-              <div className="text-center">
-                <div className="rating-big">{avg}</div>
+            <div className="flex gap-4 items-start">
+              <div className="text-center shrink-0">
+                <div className="text-4xl font-bold text-primary leading-none">{avg}</div>
                 <Stars n={Math.round(Number(avg))} />
-                <div className="text-xs muted mt-2">
+                <div className="text-xs text-muted-foreground mt-2">
                   {t('reviews.totalCount', { count: total, defaultValue: `${total} đánh giá` })}
                 </div>
               </div>
-              <div>
+              <div className="flex-1">
                 {dist.map((d) => (
-                  <div className="rating-row" key={d.s}>
+                  <div className="flex items-center gap-2 text-xs mb-1" key={d.s}>
                     <span>{d.s} ★</span>
-                    <div className="rating-bar">
-                      <div style={{ width: (total > 0 ? (d.n / total) * 100 : 0) + '%' }} />
+                    <div className="flex-1 h-1.5 bg-surface-muted rounded-none overflow-hidden">
+                      <div className="h-full bg-primary" style={{ width: (total > 0 ? (d.n / total) * 100 : 0) + '%' }} />
                     </div>
-                    <span className="text-right">{d.n}</span>
+                    <span className="w-4 text-right">{d.n}</span>
                   </div>
                 ))}
               </div>
@@ -164,27 +170,27 @@ export function ReviewListScreen({ navigate, canUpdate }) {
         <div className="bb-card">
           <div className="bb-card-header"><h2>{t('reviews.needsAction', { defaultValue: 'Cần xử lý' })}</h2></div>
           <div className="bb-card-body">
-            <div className="attn-list">
-              <div className="attn-item warn">
-                <span className="attn-icon"><MessageSquare size={16} /></span>
-                <div className="attn-body">
-                  <div className="attn-title">
+            <div className="dash-attention-list">
+              <div className="dash-attention-item dash-attention-item--warning">
+                <span className="dash-attention-icon"><MessageSquare size={16} /></span>
+                <div className="dash-attention-body">
+                  <div className="dash-attention-label">
                     {t('reviews.pendingCount', { count: pendingCount, defaultValue: `${pendingCount} đánh giá chờ duyệt` })}
                   </div>
-                  <div className="attn-desc">{t('reviews.pendingHint', { defaultValue: 'Duyệt sớm để hiển thị cho khách' })}</div>
+                  <div className="dash-attention-hint">{t('reviews.pendingHint', { defaultValue: 'Duyệt sớm để hiển thị cho khách' })}</div>
                 </div>
-                <span className="attn-count">{pendingCount}</span>
+                <span className="dash-attention-count">{pendingCount}</span>
               </div>
               {lowRatingPending > 0 && (
-                <div className="attn-item danger">
-                  <span className="attn-icon"><MessageSquare size={16} /></span>
-                  <div className="attn-body">
-                    <div className="attn-title">
+                <div className="dash-attention-item dash-attention-item--danger">
+                  <span className="dash-attention-icon"><MessageSquare size={16} /></span>
+                  <div className="dash-attention-body">
+                    <div className="dash-attention-label">
                       {t('reviews.lowRatingPending', { count: lowRatingPending, defaultValue: `${lowRatingPending} đánh giá 1-sao cần phản hồi` })}
                     </div>
-                    <div className="attn-desc">{t('reviews.lowRatingHint', { defaultValue: 'Cần liên hệ khách hàng sớm' })}</div>
+                    <div className="dash-attention-hint">{t('reviews.lowRatingHint', { defaultValue: 'Cần liên hệ khách hàng sớm' })}</div>
                   </div>
-                  <span className="attn-count">{lowRatingPending}</span>
+                  <span className="dash-attention-count">{lowRatingPending}</span>
                 </div>
               )}
             </div>
@@ -260,7 +266,7 @@ export function ReviewListScreen({ navigate, canUpdate }) {
               <div className="bb-card" key={r.id}>
                 <div className="bb-card-body">
                   <div className="flex items-center gap-3 mb-3">
-                    <span className={`avatar-text ${AVATAR_VARIANTS[i % AVATAR_VARIANTS.length]}`}>
+                    <span className={`inline-flex items-center justify-center size-8 rounded-full text-xs font-bold flex-shrink-0 ${AVATAR_COLORS[i % AVATAR_COLORS.length]}`}>
                       {author.charAt(0).toUpperCase()}
                     </span>
                     <div style={{ flex: 1 }}>

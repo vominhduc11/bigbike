@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
-import { Barlow, Barlow_Condensed, Oswald } from "next/font/google";
+import { barlow, barlowCondensed } from "./fonts";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import "./globals.css";
@@ -17,27 +17,6 @@ import { CompareBar } from "@/components/catalog/CompareBar";
 import { QueryProvider } from "@/components/providers/QueryProvider";
 import { HeaderUiProvider } from "@/components/layout/HeaderUiContext";
 import { env } from "@/env";
-
-const oswald = Oswald({
-  subsets: ["latin", "vietnamese"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-oswald",
-  display: "swap",
-});
-
-const barlow = Barlow({
-  subsets: ["latin", "vietnamese"],
-  weight: ["300", "400", "500", "600", "700"],
-  variable: "--font-barlow",
-  display: "swap",
-});
-
-const barlowCondensed = Barlow_Condensed({
-  subsets: ["latin", "vietnamese"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-barlow-condensed",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://bigbike.vn"),
@@ -70,7 +49,7 @@ export default async function RootLayout({
   const locale = await getLocale();
   const messages = await getMessages();
   return (
-    <html lang={locale} className={`${barlow.variable} ${barlowCondensed.variable} ${oswald.variable} h-full antialiased`} suppressHydrationWarning>
+    <html lang={locale} className={`${barlow.variable} ${barlowCondensed.variable} h-full antialiased`} suppressHydrationWarning>
       <body className="bb-theme min-h-full flex flex-col" suppressHydrationWarning>
         {GTM_ID && (
           <Script

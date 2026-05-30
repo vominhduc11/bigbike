@@ -49,13 +49,13 @@ export function WarrantyContent() {
   return (
     <div className="bb-container max-w-[560px] py-10">
       <div className="mb-7 pb-[22px] border-b border-border">
-        <span className="text-sm tracking-[0.18em] uppercase text-brand font-bold block mb-2">{t("kicker")}</span>
+        <span className="text-sm tracking-display uppercase text-brand font-bold block mb-2">{t("kicker")}</span>
         <p className="text-muted-foreground text-sm mt-2 m-0">{t("subheading")}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="bg-card border border-border py-[22px] px-6 mb-[18px] mt-6">
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="serial-input" className="text-sm font-bold tracking-[0.14em] uppercase text-muted-foreground">
+          <label htmlFor="serial-input" className="text-sm font-bold tracking-display uppercase text-muted-foreground">
             {t("serialLabel")}<span className="text-brand ml-[3px]">*</span>
           </label>
           <div className="flex gap-2 max-sm:flex-col">

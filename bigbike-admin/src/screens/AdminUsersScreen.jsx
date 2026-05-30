@@ -48,7 +48,14 @@ const STATUS_BADGE = {
   DISABLED: 'bb-badge-danger',
   SUSPENDED: 'bb-badge-warning',
 }
-const AVATAR_VARIANTS = ['', 'b', 'c', 'd', 'e', 'f']
+const AVATAR_COLORS = [
+  'bg-primary text-primary-foreground',
+  'bg-info-bg text-info',
+  'bg-success-bg text-success',
+  'bg-warning-bg text-warning',
+  'bg-danger-bg text-danger',
+  'bg-secondary text-secondary-foreground',
+]
 
 function RoleBadge({ role, t }) {
   const meta = ROLE_META[role]
@@ -375,7 +382,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
                       <tr key={u.id}>
                         <td>
                           <div className="product-cell">
-                            <span className={`avatar-text ${AVATAR_VARIANTS[i % AVATAR_VARIANTS.length]}`}>
+                            <span className={`inline-flex items-center justify-center size-12 rounded-full text-sm font-bold flex-shrink-0 ${AVATAR_COLORS[i % AVATAR_COLORS.length]}`}>
                               {(name || '?').charAt(0).toUpperCase()}
                             </span>
                             <div className="info">

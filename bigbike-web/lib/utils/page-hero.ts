@@ -4,6 +4,7 @@ export type HeroSettingPrefix = "hero_products" | "hero_brands" | "hero_news";
 
 type HeroPropsFromSettings = {
   imageUrl: string | null;
+  mobileImageUrl: string | null;
   imageAlt: string | null;
   title: string | null;
 };
@@ -19,7 +20,20 @@ export function readHeroSettings(
 ): HeroPropsFromSettings {
   return {
     imageUrl: findValue(settings, `${prefix}_image_url`),
+    mobileImageUrl: findValue(settings, `${prefix}_mobile_image_url`),
     imageAlt: findValue(settings, `${prefix}_image_alt`),
     title: findValue(settings, `${prefix}_title`),
+  };
+}
+
+export type DefaultHeroAssets = {
+  defaultBgUrl: string | null;
+  defaultIllustrationUrl: string | null;
+};
+
+export function readDefaultHeroAssets(settings: PublicSiteSetting[]): DefaultHeroAssets {
+  return {
+    defaultBgUrl: findValue(settings, "hero_default_bg_url"),
+    defaultIllustrationUrl: findValue(settings, "hero_default_illustration_url"),
   };
 }

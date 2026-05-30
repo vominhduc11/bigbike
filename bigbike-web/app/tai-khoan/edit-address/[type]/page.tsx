@@ -243,7 +243,7 @@ function AddressBookContent() {
       />
 
       {notice && (
-        <div className="bg-[var(--bb-state-success-bg)] border border-[var(--bb-state-success-border)] p-[12px_16px] mb-4 text-sm text-[var(--bb-state-success-text)]">
+        <div className="bg-[var(--bb-state-success-bg)] border border-[var(--bb-state-success-border)] p-[12px_16px] mb-4 text-sm text-state-success-text">
           {notice}
         </div>
       )}
@@ -307,7 +307,7 @@ function AddressBookContent() {
 
                   <div className="mt-4 flex items-center justify-between border-t border-border pt-3.5">
                     {addr.isDefault ? (
-                      <span className="flex items-center gap-1.5 text-sm font-bold uppercase tracking-[0.04em] text-brand">
+                      <span className="flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide text-brand">
                         <Check className="h-4 w-4" aria-hidden />
                         {t("defaultBadge")}
                       </span>
@@ -315,7 +315,7 @@ function AddressBookContent() {
                       <button
                         type="button"
                         onClick={() => handleSetDefault(addr)}
-                        className="text-sm font-bold uppercase tracking-[0.04em] text-[var(--bb-discount)] hover:underline"
+                        className="text-sm font-bold uppercase tracking-wide text-discount hover:underline"
                       >
                         {t("setDefaultButton")}
                       </button>
@@ -347,7 +347,7 @@ function AddressBookContent() {
           <button
             type="button"
             onClick={openAdd}
-            className="mt-5 flex items-center gap-2 text-sm font-bold uppercase tracking-[0.06em] text-brand hover:underline"
+            className="mt-5 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-brand hover:underline"
           >
             <Plus className="h-4 w-4" aria-hidden />
             {t("addNew")}

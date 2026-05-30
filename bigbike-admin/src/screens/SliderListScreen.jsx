@@ -393,6 +393,7 @@ export function SliderListScreen({ canUpdate }) {
               <div className="form-field" style={{ gridColumn: '1 / -1' }}>
                 <span>{t('sliders.formDesktopUrl')}</span>
                 <ImageUrlInput value={form.desktopImageUrl} onChange={(url) => setForm((p) => ({ ...p, desktopImageUrl: url }))} />
+                <span className="hint">{t('sliders.formDesktopUrlHint')}</span>
               </div>
               <label className="form-field" style={{ gridColumn: '1 / -1' }}>
                 <span>{t('sliders.formDesktopAlt')}</span>
@@ -401,6 +402,7 @@ export function SliderListScreen({ canUpdate }) {
               <div className="form-field" style={{ gridColumn: '1 / -1' }}>
                 <span>{t('sliders.formMobileUrl')}</span>
                 <ImageUrlInput value={form.mobileImageUrl} onChange={(url) => setForm((p) => ({ ...p, mobileImageUrl: url }))} />
+                <span className="hint">{t('sliders.formMobileUrlHint')}</span>
               </div>
               <label className="form-field" style={{ gridColumn: '1 / -1' }}>
                 <span>{t('sliders.formMobileAlt')}</span>

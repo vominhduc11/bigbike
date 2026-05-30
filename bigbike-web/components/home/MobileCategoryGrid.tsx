@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Category } from "@/lib/contracts/public";
 import { resolveMediaUrl, safeText } from "@/lib/utils/format";
-import { toCategoryListPath, toCategoryPath } from "@/lib/utils/routes";
+import { toProductListPath, toCategoryPath } from "@/lib/utils/routes";
 import { MobileSectionHeader } from "./MobileSectionHeader";
 
 export function MobileCategoryGrid({ categories }: { categories: Category[] }) {
@@ -14,7 +14,7 @@ export function MobileCategoryGrid({ categories }: { categories: Category[] }) {
       <MobileSectionHeader
         kicker="DANH MỤC"
         title="MUA SẮM THEO LOẠI"
-        href={toCategoryListPath()}
+        href={toProductListPath()}
       />
       <div className="bb-home-mobile-category-grid grid grid-cols-2 min-[600px]:grid-cols-3">
         {items.map((category) => {

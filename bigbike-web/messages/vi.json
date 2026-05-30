@@ -77,6 +77,7 @@
     "fallbackNav": {
       "home": "Trang chủ",
       "products": "Sản phẩm",
+      "categories": "Danh mục",
       "brands": "Thương hiệu",
       "news": "Tin tức",
       "contact": "Liên hệ"
@@ -556,6 +557,11 @@
     "logoutConfirm": "Đăng xuất khỏi tài khoản?",
     "dashboardGreeting": "Xin chào <strong>{name}</strong>.",
     "dashboardIntro": "Từ trang tài khoản, bạn có thể xem <orders>đơn hàng gần đây</orders>, quản lý <addresses>địa chỉ giao hàng và thanh toán</addresses>, và chỉnh sửa <account>mật khẩu và chi tiết tài khoản</account>.",
+    "dashboardCards": {
+      "ordersDesc": "Theo dõi trạng thái và lịch sử đơn đặt hàng của bạn",
+      "addressesDesc": "Quản lý địa chỉ giao hàng và thanh toán",
+      "infoDesc": "Cập nhật thông tin cá nhân và đổi mật khẩu"
+    },
     "menuAria": "Menu tài khoản",
     "sectionSwitcherAria": "Chuyển mục tài khoản",
     "sectionSwitcherPlaceholder": "Chọn mục tài khoản",
@@ -956,7 +962,13 @@
     "footerMove": "Di chuyển",
     "footerSelect": "Chọn",
     "footerClose": "Đóng",
-    "footerBrowse": "xem tất cả sản phẩm →"
+    "footerBrowse": "xem tất cả sản phẩm →",
+    "quickSearchesHeading": "Gợi ý tìm kiếm",
+    "trendingHeading": "Xu hướng",
+    "popularCategoriesHeading": "Danh mục phổ biến",
+    "quickSearchSuggestions": ["mũ bảo hiểm fullface", "áo giáp touring", "găng tay carbon", "giày moto"],
+    "trendingSearches": ["Shoei", "Alpinestars", "Dainese", "AGV", "touring chống nước"],
+    "popularCategories": ["Mũ bảo hiểm", "Áo giáp", "Găng tay", "Phụ kiện"]
   },
   "Compare": {
     "title": "So sánh sản phẩm",

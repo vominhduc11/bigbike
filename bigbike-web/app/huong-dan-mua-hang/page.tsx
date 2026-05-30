@@ -4,7 +4,8 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { PageHero } from "@/components/layout/PageHero";
 import { PolicySidebar } from "@/components/layout/PolicySidebar";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { getPageBySlug } from "@/lib/api/public-api";
+import { getPageBySlug, listPublicSettings } from "@/lib/api/public-api";
+import { readDefaultHeroAssets } from "@/lib/utils/page-hero";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { formatDate, safeText } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
@@ -27,11 +28,13 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function HowToBuyPage() {
   const locale = await getLocale();
-  const [pageResult, t, tBreadcrumb] = await Promise.all([
+  const [pageResult, t, tBreadcrumb, settingsResult] = await Promise.all([
     getPageBySlug("huong-dan-mua-hang", locale),
     getTranslations("StaticPage"),
     getTranslations("Breadcrumb"),
+    listPublicSettings(),
   ]);
+  const defaultHero = readDefaultHeroAssets(settingsResult.data ?? []);
 
   if (!pageResult.data && pageResult.error?.status === 404) {
     notFound();
@@ -55,6 +58,8 @@ export default async function HowToBuyPage() {
         imageUrl={page.heroImageUrl}
         imageAlt={page.heroImageAlt}
         title={page.heroTitle ?? pageTitle}
+        defaultBgUrl={defaultHero.defaultBgUrl}
+        defaultIllustrationUrl={defaultHero.defaultIllustrationUrl}
         breadcrumb={[
           { label: tBreadcrumb("home"), href: toHomePath() },
           { label: pageTitle },

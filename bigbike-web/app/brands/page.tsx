@@ -8,7 +8,7 @@ import { PaginationNav } from "@/components/ui/PaginationNav";
 import { BRAND_SORT_VALUES, listBrands, listPublicSettings } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { safeText } from "@/lib/utils/format";
-import { readHeroSettings } from "@/lib/utils/page-hero";
+import { readDefaultHeroAssets, readHeroSettings } from "@/lib/utils/page-hero";
 import { buildQueryString, collectErrors, parsePositiveIntParam, parseSortParam, readSingleSearchParam } from "@/lib/utils/query";
 import { toBrandListPath, toBrandPath, toHomePath } from "@/lib/utils/routes";
 
@@ -65,20 +65,25 @@ export default async function BrandListPage({ searchParams }: BrandListPageProps
     listPublicSettings(),
   ]);
   const heroSettings = readHeroSettings(settingsResult.data ?? [], "hero_brands");
+  const defaultHero = readDefaultHeroAssets(settingsResult.data ?? []);
 
   return (
     <>
       <PageHero
         imageUrl={heroSettings.imageUrl}
+        mobileImageUrl={heroSettings.mobileImageUrl}
         imageAlt={heroSettings.imageAlt}
         title={heroSettings.title ?? "Thương hiệu"}
+        defaultBgUrl={defaultHero.defaultBgUrl}
+        defaultIllustrationUrl={defaultHero.defaultIllustrationUrl}
+        showDefaultIllustration={false}
         breadcrumb={[
           { label: "Trang chủ", href: toHomePath() },
           { label: "Thương hiệu" },
         ]}
       />
       <section className="bb-page">
-      <div className="bb-container">
+        <div className="bb-container">
 
         {result.error && result.data.length === 0 ? (
           <ErrorState message={result.error.message} retryHref={toBrandListPath()} />
@@ -89,9 +94,9 @@ export default async function BrandListPage({ searchParams }: BrandListPageProps
           />
         ) : (
           <>
-            <div className="bb-grid-categories bb-section">
+            <div className="bb-grid-categories mt-8">
               {result.data.map((brand) => (
-                <article key={brand.id} className="bb-card bb-card-hover">
+                <article key={brand.id} className="bb-card bb-card-hover bb-category-card">
                   <Link href={toBrandPath(brand.slug)} className="bb-category-card-link">
                     <MediaImage
                       image={brand.logo}
@@ -99,10 +104,14 @@ export default async function BrandListPage({ searchParams }: BrandListPageProps
                       className="bb-category-image"
                       width={1200}
                       height={675}
+                      sizes="(min-width: 2560px) 22vw, (min-width: 1024px) 33vw, (min-width: 640px) 48vw, 100vw"
                     />
                     <div className="bb-category-body">
                       <h3>{safeText(brand.name, "Thương hiệu")}</h3>
-                      <p>{safeText(brand.description, "Thông tin thương hiệu đang cập nhật.")}</p>
+                      <p className="line-clamp-3">{safeText(
+                        brand.description?.replace(/<[^>]+>/g, " ").replace(/\s{2,}/g, " ").trim() || null,
+                        "Thông tin thương hiệu đang cập nhật."
+                      )}</p>
                     </div>
                   </Link>
                 </article>
@@ -120,7 +129,7 @@ export default async function BrandListPage({ searchParams }: BrandListPageProps
             ) : null}
           </>
         )}
-      </div>
+        </div>
       </section>
     </>
   );

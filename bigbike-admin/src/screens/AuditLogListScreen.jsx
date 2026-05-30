@@ -76,7 +76,7 @@ function exportToCsv(items, t) {
   const headers = [
     t('auditLog.colTime'),
     t('auditLog.colActor'),
-    t('auditLog.actorType.ADMIN'),
+    t('auditLog.filterActorType'),
     t('auditLog.colAction'),
     t('auditLog.colModule'),
     t('auditLog.colEntity'),
@@ -108,7 +108,14 @@ const PRESET_KEYS      = ['today', '7d', '30d', 'month']
 
 const INITIAL_QUERY = {
   actorType: 'ALL', resourceType: 'ALL',
-  q: '', from: '', to: '', page: 1, pageSize: 20, detail: null,
+  q: '', from: '', to: '', page: 1, pageSize: 20,
+}
+
+function setDetailParam(id) {
+  const url = new URL(window.location.href)
+  if (id) url.searchParams.set('detail', id)
+  else url.searchParams.delete('detail')
+  window.history.replaceState(null, '', url.toString())
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
@@ -235,21 +242,7 @@ function AuditDetailDrawer({ log, onClose }) {
       closeLabel={t('auditLog.drawerClose')}
       wide
     >
-      <div className="audit-drawer-body px-0 py-0">
-        <div className="audit-drawer-header">
-          <h2 id="audit-drawer-title" className="audit-drawer-title">
-            {t('auditLog.drawerTitle')}
-          </h2>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={onClose}
-            aria-label={t('auditLog.drawerClose')}
-          >
-            ✕
-          </Button>
-        </div>
-
+      <div className="-mx-5 -my-4">
         <div className="audit-drawer-body">
           {isDangerous && (
             <div className="audit-danger-banner">
@@ -532,7 +525,10 @@ export function AuditLogListScreen() {
   const [activePreset, setActivePreset] = useState(null)
   const [showMobileFilter, setShowMobileFilter] = useState(false)
 
-  // #6: deep-link for detail drawer — restore from URL on mount
+  // deep-link: read detail id from URL once on mount (does not trigger fetch)
+  const [initialDetailId] = useState(
+    () => new URLSearchParams(window.location.search).get('detail')
+  )
   const [selectedLog, setSelectedLog] = useState(null)
 
   const isFiltered = query.actorType !== 'ALL' || query.resourceType !== 'ALL' || !!query.q || !!query.from || !!query.to
@@ -550,9 +546,9 @@ export function AuditLogListScreen() {
       .then((r) => {
         if (!active) return
         setState({ status: 'success', items: r.items, pagination: r.pagination, warning: '' })
-        // Restore detail drawer from URL on initial load
-        if (query.detail) {
-          const match = r.items.find((item) => item.id === query.detail)
+        // Restore detail drawer from URL deep-link on initial load
+        if (initialDetailId) {
+          const match = r.items.find((item) => item.id === initialDetailId)
           if (match) setSelectedLog(match)
         }
       })
@@ -620,13 +616,12 @@ export function AuditLogListScreen() {
 
   function handleRowClick(log) {
     setSelectedLog(log)
-    // #6: update URL with detail id
-    updateQuery({ detail: log.id })
+    setDetailParam(log.id)
   }
 
   function handleCloseDrawer() {
     setSelectedLog(null)
-    updateQuery({ detail: null })
+    setDetailParam(null)
   }
 
   function handleExport() {
@@ -791,7 +786,7 @@ export function AuditLogListScreen() {
       {state.status === 'success' && totalItems != null && totalItems > 0 && (
         <div className="audit-summary-bar">
           <span>
-            {t('auditLog.summaryFound', { count: <strong key="c">{totalItems.toLocaleString('vi-VN')}</strong> })}
+            {t('auditLog.summaryFound', { count: totalItems.toLocaleString('vi-VN') })}
             {isFiltered && ` ${t('auditLog.summaryFiltered')}`}
           </span>
         </div>

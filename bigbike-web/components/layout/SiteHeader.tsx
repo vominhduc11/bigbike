@@ -8,7 +8,7 @@ import { MobileHeaderMenu } from "@/components/layout/MobileHeaderMenu";
 import { SearchToggle } from "@/components/layout/SearchToggle";
 import { ShopInfoDrawer } from "@/components/layout/ShopInfoDrawer";
 import { StickyHeaderShell } from "@/components/layout/StickyHeaderShell";
-import { getPublicMenu, listPublicSettings } from "@/lib/api/public-api";
+import { getPublicMenu, listCategories, listPublicSettings } from "@/lib/api/public-api";
 import { buildPublicMenuTree } from "@/lib/utils/public-menu";
 import { pickSetting } from "@/lib/utils/settings";
 
@@ -16,9 +16,10 @@ const DEFAULT_SITE_NAME = "BigBike";
 const PRIMARY_MENU_LOCATION = "primary";
 
 export async function SiteHeader() {
-  const [menuResult, settingsResult, t] = await Promise.all([
+  const [menuResult, settingsResult, categoriesResult, t] = await Promise.all([
     getPublicMenu(PRIMARY_MENU_LOCATION),
     listPublicSettings(),
+    listCategories({ size: 8, sort: "sortOrder:asc" }),
     getTranslations("Header"),
   ]);
 
@@ -62,8 +63,8 @@ export async function SiteHeader() {
     {
       id: "fb-3",
       parentId: null,
-      label: t("fallbackNav.brands"),
-      url: "/brands/",
+      label: t("fallbackNav.categories"),
+      url: "/danh-muc-san-pham/",
       sortOrder: 2,
       openInNewTab: false,
       cssClass: null,
@@ -72,8 +73,8 @@ export async function SiteHeader() {
     {
       id: "fb-4",
       parentId: null,
-      label: t("fallbackNav.news"),
-      url: "/tin-tuc/",
+      label: t("fallbackNav.brands"),
+      url: "/brands/",
       sortOrder: 3,
       openInNewTab: false,
       cssClass: null,
@@ -82,9 +83,19 @@ export async function SiteHeader() {
     {
       id: "fb-5",
       parentId: null,
+      label: t("fallbackNav.news"),
+      url: "/tin-tuc/",
+      sortOrder: 4,
+      openInNewTab: false,
+      cssClass: null,
+      children: [],
+    },
+    {
+      id: "fb-6",
+      parentId: null,
       label: t("fallbackNav.contact"),
       url: "/lien-he/",
-      sortOrder: 4,
+      sortOrder: 5,
       openInNewTab: false,
       cssClass: null,
       children: [],
@@ -134,7 +145,7 @@ export async function SiteHeader() {
             </nav>
 
             <div className="bb-user-control">
-              <SearchToggle />
+              <SearchToggle popularCategories={categoriesResult.data?.map(c => ({ name: c.name, slug: c.slug })) ?? []} />
               <CartIcon />
               <HeaderUserMenu />
               <ShopInfoDrawer

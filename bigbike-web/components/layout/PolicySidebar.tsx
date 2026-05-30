@@ -52,7 +52,7 @@ export async function PolicySidebar({ activeHref, title, items }: Props) {
               <li key={item.href} className="border-b border-border">
                 <Link
                   href={item.href}
-                  className={`block py-3 font-body text-sm uppercase tracking-[0.02em] no-underline transition-all duration-150 hover:pl-1.5 hover:text-brand ${
+                  className={`block py-3 font-body text-sm uppercase tracking-wide no-underline transition-all duration-150 hover:pl-1.5 hover:text-brand ${
                     active ? "font-semibold text-brand" : "text-foreground"
                   }`}
                 >

@@ -9,6 +9,9 @@ type MediaImageProps = {
   width?: number;
   height?: number;
   priority?: boolean;
+  /** Responsive sizes hint so next/image picks an appropriately scaled source
+   *  for grid cells (without it, next/image assumes 100vw and over-fetches). */
+  sizes?: string;
 };
 
 export function MediaImage({
@@ -18,6 +21,7 @@ export function MediaImage({
   width = 1200,
   height = 1200,
   priority = false,
+  sizes,
 }: MediaImageProps) {
   const src = resolveMediaUrl(image?.url?.trim());
   const alt = safeText(image?.alt, altFallback);
@@ -41,6 +45,7 @@ export function MediaImage({
       height={image?.height ?? height}
       className={className}
       priority={priority}
+      sizes={sizes}
     />
   );
 }

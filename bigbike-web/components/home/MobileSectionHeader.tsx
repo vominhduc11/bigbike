@@ -14,7 +14,7 @@ export function MobileSectionHeader({ kicker, title, href, linkText = "Xem tất
       <div>
         <div className="bb-mobile-section-kicker flex items-center gap-2 mb-1">
           <span className="inline-block h-px w-4 bg-brand" />
-          <span className="font-cta text-[10px] font-semibold uppercase tracking-[0.20em] text-brand">
+          <span className="font-cta text-[10px] font-semibold uppercase tracking-display text-brand">
             {kicker}
           </span>
         </div>
