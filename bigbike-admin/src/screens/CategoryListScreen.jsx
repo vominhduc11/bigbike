@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { ChevronRight, ExternalLink, FolderTree, ImageOff, Plus } from 'lucide-react'
+import { ChevronRight, ExternalLink, FolderTree, GripVertical, ImageOff, Plus, Search } from 'lucide-react'
 import {
   DndContext,
   closestCenter,
@@ -535,14 +535,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
                 {...(sortableProps.listeners || {})}
                 disabled={Boolean(bulkProgress) || Boolean(dragSavingId)}
               >
-                <svg width="10" height="14" viewBox="0 0 10 14" aria-hidden="true">
-                  <circle cx="2.5" cy="2"  r="1.2" fill="currentColor" />
-                  <circle cx="2.5" cy="7"  r="1.2" fill="currentColor" />
-                  <circle cx="2.5" cy="12" r="1.2" fill="currentColor" />
-                  <circle cx="7.5" cy="2"  r="1.2" fill="currentColor" />
-                  <circle cx="7.5" cy="7"  r="1.2" fill="currentColor" />
-                  <circle cx="7.5" cy="12" r="1.2" fill="currentColor" />
-                </svg>
+                <GripVertical size={16} aria-hidden="true" />
               </button>
             )}
             {useTreeMode && hasChildren ? (
@@ -730,9 +723,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
 
       <div className="bb-filter-bar">
         <div style={{ position: 'relative' }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--bb-text-muted)', pointerEvents: 'none' }}>
-            <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
-          </svg>
+          <Search size={14} aria-hidden="true" style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--bb-text-muted)', pointerEvents: 'none' }} />
           <input
             type="search"
             className="bb-input"

@@ -18,7 +18,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { GripVertical, Plus } from 'lucide-react'
+import { GripVertical, Play, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   fetchHomeVideos,
@@ -171,10 +171,9 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPrevi
             : <div className="w-full h-full bg-black" />
         }
         <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-          <svg viewBox="0 0 40 40" width={28} height={28} fill="none">
-            <circle cx="20" cy="20" r="20" fill="rgba(0,0,0,0.55)" />
-            <polygon points="16,12 16,28 30,20" fill="white" />
-          </svg>
+          <span className="flex items-center justify-center w-7 h-7 rounded-full bg-black/55">
+            <Play size={14} fill="white" className="text-white ml-0.5" aria-hidden="true" />
+          </span>
         </div>
       </button>
 
