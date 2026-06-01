@@ -375,7 +375,7 @@ export function CouponListScreen({ canUpdate }) {
 
       {/* Edit form */}
       {editCoupon && (
-        <div className="bb-card mb-4" style={{ borderColor: 'var(--admin-color-brand-red)' }}>
+        <div className="bb-card mb-4" style={{ borderColor: 'var(--admin-color-primary)' }}>
           <div className="bb-card-header"><h2>{t('coupons.editTitle', { code: editCoupon.code })}</h2></div>
           <form onSubmit={handleEdit} className="bb-card-body">
             {editError && <Alert tone="danger" size="sm" className="mb-3">{editError}</Alert>}
@@ -488,7 +488,7 @@ export function CouponListScreen({ canUpdate }) {
                     return (
                       <tr key={c.id}>
                         <td>
-                          <span className="mono" style={{ fontSize: 13, color: 'var(--admin-color-brand-red)' }}>{c.code}</span>
+                          <span className="mono" style={{ fontSize: 13, color: 'var(--admin-color-primary)' }}>{c.code}</span>
                         </td>
                         <td>{c.name || '—'}</td>
                         <td>
