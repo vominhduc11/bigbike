@@ -1400,7 +1400,7 @@ a {
   width: 16px;
   height: 16px;
   border-radius: var(--admin-radius-full);
-  background: var(--admin-color-brand-red);
+  background: var(--admin-color-status-danger-text);
   color: var(--admin-color-text-inverse);
   font-size: 10px;
   font-weight: 700;
