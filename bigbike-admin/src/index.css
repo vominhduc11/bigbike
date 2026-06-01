@@ -3456,9 +3456,9 @@ a {
   flex-wrap: wrap;
 }
 .audit-preset-active {
-  background: var(--admin-color-brand-red) !important;
+  background: var(--admin-color-primary) !important;
   color: #fff !important;
-  border-color: var(--admin-color-brand-red) !important;
+  border-color: var(--admin-color-primary) !important;
 }
 
 /* ── Danger indicator ─────────────────────────────────────────────────── */
@@ -3785,8 +3785,8 @@ a {
 }
 .audit-card:hover,
 .audit-card:focus-visible {
-  border-color: var(--admin-color-brand-red);
-  box-shadow: 0 0 0 2px var(--admin-color-brand-red-muted);
+  border-color: var(--admin-color-primary);
+  box-shadow: 0 0 0 2px var(--admin-color-primary-muted);
   outline: none;
 }
 .audit-card--danger {
