@@ -784,13 +784,13 @@ a {
 }
 
 .menu-slot-tab.is-active {
-  border-color: var(--admin-color-brand-red);
-  background: var(--admin-color-brand-red-subtle);
+  border-color: var(--admin-color-primary);
+  background: var(--admin-color-primary-subtle);
   box-shadow: var(--admin-shadow-xs);
 }
 
 .menu-slot-tab.is-active .menu-slot-tab-title {
-  color: var(--admin-color-brand-red);
+  color: var(--admin-color-primary);
 }
 
 .menu-slot-tab-title {
@@ -931,8 +931,8 @@ a {
 }
 
 .menu-search-box:focus-within {
-  border-color: var(--admin-color-brand-red);
-  box-shadow: 0 0 0 3px var(--admin-color-brand-red-muted);
+  border-color: var(--admin-color-primary);
+  box-shadow: 0 0 0 3px var(--admin-color-primary-muted);
 }
 
 .menu-search-box input {
