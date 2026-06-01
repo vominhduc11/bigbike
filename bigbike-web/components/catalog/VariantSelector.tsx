@@ -153,6 +153,11 @@ export function VariantSelector({
             <div className="group">
               <div className="group-label">
                 <label>{group.name}</label>
+                {currentValue ? (
+                  <span className="ml-2 align-top text-base font-normal leading-[52px] text-muted-foreground">
+                    {currentValue}
+                  </span>
+                ) : null}
               </div>
               <div className="variation-radios">
                 {group.values.map((info) => {

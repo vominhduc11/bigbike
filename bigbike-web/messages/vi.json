@@ -237,6 +237,9 @@
     "buyBox": {
       "skuLabel": "Mã SP: {sku}",
       "ratingCount": "({count} đánh giá)",
+      "reviewsWord": "đánh giá",
+      "noReviews": "Chưa có đánh giá",
+      "outOfStockNote": "Sản phẩm tạm hết hàng. Vui lòng liên hệ để được tư vấn hoặc quay lại sau.",
       "pickVariantHint": "Vui lòng chọn size/màu sắc để mua hàng.",
       "quantityLabel": "Số lượng sản phẩm",
       "adding": "Đang thêm...",
@@ -252,9 +255,10 @@
       "callHotline": "Liên hệ tư vấn: {phone}",
       "zaloAdvice": "Tư vấn qua Zalo ngay",
       "shareLabel": "Chia sẻ",
+      "shareNative": "Chia sẻ liên kết",
+      "shareCopied": "Đã sao chép liên kết",
       "shareFacebook": "Chia sẻ lên Facebook",
       "shareTwitter": "Chia sẻ trên X (Twitter)",
-      "shareSkype": "Chia sẻ qua Skype",
       "shareInstagram": "Instagram BigBike"
     },
     "lowStockRemaining": "Chỉ còn {count} sản phẩm",

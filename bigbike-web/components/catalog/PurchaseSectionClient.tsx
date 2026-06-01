@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { useCallback, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
@@ -58,9 +59,28 @@ function RatingRow({
   rating: number | null;
   count: number | null;
 }) {
-  const value = rating && rating > 0 ? rating : 5;
-  const reviewCount = count && count > 0 ? count : 125;
-  const displayValue = Number.isInteger(value) ? String(value) : value.toFixed(1);
+  const t = useTranslations("Product.buyBox");
+  // Only show a rating when it's backed by real reviews. Previously this
+  // fabricated 5★/125 reviews for products with none — fake data that also
+  // leaked into the schema.org AggregateRating microdata.
+  const hasReviews =
+    typeof rating === "number" && rating > 0 && typeof count === "number" && count > 0;
+
+  if (!hasReviews) {
+    return (
+      <div className="rating rating--empty">
+        <span
+          className="rating-star"
+          style={{ "--rating-fill": "0%" } as CSSProperties}
+          aria-hidden="true"
+        />
+        <p>{t("noReviews")}</p>
+      </div>
+    );
+  }
+
+  const displayValue = Number.isInteger(rating) ? String(rating) : rating.toFixed(1);
+  const fillPct = `${Math.min(100, Math.max(0, (rating / 5) * 100))}%`;
 
   return (
     <div
@@ -69,11 +89,18 @@ function RatingRow({
       itemScope
       itemType="https://schema.org/AggregateRating"
     >
-      <div className="rating-star" data-rating={displayValue} aria-label={`${displayValue} sao`} />
-      <br />
+      <span
+        className="rating-star"
+        style={{ "--rating-fill": fillPct } as CSSProperties}
+        aria-label={`${displayValue}/5`}
+      />
+      <meta itemProp="bestRating" content="5" />
       <p>
-        Đánh giá: <span itemProp="ratingValue">{displayValue}/</span>
-        <span itemProp="reviewCount">{reviewCount}</span>
+        <span itemProp="ratingValue">{displayValue}</span>
+        <span aria-hidden="true">★</span>{" "}
+        <span className="rating-count">
+          (<span itemProp="reviewCount">{count}</span> {t("reviewsWord")})
+        </span>
       </p>
     </div>
   );
@@ -154,6 +181,25 @@ export function PurchaseSectionClient({
   const [quickBuyOpen, setQuickBuyOpen] = useState(false);
   const [successOrder, setSuccessOrder] = useState<{ orderNumber: string; orderKey: string; paymentMethod: string } | null>(null);
   const [addError, setAddError] = useState("");
+  const [shareCopied, setShareCopied] = useState(false);
+
+  const handleShare = useCallback(async () => {
+    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+      try {
+        await navigator.share({ title: productName, url: canonicalUrl });
+      } catch {
+        // User dismissed the share sheet — nothing to do.
+      }
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(canonicalUrl);
+      setShareCopied(true);
+      window.setTimeout(() => setShareCopied(false), 2000);
+    } catch {
+      // Clipboard unavailable (insecure context) — silently ignore.
+    }
+  }, [productName, canonicalUrl]);
 
   const { data: snapshot, isLoading: snapshotLoading } =
     useQuery<ProductSnapshot>({
@@ -309,17 +355,24 @@ export function PurchaseSectionClient({
         )}
 
         <div className="bb-wp-add-cart-wrap">
-          <div className="bb-wp-quantity-row">
-            <WpQuantitySelector
-              value={quantity}
-              onChange={setQuantity}
-              max={effectiveStockData?.quantity}
-              label={t("quantityLabel")}
-            />
-          </div>
+          {/* When sold out, drop the quantity stepper + "Mua ngay" — they're
+              non-actionable. The sold-out state is carried by the badge plus
+              the (kept) add button label and the note below. */}
+          {!soldOut && (
+            <div className="bb-wp-quantity-row">
+              <WpQuantitySelector
+                value={quantity}
+                onChange={setQuantity}
+                max={effectiveStockData?.quantity}
+                label={t("quantityLabel")}
+              />
+            </div>
+          )}
 
           <div className="bb-wp-buttons-row">
             <div className="add-to-cart">
+              {/* Kept mounted even when sold out: MobileStickyPurchaseBar
+                  mirrors this button's disabled/data-soldout state. */}
               <button
                 type="button"
                 className={cn(
@@ -333,20 +386,26 @@ export function PurchaseSectionClient({
                 {addToCartLabel}
               </button>
             </div>
-            <div className="add-to-cart quick-add-to-cart">
-              <button
-                type="button"
-                className={cn(
-                  "btn single_add_to_cart_button button btn-quick-buy js-quickby",
-                  !isAvailable && "disabled",
-                )}
-                disabled={!isAvailable}
-                onClick={() => setQuickBuyOpen(true)}
-              >
-                {t("buyNow")}
-              </button>
-            </div>
+            {!soldOut && (
+              <div className="add-to-cart quick-add-to-cart">
+                <button
+                  type="button"
+                  className={cn(
+                    "btn single_add_to_cart_button button btn-quick-buy js-quickby",
+                    !isAvailable && "disabled",
+                  )}
+                  disabled={!isAvailable}
+                  onClick={() => setQuickBuyOpen(true)}
+                >
+                  {t("buyNow")}
+                </button>
+              </div>
+            )}
           </div>
+
+          {soldOut && (
+            <p className="mt-3 text-sm text-muted-foreground">{t("outOfStockNote")}</p>
+          )}
 
           <QuickBuyModal
             open={quickBuyOpen}
@@ -378,7 +437,21 @@ export function PurchaseSectionClient({
         </div>
 
         <div className="social text-left">
-          <p>share</p>
+          <p>{t("shareLabel")}</p>
+          <button
+            type="button"
+            className="bb-wp-share-btn"
+            onClick={handleShare}
+            aria-label={t("shareNative")}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="18" cy="5" r="3" />
+              <circle cx="6" cy="12" r="3" />
+              <circle cx="18" cy="19" r="3" />
+              <line x1="8.6" y1="13.5" x2="15.4" y2="17.5" />
+              <line x1="15.4" y1="6.5" x2="8.6" y2="10.5" />
+            </svg>
+          </button>
           <a
             href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(canonicalUrl)}`}
             target="_blank"
@@ -396,7 +469,7 @@ export function PurchaseSectionClient({
             aria-label={t("shareTwitter")}
           >
             <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-              <path d="M14.4 4.1v.4c0 4.3-3.3 9.3-9.3 9.3-1.8 0-3.5-.5-4.9-1.5h.8c1.5 0 2.9-.5 4-1.4-1.4 0-2.5-.9-2.9-2.2.2 0 .4.1.7.1.3 0 .6 0 .8-.1C2.2 8.4 1.1 7.2 1.1 5.8c.4.2.9.4 1.4.4C1.7 5.6 1.1 4.6 1.1 3.5c0-.6.2-1.2.5-1.7 1.6 2 4 3.3 6.7 3.4-.1-.2-.1-.5-.1-.8 0-1.8 1.5-3.3 3.3-3.3.9 0 1.8.4 2.4 1 .7-.1 1.3-.4 1.9-.7-.2.7-.7 1.3-1.3 1.7.6-.1 1.1-.2 1.6-.4-.4.5-1 1-1.7 1.4Z" />
+              <path d="M12.6 1.5h2.45l-5.35 6.12L16 14.5h-4.93l-3.86-5.05-4.42 5.05H.34l5.72-6.54L0 1.5h5.05l3.49 4.61L12.6 1.5Zm-.86 11.52h1.36L4.32 2.9H2.86l8.88 10.12Z" />
             </svg>
           </a>
           {instagramUrl ? (
@@ -413,16 +486,11 @@ export function PurchaseSectionClient({
               </svg>
             </a>
           ) : null}
-          <a
-            href={`https://web.skype.com/share?url=${encodeURIComponent(canonicalUrl)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label={t("shareSkype")}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d="M12 2a10 10 0 0 1 8.66 15.02 6 6 0 0 1-8.34 8.3A10 10 0 1 1 12 2Zm.2 16.6c2.86 0 4.62-1.4 4.62-3.62 0-1.43-.68-2.94-3.5-3.57l-1.6-.36c-.6-.14-1.3-.33-1.3-.9 0-.63.55-1.06 1.55-1.06 2.02 0 1.83 1.38 2.84 1.38.53 0 .99-.31.99-.85 0-1.25-2-2.2-3.67-2.2-1.82 0-3.76.78-3.76 2.84 0 1 .35 2.05 2.32 2.54l2.16.54c.65.16 1.22.44 1.22 1.05 0 .6-.6 1.18-1.7 1.18-2.19 0-1.89-1.68-3.07-1.68-.53 0-.92.37-.92.9 0 1.03 1.25 2.74 3.99 2.74Z" />
-            </svg>
-          </a>
+          {shareCopied && (
+            <span className="ml-2 text-sm font-medium text-brand" role="status">
+              {t("shareCopied")}
+            </span>
+          )}
         </div>
       </div>
     </>

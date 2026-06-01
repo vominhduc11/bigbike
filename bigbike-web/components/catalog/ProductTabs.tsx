@@ -22,7 +22,7 @@ export function ProductTabs({ sections }: { sections: ProductTabSection[] }) {
     : sections[0].id;
 
   return (
-    <section className="woocommerce-tabs wc-tabs-wrapper tabs mt-80 mb-40 bb-wp-tabs">
+    <section className="woocommerce-tabs wc-tabs-wrapper tabs bb-wp-tabs">
       <div className="tabs-nav" role="tablist" aria-label="Thông tin sản phẩm">
         <ul className="nav nav-tabs" id="myTab">
           {sections.map((section) => {

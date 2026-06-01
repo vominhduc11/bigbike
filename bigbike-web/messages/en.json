@@ -237,6 +237,9 @@
     "buyBox": {
       "skuLabel": "SKU: {sku}",
       "ratingCount": "({count} reviews)",
+      "reviewsWord": "reviews",
+      "noReviews": "No reviews yet",
+      "outOfStockNote": "This product is temporarily out of stock. Please contact us for advice or check back later.",
       "pickVariantHint": "Please pick a size/color to buy.",
       "quantityLabel": "Quantity",
       "adding": "Adding…",
@@ -252,9 +255,10 @@
       "callHotline": "Call us: {phone}",
       "zaloAdvice": "Chat on Zalo now",
       "shareLabel": "Share",
+      "shareNative": "Share link",
+      "shareCopied": "Link copied",
       "shareFacebook": "Share on Facebook",
       "shareTwitter": "Share on X (Twitter)",
-      "shareSkype": "Share on Skype",
       "shareInstagram": "BigBike Instagram"
     },
     "lowStockRemaining": "Only {count} left",

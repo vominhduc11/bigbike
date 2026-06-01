@@ -13,6 +13,7 @@ import {
 import { useCart } from "@/lib/cart-context";
 import type { CartItem } from "@/lib/contracts/commerce";
 import { useCartQuery, useRemoveCartItem, useUpdateCartItem } from "@/lib/query/hooks";
+import { cn } from "@/lib/utils";
 import { formatVnd } from "@/lib/utils/format";
 import { toCartPath, toCheckoutPath, toProductListPath } from "@/lib/utils/routes";
 import { useHeaderUi } from "./HeaderUiContext";
@@ -78,6 +79,8 @@ export function MobileCartSheet() {
   const loading = isLoading || (open && isFetching && !cart);
   const queryError = cartError instanceof Error ? cartError.message : "";
   const unavailable = items.some((item) => !item.available);
+  const hasItems = items.length > 0 && !queryError && !errorMessage;
+  const compact = !loading && !hasItems;
 
   return (
     <Sheet
@@ -91,7 +94,7 @@ export function MobileCartSheet() {
         }
       }}
     >
-      <SheetContent side="bottom" className="bb-mobile-cart-sheet md:hidden">
+      <SheetContent side="bottom" className={cn("bb-mobile-cart-sheet md:hidden", compact && "is-compact")}>
         <div className="bb-mobile-cart-grabber" aria-hidden="true" />
         <div className="bb-mobile-cart-head">
           <div>
@@ -119,7 +122,6 @@ export function MobileCartSheet() {
               <span className="bb-mobile-cart-empty-icon" aria-hidden="true">
                 <ShoppingCart size={28} />
               </span>
-              <h3>Giỏ hàng trống</h3>
               <p>Thêm sản phẩm để bắt đầu mua sắm.</p>
               <Link href={toProductListPath()} onClick={closePanel}>
                 Mua sắm ngay
