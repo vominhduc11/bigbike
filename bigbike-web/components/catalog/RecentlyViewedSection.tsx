@@ -66,7 +66,7 @@ export function RecentlyViewedSection({ currentProductId, currentProduct }: Prop
               </div>
               <div className="flex flex-col gap-[3px] px-2.5 pt-2 pb-2.5">
                 {p.categoryName && (
-                  <p className="m-0 text-sm font-bold uppercase tracking-display text-brand">
+                  <p className="bb-category-badge">
                     {p.categoryName}
                   </p>
                 )}

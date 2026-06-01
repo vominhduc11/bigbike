@@ -18,7 +18,7 @@ export function ErrorState({ title, message, retryHref }: ErrorStateProps) {
       role="alert"
       aria-live="assertive"
     >
-      <p className="font-heading text-base font-semibold uppercase text-foreground m-0">
+      <p className="bb-state-title">
         {title ?? t("errorTitle")}
       </p>
       <p className="m-0 text-muted-foreground">{message}</p>

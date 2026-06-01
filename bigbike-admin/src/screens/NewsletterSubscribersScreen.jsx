@@ -48,7 +48,7 @@ export function NewsletterSubscribersScreen() {
           <div className="bb-card">
             <div className="bb-card-body">
               <div className="flex items-center gap-3">
-                <span className="flex items-center justify-center w-9 h-9 rounded-none bg-[var(--bb-brand-subtle)] text-[var(--bb-brand)]">
+                <span className="flex items-center justify-center w-9 h-9 rounded-none bg-[var(--bb-primary-subtle)] text-[var(--bb-primary)]">
                   <Mail size={16} />
                 </span>
                 <div>

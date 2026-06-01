@@ -107,7 +107,7 @@ export default async function ContactPage() {
 
           <div className="grid grid-cols-1 items-start gap-10 pb-[60px] pt-8 lg:grid-cols-2 lg:gap-[60px]">
             <div className="min-w-0">
-              <h2 className="mb-6 font-display text-26 font-semibold text-foreground">
+              <h2 className="bb-section-heading mb-6">
                 {t("contactInfoHeading")}
               </h2>
               <ContactInfoList
@@ -186,7 +186,7 @@ export default async function ContactPage() {
 
             {(mapEmbedSrc || address || hotline) ? (
               <div className="min-w-0">
-                <h2 className="mb-6 font-display text-26 font-semibold text-foreground">
+                <h2 className="bb-section-heading mb-6">
                   {t("storeSystemHeading")}
                 </h2>
                 {mapEmbedSrc ? (
@@ -211,17 +211,17 @@ export default async function ContactPage() {
                             height={48}
                             className="h-12 w-12 object-contain"
                           />
-                          <p className="font-display text-lg font-bold uppercase text-foreground">
+                          <p className="font-display text-h4 font-bold uppercase text-foreground">
                             {pageTitle}
                           </p>
                         </div>
                         {address ? (
-                          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                          <p className="mt-2 text-caption leading-relaxed text-muted-foreground">
                             {address}
                           </p>
                         ) : null}
                         {hotline ? (
-                          <p className="mt-1 text-sm text-muted-foreground">
+                          <p className="mt-1 text-caption text-muted-foreground">
                             {t("hotline")}:{" "}
                             <a href={tel(hotline)} className="bb-link">
                               {hotline}

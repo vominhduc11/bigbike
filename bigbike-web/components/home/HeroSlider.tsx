@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Swiper, SwiperSlide } from "swiper/react";
 import type { Swiper as SwiperType } from "swiper";
 import "swiper/css";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export type HeroSlide = {
   id: string;
@@ -157,9 +158,7 @@ export function HeroSlider({ slides }: HeroSliderProps) {
             onClick={() => swiperRef.current?.slidePrev()}
             aria-label="Slide trước"
           >
-            <svg width="20" height="40" viewBox="0 0 20 40" fill="none" aria-hidden="true">
-              <polyline points="16,4 4,20 16,36" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            <ChevronLeft aria-hidden="true" className="h-10 w-5 shrink-0" strokeWidth={2} />
           </button>
           <button
             type="button"
@@ -167,9 +166,7 @@ export function HeroSlider({ slides }: HeroSliderProps) {
             onClick={() => swiperRef.current?.slideNext()}
             aria-label="Slide tiếp"
           >
-            <svg width="20" height="40" viewBox="0 0 20 40" fill="none" aria-hidden="true">
-              <polyline points="4,4 16,20 4,36" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            <ChevronRight aria-hidden="true" className="h-10 w-5 shrink-0" strokeWidth={2} />
           </button>
           <div className="bb-main-banner-pagination">
             <span>{activeIndex + 1}/{count}</span>

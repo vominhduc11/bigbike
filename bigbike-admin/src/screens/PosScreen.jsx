@@ -1053,7 +1053,7 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit, canOverri
             </div>
             <div className="pos-cart-total">
               <span>{t('pos.total')}</span>
-              <strong style={{ color: 'var(--admin-color-brand-red)' }}>{formatCurrencyVnd(total)}</strong>
+              <strong style={{ color: 'var(--admin-color-primary)' }}>{formatCurrencyVnd(total)}</strong>
             </div>
             <button
               type="button"

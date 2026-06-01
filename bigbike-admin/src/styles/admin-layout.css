@@ -60,17 +60,17 @@ button.summary-card {
 
 button.summary-card:hover,
 button.summary-card:focus-visible {
-  border-color: var(--admin-color-brand-red);
+  border-color: var(--admin-color-primary);
   box-shadow: var(--admin-shadow-sm);
   outline: none;
 }
 
 button.summary-card:focus-visible {
-  box-shadow: 0 0 0 3px var(--admin-color-brand-red-muted);
+  box-shadow: 0 0 0 3px var(--admin-color-primary-muted);
 }
 
 .summary-card.is-active {
-  border-color: var(--admin-color-brand-red);
+  border-color: var(--admin-color-primary);
   background: var(--admin-color-surface-selected);
 }
 
@@ -95,7 +95,7 @@ button.summary-card:focus-visible {
   flex-shrink: 0;
 }
 
-.summary-card-icon--brand   { background: var(--admin-color-brand-red-subtle);    color: var(--admin-color-brand-red); }
+.summary-card-icon--brand   { background: var(--admin-color-primary-subtle);      color: var(--admin-color-primary); }
 .summary-card-icon--success { background: var(--admin-color-status-success-bg);   color: var(--admin-color-status-success-text); }
 .summary-card-icon--warning { background: var(--admin-color-status-warning-bg);   color: var(--admin-color-status-warning-text); }
 .summary-card-icon--danger  { background: var(--admin-color-status-danger-bg);    color: var(--admin-color-status-danger-text); }
@@ -170,7 +170,7 @@ button.summary-card:focus-visible {
 
 .seg-tabs-tab:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--admin-color-brand-red-muted);
+  box-shadow: 0 0 0 2px var(--admin-color-primary-muted);
 }
 
 .seg-tabs-tab.is-active {
@@ -191,8 +191,8 @@ button.summary-card:focus-visible {
 }
 
 .seg-tabs-tab.is-active .seg-tabs-count {
-  background: var(--admin-color-brand-red-subtle);
-  color: var(--admin-color-brand-red);
+  background: var(--admin-color-primary-subtle);
+  color: var(--admin-color-primary-subtle-text);
 }
 
 @media (max-width: 640px) {
@@ -461,7 +461,7 @@ button.summary-card:focus-visible {
   cursor: pointer;
   font-size: var(--admin-text-xs);
   font-weight: 600;
-  color: var(--admin-color-brand-red);
+  color: var(--admin-color-primary);
   padding: 2px 0;
   white-space: nowrap;
 }
@@ -650,7 +650,7 @@ button.summary-card:focus-visible {
 
 .dash-attention-item:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px var(--admin-color-brand-red-muted);
+  box-shadow: 0 0 0 3px var(--admin-color-primary-muted);
 }
 
 .dash-attention-item--danger  { border-left-color: var(--admin-color-status-danger-text); }
@@ -722,7 +722,7 @@ button.summary-card:focus-visible {
 .dash-attention-cta {
   font-size: var(--admin-text-xs);
   font-weight: 600;
-  color: var(--admin-color-brand-red);
+  color: var(--admin-color-primary);
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -935,7 +935,7 @@ button.summary-card:focus-visible {
 
 .settings-nav button:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--admin-color-brand-red-muted);
+  box-shadow: 0 0 0 2px var(--admin-color-primary-muted);
 }
 
 .settings-nav button.active {
@@ -952,7 +952,7 @@ button.summary-card:focus-visible {
   top: 6px;
   bottom: 6px;
   width: 3px;
-  background: var(--admin-color-brand-red);
+  background: var(--admin-color-primary);
   border-radius: 0 var(--admin-radius-sm) var(--admin-radius-sm) 0;
 }
 

@@ -18,7 +18,7 @@ export function MobileSectionHeader({ kicker, title, href, linkText = "Xem tất
             {kicker}
           </span>
         </div>
-        <h2 className="m-0 font-display text-2xl font-semibold uppercase leading-none tracking-normal text-foreground">
+        <h2 className="m-0 font-display text-h2 font-semibold uppercase leading-display tracking-normal text-foreground">
           {title}
         </h2>
       </div>

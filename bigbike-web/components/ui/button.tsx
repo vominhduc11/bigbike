@@ -26,6 +26,7 @@ const buttonVariants = cva(
         sm: "min-h-[36px] px-4 py-2 text-sm",
         md: "min-h-[44px] px-8 py-4 text-base",
         lg: "min-h-[52px] px-10 py-4 text-lg",
+        auth: "min-h-[52px] w-full py-0 text-sm hover:not-disabled:scale-100",
         icon: "min-h-[44px] w-[44px] px-0 py-0",
       },
     },

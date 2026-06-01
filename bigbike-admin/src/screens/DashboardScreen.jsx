@@ -313,7 +313,7 @@ export function DashboardScreen({ navigate }) {
                 <span>{t('dashboard.kpi.todayRevenue')}</span>
                 <span className="bb-kpi-icon brand"><CircleDollarSign size={15} /></span>
               </div>
-              <div className="bb-kpi-value">{formatVndShort(data.kpi.todayRevenue)}</div>
+              <div className="bb-kpi-value bb-kpi-value--money">{formatVndShort(data.kpi.todayRevenue)}</div>
               <div className="bb-kpi-foot">
                 <TrendPill {...revenueTrend(data.kpi)} />
                 <span className="bb-kpi-foot-label">
@@ -376,8 +376,8 @@ export function DashboardScreen({ navigate }) {
                     <AreaChart data={revenueData} margin={{ top: 4, right: 16, left: 8, bottom: 0 }}>
                       <defs>
                         <linearGradient id="grad-revenue" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="var(--bb-brand)" stopOpacity={0.18} />
-                          <stop offset="95%" stopColor="var(--bb-brand)" stopOpacity={0.01} />
+                          <stop offset="5%" stopColor="var(--bb-primary)" stopOpacity={0.18} />
+                          <stop offset="95%" stopColor="var(--bb-primary)" stopOpacity={0.01} />
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--bb-border-faint)" vertical={false} />
@@ -401,7 +401,7 @@ export function DashboardScreen({ navigate }) {
                         type="monotone"
                         dataKey="revenue"
                         name={t('dashboard.revenueChart.revenue')}
-                        stroke="var(--bb-brand)"
+                        stroke="var(--bb-primary)"
                         strokeWidth={2}
                         fill="url(#grad-revenue)"
                         dot={false}
@@ -620,7 +620,7 @@ export function DashboardScreen({ navigate }) {
                               </div>
                             </td>
                             <td className="num">{product.units}</td>
-                            <td className="num" style={{ fontWeight: 700, color: 'var(--bb-brand)' }}>
+                            <td className="num" style={{ fontWeight: 700, color: 'var(--bb-primary)' }}>
                               {formatVndShort(product.revenue)}
                             </td>
                           </tr>

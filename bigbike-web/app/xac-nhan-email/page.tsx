@@ -54,16 +54,16 @@ export default function VerifyEmailPage() {
         <div className="bb-auth-wrap text-center">
           {status === "loading" && (
             <>
-              <h1 className="mb-3 text-base font-semibold normal-case">{t("loadingTitle")}</h1>
+              <h1 className="bb-auth-heading mb-3">{t("loadingTitle")}</h1>
               <p className="m-0 text-sm leading-relaxed text-foreground">{t("loadingMessage")}</p>
             </>
           )}
 
           {status === "success" && (
             <>
-              <h1 className="mb-3 text-base font-semibold normal-case">{t("successTitle")}</h1>
+              <h1 className="bb-auth-heading mb-3">{t("successTitle")}</h1>
               <p className="mb-6 text-sm leading-relaxed text-foreground">{t("successMessage")}</p>
-              <Button asChild variant="primary" className="h-[52px] w-full py-0 text-sm hover:not-disabled:scale-100">
+              <Button asChild variant="primary" size="auth">
                 <Link href="/tai-khoan/">{t("successCta")}</Link>
               </Button>
             </>
@@ -71,7 +71,7 @@ export default function VerifyEmailPage() {
 
           {status === "error" && (
             <>
-              <h1 className="mb-3 text-base font-semibold normal-case">{t("errorTitle")}</h1>
+              <h1 className="bb-auth-heading mb-3">{t("errorTitle")}</h1>
               <p className="mb-6 text-sm leading-relaxed text-foreground">{errorMsg}</p>
 
               {isLoggedIn ? (
@@ -86,14 +86,14 @@ export default function VerifyEmailPage() {
                         variant="primary"
                         onClick={handleResend}
                         disabled={resendStatus === "sending"}
-                        className="h-[52px] w-full py-0 text-sm hover:not-disabled:scale-100"
+                        size="auth"
                       >
                         {resendStatus === "sending" ? t("resending") : t("resend")}
                       </Button>
                       {resendStatus === "error" && <p className="text-sm text-destructive">{resendMsg}</p>}
                     </>
                   )}
-                  <Button asChild variant="secondary" className="h-[52px] w-full py-0 text-sm hover:not-disabled:scale-100">
+                  <Button asChild variant="secondary" size="auth">
                     <Link href="/tai-khoan/">{t("backToAccount")}</Link>
                   </Button>
                 </div>
@@ -110,19 +110,19 @@ export default function VerifyEmailPage() {
 
           {status === "missing" && (
             <>
-              <h1 className="mb-3 text-base font-semibold normal-case">{t("missingTitle")}</h1>
+              <h1 className="bb-auth-heading mb-3">{t("missingTitle")}</h1>
               <p className="mb-6 text-sm leading-relaxed text-foreground">{t("missingMessage")}</p>
               {isLoggedIn ? (
                 <Button
                   variant="primary"
                   onClick={handleResend}
                   disabled={resendStatus === "sending"}
-                  className="h-[52px] w-full py-0 text-sm hover:not-disabled:scale-100"
+                  size="auth"
                 >
                   {resendStatus === "sending" ? t("resending") : t("resend")}
                 </Button>
               ) : (
-                <Button asChild variant="secondary" className="h-[52px] w-full py-0 text-sm hover:not-disabled:scale-100">
+                <Button asChild variant="secondary" size="auth">
                   <Link href="/">{t("backToHome")}</Link>
                 </Button>
               )}

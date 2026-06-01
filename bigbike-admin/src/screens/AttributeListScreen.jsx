@@ -21,8 +21,8 @@ function SwatchPreview({ colorHex, swatchImageUrl }) {
           display: 'inline-block',
           width: 52,
           height: 52,
-          border: '1px solid #000',
-          backgroundColor: '#f5f5f5',
+          border: '1px solid var(--admin-color-border-strong)',
+          backgroundColor: 'var(--admin-color-surface-muted)',
           backgroundImage: `url(${swatchImageUrl})`,
           backgroundSize: 'contain',
           backgroundRepeat: 'no-repeat',
@@ -39,7 +39,7 @@ function SwatchPreview({ colorHex, swatchImageUrl }) {
           display: 'inline-block',
           width: 52,
           height: 52,
-          border: '1px solid #000',
+          border: '1px solid var(--admin-color-border-strong)',
           backgroundColor: colorHex,
           flexShrink: 0,
         }}
@@ -52,8 +52,8 @@ function SwatchPreview({ colorHex, swatchImageUrl }) {
         display: 'inline-block',
         width: 52,
         height: 52,
-        border: '1px solid #ccc',
-        backgroundColor: '#f5f5f5',
+        border: '1px solid var(--admin-color-border-default)',
+        backgroundColor: 'var(--admin-color-surface-muted)',
         flexShrink: 0,
       }}
     />
@@ -172,7 +172,7 @@ function ColorAttributeSection({ attribute, canUpdate }) {
                         <img
                           src={draftUrl}
                           alt=""
-                          style={{ width: 32, height: 32, objectFit: 'contain', border: '1px solid #ccc', background: '#f5f5f5' }}
+                          style={{ width: 32, height: 32, objectFit: 'contain', border: '1px solid var(--admin-color-border-default)', background: 'var(--admin-color-surface-muted)' }}
                         />
                       )}
                       {canUpdate && (

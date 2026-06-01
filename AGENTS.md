@@ -366,9 +366,10 @@ Tailwind utility classes / CSS variables     ← text-primary, bg-brand, var(--a
 ```
 
 **Quy tắc:**
-- **Màu**: BigBike admin palette (red/black identity) từ `admin-tokens.css`. Tham chiếu qua CSS variable / Tailwind token.
-- **Font**: `Bungee` (display/headline, uppercase only), `Exo` (body/UI/content, 9 weights). **Không dùng Barlow/Oswald/Barlow Condensed** trong admin.
-- **Scale / spacing / radius**: cùng quy tắc như web.
+- **Màu**: **Primary = cam Direction B `#cc4a08`** (dark `#f0791f`) cho CTA / active / selected / focus / link — map qua `--admin-color-primary`, shadcn `--primary` / `--ring`, và `--bb-primary*`. **Đỏ thương hiệu `#e8281e`** (`--admin-color-brand-red` / `--bb-brand`) **chỉ** cho brand chrome: vạch active sidebar, nav badge, notification pip, logo. Danger giữ token danger riêng. Tham chiếu qua CSS variable / Tailwind token, không hardcode hex.
+- **Font**: `Inter` (body/UI/content), `Bungee` (display — số KPI, wordmark), `JetBrains Mono` (mã/SKU/ID). **Không dùng Exo/Barlow/Oswald** trong admin. Đã cài qua `@fontsource`.
+- **Scale / spacing**: type scale + thang 4px theo `admin-tokens.css` (`--admin-text-*`, `--admin-space-*`).
+- **Border radius**: theo token bo `--admin-radius-*` (xs 5 / sm 8 / md 12 / lg 16 px); `rounded-full` chỉ cho phần tử thực sự tròn. Admin **không** dùng `rounded-none` mặc định như web.
 - **Visual style**: operational/data-first — dense, readable, table/form/filter centric. Không hero/campaign visuals trong operational screens (trừ module preview cụ thể yêu cầu).
 
 #### Visual consistency check (cho cả 2 app)
@@ -573,7 +574,7 @@ grep -rn "ten-class" bigbike-web    --include="*.jsx" --include="*.tsx" --includ
 |---|---|---|---|
 | `src/index.css` | Mới — production | không prefix (`sidebar`, `admin-table`, `screen`, …) | Active |
 | `src/styles/admin-layout.css` | Mới — production | không prefix (`summary-card`, `seg-tabs`, `dash-*`, …) | Active |
-| `src/styles/admin-prototype.css` | Cũ — prototype ported | `bb-*` | **Vẫn active** — dùng bởi `AdminShell`, `DashboardScreen`, `LoginScreen` và nhiều screen khác. **KHÔNG giả định dead mà không grep.** |
+| `src/styles/admin-prototype.css` | **Hệ `bb-*` canonical đang sống** (đã re-skin theo Direction B cam) | `bb-*` | **Active — chassis chính của admin**: shell (`bb-sidebar`/`bb-topbar`/`bb-breadcrumb`), header, button, card, table, badge, KPI, form. Dùng bởi `AdminShell` + hầu hết screen. **KHÔNG giả định dead mà không grep.** |
 | `src/styles/admin-tokens.css` | Design tokens | `--bb-*`, `--admin-*` CSS variables | Active |
 
 **Đặc biệt với `bb-*` class**: Phần lớn `bb-*` đang được dùng nặng (`bb-sidebar`, `bb-nav-link`, `bb-kpi`, `bb-card`, `bb-table`, `bb-btn`, `bb-screen-header`, …). Một số đã được xác nhận dead và xóa (tháng 5/2026): `bb-search`, `bb-checkbox`, `bb-radio`, `bb-switch`, `bb-tabs`, `bb-detail-grid`, `bb-detail-grid-wide`, `bb-timeline`. Không xóa thêm mà không grep.
@@ -583,7 +584,7 @@ grep -rn "ten-class" bigbike-web    --include="*.jsx" --include="*.tsx" --includ
 1. Tailwind không làm được? → mới viết CSS (xem Section 6.3).
 2. Viết class → **ngay lập tức viết JSX reference trong cùng commit**.
 3. Class chỉ dùng một chỗ duy nhất → không cần CSS, dùng Tailwind inline.
-4. Class mới trong `admin-prototype.css` → **không được thêm** — đây là file legacy. Thêm vào `admin-layout.css` hoặc `index.css` thay thế.
+4. `admin-prototype.css` là hệ `bb-*` canonical: được phép **restyle / maintain** các `bb-*` hiện có và thêm **sub-class thuộc cùng một component `bb-*`** (vd `bb-brand-mark` trong shell). Cấu trúc/feature **mới không thuộc `bb-*`** → viết Tailwind inline hoặc `admin-layout.css`, không nhét vào đây.
 
 **Cấm:**
 - ❌ Viết CSS class vào `.css` mà không có JSX nào dùng ngay.
@@ -591,7 +592,7 @@ grep -rn "ten-class" bigbike-web    --include="*.jsx" --include="*.tsx" --includ
 - ❌ Copy cả block CSS từ nơi khác rồi chỉ dùng một phần, bỏ phần còn lại.
 - ❌ Kết luận dead mà không grep xác nhận.
 - ❌ Phát hiện dead CSS → ghi TODO "sẽ xóa sau" — phải xóa ngay.
-- ❌ Thêm class mới vào `admin-prototype.css` (file legacy, chỉ đọc để maintain).
+- ❌ Thêm class/feature **không thuộc hệ `bb-*`** vào `admin-prototype.css` (dùng Tailwind inline hoặc `admin-layout.css`).
 
 ---
 

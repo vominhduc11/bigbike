@@ -132,6 +132,14 @@
   --tracking-wide: var(--bb-tracking-wide);
   --tracking-display: var(--bb-tracking-display);
 
+  /* Line-height tokens (TYPOGRAPHY §7.4) expose qua @theme → leading-display/heading/
+     title/body. Đặt tên theo vai trò để KHÔNG đè built-in leading-tight/snug/normal.
+     Dùng thay cho leading-[…] arbitrary. */
+  --leading-display: var(--bb-line-tight);    /* 1.1  — display / h1 */
+  --leading-heading: var(--bb-line-heading);  /* 1.15 — heading chặt */
+  --leading-title: var(--bb-line-snug);       /* 1.2  — h2–h4, news/product/card title, kicker */
+  --leading-body: var(--bb-line-body);        /* 1.5  — body */
+
   /* Accordion animations */
   --animate-accordion-down: accordion-down 220ms cubic-bezier(0.2, 0, 0, 1);
   --animate-accordion-up: accordion-up 220ms cubic-bezier(0.4, 0, 1, 1);
@@ -345,11 +353,98 @@ body {
 .bb-kicker {
   margin-bottom: var(--bb-space-3);
   color: var(--bb-text-brand);
-  font-size: var(--bb-text-xs);
-  font-weight: 700;
+  font-size: var(--bb-text-section-kicker);
+  font-weight: 900;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
+
+/* ── Shared typography classes ─────────────────────────────────────────── */
+
+.bb-field-label {
+  font-size: var(--bb-text-sm);
+  font-weight: 700;
+  letter-spacing: var(--bb-tracking-display);
+  text-transform: uppercase;
+  color: var(--bb-text-muted);
+}
+
+.bb-section-heading {
+  font-family: var(--bb-font-display);
+  font-size: var(--bb-text-26);
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--bb-text-primary);
+}
+
+.bb-section-subheading {
+  font-family: var(--bb-font-heading);
+  font-size: var(--bb-text-base);
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--bb-text-primary);
+}
+
+.bb-auth-heading {
+  font-size: var(--bb-text-base);
+  font-weight: 600;
+  text-transform: none;
+}
+
+.bb-auth-input {
+  height: 52px;
+  min-height: 52px;
+  padding-left: 20px;
+  padding-right: 20px;
+  padding-top: 0;
+  padding-bottom: 0;
+  font-size: var(--bb-text-sm);
+}
+
+.bb-state-title {
+  font-family: var(--bb-font-heading);
+  font-size: var(--bb-text-base);
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--bb-text-primary);
+  margin: 0;
+}
+
+.bb-meta-label {
+  font-size: var(--bb-text-sm);
+  color: var(--bb-text-muted);
+  letter-spacing: var(--bb-tracking-display);
+  text-transform: uppercase;
+}
+
+.bb-table-header {
+  font-family: var(--bb-font-heading);
+  font-size: var(--bb-text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--bb-tracking-wide);
+}
+
+.bb-detail-table-cell {
+  display: block;
+  font-size: var(--bb-text-sm);
+  font-weight: 700;
+  color: var(--bb-text-primary);
+  letter-spacing: var(--bb-tracking-wide);
+  text-transform: none;
+  margin-top: 3px;
+}
+
+.bb-category-badge {
+  margin: 0;
+  font-size: var(--bb-text-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--bb-tracking-display);
+  color: var(--bb-text-brand);
+}
+
+/* ── End shared typography classes ─────────────────────────────────────── */
 
 .bb-page h1 {
   font-family: var(--bb-font-display);
@@ -2388,17 +2483,6 @@ body {
   margin-bottom: 0;
 }
 
-.bb-experience-kicker {
-  margin: 0 0 10px;
-  color: var(--bb-text-muted);
-  font-family: var(--bb-font-cta);
-  font-size: var(--bb-text-section-kicker);
-  font-weight: 700;
-  line-height: var(--bb-line-section-kicker);
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-}
-
 .bb-experience-title {
   font-family: var(--bb-font-heading);
   font-size: var(--bb-text-section-title);
@@ -2548,10 +2632,6 @@ body {
     padding-bottom: 2rem;
   }
 
-  .bb-experience-kicker {
-    font-size: var(--bb-text-section-kicker);
-    line-height: var(--bb-line-section-kicker);
-  }
 
   .bb-experience-title {
     font-size: var(--bb-text-section-title);
@@ -2570,7 +2650,6 @@ body {
   .bb-exp-slide-title {
     max-width: 240px;
     margin-inline: auto;
-    font-size: 24px;
     line-height: 36px;
   }
 
@@ -3041,7 +3120,7 @@ body {
 
 .bb-news-card-title {
   font-family: var(--bb-font-heading);
-  font-size: var(--bb-text-xl);
+  font-size: var(--fs-h4);
   font-weight: var(--bb-font-weight-semibold);
   color: var(--bb-text-primary);
   text-transform: none;
@@ -3059,7 +3138,7 @@ body {
 }
 
 .bb-news-excerpt {
-  font-size: 0.8rem;
+  font-size: var(--fs-caption);
   color: var(--bb-text-secondary);
   line-height: 1.55;
   margin: 0;
@@ -3223,7 +3302,7 @@ body {
 /* -- Section headers -------------------------------------- */
 .bb-section { max-width: 1200px; margin: 60px auto 0; padding: 0 24px; }
 .bb-section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 28px; padding-bottom: 16px; border-bottom: 1px solid var(--bb-border-default); }
-.bb-section-head .bb-kicker { font-family: var(--bb-font-cta); font-size: var(--bb-text-section-kicker); line-height: var(--bb-line-section-kicker); letter-spacing: 0; text-transform: uppercase; color: var(--bb-text-brand); font-weight: 600; margin: 0 0 10px; display: block; }
+.bb-section-head .bb-kicker { font-family: var(--bb-font-cta); font-size: var(--bb-text-section-kicker); line-height: var(--bb-line-section-kicker); letter-spacing: 0; text-transform: uppercase; color: var(--bb-text-brand); margin: 0 0 10px; display: block; }
 .bb-section-title { font-family: var(--bb-font-heading); text-transform: uppercase; font-size: var(--bb-text-section-title); font-weight: 600; letter-spacing: 0; line-height: var(--bb-line-section-title); margin: 0; color: var(--bb-text-primary); }
 
 
@@ -4646,9 +4725,9 @@ img, picture, video, svg, canvas { max-width: 100%; }
   margin: 0;
   color: var(--bb-text-primary);
   font-family: var(--bb-font-heading);
-  font-size: 35px;
+  font-size: var(--fs-h2);
   font-weight: 600;
-  line-height: 60px;
+  line-height: var(--bb-line-snug);
   letter-spacing: 0;
   text-transform: uppercase;
 }
@@ -4757,9 +4836,9 @@ img, picture, video, svg, canvas { max-width: 100%; }
   overflow: visible;
   color: var(--bb-text-primary);
   font-family: var(--bb-font-heading);
-  font-size: 20px;
+  font-size: var(--fs-h4);
   font-weight: 600;
-  line-height: 24px;
+  line-height: var(--bb-line-snug);
   letter-spacing: 0;
   text-transform: none;
   transition: none;
@@ -4777,7 +4856,7 @@ img, picture, video, svg, canvas { max-width: 100%; }
   font-family: var(--bb-font-body);
   font-size: var(--fs-body);
   font-weight: 400;
-  line-height: 20px;
+  line-height: var(--bb-line-body);
 }
 
 .bb-news-section--home .bb-news-read-more,
@@ -4790,10 +4869,7 @@ img, picture, video, svg, canvas { max-width: 100%; }
     scroll-margin-top: 72px;
   }
 
-  .bb-news-section--home .bb-news-heading {
-    font-size: 24px;
-    line-height: 30px;
-  }
+  /* .bb-news-heading dùng var(--fs-h2) fluid (sàn 24px ở mobile) — đã gỡ override @767. */
 
   .bb-news-section--home .bb-articles-grid-v2 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -5111,7 +5187,7 @@ img, picture, video, svg, canvas { max-width: 100%; }
   margin: 0 0 16px;
   color: var(--bb-text-primary);
   font-family: var(--bb-font-heading);
-  font-size: 28px;
+  font-size: var(--fs-h2);
   font-weight: 600;
   line-height: 1.3;
 }
@@ -5430,7 +5506,6 @@ img, picture, video, svg, canvas { max-width: 100%; }
   font-family: var(--bb-font-cta);
   font-size: var(--bb-text-section-kicker);
   line-height: var(--bb-line-section-kicker);
-  font-weight: 600;
   letter-spacing: 0;
   text-transform: uppercase;
   margin: 0 0 10px;
@@ -5742,12 +5817,10 @@ a:not(.font-cta):hover {
 }
 
 .bb-kicker,
-.bb-kicker,
 .bb-news-kicker,
 .bb-product-brand {
   color: var(--bb-color-red-700);
   font-family: var(--bb-font-cta);
-  font-weight: 600;
   letter-spacing: 0;
   text-transform: uppercase;
 }
@@ -5757,7 +5830,6 @@ a:not(.font-cta):hover {
   color: var(--bb-text-brand);
   font-family: var(--bb-font-cta);
   font-size: var(--bb-text-section-kicker);
-  font-weight: 600;
   line-height: var(--bb-line-section-kicker);
   letter-spacing: 0;
   text-transform: uppercase;
@@ -6531,11 +6603,9 @@ input[type="checkbox"] {
    Canonical breakpoints: 576px (tablet) / 992px (desktop).
    ========================================================= */
 
-@media (min-width: 992px) {
-  .bb-news-excerpt { font-size: 15px; }
-  .bb-pdp-review-comment { font-size: 15px; }
-  .bb-page-head .sub { font-size: 15px; }
-}
+/* Gỡ override @992px (font-size:15px) cho .bb-news-excerpt / .bb-pdp-review-comment /
+   .bb-page-head .sub — base đã là var(--fs-caption) fluid; cap 15px chặn chữ scale lên
+   ở 3xl/4xl (TYPOGRAPHY §6 "một token = một clamp()"). */
 
 /* Homepage product carousel: legacy WP parity for page-home.php #main-product-slide. */
 .bb-home-products-parity {
@@ -6561,7 +6631,6 @@ input[type="checkbox"] {
   color: var(--bb-text-muted);
   font-family: var(--bb-font-cta);
   font-size: var(--bb-text-section-kicker);
-  font-weight: 700;
   line-height: var(--bb-line-section-kicker);
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -10473,10 +10542,15 @@ body .bb-home .white.block-title h3 {
 
 .bb-home .category-list .item--title {
   margin: 0 0 40px;
+  max-width: 55%;
   font-family: var(--bb-font-display);
-  font-size: var(--fs-h4);
+  font-size: clamp(1.125rem, 0.645rem + 1vw, 2.25rem);
   font-weight: 600;
-  line-height: 20px;
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .bb-home .category-list .item--title a {
@@ -10486,6 +10560,7 @@ body .bb-home .white.block-title h3 {
 .bb-home .category-list .item--btn {
   color: var(--bb-text-brand);
   font-family: var(--bb-font-display);
+  font-size: clamp(0.875rem, 0.5rem + 0.5vw, 1.375rem);
   font-weight: 600;
   text-transform: none;
 }
@@ -13641,18 +13716,8 @@ body .bb-home .white.block-title h3 {
   color: var(--bb-text-brand);
 }
 
-.bb-home .bb-kicker,
-.bb-home .bb-experience-kicker {
+.bb-home .bb-kicker {
   color: var(--bb-text-muted);
-  font-size: var(--bb-text-section-kicker);
-  font-weight: 700;
-  letter-spacing: 0.15em;
-}
-
-.bb-home .partner-slide .bb-kicker {
-  color: var(--bb-text-muted);
-  font-size: var(--bb-text-section-kicker);
-  font-weight: 700;
   letter-spacing: 0.15em;
 }
 
@@ -13660,18 +13725,6 @@ body .bb-home .white.block-title h3 {
   color: var(--bb-text-brand);
 }
 
-/* Homepage subtitle parity — high-specificity overrides to guarantee all 5 kicker/subtitle
-   elements on the homepage render with the correct WP-parity style regardless of cascade. */
-body .bb-home .bb-home-news-parity .block-title p.sub-title,
-body .bb-home .bb-home-products-parity .bb-products-header .bb-kicker,
-body .bb-home .bb-experience--home .bb-experience-header .bb-experience-kicker,
-body .bb-home .partner-slide .bb-kicker {
-  color: var(--bb-text-muted);
-  font-size: var(--bb-text-section-kicker);
-  font-weight: 700;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-}
 
 .bb-cart-breadcrumb li,
 .bb-cart-breadcrumb a,
@@ -14432,6 +14485,10 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
     height: 360px;
   }
 
+  .bb-home .category-list .item--title {
+    max-width: 55%;
+  }
+
   .bb-home .category-list .item--thumbnail img {
     max-height: 220px;
   }
@@ -14510,8 +14567,6 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
   }
 
   .bb-home .category-list .item--title {
-    font-size: 20px;
-    line-height: 24px;
     margin-bottom: 50px;
     max-width: 55%;
   }
@@ -14647,6 +14702,11 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
   .bb-home .category-list .item--title {
     max-width: 56%;
     margin-bottom: 16px;
+    font-size: 0.875rem;
+    line-height: 1.25;
+  }
+  .bb-home .category-list .item--btn {
+    font-size: 0.8125rem;
   }
   .bb-home .category-list .item--thumbnail {
     right: 18px;

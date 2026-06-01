@@ -452,7 +452,7 @@ export function ReturnListScreen({ canUpdate, navigate }) {
                           <button
                             type="button"
                             className="text-xs font-semibold"
-                            style={{ color: 'var(--bb-brand)', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+                            style={{ color: 'var(--bb-primary)', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
                             onClick={() => navigate(`/admin/orders/${r.orderId}`)}
                           >
                             #{r.orderNumber}

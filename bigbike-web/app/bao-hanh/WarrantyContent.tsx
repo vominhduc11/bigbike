@@ -50,12 +50,12 @@ export function WarrantyContent() {
     <div className="bb-container max-w-[560px] py-10">
       <div className="mb-7 pb-[22px] border-b border-border">
         <span className="text-sm tracking-display uppercase text-brand font-bold block mb-2">{t("kicker")}</span>
-        <p className="text-muted-foreground text-sm mt-2 m-0">{t("subheading")}</p>
+        <p className="text-muted-foreground text-body mt-2 m-0">{t("subheading")}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="bg-card border border-border py-[22px] px-6 mb-[18px] mt-6">
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="serial-input" className="text-sm font-bold tracking-display uppercase text-muted-foreground">
+          <label htmlFor="serial-input" className="bb-field-label">
             {t("serialLabel")}<span className="text-brand ml-[3px]">*</span>
           </label>
           <div className="flex gap-2 max-sm:flex-col">
@@ -77,7 +77,7 @@ export function WarrantyContent() {
               {isPending ? t("submitting") : t("submitButton")}
             </Button>
           </div>
-          <p className="text-muted-foreground text-sm mt-1.5 m-0">
+          <p className="text-muted-foreground text-caption mt-1.5 m-0">
             {t("serialHint")}
           </p>
         </div>

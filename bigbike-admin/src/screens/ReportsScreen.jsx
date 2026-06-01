@@ -197,16 +197,16 @@ export function ReportsScreen() {
           {/* KPI row */}
           <div className="bb-kpi-grid">
             {[
-              { label: t('reports.kpiGmv'), value: formatCurrencyVnd(state.data.summary.grossOrderValue, locale), color: 'danger' },
-              { label: t('reports.kpiPaidRevenue'), value: formatCurrencyVnd(state.data.summary.paidRevenue, locale), color: 'success' },
-              { label: t('reports.kpiRefund'), value: formatCurrencyVnd(state.data.summary.refundAmount, locale), color: 'warning' },
-              { label: t('reports.kpiNetRevenue'), value: formatCurrencyVnd(state.data.summary.netRevenue, locale), color: 'info' },
+              { label: t('reports.kpiGmv'), value: formatCurrencyVnd(state.data.summary.grossOrderValue, locale), color: 'danger', money: true },
+              { label: t('reports.kpiPaidRevenue'), value: formatCurrencyVnd(state.data.summary.paidRevenue, locale), color: 'success', money: true },
+              { label: t('reports.kpiRefund'), value: formatCurrencyVnd(state.data.summary.refundAmount, locale), color: 'warning', money: true },
+              { label: t('reports.kpiNetRevenue'), value: formatCurrencyVnd(state.data.summary.netRevenue, locale), color: 'info', money: true },
               { label: t('reports.kpiOrderCount'), value: state.data.summary.orderCount.toLocaleString(locale), color: 'info' },
-              { label: t('reports.kpiAov'), value: formatCurrencyVnd(state.data.summary.avgOrderValue, locale), color: '' },
+              { label: t('reports.kpiAov'), value: formatCurrencyVnd(state.data.summary.avgOrderValue, locale), color: '', money: true },
             ].map((k) => (
               <div className="bb-kpi" key={k.label}>
                 <div className="bb-kpi-head"><span>{k.label}</span></div>
-                <div className="bb-kpi-value">{k.value}</div>
+                <div className={k.money ? 'bb-kpi-value bb-kpi-value--money' : 'bb-kpi-value'}>{k.value}</div>
               </div>
             ))}
           </div>
@@ -220,8 +220,8 @@ export function ReportsScreen() {
                   <AreaChart data={state.data.dailyRevenue} margin={{ left: 10, right: 10, top: 4, bottom: 0 }}>
                     <defs>
                       <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="var(--admin-color-brand-red)" stopOpacity={0.15} />
-                        <stop offset="95%" stopColor="var(--admin-color-brand-red)" stopOpacity={0} />
+                        <stop offset="5%" stopColor="var(--admin-color-primary)" stopOpacity={0.15} />
+                        <stop offset="95%" stopColor="var(--admin-color-primary)" stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--admin-color-border-subtle)" vertical={false} />
@@ -244,7 +244,7 @@ export function ReportsScreen() {
                       type="monotone"
                       dataKey="revenue"
                       name={t('reports.chartRevenueSeries')}
-                      stroke="var(--admin-color-brand-red)"
+                      stroke="var(--admin-color-primary)"
                       strokeWidth={2}
                       fill="url(#revenueGrad)"
                       dot={false}
@@ -288,7 +288,7 @@ export function ReportsScreen() {
                       formatter={(v) => [formatCurrencyVnd(v, locale), t('reports.colRevenue')]}
                       cursor={{ fill: 'var(--admin-color-surface-hover)' }}
                     />
-                    <Bar dataKey="revenue" fill="var(--admin-color-brand-red)" radius={[0, 3, 3, 0]} maxBarSize={20} />
+                    <Bar dataKey="revenue" fill="var(--admin-color-primary)" radius={[0, 3, 3, 0]} maxBarSize={20} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>

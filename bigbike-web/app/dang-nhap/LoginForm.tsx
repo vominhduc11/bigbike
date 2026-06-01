@@ -70,7 +70,7 @@ export function LoginForm({ returnTo }: { returnTo: string }) {
             id="login-username"
             autoComplete="username"
             placeholder={t("emailPlaceholder")}
-            className="h-[52px] min-h-[52px] px-5 py-0 text-sm"
+            className="bb-auth-input"
             aria-invalid={!!errors.login}
             aria-describedby={errors.login ? "login-username-error" : undefined}
             {...register("login")}
@@ -91,7 +91,7 @@ export function LoginForm({ returnTo }: { returnTo: string }) {
             type="password"
             autoComplete="current-password"
             placeholder={t("passwordPlaceholder")}
-            className="h-[52px] min-h-[52px] px-5 py-0 text-sm"
+            className="bb-auth-input"
             aria-invalid={!!errors.password}
             aria-describedby={errors.password ? "login-password-error" : undefined}
             {...register("password")}
@@ -122,7 +122,7 @@ export function LoginForm({ returnTo }: { returnTo: string }) {
         <Button
           type="submit"
           variant="primary"
-          className="h-[52px] w-full py-0 text-sm hover:not-disabled:scale-100"
+          size="auth"
           disabled={isSubmitting}
         >
           {isSubmitting ? t("submitting") : t("submit")}

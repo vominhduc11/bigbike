@@ -27,14 +27,14 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
       <div className="bb-container">
         <div className="bb-auth-wrap">
           <div className="mb-5">
-            <h1 className="mb-2 text-base font-semibold normal-case">Đăng ký</h1>
-            <p className="m-0 text-sm text-foreground">
+            <h1 className="bb-auth-heading mb-2">Đăng ký</h1>
+            <p className="m-0 text-body text-foreground">
               Nếu bạn đã có tài khoản, đăng nhập tại{" "}
               <Link href="/dang-nhap/" className="bb-link font-normal">
                 đây
               </Link>
             </p>
-            <p className="m-0 mt-2 text-sm text-foreground">
+            <p className="m-0 mt-2 text-body text-foreground">
               Xin vui lòng điền chính xác các thông tin để tạo tài khoản Bigbike.
             </p>
           </div>

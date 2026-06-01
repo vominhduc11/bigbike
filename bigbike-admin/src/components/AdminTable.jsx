@@ -94,7 +94,7 @@ export function AdminTable({
       <TableBody>
         {loading
           ? Array.from({ length: pageSize }, (_, i) => (
-              <TableRow key={i} className="hover:bg-transparent animate-pulse">
+              <TableRow key={i} className="h-11 hover:bg-transparent animate-pulse">
                 {selectable && (
                   <TableCell>
                     <div className="h-4 w-4 rounded-xs bg-surface-muted" />
@@ -116,7 +116,7 @@ export function AdminTable({
               return (
                 <TableRow
                   key={row.id}
-                  className={cn(extraClass, clickable && 'cursor-pointer')}
+                  className={cn('h-11', extraClass, clickable && 'cursor-pointer')}
                   onClick={clickable ? () => onRowClick(row) : undefined}
                   tabIndex={clickable ? 0 : undefined}
                   onKeyDown={clickable ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onRowClick(row) } } : undefined}
