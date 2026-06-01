@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Shield, Edit2, Check, X, AlertTriangle, ChevronLeft, Info, Plus, Trash2 } from 'lucide-react'
+import { Shield, Pencil, Check, X, AlertTriangle, ChevronLeft, Info, Plus, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { fetchRoles, fetchPermissionCatalog, updateRolePermissions, createRole, deleteRole } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
@@ -682,7 +682,7 @@ function RoleDetail({
             <>
               <Button variant="secondary" size="sm" onClick={onStartEdit}
                 className="flex items-center gap-1.5">
-                <Edit2 size={14} aria-hidden />
+                <Pencil size={14} aria-hidden />
                 {t('roles.editBtn')}
               </Button>
               {!role.isSystem && (

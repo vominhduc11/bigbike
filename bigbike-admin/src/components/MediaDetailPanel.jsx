@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { X as XIcon, Copy, Maximize2, Edit2, Trash2, RotateCcw, AlertTriangle, Music, FileText, RefreshCw } from 'lucide-react'
+import { X as XIcon, Copy, Maximize2, Pencil, Trash2, RotateCcw, AlertTriangle, Music, FileText, RefreshCw } from 'lucide-react'
 import { fetchMediaFolders, replaceMediaFile, updateMedia } from '../lib/adminApi'
 import { useMediaReferences } from '../lib/useMediaReferences'
 import { TagInput } from './TagInput'
@@ -323,7 +323,7 @@ export function MediaDetailPanel({ media, onClose, onSaved, onPreview, onDelete,
           </Button>
           {canUpdate && !isTrash && (
             <Button type="submit" form="media-detail-panel-form" loading={saving} disabled={!dirty}>
-              <Edit2 size={14} /> {t('common.save')}
+              <Pencil size={14} /> {t('common.save')}
             </Button>
           )}
         </div>

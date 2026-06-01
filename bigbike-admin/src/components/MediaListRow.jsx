@@ -1,4 +1,4 @@
-import { Edit2, Trash2, RotateCcw, AlertTriangle, Music, FileText, Copy, Eye } from 'lucide-react'
+import { Pencil, Trash2, RotateCcw, AlertTriangle, Music, FileText, Copy, Eye } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
 import { formatText } from '../lib/formatters'
@@ -85,7 +85,7 @@ export function MediaListRow({
         {onEdit && (
           <button type="button" onClick={onEdit} className="medialib-icon-btn-light"
             title={t('common.edit')}>
-            <Edit2 size={14} />
+            <Pencil size={14} />
           </button>
         )}
         {onRestore && (

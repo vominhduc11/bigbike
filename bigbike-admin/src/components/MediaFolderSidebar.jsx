@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Folder, FolderOpen, Plus, Edit2, Trash2, Inbox, Hash } from 'lucide-react'
+import { Folder, FolderOpen, Plus, Pencil, Trash2, Inbox, Hash } from 'lucide-react'
 import { toast } from 'sonner'
 import { showConfirm } from '../lib/confirm'
 import {
@@ -144,7 +144,7 @@ export function MediaFolderSidebar({
                     <div className="mediafolder-item-actions">
                       <button type="button" onClick={() => setEditingId(f.id)}
                         className="mediafolder-action-btn" aria-label={t('common.edit')} title={t('common.edit')}>
-                        <Edit2 size={11} />
+                        <Pencil size={11} />
                       </button>
                       <button type="button" onClick={() => handleDelete(f)}
                         className="mediafolder-action-btn" aria-label={t('common.delete')} title={t('common.delete')}>

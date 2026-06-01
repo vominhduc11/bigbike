@@ -1,4 +1,4 @@
-import { Edit2, Trash2, RotateCcw, AlertTriangle, Music, FileText, Copy } from 'lucide-react'
+import { Pencil, Trash2, RotateCcw, AlertTriangle, Music, FileText, Copy } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
 import { formatText } from '../lib/formatters'
@@ -98,7 +98,7 @@ export function MediaCard({
                 <button type="button" onClick={(e) => { e.stopPropagation(); onEdit() }}
                   className="medialib-icon-btn"
                   title={t('common.edit')} aria-label={t('common.edit')}>
-                  <Edit2 size={14} />
+                  <Pencil size={14} />
                 </button>
               )}
               {onRestore && (
