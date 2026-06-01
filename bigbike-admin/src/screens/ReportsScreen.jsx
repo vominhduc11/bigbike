@@ -197,16 +197,16 @@ export function ReportsScreen() {
           {/* KPI row */}
           <div className="bb-kpi-grid">
             {[
-              { label: t('reports.kpiGmv'), value: formatCurrencyVnd(state.data.summary.grossOrderValue, locale), color: 'danger' },
-              { label: t('reports.kpiPaidRevenue'), value: formatCurrencyVnd(state.data.summary.paidRevenue, locale), color: 'success' },
-              { label: t('reports.kpiRefund'), value: formatCurrencyVnd(state.data.summary.refundAmount, locale), color: 'warning' },
-              { label: t('reports.kpiNetRevenue'), value: formatCurrencyVnd(state.data.summary.netRevenue, locale), color: 'info' },
+              { label: t('reports.kpiGmv'), value: formatCurrencyVnd(state.data.summary.grossOrderValue, locale), color: 'danger', money: true },
+              { label: t('reports.kpiPaidRevenue'), value: formatCurrencyVnd(state.data.summary.paidRevenue, locale), color: 'success', money: true },
+              { label: t('reports.kpiRefund'), value: formatCurrencyVnd(state.data.summary.refundAmount, locale), color: 'warning', money: true },
+              { label: t('reports.kpiNetRevenue'), value: formatCurrencyVnd(state.data.summary.netRevenue, locale), color: 'info', money: true },
               { label: t('reports.kpiOrderCount'), value: state.data.summary.orderCount.toLocaleString(locale), color: 'info' },
-              { label: t('reports.kpiAov'), value: formatCurrencyVnd(state.data.summary.avgOrderValue, locale), color: '' },
+              { label: t('reports.kpiAov'), value: formatCurrencyVnd(state.data.summary.avgOrderValue, locale), color: '', money: true },
             ].map((k) => (
               <div className="bb-kpi" key={k.label}>
                 <div className="bb-kpi-head"><span>{k.label}</span></div>
-                <div className="bb-kpi-value">{k.value}</div>
+                <div className={k.money ? 'bb-kpi-value bb-kpi-value--money' : 'bb-kpi-value'}>{k.value}</div>
               </div>
             ))}
           </div>
