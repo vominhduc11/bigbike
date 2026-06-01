@@ -220,8 +220,8 @@ export function ReportsScreen() {
                   <AreaChart data={state.data.dailyRevenue} margin={{ left: 10, right: 10, top: 4, bottom: 0 }}>
                     <defs>
                       <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="var(--admin-color-brand-red)" stopOpacity={0.15} />
-                        <stop offset="95%" stopColor="var(--admin-color-brand-red)" stopOpacity={0} />
+                        <stop offset="5%" stopColor="var(--admin-color-primary)" stopOpacity={0.15} />
+                        <stop offset="95%" stopColor="var(--admin-color-primary)" stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--admin-color-border-subtle)" vertical={false} />
@@ -244,7 +244,7 @@ export function ReportsScreen() {
                       type="monotone"
                       dataKey="revenue"
                       name={t('reports.chartRevenueSeries')}
-                      stroke="var(--admin-color-brand-red)"
+                      stroke="var(--admin-color-primary)"
                       strokeWidth={2}
                       fill="url(#revenueGrad)"
                       dot={false}
@@ -288,7 +288,7 @@ export function ReportsScreen() {
                       formatter={(v) => [formatCurrencyVnd(v, locale), t('reports.colRevenue')]}
                       cursor={{ fill: 'var(--admin-color-surface-hover)' }}
                     />
-                    <Bar dataKey="revenue" fill="var(--admin-color-brand-red)" radius={[0, 3, 3, 0]} maxBarSize={20} />
+                    <Bar dataKey="revenue" fill="var(--admin-color-primary)" radius={[0, 3, 3, 0]} maxBarSize={20} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
