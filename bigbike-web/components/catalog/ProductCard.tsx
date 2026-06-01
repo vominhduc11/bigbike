@@ -22,6 +22,7 @@ import { SaleBadge } from "@/components/catalog/SaleBadge";
 import { WishlistButton } from "@/components/catalog/WishlistButton";
 import { CompareButton } from "@/components/catalog/CompareButton";
 import { RatingStars } from "@/components/ui/RatingStars";
+import { cardChrome } from "@/lib/ui-classes";
 
 type ProductCardProps = {
   product: Product;
@@ -197,7 +198,7 @@ export function ProductCard({ product, variant = "compact" }: ProductCardProps) 
   if (variant === "tile") {
     const src = resolveMediaUrl(product.image?.url?.trim());
     return (
-      <article className="group relative min-h-[374px] overflow-hidden border border-border bg-card transition-[border-color,box-shadow] duration-200 hover:border-brand hover:shadow-[var(--bb-shadow-product)]">
+      <article className={`group relative min-h-[374px] overflow-hidden ${cardChrome}`}>
         <Link
           href={href}
           aria-label={tProduct("viewProductAria", { name })}
