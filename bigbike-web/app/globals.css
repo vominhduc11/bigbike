@@ -8144,9 +8144,12 @@ body:has(.bb-home) {
   }
 
   /* ---- Scroll sections (tabs → continuous on mobile) ---- */
+  /* Divider + gap marking the buy/overview → product-details boundary, so the
+     share row (end of the purchase block) reads as separate from "Mô tả". */
   .bb-wp-pdp .bb-wp-tabs {
-    margin-top: 0;
+    margin-top: 32px;
     padding-top: 0;
+    border-top: 3px solid var(--bb-border-subtle);
   }
 
   .bb-wp-pdp .bb-wp-tabs .tabs-nav {
