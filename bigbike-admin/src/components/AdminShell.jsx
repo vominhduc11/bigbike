@@ -10,7 +10,6 @@ import { LanguageSwitcher } from './LanguageSwitcher'
 import { NotificationBell } from './NotificationBell'
 import { ThemeToggle } from './ThemeToggle'
 
-const APP_BUILD = 'v2.6.0 · production'
 const FOCUS_MODE_STORAGE_KEY = 'bb-focus-mode'
 
 function isRouteActive(activePath, candidatePath) {
@@ -172,12 +171,11 @@ export function AdminShell({
 
         <aside className="bb-sidebar" aria-label={t('nav.sidebarLabel')}>
           <div className="bb-sidebar-brand">
-            <p className="eyebrow">BigBike Motors</p>
-            <h1>
-              <span className="brand-dot" aria-hidden="true" />
-              Admin
-            </h1>
-            <div className="build">{APP_BUILD}</div>
+            <span className="bb-brand-mark" aria-hidden="true">BB</span>
+            <div className="bb-brand-meta">
+              <span className="bb-brand-name">BigBike</span>
+              <span className="bb-brand-sub">Admin</span>
+            </div>
           </div>
 
           <nav className="bb-sidebar-nav" aria-label={t('nav.mainNav')}>

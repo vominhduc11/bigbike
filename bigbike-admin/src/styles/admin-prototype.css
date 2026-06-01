@@ -25,40 +25,46 @@
   overflow: hidden;
 }
 .bb-sidebar-brand {
-  padding: 16px 18px 14px;
+  padding: 16px 16px 14px;
   border-bottom: 1px solid #1c2230;
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.bb-sidebar-brand .eyebrow {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--bb-text-onsidebar-dim);
-  margin: 0;
-}
-.bb-sidebar-brand h1 {
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  margin: 0;
-  color: #fff;
-  display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 11px;
+  flex-shrink: 0;
 }
-.bb-sidebar-brand .brand-dot {
-  width: 8px; height: 8px; border-radius: 2px;
+/* Brand mark — monogram tile in brand red (logo placeholder) */
+.bb-brand-mark {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--bb-r-md);
   background: var(--bb-brand);
-  box-shadow: 0 0 0 3px rgba(232,40,30,0.18);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-family: var(--admin-font-display);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
 }
-.bb-sidebar-brand .build {
+.bb-brand-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.1;
+}
+.bb-brand-name {
+  font-family: var(--admin-font-display);
+  font-size: 15px;
+  color: #fff;
+  letter-spacing: 0.01em;
+}
+.bb-brand-sub {
   font-size: 10.5px;
   color: var(--bb-text-onsidebar-dim);
-  margin-top: 4px;
-  font-family: var(--bb-font-mono);
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-top: 5px;
 }
 
 .bb-sidebar-nav {
@@ -254,7 +260,7 @@
   text-decoration: none;
   cursor: pointer;
 }
-.bb-breadcrumb a:hover { color: var(--bb-brand); }
+.bb-breadcrumb a:hover { color: var(--bb-primary); }
 .bb-breadcrumb .current { color: var(--bb-text); font-weight: 500; }
 .bb-breadcrumb .sep { color: var(--bb-text-faint); }
 
@@ -272,17 +278,19 @@
   margin-bottom: 20px;
 }
 .bb-screen-eyebrow {
+  font-family: var(--bb-font-mono);
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
-  color: var(--bb-text-muted);
-  margin: 0 0 4px;
+  color: var(--bb-primary);
+  margin: 0 0 6px;
 }
 .bb-screen-title h1 {
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
+  font-size: 25px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
   margin: 0 0 4px;
   color: var(--bb-text);
 }
