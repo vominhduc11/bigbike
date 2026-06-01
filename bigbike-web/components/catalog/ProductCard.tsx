@@ -114,7 +114,7 @@ export function ProductCard({ product, variant = "compact" }: ProductCardProps) 
     );
   }
 
-  // Related variant: PDP related products, matching WP product--item classes.
+  // Related variant: PDP related products carousel (Tailwind inline).
   if (variant === "related") {
     const featuredCompare =
       compare && compare > current
@@ -246,46 +246,63 @@ export function ProductCard({ product, variant = "compact" }: ProductCardProps) 
           : "Thêm vào giỏ hàng";
 
     return (
-      <article className="product--item bb-archive-product">
-        <div className="product--item-thumbnail bb-archive-product-thumb">
-          <Link href={href} aria-label={tProduct("viewProductAria", { name })}>
+      <article className="group mt-[30px] text-foreground max-[767px]:m-0 max-[767px]:h-full max-[767px]:border max-[767px]:border-border max-[767px]:bg-card">
+        <div className="relative mb-5 aspect-square overflow-hidden bg-white max-[767px]:m-0 max-[767px]:border-b max-[767px]:border-border">
+          <Link
+            href={href}
+            aria-label={tProduct("viewProductAria", { name })}
+            className="relative flex h-full items-center justify-center text-center max-[767px]:p-2.5"
+          >
             <Image
               src={imageSrc}
               alt={safeText(product.image?.alt, name)}
               width={product.image?.width ?? 480}
               height={product.image?.height ?? 480}
-              className="bb-archive-product-img"
+              className="!h-auto max-h-full !w-auto max-w-full object-contain transition-transform duration-300 ease-in-out group-hover:scale-105"
             />
           </Link>
 
           {discountPercent != null && discountPercent > 0 && (
-            <div className="product--item-sale bb-archive-product-sale">
-              <p>{discountPercent}%</p>
+            <div className="absolute left-0 top-5 h-8 w-20 bg-[url('/wp/ticket.svg')] bg-left-top bg-no-repeat text-white">
+              <p className="m-0 -rotate-[20deg] p-0 text-center font-cta text-[18px] font-semibold leading-7 text-white">
+                {discountPercent}%
+              </p>
             </div>
           )}
 
-          <div className="product--item-cart bb-archive-product-cart">
-            <Link href={href}>{archiveCta}</Link>
+          <div className="absolute -bottom-[51px] left-0 w-full bg-black text-center transition-all duration-300 group-hover:bottom-0 max-[767px]:bottom-0">
+            <Link
+              href={href}
+              className="block py-[15px] font-cta text-13 font-semibold uppercase text-white max-[767px]:flex max-[767px]:min-h-10 max-[767px]:items-center max-[767px]:justify-center max-[767px]:px-2 max-[767px]:text-11"
+            >
+              {archiveCta}
+            </Link>
           </div>
         </div>
 
-        <div className="product--item-desc bb-archive-product-desc">
-          <div className="product--item-inside row bb-archive-product-inside">
-            <div className="col-md-12 bb-archive-product-info">
-              <h3 className="product--item-title bb-archive-product-title">
-                <Link href={href}>{name}</Link>
+        <div>
+          <div className="mx-[-5px] mt-2.5 max-[767px]:m-0">
+            <div className="px-[5px] max-[767px]:px-2.5 max-[767px]:pb-3">
+              <h3 className="mb-2.5 font-display text-h4 font-semibold leading-[1.25] text-foreground max-[767px]:mb-2 max-[767px]:line-clamp-2 max-[767px]:min-h-9 max-[767px]:font-cta max-[767px]:text-sm max-[767px]:uppercase">
+                <Link href={href} className="text-foreground hover:text-brand">
+                  {name}
+                </Link>
               </h3>
 
               {product.price && current > 0 ? (
-                <div className="product--item-price bb-archive-product-price">
-                  <p>{formatVnd(current)}</p>
+                <div className="text-left font-cta text-sm font-semibold text-brand">
+                  <p className="mr-5 inline-block text-sm leading-[1.214rem] text-brand max-[767px]:leading-[1.2]">
+                    {formatVnd(current)}
+                  </p>
                   {archiveCompare && archiveCompare > current ? (
-                    <p className="old">{formatVnd(archiveCompare)}</p>
+                    <p className="mr-5 inline-block text-sm leading-[1.214rem] text-muted-foreground line-through max-[767px]:leading-[1.2]">
+                      {formatVnd(archiveCompare)}
+                    </p>
                   ) : null}
                 </div>
               ) : null}
 
-              <div className="rating bb-archive-rating">
+              <div className="mt-2 text-[18px] max-[767px]:text-sm">
                 <RatingStars value={ratingValue} />
               </div>
             </div>
