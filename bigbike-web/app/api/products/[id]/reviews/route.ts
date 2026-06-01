@@ -1,14 +1,7 @@
 import { NextResponse } from "next/server";
-import { env } from "@/env";
+import { BACKEND, readBackendError, type ProductRouteParams } from "@/lib/api/backend-proxy";
 
 export const dynamic = "force-dynamic";
-
-const BACKEND =
-  env.BIGBIKE_API_BASE_URL ??
-  env.NEXT_PUBLIC_API_BASE_URL ??
-  "http://localhost:8080";
-
-type Params = { params: Promise<{ id: string }> };
 
 type Pagination = {
   page: number;
@@ -18,15 +11,6 @@ type Pagination = {
   hasNext: boolean;
   hasPrevious: boolean;
 };
-
-type BackendErrorPayload =
-  | {
-      error?: {
-        message?: string;
-      };
-      message?: string;
-    }
-  | null;
 
 const EMPTY_BREAKDOWN: Record<string, number> = { "5": 0, "4": 0, "3": 0, "2": 0, "1": 0 };
 
@@ -45,12 +29,7 @@ const EMPTY = {
   } satisfies Pagination,
 };
 
-async function readBackendError(res: Response) {
-  const payload = (await res.json().catch(() => null)) as BackendErrorPayload;
-  return payload?.error?.message ?? payload?.message ?? null;
-}
-
-export async function GET(req: Request, { params }: Params) {
+export async function GET(req: Request, { params }: ProductRouteParams) {
   const { id } = await params;
   const { searchParams } = new URL(req.url);
   const upstreamParams = new URLSearchParams();
@@ -124,7 +103,7 @@ export async function GET(req: Request, { params }: Params) {
   }
 }
 
-export async function POST(req: Request, { params }: Params) {
+export async function POST(req: Request, { params }: ProductRouteParams) {
   const { id } = await params;
 
   let body: { authorName?: string; rating?: number; comment?: string; website?: string };
