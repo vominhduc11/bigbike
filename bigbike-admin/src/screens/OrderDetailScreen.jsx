@@ -408,7 +408,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
           </p>
           <h1 style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             {t('orders.detail.eyebrow')}{' '}
-            <span className="mono" style={{ color: 'var(--bb-brand)' }}>
+            <span className="mono" style={{ color: 'var(--bb-primary)' }}>
               {formatText(order.orderNumber, `#${orderId}`)}
             </span>
             <StatusBadge type="order" status={order.orderStatus} />
@@ -431,7 +431,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
 
       {/* Action panel */}
       {canUpdate && (
-        <div className="bb-card" style={{ marginBottom: 16, borderLeft: '3px solid var(--bb-brand)' }}>
+        <div className="bb-card" style={{ marginBottom: 16, borderLeft: '3px solid var(--bb-primary)' }}>
           <div className="bb-card-body" style={{ display: 'flex', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
             <div style={{ flex: '1 1 auto', minWidth: 240 }}>
               <div style={{ fontWeight: 700, marginBottom: 6 }}>{t('orders.detail.orderStatus')}</div>
@@ -547,7 +547,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                     </>
                   )}
                   <dt style={{ textTransform: 'none', fontWeight: 700, fontSize: 15, paddingTop: 8 }}>{t('orders.detail.total')}</dt>
-                  <dd style={{ textAlign: 'right', fontSize: 18, fontWeight: 800, color: 'var(--bb-brand)', paddingTop: 8 }}>
+                  <dd style={{ textAlign: 'right', fontSize: 18, fontWeight: 800, color: 'var(--bb-primary)', paddingTop: 8 }}>
                     {formatCurrencyVnd(order.total)}
                   </dd>
                 </dl>
