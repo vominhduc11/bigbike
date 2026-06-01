@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MediaImage } from "@/components/ui/MediaImage";
+import { CarouselArrow } from "@/components/ui/icons";
 import type { ImageAsset, VideoAsset } from "@/lib/contracts/public";
 import { cn } from "@/lib/utils";
 
@@ -162,9 +163,7 @@ export function ProductGallery({
               aria-label="Ảnh trước"
               onClick={prev}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+              <CarouselArrow dir="prev" />
             </button>
             <button
               type="button"
@@ -172,9 +171,7 @@ export function ProductGallery({
               aria-label="Ảnh tiếp"
               onClick={next}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M9 18l6-6-6-6" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+              <CarouselArrow dir="next" />
             </button>
           </>
         )}

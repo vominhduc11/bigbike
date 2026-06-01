@@ -8,6 +8,7 @@ import { Clock3, LogOut, MapPin, Phone, UserCircle2, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { HeaderNavNode } from "@/components/layout/HeaderNavItem";
 import { useHeaderUi } from "@/components/layout/HeaderUiContext";
+import { MenuIcon } from "@/components/ui/icons";
 import { performLogout, useAuth } from "@/lib/auth/auth-store";
 import {
   getSafeLoginHref,
@@ -28,26 +29,6 @@ type MobileHeaderMenuProps = {
   hotline: string;
   hotline2: string;
 };
-
-function MenuIcon() {
-  return (
-    <svg
-      width="22"
-      height="22"
-      viewBox="0 0 22 22"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <line x1="4" y1="6" x2="17.5" y2="6" />
-      <line x1="4" y1="11" x2="19" y2="11" />
-      <line x1="9" y1="16" x2="19" y2="16" />
-    </svg>
-  );
-}
 
 function ChevronIcon({ open }: { open: boolean }) {
   return (

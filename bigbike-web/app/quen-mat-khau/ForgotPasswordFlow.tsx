@@ -16,19 +16,12 @@ import { toLoginPath } from "@/lib/utils/routes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AuthField } from "@/components/ui/AuthField";
+import { FormRootError } from "@/components/ui/FormRootError";
 
 type ForgotPasswordFlowProps = {
   token?: string | null;
 };
-
-function RootError({ message }: { message?: string }) {
-  if (!message) return null;
-  return (
-    <p role="alert" aria-live="assertive" className="mb-5 text-sm font-medium text-destructive">
-      {message}
-    </p>
-  );
-}
 
 function RequestResetForm() {
   const t = useTranslations("Auth.forgot");
@@ -68,7 +61,7 @@ function RequestResetForm() {
     <>
       <h1 className="bb-auth-heading mb-3">{t("title")}</h1>
       <p className="mb-5 text-sm leading-relaxed text-foreground">{t("subtitle")}</p>
-      <RootError message={errors.root?.message} />
+      <FormRootError message={errors.root?.message} />
       <form onSubmit={handleSubmit(onSubmit)} className="grid gap-[30px]" noValidate>
         <div>
           <Label htmlFor="forgot-login" className="sr-only">
@@ -141,48 +134,28 @@ function ResetPasswordForm({ token }: { token: string }) {
     <>
       <h1 className="bb-auth-heading mb-3">{tForgot("title")}</h1>
       <p className="mb-5 text-sm leading-relaxed text-foreground">{t("subtitle")}</p>
-      <RootError message={errors.root?.message} />
+      <FormRootError message={errors.root?.message} />
       <form onSubmit={handleSubmit(onSubmit)} className="grid gap-[30px]" noValidate>
-        <div className="flex flex-col gap-2.5">
-          <Label htmlFor="reset-password">
-            {t("newPasswordLabel")} <span className="text-destructive">*</span>
-          </Label>
-          <Input
-            id="reset-password"
-            type="password"
-            autoComplete="new-password"
-            placeholder={t("newPasswordPlaceholder")}
-            className="bb-auth-input"
-            aria-invalid={!!errors.password}
-            aria-describedby={errors.password ? "reset-password-error" : undefined}
-            {...register("password")}
-          />
-          {errors.password && (
-            <p id="reset-password-error" role="alert" className="text-sm text-destructive">
-              {errors.password.message}
-            </p>
-          )}
-        </div>
-        <div className="flex flex-col gap-2.5">
-          <Label htmlFor="reset-confirm">
-            {t("confirmLabel")} <span className="text-destructive">*</span>
-          </Label>
-          <Input
-            id="reset-confirm"
-            type="password"
-            autoComplete="new-password"
-            placeholder={t("confirmPlaceholder")}
-            className="bb-auth-input"
-            aria-invalid={!!errors.confirm}
-            aria-describedby={errors.confirm ? "reset-confirm-error" : undefined}
-            {...register("confirm")}
-          />
-          {errors.confirm && (
-            <p id="reset-confirm-error" role="alert" className="text-sm text-destructive">
-              {errors.confirm.message}
-            </p>
-          )}
-        </div>
+        <AuthField
+          describeError
+          id="reset-password"
+          type="password"
+          autoComplete="new-password"
+          label={t("newPasswordLabel")}
+          placeholder={t("newPasswordPlaceholder")}
+          registration={register("password")}
+          error={errors.password}
+        />
+        <AuthField
+          describeError
+          id="reset-confirm"
+          type="password"
+          autoComplete="new-password"
+          label={t("confirmLabel")}
+          placeholder={t("confirmPlaceholder")}
+          registration={register("confirm")}
+          error={errors.confirm}
+        />
         <Button
           type="submit"
           variant="primary"

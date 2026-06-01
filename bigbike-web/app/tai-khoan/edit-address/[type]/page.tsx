@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { VnAddressFields } from "@/components/ui/VnAddressFields";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { FormNotice } from "@/components/ui/FormNotice";
 
 // 2020-mockup field label: gray, sentence-case, red asterisk appended.
 const LEGACY_LABEL = "text-sm text-muted-foreground";
@@ -62,9 +63,7 @@ function AddressForm({ editing, accountEmail, saving, error, onSubmit }: Address
   return (
     <form onSubmit={handleSubmit} className="p-6">
       {error && (
-        <div className="bg-[var(--bb-state-danger-bg)] border border-[var(--bb-state-danger-border)] p-[12px_16px] mb-4 text-sm text-destructive">
-          {error}
-        </div>
+        <FormNotice tone="danger" className="mb-4">{error}</FormNotice>
       )}
 
       <div className="grid grid-cols-1 gap-x-6 gap-y-[18px] sm:grid-cols-2 xl:gap-x-8">
@@ -243,14 +242,10 @@ function AddressBookContent() {
       />
 
       {notice && (
-        <div className="bg-[var(--bb-state-success-bg)] border border-[var(--bb-state-success-border)] p-[12px_16px] mb-4 text-sm text-state-success-text">
-          {notice}
-        </div>
+        <FormNotice tone="success" className="mb-4">{notice}</FormNotice>
       )}
       {listError && (
-        <div className="bg-[var(--bb-state-danger-bg)] border border-[var(--bb-state-danger-border)] p-[12px_16px] mb-4 text-sm text-destructive">
-          {listError}
-        </div>
+        <FormNotice tone="danger" className="mb-4">{listError}</FormNotice>
       )}
 
       {loading ? (

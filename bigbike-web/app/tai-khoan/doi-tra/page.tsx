@@ -8,6 +8,7 @@ import { AccountShell } from "@/components/layout/AccountShell";
 import { formatDate, formatVnd } from "@/lib/utils/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { FormNotice } from "@/components/ui/FormNotice";
 import { StatusBadge, type StatusTone } from "@/components/ui/StatusBadge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
@@ -322,9 +323,7 @@ function ReturnsContent() {
       </div>
 
       {formSuccess && (
-        <div className="bg-[var(--bb-state-success-bg)] border border-[var(--bb-state-success-border)] p-[14px_18px] mb-5 text-sm text-state-success-text">
-          <p className="m-0">{formSuccess}</p>
-        </div>
+        <FormNotice tone="success" className="p-[14px_18px] mb-5"><p className="m-0">{formSuccess}</p></FormNotice>
       )}
 
       {error && <p className="text-brand text-sm mb-4 m-0">{error}</p>}
@@ -334,9 +333,7 @@ function ReturnsContent() {
         <div className="bg-card border border-border p-[22px_24px] mb-6">
           <p className="bb-field-label mb-4">{t("createHeading")}</p>
           {formError && (
-            <div className="bg-[var(--bb-state-danger-bg)] border border-[var(--bb-state-danger-border)] p-[14px_18px] mb-3 text-sm text-destructive">
-              <p className="m-0">{formError}</p>
-            </div>
+            <FormNotice tone="danger" className="p-[14px_18px] mb-3"><p className="m-0">{formError}</p></FormNotice>
           )}
           <form onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 gap-[14px] sm:grid-cols-2">
@@ -371,9 +368,7 @@ function ReturnsContent() {
                   ) : !eligibility ? (
                     <p className="text-sm text-muted-foreground">{t("noItemsInOrder")}</p>
                   ) : !eligibility.eligible ? (
-                    <div className="bg-[var(--bb-state-warning-bg)] border border-[var(--bb-state-warning-border)] p-[14px_18px] text-sm text-state-warning-text">
-                      <p className="m-0">{t(`eligibility.${eligibility.reason as ReturnEligibilityReason}`)}</p>
-                    </div>
+                    <FormNotice tone="warning" className="p-[14px_18px]"><p className="m-0">{t(`eligibility.${eligibility.reason as ReturnEligibilityReason}`)}</p></FormNotice>
                   ) : (
                     eligibility.items
                       .filter((it) => it.returnableQuantity > 0)

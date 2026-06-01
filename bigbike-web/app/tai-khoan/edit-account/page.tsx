@@ -7,6 +7,7 @@ import { updateCustomerProfile } from "@/lib/api/client-api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { FormNotice } from "@/components/ui/FormNotice";
 
 // 2020-mockup field label: gray, sentence-case.
 const LEGACY_LABEL = "text-sm text-muted-foreground";
@@ -88,14 +89,10 @@ function EditAccountContent() {
       </p>
 
       {success && (
-        <div className="bg-[var(--bb-state-success-bg)] border border-[var(--bb-state-success-border)] p-[12px_16px] mb-5 text-sm text-state-success-text">
-          {t("successUpdated")}
-        </div>
+        <FormNotice tone="success" className="mb-5">{t("successUpdated")}</FormNotice>
       )}
       {error && (
-        <div className="bg-[var(--bb-state-danger-bg)] border border-[var(--bb-state-danger-border)] p-[12px_16px] mb-5 text-sm text-destructive">
-          {error}
-        </div>
+        <FormNotice tone="danger" className="mb-5">{error}</FormNotice>
       )}
 
       <form onSubmit={handleSubmit}>

@@ -12,8 +12,8 @@ import { createLoginSchema, type LoginFormValues } from "@/lib/schemas/auth";
 import { toForgotPasswordPath } from "@/lib/utils/routes";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { AuthField } from "@/components/ui/AuthField";
+import { FormRootError } from "@/components/ui/FormRootError";
 import { SocialLoginButtons } from "./SocialLoginButtons";
 
 export function LoginForm({ returnTo }: { returnTo: string }) {
@@ -55,53 +55,29 @@ export function LoginForm({ returnTo }: { returnTo: string }) {
 
   return (
     <div>
-      {errors.root && (
-        <p role="alert" aria-live="assertive" className="mb-5 text-sm font-medium text-destructive">
-          {errors.root.message}
-        </p>
-      )}
+      <FormRootError message={errors.root?.message} />
 
       <form onSubmit={handleSubmit(onSubmit)} className="grid gap-[30px]" noValidate>
-        <div className="flex flex-col gap-2.5">
-          <Label htmlFor="login-username">
-            {t("emailLabel")} <span className="text-destructive">*</span>
-          </Label>
-          <Input
-            id="login-username"
-            autoComplete="username"
-            placeholder={t("emailPlaceholder")}
-            className="bb-auth-input"
-            aria-invalid={!!errors.login}
-            aria-describedby={errors.login ? "login-username-error" : undefined}
-            {...register("login")}
-          />
-          {errors.login && (
-            <p id="login-username-error" role="alert" className="text-sm text-destructive">
-              {errors.login.message}
-            </p>
-          )}
-        </div>
+        <AuthField
+          describeError
+          id="login-username"
+          label={t("emailLabel")}
+          autoComplete="username"
+          placeholder={t("emailPlaceholder")}
+          registration={register("login")}
+          error={errors.login}
+        />
 
-        <div className="flex flex-col gap-2.5">
-          <Label htmlFor="login-password">
-            {t("passwordLabel")} <span className="text-destructive">*</span>
-          </Label>
-          <Input
-            id="login-password"
-            type="password"
-            autoComplete="current-password"
-            placeholder={t("passwordPlaceholder")}
-            className="bb-auth-input"
-            aria-invalid={!!errors.password}
-            aria-describedby={errors.password ? "login-password-error" : undefined}
-            {...register("password")}
-          />
-          {errors.password && (
-            <p id="login-password-error" role="alert" className="text-sm text-destructive">
-              {errors.password.message}
-            </p>
-          )}
-        </div>
+        <AuthField
+          describeError
+          id="login-password"
+          type="password"
+          autoComplete="current-password"
+          placeholder={t("passwordPlaceholder")}
+          label={t("passwordLabel")}
+          registration={register("password")}
+          error={errors.password}
+        />
 
         <div className="flex items-center justify-between gap-2">
           <label className="flex cursor-pointer select-none items-center gap-2">

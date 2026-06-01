@@ -10,8 +10,8 @@ import { refreshAuth } from "@/lib/auth/auth-store";
 import { createRegisterSchema, type RegisterFormValues } from "@/lib/schemas/auth";
 import { toAccountPath } from "@/lib/utils/routes";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { AuthField } from "@/components/ui/AuthField";
+import { FormRootError } from "@/components/ui/FormRootError";
 import { SocialLoginButtons } from "@/app/dang-nhap/SocialLoginButtons";
 
 export function RegisterForm({ returnTo = toAccountPath() }: { returnTo?: string }) {
@@ -67,86 +67,57 @@ export function RegisterForm({ returnTo = toAccountPath() }: { returnTo?: string
 
   return (
     <div>
-      {errors.root && (
-        <p role="alert" aria-live="assertive" className="mb-5 text-sm font-medium text-destructive">
-          {errors.root.message}
-        </p>
-      )}
+      <FormRootError message={errors.root?.message} />
 
       <form onSubmit={handleSubmit(onSubmit)} className="grid gap-[30px]" noValidate>
-        <div className="flex flex-col gap-2.5">
-          <Label htmlFor="reg-fullName">
-            {t("fullNameLabel")} <span className="text-destructive">*</span>
-          </Label>
-          <Input
-            id="reg-fullName"
-            autoComplete="name"
-            placeholder={t("fullNamePlaceholder")}
-            className="bb-auth-input"
-            {...register("fullName")}
-          />
-          {errors.fullName && <p className="text-sm text-destructive">{errors.fullName.message}</p>}
-        </div>
+        <AuthField
+          id="reg-fullName"
+          label={t("fullNameLabel")}
+          autoComplete="name"
+          placeholder={t("fullNamePlaceholder")}
+          registration={register("fullName")}
+          error={errors.fullName}
+        />
 
-        <div className="flex flex-col gap-2.5">
-          <Label htmlFor="reg-email">
-            {t("emailLabel")} <span className="text-destructive">*</span>
-          </Label>
-          <Input
-            id="reg-email"
-            type="email"
-            autoComplete="email"
-            placeholder={t("emailPlaceholder")}
-            className="bb-auth-input"
-            {...register("email")}
-          />
-          {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
-        </div>
+        <AuthField
+          id="reg-email"
+          type="email"
+          label={t("emailLabel")}
+          autoComplete="email"
+          placeholder={t("emailPlaceholder")}
+          registration={register("email")}
+          error={errors.email}
+        />
 
-        <div className="flex flex-col gap-2.5">
-          <Label htmlFor="reg-phone">
-            {t("phoneLabel")} <span className="text-destructive">*</span>
-          </Label>
-          <Input
-            id="reg-phone"
-            type="tel"
-            autoComplete="tel"
-            placeholder={t("phonePlaceholder")}
-            className="bb-auth-input"
-            {...register("phone")}
-          />
-          {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
-        </div>
+        <AuthField
+          id="reg-phone"
+          type="tel"
+          label={t("phoneLabel")}
+          autoComplete="tel"
+          placeholder={t("phonePlaceholder")}
+          registration={register("phone")}
+          error={errors.phone}
+        />
 
-        <div className="flex flex-col gap-2.5">
-          <Label htmlFor="reg-password">
-            {t("passwordLabel")} <span className="text-destructive">*</span>
-          </Label>
-          <Input
-            id="reg-password"
-            type="password"
-            autoComplete="new-password"
-            placeholder={t("passwordPlaceholder")}
-            className="bb-auth-input"
-            {...register("password")}
-          />
-          {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
-        </div>
+        <AuthField
+          id="reg-password"
+          type="password"
+          label={t("passwordLabel")}
+          autoComplete="new-password"
+          placeholder={t("passwordPlaceholder")}
+          registration={register("password")}
+          error={errors.password}
+        />
 
-        <div className="flex flex-col gap-2.5">
-          <Label htmlFor="reg-confirm">
-            {t("confirmLabel")} <span className="text-destructive">*</span>
-          </Label>
-          <Input
-            id="reg-confirm"
-            type="password"
-            autoComplete="new-password"
-            placeholder={t("confirmPlaceholder")}
-            className="bb-auth-input"
-            {...register("confirm")}
-          />
-          {errors.confirm && <p className="text-sm text-destructive">{errors.confirm.message}</p>}
-        </div>
+        <AuthField
+          id="reg-confirm"
+          type="password"
+          label={t("confirmLabel")}
+          autoComplete="new-password"
+          placeholder={t("confirmPlaceholder")}
+          registration={register("confirm")}
+          error={errors.confirm}
+        />
 
         <Button
           type="submit"

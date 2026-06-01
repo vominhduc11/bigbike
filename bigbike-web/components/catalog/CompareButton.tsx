@@ -4,6 +4,7 @@ import { useCart } from "@/lib/cart-context";
 import { useCompare } from "@/lib/compare-context";
 import type { CompareProduct } from "@/lib/compare-storage";
 import { cn } from "@/lib/utils";
+import { CardIconButton } from "@/components/shared/CardIconButton";
 
 type CompareButtonProps = {
   product: CompareProduct;
@@ -70,19 +71,14 @@ export function CompareButton({ product, variant = "icon" }: CompareButtonProps)
   }
 
   return (
-    <button
-      type="button"
+    <CardIconButton
+      active={active}
+      ariaLabel={active ? "Bỏ khỏi so sánh" : "Thêm vào so sánh"}
+      top="top-[52px]"
+      ariaPressed={active}
       onClick={handleClick}
-      aria-pressed={active}
-      aria-label={active ? "Bỏ khỏi so sánh" : "Thêm vào so sánh"}
-      className={cn(
-        "bb-round absolute top-[52px] right-[10px] z-[3] flex h-[34px] w-[34px] items-center justify-center rounded-full border p-0 transition-colors duration-300",
-        active
-          ? "border-brand bg-brand-soft text-brand"
-          : "border-border bg-white/95 text-muted-foreground hover:border-brand hover:bg-white hover:text-brand",
-      )}
     >
       <CompareIcon />
-    </button>
+    </CardIconButton>
   );
 }
