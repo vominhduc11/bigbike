@@ -17,6 +17,7 @@ import {
 import { isActivePath, normalizeMenuUrl } from "@/lib/utils/nav";
 import { cn } from "@/lib/utils";
 import { parsePhones, parseShopHours } from "@/lib/utils/shop";
+import { useMediaQueryChange } from "@/lib/hooks/useMediaQueryChange";
 
 type MobileHeaderMenuProps = {
   menuTree: HeaderNavNode[];
@@ -201,14 +202,7 @@ export function MobileHeaderMenu({
     return () => window.clearTimeout(timer);
   }, [open]);
 
-  useEffect(() => {
-    const mql = window.matchMedia("(min-width: 1261px)");
-    function onBreakpointChange(e: MediaQueryListEvent) {
-      if (e.matches) closePanel();
-    }
-    mql.addEventListener("change", onBreakpointChange);
-    return () => mql.removeEventListener("change", onBreakpointChange);
-  }, [closePanel]);
+  useMediaQueryChange("(min-width: 1261px)", closePanel);
 
   function close() {
     closePanel();

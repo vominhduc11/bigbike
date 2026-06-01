@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import type { Product } from "@/lib/contracts/public";
+import { useResponsiveValue } from "@/lib/hooks/useResponsiveValue";
 
 type PdpRelatedProductsCarouselProps = {
   products: Product[];
@@ -23,17 +24,10 @@ export function PdpRelatedProductsCarousel({
   kicker = "SẢN PHẨM LIÊN QUAN",
   heading = "Sản phẩm tương tự",
 }: PdpRelatedProductsCarouselProps) {
-  const [columns, setColumns] = useState(4);
+  const columns = useResponsiveValue(getColumns, 4);
   const [index, setIndex] = useState(0);
   const maxIndex = Math.max(0, products.length - columns);
   const safeIndex = Math.min(index, maxIndex);
-
-  useEffect(() => {
-    const update = () => setColumns(getColumns(window.innerWidth));
-    update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
-  }, []);
 
   const trackStyle = useMemo(
     () =>

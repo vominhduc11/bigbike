@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Product } from "@/lib/contracts/public";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { cn } from "@/lib/utils";
+import { useResponsiveValue } from "@/lib/hooks/useResponsiveValue";
 
 type Props = { products: Product[] };
 
@@ -36,18 +37,8 @@ const CAR_BTN =
 
 export function FeaturedProductsCarousel({ products }: Props) {
   const t = useTranslations("Common");
-  const [slidesPerView, setSlidesPerView] = useState(4);
+  const slidesPerView = useResponsiveValue(resolveSlidesPerView, 4);
   const [page, setPage] = useState(0);
-
-  useEffect(() => {
-    const updateSlidesPerView = () => {
-      setSlidesPerView(resolveSlidesPerView(window.innerWidth));
-    };
-
-    updateSlidesPerView();
-    window.addEventListener("resize", updateSlidesPerView);
-    return () => window.removeEventListener("resize", updateSlidesPerView);
-  }, []);
 
   const pageCount = useMemo(
     () => Math.max(1, Math.ceil(products.length / slidesPerView)),

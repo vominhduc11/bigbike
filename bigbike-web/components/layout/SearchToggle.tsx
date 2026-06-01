@@ -9,6 +9,7 @@ import { useHeaderUi } from "@/components/layout/HeaderUiContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useDebounce } from "@/lib/hooks/useDebounce";
+import { useMediaQueryChange } from "@/lib/hooks/useMediaQueryChange";
 import { useRecentSearches } from "@/lib/hooks/useRecentSearches";
 import { formatVnd, resolveMediaUrl } from "@/lib/utils/format";
 import { toArticlePath, toCategoryPath, toProductPath } from "@/lib/utils/routes";
@@ -76,14 +77,7 @@ export function SearchToggle({ popularCategories: categoriesFromApi = [] }: Sear
     return () => window.clearTimeout(timer);
   }, [open]);
 
-  useEffect(() => {
-    const mql = window.matchMedia("(min-width: 1261px)");
-    function onBreakpointChange(e: MediaQueryListEvent) {
-      if (e.matches) closePanel();
-    }
-    mql.addEventListener("change", onBreakpointChange);
-    return () => mql.removeEventListener("change", onBreakpointChange);
-  }, [closePanel]);
+  useMediaQueryChange("(min-width: 1261px)", closePanel);
 
   useEffect(() => {
     if (!open || debouncedQuery.length < 1) {
