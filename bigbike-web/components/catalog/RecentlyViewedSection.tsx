@@ -70,7 +70,7 @@ export function RecentlyViewedSection({ currentProductId, currentProduct }: Prop
                     {p.categoryName}
                   </p>
                 )}
-                <p className="m-0 line-clamp-2 text-sm font-bold uppercase leading-[1.35] tracking-wide text-foreground">
+                <p className="m-0 line-clamp-2 text-sm font-bold uppercase leading-title tracking-wide text-foreground">
                   {p.name}
                 </p>
                 {p.price != null && p.price > 0 && (

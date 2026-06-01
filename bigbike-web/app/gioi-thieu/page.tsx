@@ -92,7 +92,7 @@ function ServiceTileCard({ tile }: { tile: ServiceTile }) {
           {tile.title}
         </h4>
         <p
-          className={`m-0 text-sm leading-[1.55] ${
+          className={`m-0 text-sm leading-body ${
             tile.highlight ? "text-white/90" : "text-muted-foreground"
           }`}
         >

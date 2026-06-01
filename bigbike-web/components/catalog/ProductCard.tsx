@@ -121,9 +121,9 @@ export function ProductCard({ product, variant = "compact" }: ProductCardProps) 
         </div>
         <div className="bb-fp-desc">
           <div className="bb-fp-inside">
-            <p className="bb-fp-title">
+            <h3 className="bb-fp-title">
               <Link href={href}>{name}</Link>
-            </p>
+            </h3>
             <div className="bb-fp-price">
               {product.price && current > 0 ? (
                 <>
@@ -192,9 +192,9 @@ export function ProductCard({ product, variant = "compact" }: ProductCardProps) 
         <div className="product--item-desc">
           <div className="product--item-inside row">
             <div className="col-md-12">
-              <p className="product--item-title">
+              <h3 className="product--item-title">
                 <Link href={href}>{name}</Link>
-              </p>
+              </h3>
             </div>
             <div className="col-md-12">
               <div className="product--item-price">
@@ -231,7 +231,7 @@ export function ProductCard({ product, variant = "compact" }: ProductCardProps) 
           className="absolute inset-0 z-[2]"
         />
         <div className="relative z-[1] flex h-full flex-col px-10 pt-10 pb-8 pr-[40%] max-[900px]:px-8 max-[900px]:pt-8 max-[900px]:pr-[38%] max-[600px]:min-h-[320px] max-[600px]:px-6 max-[600px]:pt-6 max-[600px]:pr-[36%]">
-          <h3 className="font-heading text-lg font-semibold uppercase leading-display text-foreground">
+          <h3 className="font-heading text-h4 font-semibold uppercase leading-display text-foreground">
             {name}
           </h3>
           <span className="mt-14 inline-flex w-fit font-heading text-17 font-semibold uppercase leading-none text-brand max-[600px]:mt-10">
@@ -296,9 +296,9 @@ export function ProductCard({ product, variant = "compact" }: ProductCardProps) 
         <div className="product--item-desc bb-archive-product-desc">
           <div className="product--item-inside row bb-archive-product-inside">
             <div className="col-md-12 bb-archive-product-info">
-              <p className="product--item-title bb-archive-product-title">
+              <h3 className="product--item-title bb-archive-product-title">
                 <Link href={href}>{name}</Link>
-              </p>
+              </h3>
 
               {product.price && current > 0 ? (
                 <div className="product--item-price bb-archive-product-price">

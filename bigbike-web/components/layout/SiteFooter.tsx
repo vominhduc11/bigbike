@@ -217,7 +217,7 @@ export async function SiteFooter() {
         <div className="bb-container">
           <div className="grid grid-cols-1 gap-8 md:grid-cols-12 md:gap-10">
             <div className="md:col-span-7">
-              <h2 className="m-0 mb-7 font-cta text-[clamp(2.25rem,1.125rem+4.8vw,3.429rem)] font-medium uppercase leading-title text-white md:mb-[2.857rem] lg:max-w-[43rem]">
+              <h2 className="m-0 mb-7 font-cta text-footer-slogan font-medium uppercase leading-title text-white md:mb-[2.857rem] lg:max-w-[43rem]">
                 {splitHeading(footerTagline).map((line) => (
                   <span key={line} className="block">
                     {line}
@@ -238,8 +238,8 @@ export async function SiteFooter() {
                       href={href}
                       className={`flex min-w-0 items-start gap-3.5 font-cta font-medium text-white no-underline transition-colors hover:text-brand-inverse md:gap-5 ${
                         isEmail
-                          ? "text-[clamp(1.375rem,0.642rem+3.127vw,2.143rem)] leading-title"
-                          : "text-[clamp(1.625rem,1.131rem+2.109vw,2.143rem)] leading-heading"
+                          ? "text-h3 leading-title"
+                          : "text-h2 leading-heading"
                       }`}
                     >
                       <ContactIcon icon={item.icon} />
@@ -248,7 +248,7 @@ export async function SiteFooter() {
                   );
                 })}
                 {contacts.length === 0 ? (
-                  <p className="m-0 text-body leading-[1.786rem] text-white/75">
+                  <p className="m-0 text-body leading-title text-white/75">
                     {t("contactUpdating")}
                   </p>
                 ) : null}
@@ -257,7 +257,7 @@ export async function SiteFooter() {
 
             <div className="md:col-span-5">
               {footerDescription ? (
-                <p className="m-0 mb-7 text-caption leading-[1.65] text-white md:mb-[2.286rem] md:max-w-[40rem]">
+                <p className="m-0 mb-7 text-caption leading-body text-white md:mb-[2.286rem] md:max-w-[40rem]">
                   {footerDescription}
                 </p>
               ) : null}
@@ -274,14 +274,14 @@ export async function SiteFooter() {
                                 href={item.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-base leading-[1.45] text-white no-underline transition-colors hover:text-brand-inverse"
+                                className="text-base leading-body text-white no-underline transition-colors hover:text-brand-inverse"
                               >
                                 {item.label}
                               </a>
                             ) : (
                               <Link
                                 href={item.url}
-                                className="text-base leading-[1.45] text-white no-underline transition-colors hover:text-brand-inverse"
+                                className="text-base leading-body text-white no-underline transition-colors hover:text-brand-inverse"
                               >
                                 {item.label}
                               </Link>
@@ -290,7 +290,7 @@ export async function SiteFooter() {
                         ))}
                       </ul>
                     ) : (
-                      <p className="m-0 text-body leading-[1.45] text-white/75">
+                      <p className="m-0 text-body leading-body text-white/75">
                         {t("linkFallback")}
                       </p>
                     )}
@@ -318,7 +318,7 @@ export async function SiteFooter() {
                         ))}
                       </ul>
                     ) : (
-                      <p className="m-0 text-body leading-[1.45] text-white/75">
+                      <p className="m-0 text-body leading-body text-white/75">
                         {t("socialUpdating")}
                       </p>
                     )}
@@ -345,7 +345,7 @@ export async function SiteFooter() {
             </div>
 
             <div className="md:col-span-4 max-md:order-2">
-              <p className="m-0 max-w-[22rem] text-caption leading-[1.45] text-white">
+              <p className="m-0 max-w-[22rem] text-caption leading-body text-white">
                 {t("copyright", { year: new Date().getFullYear() })}
               </p>
             </div>

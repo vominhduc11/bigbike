@@ -87,7 +87,7 @@ function VideoCard({ video, onPlay }: { video: HomeVideo; onPlay: () => void }) 
       {/* Footer title — compact ở mobile; từ tablet trở lên reserve 2 dòng (min-h)
           để mọi card cao bằng nhau, và to/đậm hơn trên desktop lớn cho dễ đọc */}
       <div className="bg-black px-3 py-3 min-[600px]:px-4 min-[600px]:py-4">
-        <p className="m-0 overflow-hidden normal-case font-body text-caption font-semibold leading-[1.4] text-white line-clamp-2 min-[600px]:min-h-[2.9em]">
+        <p className="m-0 overflow-hidden normal-case font-body text-caption font-semibold leading-title text-white line-clamp-2 min-[600px]:min-h-[2.9em]">
           {title}
         </p>
       </div>

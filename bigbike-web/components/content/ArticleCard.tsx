@@ -107,7 +107,7 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
             {title}
           </h3>
           <p
-            className="text-caption text-muted-foreground leading-[1.65] m-0"
+            className="text-caption text-muted-foreground leading-body m-0"
           >
             {excerpt}
           </p>

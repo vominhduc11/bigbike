@@ -112,6 +112,7 @@
   --text-section-title: var(--bb-text-section-title);
   --text-news-title: var(--bb-text-news-title);
   --text-product-title: var(--bb-text-product-title);
+  --text-footer-slogan: var(--bb-text-footer-slogan);
 
   /* Fluid type scale canonical — docs/TYPOGRAPHY.md. Tailwind utilities map tới
      --fs-* clamp tokens. Dùng cho component mới / refactor: text-display, text-h4,

@@ -104,7 +104,7 @@ function ReturnDetailPanel({ id, onClose }: { id: string; onClose: () => void })
 
             {/* Customer note */}
             {detail.customerNote && (
-              <div className="py-3 px-[14px] text-sm leading-[1.6] bg-[var(--bb-bg-surface-raised)] text-muted-foreground [&_p]:m-0">
+              <div className="py-3 px-[14px] text-sm leading-body bg-[var(--bb-bg-surface-raised)] text-muted-foreground [&_p]:m-0">
                 <p className="text-sm font-bold tracking-display uppercase mb-[6px]">{t("customerNoteHeading")}</p>
                 <p>{detail.customerNote}</p>
               </div>
@@ -112,7 +112,7 @@ function ReturnDetailPanel({ id, onClose }: { id: string; onClose: () => void })
 
             {/* Admin note */}
             {detail.adminNote && (
-              <div className="py-3 px-[14px] text-sm leading-[1.6] bg-[var(--bb-state-warning-bg)] text-state-warning-text border border-[var(--bb-state-warning-border)] [&_p]:m-0">
+              <div className="py-3 px-[14px] text-sm leading-body bg-[var(--bb-state-warning-bg)] text-state-warning-text border border-[var(--bb-state-warning-border)] [&_p]:m-0">
                 <p className="text-sm font-bold tracking-display uppercase mb-[6px]">{t("adminNoteHeading")}</p>
                 <p>{detail.adminNote}</p>
               </div>
