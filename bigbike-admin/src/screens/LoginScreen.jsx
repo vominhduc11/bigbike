@@ -150,7 +150,7 @@ export function LoginScreen() {
 
           <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid var(--bb-border)', textAlign: 'center', fontSize: 12, color: 'var(--bb-text-muted)' }}>
             {t('auth.supportContact')}:{' '}
-            <a href="mailto:admin@bigbike.vn" style={{ fontWeight: 600, color: 'var(--bb-brand)' }}>
+            <a href="mailto:admin@bigbike.vn" style={{ fontWeight: 600, color: 'var(--bb-primary)' }}>
               admin@bigbike.vn
             </a>
           </div>
