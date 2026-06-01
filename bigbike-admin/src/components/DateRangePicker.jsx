@@ -78,7 +78,7 @@ export function DateRangePicker({ value, onChange, placeholder }) {
             disabled={{ after: new Date() }}
             styles={{
               root: {
-                '--rdp-accent-color': 'var(--admin-color-brand-red)',
+                '--rdp-accent-color': 'var(--admin-color-primary)',
                 '--rdp-accent-background-color': 'var(--admin-color-surface-selected)',
                 fontFamily: 'inherit',
                 fontSize: '0.8125rem',
