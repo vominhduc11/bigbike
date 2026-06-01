@@ -1735,8 +1735,8 @@ a {
 }
 
 .mpicker-item.is-selected {
-  border-color: var(--admin-color-brand-red);
-  box-shadow: 0 0 0 1px var(--admin-color-brand-red);
+  border-color: var(--admin-color-primary);
+  box-shadow: 0 0 0 1px var(--admin-color-primary);
 }
 
 .mpicker-thumb {
@@ -1770,7 +1770,7 @@ a {
   right: 6px;
   width: 22px;
   height: 22px;
-  background: var(--admin-color-brand-red);
+  background: var(--admin-color-primary);
   color: var(--admin-color-text-inverse);
   border-radius: var(--admin-radius-full);
   display: flex;
@@ -2819,7 +2819,7 @@ a {
   position: absolute;
   inset: 0;
   z-index: 10;
-  background: var(--admin-color-brand-red-muted);
+  background: var(--admin-color-primary-muted);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -4060,7 +4060,7 @@ a {
   inset: -4px;
   border: 2px dashed var(--c-primary);
   border-radius: 8px;
-  background: var(--admin-color-brand-red-muted);
+  background: var(--admin-color-primary-muted);
   pointer-events: none;
   z-index: 10;
 }
@@ -4191,7 +4191,7 @@ a {
 .medialib-card.medialib-is-selected {
   border-color: var(--c-primary);
   border-width: 2px;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--admin-color-brand-red) 20%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--admin-color-primary) 20%, transparent);
 }
 
 .medialib-card.medialib-is-focused {
