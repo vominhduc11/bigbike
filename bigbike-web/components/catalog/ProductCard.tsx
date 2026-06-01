@@ -18,6 +18,7 @@ import { derivePricing } from "@/lib/pricing";
 import { toProductPath } from "@/lib/utils/routes";
 import { MediaImage } from "@/components/ui/MediaImage";
 import { ProductCardAddBar } from "@/components/catalog/ProductCardAddBar";
+import { SaleBadge } from "@/components/catalog/SaleBadge";
 import { WishlistButton } from "@/components/catalog/WishlistButton";
 import { CompareButton } from "@/components/catalog/CompareButton";
 import { RatingStars } from "@/components/ui/RatingStars";
@@ -151,11 +152,7 @@ export function ProductCard({ product, variant = "compact" }: ProductCardProps) 
             )}
           </Link>
           {discountPercent != null && discountPercent > 0 && (
-            <div className="absolute left-0 top-5">
-              <p className="relative m-0 w-[70px] bg-brand text-center font-heading text-sm uppercase leading-[42px] text-white after:absolute after:right-[-33px] after:top-0 after:h-0 after:w-0 after:border-b-0 after:border-l-[42px] after:border-r-[33px] after:border-t-[42px] after:border-l-transparent after:border-r-transparent after:border-t-brand after:content-['']">
-                {discountPercent}%
-              </p>
-            </div>
+            <SaleBadge percent={discountPercent} />
           )}
           <div className="absolute bottom-0 left-0 w-full translate-y-full bg-surface-dark text-center transition-transform duration-300 group-hover:translate-y-0">
             <Link
@@ -263,11 +260,7 @@ export function ProductCard({ product, variant = "compact" }: ProductCardProps) 
           </Link>
 
           {discountPercent != null && discountPercent > 0 && (
-            <div className="absolute left-0 top-5 h-8 w-20 bg-[url('/wp/ticket.svg')] bg-left-top bg-no-repeat text-white">
-              <p className="m-0 -rotate-[20deg] p-0 text-center font-cta text-[18px] font-semibold leading-7 text-white">
-                {discountPercent}%
-              </p>
-            </div>
+            <SaleBadge percent={discountPercent} variant="ticket" />
           )}
 
           <div className="absolute -bottom-[51px] left-0 w-full bg-black text-center transition-all duration-300 group-hover:bottom-0 max-[767px]:bottom-0">
