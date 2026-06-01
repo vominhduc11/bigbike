@@ -132,7 +132,7 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPrevi
       style={{
         ...style,
         opacity: video.isActive === false && !selected ? 0.55 : style.opacity,
-        ...(selected ? { borderColor: 'var(--admin-color-brand-red)', background: 'var(--admin-color-surface-selected)' } : {}),
+        ...(selected ? { borderColor: 'var(--admin-color-primary)', background: 'var(--admin-color-surface-selected)' } : {}),
         display: 'flex', gap: 12, alignItems: 'flex-start', padding: '12px 16px',
       }}
       className="bb-card"
