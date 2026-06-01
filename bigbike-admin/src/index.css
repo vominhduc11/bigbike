@@ -11,8 +11,8 @@
   --card-foreground:            var(--admin-color-text-primary);
   --popover:                    var(--admin-color-surface-raised);
   --popover-foreground:         var(--admin-color-text-primary);
-  --primary:                    var(--admin-color-brand-red);
-  --primary-foreground:         var(--admin-color-text-inverse);
+  --primary:                    var(--admin-color-primary);
+  --primary-foreground:         var(--admin-color-on-primary);
   --secondary:                  var(--admin-color-surface-raised);
   --secondary-foreground:       var(--admin-color-text-primary);
   --muted:                      var(--admin-color-surface-muted);

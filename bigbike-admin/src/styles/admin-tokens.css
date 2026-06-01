@@ -18,7 +18,8 @@
   --admin-color-surface-muted:    #f8f9fa;
   --admin-color-surface-raised:   #f1f3f5;
   --admin-color-surface-hover:    #f3f4f6;
-  --admin-color-surface-selected: #fff1f0;
+  /* "Selected" surfaces follow primary (orange), not brand red */
+  --admin-color-surface-selected: var(--admin-color-primary-subtle);
 
   /* ─── Rank badges (top-products) ─────────────────────────────────────── */
   --admin-rank-1-bg:   #fef3c7;
@@ -71,16 +72,18 @@
 
   /* ─── Typography ────────────────────────────────────────────────────────── */
   --admin-font-body:    Inter, system-ui, -apple-system, sans-serif;
-  --admin-font-display: Inter, system-ui, sans-serif;
+  --admin-font-display: Bungee, Inter, system-ui, sans-serif;
   --admin-font-mono:    'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace;
 
+  /* Type scale — aligned to the redesign prototype (--t-*) */
   --admin-text-xs:   0.75rem;    /* 12px   */
-  --admin-text-sm:   0.875rem;   /* 14px   */
+  --admin-text-sm:   0.8125rem;  /* 13px   */
   --admin-text-base: 0.9375rem;  /* 15px   */
   --admin-text-md:   1rem;       /* 16px   */
-  --admin-text-lg:   1.0625rem;  /* 17px   */
-  --admin-text-xl:   1.1875rem;  /* 19px   */
-  --admin-text-2xl:  1.4375rem;  /* 23px   */
+  --admin-text-lg:   1.125rem;   /* 18px   */
+  --admin-text-xl:   1.375rem;   /* 22px   */
+  --admin-text-2xl:  1.6875rem;  /* 27px   */
+  --admin-text-3xl:  2.125rem;   /* 34px   */
 
   /* ─── Spacing ───────────────────────────────────────────────────────────── */
   --admin-space-1:  4px;
@@ -91,12 +94,13 @@
   --admin-space-6:  24px;
   --admin-space-8:  32px;
   --admin-space-10: 40px;
+  --admin-space-12: 48px;
 
-  /* ─── Radius ────────────────────────────────────────────────────────────── */
-  --admin-radius-xs:   4px;
-  --admin-radius-sm:   7px;
-  --admin-radius-md:   10px;
-  --admin-radius-lg:   14px;
+  /* ─── Radius (aligned to prototype --r-*) ───────────────────────────────── */
+  --admin-radius-xs:   5px;
+  --admin-radius-sm:   8px;
+  --admin-radius-md:   12px;
+  --admin-radius-lg:   16px;
   --admin-radius-full: 9999px;
 
   /* ─── Shadows ───────────────────────────────────────────────────────────── */
@@ -123,11 +127,18 @@
   --admin-scrollbar-thumb-hover: var(--admin-color-border-strong);
   --admin-scrollbar-track:       transparent;
 
-  /* ─── Semantic aliases — let new screens reference one canonical name
-     instead of repeating brand/status primitives. Picked deliberately so
-     dark-mode overrides flow through automatically. ──────────────────── */
-  --admin-color-primary:        var(--admin-color-brand-red);
-  --admin-color-primary-hover:  var(--admin-color-brand-red-hover);
+  /* ─── Primary (Direction B — Orange, approved) ───────────────────────────
+     Used for CTA / active / selected / focus / links across the admin.
+     Brand red (--admin-color-brand-red) is reserved for brand chrome only:
+     sidebar active bar, nav badge, notification pip, logo. ──────────────── */
+  --admin-color-primary:             #cc4a08;
+  --admin-color-primary-hover:       #ac3e08;
+  --admin-color-primary-active:      #8a3206;
+  --admin-color-primary-subtle:      #fff3e9;
+  --admin-color-primary-subtle-text: #ac3e08;
+  --admin-color-primary-muted:       rgba(204, 74, 8, 0.14);
+  --admin-color-primary-ring:        rgba(204, 74, 8, 0.40);
+  --admin-color-on-primary:          #ffffff;
 
   /* ─── Short-form aliases (used by inline styles across screens) ─────────── */
   --c-text-primary:  var(--admin-color-text-primary);
@@ -138,8 +149,8 @@
   --c-border:        var(--admin-color-border-subtle);
   --c-surface:       var(--admin-color-surface-base);
   --c-bg-subtle:     var(--admin-color-surface-muted);
-  --c-primary:       var(--admin-color-brand-red);
-  --c-primary-subtle: var(--admin-color-surface-selected);
+  --c-primary:       var(--admin-color-primary);
+  --c-primary-subtle: var(--admin-color-primary-subtle);
 
   /* ─── Prototype bb-* aliases — light mode ─────────────────────────────────
      The bb-* component CSS (admin-prototype.css) references these variables.
@@ -150,6 +161,15 @@
   --bb-brand-active:    var(--admin-color-brand-red-active);
   --bb-brand-subtle:    var(--admin-color-brand-red-subtle);
   --bb-brand-muted:     var(--admin-color-brand-red-muted);
+
+  /* Primary (orange) — CTA / active / selected / focus for the bb-* system */
+  --bb-primary:             var(--admin-color-primary);
+  --bb-primary-hover:       var(--admin-color-primary-hover);
+  --bb-primary-active:      var(--admin-color-primary-active);
+  --bb-primary-subtle:      var(--admin-color-primary-subtle);
+  --bb-primary-subtle-text: var(--admin-color-primary-subtle-text);
+  --bb-primary-muted:       var(--admin-color-primary-muted);
+  --bb-on-primary:          var(--admin-color-on-primary);
 
   --bb-bg:              var(--admin-color-background-app);
   --bb-page:            var(--admin-color-background-page);
@@ -223,7 +243,7 @@
   --bb-sh-lg: var(--admin-shadow-lg);
 
   --bb-sidebar-w:  248px;
-  --bb-topbar-h:   52px;
+  --bb-topbar-h:   56px;
   --bb-row-h:      44px;
 }
 
@@ -238,6 +258,16 @@
   /* ─── Brand — unchanged, red stays red ─── */
   --admin-color-brand-red-subtle:  #2a1010;
   --admin-color-brand-red-muted:   rgba(232, 40, 30, 0.16);
+
+  /* ─── Primary (orange) — dark ─── */
+  --admin-color-primary:             #f0791f;
+  --admin-color-primary-hover:       #f8923f;
+  --admin-color-primary-active:      #d96412;
+  --admin-color-primary-subtle:      #2a1808;
+  --admin-color-primary-subtle-text: #f5a45f;
+  --admin-color-primary-muted:       rgba(240, 121, 31, 0.18);
+  --admin-color-primary-ring:        rgba(240, 121, 31, 0.45);
+  --admin-color-on-primary:          #231000;
 
   /* ─── Backgrounds ─── */
   --admin-color-background-app:     #010409;
