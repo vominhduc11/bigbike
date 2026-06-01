@@ -519,6 +519,14 @@
   font-variant-numeric: tabular-nums;
   line-height: 1.15;
 }
+/* Money / long numeric KPIs: Bungee is too wide for full currency strings,
+   so fall back to Inter tabular-nums (keep Bungee for short count values). */
+.bb-kpi-value--money {
+  font-family: var(--bb-font);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
 .bb-kpi-trend {
   display: inline-flex;
   align-items: center;

@@ -313,7 +313,7 @@ export function DashboardScreen({ navigate }) {
                 <span>{t('dashboard.kpi.todayRevenue')}</span>
                 <span className="bb-kpi-icon brand"><CircleDollarSign size={15} /></span>
               </div>
-              <div className="bb-kpi-value">{formatVndShort(data.kpi.todayRevenue)}</div>
+              <div className="bb-kpi-value bb-kpi-value--money">{formatVndShort(data.kpi.todayRevenue)}</div>
               <div className="bb-kpi-foot">
                 <TrendPill {...revenueTrend(data.kpi)} />
                 <span className="bb-kpi-foot-label">
