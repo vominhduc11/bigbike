@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Download } from 'lucide-react'
 import { AdminTable } from '../components/AdminTable'
 import { Modal } from '../components/layout'
 import { PaginationControls } from '../components/PaginationControls'
@@ -651,7 +652,7 @@ export function AuditLogListScreen() {
                 : t('auditLog.exportTooltipEmpty')
             }
           >
-            ↓ {t('auditLog.exportBtn')}
+            <Download size={14} />{t('auditLog.exportBtn')}
           </button>
         </div>
       </div>
