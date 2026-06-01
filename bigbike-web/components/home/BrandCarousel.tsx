@@ -4,15 +4,10 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import Link from "next/link";
 import "swiper/css";
 import type { Brand } from "@/lib/contracts/public";
-import { resolveMediaUrl, safeText } from "@/lib/utils/format";
+import { resolveMediaUrl, safeText, toLegacyWpMediaUrl } from "@/lib/utils/format";
 import { toBrandPath } from "@/lib/utils/routes";
 
 type Props = { brands: Brand[] };
-
-function toLegacyWpMediaUrl(src: string | null | undefined): string | null {
-  if (!src) return null;
-  return src.startsWith("/wp-content/") ? `https://bigbike.vn${src}` : src;
-}
 
 export function BrandCarousel({ brands }: Props) {
   if (brands.length === 0) return null;

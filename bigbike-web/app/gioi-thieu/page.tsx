@@ -18,7 +18,7 @@ import { ContactInfoList } from "@/components/ui/ContactInfoList";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { getPageBySlug, listBrands, listPublicSettings } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
-import { resolveMediaUrl } from "@/lib/utils/format";
+import { resolveMediaUrl, telHref } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import { toBrandPath, toPagePath } from "@/lib/utils/routes";
 import { pickSetting } from "@/lib/utils/settings";
@@ -263,7 +263,7 @@ export default async function AboutPage() {
                             {hotline ? (
                               <p className="m-0 text-caption leading-snug text-muted-foreground">
                                 <a
-                                  href={`tel:${hotline.replace(/[^\d+]/g, "")}`}
+                                  href={telHref(hotline)}
                                   className="bb-link"
                                 >
                                   {hotline}
@@ -273,7 +273,7 @@ export default async function AboutPage() {
                             {hotline2 ? (
                               <p className="m-0 text-caption leading-snug text-muted-foreground">
                                 <a
-                                  href={`tel:${hotline2.replace(/[^\d+]/g, "")}`}
+                                  href={telHref(hotline2)}
                                   className="bb-link"
                                 >
                                   {hotline2}

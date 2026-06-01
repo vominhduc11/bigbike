@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { telHref, zaloHref } from "@/lib/utils/format";
 
 type ProductContactCtaProps = {
   productName: string;
@@ -9,13 +10,6 @@ type ProductContactCtaProps = {
   hotline?: string;
   zaloUrl?: string;
 };
-
-/** Normalize a Zalo setting value (raw phone or full URL) into a tel/zalo link. */
-function toZaloHref(value: string): string {
-  if (/^https?:\/\//i.test(value)) return value;
-  const digits = value.replace(/[^\d]/g, "");
-  return digits ? `https://zalo.me/${digits}` : value;
-}
 
 /**
  * Local-SEO contact band near the foot of the product detail page.
@@ -53,7 +47,7 @@ export function ProductContactCta({
         <p className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
           {hotline && (
             <a
-              href={`tel:${hotline.replace(/[^\d+]/g, "")}`}
+              href={telHref(hotline)}
               className="font-display text-base font-semibold text-brand hover:underline"
             >
               {hotline}
@@ -61,7 +55,7 @@ export function ProductContactCta({
           )}
           {zaloUrl && (
             <a
-              href={toZaloHref(zaloUrl)}
+              href={zaloHref(zaloUrl)}
               target="_blank"
               rel="noopener noreferrer"
               className="font-display text-base font-semibold text-brand hover:underline"

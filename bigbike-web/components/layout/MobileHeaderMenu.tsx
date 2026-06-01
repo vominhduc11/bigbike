@@ -16,6 +16,7 @@ import {
 } from "@/lib/utils/routes";
 import { isActivePath, normalizeMenuUrl } from "@/lib/utils/nav";
 import { cn } from "@/lib/utils";
+import { parsePhones, parseShopHours } from "@/lib/utils/shop";
 
 type MobileHeaderMenuProps = {
   menuTree: HeaderNavNode[];
@@ -191,11 +192,8 @@ export function MobileHeaderMenu({
     t("shopInfoDefaultHoursLine2"),
     t("shopInfoDefaultHoursLine3"),
   ].join("\n");
-  const hoursLines = (hours.trim() || defaultHours)
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
-  const phones = [hotline, hotline2].map((phone) => phone.trim()).filter(Boolean);
+  const hoursLines = parseShopHours(hours, defaultHours);
+  const phones = parsePhones(hotline, hotline2);
 
   useEffect(() => {
     if (!open) return;

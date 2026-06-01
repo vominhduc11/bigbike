@@ -6,6 +6,7 @@ import { getPublicMenu, listPublicSettings } from "@/lib/api/public-api";
 import { flattenPublicMenuTree, buildPublicMenuTree } from "@/lib/utils/public-menu";
 import { normalizeMenuUrl } from "@/lib/utils/nav";
 import { pickSetting } from "@/lib/utils/settings";
+import { telHref } from "@/lib/utils/format";
 import { BctBadge } from "./BctBadge";
 import { FooterCollapsible } from "./FooterCollapsible";
 import { ScrollToTopButton } from "./ScrollToTopButton";
@@ -31,10 +32,6 @@ type SocialLink = {
 };
 
 const FOOTER_MENU_LOCATION = "footer";
-
-function telHref(value: string): string {
-  return value.replace(/[^\d+]/g, "");
-}
 
 function splitHeading(value: string): string[] {
   return value
@@ -230,7 +227,7 @@ export async function SiteFooter() {
                   const isEmail = item.icon === "email";
                   const href = isEmail
                     ? `mailto:${item.hrefValue}`
-                    : `tel:${telHref(item.hrefValue)}`;
+                    : telHref(item.hrefValue);
 
                   return (
                     <a

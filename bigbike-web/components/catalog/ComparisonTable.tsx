@@ -7,7 +7,8 @@ import { useCompare } from "@/lib/compare-context";
 import { useCart } from "@/lib/cart-context";
 import { MediaImage } from "@/components/ui/MediaImage";
 import { RatingStars } from "@/components/ui/RatingStars";
-import { formatVnd, safeText } from "@/lib/utils/format";
+import { formatVnd, safeText, stockStateLabelWithT } from "@/lib/utils/format";
+import { derivePricing } from "@/lib/pricing";
 import { toProductPath } from "@/lib/utils/routes";
 import type { Product } from "@/lib/contracts/public";
 
@@ -16,12 +17,10 @@ type ComparisonTableProps = {
 };
 
 function priceOf(p: Product): { current: number; compare: number | null } {
-  const retail = p.price?.retailPrice ?? 0;
-  const sale = p.price?.salePrice && p.price.salePrice > 0 ? p.price.salePrice : null;
-  const compareAt =
-    p.price?.compareAtPrice && p.price.compareAtPrice > 0 ? p.price.compareAtPrice : null;
-  const current = sale ?? retail;
-  return { current, compare: compareAt && compareAt > current ? compareAt : null };
+  // Reuse the shared derivation; the table only shows the compare ("was") price
+  // when it beats the current price, so gate it here.
+  const { current, compare } = derivePricing(p.price);
+  return { current, compare: compare && compare > current ? compare : null };
 }
 
 /** Distinct variant option values per attribute name (e.g. Màu sắc → [Đỏ, Đen]). */
@@ -44,15 +43,6 @@ export function ComparisonTable({ products }: ComparisonTableProps) {
   const tProduct = useTranslations("Product");
   const { remove } = useCompare();
   const { addToCart, showToast } = useCart();
-
-  function stockLabelT(stockState: string | null | undefined): string {
-    switch (stockState) {
-      case "IN_STOCK": return tProduct("stockState.IN_STOCK");
-      case "LOW_STOCK": return tProduct("stockState.LOW_STOCK");
-      case "OUT_OF_STOCK": return tProduct("stockState.OUT_OF_STOCK");
-      default: return tProduct("stockState.UNKNOWN");
-    }
-  }
 
   // ── Union of specification rows across every product, clustered by group ──
   const specKeys: { group: string | null; name: string }[] = [];
@@ -194,7 +184,7 @@ export function ComparisonTable({ products }: ComparisonTableProps) {
             ),
           )}
           {criterionRow(t("stockRow"), (p) =>
-            stockLabelT(p.forceOutOfStock ? "OUT_OF_STOCK" : p.stockState),
+            stockStateLabelWithT(p.forceOutOfStock ? "OUT_OF_STOCK" : p.stockState, tProduct),
           )}
           {criterionRow(t("optionsRow"), (p) => {
             const groups = optionsSummary(p);

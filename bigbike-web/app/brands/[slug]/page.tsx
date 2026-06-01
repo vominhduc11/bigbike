@@ -10,6 +10,11 @@ import { PRODUCT_SORT_VALUES, getBrandBySlug, listBrands, listCategories, listPr
 import { readDefaultHeroAssets } from "@/lib/utils/page-hero";
 import { buildCatalogTitle } from "@/lib/utils/catalog";
 import {
+  DEFAULT_PRODUCT_PAGE_SIZE as DEFAULT_PAGE_SIZE,
+  DEFAULT_PRODUCT_SORT as DEFAULT_SORT,
+  PRICE_PARAM_MAX,
+} from "@/lib/constants/catalog";
+import {
   DEFAULT_WP_ORDERBY,
   isWpOrderbyValue,
   productSortToWpOrderby,
@@ -33,8 +38,6 @@ import { toBrandListPath, toBrandPath, toHomePath } from "@/lib/utils/routes";
 import { isValidSlug } from "@/lib/utils/slug";
 
 export const dynamic = "force-dynamic";
-const DEFAULT_SORT = "createdAt:desc";
-const DEFAULT_PAGE_SIZE = 24;
 
 export async function generateStaticParams() {
   const result = await listBrands({ page: 1, size: 1000, sort: "name:asc" });
@@ -125,12 +128,12 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
   const colorParsed = parseSlugParam(query.filter_color, "filter_color");
   const minPriceParsed = parseOptionalPositiveIntParam(query.min_price, {
     min: 0,
-    max: 1_000_000_000,
+    max: PRICE_PARAM_MAX,
     field: "min_price",
   });
   const maxPriceParsed = parseOptionalPositiveIntParam(query.max_price, {
     min: 0,
-    max: 1_000_000_000,
+    max: PRICE_PARAM_MAX,
     field: "max_price",
   });
   const orderbyParam = readSingleSearchParam(query.orderby);

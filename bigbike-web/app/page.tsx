@@ -40,9 +40,11 @@ import {
   isSafePublicHref,
   resolveMediaUrl,
   safeText,
+  toLegacyWpMediaUrl,
   toSafePublicHref,
 } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
+import { stripHtmlToText } from "@/lib/utils/text";
 import { pickSetting } from "@/lib/utils/settings";
 import {
   toArticlePath,
@@ -56,11 +58,6 @@ export const dynamic = "force-dynamic";
 
 const HOME_ORG_LOGO = "/wp/logo.png";
 const DEFAULT_SITE_NAME = "BigBike";
-
-function toLegacyWpMediaUrl(src: string | null | undefined): string | null {
-  if (!src) return null;
-  return src.startsWith("/wp-content/") ? `https://bigbike.vn${src}` : src;
-}
 
 export async function generateMetadata(): Promise<Metadata> {
   const settingsResult = await listPublicSettings();
@@ -220,19 +217,6 @@ function PromoBanner({
       </div>
     </div>
   );
-}
-
-function stripHtmlToText(html: string): string {
-  return html
-    .replace(/<[^>]*>/g, " ")
-    .replace(/&nbsp;|&#160;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/\s+/g, " ")
-    .trim();
 }
 
 function truncateWpExcerpt(text: string, maxLength = 120): string {

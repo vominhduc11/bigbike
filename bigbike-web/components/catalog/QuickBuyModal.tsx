@@ -28,15 +28,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-
-// UUID v4 helper — minimal, no dep
-function uuid4(): string {
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
-  });
-}
+import { cn, generateId } from "@/lib/utils";
+import { formatVnd } from "@/lib/utils/format";
 
 export type QuickBuyModalProps = {
   open: boolean;
@@ -67,9 +60,9 @@ export function QuickBuyModal({
   const [shippingMethods, setShippingMethods] = useState<ShippingMethodOption[]>([]);
 
   // Idempotency key — regenerated each time modal opens
-  const idempotencyKeyRef = useRef<string>(uuid4());
+  const idempotencyKeyRef = useRef<string>(generateId());
   useEffect(() => {
-    if (open) idempotencyKeyRef.current = uuid4();
+    if (open) idempotencyKeyRef.current = generateId();
   }, [open]);
 
   const form = useForm<QuickBuyFormValues>({
@@ -195,7 +188,7 @@ export function QuickBuyModal({
             )}
             {unitPrice != null && unitPrice > 0 && (
               <p className="text-sm font-semibold text-brand">
-                {unitPrice.toLocaleString("vi-VN")}₫
+                {formatVnd(unitPrice)}
               </p>
             )}
           </div>
@@ -409,7 +402,7 @@ export function QuickBuyModal({
                 <div className="flex justify-between px-3 py-2 border-b border-border">
                   <span className="text-muted-foreground">{tQb("summarySubtotal")}</span>
                   <span className="font-medium tabular-nums">
-                    {(unitPrice * quantity).toLocaleString("vi-VN")}₫
+                    {formatVnd(unitPrice * quantity)}
                   </span>
                 </div>
                 <div className="flex justify-between px-3 py-2 border-b border-border">
@@ -421,7 +414,7 @@ export function QuickBuyModal({
                         ? <span className="text-muted-foreground text-xs">{tQb("summaryShippingUnknown")}</span>
                         : shippingEstimate.isFree
                           ? tQb("summaryShippingFree")
-                          : `${shippingEstimate.cost.toLocaleString("vi-VN")}₫`
+                          : formatVnd(shippingEstimate.cost)
                     }
                   </span>
                 </div>
@@ -429,8 +422,8 @@ export function QuickBuyModal({
                   <span>{tQb("summaryTotal")}</span>
                   <span className="tabular-nums text-brand">
                     {shippingEstimate != null
-                      ? `${(unitPrice * quantity + shippingEstimate.cost).toLocaleString("vi-VN")}₫`
-                      : `${(unitPrice * quantity).toLocaleString("vi-VN")}₫`
+                      ? formatVnd(unitPrice * quantity + shippingEstimate.cost)
+                      : formatVnd(unitPrice * quantity)
                     }
                     {shippingEstimate == null && province && (
                       <span className="text-xs font-normal text-muted-foreground ml-1">+ {tQb("summaryShippingUnknown")}</span>

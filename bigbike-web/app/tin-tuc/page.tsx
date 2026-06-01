@@ -15,6 +15,9 @@ import {
   readSingleSearchParam,
 } from "@/lib/utils/query";
 import { toArticleListPath, toArticlePath, toHomePath } from "@/lib/utils/routes";
+import { safeText } from "@/lib/utils/format";
+import { stripHtmlTags } from "@/lib/utils/text";
+import { makeSlugThumbnailFallback, resolveWpUploadUrl } from "@/lib/utils/wp-media";
 import { WpArticleImage } from "./WpArticleImage";
 
 type ArticleListPageProps = {
@@ -23,10 +26,6 @@ type ArticleListPageProps = {
 
 const DEFAULT_PAGE_SIZE = 12;
 const ROOT_CATEGORY_SLUG = "tin-tuc";
-const BIGBIKE_UPLOADS_BASE = "https://bigbike.vn/wp-content/uploads/";
-const LEGACY_CDN_PREFIX = "https://cdn.bigbike.vn/uploads/";
-const WP_UPLOADS_PATH = "/wp-content/uploads/";
-const MINIO_UPLOADS_SUBPATH = "/wp-uploads/";
 const WP_EXCERPT_WORDS = 20;
 
 export async function generateMetadata({ searchParams }: ArticleListPageProps): Promise<Metadata> {
@@ -237,7 +236,7 @@ function WpCategoryWidget({ categories }: { categories: ContentCategoryWithCount
 }
 
 function WpArticleCard({ article }: { article: Article }) {
-  const title = textOrFallback(article.title, "Bài viết");
+  const title = safeText(article.title, "Bài viết");
   const excerpt = makeExcerpt(article);
   const publishedAt = formatWpDate(article.publishedAt ?? article.createdAt);
   const imageUrl = (article.coverImage ?? article.productImage)?.url;
@@ -382,7 +381,7 @@ function buildWpPageItems(page: number, totalPages: number): Array<number | "dot
 
 function makeExcerpt(article: Article): string {
   const source = article.excerpt ?? article.body;
-  const plain = stripHtml(source).replace(/\s+/g, " ").trim();
+  const plain = stripHtmlTags(source).replace(/\s+/g, " ").trim();
 
   if (!plain) {
     return "";
@@ -394,15 +393,6 @@ function makeExcerpt(article: Article): string {
   }
 
   return `${words.slice(0, WP_EXCERPT_WORDS).join(" ")}…`;
-}
-
-function stripHtml(value: string | null | undefined): string {
-  return (value ?? "").replace(/<[^>]*>/g, "");
-}
-
-function textOrFallback(value: string | null | undefined, fallback: string): string {
-  const trimmed = value?.trim();
-  return trimmed ? trimmed : fallback;
 }
 
 function formatWpDate(value: string | null | undefined): string {
@@ -418,55 +408,3 @@ function formatWpDate(value: string | null | undefined): string {
   return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
 }
 
-function resolveWpUploadUrl(value: string | null | undefined): string | null {
-  const raw = value?.trim();
-  if (!raw) {
-    return null;
-  }
-
-  if (raw.startsWith(LEGACY_CDN_PREFIX)) {
-    return normalizeKnownWpUploadUrl(`${BIGBIKE_UPLOADS_BASE}${raw.slice(LEGACY_CDN_PREFIX.length)}`);
-  }
-
-  if (raw.startsWith(WP_UPLOADS_PATH)) {
-    return normalizeKnownWpUploadUrl(`https://bigbike.vn${raw}`);
-  }
-
-  if (/^https:\/\/(?:www\.)?bigbike\.vn\/wp-content\/uploads\//.test(raw)) {
-    return normalizeKnownWpUploadUrl(raw);
-  }
-
-  if (raw.startsWith("http") && raw.includes(MINIO_UPLOADS_SUBPATH)) {
-    const idx = raw.indexOf(MINIO_UPLOADS_SUBPATH);
-    return normalizeKnownWpUploadUrl(`${BIGBIKE_UPLOADS_BASE}${raw.slice(idx + MINIO_UPLOADS_SUBPATH.length)}`);
-  }
-
-  return raw;
-}
-
-function normalizeKnownWpUploadUrl(url: string): string {
-  return url.replace(
-    "/wp-content/uploads/2026/03/shop-mu-bao-hiem-gan-day-thumbnail.jpg",
-    "/wp-content/uploads/2026/03/shop-non-bao-hiem-gan-day-thumbnail.jpg",
-  );
-}
-
-function makeSlugThumbnailFallback(value: string | null | undefined, slug: string): string | null {
-  const resolved = resolveWpUploadUrl(value);
-  if (!resolved || !slug) {
-    return null;
-  }
-
-  const match = resolved.match(/^(https:\/\/bigbike\.vn\/wp-content\/uploads\/\d{4}\/\d{2}\/)([^/?#]+)(\.[a-z0-9]+)([?#].*)?$/i);
-  if (!match) {
-    return null;
-  }
-
-  const [, basePath, fileName, extension] = match;
-  const fallbackName = `${slug}-thumbnail`;
-  if (fileName === fallbackName) {
-    return null;
-  }
-
-  return `${basePath}${fallbackName}${extension}`;
-}

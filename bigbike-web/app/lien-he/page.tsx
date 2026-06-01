@@ -9,7 +9,7 @@ import { ContactInfoList } from "@/components/ui/ContactInfoList";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { getPageBySlug, listPublicSettings } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
-import { safeText } from "@/lib/utils/format";
+import { safeText, telHref } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import { toHomePath, toPagePath } from "@/lib/utils/routes";
 import { pickSetting } from "@/lib/utils/settings";
@@ -79,7 +79,6 @@ export default async function ContactPage() {
   const hasPhoneAsset = publicAsset(PHONE_ASSET) !== null;
   const localHeroBg = HERO_BG_CANDIDATES.map(publicAsset).find(Boolean) ?? null;
   const heroImageUrl = page.heroImageUrl?.trim() || localHeroBg || undefined;
-  const tel = (v: string) => `tel:${v.replace(/[^\d+]/g, "")}`;
   const sanitizedBody = page.body ? sanitizeRichHtml(page.body) : "";
 
   return (
@@ -105,8 +104,8 @@ export default async function ContactPage() {
             />
           ) : null}
 
-          <div className="grid grid-cols-1 items-start gap-10 pb-[60px] pt-8 lg:grid-cols-2 lg:gap-[60px]">
-            <div className="min-w-0">
+          <div className="grid grid-cols-1 items-start gap-10 pb-[60px] pt-8 lg:grid-cols-2 lg:gap-[60px] 3xl:gap-20 4xl:gap-[100px]">
+            <div className="min-w-0 2xl:max-w-[640px] 4xl:max-w-[760px]">
               <h2 className="bb-section-heading mb-6">
                 {t("contactInfoHeading")}
               </h2>
@@ -132,14 +131,14 @@ export default async function ContactPage() {
                           <>
                             {hotline ? (
                               <p className="leading-relaxed text-muted-foreground">
-                                <a href={tel(hotline)} className="bb-link">
+                                <a href={telHref(hotline)} className="bb-link">
                                   {hotline}
                                 </a>
                               </p>
                             ) : null}
                             {hotline2 ? (
                               <p className="leading-relaxed text-muted-foreground">
-                                <a href={tel(hotline2)} className="bb-link">
+                                <a href={telHref(hotline2)} className="bb-link">
                                   {hotline2}
                                 </a>
                               </p>
@@ -190,7 +189,7 @@ export default async function ContactPage() {
                   {t("storeSystemHeading")}
                 </h2>
                 {mapEmbedSrc ? (
-                  <div className="relative h-[420px] w-full border border-border bg-secondary">
+                  <div className="relative h-[420px] w-full border border-border bg-secondary 3xl:h-[520px] 4xl:h-[600px]">
                     <iframe
                       title={t("mapTitle")}
                       src={mapEmbedSrc}
@@ -202,7 +201,7 @@ export default async function ContactPage() {
                       allowFullScreen
                     />
                     {(address || hotline) ? (
-                      <div className="absolute bottom-4 left-4 right-4 border border-border bg-white p-4 sm:right-auto sm:max-w-[300px]">
+                      <div className="absolute bottom-4 left-4 right-4 border border-border bg-white p-4 sm:right-auto sm:max-w-[300px] 3xl:max-w-[360px]">
                         <div className="flex items-center gap-3">
                           <Image
                             src="/brand/logo-primary.png"
@@ -223,7 +222,7 @@ export default async function ContactPage() {
                         {hotline ? (
                           <p className="mt-1 text-caption text-muted-foreground">
                             {t("hotline")}:{" "}
-                            <a href={tel(hotline)} className="bb-link">
+                            <a href={telHref(hotline)} className="bb-link">
                               {hotline}
                             </a>
                           </p>

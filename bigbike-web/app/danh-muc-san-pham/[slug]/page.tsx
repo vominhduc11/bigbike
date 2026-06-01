@@ -17,6 +17,11 @@ import {
 import { readDefaultHeroAssets } from "@/lib/utils/page-hero";
 import { buildCatalogTitle } from "@/lib/utils/catalog";
 import {
+  DEFAULT_PRODUCT_PAGE_SIZE as DEFAULT_PAGE_SIZE,
+  DEFAULT_PRODUCT_SORT as DEFAULT_SORT,
+  PRICE_PARAM_MAX,
+} from "@/lib/constants/catalog";
+import {
   DEFAULT_WP_ORDERBY,
   isWpOrderbyValue,
   productSortToWpOrderby,
@@ -46,9 +51,6 @@ export async function generateStaticParams() {
   const result = await listCategories({ page: 1, size: 100 });
   return (result.data ?? []).map((c) => ({ slug: c.slug }));
 }
-
-const DEFAULT_SORT = "createdAt:desc";
-const DEFAULT_PAGE_SIZE = 24;
 
 async function getCategoryByRouteSlug(slug: string, locale: string) {
   const result = await getCategoryBySlug(slug, locale);
@@ -154,12 +156,12 @@ export default async function CategoryDetailPage({
   const colorParsed = parseSlugParam(pageParams.filter_color, "filter_color");
   const minPriceParsed = parseOptionalPositiveIntParam(pageParams.min_price, {
     min: 0,
-    max: 1_000_000_000,
+    max: PRICE_PARAM_MAX,
     field: "min_price",
   });
   const maxPriceParsed = parseOptionalPositiveIntParam(pageParams.max_price, {
     min: 0,
-    max: 1_000_000_000,
+    max: PRICE_PARAM_MAX,
     field: "max_price",
   });
   const orderbyParam = readSingleSearchParam(pageParams.orderby);

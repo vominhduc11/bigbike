@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, type ReactElement } from "react";
 import { createPortal } from "react-dom";
+import { telHref } from "@/lib/utils/format";
 
 type FloatingChatProps = {
   hotline?: string;
@@ -231,11 +232,12 @@ export function FloatingChat({ hotline, zaloUrl, messengerUrl }: Readonly<Floati
   const items: ContactItem[] = [];
 
   if (hotline) {
-    const tel = hotline.replace(/[^\d+]/g, "");
-    if (tel) {
+    const tel = telHref(hotline);
+    // telHref keeps only digits/"+"; an empty result is just "tel:" — skip it.
+    if (tel !== "tel:") {
       items.push({
         key: "hotline",
-        href: `tel:${tel}`,
+        href: tel,
         label: "Hotline",
         value: hotline,
         icon: <IconHotline />,

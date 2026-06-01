@@ -1,29 +1,20 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { safeStorage } from "@/lib/utils/storage";
 
 const STORAGE_KEY = "bb_recent_searches";
 const MAX_ITEMS = 8;
 
 function loadFromStorage(): string[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed: unknown = JSON.parse(raw);
-    return Array.isArray(parsed)
-      ? parsed.filter((s): s is string => typeof s === "string")
-      : [];
-  } catch {
-    return [];
-  }
+  const parsed = safeStorage.get<unknown>(STORAGE_KEY, []);
+  return Array.isArray(parsed)
+    ? parsed.filter((s): s is string => typeof s === "string")
+    : [];
 }
 
 function saveToStorage(searches: string[]): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(searches));
-  } catch {
-    // localStorage unavailable (private mode, quota exceeded)
-  }
+  safeStorage.set(STORAGE_KEY, searches);
 }
 
 export function useRecentSearches() {

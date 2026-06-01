@@ -15,6 +15,8 @@ import {
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { safeText } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
+import { stripHtmlTags } from "@/lib/utils/text";
+import { makeSlugThumbnailFallback, resolveWpUploadUrl } from "@/lib/utils/wp-media";
 import { readDefaultHeroAssets, readHeroSettings } from "@/lib/utils/page-hero";
 import { pickSetting } from "@/lib/utils/settings";
 import {
@@ -30,10 +32,6 @@ import { ArticleTableOfContents } from "./ArticleTableOfContents";
 // Locale is read from a cookie (next-intl) - opt into dynamic rendering.
 export const dynamic = "force-dynamic";
 
-const BIGBIKE_UPLOADS_BASE = "https://bigbike.vn/wp-content/uploads/";
-const LEGACY_CDN_PREFIX = "https://cdn.bigbike.vn/uploads/";
-const WP_UPLOADS_PATH = "/wp-content/uploads/";
-const MINIO_UPLOADS_SUBPATH = "/wp-uploads/";
 const WP_TIME_ZONE = "Asia/Ho_Chi_Minh";
 const ARTICLE_DETAIL_THUMBNAIL =
   "https://bigbike.vn/wp-content/themes/bigbike/images/85f3273578840b12abf6a48a6e8c5bd1.png";
@@ -323,7 +321,7 @@ function excludeArticle(articles: Article[], currentSlug: string): Article[] {
 }
 
 function getArticleCategoryLabel(article: Article): string {
-  return textOrFallback(article.category?.name ?? article.categories?.[0]?.name, "Tin tức");
+  return safeText(article.category?.name ?? article.categories?.[0]?.name, "Tin tức");
 }
 
 function getArticleCategoryHref(article: Article): string {
@@ -341,22 +339,13 @@ function getArticleDate(article: Article): string | null | undefined {
 
 function makeExcerpt(article: Article, maxLength: number): string {
   const source = article.excerpt ?? article.body;
-  const plain = stripHtml(source).replace(/\s+/g, " ").trim();
+  const plain = stripHtmlTags(source).replace(/\s+/g, " ").trim();
 
   if (!plain) {
     return "";
   }
 
   return plain.length > maxLength ? `${plain.slice(0, Math.max(0, maxLength - 3)).trim()}...` : plain;
-}
-
-function stripHtml(value: string | null | undefined): string {
-  return (value ?? "").replace(/<[^>]*>/g, "");
-}
-
-function textOrFallback(value: string | null | undefined, fallback: string): string {
-  const trimmed = value?.trim();
-  return trimmed ? trimmed : fallback;
 }
 
 function formatWpLongDate(value: string | null | undefined): string {
@@ -405,55 +394,3 @@ function resolveArticleImageUrl(article: Article): string | null {
   return resolveWpUploadUrl(article.coverImage?.url ?? article.productImage?.url);
 }
 
-function resolveWpUploadUrl(value: string | null | undefined): string | null {
-  const raw = value?.trim();
-  if (!raw) {
-    return null;
-  }
-
-  if (raw.startsWith(LEGACY_CDN_PREFIX)) {
-    return normalizeKnownWpUploadUrl(`${BIGBIKE_UPLOADS_BASE}${raw.slice(LEGACY_CDN_PREFIX.length)}`);
-  }
-
-  if (raw.startsWith(WP_UPLOADS_PATH)) {
-    return normalizeKnownWpUploadUrl(`https://bigbike.vn${raw}`);
-  }
-
-  if (/^https:\/\/(?:www\.)?bigbike\.vn\/wp-content\/uploads\//.test(raw)) {
-    return normalizeKnownWpUploadUrl(raw);
-  }
-
-  if (raw.startsWith("http") && raw.includes(MINIO_UPLOADS_SUBPATH)) {
-    const idx = raw.indexOf(MINIO_UPLOADS_SUBPATH);
-    return normalizeKnownWpUploadUrl(`${BIGBIKE_UPLOADS_BASE}${raw.slice(idx + MINIO_UPLOADS_SUBPATH.length)}`);
-  }
-
-  return raw;
-}
-
-function normalizeKnownWpUploadUrl(url: string): string {
-  return url.replace(
-    "/wp-content/uploads/2026/03/shop-mu-bao-hiem-gan-day-thumbnail.jpg",
-    "/wp-content/uploads/2026/03/shop-non-bao-hiem-gan-day-thumbnail.jpg",
-  );
-}
-
-function makeSlugThumbnailFallback(value: string | null | undefined, slug: string): string | null {
-  const resolved = resolveWpUploadUrl(value);
-  if (!resolved || !slug) {
-    return null;
-  }
-
-  const match = resolved.match(/^(https:\/\/bigbike\.vn\/wp-content\/uploads\/\d{4}\/\d{2}\/)([^/?#]+)(\.[a-z0-9]+)([?#].*)?$/i);
-  if (!match) {
-    return null;
-  }
-
-  const [, basePath, fileName, extension] = match;
-  const fallbackName = `${slug}-thumbnail`;
-  if (fileName === fallbackName) {
-    return null;
-  }
-
-  return `${basePath}${fallbackName}${extension}`;
-}

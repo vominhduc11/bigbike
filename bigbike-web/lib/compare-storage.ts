@@ -6,6 +6,8 @@
  * deduped by id, every read/write wrapped so storage errors never throw.
  */
 
+import { safeStorage } from "@/lib/utils/storage";
+
 const KEY = "bb_compare";
 export const COMPARE_MAX = 3;
 
@@ -22,22 +24,10 @@ export type CompareProduct = {
 };
 
 export function getCompareProducts(): CompareProduct[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as CompareProduct[];
-    return Array.isArray(parsed) ? parsed.slice(0, COMPARE_MAX) : [];
-  } catch {
-    return [];
-  }
+  const parsed = safeStorage.get<CompareProduct[]>(KEY, []);
+  return Array.isArray(parsed) ? parsed.slice(0, COMPARE_MAX) : [];
 }
 
 export function saveCompareProducts(list: CompareProduct[]): void {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(KEY, JSON.stringify(list.slice(0, COMPARE_MAX)));
-  } catch {
-    // ignore storage errors (private mode, quota, …)
-  }
+  safeStorage.set(KEY, list.slice(0, COMPARE_MAX));
 }

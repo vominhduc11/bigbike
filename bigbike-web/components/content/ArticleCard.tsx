@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { Article } from "@/lib/contracts/public";
 import { formatDate } from "@/lib/utils/format";
+import { stripHtmlToText } from "@/lib/utils/text";
 import { toArticlePath } from "@/lib/utils/routes";
 import { MediaImage } from "@/components/ui/MediaImage";
 
@@ -11,19 +12,6 @@ type ArticleCardProps = {
   article: Article;
   variant?: "default" | "featured";
 };
-
-function stripHtmlToText(html: string): string {
-  return html
-    .replace(/<[^>]*>/g, " ")
-    .replace(/&nbsp;|&#160;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/\s+/g, " ")
-    .trim();
-}
 
 function truncateText(text: string, maxLength = 160): string {
   if (text.length <= maxLength) return text;

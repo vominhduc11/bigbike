@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { applyCoupon, fetchCart, removeCoupon, removeCartItem, updateCartItem } from "@/lib/api/client-api";
 import type { Cart, CartItem } from "@/lib/contracts/commerce";
-import { pushDataLayer } from "@/lib/analytics";
+import { pushDataLayer, toGtmCartItems } from "@/lib/analytics";
 import { formatVnd } from "@/lib/utils/format";
 import { toProductListPath, toCheckoutPath } from "@/lib/utils/routes";
 import { MediaImage } from "@/components/ui/MediaImage";
@@ -34,16 +34,6 @@ const COPY = {
   removeItem: "Xóa sản phẩm",
   removeCoupon: "Xóa mã",
 };
-
-function toGtmCartItems(items: CartItem[]) {
-  return items.map((item) => ({
-    item_id: item.productId ?? item.sku ?? item.id,
-    item_name: item.productName,
-    price: item.unitPrice,
-    quantity: item.quantity,
-    currency: "VND",
-  }));
-}
 
 function cartToDrafts(cart: Cart): Record<string, number> {
   return Object.fromEntries(cart.items.map((item) => [item.id, item.quantity]));

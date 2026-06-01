@@ -6,7 +6,14 @@ import Link from "next/link";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import type { Product } from "@/lib/contracts/public";
-import { formatVnd, resolveMediaUrl, safeText } from "@/lib/utils/format";
+import {
+  formatVnd,
+  resolveMediaUrl,
+  safeText,
+  stockStateLabelWithT,
+  toLegacyWpMediaUrl,
+} from "@/lib/utils/format";
+import { derivePricing } from "@/lib/pricing";
 import { toProductPath } from "@/lib/utils/routes";
 import { MediaImage } from "@/components/ui/MediaImage";
 import { ProductCardAddBar } from "@/components/catalog/ProductCardAddBar";
@@ -19,62 +26,23 @@ type ProductCardProps = {
   variant?: "compact" | "featured" | "tile" | "archive" | "related";
 };
 
-function computePricing(product: Product) {
-  const retail = product.price?.retailPrice ?? 0;
-  const sale =
-    product.price?.salePrice && product.price.salePrice > 0
-      ? product.price.salePrice
-      : null;
-  const compare =
-    product.price?.compareAtPrice && product.price.compareAtPrice > 0
-      ? product.price.compareAtPrice
-      : null;
-  const current = sale ?? retail;
-  const isSale = Boolean((sale && sale < retail) || (compare && compare > current));
-  const reference = compare ?? retail;
-  const discountPercent =
-    sale && reference > sale
-      ? Math.round(((reference - sale) / reference) * 100)
-      : compare && compare > current
-        ? Math.round(((compare - current) / compare) * 100)
-        : null;
-  return { retail, sale, compare, current, isSale, discountPercent };
-}
-
-type StockLabels = {
-  IN_STOCK: string;
-  LOW_STOCK: string;
-  OUT_OF_STOCK: string;
-  UNKNOWN: string;
-};
-
-function mapStockState(state: Product["stockState"], labels: StockLabels) {
+function stockBadgeClassName(state: Product["stockState"]): string {
   switch (state) {
-    case "IN_STOCK":     return { label: labels.IN_STOCK,     className: "bb-stock-in" };
-    case "LOW_STOCK":    return { label: labels.LOW_STOCK,    className: "bb-stock-low" };
-    case "OUT_OF_STOCK": return { label: labels.OUT_OF_STOCK, className: "bb-stock-out" };
-    default:             return { label: labels.UNKNOWN,      className: "bb-stock-out" };
+    case "IN_STOCK":     return "bb-stock-in";
+    case "LOW_STOCK":    return "bb-stock-low";
+    case "OUT_OF_STOCK": return "bb-stock-out";
+    default:             return "bb-stock-out";
   }
-}
-
-function toLegacyWpMediaUrl(src: string | null | undefined): string | null {
-  if (!src) return null;
-  return src.startsWith("/wp-content/") ? `https://bigbike.vn${src}` : src;
 }
 
 export function ProductCard({ product, variant = "compact" }: ProductCardProps) {
   const tProduct = useTranslations("Product");
   const tCommon = useTranslations("Common");
-  const stockLabels: StockLabels = {
-    IN_STOCK: tProduct("stockState.IN_STOCK"),
-    LOW_STOCK: tProduct("stockState.LOW_STOCK"),
-    OUT_OF_STOCK: tProduct("stockState.OUT_OF_STOCK"),
-    UNKNOWN: tProduct("stockState.UNKNOWN"),
-  };
   const name = safeText(product.name, tProduct("nameFallback"));
   const href = toProductPath(product.slug);
-  const { retail, sale, current, compare, isSale, discountPercent } = computePricing(product);
-  const { label: stockLabel, className: stockClass } = mapStockState(product.stockState, stockLabels);
+  const { retail, sale, current, compare, isSale, discountPercent } = derivePricing(product.price);
+  const stockLabel = stockStateLabelWithT(product.stockState, tProduct);
+  const stockClass = stockBadgeClassName(product.stockState);
 
   // Featured variant: homepage carousel, matching WP #main-product-slide classes.
   if (variant === "featured") {

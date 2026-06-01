@@ -13,6 +13,11 @@ import {
 } from "@/lib/api/public-api";
 import { buildCatalogTitle } from "@/lib/utils/catalog";
 import {
+  DEFAULT_PRODUCT_PAGE_SIZE as DEFAULT_PAGE_SIZE,
+  DEFAULT_PRODUCT_SORT as DEFAULT_SORT,
+  PRICE_PARAM_MAX,
+} from "@/lib/constants/catalog";
+import {
   DEFAULT_WP_ORDERBY,
   isWpOrderbyValue,
   productSortToWpOrderby,
@@ -36,10 +41,6 @@ import {
 type ProductListPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
-
-const DEFAULT_PAGE_SIZE = 24;
-const DEFAULT_SORT = "createdAt:desc";
-const PRICE_PARAM_MAX = 1_000_000_000;
 
 export async function generateMetadata({ searchParams }: ProductListPageProps): Promise<Metadata> {
   const params = await searchParams;

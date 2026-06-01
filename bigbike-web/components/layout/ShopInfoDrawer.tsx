@@ -6,6 +6,7 @@ import { Clock3, MapPin, Phone, X } from "lucide-react";
 import { useHeaderUi } from "@/components/layout/HeaderUiContext";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { parsePhones, parseShopHours } from "@/lib/utils/shop";
 
 type ShopInfoDrawerProps = {
   siteName: string;
@@ -55,11 +56,8 @@ export function ShopInfoDrawer({
     t("shopInfoDefaultHoursLine2"),
     t("shopInfoDefaultHoursLine3"),
   ].join("\n");
-  const hoursLines = (hours.trim() || defaultHours)
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
-  const phones = [hotline, hotline2].map((phone) => phone.trim()).filter(Boolean);
+  const hoursLines = parseShopHours(hours, defaultHours);
+  const phones = parsePhones(hotline, hotline2);
 
   return (
     <>

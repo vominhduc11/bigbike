@@ -10,15 +10,22 @@ export function safeArray<T>(value: T[] | null | undefined): T[] {
   return Array.isArray(value) ? value : [];
 }
 
+/**
+ * Format a VND amount as a grouped number string WITHOUT any currency suffix
+ * (e.g. 1000000 -> "1.000.000"). Use where the surrounding text supplies its
+ * own unit — e.g. SEO titles that append a literal " dong".
+ */
+export function formatVndNumber(value: number): string {
+  return new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(value);
+}
+
 export function formatVnd(value: number | null | undefined): string {
   const safeValue = typeof value === "number" && Number.isFinite(value) ? value : null;
   if (safeValue === null) {
     return "—";
   }
 
-  return new Intl.NumberFormat("vi-VN", {
-    maximumFractionDigits: 0,
-  }).format(safeValue) + " đ";
+  return formatVndNumber(safeValue) + " đ";
 }
 
 const LEGACY_CDN_PREFIX = "https://cdn.bigbike.vn/uploads/";
@@ -48,6 +55,17 @@ export function resolveMediaUrl(url: string | null | undefined): string | null |
     return WP_UPLOADS_PROXY + url.slice(idx + MINIO_UPLOADS_SUBPATH.length);
   }
   return url;
+}
+
+/**
+ * Re-attach the absolute BigBike origin to a same-origin `/wp-content/` path.
+ * Complements {@link resolveMediaUrl} (which strips the origin down to a
+ * same-origin path); the two are composed at call sites as
+ * `toLegacyWpMediaUrl(resolveMediaUrl(src))`. Falsy input collapses to null.
+ */
+export function toLegacyWpMediaUrl(src: string | null | undefined): string | null {
+  if (!src) return null;
+  return src.startsWith("/wp-content/") ? `${PUBLIC_BASE_URL}${src}` : src;
 }
 
 function trimToNull(value: string | null | undefined): string | null {
@@ -170,6 +188,22 @@ export function formatAddress(parts: (string | null | undefined)[]): string {
 export function isValidVnPhone(phone: string): boolean {
   // Re-uses the same regex as checkoutAddressSchema (supports both local 0x and +84x forms)
   return /^(0[3-9][0-9]{8}|\+84[3-9][0-9]{8})$/.test(phone.trim());
+}
+
+/** Build a `tel:` href from a raw phone string, keeping only digits and "+". */
+export function telHref(value: string): string {
+  return `tel:${value.replace(/[^\d+]/g, "")}`;
+}
+
+/**
+ * Build a Zalo link from a raw value: pass through a full http(s) URL unchanged,
+ * otherwise build `https://zalo.me/<digits>`; falls back to the raw value when
+ * the input has no digits.
+ */
+export function zaloHref(value: string): string {
+  if (/^https?:\/\//i.test(value)) return value;
+  const digits = value.replace(/[^\d]/g, "");
+  return digits ? `https://zalo.me/${digits}` : value;
 }
 
 export function paymentStatusLabel(status: string | null | undefined): string {

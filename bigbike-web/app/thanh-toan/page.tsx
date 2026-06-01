@@ -11,14 +11,13 @@ import { submitCheckout } from "@/lib/api/client-api";
 import { useCart } from "@/lib/cart-context";
 import { useAddresses, useCartQuery, useCheckoutOptions, useProfile } from "@/lib/query/hooks";
 import type {
-  CartItem,
   CustomerAddress,
   PaymentMethodOption,
   PriceChange,
   ShippingMethodOption,
 } from "@/lib/contracts/commerce";
 import { createCheckoutAddressSchema, type CheckoutAddressFormValues } from "@/lib/schemas/checkout";
-import { pushDataLayer } from "@/lib/analytics";
+import { pushDataLayer, toGtmCartItems } from "@/lib/analytics";
 import { formatAddress, formatVnd } from "@/lib/utils/format";
 import { toCartPath, toOrderConfirmPath } from "@/lib/utils/routes";
 import { VnAddressFields } from "@/components/ui/VnAddressFields";
@@ -27,16 +26,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { getVietnamRegion } from "@/lib/utils/vn-region";
-
-function toGtmCartItems(items: CartItem[]) {
-  return items.map((item) => ({
-    item_id: item.productId ?? item.sku ?? item.id,
-    item_name: item.productName,
-    price: item.unitPrice,
-    quantity: item.quantity,
-    currency: "VND",
-  }));
-}
 
 function pickDefaultAddress(addresses: CustomerAddress[] | undefined): CustomerAddress | null {
   if (!addresses?.length) return null;

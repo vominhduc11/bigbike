@@ -1,3 +1,5 @@
+import { formatVndNumber } from "@/lib/utils/format";
+
 type CatalogFilterSummary = {
   brandName?: string | null;
   minPrice?: number | null;
@@ -6,8 +8,10 @@ type CatalogFilterSummary = {
   page?: number | null;
 };
 
+// Suffix-less VND number for SEO titles — buildCatalogTitle appends its own
+// unaccented " dong" unit, so this must NOT carry a currency symbol.
 function formatMoney(value: number): string {
-  return new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(value);
+  return formatVndNumber(value);
 }
 
 export function buildCatalogTitle(baseTitle: string, filters: CatalogFilterSummary = {}): string {
