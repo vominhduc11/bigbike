@@ -86,6 +86,7 @@ function WelcomeHero({ title, watermark, illustration, imageUrl, defaultBgUrl }:
         {/* Watermark mờ + headline, đặt ~1/3 trên để chừa chỗ cho ảnh cut-out. */}
         <div className="absolute left-1/2 top-[100px] -translate-x-1/2 px-4 text-center md:top-[143px] 3xl:top-[170px] 4xl:top-[200px]">
           {watermark ? (
+            {/* bespoke: decorative watermark, no canonical token at 64–200px scale */}
             <span
               aria-hidden="true"
               className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 select-none whitespace-nowrap font-display font-bold uppercase leading-none tracking-wide text-white/[0.07] text-[clamp(64px,19vw,200px)]"

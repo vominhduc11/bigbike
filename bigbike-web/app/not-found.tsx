@@ -30,10 +30,11 @@ export default async function NotFoundPage() {
         <div className="max-w-[720px] mx-auto pt-10 pb-20 flex flex-col gap-7">
           <div className="flex justify-center select-none" aria-hidden="true">
             <div className="relative">
-              <span className="font-display font-bold text-[clamp(7rem,22vw,14rem)] leading-none tracking-tighter text-foreground/[0.07] select-none">
+              {/* bespoke: display-only ghost text, no token at this scale */}
+              <span className="font-display font-bold text-[clamp(7rem,22vw,14rem)] leading-none tracking-normal text-foreground/[0.07] select-none">
                 404
               </span>
-              <span className="absolute inset-0 flex items-center justify-center font-display font-bold text-display-xl leading-none tracking-tight text-brand">
+              <span className="absolute inset-0 flex items-center justify-center font-display font-bold text-display-xl leading-none tracking-normal text-brand">
                 404
               </span>
             </div>
