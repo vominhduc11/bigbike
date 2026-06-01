@@ -89,7 +89,7 @@ function SectionCard({ title, badge, required, children }) {
           {title}
           {required && (
             <span
-              className="ml-1 text-[var(--admin-color-brand-red)]"
+              className="ml-1 text-[var(--admin-color-status-danger-text)]"
               aria-label="bắt buộc"
               title="Bắt buộc"
             >*</span>
