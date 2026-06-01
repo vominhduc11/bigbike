@@ -627,8 +627,8 @@ a {
 }
 
 .lang-btn.active {
-  background: var(--admin-color-brand-red);
-  color: var(--admin-color-text-inverse);
+  background: var(--admin-color-primary);
+  color: var(--admin-color-on-primary);
 }
 
 /* ─── Page content ───────────────────────────────────────────────────────────*/
@@ -690,7 +690,7 @@ a {
   letter-spacing: 0.1em;
   font-size: 0.67rem;
   font-weight: 600;
-  color: var(--admin-color-brand-red);
+  color: var(--admin-color-primary);
 }
 
 /* ─── Banners ────────────────────────────────────────────────────────────────*/
@@ -1070,7 +1070,7 @@ a {
 }
 
 .rich-editor-content .tiptap blockquote {
-  border-left: 3px solid var(--admin-color-brand-red);
+  border-left: 3px solid var(--admin-color-primary);
   padding-left: 1em;
   color: var(--admin-color-text-secondary);
   margin: 0.75em 0;
@@ -1117,13 +1117,13 @@ a {
 }
 
 .rich-editor-content .tiptap a {
-  color: var(--admin-color-brand-red);
+  color: var(--admin-color-primary);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
 .rich-editor-content .tiptap a:hover {
-  color: var(--admin-color-brand-red-hover);
+  color: var(--admin-color-primary-hover);
 }
 
 .rich-editor-content .tiptap u {
@@ -1143,7 +1143,7 @@ a {
 }
 
 .rich-editor-content .tiptap .rte-image.ProseMirror-selectednode {
-  border-color: var(--admin-color-brand-red);
+  border-color: var(--admin-color-primary);
   outline: none;
 }
 
