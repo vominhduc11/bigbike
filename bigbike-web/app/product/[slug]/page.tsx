@@ -11,6 +11,7 @@ import { MobilePdpAnchorNav } from "@/components/catalog/MobilePdpAnchorNav";
 import { MobileStickyPurchaseBar } from "@/components/catalog/MobileStickyPurchaseBar";
 import { AnalyticsView } from "@/components/analytics/AnalyticsView";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { getProductBySlug, listProducts, listPublicSettings } from "@/lib/api/public-api";
 import {
@@ -156,63 +157,76 @@ export default async function ProductDetailPage({
     id: string;
     label: string;
     content: ReactNode;
-  }[] = [];
-
-  if (richHasContent(sanitizedDescription)) {
-    sections.push({
+  }[] = [
+    {
       id: "tab-description",
       label: tProduct("tabs.description"),
-      content: (
+      content: richHasContent(sanitizedDescription) ? (
         <article
           className="bb-richtext"
           dangerouslySetInnerHTML={{ __html: sanitizedDescription }}
         />
+      ) : (
+        <EmptyState
+          title={tProduct("tabsEmpty.descriptionTitle")}
+          description={tProduct("tabsEmpty.descriptionDesc")}
+        />
       ),
-    });
-  }
-
-  if (videos.length > 0) {
-    sections.push({
+    },
+    {
       id: "tab-videos",
       label: "Videos",
-      content: <ProductVideosTab videos={videos} />,
-    });
-  }
-
-  if (specs.length > 0) {
-    sections.push({
+      content:
+        videos.length > 0 ? (
+          <ProductVideosTab videos={videos} />
+        ) : (
+          <EmptyState
+            title={tProduct("tabsEmpty.videosTitle")}
+            description={tProduct("tabsEmpty.videosDesc")}
+          />
+        ),
+    },
+    {
       id: "tab-more_infomation",
       label: tProduct("tabs.specs"),
-      content: <ProductSpecTable specifications={specs} />,
-    });
-  }
-
-  if (faqs.length > 0) {
-    sections.push({
+      content:
+        specs.length > 0 ? (
+          <ProductSpecTable specifications={specs} />
+        ) : (
+          <EmptyState
+            title={tProduct("tabsEmpty.specsTitle")}
+            description={tProduct("tabsEmpty.specsDesc")}
+          />
+        ),
+    },
+    {
       id: "tab-faq",
       label: tProduct("faqs"),
-      content: (
-        <div className="bb-pdp-faq-list">
-          {faqs.map((faq, index) => (
-            <details key={index} className="bb-pdp-faq-item">
-              <summary className="bb-pdp-faq-q">{faq.question}</summary>
-              <div className="bb-pdp-faq-a">{faq.answer}</div>
-            </details>
-          ))}
-        </div>
-      ),
-    });
-  }
+      content:
+        faqs.length > 0 ? (
+          <div className="bb-pdp-faq-list">
+            {faqs.map((faq, index) => (
+              <details key={index} className="bb-pdp-faq-item">
+                <summary className="bb-pdp-faq-q">{faq.question}</summary>
+                <div className="bb-pdp-faq-a">{faq.answer}</div>
+              </details>
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            title={tProduct("tabsEmpty.faqsTitle")}
+            description={tProduct("tabsEmpty.faqsDesc")}
+          />
+        ),
+    },
+  ];
 
   const anchorItems = [
-    ...(richHasContent(sanitizedDescription)
-      ? [{ id: "tab-description", label: "Mô tả" }]
-      : []),
-    ...(videos.length > 0 ? [{ id: "tab-videos", label: "Videos" }] : []),
-    ...(specs.length > 0
-      ? [{ id: "tab-more_infomation", label: "Thông số" }]
-      : []),
-    ...(faqs.length > 0 ? [{ id: "tab-faq", label: tProduct("faqs") }] : []),
+    { id: "pdp-overview", label: "Tổng quan" },
+    { id: "tab-description", label: "Mô tả" },
+    { id: "tab-videos", label: "Videos" },
+    { id: "tab-more_infomation", label: "Thông số" },
+    { id: "tab-faq", label: tProduct("faqs") },
   ];
 
   return (
@@ -246,7 +260,7 @@ export default async function ProductDetailPage({
           ]}
         />
 
-        <div className="bb-wp-pdp-layout">
+        <div id="pdp-overview" className="bb-wp-pdp-layout">
           <PurchaseSectionClient
             productId={product.id}
             productSlug={product.slug}

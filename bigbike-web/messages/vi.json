@@ -157,6 +157,16 @@
       "reviewsEmpty": "Đánh giá khách hàng",
       "reviewsWithCount": "Đánh giá ({count})"
     },
+    "tabsEmpty": {
+      "descriptionTitle": "Chưa có mô tả",
+      "descriptionDesc": "Sản phẩm này chưa có mô tả chi tiết.",
+      "videosTitle": "Chưa có video",
+      "videosDesc": "Sản phẩm này chưa có video giới thiệu.",
+      "specsTitle": "Chưa có thông số",
+      "specsDesc": "Sản phẩm này chưa cập nhật thông số kỹ thuật.",
+      "faqsTitle": "Chưa có câu hỏi",
+      "faqsDesc": "Sản phẩm này chưa có câu hỏi thường gặp."
+    },
     "related": {
       "kicker": "SẢN PHẨM LIÊN QUAN",
       "heading": "Khám phá thêm sản phẩm khác"

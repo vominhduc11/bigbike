@@ -157,6 +157,16 @@
       "reviewsEmpty": "Customer reviews",
       "reviewsWithCount": "Reviews ({count})"
     },
+    "tabsEmpty": {
+      "descriptionTitle": "No description",
+      "descriptionDesc": "This product has no detailed description yet.",
+      "videosTitle": "No videos",
+      "videosDesc": "This product has no introduction videos yet.",
+      "specsTitle": "No specifications",
+      "specsDesc": "This product has no specifications yet.",
+      "faqsTitle": "No FAQs",
+      "faqsDesc": "This product has no frequently asked questions yet."
+    },
     "related": {
       "kicker": "RELATED PRODUCTS",
       "heading": "Explore more products"
