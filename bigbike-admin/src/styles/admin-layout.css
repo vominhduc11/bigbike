@@ -952,7 +952,7 @@ button.summary-card:focus-visible {
   top: 6px;
   bottom: 6px;
   width: 3px;
-  background: var(--admin-color-brand-red);
+  background: var(--admin-color-primary);
   border-radius: 0 var(--admin-radius-sm) var(--admin-radius-sm) 0;
 }
 
