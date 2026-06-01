@@ -19,10 +19,10 @@ export function ProductFaqSection({ faqs }: { faqs: ProductFaq[] }) {
     <Accordion type="single" collapsible className="border-t border-border">
       {faqs.map((faq, index) => (
         <AccordionItem key={index} value={`faq-${index}`}>
-          <AccordionTrigger className="text-left text-sm normal-case sm:text-base">
+          <AccordionTrigger className="text-left text-body normal-case">
             {faq.question}
           </AccordionTrigger>
-          <AccordionContent className="whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
+          <AccordionContent className="whitespace-pre-line text-body leading-relaxed text-muted-foreground">
             {faq.answer}
           </AccordionContent>
         </AccordionItem>

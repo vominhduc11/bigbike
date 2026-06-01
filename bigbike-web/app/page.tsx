@@ -46,8 +46,7 @@ import { sanitizeRichHtml } from "@/lib/utils/html";
 import { pickSetting } from "@/lib/utils/settings";
 import {
   toArticlePath,
-  toBrandListPath,
-  toCategoryPath,
+toCategoryPath,
   toHomePath,
   toProductListPath,
   toProductPath,
@@ -427,7 +426,7 @@ export default async function HomePage() {
           <div className="container">
             {(aboutSubtitle || aboutTitle) && (
               <div className="block-title text-center mb-40">
-                {aboutSubtitle ? <p className="sub-title">{aboutSubtitle}</p> : null}
+                {aboutSubtitle ? <p className="bb-kicker">{aboutSubtitle}</p> : null}
                 {aboutTitle ? <h2>{aboutTitle}</h2> : null}
               </div>
             )}
@@ -502,7 +501,7 @@ export default async function HomePage() {
             <div className="mx-auto w-full max-w-[var(--bb-container-xl)] px-[15px]">
               <div className="bb-experience-header text-center">
                 {expSubtitle ? (
-                  <p className="bb-experience-kicker">
+                  <p className="bb-kicker">
                     {expSubtitle}
                   </p>
                 ) : null}
@@ -532,7 +531,7 @@ export default async function HomePage() {
         <div className="news pt-60 bb-home-news-parity">
           <div className="container">
             <div className="block-title text-center pb-40">
-              <p className="sub-title">Tin tức & cập nhật</p>
+              <p className="bb-kicker">Tin tức & cập nhật</p>
               <h2>Cập nhật xu hướng cùng BigBike</h2>
             </div>
             <div className="news-list">
@@ -576,7 +575,7 @@ export default async function HomePage() {
 
       {brandsResult.data.length > 0 && (
         <div className="partner-slide pt-120 pb-120">
-          <BrandCarousel brands={brandsResult.data} viewAllHref={toBrandListPath()} />
+          <BrandCarousel brands={brandsResult.data} />
         </div>
       )}
 

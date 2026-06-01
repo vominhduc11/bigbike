@@ -27,7 +27,7 @@ export function MobileTrustSignals() {
             <div className="flex h-9 w-9 shrink-0 items-center justify-center bg-brand-soft text-brand">
               <Icon size={18} />
             </div>
-            <div className="font-cta text-sm font-semibold uppercase leading-[1.15] text-foreground">
+            <div className="font-cta text-sm font-semibold uppercase leading-heading text-foreground">
               {title}
             </div>
             <div className="text-xs leading-tight text-muted-foreground">{sub}</div>

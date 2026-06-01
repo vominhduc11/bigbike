@@ -231,7 +231,7 @@ export function ProductCard({ product, variant = "compact" }: ProductCardProps) 
           className="absolute inset-0 z-[2]"
         />
         <div className="relative z-[1] flex h-full flex-col px-10 pt-10 pb-8 pr-[40%] max-[900px]:px-8 max-[900px]:pt-8 max-[900px]:pr-[38%] max-[600px]:min-h-[320px] max-[600px]:px-6 max-[600px]:pt-6 max-[600px]:pr-[36%]">
-          <h3 className="font-heading text-[18px] font-semibold uppercase leading-[1.08] text-foreground">
+          <h3 className="font-heading text-lg font-semibold uppercase leading-display text-foreground">
             {name}
           </h3>
           <span className="mt-14 inline-flex w-fit font-heading text-17 font-semibold uppercase leading-none text-brand max-[600px]:mt-10">

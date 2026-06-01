@@ -73,7 +73,7 @@ export default async function HowToBuyPage() {
               className="bb-richtext"
               dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(page.body) }}
             />
-            <p className="text-muted-foreground text-sm text-right mb-10">
+            <p className="text-muted-foreground text-caption text-right mb-10">
               {t("updatedAt", { date: formatDate(page.updatedAt) })}
             </p>
           </div>

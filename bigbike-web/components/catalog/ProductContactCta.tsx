@@ -33,14 +33,14 @@ export function ProductContactCta({
 
   return (
     <section className="border border-border border-t-2 border-t-brand bg-muted/40 px-6 py-8 text-center">
-      <p className="font-display text-lg uppercase tracking-tight text-foreground sm:text-xl">
+      <p className="font-display text-h4 uppercase tracking-wide text-foreground">
         {t.rich("headline", {
           productName,
           siteName,
           brand: (chunks) => <span className="text-brand">{chunks}</span>,
         })}
       </p>
-      <div className="mt-3 flex flex-col items-center gap-1.5 text-sm text-muted-foreground">
+      <div className="mt-3 flex flex-col items-center gap-1.5 text-caption text-muted-foreground">
         {address && (
           <p className="flex items-center gap-2">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-brand" aria-hidden="true">

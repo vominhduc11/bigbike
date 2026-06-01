@@ -12,10 +12,11 @@
 }
 
 /* Section heading: WP uses Barlow Condensed 3.571rem/4.286rem — at our 16px root that's ~57px.
-   We target 44px to match screenshot proportions without the oversized poster look. */
+   Single clamp (TYPOGRAPHY §6 "một token = một clamp()"): 28px@375 → 56px@2560,
+   fluid mobile→3xl/4xl thay cho các override @media (đã gỡ). */
 body .bb-home .bb-home-news-parity .block-title h2 {
   font-family: var(--bb-font-cta, "Barlow Condensed", sans-serif);
-  font-size: 44px;
+  font-size: clamp(1.75rem, 1.45rem + 1.281vw, 3.5rem);
   line-height: 1.15;
   font-weight: 600;
   letter-spacing: 0;
@@ -103,9 +104,9 @@ body .bb-home .bb-home-news-parity .block-title h2 {
 .bb-home .bb-home-news-parity .news--item-inside .title-post {
   margin: 0 0 5px;
   font-family: var(--bb-font-heading, "Barlow Condensed", sans-serif);
-  font-size: 20px;
+  font-size: clamp(1.25rem, 1.229rem + 0.092vw, 1.375rem); /* 20→22@2560 */
   font-weight: 600;
-  line-height: 24px;
+  line-height: var(--bb-line-snug);
   letter-spacing: 0;
   text-transform: none;
   color: var(--bb-text-primary);
@@ -121,20 +122,17 @@ body .bb-home .bb-home-news-parity .block-title h2 {
   color: var(--bb-text-brand);
 }
 
-/* ── Card excerpt: WP 1rem/1.25rem ── */
+/* ── Card excerpt: body text fluid (TYPOGRAPHY §8 — đã token hóa, không còn px cứng). ── */
 .bb-home .bb-home-news-parity .news--item-inside p:not(.title-post) {
   margin: 0;
-  font-size: 16px;
-  line-height: 20px;
+  font-size: var(--fs-body);
+  line-height: var(--bb-line-body);
   color: var(--bb-text-primary);
 }
 
 /* ── Responsive: tablet 768–991px ── */
 @media (min-width: 768px) and (max-width: 991px) {
-  body .bb-home .bb-home-news-parity .block-title h2 {
-    font-size: 34px;
-  }
-
+  /* h2 font-size: dùng clamp đơn (đã gỡ override @media — TYPOGRAPHY §6). */
   .bb-home .bb-home-news-parity .news-list .news--item-thumbnail a img {
     height: 200px;
   }
@@ -150,10 +148,7 @@ body .bb-home .bb-home-news-parity .block-title h2 {
     width: min(100% - calc(var(--bb-page-padding-desktop) * 2), 100rem);
   }
 
-  body .bb-home .bb-home-news-parity .block-title h2 {
-    font-size: 50px;
-  }
-
+  /* h2 font-size: clamp đơn tự scale (đã gỡ override @media). */
   .bb-home .bb-home-news-parity .news-list .news--item-thumbnail a img {
     height: 290px;
   }
@@ -168,24 +163,16 @@ body .bb-home .bb-home-news-parity .block-title h2 {
     width: min(100% - calc(var(--bb-page-padding-desktop) * 2), 140rem);
   }
 
-  body .bb-home .bb-home-news-parity .block-title h2 {
-    font-size: 56px;
-  }
-
+  /* h2 + title-post font-size: clamp đơn tự scale tới 2560px (đã gỡ override @media). */
   .bb-home .bb-home-news-parity .news-list .news--item-thumbnail a img {
     height: 400px;
-  }
-
-  .bb-home .bb-home-news-parity .news--item-inside .title-post {
-    font-size: 22px;
-    line-height: 28px;
   }
 }
 
 /* ── Responsive: mobile < 768px ── */
 @media (max-width: 767px) {
+  /* font-size theo clamp đơn; chỉ nới line-height nhẹ cho dấu tiếng Việt UPPERCASE (§7). */
   body .bb-home .bb-home-news-parity .block-title h2 {
-    font-size: 28px;
     line-height: 1.2;
   }
 
@@ -238,6 +225,5 @@ body .bb-home .bb-home-news-parity .block-title h2 {
     overflow: hidden;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
-    line-height: 1.45;
   }
 }

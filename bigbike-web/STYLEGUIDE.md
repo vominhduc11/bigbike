@@ -90,11 +90,11 @@ Superfamily **Barlow**: Barlow Condensed cho mọi display/heading/nav/CTA/label
 | H2 | Barlow Condensed | 24→40px (`--fs-h2`) | 600 (700 nhấn) | 1.2 |
 | H3–H6 | Barlow Condensed | 20→30px (`--fs-h3`); richtext h3–h6 giữ 18px (`--bb-text-h3`) | 600 | 1.2 |
 | Section title | Barlow Condensed | 30→50px (`--bb-text-section-title`) | 600 | 1.2 |
-| Body | Barlow | 16→18px (`--fs-body`) | 400 | 1.6 |
-| Button / CTA | Barlow Condensed | 15→16px | 600 | 1.2 |
+| Body | Barlow | 16→22px (`--fs-body`) | 400 | 1.6 |
+| Button / CTA | Barlow Condensed | 15→18px | 600 | 1.2 |
 | Nav | Barlow Condensed | 17px | 600 | 1 |
-| Link (body) | Barlow | 16→18px | 400 | 1.6 |
-| Meta / badge | Barlow Condensed | 12→13px | 600 | 1.4 |
+| Link (body) | Barlow | 16→22px | 400 | 1.6 |
+| Meta / badge | Barlow Condensed | 12→14px | 600 | 1.4 |
 | News title | Barlow Condensed | 20px (`--bb-text-news-title`) | 600 | 1.2 |
 | Price | Barlow Condensed | 16px | 600 | 1.5 |
 | Footer slogan | Barlow Condensed | 46→54.86px | 500 | 1.2 |

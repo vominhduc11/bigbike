@@ -73,14 +73,14 @@ Gắn biến vào `<html>` trong `app/layout.tsx`:
 
 ### Size — fluid clamp (`--fs-*`), `styles/brand-tokens.css`
 
-**Một token = một `clamp()`**, khai báo một lần. Content/UI chốt trần ~1440px; Display/Heading scale tới 2560px.
+**Một token = một `clamp()`**, khai báo một lần. Anchor 375px (sàn) → 2560px (trần): Content/UI **scale tới 2560px** (trước đây chốt ~1440px khiến body/caption quá nhỏ trên màn 3xl/4xl showroom); Display/Heading cũng tới 2560px.
 
 ```css
---fs-overline:   clamp(0.75rem, 0.728rem + 0.094vw, 0.8125rem);
---fs-caption:    clamp(0.875rem, 0.853rem + 0.094vw, 0.9375rem);
---fs-button:     clamp(0.9375rem, 0.916rem + 0.094vw, 1rem);
---fs-body:       clamp(1rem, 0.956rem + 0.188vw, 1.125rem);
---fs-body-lg:    clamp(1.125rem, 1.081rem + 0.188vw, 1.25rem);
+--fs-overline:   clamp(0.75rem, 0.729rem + 0.092vw, 0.875rem);     /* 12→14 */
+--fs-caption:    clamp(0.875rem, 0.843rem + 0.137vw, 1.0625rem);   /* 14→17 */
+--fs-button:     clamp(0.9375rem, 0.905rem + 0.137vw, 1.125rem);   /* 15→18 */
+--fs-body:       clamp(1rem, 0.936rem + 0.275vw, 1.375rem);        /* 16→22 */
+--fs-body-lg:    clamp(1.125rem, 1.061rem + 0.275vw, 1.5rem);      /* 18→24 */
 --fs-h4:         clamp(1.125rem, 1.061rem + 0.275vw, 1.5rem);
 --fs-h3:         clamp(1.25rem, 1.143rem + 0.458vw, 1.875rem);
 --fs-h2:         clamp(1.5rem, 1.328rem + 0.732vw, 2.5rem);
@@ -128,11 +128,11 @@ Dùng: `text-display`, `text-h1`…`text-h4`, `text-body`, `text-button`, `text-
 | `h2` | 24 | 40 | 1.15 | — | Condensed | 700 | UPPER | Tiêu đề section |
 | `h3` | 20 | 30 | 1.2 | — | Condensed | 600 | UPPER | Tên sản phẩm, card title |
 | `h4` | 18 | 24 | 1.25 | — | Condensed | 600 | UPPER | Sub-heading |
-| `body-lg` | 18 | 20 | 1.6 | — | Barlow | 400 | none | Lead, mô tả nổi bật |
-| `body` | 16 | 18 | 1.6 | — | Barlow | 400 | none | Văn bản chính, **form input** |
-| `button` | 15 | 16 | 1.2 | 0.01em | Condensed | 600 | UPPER | Nút, CTA |
-| `caption` | 14 | 15 | 1.4 | — | Barlow | 400 | none | Chú thích, meta, giá phụ |
-| `overline` | 12 | 13 | 1.4 | 0.06em | Condensed | 600 | UPPER | Badge, eyebrow, label nhỏ |
+| `body-lg` | 18 | 24 | 1.6 | — | Barlow | 400 | none | Lead, mô tả nổi bật |
+| `body` | 16 | 22 | 1.6 | — | Barlow | 400 | none | Văn bản chính, **form input** |
+| `button` | 15 | 18 | 1.2 | 0.01em | Condensed | 600 | UPPER | Nút, CTA |
+| `caption` | 14 | 17 | 1.4 | — | Barlow | 400 | none | Chú thích, meta, giá phụ |
+| `overline` | 12 | 14 | 1.4 | 0.06em | Condensed | 600 | UPPER | Badge, eyebrow, label nhỏ |
 
 ---
 
@@ -182,8 +182,8 @@ Ngoại lệ cố ý giữ `vw` thuần — **chữ trang trí** (không phải 
 - **body** (`--fs-body`): seo-content p/ul, blog body text, no-results, hero subtitle, wp-tabs content, about paragraph, content-bottom prose, article-detail body.
 - **heading** (`--fs-h1…h4`): seo-content + content-bottom h1–h6, checkout section title, related-products title, và **tiêu đề product/category/slide** (product-name, fp-title, archive-product-title, home-category-title, category item-title, videos-slide desc, exp-slide-title).
 
-Còn lại (~195 px) **GIỮ NGUYÊN có chủ đích**: nhãn/kicker/badge/button/CTA uppercase, giá, rating, breadcrumb, input, icon, số, avatar initials, related-product title (compact 14px), và override px theo breakpoint. Size px trong `home-news-parity.css` giữ theo WP-parity.
+Còn lại (~195 px) **GIỮ NGUYÊN có chủ đích**: nhãn/kicker/badge/button/CTA uppercase, giá, rating, breadcrumb, input, icon, số, avatar initials, related-product title (compact 14px), và override px theo breakpoint. Trong `home-news-parity.css`: section heading (`.block-title h2`), card title (`.title-post`) và excerpt đã **token-hóa sang single `clamp()`/`--fs-body`** (gỡ override `font-size` theo @media 768/1920/2560/mobile, đúng §6); chỉ còn `.news-date p` (badge UPPERCASE) giữ px theo WP-parity.
 
 ---
 
-*Source of truth typography cho bigbike-web. Anchor: 375px (sàn) · 1440px (trần content) · 2560px (trần display). Root 16px.*
+*Source of truth typography cho bigbike-web. Anchor: 375px (sàn) · 2560px (trần — cả content lẫn display, để chữ không quá nhỏ trên màn 3xl/4xl). Root 16px.*

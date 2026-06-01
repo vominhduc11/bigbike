@@ -20,13 +20,13 @@ function AccountDashboardContent() {
   return (
     <>
       <AccountSectionHeading title={tNav("dashboard")} />
-      <p className="mb-4 text-sm leading-relaxed text-foreground">
+      <p className="mb-4 text-body leading-relaxed text-foreground">
         {t.rich("dashboardGreeting", {
           name: displayName,
           strong: (chunks) => <strong>{chunks}</strong>,
         })}
       </p>
-      <p className="mb-6 text-sm leading-relaxed text-foreground">
+      <p className="mb-6 text-body leading-relaxed text-foreground">
         {t.rich("dashboardIntro", {
           orders: (chunks) => (
             <Link href="/tai-khoan/don-hang/" className="bb-link font-normal">

@@ -169,16 +169,17 @@ export function FeaturedProductsScreen({ canUpdate }) {
   const [initialized, setInitialized] = useState(false)
   const [activeId, setActiveId] = useState(null)
 
-  const { isLoading, isError, error } = useQuery({
+  const { isLoading, isError, error, data: blocksData } = useQuery({
     queryKey: ['homepage-blocks'],
     queryFn: fetchHomepageBlocks,
-    onSuccess(data) {
-      if (!initialized) {
-        setItems(data.featuredGrid ?? [])
-        setInitialized(true)
-      }
-    },
   })
+
+  useEffect(() => {
+    if (blocksData && !initialized) {
+      setItems(blocksData.featuredGrid ?? [])
+      setInitialized(true)
+    }
+  }, [blocksData, initialized])
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),

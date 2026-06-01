@@ -2190,7 +2190,7 @@ export async function fetchHomepageBlocks() {
     query: { homepageBlock: 'FEATURED_GRID', size: 20, sort: 'homepageOrder:asc' },
   })
   return {
-    featuredGrid: (payload?.items ?? payload?.data?.items ?? []).map(normalizeProduct),
+    featuredGrid: (Array.isArray(payload?.data) ? payload.data : (payload?.items ?? [])).map(normalizeProduct),
   }
 }
 

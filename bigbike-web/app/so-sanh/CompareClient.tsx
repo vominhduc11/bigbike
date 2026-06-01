@@ -36,10 +36,10 @@ export function CompareClient() {
     <section className="bb-page bb-compare-page">
       <div className="bb-container pb-28">
         <header className="mb-6">
-          <p className="font-heading text-xs font-semibold uppercase tracking-display text-brand">
+          <p className="bb-kicker">
             {t("kicker")}
           </p>
-          <h1 className="font-display text-26 font-semibold uppercase text-foreground">
+          <h1 className="bb-section-heading">
             {t("heading")}
           </h1>
           <p className="mt-1 text-muted-foreground">

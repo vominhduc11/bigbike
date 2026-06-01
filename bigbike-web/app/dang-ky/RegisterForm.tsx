@@ -44,7 +44,7 @@ export function RegisterForm({ returnTo = toAccountPath() }: { returnTo?: string
   if (registered) {
     return (
       <div className="text-center">
-        <h2 className="mb-3 text-base font-semibold normal-case">{t("successHeading")}</h2>
+        <h2 className="bb-auth-heading mb-3">{t("successHeading")}</h2>
         {confirmedEmail && (
           <p className="bb-auth-footer mb-5">
             {t.rich("successDescription", {
@@ -56,7 +56,7 @@ export function RegisterForm({ returnTo = toAccountPath() }: { returnTo?: string
         <Button
           type="button"
           variant="primary"
-          className="h-[52px] w-full py-0 text-sm hover:not-disabled:scale-100"
+          size="auth"
           onClick={() => router.push(returnTo)}
         >
           {t("successCta")}
@@ -82,7 +82,7 @@ export function RegisterForm({ returnTo = toAccountPath() }: { returnTo?: string
             id="reg-fullName"
             autoComplete="name"
             placeholder={t("fullNamePlaceholder")}
-            className="h-[52px] min-h-[52px] px-5 py-0 text-sm"
+            className="bb-auth-input"
             {...register("fullName")}
           />
           {errors.fullName && <p className="text-sm text-destructive">{errors.fullName.message}</p>}
@@ -97,7 +97,7 @@ export function RegisterForm({ returnTo = toAccountPath() }: { returnTo?: string
             type="email"
             autoComplete="email"
             placeholder={t("emailPlaceholder")}
-            className="h-[52px] min-h-[52px] px-5 py-0 text-sm"
+            className="bb-auth-input"
             {...register("email")}
           />
           {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
@@ -112,7 +112,7 @@ export function RegisterForm({ returnTo = toAccountPath() }: { returnTo?: string
             type="tel"
             autoComplete="tel"
             placeholder={t("phonePlaceholder")}
-            className="h-[52px] min-h-[52px] px-5 py-0 text-sm"
+            className="bb-auth-input"
             {...register("phone")}
           />
           {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
@@ -127,7 +127,7 @@ export function RegisterForm({ returnTo = toAccountPath() }: { returnTo?: string
             type="password"
             autoComplete="new-password"
             placeholder={t("passwordPlaceholder")}
-            className="h-[52px] min-h-[52px] px-5 py-0 text-sm"
+            className="bb-auth-input"
             {...register("password")}
           />
           {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
@@ -142,7 +142,7 @@ export function RegisterForm({ returnTo = toAccountPath() }: { returnTo?: string
             type="password"
             autoComplete="new-password"
             placeholder={t("confirmPlaceholder")}
-            className="h-[52px] min-h-[52px] px-5 py-0 text-sm"
+            className="bb-auth-input"
             {...register("confirm")}
           />
           {errors.confirm && <p className="text-sm text-destructive">{errors.confirm.message}</p>}
@@ -151,7 +151,7 @@ export function RegisterForm({ returnTo = toAccountPath() }: { returnTo?: string
         <Button
           type="submit"
           variant="primary"
-          className="h-[52px] w-full py-0 text-sm hover:not-disabled:scale-100"
+          size="auth"
           disabled={isSubmitting}
         >
           {isSubmitting ? t("submitting") : t("submit")}

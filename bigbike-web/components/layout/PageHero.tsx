@@ -93,7 +93,7 @@ function WelcomeHero({ title, watermark, illustration, imageUrl, defaultBgUrl }:
               {watermark}
             </span>
           ) : null}
-          <h1 className="relative m-0 font-display text-xl font-bold uppercase leading-tight tracking-wide text-white [text-shadow:0_2px_14px_rgba(0,0,0,0.7)] sm:text-3xl lg:text-5xl">
+          <h1 className="relative m-0 font-display text-h1 font-bold uppercase leading-display tracking-wide text-white [text-shadow:0_2px_14px_rgba(0,0,0,0.7)]">
             {title}
           </h1>
         </div>

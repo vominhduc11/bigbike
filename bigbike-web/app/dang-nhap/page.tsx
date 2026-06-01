@@ -27,8 +27,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       <div className="bb-container">
         <div className="bb-auth-wrap">
           <div className="mb-5">
-            <h1 className="mb-2 text-base font-semibold normal-case">Đăng nhập</h1>
-            <p className="m-0 text-sm text-foreground">
+            <h1 className="bb-auth-heading mb-2">Đăng nhập</h1>
+            <p className="m-0 text-body text-foreground">
               Đăng ký thành viên mới tại{" "}
               <Link href="/dang-ky/" className="bb-link font-normal">
                 đây

@@ -165,10 +165,10 @@ export default async function AboutPage() {
         <div className="bb-container">
           <div className="grid grid-cols-1 items-start gap-6 pb-10 lg:grid-cols-[4fr_5fr_3fr] lg:gap-[30px] xl:gap-[48px] 2xl:gap-[60px]">
             <div>
-              <h3 className="mb-4 font-display text-26 font-semibold uppercase text-foreground">
+              <h3 className="bb-section-heading mb-4">
                 {t("aboutBigbike")}
               </h3>
-              <p className="m-0 text-base leading-snug text-muted-foreground">
+              <p className="m-0 text-body leading-snug text-muted-foreground">
                 {t("aboutSubtitle")}
               </p>
             </div>
@@ -211,10 +211,10 @@ export default async function AboutPage() {
 
           <div className="grid grid-cols-1 items-start gap-[30px] py-[60px] lg:grid-cols-[4fr_8fr] xl:gap-[48px] xl:py-[80px] 2xl:py-[100px]">
             <div>
-              <h3 className="mb-4 font-display text-26 font-semibold uppercase leading-tight text-foreground">
+              <h3 className="bb-section-heading mb-4 leading-tight">
                 {t("aboutQualityTitle")}
               </h3>
-              <p className="m-0 text-base leading-relaxed text-muted-foreground">
+              <p className="m-0 text-body leading-relaxed text-muted-foreground">
                 {t("aboutQualityBody")}
               </p>
             </div>
@@ -235,7 +235,7 @@ export default async function AboutPage() {
 
           {(address || hotline || hotline2 || facebookUrl) ? (
             <div className="py-10">
-              <h3 className="mb-3 font-display text-26 font-semibold uppercase text-foreground">
+              <h3 className="bb-section-heading mb-3">
                 {t("aboutConnectTitle")}
               </h3>
               <p className="mb-2 text-muted-foreground">{t("aboutConnectBody1")}</p>
@@ -248,7 +248,7 @@ export default async function AboutPage() {
                         icon: <Store className="h-[22px] w-[22px]" strokeWidth={1.5} />,
                         label: t("mainStore"),
                         content: (
-                          <p className="m-0 text-sm leading-snug text-muted-foreground">
+                          <p className="m-0 text-caption leading-snug text-muted-foreground">
                             {address}
                           </p>
                         ),
@@ -261,7 +261,7 @@ export default async function AboutPage() {
                         content: (
                           <>
                             {hotline ? (
-                              <p className="m-0 text-sm leading-snug text-muted-foreground">
+                              <p className="m-0 text-caption leading-snug text-muted-foreground">
                                 <a
                                   href={`tel:${hotline.replace(/[^\d+]/g, "")}`}
                                   className="bb-link"
@@ -271,7 +271,7 @@ export default async function AboutPage() {
                               </p>
                             ) : null}
                             {hotline2 ? (
-                              <p className="m-0 text-sm leading-snug text-muted-foreground">
+                              <p className="m-0 text-caption leading-snug text-muted-foreground">
                                 <a
                                   href={`tel:${hotline2.replace(/[^\d+]/g, "")}`}
                                   className="bb-link"
@@ -289,7 +289,7 @@ export default async function AboutPage() {
                         icon: <Share2 className="h-[22px] w-[22px]" strokeWidth={1.5} />,
                         label: t("facebook"),
                         content: (
-                          <p className="m-0 text-sm leading-snug text-muted-foreground">
+                          <p className="m-0 text-caption leading-snug text-muted-foreground">
                             <a
                               href={facebookUrl}
                               target="_blank"

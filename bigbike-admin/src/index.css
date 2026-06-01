@@ -3079,6 +3079,7 @@ a {
 .audit-filter-bar {
   display: flex;
   flex-direction: column;
+  align-items: stretch; /* override bb-filter-bar's align-items:center */
   gap: var(--admin-space-3);
 }
 .audit-filter-row {
@@ -3086,6 +3087,15 @@ a {
   flex-wrap: wrap;
   align-items: flex-end;
   gap: var(--admin-space-3);
+}
+/* label + control stacked vertically, matching other filter bars */
+.audit-filter-row label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: var(--admin-color-text-secondary);
+  font-weight: 500;
 }
 .audit-filter-search-group {
   flex: 1 1 260px;

@@ -99,7 +99,7 @@ export default async function StaticPageDetail({ params }: StaticPageDetailProps
               __html: sanitizeRichHtml(page.body),
             }}
           />
-          <p className="text-muted-foreground text-sm mt-4">
+          <p className="text-muted-foreground text-caption mt-4">
             {t("updatedAt", { date: formatDate(page.updatedAt) })}
           </p>
         </div>

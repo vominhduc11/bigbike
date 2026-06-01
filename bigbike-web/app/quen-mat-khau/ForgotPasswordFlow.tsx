@@ -58,7 +58,7 @@ function RequestResetForm() {
   if (success) {
     return (
       <>
-        <h1 className="mb-3 text-base font-semibold normal-case">{t("title")}</h1>
+        <h1 className="bb-auth-heading mb-3">{t("title")}</h1>
         <p className="m-0 text-sm leading-relaxed text-foreground">{t("sentDescription")}</p>
       </>
     );
@@ -66,7 +66,7 @@ function RequestResetForm() {
 
   return (
     <>
-      <h1 className="mb-3 text-base font-semibold normal-case">{t("title")}</h1>
+      <h1 className="bb-auth-heading mb-3">{t("title")}</h1>
       <p className="mb-5 text-sm leading-relaxed text-foreground">{t("subtitle")}</p>
       <RootError message={errors.root?.message} />
       <form onSubmit={handleSubmit(onSubmit)} className="grid gap-[30px]" noValidate>
@@ -77,7 +77,7 @@ function RequestResetForm() {
           <Input
             id="forgot-login"
             autoComplete="username"
-            className="h-[52px] min-h-[52px] px-5 py-0 text-sm"
+            className="bb-auth-input"
             aria-invalid={!!errors.login}
             aria-describedby={errors.login ? "forgot-login-error" : undefined}
             {...register("login")}
@@ -91,7 +91,7 @@ function RequestResetForm() {
         <Button
           type="submit"
           variant="primary"
-          className="h-[52px] w-full py-0 text-sm hover:not-disabled:scale-100"
+          size="auth"
           disabled={isSubmitting}
         >
           {isSubmitting ? t("submitting") : t("submit")}
@@ -128,7 +128,7 @@ function ResetPasswordForm({ token }: { token: string }) {
   if (success) {
     return (
       <div className="text-center">
-        <h1 className="mb-3 text-base font-semibold normal-case">{t("successHeading")}</h1>
+        <h1 className="bb-auth-heading mb-3">{t("successHeading")}</h1>
         <p className="mb-6 text-sm leading-relaxed text-foreground">{t("successDescription")}</p>
         <Button asChild variant="primary" className="h-[52px] w-full py-0 text-sm hover:not-disabled:scale-100">
           <Link href={toLoginPath()}>{t("loginNow")}</Link>
@@ -139,7 +139,7 @@ function ResetPasswordForm({ token }: { token: string }) {
 
   return (
     <>
-      <h1 className="mb-3 text-base font-semibold normal-case">{tForgot("title")}</h1>
+      <h1 className="bb-auth-heading mb-3">{tForgot("title")}</h1>
       <p className="mb-5 text-sm leading-relaxed text-foreground">{t("subtitle")}</p>
       <RootError message={errors.root?.message} />
       <form onSubmit={handleSubmit(onSubmit)} className="grid gap-[30px]" noValidate>
@@ -152,7 +152,7 @@ function ResetPasswordForm({ token }: { token: string }) {
             type="password"
             autoComplete="new-password"
             placeholder={t("newPasswordPlaceholder")}
-            className="h-[52px] min-h-[52px] px-5 py-0 text-sm"
+            className="bb-auth-input"
             aria-invalid={!!errors.password}
             aria-describedby={errors.password ? "reset-password-error" : undefined}
             {...register("password")}
@@ -172,7 +172,7 @@ function ResetPasswordForm({ token }: { token: string }) {
             type="password"
             autoComplete="new-password"
             placeholder={t("confirmPlaceholder")}
-            className="h-[52px] min-h-[52px] px-5 py-0 text-sm"
+            className="bb-auth-input"
             aria-invalid={!!errors.confirm}
             aria-describedby={errors.confirm ? "reset-confirm-error" : undefined}
             {...register("confirm")}
@@ -186,7 +186,7 @@ function ResetPasswordForm({ token }: { token: string }) {
         <Button
           type="submit"
           variant="primary"
-          className="h-[52px] w-full py-0 text-sm hover:not-disabled:scale-100"
+          size="auth"
           disabled={isSubmitting}
         >
           {isSubmitting ? t("submitting") : t("submit")}

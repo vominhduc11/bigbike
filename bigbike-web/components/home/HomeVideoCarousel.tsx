@@ -6,7 +6,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import type { Swiper as SwiperType } from "swiper";
 import "swiper/css";
 import Image from "next/image";
-import { X } from "lucide-react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import type { HomeVideo } from "@/lib/contracts/public";
 import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 
@@ -87,7 +87,7 @@ function VideoCard({ video, onPlay }: { video: HomeVideo; onPlay: () => void }) 
       {/* Footer title — compact ở mobile; từ tablet trở lên reserve 2 dòng (min-h)
           để mọi card cao bằng nhau, và to/đậm hơn trên desktop lớn cho dễ đọc */}
       <div className="bg-black px-3 py-3 min-[600px]:px-4 min-[600px]:py-4">
-        <p className="m-0 overflow-hidden normal-case font-body text-[13px] font-semibold leading-[1.4] text-white line-clamp-2 min-[600px]:min-h-[2.9em] min-[600px]:text-[14px] min-[900px]:text-[15px] min-[900px]:leading-[1.45] min-[1200px]:text-[17px]">
+        <p className="m-0 overflow-hidden normal-case font-body text-caption font-semibold leading-[1.4] text-white line-clamp-2 min-[600px]:min-h-[2.9em]">
           {title}
         </p>
       </div>
@@ -109,31 +109,12 @@ function ArrowButton({
       type="button"
       onClick={onClick}
       aria-label={label}
-      className={[
-        "group flex items-center justify-center appearance-none",
-        "w-10 h-10 rounded-full",
-        "bg-black/50 border border-white/20 text-white",
-        "shadow-[0_2px_12px_rgba(0,0,0,0.45)]",
-        "transition-colors duration-150",
-        "hover:bg-black/75 hover:border-white/40",
-        "focus-visible:outline-[var(--bb-focus-outline)] focus-visible:outline-offset-2",
-      ].join(" ")}
+      className="flex items-center justify-center appearance-none w-10 h-10 bg-transparent border-0 p-0 text-white transition-colors duration-150 hover:text-brand focus-visible:outline-[var(--bb-focus-outline)] focus-visible:outline-offset-2"
     >
-      <svg
-        style={{ width: 11, height: 20, flexShrink: 0 }}
-        viewBox="0 0 27 44"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-      >
-        {direction === "prev"
-          ? <path d="M22 2 L4 22 L22 42" />
-          : <path d="M5 2 L23 22 L5 42" />
-        }
-      </svg>
+      {direction === "prev"
+        ? <ChevronLeft aria-hidden="true" className="h-9 w-9 shrink-0" strokeWidth={2} />
+        : <ChevronRight aria-hidden="true" className="h-9 w-9 shrink-0" strokeWidth={2} />
+      }
     </button>
   );
 }
@@ -265,7 +246,7 @@ function VideoModal({
           justifyContent: "center",
           width: 44,
           height: 44,
-          borderRadius: 9999,
+          borderRadius: 0,
           background: "rgba(0,0,0,0.72)",
           border: "1px solid rgba(255,255,255,0.25)",
           color: "#fff",
@@ -297,7 +278,7 @@ function VideoModal({
               justifyContent: "center",
               width: navSize,
               height: navSize,
-              borderRadius: 9999,
+              borderRadius: 0,
               background: "rgba(0,0,0,0.65)",
               border: "1px solid rgba(255,255,255,0.25)",
               color: "#fff",
@@ -307,9 +288,7 @@ function VideoModal({
             }}
             className="focus-visible:outline-[var(--bb-focus-outline)] focus-visible:outline-offset-2"
           >
-            <svg style={{ width: 14, height: 22, flexShrink: 0 }} viewBox="0 0 27 44" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M22 2 L4 22 L22 42" />
-            </svg>
+            <ChevronLeft aria-hidden="true" style={{ width: 20, height: 20, flexShrink: 0 }} strokeWidth={2} />
           </button>
           <button
             type="button"
@@ -327,7 +306,7 @@ function VideoModal({
               justifyContent: "center",
               width: navSize,
               height: navSize,
-              borderRadius: 9999,
+              borderRadius: 0,
               background: "rgba(0,0,0,0.65)",
               border: "1px solid rgba(255,255,255,0.25)",
               color: "#fff",
@@ -337,9 +316,7 @@ function VideoModal({
             }}
             className="focus-visible:outline-[var(--bb-focus-outline)] focus-visible:outline-offset-2"
           >
-            <svg style={{ width: 14, height: 22, flexShrink: 0 }} viewBox="0 0 27 44" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M5 2 L23 22 L5 42" />
-            </svg>
+            <ChevronRight aria-hidden="true" style={{ width: 20, height: 20, flexShrink: 0 }} strokeWidth={2} />
           </button>
         </>
       )}
@@ -362,7 +339,7 @@ function VideoModal({
         </div>
         {title && (
           <div className="px-4 py-3">
-            <p className="m-0 font-body text-15 font-semibold text-white">{title}</p>
+            <p className="m-0 font-body text-body font-semibold text-white">{title}</p>
           </div>
         )}
       </div>

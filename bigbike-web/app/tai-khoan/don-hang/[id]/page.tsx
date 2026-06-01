@@ -56,7 +56,7 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
         })}
       </p>
 
-      <h2 className="mb-3 font-heading text-base font-semibold uppercase text-foreground">{t("invoice")}</h2>
+      <h2 className="bb-section-subheading mb-3">{t("invoice")}</h2>
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-left text-sm">
           <thead>
@@ -112,7 +112,7 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
 
       <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2 xl:gap-8">
         <section>
-          <h2 className="mb-3 font-heading text-base font-semibold uppercase text-foreground">{t("billingAddress")}</h2>
+          <h2 className="bb-section-subheading mb-3">{t("billingAddress")}</h2>
           {billingAddress ? (
             <div className="text-sm leading-relaxed text-muted-foreground">
               <p className="m-0 font-semibold text-foreground">{safeText(billingAddress.fullName, "—")}</p>
@@ -126,7 +126,7 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
         </section>
 
         <section>
-          <h2 className="mb-3 font-heading text-base font-semibold uppercase text-foreground">{t("shippingAddress")}</h2>
+          <h2 className="bb-section-subheading mb-3">{t("shippingAddress")}</h2>
           {shippingAddress ? (
             <div className="text-sm leading-relaxed text-muted-foreground">
               <p className="m-0 font-semibold text-foreground">{safeText(shippingAddress.fullName, "—")}</p>
