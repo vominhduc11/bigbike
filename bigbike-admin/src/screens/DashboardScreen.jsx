@@ -620,7 +620,7 @@ export function DashboardScreen({ navigate }) {
                               </div>
                             </td>
                             <td className="num">{product.units}</td>
-                            <td className="num" style={{ fontWeight: 700, color: 'var(--bb-brand)' }}>
+                            <td className="num" style={{ fontWeight: 700, color: 'var(--bb-primary)' }}>
                               {formatVndShort(product.revenue)}
                             </td>
                           </tr>

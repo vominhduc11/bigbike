@@ -1823,7 +1823,7 @@ function RoleBadge({ role }) {
     return (
       <span
         className="inline-flex items-center text-[10px] uppercase tracking-wide px-1.5 py-0.5 border rounded-none"
-        style={{ color: 'var(--admin-color-brand-red)', borderColor: 'var(--admin-color-brand-red)' }}
+        style={{ color: 'var(--admin-color-primary)', borderColor: 'var(--admin-color-primary)' }}
       >{label}</span>
     )
   }
@@ -1858,7 +1858,7 @@ function SectionCard({ title, badge, required, children }) {
           {title}
           {required && (
             <span
-              className="ml-1 text-[var(--admin-color-brand-red)]"
+              className="ml-1 text-[var(--admin-color-status-danger-text)]"
               aria-label="bắt buộc"
               title="Bắt buộc"
             >*</span>
@@ -1880,7 +1880,7 @@ function AssignmentBanner({ t }) {
         <span>{t('products.detail.assign.title')}</span>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="border-l-[3px] pl-2 py-0.5" style={{ borderColor: 'var(--admin-color-brand-red)' }}>
+        <div className="border-l-[3px] pl-2 py-0.5" style={{ borderColor: 'var(--admin-color-primary)' }}>
           <div className="text-[11px] font-bold uppercase tracking-wide text-foreground mb-0.5">
             {t('products.detail.assign.roleContent')}
           </div>
