@@ -3316,13 +3316,13 @@ a {
 }
 
 .roles-role-item:focus-visible {
-  outline: 2px solid var(--admin-color-brand-red);
+  outline: 2px solid var(--admin-color-primary);
   outline-offset: -2px;
 }
 
 .roles-role-item.active {
-  background: var(--admin-color-brand-red-muted);
-  border-left: 3px solid var(--admin-color-brand-red);
+  background: var(--admin-color-primary-muted);
+  border-left: 3px solid var(--admin-color-primary);
 }
 
 .roles-perm-row {
