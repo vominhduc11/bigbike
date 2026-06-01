@@ -66,7 +66,7 @@ function HeroSlideView({ slide }: { slide: HeroSlide }) {
   const copy = (
     <div className="bb-main-banner-copy">
       <p className="bb-main-banner-kicker">{slide.productCode || slide.categoryName || "BIGBIKE"}</p>
-      <p className="bb-main-banner-title">{slide.productName || slide.categoryName || "BigBike"}</p>
+      <h2 className="bb-main-banner-title">{slide.productName || slide.categoryName || "BigBike"}</h2>
       <span>Mua ngay</span>
     </div>
   );

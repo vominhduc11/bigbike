@@ -53,7 +53,7 @@ function AccountDashboardContent() {
             href={href}
             className="group flex flex-col gap-3 border border-border bg-white p-5 transition-colors hover:border-brand"
           >
-            <span className="font-display font-bold text-sm uppercase tracking-wide text-foreground group-hover:text-brand">
+            <span className="font-display font-bold text-caption uppercase tracking-wide text-foreground group-hover:text-brand">
               {tNav(titleKey)}
             </span>
             <span className="text-sm leading-relaxed text-muted-foreground">

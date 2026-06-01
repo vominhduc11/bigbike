@@ -198,7 +198,7 @@ export default async function AboutPage() {
                           className="max-h-12 w-auto object-contain"
                         />
                       ) : (
-                        <span className="text-center font-display text-sm font-semibold uppercase text-foreground">
+                        <span className="text-center font-display text-overline font-semibold uppercase text-foreground">
                           {brand.name}
                         </span>
                       )}

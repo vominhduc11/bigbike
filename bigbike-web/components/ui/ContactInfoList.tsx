@@ -48,7 +48,7 @@ export function ContactInfoList({ entries, variant = "columns", className }: Con
               {entry.icon}
             </span>
             <div className="min-w-0">
-              <p className="font-display text-lg font-semibold text-foreground mb-1">
+              <p className="font-display text-button font-semibold text-foreground mb-1">
                 {entry.label}
               </p>
               {entry.content}
