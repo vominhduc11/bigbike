@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { ChevronRight, ExternalLink, FolderTree, ImageOff } from 'lucide-react'
+import { ChevronRight, ExternalLink, FolderTree, ImageOff, Plus } from 'lucide-react'
 import {
   DndContext,
   closestCenter,
@@ -721,7 +721,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
             onClick={() => navigate('/admin/categories/new')}
             disabled={!canUpdate}
           >
-            {canUpdate ? t('categories.create') : t('common.noPermission')}
+            <Plus size={14} />{canUpdate ? t('categories.create') : t('common.noPermission')}
           </button>
         </div>
       </div>
@@ -864,7 +864,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
                 )}
                 {canUpdate && (
                   <Button onClick={() => navigate('/admin/categories/new')}>
-                    {t('categories.create')}
+                    <Plus size={14} />{t('categories.create')}
                   </Button>
                 )}
               </div>

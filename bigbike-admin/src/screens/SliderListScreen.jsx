@@ -18,7 +18,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { GripVertical } from 'lucide-react'
+import { GripVertical, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { createSlider, deleteSlider, fetchSliders, reorderSliders, updateSlider } from '../lib/adminApi'
 import { ImageUrlInput } from '../components/ImageUrlInput'
@@ -345,7 +345,7 @@ export function SliderListScreen({ canUpdate }) {
               className="bb-btn bb-btn-primary"
               onClick={() => { if (showForm && !editingId) { closeForm() } else { openAddForm() } }}
             >
-              {showForm && !editingId ? t('common.cancel') : t('sliders.addBtn')}
+              <Plus size={14} />{showForm && !editingId ? t('common.cancel') : t('sliders.addBtn')}
             </button>
           </div>
         )}

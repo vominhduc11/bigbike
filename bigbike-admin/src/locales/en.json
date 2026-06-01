@@ -2553,7 +2553,7 @@
   },
   "homeVideos": {
     "title": "Home Videos",
-    "addButton": "+ Add video",
+    "addButton": "Add video",
     "createTitle": "Add new video",
     "editTitle": "Edit video",
     "loading": "Loading videos...",

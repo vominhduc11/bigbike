@@ -18,7 +18,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { GripVertical } from 'lucide-react'
+import { GripVertical, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   fetchHomeVideos,
@@ -564,7 +564,7 @@ export function HomeVideoListScreen({ canUpdate }) {
               className="bb-btn bb-btn-primary"
               onClick={() => { setShowForm(true); setEditingVideo(null); setForm(EMPTY_FORM); setFormError('') }}
             >
-              {t('homeVideos.addButton')}
+              <Plus size={14} />{t('homeVideos.addButton')}
             </button>
           </div>
         )}

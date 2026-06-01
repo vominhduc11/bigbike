@@ -2553,7 +2553,7 @@
   },
   "homeVideos": {
     "title": "Video trang chủ",
-    "addButton": "+ Thêm video",
+    "addButton": "Thêm video",
     "createTitle": "Thêm video mới",
     "editTitle": "Chỉnh sửa video",
     "loading": "Đang tải video...",
