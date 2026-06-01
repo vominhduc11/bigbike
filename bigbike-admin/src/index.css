@@ -1737,6 +1737,12 @@ a {
   font-size: var(--admin-text-sm);
   vertical-align: middle;
 }
+/* S1: align data-cell density to bb-table (44px row, zero vertical padding); header keeps its padding */
+.cat-tree-table td {
+  padding-top: 0;
+  padding-bottom: 0;
+  height: var(--bb-row-h);
+}
 .cat-tree-table th {
   background: var(--admin-color-surface-muted);
   font-weight: 600;

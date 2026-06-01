@@ -1317,7 +1317,7 @@ function InventoryGroupRow({ group, isExpanded, onToggle, onStockIn, onSerialMan
 
   return (
     <>
-      <tr className="border-b border-border bg-surface-raised">
+      <tr className="h-11 border-b border-border bg-surface-raised">
         <td className="py-1.5 px-2 w-8 align-middle">
           {hasVariants ? (
             <button
