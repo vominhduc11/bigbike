@@ -3,9 +3,8 @@ import { notFound } from "next/navigation";
 import { getLocale } from "next-intl/server";
 import { ProductArchiveHero } from "@/components/catalog/ProductArchiveHero";
 import { ProductArchiveLayout } from "@/components/catalog/ProductArchiveLayout";
-import { ProductCard } from "@/components/catalog/ProductCard";
+import { ProductArchiveResults } from "@/components/catalog/ProductArchiveResults";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { PaginationNav } from "@/components/ui/PaginationNav";
 import { PRODUCT_SORT_VALUES, getBrandBySlug, listBrands, listCategories, listProducts, listPublicSettings } from "@/lib/api/public-api";
 import { readDefaultHeroAssets } from "@/lib/utils/page-hero";
 import { buildCatalogTitle } from "@/lib/utils/catalog";
@@ -242,37 +241,24 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
           },
         }}
       >
-        {productsResult.error && productsResult.data.length === 0 ? (
-          <ErrorState message={productsResult.error.message} retryHref={canonicalPath} />
-        ) : productsResult.data.length === 0 ? (
-          <p className="woocommerce-info">Không tìm thấy sản phẩm phù hợp.</p>
-        ) : (
-          <>
-            <div className="row bb-wp-row bb-product-grid">
-              {productsResult.data.map((product) => (
-                <div key={product.id} className="col-md-3 col-6 bb-wp-col-md-3 bb-wp-col-6">
-                  <ProductCard product={product} variant="archive" />
-                </div>
-              ))}
-            </div>
-            {pagination ? (
-              <PaginationNav
-                page={pagination.page}
-                totalPages={pagination.totalPages}
-                baseHref={`${canonicalPath}${buildQueryString({
-                    size: sizeParsed.value !== DEFAULT_PAGE_SIZE ? sizeParsed.value : undefined,
-                    orderby: orderbyCurrent !== DEFAULT_WP_ORDERBY ? orderbyCurrent : undefined,
-                    "pwb-brand": brandFilterParsed.value,
-                    q: qParsed.value,
-                    filter_color: colorParsed.value,
-                    min_price: minPriceParsed.value,
-                    max_price: maxPriceParsed.value,
-                  })}`}
-                variant="archive"
-              />
-            ) : null}
-          </>
-        )}
+        <ProductArchiveResults
+          products={productsResult.data}
+          hasError={!!productsResult.error}
+          pagination={pagination}
+          baseHref={`${canonicalPath}${buildQueryString({
+            size: sizeParsed.value !== DEFAULT_PAGE_SIZE ? sizeParsed.value : undefined,
+            orderby: orderbyCurrent !== DEFAULT_WP_ORDERBY ? orderbyCurrent : undefined,
+            "pwb-brand": brandFilterParsed.value,
+            q: qParsed.value,
+            filter_color: colorParsed.value,
+            min_price: minPriceParsed.value,
+            max_price: maxPriceParsed.value,
+          })}`}
+          emptyContent={<p className="woocommerce-info">Không tìm thấy sản phẩm phù hợp.</p>}
+          errorContent={
+            <ErrorState message={productsResult.error?.message ?? ""} retryHref={canonicalPath} />
+          }
+        />
       </ProductArchiveLayout>
     </div>
   );

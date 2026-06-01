@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
-import { ProductCard } from "@/components/catalog/ProductCard";
+import { ProductArchiveResults } from "@/components/catalog/ProductArchiveResults";
 import { ProductArchiveHero } from "@/components/catalog/ProductArchiveHero";
 import { ProductArchiveLayout } from "@/components/catalog/ProductArchiveLayout";
-import { PaginationNav } from "@/components/ui/PaginationNav";
 import {
   PRODUCT_SORT_VALUES,
   listBrands,
@@ -213,38 +212,23 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
           },
         }}
       >
-          {result.error && result.data.length === 0 ? (
-            <p className="woocommerce-info">{result.error.message}</p>
-          ) : result.data.length === 0 ? (
-            <p className="woocommerce-info">{tCatalog("noResults")}</p>
-          ) : (
-            <>
-              <div className="row bb-wp-row bb-product-grid">
-                {result.data.map((product) => (
-                  <div key={product.id} className="col-md-3 col-6 bb-wp-col-md-3 bb-wp-col-6">
-                    <ProductCard product={product} variant="archive" />
-                  </div>
-                ))}
-              </div>
-              {pagination ? (
-                <PaginationNav
-                  page={pagination.page}
-                  totalPages={pagination.totalPages}
-                  baseHref={`${toProductListPath()}${buildQueryString({
-                      size: sizeParsed.value !== DEFAULT_PAGE_SIZE ? sizeParsed.value : undefined,
-                      orderby: orderbyCurrent !== DEFAULT_WP_ORDERBY ? orderbyCurrent : undefined,
-                      category: categoryParsed.value,
-                      "pwb-brand": brandParsed.value,
-                      q: qParsed.value,
-                      filter_color: colorParsed.value,
-                      min_price: minPriceParsed.value,
-                      max_price: maxPriceParsed.value,
-                    })}`}
-                  variant="archive"
-                />
-              ) : null}
-            </>
-          )}
+          <ProductArchiveResults
+            products={result.data}
+            hasError={!!result.error}
+            pagination={pagination}
+            baseHref={`${toProductListPath()}${buildQueryString({
+              size: sizeParsed.value !== DEFAULT_PAGE_SIZE ? sizeParsed.value : undefined,
+              orderby: orderbyCurrent !== DEFAULT_WP_ORDERBY ? orderbyCurrent : undefined,
+              category: categoryParsed.value,
+              "pwb-brand": brandParsed.value,
+              q: qParsed.value,
+              filter_color: colorParsed.value,
+              min_price: minPriceParsed.value,
+              max_price: maxPriceParsed.value,
+            })}`}
+            emptyContent={<p className="woocommerce-info">{tCatalog("noResults")}</p>}
+            errorContent={<p className="woocommerce-info">{result.error?.message}</p>}
+          />
       </ProductArchiveLayout>
     </div>
   );
