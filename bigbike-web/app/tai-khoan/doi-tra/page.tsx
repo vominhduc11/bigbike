@@ -68,7 +68,7 @@ function ReturnDetailPanel({ id, onClose }: { id: string; onClose: () => void })
     <div className="fixed inset-0 bg-black/65 z-[2000] flex justify-end" role="dialog" aria-modal="true">
       <div className="w-[min(480px,100vw)] h-full bg-card border-l border-border flex flex-col overflow-hidden">
         <div className="flex justify-between items-center py-[18px] px-[22px] border-b border-border flex-shrink-0">
-          <h3 className="text-sm font-bold text-foreground m-0 tracking-wide">{t("detailHeading")}</h3>
+          <h3 className="text-caption font-bold text-foreground m-0 tracking-wide">{t("detailHeading")}</h3>
           <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label={t("closeAria")}>✕</Button>
         </div>
 

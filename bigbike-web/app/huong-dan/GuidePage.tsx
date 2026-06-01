@@ -110,7 +110,7 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
                 href={guide.path}
                 className="group block bg-card border border-border p-6 no-underline text-inherit transition-colors duration-200 hover:border-brand"
               >
-                <h2 className="font-display text-h4 uppercase tracking-wide m-0 mb-2 leading-snug transition-colors duration-200 group-hover:text-brand">
+                <h2 className="font-display text-h4 uppercase tracking-wide m-0 mb-2 leading-title transition-colors duration-200 group-hover:text-brand">
                   {t(guide.titleKey)}
                 </h2>
                 <p className="text-caption text-muted-foreground m-0 leading-relaxed">{t(guide.descriptionKey)}</p>

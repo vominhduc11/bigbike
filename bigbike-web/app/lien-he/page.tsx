@@ -211,9 +211,9 @@ export default async function ContactPage() {
                             height={48}
                             className="h-12 w-12 object-contain"
                           />
-                          <p className="font-display text-h4 font-bold uppercase text-foreground">
+                          <h3 className="font-display text-h4 font-bold uppercase text-foreground">
                             {pageTitle}
-                          </p>
+                          </h3>
                         </div>
                         {address ? (
                           <p className="mt-2 text-caption leading-relaxed text-muted-foreground">

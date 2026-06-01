@@ -211,7 +211,7 @@ export default async function AboutPage() {
 
           <div className="grid grid-cols-1 items-start gap-[30px] py-[60px] lg:grid-cols-[4fr_8fr] xl:gap-[48px] xl:py-[80px] 2xl:py-[100px]">
             <div>
-              <h3 className="bb-section-heading mb-4 leading-tight">
+              <h3 className="bb-section-heading mb-4 leading-heading">
                 {t("aboutQualityTitle")}
               </h3>
               <p className="m-0 text-body leading-relaxed text-muted-foreground">

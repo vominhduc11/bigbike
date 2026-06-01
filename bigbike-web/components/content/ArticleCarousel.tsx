@@ -17,7 +17,7 @@ type Props = { articles: Article[] };
 
 // Carousel arrow button — transparent glyph, hidden on touch / mobile.
 const CAR_BTN =
-  "absolute top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-[3.125rem] font-light leading-none text-foreground shadow-none transition-[background,box-shadow] hover:text-brand pointer-coarse:hidden max-md:hidden";
+  "absolute top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-50 font-light leading-none text-foreground shadow-none transition-[background,box-shadow] hover:text-brand pointer-coarse:hidden max-md:hidden";
 
 export function ArticleCarousel({ articles }: Props) {
   const t = useTranslations("Blog");

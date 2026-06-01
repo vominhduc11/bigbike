@@ -41,7 +41,7 @@ export async function PolicySidebar({ activeHref, title, items }: Props) {
 
   return (
     <aside className="min-w-0" aria-label={resolvedTitle}>
-      <h3 className="mb-4 border-b-2 border-brand pb-3 font-display text-base font-semibold uppercase text-foreground tracking-normal">
+      <h3 className="mb-4 border-b-2 border-brand pb-3 font-display text-h4 font-semibold uppercase text-foreground tracking-normal">
         {resolvedTitle}
       </h3>
       {resolvedItems.length > 0 ? (

@@ -387,7 +387,8 @@ body {
 }
 
 .bb-auth-heading {
-  font-size: var(--bb-text-base);
+  font-family: var(--bb-font-heading);
+  font-size: var(--fs-h3);
   font-weight: 600;
   text-transform: none;
 }
@@ -3125,7 +3126,7 @@ body {
   font-weight: var(--bb-font-weight-semibold);
   color: var(--bb-text-primary);
   text-transform: none;
-  line-height: 1.35;
+  line-height: var(--bb-line-snug);
   margin: 0;
   transition: color 0.14s;
   display: -webkit-box;
