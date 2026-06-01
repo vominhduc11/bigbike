@@ -79,7 +79,7 @@ export function ReceivableDetailScreen({ receivableId, navigate, canRecordPaymen
           </p>
           <h1 style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             {t('receivables.title')}{' '}
-            <span className="mono" style={{ color: 'var(--admin-color-brand-red)' }}>
+            <span className="mono" style={{ color: 'var(--admin-color-primary)' }}>
               {ar.orderNumber || ar.orderId?.slice(0, 8) || ''}
             </span>
             <StatusBadge status={ar.status} t={t} />
@@ -168,7 +168,7 @@ export function ReceivableDetailScreen({ receivableId, navigate, canRecordPaymen
                     <button
                       type="button"
                       className="text-xs font-semibold"
-                      style={{ color: 'var(--bb-brand)', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+                      style={{ color: 'var(--bb-primary)', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
                       onClick={() => navigate(`/admin/customers/${ar.customerId}`)}
                     >
                       {t('receivables.detail.viewProfile')}
