@@ -134,15 +134,15 @@ Chi tiết đầy đủ: [AGENTS.md](AGENTS.md) — Section 6.1 (stack), Section
 grep -rn "ten-class" bigbike-admin/src --include="*.jsx" --include="*.tsx" --include="*.js"
 ```
 
-**`bigbike-admin` có hai hệ CSS song song — không nhầm:**
-- `index.css` + `admin-layout.css` → hệ mới, production, active.
-- `admin-prototype.css` → hệ cũ `bb-*`, **vẫn đang dùng** bởi `AdminShell`, `DashboardScreen`, `LoginScreen`. Không giả định dead mà không grep. Không thêm class mới vào file này.
+**`bigbike-admin` có ba file CSS song song — không nhầm:**
+- `index.css` + `admin-layout.css` → token mapping + layout primitives + screen-cluster classes, production, active.
+- `admin-prototype.css` → **hệ `bb-*` canonical đang sống** (đã re-skin theo Direction B cam) — chassis chính: shell/header/button/card/table/badge/KPI/form, dùng bởi `AdminShell` + hầu hết screen. Được phép restyle/maintain `bb-*` và thêm sub-class cùng component `bb-*`; KHÔNG nhét class/feature ngoài `bb-*` vào đây. Không giả định dead mà không grep.
 
 **Cấm:**
 - ❌ Viết CSS class mà không có JSX dùng ngay.
 - ❌ Kết luận dead mà không grep xác nhận.
 - ❌ Phát hiện dead CSS → không xóa ngay (TODO "sẽ xóa sau" là không đủ).
-- ❌ Thêm class mới vào `admin-prototype.css`.
+- ❌ Thêm class/feature **không thuộc hệ `bb-*`** vào `admin-prototype.css` (dùng Tailwind inline hoặc `admin-layout.css`).
 
 Chi tiết đầy đủ: [AGENTS.md](AGENTS.md) — Section 6.6.
 
@@ -181,10 +181,10 @@ Mọi trang, route, component trong `bigbike-web` — và mọi màn hình, form
 | Dùng trong JSX | Tailwind utility classes hoặc CSS variable (`text-primary`, `bg-brand`, `var(--admin-...)`, …) |
 
 **Quy tắc bắt buộc:**
-- **Màu** → chỉ từ BigBike brand palette; tham chiếu qua CSS variable hoặc Tailwind token — không hardcode hex ngoài danh sách đã duyệt.
-- **Font** → Bungee (display/headline, uppercase only), Exo (body/UI/content) — không import font khác, không dùng Barlow/Oswald.
+- **Màu** → **Primary = cam Direction B `#cc4a08`** (dark `#f0791f`) cho CTA / active / selected / focus / link (`--admin-color-primary`, shadcn `--primary`/`--ring`, `--bb-primary*`). **Đỏ `#e8281e`** (`--admin-color-brand-red`/`--bb-brand`) **chỉ** cho brand chrome: vạch active sidebar, nav badge, notification pip, logo. Danger giữ token danger riêng. Tham chiếu qua CSS variable/token, không hardcode hex.
+- **Font** → `Inter` (body/UI), `Bungee` (display — số KPI, wordmark), `JetBrains Mono` (mã/SKU) — đã cài qua `@fontsource`; không dùng Exo/Barlow/Oswald.
 - **Spacing** → thang 4px — không dùng arbitrary px khi Tailwind step đã đủ.
-- **Border radius** → `rounded-none` mặc định; `rounded-full` chỉ cho phần tử thực sự tròn.
+- **Border radius** → theo token bo `--admin-radius-*` (xs 5 / sm 8 / md 12 / lg 16 px); `rounded-full` chỉ cho phần tử thực sự tròn. Admin **không** dùng `rounded-none` mặc định như web.
 - **Visual style** → operational/data-first: dense, readable, table/form/filter centric — không đưa hero/campaign visuals vào operational screens.
 - **Visual consistency** → trước khi ship screen mới, phải trông như phần của cùng một admin dashboard — không generic SaaS template.
 
