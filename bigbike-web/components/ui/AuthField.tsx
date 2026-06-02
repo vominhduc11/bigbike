@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { UseFormRegisterReturn } from "react-hook-form";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { authInput } from "@/lib/ui-classes";
 
 type FieldErrorLike = { message?: string };
 
@@ -59,7 +60,7 @@ export function AuthField({
         type={type}
         autoComplete={autoComplete}
         placeholder={placeholder}
-        className="bb-auth-input"
+        className={authInput}
         aria-invalid={describeError ? !!error : undefined}
         aria-describedby={describeError && error ? errorId : undefined}
         {...registration}

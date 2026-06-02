@@ -37,6 +37,12 @@ export const detailTableCell = "mt-[3px] block text-sm font-bold normal-case tra
 /** Category badge text (was `.bb-category-badge`). */
 export const categoryBadge = "m-0 text-sm font-bold uppercase tracking-display text-brand";
 
+/** Auth card heading (was `.bb-auth-heading`). On auth-wrap h1s the kept marker
+ * rule `.bb-page--auth .bb-auth-wrap h1` overrides this (text-32/uppercase). */
+export const authHeading = "font-heading text-[length:var(--fs-h3)] font-semibold normal-case";
+/** Auth form input sizing (was `.bb-auth-input`). */
+export const authInput = "h-[52px] min-h-[52px] px-5 py-0 text-sm";
+
 /** Inline text link (was `.bb-link`): blue resting (--bb-link-text), red on
  * hover/focus. The base red is overridden by later WP-parity groups, so the
  * effective resting color is the blue link token. */

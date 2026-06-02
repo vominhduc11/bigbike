@@ -9,6 +9,8 @@ import { registerCustomer } from "@/lib/api/client-api";
 import { refreshAuth } from "@/lib/auth/auth-store";
 import { createRegisterSchema, type RegisterFormValues } from "@/lib/schemas/auth";
 import { toAccountPath } from "@/lib/utils/routes";
+import { authHeading } from "@/lib/ui-classes";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { AuthField } from "@/components/ui/AuthField";
 import { FormRootError } from "@/components/ui/FormRootError";
@@ -44,7 +46,7 @@ export function RegisterForm({ returnTo = toAccountPath() }: { returnTo?: string
   if (registered) {
     return (
       <div className="text-center">
-        <h2 className="bb-auth-heading mb-3">{t("successHeading")}</h2>
+        <h2 className={cn(authHeading, "mb-3")}>{t("successHeading")}</h2>
         {confirmedEmail && (
           <p className="bb-auth-footer mb-5">
             {t.rich("successDescription", {

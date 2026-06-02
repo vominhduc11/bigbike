@@ -13,6 +13,8 @@ import {
   type ResetPasswordFormValues,
 } from "@/lib/schemas/auth";
 import { toLoginPath } from "@/lib/utils/routes";
+import { authHeading, authInput } from "@/lib/ui-classes";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -51,7 +53,7 @@ function RequestResetForm() {
   if (success) {
     return (
       <>
-        <h1 className="bb-auth-heading mb-3">{t("title")}</h1>
+        <h1 className={cn(authHeading, "mb-3")}>{t("title")}</h1>
         <p className="m-0 text-sm leading-relaxed text-foreground">{t("sentDescription")}</p>
       </>
     );
@@ -59,7 +61,7 @@ function RequestResetForm() {
 
   return (
     <>
-      <h1 className="bb-auth-heading mb-3">{t("title")}</h1>
+      <h1 className={cn(authHeading, "mb-3")}>{t("title")}</h1>
       <p className="mb-5 text-sm leading-relaxed text-foreground">{t("subtitle")}</p>
       <FormRootError message={errors.root?.message} />
       <form onSubmit={handleSubmit(onSubmit)} className="grid gap-[30px]" noValidate>
@@ -70,7 +72,7 @@ function RequestResetForm() {
           <Input
             id="forgot-login"
             autoComplete="username"
-            className="bb-auth-input"
+            className={authInput}
             aria-invalid={!!errors.login}
             aria-describedby={errors.login ? "forgot-login-error" : undefined}
             {...register("login")}
@@ -121,7 +123,7 @@ function ResetPasswordForm({ token }: { token: string }) {
   if (success) {
     return (
       <div className="text-center">
-        <h1 className="bb-auth-heading mb-3">{t("successHeading")}</h1>
+        <h1 className={cn(authHeading, "mb-3")}>{t("successHeading")}</h1>
         <p className="mb-6 text-sm leading-relaxed text-foreground">{t("successDescription")}</p>
         <Button asChild variant="primary" className="h-[52px] w-full py-0 text-sm hover:not-disabled:scale-100">
           <Link href={toLoginPath()}>{t("loginNow")}</Link>
@@ -132,7 +134,7 @@ function ResetPasswordForm({ token }: { token: string }) {
 
   return (
     <>
-      <h1 className="bb-auth-heading mb-3">{tForgot("title")}</h1>
+      <h1 className={cn(authHeading, "mb-3")}>{tForgot("title")}</h1>
       <p className="mb-5 text-sm leading-relaxed text-foreground">{t("subtitle")}</p>
       <FormRootError message={errors.root?.message} />
       <form onSubmit={handleSubmit(onSubmit)} className="grid gap-[30px]" noValidate>
