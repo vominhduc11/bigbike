@@ -9,6 +9,13 @@ import { MenuIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import { parsePhones, parseShopHours } from "@/lib/utils/shop";
 
+// Drawer content (shell — bb-header-info-sheet/overlay/content + .is-open
+// transitions — intentionally stays as CSS).
+const liGrid = "grid grid-cols-[40px_minmax(0,1fr)] gap-4";
+const copyText = "m-0 text-black leading-[1.7]";
+const copyLink =
+  "m-0 block text-black leading-[1.7] no-underline hover:text-[var(--bb-brand-primary)] focus-visible:text-[var(--bb-brand-primary)] focus-visible:outline-none";
+
 type ShopInfoDrawerProps = {
   siteName: string;
   description: string;
@@ -75,14 +82,14 @@ export function ShopInfoDrawer({
         >
           <button
             type="button"
-            className="bb-header-info-close"
+            className="absolute top-[52px] right-[70px] border-none bg-transparent text-foreground cursor-pointer hover:text-[var(--bb-brand-primary)] focus-visible:text-[var(--bb-brand-primary)] focus-visible:outline-none"
             aria-label={t("closeDrawer")}
             onClick={closePanel}
           >
             <X size={18} aria-hidden />
           </button>
 
-          <div className="bb-header-info-body">
+          <div className="flex flex-col">
             <Image
               src="/wp/logo-1.png"
               alt={siteName}
@@ -91,48 +98,49 @@ export function ShopInfoDrawer({
               className="h-auto w-[150px]"
             />
 
-            <div className="bb-header-info-desc">
-              <p>{desc}</p>
+            <div className="mt-[30px]">
+              <p className="m-0 text-[#6f6f6f] text-[length:var(--fs-caption)] leading-[1.75]">{desc}</p>
             </div>
 
-            <div className="bb-header-info-contact">
-              <h2>{t("shopInfoContactHeading")}</h2>
+            <div className="mt-[70px]">
+              <h2 className="m-0 text-foreground font-display text-[16px] font-semibold uppercase">
+                {t("shopInfoContactHeading")}
+              </h2>
 
-              <ul className="bb-header-info-contact-list">
-                <li>
-                  <span className="bb-header-info-contact-icon" aria-hidden="true">
+              <ul className="grid gap-[30px] m-0 p-0 list-none">
+                <li className={liGrid}>
+                  <span className="text-[var(--bb-brand-primary)]" aria-hidden="true">
                     <Clock3 size={22} />
                   </span>
-                  <div className="bb-header-info-contact-copy">
+                  <div>
                     {hoursLines.map((line) => (
-                      <p key={line}>{line}</p>
+                      <p key={line} className={copyText}>
+                        {line}
+                      </p>
                     ))}
                   </div>
                 </li>
 
                 {address && (
-                  <li>
-                    <span className="bb-header-info-contact-icon" aria-hidden="true">
+                  <li className={liGrid}>
+                    <span className="text-[var(--bb-brand-primary)]" aria-hidden="true">
                       <MapPin size={22} />
                     </span>
-                    <div className="bb-header-info-contact-copy">
-                      <p>{t("shopInfoStoreLabel", { siteName })}</p>
-                      <p>{address}</p>
+                    <div>
+                      <p className={copyText}>{t("shopInfoStoreLabel", { siteName })}</p>
+                      <p className={copyText}>{address}</p>
                     </div>
                   </li>
                 )}
 
                 {phones.length > 0 && (
-                  <li>
-                    <span className="bb-header-info-contact-icon" aria-hidden="true">
+                  <li className={liGrid}>
+                    <span className="text-[var(--bb-brand-primary)]" aria-hidden="true">
                       <Phone size={22} />
                     </span>
-                    <div className="bb-header-info-contact-copy">
+                    <div>
                       {phones.map((phone) => (
-                        <a
-                          key={phone}
-                          href={`tel:${phone.replace(/[\s.]/g, "")}`}
-                        >
+                        <a key={phone} href={`tel:${phone.replace(/[\s.]/g, "")}`} className={copyLink}>
                           {phone}
                         </a>
                       ))}
