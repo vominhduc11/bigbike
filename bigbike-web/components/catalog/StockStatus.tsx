@@ -89,14 +89,19 @@ export function StockStatus({
   }
 
   // Black, skewed parallelogram badge — matches the legacy WP product page.
+  // The skewed background lives on the parent `.status p::after` (see
+  // PurchaseSectionClient); `bb-pdp-stock-badge--out` is kept purely as a
+  // marker so that parent's `has-[.bb-pdp-stock-badge--out]` flips it red.
   return (
     <span
       className={cn(
-        "bb-pdp-stock-badge",
+        "relative z-[1] block",
         rawState === "OUT_OF_STOCK" && "bb-pdp-stock-badge--out",
       )}
     >
-      <span className="bb-pdp-stock-badge-label">{label}</span>
+      <span className="block font-cta text-[13px] font-semibold uppercase tracking-normal !leading-[42px] text-white max-md:!leading-[38px]">
+        {label}
+      </span>
     </span>
   );
 }

@@ -1,6 +1,5 @@
 "use client";
 
-import type { CSSProperties } from "react";
 import { useCallback, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
@@ -52,6 +51,14 @@ export type PurchaseSectionClientProps = {
   canonicalUrl: string;
 };
 
+// Shared red add-to-cart / buy-now CTA (mobile swaps body→cta font + uppercase).
+const ADD_BTN =
+  "inline-flex items-center justify-center gap-2.5 w-full h-[52px] border-none rounded-none bg-brand text-white font-body text-[16px] font-semibold !leading-[52px] normal-case cursor-pointer disabled:cursor-not-allowed disabled:bg-[var(--bb-color-gray-450)] disabled:opacity-70 max-md:min-h-[52px] max-md:font-cta max-md:text-[14px] max-md:uppercase max-md:tracking-[0.08em]";
+
+// Share icon links + native-share button (1em icons, brand on hover).
+const SOCIAL_LINK =
+  "inline-flex items-center justify-center mr-[30px] p-0 border-none bg-transparent text-muted-foreground text-[1.5rem] no-underline align-middle cursor-pointer hover:text-brand [&_svg]:w-[1em] [&_svg]:h-[1em]";
+
 function RatingRow({
   rating,
   count,
@@ -68,34 +75,31 @@ function RatingRow({
 
   if (!hasReviews) {
     return (
-      <div className="rating rating--empty">
+      <div className="text-black text-[14px]">
         <span
-          className="rating-star"
-          style={{ "--rating-fill": "0%" } as CSSProperties}
+          className="inline-block text-rating-star text-[18px] tracking-normal before:content-['★★★★★']"
           aria-hidden="true"
         />
-        <p>{t("noReviews")}</p>
+        <p className="m-0 mt-1 text-black text-[14px] !leading-[1.4]">{t("noReviews")}</p>
       </div>
     );
   }
 
   const displayValue = Number.isInteger(rating) ? String(rating) : rating.toFixed(1);
-  const fillPct = `${Math.min(100, Math.max(0, (rating / 5) * 100))}%`;
 
   return (
     <div
-      className="rating"
+      className="text-black text-[14px]"
       itemProp="aggregateRating"
       itemScope
       itemType="https://schema.org/AggregateRating"
     >
       <span
-        className="rating-star"
-        style={{ "--rating-fill": fillPct } as CSSProperties}
+        className="inline-block text-rating-star text-[18px] tracking-normal before:content-['★★★★★']"
         aria-label={`${displayValue}/5`}
       />
       <meta itemProp="bestRating" content="5" />
-      <p>
+      <p className="m-0 mt-1 text-black text-[14px] !leading-[1.4]">
         <span itemProp="ratingValue">{displayValue}</span>
         <span aria-hidden="true">★</span>{" "}
         <span className="rating-count">
@@ -124,9 +128,12 @@ function WpQuantitySelector({
     onChange(Number.isFinite(clamped) ? clamped : 1);
   }
 
+  const stepBtn =
+    "block w-full h-[26px] border border-[#707070] rounded-none border-l-0 bg-transparent text-black text-[10px] cursor-pointer hover:bg-black hover:text-white";
+
   return (
-    <div className="quantity-group">
-      <div className="quantity">
+    <div className="flex flex-wrap w-full">
+      <div className="flex-1 min-w-0">
         <label className="sr-only" htmlFor="bb-wp-pdp-qty">
           {label}
         </label>
@@ -138,15 +145,16 @@ function WpQuantitySelector({
           value={value}
           onChange={(event) => commit(Number.parseInt(event.target.value, 10))}
           inputMode="numeric"
+          className="w-full h-[52px] border border-[#707070] rounded-none bg-transparent text-center text-black text-[1.5rem] font-semibold"
         />
       </div>
-      <div className="button">
-        <button type="button" className="minus js-plus" onClick={() => commit(value + 1)}>
+      <div className="flex-[0_0_60px] max-w-[60px]">
+        <button type="button" className={stepBtn} onClick={() => commit(value + 1)}>
           <svg width="10" height="10" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
-        <button type="button" className="plus js-minus" onClick={() => commit(value - 1)}>
+        <button type="button" className={cn(stepBtn, "border-t-0")} onClick={() => commit(value - 1)}>
           <svg width="10" height="10" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
@@ -309,12 +317,14 @@ export function PurchaseSectionClient({
       </div>
 
       <div className="bb-wp-pdp-info-col product-information">
-        <div className="title">
-          <h1>{productName}</h1>
+        <div className="mb-5 max-md:mb-3">
+          <h1 className="m-0 font-[family-name:var(--bb-font-display)] text-[30px] max-[1024px]:text-[26px] max-md:text-[24px] font-semibold !leading-[3.75rem] max-[1024px]:!leading-[1.25] max-md:!leading-[1.12] tracking-normal normal-case max-md:uppercase text-black">
+            {productName}
+          </h1>
         </div>
 
-        <div className="bb-wp-summary-row">
-          <div className="bb-wp-price-rating-col">
+        <div className="flex flex-wrap mx-[-15px] max-md:mx-0 max-md:gap-3">
+          <div className="flex-[0_0_41.666667%] max-[1024px]:flex-[0_0_100%] max-w-[41.666667%] max-[1024px]:max-w-full px-[15px] max-md:px-0">
             <PricingPanel
               data={effectivePricing}
               fallback={fallbackPrice}
@@ -322,8 +332,8 @@ export function PurchaseSectionClient({
             />
             <RatingRow rating={initialRating} count={initialRatingCount} />
           </div>
-          <div className="bb-wp-status-col status">
-            <p>
+          <div className="flex justify-end max-[1024px]:justify-start flex-[0_0_58.333333%] max-[1024px]:flex-[0_0_100%] max-w-[58.333333%] max-[1024px]:max-w-full px-[15px] max-md:px-0 text-right max-[1024px]:text-left max-[1024px]:mt-3 max-md:mt-0">
+            <p className="relative w-full max-w-[190px] max-md:max-w-[170px] h-[42px] max-md:h-[38px] m-0 ml-auto max-[1024px]:ml-0 border-none bg-transparent text-center font-cta font-semibold uppercase text-white after:content-[''] after:absolute after:inset-0 after:z-0 after:bg-black after:[transform:skewX(-20deg)] has-[.bb-pdp-stock-badge--out]:after:bg-brand">
               <StockStatus
                 variant="badge"
                 data={effectiveStockData}
@@ -344,7 +354,7 @@ export function PurchaseSectionClient({
         )}
 
         {hasVariants && (
-          <div className="size">
+          <div className="size mt-[15px]">
             <VariantSelector
               variants={variants}
               selectedOptions={selectedOptions}
@@ -354,12 +364,12 @@ export function PurchaseSectionClient({
           </div>
         )}
 
-        <div className="bb-wp-add-cart-wrap">
+        <div className="mt-[30px] max-md:mt-5">
           {/* When sold out, drop the quantity stepper + "Mua ngay" — they're
               non-actionable. The sold-out state is carried by the badge plus
               the (kept) add button label and the note below. */}
           {!soldOut && (
-            <div className="bb-wp-quantity-row">
+            <div className="w-[41.666667%] max-[1024px]:w-full min-w-[190px] max-md:min-w-0">
               <WpQuantitySelector
                 value={quantity}
                 onChange={setQuantity}
@@ -369,16 +379,14 @@ export function PurchaseSectionClient({
             </div>
           )}
 
-          <div className="bb-wp-buttons-row">
-            <div className="add-to-cart">
+          {/* bb-wp-buttons-row kept: MobileStickyPurchaseBar observes it. */}
+          <div className="bb-wp-buttons-row grid grid-cols-2 max-[1024px]:grid-cols-1 gap-[30px] max-[1024px]:gap-5 max-md:gap-2.5 mt-5 max-md:mt-3">
+            <div>
               {/* Kept mounted even when sold out: MobileStickyPurchaseBar
                   mirrors this button's disabled/data-soldout state. */}
               <button
                 type="button"
-                className={cn(
-                  "single_add_to_cart_button button alt btn js-add-to-cart-btn",
-                  !isAvailable && "disabled wc-variation-selection-needed",
-                )}
+                className={cn("js-add-to-cart-btn", ADD_BTN)}
                 onClick={handleAddToCart}
                 disabled={busy || !isAvailable}
                 data-soldout={soldOut ? "true" : undefined}
@@ -387,13 +395,10 @@ export function PurchaseSectionClient({
               </button>
             </div>
             {!soldOut && (
-              <div className="add-to-cart quick-add-to-cart">
+              <div>
                 <button
                   type="button"
-                  className={cn(
-                    "btn single_add_to_cart_button button btn-quick-buy js-quickby",
-                    !isAvailable && "disabled",
-                  )}
+                  className={ADD_BTN}
                   disabled={!isAvailable}
                   onClick={() => setQuickBuyOpen(true)}
                 >
@@ -430,17 +435,19 @@ export function PurchaseSectionClient({
           />
 
           {addError && (
-            <p className="bb-error-text bb-wp-cart-error" role="alert">
+            <p className="mt-2.5 text-sm text-brand" role="alert">
               {addError}
             </p>
           )}
         </div>
 
-        <div className="social text-left">
-          <p>{t("shareLabel")}</p>
+        <div className="mt-[30px] max-md:mt-[22px] text-left">
+          <p className="inline-block m-0 mr-[30px] text-black text-[1.5rem] font-semibold lowercase">
+            {t("shareLabel")}
+          </p>
           <button
             type="button"
-            className="bb-wp-share-btn"
+            className={SOCIAL_LINK}
             onClick={handleShare}
             aria-label={t("shareNative")}
           >
@@ -457,6 +464,7 @@ export function PurchaseSectionClient({
             target="_blank"
             rel="noopener noreferrer"
             aria-label={t("shareFacebook")}
+            className={SOCIAL_LINK}
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
               <path d="M9.2 14V8.5h1.85l.28-2.15H9.2V5c0-.62.17-1.04 1.06-1.04h1.13V2.05A15.4 15.4 0 0 0 9.84 2C8.2 2 7.08 3 7.08 4.84V6.35H5.22V8.5h1.86V14H9.2Z" />
@@ -467,6 +475,7 @@ export function PurchaseSectionClient({
             target="_blank"
             rel="noopener noreferrer"
             aria-label={t("shareTwitter")}
+            className={SOCIAL_LINK}
           >
             <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
               <path d="M12.6 1.5h2.45l-5.35 6.12L16 14.5h-4.93l-3.86-5.05-4.42 5.05H.34l5.72-6.54L0 1.5h5.05l3.49 4.61L12.6 1.5Zm-.86 11.52h1.36L4.32 2.9H2.86l8.88 10.12Z" />
@@ -478,6 +487,7 @@ export function PurchaseSectionClient({
               target="_blank"
               rel="noopener noreferrer"
               aria-label={t("shareInstagram")}
+              className={SOCIAL_LINK}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                 <rect x="3" y="3" width="18" height="18" rx="5" />

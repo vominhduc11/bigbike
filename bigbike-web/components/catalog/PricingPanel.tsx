@@ -18,10 +18,14 @@ type PricingPanelProps = {
 };
 
 export function PricingPanel({ data, fallback, isLoading }: PricingPanelProps) {
+  const priceText = "m-0 text-[1.5rem] font-semibold text-black";
+
   if (isLoading && !fallback) {
     return (
-      <div className="price">
-        <p aria-hidden="true">&nbsp;</p>
+      <div className="mb-[5px]">
+        <p className={priceText} aria-hidden="true">
+          &nbsp;
+        </p>
       </div>
     );
   }
@@ -33,8 +37,8 @@ export function PricingPanel({ data, fallback, isLoading }: PricingPanelProps) {
 
   if (!current) {
     return (
-      <div className="price">
-        <p>Liên hệ</p>
+      <div className="mb-[5px]">
+        <p className={priceText}>Liên hệ</p>
       </div>
     );
   }
@@ -42,10 +46,16 @@ export function PricingPanel({ data, fallback, isLoading }: PricingPanelProps) {
   const hasSale = Boolean(compare && compare > current);
 
   return (
-    <div className="price">
-      <p className="price js-single-price">
-        {hasSale && compare ? <del>{formatVnd(compare)}</del> : null}
-        {hasSale ? <ins>{formatVnd(current)}</ins> : formatVnd(current)}
+    <div className="mb-[5px]">
+      <p className={`js-single-price ${priceText}`}>
+        {hasSale && compare ? (
+          <del className="text-muted-foreground">{formatVnd(compare)}</del>
+        ) : null}
+        {hasSale ? (
+          <ins className="block mt-[5px] no-underline">{formatVnd(current)}</ins>
+        ) : (
+          formatVnd(current)
+        )}
       </p>
     </div>
   );

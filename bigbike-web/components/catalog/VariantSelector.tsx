@@ -141,25 +141,19 @@ export function VariantSelector({
         const isColorGroup = isColorAttribute(group.name);
 
         return (
-          <div
-            key={group.name}
-            className={cn(
-              "options",
-              `pa_${toWpAttributeSlug(group.name)}`,
-              isColorGroup && "color",
-              "size",
-            )}
-          >
-            <div className="group">
-              <div className="group-label">
-                <label>{group.name}</label>
+          <div key={group.name} className="mb-[15px]">
+            <div>
+              <div className="inline-block max-md:block align-top pr-[25px] max-md:pr-0">
+                <label className="block m-0 font-[family-name:var(--bb-font-display)] text-[24px] max-md:text-[18px] font-semibold !leading-[52px] max-md:!leading-[1.2] max-md:mb-2.5 text-black">
+                  {group.name}
+                </label>
                 {currentValue ? (
                   <span className="ml-2 align-top text-base font-normal leading-[52px] text-muted-foreground">
                     {currentValue}
                   </span>
                 ) : null}
               </div>
-              <div className="variation-radios">
+              <div className="inline-flex flex-wrap gap-2.5 max-md:gap-2 align-top">
                 {group.values.map((info) => {
                   const { value, colorHex, swatchImageUrl, variantImageUrl } = info;
                   const probeSelection = { ...selectedOptions, [group.name]: value };
@@ -185,10 +179,8 @@ export function VariantSelector({
                     <div
                       key={`${group.name}-${value}`}
                       className={cn(
-                        "form-group",
-                        isColorGroup && "form-group--color",
-                        active && "is-active",
-                        !available && !active && "is-disabled",
+                        "relative inline-block w-[52px] h-[52px] m-0 p-0 border-none bg-transparent cursor-pointer max-md:w-11 max-md:h-11 max-md:!leading-[42px]",
+                        !available && !active && "cursor-not-allowed opacity-45",
                       )}
                     >
                       <input
@@ -196,7 +188,7 @@ export function VariantSelector({
                         type="radio"
                         name={`attribute_pa_${toWpAttributeSlug(group.name)}`}
                         value={value}
-                        className={cn("form-control", isColorGroup && "js-change-color")}
+                        className="absolute inset-0 z-[2] w-[52px] h-[52px] m-0 cursor-pointer opacity-0 max-md:w-11 max-md:h-11 max-md:!leading-[42px] disabled:cursor-not-allowed"
                         checked={active}
                         disabled={disabled || (!available && !active)}
                         onChange={() => {
@@ -205,7 +197,14 @@ export function VariantSelector({
                         }}
                       />
                       <label
-                        className="bb-wp-variant-label"
+                        className={cn(
+                          "block w-[52px] h-[52px] border border-black bg-[#f5f5f5] bg-center bg-no-repeat bg-contain text-center text-[1.5rem] font-semibold uppercase text-black !leading-[50px] max-md:w-11 max-md:h-11 max-md:!leading-[42px]",
+                          active && "bg-black text-white",
+                          isColorGroup && !active && "text-transparent",
+                          isColorGroup &&
+                            active &&
+                            "relative after:absolute after:inset-0 after:text-center after:text-[20px] after:leading-[52px] after:text-white after:content-['✓'] after:[text-shadow:0_1px_2px_rgba(0,0,0,0.45)]",
+                        )}
                         style={swatchStyle}
                         htmlFor={inputId}
                         title={value}
