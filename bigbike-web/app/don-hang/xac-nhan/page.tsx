@@ -4,6 +4,8 @@ import { getOrderLookup } from "@/lib/api/public-api";
 import { PurchaseEvent } from "@/components/analytics/PurchaseEvent";
 import type { OrderAddress, OrderDetail } from "@/lib/contracts/commerce";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
+import { sectionHeading } from "@/lib/ui-classes";
+import { cn } from "@/lib/utils";
 import { formatAddress, formatDate, formatVnd } from "@/lib/utils/format";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -137,7 +139,7 @@ function OrderDetails({
 
   return (
     <section className="woocommerce-order-details">
-      <h2 className="woocommerce-order-details__title bb-section-heading m-0 mb-5">
+      <h2 className={cn(sectionHeading, "woocommerce-order-details__title m-0 mb-5")}>
         {t("orderDetailsTitle")}
       </h2>
       <div className="overflow-x-auto">
@@ -224,7 +226,7 @@ function AddressColumn({ title, address }: { title: string; address: OrderAddres
 
   return (
     <div className="woocommerce-column woocommerce-column--1 woocommerce-column--billing-address col-1">
-      <h2 className="woocommerce-column__title bb-section-heading m-0 mb-4">
+      <h2 className={cn(sectionHeading, "woocommerce-column__title m-0 mb-4")}>
         {title}
       </h2>
       <address className="m-0 border border-border p-4 not-italic leading-7 text-foreground">

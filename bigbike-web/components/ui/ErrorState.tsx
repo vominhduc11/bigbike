@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
+import { stateTitle } from "@/lib/ui-classes";
 
 type ErrorStateProps = {
   title?: string;
@@ -18,7 +19,7 @@ export function ErrorState({ title, message, retryHref }: ErrorStateProps) {
       role="alert"
       aria-live="assertive"
     >
-      <p className="bb-state-title">
+      <p className={stateTitle}>
         {title ?? t("errorTitle")}
       </p>
       <p className="m-0 text-muted-foreground">{message}</p>

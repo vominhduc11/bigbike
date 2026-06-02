@@ -19,6 +19,8 @@ import { ContactInfoList } from "@/components/ui/ContactInfoList";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { getPageBySlug, listBrands, listPublicSettings } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
+import { sectionHeading } from "@/lib/ui-classes";
+import { cn } from "@/lib/utils";
 import { resolveMediaUrl, telHref } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import { toBrandPath, toPagePath } from "@/lib/utils/routes";
@@ -166,7 +168,7 @@ export default async function AboutPage() {
         <Container>
           <div className="grid grid-cols-1 items-start gap-6 pb-10 lg:grid-cols-[4fr_5fr_3fr] lg:gap-[30px] xl:gap-[48px] 2xl:gap-[60px]">
             <div>
-              <h3 className="bb-section-heading mb-4">
+              <h3 className={cn(sectionHeading, "mb-4")}>
                 {t("aboutBigbike")}
               </h3>
               <p className="m-0 text-body leading-snug text-muted-foreground">
@@ -212,7 +214,7 @@ export default async function AboutPage() {
 
           <div className="grid grid-cols-1 items-start gap-[30px] py-[60px] lg:grid-cols-[4fr_8fr] xl:gap-[48px] xl:py-[80px] 2xl:py-[100px]">
             <div>
-              <h3 className="bb-section-heading mb-4 leading-heading">
+              <h3 className={cn(sectionHeading, "mb-4 leading-heading")}>
                 {t("aboutQualityTitle")}
               </h3>
               <p className="m-0 text-body leading-relaxed text-muted-foreground">
@@ -236,7 +238,7 @@ export default async function AboutPage() {
 
           {(address || hotline || hotline2 || facebookUrl) ? (
             <div className="py-10">
-              <h3 className="bb-section-heading mb-3">
+              <h3 className={cn(sectionHeading, "mb-3")}>
                 {t("aboutConnectTitle")}
               </h3>
               <p className="mb-2 text-muted-foreground">{t("aboutConnectBody1")}</p>

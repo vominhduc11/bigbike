@@ -10,6 +10,8 @@ import { RatingStars } from "@/components/ui/RatingStars";
 import { formatVnd, safeText, stockStateLabelWithT } from "@/lib/utils/format";
 import { derivePricing } from "@/lib/pricing";
 import { toProductPath } from "@/lib/utils/routes";
+import { tableHeader } from "@/lib/ui-classes";
+import { cn } from "@/lib/utils";
 import type { Product } from "@/lib/contracts/public";
 
 type ComparisonTableProps = {
@@ -115,7 +117,7 @@ export function ComparisonTable({ products }: ComparisonTableProps) {
       <table className="w-full min-w-[600px] border-collapse text-sm">
         <thead>
           <tr>
-            <th className="bb-table-header sticky left-0 z-[1] min-w-[120px] bg-muted px-3 py-3 text-left align-bottom text-muted-foreground">
+            <th className={cn(tableHeader, "sticky left-0 z-[1] min-w-[120px] bg-muted px-3 py-3 text-left align-bottom text-muted-foreground")}>
               {t("tableProductCol")}
             </th>
             {products.map((product) => {
@@ -213,7 +215,7 @@ export function ComparisonTable({ products }: ComparisonTableProps) {
                     <tr>
                       <th
                         colSpan={colCount}
-                        className="bb-table-header border-t border-border bg-secondary px-3 py-2 text-left text-foreground"
+                        className={cn(tableHeader, "border-t border-border bg-secondary px-3 py-2 text-left text-foreground")}
                       >
                         {specKey.group}
                       </th>
@@ -258,14 +260,14 @@ export function ComparisonTable({ products }: ComparisonTableProps) {
                       <button
                         type="button"
                         onClick={() => handleAddToCart(product)}
-                        className="bb-table-header bg-brand px-3 py-2 text-center text-white transition-colors hover:bg-brand-hover"
+                        className={cn(tableHeader, "bg-brand px-3 py-2 text-center text-white transition-colors hover:bg-brand-hover")}
                       >
                         {t("addToCart")}
                       </button>
                     )}
                     <Link
                       href={toProductPath(product.slug)}
-                      className="bb-table-header border border-border px-3 py-2 text-center text-foreground transition-colors hover:border-brand hover:text-brand"
+                      className={cn(tableHeader, "border border-border px-3 py-2 text-center text-foreground transition-colors hover:border-brand hover:text-brand")}
                     >
                       {t("viewProduct")}
                     </Link>

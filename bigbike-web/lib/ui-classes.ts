@@ -14,6 +14,29 @@ export const cardHover =
 /** Bordered surface card chrome: product card, news card, generic card, etc. */
 export const cardChrome = `border border-border bg-card ${cardHover}`;
 
+/* ── Shared typography bundles (were `.bb-*` leaf classes in globals.css) ──────
+ * Direct-applied text-style classes with no contextual overrides. Font-size
+ * tokens use the `text-<n>` @theme utilities (sm/base/xs/26 map 1:1 to the
+ * --bb-text-* px/clamp values); `text-muted-foreground` == --bb-text-muted,
+ * `text-brand` == --bb-text-brand, `tracking-display/wide` == the --bb-tracking-*. */
+
+/** Form field label (was `.bb-field-label`). */
+export const fieldLabel = "text-sm font-bold uppercase tracking-display text-muted-foreground";
+/** Section heading, display font (was `.bb-section-heading`). */
+export const sectionHeading = "font-display text-26 font-semibold uppercase text-foreground";
+/** Smaller section subheading (was `.bb-section-subheading`). */
+export const sectionSubheading = "font-heading text-base font-semibold uppercase text-foreground";
+/** Empty/error state title (was `.bb-state-title`). */
+export const stateTitle = "m-0 font-heading text-base font-semibold uppercase text-foreground";
+/** Inline meta label (was `.bb-meta-label`). */
+export const metaLabel = "text-sm uppercase tracking-display text-muted-foreground";
+/** Table column header (was `.bb-table-header`). */
+export const tableHeader = "font-heading text-xs font-semibold uppercase tracking-wide";
+/** Detail value cell (was `.bb-detail-table-cell`). */
+export const detailTableCell = "mt-[3px] block text-sm font-bold normal-case tracking-wide text-foreground";
+/** Category badge text (was `.bb-category-badge`). */
+export const categoryBadge = "m-0 text-sm font-bold uppercase tracking-display text-brand";
+
 /* ── Skeleton shimmer system (was `.bb-skel*` in globals.css) ──────────────────
  * Loading-placeholder primitives shared by Skeletons.tsx + the per-page loading
  * states. Shapes are square by default (the global `.bb-theme :is(span…)` rule

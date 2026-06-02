@@ -8,7 +8,7 @@ import { ProductCard } from "@/components/catalog/ProductCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { skelBase, skelStack } from "@/lib/ui-classes";
+import { sectionHeading, skelBase, skelStack } from "@/lib/ui-classes";
 
 function WishlistContent() {
   const t = useTranslations("Account.wishlist");
@@ -18,7 +18,7 @@ function WishlistContent() {
   return (
     <>
       <div className="flex justify-between items-end mb-5 pb-4 border-b border-border">
-        <h2 className="bb-section-heading tracking-wide m-0">{t("heading")}</h2>
+        <h2 className={cn(sectionHeading, "tracking-wide m-0")}>{t("heading")}</h2>
       </div>
 
       {error && <p className="text-brand text-sm mb-4 m-0">{(error as Error).message}</p>}

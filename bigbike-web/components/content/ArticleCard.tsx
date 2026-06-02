@@ -7,6 +7,7 @@ import { formatDate } from "@/lib/utils/format";
 import { stripHtmlToText } from "@/lib/utils/text";
 import { toArticlePath } from "@/lib/utils/routes";
 import { MediaImage } from "@/components/ui/MediaImage";
+import { categoryBadge } from "@/lib/ui-classes";
 
 type ArticleCardProps = {
   article: Article;
@@ -54,7 +55,7 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
         <div className="bb-news-body">
           <span className="bb-news-date">{publishedDate}</span>
           <div className="bb-news-body-inside">
-            <p className="bb-category-badge">{category}</p>
+            <p className={categoryBadge}>{category}</p>
             <h3 className="bb-news-card-title">{title}</h3>
             <p className="bb-news-excerpt">{excerpt}</p>
           </div>

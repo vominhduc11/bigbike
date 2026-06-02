@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { type RecentProduct, getRecentProducts, saveRecentProduct } from "@/lib/recently-viewed";
 import { formatVnd, resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { toProductPath } from "@/lib/utils/routes";
+import { categoryBadge } from "@/lib/ui-classes";
 
 type Props = {
   currentProductId: string;
@@ -66,7 +67,7 @@ export function RecentlyViewedSection({ currentProductId, currentProduct }: Prop
               </div>
               <div className="flex flex-col gap-[3px] px-2.5 pt-2 pb-2.5">
                 {p.categoryName && (
-                  <p className="bb-category-badge">
+                  <p className={categoryBadge}>
                     {p.categoryName}
                   </p>
                 )}

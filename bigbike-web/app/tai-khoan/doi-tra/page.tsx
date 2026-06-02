@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { skelBase, skelCol, skelRow, skelStack } from "@/lib/ui-classes";
+import { detailTableCell, fieldLabel, metaLabel, sectionHeading, skelBase, skelCol, skelRow, skelStack } from "@/lib/ui-classes";
 
 const RETURN_STATUS_KEYS = ["PENDING", "APPROVED", "REJECTED", "RECEIVED", "INSPECTING", "COMPLETED", "REFUNDED"] as const;
 const RETURN_REASON_KEYS = ["DEFECTIVE", "WRONG_ITEM", "NOT_AS_DESCRIBED", "CHANGED_MIND", "OTHER"] as const;
@@ -124,13 +124,13 @@ function ReturnDetailPanel({ id, onClose }: { id: string; onClose: () => void })
             {/* Items */}
             {detail.items && detail.items.length > 0 && (
               <div>
-                <p className="bb-field-label mb-[10px]">{t("itemsHeading")}</p>
+                <p className={cn(fieldLabel, "mb-[10px]")}>{t("itemsHeading")}</p>
                 <table className="w-full border-collapse text-sm text-foreground">
                   <thead>
                     <tr>
-                      <th className="bb-meta-label text-left py-1.5 border-b border-border">{t("colProduct")}</th>
-                      <th className="bb-meta-label text-center py-1.5 border-b border-border">{t("colQty")}</th>
-                      <th className="bb-meta-label text-right py-1.5 border-b border-border">{t("colUnitPrice")}</th>
+                      <th className={cn(metaLabel, "text-left py-1.5 border-b border-border")}>{t("colProduct")}</th>
+                      <th className={cn(metaLabel, "text-center py-1.5 border-b border-border")}>{t("colQty")}</th>
+                      <th className={cn(metaLabel, "text-right py-1.5 border-b border-border")}>{t("colUnitPrice")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -152,7 +152,7 @@ function ReturnDetailPanel({ id, onClose }: { id: string; onClose: () => void })
             {/* History */}
             {detail.history && detail.history.length > 0 && (
               <div>
-                <p className="bb-field-label mb-[10px]">{t("historyHeading")}</p>
+                <p className={cn(fieldLabel, "mb-[10px]")}>{t("historyHeading")}</p>
                 <ol className="list-none m-0 p-0 flex flex-col">
                   {detail.history.map((h, i) => (
                     <li key={i} className="flex gap-3 pb-4 relative last:pb-0 [&:not(:last-child)]:before:content-[''] [&:not(:last-child)]:before:absolute [&:not(:last-child)]:before:left-[5px] [&:not(:last-child)]:before:top-[14px] [&:not(:last-child)]:before:bottom-0 [&:not(:last-child)]:before:w-px [&:not(:last-child)]:before:bg-border">
@@ -314,7 +314,7 @@ function ReturnsContent() {
     <>
       <div className="flex justify-between items-end mb-5 pb-4 border-b border-border">
         <div>
-          <h2 className="bb-section-heading tracking-wide m-0">{t("heading")}</h2>
+          <h2 className={cn(sectionHeading, "tracking-wide m-0")}>{t("heading")}</h2>
           <p className="text-sm text-muted-foreground mt-1 m-0">{t("subtitle")}</p>
         </div>
         {!showForm && (
@@ -333,14 +333,14 @@ function ReturnsContent() {
       {/* Create return form */}
       {showForm && (
         <div className="bg-card border border-border p-[22px_24px] mb-6">
-          <p className="bb-field-label mb-4">{t("createHeading")}</p>
+          <p className={cn(fieldLabel, "mb-4")}>{t("createHeading")}</p>
           {formError && (
             <FormNotice tone="danger" className="p-[14px_18px] mb-3"><p className="m-0">{formError}</p></FormNotice>
           )}
           <form onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 gap-[14px] sm:grid-cols-2">
               <div className="flex flex-col gap-1.5 col-span-full">
-                <label className="bb-field-label">{t("orderLabel")}</label>
+                <label className={fieldLabel}>{t("orderLabel")}</label>
                 {ordersLoading ? (
                   <span className={cn(skelBase, "h-[0.85em]")} style={{ width: "100%", display: "block", height: 38 }} />
                 ) : returnableOrders.length === 0 ? (
@@ -364,7 +364,7 @@ function ReturnsContent() {
               {/* Line items appear after an order is chosen */}
               {selectedOrderId && (
                 <div className="flex flex-col gap-1.5 col-span-full">
-                  <label className="bb-field-label mb-2 block">{t("pickItemLabel")}</label>
+                  <label className={cn(fieldLabel, "mb-2 block")}>{t("pickItemLabel")}</label>
                   {eligibilityLoading ? (
                     <span className={cn(skelBase, "h-[0.85em]")} style={{ width: "100%", display: "block", height: 32 }} />
                   ) : !eligibility ? (
@@ -404,7 +404,7 @@ function ReturnsContent() {
               )}
 
               <div className="flex flex-col gap-1.5 col-span-full">
-                <label className="bb-field-label">{t("reasonLabel")}</label>
+                <label className={fieldLabel}>{t("reasonLabel")}</label>
                 <Select name="reason" required>
                   <SelectTrigger>
                     <SelectValue placeholder={t("reasonPlaceholder")} />
@@ -417,7 +417,7 @@ function ReturnsContent() {
                 </Select>
               </div>
               <div className="flex flex-col gap-1.5 col-span-full">
-                <label className="bb-field-label">{t("noteLabel")}</label>
+                <label className={fieldLabel}>{t("noteLabel")}</label>
                 <Textarea
                   name="customerNote"
                   rows={3}
@@ -474,28 +474,28 @@ function ReturnsContent() {
               >
                 <div className="flex justify-between items-center py-[14px] px-5 bg-[var(--bb-bg-surface-raised)] border-b border-border gap-[14px] flex-wrap">
                   <div className="flex gap-[22px] max-sm:flex-wrap max-sm:gap-x-[18px] max-sm:gap-y-3">
-                    <div className="bb-meta-label">
+                    <div className={metaLabel}>
                       {t("metaCode")}
-                      <b className="bb-detail-table-cell font-mono">{ret.returnNumber}</b>
+                      <b className={cn(detailTableCell, "font-mono")}>{ret.returnNumber}</b>
                     </div>
                     {ret.orderNumber && (
-                      <div className="bb-meta-label">
+                      <div className={metaLabel}>
                         {t("metaOrder")}
-                        <b className="bb-detail-table-cell font-mono">#{ret.orderNumber}</b>
+                        <b className={cn(detailTableCell, "font-mono")}>#{ret.orderNumber}</b>
                       </div>
                     )}
-                    <div className="bb-meta-label">
+                    <div className={metaLabel}>
                       {t("metaReason")}
-                      <b className="bb-detail-table-cell">{reasonLabel(ret.reason)}</b>
+                      <b className={detailTableCell}>{reasonLabel(ret.reason)}</b>
                     </div>
-                    <div className="bb-meta-label">
+                    <div className={metaLabel}>
                       {t("metaCreatedAt")}
-                      <b className="bb-detail-table-cell font-mono">{formatDate(ret.createdAt)}</b>
+                      <b className={cn(detailTableCell, "font-mono")}>{formatDate(ret.createdAt)}</b>
                     </div>
                     {ret.refundAmount > 0 && (
-                      <div className="bb-meta-label">
+                      <div className={metaLabel}>
                         {t("metaRefund")}
-                        <b className="bb-detail-table-cell">{formatVnd(ret.refundAmount)}</b>
+                        <b className={detailTableCell}>{formatVnd(ret.refundAmount)}</b>
                       </div>
                     )}
                   </div>

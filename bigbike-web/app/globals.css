@@ -362,30 +362,6 @@ body {
 
 /* ── Shared typography classes ─────────────────────────────────────────── */
 
-.bb-field-label {
-  font-size: var(--bb-text-sm);
-  font-weight: 700;
-  letter-spacing: var(--bb-tracking-display);
-  text-transform: uppercase;
-  color: var(--bb-text-muted);
-}
-
-.bb-section-heading {
-  font-family: var(--bb-font-display);
-  font-size: var(--bb-text-26);
-  font-weight: 600;
-  text-transform: uppercase;
-  color: var(--bb-text-primary);
-}
-
-.bb-section-subheading {
-  font-family: var(--bb-font-heading);
-  font-size: var(--bb-text-base);
-  font-weight: 600;
-  text-transform: uppercase;
-  color: var(--bb-text-primary);
-}
-
 .bb-auth-heading {
   font-family: var(--bb-font-heading);
   font-size: var(--fs-h3);
@@ -401,49 +377,6 @@ body {
   padding-top: 0;
   padding-bottom: 0;
   font-size: var(--bb-text-sm);
-}
-
-.bb-state-title {
-  font-family: var(--bb-font-heading);
-  font-size: var(--bb-text-base);
-  font-weight: 600;
-  text-transform: uppercase;
-  color: var(--bb-text-primary);
-  margin: 0;
-}
-
-.bb-meta-label {
-  font-size: var(--bb-text-sm);
-  color: var(--bb-text-muted);
-  letter-spacing: var(--bb-tracking-display);
-  text-transform: uppercase;
-}
-
-.bb-table-header {
-  font-family: var(--bb-font-heading);
-  font-size: var(--bb-text-xs);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: var(--bb-tracking-wide);
-}
-
-.bb-detail-table-cell {
-  display: block;
-  font-size: var(--bb-text-sm);
-  font-weight: 700;
-  color: var(--bb-text-primary);
-  letter-spacing: var(--bb-tracking-wide);
-  text-transform: none;
-  margin-top: 3px;
-}
-
-.bb-category-badge {
-  margin: 0;
-  font-size: var(--bb-text-sm);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: var(--bb-tracking-display);
-  color: var(--bb-text-brand);
 }
 
 /* ── End shared typography classes ─────────────────────────────────────── */

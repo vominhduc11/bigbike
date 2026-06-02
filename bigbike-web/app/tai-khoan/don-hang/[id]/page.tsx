@@ -7,6 +7,8 @@ import { AccountSectionHeading, AccountShell } from "@/components/layout/Account
 import { useOrder } from "@/lib/query/hooks";
 import { formatAddress, formatDate, formatVnd, orderStatusLabelWithT, paymentMethodLabelWithT, safeText } from "@/lib/utils/format";
 import { toOrderHistoryPath } from "@/lib/utils/routes";
+import { cn } from "@/lib/utils";
+import { sectionSubheading } from "@/lib/ui-classes";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -56,7 +58,7 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
         })}
       </p>
 
-      <h2 className="bb-section-subheading mb-3">{t("invoice")}</h2>
+      <h2 className={cn(sectionSubheading, "mb-3")}>{t("invoice")}</h2>
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-left text-sm">
           <thead>
@@ -112,7 +114,7 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
 
       <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2 xl:gap-8">
         <section>
-          <h2 className="bb-section-subheading mb-3">{t("billingAddress")}</h2>
+          <h2 className={cn(sectionSubheading, "mb-3")}>{t("billingAddress")}</h2>
           {billingAddress ? (
             <div className="text-sm leading-relaxed text-muted-foreground">
               <p className="m-0 font-semibold text-foreground">{safeText(billingAddress.fullName, "—")}</p>
@@ -126,7 +128,7 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
         </section>
 
         <section>
-          <h2 className="bb-section-subheading mb-3">{t("shippingAddress")}</h2>
+          <h2 className={cn(sectionSubheading, "mb-3")}>{t("shippingAddress")}</h2>
           {shippingAddress ? (
             <div className="text-sm leading-relaxed text-muted-foreground">
               <p className="m-0 font-semibold text-foreground">{safeText(shippingAddress.fullName, "—")}</p>

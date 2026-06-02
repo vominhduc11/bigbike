@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Container } from "@/components/layout/Container";
 import { lookupWarranty, type WarrantyLookupResult } from "@/lib/api/client-api";
 import { formatDate } from "@/lib/utils/format";
+import { fieldLabel } from "@/lib/ui-classes";
 
 function StatusBadge({ status, daysLeft, t }: { status: WarrantyLookupResult["status"]; daysLeft: number; t: ReturnType<typeof useTranslations<"Warranty">> }) {
   if (status === "VOIDED") {
@@ -56,7 +57,7 @@ export function WarrantyContent() {
 
       <form onSubmit={handleSubmit} className="bg-card border border-border py-[22px] px-6 mb-[18px] mt-6">
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="serial-input" className="bb-field-label">
+          <label htmlFor="serial-input" className={fieldLabel}>
             {t("serialLabel")}<span className="text-brand ml-[3px]">*</span>
           </label>
           <div className="flex gap-2 max-sm:flex-col">

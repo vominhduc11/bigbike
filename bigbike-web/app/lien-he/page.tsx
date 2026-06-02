@@ -10,6 +10,8 @@ import { ContactInfoList } from "@/components/ui/ContactInfoList";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { getPageBySlug, listPublicSettings } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
+import { sectionHeading } from "@/lib/ui-classes";
+import { cn } from "@/lib/utils";
 import { safeText, telHref } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import { toHomePath, toPagePath } from "@/lib/utils/routes";
@@ -107,7 +109,7 @@ export default async function ContactPage() {
 
           <div className="grid grid-cols-1 items-start gap-10 pb-[60px] pt-8 lg:grid-cols-2 lg:gap-[60px] 3xl:gap-20 4xl:gap-[100px]">
             <div className="min-w-0 2xl:max-w-[640px] 4xl:max-w-[760px]">
-              <h2 className="bb-section-heading mb-6">
+              <h2 className={cn(sectionHeading, "mb-6")}>
                 {t("contactInfoHeading")}
               </h2>
               <ContactInfoList
@@ -186,7 +188,7 @@ export default async function ContactPage() {
 
             {(mapEmbedSrc || address || hotline) ? (
               <div className="min-w-0">
-                <h2 className="bb-section-heading mb-6">
+                <h2 className={cn(sectionHeading, "mb-6")}>
                   {t("storeSystemHeading")}
                 </h2>
                 {mapEmbedSrc ? (

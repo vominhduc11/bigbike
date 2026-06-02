@@ -12,6 +12,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Button } from "@/components/ui/button";
 import { toProductListPath } from "@/lib/utils/routes";
+import { sectionHeading } from "@/lib/ui-classes";
 import type { Product } from "@/lib/contracts/public";
 
 export function CompareClient() {
@@ -40,7 +41,7 @@ export function CompareClient() {
           <p className="bb-kicker">
             {t("kicker")}
           </p>
-          <h1 className="bb-section-heading">
+          <h1 className={sectionHeading}>
             {t("heading")}
           </h1>
           <p className="mt-1 text-muted-foreground">
