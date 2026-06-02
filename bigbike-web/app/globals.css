@@ -1510,128 +1510,6 @@ body {
 
 }
 
-.bb-mobile-header-account {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 30px 25px;
-  border-bottom: 1px solid #4b4b4b;
-  color: #ffffff;
-}
-
-.bb-mobile-header-account.is-authenticated {
-  position: relative;
-  align-items: flex-start;
-}
-
-.bb-mobile-header-auth-links {
-  color: #ffffff;
-  font-size: 16px;
-}
-
-.bb-mobile-header-auth-links a {
-  color: #ffffff;
-  text-decoration: none;
-}
-
-.bb-mobile-header-auth-links span {
-  margin-inline: 8px;
-}
-
-.bb-mobile-header-account-copy p,
-.bb-mobile-header-account-copy span {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.bb-mobile-header-account-copy span {
-  display: block;
-  text-transform: none;
-}
-
-.bb-mobile-header-account-copy a {
-  display: inline-block;
-  margin-top: 12px;
-  color: #4b4b4b;
-  font-size: var(--fs-caption);
-  font-weight: 400;
-  text-decoration: none;
-  text-transform: capitalize;
-}
-
-.bb-mobile-header-logout {
-  position: absolute;
-  top: 50%;
-  right: 25px;
-  border: none;
-  background: transparent;
-  color: #ffffff;
-  transform: translateY(-50%);
-  cursor: pointer;
-}
-
-.bb-mobile-nav {
-  display: grid;
-}
-
-.bb-mobile-nav-link {
-  display: flex;
-  align-items: center;
-  padding: 20px 25px;
-  color: #ffffff;
-  font-family: var(--bb-font-cta);
-  font-size: 16px;
-  font-weight: 500;
-  text-decoration: none;
-  text-transform: uppercase;
-}
-
-.bb-mobile-nav-link:hover,
-.bb-mobile-nav-link:focus-visible,
-.bb-mobile-nav-link.active {
-  color: var(--bb-brand-primary);
-  outline: none;
-}
-
-.bb-mobile-nav-row {
-  position: relative;
-  display: flex;
-  align-items: stretch;
-  border-bottom: 1px solid #4b4b4b;
-}
-
-.bb-mobile-nav-row > .bb-mobile-nav-link {
-  flex: 1;
-  padding-right: 72px;
-}
-
-.bb-mobile-nav-toggle {
-  position: absolute;
-  top: 18px;
-  right: 18px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border: none;
-  background: transparent;
-  color: #ffffff;
-  cursor: pointer;
-}
-
-.bb-mobile-nav-toggle:hover,
-.bb-mobile-nav-toggle:focus-visible {
-  color: var(--bb-brand-primary);
-  outline: none;
-}
-
-.bb-mobile-nav-branch > .bb-mobile-nav-link {
-  border-bottom: 1px solid #4b4b4b;
-}
-
 .bb-mobile-nav-children {
   display: grid;
   background: rgba(255, 255, 255, 0.02);
@@ -1656,110 +1534,10 @@ body {
   }
 }
 
-.bb-mobile-header-contact {
-  padding: 30px 25px;
-  border-top: 1px solid #4b4b4b;
-  color: #cecece;
-  text-align: left;
-}
-
-.bb-mobile-header-contact h2 {
-  margin: 0;
-  font-family: var(--bb-font-display);
-  font-size: 16px;
-  font-weight: 600;
-  text-transform: uppercase;
-  color: #ffffff;
-}
-
-.bb-mobile-header-contact-list {
-  display: grid;
-  gap: 30px;
-  margin: 30px 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.bb-mobile-header-contact-list li {
-  display: grid;
-  grid-template-columns: 40px minmax(0, 1fr);
-  gap: 16px;
-}
-
-.bb-mobile-header-contact-icon {
-  color: var(--bb-brand-primary);
-}
-
-.bb-mobile-header-contact-copy p,
-.bb-mobile-header-contact-copy a {
-  margin: 0;
-  color: #cecece;
-  font-family: var(--bb-font-body);
-  font-size: var(--fs-caption);
-  font-weight: 400;
-  line-height: 1.7;
-  text-decoration: none;
-}
-
-.bb-mobile-header-contact-copy a {
-  display: block;
-}
-
-.bb-mobile-header-contact-copy a:hover,
-.bb-mobile-header-contact-copy a:focus-visible {
-  color: var(--bb-brand-primary);
-  outline: none;
-}
-
-/* Tablet drawer — light theme color overrides (must come AFTER base dark rules) */
+/* Tablet drawer — nav-children accordion background (light theme) */
 @media (min-width: 768px) and (max-width: 1260px) {
-  .bb-mobile-header-account {
-    color: var(--bb-text-primary);
-    border-bottom-color: #e8e8e8;
-  }
-
-  .bb-mobile-header-auth-links,
-  .bb-mobile-header-auth-links a {
-    color: var(--bb-text-primary);
-  }
-
-  .bb-mobile-header-account-copy a {
-    color: var(--bb-brand-primary);
-  }
-
-  .bb-mobile-header-logout {
-    color: var(--bb-text-primary);
-  }
-
-  .bb-mobile-nav-link {
-    color: var(--bb-text-primary);
-  }
-
-  .bb-mobile-nav-row,
-  .bb-mobile-nav-branch > .bb-mobile-nav-link {
-    border-color: #e8e8e8;
-  }
-
-  .bb-mobile-nav-toggle {
-    color: var(--bb-text-primary);
-  }
-
   .bb-mobile-nav-children {
     background: rgba(0, 0, 0, 0.02);
-  }
-
-  .bb-mobile-header-contact {
-    color: #6f6f6f;
-    border-top-color: #e8e8e8;
-  }
-
-  .bb-mobile-header-contact h2 {
-    color: var(--bb-text-primary);
-  }
-
-  .bb-mobile-header-contact-copy p,
-  .bb-mobile-header-contact-copy a {
-    color: #000000;
   }
 }
 
@@ -3728,9 +3506,6 @@ img, picture, video, svg, canvas { max-width: 100%; }
 .bb-pagination-page,
 .bb-pagination-page {
     min-width: var(--bb-touch-target);
-    min-height: var(--bb-touch-target);
-  }
-  .bb-mobile-nav a {
     min-height: var(--bb-touch-target);
   }
 }
@@ -9902,54 +9677,8 @@ body .bb-home .white.block-title h3 {
     cursor: pointer;
   }
 
-  .bb-mobile-header-account {
-    gap: 12px;
-    padding: 16px 14px;
-    border-bottom: 1px solid var(--bb-mobile-shell-border);
-    background: var(--bb-mobile-shell-bg);
-  }
-
-  .bb-mobile-nav-link {
-    min-height: 52px;
-    padding: 0 14px;
-    border-bottom: 1px solid var(--bb-mobile-shell-border);
-    font-size: 14px;
-    letter-spacing: 0.02em;
-  }
-
-  .bb-mobile-nav-row {
-    border-bottom: 0;
-  }
-
-  .bb-mobile-nav-row > .bb-mobile-nav-link {
-    padding-right: 62px;
-  }
-
-  .bb-mobile-nav-toggle {
-    top: 8px;
-    right: 10px;
-    width: var(--bb-touch-target);
-    height: var(--bb-touch-target);
-  }
-
-  .bb-mobile-nav-branch > .bb-mobile-nav-link {
-    border-bottom: 1px solid var(--bb-mobile-shell-border);
-  }
-
   .bb-mobile-nav-children {
     background: color-mix(in srgb, var(--bb-text-inverse) 4%, transparent);
-  }
-
-  .bb-mobile-header-contact {
-    margin-top: auto;
-    padding: 18px 14px calc(16px + env(safe-area-inset-bottom));
-    border-top: 1px solid var(--bb-mobile-shell-border);
-    background: var(--bb-mobile-shell-surface-2);
-  }
-
-  .bb-mobile-header-contact-list {
-    gap: 14px;
-    margin-top: 16px;
   }
 
   .bb-cart-toast {
@@ -11828,16 +11557,11 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
     transition: transform 280ms var(--bb-ease-standard);
   }
 
-  .bb-mobile-drawer-head button:focus-visible,
-  .bb-mobile-nav-link:focus-visible,
-  .bb-mobile-nav-toggle:focus-visible,
-  .bb-mobile-header-logout:focus-visible {
+  .bb-mobile-drawer-head button:focus-visible {
     outline: var(--bb-focus-outline);
     outline-offset: -2px;
   }
 
-  .bb-mobile-nav-link,
-  .bb-mobile-nav-toggle,
   .bb-mobile-drawer-head button {
     min-height: var(--bb-touch-target);
   }

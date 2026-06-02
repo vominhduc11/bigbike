@@ -30,6 +30,48 @@ type MobileHeaderMenuProps = {
   hotline2: string;
 };
 
+/* Drawer content uses a dual-theme / dual-structure cascade (kept inline since
+   the panel/overlay/drawer transitions stay as CSS shell):
+   - base / max-md:  MOBILE ≤767  → dark shell (--bb-mobile-shell-* tokens; only
+     defined inside @media ≤767, so always reference them via max-md:)
+   - md:             TABLET 768–1260 → white theme (component is hidden ≥1261)
+   Borders move between elements per breakpoint: at mobile each nav-link carries
+   the divider; at tablet the nav-row carries it. */
+const OUTLINE_MOBILE =
+  "max-md:focus-visible:[outline:var(--bb-focus-outline)] max-md:focus-visible:[outline-offset:-2px]";
+
+const NAV_LINK_BASE =
+  "flex items-center font-cta font-medium uppercase no-underline " +
+  "text-white md:text-foreground hover:text-brand-on-dark " +
+  "focus-visible:text-brand-on-dark focus-visible:outline-none pointer-coarse:min-h-11 " +
+  "max-md:min-h-11 max-md:py-0 max-md:px-[14px] max-md:border-b " +
+  "max-md:border-[color:var(--bb-mobile-shell-border)] max-md:text-[14px] max-md:tracking-[0.02em] " +
+  "md:px-[25px] md:py-5 md:text-base " +
+  OUTLINE_MOBILE;
+
+const NAV_LINK_ACTIVE = "text-brand-on-dark md:text-brand-on-dark";
+
+const NAV_ROW = "relative flex items-stretch md:border-b md:border-[#e8e8e8]";
+
+const NAV_TOGGLE =
+  "absolute inline-flex items-center justify-center border-0 bg-transparent cursor-pointer " +
+  "text-white md:text-foreground hover:text-brand-on-dark " +
+  "focus-visible:text-brand-on-dark focus-visible:outline-none " +
+  "max-md:top-2 max-md:right-[10px] max-md:w-11 max-md:h-11 max-md:min-h-11 " +
+  "md:top-[18px] md:right-[18px] md:w-9 md:h-9 " +
+  OUTLINE_MOBILE;
+
+const ACCOUNT_BASE =
+  "flex items-center border-b text-white md:text-foreground " +
+  "max-md:gap-3 max-md:px-[14px] max-md:py-4 " +
+  "max-md:border-[color:var(--bb-mobile-shell-border)] max-md:bg-[var(--bb-mobile-shell-bg)] " +
+  "md:gap-5 md:px-[25px] md:py-[30px] md:border-[#e8e8e8]";
+
+const AUTH_LINK = "text-white md:text-foreground no-underline";
+
+const CONTACT_COPY =
+  "m-0 font-body text-[length:var(--fs-caption)] font-normal leading-[1.7] text-[#cecece] md:text-black";
+
 function ChevronIcon({ open }: { open: boolean }) {
   return (
     <svg
@@ -56,7 +98,6 @@ type MobileNavBranchProps = {
   node: HeaderNavNode;
   pathname: string | null;
   onNavigate: () => void;
-  depth: number;
   t: ReturnType<typeof useTranslations<"Header">>;
 };
 
@@ -64,7 +105,6 @@ function MobileNavBranch({
   node,
   pathname,
   onNavigate,
-  depth,
   t,
 }: MobileNavBranchProps) {
   const href = normalizeMenuUrl(node.url);
@@ -76,11 +116,7 @@ function MobileNavBranch({
     return (
       <Link
         href={href}
-        className={cn(
-          `bb-mobile-nav-link bb-mobile-nav-depth-${depth}`,
-          node.iconUrl && "gap-2.5",
-          active && "active",
-        )}
+        className={cn(NAV_LINK_BASE, node.iconUrl && "gap-2.5", active && NAV_LINK_ACTIVE)}
         onClick={onNavigate}
       >
         {node.iconUrl && (
@@ -99,11 +135,16 @@ function MobileNavBranch({
   }
 
   return (
-    <div className="bb-mobile-nav-branch">
-      <div className={`bb-mobile-nav-row bb-mobile-nav-depth-${depth}`}>
+    <div>
+      <div className={NAV_ROW}>
         <Link
           href={href}
-          className={cn("bb-mobile-nav-link", node.iconUrl && "gap-2.5", active && "active")}
+          className={cn(
+            NAV_LINK_BASE,
+            "flex-1 max-md:pr-[62px] md:pr-[72px]",
+            node.iconUrl && "gap-2.5",
+            active && NAV_LINK_ACTIVE,
+          )}
           onClick={onNavigate}
         >
           {node.iconUrl && (
@@ -120,7 +161,7 @@ function MobileNavBranch({
         </Link>
         <button
           type="button"
-          className="bb-mobile-nav-toggle"
+          className={NAV_TOGGLE}
           aria-expanded={childOpen}
           aria-label={
             childOpen
@@ -141,7 +182,6 @@ function MobileNavBranch({
               node={child}
               pathname={pathname}
               onNavigate={onNavigate}
-              depth={depth + 1}
               t={t}
             />
           ))}
@@ -236,19 +276,29 @@ export function MobileHeaderMenu({
           </div>
 
           {auth.status === "authenticated" ? (
-            <div className="bb-mobile-header-account is-authenticated">
-              <div className="bb-mobile-header-account-copy">
-                <p>{t("loggedInGreeting")}</p>
-                <span title={auth.profile.email}>
+            <div className={cn(ACCOUNT_BASE, "relative items-start")}>
+              <div>
+                <p className="m-0 text-base font-semibold uppercase">{t("loggedInGreeting")}</p>
+                <span
+                  title={auth.profile.email}
+                  className="block text-base font-semibold normal-case"
+                >
                   {auth.profile.displayName?.trim() || auth.profile.email}
                 </span>
-                <Link href={toAccountPath()} onClick={close}>
+                <Link
+                  href={toAccountPath()}
+                  onClick={close}
+                  className="mt-3 inline-block text-[length:var(--fs-caption)] font-normal capitalize no-underline text-[#4b4b4b] md:text-brand-on-dark"
+                >
                   {t("myAccount")}
                 </Link>
               </div>
               <button
                 type="button"
-                className="bb-mobile-header-logout"
+                className={cn(
+                  "absolute right-[25px] top-1/2 -translate-y-1/2 cursor-pointer border-0 bg-transparent text-white md:text-foreground",
+                  OUTLINE_MOBILE,
+                )}
                 aria-label={t("logout")}
                 onClick={handleLogout}
                 disabled={loggingOut}
@@ -257,72 +307,74 @@ export function MobileHeaderMenu({
               </button>
             </div>
           ) : (
-            <div className="bb-mobile-header-account">
+            <div className={ACCOUNT_BASE}>
               <UserCircle2 size={40} aria-hidden className="shrink-0" />
-              <div className="bb-mobile-header-auth-links">
-                <Link href={toRegisterPath()} onClick={close}>
+              <div className="text-base text-white md:text-foreground">
+                <Link href={toRegisterPath()} onClick={close} className={AUTH_LINK}>
                   {t("register")}
                 </Link>
-                <span>/</span>
-                <Link href={safeLoginHref} onClick={close}>
+                <span className="mx-2">/</span>
+                <Link href={safeLoginHref} onClick={close} className={AUTH_LINK}>
                   {t("login")}
                 </Link>
               </div>
             </div>
           )}
 
-          <nav className="bb-mobile-nav" aria-label={menuLabel || "BIGBIKE MENU"}>
+          <nav className="grid" aria-label={menuLabel || "BIGBIKE MENU"}>
             {menuTree.map((node) => (
               <MobileNavBranch
                 key={node.id}
                 node={node}
                 pathname={pathname}
                 onNavigate={close}
-                depth={0}
                 t={t}
               />
             ))}
           </nav>
 
-          <div className="bb-mobile-header-contact">
-            <h2>{t("shopInfoContactHeading")}</h2>
+          <div className="border-t text-left text-[#cecece] md:text-[#6f6f6f] max-md:mt-auto max-md:px-[14px] max-md:pt-[18px] max-md:pb-[calc(16px_+_env(safe-area-inset-bottom))] max-md:border-[color:var(--bb-mobile-shell-border)] max-md:bg-[var(--bb-mobile-shell-surface-2)] md:px-[25px] md:py-[30px] md:border-[#e8e8e8]">
+            <h2 className="m-0 font-display text-base font-semibold uppercase text-white md:text-foreground">
+              {t("shopInfoContactHeading")}
+            </h2>
 
-            <ul className="bb-mobile-header-contact-list">
+            <ul className="grid list-none p-0 gap-[14px] mt-4 md:gap-[30px] md:mt-[30px]">
               {hoursLines.length > 0 && (
-                <li>
-                  <span className="bb-mobile-header-contact-icon" aria-hidden="true">
+                <li className="grid grid-cols-[40px_minmax(0,1fr)] gap-4">
+                  <span className="text-brand-on-dark" aria-hidden="true">
                     <Clock3 size={20} />
                   </span>
-                  <div className="bb-mobile-header-contact-copy">
+                  <div>
                     {hoursLines.map((line) => (
-                      <p key={line}>{line}</p>
+                      <p key={line} className={CONTACT_COPY}>{line}</p>
                     ))}
                   </div>
                 </li>
               )}
 
               {address && (
-                <li>
-                  <span className="bb-mobile-header-contact-icon" aria-hidden="true">
+                <li className="grid grid-cols-[40px_minmax(0,1fr)] gap-4">
+                  <span className="text-brand-on-dark" aria-hidden="true">
                     <MapPin size={20} />
                   </span>
-                  <div className="bb-mobile-header-contact-copy">
-                    <p>{t("shopInfoStoreLabel", { siteName })}</p>
-                    <p>{address}</p>
+                  <div>
+                    <p className={CONTACT_COPY}>{t("shopInfoStoreLabel", { siteName })}</p>
+                    <p className={CONTACT_COPY}>{address}</p>
                   </div>
                 </li>
               )}
 
               {phones.length > 0 && (
-                <li>
-                  <span className="bb-mobile-header-contact-icon" aria-hidden="true">
+                <li className="grid grid-cols-[40px_minmax(0,1fr)] gap-4">
+                  <span className="text-brand-on-dark" aria-hidden="true">
                     <Phone size={20} />
                   </span>
-                  <div className="bb-mobile-header-contact-copy">
+                  <div>
                     {phones.map((phone) => (
                       <a
                         key={phone}
                         href={`tel:${phone.replace(/[\s.]/g, "")}`}
+                        className={cn(CONTACT_COPY, "block no-underline hover:text-brand-on-dark")}
                       >
                         {phone}
                       </a>
