@@ -2541,32 +2541,6 @@ body:has(.bb-account-layout) .bb-breadcrumb {
   display: flex; align-items: center; justify-content: center;
 }
 
-/* Nav card */
-.bb-account-nav { background: #fff; border: 1px solid #e4e4e4; padding: 4px 22px; }
-.bb-account-nav a,
-.bb-account-nav button {
-  display: flex; align-items: center; gap: 9px;
-  width: 100%;
-  padding: 16px 0; text-decoration: none;
-  font-family: var(--bb-font-body); font-size: 14px; font-weight: 400;
-  color: #4a4a4a; border: 0; border-bottom: 1px solid #ededed; transition: color 140ms;
-  background: transparent; cursor: pointer; text-align: left;
-}
-.bb-account-nav a:last-child,
-.bb-account-nav button:last-child { border-bottom: none; }
-.bb-account-nav a::before,
-.bb-account-nav button::before {
-  content: ""; width: 7px; height: 7px; flex-shrink: 0;
-  background: var(--bb-action-primary);
-  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
-  opacity: 0; transition: opacity 140ms;
-}
-.bb-account-nav a:hover,
-.bb-account-nav button:hover { color: var(--bb-text-brand); }
-.bb-account-nav a.active { color: var(--bb-text-brand); font-weight: 600; }
-.bb-account-nav a.active::before { opacity: 1; }
-
-
 /* -- Order status timeline -------------------------------- */
 
 .bb-order-card { background: var(--bb-bg-surface); border: 1px solid var(--bb-border-subtle); border-radius: var(--bb-radius-none); margin-bottom: 14px; overflow: hidden; }
@@ -9305,7 +9279,6 @@ body .bb-home .white.block-title h3 {
   .bb-news-card,
   .bb-checkout-section,
   .bb-order-summary,
-  .bb-account-nav,
   .bb-order-card {
     border: 1px solid var(--bb-border-subtle);
     background: var(--bb-bg-surface);
@@ -9910,41 +9883,6 @@ body .bb-home .white.block-title h3 {
 
   .bb-account-layout + * {
     margin-top: 0;
-  }
-
-  .bb-account-nav {
-    display: flex;
-    gap: 8px;
-    overflow-x: auto;
-    border: 0;
-    background: transparent;
-    padding: 0 0 4px;
-    scrollbar-width: none;
-  }
-
-  .bb-account-nav::-webkit-scrollbar {
-    display: none;
-  }
-
-  .bb-account-nav a,
-  .bb-account-nav button {
-    flex: 0 0 auto;
-    width: auto;
-    min-height: var(--bb-touch-target);
-    border: 1px solid var(--bb-border-subtle);
-    background: var(--bb-bg-surface);
-    padding: 0 14px;
-    white-space: nowrap;
-  }
-
-  .bb-account-nav a::before,
-  .bb-account-nav button::before {
-    display: none;
-  }
-
-  .bb-account-nav a.active {
-    border-color: var(--bb-action-primary);
-    color: var(--bb-text-brand);
   }
 
   .bb-page--auth .bb-auth-wrap,

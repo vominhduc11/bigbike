@@ -11,6 +11,14 @@ import { toLoginPath } from "@/lib/utils/routes";
 import { AccountLayoutSkeleton } from "@/components/ui/Skeletons";
 import { Breadcrumb, type BreadcrumbItem } from "@/components/ui/Breadcrumb";
 import { accountHeaderShell, accountSidebar } from "@/lib/ui-classes";
+import { cn } from "@/lib/utils";
+
+// Account nav is dual-layout: desktop = vertical card rows with a clip-path diamond ::before
+// marker (revealed on active); mobile (<=767px) = horizontal-scroll chips with the marker hidden.
+const accountNavItem =
+  "flex w-full cursor-pointer items-center gap-[9px] border-b border-[#ededed] bg-transparent px-0 py-4 text-left font-body text-[14px] font-normal text-[#4a4a4a] no-underline transition-colors last:border-b-0 hover:text-brand before:h-[7px] before:w-[7px] before:shrink-0 before:bg-brand before:opacity-0 before:transition-opacity before:content-[''] before:[clip-path:polygon(50%_0,100%_50%,50%_100%,0_50%)] max-md:w-auto max-md:min-h-11 max-md:flex-[0_0_auto] max-md:whitespace-nowrap max-md:border max-md:border-[var(--bb-border-subtle)] max-md:bg-[var(--bb-bg-surface)] max-md:px-3.5 max-md:py-0 max-md:before:hidden";
+const accountNavItemActive =
+  "font-semibold text-brand before:opacity-100 max-md:border-[var(--bb-action-primary)]";
 
 const AccountContext = createContext<CustomerProfile | null>(null);
 const AccountRefreshContext = createContext<(() => Promise<void>) | null>(null);
@@ -114,13 +122,20 @@ export function AccountShell({ children, loginRedirect }: Props) {
                 </span>
               </div>
             </div>
-            <nav className="bb-account-nav" aria-label={t("menuAria")}>
+            <nav
+              className="border border-[#e4e4e4] bg-white px-[22px] py-1 max-md:flex max-md:gap-2 max-md:overflow-x-auto max-md:border-0 max-md:bg-transparent max-md:px-0 max-md:pb-1 max-md:pt-0 max-md:[scrollbar-width:none] max-md:[&::-webkit-scrollbar]:hidden"
+              aria-label={t("menuAria")}
+            >
               {NAV.map((item) => (
-                <Link key={item.href} href={item.href} className={navIsActive(item, pathname) ? "active" : undefined}>
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(accountNavItem, navIsActive(item, pathname) && accountNavItemActive)}
+                >
                   {tNav(item.labelKey)}
                 </Link>
               ))}
-              <button type="button" onClick={handleLogout} disabled={loggingOut}>
+              <button type="button" onClick={handleLogout} disabled={loggingOut} className={accountNavItem}>
                 {loggingOut ? t("loggingOut") : t("logout")}
               </button>
             </nav>
