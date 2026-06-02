@@ -27,15 +27,15 @@ export function ProductTabs({ sections }: { sections: ProductTabSection[] }) {
     // reset `.bb-wp-tabs .tab-panel *{line-height:inherit}` (specificity 0,2,0 —
     // it intentionally overrides bb-richtext heading line-heights inside tabs; an
     // inline [&_*] util can't reach that specificity). All other styling is inline.
-    <section className="bb-wp-tabs mx-auto mt-20 mb-10 px-[15px] max-w-[1140px] max-[1023px]:mt-[60px] max-md:mt-8 max-md:px-[var(--bb-mobile-page-x)] max-md:border-t-[3px] max-md:border-t-border min-[1536px]:max-w-[1360px] min-[1920px]:max-w-[1600px] min-[2560px]:max-w-[2240px]">
+    <section className="bb-wp-tabs mx-auto mt-20 mb-10 px-[15px] max-w-[1140px] max-[1024px]:mt-[60px] max-md:mt-8 max-md:px-[var(--bb-mobile-page-x)] max-md:border-t-[3px] max-md:border-t-border min-[1536px]:max-w-[1360px] min-[1920px]:max-w-[1600px] min-[2560px]:max-w-[2240px]">
       <div
         role="tablist"
         aria-label="Thông tin sản phẩm"
-        className="mb-10 max-[1023px]:h-[42px] max-[1023px]:overflow-x-auto max-[1023px]:overflow-y-hidden max-md:mb-[18px] max-md:hidden"
+        className="mb-10 max-[1024px]:h-[42px] max-[1024px]:overflow-x-auto max-[1024px]:overflow-y-hidden max-md:mb-[18px] max-md:hidden"
       >
         <ul
           id="myTab"
-          className="relative flex flex-nowrap w-full m-0 pl-2.5 border-none list-none max-[1023px]:w-[800px] max-md:w-max max-md:min-w-full before:content-[''] before:absolute before:top-1/2 before:right-0 before:left-2.5 before:z-0 before:h-px before:bg-[#cecece]"
+          className="relative flex flex-nowrap w-full m-0 pl-2.5 border-none list-none max-[1024px]:w-[800px] max-md:w-max max-md:min-w-full before:content-[''] before:absolute before:top-1/2 before:right-0 before:left-2.5 before:z-0 before:h-px before:bg-[#cecece]"
         >
           {sections.map((section) => {
             const tabId = toWpTabButtonId(section.id);

@@ -90,23 +90,23 @@ export function ProductGallery({
   }
 
   return (
-    <div className="grid grid-cols-[minmax(0,25%)_minmax(0,75%)] gap-[30px] min-w-0 max-[1023px]:grid-cols-[1fr] max-[1023px]:gap-[10px] max-[1023px]:w-full max-md:gap-2">
+    <div className="grid grid-cols-[minmax(0,25%)_minmax(0,75%)] gap-[30px] min-w-0 max-[1024px]:grid-cols-[1fr] max-[1024px]:gap-[10px] max-[1024px]:w-full max-md:gap-2">
       {count > 1 && (
-        <div className="relative h-[500px] py-8 min-w-0 max-[1023px]:h-[120px] max-[1023px]:px-8 max-[1023px]:py-0 max-md:h-[82px] max-md:px-7">
+        <div className="relative h-[500px] py-8 min-w-0 max-[1024px]:h-[120px] max-[1024px]:px-8 max-[1024px]:py-0 max-md:h-[82px] max-md:px-7">
           <button
             type="button"
-            className="absolute left-1/2 top-0 z-[2] w-7 h-7 [transform:translateX(-50%)] border-none bg-transparent text-black cursor-pointer max-[1023px]:left-0 max-[1023px]:top-1/2 max-[1023px]:[transform:translateY(-50%)]"
+            className="absolute left-1/2 top-0 z-[2] w-7 h-7 [transform:translateX(-50%)] border-none bg-transparent text-black cursor-pointer max-[1024px]:left-0 max-[1024px]:top-1/2 max-[1024px]:[transform:translateY(-50%)]"
             aria-label="Ảnh trước"
             onClick={() => scrollThumbsBy("prev")}
           >
-            <svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" className="max-[1023px]:[transform:rotate(-90deg)]">
+            <svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" className="max-[1024px]:[transform:rotate(-90deg)]">
               <path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
 
           <div
             ref={thumbsRef}
-            className="h-full flex flex-col gap-2.5 overflow-hidden scroll-smooth max-[1023px]:flex-row max-[1023px]:gap-[30px] max-md:gap-2 max-md:overflow-x-auto max-md:[scrollbar-width:none] max-md:[&::-webkit-scrollbar]:hidden"
+            className="h-full flex flex-col gap-2.5 overflow-hidden scroll-smooth max-[1024px]:flex-row max-[1024px]:gap-[30px] max-md:gap-2 max-md:overflow-x-auto max-md:[scrollbar-width:none] max-md:[&::-webkit-scrollbar]:hidden"
           >
             {images.map((image, index) => {
               const active = index === selectedIndex;
@@ -114,7 +114,7 @@ export function ProductGallery({
                 <button
                   key={image.id ?? image.url ?? index}
                   type="button"
-                  className="flex-[0_0_calc((100%_-_20px)_/_3)] h-[calc((100%_-_20px)_/_3)] min-h-0 py-[5px] border-none bg-white cursor-pointer max-[1023px]:flex-[0_0_calc((100%_-_60px)_/_3)] max-[1023px]:w-[calc((100%_-_60px)_/_3)] max-[1023px]:h-[120px] max-md:flex-[0_0_76px] max-md:w-[76px] max-md:h-[76px] max-md:p-0"
+                  className="flex-[0_0_calc((100%_-_20px)_/_3)] h-[calc((100%_-_20px)_/_3)] min-h-0 py-[5px] border-none bg-white cursor-pointer max-[1024px]:flex-[0_0_calc((100%_-_60px)_/_3)] max-[1024px]:w-[calc((100%_-_60px)_/_3)] max-[1024px]:h-[120px] max-md:flex-[0_0_76px] max-md:w-[76px] max-md:h-[76px] max-md:p-0"
                   onClick={() => setSelectedIndex(index)}
                   aria-label={`Xem ảnh ${index + 1}`}
                   aria-pressed={active}
@@ -136,11 +136,11 @@ export function ProductGallery({
 
           <button
             type="button"
-            className="absolute left-1/2 bottom-0 z-[2] w-7 h-7 [transform:translateX(-50%)] border-none bg-transparent text-black cursor-pointer max-[1023px]:left-auto max-[1023px]:right-0 max-[1023px]:top-1/2 max-[1023px]:bottom-auto max-[1023px]:[transform:translateY(-50%)]"
+            className="absolute left-1/2 bottom-0 z-[2] w-7 h-7 [transform:translateX(-50%)] border-none bg-transparent text-black cursor-pointer max-[1024px]:left-auto max-[1024px]:right-0 max-[1024px]:top-1/2 max-[1024px]:bottom-auto max-[1024px]:[transform:translateY(-50%)]"
             aria-label="Ảnh tiếp"
             onClick={() => scrollThumbsBy("next")}
           >
-            <svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" className="max-[1023px]:[transform:rotate(-90deg)]">
+            <svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" className="max-[1024px]:[transform:rotate(-90deg)]">
               <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
@@ -148,7 +148,7 @@ export function ProductGallery({
       )}
 
       <div className="relative min-w-0">
-        <div className="relative w-full aspect-square flex items-center justify-center overflow-hidden bg-white max-[1023px]:max-h-[380px] max-md:max-h-none max-md:border max-md:border-border max-md:bg-[var(--bb-bg-surface-raised)]">
+        <div className="relative w-full aspect-square flex items-center justify-center overflow-hidden bg-white max-[1024px]:max-h-[380px] max-md:max-h-none max-md:border max-md:border-border max-md:bg-[var(--bb-bg-surface-raised)]">
           <div
             key={selectedImage?.url ?? selectedIndex}
             className="w-full h-full [animation:bb-gallery-fade-in_0.22s_ease]"
