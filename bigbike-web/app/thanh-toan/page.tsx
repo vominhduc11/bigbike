@@ -28,6 +28,18 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { getVietnamRegion } from "@/lib/utils/vn-region";
 
+// Checkout is styled MOBILE-ONLY (<=767px); at >=768px it intentionally falls back to plain
+// shadcn/block defaults (pre-existing parity), so every migrated rule is max-md:-scoped.
+const coStepCard =
+  "max-md:border max-md:border-[var(--bb-border-subtle)] max-md:bg-[var(--bb-bg-surface)] max-md:px-3.5 max-md:py-4";
+const coGrid = "max-md:grid max-md:grid-cols-1 max-md:gap-3";
+const coSectionH3 =
+  "max-md:m-0 max-md:mb-3 max-md:font-heading max-md:text-[16px] max-md:font-semibold max-md:uppercase max-md:leading-[1.2]";
+const coRadioRow =
+  "max-md:flex max-md:min-h-11 max-md:items-center max-md:gap-2.5 max-md:border max-md:border-[var(--bb-border-subtle)] max-md:bg-[var(--bb-bg-surface)] max-md:px-3 max-md:py-2.5";
+const coCardRaised =
+  "max-md:mt-3.5 max-md:border max-md:border-[var(--bb-border-subtle)] max-md:bg-[var(--bb-bg-surface-raised)] max-md:p-3";
+
 function pickDefaultAddress(addresses: CustomerAddress[] | undefined): CustomerAddress | null {
   if (!addresses?.length) return null;
   return addresses.find((a) => a.isDefault) ?? addresses[0];
@@ -49,10 +61,10 @@ function isZoneMismatch(method: ShippingMethodOption, userRegion: "MB" | "MT" | 
 
 function CheckoutStepTitle({ step, children }: { step: number; children: React.ReactNode }) {
   return (
-    <div className="check-out-step-title">
-      <h2>
-        <span>
-          <b>{step}</b>
+    <div className="max-md:mb-4">
+      <h2 className="max-md:m-0 max-md:flex max-md:items-center max-md:gap-2.5 max-md:font-heading max-md:text-[18px] max-md:font-semibold max-md:uppercase max-md:leading-[1.15]">
+        <span className="max-md:inline-flex max-md:h-[34px] max-md:w-[34px] max-md:basis-[34px] max-md:items-center max-md:justify-center max-md:bg-brand max-md:font-cta max-md:text-[var(--bb-text-inverse)]">
+          <b className="max-md:font-semibold">{step}</b>
         </span>
         {children}
       </h2>
@@ -339,19 +351,18 @@ export default function CheckoutPage() {
           )}
         </div>
 
-        <div className="bb-checkout-content-row">
-          <div className="bb-checkout-content-main check-out-form">
-            <section className="check-out-step woocommerce-billing-fields">
+        <div className="max-md:grid max-md:grid-cols-1 max-md:gap-4">
+          <div className="max-md:min-w-0">
+            <section className={cn(coStepCard, "max-md:mb-3.5")}>
               <CheckoutStepTitle step={1}>{t("step1Title")}</CheckoutStepTitle>
 
-              <div className="bb-checkout-fields-grid">
-                <div className="form-group form-row form-row-first">
+              <div className={coGrid}>
+                <div className="max-md:m-0 max-md:min-w-0">
                   <label htmlFor="billing_full_name">
                     {t("fullName")} {reqMark}
                   </label>
                   <Input
                     id="billing_full_name"
-                    className="form-control"
                     placeholder={t("fullNamePlaceholder")}
                     autoComplete="name"
                     aria-invalid={!!addressErrors.fullName}
@@ -360,13 +371,12 @@ export default function CheckoutPage() {
                   <FieldError message={addressErrors.fullName?.message} />
                 </div>
 
-                <div className="form-group form-row form-row-last">
+                <div className="max-md:m-0 max-md:min-w-0">
                   <label htmlFor="billing_phone">
                     {t("phone")} {reqMark}
                   </label>
                   <Input
                     id="billing_phone"
-                    className="form-control"
                     type="tel"
                     inputMode="tel"
                     maxLength={12}
@@ -378,11 +388,10 @@ export default function CheckoutPage() {
                   <FieldError message={addressErrors.phone?.message} />
                 </div>
 
-                <div className="form-group form-row form-row-wide">
+                <div className="max-md:m-0 max-md:min-w-0">
                   <label htmlFor="billing_email">{t("email")}</label>
                   <Input
                     id="billing_email"
-                    className="form-control"
                     type="email"
                     placeholder={t("emailPlaceholder")}
                     autoComplete="email"
@@ -392,13 +401,12 @@ export default function CheckoutPage() {
                   <FieldError message={addressErrors.email?.message} />
                 </div>
 
-                <div className="form-group form-row form-row-wide">
+                <div className="max-md:m-0 max-md:min-w-0">
                   <label htmlFor="billing_address_1">
                     {t("address")} {reqMark}
                   </label>
                   <Input
                     id="billing_address_1"
-                    className="form-control"
                     placeholder={t("addressPlaceholder")}
                     autoComplete="address-line1"
                     aria-invalid={!!addressErrors.addressLine1}
@@ -407,7 +415,7 @@ export default function CheckoutPage() {
                   <FieldError message={addressErrors.addressLine1?.message} />
                 </div>
 
-                <div className="form-row form-row-wide bb-checkout-address-grid">
+                <div className={coGrid}>
                   <VnAddressFields
                     value={{
                       province: formAddress.province ?? "",
@@ -423,19 +431,18 @@ export default function CheckoutPage() {
                   />
                 </div>
                 {(addressErrors.province || addressErrors.district) && (
-                  <p className="bb-checkout-field-error form-row form-row-wide">
+                  <p className="max-md:m-0 max-md:min-w-0">
                     {addressErrors.province?.message ?? addressErrors.district?.message}
                   </p>
                 )}
               </div>
 
-              <div className="form-group form-row form-row-wide bb-order-comments">
+              <div className="max-md:m-0 max-md:mt-3.5 max-md:min-w-0">
                 <label htmlFor="order_comments">
                   {t("noteLabel")} <span className="optional">{t("noteOptional")}</span>
                 </label>
                 <Textarea
                   id="order_comments"
-                  className="form-control"
                   placeholder={t("notePlaceholder")}
                   value={customerNote}
                   onChange={(e) => setCustomerNote(e.target.value)}
@@ -445,22 +452,22 @@ export default function CheckoutPage() {
               </div>
             </section>
 
-            <section className="check-out-step woocommerce-shipping-fields">
+            <section className={cn(coStepCard, "max-md:mb-3.5")}>
               <CheckoutStepTitle step={2}>{t("step2Title")}</CheckoutStepTitle>
 
-              <div className="bb-checkout-method-block">
-                <h3>{t("shippingMethodSectionTitle")}</h3>
+              <div className="max-md:mt-3.5 max-md:grid max-md:grid-cols-1 max-md:gap-3 max-md:border-t max-md:border-[var(--bb-border-subtle)] max-md:pt-3.5">
+                <h3 className={coSectionH3}>{t("shippingMethodSectionTitle")}</h3>
                 {optionsLoading ? (
                   <p className="woocommerce-info">{t("paymentLoading")}</p>
                 ) : shippingMethods.length > 0 ? (
-                  <RadioGroup value={shippingMethodId} onValueChange={setShippingMethodId} className="bb-checkout-radio-list">
+                  <RadioGroup value={shippingMethodId} onValueChange={setShippingMethodId} className={coGrid}>
                     {shippingMethods.map((method) => {
                       const disabled = isZoneMismatch(method, userRegion);
                       const cost = effectiveMethodCost(method, cartSubtotal);
                       return (
                         <label
                           key={method.id}
-                          className={cn("bb-checkout-radio-row", disabled && "is-disabled")}
+                          className={cn(coRadioRow, disabled && "max-md:opacity-50")}
                           htmlFor={`shipping_method_${method.id}`}
                         >
                           <RadioGroupItem
@@ -468,8 +475,8 @@ export default function CheckoutPage() {
                             id={`shipping_method_${method.id}`}
                             disabled={disabled}
                           />
-                          <span className="bb-checkout-radio-label">{method.title}</span>
-                          <span className="bb-checkout-radio-price">
+                          <span className="max-md:min-w-0 max-md:flex-1 max-md:font-semibold">{method.title}</span>
+                          <span className="max-md:whitespace-nowrap max-md:font-cta max-md:font-semibold max-md:text-brand">
                             {cost > 0 ? formatVnd(cost) : t("shippingMethodFree")}
                           </span>
                         </label>
@@ -481,25 +488,24 @@ export default function CheckoutPage() {
                 )}
               </div>
 
-              <div id="payment" className="woocommerce-checkout-payment bb-checkout-payment">
+              <div id="payment" className="max-md:mt-3.5 max-md:border-t max-md:border-[var(--bb-border-subtle)] max-md:pt-3.5">
                 {optionsLoading ? (
                   <p className="woocommerce-info">{t("paymentLoading")}</p>
                 ) : paymentMethods.length > 0 ? (
                   <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} asChild>
-                    <ul className="wc_payment_methods payment_methods methods">
+                    <ul className="max-md:gap-2.5">
                       {paymentMethods.map((method) => {
-                        const code = normalizeMethodCode(method.code);
                         const checked = paymentMethod === method.code;
                         const description = paymentDescription(method.code);
                         return (
-                          <li key={method.code} className={`wc_payment_method payment_method_${code.toLowerCase()}`}>
-                            <label htmlFor={`payment_method_${method.code}`} className="bb-checkout-payment-label">
+                          <li key={method.code}>
+                            <label htmlFor={`payment_method_${method.code}`} className={coRadioRow}>
                               <RadioGroupItem value={method.code} id={`payment_method_${method.code}`} />
                               <span>{paymentLabel(method)}</span>
                             </label>
                             {checked && description && (
-                              <div className={`payment_box payment_method_${code.toLowerCase()}`}>
-                                <p>{description}</p>
+                              <div className="max-md:border max-md:border-t-0 max-md:border-[var(--bb-border-subtle)] max-md:bg-[var(--bb-bg-surface-raised)] max-md:p-3 max-md:text-[14px] max-md:leading-[1.5]">
+                                <p className="max-md:m-0">{description}</p>
                               </div>
                             )}
                           </li>
@@ -511,11 +517,11 @@ export default function CheckoutPage() {
                   <p className="woocommerce-error">{t("paymentNone")}</p>
                 )}
 
-                <div className="form-submit place-order">
+                <div className="max-md:mt-3.5">
                   <Button
                     type="submit"
                     variant="primary"
-                    className="button alt"
+                    className="max-md:!min-h-[52px] max-md:w-full max-md:font-cta max-md:text-[14px] max-md:font-semibold max-md:uppercase max-md:tracking-[0.08em]"
                     disabled={submitting || cartLoading || !cart.items.length || belowMinOrder || selectedShippingZoneMismatch}
                   >
                     {submitting ? t("placingOrder") : t("placeOrder")}
@@ -525,14 +531,14 @@ export default function CheckoutPage() {
             </section>
           </div>
 
-          <aside className="bb-checkout-content-side">
-            <div className="checkout-summary">
+          <aside className="max-md:mt-[2px] max-md:min-w-0">
+            <div className={coStepCard}>
               <div className="checkout-summary-title">
-                <h3>{t("summaryTitle")}</h3>
+                <h3 className={coSectionH3}>{t("summaryTitle")}</h3>
               </div>
 
-              <div id="order_review" className="woocommerce-checkout-review-order">
-                <table className="shop_table woocommerce-checkout-review-order-table">
+              <div id="order_review" className="max-md:overflow-x-auto max-md:[-webkit-overflow-scrolling:touch]">
+                <table className="max-md:min-w-[520px]">
                   <thead>
                     <tr>
                       <th className="product-name">{t("orderProducts")}</th>
@@ -586,17 +592,17 @@ export default function CheckoutPage() {
                   </tfoot>
                 </table>
 
-                <div className="summary total-summary">
-                  <div className="summary--items">
+                <div className={coCardRaised}>
+                  <div>
                     <p>{t("summaryTotal")}</p>
-                    <p className="total-price">{formatVnd(grandTotal)}</p>
+                    <p>{formatVnd(grandTotal)}</p>
                   </div>
                 </div>
 
                 {paymentMethod && (
-                  <div className="bb-checkout-summary-payment">
-                    <p>{t("summaryPaymentInfo")}</p>
-                    <strong>{paymentLabel(paymentMethod)}</strong>
+                  <div className={coCardRaised}>
+                    <p className="max-md:m-0">{t("summaryPaymentInfo")}</p>
+                    <strong className="max-md:m-0">{paymentLabel(paymentMethod)}</strong>
                   </div>
                 )}
               </div>
