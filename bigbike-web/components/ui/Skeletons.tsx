@@ -9,11 +9,12 @@
  * the `skeleton-shimmer` keyframe stays in globals.css. Shapes are the atoms below
  * (SkelText/SkelTitle/SkelBlock/SkelCircle/SkelChip/SkelButton).
  *
- * NOTE: the page-layout classes used here (bb-container, bb-product-card,
- * bb-cat-layout, …) are intentionally NOT migrated — this file MIRRORS those pages,
- * so it keeps their classes until each page itself moves to Tailwind. The PDP
- * grid (formerly bb-pdp / bb-pdp-below) is now inline Tailwind, migrated together
- * with the real .bb-wp-pdp shell.
+ * NOTE: page-layout classes SHARED with a real page (bb-product-grid, bb-breadcrumb,
+ * bb-page-head, …) are intentionally NOT migrated here — this file MIRRORS those
+ * pages, so it keeps their classes until each page itself moves to Tailwind.
+ * Skeleton-OWNED layout (no real page uses it) is migrated independently: the PDP
+ * grid (formerly bb-pdp / bb-pdp-below, with the real .bb-wp-pdp shell) and the
+ * catalog grid rail (formerly bb-cat-layout, see bbCatLayout below) are inline.
  */
 
 import type { CSSProperties, ReactNode } from "react";
@@ -21,6 +22,20 @@ import { Card } from "@/components/ui/card";
 import { Container } from "@/components/layout/Container";
 import { cn } from "@/lib/utils";
 import { accountHeaderShell, accountSidebar, bbCard, bbSection, skelBase, skelCol, skelRow, skelStack } from "@/lib/ui-classes";
+
+/**
+ * Skeleton-only catalog grid rail (the real archive page uses the bootstrap
+ * col-md grid, not this). Ported from the former `.bb-cat-layout` rules:
+ * mobile 1-col / md 2-col with a 220→240→260px sidebar at md/lg/xl, on the
+ * fluid rail that tracks the archive container width at each breakpoint.
+ */
+const bbCatLayout =
+  "mx-auto mt-6 grid grid-cols-1 gap-0 bg-background pb-10 " +
+  "w-[min(100%_-_calc(var(--bb-page-padding-mobile)_*_2),var(--bb-container-xl))] " +
+  "md:mt-8 md:grid-cols-[220px_1fr] md:gap-7 md:pb-12 " +
+  "md:w-[min(100%_-_calc(var(--bb-page-padding-tablet)_*_2),var(--bb-container-xl))] " +
+  "lg:grid-cols-[240px_1fr] lg:w-[min(100%_-_calc(var(--bb-page-padding-desktop)_*_2),var(--bb-container-xl))] " +
+  "xl:grid-cols-[260px_1fr] xl:gap-9";
 
 const sr: CSSProperties = {
   position: "absolute",
@@ -336,7 +351,7 @@ export function CatalogSkeleton({ withHero = false }: { withHero?: boolean }) {
         </>
       )}
 
-      <div className="bb-cat-layout">
+      <div className={bbCatLayout}>
         {/* Sidebar filters */}
         <aside className="bb-filters-v2">
           <div className={skelStack}>
@@ -432,7 +447,7 @@ export function BrandDetailSkeleton() {
       <Container className="mb-6">
         <SkelBlock w="100%" h={180} />
       </Container>
-      <div className="bb-cat-layout">
+      <div className={bbCatLayout}>
         <aside className="bb-filters-v2">
           <div className={skelStack}>
             <SkelTitle w="50%" />

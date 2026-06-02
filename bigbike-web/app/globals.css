@@ -2308,10 +2308,6 @@ html[data-header-scrolled] .bb-page-head { padding-left: 24px; }
 /* -- Category SEO description block (below product grid) -- */
 
 /* -- Catalog: sidebar + grid layout ---------------------- */
-.bb-cat-layout { display: grid; grid-template-columns: 220px 1fr; gap: 28px; width: min(100% - calc(var(--bb-page-padding-mobile) * 2), var(--bb-container-xl)); margin-inline: auto; margin-top: 32px; padding-bottom: 48px; }
-@media (min-width: 768px) { .bb-cat-layout { width: min(100% - calc(var(--bb-page-padding-tablet) * 2), var(--bb-container-xl)); } }
-@media (min-width: 1024px) { .bb-cat-layout { width: min(100% - calc(var(--bb-page-padding-desktop) * 2), var(--bb-container-xl)); grid-template-columns: 240px 1fr; } }
-@media (min-width: 1280px) { .bb-cat-layout { grid-template-columns: 260px 1fr; gap: 36px; } }
 
 /* -- Sidebar filters v2 ------------------------------------ */
 
@@ -2654,7 +2650,6 @@ body:has(.bb-account-layout) .bb-breadcrumb {
 @media (max-width: 768px) {
   .bb-news-hero { grid-template-columns: 1fr; margin: 16px 16px 24px; padding: 28px 20px; }
   .bb-news-page .bb-news-section { padding: 0 16px; }
-  .bb-cat-layout { grid-template-columns: 1fr; margin-top: 24px; padding-bottom: 40px; gap: 0; }
   .bb-order-summary { position: static; }
 }
 
@@ -3609,7 +3604,6 @@ a:not(.font-cta):hover {
 .bb-main,
 .bb-home,
 .bb-page,
-.bb-cat-layout,
 .bb-products-section,
 .bb-experience,
 .bb-seo-content,
