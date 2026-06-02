@@ -57,9 +57,9 @@ export function ProductVideosTab({ videos }: ProductVideosTabProps) {
 
   if (validVideos.length === 0) {
     return (
-      <div className="videos-slide">
-        <div className="row">
-          <p>Chưa có video nào</p>
+      <div>
+        <div>
+          <p className="mb-3">Chưa có video nào</p>
         </div>
       </div>
     );

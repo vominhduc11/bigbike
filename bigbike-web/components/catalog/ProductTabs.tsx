@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { ReactNode } from "react";
+import { cn } from "@/lib/utils";
 
 export type ProductTabSection = {
   id: string;
@@ -22,20 +23,38 @@ export function ProductTabs({ sections }: { sections: ProductTabSection[] }) {
     : sections[0].id;
 
   return (
-    <section className="woocommerce-tabs wc-tabs-wrapper tabs bb-wp-tabs">
-      <div className="tabs-nav" role="tablist" aria-label="Thông tin sản phẩm">
-        <ul className="nav nav-tabs" id="myTab">
+    // `bb-wp-tabs` + `tab-panel` kept as bare markers ONLY to host the descendant
+    // reset `.bb-wp-tabs .tab-panel *{line-height:inherit}` (specificity 0,2,0 —
+    // it intentionally overrides bb-richtext heading line-heights inside tabs; an
+    // inline [&_*] util can't reach that specificity). All other styling is inline.
+    <section className="bb-wp-tabs mx-auto mt-20 mb-10 px-[15px] max-w-[1140px] max-[1023px]:mt-[60px] max-md:mt-8 max-md:px-[var(--bb-mobile-page-x)] max-md:border-t-[3px] max-md:border-t-border min-[1536px]:max-w-[1360px] min-[1920px]:max-w-[1600px] min-[2560px]:max-w-[2240px]">
+      <div
+        role="tablist"
+        aria-label="Thông tin sản phẩm"
+        className="mb-10 max-[1023px]:h-[42px] max-[1023px]:overflow-x-auto max-[1023px]:overflow-y-hidden max-md:mb-[18px] max-md:hidden"
+      >
+        <ul
+          id="myTab"
+          className="relative flex flex-nowrap w-full m-0 pl-2.5 border-none list-none max-[1023px]:w-[800px] max-md:w-max max-md:min-w-full before:content-[''] before:absolute before:top-1/2 before:right-0 before:left-2.5 before:z-0 before:h-px before:bg-[#cecece]"
+        >
           {sections.map((section) => {
             const tabId = toWpTabButtonId(section.id);
+            const active = activeId === section.id;
             return (
-              <li key={section.id} className="nav-item">
+              <li
+                key={section.id}
+                className="relative z-[1] w-full max-w-[220px] m-0 pr-[30px] bg-white max-md:w-auto max-md:min-w-40 max-md:pr-3"
+              >
                 <a
                   role="tab"
-                  aria-selected={activeId === section.id}
+                  aria-selected={active}
                   aria-controls={section.id}
                   id={tabId}
                   href={`#${section.id}`}
-                  className={`nav-link${activeId === section.id ? " active" : ""}`}
+                  className={cn(
+                    "relative block w-full h-[42px] border-none bg-transparent text-[var(--bb-text-secondary)] font-body text-base font-semibold leading-[42px] text-center no-underline normal-case cursor-pointer after:content-[''] after:absolute after:inset-0 after:-z-[1] after:border after:border-[#cecece] after:bg-white after:[transform:skewX(-20deg)]",
+                    active && "text-white after:border-black after:bg-black",
+                  )}
                   onClick={(event) => {
                     event.preventDefault();
                     setActive(section.id);
@@ -49,19 +68,27 @@ export function ProductTabs({ sections }: { sections: ProductTabSection[] }) {
         </ul>
       </div>
 
-      <div className="tabs-content">
-        {sections.map((section) => (
-          <div
-            key={section.id}
-            id={section.id}
-            role="tabpanel"
-            aria-labelledby={toWpTabButtonId(section.id)}
-            className={`tab-panel fade wyswyg${activeId === section.id ? " show active" : ""}`}
-            data-label={section.label}
-          >
-            {section.content}
-          </div>
-        ))}
+      <div>
+        {sections.map((section) => {
+          const active = activeId === section.id;
+          return (
+            <div
+              key={section.id}
+              id={section.id}
+              role="tabpanel"
+              aria-labelledby={toWpTabButtonId(section.id)}
+              className={cn(
+                "tab-panel text-black text-[length:var(--fs-body)] leading-[1.7]",
+                active ? "block" : "hidden",
+                "max-md:block max-md:pt-6 max-md:pb-1 max-md:mt-0 max-md:border-t-[3px] max-md:border-t-border max-md:first:[border-top:none] max-md:scroll-mt-[calc(var(--bb-header-height)_+_52px)]",
+                "max-md:before:content-[attr(data-label)] max-md:before:block max-md:before:mb-4 max-md:before:font-[family-name:var(--bb-font-display)] max-md:before:text-lg max-md:before:font-semibold max-md:before:text-[var(--bb-text-primary)] max-md:before:uppercase max-md:before:tracking-[0.02em] max-md:before:leading-[1.2]",
+              )}
+              data-label={section.label}
+            >
+              {section.content}
+            </div>
+          );
+        })}
       </div>
     </section>
   );

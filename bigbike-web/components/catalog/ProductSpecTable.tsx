@@ -27,20 +27,20 @@ export function ProductSpecTable({
   const groups = groupSpecifications(specifications);
 
   return (
-    <div className="thong-so-ki-thuat">
+    <div>
       {groups.map((group, index) => (
         <div key={`${group.group ?? "default"}-${index}`}>
           {group.group && (
-            <p>
+            <p className="mb-3">
               <strong>{group.group}</strong>
             </p>
           )}
-          <ul>
+          <ul className="mb-4 pl-5">
             {group.items.map((spec, specIndex) => {
               const name = safeText(spec.name, tProduct("specifications"));
               const value = safeText(spec.value, tProduct("stockState.UNKNOWN"));
               return (
-                <li key={`${name}-${specIndex}`}>
+                <li key={`${name}-${specIndex}`} className="mb-1">
                   {name}: {value}
                 </li>
               );

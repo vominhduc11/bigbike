@@ -5937,119 +5937,8 @@ body:has(.bb-home) {
   height: 1em;
 }
 
-.bb-wp-tabs {
-  max-width: 1140px;
-  margin: 80px auto 40px;
-  padding: 0 15px;
-}
-
-.bb-wp-tabs .tabs-nav {
-  margin-bottom: 40px;
-}
-
-.bb-wp-tabs .nav-tabs {
-  position: relative;
-  display: flex;
-  flex-wrap: nowrap;
-  width: 100%;
-  margin: 0;
-  padding: 0 0 0 10px;
-  border: 0;
-  list-style: none;
-}
-
-.bb-wp-tabs .nav-tabs::before {
-  content: "";
-  position: absolute;
-  top: 50%;
-  right: 0;
-  left: 10px;
-  z-index: 0;
-  height: 1px;
-  background: #cecece;
-}
-
-.bb-wp-tabs .nav-item {
-  position: relative;
-  z-index: 1;
-  width: 100%;
-  max-width: 220px;
-  margin: 0;
-  padding-right: 30px;
-  background: #fff;
-}
-
-.bb-wp-tabs .nav-link {
-  position: relative;
-  display: block;
-  width: 100%;
-  height: 42px;
-  border: 0;
-  background: transparent;
-  color: var(--bb-text-secondary);
-  font-family: var(--bb-font-body);
-  font-size: 16px;
-  font-weight: 600;
-  line-height: 42px;
-  text-align: center;
-  text-decoration: none;
-  text-transform: none;
-  cursor: pointer;
-}
-
-.bb-wp-tabs .nav-link::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border: 1px solid #cecece;
-  background: #fff;
-  transform: skewX(-20deg);
-}
-
-.bb-wp-tabs .nav-link.active {
-  color: #fff;
-}
-
-.bb-wp-tabs .nav-link.active::after {
-  border-color: #000;
-  background: #000;
-}
-
-.bb-wp-tabs .tab-panel {
-  color: #000;
-  font-size: var(--fs-body);
-  line-height: 1.7;
-}
-
-/* Desktop tabs: show only the active panel. Replaces the HTML `hidden`
-   attribute — modern Chromium sets [hidden]{display:none!important} in its UA
-   sheet, which author CSS can't override, so the mobile stack couldn't show. */
-.bb-wp-tabs .tab-panel:not(.active) {
-  display: none;
-}
-
 .bb-wp-tabs .tab-panel * {
   line-height: inherit;
-}
-
-.bb-wp-tabs .videos-slide .row {
-  display: block;
-  margin: 0;
-}
-
-.bb-wp-tabs .videos-slide p,
-.bb-wp-tabs .thong-so-ki-thuat p {
-  margin: 0 0 12px;
-}
-
-.bb-wp-tabs .thong-so-ki-thuat ul {
-  margin: 0 0 16px;
-  padding-left: 20px;
-}
-
-.bb-wp-tabs .thong-so-ki-thuat li {
-  margin: 0 0 4px;
 }
 
 .bb-wp-video-single iframe,
@@ -6284,20 +6173,6 @@ body:has(.bb-home) {
     gap: 20px;
   }
 
-  .bb-wp-tabs {
-    margin-top: 60px;
-  }
-
-  .bb-wp-tabs .tabs-nav {
-    height: 42px;
-    overflow-x: auto;
-    overflow-y: hidden;
-  }
-
-  .bb-wp-tabs .nav-tabs {
-    width: 800px;
-  }
-
   .bb-wp-video-grid {
     grid-template-columns: 1fr;
   }
@@ -6459,46 +6334,6 @@ body:has(.bb-home) {
   }
 
   /* ---- Scroll sections (tabs → continuous on mobile) ---- */
-  /* Divider + gap marking the buy/overview → product-details boundary, so the
-     share row (end of the purchase block) reads as separate from "Mô tả". */
-  .bb-wp-pdp .bb-wp-tabs {
-    margin-top: 32px;
-    padding-top: 0;
-    border-top: 3px solid var(--bb-border-subtle);
-  }
-
-  .bb-wp-pdp .bb-wp-tabs .tabs-nav {
-    display: none;
-  }
-
-  /* All panels stack and show on mobile, overriding the desktop
-     `.tab-panel:not(.active)` hide. */
-  .bb-wp-pdp .bb-wp-tabs .tab-panel {
-    display: block;
-    padding-top: 24px;
-    padding-bottom: 4px;
-    border-top: 3px solid var(--bb-border-subtle);
-    margin-top: 0;
-    scroll-margin-top: calc(var(--bb-header-height) + 52px);
-  }
-
-  /* Section title injected from data-label attribute */
-  .bb-wp-pdp .bb-wp-tabs .tab-panel::before {
-    content: attr(data-label);
-    display: block;
-    margin-bottom: 16px;
-    font-family: var(--bb-font-display);
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--bb-text-primary);
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
-    line-height: 1.2;
-  }
-
-  .bb-wp-pdp .bb-wp-tabs .tab-panel:first-child {
-    border-top: none;
-  }
 }
 
 /* ---- FAQ accordion (shown in tabs on desktop, scroll sections on mobile) ---- */
@@ -9492,25 +9327,6 @@ body .bb-home .white.block-title h3 {
     margin-top: 22px;
   }
 
-  .bb-wp-tabs {
-    margin-top: 34px;
-    padding-inline: var(--bb-mobile-page-x);
-  }
-
-  .bb-wp-tabs .tabs-nav {
-    margin-bottom: 18px;
-  }
-
-  .bb-wp-tabs .nav-tabs {
-    width: max-content;
-    min-width: 100%;
-  }
-
-  .bb-wp-tabs .nav-item {
-    width: auto;
-    min-width: 160px;
-    padding-right: 12px;
-  }
 
   .bb-wp-related.related.products {
     margin-top: 36px;
@@ -10600,7 +10416,6 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
   .bb-product-archive .container.bb-wp-container,
   .bb-wp-pdp .bb-breadcrumb,
   .bb-wp-pdp-layout,
-  .bb-wp-tabs,
   .bb-wp-related {
     max-width: 1360px;
   }
@@ -10611,7 +10426,6 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
   .bb-product-archive .container.bb-wp-container,
   .bb-wp-pdp .bb-breadcrumb,
   .bb-wp-pdp-layout,
-  .bb-wp-tabs,
   .bb-wp-related {
     max-width: 1600px;
   }
@@ -10622,7 +10436,6 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
   .bb-product-archive .container.bb-wp-container,
   .bb-wp-pdp .bb-breadcrumb,
   .bb-wp-pdp-layout,
-  .bb-wp-tabs,
   .bb-wp-related {
     max-width: 2240px;
   }
