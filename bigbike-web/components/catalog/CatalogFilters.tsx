@@ -58,6 +58,25 @@ const PRICE_FALLBACK: { key: string; label: string; min?: number; max?: number }
   { key: "tren-10tr", label: "Trên 10.000.000 VND", min: 10_000_000, max: undefined },
 ];
 
+/* ── Inline-Tailwind ports of the former .bb-product-archive sidebar/.widget rules ───
+ * #cecece = --bb-border-default (no Tailwind token); #6f6f6f = --bb-text-muted = text-muted-foreground;
+ * --bb-action-primary = --bb-text-brand = brand. Rotated pseudo-squares use the arbitrary
+ * [transform:rotate(45deg)] (v4 `rotate-45` sets the `rotate` prop, not `transform`).
+ * Mobile (max-md) values are the EFFECTIVE last-override (the drawer/widget were re-overridden
+ * by a second @media block: wrapper min(86vw,340px)/18px pad, overlay color-mix 58%, widget 20/16). */
+const WIDGET = "mb-[30px] border-b border-[var(--bb-border-default)] pb-[15px] last:border-b-0 max-md:mb-5 max-md:pb-4";
+const WIDGET_TITLE_H3 =
+  "m-0 font-[family-name:var(--bb-font-display)] text-[1.5rem] font-semibold uppercase text-black";
+const LIST = "m-0 list-none p-0"; // widget--body ul
+const LIST_LINK =
+  "relative block pr-5 text-sm font-semibold leading-[1.3] text-muted-foreground no-underline hover:text-brand";
+const CAT_DIAMOND =
+  "after:absolute after:left-[3px] after:top-[10px] after:h-[5px] after:w-[5px] after:rounded-[1px] after:bg-brand after:[transform:rotate(45deg)] after:content-['']";
+const SHOW_MORE =
+  "h-[52px] w-full cursor-pointer border border-black bg-black px-2.5 text-center font-semibold uppercase leading-[52px] text-white";
+const VISIBLE_CLAMP =
+  "relative max-h-[400px] overflow-hidden after:absolute after:bottom-0 after:left-0 after:z-[2] after:h-[10%] after:w-full after:bg-[linear-gradient(transparent,#ffffff)] after:content-['']";
+
 function FilterSection({
   title,
   children,
@@ -68,20 +87,21 @@ function FilterSection({
   className?: string;
 }) {
   return (
-    <div className={cn("widget", className)}>
-      <div className="widget--title">
-        <h3>{title}</h3>
+    <div className={cn(WIDGET, className)}>
+      <div className="pb-[15px]">
+        <h3 className={WIDGET_TITLE_H3}>{title}</h3>
       </div>
-      <div className="widget--body">{children}</div>
+      <div>{children}</div>
     </div>
   );
 }
 
+/** Layered-nav count badge (rotated grey square with the number on top). Categories hide it. */
 function Count({ value }: { value?: number }) {
   if (value == null) return null;
   return (
-    <span className="count">
-      <span>{value}</span>
+    <span className="absolute right-[3px] top-[10px] h-5 w-5 text-center font-semibold text-white after:absolute after:left-0 after:top-[2px] after:h-full after:w-full after:rounded-[2px] after:bg-[var(--bb-text-muted)] after:[transform:rotate(45deg)] after:content-['']">
+      <span className="relative z-[2] text-sm leading-5">{value}</span>
     </span>
   );
 }
@@ -100,11 +120,11 @@ function FilterList({
 
   return (
     <>
-      <ul className={cn(className, shouldClamp && !revealed && "visible")}>{children}</ul>
+      <ul className={cn(className, shouldClamp && !revealed && VISIBLE_CLAMP)}>{children}</ul>
       {shouldClamp && !revealed && (
-        <button type="button" className="show-more" onClick={() => setRevealed(true)}>
+        <button type="button" className={SHOW_MORE} onClick={() => setRevealed(true)}>
           Xem thêm
-          <i className="far fa-plus" aria-hidden="true" />
+          <i className="far fa-plus ml-1.5" aria-hidden="true" />
         </button>
       )}
     </>
@@ -172,19 +192,34 @@ export function CatalogFilters({
       : PRICE_FALLBACK.map((b) => ({ ...b, count: undefined as number | undefined }));
 
   return (
-    <aside className={cn("sidebar-wrap-product bb-archive-sidebar", mobileOpen && "active", mobileIn && "in")}>
-      <div className="wrapper-product">
-        <div className="mobile-sidebar-title">
-          <p>BỘ LỌC</p>
-          <button type="button" className="close-btn" onClick={onMobileClose} aria-label={t("filterToggleCollapse")}>
+    <aside
+      className={cn(
+        "block max-md:fixed max-md:top-0 max-md:right-0 max-md:z-[9999] max-md:h-full max-md:w-full",
+        mobileOpen ? "max-md:block" : "max-md:hidden",
+      )}
+    >
+      <div
+        className={cn(
+          "bg-white max-md:absolute max-md:top-0 max-md:right-0 max-md:z-[2] max-md:h-full max-md:w-[min(86vw,340px)] max-md:max-w-[340px] max-md:overflow-x-auto max-md:py-[18px] max-md:px-[var(--bb-mobile-page-x)] max-md:[transition:all_0.3s_ease]",
+          mobileIn ? "max-md:[transform:translateX(0)]" : "max-md:[transform:translateX(100%)]",
+        )}
+      >
+        <div className="hidden max-md:relative max-md:mb-[18px] max-md:block max-md:border-b max-md:border-[var(--bb-border-default)] max-md:pb-[14px] max-md:text-black">
+          <p className="m-0 bg-white text-[24px] font-semibold">BỘ LỌC</p>
+          <button
+            type="button"
+            className="absolute right-0 top-2 cursor-pointer border-none bg-transparent text-[24px] leading-none text-black"
+            onClick={onMobileClose}
+            aria-label={t("filterToggleCollapse")}
+          >
             ×
           </button>
         </div>
 
-        <div className="wrapper">
+        <div>
           {rootCategories.length > 0 && (
             <FilterSection title="Danh mục sản phẩm">
-              <FilterList className="product-categories" count={categoryRowCount}>
+              <FilterList className={cn(LIST, "mb-5")} count={categoryRowCount}>
                 {rootCategories.map((cat) => {
                   const href = toCategoryPath(cat.slug);
                   const active = href === resetHref || current.category === cat.slug;
@@ -192,30 +227,26 @@ export function CatalogFilters({
                     ? visibleCategories.filter((child) => child.parentId === cat.id)
                     : [];
                   return (
-                    <li
-                      key={cat.id}
-                      className={cn(
-                        "cat-item",
-                        cat.slug,
-                        visibleCategories.some((child) => child.parentId === cat.id) && "cat-parent",
-                        active && "current-cat active",
-                        !active && activeCategoryParentId === cat.id && "current-cat-parent",
-                      )}
-                    >
-                      <Link href={href}>{cat.name}</Link>
-                      <Count value={facetCount(facets?.categories, cat.slug)} />
+                    <li key={cat.id} className="relative py-2.5">
+                      <Link
+                        href={href}
+                        className={cn(LIST_LINK, active && `text-brand pl-[25px] ${CAT_DIAMOND}`)}
+                      >
+                        {cat.name}
+                      </Link>
                       {children.length > 0 ? (
-                        <ul className="children">
+                        <ul className="relative m-0 block pt-2.5 after:absolute after:left-[9px] after:top-[15px] after:w-px after:[height:calc(100%_-_30px)] after:border after:border-dashed after:border-[#6f6f6f] after:content-['']">
                           {children.map((child) => {
                             const childHref = toCategoryPath(child.slug);
                             const childActive = childHref === resetHref || current.category === child.slug;
                             return (
-                              <li
-                                key={child.id}
-                                className={cn("cat-item", child.slug, childActive && "current-cat active")}
-                              >
-                                <Link href={childHref}>{child.name}</Link>
-                                <Count value={facetCount(facets?.categories, child.slug)} />
+                              <li key={child.id} className="relative py-2.5 pl-[47px]">
+                                <Link
+                                  href={childHref}
+                                  className={cn(LIST_LINK, childActive && `text-brand ${CAT_DIAMOND}`)}
+                                >
+                                  {child.name}
+                                </Link>
                               </li>
                             );
                           })}
@@ -229,9 +260,14 @@ export function CatalogFilters({
           )}
 
           <FilterSection title="Giá">
-            <FilterList className="woocommerce-widget-layered-nav-list" count={priceRows.length + 1}>
-              <li className={cn(current.minPrice == null && current.maxPrice == null && "chosen active")}>
-                <Link href={queryHref({ min_price: undefined, max_price: undefined })}>Tất cả</Link>
+            <FilterList className={LIST} count={priceRows.length + 1}>
+              <li className="relative py-[15px]">
+                <Link
+                  href={queryHref({ min_price: undefined, max_price: undefined })}
+                  className={cn(LIST_LINK, current.minPrice == null && current.maxPrice == null && "text-brand")}
+                >
+                  Tất cả
+                </Link>
               </li>
               {priceRows.map((band) => {
                 const active =
@@ -241,8 +277,10 @@ export function CatalogFilters({
                   ? queryHref({ min_price: undefined, max_price: undefined })
                   : queryHref({ min_price: band.min, max_price: band.max });
                 return (
-                  <li key={band.key} className={cn(active && "chosen active")}>
-                    <Link href={href}>{band.label}</Link>
+                  <li key={band.key} className="relative py-[15px]">
+                    <Link href={href} className={cn(LIST_LINK, active && "text-brand")}>
+                      {band.label}
+                    </Link>
                     <Count value={band.count} />
                   </li>
                 );
@@ -251,8 +289,8 @@ export function CatalogFilters({
           </FilterSection>
 
           {brandRows.length > 0 && (
-            <FilterSection title="Thương Hiệu" className="widget_filter_by_brand">
-              <FilterList className="woocommerce-widget-layered-nav-list" count={brandRows.length}>
+            <FilterSection title="Thương Hiệu">
+              <FilterList className={LIST} count={brandRows.length}>
                 {brandRows.map((brand) => {
                   const active = current.brand === brand.key;
                   const href = active
@@ -262,18 +300,22 @@ export function CatalogFilters({
                     ? resolveMediaUrl(brand.image.url.trim())
                     : null;
                   return (
-                    <li key={brand.key} className={cn(active && "chosen active")}>
-                      <Link href={href}>
+                    <li key={brand.key} className="relative py-[15px]">
+                      <Link
+                        href={href}
+                        className={cn(LIST_LINK, "flex items-center gap-2", active && "text-brand")}
+                      >
                         {imageSrc ? (
                           <img
                             src={imageSrc}
                             alt={safeText(brand.image?.alt, brand.label)}
                             width={92}
                             loading="lazy"
+                            className="inline-block h-auto w-[92px] !max-w-[92px] align-middle"
                           />
                         ) : null}
                         {showBrandLabels || !imageSrc ? (
-                          <span className="bb-brand-filter-label">{brand.label}</span>
+                          <span className="inline-block">{brand.label}</span>
                         ) : null}
                       </Link>
                       <Count value={brand.count} />
@@ -285,15 +327,17 @@ export function CatalogFilters({
           )}
 
           <FilterSection title="Màu sắc">
-            <FilterList className="woocommerce-widget-layered-nav-list" count={colorRows.length}>
+            <FilterList className={LIST} count={colorRows.length}>
               {colorRows.map((color) => {
                 const active = current.color === color.key;
                 const href = active
                   ? queryHref({ filter_color: undefined })
                   : queryHref({ filter_color: color.key });
                 return (
-                  <li key={color.key} className={cn(active && "chosen active")}>
-                    <Link href={href}>{color.label}</Link>
+                  <li key={color.key} className="relative py-[15px]">
+                    <Link href={href} className={cn(LIST_LINK, active && "text-brand")}>
+                      {color.label}
+                    </Link>
                     <Count value={color.count} />
                   </li>
                 );
@@ -302,7 +346,15 @@ export function CatalogFilters({
           </FilterSection>
         </div>
       </div>
-      <button type="button" className="overlay" onClick={onMobileClose} aria-label={t("filterToggleCollapse")} />
+      <button
+        type="button"
+        className={cn(
+          "hidden max-md:absolute max-md:top-0 max-md:left-0 max-md:z-[1] max-md:block max-md:h-full max-md:w-full max-md:border-none max-md:bg-[color-mix(in_srgb,var(--bb-color-black)_58%,transparent)] max-md:[transition:all_0.2s_ease]",
+          mobileIn ? "max-md:opacity-100" : "max-md:opacity-0",
+        )}
+        onClick={onMobileClose}
+        aria-label={t("filterToggleCollapse")}
+      />
     </aside>
   );
 }
