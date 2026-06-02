@@ -90,28 +90,31 @@ export function ProductGallery({
   }
 
   return (
-    <div className="bb-wp-gallery">
+    <div className="grid grid-cols-[minmax(0,25%)_minmax(0,75%)] gap-[30px] min-w-0 max-[1023px]:grid-cols-[1fr] max-[1023px]:gap-[10px] max-[1023px]:w-full max-md:gap-2">
       {count > 1 && (
-        <div className="bb-wp-gallery-thumbs-wrap">
+        <div className="relative h-[500px] py-8 min-w-0 max-[1023px]:h-[120px] max-[1023px]:px-8 max-[1023px]:py-0 max-md:h-[82px] max-md:px-7">
           <button
             type="button"
-            className="bb-wp-gallery-thumb-nav bb-wp-gallery-thumb-prev"
+            className="absolute left-1/2 top-0 z-[2] w-7 h-7 [transform:translateX(-50%)] border-none bg-transparent text-black cursor-pointer max-[1023px]:left-0 max-[1023px]:top-1/2 max-[1023px]:[transform:translateY(-50%)]"
             aria-label="Ảnh trước"
             onClick={() => scrollThumbsBy("prev")}
           >
-            <svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" className="max-[1023px]:[transform:rotate(-90deg)]">
               <path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
 
-          <div ref={thumbsRef} className="bb-wp-gallery-thumbs">
+          <div
+            ref={thumbsRef}
+            className="h-full flex flex-col gap-2.5 overflow-hidden scroll-smooth max-[1023px]:flex-row max-[1023px]:gap-[30px] max-md:gap-2 max-md:overflow-x-auto max-md:[scrollbar-width:none] max-md:[&::-webkit-scrollbar]:hidden"
+          >
             {images.map((image, index) => {
               const active = index === selectedIndex;
               return (
                 <button
                   key={image.id ?? image.url ?? index}
                   type="button"
-                  className={cn("bb-wp-gallery-thumb", active && "is-active")}
+                  className="flex-[0_0_calc((100%_-_20px)_/_3)] h-[calc((100%_-_20px)_/_3)] min-h-0 py-[5px] border-none bg-white cursor-pointer max-[1023px]:flex-[0_0_calc((100%_-_60px)_/_3)] max-[1023px]:w-[calc((100%_-_60px)_/_3)] max-[1023px]:h-[120px] max-md:flex-[0_0_76px] max-md:w-[76px] max-md:h-[76px] max-md:p-0"
                   onClick={() => setSelectedIndex(index)}
                   aria-label={`Xem ảnh ${index + 1}`}
                   aria-pressed={active}
@@ -121,7 +124,10 @@ export function ProductGallery({
                     altFallback={altFallback}
                     width={220}
                     height={220}
-                    className="bb-wp-gallery-thumb-img"
+                    className={cn(
+                      "w-full h-full object-contain border",
+                      active ? "border-[var(--bb-border-control)]" : "border-transparent",
+                    )}
                   />
                 </button>
               );
@@ -130,27 +136,30 @@ export function ProductGallery({
 
           <button
             type="button"
-            className="bb-wp-gallery-thumb-nav bb-wp-gallery-thumb-next"
+            className="absolute left-1/2 bottom-0 z-[2] w-7 h-7 [transform:translateX(-50%)] border-none bg-transparent text-black cursor-pointer max-[1023px]:left-auto max-[1023px]:right-0 max-[1023px]:top-1/2 max-[1023px]:bottom-auto max-[1023px]:[transform:translateY(-50%)]"
             aria-label="Ảnh tiếp"
             onClick={() => scrollThumbsBy("next")}
           >
-            <svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" className="max-[1023px]:[transform:rotate(-90deg)]">
               <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
         </div>
       )}
 
-      <div className="bb-wp-gallery-main-wrap">
-        <div className="bb-wp-gallery-main">
-          <div key={selectedImage?.url ?? selectedIndex} className="bb-wp-gallery-main-img-anim">
+      <div className="relative min-w-0">
+        <div className="relative w-full aspect-square flex items-center justify-center overflow-hidden bg-white max-[1023px]:max-h-[380px] max-md:max-h-none max-md:border max-md:border-border max-md:bg-[var(--bb-bg-surface-raised)]">
+          <div
+            key={selectedImage?.url ?? selectedIndex}
+            className="w-full h-full [animation:bb-gallery-fade-in_0.22s_ease]"
+          >
             <MediaImage
               image={selectedImage}
               altFallback={altFallback}
               priority
               width={1200}
               height={1200}
-              className="bb-wp-gallery-main-img"
+              className="w-full h-full object-contain"
             />
           </div>
         </div>
@@ -159,7 +168,7 @@ export function ProductGallery({
           <>
             <button
               type="button"
-              className="bb-wp-gallery-main-nav bb-wp-gallery-main-prev"
+              className="absolute top-1/2 left-2 z-[3] w-9 h-9 [transform:translateY(-50%)] border-none bg-transparent text-black cursor-pointer max-md:w-11 max-md:h-11"
               aria-label="Ảnh trước"
               onClick={prev}
             >
@@ -167,7 +176,7 @@ export function ProductGallery({
             </button>
             <button
               type="button"
-              className="bb-wp-gallery-main-nav bb-wp-gallery-main-next"
+              className="absolute top-1/2 right-2 z-[3] w-9 h-9 [transform:translateY(-50%)] border-none bg-transparent text-black cursor-pointer max-md:w-11 max-md:h-11"
               aria-label="Ảnh tiếp"
               onClick={next}
             >

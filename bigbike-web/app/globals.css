@@ -5512,120 +5512,6 @@ body:has(.bb-home) {
   min-width: 0;
 }
 
-.bb-wp-gallery {
-  display: grid;
-  grid-template-columns: minmax(0, 25%) minmax(0, 75%);
-  gap: 30px;
-  min-width: 0;
-}
-
-.bb-wp-gallery-thumbs-wrap {
-  position: relative;
-  height: 500px;
-  padding: 32px 0;
-  min-width: 0;
-}
-
-.bb-wp-gallery-thumbs {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  overflow: hidden;
-  scroll-behavior: smooth;
-}
-
-.bb-wp-gallery-thumb {
-  flex: 0 0 calc((100% - 20px) / 3);
-  height: calc((100% - 20px) / 3);
-  min-height: 0;
-  padding: 5px 0;
-  border: 0;
-  background: #fff;
-  cursor: pointer;
-}
-
-.bb-wp-gallery-thumb-img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  border: 1px solid transparent;
-}
-
-.bb-wp-gallery-thumb.is-active .bb-wp-gallery-thumb-img {
-  border-color: var(--bb-border-control);
-}
-
-.bb-wp-gallery-thumb-nav {
-  position: absolute;
-  left: 50%;
-  z-index: 2;
-  width: 28px;
-  height: 28px;
-  transform: translateX(-50%);
-  border: 0;
-  background: transparent;
-  color: #000;
-  cursor: pointer;
-}
-
-.bb-wp-gallery-thumb-prev {
-  top: 0;
-}
-
-.bb-wp-gallery-thumb-next {
-  bottom: 0;
-}
-
-.bb-wp-gallery-main-wrap {
-  position: relative;
-  min-width: 0;
-}
-
-.bb-wp-gallery-main {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  background: #fff;
-}
-
-.bb-wp-gallery-main-img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-.bb-wp-gallery-main-nav {
-  position: absolute;
-  top: 50%;
-  z-index: 3;
-  width: 36px;
-  height: 36px;
-  transform: translateY(-50%);
-  border: 0;
-  background: transparent;
-  color: #000;
-  cursor: pointer;
-}
-
-.bb-wp-gallery-main-prev {
-  left: 8px;
-}
-
-.bb-wp-gallery-main-next {
-  right: 8px;
-}
-
-.bb-wp-gallery-main-img-anim {
-  width: 100%;
-  height: 100%;
-  animation: bb-gallery-fade-in 0.22s ease;
-}
-
 @keyframes bb-gallery-fade-in {
   from { opacity: 0; }
   to   { opacity: 1; }
@@ -6368,57 +6254,6 @@ body:has(.bb-home) {
     width: 100%;
   }
 
-  .bb-wp-gallery {
-    grid-template-columns: 1fr;
-    gap: 10px;
-    width: 100%;
-  }
-
-  .bb-wp-gallery-thumbs-wrap {
-    height: 120px;
-    padding: 0 32px;
-  }
-
-  .bb-wp-gallery-thumbs {
-    flex-direction: row;
-    gap: 30px;
-    overflow: hidden;
-  }
-
-  .bb-wp-gallery-thumb {
-    flex: 0 0 calc((100% - 60px) / 3);
-    width: calc((100% - 60px) / 3);
-    height: 120px;
-    padding: 5px 0;
-  }
-
-  .bb-wp-gallery-thumb-nav {
-    top: 50%;
-    left: auto;
-    transform: translateY(-50%);
-  }
-
-  .bb-wp-gallery-thumb-prev {
-    left: 0;
-  }
-
-  .bb-wp-gallery-thumb-next {
-    right: 0;
-    bottom: auto;
-  }
-
-  .bb-wp-gallery-thumb-prev svg {
-    transform: rotate(-90deg);
-  }
-
-  .bb-wp-gallery-thumb-next svg {
-    transform: rotate(-90deg);
-  }
-
-  .bb-wp-gallery-main {
-    max-height: 380px;
-  }
-
   .bb-wp-pdp .product-information .title h1 {
     font-size: 26px;
     line-height: 1.25;
@@ -6479,15 +6314,6 @@ body:has(.bb-home) {
 @media (max-width: 419px) {
   .bb-wp-related-track {
     --bb-wp-related-gap: 0px;
-  }
-
-  .bb-wp-gallery-thumbs {
-    gap: 16px;
-  }
-
-  .bb-wp-gallery-thumb {
-    flex-basis: calc((100% - 32px) / 3);
-    width: calc((100% - 32px) / 3);
   }
 }
 
@@ -9570,44 +9396,6 @@ body .bb-home .white.block-title h3 {
 
   .bb-wp-pdp-info-col {
     order: 2;
-  }
-
-  .bb-wp-gallery {
-    gap: 8px;
-  }
-
-  /* Gallery prev/next arrows to the 44px touch-target minimum on mobile. */
-  .bb-wp-gallery-main-nav {
-    width: 44px;
-    height: 44px;
-  }
-
-  .bb-wp-gallery-main {
-    max-height: none;
-    border: 1px solid var(--bb-border-subtle);
-    background: var(--bb-bg-surface-raised);
-  }
-
-  .bb-wp-gallery-thumbs-wrap {
-    height: 82px;
-    padding-inline: 28px;
-  }
-
-  .bb-wp-gallery-thumbs {
-    gap: 8px;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .bb-wp-gallery-thumbs::-webkit-scrollbar {
-    display: none;
-  }
-
-  .bb-wp-gallery-thumb {
-    flex: 0 0 76px;
-    width: 76px;
-    height: 76px;
-    padding: 0;
   }
 
   .bb-wp-pdp .product-information .title {
