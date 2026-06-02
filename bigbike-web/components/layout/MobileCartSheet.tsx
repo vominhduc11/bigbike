@@ -18,9 +18,20 @@ import { formatVnd } from "@/lib/utils/format";
 import { toCartPath, toCheckoutPath, toProductListPath } from "@/lib/utils/routes";
 import { useHeaderUi } from "./HeaderUiContext";
 
+// Dark-shell micro label (GIỎ HÀNG / TỔNG TẠM TÍNH / line SKU)
+const microLabel =
+  "m-0 font-cta text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--bb-text-inverse-muted)]";
+// Shared CTA button chrome (empty link / primary / secondary)
+const ctaBtn =
+  "inline-flex min-h-11 items-center justify-center px-4 font-cta text-[13px] font-semibold uppercase tracking-[0.1em] no-underline";
+const ctaBtnFilled = "border border-[var(--bb-brand-primary)] bg-brand text-[var(--bb-text-inverse)]";
+const qtyBtn =
+  "inline-flex h-11 w-11 items-center justify-center border-0 bg-transparent cursor-pointer disabled:cursor-not-allowed disabled:opacity-45";
+const lineMeta = "mt-1 text-[12px] leading-[1.25]";
+
 function CartSheetThumb({ item }: { item: CartItem }) {
   return (
-    <div className="bb-mobile-cart-thumb">
+    <div className="relative flex h-[72px] w-[72px] flex-none items-center justify-center overflow-hidden bg-[var(--bb-bg-surface)] text-[var(--bb-text-primary)] [&_img]:h-full [&_img]:w-full [&_img]:object-contain">
       {item.image?.url ? (
         <MediaImage image={item.image} altFallback={item.productName} width={96} height={96} />
       ) : (
@@ -79,8 +90,6 @@ export function MobileCartSheet() {
   const loading = isLoading || (open && isFetching && !cart);
   const queryError = cartError instanceof Error ? cartError.message : "";
   const unavailable = items.some((item) => !item.available);
-  const hasItems = items.length > 0 && !queryError && !errorMessage;
-  const compact = !loading && !hasItems;
 
   return (
     <Sheet
@@ -94,12 +103,15 @@ export function MobileCartSheet() {
         }
       }}
     >
-      <SheetContent side="bottom" className={cn("bb-mobile-cart-sheet md:hidden", compact && "is-compact")}>
-        <div className="bb-mobile-cart-grabber" aria-hidden="true" />
-        <div className="bb-mobile-cart-head">
+      <SheetContent
+        side="bottom"
+        className="md:hidden flex flex-col gap-0 p-0 text-[var(--bb-text-inverse)] bg-[var(--bb-mobile-shell-bg)] border-[var(--bb-mobile-shell-border)] z-[var(--bb-mobile-panel-z)] h-[min(84dvh,calc(100dvh_-_max(24px,env(safe-area-inset-top))))] max-h-[min(84dvh,calc(100dvh_-_max(24px,env(safe-area-inset-top))))] [&>button]:top-[11px] [&>button]:right-[10px] [&>button]:h-11 [&>button]:w-11 [&>button]:text-[var(--bb-text-inverse)]"
+      >
+        <div className="mx-auto mt-2 h-1 w-9 flex-none bg-[var(--bb-mobile-shell-border-strong)]" aria-hidden="true" />
+        <div className="px-[14px] pt-3 pb-2 border-b border-[var(--bb-mobile-shell-border)]">
           <div>
-            <p>GIỎ HÀNG</p>
-            <SheetTitle className="bb-mobile-cart-title">
+            <p className={microLabel}>GIỎ HÀNG</p>
+            <SheetTitle className="text-[var(--bb-text-inverse)]">
               {itemCount > 0 ? `${itemCount} sản phẩm` : "Giỏ hàng trống"}
             </SheetTitle>
             <SheetDescription className="sr-only">
@@ -108,52 +120,70 @@ export function MobileCartSheet() {
           </div>
         </div>
 
-        <div className="bb-mobile-cart-body">
+        <div className="flex-1 min-h-0 overflow-y-auto px-[18px] py-[14px] [-webkit-overflow-scrolling:touch]">
           {loading ? (
-            <div className="bb-mobile-cart-state" role="status">
+            <div className="py-11 px-[18px] text-center text-[var(--bb-text-inverse-muted)]" role="status">
               Đang tải giỏ hàng...
             </div>
           ) : queryError || errorMessage ? (
-            <div className="bb-mobile-cart-state is-error" role="alert">
+            <div
+              className="py-11 px-[18px] text-center text-[var(--bb-text-inverse)] border border-[var(--bb-border-brand)] bg-[color-mix(in_srgb,var(--bb-brand-primary)_12%,transparent)]"
+              role="alert"
+            >
               {errorMessage || queryError}
             </div>
           ) : items.length === 0 ? (
-            <div className="bb-mobile-cart-empty">
-              <span className="bb-mobile-cart-empty-icon" aria-hidden="true">
+            <div className="grid justify-items-center pt-9 px-3 pb-[42px] text-center text-[var(--bb-text-inverse-muted)]">
+              <span
+                className="inline-flex h-16 w-16 items-center justify-center mb-[14px] border border-[var(--bb-mobile-shell-border)] bg-[var(--bb-mobile-shell-surface)] text-[var(--bb-text-inverse-muted)]"
+                aria-hidden="true"
+              >
                 <ShoppingCart size={28} />
               </span>
-              <p>Thêm sản phẩm để bắt đầu mua sắm.</p>
-              <Link href={toProductListPath()} onClick={closePanel}>
+              <p className="mt-[6px] mb-4">Thêm sản phẩm để bắt đầu mua sắm.</p>
+              <Link href={toProductListPath()} onClick={closePanel} className={cn(ctaBtn, ctaBtnFilled, "mt-[2px]")}>
                 Mua sắm ngay
               </Link>
             </div>
           ) : (
-            <div className="bb-mobile-cart-list" role="list">
+            <div className="grid gap-[10px]" role="list">
               {items.map((item) => {
                 const mutating = updateItem.isPending || removeItem.isPending;
                 return (
-                  <article key={item.id} className="bb-mobile-cart-line" role="listitem">
+                  <article
+                    key={item.id}
+                    className="relative flex gap-3 border border-[var(--bb-mobile-shell-border)] bg-[var(--bb-mobile-shell-surface)] p-[10px]"
+                    role="listitem"
+                  >
                     <CartSheetThumb item={item} />
-                    <div className="bb-mobile-cart-line-copy">
-                      <p className="bb-mobile-cart-line-sku">{item.sku || "BIGBIKE"}</p>
-                      <h3>{item.productName}</h3>
-                      {item.variantName ? <p className="bb-mobile-cart-line-variant">{item.variantName}</p> : null}
-                      {!item.available ? (
-                        <p className="bb-mobile-cart-line-warning">Sản phẩm tạm thời không khả dụng.</p>
+                    <div className="min-w-0 flex-1">
+                      <p className={microLabel}>{item.sku || "BIGBIKE"}</p>
+                      <h3 className="mt-[2px] mr-7 line-clamp-2 font-cta text-[13px] font-medium leading-[1.2] text-[var(--bb-text-inverse)]">
+                        {item.productName}
+                      </h3>
+                      {item.variantName ? (
+                        <p className={cn(lineMeta, "text-[var(--bb-text-inverse-muted)]")}>{item.variantName}</p>
                       ) : null}
-                      <div className="bb-mobile-cart-line-bottom">
-                        <div className="bb-mobile-cart-qty" aria-label={`Số lượng ${item.productName}`}>
+                      {!item.available ? (
+                        <p className={cn(lineMeta, "text-brand-on-dark")}>Sản phẩm tạm thời không khả dụng.</p>
+                      ) : null}
+                      <div className="flex items-center justify-between gap-[10px] mt-2">
+                        <div className="inline-flex border border-[var(--bb-mobile-shell-border-strong)]" aria-label={`Số lượng ${item.productName}`}>
                           <button
                             type="button"
+                            className={cn(qtyBtn, "text-[var(--bb-text-inverse)]")}
                             onClick={() => setQuantity(item, item.quantity - 1)}
                             disabled={mutating || item.quantity <= 1 || !item.available}
                             aria-label={`Giảm số lượng ${item.productName}`}
                           >
                             -
                           </button>
-                          <span>{item.quantity}</span>
+                          <span className="inline-flex min-w-[30px] items-center justify-center text-[var(--bb-text-inverse)] text-[13px]">
+                            {item.quantity}
+                          </span>
                           <button
                             type="button"
+                            className={cn(qtyBtn, "text-[var(--bb-text-inverse)]")}
                             onClick={() => setQuantity(item, item.quantity + 1)}
                             disabled={mutating || !item.available}
                             aria-label={`Tăng số lượng ${item.productName}`}
@@ -161,12 +191,12 @@ export function MobileCartSheet() {
                             +
                           </button>
                         </div>
-                        <strong>{formatVnd(item.lineTotal)}</strong>
+                        <strong className="text-brand-on-dark font-heading text-[14px]">{formatVnd(item.lineTotal)}</strong>
                       </div>
                     </div>
                     <button
                       type="button"
-                      className="bb-mobile-cart-remove"
+                      className={cn(qtyBtn, "absolute top-[6px] right-[6px] text-[var(--bb-text-inverse-muted)]")}
                       onClick={() => removeLine(item)}
                       disabled={mutating}
                       aria-label={`Xóa ${item.productName}`}
@@ -181,26 +211,41 @@ export function MobileCartSheet() {
         </div>
 
         {items.length > 0 ? (
-          <div className="bb-mobile-cart-foot">
-            <div className="bb-mobile-cart-total">
-              <span>TỔNG TẠM TÍNH</span>
-              <strong>{formatVnd(cart?.totals.totalAmount ?? 0)}</strong>
+          <div className="flex-none pt-3 px-[18px] pb-[max(16px,env(safe-area-inset-bottom))] border-t border-[var(--bb-mobile-shell-border)] bg-[var(--bb-mobile-shell-surface-2)]">
+            <div className="flex items-baseline justify-between gap-3 mb-3">
+              <span className={microLabel}>TỔNG TẠM TÍNH</span>
+              <strong className="text-[var(--bb-text-inverse)] font-heading text-[22px]">
+                {formatVnd(cart?.totals.totalAmount ?? 0)}
+              </strong>
             </div>
             {unavailable ? (
-              <p className="bb-mobile-cart-foot-warning" role="alert">
+              <p
+                className="mt-[-2px] mb-3 border border-[var(--bb-state-warning-border)] bg-[var(--bb-state-warning-bg)] px-3 py-[10px] text-[var(--bb-state-warning-text)] text-[13px] leading-[1.35]"
+                role="alert"
+              >
                 Có sản phẩm tạm thời không khả dụng. Vui lòng cập nhật giỏ hàng trước khi thanh toán.
               </p>
             ) : null}
-            <div className="bb-mobile-cart-actions">
-              <Link href={toCartPath()} className="bb-mobile-cart-secondary" onClick={closePanel}>
+            <div className={cn("grid gap-2", unavailable ? "grid-cols-2" : "grid-cols-[minmax(0,0.85fr)_minmax(0,1fr)]")}>
+              <Link
+                href={toCartPath()}
+                className={cn(ctaBtn, "border border-[var(--bb-mobile-shell-border-strong)] text-[var(--bb-text-inverse)]")}
+                onClick={closePanel}
+              >
                 Xem giỏ hàng
               </Link>
               {unavailable ? (
-                <span className="bb-mobile-cart-primary is-disabled" aria-disabled="true">
+                <span
+                  className={cn(
+                    ctaBtn,
+                    "cursor-not-allowed border border-[var(--bb-mobile-shell-border-strong)] bg-[var(--bb-mobile-shell-surface)] text-[var(--bb-text-inverse-muted)]",
+                  )}
+                  aria-disabled="true"
+                >
                   Thanh toán
                 </span>
               ) : (
-                <Link href={toCheckoutPath()} className="bb-mobile-cart-primary" onClick={closePanel}>
+                <Link href={toCheckoutPath()} className={cn(ctaBtn, ctaBtnFilled)} onClick={closePanel}>
                   Thanh toán
                 </Link>
               )}
