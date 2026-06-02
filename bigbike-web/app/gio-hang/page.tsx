@@ -9,6 +9,13 @@ import { formatVnd } from "@/lib/utils/format";
 import { toProductListPath, toCheckoutPath } from "@/lib/utils/routes";
 import { MediaImage } from "@/components/ui/MediaImage";
 import { Container } from "@/components/layout/Container";
+import { cn } from "@/lib/utils";
+
+// Cart action links share the legacy `.cart-table .btn` base. The CTA font is set via an
+// arbitrary `var(--bb-font-cta)` rather than the `.font-cta` utility so the global
+// `a:not(.font-cta):hover { color: brand }` rule keeps matching these anchors (hover parity).
+const cartBtnBase =
+  "inline-block border-0 rounded-none font-[family-name:var(--bb-font-cta)] font-semibold no-underline uppercase";
 
 const COPY = {
   title: "Giỏ hàng",
@@ -62,7 +69,7 @@ function CartHeading() {
 
 function CartItemThumb({ item }: { item: CartItem }) {
   return (
-    <div className="bb-cart-item-thumb">
+    <div className="flex min-h-[100px] w-[120px] items-center justify-start [&_img]:h-auto [&_img]:max-h-[120px] [&_img]:w-auto [&_img]:max-w-[120px] [&_img]:object-contain max-md:max-w-[86px] max-md:[&_img]:max-w-[86px]">
       {item.image?.url ? (
         <MediaImage image={item.image} altFallback={item.productName} width={130} height={130} />
       ) : (
@@ -268,16 +275,19 @@ export default function CartPage() {
               </p>
             </>
           ) : (
-            <form className="woocommerce-cart-form" onSubmit={handleUpdateCart}>
-              <div className="bb-cart-content-row">
-                <div className="bb-cart-content-main">
-                  <div className="cart-avalable">
-                    <h3>
-                      {COPY.cartHeading} <span><b>{itemCount}</b></span>
+            <form onSubmit={handleUpdateCart}>
+              <div className="-mx-[15px] flex flex-wrap items-start">
+                <div className="relative min-h-px w-full max-w-[66.666667%] basis-2/3 px-[15px] max-[991px]:max-w-full max-[991px]:basis-full">
+                  <div className="mb-[30px] text-[1.714rem]">
+                    <h3 className="relative m-0 inline-block pr-10 font-heading text-[1em] font-semibold leading-[1.2] text-black">
+                      {COPY.cartHeading}{" "}
+                      <span className="absolute right-0 top-1/2 inline-block h-5 w-5 text-center text-[1.175rem] leading-none [transform:translateY(-50%)] after:absolute after:right-0 after:top-1/2 after:block after:h-5 after:w-5 after:rounded-[2px] after:bg-brand after:content-[''] after:[box-shadow:0_3px_6px_rgba(0,0,0,0.16)] after:[transform:translateY(-50%)_rotate(45deg)]">
+                        <b className="relative z-[2] inline-block pt-0.5 align-middle leading-none text-white">{itemCount}</b>
+                      </span>
                     </h3>
                   </div>
 
-                  <div className="table" role="list">
+                  <div className="mb-[30px]" role="list">
                     {cart.items.map((item) => {
                       const draftQuantity = quantityDrafts[item.id] ?? item.quantity;
                       const isMutating = mutating[item.id];
@@ -285,38 +295,45 @@ export default function CartPage() {
                       return (
                         <div
                           key={item.id}
-                          className={`table--items bb-cart-line-item${isMutating ? " is-mutating" : ""}`}
+                          className={cn(
+                            "m-0 flex flex-nowrap items-center md:border-b md:border-[#cecece] md:py-[30px] md:[&:first-child]:pt-0 max-md:mb-[10px] max-md:grid-cols-[86px_minmax(0,1fr)] max-md:gap-3 max-md:border max-md:border-[var(--bb-border-subtle)] max-md:p-[10px] max-md:[&:first-child]:pt-[10px] max-[600px]:grid",
+                            isMutating && "opacity-50",
+                          )}
                           role="listitem"
                         >
-                          <div className="table--items-item thumbnail">
+                          <div className="min-w-0 max-w-[130px] basis-[130px] p-0 [&_img]:mr-[10px] max-[600px]:max-w-none max-[600px]:basis-auto">
                             <CartItemThumb item={item} />
                           </div>
 
-                          <div className="table--items-item cart-information">
-                            <h3>{item.productName}</h3>
-                            {item.variantName ? <p>{item.variantName}</p> : <p aria-hidden="true">&nbsp;</p>}
-                            <p className="price">
+                          <div className="min-w-0 flex-auto p-0 pl-10 max-[600px]:pl-0">
+                            <h3 className="m-0 mb-2 font-heading text-[1rem] font-semibold leading-[1.25] text-[#3a3a3a] max-md:text-[15px] max-md:leading-[1.2]">{item.productName}</h3>
+                            {item.variantName ? (
+                              <p className="m-0 mb-2 text-[#3a3a3a]">{item.variantName}</p>
+                            ) : (
+                              <p aria-hidden="true" className="m-0 mb-2 text-[#3a3a3a]">&nbsp;</p>
+                            )}
+                            <p className="m-0 text-[#3a3a3a]">
                               <b>
                                 {item.quantity} x {formatVnd(item.unitPrice)} = {formatVnd(item.lineTotal)}
                               </b>
                             </p>
                           </div>
 
-                          <div className="table--items-item quantity">
-                            <div className="quantity-form js-quantity-wrap">
+                          <div className="min-w-0 max-w-[150px] basis-[150px] p-0 text-center max-[600px]:col-[1/2] max-[600px]:max-w-none max-[600px]:basis-auto max-[600px]:text-left">
+                            <div>
                               <button
                                 type="button"
-                                className="plus js-plus"
+                                className="inline-block h-5 w-6 border-0 bg-transparent p-0 align-top text-[1.714rem] leading-5 text-black disabled:cursor-not-allowed disabled:opacity-50 max-md:min-h-11 max-md:min-w-11"
                                 onClick={() => handleQuantityStep(item.id, 1)}
                                 disabled={isMutating || !item.available}
                                 aria-label={`Tăng số lượng ${item.productName}`}
                               >
                                 +
                               </button>
-                              <div className="quantity">
+                              <div>
                                 <input
                                   type="number"
-                                  className="quantity-input"
+                                  className="inline-block h-5 w-[50px] border-0 bg-transparent text-center align-top text-[1.429rem] font-semibold leading-5 text-black [appearance:textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none max-md:min-h-11"
                                   min={1}
                                   step={1}
                                   value={draftQuantity}
@@ -328,7 +345,7 @@ export default function CartPage() {
                               </div>
                               <button
                                 type="button"
-                                className="minus js-minus"
+                                className="inline-block h-5 w-6 border-0 bg-transparent p-0 align-top text-[1.714rem] leading-5 text-black disabled:cursor-not-allowed disabled:opacity-50 max-md:min-h-11 max-md:min-w-11"
                                 onClick={() => handleQuantityStep(item.id, -1)}
                                 disabled={isMutating || !item.available || draftQuantity <= 1}
                                 aria-label={`Giảm số lượng ${item.productName}`}
@@ -338,11 +355,11 @@ export default function CartPage() {
                             </div>
                           </div>
 
-                          <div className="table--items-item action">
-                            <div className="delete text-right">
+                          <div className="min-w-0 max-w-[50px] basis-[50px] p-0 max-[600px]:col-[2/3] max-[600px]:max-w-none max-[600px]:basis-auto max-[600px]:text-right">
+                            <div className="text-right">
                               <button
                                 type="button"
-                                className="remove"
+                                className="inline-flex h-6 w-6 items-center justify-center border-0 bg-transparent p-0 text-brand max-md:min-h-11 max-md:min-w-11"
                                 onClick={() => handleRemove(item.id)}
                                 disabled={isMutating}
                                 aria-label={COPY.removeItem}
@@ -356,11 +373,11 @@ export default function CartPage() {
                     })}
                   </div>
 
-                  <div className="check-out">
-                    <div className="bb-cart-update-row">
+                  <div className="mt-0">
+                    <div className="mb-[30px] text-right max-[600px]:text-left">
                       <button
                         type="submit"
-                        className="button"
+                        className="h-[42px] min-w-[180px] border-0 bg-black px-5 font-cta text-[14px] font-semibold leading-[42px] text-white disabled:cursor-not-allowed disabled:opacity-50 max-[600px]:w-full"
                         name="update_cart"
                         value={COPY.updateCart}
                         disabled={!hasQuantityChanges || cartUpdating}
@@ -369,16 +386,18 @@ export default function CartPage() {
                       </button>
                     </div>
 
-                    <div className="bb-cart-action-row">
-                      <Link className="btn btn-continue-shopping" href={continueHref}>
+                    <div className="flex items-center justify-between gap-[30px] max-[600px]:flex-col max-[600px]:items-stretch max-[600px]:gap-3">
+                      <Link className={cn(cartBtnBase, "h-[62px] bg-black py-0 pl-2.5 pr-5 leading-[62px] text-white max-[600px]:w-full max-[600px]:text-center")} href={continueHref}>
                         <span aria-hidden="true">‹</span> {COPY.continueShopping}
                       </Link>
+                      {/* On ≤767px the action-row "THANH TOÁN" is demoted to a secondary outline so it
+                          does not compete with the solid-red "Tiến hành thanh toán" CTA in the totals. */}
                       {hasUnavailable ? (
-                        <span className="btn btn-submit disabled" aria-disabled="true">
+                        <span className={cn(cartBtnBase, "h-[62px] min-w-[180px] bg-brand px-[30px] text-center leading-[62px] text-white opacity-50 pointer-events-none max-md:border max-md:border-[var(--bb-action-primary)] max-md:bg-transparent max-md:text-brand max-[600px]:w-full")} aria-disabled="true">
                           {COPY.checkoutShort}
                         </span>
                       ) : (
-                        <Link className="btn btn-submit" href={toCheckoutPath()}>
+                        <Link className={cn(cartBtnBase, "h-[62px] min-w-[180px] bg-brand px-[30px] text-center leading-[62px] text-white max-md:border max-md:border-[var(--bb-action-primary)] max-md:bg-transparent max-md:text-brand max-[600px]:w-full")} href={toCheckoutPath()}>
                           {COPY.checkoutShort}
                         </Link>
                       )}
@@ -386,33 +405,33 @@ export default function CartPage() {
                   </div>
                 </div>
 
-                <div className="bb-cart-content-side">
-                  <div className="summary">
-                    <div className="cart_totals">
-                      <h2>{COPY.totalsHeading}</h2>
+                <div className="relative min-h-px w-full max-w-[33.333333%] basis-1/3 px-[15px] max-[991px]:mt-9 max-[991px]:max-w-full max-[991px]:basis-full">
+                  <div>
+                    <div>
+                      <h2 className="m-0 mb-5 font-heading text-[1.5rem] font-semibold leading-[1.25] text-black">{COPY.totalsHeading}</h2>
 
-                      <div className="summary--items">
-                        <div className="summary--items-item">
-                          <p>{COPY.subtotal}</p>
+                      <div className="mb-5 flex flex-nowrap justify-between gap-4 max-md:gap-2.5">
+                        <div>
+                          <p className="m-0">{COPY.subtotal}</p>
                         </div>
-                        <div className="summary--items-item text-right">
-                          <p><b>{formatVnd(cart.totals.subtotalAmount)}</b></p>
+                        <div className="text-right">
+                          <p className="m-0"><b>{formatVnd(cart.totals.subtotalAmount)}</b></p>
                         </div>
                       </div>
 
                       {cart.totals.discountAmount > 0 && (
-                        <div className="summary--items">
-                          <div className="summary--items-item">
-                            <p>{COPY.discount}</p>
+                        <div className="mb-5 flex flex-nowrap justify-between gap-4 max-md:gap-2.5">
+                          <div>
+                            <p className="m-0">{COPY.discount}</p>
                           </div>
-                          <div className="summary--items-item text-right">
-                            <p className="discount"><b>-{formatVnd(cart.totals.discountAmount)}</b></p>
+                          <div className="text-right">
+                            <p className="m-0 text-discount"><b>-{formatVnd(cart.totals.discountAmount)}</b></p>
                           </div>
                         </div>
                       )}
 
-                      <div className="bb-cart-shipping-block">
-                        <p>
+                      <div className="mb-5">
+                        <p className="m-0 text-[12px] italic leading-[1.45] text-[#3a3a3a]">
                           {cart.totals.shippingAmount > 0 ? (
                             <>
                               {COPY.shipping}: <b>{formatVnd(cart.totals.shippingAmount)}</b>
@@ -423,13 +442,13 @@ export default function CartPage() {
                         </p>
                       </div>
 
-                      <div className="wc-proceed-to-checkout">
+                      <div className="mt-5">
                         {hasUnavailable ? (
-                          <span className="checkout-button button alt wc-forward disabled" aria-disabled="true">
+                          <span className="block min-h-[52px] w-full rounded-none border-0 bg-brand px-5 py-3.5 text-center font-[family-name:var(--bb-font-cta)] text-[14px] font-semibold leading-6 text-white no-underline opacity-50 pointer-events-none" aria-disabled="true">
                             {COPY.checkoutProceed}
                           </span>
                         ) : (
-                          <Link href={toCheckoutPath()} className="checkout-button button alt wc-forward">
+                          <Link href={toCheckoutPath()} className="block min-h-[52px] w-full rounded-none border-0 bg-brand px-5 py-3.5 text-center font-[family-name:var(--bb-font-cta)] text-[14px] font-semibold leading-6 text-white no-underline">
                             {COPY.checkoutProceed}
                           </Link>
                         )}
@@ -437,15 +456,15 @@ export default function CartPage() {
                     </div>
                   </div>
 
-                  <div className="promotion">
+                  <div>
                     {cart.couponCodes && cart.couponCodes.length > 0 && (
-                      <div className="apply-code">
+                      <div className="mb-2.5">
                         {cart.couponCodes.map((code) => (
-                          <p key={code}>
+                          <p key={code} className="mb-2.5 ml-0 mr-2.5 mt-0 inline-flex items-center gap-[9px] bg-black px-5 py-[7px] font-semibold text-brand last:mr-0">
                             {code}
                             <button
                               type="button"
-                              className="delete"
+                              className="border-0 bg-transparent text-[18px] leading-none text-brand"
                               onClick={() => handleRemoveCoupon(code)}
                               disabled={couponLoading}
                               aria-label={`${COPY.removeCoupon} ${code}`}
@@ -457,16 +476,16 @@ export default function CartPage() {
                       </div>
                     )}
 
-                    <div className="promotion-form">
+                    <div className="border border-[#dfdfdf] p-5 max-md:p-3.5">
                       <div>
-                        <fieldset>
-                          <legend>{COPY.couponLegend}</legend>
+                        <fieldset className="m-0 border-0 p-0">
+                          <legend className="mb-[13px] scale-100 text-[1.143rem] font-normal text-black">{COPY.couponLegend}</legend>
                         </fieldset>
-                        <div className="form-group">
+                        <div className="relative m-0 pr-[70px]">
                           <input
                             type="text"
                             name="coupon_code"
-                            className="input-text"
+                            className="h-[52px] w-full border border-[#cecece] px-5 text-black placeholder:text-[var(--bb-text-secondary)]"
                             id="coupon_code"
                             value={couponInput}
                             placeholder={COPY.couponPlaceholder}
@@ -478,7 +497,7 @@ export default function CartPage() {
                           />
                           <button
                             type="button"
-                            className="button"
+                            className="absolute right-0 top-0 h-[52px] w-[70px] border-0 bg-brand text-[1.143rem] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
                             name="apply_coupon"
                             value={COPY.couponApply}
                             disabled={couponLoading || !couponInput.trim()}
@@ -491,13 +510,13 @@ export default function CartPage() {
                     </div>
                   </div>
 
-                  <div className="total-summary summary">
-                    <div className="summary--items">
-                      <div className="summary--items-item">
-                        <p>{COPY.total}</p>
+                  <div className="mt-5 border-b border-t border-[#cecece] py-5">
+                    <div className="flex flex-nowrap justify-between gap-4 max-md:gap-2.5">
+                      <div>
+                        <p className="m-0">{COPY.total}</p>
                       </div>
-                      <div className="summary--items-item text-right">
-                        <p className="total-price">
+                      <div className="text-right">
+                        <p className="m-0 text-[1.714rem] text-brand">
                           <strong>{formatVnd(cart.totals.totalAmount)}</strong>
                         </p>
                       </div>
