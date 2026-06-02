@@ -6057,158 +6057,7 @@ body:has(.bb-search-results-page) {
   margin-inline: -15px;
 }
 
-.bb-archive-product {
-  margin: 30px 0 0;
-  color: #000000;
-}
 
-.bb-archive-product-thumb {
-  position: relative;
-  /* Square thumb at ALL widths (not just ≤767) so the product image fills the
-     box instead of floating in a fixed 200px-tall frame. At 768-991 the 4-up
-     grid makes cards narrow; the old min-height:200px left big empty bands above
-     and below a ~100px image. A 1:1 box scales with the card and stays full.
-     Mirrors the home featured carousel thumb (.bb-fp-thumb aspect-ratio:1/1). */
-  aspect-ratio: 1 / 1;
-  min-height: 0;
-  margin: 0 0 20px;
-  overflow: hidden;
-  background: #ffffff;
-}
-
-.bb-archive-product-thumb > a {
-  position: relative;
-  display: flex;
-  height: 100%;
-  min-height: 0;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-}
-
-.bb-archive-product-img {
-  width: auto !important;
-  max-width: 100%;
-  height: auto !important;
-  max-height: 100%;
-  object-fit: contain;
-  transition: all 0.3s ease-in-out;
-}
-
-.bb-archive-product-sale {
-  position: absolute;
-  top: 20px;
-  left: 0;
-  width: 80px;
-  height: 32px;
-  background: url("/wp/ticket.svg") top left no-repeat;
-  color: #ffffff;
-}
-
-.bb-archive-product-sale p {
-  position: relative;
-  width: auto;
-  margin: 0;
-  padding: 0;
-  background: transparent;
-  color: #ffffff;
-  font-family: var(--bb-font-cta);
-  font-size: 18px;
-  font-weight: 600;
-  line-height: 28px;
-  text-align: center;
-  transform: rotate(-20deg);
-}
-
-.bb-archive-product-sale p::after {
-  display: none;
-}
-
-.bb-archive-product-cart {
-  position: absolute;
-  bottom: -51px;
-  left: 0;
-  width: 100%;
-  background-color: #000000;
-  text-align: center;
-  transition: all 0.32s ease;
-}
-
-.bb-archive-product-cart a {
-  display: block;
-  padding: 15px 0;
-  color: #ffffff;
-  font-family: var(--bb-font-cta);
-  font-size: 13px;
-  font-weight: 600;
-  text-decoration: none;
-  text-transform: uppercase;
-}
-
-.bb-archive-product:hover .bb-archive-product-cart {
-  bottom: 0;
-}
-
-.bb-archive-product:hover .bb-archive-product-img {
-  transform: scale(1.05);
-}
-
-.bb-archive-product-inside {
-  margin: 10px -5px 0;
-}
-
-.bb-archive-product-inside > .bb-archive-product-info {
-  padding-inline: 5px;
-}
-
-.bb-archive-product-title {
-  margin: 0 0 10px;
-  color: #000000;
-  font-family: var(--bb-font-display);
-  font-size: var(--fs-h4);
-  font-weight: 600;
-  line-height: 1.25;
-}
-
-.bb-archive-product-title a {
-  color: #000000;
-  text-decoration: none;
-}
-
-.bb-archive-product-title a:hover {
-  color: var(--bb-text-brand);
-}
-
-.bb-archive-product-price {
-  color: var(--bb-product-price);
-  font-family: var(--bb-font-cta);
-  font-size: 14px;
-  font-weight: 600;
-  text-align: left;
-}
-
-.bb-archive-product-price p {
-  display: inline-block;
-  margin: 0 20px 0 0;
-  color: var(--bb-product-price);
-  font-size: 14px;
-  line-height: 1.214rem;
-}
-
-.bb-archive-product-price p.old {
-  color: var(--bb-text-secondary);
-  text-decoration: line-through;
-}
-
-.bb-archive-rating {
-  margin-top: 8px;
-  font-size: 18px;
-  letter-spacing: 0;
-}
-
-.bb-archive-rating .text-brand {
-  color: var(--bb-rating-star);
-}
 
 .bb-product-archive .woocommerce-info {
   margin: 30px 0 0;
@@ -6448,18 +6297,10 @@ body:has(.bb-search-results-page) {
     font-size: 12px;
   }
 
-  .bb-archive-product-price {
-    text-align: left;
-  }
+
 }
 
-@media (max-width: 430px) {
-  .bb-archive-product-title,
-  .bb-archive-product-price,
-  .bb-archive-product-price p {
-    font-size: 14px;
-  }
-}
+
 
 /* Homepage visual parity: WordPress page-template-page-home cache 2026-01-19. */
 .bb-home {
@@ -8340,76 +8181,7 @@ body .bb-home .white.block-title h3 {
     padding-inline: 0;
   }
 
-  .bb-archive-product {
-    height: 100%;
-    margin: 0;
-    border: 1px solid var(--bb-border-subtle);
-    background: var(--bb-bg-surface);
-  }
 
-  .bb-archive-product-thumb {
-    aspect-ratio: 1 / 1;
-    min-height: 0;
-    margin: 0;
-    border-bottom: 1px solid var(--bb-border-subtle);
-  }
-
-  .bb-archive-product-thumb > a {
-    min-height: 0;
-    height: 100%;
-    padding: 10px;
-  }
-
-  .bb-archive-product-img {
-    max-height: 100%;
-    object-fit: contain;
-  }
-
-  .bb-archive-product-cart {
-    bottom: 0;
-    transform: none;
-  }
-
-  .bb-archive-product-cart a {
-    min-height: 40px;
-    padding: 0 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-  }
-
-  .bb-archive-product-inside {
-    margin: 0;
-  }
-
-  .bb-archive-product-inside > .bb-archive-product-info {
-    padding: 10px 10px 12px;
-  }
-
-  .bb-archive-product-title {
-    display: -webkit-box;
-    min-height: 36px;
-    margin-bottom: 8px;
-    overflow: hidden;
-    font-family: var(--bb-font-cta);
-    font-size: 14px;
-    line-height: 1.25;
-    text-transform: uppercase;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-  }
-
-  .bb-archive-product-price,
-  .bb-archive-product-price p {
-    font-size: 14px;
-    line-height: 1.2;
-  }
-
-  .bb-archive-rating {
-    margin-top: 8px;
-    font-size: 14px;
-  }
 
   .bb-product-archive .sidebar-wrap-product .wrapper-product {
     width: min(86vw, 340px);
@@ -8738,20 +8510,15 @@ body .bb-home .white.block-title h3 {
 }
 
 .bb-fp-price-current,
-.bb-home-products-parity .bb-fp-price-current,
-.bb-archive-product-price,
-.bb-archive-product-price p {
+.bb-home-products-parity .bb-fp-price-current {
   color: var(--bb-product-price);
 }
 
 .bb-fp-price-old,
-.bb-home-products-parity .bb-fp-price-old,
-.bb-archive-product-price p.old {
+.bb-home-products-parity .bb-fp-price-old {
   color: var(--bb-text-secondary);
 }
 
-.bb-archive-rating .text-brand,
-.bb-archive-rating [class*="text-[var(--bb-rating-star)]"],
 .bb-fp-rating .text-brand {
   color: var(--bb-rating-star);
 }
@@ -9008,7 +8775,6 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
 
   .bb-product-image img,
   .bb-product-image > span > img,
-  .bb-archive-product-img,
   .bb-home-products-parity .bb-fp-thumb img,
   .bb-brand-mobile-cell img {
     object-fit: contain !important;
@@ -9067,7 +8833,6 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
 
   .bb-product-name,
   .bb-home-products-parity .bb-fp-title a,
-  .bb-archive-product-title a,
   .bb-category-body h3 {
     display: -webkit-box;
     overflow: hidden;
@@ -9607,9 +9372,5 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
     max-width: 100%;
   }
 
-  /* [Fix 6] Archive product-card CTA bar was 40px tall — below the 44px one-handed
-     tap-target guideline. */
-  .bb-archive-product-cart a {
-    min-height: 44px;
-  }
+
 }
