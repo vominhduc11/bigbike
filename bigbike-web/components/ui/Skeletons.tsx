@@ -18,7 +18,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { Card } from "@/components/ui/card";
 import { Container } from "@/components/layout/Container";
 import { cn } from "@/lib/utils";
-import { skelBase, skelCol, skelRow, skelStack } from "@/lib/ui-classes";
+import { bbSection, skelBase, skelCol, skelRow, skelStack } from "@/lib/ui-classes";
 
 const sr: CSSProperties = {
   position: "absolute",
@@ -158,7 +158,7 @@ export function HomeSkeleton() {
         </div>
 
         {/* Featured 3-tile — nhãn danh mục + tên + nút "Mua ngay" */}
-        <div className="bb-section">
+        <div className={bbSection}>
           <div className="grid grid-cols-1 gap-4 py-[var(--bb-space-12)] sm:grid-cols-2 lg:grid-cols-3 xl:gap-6 2xl:gap-8">
             {Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="flex min-h-[200px] flex-col justify-center gap-3 bg-muted p-6">
@@ -171,7 +171,7 @@ export function HomeSkeleton() {
         </div>
 
         {/* Product carousel */}
-        <div className="bb-section">
+        <div className={bbSection}>
           <div className="bb-section-head">
             <div className={skelCol} style={{ flex: 1 }}>
               <SkelText w="18%" />
@@ -193,7 +193,7 @@ export function HomeSkeleton() {
         </div>
 
         {/* Category grid (image tiles) */}
-        <div className="bb-section">
+        <div className={bbSection}>
           <div className="bb-section-head">
             <div className={skelCol} style={{ flex: 1 }}>
               <SkelText w="22%" />
@@ -208,7 +208,7 @@ export function HomeSkeleton() {
         </div>
 
         {/* News strip */}
-        <div className="bb-section">
+        <div className={bbSection}>
           <div className="bb-section-head">
             <div className={skelCol} style={{ flex: 1 }}>
               <SkelText w="14%" />

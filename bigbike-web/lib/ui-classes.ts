@@ -37,6 +37,14 @@ export const detailTableCell = "mt-[3px] block text-sm font-bold normal-case tra
 /** Category badge text (was `.bb-category-badge`). */
 export const categoryBadge = "m-0 text-sm font-bold uppercase tracking-display text-brand";
 
+/** Section vertical rhythm (was `.bb-section` padding-block: 32/52/section-y). */
+export const sectionPad =
+  "py-8 min-[640px]:py-[52px] min-[1024px]:py-[var(--bb-section-y)]";
+/** Full centered content section rail (was `.bb-section`): rhythm + max-width
+ * (--bb-container-xl incl. large-desktop expansion) + responsive inline padding. */
+export const bbSection =
+  "mx-auto max-w-[var(--bb-container-xl)] px-6 max-[600px]:px-4 " + sectionPad;
+
 /* ── Skeleton shimmer system (was `.bb-skel*` in globals.css) ──────────────────
  * Loading-placeholder primitives shared by Skeletons.tsx + the per-page loading
  * states. Shapes are square by default (the global `.bb-theme :is(span…)` rule

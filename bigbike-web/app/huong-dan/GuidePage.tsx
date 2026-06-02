@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { Container } from "@/components/layout/Container";
+import { cn } from "@/lib/utils";
+import { bbSection, sectionPad } from "@/lib/ui-classes";
 import { PageHero } from "@/components/layout/PageHero";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { getPageBySlug, getPublicMenu, listPublicSettings } from "@/lib/api/public-api";
@@ -103,7 +105,7 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
           ]}
         />
         <section className="bb-page">
-        <Container className="bb-section">
+        <Container className={sectionPad}>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 xl:gap-6 2xl:gap-8">
             {Object.values(GUIDE_ROUTE_MAP).map((guide) => (
               <Link
@@ -161,7 +163,7 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
       />
       <section className="bb-page">
         <Container>
-          <div className="bb-detail-layout bb-section">
+          <div className={cn("bb-detail-layout", bbSection)}>
             <div className="bb-card bb-card-content">
               <article
                 className="bb-richtext"
