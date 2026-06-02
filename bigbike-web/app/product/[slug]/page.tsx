@@ -205,11 +205,18 @@ export default async function ProductDetailPage({
       label: tProduct("faqs"),
       content:
         faqs.length > 0 ? (
-          <div className="bb-pdp-faq-list">
+          <div className="flex flex-col gap-0">
             {faqs.map((faq, index) => (
-              <details key={index} className="bb-pdp-faq-item">
-                <summary className="bb-pdp-faq-q">{faq.question}</summary>
-                <div className="bb-pdp-faq-a">{faq.answer}</div>
+              <details
+                key={index}
+                className="group border-b border-border first:border-t"
+              >
+                <summary className="flex justify-between items-start gap-3 py-3.5 text-[15px] font-semibold text-foreground cursor-pointer list-none [&::-webkit-details-marker]:hidden after:content-['+'] after:shrink-0 after:text-xl after:font-normal after:text-muted-foreground after:leading-none group-[[open]]:after:content-['−']">
+                  {faq.question}
+                </summary>
+                <div className="pb-3.5 text-[length:var(--fs-caption)] text-muted-foreground">
+                  {faq.answer}
+                </div>
               </details>
             ))}
           </div>
@@ -263,7 +270,7 @@ export default async function ProductDetailPage({
 
         <div
           id="pdp-overview"
-          className="mx-auto max-w-[1140px] max-[1025px]:max-w-[960px] 2xl:max-w-[1360px] min-[1920px]:max-w-[1600px] min-[2560px]:max-w-[2240px] px-[15px] max-md:px-[var(--bb-mobile-page-x)] grid grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-[30px] [align-items:start] max-[1024px]:flex max-[1024px]:flex-col max-[1024px]:gap-6 max-md:gap-[18px]"
+          className="bb-wp-pdp-layout mx-auto max-w-[1140px] max-[1025px]:max-w-[960px] 2xl:max-w-[1360px] min-[1920px]:max-w-[1600px] min-[2560px]:max-w-[2240px] px-[15px] max-md:px-[var(--bb-mobile-page-x)] grid grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-[30px] [align-items:start] max-[1024px]:flex max-[1024px]:flex-col max-[1024px]:gap-6 max-md:gap-[18px]"
         >
           <PurchaseSectionClient
             productId={product.id}

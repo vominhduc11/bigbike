@@ -97,7 +97,12 @@ export function MobilePdpAnchorNav({ items }: { items: AnchorNavItem[] }) {
   return (
     <nav
       ref={navRef}
-      className={cn("bb-pdp-anchor-nav", visible && "is-visible")}
+      className={cn(
+        "hidden max-md:flex max-md:overflow-x-auto max-md:[scroll-snap-type:x_mandatory] max-md:[scrollbar-width:none] max-md:[&::-webkit-scrollbar]:hidden max-md:bg-white max-md:border-b max-md:border-border max-md:fixed max-md:top-[var(--bb-header-height)] max-md:left-0 max-md:right-0 max-md:z-40 max-md:px-2 max-md:gap-0 max-md:[transition-property:transform] max-md:duration-200 max-md:ease-[ease]",
+        visible
+          ? "max-md:[transform:translateY(0)] max-md:pointer-events-auto"
+          : "max-md:[transform:translateY(-100%)] max-md:pointer-events-none",
+      )}
       aria-label="Điều hướng nội dung sản phẩm"
       aria-hidden={!visible}
     >
@@ -106,7 +111,12 @@ export function MobilePdpAnchorNav({ items }: { items: AnchorNavItem[] }) {
           key={item.id}
           type="button"
           data-id={item.id}
-          className={cn("bb-pdp-anchor-btn", activeId === item.id && "is-active")}
+          className={cn(
+            "max-md:flex-none max-md:[scroll-snap-align:start] max-md:py-2.5 max-md:px-3.5 max-md:border-b-2 max-md:bg-transparent max-md:font-body max-md:text-xs max-md:font-bold max-md:uppercase max-md:tracking-[0.04em] max-md:whitespace-nowrap max-md:cursor-pointer max-md:-mb-px max-md:min-h-11",
+            activeId === item.id
+              ? "max-md:text-brand max-md:border-b-brand"
+              : "max-md:text-muted-foreground max-md:border-b-transparent",
+          )}
           onClick={() => handleClick(item.id)}
           tabIndex={visible ? 0 : -1}
           aria-current={activeId === item.id ? "location" : undefined}

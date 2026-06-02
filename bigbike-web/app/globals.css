@@ -5532,57 +5532,11 @@ body:has(.bb-home) {
   line-height: inherit;
 }
 
-.bb-wp-video-single iframe,
-.bb-wp-video-main iframe,
-.bb-wp-video-single video,
-.bb-wp-video-main video {
-  display: block;
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  border: 0;
-  background: #000;
-}
-
-.bb-wp-video-grid {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 30px;
-}
-
-.bb-wp-video-list {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.bb-wp-video-list .video-slide--items {
-  display: grid;
-  grid-template-columns: 110px minmax(0, 1fr);
-  gap: 12px;
-  align-items: center;
-  border: 0;
-  background: transparent;
-  padding: 0;
-  text-align: left;
-  cursor: pointer;
-}
-
-.bb-wp-video-list .video-slide--thumb {
-  display: block;
-  width: 110px;
-  aspect-ratio: 16 / 9;
-  background: #000 center / cover no-repeat;
-}
-
-.bb-wp-video-list .video-slide--title {
-  color: #000;
-  font-weight: 600;
-  line-height: 1.35;
-}
-
-.bb-wp-video-list .is-active .video-slide--title {
-  color: var(--bb-text-brand);
-}
+/* PDP Videos tab (bb-wp-video-* / video-slide--*) migrated to inline Tailwind in
+   ProductVideosTab.tsx: iframe/video styled directly (no wrapper-descendant
+   selector), grid/list/thumbnail-button/title inline. The title keeps !leading-[1.35]
+   because it lives inside `.bb-wp-tabs .tab-panel *{line-height:inherit}`. The home
+   `.bb-home .videos-slide .video-slide--*` rules are a separate context and stay. */
 
 .bb-wp-related-track {
   --bb-wp-related-gap: 30px;
@@ -5625,10 +5579,6 @@ body:has(.bb-home) {
     display: none;
   }
 
-  .bb-wp-video-grid {
-    grid-template-columns: 1fr;
-  }
-
   .bb-wp-related-track {
     --bb-wp-related-gap: 20px;
   }
@@ -5641,198 +5591,19 @@ body:has(.bb-home) {
 }
 
 /* ---------------------------------------------------------
-   PDP Anchor Nav + Sticky CTA + Scroll Sections (mobile)
+   PDP Anchor Nav + Sticky CTA (mobile) — migrated to inline Tailwind in
+   MobilePdpAnchorNav.tsx / MobileStickyPurchaseBar.tsx (mobile-only via max-md:,
+   is-visible/is-active states driven by React props). The `.bb-pdp-sticky-cta`
+   + `is-visible` classes are KEPT as markers because the
+   body:has(.bb-pdp-sticky-cta.is-visible) coordination rules (bottom-nav /
+   floating-chat, below) can't be expressed inline.
    --------------------------------------------------------- */
 
-/* Base: hidden on desktop, revealed only on mobile */
-.bb-pdp-anchor-nav {
-  display: none;
-}
-
-.bb-pdp-sticky-cta {
-  display: none;
-}
-
-@media (max-width: 767px) {
-  /* ---- Anchor nav ---- */
-  .bb-pdp-anchor-nav {
-    display: flex;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none;
-    background: #fff;
-    border-bottom: 1px solid var(--bb-border-subtle);
-    position: fixed;
-    top: var(--bb-header-height);
-    left: 0;
-    right: 0;
-    z-index: 40;
-    padding: 0 8px;
-    gap: 0;
-    transform: translateY(-100%);
-    transition: transform 200ms ease;
-    pointer-events: none;
-  }
-
-  .bb-pdp-anchor-nav.is-visible {
-    transform: translateY(0);
-    pointer-events: auto;
-  }
-
-  .bb-pdp-anchor-nav::-webkit-scrollbar {
-    display: none;
-  }
-
-  .bb-pdp-anchor-btn {
-    flex: 0 0 auto;
-    scroll-snap-align: start;
-    padding: 10px 14px;
-    border: none;
-    border-bottom: 2px solid transparent;
-    background: transparent;
-    color: var(--bb-text-secondary);
-    font-family: var(--bb-font-body);
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    white-space: nowrap;
-    cursor: pointer;
-    margin-bottom: -1px;
-    min-height: 44px;
-  }
-
-  .bb-pdp-anchor-btn.is-active {
-    color: var(--bb-text-brand);
-    border-bottom-color: var(--bb-action-primary);
-  }
-
-  /* ---- Sticky CTA ---- */
-  .bb-pdp-sticky-cta {
-    display: flex;
-    gap: 10px;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 100;
-    padding: 10px 16px;
-    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
-    background: #fff;
-    border-top: 1px solid var(--bb-border-subtle);
-    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
-    transform: translateY(calc(100% + 1px));
-    transition: transform 200ms ease;
-    pointer-events: none;
-  }
-
-  .bb-pdp-sticky-cta.is-visible {
-    transform: translateY(0);
-    pointer-events: auto;
-  }
-
-  .bb-pdp-sticky-add {
-    flex: 1;
-    height: 48px;
-    border: none;
-    border-radius: 0;
-    background: var(--bb-action-primary);
-    color: #fff;
-    font-family: var(--bb-font-body);
-    font-size: 14px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    cursor: pointer;
-  }
-
-  .bb-pdp-sticky-add:active {
-    opacity: 0.85;
-  }
-
-  /* Sold-out / variant-not-selected: mirror the muted inline button so the
-     sticky CTA never reads as an actionable red bar when it can't add. */
-  .bb-pdp-sticky-add.is-disabled {
-    background: var(--bb-color-gray-450);
-    opacity: 0.7;
-    cursor: not-allowed;
-  }
-
-  .bb-pdp-sticky-consult {
-    flex: 0 0 auto;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    height: 48px;
-    padding: 0 16px;
-    border: 2px solid #000;
-    border-radius: 0;
-    color: #000;
-    font-family: var(--bb-font-body);
-    font-size: 13px;
-    font-weight: 700;
-    text-decoration: none;
-    text-transform: uppercase;
-    white-space: nowrap;
-  }
-
-  /* Bottom padding so sticky CTA never covers last content → inline max-md:pb-20 */
-
-  /* ---- Scroll sections (tabs → continuous on mobile) ---- */
-}
-
-/* ---- FAQ accordion (shown in tabs on desktop, scroll sections on mobile) ---- */
-.bb-pdp-faq-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-.bb-pdp-faq-item {
-  border-bottom: 1px solid var(--bb-border-subtle);
-}
-
-.bb-pdp-faq-item:first-child {
-  border-top: 1px solid var(--bb-border-subtle);
-}
-
-.bb-pdp-faq-q {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 14px 0;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--bb-text-primary);
-  line-height: 1.45;
-  cursor: pointer;
-  list-style: none;
-}
-
-.bb-pdp-faq-q::-webkit-details-marker {
-  display: none;
-}
-
-.bb-pdp-faq-q::after {
-  content: "+";
-  flex-shrink: 0;
-  font-size: 20px;
-  font-weight: 400;
-  color: var(--bb-text-secondary);
-  line-height: 1;
-}
-
-.bb-pdp-faq-item[open] .bb-pdp-faq-q::after {
-  content: "−";
-}
-
-.bb-pdp-faq-a {
-  padding: 0 0 14px;
-  font-size: var(--fs-caption);
-  color: var(--bb-text-secondary);
-  line-height: 1.7;
-}
+/* ---- FAQ accordion (shown in tabs on desktop, scroll sections on mobile) ----
+   Migrated to inline Tailwind on the <details>/<summary>/<div> in page.tsx. The
+   faq-q / faq-a line-heights were DEAD (the kept `.bb-wp-tabs .tab-panel *
+   {line-height:inherit}` (0,2,0) overrode them) so they were dropped; the
+   ::after chevron line-height is live (pseudo not matched by `*`) → after:leading-none. */
 
 /* ============================================================
  * Product archive/listing parity with WP WooCommerce archive-product.php.
@@ -9793,12 +9564,9 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
 @media (max-width: 767px) {
   /* PDP: the sticky purchase bar and the bottom tab nav take turns. While the
      bar is up the nav slides out (see the :has rule on .bb-bottom-nav), so the
-     bar sits flush at the bottom and restores its own safe-area padding. */
-  .bb-pdp-sticky-cta {
-    bottom: 0;
-    padding-bottom: calc(12px + env(safe-area-inset-bottom));
-    z-index: 651;
-  }
+     bar sits flush at the bottom and restores its own safe-area padding. The bar's
+     own bottom/padding-bottom(12px)/z-index(651) now live inline on
+     MobileStickyPurchaseBar (effective audit values, not the base). */
 
   /* Bar up + nav hidden: lift the floating chat FAB just above the purchase bar
      (~70px tall) so it doesn't overlap the "Tư vấn" button.

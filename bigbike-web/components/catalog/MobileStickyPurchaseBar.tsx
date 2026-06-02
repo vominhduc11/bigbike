@@ -84,12 +84,30 @@ export function MobileStickyPurchaseBar({
 
   return (
     <div
-      className={cn("bb-pdp-sticky-cta", visible && "is-visible")}
+      className={cn(
+        // bb-pdp-sticky-cta + is-visible kept as markers: the body:has(.bb-pdp-sticky-cta.is-visible)
+        // coordination rules (bottom-nav / floating-chat) can't be expressed inline.
+        "bb-pdp-sticky-cta",
+        visible && "is-visible",
+        // bottom/padding-bottom(12px)/z-index(651) are the EFFECTIVE values from the
+        // mobile-audit override of .bb-pdp-sticky-cta, not the original base (10px/100).
+        "hidden max-md:flex max-md:gap-2.5 max-md:fixed max-md:bottom-0 max-md:left-0 max-md:right-0 max-md:z-[651] max-md:pt-2.5 max-md:px-4 max-md:[padding-bottom:calc(12px_+_env(safe-area-inset-bottom))] max-md:bg-white max-md:border-t max-md:border-border max-md:[box-shadow:0_-4px_16px_rgba(0,0,0,0.08)] max-md:[transition-property:transform] max-md:duration-200 max-md:ease-[ease]",
+        visible
+          ? "max-md:[transform:translateY(0)] max-md:pointer-events-auto"
+          : "max-md:[transform:translateY(calc(100%_+_1px))] max-md:pointer-events-none",
+      )}
       aria-hidden={!visible}
     >
       <button
         type="button"
-        className={cn("bb-pdp-sticky-add", disabled && "is-disabled")}
+        className={cn(
+          // text-white on the base: the old .bb-pdp-sticky-add{color:#fff} applied in
+          // BOTH states (is-disabled only changed bg/opacity/cursor).
+          "max-md:flex-1 max-md:h-12 max-md:border-none max-md:rounded-none max-md:text-white max-md:font-body max-md:text-sm max-md:font-bold max-md:uppercase max-md:tracking-[0.04em] max-md:cursor-pointer max-md:active:opacity-85",
+          disabled
+            ? "max-md:bg-[var(--bb-color-gray-450)] max-md:opacity-70 max-md:cursor-not-allowed"
+            : "max-md:bg-brand",
+        )}
         onClick={handleAddToCart}
         aria-label={label}
         aria-disabled={disabled}
@@ -103,7 +121,7 @@ export function MobileStickyPurchaseBar({
           href={zaloUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="bb-pdp-sticky-consult"
+          className="max-md:flex-none max-md:inline-flex max-md:items-center max-md:justify-center max-md:h-12 max-md:px-4 max-md:border-2 max-md:border-black max-md:rounded-none max-md:text-black max-md:font-body max-md:text-[13px] max-md:font-bold max-md:no-underline max-md:uppercase max-md:whitespace-nowrap"
           aria-label="Tư vấn qua Zalo"
           tabIndex={visible ? 0 : -1}
         >
