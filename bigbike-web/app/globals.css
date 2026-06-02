@@ -2326,8 +2326,6 @@ html[data-header-scrolled] .bb-page-head { padding-left: 24px; }
 
 /* Mobile toggle + collapsible body */
 
-.bb-catalog-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
-
 /* -- Product Detail Page ---------------------------------- */
 /* .bb-pdp (PdpSkeleton mirror — DIFFERENT 1.1fr/1fr grid from the real
    .bb-wp-pdp-layout 7fr/5fr) migrated to inline Tailwind. */
@@ -3758,26 +3756,6 @@ input[type="checkbox"] {
   color: #cecece;
   font-size: var(--fs-body);
   line-height: 24px;
-}
-
-.bb-product-grid {
-  display: grid;
-  grid-template-columns: repeat(1, minmax(0, 1fr));
-  gap: 24px;
-}
-
-/* Breakpoints follow STYLEGUIDE.md: 2 columns from tablet (≥576px),
-   3 columns from desktop (≥992px). */
-@media (min-width: 576px) {
-  .bb-product-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 992px) {
-  .bb-product-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
 }
 
 .bb-product-card {
@@ -5653,11 +5631,6 @@ body:has(.bb-home) {
   .bb-product-archive .container.bb-wp-container {
     width: min(100% - calc(var(--bb-page-padding-tablet) * 2), var(--bb-container-xl));
   }
-
-  .bb-product-archive .bb-wp-col-sm-6 {
-    flex: 0 0 50%;
-    max-width: 50%;
-  }
 }
 
 @media (min-width: 768px) {
@@ -5681,18 +5654,11 @@ body:has(.bb-home) {
 }
 
 
-.bb-product-archive .bb-archive-main {
-  padding-bottom: 0;
-}
-
+/* `.product-list.pb-40` + `.product-list-filter` kept for the SEARCH page
+   (tim-kiem shares `.bb-product-archive` + these classes); the catalog archive
+   migrated this chrome to inline Tailwind (ProductArchiveLayout). */
 .bb-product-archive .product-list.pb-40 {
   padding-bottom: 40px;
-}
-
-.bb-product-archive .bb-archive-inner-container {
-  width: 100%;
-  padding-inline: 15px;
-  margin-inline: auto;
 }
 
 .bb-product-archive .product-list-filter {
@@ -5700,103 +5666,6 @@ body:has(.bb-home) {
   top: 80px;
   background: #ffffff;
   z-index: 2;
-}
-
-.bb-product-archive .product-list-filter .result {
-  min-height: 52px;
-  margin-bottom: 30px;
-  font-size: 1.5rem;
-  font-weight: 600;
-  line-height: 52px;
-}
-
-.bb-product-archive .product-list-filter .result p {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 600;
-  line-height: 1.3;
-}
-
-.bb-product-archive .bb-archive-sort-col {
-  text-align: right;
-}
-
-.bb-product-archive .woocommerce-ordering {
-  display: inline-block;
-  width: 100%;
-  max-width: 200px;
-  margin: 0;
-}
-
-.bb-product-archive .form-group {
-  margin-bottom: 30px;
-}
-
-.bb-product-archive .form-group.form-select {
-  position: relative;
-  width: 100%;
-  min-width: 200px;
-  max-width: 100%;
-}
-
-.bb-product-archive .form-group.form-select::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  right: 25px;
-  width: 7px;
-  height: 7px;
-  border-right: 1px solid #000000;
-  border-bottom: 1px solid #000000;
-  transform: translateY(-65%) rotate(45deg);
-  pointer-events: none;
-}
-
-.bb-product-archive .form-control {
-  width: 100%;
-  height: 52px;
-  padding: 0 40px 0 20px;
-  border: 1px solid #cecece;
-  border-radius: 0;
-  background-color: #ffffff;
-  color: #000000;
-  font-size: 14px;
-  font-weight: 600;
-  text-transform: uppercase;
-  appearance: none;
-}
-
-.bb-product-archive .filter-mobile-wrapper {
-  display: none;
-  margin-bottom: 30px;
-}
-
-.bb-product-archive .filter-mobile {
-  width: 100%;
-  border: 0;
-  background: transparent;
-  color: #000000;
-  text-align: left;
-  cursor: pointer;
-}
-
-.bb-product-archive .filter-mobile p {
-  position: relative;
-  height: 52px;
-  margin: 0;
-  padding: 0 40px 0 20px;
-  border: 1px solid #cecece;
-  border-left: none;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 50px;
-}
-
-.bb-product-archive .filter-mobile i {
-  position: absolute;
-  top: 50%;
-  right: 25px;
-  transform: translateY(-50%);
 }
 
 
@@ -5808,15 +5677,6 @@ html.overlay {
 body:has(.bb-search-results-page) {
   overflow-x: hidden;
 }
-
-
-.bb-product-archive .bb-product-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0;
-  margin-inline: -15px;
-}
-
 
 
 .bb-product-archive .woocommerce-info {
@@ -5908,10 +5768,8 @@ body:has(.bb-search-results-page) {
 }
 
 @media (max-width: 767px) {
-  .bb-product-archive .bb-archive-row {
-    display: block;
-  }
-
+  /* col-md spans + the toolbar row flex are kept for the SEARCH page; the
+     catalog archive's toolbar/sort/filter columns moved to inline Tailwind. */
   .bb-product-archive .bb-wp-col-md-3,
   .bb-product-archive .bb-wp-col-md-9 {
     max-width: 100%;
@@ -5921,46 +5779,9 @@ body:has(.bb-search-results-page) {
     padding: 0;
   }
 
-
   .bb-product-archive .product-list-filter .bb-wp-row {
     display: flex;
   }
-
-  .bb-product-archive .bb-archive-result-col {
-    flex: 0 0 100%;
-    max-width: 100%;
-  }
-
-  .bb-product-archive .bb-archive-sort-col,
-  .bb-product-archive .filter-mobile-wrapper {
-    flex: 0 0 50%;
-    max-width: 50%;
-    padding-inline: 0;
-  }
-
-  .bb-product-archive .bb-archive-sort-col {
-    order: 3;
-  }
-
-  .bb-product-archive .filter-mobile-wrapper {
-    display: block;
-    order: 2;
-  }
-
-  .bb-product-archive .woocommerce-ordering {
-    max-width: 100%;
-  }
-
-  .bb-product-archive .form-group.form-select {
-    min-width: 0 !important;
-  }
-
-  .bb-product-archive .form-control,
-  .bb-product-archive .filter-mobile p {
-    font-size: 12px;
-  }
-
-
 }
 
 
@@ -7535,7 +7356,6 @@ body .bb-home .white.block-title h3 {
 
   .bb-home .container,
   .bb-product-archive .container.bb-wp-container,
-  .bb-product-archive .bb-archive-inner-container,
   .bb-search-results-page .bb-search-inner-container {
     width: 100%;
     max-width: none;
@@ -7782,10 +7602,8 @@ body .bb-home .white.block-title h3 {
     color: var(--bb-text-primary);
   }
 
-  .bb-product-archive .bb-archive-main {
-    padding-bottom: 24px;
-  }
-
+  /* `.product-list-filter` sticky chrome kept for the SEARCH page toolbar; the
+     catalog archive's toolbar/result/sort/filter chrome moved to inline Tailwind. */
   .bb-product-archive .product-list-filter {
     position: sticky;
     top: var(--bb-header-height);
@@ -7797,34 +7615,6 @@ body .bb-home .white.block-title h3 {
     backdrop-filter: blur(10px);
   }
 
-  .bb-product-archive .product-list-filter .result {
-    min-height: 0;
-    margin: 0 0 10px;
-    font-size: 14px;
-    line-height: 1.35;
-  }
-
-  .bb-product-archive .bb-archive-sort-col,
-  .bb-product-archive .filter-mobile-wrapper {
-    padding-inline: 0;
-  }
-
-  .bb-product-archive .form-control,
-  .bb-product-archive .filter-mobile p {
-    height: var(--bb-touch-target);
-    min-height: var(--bb-touch-target);
-    border: 1px solid var(--bb-border-default);
-    font-family: var(--bb-font-cta);
-    font-size: 12px;
-    line-height: calc(var(--bb-touch-target) - 2px);
-  }
-
-  .bb-product-archive .filter-mobile p {
-    border-left: 1px solid var(--bb-border-default);
-  }
-
-  .bb-product-archive .row.bb-wp-row.bb-product-grid,
-  .bb-product-archive .bb-product-grid,
   .bb-search-results-page .bb-search-product-row {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -7833,8 +7623,6 @@ body .bb-home .white.block-title h3 {
     margin-inline: 0;
   }
 
-  .bb-product-archive .row.bb-wp-row.bb-product-grid > [class*="bb-wp-col"],
-  .bb-product-archive .bb-product-grid > [class*="col-"],
   .bb-search-results-page .bb-search-product-col {
     width: auto;
     max-width: none;
@@ -8095,8 +7883,6 @@ body .bb-home .white.block-title h3 {
 }
 
 @media (max-width: 374px) {
-  .bb-product-archive .row.bb-wp-row.bb-product-grid,
-  .bb-product-archive .bb-product-grid,
   .bb-search-results-page .bb-search-product-row {
     grid-template-columns: 1fr;
   }
@@ -8952,12 +8738,10 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
     max-width: 2240px;
   }
 
-  /* Bootstrap `col-md-3` inside `.bb-product-grid` produces 4 cards / row by default.
-     At ≥2560px the col-md-9 right column is ~1680px → each 4-col card is ~420px.
-     Bump cards to 5/row (20% width). Filter sidebar `.bb-wp-col-md-3` outside
-     `.bb-product-grid` is intentionally NOT matched here — sidebar keeps its 25%. */
-  .bb-product-archive .bb-product-grid > .bb-wp-col-md-3,
-  .bb-product-archive .bb-product-grid > .col-md-3,
+  /* Bootstrap `col-md-3` produces 4 cards / row by default. At ≥2560px the
+     content column is ~1680px → each 4-col card is ~420px. Bump search-result
+     cards to 5/row (20% width). The catalog archive does this inline (the
+     filter sidebar keeps its 25% — not matched here). */
   .bb-search-results-page .bb-search-product-row > .bb-wp-col-md-3,
   .bb-search-results-page .bb-search-product-row > .col-md-3 {
     flex: 0 0 20%;
@@ -9007,14 +8791,6 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
     max-height: 130px;
   }
 
-  /* [Fix 3] Product-archive toolbar: the sort <select> sat in a 50% column and
-     clipped its label ("Sắp xếp mặc đị…"). Stack filter + sort full-width on mobile
-     so the full label is readable. */
-  .bb-product-archive .bb-archive-sort-col,
-  .bb-product-archive .filter-mobile-wrapper {
-    flex: 0 0 100%;
-    max-width: 100%;
-  }
 
 
 }

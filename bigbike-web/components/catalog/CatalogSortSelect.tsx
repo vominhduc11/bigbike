@@ -31,13 +31,13 @@ export function CatalogSortSelect({ current }: { current: string }) {
   }
 
   return (
-    <form className="woocommerce-ordering" method="get">
+    <form className="inline-block w-full max-w-[200px] m-0 max-md:max-w-full" method="get">
       <label htmlFor="sort-select" className="sr-only">Sắp xếp</label>
-      <div className="form-group form-select">
+      <div className="relative w-full min-w-[200px] max-w-full mb-[30px] max-md:min-w-0 after:content-[''] after:absolute after:top-1/2 after:right-[25px] after:h-[7px] after:w-[7px] after:border-r after:border-b after:border-black after:pointer-events-none after:[transform:translateY(-65%)_rotate(45deg)]">
         <select
           id="sort-select"
           name="orderby"
-          className="form-control text-left"
+          className="w-full h-[52px] py-0 pr-10 pl-5 border border-[var(--bb-border-default)] rounded-none bg-white text-black text-[14px] font-semibold uppercase appearance-none text-left max-md:h-11 max-md:min-h-11 max-md:text-[12px] max-md:font-[family-name:var(--bb-font-cta)] max-md:leading-[42px]"
           value={selectedValue}
           onChange={(event) => handleChange(event.target.value)}
           aria-label="Sắp xếp"

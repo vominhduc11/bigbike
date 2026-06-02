@@ -4,6 +4,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { ProductArchiveHero } from "@/components/catalog/ProductArchiveHero";
 import { ProductArchiveLayout } from "@/components/catalog/ProductArchiveLayout";
 import { ProductArchiveResults } from "@/components/catalog/ProductArchiveResults";
+import { Container } from "@/components/layout/Container";
 import {
   PRODUCT_SORT_VALUES,
   getCatalogFacets,
@@ -187,10 +188,10 @@ export default async function CategoryDetailPage({
   if (validationErrors.length > 0) {
     return (
       <div className="bb-product-archive archive tax-product_cat">
-        <div id="main-content" className="bb-archive-main">
-          <div className="container bb-wp-container">
+        <div id="main-content" className="pb-0 max-md:pb-6">
+          <Container>
             <p className="woocommerce-info">{validationErrors.join(" ")}</p>
-          </div>
+          </Container>
         </div>
       </div>
     );
@@ -206,10 +207,10 @@ export default async function CategoryDetailPage({
   if (!categoryResult.data) {
     return (
       <div className="bb-product-archive archive tax-product_cat">
-        <div id="main-content" className="bb-archive-main">
-          <div className="container bb-wp-container">
+        <div id="main-content" className="pb-0 max-md:pb-6">
+          <Container>
             <p className="woocommerce-info">{categoryResult.error?.message ?? "Không tải được thông tin danh mục."}</p>
-          </div>
+          </Container>
         </div>
       </div>
     );

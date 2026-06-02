@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { CatalogFilters, type CatalogFiltersProps } from "@/components/catalog/CatalogFilters";
 import { CatalogSortSelect } from "@/components/catalog/CatalogSortSelect";
+import { Container } from "@/components/layout/Container";
 
 type ProductArchiveLayoutProps = {
   filters: Omit<CatalogFiltersProps, "mobileOpen" | "onMobileClose">;
@@ -48,10 +49,10 @@ export function ProductArchiveLayout({
   }
 
   return (
-    <div id="main-content" className="bb-archive-main">
-      <div className="container bb-wp-container">
-        <div className="row bb-wp-row bb-archive-row">
-          <div className="col-md-3 bb-wp-col-md-3">
+    <div id="main-content" className="pb-0 max-md:pb-6">
+      <Container>
+        <div className="flex flex-wrap -mx-[15px]">
+          <div className="min-w-0 w-full max-w-full px-[15px] md:flex-[0_0_25%] md:max-w-[25%]">
             <CatalogFilters
               {...filters}
               mobileOpen={mobileOpen}
@@ -60,28 +61,35 @@ export function ProductArchiveLayout({
             />
           </div>
 
-          <div className="col-md-9 bb-wp-col-md-9">
-            <div className="product-list pb-40">
-              <div className="container bb-archive-inner-container">
-                <div className="product-list-filter headroom bb-archive-toolbar">
-                  <div className="row align-items-center bb-wp-row">
-                    <div className="col-sm-6 bb-wp-col-sm-6 bb-archive-result-col">
-                      <div className="result">
+          <div className="min-w-0 w-full max-w-full px-[15px] md:flex-[0_0_75%] md:max-w-[75%]">
+            <div className="pb-10">
+              <div className="w-full mx-auto px-[var(--bb-mobile-page-x)] md:px-[15px]">
+                <div className="sticky top-20 z-[2] bg-white max-md:top-[var(--bb-header-height)] max-md:z-30 max-md:[margin-inline:calc(var(--bb-mobile-page-x)*-1)] max-md:border-b max-md:border-border max-md:bg-[color-mix(in_srgb,var(--bb-bg-page)_96%,transparent)] max-md:px-[var(--bb-mobile-page-x)] max-md:py-2.5 max-md:backdrop-blur-[10px]">
+                  <div className="flex flex-wrap items-center -mx-[15px]">
+                    <div className="min-w-0 w-full px-[15px] flex-[0_0_100%] max-w-full md:flex-[0_0_50%] md:max-w-[50%]">
+                      <div className="min-h-[52px] mb-[30px] text-[1.5rem] font-semibold leading-[52px] max-md:min-h-0 max-md:m-0 max-md:mb-2.5 max-md:text-sm max-md:leading-[1.35]">
                         {totalItems != null ? `${totalItems} Sản phẩm` : null}
                       </div>
                     </div>
 
-                    <div className="col-sm-6 bb-wp-col-sm-6 bb-archive-sort-col">
+                    <div className="text-right min-w-0 w-full px-[15px] flex-[0_0_100%] max-w-full order-3 md:flex-[0_0_50%] md:max-w-[50%] md:order-none">
                       <Suspense fallback={null}>
                         <CatalogSortSelect current={sortCurrent} />
                       </Suspense>
                     </div>
 
-                    <div className="col-sm-6 filter-mobile-wrapper bb-wp-col-sm-6">
-                      <button type="button" className="filter-mobile" onClick={openMobileFilters}>
-                        <p>
+                    <div className="hidden mb-[30px] min-w-0 w-full px-[15px] md:flex-[0_0_50%] md:max-w-[50%] max-md:block max-md:flex-[0_0_100%] max-md:max-w-full max-md:order-2">
+                      <button
+                        type="button"
+                        className="w-full cursor-pointer border-none bg-transparent text-left text-black"
+                        onClick={openMobileFilters}
+                      >
+                        <p className="relative m-0 h-[52px] border-[color:var(--bb-border-default)] border-t border-r border-b [border-left:none] py-0 pr-10 pl-5 text-sm font-semibold leading-[50px] max-md:h-11 max-md:min-h-11 max-md:[border-left:1px_solid_var(--bb-border-default)] max-md:font-[family-name:var(--bb-font-cta)] max-md:text-xs max-md:leading-[42px]">
                           BỘ LỌC
-                          <i className="far fa-sliders-v" aria-hidden="true" />
+                          <i
+                            className="far fa-sliders-v absolute top-1/2 right-[25px] [transform:translateY(-50%)]"
+                            aria-hidden="true"
+                          />
                         </p>
                       </button>
                     </div>
@@ -93,7 +101,7 @@ export function ProductArchiveLayout({
             </div>
           </div>
         </div>
-      </div>
+      </Container>
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { ProductArchiveResults } from "@/components/catalog/ProductArchiveResults";
 import { ProductArchiveHero } from "@/components/catalog/ProductArchiveHero";
 import { ProductArchiveLayout } from "@/components/catalog/ProductArchiveLayout";
+import { Container } from "@/components/layout/Container";
 import {
   PRODUCT_SORT_VALUES,
   listBrands,
@@ -144,10 +145,10 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
             { label: tCatalog("allProducts") },
           ]}
         />
-        <div id="main-content" className="bb-archive-main">
-          <div className="container bb-wp-container">
+        <div id="main-content" className="pb-0 max-md:pb-6">
+          <Container>
             <p className="woocommerce-info">{validationErrors.join(" ")}</p>
-          </div>
+          </Container>
         </div>
       </div>
     );

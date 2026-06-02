@@ -37,6 +37,17 @@ const bbCatLayout =
   "lg:grid-cols-[240px_1fr] lg:w-[min(100%_-_calc(var(--bb-page-padding-desktop)_*_2),var(--bb-container-xl))] " +
   "xl:grid-cols-[260px_1fr] xl:gap-9";
 
+/**
+ * Skeleton-only card grid (the real archive uses the bootstrap col-md flex grid,
+ * not this — see ProductArchiveResults). Ported from the former base
+ * `.bb-product-grid` rule: 1 col / 2 cols ≥576 / 3 cols ≥992, 24px gap.
+ */
+const bbProductGridSkel =
+  "grid grid-cols-1 gap-6 min-[576px]:grid-cols-2 min-[992px]:grid-cols-3";
+
+/** Skeleton catalog-head row (former `.bb-catalog-head`). */
+const bbCatalogHead = "mb-[18px] flex items-center justify-between";
+
 const sr: CSSProperties = {
   position: "absolute",
   width: 1,
@@ -369,11 +380,11 @@ export function CatalogSkeleton({ withHero = false }: { withHero?: boolean }) {
 
         {/* Grid */}
         <div>
-          <div className="bb-catalog-head">
+          <div className={bbCatalogHead}>
             <SkelText w={140} />
             <SkelButton w={160} />
           </div>
-          <div className="bb-product-grid">
+          <div className={bbProductGridSkel}>
             {Array.from({ length: 8 }).map((_, i) => <ProductCardSkel key={i} />)}
           </div>
         </div>
@@ -460,11 +471,11 @@ export function BrandDetailSkeleton() {
           </div>
         </aside>
         <div>
-          <div className="bb-catalog-head">
+          <div className={bbCatalogHead}>
             <SkelText w={140} />
             <SkelButton w={160} />
           </div>
-          <div className="bb-product-grid">
+          <div className={bbProductGridSkel}>
             {Array.from({ length: 8 }).map((_, i) => <ProductCardSkel key={i} />)}
           </div>
         </div>

@@ -43,9 +43,12 @@ export function ProductArchiveResults({
         emptyContent
       ) : (
         <>
-          <div className="row bb-wp-row bb-product-grid">
+          <div className="grid grid-cols-2 flex-wrap gap-[var(--bb-mobile-card-gap)] mx-0 max-[375px]:grid-cols-1 max-md:items-stretch md:flex md:gap-0 md:-mx-[15px]">
             {products.map((product) => (
-              <div key={product.id} className="col-md-3 col-6 bb-wp-col-md-3 bb-wp-col-6">
+              <div
+                key={product.id}
+                className="min-w-0 w-auto max-w-none flex-initial col-auto px-0 md:w-full md:px-[15px] md:flex-[0_0_25%] md:max-w-[25%] 4xl:flex-[0_0_20%] 4xl:max-w-[20%]"
+              >
                 <ProductCard product={product} variant="archive" />
               </div>
             ))}
