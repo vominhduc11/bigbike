@@ -19,15 +19,15 @@ export default async function ArticleListLoading() {
         </div>
       </div>
 
-      <div id="main-content" className="bb-wp-main-content">
+      <div id="main-content" className="pb-0">
         <Container variant="blog" className="container">
-          <div className={cn("bb-wp-block-text bb-wp-block-text--top block-text pb-60", skelStack)}>
+          <div className={cn("text-foreground font-body text-[length:var(--fs-body)] font-normal leading-[1.6] pb-[60px]", skelStack)}>
             <div className={cn(skelBase, "!animate-none h-[0.85em] w-full")} />
             <div className={cn(skelBase, "!animate-none h-[0.85em] w-4/5")} />
           </div>
 
-          <div className="bb-wp-row row">
-            <aside className="bb-wp-sidebar col-md-3">
+          <div className="flex flex-wrap -mx-[15px]">
+            <aside className="relative w-full px-[15px] flex-[0_0_25%] max-w-[25%] max-md:hidden max-md:flex-[0_0_100%] max-md:max-w-full max-md:mb-0">
               <div className="pb-[15px] mb-[30px] border-b border-b-[#cecece]">
                 <div className="pb-[15px]">
                   <div className={cn(skelBase, "!animate-none h-[1.1em] w-4/5")} />
@@ -46,11 +46,14 @@ export default async function ArticleListLoading() {
               </div>
             </aside>
 
-            <section className="bb-wp-content-col col-md-9">
-              <div className="bb-wp-news-list news-list">
-                <div className="bb-wp-row row">
+            <section className="relative w-full px-[15px] flex-[0_0_75%] max-w-[75%] max-md:flex-[0_0_100%] max-md:max-w-full">
+              <div className="news-list">
+                <div className="flex flex-wrap -mx-[15px]">
                   {Array.from({ length: 6 }).map((_, index) => (
-                    <div key={index} className="bb-wp-card-col col-md-4 col-sm-6 col-12">
+                    <div
+                      key={index}
+                      className="relative w-full px-[15px] flex-[0_0_33.333333%] max-w-[33.333333%] mb-[30px] flex flex-col max-[768px]:flex-[0_0_50%] max-[768px]:max-w-[50%] max-[576px]:flex-[0_0_100%] max-[576px]:max-w-full"
+                    >
                       <article
                         className="flex flex-col flex-1 mb-0 bg-card [box-shadow:var(--bb-shadow-md)] max-md:border max-md:border-solid max-md:border-border max-md:[box-shadow:none]"
                         aria-hidden="true"

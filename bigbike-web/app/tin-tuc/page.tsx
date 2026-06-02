@@ -87,7 +87,7 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
             { label: t("breadcrumb") },
           ]}
         />
-        <div id="main-content" className="bb-wp-main-content">
+        <div id="main-content" className="pb-0">
           <Container variant="blog" className="container">
             <WpNoResults query={qParsed.value} />
           </Container>
@@ -155,22 +155,31 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
         }
       />
 
-      <div id="main-content" className="bb-wp-main-content">
+      <div id="main-content" className="pb-0">
         <Container variant="blog" className="container">
-          <div className="bb-wp-row row">
-            <aside className="bb-wp-sidebar col-md-3" aria-label="Danh mục tin tức">
+          <div className="flex flex-wrap -mx-[15px]">
+            <aside
+              className="relative w-full px-[15px] flex-[0_0_25%] max-w-[25%] max-md:hidden max-md:flex-[0_0_100%] max-md:max-w-full max-md:mb-0"
+              aria-label="Danh mục tin tức"
+            >
               <WpCategoryWidget categories={sidebarCategories} />
             </aside>
 
-            <section className="bb-wp-content-col col-md-9" aria-label="Danh sách bài viết">
+            <section
+              className="relative w-full px-[15px] flex-[0_0_75%] max-w-[75%] max-md:flex-[0_0_100%] max-md:max-w-full"
+              aria-label="Danh sách bài viết"
+            >
               {result.data.length === 0 ? (
                 <WpNoResults query={qParsed.value} />
               ) : (
                 <>
-                  <div className="bb-wp-news-list news-list">
-                    <div className="bb-wp-row row">
+                  <div className="news-list">
+                    <div className="flex flex-wrap -mx-[15px]">
                       {result.data.map((article) => (
-                        <div key={article.id} className="bb-wp-card-col col-md-4 col-sm-6 col-12">
+                        <div
+                          key={article.id}
+                          className="relative w-full px-[15px] flex-[0_0_33.333333%] max-w-[33.333333%] mb-[30px] flex flex-col max-[768px]:flex-[0_0_50%] max-[768px]:max-w-[50%] max-[576px]:flex-[0_0_100%] max-[576px]:max-w-full"
+                        >
                           <WpArticleCard article={article} />
                         </div>
                       ))}

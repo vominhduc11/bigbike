@@ -2698,62 +2698,6 @@ img, picture, video, svg, canvas { max-width: 100%; }
   color: var(--bb-text-primary);
 }
 
-.bb-blog-listing-parity .bb-wp-main-content {
-  padding-bottom: 0;
-}
-
-.bb-blog-listing-parity .bb-wp-block-text {
-  color: var(--bb-text-primary);
-  font-family: var(--bb-font-body);
-  font-size: var(--fs-body);
-  font-weight: 400;
-  line-height: 1.6;
-}
-
-.bb-blog-listing-parity .bb-wp-block-text p {
-  margin: 0 0 1rem;
-  text-align: justify;
-}
-
-.bb-blog-listing-parity .bb-wp-block-text--top {
-  padding-bottom: 60px;
-}
-
-.bb-blog-listing-parity .bb-wp-row {
-  display: flex;
-  flex-wrap: wrap;
-  margin-right: -15px;
-  margin-left: -15px;
-}
-
-.bb-blog-listing-parity .bb-wp-sidebar,
-.bb-blog-listing-parity .bb-wp-content-col,
-.bb-blog-listing-parity .bb-wp-card-col {
-  position: relative;
-  width: 100%;
-  padding-right: 15px;
-  padding-left: 15px;
-}
-
-.bb-blog-listing-parity .bb-wp-sidebar {
-  flex: 0 0 25%;
-  max-width: 25%;
-}
-
-.bb-blog-listing-parity .bb-wp-content-col {
-  flex: 0 0 75%;
-  max-width: 75%;
-}
-
-.bb-blog-listing-parity .bb-wp-card-col {
-  flex: 0 0 33.333333%;
-  max-width: 33.333333%;
-  margin-bottom: 30px;
-  /* Stretch the card to fill the column so cards in a row share the tallest
-     height and their bottom edges line up (no ragged grid). */
-  display: flex;
-  flex-direction: column;
-}
 
 
 .bb-blog-listing-parity .news--item-thumbnail {
@@ -2880,34 +2824,7 @@ img, picture, video, svg, canvas { max-width: 100%; }
   border-radius: 0;
 }
 
-@media (max-width: 767px) {
-  .bb-blog-listing-parity .bb-wp-block-text--top {
-    padding-bottom: 60px;
-  }
-
-  .bb-blog-listing-parity .bb-wp-sidebar,
-  .bb-blog-listing-parity .bb-wp-content-col {
-    flex: 0 0 100%;
-    max-width: 100%;
-  }
-
-  .bb-blog-listing-parity .bb-wp-sidebar {
-    display: none;
-    margin-bottom: 0;
-  }
-
-  .bb-blog-listing-parity .bb-wp-card-col {
-    flex: 0 0 50%;
-    max-width: 50%;
-  }
-}
-
 @media (max-width: 575px) {
-  .bb-blog-listing-parity .bb-wp-card-col {
-    flex: 0 0 100%;
-    max-width: 100%;
-  }
-
   .bb-blog-listing-parity .bb-wp-pagination {
     text-align: right;
   }
