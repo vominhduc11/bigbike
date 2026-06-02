@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { readSingleSearchParam } from "@/lib/utils/query";
 import { toForgotPasswordPath } from "@/lib/utils/routes";
+import { Container } from "@/components/layout/Container";
 import ForgotPasswordFlow from "./ForgotPasswordFlow";
 
 type ForgotPasswordPageProps = {
@@ -28,9 +29,9 @@ export default async function ForgotPasswordPage({ searchParams }: ForgotPasswor
 
   return (
     <section className="bb-page bb-page--auth">
-      <div className="bb-container">
+      <Container>
         <ForgotPasswordFlow token={token} />
-      </div>
+      </Container>
     </section>
   );
 }

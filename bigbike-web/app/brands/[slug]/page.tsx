@@ -35,6 +35,7 @@ import {
 } from "@/lib/utils/query";
 import { toBrandListPath, toBrandPath, toHomePath } from "@/lib/utils/routes";
 import { isValidSlug } from "@/lib/utils/slug";
+import { Container } from "@/components/layout/Container";
 
 export const dynamic = "force-dynamic";
 
@@ -159,9 +160,9 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
   if (validationErrors.length > 0) {
     return (
       <section className="bb-page">
-        <div className="bb-container">
+        <Container>
           <ErrorState message={validationErrors.join(" ")} />
-        </div>
+        </Container>
       </section>
     );
   }
@@ -191,9 +192,9 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
   if (!brandResult.data) {
     return (
       <section className="bb-page">
-        <div className="bb-container">
+        <Container>
           <ErrorState message={brandResult.error?.message ?? "Không tải được thông tin thương hiệu."} />
-        </div>
+        </Container>
       </section>
     );
   }

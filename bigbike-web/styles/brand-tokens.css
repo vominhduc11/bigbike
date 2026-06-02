@@ -269,23 +269,6 @@
   font-family: var(--bb-font-body);
 }
 
-.bb-container {
-  width: min(100% - calc(var(--bb-page-padding-mobile) * 2), var(--bb-container-xl));
-  margin-inline: auto;
-}
-
-@media (min-width: 576px) {
-  .bb-container {
-    width: min(100% - calc(var(--bb-page-padding-tablet) * 2), var(--bb-container-xl));
-  }
-}
-
-@media (min-width: 992px) {
-  .bb-container {
-    width: min(100% - calc(var(--bb-page-padding-desktop) * 2), var(--bb-container-xl));
-  }
-}
-
 .bb-kicker {
   font-family: var(--bb-font-cta);
   font-size: var(--bb-text-xs);

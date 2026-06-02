@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useTranslations } from "next-intl";
+import { Container } from "@/components/layout/Container";
 import { Button } from "@/components/ui/button";
 
 export default function GlobalRouteError({
@@ -22,7 +23,7 @@ export default function GlobalRouteError({
       className="bb-page flex flex-col items-center justify-center"
       style={{ minHeight: "calc(100dvh - var(--bb-header-stack))" }}
     >
-      <div className="bb-container">
+      <Container>
         <section
           className="bb-error-state mx-auto max-w-md grid justify-items-center gap-6 border border-border bg-card p-10 text-center"
           role="alert"
@@ -34,7 +35,7 @@ export default function GlobalRouteError({
             {t("retry")}
           </Button>
         </section>
-      </div>
+      </Container>
     </section>
   );
 }

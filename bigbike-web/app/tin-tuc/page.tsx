@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { Container } from "@/components/layout/Container";
 import { PageHero } from "@/components/layout/PageHero";
 import { listArticles, listContentCategories, listPublicSettings } from "@/lib/api/public-api";
 import type { Article, ContentCategoryWithCount } from "@/lib/contracts/public";
@@ -87,9 +88,9 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
           ]}
         />
         <div id="main-content" className="bb-wp-main-content">
-          <div className="bb-container container">
+          <Container variant="blog" className="container">
             <WpNoResults query={qParsed.value} />
-          </div>
+          </Container>
         </div>
       </div>
     );
@@ -155,7 +156,7 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
       />
 
       <div id="main-content" className="bb-wp-main-content">
-        <div className="bb-container container">
+        <Container variant="blog" className="container">
           <div className="bb-wp-row row">
             <aside className="bb-wp-sidebar col-md-3" aria-label="Danh mục tin tức">
               <WpCategoryWidget categories={sidebarCategories} />
@@ -193,7 +194,7 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
               )}
             </section>
           </div>
-        </div>
+        </Container>
       </div>
     </div>
   );

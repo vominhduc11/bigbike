@@ -13,6 +13,7 @@ import {
   Store,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { Container } from "@/components/layout/Container";
 import { PageHero } from "@/components/layout/PageHero";
 import { ContactInfoList } from "@/components/ui/ContactInfoList";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -135,9 +136,9 @@ export default async function AboutPage() {
   if (!pageResult.data) {
     return (
       <section className="bb-page">
-        <div className="bb-container">
+        <Container>
           <ErrorState message={pageResult.error?.message ?? t("aboutLoadFailed")} />
-        </div>
+        </Container>
       </section>
     );
   }
@@ -162,7 +163,7 @@ export default async function AboutPage() {
         defaultBgUrl={pickSetting(settings, ["hero_default_bg_url"]) || null}
       />
       <section className="bb-page">
-        <div className="bb-container">
+        <Container>
           <div className="grid grid-cols-1 items-start gap-6 pb-10 lg:grid-cols-[4fr_5fr_3fr] lg:gap-[30px] xl:gap-[48px] 2xl:gap-[60px]">
             <div>
               <h3 className="bb-section-heading mb-4">
@@ -306,7 +307,7 @@ export default async function AboutPage() {
               />
             </div>
           ) : null}
-        </div>
+        </Container>
       </section>
     </>
   );

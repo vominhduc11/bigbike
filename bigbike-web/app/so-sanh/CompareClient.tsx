@@ -6,6 +6,7 @@ import { useQueries } from "@tanstack/react-query";
 import { useCompare } from "@/lib/compare-context";
 import { fetchPublicProduct } from "@/lib/api/client-api";
 import { queryKeys } from "@/lib/query/keys";
+import { Container } from "@/components/layout/Container";
 import { ComparisonTable } from "@/components/catalog/ComparisonTable";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -34,7 +35,7 @@ export function CompareClient() {
 
   return (
     <section className="bb-page bb-compare-page">
-      <div className="bb-container pb-28">
+      <Container className="pb-28">
         <header className="mb-6">
           <p className="bb-kicker">
             {t("kicker")}
@@ -69,7 +70,7 @@ export function CompareClient() {
         ) : (
           <ComparisonTable products={products} />
         )}
-      </div>
+      </Container>
     </section>
   );
 }

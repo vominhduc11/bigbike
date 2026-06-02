@@ -7,6 +7,7 @@ import { flattenPublicMenuTree, buildPublicMenuTree } from "@/lib/utils/public-m
 import { normalizeMenuUrl } from "@/lib/utils/nav";
 import { pickSetting } from "@/lib/utils/settings";
 import { telHref } from "@/lib/utils/format";
+import { Container } from "@/components/layout/Container";
 import { BctBadge } from "./BctBadge";
 import { FooterCollapsible } from "./FooterCollapsible";
 import { ScrollToTopButton } from "./ScrollToTopButton";
@@ -211,7 +212,7 @@ export async function SiteFooter() {
   return (
     <footer className="bg-black text-white">
       <div className="bg-footer-top py-[60px] max-md:pb-0 max-md:pt-9">
-        <div className="bb-container">
+        <Container>
           <div className="grid grid-cols-1 gap-8 md:grid-cols-12 md:gap-10">
             <div className="md:col-span-7">
               <h2 className="m-0 mb-7 font-cta text-footer-slogan font-medium uppercase leading-title text-white md:mb-[2.857rem] lg:max-w-[43rem]">
@@ -324,11 +325,11 @@ export async function SiteFooter() {
               </div>
             </div>
           </div>
-        </div>
+        </Container>
       </div>
 
       <div className="bg-black py-[30px] max-md:pb-5 max-md:pt-6">
-        <div className="bb-container relative">
+        <Container className="relative">
           <ScrollToTopButton />
           <div className="grid grid-cols-1 items-center gap-5 md:grid-cols-12 md:gap-0">
             <div className="md:col-span-2 max-md:order-1">
@@ -366,7 +367,7 @@ export async function SiteFooter() {
               ) : null}
             </div>
           </div>
-        </div>
+        </Container>
       </div>
     </footer>
   );

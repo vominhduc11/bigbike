@@ -10,6 +10,7 @@ import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { formatDate, safeText } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import { toHomePath } from "@/lib/utils/routes";
+import { Container } from "@/components/layout/Container";
 
 // Map URL slug → backend page slug
 const POLICY_SLUG_MAP: Record<string, string> = {
@@ -82,9 +83,9 @@ export default async function PolicyPage({ params }: Props) {
   if (!result.data) {
     return (
       <section className="bb-page">
-        <div className="bb-container">
+        <Container>
           <ErrorState message={result.error?.message ?? t("loadFailed")} />
-        </div>
+        </Container>
       </section>
     );
   }
@@ -109,7 +110,7 @@ export default async function PolicyPage({ params }: Props) {
         ]}
       />
       <section className="bb-page">
-        <div className="bb-container grid grid-cols-1 gap-[30px] pt-10 pb-[60px] items-start lg:grid-cols-[3fr_9fr] xl:gap-[48px] xl:pt-12 xl:pb-[80px]">
+        <Container className="grid grid-cols-1 gap-[30px] pt-10 pb-[60px] items-start lg:grid-cols-[3fr_9fr] xl:gap-[48px] xl:pt-12 xl:pb-[80px]">
           <PolicySidebar activeHref={`/chinh-sach/${slug}`} title={t("policy.sidebarTitle")} />
           <div className="min-w-0">
             <article
@@ -120,7 +121,7 @@ export default async function PolicyPage({ params }: Props) {
               {t("updatedAt", { date: formatDate(page.updatedAt) })}
             </p>
           </div>
-        </div>
+        </Container>
       </section>
     </>
   );

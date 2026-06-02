@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 
+import { Container } from "@/components/layout/Container";
 import { PageHero } from "@/components/layout/PageHero";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { getArticleBySlug, listArticles, listPublicSettings } from "@/lib/api/public-api";
@@ -96,9 +97,9 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
   if (!result.data) {
     return (
       <section className="bb-page">
-        <div className="bb-container">
+        <Container>
           <ErrorState message={result.error?.message ?? t("loadFailed")} />
-        </div>
+        </Container>
       </section>
     );
   }

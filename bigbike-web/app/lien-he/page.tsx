@@ -3,6 +3,7 @@ import { join } from "node:path";
 import type { Metadata } from "next";
 import Image from "next/image";
 import { getLocale, getTranslations } from "next-intl/server";
+import { Container } from "@/components/layout/Container";
 import { PageHero } from "@/components/layout/PageHero";
 import { Button } from "@/components/ui/button";
 import { ContactInfoList } from "@/components/ui/ContactInfoList";
@@ -49,9 +50,9 @@ export default async function ContactPage() {
   if (!pageResult.data) {
     return (
       <section className="bb-page">
-        <div className="bb-container">
+        <Container>
           <ErrorState message={pageResult.error?.message ?? t("contactLoadFailed")} />
-        </div>
+        </Container>
       </section>
     );
   }
@@ -96,7 +97,7 @@ export default async function ContactPage() {
       />
 
       <section className="bb-page">
-        <div className="bb-container">
+        <Container>
           {sanitizedBody ? (
             <article
               className="bb-richtext pt-8"
@@ -241,7 +242,7 @@ export default async function ContactPage() {
               </div>
             ) : null}
           </div>
-        </div>
+        </Container>
       </section>
     </>
   );

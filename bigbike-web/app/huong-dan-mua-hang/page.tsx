@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
+import { Container } from "@/components/layout/Container";
 import { PageHero } from "@/components/layout/PageHero";
 import { PolicySidebar } from "@/components/layout/PolicySidebar";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -42,9 +43,9 @@ export default async function HowToBuyPage() {
   if (!pageResult.data) {
     return (
       <section className="bb-page">
-        <div className="bb-container">
+        <Container>
           <ErrorState message={pageResult.error?.message ?? t("howToBuy.loadFailed")} />
-        </div>
+        </Container>
       </section>
     );
   }
@@ -66,7 +67,7 @@ export default async function HowToBuyPage() {
         ]}
       />
       <section className="bb-page">
-        <div className="bb-container grid grid-cols-1 gap-[30px] pt-10 pb-[60px] items-start lg:grid-cols-[3fr_9fr] xl:gap-10 2xl:gap-12">
+        <Container className="grid grid-cols-1 gap-[30px] pt-10 pb-[60px] items-start lg:grid-cols-[3fr_9fr] xl:gap-10 2xl:gap-12">
           <PolicySidebar activeHref="/huong-dan-mua-hang" title={t("howToBuy.sidebarTitle")} />
           <div className="min-w-0">
             <article
@@ -77,7 +78,7 @@ export default async function HowToBuyPage() {
               {t("updatedAt", { date: formatDate(page.updatedAt) })}
             </p>
           </div>
-        </div>
+        </Container>
       </section>
     </>
   );

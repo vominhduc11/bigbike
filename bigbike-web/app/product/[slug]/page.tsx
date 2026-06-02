@@ -10,6 +10,7 @@ import { PdpRelatedProductsCarousel } from "@/components/catalog/PdpRelatedProdu
 import { MobilePdpAnchorNav } from "@/components/catalog/MobilePdpAnchorNav";
 import { MobileStickyPurchaseBar } from "@/components/catalog/MobileStickyPurchaseBar";
 import { AnalyticsView } from "@/components/analytics/AnalyticsView";
+import { Container } from "@/components/layout/Container";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -107,11 +108,11 @@ export default async function ProductDetailPage({
   if (!result.data) {
     return (
       <section className="bb-page">
-        <div className="bb-container">
+        <Container>
           <ErrorState
             message={result.error?.message ?? tProduct("loadFailed")}
           />
-        </div>
+        </Container>
       </section>
     );
   }

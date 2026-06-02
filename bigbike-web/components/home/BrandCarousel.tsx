@@ -4,6 +4,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import Link from "next/link";
 import "swiper/css";
 import type { Brand } from "@/lib/contracts/public";
+import { Container } from "@/components/layout/Container";
 import { resolveMediaUrl, safeText, toLegacyWpMediaUrl } from "@/lib/utils/format";
 import { toBrandPath } from "@/lib/utils/routes";
 
@@ -13,7 +14,7 @@ export function BrandCarousel({ brands }: Props) {
   if (brands.length === 0) return null;
 
   return (
-    <div className="bb-container">
+    <Container>
 
       {/* Mobile grid (ẩn ≥ md) */}
       <div className="bb-brand-mobile-grid md:hidden">
@@ -76,6 +77,6 @@ export function BrandCarousel({ brands }: Props) {
         </Swiper>
       </div>
 
-    </div>
+    </Container>
   );
 }

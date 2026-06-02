@@ -4,6 +4,7 @@ import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { readSingleSearchParam } from "@/lib/utils/query";
 import { isSafeReturnTo } from "@/lib/utils/auth";
 import { toAccountPath } from "@/lib/utils/routes";
+import { Container } from "@/components/layout/Container";
 import { LoginForm } from "./LoginForm";
 
 type LoginPageProps = {
@@ -24,7 +25,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
   return (
     <section className="bb-page bb-page--auth">
-      <div className="bb-container">
+      <Container>
         <div className="bb-auth-wrap">
           <div className="mb-5">
             <h1 className="bb-auth-heading mb-2">Đăng nhập</h1>
@@ -37,7 +38,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </div>
           <LoginForm returnTo={returnTo} />
         </div>
-      </div>
+      </Container>
     </section>
   );
 }

@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import { Container } from "@/components/layout/Container";
 import { cn } from "@/lib/utils";
 import { skelBase, skelStack } from "@/lib/ui-classes";
 
@@ -11,15 +12,15 @@ export default async function ArticleListLoading() {
       <div className="relative h-[300px] md:h-[450px] 3xl:h-[520px] 4xl:h-[600px]">
         <div className="absolute inset-x-0 top-0 h-[300px] overflow-hidden bg-black md:h-[450px] 3xl:h-[520px] 4xl:h-[600px] [clip-path:polygon(0_0,100%_0,100%_75%,0_100%)]" />
         <div className="absolute inset-x-0 top-0 flex h-[300px] items-center md:h-[450px] 3xl:h-[520px] 4xl:h-[600px]">
-          <div className="bb-container">
+          <Container variant="blog">
             <div className="h-10 md:h-14 w-2/3 max-w-[28rem] bg-white/15" />
             <div className="mt-5 h-4 w-40 bg-white/15" />
-          </div>
+          </Container>
         </div>
       </div>
 
       <div id="main-content" className="bb-wp-main-content">
-        <div className="bb-container container">
+        <Container variant="blog" className="container">
           <div className={cn("bb-wp-block-text bb-wp-block-text--top block-text pb-60", skelStack)}>
             <div className={cn(skelBase, "!animate-none h-[0.85em] w-full")} />
             <div className={cn(skelBase, "!animate-none h-[0.85em] w-4/5")} />
@@ -73,7 +74,7 @@ export default async function ArticleListLoading() {
               </div>
             </section>
           </div>
-        </div>
+        </Container>
       </div>
     </div>
   );

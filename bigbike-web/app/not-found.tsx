@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { PageHero } from "@/components/layout/PageHero";
+import { Container } from "@/components/layout/Container";
 import { ArticleCard } from "@/components/content/ArticleCard";
 import { listArticles } from "@/lib/api/public-api";
 import { toArticleListPath, toHomePath, toProductListPath } from "@/lib/utils/routes";
@@ -26,7 +27,7 @@ export default async function NotFoundPage() {
           { label: "404" },
         ]}
       />
-      <div className="bb-container">
+      <Container>
         <div className="max-w-[720px] mx-auto pt-10 pb-20 flex flex-col gap-7">
           <div className="flex justify-center select-none" aria-hidden="true">
             <div className="relative">
@@ -83,7 +84,7 @@ export default async function NotFoundPage() {
             </section>
           )}
         </div>
-      </div>
+      </Container>
     </section>
   );
 }

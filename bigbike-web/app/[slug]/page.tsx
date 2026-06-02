@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
+import { Container } from "@/components/layout/Container";
 import { PageHero } from "@/components/layout/PageHero";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { getPageBySlug, listPublicSettings } from "@/lib/api/public-api";
@@ -68,9 +69,9 @@ export default async function StaticPageDetail({ params }: StaticPageDetailProps
   if (!result.data) {
     return (
       <section className="bb-page">
-        <div className="bb-container">
+        <Container>
           <ErrorState message={result.error?.message ?? t("loadFailed")} />
-        </div>
+        </Container>
       </section>
     );
   }
@@ -92,7 +93,7 @@ export default async function StaticPageDetail({ params }: StaticPageDetailProps
         ]}
       />
       <section className="bb-page">
-        <div className="bb-container pt-8 pb-[60px]">
+        <Container className="pt-8 pb-[60px]">
           <article
             className="bb-richtext"
             dangerouslySetInnerHTML={{
@@ -102,7 +103,7 @@ export default async function StaticPageDetail({ params }: StaticPageDetailProps
           <p className="text-muted-foreground text-caption mt-4">
             {t("updatedAt", { date: formatDate(page.updatedAt) })}
           </p>
-        </div>
+        </Container>
       </section>
     </>
   );

@@ -20,6 +20,7 @@ import { createCheckoutAddressSchema, type CheckoutAddressFormValues } from "@/l
 import { pushDataLayer, toGtmCartItems } from "@/lib/analytics";
 import { formatAddress, formatVnd } from "@/lib/utils/format";
 import { toCartPath, toOrderConfirmPath } from "@/lib/utils/routes";
+import { Container } from "@/components/layout/Container";
 import { VnAddressFields } from "@/components/ui/VnAddressFields";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -265,25 +266,25 @@ export default function CheckoutPage() {
 
   if (cartLoading && !cart) {
     return (
-      <div className="bb-container cart-table bb-checkout-page">
+      <Container className="cart-table bb-checkout-page">
         <p className="woocommerce-info">{t("loading")}</p>
-      </div>
+      </Container>
     );
   }
 
   if (cartError) {
     return (
-      <div className="bb-container cart-table bb-checkout-page">
+      <Container className="cart-table bb-checkout-page">
         <div className="woocommerce-error" role="alert">
           {t("loadCartFailed")} <Link href={toCartPath()}>{t("backToCart")}</Link>
         </div>
-      </div>
+      </Container>
     );
   }
 
   if (!cart || cart.items.length === 0) {
     return (
-      <div className="bb-container cart-table bb-checkout-page">
+      <Container className="cart-table bb-checkout-page">
         <div className="cart-empty woocommerce-info" role="status">
           {tCart("emptyHeading")}
         </div>
@@ -292,7 +293,7 @@ export default function CheckoutPage() {
             <Link href={toCartPath()}>{t("viewCart")}</Link>
           </Button>
         </p>
-      </div>
+      </Container>
     );
   }
 
@@ -303,7 +304,7 @@ export default function CheckoutPage() {
   );
 
   return (
-    <div className="bb-container cart-table bb-checkout-page">
+    <Container className="cart-table bb-checkout-page">
       <div className="check-out-title">
         <h1>{t("title")}</h1>
       </div>
@@ -603,6 +604,6 @@ export default function CheckoutPage() {
           </aside>
         </div>
       </form>
-    </div>
+    </Container>
   );
 }

@@ -11,6 +11,7 @@ import { safeText } from "@/lib/utils/format";
 import { readDefaultHeroAssets, readHeroSettings } from "@/lib/utils/page-hero";
 import { buildQueryString, collectErrors, parsePositiveIntParam, parseSortParam, readSingleSearchParam } from "@/lib/utils/query";
 import { toBrandListPath, toBrandPath, toHomePath } from "@/lib/utils/routes";
+import { Container } from "@/components/layout/Container";
 
 type BrandListPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -49,9 +50,9 @@ export default async function BrandListPage({ searchParams }: BrandListPageProps
   if (validationErrors.length > 0) {
     return (
       <section className="bb-page">
-        <div className="bb-container">
+        <Container>
           <ErrorState title="Query chưa hợp lệ" message={validationErrors.join(" ")} retryHref={toBrandListPath()} />
-        </div>
+        </Container>
       </section>
     );
   }
@@ -83,7 +84,7 @@ export default async function BrandListPage({ searchParams }: BrandListPageProps
         ]}
       />
       <section className="bb-page">
-        <div className="bb-container">
+        <Container>
 
         {result.error && result.data.length === 0 ? (
           <ErrorState message={result.error.message} retryHref={toBrandListPath()} />
@@ -129,7 +130,7 @@ export default async function BrandListPage({ searchParams }: BrandListPageProps
             ) : null}
           </>
         )}
-        </div>
+        </Container>
       </section>
     </>
   );

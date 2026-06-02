@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { getLocale } from "next-intl/server";
+import { Container } from "@/components/layout/Container";
 import { BrandCarousel } from "@/components/home/BrandCarousel";
 import { ExperienceCarousel } from "@/components/home/ExperienceCarousel";
 import { FeaturedProductsCarousel } from "@/components/home/FeaturedProductsCarousel";
@@ -429,7 +430,7 @@ export default async function HomePage() {
           className="bb-products-section bb-home-products-parity"
           aria-labelledby="home-products-heading"
         >
-          <div className="bb-container">
+          <Container>
             <div className="bb-products-header">
               <p className="bb-kicker">Sản phẩm nổi bật</p>
               <h2 id="home-products-heading" className="bb-products-title bb-section-title">
@@ -451,13 +452,13 @@ export default async function HomePage() {
                 </div>
               </>
             )}
-          </div>
+          </Container>
         </section>
       )}
 
       {carouselProducts.length === 0 && categoriesResult.data.length > 0 && (
         <section className="bb-products-section" aria-label="Danh mục sản phẩm">
-          <div className="bb-container">
+          <Container>
             <div className="block md:hidden">
               <MobileCategoryGrid categories={categoriesResult.data} />
             </div>
@@ -468,7 +469,7 @@ export default async function HomePage() {
                 ))}
               </div>
             </div>
-          </div>
+          </Container>
         </section>
       )}
 

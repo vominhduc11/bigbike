@@ -16,6 +16,7 @@
 
 import type { CSSProperties, ReactNode } from "react";
 import { Card } from "@/components/ui/card";
+import { Container } from "@/components/layout/Container";
 import { cn } from "@/lib/utils";
 import { skelBase, skelCol, skelRow, skelStack } from "@/lib/ui-classes";
 
@@ -143,7 +144,7 @@ export function HomeSkeleton() {
       </div>
 
       {/* Trust rail */}
-      <div className="bb-container">
+      <Container>
         <div className="bb-feature-row">
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="bb-feature-tile">
@@ -221,7 +222,7 @@ export function HomeSkeleton() {
             ))}
           </div>
         </div>
-      </div>
+      </Container>
     </SkeletonRoot>
   );
 }
@@ -373,7 +374,7 @@ export function CategoryListSkeleton() {
         <SkelText w="15%" />
         <SkelTitle w="40%" h="2em" />
       </div>
-      <div className="bb-container pb-16">
+      <Container className="pb-16">
         <div className="bb-grid-categories">
           {Array.from({ length: 9 }).map((_, i) => (
             <div key={i} className="bb-card">
@@ -385,7 +386,7 @@ export function CategoryListSkeleton() {
             </div>
           ))}
         </div>
-      </div>
+      </Container>
     </SkeletonRoot>
   );
 }
@@ -399,7 +400,7 @@ export function BrandListSkeleton() {
         <SkelText w="15%" />
         <SkelTitle w="35%" h="2em" />
       </div>
-      <div className="bb-container">
+      <Container>
         <div
           style={{
             display: "grid",
@@ -411,7 +412,7 @@ export function BrandListSkeleton() {
             <SkelBlock key={i} w="100%" h={120} />
           ))}
         </div>
-      </div>
+      </Container>
     </SkeletonRoot>
   );
 }
@@ -426,9 +427,9 @@ export function BrandDetailSkeleton() {
         <SkelTitle w="35%" h="2em" />
         <SkelText w="60%" />
       </div>
-      <div className="bb-container mb-6">
+      <Container className="mb-6">
         <SkelBlock w="100%" h={180} />
-      </div>
+      </Container>
       <div className="bb-cat-layout">
         <aside className="bb-filters-v2">
           <div className={skelStack}>
@@ -459,7 +460,7 @@ export function BrandDetailSkeleton() {
 export function ArticleListSkeleton({ label = "Loading articles" }: { label?: string }) {
   return (
     <SkeletonRoot label={label} className="bb-news-page">
-      <div className="bb-container mt-6">
+      <Container className="mt-6">
         <div className="bb-news-hero">
           <div className={cn("bb-news-hero-copy", skelStack)}>
             <SkelText w="20%" />
@@ -471,7 +472,7 @@ export function ArticleListSkeleton({ label = "Loading articles" }: { label?: st
             <SkelBlock w="100%" h={160} />
           </div>
         </div>
-      </div>
+      </Container>
       <div className="bb-news-section">
         <div className={skelRow} style={{ marginBottom: 28 }}>
           <SkelButton w={120} />
@@ -764,7 +765,7 @@ export function AuthSkeleton() {
   return (
     <SkeletonRoot label="Đang tải biểu mẫu xác thực">
       <section className="bb-page bb-page--auth">
-        <div className="bb-container">
+        <Container>
           <div className="bb-auth-wrap">
             <Card className="p-6 border-t-[3px] border-t-primary">
               <div className={skelStack}>
@@ -779,7 +780,7 @@ export function AuthSkeleton() {
               </div>
             </Card>
           </div>
-        </div>
+        </Container>
       </section>
     </SkeletonRoot>
   );
@@ -790,7 +791,7 @@ export function StaticPageSkeleton({ title = "Loading content" }: { title?: stri
   return (
     <SkeletonRoot label={title}>
       <section className="bb-page">
-        <div className="bb-container">
+        <Container>
           <header style={{ marginBottom: 24 }}>
             <SkelTitle w="55%" h="2.2em" />
           </header>
@@ -803,7 +804,7 @@ export function StaticPageSkeleton({ title = "Loading content" }: { title?: stri
             <SkelText w="78%" />
             <SkelText w="92%" />
           </div>
-        </div>
+        </Container>
       </section>
     </SkeletonRoot>
   );
@@ -814,7 +815,7 @@ export function SearchSkeleton({ label = "Loading search results" }: { label?: s
   return (
     <SkeletonRoot label={label}>
       <section className="bb-page">
-        <div className="bb-container">
+        <Container>
           <header>
             <SkelTitle w="20%" h="2em" />
           </header>
@@ -831,7 +832,7 @@ export function SearchSkeleton({ label = "Loading search results" }: { label?: s
               {Array.from({ length: 4 }).map((_, i) => <ProductCardSkel key={i} />)}
             </div>
           </div>
-        </div>
+        </Container>
       </section>
     </SkeletonRoot>
   );
@@ -871,7 +872,7 @@ export function ContactSkeleton() {
     <SkeletonRoot label="Đang tải trang liên hệ">
       <section className="bb-page">
         <SkelBlock w="100%" h={300} />
-        <div className="bb-container">
+        <Container>
           <div
             style={{
               display: "grid",
@@ -899,7 +900,7 @@ export function ContactSkeleton() {
               <SkelBlock w="100%" h={48} />
             </div>
           </div>
-        </div>
+        </Container>
       </section>
     </SkeletonRoot>
   );
@@ -910,7 +911,7 @@ export function GuideSkeleton({ label = "Loading guide" }: { label?: string }) {
   return (
     <SkeletonRoot label={label}>
       <section className="bb-page">
-        <div className="bb-container">
+        <Container>
           <div style={{ display: "grid", gap: 28, gridTemplateColumns: "260px 1fr" }}>
             <aside className={skelStack}>
               <SkelTitle w="60%" />
@@ -929,7 +930,7 @@ export function GuideSkeleton({ label = "Loading guide" }: { label?: string }) {
               </div>
             </div>
           </div>
-        </div>
+        </Container>
       </section>
     </SkeletonRoot>
   );

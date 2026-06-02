@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Container } from "@/components/layout/Container";
 import { lookupWarranty, type WarrantyLookupResult } from "@/lib/api/client-api";
 import { formatDate } from "@/lib/utils/format";
 
@@ -47,7 +48,7 @@ export function WarrantyContent() {
   }
 
   return (
-    <div className="bb-container max-w-[560px] py-10">
+    <Container className="max-w-[560px] py-10">
       <div className="mb-7 pb-[22px] border-b border-border">
         <span className="text-sm tracking-display uppercase text-brand font-bold block mb-2">{t("kicker")}</span>
         <p className="text-muted-foreground text-body mt-2 m-0">{t("subheading")}</p>
@@ -129,6 +130,6 @@ export function WarrantyContent() {
           )}
         </div>
       )}
-    </div>
+    </Container>
   );
 }

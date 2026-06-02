@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { resendEmailVerification, verifyEmail } from "@/lib/api/client-api";
 import { useAuth } from "@/lib/auth/auth-store";
+import { Container } from "@/components/layout/Container";
 
 type Status = "idle" | "loading" | "success" | "error" | "missing";
 type ResendStatus = "idle" | "sending" | "sent" | "error";
@@ -50,7 +51,7 @@ export default function VerifyEmailPage() {
 
   return (
     <section className="bb-page bb-page--auth">
-      <div className="bb-container">
+      <Container>
         <div className="bb-auth-wrap text-center">
           {status === "loading" && (
             <>
@@ -135,7 +136,7 @@ export default function VerifyEmailPage() {
             </>
           )}
         </div>
-      </div>
+      </Container>
     </section>
   );
 }

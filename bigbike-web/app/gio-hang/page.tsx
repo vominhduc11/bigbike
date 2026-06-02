@@ -8,6 +8,7 @@ import { pushDataLayer, toGtmCartItems } from "@/lib/analytics";
 import { formatVnd } from "@/lib/utils/format";
 import { toProductListPath, toCheckoutPath } from "@/lib/utils/routes";
 import { MediaImage } from "@/components/ui/MediaImage";
+import { Container } from "@/components/layout/Container";
 
 const COPY = {
   title: "Giỏ hàng",
@@ -207,12 +208,12 @@ export default function CartPage() {
   if (loading) {
     return (
       <div id="main-content" className="bb-cart-page" aria-busy="true">
-        <div className="bb-container">
+        <Container>
           <CartHeading />
           <div className="cart-table">
             <div className="woocommerce-notices-wrapper" />
           </div>
-        </div>
+        </Container>
       </div>
     );
   }
@@ -220,7 +221,7 @@ export default function CartPage() {
   if (!cart) {
     return (
       <div id="main-content" className="bb-cart-page">
-        <div className="bb-container">
+        <Container>
           <CartHeading />
           <div className="cart-table">
             <div className="woocommerce-notices-wrapper">
@@ -232,7 +233,7 @@ export default function CartPage() {
               </Link>
             </p>
           </div>
-        </div>
+        </Container>
       </div>
     );
   }
@@ -244,7 +245,7 @@ export default function CartPage() {
 
   return (
     <div id="main-content" className="bb-cart-page">
-      <div className="bb-container">
+      <Container>
         <CartHeading />
 
         <div className="cart-table">
@@ -507,7 +508,7 @@ export default function CartPage() {
             </form>
           )}
         </div>
-      </div>
+      </Container>
     </div>
   );
 }

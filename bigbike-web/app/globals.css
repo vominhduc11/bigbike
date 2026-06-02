@@ -336,7 +336,7 @@ body {
   background: var(--bb-bg-page);
 }
 
-.bb-page > .bb-container > header:first-child {
+.bb-page > [data-bb-rail] > header:first-child {
   position: relative;
   overflow: hidden;
   margin-bottom: var(--bb-space-8);
@@ -345,7 +345,7 @@ body {
   background: var(--bb-bg-section);
 }
 
-.bb-page > .bb-container > header:first-child > * {
+.bb-page > [data-bb-rail] > header:first-child > * {
   position: relative;
   z-index: 1;
 }
@@ -768,7 +768,7 @@ body {
     padding-block: var(--bb-space-6) var(--bb-space-12);
   }
 
-  .bb-page > .bb-container > header:first-child {
+  .bb-page > [data-bb-rail] > header:first-child {
     padding: var(--bb-space-6);
   }
 
@@ -2278,15 +2278,6 @@ body {
   color: var(--bb-text-primary);
 }
 
-.bb-seo-content .bb-container {
-  width: 100%;
-  max-width: none;
-  margin-right: auto;
-  margin-left: auto;
-  padding-right: 15px;
-  padding-left: 15px;
-}
-
 .bb-seo-content-body {
   width: 100%;
 }
@@ -2355,30 +2346,6 @@ body {
 }
 
 /* Override Gutenberg alignment classes that leak in via WordPress HTML */
-
-@media (min-width: 576px) {
-  .bb-seo-content .bb-container {
-    max-width: 540px;
-  }
-}
-
-@media (min-width: 768px) {
-  .bb-seo-content .bb-container {
-    max-width: 720px;
-  }
-}
-
-@media (min-width: 992px) {
-  .bb-seo-content .bb-container {
-    max-width: 960px;
-  }
-}
-
-@media (min-width: 1200px) {
-  .bb-seo-content .bb-container {
-    max-width: 1200px;
-  }
-}
 
 /* -- Responsive additions -------------------------------- */
 
@@ -2615,7 +2582,7 @@ html[data-header-scrolled] .bb-cart-heading-col { padding-left: 15px; }
   .bb-checkout-page > .check-out-title,
   .bb-checkout-page > .cart-empty,
   .bb-checkout-page > .return-to-shop,
-  .bb-page.bb-compare-page > .bb-container > header:first-child {
+  .bb-page.bb-compare-page > [data-bb-rail] > header:first-child {
     padding-left: 200px;
   }
 }
@@ -2623,14 +2590,14 @@ html[data-header-scrolled] .bb-cart-heading-col { padding-left: 15px; }
   .bb-checkout-page > .check-out-title,
   .bb-checkout-page > .cart-empty,
   .bb-checkout-page > .return-to-shop,
-  .bb-page.bb-compare-page > .bb-container > header:first-child {
+  .bb-page.bb-compare-page > [data-bb-rail] > header:first-child {
     padding-left: 256px;
   }
 }
 html[data-header-scrolled] .bb-checkout-page > .check-out-title,
 html[data-header-scrolled] .bb-checkout-page > .cart-empty,
 html[data-header-scrolled] .bb-checkout-page > .return-to-shop,
-html[data-header-scrolled] .bb-page.bb-compare-page > .bb-container > header:first-child {
+html[data-header-scrolled] .bb-page.bb-compare-page > [data-bb-rail] > header:first-child {
   padding-left: 0;
 }
 
@@ -3622,15 +3589,6 @@ img, picture, video, svg, canvas { max-width: 100%; }
 
 .bb-blog-listing-parity .bb-wp-main-content {
   padding-bottom: 0;
-}
-
-.bb-blog-listing-parity .bb-container {
-  width: 100%;
-  max-width: 1200px;
-  margin-right: auto;
-  margin-left: auto;
-  padding-right: 15px;
-  padding-left: 15px;
 }
 
 .bb-blog-listing-parity .bb-wp-block-text {
@@ -5284,9 +5242,6 @@ input[type="checkbox"] {
    Math: container max 85rem = 1360px; at 1536px viewport → 88px each side.
    Arrow guard: arrows at −64px leave 24px clearance — within the white section bg. */
 @media (min-width: 1536px) {
-  .bb-home-products-parity .bb-container {
-    width: min(100% - calc(var(--bb-page-padding-desktop) * 2), 85rem);
-  }
   .bb-home-products-parity .bb-fp-item {
     flex: 0 0 calc((100% - 120px) / 5); /* 5 items × 4 gaps × 30px = 120px */
   }
@@ -5295,21 +5250,10 @@ input[type="checkbox"] {
   }
 }
 
-/* ≥1920px (ultra-wide / 3xl): widen to 1600px (100rem).
-   160px each side → arrow clearance of 96px, ample breathing room. */
-@media (min-width: 1920px) {
-  .bb-home-products-parity .bb-container {
-    width: min(100% - calc(var(--bb-page-padding-desktop) * 2), 100rem);
-  }
-}
-
 /* ≥2560px (4xl): widen to 2240px (140rem) and switch to 6 items per row.
    Math: 6 items × 5 gaps × 30px = 150px gap total → ~348px per item card.
    Arrow guard: container 160px from viewport edge → arrows have 96px clearance. */
 @media (min-width: 2560px) {
-  .bb-home-products-parity .bb-container {
-    width: min(100% - calc(var(--bb-page-padding-desktop) * 2), 140rem);
-  }
   .bb-home-products-parity .bb-fp-item {
     flex: 0 0 calc((100% - 150px) / 6); /* 6 items × 5 gaps × 30px = 150px */
   }
@@ -5323,7 +5267,7 @@ body:has(.bb-article-detail-page) .bb-header-info-sheet:not(.is-open) .bb-header
   display: none;
 }
 
-body:has(.bb-article-detail-page) footer .bb-container.relative > button.absolute.z-20 {
+body:has(.bb-article-detail-page) footer [data-bb-rail].relative > button.absolute.z-20 {
   right: 0 !important;
 }
 
@@ -9690,10 +9634,6 @@ body .bb-home .white.block-title h3 {
     padding-bottom: 8px;
   }
 
-  .bb-home-products-parity .bb-container {
-    width: 100%;
-  }
-
   .bb-home-products-parity .bb-products-header {
     margin-bottom: 14px;
     padding: 0 14px;
@@ -9963,7 +9903,6 @@ body .bb-home .white.block-title h3 {
     overflow-x: clip;
   }
 
-  .bb-container,
   .bb-home .container,
   .bb-product-archive .container.bb-wp-container,
   .bb-product-archive .bb-archive-inner-container,
@@ -10059,7 +9998,7 @@ body .bb-home .white.block-title h3 {
     padding-block: 24px calc(var(--bb-mobile-section-y) + 8px);
   }
 
-  .bb-page > .bb-container > header:first-child,
+  .bb-page > [data-bb-rail] > header:first-child,
   .bb-page-head,
   .bb-news-hero {
     margin: 0 0 18px;
@@ -11737,9 +11676,7 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
 
   /* Tier 4 — selectors that hard-code 1200px instead of using the token */
   .bb-section,
-.bb-blog-listing-parity .bb-container,
-.bb-article-detail-parity .container,
-.bb-seo-content .bb-container {
+.bb-article-detail-parity .container {
     max-width: 1360px;
   }
 
@@ -11787,9 +11724,7 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
 
   /* Tier 4 */
   .bb-section,
-.bb-blog-listing-parity .bb-container,
-.bb-article-detail-parity .container,
-.bb-seo-content .bb-container {
+.bb-article-detail-parity .container {
     max-width: 1600px;
   }
 
@@ -11871,9 +11806,7 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
 
   /* Tier 4 */
   .bb-section,
-.bb-blog-listing-parity .bb-container,
-.bb-article-detail-parity .container,
-.bb-seo-content .bb-container {
+.bb-article-detail-parity .container {
     max-width: 2240px;
   }
 

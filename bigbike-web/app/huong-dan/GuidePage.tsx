@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { Container } from "@/components/layout/Container";
 import { PageHero } from "@/components/layout/PageHero";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { getPageBySlug, getPublicMenu, listPublicSettings } from "@/lib/api/public-api";
@@ -102,7 +103,7 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
           ]}
         />
         <section className="bb-page">
-        <div className="bb-container bb-section">
+        <Container className="bb-section">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 xl:gap-6 2xl:gap-8">
             {Object.values(GUIDE_ROUTE_MAP).map((guide) => (
               <Link
@@ -117,7 +118,7 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
               </Link>
             ))}
           </div>
-        </div>
+        </Container>
         </section>
       </>
     );
@@ -132,9 +133,9 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
   if (!pageResult.data) {
     return (
       <section className="bb-page">
-        <div className="bb-container">
+        <Container>
           <ErrorState message={pageResult.error?.message ?? t("loadFailed")} />
-        </div>
+        </Container>
       </section>
     );
   }
@@ -159,7 +160,7 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
         ]}
       />
       <section className="bb-page">
-        <div className="bb-container">
+        <Container>
           <div className="bb-detail-layout bb-section">
             <div className="bb-card bb-card-content">
               <article
@@ -197,7 +198,7 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
               </div>
             </aside>
           </div>
-        </div>
+        </Container>
       </section>
     </>
   );

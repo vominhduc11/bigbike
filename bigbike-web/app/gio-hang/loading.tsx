@@ -1,9 +1,10 @@
 import Link from "next/link";
+import { Container } from "@/components/layout/Container";
 
 export default function CartLoading() {
   return (
     <div id="main-content" className="bb-cart-page" aria-busy="true">
-      <div className="bb-container">
+      <Container>
         <div className="bb-cart-heading-row">
           <div className="bb-cart-heading-col">
             <h1>Giỏ hàng</h1>
@@ -22,7 +23,7 @@ export default function CartLoading() {
         <div className="cart-table">
           <div className="woocommerce-notices-wrapper" />
         </div>
-      </div>
+      </Container>
     </div>
   );
 }

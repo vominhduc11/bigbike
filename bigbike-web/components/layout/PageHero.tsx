@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { Breadcrumb, type BreadcrumbItem } from "@/components/ui/Breadcrumb";
+import { Container } from "@/components/layout/Container";
 
 // Ảnh banner đặc (không vùng trong suốt). Cả hai biến thể hero đều tự cắt chéo
 // bằng clip-path nên dùng chung ảnh này → zoom/khung hình nền đồng nhất.
@@ -161,12 +162,12 @@ function ContactHero({ imageUrl, mobileImageUrl, imageAlt, title, breadcrumb, il
       </div>
 
       <div className="absolute inset-x-0 top-0 flex h-[300px] items-center md:h-[450px] 3xl:h-[520px] 4xl:h-[600px]">
-        <div className="bb-container">
+        <Container>
           <Breadcrumb items={breadcrumb ?? []} variant="onHero" />
           <h1 className="bb-cat-hero-title">
             {title}
           </h1>
-        </div>
+        </Container>
       </div>
 
       {passedIllustration ? (
