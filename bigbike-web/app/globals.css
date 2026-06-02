@@ -1263,63 +1263,6 @@ body {
   align-items: stretch;
 }
 
-.bb-header-user-trigger {
-  display: inline-flex;
-  min-height: var(--bb-header-height);
-  border: none;
-  background: transparent;
-  color: #ffffff;
-  cursor: pointer;
-  transition: color var(--bb-duration-fast) var(--bb-ease-standard),
-    background var(--bb-duration-fast) var(--bb-ease-standard);
-}
-
-.bb-header-user-trigger:hover,
-.bb-header-user-trigger:focus-visible {
-  color: var(--bb-brand-primary);
-  background: rgba(255, 255, 255, 0.05);
-  outline: none;
-}
-
-.bb-header-user-trigger-guest {
-  align-items: center;
-  justify-content: center;
-  padding: 0 clamp(10px, 0.9vw, 16px);
-}
-
-.bb-header-user-trigger-auth {
-  width: 132px;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 2px;
-  padding: 20px 16px 16px;
-  text-align: left;
-}
-
-.bb-header-user-greeting {
-  width: 100%;
-  overflow: hidden;
-  font-family: var(--bb-font-cta);
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1;
-  text-transform: uppercase;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.bb-header-user-name {
-  width: 100%;
-  overflow: hidden;
-  font-size: 14px;
-  font-weight: 300;
-  line-height: 1.2;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  text-transform: none;
-}
-
 /* Invisible bridge: fills the gap between trigger and menu so hovering
    across doesn't dismiss the dropdown before the pointer arrives. */
 .bb-header-user-menu::after {
@@ -1375,60 +1318,6 @@ body {
     transform var(--bb-duration-fast) var(--bb-ease-standard),
     visibility 0s linear 0s,
     pointer-events 0s linear 0s;
-}
-
-.bb-header-user-menu-list {
-  display: grid;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.bb-header-user-menu-link {
-  display: flex;
-  width: 100%;
-  height: 44px;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  background: #111111;
-  color: #ffffff !important;
-  font-family: var(--bb-font-cta);
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  line-height: 1;
-  text-decoration: none !important;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: background var(--bb-duration-fast) var(--bb-ease-standard);
-}
-
-.bb-header-user-menu-link.is-primary {
-  background: var(--bb-action-primary);
-  color: #ffffff !important;
-}
-
-.bb-header-user-menu-link:hover,
-.bb-header-user-menu-link:focus-visible {
-  outline: none;
-}
-
-.bb-header-user-menu-link:not(.is-primary):hover,
-.bb-header-user-menu-link:not(.is-primary):focus-visible {
-  background: #333333;
-  color: #ffffff !important;
-}
-
-.bb-header-user-menu-link.is-primary:hover,
-.bb-header-user-menu-link.is-primary:focus-visible {
-  background: var(--bb-action-primary-hover);
-  color: #ffffff !important;
-}
-
-.bb-header-user-menu-link:visited {
-  color: #ffffff !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

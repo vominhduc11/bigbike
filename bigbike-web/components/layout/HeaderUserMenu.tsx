@@ -14,6 +14,19 @@ import {
 
 const CLOSE_DELAY_MS = 100;
 
+// Trigger + dropdown content. The stateful dropdown SHELL stays as CSS:
+// bb-header-user (position anchor + ≤1260px hide) and bb-header-user-menu
+// (::before caret, ::after hover-bridge, .is-open transition, reduced-motion).
+const trigger =
+  "inline-flex min-h-[var(--bb-header-height)] border-none bg-transparent text-white cursor-pointer transition-colors duration-[var(--bb-duration-fast)] ease-[var(--bb-ease-standard)] hover:text-[var(--bb-brand-primary)] hover:bg-white/5 focus-visible:text-[var(--bb-brand-primary)] focus-visible:bg-white/5 focus-visible:outline-none";
+const triggerGuest = "items-center justify-center px-[clamp(10px,0.9vw,16px)] py-0";
+const triggerAuth = "w-[132px] flex-col items-start justify-center gap-[2px] pt-5 px-4 pb-4 text-left";
+const menuLink =
+  "flex w-full h-11 items-center justify-center border-none bg-[#111111] font-cta text-[14px] font-semibold tracking-[0.06em] leading-none uppercase cursor-pointer !text-white !no-underline visited:!text-white transition-colors duration-[var(--bb-duration-fast)] ease-[var(--bb-ease-standard)] focus-visible:outline-none";
+const menuLinkPrimary =
+  "bg-brand hover:bg-[var(--bb-action-primary-hover)] focus-visible:bg-[var(--bb-action-primary-hover)]";
+const menuLinkPlain = "hover:bg-[#333333] focus-visible:bg-[#333333]";
+
 function UserIcon() {
   return (
     <svg
@@ -129,27 +142,29 @@ export function HeaderUserMenu() {
         <>
           <button
             type="button"
-            className="bb-header-user-trigger bb-header-user-trigger-auth"
+            className={cn(trigger, triggerAuth)}
             aria-label={t("accountAriaLabelUser", { name: displayName })}
             aria-expanded={open}
             onClick={() => setOpen((current) => !current)}
             onFocus={() => setOpen(true)}
           >
-            <span className="bb-header-user-greeting">{t("loggedInGreeting")}</span>
-            <span className="bb-header-user-name" title={auth.profile.email}>
+            <span className="w-full overflow-hidden font-cta text-[14px] font-semibold leading-none uppercase text-ellipsis whitespace-nowrap">
+              {t("loggedInGreeting")}
+            </span>
+            <span
+              className="w-full overflow-hidden text-[14px] font-light leading-[1.2] text-ellipsis whitespace-nowrap normal-case"
+              title={auth.profile.email}
+            >
               {displayName}
             </span>
           </button>
 
-          <div
-            className={cn("bb-header-user-menu", open && "is-open")}
-            role="menu"
-          >
-            <ul className="bb-header-user-menu-list">
+          <div className={cn("bb-header-user-menu", open && "is-open")} role="menu">
+            <ul className="grid gap-2 m-0 p-0 list-none">
               <li>
                 <Link
                   href={toAccountPath()}
-                  className="bb-header-user-menu-link is-primary"
+                  className={cn(menuLink, menuLinkPrimary)}
                   onClick={() => setOpen(false)}
                 >
                   {t("myAccount")}
@@ -158,7 +173,7 @@ export function HeaderUserMenu() {
               <li>
                 <button
                   type="button"
-                  className="bb-header-user-menu-link"
+                  className={cn(menuLink, menuLinkPlain)}
                   onClick={handleLogout}
                   disabled={loggingOut}
                 >
@@ -172,7 +187,7 @@ export function HeaderUserMenu() {
         <>
           <button
             type="button"
-            className="bb-header-user-trigger bb-header-user-trigger-guest"
+            className={cn(trigger, triggerGuest)}
             aria-label={t("accountAriaLabel")}
             aria-expanded={open}
             onClick={() => setOpen((current) => !current)}
@@ -181,26 +196,19 @@ export function HeaderUserMenu() {
             <UserIcon />
           </button>
 
-          <div
-            className={cn("bb-header-user-menu", open && "is-open")}
-            role="menu"
-          >
-            <ul className="bb-header-user-menu-list">
+          <div className={cn("bb-header-user-menu", open && "is-open")} role="menu">
+            <ul className="grid gap-2 m-0 p-0 list-none">
               <li>
                 <Link
                   href={toRegisterPath()}
-                  className="bb-header-user-menu-link is-primary"
+                  className={cn(menuLink, menuLinkPrimary)}
                   onClick={() => setOpen(false)}
                 >
                   {t("register")}
                 </Link>
               </li>
               <li>
-                <Link
-                  href={loginHref}
-                  className="bb-header-user-menu-link"
-                  onClick={() => setOpen(false)}
-                >
+                <Link href={loginHref} className={cn(menuLink, menuLinkPlain)} onClick={() => setOpen(false)}>
                   {t("login")}
                 </Link>
               </li>
