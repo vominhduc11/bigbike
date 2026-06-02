@@ -2726,56 +2726,6 @@ img, picture, video, svg, canvas { max-width: 100%; }
   object-fit: cover;
 }
 
-.bb-blog-listing-parity .bb-wp-pagination {
-  display: block !important;
-  padding-top: 20px;
-  padding-bottom: 40px;
-}
-
-.bb-blog-listing-parity .bb-wp-pagination ul {
-  display: block;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.bb-blog-listing-parity .bb-wp-pagination .text-right {
-  text-align: right;
-}
-
-.bb-blog-listing-parity .bb-wp-pagination li {
-  display: inline-block;
-  padding: 0 8px;
-  color: var(--bb-text-primary);
-  font-size: 1.5rem;
-  font-weight: 600;
-}
-
-.bb-blog-listing-parity .bb-wp-pagination a,
-.bb-blog-listing-parity .bb-wp-pagination span {
-  display: inline-block;
-  padding: 5px 10px;
-  color: var(--bb-text-primary);
-  font-size: 1.5rem;
-  text-decoration: none;
-}
-
-.bb-blog-listing-parity .bb-wp-pagination .current {
-  color: var(--bb-text-brand);
-}
-
-.bb-blog-listing-parity .bb-wp-pagination i {
-  font-style: normal;
-}
-
-.bb-blog-listing-parity .bb-wp-pagination .fa-angle-left::before {
-  content: "‹";
-}
-
-.bb-blog-listing-parity .bb-wp-pagination .fa-angle-right::before {
-  content: "›";
-}
-
 .bb-blog-listing-parity .no-results {
   padding-bottom: 60px;
 }
@@ -2824,11 +2774,6 @@ img, picture, video, svg, canvas { max-width: 100%; }
   border-radius: 0;
 }
 
-@media (max-width: 575px) {
-  .bb-blog-listing-parity .bb-wp-pagination {
-    text-align: right;
-  }
-}
 
 /* ==========================================================
  * WP LIGHT THEME OVERRIDES (Phase 2 rebuild)

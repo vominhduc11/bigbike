@@ -307,16 +307,19 @@ function WpPagination({
   }
 
   const pages = buildWpPageItems(page, totalPages);
+  const liCls = "inline-block px-2 text-foreground text-[1.5rem] font-semibold";
+  const cellCls = "inline-block px-2.5 py-[5px] text-foreground text-[1.5rem] no-underline";
+  const cellCurrentCls = "inline-block px-2.5 py-[5px] text-brand text-[1.5rem] no-underline";
 
   return (
-    <nav className="bb-wp-pagination pagination pb-40 pt-20" aria-label="Phân trang bài viết">
-      <ul className="text-right">
-        <div className="paginate-links">
-          <ul className="page-numbers">
+    <nav className="block pt-5 pb-10 max-[576px]:text-right" aria-label="Phân trang bài viết">
+      <ul className="block m-0 p-0 list-none text-right">
+        <div>
+          <ul className="block m-0 p-0 list-none">
             {page > 1 ? (
-              <li {...{ index: 0 }}>
-                <Link className="prev page-numbers" href={makeHref(page - 1)} aria-label="Trang trước">
-                  <i className="fal fa-angle-left" aria-hidden="true" />
+              <li {...{ index: 0 }} className={liCls}>
+                <Link className={cellCls} href={makeHref(page - 1)} aria-label="Trang trước">
+                  <i className="not-italic before:content-['‹']" aria-hidden="true" />
                 </Link>
               </li>
             ) : null}
@@ -324,15 +327,15 @@ function WpPagination({
               const index = page > 1 ? itemIndex + 1 : itemIndex;
 
               return (
-                <li key={`${item}-${itemIndex}`} {...{ index }}>
+                <li key={`${item}-${itemIndex}`} {...{ index }} className={liCls}>
                   {item === "dots" ? (
-                    <span className="page-numbers dots">…</span>
+                    <span className={cellCls}>…</span>
                   ) : item === page ? (
-                    <span aria-current="page" className="page-numbers current">
+                    <span aria-current="page" className={cellCurrentCls}>
                       {item}
                     </span>
                   ) : (
-                    <Link className="page-numbers" href={makeHref(item)}>
+                    <Link className={cellCls} href={makeHref(item)}>
                       {item}
                     </Link>
                   )}
@@ -340,9 +343,9 @@ function WpPagination({
               );
             })}
             {page < totalPages ? (
-              <li {...{ index: pages.length + (page > 1 ? 1 : 0) }}>
-                <Link className="next page-numbers" href={makeHref(page + 1)} aria-label="Trang sau">
-                  <i className="fal fa-angle-right" aria-hidden="true" />
+              <li {...{ index: pages.length + (page > 1 ? 1 : 0) }} className={liCls}>
+                <Link className={cellCls} href={makeHref(page + 1)} aria-label="Trang sau">
+                  <i className="not-italic before:content-['›']" aria-hidden="true" />
                 </Link>
               </li>
             ) : null}
