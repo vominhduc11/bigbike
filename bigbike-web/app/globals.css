@@ -2525,7 +2525,6 @@ html[data-header-scrolled] .bb-page.bb-compare-page > [data-bb-rail] > header:fi
 /* -- Account page ------------------------------------------ */
 /* === Account section — 2020 legacy mockup parity ===================== */
 .bb-account-layout { display: grid; grid-template-columns: 282px 1fr; gap: 30px; max-width: 1280px; margin: 8px auto 56px; padding: 0 24px; }
-.bb-account-sidebar { align-self: start; position: sticky; top: calc(var(--bb-header-height) + 24px); }
 
 /* Breadcrumb on account pages: match account layout max-width so the two
    containers share the same margin: auto rail — text aligns with sidebar.
@@ -2536,27 +2535,10 @@ body:has(.bb-account-layout) .bb-breadcrumb {
   padding-left: 24px;
 }
 
-/* User card */
-.bb-account-user {
-  display: flex; align-items: center; gap: 12px;
-  background: #fff; border: 1px solid #e4e4e4;
-  padding: 16px 16px; margin-bottom: 14px;
-}
 .bb-account-avatar {
   width: 50px; height: 50px; border-radius: 999px; flex-shrink: 0;
   background: #f3f3f3; color: #6f6f6f; /* was #b0b0b0 (2.35:1 fail) → #6f6f6f (4.59:1 AA pass) */
   display: flex; align-items: center; justify-content: center;
-}
-.bb-account-user-info { flex: 1; min-width: 0; }
-.bb-account-user-info b {
-  display: block; font-family: var(--bb-font-display);
-  font-size: 14px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.04em; color: #1a1a1a; line-height: 1.25;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.bb-account-user-info span {
-  display: block; font-size: 12px; color: #6f6f6f; margin-top: 3px; /* was #9a9a9a (2.85:1 fail) → #6f6f6f (4.59:1 pass) */
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
 /* Nav card */
@@ -2584,27 +2566,6 @@ body:has(.bb-account-layout) .bb-breadcrumb {
 .bb-account-nav a.active { color: var(--bb-text-brand); font-weight: 600; }
 .bb-account-nav a.active::before { opacity: 1; }
 
-.bb-account-main { min-width: 0; }
-
-/* Section heading — red triangle marker + faint section icon */
-.bb-account-header {
-  display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: 22px; padding-bottom: 14px;
-  border-bottom: 1px solid #e4e4e4;
-}
-.bb-account-header h1,
-.bb-account-header h2 {
-  display: flex; align-items: center; gap: 11px;
-  font-family: var(--bb-font-display); font-weight: 700;
-  font-size: 22px; text-transform: uppercase; letter-spacing: 0.03em;
-  color: #1a1a1a; margin: 0;
-}
-.bb-account-header h1::before,
-.bb-account-header h2::before {
-  content: ""; width: 0; height: 0; flex-shrink: 0;
-  border-top: 7px solid transparent; border-bottom: 7px solid transparent;
-  border-left: 11px solid var(--bb-brand-primary);
-}
 
 /* -- Order status timeline -------------------------------- */
 
@@ -2721,7 +2682,6 @@ body:has(.bb-account-layout) .bb-breadcrumb {
   .bb-news-hero { grid-template-columns: 1fr; margin-inline: 24px; }
   .bb-checkout-layout { grid-template-columns: 1fr; }
   .bb-account-layout { grid-template-columns: 1fr; }
-  .bb-account-sidebar { position: static; }
 }
 @media (max-width: 768px) {
   .bb-news-hero { grid-template-columns: 1fr; margin: 16px 16px 24px; padding: 28px 20px; }
@@ -9985,17 +9945,6 @@ body .bb-home .white.block-title h3 {
   .bb-account-nav a.active {
     border-color: var(--bb-action-primary);
     color: var(--bb-text-brand);
-  }
-
-  .bb-account-header {
-    margin-bottom: 16px;
-    padding-bottom: 12px;
-  }
-
-  .bb-account-header h1,
-  .bb-account-header h2 {
-    font-size: 20px;
-    line-height: 1.15;
   }
 
   .bb-page--auth .bb-auth-wrap,

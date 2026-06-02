@@ -22,6 +22,16 @@ export const bbCard =
 /** Card inner padding (was `.bb-card-content`): 20px desktop, 14px mobile. */
 export const bbCardContent = "p-5 max-md:p-[14px]";
 
+/* ── Account shell bundles (were `.bb-account-*` leaf in globals.css) ──────────
+ * Shared by AccountShell and the account Skeletons (page mirror). */
+
+/** Account section heading row (was `.bb-account-header` container). */
+export const accountHeaderShell =
+  "mb-[22px] flex items-center justify-between border-b border-[#e4e4e4] pb-3.5 max-md:mb-4 max-md:pb-3";
+/** Account sidebar rail (was `.bb-account-sidebar`): sticky desktop, static <=1024px. */
+export const accountSidebar =
+  "sticky top-[calc(var(--bb-header-height)_+_24px)] [align-self:start] max-[1024px]:static";
+
 /* ── Shared typography bundles (were `.bb-*` leaf classes in globals.css) ──────
  * Direct-applied text-style classes with no contextual overrides. Font-size
  * tokens use the `text-<n>` @theme utilities (sm/base/xs/26 map 1:1 to the

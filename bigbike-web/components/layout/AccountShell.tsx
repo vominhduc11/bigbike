@@ -10,6 +10,7 @@ import type { CustomerProfile } from "@/lib/contracts/commerce";
 import { toLoginPath } from "@/lib/utils/routes";
 import { AccountLayoutSkeleton } from "@/components/ui/Skeletons";
 import { Breadcrumb, type BreadcrumbItem } from "@/components/ui/Breadcrumb";
+import { accountHeaderShell, accountSidebar } from "@/lib/ui-classes";
 
 const AccountContext = createContext<CustomerProfile | null>(null);
 const AccountRefreshContext = createContext<(() => Promise<void>) | null>(null);
@@ -42,8 +43,10 @@ export function AccountSectionHeading({
   icon?: ReactNode;
 }) {
   return (
-    <div className="bb-account-header">
-      <h1>{title}</h1>
+    <div className={accountHeaderShell}>
+      <h1 className="m-0 flex items-center gap-[11px] font-[family-name:var(--bb-font-display)] text-[22px] font-bold uppercase tracking-[0.03em] text-[#1a1a1a] before:h-0 before:w-0 before:shrink-0 before:border-y-[7px] before:border-l-[11px] before:border-y-transparent before:border-l-[var(--bb-brand-primary)] before:content-[''] max-md:text-[20px] max-md:leading-[1.15]">
+        {title}
+      </h1>
     </div>
   );
 }
@@ -97,14 +100,18 @@ export function AccountShell({ children, loginRedirect }: Props) {
         <Breadcrumb items={breadcrumbItems} variant="onLight" />
 
         <div className="bb-account-layout">
-          <aside className="bb-account-sidebar">
-            <div className="bb-account-user">
+          <aside className={accountSidebar}>
+            <div className="mb-3.5 flex items-center gap-3 border border-[#e4e4e4] bg-white p-4">
               <div className="bb-account-avatar" aria-hidden="true">
                 {(profile.displayName?.[0] ?? profile.email?.[0] ?? "U").toUpperCase()}
               </div>
-              <div className="bb-account-user-info">
-                <b>{profile.displayName ?? profile.email?.split("@")[0]}</b>
-                <span>{profile.email}</span>
+              <div className="min-w-0 flex-1">
+                <b className="block overflow-hidden text-ellipsis whitespace-nowrap font-[family-name:var(--bb-font-display)] text-[14px] font-bold uppercase leading-[1.25] tracking-[0.04em] text-[#1a1a1a]">
+                  {profile.displayName ?? profile.email?.split("@")[0]}
+                </b>
+                <span className="mt-[3px] block overflow-hidden text-ellipsis whitespace-nowrap text-[12px] text-[#6f6f6f]">
+                  {profile.email}
+                </span>
               </div>
             </div>
             <nav className="bb-account-nav" aria-label={t("menuAria")}>
@@ -119,7 +126,7 @@ export function AccountShell({ children, loginRedirect }: Props) {
             </nav>
           </aside>
 
-          <div className="bb-account-main">{children}</div>
+          <div className="min-w-0">{children}</div>
         </div>
       </AccountContext.Provider>
     </AccountRefreshContext.Provider>

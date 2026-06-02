@@ -18,7 +18,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { Card } from "@/components/ui/card";
 import { Container } from "@/components/layout/Container";
 import { cn } from "@/lib/utils";
-import { bbCard, bbSection, skelBase, skelCol, skelRow, skelStack } from "@/lib/ui-classes";
+import { accountHeaderShell, accountSidebar, bbCard, bbSection, skelBase, skelCol, skelRow, skelStack } from "@/lib/ui-classes";
 
 const sr: CSSProperties = {
   position: "absolute",
@@ -602,7 +602,7 @@ export function CheckoutSkeleton() {
 export function AccountInnerSkeleton({ rows = 3 }: { rows?: number }) {
   return (
     <SkeletonRoot label="Đang tải nội dung tài khoản">
-      <div className="bb-account-header">
+      <div className={accountHeaderShell}>
         <div className={skelCol} style={{ flex: 1 }}>
           <SkelTitle w="30%" h="1.6em" />
           <SkelText w="50%" />
@@ -621,7 +621,7 @@ export function AccountInnerSkeleton({ rows = 3 }: { rows?: number }) {
 export function AccountLayoutSkeleton({ rows = 3 }: { rows?: number }) {
   return (
     <SkeletonRoot label="Đang tải trang tài khoản" className="bb-account-layout">
-      <aside className="bb-account-sidebar">
+      <aside className={accountSidebar}>
         <div style={{ padding: "24px 22px", borderBottom: "1px solid var(--bb-border-subtle)" }}>
           <SkelCircle size={56} />
           <div className={skelStack} style={{ marginTop: 12 }}>
@@ -635,8 +635,8 @@ export function AccountLayoutSkeleton({ rows = 3 }: { rows?: number }) {
           ))}
         </div>
       </aside>
-      <div className="bb-account-main">
-        <div className="bb-account-header">
+      <div className="min-w-0">
+        <div className={accountHeaderShell}>
           <div className={skelCol} style={{ flex: 1 }}>
             <SkelTitle w="30%" h="1.6em" />
             <SkelText w="50%" />
@@ -656,7 +656,7 @@ export function AccountLayoutSkeleton({ rows = 3 }: { rows?: number }) {
 export function OrderListSkeleton({ count = 3 }: { count?: number }) {
   return (
     <SkeletonRoot label="Đang tải danh sách đơn hàng">
-      <div className="bb-account-header">
+      <div className={accountHeaderShell}>
         <div className={skelCol} style={{ flex: 1 }}>
           <SkelTitle w="30%" h="1.6em" />
           <SkelText w="40%" />
@@ -702,7 +702,7 @@ export function OrderListSkeleton({ count = 3 }: { count?: number }) {
 export function OrderDetailSkeleton() {
   return (
     <SkeletonRoot label="Đang tải chi tiết đơn hàng">
-      <div className="bb-account-header">
+      <div className={accountHeaderShell}>
         <div className={skelCol} style={{ flex: 1 }}>
           <SkelTitle w="30%" h="1.6em" />
           <SkelText w="20%" />
@@ -724,7 +724,7 @@ export function FormSkeleton({
 }: { fields?: number; twoCol?: boolean }) {
   return (
     <SkeletonRoot label="Đang tải biểu mẫu">
-      <div className="bb-account-header">
+      <div className={accountHeaderShell}>
         <div className={skelCol} style={{ flex: 1 }}>
           <SkelTitle w="25%" h="1.6em" />
           <SkelText w="40%" />
