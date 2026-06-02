@@ -23,18 +23,29 @@ import { WishlistButton } from "@/components/catalog/WishlistButton";
 import { CompareButton } from "@/components/catalog/CompareButton";
 import { RatingStars } from "@/components/ui/RatingStars";
 import { cardChrome } from "@/lib/ui-classes";
+import { cn } from "@/lib/utils";
 
 type ProductCardProps = {
   product: Product;
   variant?: "compact" | "featured" | "tile" | "archive" | "related";
 };
 
+/** Stock badge shell shared by all three states (was `.bb-stock-badge`). */
+const STOCK_BADGE_BASE = "rounded-none font-body text-sm font-bold leading-3";
+
+/**
+ * Per-state stock badge colors. The success/warning surfaces use rgba/hex values
+ * that have no Tailwind color utility, so they reference the brand vars directly.
+ */
 function stockBadgeClassName(state: Product["stockState"]): string {
   switch (state) {
-    case "IN_STOCK":     return "bb-stock-in";
-    case "LOW_STOCK":    return "bb-stock-low";
-    case "OUT_OF_STOCK": return "bb-stock-out";
-    default:             return "bb-stock-out";
+    case "IN_STOCK":
+      return "border border-[var(--bb-state-success-border)] bg-[var(--bb-state-success-bg)] text-state-success-text";
+    case "LOW_STOCK":
+      return "border border-[var(--bb-state-warning)] bg-[var(--bb-state-warning)] text-black";
+    case "OUT_OF_STOCK":
+    default:
+      return "border border-border bg-border text-[#4a4a4a]";
   }
 }
 
@@ -306,17 +317,23 @@ export function ProductCard({ product, variant = "compact" }: ProductCardProps) 
     );
   }
   const brandName = safeText(product.brand?.name, "BigBike");
+  const priceCurrentClass = "font-cta text-base font-semibold leading-6 text-brand";
   return (
-    <article className="bb-product-card">
+    <article
+      className={cn(
+        "group relative flex cursor-pointer flex-col overflow-hidden text-foreground",
+        cardChrome,
+      )}
+    >
       <Link
         href={href}
-        className="bb-product-card-link"
+        className="absolute inset-0 z-[1] focus-visible:[outline:2px_solid_var(--bb-brand-primary)] focus-visible:[outline-offset:-2px]"
         aria-label={tProduct("viewProductAria", { name })}
         tabIndex={0}
       />
-      <div className="bb-product-image">
+      <div className="aspect-square bg-white">
         {isSale && (
-          <span className="bb-product-tag">
+          <span className="bg-brand font-cta font-semibold text-white">
             {discountPercent != null && discountPercent > 0 ? `-${discountPercent}%` : tCommon("sale")}
           </span>
         )}
@@ -333,7 +350,13 @@ export function ProductCard({ product, variant = "compact" }: ProductCardProps) 
           }}
           variant="icon"
         />
-        <MediaImage image={product.image} altFallback={name} width={480} height={480} />
+        <MediaImage
+          image={product.image}
+          altFallback={name}
+          width={480}
+          height={480}
+          className="h-full w-full object-contain"
+        />
         <ProductCardAddBar
           productId={product.id}
           hasVariants={!!product.variants?.length}
@@ -341,25 +364,29 @@ export function ProductCard({ product, variant = "compact" }: ProductCardProps) 
           stockState={product.stockState}
         />
       </div>
-      <div className="bb-product-body">
-        <p className="bb-product-brand">{brandName}</p>
-        <h3 className="bb-product-name">{name}</h3>
+      <div className="relative z-[2] flex flex-col gap-1 p-4">
+        <p className="font-cta text-sm uppercase tracking-[0.12em] text-brand">{brandName}</p>
+        <h3 className="font-display text-h4 font-semibold leading-5 text-foreground max-[767px]:line-clamp-2">
+          {name}
+        </h3>
         {product.rating != null && product.rating > 0 && (
-          <div className="bb-product-rating">
+          <div className="text-sm tracking-[0.1em]">
             <RatingStars value={product.rating} />
           </div>
         )}
-        <div className="bb-product-price">
+        <div className="mt-1.5 flex items-baseline gap-2">
           {product.price ? (
             <>
-              <b>{formatVnd(current)}</b>
-              {compare && compare > current ? <s>{formatVnd(compare)}</s> : null}
+              <b className={priceCurrentClass}>{formatVnd(current)}</b>
+              {compare && compare > current ? (
+                <s className="text-muted-foreground line-through">{formatVnd(compare)}</s>
+              ) : null}
             </>
           ) : (
-            <b>{tProduct("contactForPrice")}</b>
+            <b className={priceCurrentClass}>{tProduct("contactForPrice")}</b>
           )}
         </div>
-        <span className={`bb-stock-badge ${stockClass}`}>{stockLabel}</span>
+        <span className={cn(STOCK_BADGE_BASE, stockClass)}>{stockLabel}</span>
       </div>
     </article>
   );
