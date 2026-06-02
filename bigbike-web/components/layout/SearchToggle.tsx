@@ -17,6 +17,20 @@ import { cn } from "@/lib/utils";
 
 const SEARCH_PATH = "/tim-kiem/";
 
+// Inline-Tailwind class bundles for the search-panel CONTENT (the overlay shell
+// — layer/overlay/panel/form/input + transitions/keyframe — stays in globals.css
+// per the CLAUDE.md keyframe/complex-pseudo exemption). Search reds use
+// --bb-brand-primary (#ff0c09) → text-brand-on-dark (the exact-value token).
+const preLabelRow = "flex items-center justify-between border-b border-border bg-card px-4 pt-2 pb-1";
+const preLabel = "font-cta text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground";
+const preChips = "flex flex-wrap gap-1.5 px-4 pb-3 pt-2.5";
+const preChip =
+  "inline-flex cursor-pointer items-center gap-[5px] border border-border bg-card px-3 py-[5px] font-cta text-[12px] font-semibold uppercase text-foreground transition-colors duration-fast hover:text-brand-on-dark focus-visible:text-brand-on-dark focus-visible:outline-none";
+const resultItem =
+  "flex cursor-pointer items-center gap-3 border-b border-border px-4 py-2.5 text-foreground no-underline transition-colors duration-fast hover:bg-card focus-visible:bg-card focus-visible:outline-none";
+const resultsLabel =
+  "m-0 border-b border-border bg-card px-4 pt-2 pb-1 font-cta text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground";
+
 type PopularCategory = { name: string; slug: string };
 
 type SearchSuggestion = {
@@ -211,25 +225,25 @@ export function SearchToggle({ popularCategories: categoriesFromApi = [] }: Sear
             <div className="bb-header-search-results max-[767px]:hidden" aria-label={t("suggestionsLabel")}>
               {recentSearches.length > 0 && (
                 <>
-                  <div className="bb-search-pre-label-row">
-                    <span>{t("recentLabel")}</span>
-                    <button type="button" className="bb-search-pre-clear" onClick={clearAll}>
+                  <div className={preLabelRow}>
+                    <span className={preLabel}>{t("recentLabel")}</span>
+                    <button type="button" className="cursor-pointer border-none bg-transparent p-0 text-[12px] text-brand-on-dark hover:underline" onClick={clearAll}>
                       {t("recentClear")}
                     </button>
                   </div>
                   {recentSearches.slice(0, 5).map((item) => (
-                    <div key={item} className="bb-search-pre-item">
+                    <div key={item} className="flex items-center border-b border-border transition-colors duration-fast last-of-type:border-b-0 hover:bg-card">
                       <button
                         type="button"
-                        className="bb-search-pre-item-trigger"
+                        className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 border-none bg-transparent py-[9px] pl-4 pr-2 text-left font-body text-caption text-foreground hover:text-brand-on-dark focus-visible:text-brand-on-dark focus-visible:outline-none"
                         onClick={() => runSearch(item)}
                       >
-                        <Clock size={14} aria-hidden />
-                        <span>{item}</span>
+                        <Clock size={14} aria-hidden className="shrink-0 text-muted-foreground" />
+                        <span className="min-w-0 flex-1 truncate">{item}</span>
                       </button>
                       <button
                         type="button"
-                        className="bb-search-pre-remove"
+                        className="inline-flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center border-none bg-transparent p-0 text-muted-foreground transition-colors duration-fast hover:text-foreground"
                         aria-label={`Xoá "${item}"`}
                         onClick={() => removeSearch(item)}
                       >
@@ -239,26 +253,26 @@ export function SearchToggle({ popularCategories: categoriesFromApi = [] }: Sear
                   ))}
                 </>
               )}
-              <div className="bb-search-pre-label-row">
-                <span>{t("trendingHeading")}</span>
+              <div className={preLabelRow}>
+                <span className={preLabel}>{t("trendingHeading")}</span>
               </div>
-              <div className="bb-search-pre-chips">
+              <div className={preChips}>
                 {trendingSearches.slice(0, 5).map((item) => (
-                  <button key={item} type="button" className="bb-search-pre-chip" onClick={() => runSearch(item)}>
-                    <Zap size={11} aria-hidden />
+                  <button key={item} type="button" className={preChip} onClick={() => runSearch(item)}>
+                    <Zap size={11} aria-hidden className="text-brand-on-dark" />
                     {item}
                   </button>
                 ))}
               </div>
-              <div className="bb-search-pre-label-row">
-                <span>{t("popularCategoriesHeading")}</span>
+              <div className={preLabelRow}>
+                <span className={preLabel}>{t("popularCategoriesHeading")}</span>
               </div>
-              <div className="bb-search-pre-chips">
+              <div className={preChips}>
                 {resolvedCategories.map((cat) => (
                   <Link
                     key={cat.slug || cat.name}
                     href={cat.slug ? toCategoryPath(cat.slug) : `${SEARCH_PATH}?s=${encodeURIComponent(cat.name)}`}
-                    className="bb-search-pre-chip"
+                    className={preChip}
                     onClick={handleClose}
                   >
                     {cat.name}
@@ -278,13 +292,13 @@ export function SearchToggle({ popularCategories: categoriesFromApi = [] }: Sear
               {suggestions.length > 0 || articleSuggestions.length > 0 ? (
                 <>
                   {suggestions.length > 0 && (
-                    <p className="bb-header-search-results-label">{t("sectionProducts")}</p>
+                    <p className={resultsLabel}>{t("sectionProducts")}</p>
                   )}
                   {suggestions.slice(0, 5).map((product) => (
                     <Link
                       key={product.id}
                       href={toProductPath(product.slug)}
-                      className="bb-header-search-result-item"
+                      className={resultItem}
                       role="option"
                       aria-selected={false}
                       onClick={() => { addSearch(trimmedQuery); handleClose(); }}
@@ -294,16 +308,16 @@ export function SearchToggle({ popularCategories: categoriesFromApi = [] }: Sear
                         <img
                           src={resolveMediaUrl(product.image?.url)!}
                           alt={product.name}
-                          className="bb-header-search-result-img"
+                          className="h-12 w-12 shrink-0 object-contain"
                           width={48}
                           height={48}
                         />
                       ) : (
-                        <div className="bb-header-search-result-img" aria-hidden />
+                        <div className="h-12 w-12 shrink-0 object-contain" aria-hidden />
                       )}
-                      <div className="bb-header-search-result-info">
-                        <span className="bb-header-search-result-name">{product.name}</span>
-                        <span className="bb-header-search-result-price">
+                      <div className="flex min-w-0 flex-1 flex-col gap-1">
+                        <span className="truncate text-caption font-medium text-foreground">{product.name}</span>
+                        <span className="text-[13px] font-bold text-brand-on-dark">
                           {formatVnd(product.price?.salePrice ?? product.price?.retailPrice)}
                         </span>
                       </div>
@@ -311,20 +325,20 @@ export function SearchToggle({ popularCategories: categoriesFromApi = [] }: Sear
                   ))}
                   {articleSuggestions.length > 0 && (
                     <>
-                      <p className="bb-header-search-results-label">{t("sectionArticles")}</p>
+                      <p className={resultsLabel}>{t("sectionArticles")}</p>
                       {articleSuggestions.slice(0, 5).map((article) => (
                         <Link
                           key={article.id}
                           href={toArticlePath(article.slug)}
-                          className="bb-header-search-result-item bb-header-search-result-article"
+                          className={resultItem}
                           role="option"
                           aria-selected={false}
                           onClick={handleClose}
                         >
-                          <div className="bb-header-search-result-info">
-                            <span className="bb-header-search-result-name">{article.title}</span>
+                          <div className="flex min-w-0 flex-1 flex-col gap-1">
+                            <span className="text-[13px] font-normal text-foreground line-clamp-2">{article.title}</span>
                             {article.category?.name && (
-                              <span className="bb-header-search-result-category">
+                              <span className="text-[11px] font-semibold uppercase tracking-[0.04em] text-brand-on-dark">
                                 {article.category.name}
                               </span>
                             )}
@@ -335,17 +349,18 @@ export function SearchToggle({ popularCategories: categoriesFromApi = [] }: Sear
                   )}
                   <Link
                     href={`${SEARCH_PATH}?s=${encodeURIComponent(trimmedQuery)}`}
-                    className="bb-header-search-results-footer"
+                    className="flex items-center justify-center px-4 py-[13px] font-cta text-[13px] font-semibold uppercase tracking-[0.04em] text-brand-on-dark no-underline transition-colors duration-fast hover:bg-card focus-visible:bg-card focus-visible:outline-none"
                     onClick={handleClose}
                   >
                     {t("viewAllResultsBtn", { query: trimmedQuery })}
                   </Link>
                 </>
               ) : (
-                <div className="bb-header-search-results-empty">
-                  <p>{t("noMatchText", { query: trimmedQuery })}</p>
+                <div className="px-4 py-5 text-center text-caption text-muted-foreground">
+                  <p className="m-0 mb-2">{t("noMatchText", { query: trimmedQuery })}</p>
                   <Link
                     href={`${SEARCH_PATH}?s=${encodeURIComponent(trimmedQuery)}`}
+                    className="font-semibold text-brand-on-dark no-underline"
                     onClick={handleClose}
                   >
                     {t("noMatchBrowse")}
