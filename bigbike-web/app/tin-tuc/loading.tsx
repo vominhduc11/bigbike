@@ -28,15 +28,15 @@ export default async function ArticleListLoading() {
 
           <div className="bb-wp-row row">
             <aside className="bb-wp-sidebar col-md-3">
-              <div className="bb-wp-widget widget">
-                <div className="bb-wp-widget-title widget--title">
+              <div className="pb-[15px] mb-[30px] border-b border-b-[#cecece]">
+                <div className="pb-[15px]">
                   <div className={cn(skelBase, "!animate-none h-[1.1em] w-4/5")} />
                 </div>
-                <div className="bb-wp-widget-body widget--body">
-                  <div className="bb-wp-product-category product-category">
-                    <ul>
+                <div>
+                  <div>
+                    <ul className="m-0 p-0 list-none">
                       {Array.from({ length: 3 }).map((_, index) => (
-                        <li key={index}>
+                        <li key={index} className="relative m-0 py-[15px]">
                           <span className={cn(skelBase, "!animate-none h-[0.85em] w-4/5")} />
                         </li>
                       ))}

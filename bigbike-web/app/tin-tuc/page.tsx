@@ -206,24 +206,29 @@ function WpCategoryWidget({ categories }: { categories: ContentCategoryWithCount
   }
 
   return (
-    <div className="bb-wp-widget widget">
-      <div className="bb-wp-widget-title widget--title">
-        <h3>Danh mục tin tức</h3>
+    <div className="pb-[15px] mb-[30px] border-b border-b-[#cecece]">
+      <div className="pb-[15px]">
+        <h3 className="m-0 text-foreground font-heading text-2xl font-semibold leading-[1.3] tracking-normal normal-case">
+          Danh mục tin tức
+        </h3>
       </div>
-      <div className="bb-wp-widget-body widget--body">
-        <div className="bb-wp-product-category product-category">
-          <ul>
+      <div>
+        <div>
+          <ul className="m-0 p-0 list-none">
             {categories.map((cat) => {
               const href = cat.slug === ROOT_CATEGORY_SLUG
                 ? toArticleListPath()
                 : `${toArticleListPath()}${buildQueryString({ category: cat.slug })}`;
 
               return (
-                <li key={cat.id}>
-                  <Link href={href}>
+                <li key={cat.id} className="relative m-0 py-[15px]">
+                  <Link
+                    href={href}
+                    className="relative block min-h-5 pr-7 text-muted-foreground font-body text-[length:var(--fs-body)] font-normal leading-5 no-underline [transition:none] hover:text-brand"
+                  >
                     {cat.name}
-                    <span className="count">
-                      <span>{cat.articleCount}</span>
+                    <span className="absolute top-0 right-[3px] w-5 h-5 text-white font-semibold text-center after:content-[''] after:absolute after:inset-0 after:z-0 after:block after:bg-[#cecece] after:[transform:rotate(45deg)]">
+                      <span className="relative z-[1] block text-[14px] leading-5">{cat.articleCount}</span>
                     </span>
                   </Link>
                 </li>
