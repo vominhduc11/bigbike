@@ -76,7 +76,7 @@ export function FeaturedProductsCarousel({ products }: Props) {
           style={isMobileScroll ? undefined : { transform: `translate3d(calc(-${currentPage * 100}% - ${offsetGap}px), 0, 0)` }}
         >
           {products.map((product) => (
-            <ProductCard key={product.id} product={product} variant="featured" />
+            <ProductCard key={product.id} product={product} variant="featured" surface="home" />
           ))}
         </div>
       </div>

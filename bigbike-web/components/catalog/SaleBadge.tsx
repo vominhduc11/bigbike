@@ -2,10 +2,11 @@ type SaleBadgeProps = Readonly<{
   /** Discount percent (already validated > 0 by caller). */
   percent: number;
   /**
-   * `ribbon` — WP triangle/pennant ribbon (homepage featured + PDP related cards).
+   * `ribbon` — WP triangle/pennant ribbon (article-page featured + PDP related cards).
    * `ticket` — ticket.svg badge with rotated text (category/archive cards).
+   * `tilted` — rotated solid-brand block, no triangle (homepage featured carousel).
    */
-  variant?: "ribbon" | "ticket";
+  variant?: "ribbon" | "ticket" | "tilted";
 }>;
 
 /**
@@ -13,6 +14,16 @@ type SaleBadgeProps = Readonly<{
  * / bb-archive-product-sale markup that was repeated across ProductCard variants.
  */
 export function SaleBadge({ percent, variant = "ribbon" }: SaleBadgeProps) {
+  if (variant === "tilted") {
+    return (
+      <div className="absolute left-0 top-5 z-[2] h-8 w-20">
+        <p className="relative m-0 w-auto -rotate-[20deg] bg-brand p-0 text-center font-display text-[18px] font-semibold leading-7 text-white">
+          {percent}%
+        </p>
+      </div>
+    );
+  }
+
   if (variant === "ticket") {
     return (
       <div className="absolute left-0 top-5 h-8 w-20 bg-[url('/wp/ticket.svg')] bg-left-top bg-no-repeat text-white">

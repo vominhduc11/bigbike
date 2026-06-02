@@ -28,6 +28,12 @@ import { cn } from "@/lib/utils";
 type ProductCardProps = {
   product: Product;
   variant?: "compact" | "featured" | "tile" | "archive" | "related";
+  /**
+   * Featured variant only — selects between the two render contexts that the
+   * legacy `.bb-home-products-parity .bb-fp-*` cascade produced:
+   * `home` (homepage carousel) vs `article` (ArticleProducts grid, the base look).
+   */
+  surface?: "home" | "article";
 };
 
 /** Stock badge shell shared by all three states (was `.bb-stock-badge`). */
@@ -49,7 +55,7 @@ function stockBadgeClassName(state: Product["stockState"]): string {
   }
 }
 
-export function ProductCard({ product, variant = "compact" }: ProductCardProps) {
+export function ProductCard({ product, variant = "compact", surface = "article" }: ProductCardProps) {
   const tProduct = useTranslations("Product");
   const tCommon = useTranslations("Common");
   const name = safeText(product.name, tProduct("nameFallback"));
@@ -58,8 +64,14 @@ export function ProductCard({ product, variant = "compact" }: ProductCardProps) 
   const stockLabel = stockStateLabelWithT(product.stockState, tProduct);
   const stockClass = stockBadgeClassName(product.stockState);
 
-  // Featured variant: homepage carousel, matching WP #main-product-slide classes.
+  // Featured variant: two render contexts (matching the legacy bb-fp-* cascade).
+  //  - `home`    → homepage carousel inside `.bb-home-products-parity` (tilted sale
+  //                badge, left/red inline price, image-zoom on hover, square image
+  //                frame at md+, responsive carousel flex-basis /4 → /5 → /6).
+  //  - `article` → ArticleProducts grid (base bb-fp-* look: bordered card via
+  //                cardChrome, pennant ribbon badge, no image zoom).
   if (variant === "featured") {
+    const isHome = surface === "home";
     const featuredCompare =
       compare && compare > current
         ? compare
@@ -69,57 +81,88 @@ export function ProductCard({ product, variant = "compact" }: ProductCardProps) 
     const ratingValue = product.rating != null && product.rating > 0 ? product.rating : 4.5;
     const featuredImageSrc = toLegacyWpMediaUrl(resolveMediaUrl(product.image?.url?.trim()));
 
+    // Home classes are mobile-first: base = mobile (<768px, the ≤767 carousel-scroll
+    // card), `md:` = desktop (≥768), `2xl:`/`min-[2560px]:` = wide (5/6 columns).
+    const itemClass = isHome
+      ? "group relative mt-0 flex h-full w-[184px] min-w-0 flex-col bg-transparent text-black flex-[0_0_184px] md:mt-[30px] md:w-auto md:flex-[0_0_calc((100%_-_90px)_/_4)] 2xl:flex-[0_0_calc((100%_-_120px)_/_5)] min-[2560px]:flex-[0_0_calc((100%_-_150px)_/_6)]"
+      : cn("group relative flex h-full flex-col p-5", cardChrome);
+    const thumbClass = isHome
+      ? "relative m-0 aspect-square overflow-hidden bg-white md:mb-5"
+      : "relative mb-4 aspect-square overflow-hidden bg-white";
+    const thumbLinkClass = isHome ? "relative block aspect-square md:aspect-auto md:h-full" : "relative block";
+    const imgClass = isHome
+      ? "block h-full w-full object-contain p-2 transition-transform duration-300 ease-in-out group-hover:scale-105 md:absolute md:inset-0 md:p-0"
+      : "h-full w-full object-contain transition-transform duration-300";
+    // `text-white` lives on the container (not just the link) because the homepage
+    // `.bb-home a { color: inherit }` rule (0,1,1) outranks the link's own `text-white`
+    // (0,1,0); the link then inherits white from this container.
+    // Home: cart is revealed on the touch carousel (mobile), hover-slide on desktop.
+    // Article: hover-slide, plus always-visible on touch (hover:none/coarse).
+    const cartClass = cn(
+      "absolute bottom-0 left-0 z-[2] w-full bg-black text-center text-white transition-transform duration-300",
+      isHome
+        ? "translate-y-0 md:translate-y-full md:group-hover:translate-y-0"
+        : "translate-y-full group-hover:translate-y-0 [@media(hover:none)]:translate-y-0 [@media(pointer:coarse)]:translate-y-0",
+    );
+    const cartLinkClass = isHome
+      ? "flex items-center justify-center gap-2.5 py-[15px] font-display text-13 font-semibold uppercase leading-normal text-white"
+      : "flex items-center justify-center gap-2.5 py-[15px] font-cta text-base font-semibold uppercase leading-6 text-white";
+    const descClass = isHome ? "flex flex-col px-3 pt-2.5 pb-3 md:p-0" : "flex flex-col";
+    const insideClass = isHome ? "mt-2.5" : undefined;
+    const titleClass = isHome
+      ? "m-0 min-h-[34px] font-cta text-sm font-medium leading-title text-black md:mb-4 md:min-h-12 md:font-display md:text-h4 md:font-semibold md:leading-normal"
+      : "m-0 font-heading text-h4 font-semibold uppercase leading-5 text-foreground";
+    const titleLinkClass = "text-foreground no-underline hover:text-brand max-[767px]:line-clamp-2";
+    const priceClass = isHome
+      ? "mt-1 block text-left font-cta text-sm font-semibold text-brand md:mt-0"
+      : "mt-2 flex flex-col items-start text-left font-display font-semibold text-foreground";
+    const priceCurrentClass = isHome
+      ? "mr-5 inline-block text-sm leading-[1.214rem] text-brand"
+      : "m-0 font-cta text-base font-semibold leading-6 text-brand";
+    const priceOldClass = isHome
+      ? "mr-5 inline-block text-sm leading-[1.214rem] text-muted-foreground line-through"
+      : "m-0 text-[0.9rem] leading-[1.214rem] text-muted-foreground line-through";
+
     return (
-      <article className="bb-fp-item">
-        <div className="bb-fp-thumb">
-          <Link href={href} className="bb-fp-thumb-link" aria-label={tProduct("viewProductAria", { name })}>
+      <article className={itemClass}>
+        <div className={thumbClass}>
+          <Link href={href} className={thumbLinkClass} aria-label={tProduct("viewProductAria", { name })}>
             {featuredImageSrc ? (
-              <img
-                src={featuredImageSrc}
-                alt={safeText(product.image?.alt, name)}
-                className="swiper-lazy -lazy"
-                loading="lazy"
-              />
+              <img src={featuredImageSrc} alt={safeText(product.image?.alt, name)} className={imgClass} loading="lazy" />
             ) : (
-              <MediaImage
-                image={product.image}
-                altFallback={name}
-                width={480}
-                height={480}
-                className="swiper-lazy -lazy"
-              />
+              <MediaImage image={product.image} altFallback={name} width={480} height={480} className={imgClass} />
             )}
           </Link>
           {discountPercent != null && discountPercent > 0 && (
-            <div className="bb-fp-sale">
-              <p>{discountPercent}%</p>
-            </div>
+            <SaleBadge percent={discountPercent} variant={isHome ? "tilted" : "ribbon"} />
           )}
-          <div className="bb-fp-cart">
-            <Link href={href}>
+          <div className={cartClass}>
+            <Link href={href} className={cartLinkClass}>
               XEM CHI TIẾT
             </Link>
           </div>
         </div>
-        <div className="bb-fp-desc">
-          <div className="bb-fp-inside">
-            <h3 className="bb-fp-title">
-              <Link href={href}>{name}</Link>
+        <div className={descClass}>
+          <div className={insideClass}>
+            <h3 className={titleClass}>
+              <Link href={href} className={titleLinkClass}>
+                {name}
+              </Link>
             </h3>
-            <div className="bb-fp-price">
+            <div className={priceClass}>
               {product.price && current > 0 ? (
                 <>
-                  <span className="bb-fp-price-current">{formatVnd(current)}</span>
+                  <span className={priceCurrentClass}>{formatVnd(current)}</span>
                   {featuredCompare && featuredCompare > current ? (
-                    <span className="bb-fp-price-old">{formatVnd(featuredCompare)}</span>
+                    <span className={priceOldClass}>{formatVnd(featuredCompare)}</span>
                   ) : null}
                 </>
               ) : (
-                <span className="bb-fp-price-current">{tProduct("contactForPrice")}</span>
+                <span className={priceCurrentClass}>{tProduct("contactForPrice")}</span>
               )}
             </div>
           </div>
-          <div className="bb-fp-rating">
+          <div className="mt-2">
             <RatingStars value={ratingValue} />
           </div>
         </div>
