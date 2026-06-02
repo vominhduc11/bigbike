@@ -31,6 +31,32 @@ const resultItem =
 const resultsLabel =
   "m-0 border-b border-border bg-card px-4 pt-2 pb-1 font-cta text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground";
 
+// Mobile-only search body (≤767). The dark 9437 layer is fully overridden by the
+// "whole-site refactor pass" to LIGHT, so these are the merged light values; the
+// panel/form/input/results overlay shell stays in globals.css. Tokens are exact
+// equivalents: bg-background == --bb-bg-page, bg-card == --bb-bg-surface,
+// border-border == --bb-border-subtle, text-muted-foreground == --bb-text-secondary.
+const mFocusRing =
+  "focus-visible:[outline:var(--bb-focus-outline)] focus-visible:[outline-offset:2px]";
+const mBody =
+  "hidden max-md:block flex-none min-h-0 overflow-y-auto bg-background px-6 pt-[18px] pb-[calc(24px_+_env(safe-area-inset-bottom))] text-foreground [-webkit-overflow-scrolling:touch]";
+const mSection = "mb-[22px]";
+const mLabel =
+  "m-0 mb-2 font-cta text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground";
+const mList = "grid [&_svg]:text-muted-foreground";
+const mListBtn =
+  "flex min-h-11 cursor-pointer items-center gap-3 border-b border-border bg-transparent p-0 text-left font-body text-foreground " +
+  mFocusRing;
+const mRecentRemove =
+  "flex h-7 w-7 min-h-11 shrink-0 cursor-pointer items-center justify-center border-b border-border bg-transparent p-0 " +
+  mFocusRing;
+const mChip =
+  "inline-flex min-h-11 cursor-pointer items-center gap-1.5 border border-border bg-card px-[14px] py-0 font-cta text-[13px] font-medium uppercase text-foreground [&>svg]:text-brand-on-dark " +
+  mFocusRing;
+const mGridCard =
+  "grid min-h-11 cursor-pointer gap-0.5 border border-border bg-card px-3 py-2.5 text-left font-body text-foreground no-underline " +
+  mFocusRing;
+
 type PopularCategory = { name: string; slug: string };
 
 type SearchSuggestion = {
@@ -371,34 +397,34 @@ export function SearchToggle({ popularCategories: categoriesFromApi = [] }: Sear
           )}
 
           {!showSuggestions && (
-          <div className="bb-mobile-search-body">
+          <div className={mBody}>
             {recentSearches.length > 0 ? (
-              <section className="bb-mobile-search-section">
-                <div className="bb-mobile-search-section-header">
-                  <p>{t("recentLabel")}</p>
+              <section className={mSection}>
+                <div className="mb-1 flex items-center justify-between">
+                  <p className="m-0">{t("recentLabel")}</p>
                   <button
                     type="button"
-                    className="bb-mobile-search-clear-btn"
+                    className="cursor-pointer border-0 bg-transparent px-0 py-1 font-body text-[13px] text-brand-on-dark"
                     onClick={clearAll}
                   >
                     {t("recentClear")}
                   </button>
                 </div>
-                <div className="bb-mobile-search-list">
+                <div className={mList}>
                   {recentSearches.map((item) => (
                     <div
                       key={item}
                       role="button"
                       tabIndex={0}
-                      className="bb-mobile-search-recent-item"
+                      className="flex w-full items-center gap-3 text-left"
                       onClick={() => runSearch(item)}
                       onKeyDown={(e) => e.key === "Enter" && runSearch(item)}
                     >
                       <Clock size={16} aria-hidden />
-                      <span>{item}</span>
+                      <span className="min-w-0 flex-1 truncate">{item}</span>
                       <button
                         type="button"
-                        className="bb-mobile-search-recent-remove"
+                        className={mRecentRemove}
                         aria-label={`Xoá "${item}"`}
                         onClick={(e) => { e.stopPropagation(); removeSearch(item); }}
                       >
@@ -409,11 +435,11 @@ export function SearchToggle({ popularCategories: categoriesFromApi = [] }: Sear
                 </div>
               </section>
             ) : (
-              <section className="bb-mobile-search-section">
-                <p>{t("quickSearchesHeading")}</p>
-                <div className="bb-mobile-search-list">
+              <section className={mSection}>
+                <p className={mLabel}>{t("quickSearchesHeading")}</p>
+                <div className={mList}>
                   {quickSearches.map((item) => (
-                    <button key={item} type="button" onClick={() => runSearch(item)}>
+                    <button key={item} type="button" className={mListBtn} onClick={() => runSearch(item)}>
                       <Search size={16} aria-hidden />
                       <span>{item}</span>
                     </button>
@@ -422,11 +448,11 @@ export function SearchToggle({ popularCategories: categoriesFromApi = [] }: Sear
               </section>
             )}
 
-            <section className="bb-mobile-search-section">
-              <p>{t("trendingHeading")}</p>
-              <div className="bb-mobile-search-chips">
+            <section className={mSection}>
+              <p className={mLabel}>{t("trendingHeading")}</p>
+              <div className="flex flex-wrap gap-2">
                 {trendingSearches.map((item) => (
-                  <button key={item} type="button" onClick={() => runSearch(item)}>
+                  <button key={item} type="button" className={mChip} onClick={() => runSearch(item)}>
                     <Zap size={13} aria-hidden />
                     {item}
                   </button>
@@ -434,17 +460,18 @@ export function SearchToggle({ popularCategories: categoriesFromApi = [] }: Sear
               </div>
             </section>
 
-            <section className="bb-mobile-search-section">
-              <p>{t("popularCategoriesHeading")}</p>
-              <div className="bb-mobile-search-grid">
+            <section className={mSection}>
+              <p className={mLabel}>{t("popularCategoriesHeading")}</p>
+              <div className="grid grid-cols-2 gap-2">
                 {resolvedCategories.map((cat) => (
                   <Link
                     key={cat.slug || cat.name}
                     href={cat.slug ? toCategoryPath(cat.slug) : `${SEARCH_PATH}?s=${encodeURIComponent(cat.name)}`}
+                    className={mGridCard}
                     onClick={handleClose}
                   >
-                    <span>{cat.name}</span>
-                    <small>BIGBIKE</small>
+                    <span className="font-cta text-[13px] font-semibold uppercase">{cat.name}</span>
+                    <small className="font-cta text-[10px] tracking-[0.08em] text-muted-foreground">BIGBIKE</small>
                   </Link>
                 ))}
               </div>
