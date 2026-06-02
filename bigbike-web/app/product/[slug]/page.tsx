@@ -249,7 +249,7 @@ export default async function ProductDetailPage({
 
       <AnalyticsView product={product} />
 
-      <div className="bb-wp-pdp product-detail product sidebar">
+      <div className="bb-wp-pdp product-detail product sidebar text-black bg-white max-md:pb-20">
         <Breadcrumb
           variant="onLight"
           items={[
@@ -261,7 +261,10 @@ export default async function ProductDetailPage({
           ]}
         />
 
-        <div id="pdp-overview" className="bb-wp-pdp-layout">
+        <div
+          id="pdp-overview"
+          className="mx-auto max-w-[1140px] max-[1025px]:max-w-[960px] 2xl:max-w-[1360px] min-[1920px]:max-w-[1600px] min-[2560px]:max-w-[2240px] px-[15px] max-md:px-[var(--bb-mobile-page-x)] grid grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-[30px] [align-items:start] max-[1024px]:flex max-[1024px]:flex-col max-[1024px]:gap-6 max-md:gap-[18px]"
+        >
           <PurchaseSectionClient
             productId={product.id}
             productSlug={product.slug}

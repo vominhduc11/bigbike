@@ -9,9 +9,11 @@
  * the `skeleton-shimmer` keyframe stays in globals.css. Shapes are the atoms below
  * (SkelText/SkelTitle/SkelBlock/SkelCircle/SkelChip/SkelButton).
  *
- * NOTE: the page-layout classes used here (bb-container, bb-pdp, bb-product-card,
+ * NOTE: the page-layout classes used here (bb-container, bb-product-card,
  * bb-cat-layout, …) are intentionally NOT migrated — this file MIRRORS those pages,
- * so it keeps their classes until each page itself moves to Tailwind.
+ * so it keeps their classes until each page itself moves to Tailwind. The PDP
+ * grid (formerly bb-pdp / bb-pdp-below) is now inline Tailwind, migrated together
+ * with the real .bb-wp-pdp shell.
  */
 
 import type { CSSProperties, ReactNode } from "react";
@@ -237,7 +239,7 @@ export function PdpSkeleton() {
       </div>
 
       {/* Two-col PDP */}
-      <div className="bb-pdp">
+      <div className="grid grid-cols-[1.1fr_1fr] max-[769px]:grid-cols-1 gap-12 max-[601px]:gap-6 max-w-[var(--bb-container-wide)] 2xl:max-w-[1480px] min-[1920px]:max-w-[1760px] min-[2560px]:max-w-[2400px] mx-auto mt-5 px-6 max-[601px]:px-4 [align-items:start] min-w-0 [&>*]:min-w-0 bg-background">
         {/* Gallery — cover image with a thumbnail row below */}
         <div>
           <div style={{ aspectRatio: "1", minWidth: 0 }}>
@@ -279,7 +281,7 @@ export function PdpSkeleton() {
       </div>
 
       {/* Below-fold: tabs + related */}
-      <div className="bb-pdp-below">
+      <div className="max-w-[var(--bb-container-wide)] 2xl:max-w-[1480px] min-[1920px]:max-w-[1760px] min-[2560px]:max-w-[2400px] mx-auto mt-12 max-[601px]:mt-7 px-6 pt-10 pb-0 max-[601px]:px-4 max-[601px]:pt-6 border-t border-t-[var(--bb-border-default)] bg-background">
         <div className={skelRow} style={{ borderBottom: "1px solid var(--bb-border-subtle)", marginBottom: 28 }}>
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} style={{ padding: "14px 22px" }}>

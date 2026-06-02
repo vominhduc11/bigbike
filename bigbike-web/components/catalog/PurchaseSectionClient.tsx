@@ -305,7 +305,7 @@ export function PurchaseSectionClient({
 
   return (
     <>
-      <div className="bb-wp-pdp-gallery-col">
+      <div className="bb-wp-pdp-gallery-col min-w-0 max-[1024px]:order-1 max-[1024px]:w-full">
         <ProductGallery
           mainImage={mainImage}
           gallery={gallery}
@@ -316,7 +316,7 @@ export function PurchaseSectionClient({
         />
       </div>
 
-      <div className="bb-wp-pdp-info-col product-information">
+      <div className="bb-wp-pdp-info-col product-information min-w-0 max-[1024px]:order-2 max-[1024px]:w-full">
         <div className="mb-5 max-md:mb-3">
           <h1 className="m-0 font-[family-name:var(--bb-font-display)] text-[30px] max-[1024px]:text-[26px] max-md:text-[24px] font-semibold !leading-[3.75rem] max-[1024px]:!leading-[1.25] max-md:!leading-[1.12] tracking-normal normal-case max-md:uppercase text-black">
             {productName}

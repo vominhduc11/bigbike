@@ -2252,7 +2252,7 @@ body {
 .bb-section-title { font-family: var(--bb-font-heading); text-transform: uppercase; font-size: var(--bb-text-section-title); font-weight: 600; letter-spacing: 0; line-height: var(--bb-line-section-title); margin: 0; color: var(--bb-text-primary); }
 
 /* -- PDP below-fold sections ------------------------------ */
-.bb-pdp-below { max-width: var(--bb-container-wide); margin: 48px auto 0; padding: 40px 24px 0; border-top: 1px solid var(--bb-border-subtle); }
+/* .bb-pdp-below (PdpSkeleton mirror) migrated to inline Tailwind. */
 
 /* -- Recently Viewed -------------------------------------- */
 
@@ -2333,8 +2333,8 @@ html[data-header-scrolled] .bb-page-head { padding-left: 24px; }
 .bb-catalog-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
 
 /* -- Product Detail Page ---------------------------------- */
-.bb-pdp { display: grid; grid-template-columns: 1.1fr 1fr; gap: 48px; max-width: var(--bb-container-wide); margin: 20px auto 0; padding: 0 24px; align-items: start; min-width: 0; }
-.bb-pdp > * { min-width: 0; }
+/* .bb-pdp (PdpSkeleton mirror — DIFFERENT 1.1fr/1fr grid from the real
+   .bb-wp-pdp-layout 7fr/5fr) migrated to inline Tailwind. */
 /* Light "studio plate" so white-background product photos don't sit
    awkwardly inside a dark garage frame. Border stays dark for theme
    continuity; subtle inner shadow gives depth without competing with the
@@ -2655,7 +2655,6 @@ body:has(.bb-account-layout) .bb-breadcrumb {
   .bb-news-hero { grid-template-columns: 1fr; margin: 16px 16px 24px; padding: 28px 20px; }
   .bb-news-page .bb-news-section { padding: 0 16px; }
   .bb-cat-layout { grid-template-columns: 1fr; margin-top: 24px; padding-bottom: 40px; gap: 0; }
-  .bb-pdp { grid-template-columns: 1fr; }
   .bb-order-summary { position: static; }
 }
 
@@ -2780,8 +2779,6 @@ img, picture, video, svg, canvas { max-width: 100%; }
 /* -- Section paddings reduce on mobile to claw back space -- */
 @media (max-width: 600px) {
   .bb-section-head { gap: 12px; margin-bottom: 18px; padding-bottom: 12px; }
-  .bb-pdp { padding-inline: 16px; gap: 24px; }
-  .bb-pdp-below { padding: 24px 16px 0; margin-top: 28px; }
   .bb-checkout-layout,
   .bb-account-layout { padding-inline: 16px; }
   .bb-page-head { padding-inline: 16px; margin: 20px auto 18px; padding-bottom: 16px; }
@@ -3253,10 +3250,8 @@ img, picture, video, svg, canvas { max-width: 100%; }
 
 /* Wishlist heart on product card - overlay on white */
 
-/* PDP below-fold dividers - were rgba(255,255,255,.07) on dark */
-.bb-pdp-below {
-  border-top: 1px solid var(--bb-border-default);
-}
+/* PDP below-fold dividers (.bb-pdp-below skeleton) — border-default divider
+   migrated to inline (border-t border-t-[var(--bb-border-default)]). */
 
 /* Review form */
 
@@ -3619,9 +3614,7 @@ a:not(.font-cta):hover {
 .bb-experience,
 .bb-seo-content,
 .bb-news-section,
-.bb-news-page,
-.bb-pdp,
-.bb-pdp-below {
+.bb-news-page {
   background: var(--bb-bg-page);
 }
 
@@ -5449,12 +5442,10 @@ body:has(.bb-home) {
   }
 }
 
-/* WooCommerce single-product parity scope */
-.bb-wp-pdp {
-  color: #000;
-  background: #fff;
-}
-
+/* WooCommerce single-product parity scope.
+   .bb-wp-pdp base color/background migrated to inline Tailwind (text-black bg-white)
+   on the page wrapper; the class is kept as a marker for the body:has() emblem
+   clearance + the breadcrumb / .product-information descendant rules below. */
 .bb-wp-pdp .bb-breadcrumb {
   max-width: 1140px;
   margin: 0 auto;
@@ -5491,20 +5482,10 @@ body:has(.bb-home) {
    natural left alignment with the rest of the page — no horizontal offset that
    would leave an empty gap on the left. */
 
-.bb-wp-pdp-layout {
-  max-width: 1140px;
-  margin: 0 auto;
-  padding: 0 15px;
-  display: grid;
-  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
-  gap: 30px;
-  align-items: start;
-}
-
-.bb-wp-pdp-gallery-col,
-.bb-wp-pdp-info-col {
-  min-width: 0;
-}
+/* .bb-wp-pdp-layout grid + .bb-wp-pdp-gallery-col/.bb-wp-pdp-info-col min-width:0
+   (+ their <=1024 / <=767 responsive flex-stack/order) migrated to inline Tailwind.
+   The gallery/info col classes are kept as markers — .bb-wp-pdp-info-col is a
+   MobileStickyPurchaseBar scroll-target hook. */
 
 @keyframes bb-gallery-fade-in {
   from { opacity: 0; }
@@ -5629,12 +5610,6 @@ body:has(.bb-home) {
 }
 
 
-@media (max-width: 1024px) {
-  .bb-wp-pdp-layout {
-    max-width: 960px;
-  }
-}
-
 /* Collapse PDP to 1-column up to 1023px (tablet inclusive). Previously this
    block fired only at <=767, leaving 768-1023 in 2-column with the WP gallery
    (7fr) + info (5fr) cramped: title wrapped to 5 lines and the breadcrumb sat
@@ -5648,22 +5623,6 @@ body:has(.bb-home) {
 
   .bb-wp-pdp .bb-breadcrumb .contents:not(:first-child):not(:last-child) {
     display: none;
-  }
-
-  .bb-wp-pdp-layout {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-  }
-
-  .bb-wp-pdp-gallery-col {
-    order: 1;
-    width: 100%;
-  }
-
-  .bb-wp-pdp-info-col {
-    order: 2;
-    width: 100%;
   }
 
   .bb-wp-video-grid {
@@ -5817,10 +5776,7 @@ body:has(.bb-home) {
     white-space: nowrap;
   }
 
-  /* Bottom padding so sticky CTA never covers last content */
-  .bb-wp-pdp {
-    padding-bottom: 80px;
-  }
+  /* Bottom padding so sticky CTA never covers last content → inline max-md:pb-20 */
 
   /* ---- Scroll sections (tabs → continuous on mobile) ---- */
 }
@@ -8709,19 +8665,6 @@ body .bb-home .white.block-title h3 {
     border-bottom: 1px solid var(--bb-border-subtle);
   }
 
-  .bb-wp-pdp-layout {
-    gap: 18px;
-    padding-inline: var(--bb-mobile-page-x);
-  }
-
-  .bb-wp-pdp-gallery-col {
-    order: 1;
-  }
-
-  .bb-wp-pdp-info-col {
-    order: 2;
-  }
-
   /* .desc styles dangerouslySetInnerHTML short-description (no React handle) —
      kept as CSS like .bb-richtext; mobile adds a divider + smaller type. */
   .bb-wp-pdp .product-information .desc {
@@ -9643,9 +9586,7 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
     max-width: 1360px;
   }
 
-  /* Tier 3 — layouts already at 1440px */
-  .bb-pdp,
-  .bb-pdp-below,
+  /* Tier 3 — layouts already at 1440px (.bb-pdp/.bb-pdp-below skeleton inline) */
   .bb-checkout-layout,
   .bb-breadcrumb,
   .bb-page-head,
@@ -9690,9 +9631,7 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
     max-height: 220px;
   }
 
-  /* Tier 3 */
-  .bb-pdp,
-  .bb-pdp-below,
+  /* Tier 3 (.bb-pdp/.bb-pdp-below skeleton inline) */
   .bb-checkout-layout,
   .bb-breadcrumb,
   .bb-page-head,
@@ -9771,9 +9710,7 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
     max-height: 310px;
   }
 
-  /* Tier 3 */
-  .bb-pdp,
-  .bb-pdp-below,
+  /* Tier 3 (.bb-pdp/.bb-pdp-below skeleton inline) */
   .bb-checkout-layout,
   .bb-breadcrumb,
   .bb-page-head,
@@ -9815,8 +9752,7 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
 @media (min-width: 1536px) {
   .bb-product-archive .bb-wp-container,
   .bb-product-archive .container.bb-wp-container,
-  .bb-wp-pdp .bb-breadcrumb,
-  .bb-wp-pdp-layout {
+  .bb-wp-pdp .bb-breadcrumb {
     max-width: 1360px;
   }
 }
@@ -9824,8 +9760,7 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
 @media (min-width: 1920px) {
   .bb-product-archive .bb-wp-container,
   .bb-product-archive .container.bb-wp-container,
-  .bb-wp-pdp .bb-breadcrumb,
-  .bb-wp-pdp-layout {
+  .bb-wp-pdp .bb-breadcrumb {
     max-width: 1600px;
   }
 }
@@ -9833,8 +9768,7 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
 @media (min-width: 2560px) {
   .bb-product-archive .bb-wp-container,
   .bb-product-archive .container.bb-wp-container,
-  .bb-wp-pdp .bb-breadcrumb,
-  .bb-wp-pdp-layout {
+  .bb-wp-pdp .bb-breadcrumb {
     max-width: 2240px;
   }
 
