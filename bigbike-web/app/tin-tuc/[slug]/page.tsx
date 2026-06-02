@@ -156,16 +156,22 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
         <div className="container">
           <div className="row">
             <div className="col-md-8">
-              <div className="blog">
-                <div className="blog-thumbnail">
+              <div className="mb-10 max-md:pb-6">
+                <div className="m-0 mb-5">
                   <WpArticleImage src={ARTICLE_DETAIL_THUMBNAIL} alt="" />
                 </div>
 
-                <div className="blog-meta">
-                  <p className="category">
-                    <Link href={categoryHref}>{categoryLabel}</Link>
+                <div className="my-5">
+                  <p className="category inline-block m-0 text-black text-[0.875rem] leading-[1.5625rem] [&:not(:last-child)]:after:content-['/'] [&:not(:last-child)]:after:inline-block [&:not(:last-child)]:after:mx-1.5 [&:not(:last-child)]:after:text-black">
+                    <Link href={categoryHref} className="text-brand font-semibold no-underline">
+                      {categoryLabel}
+                    </Link>
                   </p>
-                  {articleDate ? <p className="date">{articleDate}</p> : null}
+                  {articleDate ? (
+                    <p className="inline-block m-0 text-black text-[0.875rem] leading-[1.5625rem] [&:not(:last-child)]:after:content-['/'] [&:not(:last-child)]:after:inline-block [&:not(:last-child)]:after:mx-1.5 [&:not(:last-child)]:after:text-black">
+                      {articleDate}
+                    </p>
+                  ) : null}
                 </div>
 
                 <ArticleTableOfContents />
@@ -180,13 +186,21 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
                   }}
                 />
 
-                <div className="social-sharing">
-                  <p>Chia sẻ</p>
-                  <a className="fb-share" href={facebookShareHref} aria-label="Facebook">
-                    <i className="fab fa-facebook-f" aria-hidden="true" />
+                <div className="flex items-center py-5 border-y border-y-[#cecece]">
+                  <p className="m-0 mr-5 text-black font-bold leading-[35px]">Chia sẻ</p>
+                  <a
+                    className="inline-flex w-[35px] h-[35px] items-center justify-center mr-2 !rounded-[50%] text-white text-base font-bold leading-[35px] no-underline bg-[#1a77f2]"
+                    href={facebookShareHref}
+                    aria-label="Facebook"
+                  >
+                    <i className="not-italic before:content-['f']" aria-hidden="true" />
                   </a>
-                  <a className="twitter-share" href={twitterShareHref} aria-label="Twitter">
-                    <i className="fab fa-twitter" aria-hidden="true" />
+                  <a
+                    className="inline-flex w-[35px] h-[35px] items-center justify-center mr-2 !rounded-[50%] text-white text-base font-bold leading-[35px] no-underline bg-[#1da1f2]"
+                    href={twitterShareHref}
+                    aria-label="Twitter"
+                  >
+                    <i className="not-italic before:content-['t']" aria-hidden="true" />
                   </a>
                 </div>
               </div>

@@ -4124,44 +4124,6 @@ body:has(.bb-article-detail-page) footer [data-bb-rail].relative > button.absolu
   font-weight: 600;
 }
 
-.bb-article-detail-parity .blog {
-  margin-bottom: 40px;
-}
-
-.bb-article-detail-parity .blog-thumbnail {
-  margin: 0 0 20px;
-}
-
-.bb-article-detail-parity .blog-thumbnail .bb-news-img {
-  display: block;
-  max-width: 100%;
-  height: auto;
-}
-
-.bb-article-detail-parity .blog-meta {
-  margin: 20px 0;
-}
-
-.bb-article-detail-parity .blog-meta p {
-  display: inline-block;
-  margin: 0;
-  color: #000000;
-  font-size: 0.875rem;
-  line-height: 1.5625rem;
-}
-
-.bb-article-detail-parity .blog-meta p:not(:last-child)::after {
-  content: "/";
-  display: inline-block;
-  margin: 0 6px;
-  color: #000000;
-}
-
-.bb-article-detail-parity .blog-meta p.category a {
-  color: var(--bb-text-brand);
-  font-weight: 600;
-  text-decoration: none;
-}
 
 .bb-article-detail-parity #table-of-content {
   width: 30%;
@@ -4284,51 +4246,6 @@ body:has(.bb-article-detail-page) footer [data-bb-rail].relative > button.absolu
   border-top: 1px solid #dee2e6;
 }
 
-.bb-article-detail-parity .social-sharing {
-  display: flex;
-  align-items: center;
-  padding: 20px 0;
-  border-top: 1px solid #cecece;
-  border-bottom: 1px solid #cecece;
-}
-
-.bb-article-detail-parity .social-sharing p {
-  margin: 0 20px 0 0;
-  color: #000000;
-  font-weight: 700;
-  line-height: 35px;
-}
-
-.bb-article-detail-parity .social-sharing a {
-  display: inline-flex;
-  width: 35px;
-  height: 35px;
-  align-items: center;
-  justify-content: center;
-  margin-right: 8px;
-  border-radius: 50%;
-  color: #ffffff;
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 35px;
-  text-decoration: none;
-}
-
-.bb-article-detail-parity .social-sharing .fb-share {
-  background: #1a77f2;
-}
-
-.bb-article-detail-parity .social-sharing .twitter-share {
-  background: #1da1f2;
-}
-
-.bb-article-detail-parity .social-sharing .fa-facebook-f::before {
-  content: "f";
-}
-
-.bb-article-detail-parity .social-sharing .fa-twitter::before {
-  content: "t";
-}
 
 .bb-article-detail-parity .widget {
   margin-bottom: 30px;
@@ -7212,9 +7129,6 @@ body .bb-home .white.block-title h3 {
     background: var(--bb-bg-surface);
   }
 
-  .bb-article-detail-parity .blog {
-    padding-bottom: 24px;
-  }
 
   .bb-article-detail-parity .blog-content,
   .bb-article-detail-parity .bb-article-wyswyg {
