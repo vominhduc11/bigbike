@@ -42,19 +42,23 @@ export function PdpRelatedProductsCarousel({
   if (products.length === 0) return null;
 
   return (
-    <section className="related products bb-wp-related">
-      <div className="block-title text-center mb-40">
-        <p className="sub-title text-uppercase">{kicker}</p>
-        <p className="text-uppercase related_heading">{heading}</p>
+    // `bb-wp-related-track` + `swiper-slide` are KEPT as the carousel mechanism
+    // (custom-prop calc transform + mobile scroll-snap); decoration is inline.
+    <section className="mx-auto max-w-[1140px] px-[15px] mt-20 mb-10 max-md:mt-9 max-md:px-[var(--bb-mobile-page-x)] min-[1536px]:max-w-[1360px] min-[1920px]:max-w-[1600px] min-[2560px]:max-w-[2240px]">
+      <div className="mb-10 text-center">
+        <p className="m-0 text-black font-[family-name:var(--bb-font-display)] text-[35px] font-semibold leading-[4.286rem] tracking-[0] uppercase max-md:text-2xl max-md:leading-[1.25]">
+          {kicker}
+        </p>
+        <p className="m-0 text-[#717171] font-body text-sm font-semibold leading-none uppercase">{heading}</p>
       </div>
 
       <div className="row">
         <div className="product-list pb-40">
-          <div className="container">
-            <div className="product product-slide product-related-woo">
+          <div className="w-full">
+            <div className="relative">
               <button
                 type="button"
-                className="swiper-button-next swiper-button"
+                className="absolute top-[35%] right-[-42px] z-[2] w-9 h-9 border-none bg-transparent text-black cursor-pointer max-[1025px]:right-[-8px] max-[1024px]:hidden"
                 aria-label="Sản phẩm tiếp"
                 onClick={() => setIndex(Math.min(maxIndex, safeIndex + 1))}
               >
@@ -62,14 +66,14 @@ export function PdpRelatedProductsCarousel({
               </button>
               <button
                 type="button"
-                className="swiper-button-prev swiper-button"
+                className="absolute top-[35%] left-[-42px] z-[2] w-9 h-9 border-none bg-transparent text-black cursor-pointer max-[1025px]:left-[-8px] max-[1024px]:hidden"
                 aria-label="Sản phẩm trước"
                 onClick={() => setIndex(Math.max(0, safeIndex - 1))}
               >
                 <CarouselArrow dir="prev" />
               </button>
 
-              <div className="swiper-container">
+              <div className="overflow-hidden">
                 <div className="swiper-wrapper bb-wp-related-track" style={trackStyle}>
                   {products.map((product) => (
                     <div className="swiper-slide" key={product.id}>
