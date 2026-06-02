@@ -7,6 +7,8 @@ import { AccountShell } from "@/components/layout/AccountShell";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { skelBase, skelStack } from "@/lib/ui-classes";
 
 function WishlistContent() {
   const t = useTranslations("Account.wishlist");
@@ -25,11 +27,11 @@ function WishlistContent() {
         <div className="bb-product-grid" aria-busy="true">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="bb-product-card">
-              <div className="bb-product-image bb-skel" style={{ aspectRatio: "1/1" }} />
-              <div className="bb-product-body bb-skel-stack">
-                <span className="bb-skel bb-skel--text bb-skel-w-40" />
-                <span className="bb-skel bb-skel--text bb-skel-w-80" />
-                <span className="bb-skel bb-skel--text bb-skel-w-60" />
+              <div className={cn("bb-product-image", skelBase)} style={{ aspectRatio: "1/1" }} />
+              <div className={cn("bb-product-body", skelStack)}>
+                <span className={cn(skelBase, "h-[0.85em] w-2/5")} />
+                <span className={cn(skelBase, "h-[0.85em] w-4/5")} />
+                <span className={cn(skelBase, "h-[0.85em] w-3/5")} />
               </div>
             </div>
           ))}

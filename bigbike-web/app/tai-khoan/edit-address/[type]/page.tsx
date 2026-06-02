@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { VnAddressFields } from "@/components/ui/VnAddressFields";
+import { cn } from "@/lib/utils";
+import { skelBase } from "@/lib/ui-classes";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { FormNotice } from "@/components/ui/FormNotice";
 
@@ -252,10 +254,10 @@ function AddressBookContent() {
         <div className="grid grid-cols-1 gap-[18px] sm:grid-cols-2 xl:gap-6" aria-busy="true">
           {[1, 2].map((i) => (
             <div key={i} className="border border-border p-5">
-              <span className="bb-skel bb-skel--title bb-skel-w-50" />
-              <span className="bb-skel bb-skel--text bb-skel-w-60" style={{ marginTop: 14 }} />
-              <span className="bb-skel bb-skel--text bb-skel-w-80" style={{ marginTop: 8 }} />
-              <span className="bb-skel bb-skel--text bb-skel-w-100" style={{ marginTop: 8 }} />
+              <span className={cn(skelBase, "h-[1.1em] w-1/2")} />
+              <span className={cn(skelBase, "h-[0.85em] w-3/5")} style={{ marginTop: 14 }} />
+              <span className={cn(skelBase, "h-[0.85em] w-4/5")} style={{ marginTop: 8 }} />
+              <span className={cn(skelBase, "h-[0.85em] w-full")} style={{ marginTop: 8 }} />
             </div>
           ))}
         </div>

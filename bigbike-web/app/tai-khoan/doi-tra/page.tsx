@@ -19,6 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import { skelBase, skelCol, skelRow, skelStack } from "@/lib/ui-classes";
 
 const RETURN_STATUS_KEYS = ["PENDING", "APPROVED", "REJECTED", "RECEIVED", "INSPECTING", "COMPLETED", "REFUNDED"] as const;
 const RETURN_REASON_KEYS = ["DEFECTIVE", "WRONG_ITEM", "NOT_AS_DESCRIBED", "CHANGED_MIND", "OTHER"] as const;
@@ -74,8 +76,8 @@ function ReturnDetailPanel({ id, onClose }: { id: string; onClose: () => void })
         </div>
 
         {loading && (
-          <div className="bb-skel-stack p-6">
-            {[1, 2, 3].map((i) => <div key={i} className="bb-skel bb-skel--text" style={{ width: "100%", height: 18, marginBottom: 12 }} />)}
+          <div className={cn(skelStack, "p-6")}>
+            {[1, 2, 3].map((i) => <div key={i} className={cn(skelBase, "h-[0.85em]")} style={{ width: "100%", height: 18, marginBottom: 12 }} />)}
           </div>
         )}
 
@@ -340,7 +342,7 @@ function ReturnsContent() {
               <div className="flex flex-col gap-1.5 col-span-full">
                 <label className="bb-field-label">{t("orderLabel")}</label>
                 {ordersLoading ? (
-                  <span className="bb-skel bb-skel--text" style={{ width: "100%", display: "block", height: 38 }} />
+                  <span className={cn(skelBase, "h-[0.85em]")} style={{ width: "100%", display: "block", height: 38 }} />
                 ) : returnableOrders.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
                     {t("noEligibleOrders")}
@@ -364,7 +366,7 @@ function ReturnsContent() {
                 <div className="flex flex-col gap-1.5 col-span-full">
                   <label className="bb-field-label mb-2 block">{t("pickItemLabel")}</label>
                   {eligibilityLoading ? (
-                    <span className="bb-skel bb-skel--text" style={{ width: "100%", display: "block", height: 32 }} />
+                    <span className={cn(skelBase, "h-[0.85em]")} style={{ width: "100%", display: "block", height: 32 }} />
                   ) : !eligibility ? (
                     <p className="text-sm text-muted-foreground">{t("noItemsInOrder")}</p>
                   ) : !eligibility.eligible ? (
@@ -437,21 +439,21 @@ function ReturnsContent() {
       )}
 
       {loading ? (
-        <div className="bb-skel-stack" aria-busy="true">
+        <div className={skelStack} aria-busy="true">
           {[1, 2].map((i) => (
             <div key={i} className="bg-card border border-border mb-[14px] overflow-hidden">
               <div className="flex justify-between items-center py-[14px] px-5 bg-[var(--bb-bg-surface-raised)] border-b border-border gap-[14px] flex-wrap">
-                <div className="bb-skel-row" style={{ flex: 1, gap: 22 }}>
-                  <div className="bb-skel-col">
-                    <span className="bb-skel bb-skel--text" style={{ width: 50 }} />
-                    <span className="bb-skel bb-skel--text" style={{ width: 80 }} />
+                <div className={skelRow} style={{ flex: 1, gap: 22 }}>
+                  <div className={skelCol}>
+                    <span className={cn(skelBase, "h-[0.85em]")} style={{ width: 50 }} />
+                    <span className={cn(skelBase, "h-[0.85em]")} style={{ width: 80 }} />
                   </div>
-                  <div className="bb-skel-col">
-                    <span className="bb-skel bb-skel--text" style={{ width: 50 }} />
-                    <span className="bb-skel bb-skel--text" style={{ width: 90 }} />
+                  <div className={skelCol}>
+                    <span className={cn(skelBase, "h-[0.85em]")} style={{ width: 50 }} />
+                    <span className={cn(skelBase, "h-[0.85em]")} style={{ width: 90 }} />
                   </div>
                 </div>
-                <span className="bb-skel bb-skel--chip" style={{ width: 90 }} />
+                <span className={cn(skelBase, "h-[1.6rem]")} style={{ width: 90 }} />
               </div>
             </div>
           ))}

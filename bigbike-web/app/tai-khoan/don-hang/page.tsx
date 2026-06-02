@@ -8,6 +8,8 @@ import { useOrders } from "@/lib/query/hooks";
 import { AccountSectionHeading, AccountShell } from "@/components/layout/AccountShell";
 import { formatDate, formatVnd, orderStatusLabelWithT } from "@/lib/utils/format";
 import { toOrderDetailPath } from "@/lib/utils/routes";
+import { cn } from "@/lib/utils";
+import { skelBase } from "@/lib/ui-classes";
 
 function OrderHistoryContent() {
   const t = useTranslations("Account.orders");
@@ -32,19 +34,19 @@ function OrderHistoryContent() {
               {[1, 2, 3, 4].map((i) => (
                 <tr key={i} className="border-b border-border">
                   <td className="py-4 pr-4">
-                    <span className="bb-skel bb-skel--text bb-skel-w-60" />
+                    <span className={cn(skelBase, "h-[0.85em] w-3/5")} />
                   </td>
                   <td className="py-4 pr-4">
-                    <span className="bb-skel bb-skel--text bb-skel-w-40" />
+                    <span className={cn(skelBase, "h-[0.85em] w-2/5")} />
                   </td>
                   <td className="py-4 pr-4">
-                    <span className="bb-skel bb-skel--text bb-skel-w-50" />
+                    <span className={cn(skelBase, "h-[0.85em] w-1/2")} />
                   </td>
                   <td className="py-4 pr-4">
-                    <span className="bb-skel bb-skel--text bb-skel-w-60" />
+                    <span className={cn(skelBase, "h-[0.85em] w-3/5")} />
                   </td>
                   <td className="py-4">
-                    <span className="bb-skel bb-skel--btn bb-skel-w-80" />
+                    <span className={cn(skelBase, "h-10 w-4/5")} />
                   </td>
                 </tr>
               ))}

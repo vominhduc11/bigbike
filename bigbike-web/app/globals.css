@@ -4040,37 +4040,7 @@ body:has(.bb-account-layout) .bb-breadcrumb {
 .bb-empty-state { text-align: center; padding: 60px 0; color: var(--bb-text-muted); }
 
 /* -- Skeleton primitives (use these to compose layout-matched skeletons) -- */
-.bb-skel {
-  display: block;
-  background: linear-gradient(
-    90deg,
-    rgba(0, 0, 0, 0.04) 0%,
-    rgba(0, 0, 0, 0.10) 50%,
-    rgba(0, 0, 0, 0.04) 100%
-  );
-  background-size: 200% 100%;
-  animation: skeleton-shimmer 1.4s linear infinite;
-  border-radius: var(--bb-radius-sm);
-}
-.bb-skel--block { border-radius: var(--bb-radius-md); }
-.bb-skel--circle { border-radius: 999px; }
-.bb-skel--text { height: 0.85em; border-radius: var(--bb-radius-none); }
-.bb-skel--title { height: 1.1em; border-radius: var(--bb-radius-none); }
-.bb-skel--btn { height: 2.5rem; border-radius: var(--bb-radius-button); }
-.bb-skel--chip { height: 1.6rem; border-radius: var(--bb-radius-pill); }
-.bb-skel-row { display: flex; gap: var(--bb-space-2); align-items: center; }
-.bb-skel-col { display: flex; flex-direction: column; gap: var(--bb-space-2); min-width: 0; }
-.bb-skel-stack > * + * { margin-top: var(--bb-space-3); }
-/* width helpers for text-line skeletons */
-.bb-skel-w-40 { width: 40%; }
-.bb-skel-w-50 { width: 50%; }
-.bb-skel-w-60 { width: 60%; }
-.bb-skel-w-80 { width: 80%; }
-.bb-skel-w-100 { width: 100%; }
 @keyframes bb-spin { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) {
-  .bb-skel { animation: none; }
-}
 
 /* -- Order detail: line items ------------------------------ */
 
@@ -4645,10 +4615,6 @@ img, picture, video, svg, canvas { max-width: 100%; }
   color: var(--bb-text-primary);
   border: 1px solid #cecece;
   border-radius: 0;
-}
-
-.bb-blog-listing-parity .bb-skel {
-  animation: none;
 }
 
 @media (max-width: 767px) {
@@ -5488,8 +5454,7 @@ input[type="checkbox"] {
 }
 
 .bb-chat-item-icon svg circle,
-.bb-site-header .bb-cart-badge,
-.bb-skel--circle {
+.bb-site-header .bb-cart-badge {
   border-radius: 50%;
 }
 
@@ -5536,12 +5501,7 @@ input[type="checkbox"] {
 .bb-pagination-page,
 .bb-product-card,
 .bb-fp-item,
-.bb-news-card,
-.bb-skel--block,
-.bb-skel--text,
-.bb-skel--title,
-.bb-skel--btn,
-.bb-skel--chip {
+.bb-news-card {
   border-radius: 0;
 }
 
@@ -5582,7 +5542,7 @@ input[type="checkbox"] {
   border-radius: 0;
 }
 
-.bb-theme :is(.bb-round, .bb-site-header .bb-cart-badge, .bb-wishlist-btn, .bb-contact-icon, .bb-checkout-step-title h3 span, .bb-mini-thumb .qty-badge, .bb-account-avatar, .bb-order-tl-dot, .bb-timeline-dot, .bb-success-icon, .bb-skel--circle, .swiper-pagination-bullet, .bb-slider-dot, .bb-video-play-btn-ring, .b24-widget-button-block, .b24-widget-button-inner-block, .b24-widget-button-inner-mask) {
+.bb-theme :is(.bb-round, .bb-site-header .bb-cart-badge, .bb-wishlist-btn, .bb-contact-icon, .bb-checkout-step-title h3 span, .bb-mini-thumb .qty-badge, .bb-account-avatar, .bb-order-tl-dot, .bb-timeline-dot, .bb-success-icon, .swiper-pagination-bullet, .bb-slider-dot, .bb-video-play-btn-ring, .b24-widget-button-block, .b24-widget-button-inner-block, .b24-widget-button-inner-mask) {
   border-radius: 50%;
 }
 
