@@ -6096,49 +6096,6 @@ body:has(.bb-search-results-page) {
   margin-bottom: 0;
 }
 
-.bb-archive-pagination.pagination {
-  display: block;
-  margin: 0;
-  padding-top: 20px;
-  padding-bottom: 40px;
-  text-align: right;
-}
-
-.bb-archive-pagination ul {
-  width: 100%;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.bb-archive-pagination ul li {
-  display: inline-block;
-  padding: 0 8px;
-  font-size: 1.5rem;
-  font-weight: 600;
-}
-
-.bb-archive-pagination ul li a,
-.bb-archive-pagination ul li span {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 5px 10px;
-  color: #000000;
-  font-size: 1.5rem;
-  line-height: 1.2;
-  text-decoration: none;
-}
-
-.bb-archive-pagination ul li span.current,
-.bb-archive-pagination ul li a:hover {
-  color: var(--bb-text-brand);
-}
-
-.bb-archive-page-icon {
-  font-size: 22px;
-  line-height: 1;
-}
 
 .bb-search-results-page .bb-search-row {
   align-items: flex-start;

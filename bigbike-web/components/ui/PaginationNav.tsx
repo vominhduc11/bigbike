@@ -40,41 +40,52 @@ export function PaginationNav({ page, totalPages, baseHref, variant = "default" 
   const pages = buildPageList(page, totalPages);
 
   if (variant === "archive") {
+    // Inline Tailwind port of the legacy .bb-archive-pagination rules. The unlayered
+    // CSS set 20px/40px padding, beating the old (now-dropped) pb-40/pt-20 utilities,
+    // so the effective rhythm is pt-5/pb-10. 1.5rem font + 1.2 line-height per WP parity.
+    const itemCls = "inline-block px-2 text-[1.5rem] font-semibold";
+    const linkBase =
+      "inline-flex items-center justify-center px-2.5 py-[5px] text-[1.5rem] leading-[1.2] no-underline";
+    const iconCls = "text-[22px] leading-none";
     return (
-      <nav className="pagination pb-40 pt-20 text-right bb-archive-pagination" aria-label={t("paginationAria")}>
-        <div className="text-right">
-          <div className="paginate-links">
-            <ul className="page-numbers">
-              {page > 1 && (
-                <li>
-                  <Link href={makeHref(page - 1)} className="prev page-numbers" aria-label={t("previousPage")}>
-                    <i className="fal fa-angle-left bb-archive-page-icon" aria-hidden="true" />
-                  </Link>
-                </li>
+      <nav className="m-0 pb-10 pt-5 text-right" aria-label={t("paginationAria")}>
+        <ul className="m-0 w-full list-none p-0">
+          {page > 1 && (
+            <li className={itemCls}>
+              <Link
+                href={makeHref(page - 1)}
+                className={`${linkBase} text-black hover:text-brand`}
+                aria-label={t("previousPage")}
+              >
+                <i className={`fal fa-angle-left ${iconCls}`} aria-hidden="true" />
+              </Link>
+            </li>
+          )}
+          {pages.map((p, i) => (
+            <li key={p === "..." ? `ellipsis-${i}` : p} className={itemCls}>
+              {p === "..." ? (
+                <span className={`${linkBase} text-black`}>…</span>
+              ) : p === page ? (
+                <span className={`${linkBase} text-brand`}>{p}</span>
+              ) : (
+                <Link href={makeHref(p)} className={`${linkBase} text-black hover:text-brand`}>
+                  {p}
+                </Link>
               )}
-              {pages.map((p, i) => (
-                <li key={p === "..." ? `ellipsis-${i}` : p}>
-                  {p === "..." ? (
-                    <span className="page-numbers dots">…</span>
-                  ) : p === page ? (
-                    <span className="page-numbers current">{p}</span>
-                  ) : (
-                    <Link href={makeHref(p)} className="page-numbers">
-                      {p}
-                    </Link>
-                  )}
-                </li>
-              ))}
-              {page < totalPages && (
-                <li>
-                  <Link href={makeHref(page + 1)} className="next page-numbers" aria-label={t("nextPage")}>
-                    <i className="fal fa-angle-right bb-archive-page-icon" aria-hidden="true" />
-                  </Link>
-                </li>
-              )}
-            </ul>
-          </div>
-        </div>
+            </li>
+          ))}
+          {page < totalPages && (
+            <li className={itemCls}>
+              <Link
+                href={makeHref(page + 1)}
+                className={`${linkBase} text-black hover:text-brand`}
+                aria-label={t("nextPage")}
+              >
+                <i className={`fal fa-angle-right ${iconCls}`} aria-hidden="true" />
+              </Link>
+            </li>
+          )}
+        </ul>
       </nav>
     );
   }
