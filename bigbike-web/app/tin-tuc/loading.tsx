@@ -51,16 +51,19 @@ export default async function ArticleListLoading() {
                 <div className="bb-wp-row row">
                   {Array.from({ length: 6 }).map((_, index) => (
                     <div key={index} className="bb-wp-card-col col-md-4 col-sm-6 col-12">
-                      <article className="bb-wp-news-item news--item" aria-hidden="true">
+                      <article
+                        className="flex flex-col flex-1 mb-0 bg-card [box-shadow:var(--bb-shadow-md)] max-md:border max-md:border-solid max-md:border-border max-md:[box-shadow:none]"
+                        aria-hidden="true"
+                      >
                         <div className="news--item-thumbnail">
                           <span className={cn(skelBase, "!animate-none lazy bb-news-img-placeholder")} />
                         </div>
-                        <div className="news--item-desc">
-                          <div className="news-date">
+                        <div className="relative max-md:bg-card">
+                          <div className="pt-5 px-5 pb-2.5">
                             <p className={cn(skelBase, "!animate-none h-[0.85em] w-2/5")} />
                           </div>
-                          <div className={cn("news--item-inside", skelStack)}>
-                            <p className="title-post">
+                          <div className={cn("px-5 pb-[30px] max-md:bg-card", skelStack)}>
+                            <p className="m-0 mb-[25px] font-heading text-xl font-semibold leading-6 text-foreground">
                               <span className={cn(skelBase, "!animate-none h-[1.1em] w-full")} />
                             </p>
                             <p className={cn(skelBase, "!animate-none h-[0.85em] w-4/5")} />

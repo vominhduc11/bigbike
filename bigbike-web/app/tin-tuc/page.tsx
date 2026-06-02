@@ -246,7 +246,7 @@ function WpArticleCard({ article }: { article: Article }) {
   const href = toArticlePath(article.slug);
 
   return (
-    <article className="bb-wp-news-item news--item">
+    <article className="flex flex-col flex-1 mb-0 bg-card [box-shadow:var(--bb-shadow-md)] max-md:border max-md:border-solid max-md:border-border max-md:[box-shadow:none]">
       <div className="news--item-thumbnail">
         <Link
           href={href}
@@ -256,17 +256,23 @@ function WpArticleCard({ article }: { article: Article }) {
           <WpArticleImage src={imageSrc} fallbackSrc={fallbackImageSrc} alt={title} />
         </Link>
       </div>
-      <div className="news--item-desc">
+      <div className="relative max-md:bg-card">
         {publishedAt ? (
-          <div className="news-date">
-            <p>{publishedAt}</p>
+          <div className="pt-5 px-5 pb-2.5">
+            <p className="inline-block m-0 text-foreground font-body text-[length:var(--fs-body)] font-normal leading-5 before:content-['/'] before:mr-2.5 before:inline-block">
+              {publishedAt}
+            </p>
           </div>
         ) : null}
-        <div className="news--item-inside">
-          <p className="title-post">
-            <Link href={href}>{title}</Link>
+        <div className="px-5 pb-[30px] max-md:bg-card">
+          <p className="m-0 mb-[25px] font-heading text-xl font-semibold leading-6 text-foreground">
+            <Link href={href} className="text-black no-underline [transition:none]">
+              {title}
+            </Link>
           </p>
-          {excerpt ? <p>{excerpt}</p> : null}
+          {excerpt ? (
+            <p className="m-0 text-foreground font-body text-base font-normal leading-5">{excerpt}</p>
+          ) : null}
         </div>
       </div>
     </article>

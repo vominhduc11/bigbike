@@ -2837,16 +2837,6 @@ img, picture, video, svg, canvas { max-width: 100%; }
   line-height: 20px;
 }
 
-.bb-blog-listing-parity .news--item {
-  /* row gap is provided by .bb-wp-card-col margin-bottom; fill the column height */
-  margin-bottom: 0;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  background: var(--bb-bg-surface);
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16);
-}
-
 .bb-blog-listing-parity .news--item-thumbnail {
   text-align: center;
 }
@@ -2871,57 +2861,6 @@ img, picture, video, svg, canvas { max-width: 100%; }
   background: transparent;
   color: transparent;
   object-fit: cover;
-}
-
-.bb-blog-listing-parity .news--item-desc {
-  position: relative;
-}
-
-.bb-blog-listing-parity .news--item-desc .news-date {
-  padding: 20px 20px 10px;
-}
-
-.bb-blog-listing-parity .news--item-desc .news-date p {
-  display: inline-block;
-  margin: 0;
-  color: var(--bb-text-primary);
-  font-family: var(--bb-font-body);
-  font-size: var(--fs-body);
-  font-weight: 400;
-  line-height: 20px;
-}
-
-.bb-blog-listing-parity .news--item-desc .news-date p::before {
-  content: "/";
-  display: inline-block;
-  margin: 0 10px 0 0;
-}
-
-.bb-blog-listing-parity .news--item-inside {
-  padding: 0 20px 30px;
-}
-
-.bb-blog-listing-parity .news--item-inside p {
-  margin: 0;
-  color: var(--bb-text-primary);
-  font-family: var(--bb-font-body);
-  font-size: 1rem;
-  font-weight: 400;
-  line-height: 1.25rem;
-}
-
-.bb-blog-listing-parity .news--item-inside .title-post {
-  margin-bottom: 25px;
-  font-family: var(--bb-font-heading);
-  font-size: 1.25rem;
-  font-weight: 600;
-  line-height: 1.5rem;
-}
-
-.bb-blog-listing-parity .news--item-inside .title-post a {
-  color: #000000;
-  text-decoration: none;
-  transition: none;
 }
 
 .bb-blog-listing-parity .bb-wp-pagination {
@@ -7481,15 +7420,12 @@ body .bb-home .white.block-title h3 {
     padding-top: 6px;
   }
 
-  .bb-blog-listing-parity .news--item,
   .bb-article-detail-parity .news--item {
     border: 1px solid var(--bb-border-subtle);
     background: var(--bb-bg-surface);
     box-shadow: none;
   }
 
-  .bb-blog-listing-parity .news--item-desc,
-  .bb-blog-listing-parity .news--item-inside,
   .bb-article-detail-parity .news--item-desc,
   .bb-article-detail-parity .news--item-inside {
     background: var(--bb-bg-surface);
