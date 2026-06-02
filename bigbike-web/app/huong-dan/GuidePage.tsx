@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { Container } from "@/components/layout/Container";
 import { cn } from "@/lib/utils";
-import { bbLink, bbSection, sectionPad } from "@/lib/ui-classes";
+import { bbCard, bbCardContent, bbLink, bbSection, sectionPad } from "@/lib/ui-classes";
 import { PageHero } from "@/components/layout/PageHero";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { getPageBySlug, getPublicMenu, listPublicSettings } from "@/lib/api/public-api";
@@ -164,7 +164,7 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
       <section className="bb-page">
         <Container>
           <div className={cn("bb-detail-layout", bbSection)}>
-            <div className="bb-card bb-card-content">
+            <div className={cn(bbCard, bbCardContent)}>
               <article
                 className="bb-richtext"
                 dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(page.body) }}
@@ -173,7 +173,7 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
             </div>
 
             <aside className="bb-sidebar-grid">
-              <div className="bb-card bb-card-content">
+              <div className={cn(bbCard, bbCardContent)}>
                 <h2 className="bb-sidebar-heading">{t("sidebarTitle")}</h2>
                 {menuResult.error ? (
                   <p className="text-sm text-destructive px-2 py-1.5">{menuResult.error.message}</p>

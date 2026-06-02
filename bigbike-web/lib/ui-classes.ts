@@ -14,6 +14,14 @@ export const cardHover =
 /** Bordered surface card chrome: product card, news card, generic card, etc. */
 export const cardChrome = `border border-border bg-card ${cardHover}`;
 
+/** Generic surface card (was `.bb-card`). Effective style after WP-parity
+ * overrides: flat bg-card, border, no shadow, square. Add `cardHover` for the
+ * hover variant (was `.bb-card-hover`, identical to it). */
+export const bbCard =
+  "relative overflow-hidden rounded-none border border-border bg-card text-foreground";
+/** Card inner padding (was `.bb-card-content`): 20px desktop, 14px mobile. */
+export const bbCardContent = "p-5 max-md:p-[14px]";
+
 /* ── Shared typography bundles (were `.bb-*` leaf classes in globals.css) ──────
  * Direct-applied text-style classes with no contextual overrides. Font-size
  * tokens use the `text-<n>` @theme utilities (sm/base/xs/26 map 1:1 to the

@@ -18,7 +18,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { Card } from "@/components/ui/card";
 import { Container } from "@/components/layout/Container";
 import { cn } from "@/lib/utils";
-import { bbSection, skelBase, skelCol, skelRow, skelStack } from "@/lib/ui-classes";
+import { bbCard, bbSection, skelBase, skelCol, skelRow, skelStack } from "@/lib/ui-classes";
 
 const sr: CSSProperties = {
   position: "absolute",
@@ -377,7 +377,7 @@ export function CategoryListSkeleton() {
       <Container className="pb-16">
         <div className="bb-grid-categories">
           {Array.from({ length: 9 }).map((_, i) => (
-            <div key={i} className="bb-card">
+            <div key={i} className={bbCard}>
               <SkelBlock w="100%" style={{ aspectRatio: "16/9" }} />
               <div style={{ padding: 16, display: "grid", gap: 8 }}>
                 <SkelTitle w="60%" />

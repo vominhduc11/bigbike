@@ -369,32 +369,6 @@ body {
   text-transform: uppercase;
 }
 
-.bb-card {
-  position: relative;
-  overflow: hidden;
-  border: 1px solid var(--bb-border-subtle);
-  border-radius: var(--bb-radius-card);
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.018)),
-    var(--bb-bg-surface);
-  color: var(--bb-text-primary);
-  box-shadow: var(--bb-shadow-sm);
-}
-
-.bb-card-hover {
-  transition:
-    border-color var(--bb-duration-normal) var(--bb-ease-standard),
-    box-shadow var(--bb-duration-normal) var(--bb-ease-standard),
-    transform var(--bb-duration-normal) var(--bb-ease-standard);
-}
-
-.bb-card-hover:hover {
-  border-color: var(--bb-border-brand);
-  box-shadow: var(--bb-shadow-md);
-  transform: translateY(-2px);
-}
-
-
 .bb-query-select {
   width: 100%;
   min-height: 2.75rem;
@@ -507,9 +481,7 @@ body {
 }
 
 .bb-query-form input[type="radio"],
-.bb-query-form input[type="checkbox"],
-.bb-card input[type="radio"],
-.bb-card input[type="checkbox"] {
+.bb-query-form input[type="checkbox"] {
   accent-color: var(--bb-brand-primary);
 }
 
@@ -3234,7 +3206,6 @@ body:has(.bb-account-layout) .bb-breadcrumb {
 .bb-auth-footer { text-align: center; margin-top: var(--bb-space-4); color: var(--bb-text-secondary); font-size: var(--bb-text-sm); }
 .bb-sidebar-grid { display: grid; gap: var(--bb-space-4); align-content: start; }
 .bb-sidebar-heading { margin-bottom: var(--bb-space-4); font-size: var(--bb-text-lg); }
-.bb-card-content { padding: var(--bb-space-5); }
 .bb-nav-links { display: grid; gap: var(--bb-space-2); }
 .bb-updated-date { color: var(--bb-text-muted); font-size: var(--bb-text-xs); margin-top: var(--bb-space-4); }
 
@@ -4242,7 +4213,6 @@ a:not(.font-cta):hover {
   background: var(--bb-bg-page);
 }
 
-.bb-card,
 .bb-empty-state,
 .bb-error-state,
 .bb-query-form,
@@ -4255,7 +4225,6 @@ a:not(.font-cta):hover {
   box-shadow: none;
 }
 
-.bb-card-hover:hover,
 .bb-product-card:hover,
 .bb-fp-item:hover,
 .bb-news-card:hover {
@@ -4675,7 +4644,6 @@ input[type="checkbox"] {
 
 
 
-.bb-card,
 .bb-empty-state,
 .bb-error-state,
 .bb-query-form,
@@ -4730,29 +4698,6 @@ input[type="checkbox"] {
    DESIGN.md Canonical Overrides
    Applied last in cascade — all values per DESIGN.md spec.
    ========================================================= */
-
-/* -- Card ---------------------------------------------- */
-
-.bb-card {
-  background: var(--bb-bg-surface);
-  color: var(--bb-text-primary);
-  border: 1px solid var(--bb-border-subtle);
-  border-radius: var(--bb-radius-card);
-  box-shadow: none;
-}
-
-.bb-card-hover {
-  transition:
-    border-color var(--bb-duration-normal) var(--bb-ease-standard),
-    box-shadow var(--bb-duration-normal) var(--bb-ease-standard);
-}
-
-.bb-card-hover:hover {
-  border-color: var(--bb-text-brand);
-  box-shadow: var(--bb-shadow-product);
-  transform: none;
-}
-
 
 .bb-query-select {
   background: var(--bb-color-white);
@@ -9912,7 +9857,6 @@ body .bb-home .white.block-title h3 {
     line-height: 1.5;
   }
 
-  .bb-card,
   .bb-category-card,
   .bb-news-card,
   .bb-checkout-section,
@@ -9929,8 +9873,7 @@ body .bb-home .white.block-title h3 {
     gap: var(--bb-mobile-card-gap);
   }
 
-  .bb-category-body,
-  .bb-card-content {
+  .bb-category-body {
     padding: 14px;
   }
 

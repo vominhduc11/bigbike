@@ -12,6 +12,8 @@ import { readDefaultHeroAssets, readHeroSettings } from "@/lib/utils/page-hero";
 import { buildQueryString, collectErrors, parsePositiveIntParam, parseSortParam, readSingleSearchParam } from "@/lib/utils/query";
 import { toBrandListPath, toBrandPath, toHomePath } from "@/lib/utils/routes";
 import { Container } from "@/components/layout/Container";
+import { cn } from "@/lib/utils";
+import { bbCard, cardHover } from "@/lib/ui-classes";
 
 type BrandListPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -97,7 +99,7 @@ export default async function BrandListPage({ searchParams }: BrandListPageProps
           <>
             <div className="bb-grid-categories mt-8">
               {result.data.map((brand) => (
-                <article key={brand.id} className="bb-card bb-card-hover bb-category-card">
+                <article key={brand.id} className={cn(bbCard, cardHover, "bb-category-card")}>
                   <Link href={toBrandPath(brand.slug)} className="bb-category-card-link">
                     <MediaImage
                       image={brand.logo}
