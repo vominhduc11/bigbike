@@ -2020,44 +2020,6 @@ body {
   }
 }
 
-.bb-news-card {
-  display: flex;
-  flex-direction: column;
-  background: var(--bb-bg-surface);
-  border: none;
-  border-radius: var(--bb-radius-none);
-  /* WP: no card overflow:hidden so date badge can nudge above body */
-  box-shadow: var(--bb-shadow-md);
-  text-decoration: none;
-  color: inherit;
-  transition: box-shadow 0.3s ease;
-}
-
-.bb-news-card:hover {
-  /* WP only changes shadow on hover - no translateY lift */
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.22);
-}
-
-.bb-news-img-wrap {
-  position: relative;
-  aspect-ratio: 16 / 9;
-  overflow: hidden;
-  background: var(--bb-bg-surface-raised);
-  flex-shrink: 0;
-}
-
-.bb-news-img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.3s ease;
-}
-
-.bb-news-card:hover .bb-news-img {
-  transform: scale(1.05);
-}
-
 .bb-news-img-placeholder {
   position: absolute;
   inset: 0;
@@ -2067,73 +2029,6 @@ body {
   background:
     radial-gradient(circle at 50% 35%, rgba(255, 12, 9, 0.2), transparent 36%),
     linear-gradient(135deg, #1a1a1a, #2a0606);
-}
-
-.bb-news-date {
-  position: absolute;
-  top: -21px;
-  left: 0;
-  z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  height: 42px;
-  min-width: 168px;
-  padding: 0 28px 0 22px;
-  background: var(--bb-action-primary);
-  color: #fff;
-  font-family: var(--bb-font-display);
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  clip-path: polygon(0 0, 100% 0, calc(100% - 18px) 100%, 0 100%);
-}
-
-.bb-news-body {
-  position: relative;
-  padding: 41px 20px 30px;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  flex: 1;
-  background: var(--bb-bg-surface);
-}
-
-.bb-news-body-inside {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.bb-news-card-title {
-  font-family: var(--bb-font-heading);
-  font-size: var(--fs-h4);
-  font-weight: var(--bb-font-weight-semibold);
-  color: var(--bb-text-primary);
-  text-transform: none;
-  line-height: var(--bb-line-snug);
-  margin: 0;
-  transition: color 0.14s;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.bb-news-card:hover .bb-news-card-title {
-  color: var(--bb-text-brand);
-}
-
-.bb-news-excerpt {
-  font-size: var(--fs-caption);
-  color: var(--bb-text-secondary);
-  line-height: 1.55;
-  margin: 0;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 
 /* -- Brand Carousel (WP .partner-slide parity) ---------- */
@@ -2562,16 +2457,6 @@ body:has(.bb-account-layout) .bb-breadcrumb {
 .bb-news-hero h1 { margin: 0; font-family: var(--bb-font-display); font-size: var(--fs-h1); line-height: 1.06; letter-spacing: 0.01em; text-transform: uppercase; color: #fff; }
 .bb-news-hero p { margin: 14px 0 0; max-width: 680px; color: var(--bb-text-secondary); line-height: 1.65; }
 .bb-news-page .bb-news-section { max-width: var(--bb-container-xl); margin: 0 auto 56px; padding: 0 24px; }
-.bb-news-card { display: flex; flex-direction: column; text-decoration: none; color: inherit; background: var(--bb-bg-surface); border: none; border-radius: var(--bb-radius-none); box-shadow: var(--bb-shadow-md); transition: box-shadow 0.3s ease; }
-.bb-news-card:hover { box-shadow: 0 6px 14px rgba(0, 0, 0, 0.22); }
-.bb-news-img-wrap { position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: var(--bb-bg-surface-raised); flex-shrink: 0; }
-.bb-news-img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease; }
-.bb-news-card:hover .bb-news-img { transform: scale(1.05); }
-.bb-news-date { position: absolute; top: -21px; left: 0; z-index: 2; display: inline-flex; align-items: center; height: 42px; min-width: 168px; padding: 0 28px 0 22px; background: var(--bb-action-primary); color: #fff; font-family: var(--bb-font-display); font-size: 14px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; clip-path: polygon(0 0, 100% 0, calc(100% - 18px) 100%, 0 100%); }
-.bb-news-body { position: relative; padding: 41px 20px 30px; display: flex; flex-direction: column; gap: 8px; flex: 1; background: var(--bb-bg-surface); }
-.bb-news-body-inside { display: flex; flex-direction: column; gap: 8px; flex: 1; }
-.bb-news-card:hover .bb-news-card-title { color: var(--bb-text-brand); }
-.bb-news-excerpt { font-size: var(--fs-caption); color: var(--bb-text-secondary); line-height: 1.55; margin: 0; min-height: 104px; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
 
 /* -- Shared utility: info cards & form panels -------------- */
 
@@ -3303,20 +3188,10 @@ img, picture, video, svg, canvas { max-width: 100%; }
   padding-block: var(--bb-section-y);
 }
 
-/* News card - WP style with date badge nhA top:-21px */
-.bb-news-img-wrap { background: var(--bb-bg-section); }
-.bb-news-body {
-  background: var(--bb-bg-surface);
-  color: var(--bb-text-primary);
-}
 .bb-news-img-placeholder {
   background: var(--bb-color-gray-100);
   color: var(--bb-text-muted);
 }
-.bb-news-body-inside { color: var(--bb-text-primary); }
-.bb-news-body-inside h3,
-.bb-news-body-inside h4 { color: var(--bb-text-primary); }
-.bb-news-body-inside p { color: var(--bb-text-secondary); }
 
 /* Feature row "Cam ket BigBike" - light cards */
 .bb-feature-row {
@@ -3623,8 +3498,7 @@ a:not(.font-cta):hover {
 }
 
 .bb-product-card:hover,
-.bb-fp-item:hover,
-.bb-news-card:hover {
+.bb-fp-item:hover {
   border-color: var(--bb-text-brand);
   box-shadow: var(--bb-shadow-product);
   transform: none;
@@ -3788,8 +3662,7 @@ input[type="checkbox"] {
 }
 
 .bb-product-image,
-.bb-fp-thumb,
-.bb-news-img-wrap {
+.bb-fp-thumb {
   background: #ffffff;
   border-radius: 0;
 }
@@ -3893,8 +3766,7 @@ input[type="checkbox"] {
 }
 
 .bb-product-tag,
-.bb-fp-sale p,
-.bb-news-date {
+.bb-fp-sale p {
   background: var(--bb-action-primary);
   color: #ffffff;
   border-radius: 0;
@@ -4027,8 +3899,7 @@ input[type="checkbox"] {
 .bb-query-select,
 .bb-pagination-page,
 .bb-product-card,
-.bb-fp-item,
-.bb-news-card {
+.bb-fp-item {
   border-radius: 0;
 }
 
@@ -7477,7 +7348,6 @@ body .bb-home .white.block-title h3 {
   }
 
   .bb-category-card,
-  .bb-news-card,
   .bb-checkout-section,
   .bb-order-summary,
   .bb-order-card {
@@ -7839,19 +7709,6 @@ body .bb-home .white.block-title h3 {
   .bb-news-page .bb-news-section {
     margin-bottom: 34px;
     padding-inline: var(--bb-mobile-page-x);
-  }
-
-  .bb-news-card {
-    box-shadow: none;
-  }
-
-  .bb-news-body {
-    padding: 34px 14px 18px;
-  }
-
-  .bb-news-excerpt {
-    min-height: 0;
-    -webkit-line-clamp: 3;
   }
 
   .bb-breadcrumb {

@@ -42,22 +42,31 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
 
   if (!isFeatured) {
     return (
-      <Link href={toArticlePath(article.slug)} className="bb-news-card group">
-        <div className="bb-news-img-wrap">
+      <Link
+        href={toArticlePath(article.slug)}
+        className="group flex flex-col no-underline text-inherit bg-card border-none rounded-none [box-shadow:var(--bb-shadow-md)] [transition:box-shadow_0.3s_ease] hover:border-brand hover:[box-shadow:var(--bb-shadow-product)] max-md:border max-md:border-solid max-md:border-border max-md:[box-shadow:none]"
+      >
+        <div className="relative aspect-[16/9] overflow-hidden shrink-0 bg-white">
           <MediaImage
             image={article.coverImage}
             altFallback={title}
-            className="bb-news-img"
+            className="block w-full h-full object-cover [transition:transform_0.3s_ease] group-hover:[transform:scale(1.05)]"
             width={1200}
             height={675}
           />
         </div>
-        <div className="bb-news-body">
-          <span className="bb-news-date">{publishedDate}</span>
-          <div className="bb-news-body-inside">
+        <div className="relative pt-[41px] px-5 pb-[30px] flex flex-col gap-2 flex-1 bg-card max-md:pt-[34px] max-md:px-[14px] max-md:pb-[18px]">
+          <span className="absolute -top-[21px] left-0 z-[2] inline-flex items-center h-[42px] min-w-[168px] pl-[22px] pr-[28px] bg-brand text-white font-cta text-[14px] font-semibold tracking-normal uppercase whitespace-nowrap rounded-none [clip-path:polygon(0_0,100%_0,calc(100%-18px)_100%,0_100%)]">
+            {publishedDate}
+          </span>
+          <div className="flex flex-col gap-2 flex-1">
             <p className={categoryBadge}>{category}</p>
-            <h3 className="bb-news-card-title">{title}</h3>
-            <p className="bb-news-excerpt">{excerpt}</p>
+            <h3 className="font-heading text-h4 font-semibold text-foreground normal-case leading-[1.2] m-0 [transition:color_0.14s] line-clamp-2 group-hover:text-brand">
+              {title}
+            </h3>
+            <p className="text-caption text-muted-foreground leading-[1.55] m-0 min-h-[104px] line-clamp-4 max-md:min-h-0 max-md:line-clamp-3">
+              {excerpt}
+            </p>
           </div>
         </div>
       </Link>

@@ -139,11 +139,15 @@ function ProductCardSkel() {
 
 function ArticleCardSkel() {
   return (
-    <div className="bb-news-card" aria-hidden="true" style={{ pointerEvents: "none" }}>
-      <div className="bb-news-img-wrap">
+    <div
+      className="flex flex-col bg-card border-none rounded-none [box-shadow:var(--bb-shadow-md)] max-md:border max-md:border-solid max-md:border-border max-md:[box-shadow:none]"
+      aria-hidden="true"
+      style={{ pointerEvents: "none" }}
+    >
+      <div className="relative aspect-[16/9] overflow-hidden shrink-0 bg-white">
         <SkelBlock w="100%" h="100%" rounded={false} style={{ position: "absolute", inset: 0 }} />
       </div>
-      <div className="bb-news-body">
+      <div className="relative pt-[41px] px-5 pb-[30px] flex flex-col gap-2 flex-1 bg-card max-md:pt-[34px] max-md:px-[14px] max-md:pb-[18px]">
         <SkelTitle w="85%" h="1em" />
         <SkelText w="100%" />
         <SkelText w="60%" />
