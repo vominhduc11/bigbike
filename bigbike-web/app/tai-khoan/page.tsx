@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { AccountSectionHeading, AccountShell, useAccount } from "@/components/layout/AccountShell";
+import { bbLink } from "@/lib/ui-classes";
 
 const DASHBOARD_CARDS = [
   { href: "/tai-khoan/don-hang/", titleKey: "orders", descKey: "ordersDesc" },
@@ -29,17 +30,17 @@ function AccountDashboardContent() {
       <p className="mb-6 text-body leading-relaxed text-foreground">
         {t.rich("dashboardIntro", {
           orders: (chunks) => (
-            <Link href="/tai-khoan/don-hang/" className="bb-link font-normal">
+            <Link href="/tai-khoan/don-hang/" className={bbLink}>
               {chunks}
             </Link>
           ),
           addresses: (chunks) => (
-            <Link href="/tai-khoan/edit-address/billing/" className="bb-link font-normal">
+            <Link href="/tai-khoan/edit-address/billing/" className={bbLink}>
               {chunks}
             </Link>
           ),
           account: (chunks) => (
-            <Link href="/tai-khoan/edit-account/" className="bb-link font-normal">
+            <Link href="/tai-khoan/edit-account/" className={bbLink}>
               {chunks}
             </Link>
           ),

@@ -19,7 +19,7 @@ import { ContactInfoList } from "@/components/ui/ContactInfoList";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { getPageBySlug, listBrands, listPublicSettings } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
-import { sectionHeading } from "@/lib/ui-classes";
+import { bbLink, sectionHeading } from "@/lib/ui-classes";
 import { cn } from "@/lib/utils";
 import { resolveMediaUrl, telHref } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
@@ -267,7 +267,7 @@ export default async function AboutPage() {
                               <p className="m-0 text-caption leading-snug text-muted-foreground">
                                 <a
                                   href={telHref(hotline)}
-                                  className="bb-link"
+                                  className={bbLink}
                                 >
                                   {hotline}
                                 </a>
@@ -277,7 +277,7 @@ export default async function AboutPage() {
                               <p className="m-0 text-caption leading-snug text-muted-foreground">
                                 <a
                                   href={telHref(hotline2)}
-                                  className="bb-link"
+                                  className={bbLink}
                                 >
                                   {hotline2}
                                 </a>
@@ -297,7 +297,7 @@ export default async function AboutPage() {
                               href={facebookUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="bb-link"
+                              className={bbLink}
                             >
                               {facebookHandle}
                             </a>

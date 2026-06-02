@@ -8,7 +8,7 @@ import { useOrder } from "@/lib/query/hooks";
 import { formatAddress, formatDate, formatVnd, orderStatusLabelWithT, paymentMethodLabelWithT, safeText } from "@/lib/utils/format";
 import { toOrderHistoryPath } from "@/lib/utils/routes";
 import { cn } from "@/lib/utils";
-import { sectionSubheading } from "@/lib/ui-classes";
+import { bbLink, sectionSubheading } from "@/lib/ui-classes";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -35,7 +35,7 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
       <>
         <AccountSectionHeading title={t("detailHeading")} />
         <p className="mb-4 text-sm text-brand">{error || t("notFound")}</p>
-        <Link href={toOrderHistoryPath()} className="bb-link text-sm font-normal">
+        <Link href={toOrderHistoryPath()} className={cn(bbLink, "text-sm")}>
           {t("backToHistory")}
         </Link>
       </>
@@ -150,7 +150,7 @@ function OrderDetailContent({ orderId }: { orderId: string }) {
       </div>
 
       <div className="mt-6">
-        <Link href={toOrderHistoryPath()} className="bb-link text-sm font-normal">
+        <Link href={toOrderHistoryPath()} className={cn(bbLink, "text-sm")}>
           {t("backToHistory")}
         </Link>
       </div>

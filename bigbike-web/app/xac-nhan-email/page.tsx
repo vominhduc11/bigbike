@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { resendEmailVerification, verifyEmail } from "@/lib/api/client-api";
 import { useAuth } from "@/lib/auth/auth-store";
+import { bbLink } from "@/lib/ui-classes";
 import { Container } from "@/components/layout/Container";
 
 type Status = "idle" | "loading" | "success" | "error" | "missing";
@@ -100,7 +101,7 @@ export default function VerifyEmailPage() {
                 </div>
               ) : (
                 <p className="m-0 text-sm text-foreground">
-                  <Link href="/dang-nhap/?tiep=/xac-nhan-email/" className="bb-link">
+                  <Link href="/dang-nhap/?tiep=/xac-nhan-email/" className={bbLink}>
                     {t("loginToResend").split(" ")[0]}
                   </Link>{" "}
                   {t("loginToResend").split(" ").slice(1).join(" ")}

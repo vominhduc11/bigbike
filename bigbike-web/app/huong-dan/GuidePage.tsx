@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { Container } from "@/components/layout/Container";
 import { cn } from "@/lib/utils";
-import { bbSection, sectionPad } from "@/lib/ui-classes";
+import { bbLink, bbSection, sectionPad } from "@/lib/ui-classes";
 import { PageHero } from "@/components/layout/PageHero";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { getPageBySlug, getPublicMenu, listPublicSettings } from "@/lib/api/public-api";
@@ -188,7 +188,7 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
                         <Link
                           key={item.id}
                           href={href}
-                          className={active ? "bb-link font-bold text-brand" : "bb-link font-medium"}
+                          className={bbLink}
                           aria-current={active ? "page" : undefined}
                         >
                           {safeText(item.label, t("menuFallback"))}

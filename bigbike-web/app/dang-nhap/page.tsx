@@ -4,6 +4,7 @@ import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { readSingleSearchParam } from "@/lib/utils/query";
 import { isSafeReturnTo } from "@/lib/utils/auth";
 import { toAccountPath } from "@/lib/utils/routes";
+import { bbLink } from "@/lib/ui-classes";
 import { Container } from "@/components/layout/Container";
 import { LoginForm } from "./LoginForm";
 
@@ -31,7 +32,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             <h1 className="bb-auth-heading mb-2">Đăng nhập</h1>
             <p className="m-0 text-body text-foreground">
               Đăng ký thành viên mới tại{" "}
-              <Link href="/dang-ky/" className="bb-link font-normal">
+              <Link href="/dang-ky/" className={bbLink}>
                 đây
               </Link>
             </p>

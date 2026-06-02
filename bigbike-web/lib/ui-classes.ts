@@ -37,6 +37,12 @@ export const detailTableCell = "mt-[3px] block text-sm font-bold normal-case tra
 /** Category badge text (was `.bb-category-badge`). */
 export const categoryBadge = "m-0 text-sm font-bold uppercase tracking-display text-brand";
 
+/** Inline text link (was `.bb-link`): blue resting (--bb-link-text), red on
+ * hover/focus. The base red is overridden by later WP-parity groups, so the
+ * effective resting color is the blue link token. */
+export const bbLink =
+  "font-bold no-underline text-[var(--bb-link-text)] transition-colors duration-fast ease-[var(--bb-ease-standard)] hover:text-brand focus-visible:text-brand";
+
 /** Section vertical rhythm (was `.bb-section` padding-block: 32/52/section-y). */
 export const sectionPad =
   "py-8 min-[640px]:py-[52px] min-[1024px]:py-[var(--bb-section-y)]";

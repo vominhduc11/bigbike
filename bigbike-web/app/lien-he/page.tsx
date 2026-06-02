@@ -10,7 +10,7 @@ import { ContactInfoList } from "@/components/ui/ContactInfoList";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { getPageBySlug, listPublicSettings } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
-import { sectionHeading } from "@/lib/ui-classes";
+import { bbLink, sectionHeading } from "@/lib/ui-classes";
 import { cn } from "@/lib/utils";
 import { safeText, telHref } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
@@ -134,14 +134,14 @@ export default async function ContactPage() {
                           <>
                             {hotline ? (
                               <p className="leading-relaxed text-muted-foreground">
-                                <a href={telHref(hotline)} className="bb-link">
+                                <a href={telHref(hotline)} className={bbLink}>
                                   {hotline}
                                 </a>
                               </p>
                             ) : null}
                             {hotline2 ? (
                               <p className="leading-relaxed text-muted-foreground">
-                                <a href={telHref(hotline2)} className="bb-link">
+                                <a href={telHref(hotline2)} className={bbLink}>
                                   {hotline2}
                                 </a>
                               </p>
@@ -152,7 +152,7 @@ export default async function ContactPage() {
                                   href={zaloUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="bb-link"
+                                  className={bbLink}
                                 >
                                   {t("chatViaZalo")}
                                 </a>
@@ -174,7 +174,7 @@ export default async function ContactPage() {
                               href={facebookUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="bb-link"
+                              className={bbLink}
                             >
                               {facebookUrl.replace(/^https?:\/\/(www\.)?/, "")}
                             </a>
@@ -225,7 +225,7 @@ export default async function ContactPage() {
                         {hotline ? (
                           <p className="mt-1 text-caption text-muted-foreground">
                             {t("hotline")}:{" "}
-                            <a href={telHref(hotline)} className="bb-link">
+                            <a href={telHref(hotline)} className={bbLink}>
                               {hotline}
                             </a>
                           </p>

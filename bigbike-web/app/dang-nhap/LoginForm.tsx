@@ -10,6 +10,8 @@ import { loginCustomer } from "@/lib/api/client-api";
 import { refreshAuth, useAuth } from "@/lib/auth/auth-store";
 import { createLoginSchema, type LoginFormValues } from "@/lib/schemas/auth";
 import { toForgotPasswordPath } from "@/lib/utils/routes";
+import { bbLink } from "@/lib/ui-classes";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AuthField } from "@/components/ui/AuthField";
@@ -90,7 +92,7 @@ export function LoginForm({ returnTo }: { returnTo: string }) {
             />
             <span className="text-sm text-foreground">{t("remember")}</span>
           </label>
-          <Link href={toForgotPasswordPath()} className="bb-link text-sm font-normal underline">
+          <Link href={toForgotPasswordPath()} className={cn(bbLink, "text-sm")}>
             {t("forgotPassword")}
           </Link>
         </div>

@@ -9,7 +9,7 @@ import { AccountSectionHeading, AccountShell } from "@/components/layout/Account
 import { formatDate, formatVnd, orderStatusLabelWithT } from "@/lib/utils/format";
 import { toOrderDetailPath } from "@/lib/utils/routes";
 import { cn } from "@/lib/utils";
-import { skelBase } from "@/lib/ui-classes";
+import { bbLink, skelBase } from "@/lib/ui-classes";
 
 function OrderHistoryContent() {
   const t = useTranslations("Account.orders");
@@ -74,7 +74,7 @@ function OrderHistoryContent() {
                 {orders.map((order) => (
                   <tr key={order.id} className="border-b border-border">
                     <td className="py-4 pr-4 align-top">
-                      <Link href={toOrderDetailPath(order.id)} className="bb-link font-normal">
+                      <Link href={toOrderDetailPath(order.id)} className={bbLink}>
                         #{order.orderNumber}
                       </Link>
                     </td>

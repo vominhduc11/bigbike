@@ -390,17 +390,6 @@ body {
   text-transform: uppercase;
 }
 
-.bb-link {
-  color: var(--bb-text-brand);
-  font-weight: 700;
-  text-decoration: none;
-  transition: color var(--bb-duration-fast) var(--bb-ease-standard);
-}
-
-.bb-link:hover {
-  color: var(--bb-brand-primary-hover);
-}
-
 .bb-card {
   position: relative;
   overflow: hidden;
@@ -4344,12 +4333,10 @@ a:not(.font-cta):hover {
   text-transform: uppercase;
 }
 
-.bb-link,
 .bb-breadcrumb a {
   color: var(--bb-link-text);
 }
 
-.bb-link:hover,
 .bb-breadcrumb a:hover {
   color: var(--bb-text-brand);
 }
@@ -10916,15 +10903,12 @@ body .bb-home .white.block-title h3 {
 
 /* Contrast normalizers for legacy WP-parity selectors.
    Keep these after responsive blocks so older hardcoded colors cannot win the cascade. */
-.bb-link,
 .bb-seo-content a,
 .woocommerce-error a,
 .woocommerce-info a {
   color: var(--bb-link-text);
 }
 
-.bb-link:hover,
-.bb-link:focus-visible,
 .bb-seo-content a:hover,
 .bb-seo-content a:focus-visible,
 .woocommerce-error a:hover,
