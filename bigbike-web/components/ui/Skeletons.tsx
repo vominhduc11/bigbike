@@ -5,17 +5,19 @@
  * shell users see while data loads matches what eventually renders. Avoid
  * generic boxes — they cause layout shift and feel cheap.
  *
- * Compose with primitives from globals.css:
- *   .bb-skel              shimmer base
- *   .bb-skel--text/title  text-line shapes
- *   .bb-skel--block       larger image/card block
- *   .bb-skel--circle      avatar/icon
- *   .bb-skel--btn/chip    button/chip shapes
- *   .bb-skel-w-{40,60,…}  width helpers
+ * Shimmer primitives come from lib/ui-classes (skelBase/skelCol/skelRow/skelStack);
+ * the `skeleton-shimmer` keyframe stays in globals.css. Shapes are the atoms below
+ * (SkelText/SkelTitle/SkelBlock/SkelCircle/SkelChip/SkelButton).
+ *
+ * NOTE: the page-layout classes used here (bb-container, bb-pdp, bb-product-card,
+ * bb-cat-layout, …) are intentionally NOT migrated — this file MIRRORS those pages,
+ * so it keeps their classes until each page itself moves to Tailwind.
  */
 
 import type { CSSProperties, ReactNode } from "react";
 import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import { skelBase, skelCol, skelRow, skelStack } from "@/lib/ui-classes";
 
 const sr: CSSProperties = {
   position: "absolute",
@@ -49,17 +51,18 @@ function SkeletonRoot({
 /* ── Atoms ──────────────────────────────────────────────────── */
 
 function SkelText({ w = "100%", h = "0.85em" }: { w?: string | number; h?: string | number }) {
-  return <span className="bb-skel bb-skel--text" style={{ width: w, height: h, display: "block" }} />;
+  return <span className={skelBase} style={{ width: w, height: h, display: "block" }} />;
 }
 
 function SkelTitle({ w = "60%", h = "1.4em" }: { w?: string | number; h?: string | number }) {
-  return <span className="bb-skel bb-skel--title" style={{ width: w, height: h, display: "block" }} />;
+  return <span className={skelBase} style={{ width: w, height: h, display: "block" }} />;
 }
 
+// `rounded` is accepted for call-site compatibility but is a no-op: the global
+// `.bb-theme :is(span…)` rule squares every skeleton shape regardless.
 function SkelBlock({
   w = "100%",
   h = 200,
-  rounded = true,
   style,
 }: {
   w?: string | number;
@@ -67,29 +70,24 @@ function SkelBlock({
   rounded?: boolean;
   style?: CSSProperties;
 }) {
-  return (
-    <span
-      className={`bb-skel${rounded ? " bb-skel--block" : ""}`}
-      style={{ display: "block", width: w, height: h, ...style }}
-    />
-  );
+  return <span className={skelBase} style={{ display: "block", width: w, height: h, ...style }} />;
 }
 
 function SkelCircle({ size = 40 }: { size?: number }) {
   return (
     <span
-      className="bb-skel bb-skel--circle"
+      className={cn(skelBase, "!rounded-full")}
       style={{ display: "inline-block", width: size, height: size, flexShrink: 0 }}
     />
   );
 }
 
 function SkelChip({ w = 70 }: { w?: number }) {
-  return <span className="bb-skel bb-skel--chip" style={{ display: "inline-block", width: w }} />;
+  return <span className={cn(skelBase, "h-[1.6rem]")} style={{ display: "inline-block", width: w }} />;
 }
 
 function SkelButton({ w = 140 }: { w?: number | string }) {
-  return <span className="bb-skel bb-skel--btn" style={{ display: "inline-block", width: w }} />;
+  return <span className={cn(skelBase, "h-10")} style={{ display: "inline-block", width: w }} />;
 }
 
 /* ── Atomic card skeletons ──────────────────────────────────── */
@@ -150,7 +148,7 @@ export function HomeSkeleton() {
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="bb-feature-tile">
               <SkelCircle size={52} />
-              <div className="bb-skel-col" style={{ flex: 1 }}>
+              <div className={skelCol} style={{ flex: 1 }}>
                 <SkelTitle w="60%" />
                 <SkelText w="100%" />
               </div>
@@ -174,7 +172,7 @@ export function HomeSkeleton() {
         {/* Product carousel */}
         <div className="bb-section">
           <div className="bb-section-head">
-            <div className="bb-skel-col" style={{ flex: 1 }}>
+            <div className={skelCol} style={{ flex: 1 }}>
               <SkelText w="18%" />
               <SkelTitle w="36%" h="1.6em" />
             </div>
@@ -196,7 +194,7 @@ export function HomeSkeleton() {
         {/* Category grid (image tiles) */}
         <div className="bb-section">
           <div className="bb-section-head">
-            <div className="bb-skel-col" style={{ flex: 1 }}>
+            <div className={skelCol} style={{ flex: 1 }}>
               <SkelText w="22%" />
               <SkelTitle w="42%" h="1.6em" />
             </div>
@@ -211,7 +209,7 @@ export function HomeSkeleton() {
         {/* News strip */}
         <div className="bb-section">
           <div className="bb-section-head">
-            <div className="bb-skel-col" style={{ flex: 1 }}>
+            <div className={skelCol} style={{ flex: 1 }}>
               <SkelText w="14%" />
               <SkelTitle w="34%" h="1.6em" />
             </div>
@@ -261,7 +259,7 @@ export function PdpSkeleton() {
         </div>
 
         {/* Info */}
-        <div className="bb-skel-col">
+        <div className={skelCol}>
           <SkelText w="25%" />
           <SkelTitle w="80%" h="2em" />
           <SkelText w="35%" />
@@ -269,10 +267,10 @@ export function PdpSkeleton() {
             <SkelTitle w="40%" h="1.8em" />
           </div>
           <SkelText w="20%" />
-          <div className="bb-skel-row" style={{ flexWrap: "wrap" }}>
+          <div className={skelRow} style={{ flexWrap: "wrap" }}>
             {Array.from({ length: 4 }).map((_, i) => <SkelChip key={i} w={60} />)}
           </div>
-          <div className="bb-skel-row" style={{ marginTop: 16 }}>
+          <div className={skelRow} style={{ marginTop: 16 }}>
             <SkelButton w={140} />
             <SkelButton w={140} />
           </div>
@@ -281,14 +279,14 @@ export function PdpSkeleton() {
 
       {/* Below-fold: tabs + related */}
       <div className="bb-pdp-below">
-        <div className="bb-skel-row" style={{ borderBottom: "1px solid var(--bb-border-subtle)", marginBottom: 28 }}>
+        <div className={skelRow} style={{ borderBottom: "1px solid var(--bb-border-subtle)", marginBottom: 28 }}>
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} style={{ padding: "14px 22px" }}>
               <SkelText w={100} />
             </div>
           ))}
         </div>
-        <div className="bb-skel-stack">
+        <div className={skelStack}>
           <SkelText w="100%" />
           <SkelText w="92%" />
           <SkelText w="98%" />
@@ -338,10 +336,10 @@ export function CatalogSkeleton({ withHero = false }: { withHero?: boolean }) {
       <div className="bb-cat-layout">
         {/* Sidebar filters */}
         <aside className="bb-filters-v2">
-          <div className="bb-skel-stack">
+          <div className={skelStack}>
             <SkelTitle w="50%" />
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="bb-skel-stack" style={{ paddingBlock: 12, borderBottom: "1px solid var(--bb-border-subtle)" }}>
+              <div key={i} className={skelStack} style={{ paddingBlock: 12, borderBottom: "1px solid var(--bb-border-subtle)" }}>
                 <SkelText w="60%" />
                 <SkelText w="80%" />
                 <SkelText w="70%" />
@@ -433,10 +431,10 @@ export function BrandDetailSkeleton() {
       </div>
       <div className="bb-cat-layout">
         <aside className="bb-filters-v2">
-          <div className="bb-skel-stack">
+          <div className={skelStack}>
             <SkelTitle w="50%" />
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="bb-skel-stack" style={{ paddingBlock: 12, borderBottom: "1px solid var(--bb-border-subtle)" }}>
+              <div key={i} className={skelStack} style={{ paddingBlock: 12, borderBottom: "1px solid var(--bb-border-subtle)" }}>
                 <SkelText w="60%" />
                 <SkelText w="80%" />
               </div>
@@ -463,7 +461,7 @@ export function ArticleListSkeleton({ label = "Loading articles" }: { label?: st
     <SkeletonRoot label={label} className="bb-news-page">
       <div className="bb-container mt-6">
         <div className="bb-news-hero">
-          <div className="bb-news-hero-copy bb-skel-stack">
+          <div className={cn("bb-news-hero-copy", skelStack)}>
             <SkelText w="20%" />
             <SkelTitle w="80%" h="2em" />
             <SkelText w="100%" />
@@ -475,7 +473,7 @@ export function ArticleListSkeleton({ label = "Loading articles" }: { label?: st
         </div>
       </div>
       <div className="bb-news-section">
-        <div className="bb-skel-row" style={{ marginBottom: 28 }}>
+        <div className={skelRow} style={{ marginBottom: 28 }}>
           <SkelButton w={120} />
           <SkelButton w={140} />
           <SkelButton w={120} />
@@ -512,7 +510,7 @@ export function ArticleDetailSkeleton({ label = "Loading article" }: { label?: s
         <div className="mx-auto w-full max-w-[var(--bb-container-xl)] px-[15px]">
           <div className="-mx-[15px] flex flex-wrap">
             <div className="relative w-full px-[15px]">
-              <div className="bb-skel-stack">
+              <div className={skelStack}>
                 <SkelTitle w="50%" h="2em" />
                 <SkelText w="98%" />
                 <SkelText w="100%" />
@@ -547,7 +545,7 @@ export function CheckoutSkeleton() {
             {Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="bb-step" style={{ flex: 1 }}>
                 <SkelCircle size={28} />
-                <div className="bb-skel-col" style={{ flex: 1 }}>
+                <div className={skelCol} style={{ flex: 1 }}>
                   <SkelText w="60%" />
                   <SkelText w="80%" />
                 </div>
@@ -561,7 +559,7 @@ export function CheckoutSkeleton() {
               style={{ display: "grid", gap: 14, gridTemplateColumns: "1fr 1fr", marginTop: 18 }}
             >
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="bb-skel-stack">
+                <div key={i} className={skelStack}>
                   <SkelText w="40%" />
                   <SkelBlock w="100%" h={42} />
                 </div>
@@ -570,19 +568,19 @@ export function CheckoutSkeleton() {
           </div>
           <div className="bb-checkout-section">
             <SkelTitle w="35%" />
-            <div className="bb-skel-stack" style={{ marginTop: 18 }}>
+            <div className={skelStack} style={{ marginTop: 18 }}>
               <SkelBlock w="100%" h={56} />
               <SkelBlock w="100%" h={56} />
             </div>
           </div>
         </div>
         <aside className="bb-order-summary">
-          <div className="bb-skel-stack">
+          <div className={skelStack}>
             <SkelTitle w="60%" />
             {Array.from({ length: 2 }).map((_, i) => (
-              <div key={i} className="bb-skel-row">
+              <div key={i} className={skelRow}>
                 <SkelBlock w={56} h={56} />
-                <div className="bb-skel-col" style={{ flex: 1 }}>
+                <div className={skelCol} style={{ flex: 1 }}>
                   <SkelText w="40%" />
                   <SkelText w="85%" />
                 </div>
@@ -604,12 +602,12 @@ export function AccountInnerSkeleton({ rows = 3 }: { rows?: number }) {
   return (
     <SkeletonRoot label="Đang tải nội dung tài khoản">
       <div className="bb-account-header">
-        <div className="bb-skel-col" style={{ flex: 1 }}>
+        <div className={skelCol} style={{ flex: 1 }}>
           <SkelTitle w="30%" h="1.6em" />
           <SkelText w="50%" />
         </div>
       </div>
-      <div className="bb-skel-stack">
+      <div className={skelStack}>
         {Array.from({ length: rows }).map((_, i) => (
           <SkelBlock key={i} w="100%" h={120} />
         ))}
@@ -625,12 +623,12 @@ export function AccountLayoutSkeleton({ rows = 3 }: { rows?: number }) {
       <aside className="bb-account-sidebar">
         <div style={{ padding: "24px 22px", borderBottom: "1px solid var(--bb-border-subtle)" }}>
           <SkelCircle size={56} />
-          <div className="bb-skel-stack" style={{ marginTop: 12 }}>
+          <div className={skelStack} style={{ marginTop: 12 }}>
             <SkelText w="60%" />
             <SkelText w="80%" />
           </div>
         </div>
-        <div className="bb-skel-stack" style={{ padding: 12 }}>
+        <div className={skelStack} style={{ padding: 12 }}>
           {Array.from({ length: 4 }).map((_, i) => (
             <SkelBlock key={i} w="100%" h={36} />
           ))}
@@ -638,12 +636,12 @@ export function AccountLayoutSkeleton({ rows = 3 }: { rows?: number }) {
       </aside>
       <div className="bb-account-main">
         <div className="bb-account-header">
-          <div className="bb-skel-col" style={{ flex: 1 }}>
+          <div className={skelCol} style={{ flex: 1 }}>
             <SkelTitle w="30%" h="1.6em" />
             <SkelText w="50%" />
           </div>
         </div>
-        <div className="bb-skel-stack">
+        <div className={skelStack}>
           {Array.from({ length: rows }).map((_, i) => (
             <SkelBlock key={i} w="100%" h={120} />
           ))}
@@ -658,36 +656,36 @@ export function OrderListSkeleton({ count = 3 }: { count?: number }) {
   return (
     <SkeletonRoot label="Đang tải danh sách đơn hàng">
       <div className="bb-account-header">
-        <div className="bb-skel-col" style={{ flex: 1 }}>
+        <div className={skelCol} style={{ flex: 1 }}>
           <SkelTitle w="30%" h="1.6em" />
           <SkelText w="40%" />
         </div>
       </div>
-      <div className="bb-skel-row" style={{ borderBottom: "1px solid var(--bb-border-subtle)", marginBottom: 20 }}>
+      <div className={skelRow} style={{ borderBottom: "1px solid var(--bb-border-subtle)", marginBottom: 20 }}>
         {Array.from({ length: 5 }).map((_, i) => (
           <div key={i} style={{ padding: "12px 20px" }}><SkelText w={80} /></div>
         ))}
       </div>
-      <div className="bb-skel-stack">
+      <div className={skelStack}>
         {Array.from({ length: count }).map((_, i) => (
           <div key={i} className="bb-order-card">
             <div className="bb-order-head">
-              <div className="bb-skel-row" style={{ flex: 1, gap: 22 }}>
-                <div className="bb-skel-col"><SkelText w={50} /><SkelText w={80} /></div>
-                <div className="bb-skel-col"><SkelText w={50} /><SkelText w={90} /></div>
-                <div className="bb-skel-col"><SkelText w={50} /><SkelText w={70} /></div>
+              <div className={skelRow} style={{ flex: 1, gap: 22 }}>
+                <div className={skelCol}><SkelText w={50} /><SkelText w={80} /></div>
+                <div className={skelCol}><SkelText w={50} /><SkelText w={90} /></div>
+                <div className={skelCol}><SkelText w={50} /><SkelText w={70} /></div>
               </div>
               <SkelChip w={90} />
             </div>
             <div className="bb-order-body">
-              <div className="bb-skel-row">
+              <div className={skelRow}>
                 {Array.from({ length: 3 }).map((_, j) => <SkelBlock key={j} w={56} h={56} />)}
               </div>
-              <div className="bb-skel-col" style={{ flex: 1 }}>
+              <div className={skelCol} style={{ flex: 1 }}>
                 <SkelText w="60%" />
                 <SkelText w="40%" />
               </div>
-              <div className="bb-skel-col" style={{ alignItems: "flex-end" }}>
+              <div className={skelCol} style={{ alignItems: "flex-end" }}>
                 <SkelTitle w={120} h="1.2em" />
                 <SkelText w={80} />
               </div>
@@ -704,12 +702,12 @@ export function OrderDetailSkeleton() {
   return (
     <SkeletonRoot label="Đang tải chi tiết đơn hàng">
       <div className="bb-account-header">
-        <div className="bb-skel-col" style={{ flex: 1 }}>
+        <div className={skelCol} style={{ flex: 1 }}>
           <SkelTitle w="30%" h="1.6em" />
           <SkelText w="20%" />
         </div>
       </div>
-      <div className="bb-skel-stack">
+      <div className={skelStack}>
         <SkelBlock w="100%" h={200} />
         <SkelBlock w="100%" h={160} />
         <SkelBlock w="100%" h={140} />
@@ -726,7 +724,7 @@ export function FormSkeleton({
   return (
     <SkeletonRoot label="Đang tải biểu mẫu">
       <div className="bb-account-header">
-        <div className="bb-skel-col" style={{ flex: 1 }}>
+        <div className={skelCol} style={{ flex: 1 }}>
           <SkelTitle w="25%" h="1.6em" />
           <SkelText w="40%" />
         </div>
@@ -749,7 +747,7 @@ export function FormSkeleton({
           }}
         >
           {Array.from({ length: fields }).map((_, i) => (
-            <div key={i} className="bb-skel-stack">
+            <div key={i} className={skelStack}>
               <SkelText w="40%" />
               <SkelBlock w="100%" h={42} />
             </div>
@@ -769,7 +767,7 @@ export function AuthSkeleton() {
         <div className="bb-container">
           <div className="bb-auth-wrap">
             <Card className="p-6 border-t-[3px] border-t-primary">
-              <div className="bb-skel-stack">
+              <div className={skelStack}>
                 <SkelTitle w="60%" h="1.8em" />
                 <div style={{ height: 8 }} />
                 <SkelText w="40%" />
@@ -796,7 +794,7 @@ export function StaticPageSkeleton({ title = "Loading content" }: { title?: stri
           <header style={{ marginBottom: 24 }}>
             <SkelTitle w="55%" h="2.2em" />
           </header>
-          <div className="bb-skel-stack">
+          <div className={skelStack}>
             <SkelText w="100%" />
             <SkelText w="92%" />
             <SkelText w="98%" />
@@ -820,7 +818,7 @@ export function SearchSkeleton({ label = "Loading search results" }: { label?: s
           <header>
             <SkelTitle w="20%" h="2em" />
           </header>
-          <div className="bb-query-form bb-skel-stack" style={{ marginTop: 16 }}>
+          <div className={cn("bb-query-form", skelStack)} style={{ marginTop: 16 }}>
             <div style={{ display: "grid", gap: 14, gridTemplateColumns: "1fr 1fr" }}>
               <SkelBlock w="100%" h={42} />
               <SkelBlock w="100%" h={42} />
@@ -845,14 +843,14 @@ export function OrderConfirmSkeleton() {
     <SkeletonRoot label="Đang xác nhận đơn hàng">
       <div className="bb-success">
         <SkelCircle size={88} />
-        <div className="bb-skel-stack" style={{ marginTop: 22, alignItems: "center" }}>
+        <div className={skelStack} style={{ marginTop: 22, alignItems: "center" }}>
           <SkelText w={120} />
           <SkelTitle w="60%" h="2.2em" />
           <SkelText w="80%" />
         </div>
         <div className="order-card" style={{ marginTop: 22 }}>
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="bb-skel-stack">
+            <div key={i} className={skelStack}>
               <SkelText w="50%" />
               <SkelTitle w="80%" h="1.2em" />
             </div>
@@ -883,7 +881,7 @@ export function ContactSkeleton() {
               paddingBottom: 60,
             }}
           >
-            <div className="bb-skel-stack">
+            <div className={skelStack}>
               <SkelTitle w="55%" h="1.6em" />
               {Array.from({ length: 3 }).map((_, i) => (
                 <div key={i} style={{ display: "flex", gap: 16, paddingTop: 16, paddingBottom: 16 }}>
@@ -895,7 +893,7 @@ export function ContactSkeleton() {
                 </div>
               ))}
             </div>
-            <div className="bb-skel-stack">
+            <div className={skelStack}>
               <SkelTitle w="55%" h="1.6em" />
               <SkelBlock w="100%" h={420} />
               <SkelBlock w="100%" h={48} />
@@ -914,7 +912,7 @@ export function GuideSkeleton({ label = "Loading guide" }: { label?: string }) {
       <section className="bb-page">
         <div className="bb-container">
           <div style={{ display: "grid", gap: 28, gridTemplateColumns: "260px 1fr" }}>
-            <aside className="bb-skel-stack">
+            <aside className={skelStack}>
               <SkelTitle w="60%" />
               {Array.from({ length: 6 }).map((_, i) => (
                 <SkelBlock key={i} w="100%" h={36} />
@@ -922,7 +920,7 @@ export function GuideSkeleton({ label = "Loading guide" }: { label?: string }) {
             </aside>
             <div>
               <SkelTitle w="50%" h="2em" />
-              <div className="bb-skel-stack" style={{ marginTop: 20 }}>
+              <div className={skelStack} style={{ marginTop: 20 }}>
                 <SkelText w="100%" />
                 <SkelText w="92%" />
                 <SkelText w="98%" />
