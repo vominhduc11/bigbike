@@ -2003,22 +2003,6 @@ body {
 
 /* -- News / Blog Section -------------------------------- */
 /* WP `.news` section has no background - inherits body white. */
-.bb-news-section {
-  background: var(--bb-bg-page);
-  padding: var(--bb-space-12) 0;
-}
-
-.bb-articles-grid-v2 {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem;
-}
-
-@media (min-width: 2560px) {
-  .bb-articles-grid-v2 {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
 
 .bb-news-img-placeholder {
   position: absolute;
@@ -2113,12 +2097,6 @@ body {
 
 /* -- Responsive additions -------------------------------- */
 
-@media (max-width: 900px) {
-  .bb-articles-grid-v2 {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
 @media (max-width: 767px) {
   .bb-cat-list {
     grid-template-columns: repeat(3, 1fr);
@@ -2129,10 +2107,6 @@ body {
 @media (max-width: 575px) {
   .bb-cat-list {
     grid-template-columns: repeat(2, 1fr);
-  }
-
-  .bb-articles-grid-v2 {
-    grid-template-columns: 1fr;
   }
 }
 
@@ -2157,8 +2131,6 @@ body {
 
 /* -- Checkout address review ------------------------------ */
 
-/* -- News filter form -------------------------------------- */
-.bb-news-page .bb-news-section { max-width: var(--bb-container-wide); margin: 0 auto 40px; padding: 0 24px; }
 /* -- Entity description (brand / category) ---------------- */
 
 /* -- Breadcrumb current item ------------------------------ */
@@ -2450,13 +2422,6 @@ body:has(.bb-account-layout) .bb-breadcrumb {
 .bb-success .cta-row { display: flex; gap: 10px; justify-content: center; }
 
 
-/* -- News listing + article cards -------------------------- */
-.bb-news-page { background: var(--bb-bg-page); }
-.bb-news-hero { max-width: var(--bb-container-xl); margin: 24px auto 28px; padding: 38px 32px; display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 28px; align-items: end; border: 1px solid var(--bb-border-subtle); border-radius: var(--bb-radius-none); background: radial-gradient(circle at 88% 18%, rgba(255, 12, 9,0.22), transparent 28%), radial-gradient(circle at 15% 0%, rgba(255,255,255,0.1), transparent 38%), linear-gradient(145deg, #0d0d0d 0%, #171717 48%, #1f1f1f 100%); overflow: hidden; }
-.bb-news-hero-copy { max-width: 760px; }
-.bb-news-hero h1 { margin: 0; font-family: var(--bb-font-display); font-size: var(--fs-h1); line-height: 1.06; letter-spacing: 0.01em; text-transform: uppercase; color: #fff; }
-.bb-news-hero p { margin: 14px 0 0; max-width: 680px; color: var(--bb-text-secondary); line-height: 1.65; }
-.bb-news-page .bb-news-section { max-width: var(--bb-container-xl); margin: 0 auto 56px; padding: 0 24px; }
 
 /* -- Shared utility: info cards & form panels -------------- */
 
@@ -2526,13 +2491,10 @@ body:has(.bb-account-layout) .bb-breadcrumb {
 
 /* -- Responsive overrides ---------------------------------- */
 @media (max-width: 1024px) {
-  .bb-news-hero { grid-template-columns: 1fr; margin-inline: 24px; }
   .bb-checkout-layout { grid-template-columns: 1fr; }
   .bb-account-layout { grid-template-columns: 1fr; }
 }
 @media (max-width: 768px) {
-  .bb-news-hero { grid-template-columns: 1fr; margin: 16px 16px 24px; padding: 28px 20px; }
-  .bb-news-page .bb-news-section { padding: 0 16px; }
   .bb-order-summary { position: static; }
 }
 
@@ -2612,10 +2574,6 @@ img, picture, video, svg, canvas { max-width: 100%; }
   .bb-feature-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
-/* -- Articles & news intermediate (3 - 2 - 1) -------------- */
-@media (max-width: 600px) {
-  .bb-articles-grid-v2 { grid-template-columns: 1fr; }
-}
 
 /* -- Hero: hide decorative product mark below tablet to
  *    save LCP weight and free room for the headline. */
@@ -3183,10 +3141,6 @@ img, picture, video, svg, canvas { max-width: 100%; }
   background: var(--bb-bg-page);
 }
 
-.bb-news-section {
-  background: var(--bb-bg-section);
-  padding-block: var(--bb-section-y);
-}
 
 .bb-news-img-placeholder {
   background: var(--bb-color-gray-100);
@@ -3479,9 +3433,7 @@ a:not(.font-cta):hover {
 .bb-page,
 .bb-products-section,
 .bb-experience,
-.bb-seo-content,
-.bb-news-section,
-.bb-news-page {
+.bb-seo-content {
   background: var(--bb-bg-page);
 }
 
@@ -3604,19 +3556,7 @@ input[type="checkbox"] {
   accent-color: var(--bb-text-brand);
 }
 
-.bb-news-hero {
-  background:
-    radial-gradient(circle at 88% 22%, rgba(255, 12, 9, 0.22), transparent 28%),
-    radial-gradient(circle at 20% 0%, rgba(255, 255, 255, 0.12), transparent 42%),
-    linear-gradient(145deg, #0d0d0d 0%, #171717 48%, #1f1f1f 100%);
-  color: #ffffff;
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
-}
-
-.bb-cat-hero-title,
-.bb-news-hero h1 {
+.bb-cat-hero-title {
   color: #ffffff;
   font-family: var(--bb-font-display);
   font-size: var(--bb-text-hero);
@@ -3624,12 +3564,6 @@ input[type="checkbox"] {
   line-height: 45px;
   letter-spacing: 0;
   text-transform: uppercase;
-}
-
-.bb-news-hero p {
-  color: #cecece;
-  font-size: var(--fs-body);
-  line-height: 24px;
 }
 
 .bb-product-card {
@@ -3865,7 +3799,6 @@ input[type="checkbox"] {
 
 .bb-products-section,
 .bb-experience,
-.bb-news-section,
 .bb-seo-content {
   padding-block: var(--bb-section-y);
 }
@@ -3905,30 +3838,26 @@ input[type="checkbox"] {
 
 @media (max-width: 639px) {
 
-  .bb-cat-hero-title,
-.bb-news-hero h1 {
+  .bb-cat-hero-title {
     font-size: 18px;
     line-height: 27px;
   }
 
   .bb-products-section,
 .bb-experience,
-.bb-news-section,
 .bb-seo-content {
     padding-block: 32px;
   }
 }
 
 @media (min-width: 640px) and (max-width: 1023px) {
-  .bb-cat-hero-title,
-.bb-news-hero h1 {
+  .bb-cat-hero-title {
     font-size: 24px;
     line-height: 36px;
   }
 
   .bb-products-section,
 .bb-experience,
-.bb-news-section,
 .bb-seo-content {
     padding-block: 52px;
   }
@@ -7320,8 +7249,7 @@ body .bb-home .white.block-title h3 {
   }
 
   .bb-page > [data-bb-rail] > header:first-child,
-  .bb-page-head,
-  .bb-news-hero {
+  .bb-page-head {
     margin: 0 0 18px;
     padding: 20px 0 16px;
     border-bottom: 1px solid var(--bb-border-subtle);
@@ -7329,8 +7257,7 @@ body .bb-home .white.block-title h3 {
   }
 
   .bb-page h1,
-  .bb-page-head h1,
-  .bb-news-hero h1 {
+  .bb-page-head h1 {
     font-size: var(--fs-h1);
     line-height: 1.08;
   }
@@ -7341,8 +7268,7 @@ body .bb-home .white.block-title h3 {
     overflow-wrap: anywhere;
   }
 
-  .bb-page-head .sub,
-.bb-news-hero p {
+  .bb-page-head .sub {
     font-size: var(--fs-caption);
     line-height: 1.5;
   }
@@ -7706,10 +7632,6 @@ body .bb-home .white.block-title h3 {
     min-height: 52px;
   }
 
-  .bb-news-page .bb-news-section {
-    margin-bottom: 34px;
-    padding-inline: var(--bb-mobile-page-x);
-  }
 
   .bb-breadcrumb {
     padding: 12px var(--bb-mobile-page-x);
@@ -8129,8 +8051,7 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
 
   .bb-home .bb-experience-desc,
 .bb-home .content-bottom.wyswyg p,
-.bb-page-head .sub,
-.bb-news-hero p {
+.bb-page-head .sub {
     color: var(--bb-text-secondary);
   }
 
@@ -8412,8 +8333,7 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
   /* Tier 3 — layouts already at 1440px (.bb-pdp/.bb-pdp-below skeleton inline) */
   .bb-checkout-layout,
   .bb-breadcrumb,
-  .bb-page-head,
-  .bb-news-page .bb-news-section {
+  .bb-page-head {
     max-width: 1480px;
   }
 
@@ -8457,8 +8377,7 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
   /* Tier 3 (.bb-pdp/.bb-pdp-below skeleton inline) */
   .bb-checkout-layout,
   .bb-breadcrumb,
-  .bb-page-head,
-  .bb-news-page .bb-news-section {
+  .bb-page-head {
     max-width: 1760px;
   }
 
@@ -8536,8 +8455,7 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
   /* Tier 3 (.bb-pdp/.bb-pdp-below skeleton inline) */
   .bb-checkout-layout,
   .bb-breadcrumb,
-  .bb-page-head,
-  .bb-news-page .bb-news-section {
+  .bb-page-head {
     max-width: 2400px;
   }
 

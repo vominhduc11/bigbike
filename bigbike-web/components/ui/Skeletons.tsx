@@ -248,7 +248,7 @@ export function HomeSkeleton() {
             </div>
             <SkelButton w={120} />
           </div>
-          <div className="bb-articles-grid-v2">
+          <div className="grid grid-cols-3 gap-6 4xl:grid-cols-4 max-[901px]:grid-cols-2 max-[601px]:grid-cols-1">
             {Array.from({ length: 3 }).map((_, i) => (
               <ArticleCardSkel key={i} />
             ))}
@@ -482,37 +482,6 @@ export function BrandDetailSkeleton() {
           <div className={bbProductGridSkel}>
             {Array.from({ length: 8 }).map((_, i) => <ProductCardSkel key={i} />)}
           </div>
-        </div>
-      </div>
-    </SkeletonRoot>
-  );
-}
-
-/** Article list (tin-tuc) — hero + filter + 3-col article grid */
-export function ArticleListSkeleton({ label = "Loading articles" }: { label?: string }) {
-  return (
-    <SkeletonRoot label={label} className="bb-news-page">
-      <Container className="mt-6">
-        <div className="bb-news-hero">
-          <div className={cn("bb-news-hero-copy", skelStack)}>
-            <SkelText w="20%" />
-            <SkelTitle w="80%" h="2em" />
-            <SkelText w="100%" />
-            <SkelText w="80%" />
-          </div>
-          <div>
-            <SkelBlock w="100%" h={160} />
-          </div>
-        </div>
-      </Container>
-      <div className="bb-news-section">
-        <div className={skelRow} style={{ marginBottom: 28 }}>
-          <SkelButton w={120} />
-          <SkelButton w={140} />
-          <SkelButton w={120} />
-        </div>
-        <div className="bb-articles-grid-v2">
-          {Array.from({ length: 6 }).map((_, i) => <ArticleCardSkel key={i} />)}
         </div>
       </div>
     </SkeletonRoot>
