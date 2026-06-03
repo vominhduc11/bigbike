@@ -123,17 +123,26 @@ function WpCategoryListItem({ category }: { category: Category }) {
   const src = resolveMediaUrl(imgAsset?.url?.trim()) || "/wp/category-fallback.png";
 
   return (
-    <Link href={toCategoryPath(category.slug)} className="bb-cat-list-item">
-      <span className="bb-cat-list-img" aria-hidden="true">
+    <Link
+      href={toCategoryPath(category.slug)}
+      className="group relative flex flex-col items-center justify-center h-[290px] p-[30px] bg-white border-r border-b border-r-[#cecece] border-b-[#cecece] text-center no-underline cursor-pointer overflow-hidden before:content-[''] before:absolute before:inset-0 before:bg-[url('/wp/cat-hover.jpg')] before:bg-[position:top_center] before:bg-cover before:bg-no-repeat before:opacity-0 before:[transition:opacity_0.2s_ease] hover:before:opacity-100 focus-visible:[outline:var(--bb-focus-outline)] focus-visible:[outline-offset:-3px] focus-visible:z-[2]"
+    >
+      <span
+        className="relative z-[1] flex items-center justify-center w-[72px] h-[72px] min-[1536px]:w-20 min-[1536px]:h-20 min-[2560px]:w-[88px] min-[2560px]:h-[88px] pointer-events-none"
+        aria-hidden="true"
+      >
         <Image
           src={src}
           alt=""
           width={96}
           height={96}
           sizes="(min-width: 2560px) 88px, (min-width: 1536px) 80px, 72px"
+          className="block w-full h-full object-contain [transition:filter_0.2s_ease,transform_0.2s_ease] group-hover:[filter:brightness(0)_invert(1)] group-hover:[transform:scale(1.06)] group-active:[transform:scale(0.97)]"
         />
       </span>
-      <span className="bb-cat-list-desc">{name}</span>
+      <span className="relative z-[1] line-clamp-2 mt-6 font-[family-name:var(--bb-font-cta)] font-semibold text-[17px] min-[1536px]:text-[18px] min-[2560px]:text-[20px] leading-[1.2] tracking-[0.02em] uppercase text-foreground [transition:color_0.2s_ease] group-hover:text-white">
+        {name}
+      </span>
     </Link>
   );
 }
@@ -467,7 +476,10 @@ export default async function HomePage() {
                   <MobileCategoryGrid categories={categoriesResult.data} />
                 </div>
                 <div className="hidden md:block">
-                  <div className="bb-cat-list" aria-label="Danh mục sản phẩm">
+                  <div
+                    className="grid grid-cols-4 min-[2560px]:grid-cols-6 gap-0 border-t border-l border-t-[#cecece] border-l-[#cecece] mt-[130px] max-[1024px]:mt-20 mb-2.5"
+                    aria-label="Danh mục sản phẩm"
+                  >
                     {categoriesResult.data.map((category) => (
                       <WpCategoryListItem key={category.id} category={category} />
                     ))}
@@ -486,7 +498,7 @@ export default async function HomePage() {
               <MobileCategoryGrid categories={categoriesResult.data} />
             </div>
             <div className="hidden md:block">
-              <div className="bb-cat-list">
+              <div className="grid grid-cols-4 min-[2560px]:grid-cols-6 gap-0 border-t border-l border-t-[#cecece] border-l-[#cecece] mt-0 mb-2.5">
                 {categoriesResult.data.map((category) => (
                   <WpCategoryListItem key={category.id} category={category} />
                 ))}

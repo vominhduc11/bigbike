@@ -1604,146 +1604,6 @@ body {
 
 /* -- Featured Carousel Item wrapper (Swiper slide) ---------------- */
 
-/* -- Category List - homepage category tiles (WP `.product-category-list`
- * lineage; desktop-only, shown via `hidden md:block` >= 768px).
- * Default: white tile, 1px grey (#cecece) grid dividers, icon top-center +
- *          uppercase name centered below.
- * Hover:   red cat-hover.jpg fills the tile, icon inverts to white + scales,
- *          label turns white.
- * -------------------------------------------------------------- */
-/* Dividers: the 1px grey grid lines are drawn with per-item borders
- * (border-right + border-bottom) plus a top/left border on the grid itself —
- * NOT with a grey container background bleeding through `gap`. The old
- * background-through-gap trick exposed a large grey block whenever the last
- * row was not full (e.g. 12 items in a 5-col grid -> 5+5+2). With borders, an
- * incomplete last row simply renders fewer tiles and no grey filler, so the
- * layout stays clean for any category count.
- * Columns use 12-item-friendly divisors (2/3/4/6) so rows are always full. */
-.bb-cat-list {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0;
-  border-top: 1px solid var(--bb-color-gray-300);
-  border-left: 1px solid var(--bb-color-gray-300);
-  margin-top: 130px;
-}
-
-/* 4xl / showroom TV (container = 2240px): 6 columns gives the 12 live
- * categories a balanced 2-row grid and matches the 6-up featured carousel.
- * Replaces the old 5-col rule that produced the broken 5+5+2 layout. */
-@media (min-width: 2560px) {
-  .bb-cat-list {
-    grid-template-columns: repeat(6, 1fr);
-  }
-}
-
-.bb-cat-list-item {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 290px;
-  padding: 30px;
-  background: var(--bb-color-white);
-  border-right: 1px solid var(--bb-color-gray-300);
-  border-bottom: 1px solid var(--bb-color-gray-300);
-  text-align: center;
-  text-decoration: none;
-  color: var(--bb-text-primary);
-  cursor: pointer;
-  overflow: hidden;
-}
-
-/* Brand red image fill on hover (WP parity), tuned to a snappier 200ms. */
-.bb-cat-list-item::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: url("/wp/cat-hover.jpg") top center / cover no-repeat;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.bb-cat-list-item:hover::before {
-  opacity: 1;
-}
-
-/* Keyboard focus: brand-token focus outline, raised above the red overlay. */
-.bb-cat-list-item:focus-visible {
-  outline: var(--bb-focus-outline);
-  outline-offset: -3px;
-  z-index: 2;
-}
-
-.bb-cat-list-img {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 72px;
-  height: 72px;
-  pointer-events: none;
-}
-.bb-cat-list-img img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  transition: filter 0.2s ease, transform 0.2s ease;
-}
-.bb-cat-list-item:hover .bb-cat-list-img img {
-  filter: brightness(0) invert(1);
-  transform: scale(1.06);
-}
-/* Pressed feedback (after :hover so it wins when both are active). */
-.bb-cat-list-item:active .bb-cat-list-img img {
-  transform: scale(0.97);
-}
-
-.bb-cat-list-desc {
-  position: relative;
-  z-index: 1;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-  margin-top: 24px;
-  font-family: var(--bb-font-cta);
-  font-weight: 600;
-  font-size: 17px;
-  line-height: 1.2;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  color: var(--bb-text-primary);
-  transition: color 0.2s ease;
-}
-.bb-cat-list-item:hover .bb-cat-list-desc {
-  color: var(--bb-color-white);
-}
-
-/* Large-desktop: scale icon + label up so wide cards don't feel empty. */
-@media (min-width: 1536px) {
-  .bb-cat-list-img {
-    width: 80px;
-    height: 80px;
-  }
-  .bb-cat-list-desc {
-    font-size: 18px;
-  }
-}
-@media (min-width: 2560px) {
-  .bb-cat-list-img {
-    width: 88px;
-    height: 88px;
-  }
-  .bb-cat-list-desc {
-    font-size: 20px;
-  }
-}
-
-
 /* -- Experience Section (articles as big image slides) -- */
 
 /* -- News / Blog Section -------------------------------- */
@@ -1839,21 +1699,6 @@ body {
 }
 
 /* Override Gutenberg alignment classes that leak in via WordPress HTML */
-
-/* -- Responsive additions -------------------------------- */
-
-@media (max-width: 767px) {
-  .bb-cat-list {
-    grid-template-columns: repeat(3, 1fr);
-    margin-top: 70px;
-  }
-}
-
-@media (max-width: 575px) {
-  .bb-cat-list {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
 
 /* ==========================================================
    DESIGN SYSTEM - bb-* component classes
@@ -3246,11 +3091,6 @@ input[type="checkbox"] {
   margin-bottom: 32px;
 }
 
-.bb-cat-list-item {
-  color: #000000;
-}
-
-
 
 .bb-empty-state,
 .bb-error-state,
@@ -3634,10 +3474,6 @@ input[type="checkbox"] {
   width: 20px;
   border-radius: 100px;
   background: var(--bb-action-primary);
-}
-
-.bb-home-products-parity .bb-cat-list {
-  margin-top: 130px;
 }
 
 /* Featured products: desktop image frame + large-desktop expansion ───────────────
@@ -4841,19 +4677,9 @@ body:has(.bb-search-results-page) {
   margin-top: 60px;
 }
 
-.bb-home-products-parity .bb-cat-list {
-  margin-top: 130px;
-  margin-bottom: 10px;
-}
-
 .bb-home > .bb-products-section:not(.bb-home-products-parity) {
   padding-top: 40px;
   padding-bottom: 40px;
-}
-
-.bb-home > .bb-products-section:not(.bb-home-products-parity) .bb-cat-list {
-  margin-top: 0;
-  margin-bottom: 10px;
 }
 
 .bb-home .content-bottom {
@@ -4891,10 +4717,6 @@ body:has(.bb-search-results-page) {
     padding-bottom: 40px;
   }
 
-  .bb-home-products-parity .bb-cat-list {
-    margin-top: 80px;
-  }
-
   .bb-home > .bb-products-section:not(.bb-home-products-parity) {
     padding-top: 40px;
     padding-bottom: 40px;
@@ -4920,17 +4742,9 @@ body:has(.bb-search-results-page) {
     margin-top: 20px;
   }
 
-  .bb-home-products-parity .bb-cat-list {
-    margin-top: 48px;
-  }
-
   .bb-home > .bb-products-section:not(.bb-home-products-parity) {
     padding-top: 32px;
     padding-bottom: 32px;
-  }
-
-  .bb-home > .bb-products-section:not(.bb-home-products-parity) .bb-cat-list {
-    margin-top: 0;
   }
 
   .bb-home .content-bottom {
