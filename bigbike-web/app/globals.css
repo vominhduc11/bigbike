@@ -2434,30 +2434,6 @@ img, picture, video, svg, canvas { max-width: 100%; }
 
 /* Khi tat ca slide vua man (isLocked) - can giua, khong padding nav */
 
-/* Pagination dots - kifu WP videos-slide (active dot dAi 'o) */
-.bb-fp-pagination {
-  display: flex;
-  justify-content: center;
-  margin-top: 60px;
-  gap: 5px;
-}
-.bb-fp-pagination .swiper-pagination-bullet {
-  width: 10px;
-  height: 10px;
-  background: #ffffff;
-  opacity: 1;
-  transition: all 0.3s ease;
-  border-radius: 50%;
-  margin: 0 5px;
-  display: inline-block;
-  cursor: pointer;
-}
-.bb-fp-pagination .swiper-pagination-bullet-active {
-  width: 20px;
-  background: var(--bb-action-primary);
-  border-radius: 20px;
-}
-
 /* Related-articles carousel pagination — sits on a light page background,
  * so dots are grey when idle and brand-red when active. */
 .bb-article-pagination {
@@ -2481,11 +2457,6 @@ img, picture, video, svg, canvas { max-width: 100%; }
   width: 20px;
   background: var(--bb-action-primary);
   border-radius: 20px;
-}
-
-/* Mobile: an nAt prev/next ('A cA Y @media pointer:coarse), bo margin top card */
-@media (max-width: 767px) {
-  .bb-fp-pagination { margin-top: 20px; }
 }
 
 /* ============================================================
@@ -2942,14 +2913,6 @@ input[type="checkbox"] {
   text-transform: uppercase;
 }
 
-.bb-home-products-parity .bb-fp-carousel {
-  position: relative;
-}
-
-.bb-home-products-parity .bb-fp-viewport {
-  overflow: hidden;
-}
-
 .bb-home-products-parity .bb-fp-page-track {
   display: flex;
   gap: 30px;
@@ -2963,45 +2926,6 @@ input[type="checkbox"] {
 
 .bb-home-products-parity .swiper-slide {
   height: auto;
-}
-
-.bb-home-products-parity .bb-fp-arrow {
-  color: #000;
-}
-
-.bb-home-products-parity .bb-fp-arrow:hover {
-  color: #000;
-}
-
-.bb-home-products-parity .bb-fp-pagination {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  margin-top: 60px;
-}
-
-.bb-home-products-parity .bb-fp-pagination .swiper-pagination-bullet {
-  width: 10px;
-  height: 10px;
-  margin: 0 5px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: #cecece;
-  opacity: 1;
-  transition: all 0.3s ease;
-}
-
-.bb-home-products-parity .bb-fp-pagination .swiper-pagination-bullet-active {
-  width: 20px;
-  border-radius: 100px;
-  background: var(--bb-action-primary);
-}
-
-@media (min-width: 1536px) {
-  .bb-home-products-parity .bb-fp-pagination {
-    margin-top: 40px;
-  }
 }
 
 body:has(.bb-article-detail-page) .bb-header-info-sheet {
@@ -4132,10 +4056,6 @@ body:has(.bb-search-results-page) {
   padding-bottom: 40px;
 }
 
-.bb-home-products-parity .bb-fp-pagination {
-  margin-top: 60px;
-}
-
 .bb-home > .bb-products-section:not(.bb-home-products-parity) {
   padding-top: 40px;
   padding-bottom: 40px;
@@ -4187,10 +4107,6 @@ body:has(.bb-search-results-page) {
   .bb-home-products-parity {
     padding-top: 32px;
     padding-bottom: 32px;
-  }
-
-  .bb-home-products-parity .bb-fp-pagination {
-    margin-top: 20px;
   }
 
   .bb-home > .bb-products-section:not(.bb-home-products-parity) {
@@ -4628,41 +4544,10 @@ body:has(.bb-search-results-page) {
     content: "";
   }
 
-  .bb-home-products-parity .bb-fp-viewport {
-    overflow-x: auto;
-    padding: 0 14px 6px;
-    scrollbar-width: none;
-  }
-
-  .bb-home-products-parity .bb-fp-viewport::-webkit-scrollbar {
-    display: none;
-  }
-
   .bb-home-products-parity .bb-fp-page-track {
     width: max-content;
     gap: 12px;
     transform: none;
-  }
-
-  .bb-home-products-parity .bb-fp-arrow,
-  .bb-home-products-parity .bb-fp-pagination {
-    display: none;
-  }
-
-  .bb-home-products-parity .bb-fp-carousel {
-    position: relative;
-  }
-
-  .bb-home-products-parity .bb-fp-carousel::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 6px;
-    width: 48px;
-    background: linear-gradient(to right, transparent, var(--bb-bg-page));
-    pointer-events: none;
-    z-index: 1;
   }
 
   .bb-home .content-bottom {
@@ -4881,10 +4766,6 @@ body:has(.bb-search-results-page) {
 
   .bb-home-products-parity {
     padding-top: 24px;
-  }
-
-  .bb-home-products-parity .bb-fp-viewport {
-    padding-inline: var(--bb-mobile-page-x);
   }
 
   .bb-home .content-bottom {
