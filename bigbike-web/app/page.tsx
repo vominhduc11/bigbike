@@ -201,15 +201,15 @@ function PromoBanner({
     <img
       src={imageSrc}
       alt={alt}
-      className="lazy"
+      className="lazy w-full"
       loading="lazy"
       suppressHydrationWarning
     />
   );
 
   return (
-    <div className="banner-ads pt-60">
-      <div className="container">
+    <div className="banner-ads pt-15 pb-0 max-[1024px]:pt-13 max-md:pt-5 max-md:pb-2 max-md:px-[var(--bb-mobile-page-x)] max-md:bg-background">
+      <div className="container !px-0 max-md:border max-md:border-border max-md:bg-card">
         <div className="row">
           <div className="col-md-12">
             {href ? <Link href={href}>{content}</Link> : content}

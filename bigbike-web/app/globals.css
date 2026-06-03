@@ -4944,7 +4944,6 @@ body:has(.bb-search-results-page) {
 .bb-home .white h3 {
   color: #fff;
 }
-.bb-home .pt-60 { padding-top: 60px; }
 .bb-home .pt-120 { padding-top: 120px; }
 .bb-home .pb-40 { padding-bottom: 40px; }
 .bb-home .pb-120 { padding-bottom: 120px; }
@@ -5109,17 +5108,6 @@ body .bb-home .white.block-title h3 {
 .bb-home #main-product-slide {
   position: relative;
 }
-
-.bb-home .banner-ads .container {
-  padding-right: 0;
-  padding-left: 0;
-}
-
-.bb-home .banner-ads .container img {
-  width: 100%;
-}
-
-
 
 .bb-home-video-title {
   margin: 0 auto;
@@ -5350,11 +5338,6 @@ body .bb-home .white.block-title h3 {
   margin-bottom: 10px;
 }
 
-.bb-home .banner-ads {
-  padding-top: 60px;
-  padding-bottom: 0;
-}
-
 .bb-home .bb-experience {
   padding-top: 100px;
   padding-bottom: 0;
@@ -5443,10 +5426,6 @@ body .bb-home .white.block-title h3 {
     padding-bottom: 40px;
   }
 
-  .bb-home .banner-ads {
-    padding-top: 52px;
-  }
-
   .bb-home .bb-experience {
     padding-top: 72px;
   }
@@ -5517,10 +5496,6 @@ body .bb-home .white.block-title h3 {
 
   .bb-home > .bb-products-section:not(.bb-home-products-parity) .bb-cat-list {
     margin-top: 0;
-  }
-
-  .bb-home .banner-ads {
-    padding-top: 40px;
   }
 
   .bb-home .bb-experience {
@@ -6158,16 +6133,6 @@ body .bb-home .white.block-title h3 {
     z-index: 1;
   }
 
-  .bb-home .banner-ads {
-    padding: 20px 14px 8px;
-    background: var(--bb-mobile-shell-bg);
-  }
-
-  .bb-home .banner-ads .container {
-    border: 1px solid var(--bb-border-brand);
-    background: var(--bb-mobile-shell-surface);
-  }
-
   .bb-home .bb-experience {
     padding-top: 28px;
   }
@@ -6468,16 +6433,6 @@ body .bb-home .white.block-title h3 {
   }
 
   .bb-home-products-parity .bb-fp-desc {
-    background: var(--bb-bg-surface);
-  }
-
-  .bb-home .banner-ads {
-    background: var(--bb-bg-page);
-    padding-inline: var(--bb-mobile-page-x);
-  }
-
-  .bb-home .banner-ads .container {
-    border-color: var(--bb-border-subtle);
     background: var(--bb-bg-surface);
   }
 
