@@ -771,10 +771,6 @@ body {
   }
   .bb-logo .hide-mobile { display: none; }
   .bb-logo .hide-desktop { display: block; }
-  .bb-logo-img {
-    width: 116px;
-    max-width: 116px;
-  }
 }
 
 /* -- Right column: navigation + user-control.
@@ -2587,18 +2583,6 @@ body:has(.bb-home) {
   100%     { transform: scale(1); }
 }
 
-@media (max-width: 500px) {
-  body:has(.bb-home) .bb-logo {
-    align-items: flex-start;
-    padding-top: 23px;
-  }
-
-  body:has(.bb-home) .bb-logo-img {
-    width: 80px;
-    max-width: 80px;
-  }
-}
-
 /* WooCommerce single-product parity scope.
    .bb-wp-pdp base color/background migrated to inline Tailwind (text-black bg-white)
    on the page wrapper; the class is kept as a marker for the body:has() emblem
@@ -3224,20 +3208,8 @@ body:has(.bb-search-results-page) {
     z-index: 2;
     align-items: center;
     justify-content: center;
-    width: 120px;
     padding: 0;
     transform: translateX(-50%);
-  }
-
-  body:has(.bb-home) .bb-logo {
-    align-items: center;
-    padding-top: 0;
-  }
-
-  .bb-logo-img,
-  body:has(.bb-home) .bb-logo-img {
-    width: 104px;
-    max-width: 104px;
   }
 
   .bb-header-info-trigger {
@@ -3915,8 +3887,7 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
     justify-content: center;
   }
 
-  .bb-logo-img,
-  body:has(.bb-home) .bb-logo-img {
+  .bb-logo-img {
     width: 112px;
     max-width: 112px;
     height: auto;
