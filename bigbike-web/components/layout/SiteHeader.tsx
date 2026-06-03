@@ -134,10 +134,10 @@ export async function SiteHeader() {
 
           <div className="flex-1 flex items-stretch justify-between gap-[clamp(12px,1.6vw,28px)] h-full min-w-0 max-[1261px]:justify-end max-[1261px]:gap-0 max-md:justify-stretch max-md:w-full">
             <nav
-              className="bb-navigation flex h-full min-w-0 flex-1 items-stretch justify-center max-[1260px]:hidden"
+              className="flex h-full min-w-0 flex-1 items-stretch justify-center max-[1261px]:hidden"
               aria-label={navigationLabel}
             >
-              <ul className="bb-header-nav m-0 flex h-full list-none items-stretch p-0">
+              <ul className="m-0 flex h-full list-none items-stretch p-0">
                 {resolvedMenuTree.map((node) => (
                   <HeaderNavItem key={node.id} node={node} />
                 ))}

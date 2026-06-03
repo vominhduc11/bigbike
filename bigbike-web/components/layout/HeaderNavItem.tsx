@@ -267,7 +267,19 @@ function MegaMenu({
 const menuDelay: [number, number] = [0, CLOSE_DELAY_MS];
 
 const navLinkBase =
-  "bb-header-nav-link flex h-full items-center whitespace-nowrap font-cta text-17 font-semibold uppercase no-underline text-white transition-colors duration-150 hover:text-brand-on-dark";
+  "flex h-full items-center whitespace-nowrap px-[30px] pt-[26px] pb-[27px] font-cta text-[length:var(--bb-text-17)] font-semibold uppercase leading-[1.357rem] no-underline text-white transition-colors duration-150 hover:text-brand-on-dark focus-visible:text-brand-on-dark focus-visible:outline-none";
+
+// bb-header-nav-item kept as a marker (JS reads `.bb-header-nav-item.is-open`).
+// Base layout + the red diamond separator (rendered for every item except the
+// last) are inlined; the separator anchors at the item's right edge with zero
+// inter-item spacing (margin/padding-right resolved to 0 in the legacy cascade).
+const navItemBase =
+  "bb-header-nav-item relative flex h-full list-none items-stretch " +
+  "[&:not(:last-child)]:after:absolute [&:not(:last-child)]:after:right-0 " +
+  "[&:not(:last-child)]:after:top-1/2 [&:not(:last-child)]:after:h-1.5 " +
+  "[&:not(:last-child)]:after:w-1.5 [&:not(:last-child)]:after:bg-[var(--bb-action-primary)] " +
+  "[&:not(:last-child)]:after:content-[''] " +
+  "[&:not(:last-child)]:after:[transform:translate(50%,-50%)_rotate(45deg)]";
 
 export function HeaderNavItem({ node }: HeaderNavItemProps) {
   const pathname = usePathname();
@@ -359,7 +371,7 @@ export function HeaderNavItem({ node }: HeaderNavItemProps) {
 
   if (!hasChildren) {
     return (
-      <li className={cn("bb-header-nav-item relative flex h-full list-none items-stretch", active && "is-active")}>
+      <li className={cn(navItemBase, active && "is-active")}>
         <Link
           href={href}
           className={cn(navLinkBase, node.cssClass, active && "text-brand-on-dark")}
@@ -377,7 +389,7 @@ export function HeaderNavItem({ node }: HeaderNavItemProps) {
     <li
       ref={wrapperRef}
       className={cn(
-        "bb-header-nav-item relative flex h-full list-none items-stretch",
+        navItemBase,
         active && "is-active",
         open && "is-open",
       )}
@@ -392,7 +404,7 @@ export function HeaderNavItem({ node }: HeaderNavItemProps) {
     >
       <Link
         href={href}
-        className={cn(navLinkBase, node.cssClass, active && "text-brand-on-dark")}
+        className={cn(navLinkBase, node.cssClass, (active || open) && "text-brand-on-dark")}
         target={node.openInNewTab ? "_blank" : undefined}
         rel={node.openInNewTab ? "noreferrer" : undefined}
         aria-current={active ? "page" : undefined}

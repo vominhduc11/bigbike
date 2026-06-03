@@ -777,69 +777,14 @@ body {
   }
 }
 
-/* -- Right column: navigation + user-control (.bb-right-header layout migrated inline) */
-.bb-navigation {
-  display: flex;
-  align-items: stretch;
-  justify-content: center;
-  min-width: 0;
-  height: 100%;
-  margin-left: auto;
-}
-
-.bb-header-nav {
-  display: flex;
-  align-items: stretch;
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.bb-header-nav-item {
-  position: relative;
-  display: flex;
-  align-items: stretch;
-  height: 100%;
-}
-
-.bb-header-nav-item:not(:last-child) {
-  margin-right: clamp(12px, 1vw, 18px);
-  padding-right: clamp(12px, 1vw, 18px);
-}
-
-.bb-header-nav-item:not(:last-child)::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  right: 0;
-  width: 6px;
-  height: 6px;
-  background: var(--bb-action-primary);
-  transform: translate(50%, -50%) rotate(45deg);
-}
-
-.bb-header-nav-link {
-  display: inline-flex;
-  align-items: center;
-  height: 100%;
-  padding-inline: clamp(8px, 0.8vw, 14px);
-  color: var(--bb-text-inverse);
-  font-family: var(--bb-font-cta);
-  font-size: var(--bb-text-17);
-  font-weight: 600;
-  line-height: 1;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.bb-header-nav-item.is-active .bb-header-nav-link,
-.bb-header-nav-item.is-open .bb-header-nav-link,
-.bb-header-nav-link:hover,
-.bb-header-nav-link:focus-visible {
-  color: var(--bb-brand-primary);
-  outline: none;
-}
+/* -- Right column: navigation + user-control.
+   .bb-navigation / .bb-header-nav (wrapper layout), .bb-header-nav-item (base +
+   red diamond separator) and .bb-header-nav-link (base + hover/active/open color)
+   migrated to inline Tailwind in SiteHeader.tsx / HeaderNavItem.tsx. The legacy
+   cascade had unscoped overrides (further down this file) winning over the base
+   rules, so the effective nav-link padding was 26px 30px 27px (not the base clamp)
+   and line-height 1.357rem (not 1) — those effective values are what is inlined.
+   .bb-header-nav-item kept as a marker (JS reads `.bb-header-nav-item.is-open`). */
 
 /* Submenu category icon — mask-image URL is set inline (dynamic per item).
    Uses currentColor so it inherits text color from parent link hover state. */
@@ -1153,12 +1098,6 @@ body {
 .bb-header-info-sheet.is-open .bb-header-info-content {
   transform: translateX(0);
   opacity: 1;
-}
-
-@media (max-width: 1260px) {
-  .bb-navigation {
-    display: none !important;
-  }
 }
 
 .bb-account-avatar {
@@ -2940,17 +2879,6 @@ body:has(.bb-article-detail-page) footer [data-bb-rail].relative > button.absolu
 body:has(.bb-home) {
   --bb-header-height: 5rem;
   --bb-header-stack: 5rem;
-}
-
-.bb-header-nav-item:not(:last-child) {
-  margin-right: 0;
-  padding-right: 0;
-}
-
-.bb-header-nav-link {
-  padding: 26px 30px 27px;
-  font-size: var(--bb-text-17);
-  line-height: 1.357rem;
 }
 
 /* Floating contact widget — WP: b24-widget-button-wrapper, flex column-reverse */
