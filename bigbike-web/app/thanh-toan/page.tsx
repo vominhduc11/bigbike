@@ -74,7 +74,7 @@ function CheckoutStepTitle({ step, children }: { step: number; children: React.R
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
-  return <p className="bb-checkout-field-error">{message}</p>;
+  return <p className="m-0 mt-1 text-sm text-brand">{message}</p>;
 }
 
 export default function CheckoutPage() {
