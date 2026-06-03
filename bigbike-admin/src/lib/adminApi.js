@@ -743,7 +743,7 @@ export async function addOrderNote(orderId, { content, customerVisible = false }
 export async function fetchCustomers(query) {
   try {
     const payload = await requestJson('/admin/customers', {
-      query: { page: query?.page, size: query?.pageSize, q: query?.search, status: query?.status },
+      query: { page: query?.page, size: query?.pageSize, q: query?.search, status: query?.status, emailVerified: query?.emailVerified },
     })
     return withLiveData(parseListPayload(payload, normalizeCustomer, Number(query?.pageSize) || 10))
   } catch (error) {
@@ -1047,8 +1047,27 @@ export async function sendCouponGift(customerId, input) {
   return parseDetailPayload(payload, normalizeCoupon)
 }
 
+export async function fetchCustomerCoupons(customerId, query) {
+  try {
+    const payload = await requestJson(`/admin/customers/${customerId}/coupons`, {
+      query: { page: query?.page, size: query?.pageSize },
+    })
+    return withLiveData(parseListPayload(payload, normalizeCoupon, Number(query?.pageSize) || 20))
+  } catch (error) {
+    throw normalizeError(error)
+  }
+}
+
 export async function sendBulkCouponGift(input) {
   const payload = await requestJson('/admin/coupon-gifts/bulk', {
+    method: 'POST',
+    body: input,
+  })
+  return payload?.data ?? payload
+}
+
+export async function sendTargetedCouponGift(input) {
+  const payload = await requestJson('/admin/coupon-gifts/targeted', {
     method: 'POST',
     body: input,
   })

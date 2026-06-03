@@ -23,16 +23,30 @@ All are listed in `PermissionCatalog` (`inventory.*` and `warranty.*` in `roles.
 
 ## Roles
 
-| Role | Current scope | Status | Evidence |
-|---|---|---|---|
-| `SUPER_ADMIN` | wildcard `*` | `CONFIRMED_FROM_CODE` | `AdminRolePermissions.java` |
-| `ADMIN` | full operations including media, settings, redirects, POS override | `CONFIRMED_FROM_CODE` | `AdminRolePermissions.java` |
-| `SHOP_MANAGER` | catalog/orders/customers/coupons/shipping read/reviews/POS without price override | `CONFIRMED_FROM_CODE` | `AdminRolePermissions.java` |
-| `EDITOR` | catalog/content/media/menu/slider operations | `CONFIRMED_FROM_CODE` | `AdminRolePermissions.java` |
-| `AUTHOR` | content/media operations | `CONFIRMED_FROM_CODE` | `AdminRolePermissions.java` |
-| `CONTRIBUTOR` | content/media read | `CONFIRMED_FROM_CODE` | `AdminRolePermissions.java` |
-| `SEO_EDITOR` | content and redirects | `CONFIRMED_FROM_CODE` | `AdminRolePermissions.java` |
-| `CUSTOMER` | own profile/address/order/return APIs | `CONFIRMED_FROM_CONFIG` | `SecurityConfig.java` |
+Seven built-in admin roles are seeded as **system roles** (`is_system = TRUE`) by `V49__create_roles_permissions_tables.sql`. `CUSTOMER` is a **storefront auth role**, not a row in the `admin_roles` table and not shown in the admin Roles screen.
+
+| Role | Type | Current scope | Status | Evidence |
+|---|---|---|---|---|
+| `SUPER_ADMIN` | system (built-in) | wildcard `*` — permissions immutable; cannot be edited or deleted | `CONFIRMED_FROM_CODE` | `V49__create_roles_permissions_tables.sql`, `AdminRoleService.java` |
+| `ADMIN` | system (built-in) | full operations including media, settings, redirects, POS override | `CONFIRMED_FROM_CODE` | `V49__create_roles_permissions_tables.sql` |
+| `SHOP_MANAGER` | system (built-in) | catalog/orders/customers/coupons/shipping read/reviews/POS without price override | `CONFIRMED_FROM_CODE` | `V49__create_roles_permissions_tables.sql` |
+| `EDITOR` | system (built-in) | catalog/content/media/menu/slider operations | `CONFIRMED_FROM_CODE` | `V49__create_roles_permissions_tables.sql` |
+| `AUTHOR` | system (built-in) | content/media operations | `CONFIRMED_FROM_CODE` | `V49__create_roles_permissions_tables.sql` |
+| `CONTRIBUTOR` | system (built-in) | content/media read | `CONFIRMED_FROM_CODE` | `V49__create_roles_permissions_tables.sql` |
+| `SEO_EDITOR` | system (built-in) | content and redirects | `CONFIRMED_FROM_CODE` | `V49__create_roles_permissions_tables.sql` |
+| custom roles | non-system | any keys from `PermissionCatalog`; created/edited/deleted via the Roles API | `CONFIRMED_FROM_CODE` | `AdminRoleService.createRole/deleteRole` |
+| `CUSTOMER` | storefront (not an admin role) | own profile/address/order/return APIs; **not** in `admin_roles` | `CONFIRMED_FROM_CONFIG` | `SecurityConfig.java` |
+
+### Role Governance
+
+Enforced in `AdminRoleService` (Admin Roles API, gated by `roles.write`):
+
+- **System roles cannot be deleted.** `deleteRole` rejects any role with `is_system = TRUE` (`Cannot delete built-in system role`). All 7 built-in roles are system roles — there is no "2 fixed roles, rest deletable" model.
+- **`SUPER_ADMIN` permissions are immutable.** `updateRolePermissions` rejects edits to `SUPER_ADMIN` (`Cannot modify SUPER_ADMIN permissions`) — it stays wildcard `*`. The other 6 system roles **can** have their permission set edited (but still cannot be deleted).
+- **Custom roles** are created via `createRole` with `is_system = FALSE`; they can be both edited and deleted. `deleteRole` also blocks deletion while any admin user is still assigned to the role (`countByRole > 0`).
+- Role IDs must match `[A-Z][A-Z0-9_]{1,49}`; assigned permission keys are validated against `PermissionCatalog.ALL_KEYS` (unknown keys rejected).
+- **Admin-user guardrails** (`AdminAdminUsersService`): an admin cannot disable/suspend their own account, cannot demote themselves out of `SUPER_ADMIN`, and cannot demote the last active `SUPER_ADMIN`.
+- `CUSTOMER` (`ROLE_CUSTOMER`) is a separate storefront auth realm enforced in `SecurityConfig`; it is never managed through the admin Roles screen.
 
 ## Audit Log Permission
 

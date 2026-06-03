@@ -2,6 +2,11 @@
 @import "tw-animate-css";
 @import "../styles/brand-tokens.css";
 
+/* Keep Tailwind's automatic content scanner out of the local QA scratch dir.
+   Those .bak/.txt files contain illustrative class strings (e.g. text-[var(...)])
+   that would otherwise be compiled into invalid CSS and break the build. */
+@source not "../.artifacts";
+
 /* -------------------------------------------------------------------
    shadcn/ui CSS variables -- mapped from BigBike brand tokens.
    Radius = 0 (brand: sharp industrial design).

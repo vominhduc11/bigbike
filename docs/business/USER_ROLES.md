@@ -455,7 +455,8 @@ Confirmed evidence:
 - `AdminRolePermissions.MAP` defines built-in role-to-permission mapping.
 - `SUPER_ADMIN` has wildcard `*`.
 - Admin user management validates built-in/custom roles and writes audit logs.
-- Role management supports listing roles, updating role permissions, creating custom roles and deleting custom roles.
+- Role management (`AdminRoleService`) supports listing roles, editing role permissions, creating custom roles and deleting custom roles.
+- **Role governance** (enforced, not just inferred): the **7 built-in roles** (`SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER`, `EDITOR`, `AUTHOR`, `CONTRIBUTOR`, `SEO_EDITOR`) are **system roles** (`is_system = TRUE`) seeded by `V49__create_roles_permissions_tables.sql` and **cannot be deleted**. `SUPER_ADMIN` permissions are **immutable** (`*`); the other 6 system roles can have their permission set **edited** but not deleted. Only **custom roles** can be deleted — and only when no admin user is still assigned. `CUSTOMER` is a **storefront auth role** (`ROLE_CUSTOMER`), not a row in `admin_roles`. Full detail: `PERMISSION_MATRIX.md` → Role Governance.
 
 Important distinction:
 
@@ -478,7 +479,7 @@ Production auth caveat:
 | Backup / Ops Admin | `NOT_FOUND_IN_REPO` | No backup/restore operations role found. |
 | Marketing Manager | `NEEDS_VERIFICATION` | Coupons/content/SEO exist, but no explicit marketing role found. |
 | SEO Editor | `CONFIRMED_FROM_CODE` | Role exists in permission map. Need UI behavior verification. |
-| Custom Role | `CONFIRMED_FROM_CODE` | Admin role service/controller supports custom roles, but business governance needs verification. |
+| Custom Role | `CONFIRMED_FROM_CODE` | `AdminRoleService` supports create/edit/delete of custom roles (`is_system = FALSE`); deletion blocked while any admin user is still assigned. Governance enforced and documented in `PERMISSION_MATRIX.md` → Role Governance. |
 | System Job / Scheduled Task | `NEEDS_VERIFICATION` | System actor exists through services; scheduled/background jobs not fully audited here. |
 
 ## 14. Evidence Summary
@@ -512,7 +513,7 @@ Production auth caveat:
 3. Admin UI route guards and action-level disabled/hidden behavior need a dedicated UI audit. Backend permission enforcement is clearer than UI behavior.
 4. `SHOP_MANAGER`, `EDITOR`, `AUTHOR`, `CONTRIBUTOR`, `SEO_EDITOR` are confirmed in permission map, but business naming/Vietnamese labels and user-facing admin UI need verification.
 5. `SUPER_ADMIN` guardrails exist in admin user service, but UI confirmation/destructive-action safeguards need verification.
-6. Custom role creation/edit/delete exists, but business governance for custom permissions is not documented here.
+6. Custom role creation/edit/delete exists; role governance (system roles non-deletable, `SUPER_ADMIN` immutable, custom-only deletion) is now documented in `PERMISSION_MATRIX.md` → Role Governance and section 12 above.
 7. Customer role is confirmed, including returns creation/list/detail, but return eligibility rules need deeper audit in `CustomerReturnService`.
 8. Payment provider actor is not confirmed. Current payment flow appears internal/manual COD/BACS.
 9. Shipping provider actor is not confirmed. Current shipping flow appears internal zones/methods/cost only.

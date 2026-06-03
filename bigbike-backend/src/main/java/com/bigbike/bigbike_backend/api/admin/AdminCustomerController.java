@@ -1,6 +1,7 @@
 package com.bigbike.bigbike_backend.api.admin;
 
 import com.bigbike.bigbike_backend.api.admin.dto.coupon.AdminCouponDetailResponse;
+import com.bigbike.bigbike_backend.api.admin.dto.coupon.AdminCouponListItemResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.customer.AdminCustomerDetailResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.customer.AdminCustomerListItemResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.customer.AdminCustomerSummaryResponse;
@@ -10,6 +11,7 @@ import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiListResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.service.admin.AdminCouponGiftService;
+import com.bigbike.bigbike_backend.service.admin.AdminCouponService;
 import com.bigbike.bigbike_backend.service.admin.AdminCustomerService;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -38,6 +40,7 @@ public class AdminCustomerController extends AdminControllerSupport {
 
     private final AdminCustomerService adminCustomerService;
     private final AdminCouponGiftService couponGiftService;
+    private final AdminCouponService adminCouponService;
     private final DevAdminAuthService devAdminAuthService;
     private final ApiResponseFactory apiResponseFactory;
 
@@ -48,11 +51,12 @@ public class AdminCustomerController extends AdminControllerSupport {
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) Boolean synthetic,
+            @RequestParam(required = false) Boolean emailVerified,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "customers.read");
         return apiResponseFactory.list(
-                adminCustomerService.listCustomers(page, size, q, status, synthetic), request);
+                adminCustomerService.listCustomers(page, size, q, status, synthetic, emailVerified), request);
     }
 
     @GetMapping("/summary")
@@ -90,6 +94,18 @@ public class AdminCustomerController extends AdminControllerSupport {
         devAdminAuthService.requirePermission(request, "customers.write");
         return apiResponseFactory.data(
                 adminCustomerService.updateCustomerStatus(customerId, resolveAdminId(), body), request);
+    }
+
+    @GetMapping("/{customerId}/coupons")
+    public ApiListResponse<AdminCouponListItemResponse> listCustomerCoupons(
+            @PathVariable UUID customerId,
+            @RequestParam(defaultValue = "1") @Min(1) int page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "coupons.read");
+        return apiResponseFactory.list(
+                adminCouponService.listCouponsByCustomer(customerId, page, size), request);
     }
 
     @PostMapping("/{customerId}/coupon-gift")

@@ -5,6 +5,7 @@ import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.service.admin.AdminCouponGiftService;
 import com.bigbike.bigbike_backend.service.admin.AdminCouponGiftService.BulkCouponGiftResult;
 import com.bigbike.bigbike_backend.service.admin.AdminCouponGiftService.SendCouponGiftRequest;
+import com.bigbike.bigbike_backend.service.admin.AdminCouponGiftService.TargetedCouponGiftRequest;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -34,6 +35,17 @@ public class AdminCouponGiftController extends AdminControllerSupport {
         devAdminAuthService.requirePermission(request, "coupons.write");
         return apiResponseFactory.data(
                 couponGiftService.sendBulkCouponGift(resolveAdminId(), body), request);
+    }
+
+    @PostMapping("/targeted")
+    @ResponseStatus(HttpStatus.OK)
+    public ApiDataResponse<BulkCouponGiftResult> sendTargetedCouponGift(
+            @Valid @RequestBody TargetedCouponGiftRequest body,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "coupons.write");
+        return apiResponseFactory.data(
+                couponGiftService.sendTargetedCouponGift(resolveAdminId(), body), request);
     }
 
 }

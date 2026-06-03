@@ -75,6 +75,25 @@ public class AdminCouponService {
         return new PageResult<>(items, normalizedPage, normalizedSize, totalItems, totalPages);
     }
 
+    // ── List by customer ──────────────────────────────────────────────────────
+
+    @Transactional(readOnly = true)
+    public PageResult<AdminCouponListItemResponse> listCouponsByCustomer(UUID customerId, int page, int size) {
+        int normalizedPage = Math.max(1, page);
+        int normalizedSize = (size <= 0) ? DEFAULT_SIZE : Math.min(size, MAX_SIZE);
+        Pageable pageable = PageRequest.of(
+                normalizedPage - 1, normalizedSize,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+        Page<CouponEntity> pageResult = couponRepo.findAllByCustomerId(customerId, pageable);
+        List<AdminCouponListItemResponse> items = pageResult.getContent().stream()
+                .map(this::toListItem)
+                .toList();
+        long totalItems = pageResult.getTotalElements();
+        int totalPages = pageResult.getTotalPages() == 0 ? 1 : pageResult.getTotalPages();
+        return new PageResult<>(items, normalizedPage, normalizedSize, totalItems, totalPages);
+    }
+
     // ── Detail ────────────────────────────────────────────────────────────────
 
     @Transactional(readOnly = true)

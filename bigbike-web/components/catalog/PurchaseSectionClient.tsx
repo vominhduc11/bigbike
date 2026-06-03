@@ -333,7 +333,7 @@ export function PurchaseSectionClient({
             <RatingRow rating={initialRating} count={initialRatingCount} />
           </div>
           <div className="flex justify-end max-[1024px]:justify-start flex-[0_0_58.333333%] max-[1024px]:flex-[0_0_100%] max-w-[58.333333%] max-[1024px]:max-w-full px-[15px] max-md:px-0 text-right max-[1024px]:text-left max-[1024px]:mt-3 max-md:mt-0">
-            <p className="relative w-full max-w-[190px] max-md:max-w-[170px] h-[42px] max-md:h-[38px] m-0 ml-auto max-[1024px]:ml-0 border-none bg-transparent text-center font-cta font-semibold uppercase text-white after:content-[''] after:absolute after:inset-0 after:z-0 after:bg-black after:[transform:skewX(-20deg)] has-[.bb-pdp-stock-badge--out]:after:bg-brand">
+            <p className="relative isolate w-full max-w-[190px] max-md:max-w-[170px] h-[42px] max-md:h-[38px] m-0 ml-auto max-[1024px]:ml-0 border-none bg-transparent text-center font-cta font-semibold uppercase text-white after:content-[''] after:absolute after:inset-0 after:-z-10 after:bg-black after:[transform:skewX(-20deg)] has-[.bb-pdp-stock-badge--out]:after:bg-brand">
               <StockStatus
                 variant="badge"
                 data={effectiveStockData}

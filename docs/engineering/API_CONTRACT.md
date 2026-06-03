@@ -459,20 +459,34 @@ Concrete keys: `hero_products_*`, `hero_brands_*`, `hero_news_*` (15 total). All
 | Method | Path | Permission | Current behavior | Status | Evidence |
 |---|---|---|---|---|---|
 | `POST` | `/api/v1/admin/customers/{customerId}/coupon-gift` | `coupons.write` | Creates a unique `GIFT`-prefixed coupon locked to the customer, saves audit log, sends email async. Returns `AdminCouponDetailResponse`. Customer must have email. | `CONFIRMED_FROM_CODE` | `AdminCustomerController.java`, `AdminCouponGiftService.java` |
-| `POST` | `/api/v1/admin/coupon-gifts/bulk` | `coupons.write` | Creates one unique coupon per active customer with email (no `customer_id` lock — shared gift campaign). Emails sent async. Returns `{ sent, skipped }`. | `CONFIRMED_FROM_CODE` | `AdminCouponGiftController.java`, `AdminCouponGiftService.java` |
+| `POST` | `/api/v1/admin/coupon-gifts/bulk` | `coupons.write` | Creates one unique coupon per active customer with verified email. Emails sent async. Returns `{ sent, skipped }`. | `CONFIRMED_FROM_CODE` | `AdminCouponGiftController.java`, `AdminCouponGiftService.java` |
+| `POST` | `/api/v1/admin/coupon-gifts/targeted` | `coupons.write` | Creates one unique coupon per explicitly selected customer (by `customerIds` list). Only customers who are active and have verified email receive a coupon; others counted as `skipped`. Emails sent async. Returns `{ sent, skipped }`. | `PLANNED` | — |
 
-**Bulk gift request body** (same fields as single gift):
+**Bulk / targeted gift request body:**
 ```json
 { "discountType": "FIXED|PERCENT", "amount": 50000, "minimumAmount": null, "validDays": 30, "channel": "ALL" }
 ```
 
-**Bulk gift response shape:** `ApiDataResponse<BulkCouponGiftResult>` — `{ "sent": 120, "skipped": 5 }` where `skipped` = customers without email or with inactive status.
+**Targeted gift request body** adds `customerIds` array:
+```json
+{ "customerIds": ["uuid1", "uuid2"], "discountType": "FIXED", "amount": 50000, "minimumAmount": null, "validDays": 30, "channel": "ALL" }
+```
+
+**Gift response shape:** `ApiDataResponse<BulkCouponGiftResult>` — `{ "sent": 3, "skipped": 0 }` where `skipped` = customers without verified email, inactive status, or not found.
 
 ## Customer Admin — Summary
 
 | Method | Path | Permission | Current behavior | Status | Evidence |
 |---|---|---|---|---|---|
 | `GET` | `/api/v1/admin/customers/summary` | `customers.read` | KPI counts for the admin Customers screen. Returns `AdminCustomerSummaryResponse`: `total` (all customers), `vip` (customers whose lifetime order total ≥ 10,000,000 VND — mirrors `AdminCustomerService.deriveSegment` VIP rule), `newLast30Days` (registered within the last 30 days), `active` (status = `ACTIVE`). | `CONFIRMED_FROM_CODE` | `AdminCustomerController.java`, `AdminCustomerService.java` |
+
+## Customer Admin — Coupons
+
+| Method | Path | Permission | Current behavior | Status | Evidence |
+|---|---|---|---|---|---|
+| `GET` | `/api/v1/admin/customers/{customerId}/coupons` | `coupons.read` | Paginated list of coupons owned by a specific customer. Returns `ApiListResponse<AdminCouponListItemResponse>`. Query params: `page` (default 1), `size` (1–100, default 20). | `PLANNED` | — |
+
+**Response item shape** (`AdminCouponListItemResponse`): `id`, `code`, `name`, `discountType` (`FIXED`\|`PERCENT`), `amount`, `minimumAmount`, `status` (`ACTIVE`\|`INACTIVE`\|`EXPIRED`), `channel` (`ALL`\|`ONLINE`\|`POS`), `usageCount`, `usageLimit`, `expiresAt`, `createdAt`.
 
 ## Audit Log Contract
 

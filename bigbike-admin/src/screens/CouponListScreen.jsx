@@ -5,7 +5,9 @@ import { Copy, Pencil, Plus, Search, Send } from 'lucide-react'
 import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
+import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
 import { createCoupon, fetchCoupons, mapValidationErrors, sendBulkCouponGift, updateCoupon, updateCouponStatus } from '../lib/adminApi'
+import { CustomerPickerModal } from '../components/CustomerPickerModal'
 import { formatCurrencyVnd, formatDateTime } from '../lib/formatters'
 import { useDebounce } from '../lib/useDebounce'
 import { Alert } from '@/components/ui/alert'
@@ -66,6 +68,7 @@ export function CouponListScreen({ canUpdate }) {
 
   const [bulkOpen, setBulkOpen] = useState(false)
   const [bulkForm, setBulkForm] = useState(EMPTY_BULK_FORM)
+  const [pickerOpen, setPickerOpen] = useState(false)
   const [bulkSaving, setBulkSaving] = useState(false)
   const [bulkConfirm, setBulkConfirm] = useState(false)
 
@@ -205,6 +208,7 @@ export function CouponListScreen({ canUpdate }) {
   const items = state.items || []
 
   return (
+    <>
     <div>
       <div className="bb-screen-header">
         <div className="bb-screen-title">
@@ -214,6 +218,13 @@ export function CouponListScreen({ canUpdate }) {
         </div>
         {canUpdate && (
           <div className="bb-screen-actions">
+            <button
+              type="button"
+              className="bb-btn bb-btn-secondary"
+              onClick={() => { setPickerOpen(true); setBulkOpen(false); setShowForm(false) }}
+            >
+              <Send size={14} />Gửi mã theo nhóm
+            </button>
             <button
               type="button"
               className="bb-btn bb-btn-secondary"
@@ -248,7 +259,7 @@ export function CouponListScreen({ canUpdate }) {
             </div>
           </div>
           <form onSubmit={handleBulkSend} className="bb-card-body">
-            <div className="grid-2">
+            <div className="bb-grid-2">
               <label className="form-field">
                 <span>Loại giảm giá</span>
                 <Select value={bulkForm.discountType} onValueChange={(val) => setBulkForm((p) => ({ ...p, discountType: val }))} disabled={bulkSaving}>
@@ -316,7 +327,7 @@ export function CouponListScreen({ canUpdate }) {
           <div className="bb-card-header"><h2>{t('coupons.createTitle')}</h2></div>
           <form onSubmit={handleCreate} className="bb-card-body">
             {formError && <Alert tone="danger" size="sm" className="mb-3">{formError}</Alert>}
-            <div className="grid-2">
+            <div className="bb-grid-2">
               <label className="form-field">
                 <span>{t('coupons.formCode')}</span>
                 <Input required value={form.code} onChange={(e) => setForm((p) => ({ ...p, code: e.target.value.toUpperCase() }))} />
@@ -379,7 +390,7 @@ export function CouponListScreen({ canUpdate }) {
           <div className="bb-card-header"><h2>{t('coupons.editTitle', { code: editCoupon.code })}</h2></div>
           <form onSubmit={handleEdit} className="bb-card-body">
             {editError && <Alert tone="danger" size="sm" className="mb-3">{editError}</Alert>}
-            <div className="grid-2">
+            <div className="bb-grid-2">
               <label className="form-field">
                 <span>{t('coupons.formDiscountType')}</span>
                 <Select value={editForm.discountType} onValueChange={(val) => setEditForm((p) => ({ ...p, discountType: val }))}>
@@ -460,6 +471,7 @@ export function CouponListScreen({ canUpdate }) {
       {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) && (
         <div className="bb-card">
           <div className="bb-card-body bb-card-body--flush">
+            <div className="hide-on-mobile">
             <div className="bb-table-wrap">
               <table className="bb-table">
                 <thead>
@@ -531,6 +543,57 @@ export function CouponListScreen({ canUpdate }) {
                 </tbody>
               </table>
             </div>
+            </div>
+            <MobileCardList>
+              {items.map((c) => {
+                const pct = c.maxUsage ? Math.min(100, (c.usageCount / c.maxUsage) * 100) : 0
+                return (
+                  <MobileCard
+                    key={c.id}
+                    title={<span className="mono" style={{ fontSize: 13, color: 'var(--admin-color-primary)' }}>{c.code}</span>}
+                    subtitle={c.name || '—'}
+                    status={<CouponStatusBadge value={c.status} />}
+                    meta={[
+                      {
+                        label: t('coupons.colDiscount'),
+                        value: (
+                          <span className="bb-badge bb-badge-info">
+                            {c.discountType === 'PERCENT' ? `-${c.discountValue}%` : `-${formatCurrencyVnd(c.discountValue)}`}
+                          </span>
+                        ),
+                      },
+                      { label: t('coupons.colUsed'), value: `${c.usageCount}${c.maxUsage ? ` / ${c.maxUsage}` : ''}` },
+                      {
+                        label: 'Tỉ lệ dùng',
+                        value: c.maxUsage ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div className="stock-bar"><div style={{ width: pct + '%' }} /></div>
+                            <span className="bb-muted" style={{ fontSize: 12 }}>{pct.toFixed(0)}%</span>
+                          </div>
+                        ) : '—',
+                      },
+                      { label: 'Kênh', value: <ChannelBadge value={c.channel || 'ALL'} /> },
+                      { label: t('coupons.colExpires'), value: formatDateTime(c.expiresAt) },
+                    ]}
+                    actions={canUpdate ? (
+                      <>
+                        <button type="button" className="bb-icon-btn" title={t('common.edit')} onClick={() => openEdit(c)}>
+                          <Pencil size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          className="bb-icon-btn"
+                          title={c.status === 'ACTIVE' ? t('common.disable') : t('common.enable')}
+                          onClick={() => handleToggleStatus(c)}
+                        >
+                          <Copy size={14} />
+                        </button>
+                      </>
+                    ) : undefined}
+                  />
+                )
+              })}
+            </MobileCardList>
           </div>
           {state.status === 'success' && state.pagination && (
             <PaginationControls
@@ -541,5 +604,8 @@ export function CouponListScreen({ canUpdate }) {
         </div>
       )}
     </div>
+
+    <CustomerPickerModal open={pickerOpen} onClose={() => setPickerOpen(false)} />
+    </>
   )
 }

@@ -69,12 +69,12 @@ public class AdminCustomerService {
 
     @Transactional(readOnly = true)
     public PageResult<AdminCustomerListItemResponse> listCustomers(
-            int page, int size, String q, String status, Boolean synthetic
+            int page, int size, String q, String status, Boolean synthetic, Boolean emailVerified
     ) {
         int normalizedPage = Math.max(1, page);
         int normalizedSize = (size <= 0) ? DEFAULT_SIZE : Math.min(size, MAX_SIZE);
 
-        Specification<CustomerEntity> spec = buildSpec(q, status, synthetic);
+        Specification<CustomerEntity> spec = buildSpec(q, status, synthetic, emailVerified);
         org.springframework.data.domain.Pageable pageable = PageRequest.of(
                 normalizedPage - 1, normalizedSize, Sort.by(Sort.Direction.DESC, "createdAt"));
 
@@ -95,7 +95,7 @@ public class AdminCustomerService {
                 customerPage.getTotalElements(), customerPage.getTotalPages());
     }
 
-    private Specification<CustomerEntity> buildSpec(String q, String status, Boolean synthetic) {
+    private Specification<CustomerEntity> buildSpec(String q, String status, Boolean synthetic, Boolean emailVerified) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             if (q != null && !q.isBlank()) {
@@ -111,6 +111,11 @@ public class AdminCustomerService {
             }
             if (synthetic != null) {
                 predicates.add(cb.equal(root.get("isSynthetic"), synthetic));
+            }
+            if (Boolean.TRUE.equals(emailVerified)) {
+                predicates.add(cb.isNotNull(root.get("emailVerifiedAt")));
+            } else if (Boolean.FALSE.equals(emailVerified)) {
+                predicates.add(cb.isNull(root.get("emailVerifiedAt")));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         };

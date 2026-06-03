@@ -348,7 +348,7 @@ export async function SiteFooter() {
               </p>
             </div>
 
-            <div className="md:col-span-6 max-md:order-3 max-md:pr-14">
+            <div className="md:col-span-6 max-md:order-3">
               {bctUrl ? (
                 <div className="md:relative md:pl-[138px]">
                   <a

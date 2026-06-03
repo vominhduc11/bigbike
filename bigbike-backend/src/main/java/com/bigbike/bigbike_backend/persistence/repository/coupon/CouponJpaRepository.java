@@ -5,6 +5,8 @@ import jakarta.persistence.LockModeType;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Lock;
@@ -27,6 +29,8 @@ public interface CouponJpaRepository
     @Query("UPDATE CouponEntity c SET c.status = 'EXPIRED', c.updatedAt = :now "
             + "WHERE c.status = 'ACTIVE' AND c.expiresAt IS NOT NULL AND c.expiresAt < :now")
     int expireOverdue(@Param("now") Instant now);
+
+    Page<CouponEntity> findAllByCustomerId(UUID customerId, Pageable pageable);
 
     @Modifying
     @Query("UPDATE CouponEntity c SET c.usageCount = c.usageCount + 1, c.updatedAt = :now "

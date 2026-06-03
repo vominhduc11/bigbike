@@ -5,7 +5,7 @@ import { DetailSection } from '../components/DetailSection'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
-import { fetchCustomerCredit, fetchCustomerDetail, sendCouponGift, updateCustomer, updateCustomerCredit, updateCustomerStatus } from '../lib/adminApi'
+import { fetchCustomerCoupons, fetchCustomerCredit, fetchCustomerDetail, sendCouponGift, updateCustomer, updateCustomerCredit, updateCustomerStatus } from '../lib/adminApi'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
@@ -67,6 +67,10 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
   const canReadReceivables = hasPermission ? hasPermission('receivables.read') : false
   const canEditCredit = hasPermission ? hasPermission('receivables.create') : false
   const canSendCoupon = hasPermission ? hasPermission('coupons.write') : false
+  const canReadCoupons = hasPermission ? hasPermission('coupons.read') : false
+
+  // Customer coupons state
+  const [coupons, setCoupons] = useState({ status: 'idle', items: [], totalItems: 0 })
 
   // Coupon gift state
   const EMPTY_COUPON_FORM = { discountType: 'FIXED', amount: '', minimumAmount: '', validDays: '', channel: 'ALL' }
@@ -106,6 +110,16 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
       .finally(() => { if (active) setCreditLoading(false) })
     return () => { active = false }
   }, [customerId, canReadReceivables, t])
+
+  useEffect(() => {
+    if (!canReadCoupons) return
+    let active = true
+    setCoupons({ status: 'loading', items: [], totalItems: 0 })
+    fetchCustomerCoupons(customerId, { page: 1, pageSize: 20 })
+      .then((r) => { if (active) setCoupons({ status: 'success', items: r.items ?? [], totalItems: r.totalItems ?? 0 }) })
+      .catch(() => { if (active) setCoupons({ status: 'error', items: [], totalItems: 0 }) })
+    return () => { active = false }
+  }, [customerId, canReadCoupons])
 
   async function handleStatusChange(e) {
     setSaving(true)
@@ -489,6 +503,50 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
                   </Button>
                 </div>
               </form>
+            )}
+          </DetailSection>
+        </div>
+      )}
+
+      {/* Customer coupons list — full width below credit */}
+      {canReadCoupons && (
+        <div className="mt-6">
+          <DetailSection title="Mã giảm giá của khách hàng">
+            {coupons.status === 'loading' && (
+              <p className="text-muted-foreground text-sm">Đang tải...</p>
+            )}
+            {coupons.status === 'error' && (
+              <p className="text-danger text-sm">Không thể tải danh sách mã giảm giá.</p>
+            )}
+            {coupons.status === 'success' && coupons.items.length === 0 && (
+              <p className="text-muted-foreground text-sm">Khách hàng chưa có mã giảm giá nào.</p>
+            )}
+            {coupons.status === 'success' && coupons.items.length > 0 && (
+              <div className="flex flex-col gap-2">
+                {coupons.items.map((c) => (
+                  <div key={c.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 py-2 border-b border-border last:border-0 text-sm">
+                    <span className="font-mono font-semibold tracking-wider text-primary">{c.code}</span>
+                    <span className="text-muted-foreground">{c.name}</span>
+                    <span className="font-medium">
+                      {c.discountType === 'PERCENT'
+                        ? `${c.amount}%`
+                        : formatCurrencyVnd(c.amount)}
+                    </span>
+                    <StatusBadge status={c.status} type="coupon" />
+                    {c.expiresAt && (
+                      <span className="text-xs text-muted-foreground">HSD: {formatDateTime(c.expiresAt)}</span>
+                    )}
+                    <span className="text-xs text-muted-foreground ml-auto">
+                      {c.usageCount}/{c.usageLimit ?? '∞'} lần dùng
+                    </span>
+                  </div>
+                ))}
+                {coupons.totalItems > 20 && (
+                  <p className="text-xs text-muted-foreground pt-1">
+                    Hiển thị 20 / {coupons.totalItems} mã
+                  </p>
+                )}
+              </div>
             )}
           </DetailSection>
         </div>
