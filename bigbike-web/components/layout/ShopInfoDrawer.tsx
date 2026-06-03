@@ -10,8 +10,19 @@ import { cn } from "@/lib/utils";
 import { iconBtn } from "@/lib/ui-classes";
 import { parsePhones, parseShopHours } from "@/lib/utils/shop";
 
-// Drawer content (shell — bb-header-info-sheet/overlay/content + .is-open
-// transitions — intentionally stays as CSS).
+// Drawer shell, inlined. .bb-header-info-sheet / .bb-header-info-content are KEPT
+// as bare markers only because two rules can't be inlined onto this route-unaware
+// component: the prefers-reduced-motion duration override, and the
+// body:has(.bb-article-detail-page) overflow + closed-content display:none guard.
+// `open` swaps closed→open inline (visibility/pointer-events snap in on open and
+// wait for the fade on close); the overlay/content classes are otherwise dropped.
+const infoSheet =
+  "bb-header-info-sheet max-[1260px]:hidden fixed inset-0 z-[var(--bb-z-modal)] overflow-hidden pointer-events-none invisible [transition:visibility_0s_linear_0.5s]";
+const infoSheetOpen = "is-open pointer-events-auto visible [transition:visibility_0s_linear_0s]";
+const infoOverlay = "absolute inset-0 [border:none] bg-[rgba(0,0,0,0.64)] opacity-0 [transition:opacity_0.3s_ease]";
+const infoContent =
+  "bb-header-info-content absolute top-0 right-0 w-[min(100vw,645px)] h-full overflow-y-auto bg-white py-[50px] px-[70px] [transform:translateX(100%)] opacity-0 [transition:transform_0.5s_ease,opacity_0.5s_ease]";
+const infoContentOpen = "[transform:translateX(0px)] opacity-100";
 const liGrid = "grid grid-cols-[40px_minmax(0,1fr)] gap-4";
 const copyText = "m-0 text-black leading-[1.7]";
 const copyLink =
@@ -66,18 +77,18 @@ export function ShopInfoDrawer({
       </Button>
 
       <div
-        className={cn("bb-header-info-sheet max-[1260px]:hidden", open && "is-open")}
+        className={cn(infoSheet, open && infoSheetOpen)}
         aria-hidden={!open}
       >
         <button
           type="button"
-          className="bb-header-info-overlay"
+          className={cn(infoOverlay, open && "opacity-100")}
           aria-label={t("closeDrawer")}
           onClick={closePanel}
         />
 
         <div
-          className="bb-header-info-content"
+          className={cn(infoContent, open && infoContentOpen)}
           role="dialog"
           aria-modal="true"
           aria-label={t("shopInfoTitle", { siteName })}
