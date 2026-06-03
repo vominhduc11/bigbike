@@ -152,8 +152,8 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
         ]}
       />
 
-      <main id="main-content" className="bb-article-detail-page">
-        <div className="w-full max-w-[1200px] mx-auto px-[15px]">
+      <main id="main-content" className="bb-article-detail-page max-md:pt-1.5">
+        <div className="w-full max-w-[var(--bb-container-xl)] mx-auto px-[15px]">
           <div className="flex flex-wrap -mx-[15px]">
             <div className="relative w-full px-[15px] md:flex-[0_0_66.666667%] md:max-w-[66.666667%]">
               <div className="mb-10 max-md:pb-6">
@@ -288,7 +288,7 @@ function RelatedArticlesSection({ articles }: Readonly<{ articles: Article[] }>)
 
   return (
     <section id="related" className="pb-10">
-      <div className="w-full max-w-[1200px] mx-auto px-[15px]">
+      <div className="w-full max-w-[var(--bb-container-xl)] mx-auto px-[15px]">
         <div>
           <h3 className="m-0 mb-[30px] text-black font-heading text-[2.143rem] font-bold leading-[1.3] normal-case max-md:text-[24px] max-md:leading-[30px]">CÓ THỂ BẠN QUAN TÂM</h3>
         </div>

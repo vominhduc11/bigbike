@@ -5,7 +5,9 @@ import { useEffect } from "react";
 export function ArticleTableOfContents() {
   useEffect(() => {
     const toc = document.getElementById("table-of-content");
-    const content = document.querySelector(".blog .blog-content");
+    // The legacy ".blog" wrapper was migrated to inline Tailwind (commit a7e6bf21),
+    // so query the unique ".blog-content" richtext node directly.
+    const content = document.querySelector(".blog-content");
     if (!toc || !content) {
       return undefined;
     }

@@ -4005,98 +4005,6 @@ body:has(.bb-article-detail-page) footer [data-bb-rail].relative > button.absolu
   font-family: var(--bb-font-body);
 }
 
-.bb-article-detail-parity .align-items-center {
-  align-items: center;
-}
-
-.bb-article-detail-parity .text-right {
-  text-align: right;
-}
-
-.bb-article-detail-parity .page-title {
-  position: relative;
-  margin-bottom: 90px;
-  overflow: hidden;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: cover;
-}
-
-.bb-article-detail-parity .page-title .container {
-  position: relative;
-}
-
-.bb-article-detail-parity .page-title .row {
-  min-height: 450px;
-}
-
-.bb-article-detail-parity .page-title h1 {
-  position: relative;
-  z-index: 2;
-  margin: 0;
-  color: #ffffff;
-  font-family: var(--bb-font-heading);
-  font-size: 4.375rem;
-  font-weight: 600;
-  line-height: 1.2;
-  letter-spacing: 0;
-  text-transform: none;
-}
-
-.bb-article-detail-parity .page-title .img {
-  position: absolute;
-  right: 15px;
-  bottom: 0;
-  z-index: 1;
-}
-
-.bb-article-detail-parity .page-title .img img {
-  display: block;
-  width: auto;
-  max-width: 420px;
-  height: auto;
-}
-
-.bb-article-detail-parity .breadcrumb {
-  position: relative;
-  z-index: 2;
-  margin: 0;
-  padding: 0;
-  background: transparent;
-}
-
-.bb-article-detail-parity .breadcrumb ul {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.bb-article-detail-parity .breadcrumb li {
-  display: inline-block;
-  color: #ffffff;
-}
-
-.bb-article-detail-parity .breadcrumb li::before {
-  content: "/";
-  display: inline-block;
-  margin: 0 3px;
-}
-
-.bb-article-detail-parity .breadcrumb li:first-child::before {
-  display: none;
-}
-
-.bb-article-detail-parity .breadcrumb a,
-.bb-article-detail-parity .breadcrumb span {
-  color: #ffffff;
-  text-decoration: none;
-}
-
-.bb-article-detail-parity .breadcrumb a {
-  font-weight: 600;
-}
-
-
 .bb-article-detail-parity #table-of-content {
   width: 30%;
   margin-bottom: 14px;
@@ -4231,18 +4139,6 @@ body:has(.bb-article-detail-page) footer [data-bb-rail].relative > button.absolu
 }
 
 @media (max-width: 767px) {
-  .bb-article-detail-parity .page-title .row {
-    min-height: 250px;
-  }
-
-  .bb-article-detail-parity .page-title h1 {
-    font-size: 2rem;
-  }
-
-  .bb-article-detail-parity .page-title .img {
-    display: none;
-  }
-
   .bb-article-detail-parity #table-of-content {
     width: 100%;
   }
@@ -6908,8 +6804,7 @@ body .bb-home .white.block-title h3 {
     line-height: 1.05;
   }
 
-  .bb-blog-listing-parity #main-content,
-  .bb-article-detail-parity #main-content {
+  .bb-blog-listing-parity #main-content {
     padding-top: 6px;
   }
 
@@ -7751,11 +7646,6 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
     max-width: 1480px;
   }
 
-  /* Tier 4 — selectors that hard-code 1200px instead of using the token */
-  .bb-article-detail-parity .container {
-    max-width: 1360px;
-  }
-
   /* Tier 5 — account layout (282px fixed sidebar + fluid main) */
   .bb-account-layout {
     max-width: 1400px;
@@ -7793,11 +7683,6 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
   .bb-breadcrumb,
   .bb-page-head {
     max-width: 1760px;
-  }
-
-  /* Tier 4 */
-  .bb-article-detail-parity .container {
-    max-width: 1600px;
   }
 
   /* Tier 5 */
@@ -7871,11 +7756,6 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
   .bb-breadcrumb,
   .bb-page-head {
     max-width: 2400px;
-  }
-
-  /* Tier 4 */
-  .bb-article-detail-parity .container {
-    max-width: 2240px;
   }
 
   /* Tier 5 */
