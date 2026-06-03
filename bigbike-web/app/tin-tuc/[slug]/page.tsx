@@ -259,22 +259,22 @@ function SidebarArticleItem({ article }: Readonly<{ article: Article }>) {
   const date = formatWpShortDate(getArticleDate(article));
 
   return (
-    <div className="news--item">
-      <div className="news--item-thumbnail">
-        <Link href={href}>
+    <div className="flex flex-wrap mb-[30px] bg-white pb-5 border-b border-b-[#cecece] max-md:border-t max-md:border-r max-md:border-l max-md:border-t-[#ddd] max-md:border-r-[#ddd] max-md:border-l-[#ddd]">
+      <div className="flex-[0_0_40%] max-w-[40%]">
+        <Link href={href} className="block text-inherit no-underline">
           <WpArticleImage src={imageUrl} fallbackSrc={fallbackUrl} alt={title} />
         </Link>
       </div>
-      <div className="news--item-desc">
-        <div className="news-date">
-          <p>{categoryLabel}</p>
-          {date ? <p>{date}</p> : null}
+      <div className="flex-[0_0_60%] max-w-[60%] max-md:bg-white">
+        <div className="flex flex-wrap pl-[15px]">
+          <p className="m-0 text-[#6f6f6f] text-[12px] leading-[18px] [&:not(:last-child)]:after:content-['/'] [&:not(:last-child)]:after:mx-1.5 [&:not(:last-child)]:after:inline-block [&:not(:last-child)]:after:text-[#6f6f6f]">{categoryLabel}</p>
+          {date ? <p className="m-0 text-[#6f6f6f] text-[12px] leading-[18px] [&:not(:last-child)]:after:content-['/'] [&:not(:last-child)]:after:mx-1.5 [&:not(:last-child)]:after:inline-block [&:not(:last-child)]:after:text-[#6f6f6f]">{date}</p> : null}
         </div>
-        <div className="news--item-inside">
-          <h3>
-            <Link href={href}>{title}</Link>
+        <div className="pl-[15px] max-md:bg-white">
+          <h3 className="m-0 text-black font-heading text-[14px] font-semibold leading-[18px] normal-case">
+            <Link href={href} className="text-inherit no-underline [transition:all_0.3s_ease] hover:text-brand">{title}</Link>
           </h3>
-          <p>{makeExcerpt(article, 95)}</p>
+          <p className="hidden">{makeExcerpt(article, 95)}</p>
         </div>
       </div>
     </div>
@@ -312,19 +312,19 @@ function RelatedArticleCard({ article }: Readonly<{ article: Article }>) {
   const date = formatWpShortDate(getArticleDate(article));
 
   return (
-    <div className="news--item">
-      <div className="news--item-thumbnail">
-        <Link href={href}>
+    <div className="block mb-[30px] bg-white [box-shadow:0_3px_6px_rgba(0,0,0,0.16)] max-md:border max-md:border-border max-md:[box-shadow:none]">
+      <div>
+        <Link href={href} className="block text-inherit no-underline">
           <WpArticleImage src={imageUrl} fallbackSrc={fallbackUrl} alt={title} />
         </Link>
       </div>
-      <div className="news--item-desc">
-        <div className="news-date">{date ? <p>{date}</p> : null}</div>
-        <div className="news--item-inside">
-          <p className="title-post">
-            <Link href={href}>{title}</Link>
+      <div className="max-md:bg-white">
+        <div className="flex flex-wrap px-5 pt-5 pb-2.5">{date ? <p className="m-0 text-[#6f6f6f] text-[12px] leading-5">{date}</p> : null}</div>
+        <div className="px-5 pb-[30px] max-md:bg-white">
+          <p className="m-0 mb-2.5 text-black font-heading text-[20px] font-semibold leading-6 normal-case">
+            <Link href={href} className="text-inherit no-underline [transition:all_0.3s_ease] hover:text-brand">{title}</Link>
           </p>
-          <p>{makeExcerpt(article, 140)}</p>
+          <p className="block m-0 text-black text-[14px] leading-[25px]">{makeExcerpt(article, 140)}</p>
         </div>
       </div>
     </div>
