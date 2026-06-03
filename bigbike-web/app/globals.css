@@ -1478,78 +1478,11 @@ body {
 
 /* -- WP Experience Section ------------------------------------ */
 
-.bb-experience {
-  background: var(--bb-bg-page);
-  color: var(--bb-text-primary);
-  padding: var(--bb-space-20) 0;
-}
-
-.bb-experience--home {
-  padding: 100px 0 0;
-}
-
-.bb-experience-header {
-  text-align: center;
-  padding-bottom: 2.857rem;
-  border-bottom: 0;
-  margin-bottom: 0;
-}
-
-.bb-experience-title {
-  font-family: var(--bb-font-heading);
-  font-size: var(--bb-text-section-title);
-  font-weight: 600;
-  text-transform: uppercase;
-  color: var(--bb-text-primary);
-  margin: 0;
-  line-height: var(--bb-line-section-title);
-  letter-spacing: 0;
-}
-
-.bb-experience-desc {
-  color: var(--bb-color-footer-top);
-  max-width: 100%;
-  margin: 0 auto;
-  line-height: 1.375;
-  font-size: 1rem;
-}
-
-.bb-exp-slide-title {
-  margin: 0;
-  color: #000;
-  font-family: var(--bb-font-heading);
-  font-size: var(--fs-h3);
-  font-weight: 600;
-  line-height: 30px;
-  letter-spacing: 0;
-  text-transform: uppercase;
-}
-
-.bb-exp-slide-link {
-  display: inline-block;
-  width: 170px;
-  padding: 0;
-  border: 1px solid var(--bb-border-default);
-  color: #000;
-  font-family: var(--bb-font-cta);
-  font-size: var(--bb-text-base);
-  font-weight: 600;
-  line-height: 52px;
-  text-decoration: none;
-  text-transform: uppercase;
-  transition: border-color var(--bb-duration-fast) var(--bb-ease-standard),
-    color var(--bb-duration-fast) var(--bb-ease-standard);
-}
-
-.bb-exp-slide-link:hover {
-  color: #000;
-  text-decoration: none;
-}
-
-.bb-exp-slide-link:focus-visible {
-  outline: var(--bb-focus-outline);
-  outline-offset: 4px;
-}
+/* Experience section header/title/desc + slide title/link leaf styling
+   migrated to inline Tailwind (app/page.tsx + components/home/ExperienceCarousel.tsx).
+   Section keeps .bb-experience/.bb-experience--home markers (HeaderUiContext
+   IntersectionObserver + experience-section.spec). Cover/content carousel
+   mechanism (reacts to .swiper-slide-active) stays below. */
 
 /* -- Experience Carousel ------------------------------------ */
 
@@ -1608,26 +1541,6 @@ body {
   .bb-feature-tile {
     min-height: auto;
     padding: var(--bb-space-4);
-  }
-
-  .bb-experience-header {
-    padding-bottom: 2rem;
-  }
-
-
-  .bb-experience-title {
-    font-size: var(--bb-text-section-title);
-    line-height: var(--bb-line-section-title);
-  }
-
-  .bb-experience-desc {
-    line-height: 1.65;
-  }
-
-  .bb-exp-slide-title {
-    max-width: 240px;
-    margin-inline: auto;
-    line-height: 36px;
   }
 
 }
@@ -2596,8 +2509,7 @@ img, picture, video, svg, canvas { max-width: 100%; }
 /* Generic text/border re-skin */
 .bb-section-title,
 .bb-page-head h1,
-.bb-products-title,
-.bb-experience-title {
+.bb-products-title {
   color: var(--bb-text-primary);
 }
 
@@ -2643,11 +2555,9 @@ img, picture, video, svg, canvas { max-width: 100%; }
 
 /* Generic "color: #fff" - adjust at component scope only where safe.
    Header/footer/inverse panels intentionally keep light-on-dark. */
-.bb-products-section .bb-section-title,
-.bb-experience .bb-experience-title { color: var(--bb-text-primary); }
+.bb-products-section .bb-section-title { color: var(--bb-text-primary); }
 
-.bb-products-header,
-.bb-experience-header {
+.bb-products-header {
   color: var(--bb-text-primary);
 }
 
@@ -2658,7 +2568,6 @@ img, picture, video, svg, canvas { max-width: 100%; }
 /* Promo banner - keep image-backed dark feel optional. Light fallback: */
 
 /* Experience / video / news section bg */
-.bb-experience,
 .bb-products-section {
   background: var(--bb-bg-page);
 }
@@ -2954,7 +2863,6 @@ a:not(.font-cta):hover {
 .bb-home,
 .bb-page,
 .bb-products-section,
-.bb-experience,
 .bb-seo-content {
   background: var(--bb-bg-page);
 }
@@ -2981,7 +2889,6 @@ a:not(.font-cta):hover {
 .bb-page h1,
 .bb-section-title,
 .bb-products-title,
-.bb-experience-title,
 .bb-page-head h1 {
   color: var(--bb-text-primary);
   font-family: var(--bb-font-heading);
@@ -2993,16 +2900,14 @@ a:not(.font-cta):hover {
 
 /* WP section title: Barlow Condensed 50px/60px desktop; scales via brand tokens on tablet/mobile. */
 .bb-section-title,
-.bb-products-title,
-.bb-experience .bb-experience-title {
+.bb-products-title {
   font-size: var(--bb-text-section-title);
   line-height: var(--bb-line-section-title);
 }
 
 @media (max-width: 767px) {
   .bb-section-title,
-  .bb-products-title,
-  .bb-experience .bb-experience-title {
+  .bb-products-title {
     font-size: var(--bb-text-section-title);
     line-height: var(--bb-line-section-title);
   }
@@ -3320,7 +3225,6 @@ input[type="checkbox"] {
 }
 
 .bb-products-section,
-.bb-experience,
 .bb-seo-content {
   padding-block: var(--bb-section-y);
 }
@@ -3366,7 +3270,6 @@ input[type="checkbox"] {
   }
 
   .bb-products-section,
-.bb-experience,
 .bb-seo-content {
     padding-block: 32px;
   }
@@ -3379,7 +3282,6 @@ input[type="checkbox"] {
   }
 
   .bb-products-section,
-.bb-experience,
 .bb-seo-content {
     padding-block: 52px;
   }
@@ -5098,21 +5000,6 @@ body .bb-home .white.block-title h3 {
   margin-bottom: 10px;
 }
 
-.bb-home .bb-experience {
-  padding-top: 100px;
-  padding-bottom: 0;
-}
-
-.bb-home .bb-experience-header {
-  padding-bottom: 40px;
-}
-
-.bb-home .bb-exp-carousel {
-  padding-bottom: 40px;
-}
-
-
-
 .bb-home .content-bottom {
   padding-top: 60px;
   padding-bottom: 60px;
@@ -5134,14 +5021,9 @@ body .bb-home .white.block-title h3 {
    Breakpoint alignment: Swiper breakpoint and CSS both use 768px so Swiper
    desktop mode and CSS desktop mode activate at the same viewport width. */
 @media (min-width: 768px) {
-  .bb-home .bb-exp-slide-content {
-    padding-bottom: 56px;
-  }
-
-  .bb-home .bb-exp-carousel {
-    padding-bottom: 64px;
-  }
-
+  /* slide-content padding-bottom + carousel padding-bottom migrated to inline
+     (md:pb-14 / pb-16). swiper-wrapper height reset stays — it clears Swiper's
+     stale inline autoHeight value on resize to desktop (mechanism). */
   .bb-home .bb-exp-carousel .swiper-wrapper {
     height: auto !important;
   }
@@ -5165,10 +5047,6 @@ body .bb-home .white.block-title h3 {
   .bb-home > .bb-products-section:not(.bb-home-products-parity) {
     padding-top: 40px;
     padding-bottom: 40px;
-  }
-
-  .bb-home .bb-experience {
-    padding-top: 72px;
   }
 
 }
@@ -5216,24 +5094,6 @@ body .bb-home .white.block-title h3 {
   .bb-home > .bb-products-section:not(.bb-home-products-parity) .bb-cat-list {
     margin-top: 0;
   }
-
-  .bb-home .bb-experience {
-    padding-top: 48px;
-    padding-bottom: 0;
-  }
-
-  .bb-home .bb-experience-header {
-    padding-bottom: 24px;
-  }
-
-  .bb-home .bb-experience-header > div {
-    padding-top: 16px;
-  }
-
-  .bb-home .bb-exp-carousel {
-    padding-bottom: 28px;
-  }
-
 
   .bb-home .content-bottom {
     padding-top: 40px;
@@ -5593,15 +5453,13 @@ body .bb-home .white.block-title h3 {
 
   .bb-home-mobile-categories,
   .bb-home-products-parity,
-  .bb-home .bb-experience,
   .bb-home .content-bottom {
     background: var(--bb-mobile-shell-bg);
     color: var(--bb-text-inverse);
   }
 
   .bb-mobile-section-header h2,
-  .bb-home-products-parity .bb-products-title,
-  .bb-home .bb-experience-title {
+  .bb-home-products-parity .bb-products-title {
     color: var(--bb-text-inverse);
     font-size: 24px;
     line-height: 1.05;
@@ -5642,8 +5500,7 @@ body .bb-home .white.block-title h3 {
     z-index: 1;
   }
 
-  .bb-home-mobile-trust-card .text-muted-foreground,
-  .bb-home .bb-experience-desc {
+  .bb-home-mobile-trust-card .text-muted-foreground {
     color: var(--bb-text-inverse-muted);
   }
 
@@ -5748,25 +5605,6 @@ body .bb-home .white.block-title h3 {
     pointer-events: none;
     z-index: 1;
   }
-
-  .bb-home .bb-experience {
-    padding-top: 28px;
-  }
-
-  .bb-home .bb-experience-header {
-    padding-bottom: 18px;
-    text-align: left;
-  }
-
-  .bb-home .bb-experience-header > div {
-    padding-inline: 14px;
-  }
-
-  .bb-home .bb-exp-slide-title {
-    color: var(--bb-text-inverse);
-  }
-
-
 
   .bb-home .content-bottom {
     border-top: 1px solid var(--bb-mobile-shell-border);
@@ -5947,7 +5785,6 @@ body .bb-home .white.block-title h3 {
   .bb-home,
   .bb-home-mobile-categories,
   .bb-home-products-parity,
-  .bb-home .bb-experience,
   .bb-home .content-bottom {
     background: var(--bb-bg-page);
     color: var(--bb-text-primary);
@@ -5969,7 +5806,6 @@ body .bb-home .white.block-title h3 {
   .bb-home-mobile-trust-card .text-foreground,
   .bb-mobile-section-header h2,
   .bb-home-products-parity .bb-products-title,
-  .bb-home .bb-experience-title,
   .bb-home-products-parity .bb-fp-title,
   .bb-home-products-parity .bb-fp-title a {
     color: var(--bb-text-primary);
@@ -5984,8 +5820,7 @@ body .bb-home .white.block-title h3 {
     background: linear-gradient(to right, transparent, var(--bb-bg-page));
   }
 
-  .bb-home-mobile-trust-card .text-muted-foreground,
-  .bb-home .bb-experience-desc {
+  .bb-home-mobile-trust-card .text-muted-foreground {
     color: var(--bb-text-secondary);
   }
 
@@ -5993,8 +5828,7 @@ body .bb-home .white.block-title h3 {
     padding-top: 24px;
   }
 
-  .bb-home-products-parity .bb-products-header,
-  .bb-home .bb-experience-header > div {
+  .bb-home-products-parity .bb-products-header {
     padding-inline: var(--bb-mobile-page-x);
   }
 
@@ -6569,7 +6403,6 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
 
   .bb-mobile-section-header h2,
   .bb-home-products-parity .bb-products-title,
-  .bb-home .bb-experience-title,
   .bb-home .content-bottom.wyswyg h1,
   .bb-home .content-bottom.wyswyg h2 {
     max-width: 100%;
@@ -6588,8 +6421,7 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
     -webkit-line-clamp: 2;
   }
 
-  .bb-home .bb-experience-desc,
-.bb-home .content-bottom.wyswyg p,
+  .bb-home .content-bottom.wyswyg p,
 .bb-page-head .sub {
     color: var(--bb-text-secondary);
   }
@@ -6656,45 +6488,6 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
 
   .bb-home-mobile-category-image img {
     object-fit: contain !important;
-  }
-
-  .bb-home .bb-experience {
-    padding-top: 32px;
-  }
-
-  .bb-home .bb-experience-header {
-    padding-bottom: 16px;
-  }
-
-  .bb-home .bb-experience-title {
-    font-size: var(--fs-h2);
-    line-height: 1.08;
-  }
-
-  .bb-home .bb-experience-desc {
-    font-size: 15px;
-    line-height: 1.55;
-  }
-
-  .bb-home .bb-exp-slide-content {
-    margin-top: -18%;
-  }
-
-  .bb-home .bb-exp-slide-title {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    max-width: min(280px, 78vw);
-    margin-inline: auto;
-    font-size: 18px;
-    line-height: 1.3;
-  }
-
-  .bb-home .bb-exp-slide-link {
-    width: 150px;
-    font-size: 14px;
-    line-height: 44px;
   }
 
   .bb-home .content-bottom.bb-seo-content {
@@ -6764,12 +6557,6 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
 
   body > footer .bg-footer-top a[href^="mailto:"] {
     font-size: var(--fs-h4);
-  }
-}
-
-@media (max-width: 374px) {
-  .bb-home .bb-exp-slide-content {
-    margin-top: -14%;
   }
 }
 

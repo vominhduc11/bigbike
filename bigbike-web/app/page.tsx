@@ -489,10 +489,10 @@ export default async function HomePage() {
       />
 
       {expArticles.length > 0 && (
-        <section className="bb-experience bb-experience--home" aria-labelledby="home-exp-heading">
+        <section className="bb-experience bb-experience--home bg-background text-foreground pt-[100px] max-[1024px]:pt-[72px] max-md:pt-8 pb-0" aria-labelledby="home-exp-heading">
           {(expSubtitle || expTitle || expDesc) && (
             <div className="mx-auto w-full max-w-[var(--bb-container-xl)] px-[15px]">
-              <div className="bb-experience-header text-center">
+              <div className="[text-align:center] max-md:[text-align:left] pb-10 max-md:pb-4">
                 {expSubtitle ? (
                   <p className="bb-kicker">
                     {expSubtitle}
@@ -501,14 +501,14 @@ export default async function HomePage() {
                 {expTitle ? (
                   <h2
                     id="home-exp-heading"
-                    className="bb-experience-title"
+                    className="m-0 font-heading text-[length:var(--bb-text-section-title)] max-md:text-[length:var(--fs-h2)] font-semibold uppercase leading-[1.2] max-md:leading-[1.08] text-foreground max-md:max-w-full max-md:text-balance"
                   >
                     {expTitle}
                   </h2>
                 ) : null}
                 {expDesc ? (
-                  <div className="mx-auto w-full pt-[30px] md:w-2/3 min-[1200px]:max-w-[770px]">
-                    <p className="bb-experience-desc">
+                  <div className="mx-auto w-full pt-[30px] max-md:pt-4 max-md:px-[var(--bb-mobile-page-x)] md:w-2/3 min-[1200px]:max-w-[770px]">
+                    <p className="text-[var(--bb-color-footer-top)] max-md:text-muted-foreground max-w-full m-0 text-base max-md:text-[15px] leading-[1.375] max-md:leading-[1.55]">
                       {expDesc}
                     </p>
                   </div>
