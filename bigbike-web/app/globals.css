@@ -940,87 +940,6 @@ body {
   .bb-header-search-results { animation: none; }
 }
 
-.bb-header-user {
-  position: relative;
-  display: flex;
-  align-items: stretch;
-}
-
-/* Invisible bridge: fills the gap between trigger and menu so hovering
-   across doesn't dismiss the dropdown before the pointer arrives. */
-.bb-header-user-menu::after {
-  content: "";
-  position: absolute;
-  bottom: 100%;
-  left: 0;
-  right: 0;
-  height: 12px;
-}
-
-.bb-header-user-menu {
-  position: absolute;
-  top: var(--bb-header-height);
-  right: 0;
-  z-index: var(--bb-z-dropdown);
-  width: 220px;
-  padding: 16px;
-  background: #ffffff;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18), 0 0 6px rgba(0, 0, 0, 0.1);
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transform: translateY(8px);
-  /* closing: visibility waits until opacity+transform finish */
-  transition:
-    opacity var(--bb-duration-fast) var(--bb-ease-standard),
-    transform var(--bb-duration-fast) var(--bb-ease-standard),
-    visibility 0s linear var(--bb-duration-fast),
-    pointer-events 0s linear var(--bb-duration-fast);
-}
-
-.bb-header-user-menu::before {
-  content: "";
-  position: absolute;
-  top: -10px;
-  right: 20px;
-  width: 0;
-  height: 0;
-  border-left: 10px solid transparent;
-  border-right: 10px solid transparent;
-  border-bottom: 10px solid #ffffff;
-}
-
-.bb-header-user-menu.is-open {
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-  transform: translateY(0);
-  /* opening: visibility/pointer-events snap in immediately (delay = 0) */
-  transition:
-    opacity var(--bb-duration-fast) var(--bb-ease-standard),
-    transform var(--bb-duration-fast) var(--bb-ease-standard),
-    visibility 0s linear 0s,
-    pointer-events 0s linear 0s;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .bb-header-user-menu {
-    transform: none;
-    transition:
-      opacity var(--bb-duration-fast) linear,
-      visibility 0s linear var(--bb-duration-fast),
-      pointer-events 0s linear var(--bb-duration-fast);
-  }
-
-  .bb-header-user-menu.is-open {
-    transform: none;
-    transition:
-      opacity var(--bb-duration-fast) linear,
-      visibility 0s linear 0s,
-      pointer-events 0s linear 0s;
-  }
-}
-
 .bb-header-info-sheet {
   position: fixed;
   inset: 0;
@@ -3756,7 +3675,6 @@ body:has(.bb-search-results-page) {
     margin-left: auto;
   }
 
-  .bb-header-user,
   .bb-header-info-trigger {
     display: none !important;
   }

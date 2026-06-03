@@ -14,9 +14,23 @@ import {
 
 const CLOSE_DELAY_MS = 100;
 
-// Trigger + dropdown content. The stateful dropdown SHELL stays as CSS:
-// bb-header-user (position anchor + ≤1260px hide) and bb-header-user-menu
-// (::before caret, ::after hover-bridge, .is-open transition, reduced-motion).
+// Dropdown panel — anchor (the wrapper carries `relative`), white card with the
+// ::before caret + ::after hover-bridge, and the opacity/transform/visibility
+// fade. `open` swaps the closed → open state; visibility/pointer-events transition
+// instantly on open but wait for the fade on close (delay). Reduced-motion drops
+// the transform; the global reduced-motion rule forces the duration to 1ms.
+const menuPanel =
+  "absolute top-[var(--bb-header-height)] right-0 z-[var(--bb-z-dropdown)] w-[220px] p-4 bg-white " +
+  "[box-shadow:0_4px_16px_rgba(0,0,0,0.18),0_0_6px_rgba(0,0,0,0.1)] " +
+  "opacity-0 invisible pointer-events-none [transform:translateY(8px)] " +
+  "[transition:opacity_var(--bb-duration-fast)_var(--bb-ease-standard),transform_var(--bb-duration-fast)_var(--bb-ease-standard),visibility_0s_linear_var(--bb-duration-fast),pointer-events_0s_linear_var(--bb-duration-fast)] " +
+  "before:content-[''] before:absolute before:top-[-10px] before:right-5 before:w-0 before:h-0 before:[border-left:10px_solid_transparent] before:[border-right:10px_solid_transparent] before:[border-bottom:10px_solid_#ffffff] " +
+  "after:content-[''] after:absolute after:bottom-full after:left-0 after:right-0 after:h-3 " +
+  "motion-reduce:[transform:none] motion-reduce:[transition:opacity_var(--bb-duration-fast)_linear,visibility_0s_linear_var(--bb-duration-fast),pointer-events_0s_linear_var(--bb-duration-fast)]";
+const menuPanelOpen =
+  "opacity-100 visible pointer-events-auto [transform:translateY(0px)] " +
+  "[transition:opacity_var(--bb-duration-fast)_var(--bb-ease-standard),transform_var(--bb-duration-fast)_var(--bb-ease-standard),visibility_0s_linear_0s,pointer-events_0s_linear_0s] " +
+  "motion-reduce:[transition:opacity_var(--bb-duration-fast)_linear,visibility_0s_linear_0s,pointer-events_0s_linear_0s]";
 const trigger =
   "inline-flex min-h-[var(--bb-header-height)] border-none bg-transparent text-white cursor-pointer transition-colors duration-[var(--bb-duration-fast)] ease-[var(--bb-ease-standard)] hover:text-[var(--bb-brand-primary)] hover:bg-white/5 focus-visible:text-[var(--bb-brand-primary)] focus-visible:bg-white/5 focus-visible:outline-none";
 const triggerGuest = "items-center justify-center px-[clamp(10px,0.9vw,16px)] py-0";
@@ -133,7 +147,7 @@ export function HeaderUserMenu() {
   return (
     <div
       ref={wrapperRef}
-      className="bb-header-user max-[1260px]:hidden"
+      className="relative flex items-stretch max-[1260px]:hidden"
       onMouseEnter={() => { cancelClose(); setOpen(true); }}
       onMouseLeave={scheduleClose}
       onBlurCapture={handleBlur}
@@ -159,7 +173,7 @@ export function HeaderUserMenu() {
             </span>
           </button>
 
-          <div className={cn("bb-header-user-menu", open && "is-open")} role="menu">
+          <div className={cn(menuPanel, open && menuPanelOpen)} role="menu">
             <ul className="grid gap-2 m-0 p-0 list-none">
               <li>
                 <Link
@@ -196,7 +210,7 @@ export function HeaderUserMenu() {
             <UserIcon />
           </button>
 
-          <div className={cn("bb-header-user-menu", open && "is-open")} role="menu">
+          <div className={cn(menuPanel, open && menuPanelOpen)} role="menu">
             <ul className="grid gap-2 m-0 p-0 list-none">
               <li>
                 <Link
