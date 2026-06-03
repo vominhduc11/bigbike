@@ -151,7 +151,7 @@ function ArticleCardSkel() {
 
 function CategoryTileSkel() {
   return (
-    <div className="bb-cat-img-cell" aria-hidden="true">
+    <div className="relative aspect-square" aria-hidden="true">
       <SkelBlock w="100%" h="100%" rounded={false} style={{ position: "absolute", inset: 0 }} />
     </div>
   );
@@ -225,7 +225,7 @@ export function HomeSkeleton() {
               <SkelTitle w="42%" h="1.6em" />
             </div>
           </div>
-          <div className="bb-cat-grid-img">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <CategoryTileSkel key={i} />
             ))}
@@ -361,7 +361,7 @@ export function CatalogSkeleton({ withHero = false }: { withHero?: boolean }) {
 
       <div className={bbCatLayout}>
         {/* Sidebar filters */}
-        <aside className="bb-filters-v2">
+        <aside className="self-start border-r border-[var(--bb-border-subtle)] pr-7">
           <div className={skelStack}>
             <SkelTitle w="50%" />
             {Array.from({ length: 5 }).map((_, i) => (
@@ -456,7 +456,7 @@ export function BrandDetailSkeleton() {
         <SkelBlock w="100%" h={180} />
       </Container>
       <div className={bbCatLayout}>
-        <aside className="bb-filters-v2">
+        <aside className="self-start border-r border-[var(--bb-border-subtle)] pr-7">
           <div className={skelStack}>
             <SkelTitle w="50%" />
             {Array.from({ length: 4 }).map((_, i) => (
