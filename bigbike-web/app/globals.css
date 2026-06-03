@@ -2690,35 +2690,6 @@ input[type="checkbox"] {
   color: #ffffff;
 }
 
-.bb-stock-badge {
-  border-radius: 0;
-  font-family: var(--bb-font-link);
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0;
-  line-height: 12px;
-}
-
-.bb-stock-in {
-  background: var(--bb-state-success-bg);
-  /* state-success-text (#3d5230) = ~6:1 on the light-green bg — passes AA. */
-  color: var(--bb-state-success-text);
-  border: 1px solid var(--bb-state-success-border);
-}
-
-.bb-stock-low {
-  background: var(--bb-state-warning);
-  color: #000000;
-  border: 1px solid var(--bb-state-warning);
-}
-
-.bb-stock-out {
-  background: #dddddd;
-  /* #6f6f6f on #dddddd = ~3.43:1 — fails WCAG AA. Use #4a4a4a = 5.77:1. */
-  color: #4a4a4a;
-  border: 1px solid #dddddd;
-}
-
 .bb-chat-item-icon svg circle,
 .bb-site-header .bb-cart-badge {
   border-radius: 50%;
@@ -2876,14 +2847,6 @@ input[type="checkbox"] {
   gap: 30px;
   transition: transform 0.3s ease;
   will-change: transform;
-}
-
-.bb-home-products-parity .swiper-wrapper {
-  align-items: stretch;
-}
-
-.bb-home-products-parity .swiper-slide {
-  height: auto;
 }
 
 body:has(.bb-article-detail-page) .bb-header-info-sheet {
