@@ -152,15 +152,15 @@ function HomeCategoryHighlights({ items }: { items: HomeHighlightItem[] }) {
 
   return (
     <div className="category-list py-15 max-[1024px]:py-13 max-md:py-10">
-      <div className="container">
-        <div className="row">
+      <div className="mx-auto w-full max-w-[var(--bb-container-xl)] px-[15px] max-md:max-w-none max-md:px-[var(--bb-mobile-page-x)]">
+        <div className="flex flex-wrap -mx-[15px]">
           {items.map((item, idx) => {
             const href = toProductPath(item.productSlug);
             const categoryHref = toCategoryPath(item.categorySlug);
             const imageSrc = toLegacyWpMediaUrl(resolveMediaUrl(item.productImageUrl));
 
             return (
-              <div key={item.slot} className="col-md-4">
+              <div key={item.slot} className="relative w-full px-[15px] md:flex-[0_0_33.333333%] md:max-w-[33.333333%]">
                 <div
                   className={cn(
                     "relative h-[300px] min-[1920px]:h-[360px] min-[2560px]:h-[480px] max-md:h-[180px] p-[30px] min-[2560px]:p-10 max-md:p-[18px_20px] border border-[#cecece] bg-white uppercase",
@@ -229,9 +229,9 @@ function PromoBanner({
 
   return (
     <div className="banner-ads pt-15 pb-0 max-[1024px]:pt-13 max-md:pt-5 max-md:pb-2 max-md:px-[var(--bb-mobile-page-x)] max-md:bg-background">
-      <div className="container !px-0 max-md:border max-md:border-border max-md:bg-card">
-        <div className="row">
-          <div className="col-md-12">
+      <div className="mx-auto w-full max-w-[var(--bb-container-xl)] px-0 max-md:max-w-none max-md:border max-md:border-border max-md:bg-card">
+        <div className="flex flex-wrap -mx-[15px]">
+          <div className="relative w-full px-[15px] md:flex-[0_0_100%] md:max-w-full">
             {href ? <Link href={href}>{content}</Link> : content}
           </div>
         </div>
@@ -436,7 +436,7 @@ export default async function HomePage() {
 
       {(aboutSubtitle || aboutTitle || aboutMarkup) && (
         <div className="about-bigbike py-10 max-md:pt-8">
-          <div className="container">
+          <div className="mx-auto w-full max-w-[var(--bb-container-xl)] px-[15px] max-md:max-w-none max-md:px-[var(--bb-mobile-page-x)]">
             {(aboutSubtitle || aboutTitle) && (
               <div className="text-center mb-[40px] max-md:mb-[24px]">
                 {aboutSubtitle ? <p className="mb-3 text-[var(--bb-text-muted)] font-cta text-[length:var(--bb-text-section-kicker)] tracking-[0.15em] font-black leading-none uppercase">{aboutSubtitle}</p> : null}
@@ -607,7 +607,7 @@ export default async function HomePage() {
       {homeContentBottomMarkup ? (
         <div className="content-bottom wyswyg bb-seo-content">
           <div
-            className="container bb-seo-content-body"
+            className="bb-seo-content-body mx-auto w-full max-w-[var(--bb-container-xl)] px-[15px] max-md:max-w-none max-md:px-[var(--bb-mobile-page-x)]"
             dangerouslySetInnerHTML={{ __html: homeContentBottomMarkup }}
           />
         </div>

@@ -3821,41 +3821,8 @@ body:has(.bb-search-results-page) {
   height: auto;
 }
 
-.bb-home .container {
-  width: 100%;
-  max-width: 1200px;
-  margin-right: auto;
-  margin-left: auto;
-  padding-right: 15px;
-  padding-left: 15px;
-}
-
-.bb-home .row {
-  display: flex;
-  flex-wrap: wrap;
-  margin-right: -15px;
-  margin-left: -15px;
-}
-
-.bb-home .row > [class*="col-"] {
-  position: relative;
-  width: 100%;
-  padding-right: 15px;
-  padding-left: 15px;
-}
-
 .bb-home .align-items-center {
   align-items: center;
-}
-
-.bb-home .col-6 {
-  flex: 0 0 50%;
-  max-width: 50%;
-}
-
-.bb-home .col-12 {
-  flex: 0 0 100%;
-  max-width: 100%;
 }
 
 .bb-home .text-center {
@@ -3976,35 +3943,6 @@ body:has(.bb-search-results-page) {
 
 .bb-home .content-bottom.wyswyg a {
   color: var(--bb-text-brand);
-}
-
-@media (min-width: 576px) {
-  .bb-home .col-sm-6 {
-    flex: 0 0 50%;
-    max-width: 50%;
-  }
-}
-
-@media (min-width: 768px) {
-  .bb-home .col-md-3 {
-    flex: 0 0 25%;
-    max-width: 25%;
-  }
-
-  .bb-home .col-md-4 {
-    flex: 0 0 33.333333%;
-    max-width: 33.333333%;
-  }
-
-  .bb-home .col-md-8 {
-    flex: 0 0 66.666667%;
-    max-width: 66.666667%;
-  }
-
-  .bb-home .col-md-12 {
-    flex: 0 0 100%;
-    max-width: 100%;
-  }
 }
 
 /* Homepage spacing pass: scoped after WP parity utilities so the home rhythm
@@ -4532,7 +4470,6 @@ body:has(.bb-search-results-page) {
     overflow-x: clip;
   }
 
-  .bb-home .container,
   .bb-product-archive .container.bb-wp-container,
   .bb-search-results-page .bb-search-inner-container {
     width: 100%;
@@ -5320,10 +5257,6 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
     padding: 32px 0;
   }
 
-  .bb-home .content-bottom.bb-seo-content .container {
-    padding-inline: var(--bb-mobile-page-x);
-  }
-
   .bb-home .content-bottom.bb-seo-content h1,
   .bb-home .content-bottom.bb-seo-content h2,
   .bb-home .content-bottom.bb-seo-content h3,
@@ -5392,7 +5325,6 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
                           2560px (4xl) → wide-screen workstation / showroom TV.
 
    Tier 1  Token via --bb-container-xl: all .bb-container auto-respond
-   Tier 2  Homepage legacy WP .container (not using the token)
    Tier 3  Page layouts hard-coded at 1440px: push further
    Tier 4  Selectors hard-coded at 1200px instead of using the token
    Tier 5  Account layout (1280px sidebar grid)
@@ -5406,11 +5338,6 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
   /* Tier 1 — token: .bb-container expands globally */
   :root {
     --bb-container-xl: 85rem; /* 1360px */
-  }
-
-  /* Tier 2 — homepage WP legacy .container */
-  .bb-home .container {
-    max-width: 1360px;
   }
 
   /* Tier 3 — layouts already at 1440px (.bb-pdp/.bb-pdp-below skeleton inline) */
@@ -5431,11 +5358,6 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
   /* Tier 1 */
   :root {
     --bb-container-xl: 100rem; /* 1600px */
-  }
-
-  /* Tier 2 */
-  .bb-home .container {
-    max-width: 1600px;
   }
 
   /* Tier 3 (.bb-pdp/.bb-pdp-below skeleton inline) */
@@ -5484,11 +5406,6 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
   /* Tier 1 */
   :root {
     --bb-container-xl: 140rem; /* 2240px */
-  }
-
-  /* Tier 2 */
-  .bb-home .container {
-    max-width: 2240px;
   }
 
   /* Tier 3 (.bb-pdp/.bb-pdp-below skeleton inline) */
