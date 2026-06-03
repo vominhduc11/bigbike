@@ -6143,37 +6143,6 @@ body .bb-home .white.block-title h3 {
     padding-bottom: 36px;
   }
 
-  .bb-brand-mobile-grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 1px;
-    border: 1px solid var(--bb-mobile-shell-border);
-    background: var(--bb-mobile-shell-border);
-  }
-
-  .bb-brand-mobile-cell {
-    display: flex;
-    aspect-ratio: 1 / 1;
-    align-items: center;
-    justify-content: center;
-    background: var(--bb-mobile-shell-surface);
-    padding: 6px;
-    color: var(--bb-text-inverse-muted);
-    font-family: var(--bb-font-heading);
-    font-size: 12px;
-    font-weight: 600;
-    line-height: 1.05;
-    text-align: center;
-    text-transform: uppercase;
-  }
-
-  .bb-brand-mobile-cell img {
-    max-width: 100%;
-    max-height: 52px;
-    object-fit: contain;
-    filter: grayscale(1) brightness(1.4);
-  }
-
   .bb-home .content-bottom {
     border-top: 1px solid var(--bb-mobile-shell-border);
   }
@@ -6755,15 +6724,6 @@ body > footer .bg-footer-top a:focus-visible {
     background: var(--bb-brand-primary-on-dark);
   }
 
-  .bb-brand-mobile-cell,
-  .bb-brand-mobile-cell span {
-    color: var(--bb-text-inverse-muted);
-  }
-
-  .bb-brand-mobile-cell {
-    background: var(--bb-bg-surface-dark);
-  }
-
   .bb-mobile-section-header a {
     color: var(--bb-link-text);
   }
@@ -6975,8 +6935,7 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
 
   .bb-product-image img,
   .bb-product-image > span > img,
-  .bb-home-products-parity .bb-fp-thumb img,
-  .bb-brand-mobile-cell img {
+  .bb-home-products-parity .bb-fp-thumb img {
     object-fit: contain !important;
   }
 
@@ -6990,22 +6949,6 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
     width: 100%;
     height: 100%;
     padding: 8px;
-  }
-
-  .bb-brand-mobile-cell {
-    background: var(--bb-bg-surface);
-    color: var(--bb-text-primary);
-  }
-
-  .bb-brand-mobile-cell,
-  .bb-brand-mobile-cell span {
-    color: var(--bb-text-primary);
-  }
-
-  .bb-brand-mobile-cell img {
-    filter: none;
-    max-height: 58px;
-    padding: 4px;
   }
 
   .bb-mobile-section-header h2,
@@ -7168,39 +7111,6 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
     line-height: 1.12;
   }
 
-  .bb-brand-mobile-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-    border: 0;
-    background: transparent;
-  }
-
-  .bb-brand-mobile-cell {
-    min-height: 78px;
-    aspect-ratio: auto;
-    border: 1px solid var(--bb-border-subtle);
-    padding: 10px;
-  }
-
-  .bb-brand-mobile-cell img {
-    max-width: 86%;
-    max-height: 44px;
-    padding: 0;
-    filter: none;
-  }
-
-  .bb-brand-mobile-cell span {
-    display: flex;
-    min-height: 42px;
-    width: 100%;
-    align-items: center;
-    justify-content: center;
-    border: 1px dashed var(--bb-border-default);
-    background: var(--bb-bg-surface-raised);
-    padding: 4px 6px;
-    color: var(--bb-text-secondary);
-  }
-
   .bb-home .content-bottom.bb-seo-content {
     padding: 32px 0;
   }
@@ -7268,18 +7178,6 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
 
   body > footer .bg-footer-top a[href^="mailto:"] {
     font-size: var(--fs-h4);
-  }
-}
-
-@media (min-width: 430px) and (max-width: 599px) {
-  .bb-brand-mobile-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 600px) and (max-width: 767px) {
-  .bb-brand-mobile-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
