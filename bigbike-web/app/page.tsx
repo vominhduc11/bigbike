@@ -256,11 +256,11 @@ function WpNewsCard({ article }: { article: Article }) {
   const dateStr = formatWpHomeDate(article.publishedAt ?? article.createdAt);
 
   return (
-    <div className="col-md-4 col-sm-6">
-      <div className="news--item">
-        <div className="news--item-thumbnail">
+    <div className="relative w-full max-w-full px-0 md:flex-[0_0_33.3333%] md:max-w-[33.3333%] md:px-[15px]">
+      <div className="mb-[30px] bg-white [box-shadow:0_3px_6px_rgba(0,0,0,0.16)] max-md:border max-md:border-solid max-md:border-[#dddddd]">
+        <div className="text-center">
           <Link
-            className="lazy"
+            className="lazy group block overflow-hidden bg-cover bg-no-repeat [transition:all_0.3s_ease]"
             href={href}
             style={src ? { backgroundImage: `url("${src}")` } : undefined}
           >
@@ -268,23 +268,31 @@ function WpNewsCard({ article }: { article: Article }) {
               <img
                 src={src}
                 alt={safeText(article.coverImage?.alt, title)}
-                className="lazy"
+                className="lazy block !h-[215px] w-full max-w-full object-cover align-middle [transition:transform_0.3s_ease] max-[992px]:!h-[200px] max-[768px]:!h-[180px] min-[1920px]:!h-[290px] min-[2560px]:!h-[400px] group-hover:[transform:scale(1.03)]"
                 loading="lazy"
               />
             ) : null}
           </Link>
         </div>
-        <div className="news--item-desc">
+        <div className="relative max-md:bg-white">
           {dateStr && (
-            <div className="news-date">
-              <p>{dateStr}</p>
+            <div className="absolute left-0 top-[-21px] w-[170px] max-md:top-[-17px] max-md:w-[132px]">
+              <p className="relative m-0 p-0 pl-[20px] font-heading text-[14px] font-semibold uppercase leading-[42px] whitespace-nowrap bg-brand text-white after:absolute after:bottom-0 after:right-[-15px] after:h-[42px] after:w-[25px] after:bg-brand after:[transform:skewX(-20deg)] after:content-[''] max-md:pl-[14px] max-md:text-[12px] max-md:leading-[34px] max-md:after:right-[-11px] max-md:after:h-[34px] max-md:after:w-[19px]">
+                {dateStr}
+              </p>
             </div>
           )}
-          <div className="news--item-inside">
-            <p className="title-post">
-              <Link href={href}>{title}</Link>
+          <div className="[padding:40px_20px_30px] max-md:bg-white max-md:[padding:40px_16px_22px]">
+            <p className="m-0 mb-[5px] font-heading text-[clamp(1.25rem,1.229rem_+_0.092vw,1.375rem)] font-semibold normal-case leading-[var(--bb-line-snug)] tracking-[normal] text-black">
+              <Link href={href} className="text-black no-underline [transition:color_0.2s_ease] hover:text-brand max-md:font-cta max-md:text-[15px] max-md:leading-[1.25]">
+                {title}
+              </Link>
             </p>
-            {excerpt ? <p>{excerpt}</p> : null}
+            {excerpt ? (
+              <p className="m-0 text-[length:var(--fs-body)] leading-[var(--bb-line-body)] text-black max-md:overflow-hidden max-md:[display:flow-root] max-md:[-webkit-line-clamp:3]">
+                {excerpt}
+              </p>
+            ) : null}
           </div>
         </div>
       </div>
@@ -513,14 +521,16 @@ export default async function HomePage() {
       )}
 
       {newsArticles.length > 0 && (
-        <div className="news pt-60 bb-home-news-parity">
-          <div className="container">
-            <div className="block-title text-center pb-40">
+        <div className="bb-home-news-parity bg-white pb-0 pt-[60px] max-[1024px]:pt-[52px] max-[768px]:pt-[20px]">
+          <div className="mx-auto w-full max-w-[1200px] px-[15px] min-[1536px]:max-w-[1360px] min-[1920px]:w-[min(100%_-_2_*_var(--bb-page-padding-desktop),100rem)] min-[1920px]:max-w-none min-[2560px]:w-[min(100%_-_2_*_var(--bb-page-padding-desktop),140rem)] max-md:max-w-none max-md:px-[var(--bb-mobile-page-x)]">
+            <div className="px-0 pt-0 pb-[40px] [text-align:center] max-md:px-[var(--bb-mobile-page-x)] max-md:pb-[14px] max-md:[text-align:left]">
               <p className="bb-kicker">Tin tức & cập nhật</p>
-              <h2>Cập nhật xu hướng cùng BigBike</h2>
+              <h2 className="m-0 font-cta text-[clamp(1.75rem,1.45rem_+_1.281vw,3.5rem)] font-semibold uppercase leading-[1.15] tracking-[normal] text-black max-md:leading-[1.2]">
+                Cập nhật xu hướng cùng BigBike
+              </h2>
             </div>
-            <div className="news-list">
-              <div className="row">
+            <div>
+              <div className="-mx-[15px] flex flex-wrap max-md:mx-0 max-md:grid max-md:grid-cols-1 max-md:gap-4">
                 {newsArticles.map((article) => (
                   <WpNewsCard key={article.id} article={article} />
                 ))}
