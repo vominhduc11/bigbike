@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { getLocale } from "next-intl/server";
 import { Container } from "@/components/layout/Container";
+import { cn } from "@/lib/utils";
 import { BrandCarousel } from "@/components/home/BrandCarousel";
 import { ExperienceCarousel } from "@/components/home/ExperienceCarousel";
 import { FeaturedProductsCarousel } from "@/components/home/FeaturedProductsCarousel";
@@ -141,37 +142,47 @@ function HomeCategoryHighlights({ items }: { items: HomeHighlightItem[] }) {
   if (items.length === 0) return null;
 
   return (
-    <div className="category-list">
+    <div className="category-list py-15 max-[1024px]:py-13 max-md:py-10">
       <div className="container">
         <div className="row">
-          {items.map((item) => {
+          {items.map((item, idx) => {
             const href = toProductPath(item.productSlug);
             const categoryHref = toCategoryPath(item.categorySlug);
             const imageSrc = toLegacyWpMediaUrl(resolveMediaUrl(item.productImageUrl));
 
             return (
               <div key={item.slot} className="col-md-4">
-                <div className="item">
-                  <div className="item--thumbnail">
+                <div
+                  className={cn(
+                    "relative h-[300px] min-[1920px]:h-[360px] min-[2560px]:h-[480px] max-md:h-[180px] p-[30px] min-[2560px]:p-10 max-md:p-[18px_20px] border border-[#cecece] bg-white uppercase",
+                    idx < items.length - 1 && "max-md:mb-5",
+                  )}
+                >
+                  <div className="absolute right-[30px] min-[2560px]:right-10 max-md:right-[18px] bottom-0">
                     <Link href={href}>
                       {imageSrc ? (
                         <img
                           src={imageSrc}
                           alt={item.productName}
-                          className="-swiper-lazy lazy"
+                          className="w-auto max-h-[180px] min-[1920px]:max-h-[220px] min-[2560px]:max-h-[310px] max-md:max-h-[130px]"
                           loading="lazy"
                         />
                       ) : null}
                     </Link>
                   </div>
-                  <Link className="item--category" href={categoryHref}>
+                  <Link className="hidden" href={categoryHref}>
                     {item.categoryName}
                   </Link>
-                  <h3 className="item--title">
-                    <Link href={href}>{item.productName}</Link>
+                  <h3 className="mb-[40px] min-[2560px]:mb-[50px] max-md:mb-[16px] max-w-[55%] max-md:max-w-[56%] font-[family-name:var(--bb-font-display)] text-[clamp(1.125rem,0.645rem_+_1vw,2.25rem)] max-md:text-[0.875rem] font-semibold leading-[1.2] max-md:leading-[1.25] line-clamp-2">
+                    <Link href={href} className="!text-black">
+                      {item.productName}
+                    </Link>
                   </h3>
-                  <Link className="item--btn" href={href}>
-                    Mua ngay <i className="fal fa-chevron-right" aria-hidden="true" />
+                  <Link
+                    href={href}
+                    className="!text-brand font-[family-name:var(--bb-font-display)] text-[clamp(0.875rem,0.5rem_+_0.5vw,1.375rem)] max-md:text-[0.8125rem] font-semibold normal-case"
+                  >
+                    Mua ngay <i className="fal fa-chevron-right ml-[5px]" aria-hidden="true" />
                   </Link>
                 </div>
               </div>

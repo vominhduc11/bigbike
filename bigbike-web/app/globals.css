@@ -4702,64 +4702,6 @@ body:has(.bb-search-results-page) {
   height: 100%;
 }
 
-.bb-home .category-list {
-  padding: 60px 0;
-}
-
-.bb-home .category-list .item {
-  position: relative;
-  height: 300px;
-  padding: 30px;
-  border: 1px solid #cecece;
-  background: #fff !important;
-  text-transform: uppercase;
-}
-
-.bb-home .category-list .item--thumbnail {
-  position: absolute;
-  right: 30px;
-  bottom: 0;
-}
-
-.bb-home .category-list .item--thumbnail img {
-  width: auto;
-  max-height: 180px;
-}
-
-.bb-home .category-list .item--category {
-  display: none;
-  color: var(--bb-text-brand);
-  font-weight: 500;
-}
-
-.bb-home .category-list .item--title {
-  margin: 0 0 40px;
-  max-width: 55%;
-  font-family: var(--bb-font-display);
-  font-size: clamp(1.125rem, 0.645rem + 1vw, 2.25rem);
-  font-weight: 600;
-  line-height: 1.2;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.bb-home .category-list .item--title a {
-  color: #000;
-}
-
-.bb-home .category-list .item--btn {
-  color: var(--bb-text-brand);
-  font-family: var(--bb-font-display);
-  font-size: clamp(0.875rem, 0.5rem + 0.5vw, 1.375rem);
-  font-weight: 600;
-  text-transform: none;
-}
-
-.bb-home .category-list .item--btn i {
-  margin-left: 5px;
-}
 
 .bb-home .about-bigbike .block-content p {
   margin: 0;
@@ -4880,25 +4822,8 @@ body:has(.bb-search-results-page) {
   }
 }
 
-@media (max-width: 767px) {
-
-  .bb-home .category-list .item {
-    margin-bottom: 20px;
-  }
-
-  .bb-home .category-list .col-md-4:last-child .item {
-    margin-bottom: 0;
-  }
-
-}
-
 /* Homepage spacing pass: scoped after WP parity utilities so the home rhythm
    follows page-home.php without changing global section rules. */
-.bb-home .category-list {
-  padding-top: 60px;
-  padding-bottom: 60px;
-}
-
 .bb-home-products-parity {
   padding-top: 40px;
   padding-bottom: 40px;
@@ -4961,11 +4886,6 @@ body:has(.bb-search-results-page) {
 }
 
 @media (min-width: 768px) and (max-width: 1023px) {
-  .bb-home .category-list {
-    padding-top: 52px;
-    padding-bottom: 52px;
-  }
-
   .bb-home-products-parity {
     padding-top: 40px;
     padding-bottom: 40px;
@@ -4983,11 +4903,6 @@ body:has(.bb-search-results-page) {
 }
 
 @media (max-width: 767px) {
-  .bb-home .category-list {
-    padding-top: 40px;
-    padding-bottom: 40px;
-  }
-
   .bb-home-products-parity {
     padding-top: 32px;
     padding-bottom: 32px;
@@ -6535,19 +6450,6 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
     max-width: 1600px;
   }
 
-  /* category-list: scale card height so ratio stays ≤1.5:1 at 1600px container (≈523px/col) */
-  .bb-home .category-list .item {
-    height: 360px;
-  }
-
-  .bb-home .category-list .item--title {
-    max-width: 55%;
-  }
-
-  .bb-home .category-list .item--thumbnail img {
-    max-height: 220px;
-  }
-
   /* Tier 3 (.bb-pdp/.bb-pdp-below skeleton inline) */
   .bb-breadcrumb,
   .bb-page-head {
@@ -6599,25 +6501,6 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
   /* Tier 2 */
   .bb-home .container {
     max-width: 2240px;
-  }
-
-  /* category-list: scale card to ≈1.53:1 at 2240px container (≈737px/col) */
-  .bb-home .category-list .item {
-    height: 480px;
-    padding: 40px;
-  }
-
-  .bb-home .category-list .item--title {
-    margin-bottom: 50px;
-    max-width: 55%;
-  }
-
-  .bb-home .category-list .item--thumbnail {
-    right: 40px;
-  }
-
-  .bb-home .category-list .item--thumbnail img {
-    max-height: 310px;
   }
 
   /* Tier 3 (.bb-pdp/.bb-pdp-below skeleton inline) */
@@ -6704,30 +6587,5 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
   body:has(.bb-pdp-sticky-cta.is-visible) .bb-floating-chat-anchor {
     bottom: calc(84px + env(safe-area-inset-bottom)) !important;
   }
-
-  /* [Fix 1] Home category-highlight cards were locked at height:300px and stacked
-     full-width on mobile -> ~900px of mostly-empty cards above the real product
-     surfaces. Compact them (content preserved: image + title + "Mua ngay" link). */
-  .bb-home .category-list .item {
-    height: 180px;
-    padding: 18px 20px;
-  }
-  .bb-home .category-list .item--title {
-    max-width: 56%;
-    margin-bottom: 16px;
-    font-size: 0.875rem;
-    line-height: 1.25;
-  }
-  .bb-home .category-list .item--btn {
-    font-size: 0.8125rem;
-  }
-  .bb-home .category-list .item--thumbnail {
-    right: 18px;
-  }
-  .bb-home .category-list .item--thumbnail img {
-    max-height: 130px;
-  }
-
-
 
 }
