@@ -674,19 +674,9 @@ body {
   overflow: visible; /* logo stripe overflows below header line */
 }
 
-/* Header spans full viewport width like the original WP theme. */
-.bb-header-container {
-  width: 100%;
-  padding-inline: clamp(12px, 1.7vw, 48px);
-  height: 100%;
-}
-
-.bb-header-row {
-  display: flex;
-  align-items: stretch;
-  justify-content: space-between;
-  height: 100%;
-}
+/* Header chrome (.bb-header-container / .bb-header-row / .bb-right-header / .bb-user-control
+   layout) migrated to inline Tailwind in SiteHeader.tsx — see commit. .bb-user-control is
+   kept as a bare ancestor marker below for the .bb-user-control .bb-icon-btn rules. */
 
 /* -- Logo: top-aligned so red diagonal stripe overflows below 80px header */
 .bb-logo {
@@ -786,17 +776,7 @@ body {
   }
 }
 
-/* -- Right column: navigation + user-control */
-.bb-right-header {
-  flex: 1;
-  display: flex;
-  align-items: stretch;
-  justify-content: space-between;
-  gap: clamp(12px, 1.6vw, 28px);
-  height: 100%;
-  min-width: 0;
-}
-
+/* -- Right column: navigation + user-control (.bb-right-header layout migrated inline) */
 .bb-navigation {
   display: flex;
   align-items: stretch;
@@ -897,13 +877,8 @@ body {
 }
 
 /* -- User control: action icons row */
-.bb-user-control {
-  display: inline-flex;
-  align-items: stretch;
-  flex-shrink: 0;
-  padding-left: clamp(6px, 0.8vw, 14px);
-}
-
+/* .bb-user-control layout migrated inline (SiteHeader.tsx); class kept as a bare
+   ancestor marker for the .bb-user-control .bb-icon-btn rules below. */
 .bb-user-control .bb-icon-btn {
   display: inline-flex;
 }
@@ -1239,10 +1214,6 @@ body {
   .bb-navigation {
     display: none !important;
   }
-  .bb-right-header {
-    justify-content: flex-end;
-    gap: 0;
-  }
 }
 
 .bb-account-avatar {
@@ -1394,9 +1365,6 @@ body {
    max-[1199px]:hidden in SiteHeader.tsx — no CSS rule needed here. */
 
 @media (max-width: 639px) {
-  .bb-user-control {
-    padding-left: 0;
-  }
   .bb-user-control .bb-icon-btn {
     padding: 0 10px;
   }
@@ -3923,15 +3891,6 @@ body:has(.bb-search-results-page) {
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.26);
   }
 
-  .bb-header-container {
-    padding-inline: 8px;
-  }
-
-  .bb-header-row {
-    position: relative;
-    align-items: center;
-  }
-
   .bb-logo {
     position: absolute;
     top: 0;
@@ -3953,18 +3912,6 @@ body:has(.bb-search-results-page) {
   body:has(.bb-home) .bb-logo-img {
     width: 104px;
     max-width: 104px;
-  }
-
-  .bb-right-header {
-    width: 100%;
-    justify-content: stretch;
-    gap: 0;
-  }
-
-  .bb-user-control {
-    width: 100%;
-    align-items: center;
-    padding-left: 0;
   }
 
   .bb-menu-toggle {
@@ -4321,14 +4268,6 @@ body:has(.bb-search-results-page) {
 
   .bb-site-header {
     z-index: var(--bb-z-header);
-  }
-
-  .bb-header-row {
-    min-height: var(--bb-header-height);
-  }
-
-  .bb-user-control {
-    min-height: var(--bb-header-height);
   }
 
   .bb-header-search-trigger,
@@ -5233,11 +5172,6 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
     --bb-header-stack: 5.5rem;
   }
 
-  .bb-header-container {
-    max-width: calc(var(--bb-container-xl) + 2 * var(--bb-page-padding-desktop));
-    margin-inline: auto;
-    padding-inline: var(--bb-page-padding-desktop);
-  }
 }
 
 /* ≥2560px (4xl): wide-screen workstation, 32:9 super-ultrawide, showroom TV.
@@ -5268,8 +5202,8 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
     padding-top: calc(var(--bb-header-stack) + 110px);
   }
 
-  /* Header — height token at 4xl (2240px rail).
-     .bb-header-container max-width auto-cascades via var(--bb-container-xl) = 140rem set in Tier 1. */
+  /* Header — height token at 4xl (2240px rail). The header container's max-width is now
+     inline Tailwind (SiteHeader.tsx) keyed off var(--bb-container-xl) = 140rem (set in Tier 1). */
   :root {
     --bb-header-height: 6rem; /* 96px — +20%, proportional with 2240px content rail */
   }

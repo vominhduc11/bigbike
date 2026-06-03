@@ -109,8 +109,8 @@ export async function SiteHeader() {
 
   return (
     <StickyHeaderShell>
-      <div className="bb-header-container">
-        <div className="bb-header-row">
+      <div className="w-full h-full px-[clamp(12px,1.7vw,48px)] max-md:px-2 min-[1920px]:max-w-[calc(var(--bb-container-xl)_+_2_*_var(--bb-page-padding-desktop))] min-[1920px]:mx-auto min-[1920px]:px-[var(--bb-page-padding-desktop)]">
+        <div className="flex h-full items-stretch justify-between max-md:relative max-md:items-center max-md:min-h-[var(--bb-header-height)]">
           <div className="bb-logo">
             <Link href="/" aria-label={t("homeAriaLabel")} title={siteName}>
               <Image
@@ -132,7 +132,7 @@ export async function SiteHeader() {
             </Link>
           </div>
 
-          <div className="bb-right-header">
+          <div className="flex-1 flex items-stretch justify-between gap-[clamp(12px,1.6vw,28px)] h-full min-w-0 max-[1261px]:justify-end max-[1261px]:gap-0 max-md:justify-stretch max-md:w-full">
             <nav
               className="bb-navigation flex h-full min-w-0 flex-1 items-stretch justify-center max-[1260px]:hidden"
               aria-label={navigationLabel}
@@ -144,7 +144,7 @@ export async function SiteHeader() {
               </ul>
             </nav>
 
-            <div className="bb-user-control">
+            <div className="bb-user-control inline-flex items-stretch shrink-0 pl-[clamp(6px,0.8vw,14px)] max-md:items-center max-md:pl-0 max-md:w-full max-md:min-h-[var(--bb-header-height)]">
               <SearchToggle popularCategories={categoriesResult.data?.map(c => ({ name: c.name, slug: c.slug })) ?? []} />
               <CartIcon />
               <HeaderUserMenu />
