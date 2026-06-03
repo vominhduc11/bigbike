@@ -326,7 +326,6 @@ body {
   padding-bottom: 0;
 }
 
-
 /* Floating action group: stacks scroll-to-top + chat vertically, fixed bottom-right */
 
 /* Generic page wrapper - light theme (WP cu uses page-title banner + container). */
@@ -349,7 +348,6 @@ body {
   position: relative;
   z-index: 1;
 }
-
 
 .bb-kicker {
   margin-bottom: var(--bb-space-3);
@@ -444,8 +442,6 @@ body {
   color: var(--bb-text-primary);
 }
 
-
-
 .bb-category-body {
   display: grid;
   gap: var(--bb-space-2);
@@ -463,9 +459,6 @@ body {
 .bb-category-body p {
   color: var(--bb-text-secondary);
 }
-
-
-
 
 .bb-query-form {
   display: grid;
@@ -500,7 +493,6 @@ body {
   box-shadow: var(--bb-focus-ring);
 }
 
-
 .bb-detail-layout {
   display: grid;
   gap: var(--bb-space-6);
@@ -510,7 +502,6 @@ body {
 .bb-detail-layout > aside {
   min-width: 0;
 }
-
 
 .bb-richtext {
   display: grid;
@@ -576,7 +567,6 @@ body {
 
 /* Marker accent color */
 .bb-richtext li::marker { color: var(--bb-text-brand); }
-
 
 @keyframes skeleton-shimmer {
   from {
@@ -1125,7 +1115,6 @@ body {
   .bb-header-search-results { animation: none; }
 }
 
-
 .bb-header-user {
   position: relative;
   display: flex;
@@ -1264,7 +1253,6 @@ body {
     gap: 0;
   }
 }
-
 
 .bb-account-avatar {
   font-size: 0.875rem;
@@ -1513,7 +1501,6 @@ body {
 
 /* -- WP Floating Chat ---------------------------------------- */
 
-
 /* -- Responsive ---------------------------------------------- */
 /* BP note: 900px is intentionally NOT the token 1024px.
    At 901-1024px the two-column about/feature layouts still read well on
@@ -1574,30 +1561,10 @@ body {
   flex-shrink: 0;
 }
 
-
 /* -- Products Section ------------------------------------ */
 .bb-products-section {
   background: var(--bb-bg-page);
   padding: var(--bb-space-12) 0;
-}
-
-.bb-products-header {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 1rem;
-  padding-bottom: 1.5rem;
-}
-
-.bb-products-title {
-  font-family: var(--bb-font-heading);
-  font-size: var(--bb-text-section-title);
-  font-weight: 600;
-  text-transform: uppercase;
-  color: var(--bb-text-primary);
-  margin: 0;
-  line-height: var(--bb-line-section-title);
-  letter-spacing: 0;
 }
 
 /* Product Carousel */
@@ -1708,7 +1675,6 @@ body {
 /* -- Section headers -------------------------------------- */
 .bb-section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 28px; padding-bottom: 16px; border-bottom: 1px solid var(--bb-border-default); }
 .bb-section-head .bb-kicker { font-family: var(--bb-font-cta); font-size: var(--bb-text-section-kicker); line-height: var(--bb-line-section-kicker); letter-spacing: 0; text-transform: uppercase; color: var(--bb-text-brand); margin: 0 0 10px; display: block; }
-.bb-section-title { font-family: var(--bb-font-heading); text-transform: uppercase; font-size: var(--bb-text-section-title); font-weight: 600; letter-spacing: 0; line-height: var(--bb-line-section-title); margin: 0; color: var(--bb-text-primary); }
 
 /* -- PDP below-fold sections ------------------------------ */
 /* .bb-pdp-below (PdpSkeleton mirror) migrated to inline Tailwind. */
@@ -1800,7 +1766,6 @@ html[data-header-scrolled] .bb-page-head { padding-left: 24px; }
 
 /* -- Video grid -------------------------------------------- */
 /* Price (with star rating beneath it) on the left, stock badge on the right. */
-
 
 /* Quantity stepper + single add-to-cart button on one row. */
 
@@ -1956,7 +1921,6 @@ html[data-header-scrolled] .bb-page.bb-compare-page > [data-bb-rail] > header:fi
   text-decoration: none;
 }
 
-
 /* -- Account page ------------------------------------------ */
 /* === Account section — 2020 legacy mockup parity ===================== */
 .bb-account-layout { display: grid; grid-template-columns: 282px 1fr; gap: 30px; max-width: 1280px; margin: 8px auto 56px; padding: 0 24px; }
@@ -1999,8 +1963,6 @@ body:has(.bb-account-layout) .bb-breadcrumb {
 /* WP `.woocommerce-order-overview` parity - flexbox list, separator vertical bars */
 .bb-success .cta-row { display: flex; gap: 10px; justify-content: center; }
 
-
-
 /* -- Shared utility: info cards & form panels -------------- */
 
 /* -- Shared utility: info & nav grids ---------------------- */
@@ -2008,7 +1970,6 @@ body:has(.bb-account-layout) .bb-breadcrumb {
 /* -- Shared utility: nav cards ---------------------------- */
 
 /* -- Shared utility: alert banners ------------------------ */
-
 
 /* -- Shared utility: pagination controls ------------------ */
 /* WP parity: .pagination ul li { font-size: 1.5rem; font-weight: 600 } */
@@ -2148,7 +2109,6 @@ img, picture, video, svg, canvas { max-width: 100%; }
   .bb-feature-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
-
 /* -- Hero: hide decorative product mark below tablet to
  *    save LCP weight and free room for the headline. */
 /* Phase 2-8: canonical mobile hero ratio - portrait crop keeps CTA visible without
@@ -2166,7 +2126,6 @@ img, picture, video, svg, canvas { max-width: 100%; }
 }
 
 /* Phase 2-7: product carousel - arrows invisible on touch, cards fill viewport */
-
 
 /* -- Toast: clamp to viewport on small screens -------------- */
 
@@ -2194,7 +2153,6 @@ img, picture, video, svg, canvas { max-width: 100%; }
   .bb-breadcrumb { padding: 12px 16px; }
 }
 
-
 /* -- Tabs swipeable (account, etc.) ------------------------ */
 
 /* -- Order success card: stack on phones -------------------- */
@@ -2215,7 +2173,6 @@ img, picture, video, svg, canvas { max-width: 100%; }
 /* -- Address grid: 1 col on phones -------------------------- */
 
 /* -- Cat layout sidebar overlay on mobile (filters drawer) -- */
-
 
 /* -- Home Video Section --------------------------------------------------*/
 /* Dark gradient overlay — keeps bg-image mood, pushes it back behind content */
@@ -2257,8 +2214,6 @@ img, picture, video, svg, canvas { max-width: 100%; }
   background: var(--bb-bg-page);
   color: var(--bb-text-primary);
 }
-
-
 
 .bb-blog-listing-parity .news--item-thumbnail {
   text-align: center;
@@ -2334,7 +2289,6 @@ img, picture, video, svg, canvas { max-width: 100%; }
   border-radius: 0;
 }
 
-
 /* ==========================================================
  * WP LIGHT THEME OVERRIDES (Phase 2 rebuild)
  *
@@ -2352,9 +2306,7 @@ img, picture, video, svg, canvas { max-width: 100%; }
  * ========================================================== */
 
 /* Generic text/border re-skin */
-.bb-section-title,
-.bb-page-head h1,
-.bb-products-title {
+.bb-page-head h1 {
   color: var(--bb-text-primary);
 }
 
@@ -2387,7 +2339,6 @@ img, picture, video, svg, canvas { max-width: 100%; }
 .bb-section-head {
   border-bottom: 1px solid var(--bb-border-default);
 }
-.bb-section-title { color: var(--bb-text-primary); }
 
 /* Reviews bg */
 
@@ -2400,11 +2351,6 @@ img, picture, video, svg, canvas { max-width: 100%; }
 
 /* Generic "color: #fff" - adjust at component scope only where safe.
    Header/footer/inverse panels intentionally keep light-on-dark. */
-.bb-products-section .bb-section-title { color: var(--bb-text-primary); }
-
-.bb-products-header {
-  color: var(--bb-text-primary);
-}
 
 /* Hero fallback (when no slider data) - WP banner is image, fallback should be light */
 
@@ -2416,7 +2362,6 @@ img, picture, video, svg, canvas { max-width: 100%; }
 .bb-products-section {
   background: var(--bb-bg-page);
 }
-
 
 .bb-news-img-placeholder {
   background: var(--bb-color-gray-100);
@@ -2451,8 +2396,6 @@ img, picture, video, svg, canvas { max-width: 100%; }
  * TOC (table of contents) - WP single.php parity
  * ============================================================ */
 
-
-
 /* ============================================================
  * Mini cart popover (WP-style hover dropdown from cart icon)
  * ============================================================ */
@@ -2475,14 +2418,6 @@ img, picture, video, svg, canvas { max-width: 100%; }
  * ............................................................... */
 
 /* Header: cfn giua, sub-title xAm #cecece, tiAu 'e 'am */
-.bb-products-section .bb-products-header {
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  gap: 0;
-  padding-bottom: 2.5rem;
-}
 .bb-products-section .bb-kicker {
   color: var(--bb-text-brand);
   font-family: var(--bb-font-cta);
@@ -2492,17 +2427,12 @@ img, picture, video, svg, canvas { max-width: 100%; }
   text-transform: uppercase;
   margin: 0 0 10px;
 }
-.bb-products-section .bb-products-title {
-  text-align: center;
-  font-weight: 600;
-}
 
 /* Carousel wrap: bo padding nTi, nAt mui tAn 'at ngoAi */
 
 /* Slide width do Swiper breakpoints quan lA - bo width c' '<nh cu */
 
 /* Khi tat ca slide vua man (isLocked) - can giua, khong padding nav */
-
 
 /* Pagination dots - kifu WP videos-slide (active dot dAi 'o) */
 .bb-fp-pagination {
@@ -2614,8 +2544,6 @@ a:not(.font-cta):hover {
 }
 
 .bb-page h1,
-.bb-section-title,
-.bb-products-title,
 .bb-page-head h1 {
   color: var(--bb-text-primary);
   font-family: var(--bb-font-heading);
@@ -2623,21 +2551,6 @@ a:not(.font-cta):hover {
   letter-spacing: 0;
   line-height: 1.5;
   text-transform: uppercase;
-}
-
-/* WP section title: Barlow Condensed 50px/60px desktop; scales via brand tokens on tablet/mobile. */
-.bb-section-title,
-.bb-products-title {
-  font-size: var(--bb-text-section-title);
-  line-height: var(--bb-line-section-title);
-}
-
-@media (max-width: 767px) {
-  .bb-section-title,
-  .bb-products-title {
-    font-size: var(--bb-text-section-title);
-    line-height: var(--bb-line-section-title);
-  }
 }
 
 .bb-kicker,
@@ -2675,7 +2588,6 @@ a:not(.font-cta):hover {
 .bb-breadcrumb a {
   font-weight: 600;
 }
-
 
 .bb-query-select {
   min-height: 52px;
@@ -2800,7 +2712,6 @@ input[type="checkbox"] {
   text-transform: uppercase;
 }
 
-
 /* WP product title: Barlow Condensed 16px, no uppercase. Override white from group rule above. */
 .bb-product-name {
   font-size: var(--fs-h4);
@@ -2839,8 +2750,6 @@ input[type="checkbox"] {
   background: #000000;
   color: #ffffff;
 }
-
-
 
 .bb-stock-badge {
   border-radius: 0;
@@ -2891,13 +2800,11 @@ input[type="checkbox"] {
   padding-bottom: 0;
 }
 
-.bb-section-head,
-.bb-products-header {
+.bb-section-head {
   border-bottom: 1px solid rgba(221, 221, 221, 0.28);
   padding-bottom: 24px;
   margin-bottom: 32px;
 }
-
 
 .bb-empty-state,
 .bb-error-state,
@@ -3025,18 +2932,6 @@ input[type="checkbox"] {
   background: #fff;
 }
 
-.bb-home-products-parity .bb-products-header {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0;
-  margin: 0 0 40px;
-  padding: 0;
-  border-bottom: 0;
-  text-align: center;
-}
-
 .bb-home-products-parity .bb-kicker {
   margin: 0 0 10px;
   color: var(--bb-text-muted);
@@ -3044,18 +2939,6 @@ input[type="checkbox"] {
   font-size: var(--bb-text-section-kicker);
   line-height: var(--bb-line-section-kicker);
   letter-spacing: 0.15em;
-  text-transform: uppercase;
-}
-
-.bb-home-products-parity .bb-products-title {
-  margin: 0;
-  color: #000;
-  font-family: var(--bb-font-heading);
-  font-size: var(--bb-text-section-title);
-  font-weight: 600;
-  line-height: var(--bb-line-section-title);
-  letter-spacing: 0;
-  text-align: center;
   text-transform: uppercase;
 }
 
@@ -3081,7 +2964,6 @@ input[type="checkbox"] {
 .bb-home-products-parity .swiper-slide {
   height: auto;
 }
-
 
 .bb-home-products-parity .bb-fp-arrow {
   color: #000;
@@ -3116,13 +2998,11 @@ input[type="checkbox"] {
   background: var(--bb-action-primary);
 }
 
-
 @media (min-width: 1536px) {
   .bb-home-products-parity .bb-fp-pagination {
     margin-top: 40px;
   }
 }
-
 
 body:has(.bb-article-detail-page) .bb-header-info-sheet {
   overflow: hidden;
@@ -3262,7 +3142,6 @@ body:has(.bb-article-detail-page) footer [data-bb-rail].relative > button.absolu
   vertical-align: top;
   border-top: 1px solid #dee2e6;
 }
-
 
 .bb-article-detail-parity .bb-news-img-placeholder {
   display: flex;
@@ -3801,7 +3680,6 @@ body:has(.bb-home) {
   min-width: 0;
 }
 
-
 /* Collapse PDP to 1-column up to 1023px (tablet inclusive). Previously this
    block fired only at <=767, leaving 768-1023 in 2-column with the WP gallery
    (7fr) + info (5fr) cramped: title wrapped to 5 lines and the breadcrumb sat
@@ -3919,7 +3797,6 @@ body:has(.bb-home) {
   }
 }
 
-
 /* `.product-list.pb-40` + `.product-list-filter` kept for the SEARCH page
    (tim-kiem shares `.bb-product-archive` + these classes); the catalog archive
    migrated this chrome to inline Tailwind (ProductArchiveLayout). */
@@ -3934,16 +3811,13 @@ body:has(.bb-home) {
   z-index: 2;
 }
 
-
 html.overlay {
   overflow: hidden;
 }
 
-
 body:has(.bb-search-results-page) {
   overflow-x: hidden;
 }
-
 
 .bb-product-archive .woocommerce-info {
   margin: 30px 0 0;
@@ -3981,7 +3855,6 @@ body:has(.bb-search-results-page) {
 .bb-product-archive .product .desc :last-child {
   margin-bottom: 0;
 }
-
 
 .bb-search-results-page .bb-search-row {
   align-items: flex-start;
@@ -4049,8 +3922,6 @@ body:has(.bb-search-results-page) {
     display: flex;
   }
 }
-
-
 
 /* Homepage visual parity: WordPress page-template-page-home cache 2026-01-19. */
 .bb-home {
@@ -4134,7 +4005,6 @@ body:has(.bb-search-results-page) {
 .bb-home #main-banner .swiper-slide {
   height: 100%;
 }
-
 
 .bb-home .about-bigbike .block-content p {
   margin: 0;
@@ -4262,11 +4132,6 @@ body:has(.bb-search-results-page) {
   padding-bottom: 40px;
 }
 
-.bb-home-products-parity .bb-products-header {
-  margin-bottom: 40px;
-}
-
-
 .bb-home-products-parity .bb-fp-pagination {
   margin-top: 60px;
 }
@@ -4323,11 +4188,6 @@ body:has(.bb-search-results-page) {
     padding-top: 32px;
     padding-bottom: 32px;
   }
-
-  .bb-home-products-parity .bb-products-header {
-    margin-bottom: 28px;
-  }
-
 
   .bb-home-products-parity .bb-fp-pagination {
     margin-top: 20px;
@@ -4701,8 +4561,7 @@ body:has(.bb-search-results-page) {
     color: var(--bb-text-inverse);
   }
 
-  .bb-mobile-section-header h2,
-  .bb-home-products-parity .bb-products-title {
+  .bb-mobile-section-header h2 {
     color: var(--bb-text-inverse);
     font-size: 24px;
     line-height: 1.05;
@@ -4750,12 +4609,6 @@ body:has(.bb-search-results-page) {
   .bb-home-products-parity {
     padding-top: 20px;
     padding-bottom: 8px;
-  }
-
-  .bb-home-products-parity .bb-products-header {
-    margin-bottom: 14px;
-    padding: 0 14px;
-    text-align: left;
   }
 
   .bb-home-products-parity .bb-products-header .bb-kicker {
@@ -5009,8 +4862,7 @@ body:has(.bb-search-results-page) {
 
   .bb-home-mobile-category-card .text-foreground,
   .bb-home-mobile-trust-card .text-foreground,
-  .bb-mobile-section-header h2,
-  .bb-home-products-parity .bb-products-title {
+  .bb-mobile-section-header h2 {
     color: var(--bb-text-primary);
   }
 
@@ -5031,14 +4883,9 @@ body:has(.bb-search-results-page) {
     padding-top: 24px;
   }
 
-  .bb-home-products-parity .bb-products-header {
-    padding-inline: var(--bb-mobile-page-x);
-  }
-
   .bb-home-products-parity .bb-fp-viewport {
     padding-inline: var(--bb-mobile-page-x);
   }
-
 
   .bb-home .content-bottom {
     border-top: 1px solid var(--bb-border-subtle);
@@ -5084,9 +4931,6 @@ body:has(.bb-search-results-page) {
     grid-column: auto;
     padding-inline: 0;
   }
-
-
-
 
   .bb-wp-pdp .bb-breadcrumb {
     padding: 12px var(--bb-mobile-page-x);
@@ -5242,7 +5086,6 @@ body:has(.bb-search-results-page) {
     min-height: 52px;
   }
 
-
   .bb-breadcrumb {
     padding: 12px var(--bb-mobile-page-x);
     font-size: 14px;
@@ -5307,7 +5150,6 @@ body:has(.bb-search-results-page) {
   color: var(--bb-text-brand);
 }
 
-
 .bb-cart-breadcrumb li,
 .bb-cart-breadcrumb a,
 .bb-cart-breadcrumb span {
@@ -5327,7 +5169,6 @@ body:has(.bb-search-results-page) {
   background: var(--bb-action-primary-hover);
   color: var(--bb-text-inverse);
 }
-
 
 body > footer .bg-footer-top h3 button span {
   color: var(--bb-brand-primary-on-dark);
@@ -5576,7 +5417,6 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
   }
 
   .bb-mobile-section-header h2,
-  .bb-home-products-parity .bb-products-title,
   .bb-home .content-bottom.wyswyg h1,
   .bb-home .content-bottom.wyswyg h2 {
     max-width: 100%;

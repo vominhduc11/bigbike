@@ -463,9 +463,12 @@ export default async function HomePage() {
           aria-labelledby="home-products-heading"
         >
           <Container>
-            <div className="bb-products-header">
+            <div className="bb-products-header flex flex-col items-center justify-center gap-0 m-0 mb-[40px] p-0 [border-bottom:0] text-foreground [text-align:center] max-md:mb-[14px] max-md:px-[var(--bb-mobile-page-x)] max-md:[text-align:left]">
               <p className="bb-kicker">Sản phẩm nổi bật</p>
-              <h2 id="home-products-heading" className="bb-products-title bb-section-title">
+              <h2
+                id="home-products-heading"
+                className="m-0 font-heading text-[length:var(--bb-text-section-title)] max-md:text-[length:var(--fs-h2)] font-semibold leading-[var(--bb-line-section-title)] max-md:leading-[1.08] tracking-normal uppercase text-black [text-align:center] max-md:max-w-full max-md:text-balance"
+              >
                 Sản phẩm nổi bật tại BigBike
               </h2>
             </div>
