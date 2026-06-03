@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { submenuIcon } from "@/lib/ui-classes";
 
 const DROPDOWN_EXIT_MS = 200;
 const CLOSE_DELAY_MS = 120;
@@ -60,7 +61,7 @@ function MegaPanel({
                 >
                   {cat.iconUrl && (
                     <span
-                      className="bb-submenu-icon shrink-0"
+                      className={submenuIcon}
                       style={{
                         maskImage: `url(${cat.iconUrl})`,
                         WebkitMaskImage: `url(${cat.iconUrl})`,
@@ -145,7 +146,7 @@ function MegaSidebar({
                 >
                   {group.iconUrl && (
                     <span
-                      className="bb-submenu-icon shrink-0"
+                      className={submenuIcon}
                       style={{
                         maskImage: `url(${group.iconUrl})`,
                         WebkitMaskImage: `url(${group.iconUrl})`,
@@ -174,7 +175,7 @@ function MegaSidebar({
               >
                 {group.iconUrl && (
                   <span
-                    className="bb-submenu-icon shrink-0"
+                    className={submenuIcon}
                     style={{
                       maskImage: `url(${group.iconUrl})`,
                       WebkitMaskImage: `url(${group.iconUrl})`,
@@ -225,6 +226,12 @@ function MegaMenu({
   return (
     <div
       id={id}
+      // data-dropdown kept as a JS hook (HeaderNavItem reads `[data-dropdown] a`
+      // for ArrowDown focus). The legacy [data-dropdown] / .is-visible enter-exit
+      // animation (opacity + translateY, was in globals.css) is inlined below.
+      // `transform:translateY()` is used (not `translate-y-*`) so it animates via
+      // the `transform` property the transition targets — and stays independent of
+      // the `-translate-x-1/2` centering, which uses v4's `translate` property.
       data-dropdown
       className={cn(
         "fixed left-1/2 -translate-x-1/2",
@@ -233,7 +240,8 @@ function MegaMenu({
         "w-[min(75rem,calc(100vw-2rem))]",
         "max-h-[calc(100vh-var(--bb-header-height)-0.5rem)] overflow-y-auto overflow-x-hidden",
         "bg-white shadow-dropdown",
-        visible && "is-visible",
+        "opacity-0 [transform:translateY(6px)] pointer-events-none [transition:opacity_0.2s_ease,transform_0.2s_ease] motion-reduce:[transition-duration:1ms]",
+        visible && "opacity-100 [transform:translateY(0px)] pointer-events-auto",
       )}
       role="menu"
       aria-label={node.label}

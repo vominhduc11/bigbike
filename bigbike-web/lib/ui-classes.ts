@@ -80,6 +80,16 @@ export const iconBtn =
   // out-specified the old touch-target min-height, so that stays at the header height.
   "pointer-coarse:min-w-[var(--bb-touch-target)] max-[769px]:min-w-[var(--bb-touch-target)]";
 
+/** Submenu category icon (was `.bb-submenu-icon`): a 20×16 mask-image glyph that
+ * paints with currentColor, so it follows the parent link's text color (white →
+ * brand-red on hover). The mask-image URL is set inline per item. Shared by the
+ * desktop mega-menu (HeaderNavItem) and the mobile drawer (MobileHeaderMenu). */
+export const submenuIcon =
+  "inline-block shrink-0 w-5 h-4 bg-current " +
+  "[mask-repeat:no-repeat] [mask-position:center] [mask-size:contain] " +
+  "[-webkit-mask-repeat:no-repeat] [-webkit-mask-position:center] [-webkit-mask-size:contain] " +
+  "transition-[background-color] duration-[var(--bb-duration-normal)] ease-[ease]";
+
 /** Inline text link (was `.bb-link`): blue resting (--bb-link-text), red on
  * hover/focus. The base red is overridden by later WP-parity groups, so the
  * effective resting color is the blue link token. */

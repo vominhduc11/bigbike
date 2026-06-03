@@ -17,7 +17,7 @@ import {
 } from "@/lib/utils/routes";
 import { isActivePath, normalizeMenuUrl } from "@/lib/utils/nav";
 import { cn } from "@/lib/utils";
-import { iconBtn } from "@/lib/ui-classes";
+import { iconBtn, submenuIcon } from "@/lib/ui-classes";
 import { parsePhones, parseShopHours } from "@/lib/utils/shop";
 import { useMediaQueryChange } from "@/lib/hooks/useMediaQueryChange";
 
@@ -122,7 +122,7 @@ function MobileNavBranch({
       >
         {node.iconUrl && (
           <span
-            className="bb-submenu-icon"
+            className={submenuIcon}
             style={{
               maskImage: `url(${node.iconUrl})`,
               WebkitMaskImage: `url(${node.iconUrl})`,
@@ -150,7 +150,7 @@ function MobileNavBranch({
         >
           {node.iconUrl && (
             <span
-              className="bb-submenu-icon"
+              className={submenuIcon}
               style={{
                 maskImage: `url(${node.iconUrl})`,
                 WebkitMaskImage: `url(${node.iconUrl})`,

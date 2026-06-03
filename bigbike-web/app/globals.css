@@ -786,41 +786,10 @@ body {
    and line-height 1.357rem (not 1) — those effective values are what is inlined.
    .bb-header-nav-item kept as a marker (JS reads `.bb-header-nav-item.is-open`). */
 
-/* Submenu category icon — mask-image URL is set inline (dynamic per item).
-   Uses currentColor so it inherits text color from parent link hover state. */
-.bb-submenu-icon {
-  display: inline-block;
-  flex-shrink: 0;
-  width: 20px;
-  height: 16px;
-  background-color: currentColor;
-  mask-repeat: no-repeat;
-  -webkit-mask-repeat: no-repeat;
-  mask-position: center;
-  -webkit-mask-position: center;
-  mask-size: contain;
-  -webkit-mask-size: contain;
-  transition: background-color var(--bb-duration-normal) ease;
-}
-
-[data-dropdown] {
-  opacity: 0;
-  transform: translateY(6px);
-  transition: opacity 0.2s ease, transform 0.2s ease;
-  pointer-events: none;
-}
-
-[data-dropdown].is-visible {
-  opacity: 1;
-  transform: translateY(0);
-  pointer-events: auto;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  [data-dropdown] {
-    transition-duration: 1ms;
-  }
-}
+/* Submenu category icon (.bb-submenu-icon) migrated to the shared `submenuIcon`
+   constant in lib/ui-classes.ts (mask-image glyph, currentColor). The nav dropdown
+   enter/exit animation ([data-dropdown] / .is-visible) is inlined in HeaderNavItem
+   MegaMenu; the data-dropdown attribute is kept as a JS hook. */
 
 /* -- User control action icons: the .bb-icon-btn / .bb-cart-icon-link base,
    hover and focus styling migrated to the shared `iconBtn` constant in
