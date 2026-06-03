@@ -4944,9 +4944,7 @@ body:has(.bb-search-results-page) {
 .bb-home .white h3 {
   color: #fff;
 }
-.bb-home .pt-120 { padding-top: 120px; }
 .bb-home .pb-40 { padding-bottom: 40px; }
-.bb-home .pb-120 { padding-bottom: 120px; }
 .bb-home .mb-10 { margin-bottom: 10px; }
 .bb-home .mb-40 { margin-bottom: 40px; }
 
@@ -5367,11 +5365,6 @@ body .bb-home .white.block-title h3 {
   padding-bottom: 52px;
 }
 
-.bb-home .partner-slide {
-  padding-top: 120px;
-  padding-bottom: 120px;
-}
-
 .bb-home .content-bottom {
   padding-top: 60px;
   padding-bottom: 60px;
@@ -5446,11 +5439,6 @@ body .bb-home .white.block-title h3 {
   .bb-home .videos-slide .bb-home-video-title {
     font-size: var(--fs-h2);
     line-height: 1.1;
-  }
-
-  .bb-home .partner-slide {
-    padding-top: 80px;
-    padding-bottom: 80px;
   }
 }
 
@@ -5531,11 +5519,6 @@ body .bb-home .white.block-title h3 {
   .bb-home .videos-slide .bb-home-video-title {
     font-size: var(--fs-h3);
     line-height: 1.12;
-  }
-
-  .bb-home .partner-slide {
-    padding-top: 56px;
-    padding-bottom: 56px;
   }
 
   .bb-home .content-bottom {
@@ -5977,7 +5960,6 @@ body .bb-home .white.block-title h3 {
   .bb-home-mobile-categories,
   .bb-home-products-parity,
   .bb-home .bb-experience,
-  .bb-home .partner-slide,
   .bb-home .content-bottom {
     background: var(--bb-mobile-shell-bg);
     color: var(--bb-text-inverse);
@@ -6159,10 +6141,6 @@ body .bb-home .white.block-title h3 {
 
   .bb-home .videos-slide--inner {
     padding-bottom: 36px;
-  }
-
-  .bb-home .partner-slide {
-    padding: 28px 14px 12px;
   }
 
   .bb-brand-mobile-grid {
@@ -6376,7 +6354,6 @@ body .bb-home .white.block-title h3 {
   .bb-home-mobile-categories,
   .bb-home-products-parity,
   .bb-home .bb-experience,
-  .bb-home .partner-slide,
   .bb-home .content-bottom {
     background: var(--bb-bg-page);
     color: var(--bb-text-primary);
@@ -7189,10 +7166,6 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
     color: var(--bb-text-inverse);
     font-size: var(--fs-h3);
     line-height: 1.12;
-  }
-
-  .bb-home .partner-slide {
-    padding: 32px var(--bb-mobile-page-x) 24px;
   }
 
   .bb-brand-mobile-grid {

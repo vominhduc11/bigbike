@@ -569,7 +569,7 @@ export default async function HomePage() {
       )}
 
       {brandsResult.data.length > 0 && (
-        <div className="partner-slide pt-120 pb-120">
+        <div className="partner-slide pt-30 pb-30 max-[1024px]:pt-20 max-[1024px]:pb-20 max-md:pt-8 max-md:pb-6 max-md:px-[var(--bb-mobile-page-x)] max-md:bg-background max-md:text-foreground">
           <BrandCarousel brands={brandsResult.data} />
         </div>
       )}
