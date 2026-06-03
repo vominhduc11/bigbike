@@ -231,12 +231,12 @@ function ArticleSidebarWidget({
   }
 
   return (
-    <div className="widget">
-      <div className="widget--title">
-        <h3 className="big">{title}</h3>
+    <div className="mb-[30px]">
+      <div>
+        <h3 className="m-0 mb-5 text-black font-heading text-h3 font-semibold leading-[1.3] normal-case">{title}</h3>
       </div>
-      <div className="widget--body">
-        <div className="news-list">
+      <div>
+        <div>
           <div className="row">
             {articles.map((article) => (
               <div className="col-md-12" key={article.id}>
@@ -287,10 +287,10 @@ function RelatedArticlesSection({ articles }: Readonly<{ articles: Article[] }>)
   }
 
   return (
-    <section id="related" className="news-fix-height">
+    <section id="related" className="pb-10">
       <div className="container">
-        <div className="related--title">
-          <h3 className="big">CÓ THỂ BẠN QUAN TÂM</h3>
+        <div>
+          <h3 className="m-0 mb-[30px] text-black font-heading text-[2.143rem] font-bold leading-[1.3] normal-case max-md:text-[24px] max-md:leading-[30px]">CÓ THỂ BẠN QUAN TÂM</h3>
         </div>
         <div className="row">
           {articles.map((article) => (
