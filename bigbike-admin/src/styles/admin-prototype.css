@@ -643,7 +643,9 @@
   background: var(--bb-surface);
   border: 1px solid var(--bb-border);
   border-radius: 8px;
-  overflow: hidden;
+  /* responsive: was overflow:hidden which clipped wide tables on small screens;
+     overflow-x:auto lets them scroll sideways instead of cutting off columns. */
+  overflow-x: auto;
 }
 .bb-table {
   width: 100%;
@@ -684,6 +686,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
   padding: 10px 12px;
   border-top: 1px solid var(--bb-border-faint);
   background: var(--bb-surface-muted);
@@ -708,6 +712,7 @@
 .bb-bulk-bar {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
   padding: 10px 14px;
   background: var(--bb-text);
@@ -807,6 +812,7 @@
 .bb-pagination {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 4px;
 }
 .bb-pagination button {
@@ -1107,6 +1113,16 @@ dl.bb-info-grid dt {
 }
 dl.bb-info-grid dd { color: var(--bb-text); }
 
+/* responsive: stack label over value on phones so the fixed 120px label
+   column does not crush long values (RC-5). */
+@media (max-width: 640px) {
+  .bb-info-grid { grid-template-columns: 1fr; }
+  .bb-info-row .lbl,
+  dl.bb-info-grid dt { border-bottom: 0; padding-bottom: 2px; }
+  .bb-info-row .val,
+  dl.bb-info-grid dd { padding-top: 2px; }
+}
+
 /* Table row checkbox */
 .bb-cb {
   width: 16px; height: 16px;
@@ -1144,7 +1160,7 @@ dl.bb-info-grid dd { color: var(--bb-text); }
 .bb-checklist .check-miss { color: var(--bb-text-faint); flex-shrink: 0; }
 
 /* ─── Responsive ────────────────────────────────────────────────────────────── */
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .bb-app { grid-template-columns: 1fr; }
   .bb-sidebar {
     position: fixed;
@@ -1171,7 +1187,7 @@ dl.bb-info-grid dd { color: var(--bb-text); }
   .bb-filter-bar { flex-direction: column; align-items: stretch; }
 }
 
-@media (min-width: 1400px) {
+@media (min-width: 1280px) {
   .bb-kpi-grid { grid-template-columns: repeat(6, 1fr); }
 }
 
@@ -1199,7 +1215,7 @@ dl.bb-info-grid dd { color: var(--bb-text); }
 /* Topbar: on the drawer breakpoint, collapse identity + status to icons so the
    control row fits narrow screens. Full name/role stay in the user dropdown and
    the sidebar foot; connection status stays in the sidebar foot. */
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .bb-topbar { padding: 0 12px; gap: 8px; }
   .bb-pill-live { display: none; }
   .bb-user-chip { padding: 4px; }
@@ -1209,7 +1225,7 @@ dl.bb-info-grid dd { color: var(--bb-text); }
 
 /* ─── Hamburger (desktop hidden) ───────────────────────────────────────────── */
 .bb-hamburger { display: none; }
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .bb-hamburger { display: inline-flex; }
 }
 
@@ -1221,7 +1237,7 @@ dl.bb-info-grid dd { color: var(--bb-text); }
   background: rgba(0,0,0,0.50);
   z-index: calc(var(--admin-z-overlay) - 1);
 }
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .bb-app.sidebar-open .bb-sidebar-overlay { display: block; }
 }
 

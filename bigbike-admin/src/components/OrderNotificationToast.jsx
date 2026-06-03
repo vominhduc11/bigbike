@@ -16,7 +16,7 @@ function Toast({ toast, onDismiss, navigate }) {
       role="alert"
       aria-live="assertive"
       className={cn(
-        'bg-surface border border-border rounded-md shadow-sm py-3 px-3.5 flex gap-3 items-start min-w-[280px] max-w-[340px] cursor-pointer border-l-4',
+        'bg-surface border border-border rounded-md shadow-sm py-3 px-3.5 flex gap-3 items-start w-[min(340px,calc(100vw-2rem))] cursor-pointer border-l-4',
         isNew ? 'border-l-primary' : 'border-l-info'
       )}
       onClick={() => {

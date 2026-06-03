@@ -506,7 +506,7 @@ export function SettingsScreen({ canUpdate }) {
       {state.items.length === 0 ? (
         <StatePanel tone="neutral" title={t('settings.noSettings')} description={t('settings.noSettingsDesc')} />
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: 24 }}>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[200px_1fr]">
           {/* Tab sidebar — prototype .settings-nav */}
           <nav className="settings-nav" aria-label={t('settings.tabsAria')}>
             {[...groups.entries()].map(([group, items]) => {

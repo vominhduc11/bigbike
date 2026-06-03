@@ -114,7 +114,7 @@ export function ReceivableDetailScreen({ receivableId, navigate, canRecordPaymen
         </div>
       </div>
 
-      <div className="grid-2">
+      <div className="bb-grid-2">
         {/* Financial */}
         <div className="bb-card">
           <div className="bb-card-header"><h2>{t('receivables.detail.sectionFinancial')}</h2></div>

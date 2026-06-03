@@ -8,6 +8,7 @@ import {
 } from '../lib/adminApi'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
+import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
 import { showConfirm } from '../lib/confirm'
 import { formatCurrencyVnd } from '../lib/formatters'
 import { Button } from '@/components/ui/button'
@@ -146,7 +147,7 @@ export function ShippingScreen({ canUpdate }) {
       {zonesStatus === 'error' && <StatePanel tone="danger" title={t('shipping.error')} description={zonesError} actionLabel={t('common.retry')} onAction={loadZones} />}
 
       {zonesStatus === 'success' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: 24, alignItems: 'start' }}>
+        <div className="grid grid-cols-1 gap-6 items-start lg:grid-cols-[200px_1fr]">
           {/* Zone sidebar */}
           <nav
             className="flex flex-col gap-0 border border-border rounded-sm overflow-hidden"
@@ -177,7 +178,7 @@ export function ShippingScreen({ canUpdate }) {
                     <div className="bb-card-header"><h3>{editMethodId ? t('common.edit') : t('shipping.addMethod')}</h3></div>
                     <form onSubmit={handleMethodSubmit} className="bb-card-body">
                       {methodFormError && <Alert tone="danger" size="sm" className="mb-3">{methodFormError}</Alert>}
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <label className="form-field col-span-2">
                           <span>{t('shipping.formTitle')} *</span>
                           <Input required value={methodForm.title} onChange={(e) => setMethodForm((p) => ({ ...p, title: e.target.value }))} />
@@ -231,6 +232,8 @@ export function ShippingScreen({ canUpdate }) {
                       <StatePanel tone="neutral" title={t('shipping.methodsTitle')} description={t('shipping.noMethods')} />
                     )}
                     {methodsStatus === 'success' && methods.length > 0 && (
+                      <>
+                      <div className="hide-on-mobile">
                       <div className="bb-table-wrap">
                         <table className="bb-table">
                           <thead>
@@ -270,6 +273,38 @@ export function ShippingScreen({ canUpdate }) {
                           </tbody>
                         </table>
                       </div>
+                      </div>
+                      <MobileCardList>
+                        {[...methods].sort((a, b) => a.sortOrder - b.sortOrder).map((m) => (
+                          <MobileCard
+                            key={m.id}
+                            title={m.title}
+                            status={(
+                              <span className={`bb-badge ${m.enabled ? 'bb-badge-success' : 'bb-badge-neutral'}`}>
+                                <span className="dot" />{m.enabled ? t('common.on') : t('common.off')}
+                              </span>
+                            )}
+                            meta={[
+                              { label: t('shipping.colCost'), value: formatCurrencyVnd(m.cost), tone: 'strong' },
+                            ]}
+                            actions={canUpdate ? (
+                              <>
+                                <button
+                                  type="button"
+                                  className="bb-btn bb-btn-ghost bb-btn-sm"
+                                  onClick={() => { setEditMethodId(m.id); setMethodForm({ title: m.title, cost: String(m.cost), freeShippingThreshold: m.freeShippingThreshold != null ? String(m.freeShippingThreshold) : '', enabled: m.enabled }); setShowMethodForm(true) }}
+                                >
+                                  {t('common.edit')}
+                                </button>
+                                <button type="button" className="bb-btn bb-btn-danger-ghost bb-btn-sm" onClick={() => handleDeleteMethod(m.id)}>
+                                  {t('common.delete')}
+                                </button>
+                              </>
+                            ) : undefined}
+                          />
+                        ))}
+                      </MobileCardList>
+                      </>
                     )}
                   </div>
                 </div>

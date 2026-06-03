@@ -8,6 +8,7 @@ import { Modal } from '../components/layout'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
+import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
 import { fetchReturnDetail, fetchReturns, inspectReturnItem, updateReturnStatus } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import { useAdminList } from '../lib/useAdminList'
@@ -218,6 +219,7 @@ function ReturnDetailModal({ ret, onClose, onUpdate, canUpdate, navigate }) {
           ) : items.length > 0 && (
             <div>
               <p className="mb-2 font-semibold text-sm">{t('returns.detailItems')}</p>
+              <div className="overflow-x-auto">
               <table className="w-full text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-border">
@@ -266,6 +268,7 @@ function ReturnDetailModal({ ret, onClose, onUpdate, canUpdate, navigate }) {
                   })}
                 </tbody>
               </table>
+              </div>
             </div>
           )}
 
@@ -422,6 +425,7 @@ export function ReturnListScreen({ canUpdate, navigate }) {
       {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) && (
         <div className="bb-card">
           <div className="bb-card-body bb-card-body--flush">
+            <div className="hide-on-mobile">
             <div className="bb-table-wrap">
               <table className="bb-table">
                 <thead>
@@ -476,6 +480,32 @@ export function ReturnListScreen({ canUpdate, navigate }) {
                 </tbody>
               </table>
             </div>
+            </div>
+            <MobileCardList>
+              {items.map((r) => (
+                <MobileCard
+                  key={r.id}
+                  title={r.returnNumber}
+                  subtitle={r.customerEmail ?? '—'}
+                  status={<StatusBadge type="return" status={r.status} />}
+                  meta={[
+                    {
+                      label: t('returns.colOrder'),
+                      value: r.orderNumber ? `#${r.orderNumber}` : `${r.orderId?.slice(0, 8)}…`,
+                    },
+                    { label: t('returns.colReason'), value: t(`returns.reason.${r.reason}`, { defaultValue: r.reason?.replace('_', ' ') }) },
+                    { label: t('returns.colRefund'), value: r.refundAmount > 0 ? formatCurrencyVnd(r.refundAmount) : '—', tone: 'strong' },
+                    { label: t('returns.colDate'), value: formatDateTime(r.createdAt) },
+                  ]}
+                  actions={(
+                    <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" onClick={() => setDetailRet(r)}>
+                      {t('returns.viewBtn')}
+                    </button>
+                  )}
+                  onClick={() => setDetailRet(r)}
+                />
+              ))}
+            </MobileCardList>
           </div>
           {state.status === 'success' && pagination && (
             <PaginationControls

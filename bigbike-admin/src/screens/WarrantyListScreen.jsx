@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { Search } from 'lucide-react'
 import { PaginationControls } from '../components/PaginationControls'
 import { Modal } from '../components/layout'
+import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { fetchWarranties, voidWarranty } from '../lib/adminApi'
@@ -182,6 +183,7 @@ export function WarrantyListScreen({ canUpdate }) {
       {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) && (
         <div className="bb-card">
           <div className="bb-card-body bb-card-body--flush">
+            <div className="hide-on-mobile">
             <div className="bb-table-wrap">
               <table className="bb-table">
                 <thead>
@@ -221,6 +223,28 @@ export function WarrantyListScreen({ canUpdate }) {
                 </tbody>
               </table>
             </div>
+            </div>
+            <MobileCardList>
+              {items.map((r) => (
+                <MobileCard
+                  key={r.id}
+                  title={r.customerEmail ?? '—'}
+                  subtitle={r.customerPhone ?? '—'}
+                  status={<StatusBadge type="warranty" status={r.status} />}
+                  meta={[
+                    { label: t('warranty.colStartDate'), value: formatDate(r.startDate) },
+                    { label: t('warranty.colEndDate'), value: formatDate(r.endDate) },
+                    { label: t('warranty.colCreatedAt'), value: formatDateTime(r.createdAt) },
+                  ]}
+                  actions={(
+                    <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" onClick={(e) => { e.stopPropagation(); setDetailItem(r) }}>
+                      {t('warranty.viewBtn')}
+                    </button>
+                  )}
+                  onClick={() => setDetailItem(r)}
+                />
+              ))}
+            </MobileCardList>
           </div>
           {state.status === 'success' && pagination && (
             <PaginationControls

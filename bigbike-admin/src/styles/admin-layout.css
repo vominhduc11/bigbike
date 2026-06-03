@@ -847,7 +847,7 @@ button.summary-card:focus-visible {
 }
 
 /* On tablet/mobile a minimum width keeps columns legible; the wrap scrolls. */
-@media (max-width: 720px) {
+@media (max-width: 768px) {
   .dash-table {
     min-width: 480px;
     table-layout: auto;

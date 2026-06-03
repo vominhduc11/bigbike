@@ -10,6 +10,7 @@ import {
   updateRedirect,
 } from '../lib/adminApi'
 import { PaginationControls } from '../components/PaginationControls'
+import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { showConfirm } from '../lib/confirm'
@@ -225,7 +226,7 @@ export function RedirectListScreen({ canUpdate }) {
           </div>
           <form onSubmit={handleSubmit} className="bb-card-body">
             {formError && <Alert tone="danger" size="sm" className="mb-3">{formError}</Alert>}
-            <div className="grid-2">
+            <div className="bb-grid-2">
               <label className="form-field">
                 <span>{t('redirects.formSource', { defaultValue: 'Mẫu nguồn' })}</span>
                 <Input value={form.sourcePattern} onChange={(e) => setForm((p) => ({ ...p, sourcePattern: e.target.value }))} placeholder="/old-url" />
@@ -341,6 +342,7 @@ export function RedirectListScreen({ canUpdate }) {
       {(isLoading || items.length > 0) && (
         <div className="bb-card">
           <div className="bb-card-body bb-card-body--flush">
+            <div className="hide-on-mobile">
             <div className="bb-table-wrap">
               <table className="bb-table">
                 <thead>
@@ -394,6 +396,37 @@ export function RedirectListScreen({ canUpdate }) {
                 </tbody>
               </table>
             </div>
+            </div>
+            <MobileCardList>
+              {items.map((redirect) => (
+                <MobileCard
+                  key={redirect.id}
+                  title={<span className="mono" style={{ wordBreak: 'break-all' }}>{redirect.sourcePattern}</span>}
+                  subtitle={redirect.targetUrl}
+                  status={(
+                    <span className={`bb-badge ${redirect.enabled !== false ? 'bb-badge-success' : 'bb-badge-neutral'}`}>
+                      {redirect.enabled !== false ? t('common.on') : t('common.off')}
+                    </span>
+                  )}
+                  meta={[
+                    { label: t('redirects.colType', { defaultValue: 'Loại' }), value: normalizeRedirectTypeLabel(redirect.redirectType, t) },
+                    { label: t('redirects.colStatusCode', { defaultValue: 'Trạng thái' }), value: STATUS_CODE_LABELS[redirect.statusCode] || String(redirect.statusCode || '') },
+                    { label: t('redirects.colHits', { defaultValue: 'Lượt' }), value: redirect.hitCount ?? 0 },
+                    { label: t('redirects.colUpdated', { defaultValue: 'Cập nhật' }), value: formatDateTime(redirect.updatedAt) },
+                  ]}
+                  actions={canUpdate ? (
+                    <>
+                      <button type="button" className="bb-icon-btn" title={t('common.edit')} onClick={() => openEditForm(redirect)}>
+                        <Pencil size={14} />
+                      </button>
+                      <button type="button" className="bb-icon-btn" title={t('common.delete')} onClick={() => handleDelete(redirect)}>
+                        <Trash2 size={14} />
+                      </button>
+                    </>
+                  ) : undefined}
+                />
+              ))}
+            </MobileCardList>
           </div>
           {pagination && (
             <PaginationControls

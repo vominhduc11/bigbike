@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { Crown, Download, Search, UserCheck, UserPlus, Users } from 'lucide-react'
 import { PaginationControls } from '../components/PaginationControls'
+import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { exportCustomersCsv, fetchCustomers, fetchCustomerSummary } from '../lib/adminApi'
@@ -167,6 +168,7 @@ export function CustomerListScreen({ navigate }) {
       {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) && (
         <div className="bb-card">
           <div className="bb-card-body bb-card-body--flush">
+            <div className="hide-on-mobile">
             <div className="bb-table-wrap">
               <table className="bb-table">
                 <thead>
@@ -187,7 +189,7 @@ export function CustomerListScreen({ navigate }) {
                       </tr>
                     ))
                   )}
-                  {items.map((c, i) => {
+                  {items.map((c) => {
                     const name = formatText(c.fullName)
                     const initial = (name || '?').charAt(0).toUpperCase()
                     return (
@@ -212,6 +214,27 @@ export function CustomerListScreen({ navigate }) {
                 </tbody>
               </table>
             </div>
+            </div>
+            <MobileCardList>
+              {items.map((c) => {
+                const name = formatText(c.fullName)
+                return (
+                  <MobileCard
+                    key={c.id}
+                    title={name}
+                    subtitle={formatText(c.email)}
+                    status={<CustomerStatusBadge value={c.status} />}
+                    meta={[
+                      { label: t('customers.colPhone'), value: formatText(c.phone) },
+                      { label: t('customers.colOrders'), value: c.orderCount },
+                      { label: t('customers.colSpent'), value: formatCurrencyVnd(c.totalSpent), tone: 'strong' },
+                      { label: t('customers.colRegistered'), value: formatDateTime(c.createdAt) },
+                    ]}
+                    onClick={() => navigate(`/admin/customers/${c.id}`)}
+                  />
+                )
+              })}
+            </MobileCardList>
           </div>
           {state.status === 'success' && pagination && (
             <PaginationControls

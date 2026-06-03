@@ -27,6 +27,7 @@ import {
 } from 'recharts'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
+import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
 import { formatVndShort } from '../lib/formatters'
 import { useAuth } from '../lib/auth'
 import {
@@ -545,6 +546,8 @@ export function DashboardScreen({ navigate }) {
               </div>
               <div className="bb-card-body--flush">
                 {recentOrders.length > 0 ? (
+                  <>
+                  <div className="hide-on-mobile">
                   <div className="bb-table-wrap">
                     <table className="bb-table">
                       <thead>
@@ -569,6 +572,22 @@ export function DashboardScreen({ navigate }) {
                       </tbody>
                     </table>
                   </div>
+                  </div>
+                  <MobileCardList>
+                    {recentOrders.map((order) => (
+                      <MobileCard
+                        key={order.id}
+                        title={order.orderNumber}
+                        subtitle={order.customerName || order.customerEmail}
+                        status={<StatusBadge type="order" status={order.orderStatus} />}
+                        meta={[
+                          { label: t('dashboard.recentOrders.total'), value: formatVndShort(order.total), tone: 'strong' },
+                        ]}
+                        onClick={() => navigate(`/admin/orders/${order.id}`)}
+                      />
+                    ))}
+                  </MobileCardList>
+                  </>
                 ) : (
                   <div className="bb-card-body">
                     <SectionEmpty
@@ -595,6 +614,8 @@ export function DashboardScreen({ navigate }) {
               </div>
               <div className="bb-card-body--flush">
                 {topProducts.length > 0 ? (
+                  <>
+                  <div className="hide-on-mobile">
                   <div className="bb-table-wrap">
                     <table className="bb-table">
                       <thead>
@@ -628,6 +649,21 @@ export function DashboardScreen({ navigate }) {
                       </tbody>
                     </table>
                   </div>
+                  </div>
+                  <MobileCardList>
+                    {topProducts.map((product, idx) => (
+                      <MobileCard
+                        key={product.productId}
+                        title={`${idx + 1}. ${product.name}`}
+                        meta={[
+                          { label: t('dashboard.topProducts.units'), value: product.units },
+                          { label: t('dashboard.topProducts.revenue'), value: formatVndShort(product.revenue), tone: 'strong' },
+                        ]}
+                        onClick={() => navigate(`/admin/products/${product.productId}`)}
+                      />
+                    ))}
+                  </MobileCardList>
+                  </>
                 ) : (
                   <div className="bb-card-body">
                     <SectionEmpty

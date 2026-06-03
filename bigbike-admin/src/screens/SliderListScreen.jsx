@@ -369,7 +369,7 @@ export function SliderListScreen({ canUpdate }) {
           <div className="bb-card-header"><h2>{editingId ? t('sliders.editFormTitle') : t('sliders.formTitle')}</h2></div>
           <form onSubmit={handleSubmit} className="bb-card-body">
             {formError && <p className="mb-3 text-danger">{formError}</p>}
-            <div className="grid-2">
+            <div className="bb-grid-2">
               <label className="form-field">
                 <span>{t('sliders.formLocation')}</span>
                 <Select value={form.location} onValueChange={(val) => setForm((p) => ({ ...p, location: val }))}>

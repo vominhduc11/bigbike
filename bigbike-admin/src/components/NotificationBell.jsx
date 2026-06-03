@@ -115,7 +115,7 @@ export function NotificationBell({ navigate }) {
       {open && (
         <div
           role="menu"
-          className="absolute right-0 top-[calc(100%+8px)] w-[340px] overflow-hidden rounded-lg border border-border bg-surface"
+          className="absolute right-0 top-[calc(100%+8px)] w-[340px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-lg border border-border bg-surface"
           style={{ boxShadow: 'var(--admin-shadow-lg)', zIndex: 'var(--z-popup)' }}
         >
           <div className="flex items-center justify-between border-b border-border px-4 py-2.5">

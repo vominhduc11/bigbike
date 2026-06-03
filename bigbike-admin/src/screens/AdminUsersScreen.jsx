@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Eye, EyeOff, MoreHorizontal, Pencil, Search, UserPlus } from 'lucide-react'
 import { PaginationControls } from '../components/PaginationControls'
+import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
 import { Modal } from '../components/layout'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
@@ -357,6 +358,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
       {(listState.status === 'loading' || (listState.status === 'success' && items.length > 0)) && (
         <div className="bb-card">
           <div className="bb-card-body bb-card-body--flush">
+            <div className="hide-on-mobile">
             <div className="bb-table-wrap">
               <table className="bb-table">
                 <thead>
@@ -414,6 +416,41 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
                 </tbody>
               </table>
             </div>
+            </div>
+            <MobileCardList>
+              {items.map((u, i) => {
+                const name = u.displayName || u.email
+                return (
+                  <MobileCard
+                    key={u.id}
+                    title={(
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span className={`inline-flex items-center justify-center size-8 rounded-full text-xs font-bold flex-shrink-0 ${AVATAR_COLORS[i % AVATAR_COLORS.length]}`}>
+                          {(name || '?').charAt(0).toUpperCase()}
+                        </span>
+                        {name}
+                      </span>
+                    )}
+                    subtitle={u.displayName ? u.email : undefined}
+                    status={<UserStatusBadge status={u.status} t={t} />}
+                    meta={[
+                      { label: t('adminUsers.colRole'), value: <RoleBadge role={u.role} t={t} /> },
+                      { label: t('adminUsers.colLastLogin'), value: u.lastLoginAt ? formatDateTime(u.lastLoginAt) : t('adminUsers.notLastLogin') },
+                    ]}
+                    actions={canUpdate ? (
+                      <>
+                        <button type="button" className="bb-icon-btn" title={t('common.edit')} onClick={() => openEdit(u)}>
+                          <Pencil size={14} />
+                        </button>
+                        <button type="button" className="bb-icon-btn" title={t('common.edit')} onClick={() => openEdit(u)}>
+                          <MoreHorizontal size={15} />
+                        </button>
+                      </>
+                    ) : undefined}
+                  />
+                )
+              })}
+            </MobileCardList>
           </div>
           {listState.status === 'success' && listState.pagination && (
             <PaginationControls
