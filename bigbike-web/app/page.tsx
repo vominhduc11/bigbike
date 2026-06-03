@@ -415,17 +415,21 @@ export default async function HomePage() {
       <HomeCategoryHighlights items={homeHighlights} />
 
       {(aboutSubtitle || aboutTitle || aboutMarkup) && (
-        <div className="about-bigbike">
+        <div className="about-bigbike py-10 max-md:pt-8">
           <div className="container">
             {(aboutSubtitle || aboutTitle) && (
-              <div className="block-title text-center mb-40">
+              <div className="text-center mb-[40px] max-md:mb-[24px]">
                 {aboutSubtitle ? <p className="bb-kicker">{aboutSubtitle}</p> : null}
-                {aboutTitle ? <h2>{aboutTitle}</h2> : null}
+                {aboutTitle ? (
+                  <h2 className="m-0 text-black font-heading text-[length:var(--bb-text-section-title)] font-semibold leading-[1.2] tracking-normal uppercase">
+                    {aboutTitle}
+                  </h2>
+                ) : null}
               </div>
             )}
             {aboutMarkup ? (
               <div
-                className="block-content text-center"
+                className="block-content text-center max-w-[970px] mx-auto"
                 dangerouslySetInnerHTML={{ __html: aboutMarkup }}
               />
             ) : null}

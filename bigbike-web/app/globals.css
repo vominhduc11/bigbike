@@ -4681,35 +4681,6 @@ body:has(.bb-search-results-page) {
 }
 .bb-home .pb-40 { padding-bottom: 40px; }
 .bb-home .mb-10 { margin-bottom: 10px; }
-.bb-home .mb-40 { margin-bottom: 40px; }
-
-.bb-home .block-title p.sub-title {
-  margin: 0 0 10px;
-  color: var(--bb-text-muted);
-  font-family: var(--bb-font-cta);
-  font-size: var(--bb-text-section-kicker);
-  font-weight: 700;
-  line-height: var(--bb-line-section-kicker);
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-}
-
-body .bb-home .block-title h2,
-body .bb-home .block-title h3 {
-  margin: 0;
-  color: #000;
-  font-family: var(--bb-font-heading);
-  font-size: var(--bb-text-section-title);
-  font-weight: 600;
-  line-height: var(--bb-line-section-title);
-  letter-spacing: 0;
-  text-transform: uppercase;
-}
-
-body .bb-home .white.block-title h2,
-body .bb-home .white.block-title h3 {
-  color: #fff;
-}
 
 .bb-home .btn {
   display: inline-block;
@@ -4790,31 +4761,11 @@ body .bb-home .white.block-title h3 {
   margin-left: 5px;
 }
 
-.bb-home .about-bigbike {
-  padding: 40px 0;
-}
-
-.bb-home .about-bigbike .block-content {
-  max-width: 970px;
-  margin: 0 auto;
-}
-
 .bb-home .about-bigbike .block-content p {
   margin: 0;
   color: #6f6f6f;
   font-size: var(--fs-body);
   line-height: 1.6;
-}
-
-.bb-home .about-bigbike .block-title h2 {
-  margin: 0;
-  color: #000;
-  font-family: var(--bb-font-heading);
-  font-size: var(--bb-text-section-title);
-  font-weight: 600;
-  line-height: var(--bb-line-section-title);
-  letter-spacing: 0;
-  text-transform: uppercase;
 }
 
 .bb-home .product-list {
@@ -4931,17 +4882,6 @@ body .bb-home .white.block-title h3 {
 
 @media (max-width: 767px) {
 
-  body .bb-home .block-title h2,
-  body .bb-home .block-title h3 {
-    font-size: var(--bb-text-section-title);
-    line-height: var(--bb-line-section-title);
-  }
-
-  .bb-home .about-bigbike .block-title h2 {
-    font-size: var(--bb-text-section-title);
-    line-height: var(--bb-line-section-title);
-  }
-
   .bb-home .category-list .item {
     margin-bottom: 20px;
   }
@@ -4957,15 +4897,6 @@ body .bb-home .white.block-title h3 {
 .bb-home .category-list {
   padding-top: 60px;
   padding-bottom: 60px;
-}
-
-.bb-home .about-bigbike {
-  padding-top: 40px;
-  padding-bottom: 40px;
-}
-
-.bb-home .about-bigbike .block-title {
-  margin-bottom: 40px;
 }
 
 .bb-home-products-parity {
@@ -5055,14 +4986,6 @@ body .bb-home .white.block-title h3 {
   .bb-home .category-list {
     padding-top: 40px;
     padding-bottom: 40px;
-  }
-
-  .bb-home .about-bigbike {
-    padding-top: 32px;
-  }
-
-  .bb-home .about-bigbike .block-title {
-    margin-bottom: 24px;
   }
 
   .bb-home-products-parity {
