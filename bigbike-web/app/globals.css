@@ -2503,119 +2503,6 @@ img, picture, video, svg, canvas { max-width: 100%; }
 
 /* Khi tat ca slide vua man (isLocked) - can giua, khong padding nav */
 
-/* -- WP-style product card (content-product-swipe-item.php) -- */
-.bb-fp-item {
-  margin: 30px 0 0;
-  background: transparent;
-  border: none;
-  position: relative;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.bb-fp-thumb {
-  position: relative;
-  overflow: hidden;
-  margin: 0 0 20px;
-}
-.bb-fp-thumb-link {
-  display: block;
-  position: relative;
-}
-.bb-fp-thumb img {
-  max-width: 100%;
-  height: auto;
-  display: block;
-  transition: transform 0.3s ease-in-out;
-}
-
-/* Sale badge: co 'o skewed (border-top trick) */
-.bb-fp-sale {
-  position: absolute;
-  top: 20px;
-  left: 0;
-  z-index: 2;
-}
-.bb-fp-sale p {
-  line-height: 42px;
-  background: var(--bb-action-primary);
-  margin: 0;
-  color: #fff;
-  width: 70px;
-  position: relative;
-  text-align: center;
-  font-family: var(--bb-font-display);
-  font-weight: 600;
-  font-size: 1rem;
-}
-.bb-fp-sale p::after {
-  content: "";
-  width: 0;
-  height: 0;
-  border-left: 42px solid transparent;
-  border-right: 33px solid transparent;
-  border-top: 42px solid var(--bb-action-primary);
-  position: absolute;
-  top: 0;
-  right: -33px;
-}
-
-.bb-fp-cart a,
-.bb-fp-cart a:hover,
-.bb-fp-cart a:visited {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.625rem;
-  color: #fff;
-  font-family: var(--bb-font-display);
-  text-transform: uppercase;
-  padding: 15px 0;
-  font-weight: 600;
-  text-decoration: none;
-  letter-spacing: 0.02em;
-  font-size: 0.95rem;
-}
-/* Body: title trAi, price phai, rating du>i */
-.bb-fp-desc { display: flex; flex-direction: column; }
-.bb-fp-inside {
-  display: block;
-  margin-top: 10px;
-}
-.bb-fp-title {
-  font-size: 1rem;
-  font-family: var(--bb-font-display);
-  font-weight: 600;
-  margin: 0;
-  line-height: 1.25;
-}
-.bb-fp-title a {
-  color: var(--bb-text-primary);
-  text-decoration: none;
-}
-.bb-fp-title a:hover { color: var(--bb-text-brand); }
-
-.bb-fp-price {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  text-align: right;
-  margin-top: 8px;
-  font-family: var(--bb-font-display);
-  font-weight: 600;
-  color: var(--bb-text-primary);
-}
-.bb-fp-price-current { margin: 0; font-size: 1rem; line-height: 1.214rem; }
-.bb-fp-price-old {
-  margin: 0;
-  color: var(--bb-text-muted);
-  text-decoration: line-through;
-  font-size: 0.9rem;
-  line-height: 1.214rem;
-}
-
-.bb-fp-rating { margin-top: 8px; }
 
 /* Pagination dots - kifu WP videos-slide (active dot dAi 'o) */
 .bb-fp-pagination {
@@ -2669,9 +2556,6 @@ img, picture, video, svg, canvas { max-width: 100%; }
 /* Mobile: an nAt prev/next ('A cA Y @media pointer:coarse), bo margin top card */
 @media (max-width: 767px) {
   .bb-fp-pagination { margin-top: 20px; }
-  .bb-fp-item { margin-top: 16px; }
-  .bb-fp-thumb { margin-bottom: 14px; }
-  .bb-fp-cart a { padding: 12px 0; font-size: 0.85rem; }
 }
 
 /* ============================================================
@@ -2715,8 +2599,7 @@ a:not(.font-cta):hover {
 .bb-empty-state,
 .bb-error-state,
 .bb-query-form,
-.bb-product-card,
-.bb-fp-item {
+.bb-product-card {
   background: var(--bb-bg-surface);
   color: var(--bb-text-primary);
   border-color: var(--bb-border-subtle);
@@ -2724,8 +2607,7 @@ a:not(.font-cta):hover {
   box-shadow: none;
 }
 
-.bb-product-card:hover,
-.bb-fp-item:hover {
+.bb-product-card:hover {
   border-color: var(--bb-text-brand);
   box-shadow: var(--bb-shadow-product);
   transform: none;
@@ -2794,15 +2676,6 @@ a:not(.font-cta):hover {
   font-weight: 600;
 }
 
-.bb-fp-cart a {
-  border-radius: 0;
-  font-family: var(--bb-font-cta);
-  font-size: 16px;
-  font-weight: 600;
-  line-height: 24px;
-  letter-spacing: 0;
-  text-transform: uppercase;
-}
 
 .bb-query-select {
   min-height: 52px;
@@ -2867,20 +2740,17 @@ input[type="checkbox"] {
   outline-offset: -2px;
 }
 
-.bb-product-image,
-.bb-fp-thumb {
+.bb-product-image {
   background: #ffffff;
   border-radius: 0;
 }
 
-.bb-product-image,
-.bb-fp-thumb {
+.bb-product-image {
   aspect-ratio: 1 / 1;
 }
 
 .bb-product-image img,
-.bb-product-image > span > img,
-.bb-fp-thumb img {
+.bb-product-image > span > img {
   width: 100%;
   height: 100%;
   object-fit: contain;
@@ -2888,8 +2758,7 @@ input[type="checkbox"] {
 }
 
 .bb-product-card:hover .bb-product-image img,
-.bb-product-card:hover .bb-product-image > span > img,
-.bb-fp-item:hover .bb-fp-thumb img {
+.bb-product-card:hover .bb-product-image > span > img {
   transform: none;
 }
 
@@ -2931,17 +2800,6 @@ input[type="checkbox"] {
   text-transform: uppercase;
 }
 
-/* Card title sits on a white background — must use dark text */
-.bb-fp-title,
-.bb-fp-title a {
-  font-family: var(--bb-font-heading);
-  font-size: var(--fs-h4);
-  font-weight: 600;
-  line-height: 20px;
-  letter-spacing: 0;
-  text-transform: uppercase;
-  color: var(--bb-text-primary);
-}
 
 /* WP product title: Barlow Condensed 16px, no uppercase. Override white from group rule above. */
 .bb-product-name {
@@ -2950,8 +2808,7 @@ input[type="checkbox"] {
   color: var(--bb-color-black);
 }
 
-.bb-product-price b,
-.bb-fp-price-current {
+.bb-product-price b {
   color: var(--bb-text-brand);
   font-family: var(--bb-font-cta);
   font-size: var(--bb-text-base);
@@ -2959,20 +2816,17 @@ input[type="checkbox"] {
   line-height: 24px;
 }
 
-.bb-product-price s,
-.bb-fp-price-old {
+.bb-product-price s {
   color: #6f6f6f;
 }
 
 /* Price on white card: brand red (#ff0c09) = 3.92:1 — fails WCAG AA for 14px text.
    red-700 (#cc0906) = 5.77:1, passes. */
-.bb-fp-price-current,
 .bb-product-price b {
   color: var(--bb-color-red-700);
 }
 
-.bb-product-tag,
-.bb-fp-sale p {
+.bb-product-tag {
   background: var(--bb-action-primary);
   color: #ffffff;
   border-radius: 0;
@@ -2986,54 +2840,7 @@ input[type="checkbox"] {
   color: #ffffff;
 }
 
-.bb-fp-cart {
-  bottom: 0;
-  background: #000000;
-  color: #ffffff;
-  transform: translateY(100%);
-  transition: transform var(--bb-duration-cart) var(--bb-ease-standard), background var(--bb-duration-fast) var(--bb-ease-standard);
-}
 
-.bb-fp-item:hover .bb-fp-cart {
-  transform: translateY(0);
-}
-
-.bb-fp-cart:hover {
-  background: var(--bb-brand-primary-active);
-}
-
-@media (hover: none), (pointer: coarse) {
-  .bb-fp-cart {
-    transform: translateY(0);
-  }
-}
-
-.bb-fp-item {
-  margin: 0;
-  padding: 20px;
-  border: 1px solid #dddddd;
-}
-
-.bb-fp-thumb {
-  margin: 0 0 16px;
-}
-
-.bb-fp-cart {
-  position: absolute;
-  left: 0;
-  right: 0;
-  width: 100%;
-  z-index: 2;
-}
-
-.bb-fp-inside {
-  margin-top: 0;
-}
-
-.bb-fp-price {
-  align-items: flex-start;
-  text-align: left;
-}
 
 .bb-stock-badge {
   border-radius: 0;
@@ -3097,8 +2904,7 @@ input[type="checkbox"] {
 .bb-query-form,
 .bb-query-select,
 .bb-pagination-page,
-.bb-product-card,
-.bb-fp-item {
+.bb-product-card {
   border-radius: 0;
 }
 
@@ -3276,172 +3082,6 @@ input[type="checkbox"] {
   height: auto;
 }
 
-.bb-home-products-parity .bb-fp-item {
-  display: flex;
-  height: 100%;
-  min-width: 0;
-  flex: 0 0 calc((100% - 90px) / 4);
-  flex-direction: column;
-  margin: 30px 0 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-  color: #000;
-}
-
-.bb-home-products-parity .bb-fp-item:hover {
-  border-color: transparent;
-  box-shadow: none;
-}
-
-.bb-home-products-parity .bb-fp-thumb {
-  position: relative;
-  min-height: 200px;
-  margin: 0 0 20px;
-  overflow: hidden;
-  aspect-ratio: auto;
-  background: #fff;
-}
-
-.bb-home-products-parity .bb-fp-thumb-link {
-  position: relative;
-  display: block;
-  min-height: 200px;
-}
-
-.bb-home-products-parity .bb-fp-thumb img {
-  display: block;
-  width: auto;
-  height: auto;
-  max-width: 100%;
-  max-height: none;
-  margin: 0 auto;
-  object-fit: contain;
-  transition: transform 0.3s ease-in-out;
-}
-
-.bb-home-products-parity .bb-fp-item:hover .bb-fp-thumb img {
-  transform: scale(1.05);
-}
-
-.bb-home-products-parity .bb-fp-cart {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  z-index: 2;
-  width: 100%;
-  background: #000;
-  text-align: center;
-  transform: translateY(100%);
-  transition: transform 0.32s ease, background 0.32s ease;
-}
-
-.bb-home-products-parity .bb-fp-item:hover .bb-fp-cart {
-  transform: translateY(0);
-}
-
-.bb-home-products-parity .bb-fp-cart a {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 15px 0;
-  color: #fff;
-  font-family: var(--bb-font-display);
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.5;
-  text-decoration: none;
-  text-transform: uppercase;
-}
-
-.bb-home-products-parity .bb-fp-cart a:hover {
-  color: #fff;
-}
-
-.bb-home-products-parity .bb-fp-desc {
-  display: flex;
-  flex-direction: column;
-}
-
-.bb-home-products-parity .bb-fp-inside {
-  display: block;
-  margin-top: 10px;
-}
-
-.bb-home-products-parity .bb-fp-title {
-  margin: 0 0 1rem;
-  font-family: var(--bb-font-display);
-  font-size: 1rem;
-  font-weight: 600;
-  line-height: 1.5;
-  letter-spacing: 0;
-  text-transform: none;
-}
-
-.bb-home-products-parity .bb-fp-title a {
-  color: #000;
-  font-size: var(--fs-h4);
-  text-decoration: none;
-  text-transform: none;
-}
-
-.bb-home-products-parity .bb-fp-title a:hover {
-  color: var(--bb-text-brand);
-}
-
-.bb-home-products-parity .bb-fp-price {
-  display: block;
-  margin-top: 0;
-  color: var(--bb-product-price);
-  font-family: var(--bb-font-cta);
-  font-size: 14px;
-  font-weight: 600;
-  text-align: left;
-}
-
-.bb-home-products-parity .bb-fp-price-current,
-.bb-home-products-parity .bb-fp-price-old {
-  display: inline-block;
-  margin: 0 20px 0 0;
-  font-size: 14px;
-  line-height: 1.214rem;
-}
-
-.bb-home-products-parity .bb-fp-price-current {
-  color: var(--bb-product-price);
-}
-
-.bb-home-products-parity .bb-fp-price-old {
-  color: var(--bb-text-secondary);
-  text-decoration: line-through;
-}
-
-.bb-home-products-parity .bb-fp-sale {
-  top: 20px;
-  left: 0;
-  width: 80px;
-  height: 32px;
-}
-
-.bb-home-products-parity .bb-fp-sale p {
-  width: auto;
-  margin: 0;
-  padding: 0;
-  background: var(--bb-action-primary);
-  color: #fff;
-  font-family: var(--bb-font-display);
-  font-size: 18px;
-  font-weight: 600;
-  line-height: 28px;
-  text-align: center;
-  transform: rotate(-20deg);
-}
-
-.bb-home-products-parity .bb-fp-sale p::after {
-  display: none;
-}
 
 .bb-home-products-parity .bb-fp-arrow {
   color: #000;
@@ -3476,56 +3116,13 @@ input[type="checkbox"] {
   background: var(--bb-action-primary);
 }
 
-/* Featured products: desktop image frame + large-desktop expansion ───────────────
-   These rules layer on top of the WP-parity base above.
-   Breakpoints: 768px (desktop floor) / 1536px (2xl) / 1920px (3xl) / 2560px (4xl).  */
 
-/* ≥768px: square thumb so all cards share the same image height.
-   Absolute-position the img inside the link fills the aspect-ratio box.
-   Cart overlay (.bb-fp-cart) and discount badge (.bb-fp-sale) remain
-   position:absolute relative to .bb-fp-thumb — unaffected.
-   Title min-height guards price/rating vertical alignment across cards. */
-@media (min-width: 768px) {
-  .bb-home-products-parity .bb-fp-thumb {
-    aspect-ratio: 1 / 1;
-    min-height: unset;
-  }
-  .bb-home-products-parity .bb-fp-thumb-link {
-    height: 100%;
-    min-height: unset;
-  }
-  .bb-home-products-parity .bb-fp-thumb img {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-  }
-  .bb-home-products-parity .bb-fp-title {
-    min-height: 3rem; /* 2 title lines @ 1rem / 1.5 lh */
-  }
-}
-
-/* ≥1536px (Tailwind 2xl): expand section container beyond global 1200px cap,
-   switch to 5 items per row.
-   Math: container max 85rem = 1360px; at 1536px viewport → 88px each side.
-   Arrow guard: arrows at −64px leave 24px clearance — within the white section bg. */
 @media (min-width: 1536px) {
-  .bb-home-products-parity .bb-fp-item {
-    flex: 0 0 calc((100% - 120px) / 5); /* 5 items × 4 gaps × 30px = 120px */
-  }
   .bb-home-products-parity .bb-fp-pagination {
     margin-top: 40px;
   }
 }
 
-/* ≥2560px (4xl): widen to 2240px (140rem) and switch to 6 items per row.
-   Math: 6 items × 5 gaps × 30px = 150px gap total → ~348px per item card.
-   Arrow guard: container 160px from viewport edge → arrows have 96px clearance. */
-@media (min-width: 2560px) {
-  .bb-home-products-parity .bb-fp-item {
-    flex: 0 0 calc((100% - 150px) / 6); /* 6 items × 5 gaps × 30px = 150px */
-  }
-}
 
 body:has(.bb-article-detail-page) .bb-header-info-sheet {
   overflow: hidden;
@@ -4669,9 +4266,6 @@ body:has(.bb-search-results-page) {
   margin-bottom: 40px;
 }
 
-.bb-home-products-parity .bb-fp-item {
-  margin-top: 30px;
-}
 
 .bb-home-products-parity .bb-fp-pagination {
   margin-top: 60px;
@@ -4734,9 +4328,6 @@ body:has(.bb-search-results-page) {
     margin-bottom: 28px;
   }
 
-  .bb-home-products-parity .bb-fp-item {
-    margin-top: 20px;
-  }
 
   .bb-home-products-parity .bb-fp-pagination {
     margin-top: 20px;
@@ -5200,43 +4791,6 @@ body:has(.bb-search-results-page) {
     transform: none;
   }
 
-  .bb-home-products-parity .bb-fp-item {
-    flex: 0 0 184px;
-    width: 184px;
-    margin-top: 0;
-    padding: 0;
-  }
-
-  .bb-home-products-parity .bb-fp-thumb {
-    margin: 0;
-    background: var(--bb-bg-surface);
-  }
-
-  .bb-home-products-parity .bb-fp-desc {
-    padding: 10px 12px 12px;
-  }
-
-  .bb-home-products-parity .bb-fp-title {
-    min-height: 34px;
-    margin: 0;
-  }
-
-  .bb-home-products-parity .bb-fp-title,
-  .bb-home-products-parity .bb-fp-title a {
-    font-family: var(--bb-font-cta);
-    font-size: 14px;
-    font-weight: 500;
-    line-height: 1.2;
-  }
-
-  .bb-home-products-parity .bb-fp-price {
-    margin-top: 4px;
-  }
-
-  .bb-home-products-parity .bb-fp-cart {
-    transform: translateY(0);
-  }
-
   .bb-home-products-parity .bb-fp-arrow,
   .bb-home-products-parity .bb-fp-pagination {
     display: none;
@@ -5447,8 +5001,7 @@ body:has(.bb-search-results-page) {
   }
 
   .bb-home-mobile-category-card,
-  .bb-home-mobile-trust-card,
-  .bb-home-products-parity .bb-fp-item {
+  .bb-home-mobile-trust-card {
     border-color: var(--bb-border-subtle);
     background: var(--bb-bg-surface);
     color: var(--bb-text-primary);
@@ -5457,9 +5010,7 @@ body:has(.bb-search-results-page) {
   .bb-home-mobile-category-card .text-foreground,
   .bb-home-mobile-trust-card .text-foreground,
   .bb-mobile-section-header h2,
-  .bb-home-products-parity .bb-products-title,
-  .bb-home-products-parity .bb-fp-title,
-  .bb-home-products-parity .bb-fp-title a {
+  .bb-home-products-parity .bb-products-title {
     color: var(--bb-text-primary);
   }
 
@@ -5488,9 +5039,6 @@ body:has(.bb-search-results-page) {
     padding-inline: var(--bb-mobile-page-x);
   }
 
-  .bb-home-products-parity .bb-fp-desc {
-    background: var(--bb-bg-surface);
-  }
 
   .bb-home .content-bottom {
     border-top: 1px solid var(--bb-border-subtle);
@@ -5780,19 +5328,6 @@ body:has(.bb-search-results-page) {
   color: var(--bb-text-inverse);
 }
 
-.bb-fp-price-current,
-.bb-home-products-parity .bb-fp-price-current {
-  color: var(--bb-product-price);
-}
-
-.bb-fp-price-old,
-.bb-home-products-parity .bb-fp-price-old {
-  color: var(--bb-text-secondary);
-}
-
-.bb-fp-rating .text-brand {
-  color: var(--bb-rating-star);
-}
 
 body > footer .bg-footer-top h3 button span {
   color: var(--bb-brand-primary-on-dark);
@@ -6036,21 +5571,8 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
   }
 
   .bb-product-image img,
-  .bb-product-image > span > img,
-  .bb-home-products-parity .bb-fp-thumb img {
+  .bb-product-image > span > img {
     object-fit: contain !important;
-  }
-
-  .bb-home-products-parity .bb-fp-thumb,
-  .bb-home-products-parity .bb-fp-thumb-link {
-    aspect-ratio: 1 / 1;
-    min-height: 0;
-  }
-
-  .bb-home-products-parity .bb-fp-thumb img {
-    width: 100%;
-    height: 100%;
-    padding: 8px;
   }
 
   .bb-mobile-section-header h2,
@@ -6065,7 +5587,6 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
   }
 
   .bb-product-name,
-  .bb-home-products-parity .bb-fp-title a,
   .bb-category-body h3 {
     display: -webkit-box;
     overflow: hidden;
