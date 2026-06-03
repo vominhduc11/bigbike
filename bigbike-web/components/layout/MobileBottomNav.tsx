@@ -12,15 +12,25 @@ function isHomePath(pathname: string) {
   return pathname === "/" || pathname === "";
 }
 
+// Mobile-only bottom tab nav (≤767). .bb-bottom-nav is KEPT as a bare marker so the
+// two parent-state slide-out rules (html[data-bb-header-panel] / body:has(.bb-pdp-
+// sticky-cta.is-visible)) and the transition they animate still apply; everything
+// else is inlined. Colors resolve the dark→light reskin to the last-effective layer:
+// bg-surface-dark, mobile-shell-border, text-inverse-muted, brand-on-dark (active).
+const labelCls =
+  "text-xs leading-none max-w-full overflow-hidden text-ellipsis whitespace-nowrap max-[375px]:text-[10px]";
+
 function tabClass(active: boolean) {
   return cn(
-    "bb-bottom-nav-item relative flex min-h-14 min-w-14 flex-col items-center justify-center gap-1 px-1",
-    active && "is-active",
+    "relative flex flex-col items-center justify-center gap-1 px-1 min-h-[58px] min-w-0 [flex:1_1_0] " +
+      "border-none bg-transparent cursor-pointer touch-manipulation font-cta tracking-normal " +
+      "text-[color:var(--bb-text-inverse-muted)]",
+    active && "text-brand-on-dark",
   );
 }
 
 function ActiveBar() {
-  return <span className="bb-bottom-nav-active-bar absolute left-1/2 top-0 h-0.5 w-6 -translate-x-1/2" />;
+  return <span className="absolute left-1/2 top-0 h-0.5 w-6 -translate-x-1/2 bg-brand-on-dark" />;
 }
 
 export function MobileBottomNav() {
@@ -38,11 +48,16 @@ export function MobileBottomNav() {
 
   return (
     <nav
-      className="bb-bottom-nav fixed bottom-0 left-0 right-0 border-t backdrop-blur-md md:hidden"
+      className={cn(
+        "bb-bottom-nav fixed bottom-0 left-0 right-0 z-[650] md:hidden",
+        "border-t border-[color:var(--bb-mobile-shell-border)] bg-surface-dark text-[color:var(--bb-text-inverse-muted)] backdrop-blur-md",
+        "[box-shadow:0_-10px_24px_rgba(0,0,0,0.24)]",
+        "[transition:opacity_var(--bb-duration-normal)_var(--bb-ease-standard),transform_var(--bb-duration-normal)_var(--bb-ease-standard),visibility_var(--bb-duration-normal)_var(--bb-ease-standard)]",
+      )}
       style={{ paddingBottom: "max(8px, env(safe-area-inset-bottom))" }}
       aria-label="Điều hướng chính"
     >
-      <div className="flex justify-around px-1 pb-1 pt-1.5">
+      <div className="flex justify-between gap-0.5 px-1.5 pt-1.5 pb-1">
         <Link
           href={toHomePath()}
           className={tabClass(homeActive)}
@@ -50,7 +65,7 @@ export function MobileBottomNav() {
         >
           {homeActive && <ActiveBar />}
           <Home size={22} aria-hidden />
-          <span className={cn("text-xs leading-none", homeActive ? "font-semibold" : "font-medium")}>
+          <span className={cn(labelCls,homeActive ? "font-semibold" : "font-medium")}>
             Trang chủ
           </span>
         </Link>
@@ -64,7 +79,7 @@ export function MobileBottomNav() {
         >
           {menuActive && <ActiveBar />}
           <Grid2X2 size={22} aria-hidden />
-          <span className={cn("text-xs leading-none", menuActive ? "font-semibold" : "font-medium")}>
+          <span className={cn(labelCls,menuActive ? "font-semibold" : "font-medium")}>
             Danh mục
           </span>
         </button>
@@ -78,7 +93,7 @@ export function MobileBottomNav() {
         >
           {searchActive && <ActiveBar />}
           <Search size={22} aria-hidden />
-          <span className={cn("text-xs leading-none", searchActive ? "font-semibold" : "font-medium")}>
+          <span className={cn(labelCls,searchActive ? "font-semibold" : "font-medium")}>
             Tìm kiếm
           </span>
         </button>
@@ -99,7 +114,7 @@ export function MobileBottomNav() {
               </span>
             )}
           </div>
-          <span className={cn("text-xs leading-none", cartActive || cartRouteActive ? "font-semibold" : "font-medium")}>
+          <span className={cn(labelCls,cartActive || cartRouteActive ? "font-semibold" : "font-medium")}>
             Giỏ hàng
           </span>
         </button>
@@ -111,7 +126,7 @@ export function MobileBottomNav() {
         >
           {accountActive && <ActiveBar />}
           <User size={22} aria-hidden />
-          <span className={cn("text-xs leading-none", accountActive ? "font-semibold" : "font-medium")}>
+          <span className={cn(labelCls,accountActive ? "font-semibold" : "font-medium")}>
             Tài khoản
           </span>
         </Link>

@@ -3631,18 +3631,6 @@ body:has(.bb-search-results-page) {
     display: none !important;
   }
 
-  .bb-bottom-nav {
-    border-color: var(--bb-mobile-shell-border);
-    color: var(--bb-text-inverse-muted);
-  }
-
-  .bb-bottom-nav-item {
-    border: 0;
-    background: transparent;
-    font-family: var(--bb-font-body);
-    cursor: pointer;
-  }
-
   .bb-floating-chat-anchor {
     right: max(14px, env(safe-area-inset-right)) !important;
     bottom: calc(var(--bb-mobile-nav-height) + env(safe-area-inset-bottom) + 12px) !important;
@@ -3952,34 +3940,6 @@ body:has(.bb-search-results-page) {
 
   .bb-logo {
     pointer-events: auto;
-  }
-
-  .bb-bottom-nav {
-    z-index: 650;
-    background: color-mix(in srgb, var(--bb-bg-surface-dark) 96%, transparent);
-    box-shadow: 0 -10px 24px rgba(0, 0, 0, 0.24);
-  }
-
-  .bb-bottom-nav > div {
-    gap: 2px;
-    justify-content: space-between;
-    padding-inline: 4px;
-  }
-
-  .bb-bottom-nav-item {
-    flex: 1 1 0;
-    min-width: 0;
-    min-height: 56px;
-    color: var(--bb-text-inverse-muted);
-    font-family: var(--bb-font-cta);
-    letter-spacing: 0;
-  }
-
-  .bb-bottom-nav-item span {
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   .bb-header-search-layer {
@@ -4332,10 +4292,6 @@ body:has(.bb-search-results-page) {
   .bb-search-results-page .bb-search-product-row {
     grid-template-columns: 1fr;
   }
-
-  .bb-bottom-nav-item span {
-    font-size: 10px;
-  }
 }
 
 /* Contrast normalizers for legacy WP-parity selectors.
@@ -4385,28 +4341,6 @@ body > footer .bg-footer-top a:focus-visible {
 }
 
 @media (max-width: 767px) {
-  .bb-bottom-nav {
-    background: var(--bb-bg-surface-dark);
-    border-color: var(--bb-mobile-shell-border);
-    color: var(--bb-text-inverse-muted);
-  }
-
-  .bb-bottom-nav-item {
-    color: var(--bb-text-inverse-muted);
-  }
-
-  .bb-bottom-nav-item.is-active {
-    color: var(--bb-brand-primary-on-dark);
-  }
-
-  .bb-bottom-nav-item span {
-    color: inherit;
-  }
-
-  .bb-bottom-nav-active-bar {
-    background: var(--bb-brand-primary-on-dark);
-  }
-
   .bb-mobile-section-header a {
     color: var(--bb-link-text);
   }
@@ -4505,23 +4439,6 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
     width: 112px;
     max-width: 112px;
     height: auto;
-  }
-
-  .bb-bottom-nav {
-    z-index: 650;
-    transition:
-      opacity var(--bb-duration-normal) var(--bb-ease-standard),
-      transform var(--bb-duration-normal) var(--bb-ease-standard),
-      visibility var(--bb-duration-normal) var(--bb-ease-standard);
-  }
-
-  .bb-bottom-nav > div {
-    padding-inline: 6px;
-  }
-
-  .bb-bottom-nav-item {
-    min-height: 58px;
-    touch-action: manipulation;
   }
 
   .bb-header-search-layer.is-open .bb-header-search-overlay {
