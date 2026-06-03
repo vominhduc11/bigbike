@@ -2193,11 +2193,6 @@ img, picture, video, svg, canvas { max-width: 100%; }
  * Mirrors page-templates/page-home.php + content-blog-grid-item.php.
  * ................................................................ */
 
-@media (max-width: 767px) {
-
-  /* .bb-news-heading dùng var(--fs-h2) fluid (sàn 24px ở mobile) — đã gỡ override @767. */
-}
-
 /* -- Blog archive parity: WordPress category `tin-tuc.html` ----------------- */
 
 .bb-blog-listing-parity {
@@ -2299,13 +2294,6 @@ img, picture, video, svg, canvas { max-width: 100%; }
 .bb-page-head h1 {
   color: var(--bb-text-primary);
 }
-
-.bb-product-tag.new {
-  background: var(--bb-color-black);
-  color: #fff;
-}
-
-/* Wishlist heart on product card - overlay on white */
 
 /* PDP below-fold dividers (.bb-pdp-below skeleton) — border-default divider
    migrated to inline (border-t border-t-[var(--bb-border-default)]). */
@@ -2503,13 +2491,6 @@ a:not(.font-cta):hover {
   text-transform: uppercase;
 }
 
-.bb-product-brand {
-  color: var(--bb-color-red-700);
-  font-family: var(--bb-font-cta);
-  letter-spacing: 0;
-  text-transform: uppercase;
-}
-
 .bb-breadcrumb a {
   color: var(--bb-link-text);
 }
@@ -2579,18 +2560,6 @@ input[type="checkbox"] {
   color: var(--bb-color-black);
 }
 
-.bb-product-card-link {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  text-decoration: none;
-}
-
-.bb-product-card-link:focus-visible {
-  outline: 2px solid var(--bb-brand-primary);
-  outline-offset: -2px;
-}
-
 .bb-product-image {
   background: #ffffff;
   border-radius: 0;
@@ -2621,73 +2590,6 @@ input[type="checkbox"] {
   position: relative;
   z-index: 2;
   background: transparent;
-}
-
-.bb-product-brand {
-  font-size: 14px;
-  letter-spacing: 0.12em;
-}
-
-.bb-product-rating {
-  font-size: 14px;
-  color: var(--bb-text-brand);
-  letter-spacing: 0.1em;
-}
-
-.bb-product-price {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  margin-top: 6px;
-}
-
-.bb-product-name {
-  color: var(--bb-text-inverse);
-  font-family: var(--bb-font-display);
-  font-size: var(--fs-h4);
-  font-weight: 600;
-  line-height: 20px;
-  letter-spacing: 0;
-  text-transform: uppercase;
-}
-
-/* WP product title: Barlow Condensed 16px, no uppercase. Override white from group rule above. */
-.bb-product-name {
-  font-size: var(--fs-h4);
-  text-transform: none;
-  color: var(--bb-color-black);
-}
-
-.bb-product-price b {
-  color: var(--bb-text-brand);
-  font-family: var(--bb-font-cta);
-  font-size: var(--bb-text-base);
-  font-weight: 600;
-  line-height: 24px;
-}
-
-.bb-product-price s {
-  color: #6f6f6f;
-}
-
-/* Price on white card: brand red (#ff0c09) = 3.92:1 — fails WCAG AA for 14px text.
-   red-700 (#cc0906) = 5.77:1, passes. */
-.bb-product-price b {
-  color: var(--bb-color-red-700);
-}
-
-.bb-product-tag {
-  background: var(--bb-action-primary);
-  color: #ffffff;
-  border-radius: 0;
-  font-family: var(--bb-font-cta);
-  font-weight: 600;
-  letter-spacing: 0;
-}
-
-.bb-product-tag.new {
-  background: #000000;
-  color: #ffffff;
 }
 
 .bb-chat-item-icon svg circle,
@@ -2754,7 +2656,7 @@ input[type="checkbox"] {
   border-radius: 0;
 }
 
-.bb-theme :is(.bb-round, .bb-site-header .bb-cart-badge, .bb-wishlist-btn, .bb-contact-icon, .bb-mini-thumb .qty-badge, .bb-account-avatar, .bb-order-tl-dot, .bb-timeline-dot, .bb-success-icon, .swiper-pagination-bullet, .bb-slider-dot, .bb-video-play-btn-ring, .b24-widget-button-block, .b24-widget-button-inner-block, .b24-widget-button-inner-mask) {
+.bb-theme :is(.bb-round, .bb-site-header .bb-cart-badge, .bb-account-avatar, .swiper-pagination-bullet, .b24-widget-button-block, .b24-widget-button-inner-block, .b24-widget-button-inner-mask) {
   border-radius: 50%;
 }
 
@@ -2831,9 +2733,9 @@ input[type="checkbox"] {
    Canonical breakpoints: 576px (tablet) / 992px (desktop).
    ========================================================= */
 
-/* Gỡ override @992px (font-size:15px) cho .bb-news-excerpt / .bb-pdp-review-comment /
-   .bb-page-head .sub — base đã là var(--fs-caption) fluid; cap 15px chặn chữ scale lên
-   ở 3xl/4xl (TYPOGRAPHY §6 "một token = một clamp()"). */
+/* Gỡ override @992px (font-size:15px) cho .bb-page-head .sub — base đã là
+   var(--fs-caption) fluid; cap 15px chặn chữ scale lên ở 3xl/4xl
+   (TYPOGRAPHY §6 "một token = một clamp()"). */
 
 /* Homepage product carousel: legacy WP parity for page-home.php #main-product-slide. */
 .bb-home-products-parity {
@@ -5116,7 +5018,6 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
     text-wrap: balance;
   }
 
-  .bb-product-name,
   .bb-category-body h3 {
     display: -webkit-box;
     overflow: hidden;
