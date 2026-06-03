@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Download, Mail } from 'lucide-react'
 import { PaginationControls } from '../components/PaginationControls'
 import { StatePanel } from '../components/StatePanel'
+import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
 import { fetchNewsletterSubscribers } from '../lib/adminApi'
 import { formatDateTime } from '../lib/formatters'
 import { useAdminList } from '../lib/useAdminList'
@@ -84,6 +85,7 @@ export function NewsletterSubscribersScreen() {
       {(status === 'loading' || (status === 'success' && rows.length > 0)) && (
         <div className="bb-card">
           <div className="bb-card-body bb-card-body--flush">
+            <div className="hide-on-mobile">
             <div className="bb-table-wrap">
               <table className="bb-table" aria-label={t('newsletterSubscribers.tableCaption')}>
                 <thead>
@@ -109,6 +111,18 @@ export function NewsletterSubscribersScreen() {
                 </tbody>
               </table>
             </div>
+            </div>
+            <MobileCardList>
+              {rows.map((s) => (
+                <MobileCard
+                  key={s.id || s.email}
+                  title={s.email || '—'}
+                  meta={[
+                    { label: t('newsletterSubscribers.colSignedUp'), value: formatDateTime(s.createdAt) },
+                  ]}
+                />
+              ))}
+            </MobileCardList>
           </div>
           {status === 'success' && pagination && (
             <PaginationControls

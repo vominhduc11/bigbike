@@ -5,6 +5,7 @@ import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
+import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
 import { fetchBrands } from '../lib/adminApi'
 import { formatDateTime, formatText, stripHtml } from '../lib/formatters'
 import { useAdminList } from '../lib/useAdminList'
@@ -135,6 +136,8 @@ export function BrandListScreen({ navigate, canUpdate }) {
       {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) && (
         <div className="bb-card">
           <div className="bb-card-body bb-card-body--flush">
+            {/* responsive: table on tablet+/desktop, cards on phones */}
+            <div className="hide-on-mobile">
             <div className="bb-table-wrap">
               <table className="bb-table">
                 <thead>
@@ -193,6 +196,32 @@ export function BrandListScreen({ navigate, canUpdate }) {
                 </tbody>
               </table>
             </div>
+            </div>
+            <MobileCardList>
+              {items.map((brand) => (
+                <MobileCard
+                  key={brand.id}
+                  title={formatText(brand.name)}
+                  subtitle={`/${brand.slug}`}
+                  status={<StatusBadge type="visibility" status={brand.isVisible} />}
+                  meta={[
+                    { label: t('brands.colDescription'), value: stripHtml(brand.description) },
+                    { label: t('brands.colUpdated'), value: formatDateTime(brand.updatedAt) },
+                  ]}
+                  actions={(
+                    <button
+                      type="button"
+                      className="bb-icon-btn"
+                      title={t('common.edit')}
+                      onClick={(e) => { e.stopPropagation(); navigate(`/admin/brands/${brand.id}`) }}
+                    >
+                      <Pencil size={14} />
+                    </button>
+                  )}
+                  onClick={() => navigate(`/admin/brands/${brand.id}`)}
+                />
+              ))}
+            </MobileCardList>
           </div>
           {state.status === 'success' && pagination && (
             <PaginationControls

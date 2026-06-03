@@ -66,7 +66,7 @@ export function DateRangePicker({ value, onChange, placeholder }) {
       </Button>
 
       {open && (
-        <div className="absolute top-[calc(100%+6px)] right-0 z-50 bg-popover border border-border shadow-lg p-2 rounded-[var(--admin-radius-lg)]">
+        <div className="absolute top-[calc(100%+6px)] right-0 z-50 max-w-[calc(100vw-2rem)] overflow-x-auto bg-popover border border-border shadow-lg p-2 rounded-[var(--admin-radius-lg)]">
           <DayPicker
             locale={dayPickerLocale}
             mode="range"

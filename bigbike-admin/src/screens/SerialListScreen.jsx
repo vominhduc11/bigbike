@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { Search } from 'lucide-react'
 import { PaginationControls } from '../components/PaginationControls'
 import { Modal } from '../components/layout'
+import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { fetchAllSerials, updateSerialStatus, getWarrantyBySerial } from '../lib/adminApi'
@@ -340,6 +341,7 @@ export function SerialListScreen({ canUpdate = false, canReadWarranty = false })
       {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) && (
         <div className="bb-card">
           <div className="bb-card-body bb-card-body--flush">
+            <div className="hide-on-mobile">
             <div className="bb-table-wrap">
               <table className="bb-table">
                 <thead>
@@ -374,6 +376,22 @@ export function SerialListScreen({ canUpdate = false, canReadWarranty = false })
                 </tbody>
               </table>
             </div>
+            </div>
+            <MobileCardList>
+              {items.map((item) => (
+                <MobileCard
+                  key={item.id}
+                  title={<span className="mono">{item.serialNumber}</span>}
+                  subtitle={item.variantName ? `${item.productName || '—'} · ${item.variantName}` : (item.productName || '—')}
+                  status={<SerialStatusPill status={item.status} />}
+                  meta={[
+                    { label: t('serial.colReceivedAt'), value: formatDate(item.receivedAt) },
+                    { label: t('serial.colSoldAt'), value: formatDate(item.soldAt) },
+                  ]}
+                  onClick={() => setSelected(item)}
+                />
+              ))}
+            </MobileCardList>
           </div>
           {state.status === 'success' && pagination && (
             <PaginationControls

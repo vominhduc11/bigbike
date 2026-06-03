@@ -613,7 +613,7 @@ a {
 /* ─── Responsive ─────────────────────────────────────────────────────────────*/
 
 /* ── Tablet + Mobile (≤900px): hide lang switcher ── */
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .lang-switcher {
     display: none;
   }
@@ -1041,7 +1041,7 @@ a {
 
 
 /* ── Responsive ─────────────────────────────────────────────────────────── */
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .menu-slot-tabs {
     grid-template-columns: 1fr 1fr;
   }
@@ -1997,7 +1997,7 @@ a {
   transform: translateY(-50%) scale(1);
 }
 /* Hide popover on small screens — interferes with mobile touch + steals viewport */
-@media (max-width: 720px) {
+@media (max-width: 768px) {
   .cat-thumb-popover { display: none; }
 }
 
@@ -2216,7 +2216,7 @@ a {
   gap: var(--admin-space-4) var(--admin-space-5);
   align-items: start;
 }
-@media (max-width: 720px) {
+@media (max-width: 768px) {
   .form-media-pair { grid-template-columns: 1fr; }
 }
 
@@ -2627,7 +2627,7 @@ a {
   margin-top: var(--admin-space-4);
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .pos-layout {
     grid-template-columns: 1fr;
   }
@@ -3014,7 +3014,7 @@ a {
   display: none;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .roles-layout {
     grid-template-columns: 1fr;
     border: none;
@@ -3483,7 +3483,7 @@ a {
 }
 
 /* ── Responsive: show cards, hide table on mobile ────────────────────── */
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   /* #10: hide desktop filter bar, show mobile toggle */
   .audit-filter-bar { display: none; }
   .audit-mobile-filter-toggle {
@@ -3494,7 +3494,7 @@ a {
     padding: var(--admin-space-2) 0;
   }
 }
-@media (max-width: 760px) {
+@media (max-width: 768px) {
   .audit-table-wrapper { display: none; }
   .audit-card-list {
     display: flex;
@@ -3547,7 +3547,7 @@ a {
 }
 
 /* ── Tablet: table but narrower columns ──────────────────────────────── */
-@media (min-width: 641px) and (max-width: 960px) {
+@media (min-width: 769px) and (max-width: 1023px) {
   .audit-col-time { font-size: 0.78rem; }
   .audit-action-label { font-size: 0.82rem; }
 }
@@ -3680,7 +3680,7 @@ a {
   min-width: 0;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .medialib-layout { flex-direction: column; }
 }
 
@@ -3690,7 +3690,7 @@ a {
   transition: padding-right 0.18s ease-out;
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1280px) {
   .medialib-panel-open { padding-right: 0; }
 }
 
@@ -4176,6 +4176,20 @@ a {
   font-weight: 700;
   letter-spacing: 0.5px;
   color: var(--c-text-muted);
+}
+
+/* responsive (RC-9): the fixed 8-column list grid overflows below ~md.
+   Hide the column header and let each row wrap into a flex card instead. */
+@media (max-width: 768px) {
+  .medialib-list-header { display: none; }
+  .medialib-list-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 12px;
+  }
+  .medialib-list-name { flex: 1 1 55%; }
+  .medialib-list-actions { flex: 1 1 100%; justify-content: flex-start; }
 }
 
 /* Pagination wrapper */
@@ -4714,7 +4728,7 @@ a {
   color: #fff;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .mediafolder-sidebar {
     width: 100%;
     position: static;

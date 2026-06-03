@@ -6,6 +6,7 @@ import { BulkActionBar } from '../components/BulkActionBar'
 import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
+import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
 import { exportOrdersCsv, fetchOrders } from '../lib/adminApi'
 import { subscribeAdminWs } from '../lib/adminWebSocket'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
@@ -211,6 +212,8 @@ export function OrderListScreen({ navigate }) {
 
       {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) && (
         <div className="bb-card">
+          {/* responsive: table on tablet+/desktop, cards on phones */}
+          <div className="hide-on-mobile">
           <div className="bb-table-wrap">
             <table className="bb-table">
               <thead>
@@ -284,6 +287,28 @@ export function OrderListScreen({ navigate }) {
               </tbody>
             </table>
           </div>
+          </div>
+          <MobileCardList>
+            {items.map((order) => (
+              <MobileCard
+                key={order.id}
+                title={(
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    {formatText(order.orderNumber)}
+                    {order.source === 'pos' && <span className="bb-badge bb-badge-neutral">POS</span>}
+                  </span>
+                )}
+                subtitle={formatText(order.customerName) || formatText(order.customerEmail)}
+                status={<StatusBadge type="order" status={order.orderStatus} />}
+                meta={[
+                  { label: t('orders.colDate'), value: formatDateTime(order.createdAt) },
+                  { label: t('orders.colTotal'), value: formatCurrencyVnd(order.total), tone: 'strong' },
+                  { label: t('orders.colPaymentStatus'), value: <StatusBadge type="payment" status={order.paymentStatus} /> },
+                ]}
+                onClick={() => navigate(`/admin/orders/${order.id}`)}
+              />
+            ))}
+          </MobileCardList>
           {state.status === 'success' && pagination && (
             <PaginationControls
               pagination={pagination}

@@ -934,35 +934,37 @@ function AddSerialsPanel({ item, onSuccess }) {
       <p className="text-xs text-muted-foreground mb-1.5">
         Mỗi dòng là một sản phẩm — nhập mã serial.
       </p>
-      <table className="w-full border-collapse text-xs mb-2.5">
-        <thead>
-          <tr className="border-b border-border">
-            <th className="text-left py-1 px-1.5 font-semibold w-8">#</th>
-            <th className="text-left py-1 px-1.5 font-semibold">Mã serial</th>
-            <th className="w-8" />
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, i) => (
-            <tr key={i}>
-              <td className="py-1 px-1.5 text-muted-foreground">{i + 1}</td>
-              <td className="py-1 px-1.5">
-                <Input className="w-full"
-                  placeholder="VD: SN-20240001"
-                  value={row.serial}
-                  onChange={(e) => updateRow(i, 'serial', e.target.value)}
-                  disabled={submitting}  />
-              </td>
-              <td className="py-1 px-1.5">
-                {rows.length > 1 && (
-                  <button type="button" className="btn btn-ghost btn-icon"
-                    onClick={() => removeRow(i)} disabled={submitting} aria-label="Xoá dòng">✕</button>
-                )}
-              </td>
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse text-xs mb-2.5">
+          <thead>
+            <tr className="border-b border-border">
+              <th className="text-left py-1 px-1.5 font-semibold w-8">#</th>
+              <th className="text-left py-1 px-1.5 font-semibold">Mã serial</th>
+              <th className="w-8" />
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.map((row, i) => (
+              <tr key={i}>
+                <td className="py-1 px-1.5 text-muted-foreground">{i + 1}</td>
+                <td className="py-1 px-1.5">
+                  <Input className="w-full"
+                    placeholder="VD: SN-20240001"
+                    value={row.serial}
+                    onChange={(e) => updateRow(i, 'serial', e.target.value)}
+                    disabled={submitting}  />
+                </td>
+                <td className="py-1 px-1.5">
+                  {rows.length > 1 && (
+                    <button type="button" className="btn btn-ghost btn-icon"
+                      onClick={() => removeRow(i)} disabled={submitting} aria-label="Xoá dòng">✕</button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       <button type="button" className="btn btn-outline mb-3.5"
         onClick={addRow} disabled={submitting}>
         + Thêm dòng
@@ -984,24 +986,26 @@ function AddSerialsPanel({ item, onSuccess }) {
           <p className="font-semibold text-sm mb-1.5">
             Kết quả: {importResult.inserted} nhập thành công · {importResult.skipped} dòng bị bỏ qua
           </p>
-          <table className="w-full text-xs border-collapse">
-            <thead>
-              <tr className="border-b border-warning-border">
-                <th className="text-left py-0.5 px-1.5">Dòng</th>
-                <th className="text-left py-0.5 px-1.5">Trường</th>
-                <th className="text-left py-0.5 px-1.5">Lý do</th>
-              </tr>
-            </thead>
-            <tbody>
-              {importResult.errors.map((err, idx) => (
-                <tr key={idx} className="border-b border-warning-border">
-                  <td className="py-0.5 px-1.5 font-mono">{err.rowIndex + 1}</td>
-                  <td className="text-warning py-0.5 px-1.5">{err.field}</td>
-                  <td className="py-0.5 px-1.5">{err.message}</td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-warning-border">
+                  <th className="text-left py-0.5 px-1.5">Dòng</th>
+                  <th className="text-left py-0.5 px-1.5">Trường</th>
+                  <th className="text-left py-0.5 px-1.5">Lý do</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {importResult.errors.map((err, idx) => (
+                  <tr key={idx} className="border-b border-warning-border">
+                    <td className="py-0.5 px-1.5 font-mono">{err.rowIndex + 1}</td>
+                    <td className="text-warning py-0.5 px-1.5">{err.field}</td>
+                    <td className="py-0.5 px-1.5">{err.message}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           <button type="button" className="btn btn-outline btn-sm mt-2.5"
             onClick={handleRetrySkipped}>
             Tải lại {importResult.skipped} dòng lỗi để sửa
@@ -1166,78 +1170,80 @@ function SerialListPanel({ item, refreshKey }) {
       )}
 
       {state.items.length > 0 && (
-        <table className="w-full border-collapse text-sm">
-          <thead>
-            <tr className="border-b border-border">
-              {['Mã serial', 'Trạng thái', 'Nhập kho', 'Thao tác'].map((h) => (
-                <th key={h} className="text-left py-1.5 px-2 font-semibold">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {state.items.map((s) => {
-              const isChanging = statusChangeId === s.id
-              const allowedTo = SERIAL_ALLOWED_TRANSITIONS[s.status] || []
-              return (
-                <tr key={s.id} className="border-b border-border">
-                  <td className="py-1.5 px-2 font-mono">{s.serialNumber || '—'}</td>
-                  <td className="py-1.5 px-2"><SerialStatusBadge status={s.status} /></td>
-                  <td className="py-1.5 px-2 text-muted-foreground">
-                    {s.receivedAt ? formatDateTime(s.receivedAt) : '—'}
-                  </td>
-                  <td className="py-1.5 px-2">
-                    <div className="flex gap-1 items-center flex-wrap">
-                      {/* QR button — always visible */}
-                      <button type="button" className="btn btn-outline btn-sm"
-                        title="Xem mã QR"
-                        onClick={() => setQrSerial(s)}>
-                        QR
-                      </button>
-
-                      {/* Status change */}
-                      {allowedTo.length > 0 && !isChanging && (
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-border">
+                {['Mã serial', 'Trạng thái', 'Nhập kho', 'Thao tác'].map((h) => (
+                  <th key={h} className="text-left py-1.5 px-2 font-semibold">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {state.items.map((s) => {
+                const isChanging = statusChangeId === s.id
+                const allowedTo = SERIAL_ALLOWED_TRANSITIONS[s.status] || []
+                return (
+                  <tr key={s.id} className="border-b border-border">
+                    <td className="py-1.5 px-2 font-mono">{s.serialNumber || '—'}</td>
+                    <td className="py-1.5 px-2"><SerialStatusBadge status={s.status} /></td>
+                    <td className="py-1.5 px-2 text-muted-foreground">
+                      {s.receivedAt ? formatDateTime(s.receivedAt) : '—'}
+                    </td>
+                    <td className="py-1.5 px-2">
+                      <div className="flex gap-1 items-center flex-wrap">
+                        {/* QR button — always visible */}
                         <button type="button" className="btn btn-outline btn-sm"
-                          onClick={() => { setStatusChangeId(s.id); setStatusChangeValue('') }}>
-                          Đổi trạng thái
+                          title="Xem mã QR"
+                          onClick={() => setQrSerial(s)}>
+                          QR
                         </button>
-                      )}
-                      {isChanging && (
-                        <div className="flex flex-col gap-1">
-                          <Select value={(statusChangeValue) || '__all__'}
-                            onValueChange={(val) => setStatusChangeValue(val === '__all__' ? '' : val)} disabled={changing}><SelectTrigger><SelectValue placeholder="-- Chọn --" /></SelectTrigger><SelectContent>
-                            {allowedTo.map((st) => (
-                              <SelectItem key={st} value={st}>{SERIAL_STATUS_LABELS[st] || st}</SelectItem>
-                            ))}
-                          </SelectContent></Select>
-                          {statusChangeValue === 'SCRAPPED' && (
-                            <p className="text-destructive text-xs">Cảnh báo: trạng thái Đã hủy không thể hoàn tác.</p>
-                          )}
-                          <Input
-                            placeholder={NOTE_REQUIRED_STATUSES.has(statusChangeValue) ? 'Lý do (bắt buộc)' : 'Ghi chú (tuỳ chọn)'}
-                            value={statusNote} onChange={(e) => setStatusNote(e.target.value)}
-                            disabled={changing}
-                            required={NOTE_REQUIRED_STATUSES.has(statusChangeValue)} />
-                          <div className="flex gap-1">
-                            <button type="button" className="btn btn-primary btn-sm"
-                              onClick={() => handleStatusChange(s.id)}
-                              disabled={changing || !statusChangeValue}>
-                              {changing ? '…' : 'Xác nhận'}
-                            </button>
-                            <button type="button" className="btn btn-outline btn-sm"
-                              onClick={() => { setStatusChangeId(null); setStatusChangeValue(''); setStatusNote('') }}
-                              disabled={changing}>
-                              Huỷ
-                            </button>
+
+                        {/* Status change */}
+                        {allowedTo.length > 0 && !isChanging && (
+                          <button type="button" className="btn btn-outline btn-sm"
+                            onClick={() => { setStatusChangeId(s.id); setStatusChangeValue('') }}>
+                            Đổi trạng thái
+                          </button>
+                        )}
+                        {isChanging && (
+                          <div className="flex flex-col gap-1">
+                            <Select value={(statusChangeValue) || '__all__'}
+                              onValueChange={(val) => setStatusChangeValue(val === '__all__' ? '' : val)} disabled={changing}><SelectTrigger><SelectValue placeholder="-- Chọn --" /></SelectTrigger><SelectContent>
+                              {allowedTo.map((st) => (
+                                <SelectItem key={st} value={st}>{SERIAL_STATUS_LABELS[st] || st}</SelectItem>
+                              ))}
+                            </SelectContent></Select>
+                            {statusChangeValue === 'SCRAPPED' && (
+                              <p className="text-destructive text-xs">Cảnh báo: trạng thái Đã hủy không thể hoàn tác.</p>
+                            )}
+                            <Input
+                              placeholder={NOTE_REQUIRED_STATUSES.has(statusChangeValue) ? 'Lý do (bắt buộc)' : 'Ghi chú (tuỳ chọn)'}
+                              value={statusNote} onChange={(e) => setStatusNote(e.target.value)}
+                              disabled={changing}
+                              required={NOTE_REQUIRED_STATUSES.has(statusChangeValue)} />
+                            <div className="flex gap-1">
+                              <button type="button" className="btn btn-primary btn-sm"
+                                onClick={() => handleStatusChange(s.id)}
+                                disabled={changing || !statusChangeValue}>
+                                {changing ? '…' : 'Xác nhận'}
+                              </button>
+                              <button type="button" className="btn btn-outline btn-sm"
+                                onClick={() => { setStatusChangeId(null); setStatusChangeValue(''); setStatusNote('') }}
+                                disabled={changing}>
+                                Huỷ
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {state.pagination && state.pagination.totalPages > 1 && (
@@ -1579,45 +1585,47 @@ function MovementHistoryModal({ scope, onClose }) {
 
           {(state.status === 'loading' || (state.status === 'success' && state.items.length > 0)) && (
             <>
-              <table className="w-full text-xs border-collapse">
-                <thead>
-                  <tr className="border-b border-border">
-                    {['Loại', 'Biến thể', 'Delta', 'Sau', 'Nguồn', 'Serial', 'Ghi chú', 'Thời gian'].map((h) => (
-                      <th key={h} className="text-left py-1.5 px-2 font-semibold">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {state.status === 'loading'
-                    ? Array.from({ length: 6 }, (_, i) => (
-                        <tr key={i}><td colSpan={8} className="p-2">
-                          <div className="skeleton h-3.5 w-full" />
-                        </td></tr>
-                      ))
-                    : state.items.map((m) => (
-                        <tr key={m.id} className="border-b border-border">
-                          <td className="py-1.5 px-2"><MovementTypeBadge type={m.movementType} /></td>
-                          <td className="py-1.5 px-2">
-                            {m.variantName
-                              ? <span>{m.variantName}{m.variantSku ? ` · ${m.variantSku}` : ''}</span>
-                              : <em className="text-muted-foreground">(Sản phẩm)</em>}
-                          </td>
-                          <td className={`py-1.5 px-2 font-bold ${m.quantityDelta > 0 ? 'text-success' : 'text-danger'}`}>
-                            {m.quantityDelta > 0 ? `+${m.quantityDelta}` : m.quantityDelta}
-                          </td>
-                          <td className="py-1.5 px-2">{m.quantityAfter}</td>
-                          <td className="py-1.5 px-2 text-muted-foreground">{m.referenceType || '—'}</td>
-                          <td className="py-1.5 px-2 text-muted-foreground">
-                            {m.serialCount > 0
-                              ? <span className="font-mono">{m.serialCount} S/N</span>
-                              : '—'}
-                          </td>
-                          <td className="py-1.5 px-2 text-muted-foreground">{m.note || '—'}</td>
-                          <td className="py-1.5 px-2 text-muted-foreground">{m.createdAt ? formatDateTime(m.createdAt) : '—'}</td>
-                        </tr>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-border">
+                      {['Loại', 'Biến thể', 'Delta', 'Sau', 'Nguồn', 'Serial', 'Ghi chú', 'Thời gian'].map((h) => (
+                        <th key={h} className="text-left py-1.5 px-2 font-semibold">{h}</th>
                       ))}
-                </tbody>
-              </table>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {state.status === 'loading'
+                      ? Array.from({ length: 6 }, (_, i) => (
+                          <tr key={i}><td colSpan={8} className="p-2">
+                            <div className="skeleton h-3.5 w-full" />
+                          </td></tr>
+                        ))
+                      : state.items.map((m) => (
+                          <tr key={m.id} className="border-b border-border">
+                            <td className="py-1.5 px-2"><MovementTypeBadge type={m.movementType} /></td>
+                            <td className="py-1.5 px-2">
+                              {m.variantName
+                                ? <span>{m.variantName}{m.variantSku ? ` · ${m.variantSku}` : ''}</span>
+                                : <em className="text-muted-foreground">(Sản phẩm)</em>}
+                            </td>
+                            <td className={`py-1.5 px-2 font-bold ${m.quantityDelta > 0 ? 'text-success' : 'text-danger'}`}>
+                              {m.quantityDelta > 0 ? `+${m.quantityDelta}` : m.quantityDelta}
+                            </td>
+                            <td className="py-1.5 px-2">{m.quantityAfter}</td>
+                            <td className="py-1.5 px-2 text-muted-foreground">{m.referenceType || '—'}</td>
+                            <td className="py-1.5 px-2 text-muted-foreground">
+                              {m.serialCount > 0
+                                ? <span className="font-mono">{m.serialCount} S/N</span>
+                                : '—'}
+                            </td>
+                            <td className="py-1.5 px-2 text-muted-foreground">{m.note || '—'}</td>
+                            <td className="py-1.5 px-2 text-muted-foreground">{m.createdAt ? formatDateTime(m.createdAt) : '—'}</td>
+                          </tr>
+                        ))}
+                  </tbody>
+                </table>
+              </div>
               {state.status === 'success' && state.pagination && state.pagination.totalPages > 1 && (
                 <PaginationControls pagination={state.pagination}
                   onPageChange={(p) => setQuery((q) => ({ ...q, page: p }))} />

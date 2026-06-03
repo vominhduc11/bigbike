@@ -12,6 +12,7 @@ import { useUrlQuery } from '../lib/useUrlQuery'
 import { PaginationControls } from '../components/PaginationControls'
 import { StatePanel } from '../components/StatePanel'
 import { Modal, FormField } from '../components/layout'
+import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -166,6 +167,7 @@ export function ReceivablesListScreen({ navigate, canRecordPayment, canWriteOff 
       {!isLoading && !isError && items.length > 0 && (
         <div className="bb-card">
           <div className="bb-card-body bb-card-body--flush">
+            <div className="hide-on-mobile">
             <div className="bb-table-wrap">
               <table className="bb-table">
                 <thead>
@@ -231,6 +233,66 @@ export function ReceivablesListScreen({ navigate, canRecordPayment, canWriteOff 
                 </tbody>
               </table>
             </div>
+            </div>
+            <MobileCardList>
+              {items.map((item) => {
+                const closed = ['CLOSED', 'WRITTEN_OFF'].includes(item.status)
+                const showActions = (canRecordPayment || canWriteOff) && !closed
+                return (
+                  <MobileCard
+                    key={item.id}
+                    title={<span className="mono">{item.orderNumber || (item.orderId ? item.orderId.slice(0, 8) : '—')}</span>}
+                    subtitle={item.customerName || '—'}
+                    status={<StatusBadge status={item.status} t={t} />}
+                    meta={[
+                      { label: t('receivables.col.phone'), value: item.customerPhone || '—' },
+                      { label: t('receivables.col.originalAmount'), value: formatCurrency(item.originalAmount, locale) },
+                      { label: t('receivables.col.paidAmount'), value: formatCurrency(item.paidAmount, locale) },
+                      {
+                        label: t('receivables.col.outstandingAmount'),
+                        value: formatCurrency(item.outstandingAmount, locale),
+                        tone: item.outstandingAmount > 0 ? 'danger' : 'strong',
+                      },
+                      {
+                        label: t('receivables.col.dueDate'),
+                        value: (
+                          <span>
+                            <span>{item.dueDate || '—'}</span>
+                            {item.overdueDays != null && (
+                              <span className="text-danger" style={{ fontWeight: 600 }}>
+                                {' '}{t('receivables.overdueDays', { days: item.overdueDays })}
+                              </span>
+                            )}
+                          </span>
+                        ),
+                        tone: item.overdueDays != null ? 'danger' : undefined,
+                      },
+                    ]}
+                    actions={showActions ? (
+                      <div className="flex gap-1" style={{ flexWrap: 'wrap' }} onClick={(e) => e.stopPropagation()}>
+                        {canRecordPayment && !closed && (
+                          <button type="button" className="bb-btn bb-btn-primary bb-btn-sm" onClick={() => setPaymentTarget(item)}>
+                            {t('receivables.btn.recordPayment')}
+                          </button>
+                        )}
+                        {canWriteOff && !closed && (
+                          <button
+                            type="button"
+                            className="bb-btn bb-btn-ghost bb-btn-sm"
+                            style={{ color: 'var(--bb-danger)' }}
+                            onClick={() => setWriteOffTarget(item)}
+                            title={t('receivables.btn.writeOffTooltip')}
+                          >
+                            {t('receivables.btn.writeOff')}
+                          </button>
+                        )}
+                      </div>
+                    ) : undefined}
+                    onClick={() => navigate(`/admin/receivables/${item.id}`)}
+                  />
+                )
+              })}
+            </MobileCardList>
           </div>
           {pagination && (
             <PaginationControls

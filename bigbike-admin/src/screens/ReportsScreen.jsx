@@ -296,7 +296,7 @@ export function ReportsScreen() {
           )}
 
           {/* Tables row */}
-          <div className="grid-2">
+          <div className="bb-grid-2">
             <RankTable
               title={t('reports.chartTopProducts')}
               rows={state.data.topProducts}

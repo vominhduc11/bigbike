@@ -14,6 +14,7 @@ import { useDebounce } from '../lib/useDebounce'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 import { Alert } from '@/components/ui/alert'
 import { PaginationControls } from '../components/PaginationControls'
+import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
 
 const DUPLICATE_SESSION_KEY = 'product-duplicate-payload'
 
@@ -304,6 +305,7 @@ export function ProductListScreen({ navigate, canUpdate }) {
 
       {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) && (
         <div className="bb-card">
+          <div className="hide-on-mobile">
           <div className="bb-table-wrap">
             <table className="bb-table">
               <thead>
@@ -426,6 +428,115 @@ export function ProductListScreen({ navigate, canUpdate }) {
               </tbody>
             </table>
           </div>
+          </div>
+          <MobileCardList>
+            {items.map((product) => {
+              const isDeleting = deletingId === product.id
+              const isRestoring = restoringId === product.id
+              const isTrashed = product.publishStatus === 'TRASH'
+              const isBusy = isDeleting || isRestoring
+              const block = product.homepageBlock
+              return (
+                <MobileCard
+                  key={product.id}
+                  title={(
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span className="bb-product-thumb" style={{ width: 32, height: 32, flexShrink: 0 }}>
+                        {product.image?.url ? (
+                          <img
+                            src={product.image.url}
+                            alt={product.image.alt || product.name}
+                            referrerPolicy="no-referrer"
+                            loading="lazy"
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                        ) : (
+                          <Package size={18} />
+                        )}
+                      </span>
+                      {formatText(product.name)}
+                    </span>
+                  )}
+                  subtitle={formatText(product.sku, 'SKU TBD')}
+                  status={<PublishStatusBadge value={product.publishStatus} />}
+                  meta={[
+                    {
+                      label: t('products.colPrice'),
+                      value: product.price?.salePrice ? (
+                        <span>
+                          {formatCurrencyVnd(product.price?.retailPrice)}
+                          <span style={{ textDecoration: 'line-through', marginLeft: 6 }}>
+                            {formatCurrencyVnd(product.price.salePrice)}
+                          </span>
+                        </span>
+                      ) : (
+                        formatCurrencyVnd(product.price?.retailPrice)
+                      ),
+                      tone: 'strong',
+                    },
+                    { label: t('products.colStock'), value: <StockStatusBadge value={product.stockState} /> },
+                    {
+                      label: t('products.colHomepage'),
+                      value: (!block || block === 'NONE') ? (
+                        <span className="bb-muted">—</span>
+                      ) : (
+                        <span style={{ fontSize: 12.5, fontWeight: 600 }}>
+                          {t('products.homepageFeatured')}
+                          {Number.isFinite(product.homepageOrder) ? ` · #${product.homepageOrder}` : ''}
+                        </span>
+                      ),
+                    },
+                    { label: t('products.colUpdated'), value: formatDateTime(product.updatedAt) },
+                  ]}
+                  actions={(
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        className="bb-icon-btn"
+                        title={t('common.edit')}
+                        onClick={() => navigate(`/admin/products/${product.id}`)}
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      {canUpdate && (
+                        <button
+                          type="button"
+                          className="bb-icon-btn"
+                          title={t('products.duplicate')}
+                          onClick={() => handleDuplicate(product)}
+                        >
+                          <Copy size={14} />
+                        </button>
+                      )}
+                      {canUpdate && isTrashed && (
+                        <button
+                          type="button"
+                          className="bb-icon-btn"
+                          disabled={isBusy}
+                          title={isRestoring ? t('products.restoringLabel') : t('products.restore')}
+                          onClick={() => handleRestore(product)}
+                        >
+                          <Undo2 size={14} />
+                        </button>
+                      )}
+                      {canUpdate && !isTrashed && (
+                        <button
+                          type="button"
+                          className="bb-icon-btn"
+                          disabled={isBusy}
+                          title={isDeleting ? t('products.deletingLabel') : t('common.delete')}
+                          onClick={() => handleDelete(product)}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  onClick={() => navigate(`/admin/products/${product.id}`)}
+                />
+              )
+            })}
+          </MobileCardList>
           {state.status === 'success' && pagination && (
             <PaginationControls
               pagination={pagination}

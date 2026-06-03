@@ -20,6 +20,7 @@ import { PublishStatusBadge, StatusBadge } from '../components/StatusBadge'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { RichTextEditor } from '../components/RichTextEditor'
 import { Tabs } from '../components/layout'
+import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -580,7 +581,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
             />
           </div>
           <div className="bb-card-body">
-            <div className="grid-2">
+            <div className="bb-grid-2">
               <label className="form-field" data-field="name">
                 <span>
                   {t('categories.detail.name')}
@@ -733,31 +734,56 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
               {productsList.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '24px 16px', color: 'var(--bb-text-muted)' }}><p>{t('categories.detail.productsEmpty')}</p></div>
               ) : (
-                <div className="bb-table-wrap">
-                  <table className="bb-table">
-                    <tbody>
-                      {productsList.map((p) => (
-                        <tr key={p.id} onClick={() => navigate(`/admin/products/${p.id}`)}>
-                          <td>
-                            <div className="product-cell">
-                              <span className="thumb">
-                                {p.image?.url ? (
-                                  <img src={p.image.url} alt={p.image.alt || p.name} loading="lazy" referrerPolicy="no-referrer"
-                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                ) : <Package size={16} />}
-                              </span>
-                              <div className="info">
-                                <div className="name">{p.name}</div>
-                                <div className="sku">{p.sku || p.slug}</div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="col-actions"><PublishStatusBadge value={p.publishStatus} /></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <>
+                  <div className="hide-on-mobile">
+                    <div className="bb-table-wrap">
+                      <table className="bb-table">
+                        <tbody>
+                          {productsList.map((p) => (
+                            <tr key={p.id} onClick={() => navigate(`/admin/products/${p.id}`)}>
+                              <td>
+                                <div className="product-cell">
+                                  <span className="thumb">
+                                    {p.image?.url ? (
+                                      <img src={p.image.url} alt={p.image.alt || p.name} loading="lazy" referrerPolicy="no-referrer"
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    ) : <Package size={16} />}
+                                  </span>
+                                  <div className="info">
+                                    <div className="name">{p.name}</div>
+                                    <div className="sku">{p.sku || p.slug}</div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="col-actions"><PublishStatusBadge value={p.publishStatus} /></td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  <MobileCardList>
+                    {productsList.map((p) => (
+                      <MobileCard
+                        key={p.id}
+                        title={(
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span className="thumb" style={{ width: 32, height: 32, flexShrink: 0 }}>
+                              {p.image?.url ? (
+                                <img src={p.image.url} alt={p.image.alt || p.name} loading="lazy" referrerPolicy="no-referrer"
+                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              ) : <Package size={16} />}
+                            </span>
+                            {p.name}
+                          </span>
+                        )}
+                        subtitle={p.sku || p.slug}
+                        status={<PublishStatusBadge value={p.publishStatus} />}
+                        onClick={() => navigate(`/admin/products/${p.id}`)}
+                      />
+                    ))}
+                  </MobileCardList>
+                </>
               )}
             </div>
           </div>

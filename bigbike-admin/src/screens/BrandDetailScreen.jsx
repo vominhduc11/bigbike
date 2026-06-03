@@ -339,7 +339,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
             />
           </div>
           <div className="bb-card-body">
-            <div className="grid-2">
+            <div className="bb-grid-2">
               <label className="form-field">
                 <span>{t('brands.detail.slug')}</span>
                 <Input value={form.slug} onChange={(e) => updateField('slug', e.target.value)} disabled={isReadOnly}
@@ -386,7 +386,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
         <div className="bb-card">
           <div className="bb-card-header"><h2>{t('brands.detail.sectionMedia')}</h2></div>
           <div className="bb-card-body">
-            <div className="grid-2">
+            <div className="bb-grid-2">
               <div className="form-field" style={{ gridColumn: '1 / -1' }}>
                 <span>{t('brands.detail.logoUrl')}</span>
                 <ImageUrlInput

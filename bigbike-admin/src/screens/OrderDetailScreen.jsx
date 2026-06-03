@@ -6,6 +6,7 @@ import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { RefundModal } from '../components/RefundModal'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
+import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
 import { addOrderNote, adminCreateReturn, fetchOrderAllowedTransitions, fetchOrderDetail, fetchReturnsByOrder, updateOrderFulfillment, updateOrderPaymentStatus, updateOrderStatus } from '../lib/adminApi'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
 import { showConfirm } from '../lib/confirm'
@@ -156,6 +157,7 @@ function AdminCreateReturnModal({ order, onClose, onSuccess }) {
 
         <div className="form-field">
           <label className="field-label">{t('orders.detail.crmItemsLabel')} *</label>
+          <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-border">
@@ -186,6 +188,7 @@ function AdminCreateReturnModal({ order, onClose, onSuccess }) {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
 
         <div className="form-field">
@@ -504,6 +507,8 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
               {(order.items ?? []).length === 0 ? (
                 <div className="bb-card-body"><p className="bb-muted">{t('orders.detail.noItems')}</p></div>
               ) : (
+                <>
+                <div className="hide-on-mobile">
                 <div className="bb-table-wrap">
                   <table className="bb-table">
                     <thead>
@@ -529,6 +534,22 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                     </tbody>
                   </table>
                 </div>
+                </div>
+                <MobileCardList>
+                  {(order.items ?? []).map((item) => (
+                    <MobileCard
+                      key={item.id}
+                      title={formatText(item.productName)}
+                      subtitle={item.variantName || undefined}
+                      meta={[
+                        { label: t('orders.detail.colUnitPrice'), value: formatCurrencyVnd(item.unitPrice) },
+                        { label: t('orders.detail.colQty'), value: `×${item.quantity}` },
+                        { label: t('orders.detail.colLineTotal'), value: formatCurrencyVnd(item.lineTotal), tone: 'strong' },
+                      ]}
+                    />
+                  ))}
+                </MobileCardList>
+                </>
               )}
               <div style={{ padding: '14px 16px', borderTop: '1px solid var(--bb-border-faint)', background: 'var(--bb-surface-muted)' }}>
                 <dl className="bb-info-grid" style={{ gridTemplateColumns: '1fr auto', maxWidth: 360, marginLeft: 'auto', gap: '4px 24px', fontSize: 13 }}>
@@ -560,6 +581,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
             <div className="bb-card" style={{ marginBottom: 16 }}>
               <div className="bb-card-header"><h3>{t('orders.detail.payments')}</h3></div>
               <div className="bb-card-body--flush">
+                <div className="hide-on-mobile">
                 <div className="bb-table-wrap">
                   <table className="bb-table">
                     <thead>
@@ -582,6 +604,20 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                     </tbody>
                   </table>
                 </div>
+                </div>
+                <MobileCardList>
+                  {(order.payments ?? []).map((p, i) => (
+                    <MobileCard
+                      key={p.id ?? i}
+                      title={formatText(p.paymentMethod)}
+                      subtitle={p.paidAt ? formatDateTime(p.paidAt) : undefined}
+                      meta={[
+                        { label: t('orders.detail.colAmount'), value: formatCurrencyVnd(p.amount), tone: 'strong' },
+                        { label: t('orders.detail.colPaymentStatus'), value: t(`status.payment.${p.status}`, { defaultValue: p.status }) },
+                      ]}
+                    />
+                  ))}
+                </MobileCardList>
               </div>
             </div>
           )}
@@ -602,6 +638,8 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
               ) : orderReturns.length === 0 ? (
                 <div className="bb-card-body"><p className="bb-muted">{t('orders.detail.returnsEmpty')}</p></div>
               ) : (
+                <>
+                <div className="hide-on-mobile">
                 <div className="bb-table-wrap">
                   <table className="bb-table">
                     <thead>
@@ -624,6 +662,21 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                     </tbody>
                   </table>
                 </div>
+                </div>
+                <MobileCardList>
+                  {orderReturns.map((r) => (
+                    <MobileCard
+                      key={r.id}
+                      title={r.returnNumber}
+                      subtitle={RETURN_REASON_KEY[r.reason] ? t(RETURN_REASON_KEY[r.reason]) : r.reason}
+                      status={<StatusBadge type="return" status={RETURN_STATUS_KEY[r.status] ? r.status : 'UNKNOWN'} />}
+                      meta={[
+                        { label: t('orders.detail.colRefund'), value: r.refundAmount > 0 ? formatCurrencyVnd(r.refundAmount) : '—', tone: 'strong' },
+                      ]}
+                    />
+                  ))}
+                </MobileCardList>
+                </>
               )}
             </div>
           </div>

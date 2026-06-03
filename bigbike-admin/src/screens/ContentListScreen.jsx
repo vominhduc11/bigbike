@@ -5,6 +5,7 @@ import { PaginationControls } from '../components/PaginationControls'
 import { PublishStatusBadge } from '../components/StatusBadge'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
+import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
 import { fetchContent } from '../lib/adminApi'
 import { formatDateTime, formatText } from '../lib/formatters'
 import { useAdminList } from '../lib/useAdminList'
@@ -158,6 +159,8 @@ export function ContentListScreen({ navigate, canUpdate }) {
       {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) && (
         <div className="bb-card">
           <div className="bb-card-body bb-card-body--flush">
+            {/* responsive: table on tablet+/desktop, cards on phones */}
+            <div className="hide-on-mobile">
             <div className="bb-table-wrap">
               <table className="bb-table">
                 <thead>
@@ -224,6 +227,43 @@ export function ContentListScreen({ navigate, canUpdate }) {
                 </tbody>
               </table>
             </div>
+            </div>
+            <MobileCardList>
+              {items.map((item) => {
+                const editPath = `/admin/content/${item.type.toLowerCase()}/${item.id}`
+                const isPage = item.type === 'PAGE'
+                return (
+                  <MobileCard
+                    key={item.id}
+                    title={formatText(item.title)}
+                    subtitle={`/${item.slug}`}
+                    status={<PublishStatusBadge value={item.publishStatus} />}
+                    meta={[
+                      {
+                        label: t('content.colType'),
+                        value: (
+                          <span className={`bb-badge ${isPage ? 'bb-badge-neutral' : 'bb-badge-info'}`}>
+                            {isPage ? t('content.typePage') : t('content.typeArticle')}
+                          </span>
+                        ),
+                      },
+                      { label: t('content.colUpdated'), value: formatDateTime(item.updatedAt) },
+                    ]}
+                    actions={(
+                      <button
+                        type="button"
+                        className="bb-icon-btn"
+                        title={t('common.edit')}
+                        onClick={(e) => { e.stopPropagation(); navigate(editPath) }}
+                      >
+                        <Pencil size={14} />
+                      </button>
+                    )}
+                    onClick={() => navigate(editPath)}
+                  />
+                )
+              })}
+            </MobileCardList>
           </div>
           {state.status === 'success' && pagination && (
             <PaginationControls
