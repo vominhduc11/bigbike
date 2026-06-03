@@ -540,12 +540,15 @@ export function CheckoutSkeleton() {
         <SkelText w="10%" />
         <SkelTitle w="25%" h="2em" />
       </div>
-      <div className="bb-checkout-layout">
+      <div className="grid grid-cols-[1fr_420px] max-[1025px]:grid-cols-1 gap-8 max-md:gap-[14px] max-w-[var(--bb-container-wide)] min-[1536px]:max-w-[1480px] min-[1920px]:max-w-[1760px] min-[2560px]:max-w-[2400px] mx-auto mb-10 max-md:mb-7 px-6 max-md:px-[var(--bb-mobile-page-x)]">
         <div>
           {/* Stepper */}
-          <div className="bb-stepper">
+          <div className="flex gap-0 mb-6 max-md:mb-[14px] border-b border-b-border max-[601px]:overflow-x-auto max-[601px]:flex-nowrap max-[601px]:[scrollbar-width:none] max-[601px]:[&::-webkit-scrollbar]:hidden">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="bb-step" style={{ flex: 1 }}>
+              <div
+                key={i}
+                className="flex flex-1 items-center gap-3 py-[14px] px-4 max-md:py-2.5 max-md:px-3 border-b-[3px] border-b-transparent text-muted-foreground cursor-pointer [transition:all_140ms] max-md:min-w-[132px] max-md:min-h-[var(--bb-touch-target)]"
+              >
                 <SkelCircle size={28} />
                 <div className={skelCol} style={{ flex: 1 }}>
                   <SkelText w="60%" />
@@ -555,7 +558,7 @@ export function CheckoutSkeleton() {
             ))}
           </div>
           {/* Form section 1 */}
-          <div className="bb-checkout-section">
+          <div className="bg-card border border-border rounded-none py-[22px] px-6 max-md:py-4 max-md:px-[14px] mb-[18px] max-md:mb-3">
             <SkelTitle w="40%" />
             <div
               style={{ display: "grid", gap: 14, gridTemplateColumns: "1fr 1fr", marginTop: 18 }}
@@ -568,7 +571,7 @@ export function CheckoutSkeleton() {
               ))}
             </div>
           </div>
-          <div className="bb-checkout-section">
+          <div className="bg-card border border-border rounded-none py-[22px] px-6 max-md:py-4 max-md:px-[14px] mb-[18px] max-md:mb-3">
             <SkelTitle w="35%" />
             <div className={skelStack} style={{ marginTop: 18 }}>
               <SkelBlock w="100%" h={56} />
@@ -576,7 +579,7 @@ export function CheckoutSkeleton() {
             </div>
           </div>
         </div>
-        <aside className="bb-order-summary">
+        <aside className="bg-card border border-border rounded-none p-[22px] max-md:py-4 max-md:px-[14px] sticky max-[769px]:static top-[calc(var(--bb-header-height)+34px+16px)] [align-self:start] max-md:mb-3">
           <div className={skelStack}>
             <SkelTitle w="60%" />
             {Array.from({ length: 2 }).map((_, i) => (
