@@ -144,7 +144,7 @@ export async function SiteHeader() {
               </ul>
             </nav>
 
-            <div className="bb-user-control inline-flex items-stretch shrink-0 pl-[clamp(6px,0.8vw,14px)] max-md:items-center max-md:pl-0 max-md:w-full max-md:min-h-[var(--bb-header-height)]">
+            <div className="inline-flex items-stretch shrink-0 pl-[clamp(6px,0.8vw,14px)] max-md:items-center max-md:pl-0 max-md:w-full max-md:min-h-[var(--bb-header-height)]">
               <SearchToggle popularCategories={categoriesResult.data?.map(c => ({ name: c.name, slug: c.slug })) ?? []} />
               <CartIcon />
               <HeaderUserMenu />

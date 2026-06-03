@@ -676,8 +676,8 @@ body {
 
 /* Header chrome (.bb-header-container / .bb-header-row / .bb-right-header / .bb-user-control
    layout) migrated to inline Tailwind in SiteHeader.tsx. The icon-btn base it used to host
-   is now the shared `iconBtn` constant (lib/ui-classes.ts); .bb-user-control is a bare
-   orphan marker now — strip in the final header pass. */
+   is now the shared `iconBtn` constant (lib/ui-classes.ts); the bb-user-control marker has
+   been removed from the JSX (no remaining rule or JS hook). */
 
 /* -- Logo: top-aligned so red diagonal stripe overflows below 80px header */
 .bb-logo {
@@ -790,7 +790,7 @@ body {
 /* -- User control action icons: the .bb-icon-btn / .bb-cart-icon-link base,
    hover and focus styling migrated to the shared `iconBtn` constant in
    lib/ui-classes.ts (search / shop-info / mobile-menu triggers + cart link).
-   `.bb-user-control` is now a bare orphan marker — strip in the final pass. */
+   The `.bb-user-control` marker has been removed from the JSX. */
 
 /* Cart badge (.bb-cart-badge) migrated to inline Tailwind in CartIcon.tsx. */
 
