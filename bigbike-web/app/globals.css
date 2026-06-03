@@ -5130,30 +5130,6 @@ body .bb-home .white.block-title h3 {
   height: auto;
 }
 
-.bb-home .videos-slide .swiper-button-prev {
-  left: -98px;
-}
-
-.bb-home .videos-slide .swiper-button-next {
-  right: -98px;
-}
-
-.bb-home .videos-slide .swiper-pagination-bullet {
-  width: 10px;
-  height: 10px;
-  margin: 0 5px;
-  border: 0;
-  background: #fff;
-  opacity: 1;
-  transition: all .3s ease;
-}
-
-.bb-home .videos-slide .swiper-pagination-bullet-active {
-  width: 20px;
-  border-radius: 100px;
-  background: var(--bb-action-primary);
-}
-
 .bb-home .partner-slide .swiper-wrapper {
   align-items: center;
 }
@@ -5275,17 +5251,6 @@ body .bb-home .white.block-title h3 {
     margin-bottom: 0;
   }
 
-  .bb-home .videos-slide .video-slide--items:first-child {
-    padding-top: 20px;
-  }
-
-  body .bb-home .videos-slide .swiper-button-next {
-    right: 15px;
-  }
-
-  body .bb-home .videos-slide .swiper-button-prev {
-    left: 15px;
-  }
 }
 
 /* Homepage spacing pass: scoped after WP parity utilities so the home rhythm
