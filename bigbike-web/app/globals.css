@@ -675,8 +675,9 @@ body {
 }
 
 /* Header chrome (.bb-header-container / .bb-header-row / .bb-right-header / .bb-user-control
-   layout) migrated to inline Tailwind in SiteHeader.tsx — see commit. .bb-user-control is
-   kept as a bare ancestor marker below for the .bb-user-control .bb-icon-btn rules. */
+   layout) migrated to inline Tailwind in SiteHeader.tsx. The icon-btn base it used to host
+   is now the shared `iconBtn` constant (lib/ui-classes.ts); .bb-user-control is a bare
+   orphan marker now — strip in the final header pass. */
 
 /* -- Logo: top-aligned so red diagonal stripe overflows below 80px header */
 .bb-logo {
@@ -876,46 +877,10 @@ body {
   }
 }
 
-/* -- User control: action icons row */
-/* .bb-user-control layout migrated inline (SiteHeader.tsx); class kept as a bare
-   ancestor marker for the .bb-user-control .bb-icon-btn rules below. */
-.bb-user-control .bb-icon-btn {
-  display: inline-flex;
-}
-
-.bb-user-control .bb-icon-btn,
-.bb-site-header .bb-cart-icon-link {
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  min-height: var(--bb-header-height);
-  width: auto;
-  padding: 0 clamp(10px, 0.9vw, 16px);
-  color: #ffffff;
-  background: transparent;
-  border: none;
-  border-radius: 0;
-  font-size: 1.286rem;
-  line-height: 1;
-  cursor: pointer;
-  text-decoration: none;
-  transition: color var(--bb-duration-fast) var(--bb-ease-standard),
-    background var(--bb-duration-fast) var(--bb-ease-standard);
-}
-
-.bb-user-control .bb-icon-btn:hover,
-.bb-user-control .bb-icon-btn:focus-visible,
-.bb-site-header .bb-cart-icon-link:hover {
-  color: var(--bb-brand-primary);
-  background: rgba(255, 255, 255, 0.05);
-  outline: none;
-}
-
-.bb-user-control .bb-icon-btn:focus-visible,
-.bb-site-header .bb-cart-icon-link:focus-visible {
-  outline: 2px solid var(--bb-brand-primary);
-  outline-offset: -2px;
-}
+/* -- User control action icons: the .bb-icon-btn / .bb-cart-icon-link base,
+   hover and focus styling migrated to the shared `iconBtn` constant in
+   lib/ui-classes.ts (search / shop-info / mobile-menu triggers + cart link).
+   `.bb-user-control` is now a bare orphan marker — strip in the final pass. */
 
 /* Cart badge (.bb-cart-badge) migrated to inline Tailwind in CartIcon.tsx. */
 
@@ -1345,9 +1310,6 @@ body {
    max-[1199px]:hidden in SiteHeader.tsx — no CSS rule needed here. */
 
 @media (max-width: 639px) {
-  .bb-user-control .bb-icon-btn {
-    padding: 0 10px;
-  }
   .bb-header-search-panel {
     width: calc(100vw - 24px);
     padding-inline: 16px;
@@ -2054,10 +2016,7 @@ img, picture, video, svg, canvas { max-width: 100%; }
 
 /* -- Touch target enforcement (WCAG 2.5.5 / Apple HIG ? 44px) -- */
 @media (pointer: coarse), (max-width: 768px) {
-  .bb-icon-btn,
-.bb-cart-icon-link,
-.bb-pagination-page,
-.bb-pagination-page {
+  .bb-pagination-page {
     min-width: var(--bb-touch-target);
     min-height: var(--bb-touch-target);
   }
@@ -3905,16 +3864,6 @@ body:has(.bb-search-results-page) {
     display: none !important;
   }
 
-  .bb-user-control .bb-icon-btn,
-  .bb-site-header .bb-cart-icon-link {
-    width: var(--bb-touch-target);
-    height: var(--bb-touch-target);
-    min-height: var(--bb-touch-target);
-    padding: 0;
-    color: var(--bb-text-inverse);
-  }
-
-
   .bb-bottom-nav {
     border-color: var(--bb-mobile-shell-border);
     color: var(--bb-text-inverse-muted);
@@ -4232,12 +4181,6 @@ body:has(.bb-search-results-page) {
 
   .bb-site-header {
     z-index: var(--bb-z-header);
-  }
-
-  .bb-header-search-trigger,
-  .bb-site-header .bb-cart-icon-link,
-  .bb-menu-toggle {
-    display: none !important;
   }
 
   .bb-logo {
@@ -4795,12 +4738,6 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
     width: 112px;
     max-width: 112px;
     height: auto;
-  }
-
-  .bb-header-search-trigger,
-  .bb-site-header .bb-cart-icon-link,
-  .bb-menu-toggle {
-    display: none !important;
   }
 
   .bb-bottom-nav {

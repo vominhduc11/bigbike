@@ -17,6 +17,7 @@ import {
 } from "@/lib/utils/routes";
 import { isActivePath, normalizeMenuUrl } from "@/lib/utils/nav";
 import { cn } from "@/lib/utils";
+import { iconBtn } from "@/lib/ui-classes";
 import { parsePhones, parseShopHours } from "@/lib/utils/shop";
 import { useMediaQueryChange } from "@/lib/hooks/useMediaQueryChange";
 
@@ -242,7 +243,8 @@ export function MobileHeaderMenu({
     <>
       <button
         className={cn(
-          "bb-icon-btn bb-menu-toggle hidden md:block min-[1261px]:!hidden",
+          iconBtn,
+          "bb-menu-toggle hidden md:inline-flex min-[1261px]:!hidden",
           open && "is-active",
         )}
         aria-label={t("mobileMenuOpenAriaLabel")}

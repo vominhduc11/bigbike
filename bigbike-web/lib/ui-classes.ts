@@ -61,6 +61,25 @@ export const authHeading = "font-heading text-[length:var(--fs-h3)] font-semibol
 /** Auth form input sizing (was `.bb-auth-input`). */
 export const authInput = "h-[52px] min-h-[52px] px-5 py-0 text-sm";
 
+/** Header action icon button (was `.bb-user-control .bb-icon-btn` /
+ * `.bb-site-header .bb-cart-icon-link`): full-height transparent square button,
+ * white icon, brand-red on hover with a faint white wash, focus ring; WCAG
+ * touch-target (44px) on coarse pointers and at the <=768 edge. Shared by the
+ * search / shop-info / mobile-menu triggers and the cart link. Compose with the
+ * per-button visibility classes (e.g. `hidden md:inline-flex`). */
+export const iconBtn =
+  "inline-flex items-center justify-center h-full min-h-[var(--bb-header-height)] w-auto py-0 px-[clamp(10px,0.9vw,16px)] " +
+  "text-white bg-transparent border-none rounded-none text-[1.286rem] leading-none cursor-pointer no-underline " +
+  "transition-[color,background] duration-fast ease-[var(--bb-ease-standard)] " +
+  // `!` on hover color: the cart link is an <a>, so the unlayered global `a:hover`
+  // (brand red #cc0906) would otherwise beat this; rgba (not the /opacity form) to
+  // match the legacy literal rgba rather than v4's oklab mix.
+  "hover:!text-[var(--bb-brand-primary)] hover:bg-[rgba(255,255,255,0.05)] " +
+  "focus-visible:outline-none focus-visible:[outline:2px_solid_var(--bb-brand-primary)] focus-visible:[outline-offset:-2px] " +
+  // Touch-target only widens (min-width 44px) — the base min-height (header height)
+  // out-specified the old touch-target min-height, so that stays at the header height.
+  "pointer-coarse:min-w-[var(--bb-touch-target)] max-[769px]:min-w-[var(--bb-touch-target)]";
+
 /** Inline text link (was `.bb-link`): blue resting (--bb-link-text), red on
  * hover/focus. The base red is overridden by later WP-parity groups, so the
  * effective resting color is the blue link token. */

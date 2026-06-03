@@ -14,6 +14,7 @@ import { useRecentSearches } from "@/lib/hooks/useRecentSearches";
 import { formatVnd, resolveMediaUrl } from "@/lib/utils/format";
 import { toArticlePath, toCategoryPath, toProductPath } from "@/lib/utils/routes";
 import { cn } from "@/lib/utils";
+import { iconBtn } from "@/lib/ui-classes";
 
 const SEARCH_PATH = "/tim-kiem/";
 
@@ -178,7 +179,8 @@ export function SearchToggle({ popularCategories: categoriesFromApi = [] }: Sear
       <Button
         variant="ghost"
         className={cn(
-          "bb-icon-btn bb-header-search-trigger hidden md:flex",
+          iconBtn,
+          "bb-header-search-trigger hidden md:inline-flex",
           open && "is-active",
         )}
         aria-label={t("toggleAriaLabel")}

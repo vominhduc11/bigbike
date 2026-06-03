@@ -7,6 +7,7 @@ import { useHeaderUi } from "@/components/layout/HeaderUiContext";
 import { Button } from "@/components/ui/button";
 import { MenuIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
+import { iconBtn } from "@/lib/ui-classes";
 import { parsePhones, parseShopHours } from "@/lib/utils/shop";
 
 // Drawer content (shell — bb-header-info-sheet/overlay/content + .is-open
@@ -52,7 +53,8 @@ export function ShopInfoDrawer({
       <Button
         variant="ghost"
         className={cn(
-          "bb-icon-btn bb-header-info-trigger max-[1260px]:!hidden",
+          iconBtn,
+          "bb-header-info-trigger max-[1260px]:!hidden",
           open && "is-active",
         )}
         aria-label={t("shopInfoAriaLabel", { siteName })}
