@@ -3784,31 +3784,8 @@ body:has(.bb-search-results-page) {
   height: auto;
 }
 
-.bb-home .align-items-center {
-  align-items: center;
-}
-
 .bb-home .text-center {
   text-align: center;
-}
-
-.bb-home .white h3 {
-  color: #fff;
-}
-.bb-home .pb-40 { padding-bottom: 40px; }
-.bb-home .mb-10 { margin-bottom: 10px; }
-
-.bb-home .btn {
-  display: inline-block;
-  width: 170px;
-  padding: 0;
-  border-radius: 0;
-  color: #000;
-  font-family: "Barlow Condensed", sans-serif;
-  font-weight: 600;
-  line-height: 52px;
-  text-decoration: none;
-  opacity: 1;
 }
 
 .bb-home #main-banner .swiper,
