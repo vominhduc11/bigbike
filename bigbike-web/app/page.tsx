@@ -439,7 +439,7 @@ export default async function HomePage() {
           <div className="container">
             {(aboutSubtitle || aboutTitle) && (
               <div className="text-center mb-[40px] max-md:mb-[24px]">
-                {aboutSubtitle ? <p className="bb-kicker">{aboutSubtitle}</p> : null}
+                {aboutSubtitle ? <p className="mb-3 text-[var(--bb-text-muted)] font-cta text-[length:var(--bb-text-section-kicker)] tracking-[0.15em] font-black leading-none uppercase">{aboutSubtitle}</p> : null}
                 {aboutTitle ? (
                   <h2 className="m-0 text-black font-heading text-[length:var(--bb-text-section-title)] font-semibold leading-[1.2] tracking-normal uppercase">
                     {aboutTitle}
@@ -463,8 +463,8 @@ export default async function HomePage() {
           aria-labelledby="home-products-heading"
         >
           <Container>
-            <div className="bb-products-header flex flex-col items-center justify-center gap-0 m-0 mb-[40px] p-0 [border-bottom:0] text-foreground [text-align:center] max-md:mb-[14px] max-md:px-[var(--bb-mobile-page-x)] max-md:[text-align:left]">
-              <p className="bb-kicker">Sản phẩm nổi bật</p>
+            <div className="flex flex-col items-center justify-center gap-0 m-0 mb-[40px] p-0 [border-bottom:0] text-foreground [text-align:center] max-md:mb-[14px] max-md:px-[var(--bb-mobile-page-x)] max-md:[text-align:left]">
+              <p className="m-0 mb-2.5 text-[var(--bb-text-muted)] font-cta text-[length:var(--bb-text-section-kicker)] leading-[var(--bb-line-section-kicker)] tracking-[0.15em] font-black uppercase max-md:flex max-md:items-center max-md:gap-2 max-md:mb-1 max-md:text-[10px] max-md:tracking-[0.18em] max-md:before:content-[''] max-md:before:w-4 max-md:before:h-px max-md:before:bg-[var(--bb-action-primary)]">Sản phẩm nổi bật</p>
               <h2
                 id="home-products-heading"
                 className="m-0 font-heading text-[length:var(--bb-text-section-title)] max-md:text-[length:var(--fs-h2)] font-semibold leading-[var(--bb-line-section-title)] max-md:leading-[1.08] tracking-normal uppercase text-black [text-align:center] max-md:max-w-full max-md:text-balance"
@@ -524,7 +524,7 @@ export default async function HomePage() {
             <div className="mx-auto w-full max-w-[var(--bb-container-xl)] px-[15px]">
               <div className="[text-align:center] max-md:[text-align:left] pb-10 max-md:pb-4">
                 {expSubtitle ? (
-                  <p className="bb-kicker">
+                  <p className="mb-3 text-[var(--bb-text-muted)] font-cta text-[length:var(--bb-text-section-kicker)] tracking-[0.15em] font-black leading-none uppercase">
                     {expSubtitle}
                   </p>
                 ) : null}
@@ -554,7 +554,7 @@ export default async function HomePage() {
         <div className="bb-home-news-parity bg-white pb-0 pt-[60px] max-[1024px]:pt-[52px] max-[768px]:pt-[20px]">
           <div className="mx-auto w-full max-w-[1200px] px-[15px] min-[1536px]:max-w-[1360px] min-[1920px]:w-[min(100%_-_2_*_var(--bb-page-padding-desktop),100rem)] min-[1920px]:max-w-none min-[2560px]:w-[min(100%_-_2_*_var(--bb-page-padding-desktop),140rem)] max-md:max-w-none max-md:px-[var(--bb-mobile-page-x)]">
             <div className="px-0 pt-0 pb-[40px] [text-align:center] max-md:px-[var(--bb-mobile-page-x)] max-md:pb-[14px] max-md:[text-align:left]">
-              <p className="bb-kicker">Tin tức & cập nhật</p>
+              <p className="mb-3 text-[var(--bb-text-muted)] font-cta text-[length:var(--bb-text-section-kicker)] tracking-[0.15em] font-black leading-none uppercase">Tin tức & cập nhật</p>
               <h2 className="m-0 font-cta text-[clamp(1.75rem,1.45rem_+_1.281vw,3.5rem)] font-semibold uppercase leading-[1.15] tracking-[normal] text-black max-md:leading-[1.2]">
                 Cập nhật xu hướng cùng BigBike
               </h2>

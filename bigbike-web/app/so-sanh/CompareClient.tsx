@@ -38,7 +38,7 @@ export function CompareClient() {
     <section className="bb-page bb-compare-page">
       <Container className="pb-28">
         <header className="mb-6">
-          <p className="bb-kicker">
+          <p className="mb-3 text-brand font-cta text-[length:var(--bb-text-section-kicker)] tracking-normal font-black leading-none uppercase">
             {t("kicker")}
           </p>
           <h1 className={sectionHeading}>

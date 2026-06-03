@@ -349,15 +349,6 @@ body {
   z-index: 1;
 }
 
-.bb-kicker {
-  margin-bottom: var(--bb-space-3);
-  color: var(--bb-text-brand);
-  font-size: var(--bb-text-section-kicker);
-  font-weight: 900;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
 .bb-page h1 {
   font-family: var(--bb-font-display);
   font-size: var(--fs-h1);
@@ -1674,7 +1665,6 @@ body {
 
 /* -- Section headers -------------------------------------- */
 .bb-section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 28px; padding-bottom: 16px; border-bottom: 1px solid var(--bb-border-default); }
-.bb-section-head .bb-kicker { font-family: var(--bb-font-cta); font-size: var(--bb-text-section-kicker); line-height: var(--bb-line-section-kicker); letter-spacing: 0; text-transform: uppercase; color: var(--bb-text-brand); margin: 0 0 10px; display: block; }
 
 /* -- PDP below-fold sections ------------------------------ */
 /* .bb-pdp-below (PdpSkeleton mirror) migrated to inline Tailwind. */
@@ -2417,17 +2407,6 @@ img, picture, video, svg, canvas { max-width: 100%; }
  * WP Featured Products - 100% WP parity (page-home.php section)
  * ............................................................... */
 
-/* Header: cfn giua, sub-title xAm #cecece, tiAu 'e 'am */
-.bb-products-section .bb-kicker {
-  color: var(--bb-text-brand);
-  font-family: var(--bb-font-cta);
-  font-size: var(--bb-text-section-kicker);
-  line-height: var(--bb-line-section-kicker);
-  letter-spacing: 0;
-  text-transform: uppercase;
-  margin: 0 0 10px;
-}
-
 /* Carousel wrap: bo padding nTi, nAt mui tAn 'at ngoAi */
 
 /* Slide width do Swiper breakpoints quan lA - bo width c' '<nh cu */
@@ -2524,20 +2503,9 @@ a:not(.font-cta):hover {
   text-transform: uppercase;
 }
 
-.bb-kicker,
 .bb-product-brand {
   color: var(--bb-color-red-700);
   font-family: var(--bb-font-cta);
-  letter-spacing: 0;
-  text-transform: uppercase;
-}
-
-.bb-products-section .bb-kicker,
-.bb-section-head .bb-kicker {
-  color: var(--bb-text-brand);
-  font-family: var(--bb-font-cta);
-  font-size: var(--bb-text-section-kicker);
-  line-height: var(--bb-line-section-kicker);
   letter-spacing: 0;
   text-transform: uppercase;
 }
@@ -2901,16 +2869,6 @@ input[type="checkbox"] {
   padding-top: 60px;
   padding-bottom: 40px;
   background: #fff;
-}
-
-.bb-home-products-parity .bb-kicker {
-  margin: 0 0 10px;
-  color: var(--bb-text-muted);
-  font-family: var(--bb-font-cta);
-  font-size: var(--bb-text-section-kicker);
-  line-height: var(--bb-line-section-kicker);
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
 }
 
 .bb-home-products-parity .bb-fp-page-track {
@@ -4527,23 +4485,6 @@ body:has(.bb-search-results-page) {
     padding-bottom: 8px;
   }
 
-  .bb-home-products-parity .bb-products-header .bb-kicker {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 4px;
-    font-family: var(--bb-font-cta);
-    font-size: 10px;
-    letter-spacing: 0.18em;
-  }
-
-  .bb-home-products-parity .bb-products-header .bb-kicker::before {
-    width: 16px;
-    height: 1px;
-    background: var(--bb-action-primary);
-    content: "";
-  }
-
   .bb-home-products-parity .bb-fp-page-track {
     width: max-content;
     gap: 12px;
@@ -5019,15 +4960,6 @@ body:has(.bb-search-results-page) {
 .woocommerce-error a:focus-visible,
 .woocommerce-info a:hover,
 .woocommerce-info a:focus-visible {
-  color: var(--bb-text-brand);
-}
-
-.bb-home .bb-kicker {
-  color: var(--bb-text-muted);
-  letter-spacing: 0.15em;
-}
-
-.bb-section-head .bb-kicker {
   color: var(--bb-text-brand);
 }
 

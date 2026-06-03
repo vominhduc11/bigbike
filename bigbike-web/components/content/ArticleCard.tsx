@@ -96,7 +96,7 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
           {publishedDate}
         </span>
         <div className="flex flex-col gap-2 flex-1">
-          <p className="bb-kicker m-0">
+          <p className="m-0 text-brand font-cta text-[length:var(--bb-text-section-kicker)] tracking-normal font-black leading-none uppercase">
             {category}
           </p>
           <h3

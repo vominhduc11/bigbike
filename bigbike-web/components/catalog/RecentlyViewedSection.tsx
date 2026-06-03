@@ -38,7 +38,7 @@ export function RecentlyViewedSection({ currentProductId, currentProduct }: Prop
   return (
     <section className="mt-12 border-t border-[color:var(--bb-border-default)] pt-9">
       <div className="mb-[18px]">
-        <p className="bb-kicker">{tRecent("kicker")}</p>
+        <p className="mb-3 text-brand font-cta text-[length:var(--bb-text-section-kicker)] tracking-normal font-black leading-none uppercase">{tRecent("kicker")}</p>
         <h2 className="mt-1 mb-0 font-heading text-h4 font-semibold uppercase leading-title text-foreground">
           {tRecent("heading")}
         </h2>
