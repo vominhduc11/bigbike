@@ -917,27 +917,7 @@ body {
   outline-offset: -2px;
 }
 
-/* Cart badge: positioned relative to icon span, not the full-height link */
-.bb-site-header .bb-cart-badge {
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  transform: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 4px 3px;
-  border-radius: 999px;
-  background: var(--bb-action-primary);
-  color: #ffffff;
-  font-family: var(--bb-font-body);
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1;
-  text-align: center;
-}
+/* Cart badge (.bb-cart-badge) migrated to inline Tailwind in CartIcon.tsx. */
 
 .bb-header-search {
   position: relative;
@@ -2560,8 +2540,7 @@ input[type="checkbox"] {
   background: transparent;
 }
 
-.bb-chat-item-icon svg circle,
-.bb-site-header .bb-cart-badge {
+.bb-chat-item-icon svg circle {
   border-radius: 50%;
 }
 
@@ -2624,7 +2603,7 @@ input[type="checkbox"] {
   border-radius: 0;
 }
 
-.bb-theme :is(.bb-round, .bb-site-header .bb-cart-badge, .bb-account-avatar, .swiper-pagination-bullet, .b24-widget-button-block, .b24-widget-button-inner-block, .b24-widget-button-inner-mask) {
+.bb-theme :is(.bb-round, .bb-account-avatar, .swiper-pagination-bullet, .b24-widget-button-block, .b24-widget-button-inner-block, .b24-widget-button-inner-mask) {
   border-radius: 50%;
 }
 
@@ -2676,13 +2655,9 @@ input[type="checkbox"] {
   }
 }
 
-/* -- Cart badge ---------------------------------------- */
-
-.bb-cart-badge {
-  font-family: var(--bb-font-link);
-  font-size: var(--bb-text-xs);
-  font-weight: 700;
-}
+/* -- Cart badge: migrated to inline Tailwind (CartIcon.tsx). The former
+   `.bb-cart-badge` font rule here was dead — the `.bb-site-header .bb-cart-badge`
+   base out-specified it. -- */
 
 /* =========================================================
    WP Product Detail Tabs — skewed parallelogram (product-detail.css parity)
@@ -3939,17 +3914,6 @@ body:has(.bb-search-results-page) {
     color: var(--bb-text-inverse);
   }
 
-  .bb-site-header .bb-cart-badge {
-    top: -6px;
-    right: -6px;
-    min-width: 16px;
-    height: 16px;
-    padding: 0 4px;
-    border: 2px solid var(--bb-color-black);
-    font-size: 9px;
-    line-height: 12px;
-    transform: none;
-  }
 
   .bb-bottom-nav {
     border-color: var(--bb-mobile-shell-border);
