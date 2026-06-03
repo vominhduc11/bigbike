@@ -3240,11 +3240,6 @@ body:has(.bb-search-results-page) {
     max-width: 104px;
   }
 
-  .bb-menu-toggle {
-    order: -1;
-    margin-right: auto;
-  }
-
   .bb-header-info-trigger {
     display: none !important;
   }
