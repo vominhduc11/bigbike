@@ -541,19 +541,19 @@ export default async function HomePage() {
       )}
 
       {homeVideos.length > 0 && (
-        <section className="videos-slide" aria-labelledby="home-video-heading">
+        <section className="videos-slide pt-20 pb-0 max-[1024px]:pt-16 max-md:pt-7 max-md:bg-background" aria-labelledby="home-video-heading">
           {/*
             Overlay strategy:
             - Layer 1 (before): solid dark base ở bottom-up để nền không flat
             - Layer 2 (after):  gradient top-down nhẹ để title area tối hơn, cards nổi
             Tổng mức tối ~60% — giữ mood mạnh mẽ nhưng sharp hơn black/40 cũ
           */}
-          <div className="videos-slide--inner relative bg-[url('/wp/video-bg.jpg')] bg-cover bg-center bg-no-repeat before:absolute before:inset-0 before:bg-black/55 before:content-[''] after:absolute after:inset-0 after:bg-gradient-to-b after:from-black/30 after:via-transparent after:to-black/25 after:content-['']">
+          <div className="relative bg-[url('/wp/video-bg.jpg')] bg-cover bg-center bg-no-repeat pb-16 max-[1024px]:pb-13 max-md:pb-10 max-md:bg-[color:var(--bb-bg-surface-dark)] before:absolute before:inset-0 before:bg-black/55 before:content-[''] after:absolute after:inset-0 after:bg-gradient-to-b after:from-black/30 after:via-transparent after:to-black/25 after:content-['']">
             <div className="relative z-[1] mx-auto w-full max-w-[var(--bb-container-xl)] px-[15px]">
-              <div className="text-center text-white">
+              <div className="text-center text-white pt-18 max-[1024px]:pt-12 max-md:pt-9 pb-13 max-[1024px]:pb-8 max-md:pb-5">
                 <h2
                   id="home-video-heading"
-                  className="bb-home-video-title drop-shadow-[0_2px_12px_rgba(0,0,0,0.6)]"
+                  className="my-0 mx-auto max-w-[820px] text-white font-heading text-[length:var(--fs-h1)] max-[1024px]:text-[length:var(--fs-h2)] max-md:text-[length:var(--fs-h3)] font-semibold leading-[1.12] max-[1024px]:leading-[1.1] max-md:leading-[1.12] tracking-normal uppercase text-balance drop-shadow-[0_2px_12px_rgba(0,0,0,0.6)]"
                 >
                   {/* Tách thành 2 cụm nghĩa, mỗi cụm không xuống dòng giữa chừng:
                       desktop lớn cho ra "TRẢI NGHIỆM SẢN PHẨM" / "CÙNG BIGBIKE.VN",

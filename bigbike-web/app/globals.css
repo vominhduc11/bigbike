@@ -4606,7 +4606,8 @@ body:has(.bb-home) {
    ProductVideosTab.tsx: iframe/video styled directly (no wrapper-descendant
    selector), grid/list/thumbnail-button/title inline. The title keeps !leading-[1.35]
    because it lives inside `.bb-wp-tabs .tab-panel *{line-height:inherit}`. The home
-   `.bb-home .videos-slide .video-slide--*` rules are a separate context and stay. */
+   `.bb-home .videos-slide` section is also migrated to inline Tailwind (only the
+   `.swiper-slide{height:auto}` mechanism rule is kept). */
 
 .bb-wp-related-track {
   --bb-wp-related-gap: 30px;
@@ -5107,25 +5108,6 @@ body .bb-home .white.block-title h3 {
   position: relative;
 }
 
-.bb-home-video-title {
-  margin: 0 auto;
-  max-width: 820px;
-  color: #fff;
-  font-family: var(--bb-font-heading);
-  font-size: var(--fs-h1);
-  font-weight: 600;
-  line-height: 1.12;
-  letter-spacing: 0;
-  text-transform: uppercase;
-  text-wrap: balance;
-}
-
-.bb-home .videos-slide--inner {
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: cover;
-}
-
 .bb-home .videos-slide .swiper-slide {
   height: auto;
 }
@@ -5316,20 +5298,6 @@ body .bb-home .white.block-title h3 {
 
 
 
-.bb-home .videos-slide {
-  padding-top: 80px;
-  padding-bottom: 0;
-}
-
-.bb-home .videos-slide--inner {
-  padding-bottom: 64px;
-}
-
-.bb-home .videos-slide div:has(> .bb-home-video-title) {
-  padding-top: 72px;
-  padding-bottom: 52px;
-}
-
 .bb-home .content-bottom {
   padding-top: 60px;
   padding-bottom: 60px;
@@ -5388,23 +5356,6 @@ body .bb-home .white.block-title h3 {
     padding-top: 72px;
   }
 
-  .bb-home .videos-slide {
-    padding-top: 64px;
-  }
-
-  .bb-home .videos-slide--inner {
-    padding-bottom: 52px;
-  }
-
-  .bb-home .videos-slide div:has(> .bb-home-video-title) {
-    padding-top: 48px;
-    padding-bottom: 32px;
-  }
-
-  .bb-home .videos-slide .bb-home-video-title {
-    font-size: var(--fs-h2);
-    line-height: 1.1;
-  }
 }
 
 @media (max-width: 767px) {
@@ -5468,23 +5419,6 @@ body .bb-home .white.block-title h3 {
     padding-bottom: 28px;
   }
 
-  .bb-home .videos-slide {
-    padding-top: 48px;
-  }
-
-  .bb-home .videos-slide--inner {
-    padding-bottom: 40px;
-  }
-
-  .bb-home .videos-slide div:has(> .bb-home-video-title) {
-    padding-top: 36px;
-    padding-bottom: 24px;
-  }
-
-  .bb-home .videos-slide .bb-home-video-title {
-    font-size: var(--fs-h3);
-    line-height: 1.12;
-  }
 
   .bb-home .content-bottom {
     padding-top: 40px;
@@ -6099,15 +6033,6 @@ body .bb-home .white.block-title h3 {
 
 
 
-  .bb-home .videos-slide {
-    padding-top: 28px;
-    background: var(--bb-mobile-shell-bg);
-  }
-
-  .bb-home .videos-slide--inner {
-    padding-bottom: 36px;
-  }
-
   .bb-home .content-bottom {
     border-top: 1px solid var(--bb-mobile-shell-border);
   }
@@ -6310,7 +6235,6 @@ body .bb-home .white.block-title h3 {
   .bb-mobile-section-header h2,
   .bb-home-products-parity .bb-products-title,
   .bb-home .bb-experience-title,
-  .bb-home-video-title,
   .bb-home-products-parity .bb-fp-title,
   .bb-home-products-parity .bb-fp-title a {
     color: var(--bb-text-primary);
@@ -6345,14 +6269,6 @@ body .bb-home .white.block-title h3 {
 
   .bb-home-products-parity .bb-fp-desc {
     background: var(--bb-bg-surface);
-  }
-
-  .bb-home .videos-slide {
-    background: var(--bb-bg-page);
-  }
-
-  .bb-home .videos-slide--inner {
-    padding-bottom: 40px;
   }
 
   .bb-home .content-bottom {
@@ -7059,21 +6975,6 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
     width: 150px;
     font-size: 14px;
     line-height: 44px;
-  }
-
-  .bb-home .videos-slide--inner {
-    background-color: var(--bb-bg-surface-dark);
-  }
-
-  .bb-home .videos-slide div:has(> .bb-home-video-title) {
-    padding-top: 36px;
-    padding-bottom: 20px;
-  }
-
-  .bb-home .videos-slide .bb-home-video-title {
-    color: var(--bb-text-inverse);
-    font-size: var(--fs-h3);
-    line-height: 1.12;
   }
 
   .bb-home .content-bottom.bb-seo-content {
