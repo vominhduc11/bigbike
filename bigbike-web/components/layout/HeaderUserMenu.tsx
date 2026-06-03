@@ -36,7 +36,7 @@ const trigger =
 const triggerGuest = "items-center justify-center px-[clamp(10px,0.9vw,16px)] py-0";
 const triggerAuth = "w-[132px] flex-col items-start justify-center gap-[2px] pt-5 px-4 pb-4 text-left";
 const menuLink =
-  "flex w-full h-11 items-center justify-center border-none bg-[#111111] font-cta text-[14px] font-semibold tracking-[0.06em] leading-none uppercase cursor-pointer !text-white !no-underline visited:!text-white transition-colors duration-[var(--bb-duration-fast)] ease-[var(--bb-ease-standard)] focus-visible:outline-none";
+  "flex w-full h-11 items-center justify-center border-none bg-[#111111] font-cta text-ui-14 font-semibold tracking-[0.06em] leading-none uppercase cursor-pointer !text-white !no-underline visited:!text-white transition-colors duration-[var(--bb-duration-fast)] ease-[var(--bb-ease-standard)] focus-visible:outline-none";
 const menuLinkPrimary =
   "bg-brand hover:bg-[var(--bb-action-primary-hover)] focus-visible:bg-[var(--bb-action-primary-hover)]";
 const menuLinkPlain = "hover:bg-[#333333] focus-visible:bg-[#333333]";
@@ -162,11 +162,11 @@ export function HeaderUserMenu() {
             onClick={() => setOpen((current) => !current)}
             onFocus={() => setOpen(true)}
           >
-            <span className="w-full overflow-hidden font-cta text-[14px] font-semibold leading-none uppercase text-ellipsis whitespace-nowrap">
+            <span className="w-full overflow-hidden font-cta text-ui-14 font-semibold leading-none uppercase text-ellipsis whitespace-nowrap">
               {t("loggedInGreeting")}
             </span>
             <span
-              className="w-full overflow-hidden text-[14px] font-light leading-[1.2] text-ellipsis whitespace-nowrap normal-case"
+              className="w-full overflow-hidden text-ui-14 font-light leading-[1.2] text-ellipsis whitespace-nowrap normal-case"
               title={auth.profile.email}
             >
               {displayName}

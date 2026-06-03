@@ -314,7 +314,7 @@ function ReturnsContent() {
     <>
       <div className="flex justify-between items-end mb-5 pb-4 border-b border-border">
         <div>
-          <h2 className={cn(sectionHeading, "tracking-wide m-0")}>{t("heading")}</h2>
+          <h2 className={cn(sectionHeading, "m-0")}>{t("heading")}</h2>
           <p className="text-sm text-muted-foreground mt-1 m-0">{t("subtitle")}</p>
         </div>
         {!showForm && (

@@ -1,0 +1,2002 @@
+{
+  "390": {
+    "section": {
+      "backgroundColor": "rgb(255, 255, 255)",
+      "paddingTop": "20px",
+      "paddingBottom": "0px",
+      "paddingLeft": "0px",
+      "paddingRight": "0px"
+    },
+    "container": {
+      "maxWidth": "none",
+      "marginLeft": "0px",
+      "paddingLeft": "24px",
+      "paddingRight": "24px"
+    },
+    "containerRect": {
+      "w": 380,
+      "h": 1313
+    },
+    "blockTitle": {
+      "textAlign": "left",
+      "paddingTop": "0px",
+      "paddingBottom": "14px",
+      "paddingLeft": "24px",
+      "paddingRight": "24px",
+      "marginBottom": "0px"
+    },
+    "kicker": {
+      "color": "rgb(111, 111, 111)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", Barlow, sans-serif",
+      "fontSize": "13.3106px",
+      "fontWeight": "900",
+      "lineHeight": "13.3106px",
+      "letterSpacing": "1.99659px",
+      "textTransform": "uppercase",
+      "marginBottom": "12px",
+      "display": "block"
+    },
+    "h2": {
+      "color": "rgb(0, 0, 0)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", Barlow, sans-serif",
+      "fontSize": "28.1959px",
+      "fontWeight": "600",
+      "lineHeight": "33.8351px",
+      "letterSpacing": "normal",
+      "textTransform": "uppercase",
+      "marginTop": "0px",
+      "marginBottom": "0px"
+    },
+    "newsList": {
+      "display": "block"
+    },
+    "row": {
+      "display": "grid",
+      "gap": "16px",
+      "marginLeft": "0px",
+      "marginRight": "0px",
+      "paddingLeft": "0px",
+      "paddingRight": "0px",
+      "gridTemplateColumns": "332px"
+    },
+    "rowOverflow": {
+      "overflowX": "visible",
+      "scrolls": false
+    },
+    "col0": {
+      "width": "332px",
+      "maxWidth": "100%",
+      "paddingLeft": "0px",
+      "paddingRight": "0px",
+      "position": "relative"
+    },
+    "col0Rect": {
+      "w": 332,
+      "h": 375
+    },
+    "item": {
+      "boxShadow": "rgba(0, 0, 0, 0.16) 0px 3px 6px 0px",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "marginBottom": "30px",
+      "borderTopWidth": "1px",
+      "borderTopStyle": "solid",
+      "borderTopColor": "rgb(221, 221, 221)",
+      "borderBottomWidth": "1px"
+    },
+    "thumb": {
+      "textAlign": "center",
+      "display": "block"
+    },
+    "thumbA": {
+      "display": "block",
+      "overflow": "hidden",
+      "backgroundRepeat": "no-repeat",
+      "backgroundSize": "cover",
+      "transition": "0.3s"
+    },
+    "img": {
+      "display": "block",
+      "width": "330px",
+      "maxWidth": "100%",
+      "height": "180px",
+      "objectFit": "cover",
+      "verticalAlign": "middle"
+    },
+    "imgRect": {
+      "w": 330,
+      "h": 180
+    },
+    "desc": {
+      "position": "relative",
+      "backgroundColor": "rgb(255, 255, 255)"
+    },
+    "date": {
+      "position": "absolute",
+      "top": "-17px",
+      "left": "0px",
+      "display": "block",
+      "width": "132px"
+    },
+    "dateP": {
+      "position": "relative",
+      "margin": "0px",
+      "padding": "0px 0px 0px 14px",
+      "backgroundColor": "rgb(204, 9, 6)",
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "12px",
+      "fontWeight": "600",
+      "lineHeight": "34px",
+      "textTransform": "uppercase",
+      "whiteSpace": "nowrap"
+    },
+    "datePAfter": {
+      "content": "\"\"",
+      "position": "absolute",
+      "right": "-11px",
+      "bottom": "0px",
+      "width": "19px",
+      "height": "34px",
+      "backgroundColor": "rgb(204, 9, 6)",
+      "transform": "matrix(1, 0, -0.36397, 1, 0, 0)"
+    },
+    "inside": {
+      "paddingTop": "40px",
+      "paddingRight": "16px",
+      "paddingBottom": "22px",
+      "paddingLeft": "16px",
+      "backgroundColor": "rgb(255, 255, 255)"
+    },
+    "titlePost": {
+      "margin": "0px 0px 5px",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "20.0228px",
+      "fontWeight": "600",
+      "lineHeight": "24.0274px",
+      "letterSpacing": "normal",
+      "textTransform": "none",
+      "color": "rgb(0, 0, 0)"
+    },
+    "titleA": {
+      "color": "rgb(0, 0, 0)",
+      "textDecorationLine": "none",
+      "fontSize": "15px",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", Barlow, sans-serif",
+      "lineHeight": "18.75px"
+    },
+    "titleARect": {
+      "w": 265,
+      "h": 18
+    },
+    "titlePostRect": {
+      "w": 298,
+      "h": 24
+    },
+    "titleText": {
+      "t": "Tai nghe Bluetooth 5.3 là gì? Top 5 ưu điểm nổi bật"
+    },
+    "excerpt": {
+      "margin": "0px",
+      "fontSize": "16.0485px",
+      "lineHeight": "24.0727px",
+      "color": "rgb(0, 0, 0)",
+      "display": "flow-root",
+      "webkitLineClamp": "3",
+      "overflow": "hidden"
+    },
+    "videoTitle": {
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "20.0742px",
+      "lineHeight": "22.4831px",
+      "textTransform": "uppercase"
+    },
+    "expSection": {
+      "paddingTop": "32px",
+      "backgroundColor": "rgb(255, 255, 255)"
+    },
+    "bannerAds": {
+      "__missing": true
+    }
+  },
+  "576": {
+    "section": {
+      "backgroundColor": "rgb(255, 255, 255)",
+      "paddingTop": "20px",
+      "paddingBottom": "0px",
+      "paddingLeft": "0px",
+      "paddingRight": "0px"
+    },
+    "container": {
+      "maxWidth": "none",
+      "marginLeft": "0px",
+      "paddingLeft": "24px",
+      "paddingRight": "24px"
+    },
+    "containerRect": {
+      "w": 566,
+      "h": 1168
+    },
+    "blockTitle": {
+      "textAlign": "left",
+      "paddingTop": "0px",
+      "paddingBottom": "14px",
+      "paddingLeft": "24px",
+      "paddingRight": "24px",
+      "marginBottom": "0px"
+    },
+    "kicker": {
+      "color": "rgb(111, 111, 111)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", Barlow, sans-serif",
+      "fontSize": "14.1402px",
+      "fontWeight": "900",
+      "lineHeight": "14.1402px",
+      "letterSpacing": "2.12102px",
+      "textTransform": "uppercase",
+      "marginBottom": "12px",
+      "display": "block"
+    },
+    "h2": {
+      "color": "rgb(0, 0, 0)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", Barlow, sans-serif",
+      "fontSize": "30.5786px",
+      "fontWeight": "600",
+      "lineHeight": "36.6943px",
+      "letterSpacing": "normal",
+      "textTransform": "uppercase",
+      "marginTop": "0px",
+      "marginBottom": "0px"
+    },
+    "newsList": {
+      "display": "block"
+    },
+    "row": {
+      "display": "grid",
+      "gap": "16px",
+      "marginLeft": "0px",
+      "marginRight": "0px",
+      "paddingLeft": "0px",
+      "paddingRight": "0px",
+      "gridTemplateColumns": "518px"
+    },
+    "rowOverflow": {
+      "overflowX": "visible",
+      "scrolls": false
+    },
+    "col0": {
+      "width": "518px",
+      "maxWidth": "100%",
+      "paddingLeft": "0px",
+      "paddingRight": "0px",
+      "position": "relative"
+    },
+    "col0Rect": {
+      "w": 518,
+      "h": 353
+    },
+    "item": {
+      "boxShadow": "rgba(0, 0, 0, 0.16) 0px 3px 6px 0px",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "marginBottom": "30px",
+      "borderTopWidth": "1px",
+      "borderTopStyle": "solid",
+      "borderTopColor": "rgb(221, 221, 221)",
+      "borderBottomWidth": "1px"
+    },
+    "thumb": {
+      "textAlign": "center",
+      "display": "block"
+    },
+    "thumbA": {
+      "display": "block",
+      "overflow": "hidden",
+      "backgroundRepeat": "no-repeat",
+      "backgroundSize": "cover",
+      "transition": "0.3s"
+    },
+    "img": {
+      "display": "block",
+      "width": "516px",
+      "maxWidth": "100%",
+      "height": "180px",
+      "objectFit": "cover",
+      "verticalAlign": "middle"
+    },
+    "imgRect": {
+      "w": 516,
+      "h": 180
+    },
+    "desc": {
+      "position": "relative",
+      "backgroundColor": "rgb(255, 255, 255)"
+    },
+    "date": {
+      "position": "absolute",
+      "top": "-17px",
+      "left": "0px",
+      "display": "block",
+      "width": "132px"
+    },
+    "dateP": {
+      "position": "relative",
+      "margin": "0px",
+      "padding": "0px 0px 0px 14px",
+      "backgroundColor": "rgb(204, 9, 6)",
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "12px",
+      "fontWeight": "600",
+      "lineHeight": "34px",
+      "textTransform": "uppercase",
+      "whiteSpace": "nowrap"
+    },
+    "datePAfter": {
+      "content": "\"\"",
+      "position": "absolute",
+      "right": "-11px",
+      "bottom": "0px",
+      "width": "19px",
+      "height": "34px",
+      "backgroundColor": "rgb(204, 9, 6)",
+      "transform": "matrix(1, 0, -0.36397, 1, 0, 0)"
+    },
+    "inside": {
+      "paddingTop": "40px",
+      "paddingRight": "16px",
+      "paddingBottom": "22px",
+      "paddingLeft": "16px",
+      "backgroundColor": "rgb(255, 255, 255)"
+    },
+    "titlePost": {
+      "margin": "0px 0px 5px",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "20.1939px",
+      "fontWeight": "600",
+      "lineHeight": "24.2327px",
+      "letterSpacing": "normal",
+      "textTransform": "none",
+      "color": "rgb(0, 0, 0)"
+    },
+    "titleA": {
+      "color": "rgb(0, 0, 0)",
+      "textDecorationLine": "none",
+      "fontSize": "15px",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", Barlow, sans-serif",
+      "lineHeight": "18.75px"
+    },
+    "titleARect": {
+      "w": 265,
+      "h": 18
+    },
+    "titlePostRect": {
+      "w": 484,
+      "h": 24
+    },
+    "titleText": {
+      "t": "Tai nghe Bluetooth 5.3 là gì? Top 5 ưu điểm nổi bật"
+    },
+    "excerpt": {
+      "margin": "0px",
+      "fontSize": "16.56px",
+      "lineHeight": "24.84px",
+      "color": "rgb(0, 0, 0)",
+      "display": "flow-root",
+      "webkitLineClamp": "3",
+      "overflow": "hidden"
+    },
+    "videoTitle": {
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "20.9261px",
+      "lineHeight": "23.4372px",
+      "textTransform": "uppercase"
+    },
+    "expSection": {
+      "paddingTop": "32px",
+      "backgroundColor": "rgb(255, 255, 255)"
+    },
+    "bannerAds": {
+      "__missing": true
+    }
+  },
+  "767": {
+    "section": {
+      "backgroundColor": "rgb(255, 255, 255)",
+      "paddingTop": "20px",
+      "paddingBottom": "0px",
+      "paddingLeft": "0px",
+      "paddingRight": "0px"
+    },
+    "container": {
+      "maxWidth": "none",
+      "marginLeft": "0px",
+      "paddingLeft": "24px",
+      "paddingRight": "24px"
+    },
+    "containerRect": {
+      "w": 757,
+      "h": 1177
+    },
+    "blockTitle": {
+      "textAlign": "left",
+      "paddingTop": "0px",
+      "paddingBottom": "14px",
+      "paddingLeft": "24px",
+      "paddingRight": "24px",
+      "marginBottom": "0px"
+    },
+    "kicker": {
+      "color": "rgb(111, 111, 111)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", Barlow, sans-serif",
+      "fontSize": "14.992px",
+      "fontWeight": "900",
+      "lineHeight": "14.992px",
+      "letterSpacing": "2.2488px",
+      "textTransform": "uppercase",
+      "marginBottom": "12px",
+      "display": "block"
+    },
+    "h2": {
+      "color": "rgb(0, 0, 0)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", Barlow, sans-serif",
+      "fontSize": "33.0253px",
+      "fontWeight": "600",
+      "lineHeight": "39.6303px",
+      "letterSpacing": "normal",
+      "textTransform": "uppercase",
+      "marginTop": "0px",
+      "marginBottom": "0px"
+    },
+    "newsList": {
+      "display": "block"
+    },
+    "row": {
+      "display": "grid",
+      "gap": "16px",
+      "marginLeft": "0px",
+      "marginRight": "0px",
+      "paddingLeft": "0px",
+      "paddingRight": "0px",
+      "gridTemplateColumns": "709px"
+    },
+    "rowOverflow": {
+      "overflowX": "visible",
+      "scrolls": false
+    },
+    "col0": {
+      "width": "709px",
+      "maxWidth": "100%",
+      "paddingLeft": "0px",
+      "paddingRight": "0px",
+      "position": "relative"
+    },
+    "col0Rect": {
+      "w": 709,
+      "h": 355
+    },
+    "item": {
+      "boxShadow": "rgba(0, 0, 0, 0.16) 0px 3px 6px 0px",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "marginBottom": "30px",
+      "borderTopWidth": "1px",
+      "borderTopStyle": "solid",
+      "borderTopColor": "rgb(221, 221, 221)",
+      "borderBottomWidth": "1px"
+    },
+    "thumb": {
+      "textAlign": "center",
+      "display": "block"
+    },
+    "thumbA": {
+      "display": "block",
+      "overflow": "hidden",
+      "backgroundRepeat": "no-repeat",
+      "backgroundSize": "cover",
+      "transition": "0.3s"
+    },
+    "img": {
+      "display": "block",
+      "width": "707px",
+      "maxWidth": "100%",
+      "height": "180px",
+      "objectFit": "cover",
+      "verticalAlign": "middle"
+    },
+    "imgRect": {
+      "w": 707,
+      "h": 180
+    },
+    "desc": {
+      "position": "relative",
+      "backgroundColor": "rgb(255, 255, 255)"
+    },
+    "date": {
+      "position": "absolute",
+      "top": "-17px",
+      "left": "0px",
+      "display": "block",
+      "width": "132px"
+    },
+    "dateP": {
+      "position": "relative",
+      "margin": "0px",
+      "padding": "0px 0px 0px 14px",
+      "backgroundColor": "rgb(204, 9, 6)",
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "12px",
+      "fontWeight": "600",
+      "lineHeight": "34px",
+      "textTransform": "uppercase",
+      "whiteSpace": "nowrap"
+    },
+    "datePAfter": {
+      "content": "\"\"",
+      "position": "absolute",
+      "right": "-11px",
+      "bottom": "0px",
+      "width": "19px",
+      "height": "34px",
+      "backgroundColor": "rgb(204, 9, 6)",
+      "transform": "matrix(1, 0, -0.36397, 1, 0, 0)"
+    },
+    "inside": {
+      "paddingTop": "40px",
+      "paddingRight": "16px",
+      "paddingBottom": "22px",
+      "paddingLeft": "16px",
+      "backgroundColor": "rgb(255, 255, 255)"
+    },
+    "titlePost": {
+      "margin": "0px 0px 5px",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "20.3696px",
+      "fontWeight": "600",
+      "lineHeight": "24.4436px",
+      "letterSpacing": "normal",
+      "textTransform": "none",
+      "color": "rgb(0, 0, 0)"
+    },
+    "titleA": {
+      "color": "rgb(0, 0, 0)",
+      "textDecorationLine": "none",
+      "fontSize": "15px",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", Barlow, sans-serif",
+      "lineHeight": "18.75px"
+    },
+    "titleARect": {
+      "w": 265,
+      "h": 18
+    },
+    "titlePostRect": {
+      "w": 675,
+      "h": 24
+    },
+    "titleText": {
+      "t": "Tai nghe Bluetooth 5.3 là gì? Top 5 ưu điểm nổi bật"
+    },
+    "excerpt": {
+      "margin": "0px",
+      "fontSize": "17.0853px",
+      "lineHeight": "25.6279px",
+      "color": "rgb(0, 0, 0)",
+      "display": "flow-root",
+      "webkitLineClamp": "3",
+      "overflow": "hidden"
+    },
+    "videoTitle": {
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "21.8009px",
+      "lineHeight": "24.417px",
+      "textTransform": "uppercase"
+    },
+    "expSection": {
+      "paddingTop": "32px",
+      "backgroundColor": "rgb(255, 255, 255)"
+    },
+    "bannerAds": {
+      "__missing": true
+    }
+  },
+  "768": {
+    "section": {
+      "backgroundColor": "rgb(255, 255, 255)",
+      "paddingTop": "52px",
+      "paddingBottom": "0px",
+      "paddingLeft": "0px",
+      "paddingRight": "0px"
+    },
+    "container": {
+      "maxWidth": "1200px",
+      "marginLeft": "0px",
+      "paddingLeft": "15px",
+      "paddingRight": "15px"
+    },
+    "containerRect": {
+      "w": 758,
+      "h": 662
+    },
+    "blockTitle": {
+      "textAlign": "center",
+      "paddingTop": "0px",
+      "paddingBottom": "40px",
+      "paddingLeft": "0px",
+      "paddingRight": "0px",
+      "marginBottom": "0px"
+    },
+    "kicker": {
+      "color": "rgb(111, 111, 111)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", Barlow, sans-serif",
+      "fontSize": "14.9965px",
+      "fontWeight": "900",
+      "lineHeight": "14.9965px",
+      "letterSpacing": "2.24947px",
+      "textTransform": "uppercase",
+      "marginBottom": "12px",
+      "display": "block"
+    },
+    "h2": {
+      "color": "rgb(0, 0, 0)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", Barlow, sans-serif",
+      "fontSize": "33.0381px",
+      "fontWeight": "600",
+      "lineHeight": "37.9938px",
+      "letterSpacing": "normal",
+      "textTransform": "uppercase",
+      "marginTop": "0px",
+      "marginBottom": "0px"
+    },
+    "newsList": {
+      "display": "block"
+    },
+    "row": {
+      "display": "flex",
+      "gap": "normal",
+      "marginLeft": "-15px",
+      "marginRight": "-15px",
+      "paddingLeft": "0px",
+      "paddingRight": "0px",
+      "gridTemplateColumns": "none"
+    },
+    "rowOverflow": {
+      "overflowX": "visible",
+      "scrolls": false
+    },
+    "col0": {
+      "width": "252.656px",
+      "maxWidth": "33.3333%",
+      "paddingLeft": "15px",
+      "paddingRight": "15px",
+      "position": "relative"
+    },
+    "col0Rect": {
+      "w": 253,
+      "h": 557
+    },
+    "item": {
+      "boxShadow": "rgba(0, 0, 0, 0.16) 0px 3px 6px 0px",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "marginBottom": "30px",
+      "borderTopWidth": "0px",
+      "borderTopStyle": "solid",
+      "borderTopColor": "rgb(0, 0, 0)",
+      "borderBottomWidth": "0px"
+    },
+    "thumb": {
+      "textAlign": "center",
+      "display": "block"
+    },
+    "thumbA": {
+      "display": "block",
+      "overflow": "hidden",
+      "backgroundRepeat": "no-repeat",
+      "backgroundSize": "cover",
+      "transition": "0.3s"
+    },
+    "img": {
+      "display": "block",
+      "width": "222.656px",
+      "maxWidth": "100%",
+      "height": "200px",
+      "objectFit": "cover",
+      "verticalAlign": "middle"
+    },
+    "imgRect": {
+      "w": 223,
+      "h": 200
+    },
+    "desc": {
+      "position": "relative",
+      "backgroundColor": "rgba(0, 0, 0, 0)"
+    },
+    "date": {
+      "position": "absolute",
+      "top": "-21px",
+      "left": "0px",
+      "display": "block",
+      "width": "170px"
+    },
+    "dateP": {
+      "position": "relative",
+      "margin": "0px",
+      "padding": "0px 0px 0px 20px",
+      "backgroundColor": "rgb(204, 9, 6)",
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "14px",
+      "fontWeight": "600",
+      "lineHeight": "42px",
+      "textTransform": "uppercase",
+      "whiteSpace": "nowrap"
+    },
+    "datePAfter": {
+      "content": "\"\"",
+      "position": "absolute",
+      "right": "-15px",
+      "bottom": "0px",
+      "width": "25px",
+      "height": "42px",
+      "backgroundColor": "rgb(204, 9, 6)",
+      "transform": "matrix(1, 0, -0.36397, 1, 0, 0)"
+    },
+    "inside": {
+      "paddingTop": "40px",
+      "paddingRight": "20px",
+      "paddingBottom": "30px",
+      "paddingLeft": "20px",
+      "backgroundColor": "rgba(0, 0, 0, 0)"
+    },
+    "titlePost": {
+      "margin": "0px 0px 5px",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "20.3706px",
+      "fontWeight": "600",
+      "lineHeight": "24.4447px",
+      "letterSpacing": "normal",
+      "textTransform": "none",
+      "color": "rgb(0, 0, 0)"
+    },
+    "titleA": {
+      "color": "rgb(0, 0, 0)",
+      "textDecorationLine": "none",
+      "fontSize": "20.3706px",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "lineHeight": "24.4447px"
+    },
+    "titleARect": {
+      "w": 179,
+      "h": 48
+    },
+    "titlePostRect": {
+      "w": 183,
+      "h": 49
+    },
+    "titleText": {
+      "t": "Tai nghe Bluetooth 5.3 là gì? Top 5 ưu điểm nổi bật"
+    },
+    "excerpt": {
+      "margin": "0px",
+      "fontSize": "17.088px",
+      "lineHeight": "25.632px",
+      "color": "rgb(0, 0, 0)",
+      "display": "block",
+      "webkitLineClamp": "none",
+      "overflow": "visible"
+    },
+    "videoTitle": {
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "26.8698px",
+      "lineHeight": "29.5567px",
+      "textTransform": "uppercase"
+    },
+    "expSection": {
+      "paddingTop": "72px",
+      "backgroundColor": "rgb(255, 255, 255)"
+    },
+    "bannerAds": {
+      "__missing": true
+    }
+  },
+  "800": {
+    "section": {
+      "backgroundColor": "rgb(255, 255, 255)",
+      "paddingTop": "52px",
+      "paddingBottom": "0px",
+      "paddingLeft": "0px",
+      "paddingRight": "0px"
+    },
+    "container": {
+      "maxWidth": "1200px",
+      "marginLeft": "0px",
+      "paddingLeft": "15px",
+      "paddingRight": "15px"
+    },
+    "containerRect": {
+      "w": 790,
+      "h": 663
+    },
+    "blockTitle": {
+      "textAlign": "center",
+      "paddingTop": "0px",
+      "paddingBottom": "40px",
+      "paddingLeft": "0px",
+      "paddingRight": "0px",
+      "marginBottom": "0px"
+    },
+    "kicker": {
+      "color": "rgb(111, 111, 111)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", Barlow, sans-serif",
+      "fontSize": "15.1392px",
+      "fontWeight": "900",
+      "lineHeight": "15.1392px",
+      "letterSpacing": "2.27088px",
+      "textTransform": "uppercase",
+      "marginBottom": "12px",
+      "display": "block"
+    },
+    "h2": {
+      "color": "rgb(0, 0, 0)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", Barlow, sans-serif",
+      "fontSize": "33.448px",
+      "fontWeight": "600",
+      "lineHeight": "38.4652px",
+      "letterSpacing": "normal",
+      "textTransform": "uppercase",
+      "marginTop": "0px",
+      "marginBottom": "0px"
+    },
+    "newsList": {
+      "display": "block"
+    },
+    "row": {
+      "display": "flex",
+      "gap": "normal",
+      "marginLeft": "-15px",
+      "marginRight": "-15px",
+      "paddingLeft": "0px",
+      "paddingRight": "0px",
+      "gridTemplateColumns": "none"
+    },
+    "rowOverflow": {
+      "overflowX": "visible",
+      "scrolls": false
+    },
+    "col0": {
+      "width": "263.328px",
+      "maxWidth": "33.3333%",
+      "paddingLeft": "15px",
+      "paddingRight": "15px",
+      "position": "relative"
+    },
+    "col0Rect": {
+      "w": 263,
+      "h": 557
+    },
+    "item": {
+      "boxShadow": "rgba(0, 0, 0, 0.16) 0px 3px 6px 0px",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "marginBottom": "30px",
+      "borderTopWidth": "0px",
+      "borderTopStyle": "solid",
+      "borderTopColor": "rgb(0, 0, 0)",
+      "borderBottomWidth": "0px"
+    },
+    "thumb": {
+      "textAlign": "center",
+      "display": "block"
+    },
+    "thumbA": {
+      "display": "block",
+      "overflow": "hidden",
+      "backgroundRepeat": "no-repeat",
+      "backgroundSize": "cover",
+      "transition": "0.3s"
+    },
+    "img": {
+      "display": "block",
+      "width": "233.328px",
+      "maxWidth": "100%",
+      "height": "200px",
+      "objectFit": "cover",
+      "verticalAlign": "middle"
+    },
+    "imgRect": {
+      "w": 233,
+      "h": 200
+    },
+    "desc": {
+      "position": "relative",
+      "backgroundColor": "rgba(0, 0, 0, 0)"
+    },
+    "date": {
+      "position": "absolute",
+      "top": "-21px",
+      "left": "0px",
+      "display": "block",
+      "width": "170px"
+    },
+    "dateP": {
+      "position": "relative",
+      "margin": "0px",
+      "padding": "0px 0px 0px 20px",
+      "backgroundColor": "rgb(204, 9, 6)",
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "14px",
+      "fontWeight": "600",
+      "lineHeight": "42px",
+      "textTransform": "uppercase",
+      "whiteSpace": "nowrap"
+    },
+    "datePAfter": {
+      "content": "\"\"",
+      "position": "absolute",
+      "right": "-15px",
+      "bottom": "0px",
+      "width": "25px",
+      "height": "42px",
+      "backgroundColor": "rgb(204, 9, 6)",
+      "transform": "matrix(1, 0, -0.36397, 1, 0, 0)"
+    },
+    "inside": {
+      "paddingTop": "40px",
+      "paddingRight": "20px",
+      "paddingBottom": "30px",
+      "paddingLeft": "20px",
+      "backgroundColor": "rgba(0, 0, 0, 0)"
+    },
+    "titlePost": {
+      "margin": "0px 0px 5px",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "20.4px",
+      "fontWeight": "600",
+      "lineHeight": "24.48px",
+      "letterSpacing": "normal",
+      "textTransform": "none",
+      "color": "rgb(0, 0, 0)"
+    },
+    "titleA": {
+      "color": "rgb(0, 0, 0)",
+      "textDecorationLine": "none",
+      "fontSize": "20.4px",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "lineHeight": "24.48px"
+    },
+    "titleARect": {
+      "w": 179,
+      "h": 48
+    },
+    "titlePostRect": {
+      "w": 193,
+      "h": 49
+    },
+    "titleText": {
+      "t": "Tai nghe Bluetooth 5.3 là gì? Top 5 ưu điểm nổi bật"
+    },
+    "excerpt": {
+      "margin": "0px",
+      "fontSize": "17.176px",
+      "lineHeight": "25.764px",
+      "color": "rgb(0, 0, 0)",
+      "display": "block",
+      "webkitLineClamp": "none",
+      "overflow": "visible"
+    },
+    "videoTitle": {
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "27.104px",
+      "lineHeight": "29.8144px",
+      "textTransform": "uppercase"
+    },
+    "expSection": {
+      "paddingTop": "72px",
+      "backgroundColor": "rgb(255, 255, 255)"
+    },
+    "bannerAds": {
+      "__missing": true
+    }
+  },
+  "992": {
+    "section": {
+      "backgroundColor": "rgb(255, 255, 255)",
+      "paddingTop": "52px",
+      "paddingBottom": "0px",
+      "paddingLeft": "0px",
+      "paddingRight": "0px"
+    },
+    "container": {
+      "maxWidth": "1200px",
+      "marginLeft": "0px",
+      "paddingLeft": "15px",
+      "paddingRight": "15px"
+    },
+    "containerRect": {
+      "w": 982,
+      "h": 610
+    },
+    "blockTitle": {
+      "textAlign": "center",
+      "paddingTop": "0px",
+      "paddingBottom": "40px",
+      "paddingLeft": "0px",
+      "paddingRight": "0px",
+      "marginBottom": "0px"
+    },
+    "kicker": {
+      "color": "rgb(111, 111, 111)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", Barlow, sans-serif",
+      "fontSize": "15.9955px",
+      "fontWeight": "900",
+      "lineHeight": "15.9955px",
+      "letterSpacing": "2.39933px",
+      "textTransform": "uppercase",
+      "marginBottom": "12px",
+      "display": "block"
+    },
+    "h2": {
+      "color": "rgb(0, 0, 0)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", Barlow, sans-serif",
+      "fontSize": "35.9075px",
+      "fontWeight": "600",
+      "lineHeight": "41.2936px",
+      "letterSpacing": "normal",
+      "textTransform": "uppercase",
+      "marginTop": "0px",
+      "marginBottom": "0px"
+    },
+    "newsList": {
+      "display": "block"
+    },
+    "row": {
+      "display": "flex",
+      "gap": "normal",
+      "marginLeft": "-15px",
+      "marginRight": "-15px",
+      "paddingLeft": "0px",
+      "paddingRight": "0px",
+      "gridTemplateColumns": "none"
+    },
+    "rowOverflow": {
+      "overflowX": "visible",
+      "scrolls": false
+    },
+    "col0": {
+      "width": "327.328px",
+      "maxWidth": "33.3333%",
+      "paddingLeft": "15px",
+      "paddingRight": "15px",
+      "position": "relative"
+    },
+    "col0Rect": {
+      "w": 327,
+      "h": 500
+    },
+    "item": {
+      "boxShadow": "rgba(0, 0, 0, 0.16) 0px 3px 6px 0px",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "marginBottom": "30px",
+      "borderTopWidth": "0px",
+      "borderTopStyle": "solid",
+      "borderTopColor": "rgb(0, 0, 0)",
+      "borderBottomWidth": "0px"
+    },
+    "thumb": {
+      "textAlign": "center",
+      "display": "block"
+    },
+    "thumbA": {
+      "display": "block",
+      "overflow": "hidden",
+      "backgroundRepeat": "no-repeat",
+      "backgroundSize": "cover",
+      "transition": "0.3s"
+    },
+    "img": {
+      "display": "block",
+      "width": "297.328px",
+      "maxWidth": "100%",
+      "height": "215px",
+      "objectFit": "cover",
+      "verticalAlign": "middle"
+    },
+    "imgRect": {
+      "w": 297,
+      "h": 215
+    },
+    "desc": {
+      "position": "relative",
+      "backgroundColor": "rgba(0, 0, 0, 0)"
+    },
+    "date": {
+      "position": "absolute",
+      "top": "-21px",
+      "left": "0px",
+      "display": "block",
+      "width": "170px"
+    },
+    "dateP": {
+      "position": "relative",
+      "margin": "0px",
+      "padding": "0px 0px 0px 20px",
+      "backgroundColor": "rgb(204, 9, 6)",
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "14px",
+      "fontWeight": "600",
+      "lineHeight": "42px",
+      "textTransform": "uppercase",
+      "whiteSpace": "nowrap"
+    },
+    "datePAfter": {
+      "content": "\"\"",
+      "position": "absolute",
+      "right": "-15px",
+      "bottom": "0px",
+      "width": "25px",
+      "height": "42px",
+      "backgroundColor": "rgb(204, 9, 6)",
+      "transform": "matrix(1, 0, -0.36397, 1, 0, 0)"
+    },
+    "inside": {
+      "paddingTop": "40px",
+      "paddingRight": "20px",
+      "paddingBottom": "30px",
+      "paddingLeft": "20px",
+      "backgroundColor": "rgba(0, 0, 0, 0)"
+    },
+    "titlePost": {
+      "margin": "0px 0px 5px",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "20.5766px",
+      "fontWeight": "600",
+      "lineHeight": "24.692px",
+      "letterSpacing": "normal",
+      "textTransform": "none",
+      "color": "rgb(0, 0, 0)"
+    },
+    "titleA": {
+      "color": "rgb(0, 0, 0)",
+      "textDecorationLine": "none",
+      "fontSize": "20.5766px",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "lineHeight": "24.692px"
+    },
+    "titleARect": {
+      "w": 247,
+      "h": 50
+    },
+    "titlePostRect": {
+      "w": 257,
+      "h": 49
+    },
+    "titleText": {
+      "t": "Tai nghe Bluetooth 5.3 là gì? Top 5 ưu điểm nổi bật"
+    },
+    "excerpt": {
+      "margin": "0px",
+      "fontSize": "17.704px",
+      "lineHeight": "26.556px",
+      "color": "rgb(0, 0, 0)",
+      "display": "block",
+      "webkitLineClamp": "none",
+      "overflow": "visible"
+    },
+    "videoTitle": {
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "28.5094px",
+      "lineHeight": "31.3604px",
+      "textTransform": "uppercase"
+    },
+    "expSection": {
+      "paddingTop": "72px",
+      "backgroundColor": "rgb(255, 255, 255)"
+    },
+    "bannerAds": {
+      "__missing": true
+    }
+  },
+  "1280": {
+    "section": {
+      "backgroundColor": "rgb(255, 255, 255)",
+      "paddingTop": "60px",
+      "paddingBottom": "0px",
+      "paddingLeft": "0px",
+      "paddingRight": "0px"
+    },
+    "container": {
+      "maxWidth": "1200px",
+      "marginLeft": "35px",
+      "paddingLeft": "15px",
+      "paddingRight": "15px"
+    },
+    "containerRect": {
+      "w": 1200,
+      "h": 596
+    },
+    "blockTitle": {
+      "textAlign": "center",
+      "paddingTop": "0px",
+      "paddingBottom": "40px",
+      "paddingLeft": "0px",
+      "paddingRight": "0px",
+      "marginBottom": "0px"
+    },
+    "kicker": {
+      "color": "rgb(111, 111, 111)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", Barlow, sans-serif",
+      "fontSize": "17.28px",
+      "fontWeight": "900",
+      "lineHeight": "17.28px",
+      "letterSpacing": "2.592px",
+      "textTransform": "uppercase",
+      "marginBottom": "12px",
+      "display": "block"
+    },
+    "h2": {
+      "color": "rgb(0, 0, 0)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", Barlow, sans-serif",
+      "fontSize": "39.5968px",
+      "fontWeight": "600",
+      "lineHeight": "45.5363px",
+      "letterSpacing": "normal",
+      "textTransform": "uppercase",
+      "marginTop": "0px",
+      "marginBottom": "0px"
+    },
+    "newsList": {
+      "display": "block"
+    },
+    "row": {
+      "display": "flex",
+      "gap": "normal",
+      "marginLeft": "-15px",
+      "marginRight": "-15px",
+      "paddingLeft": "0px",
+      "paddingRight": "0px",
+      "gridTemplateColumns": "none"
+    },
+    "rowOverflow": {
+      "overflowX": "visible",
+      "scrolls": false
+    },
+    "col0": {
+      "width": "399.984px",
+      "maxWidth": "33.3333%",
+      "paddingLeft": "15px",
+      "paddingRight": "15px",
+      "position": "relative"
+    },
+    "col0Rect": {
+      "w": 400,
+      "h": 481
+    },
+    "item": {
+      "boxShadow": "rgba(0, 0, 0, 0.16) 0px 3px 6px 0px",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "marginBottom": "30px",
+      "borderTopWidth": "0px",
+      "borderTopStyle": "solid",
+      "borderTopColor": "rgb(0, 0, 0)",
+      "borderBottomWidth": "0px"
+    },
+    "thumb": {
+      "textAlign": "center",
+      "display": "block"
+    },
+    "thumbA": {
+      "display": "block",
+      "overflow": "hidden",
+      "backgroundRepeat": "no-repeat",
+      "backgroundSize": "cover",
+      "transition": "0.3s"
+    },
+    "img": {
+      "display": "block",
+      "width": "369.984px",
+      "maxWidth": "100%",
+      "height": "215px",
+      "objectFit": "cover",
+      "verticalAlign": "middle"
+    },
+    "imgRect": {
+      "w": 370,
+      "h": 215
+    },
+    "desc": {
+      "position": "relative",
+      "backgroundColor": "rgba(0, 0, 0, 0)"
+    },
+    "date": {
+      "position": "absolute",
+      "top": "-21px",
+      "left": "0px",
+      "display": "block",
+      "width": "170px"
+    },
+    "dateP": {
+      "position": "relative",
+      "margin": "0px",
+      "padding": "0px 0px 0px 20px",
+      "backgroundColor": "rgb(204, 9, 6)",
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "14px",
+      "fontWeight": "600",
+      "lineHeight": "42px",
+      "textTransform": "uppercase",
+      "whiteSpace": "nowrap"
+    },
+    "datePAfter": {
+      "content": "\"\"",
+      "position": "absolute",
+      "right": "-15px",
+      "bottom": "0px",
+      "width": "25px",
+      "height": "42px",
+      "backgroundColor": "rgb(204, 9, 6)",
+      "transform": "matrix(1, 0, -0.36397, 1, 0, 0)"
+    },
+    "inside": {
+      "paddingTop": "40px",
+      "paddingRight": "20px",
+      "paddingBottom": "30px",
+      "paddingLeft": "20px",
+      "backgroundColor": "rgba(0, 0, 0, 0)"
+    },
+    "titlePost": {
+      "margin": "0px 0px 5px",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "20.8416px",
+      "fontWeight": "600",
+      "lineHeight": "25.0099px",
+      "letterSpacing": "normal",
+      "textTransform": "none",
+      "color": "rgb(0, 0, 0)"
+    },
+    "titleA": {
+      "color": "rgb(0, 0, 0)",
+      "textDecorationLine": "none",
+      "fontSize": "20.8416px",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "lineHeight": "25.0099px"
+    },
+    "titleARect": {
+      "w": 313,
+      "h": 50
+    },
+    "titlePostRect": {
+      "w": 330,
+      "h": 50
+    },
+    "titleText": {
+      "t": "Tai nghe Bluetooth 5.3 là gì? Top 5 ưu điểm nổi bật"
+    },
+    "excerpt": {
+      "margin": "0px",
+      "fontSize": "18.496px",
+      "lineHeight": "27.744px",
+      "color": "rgb(0, 0, 0)",
+      "display": "block",
+      "webkitLineClamp": "none",
+      "overflow": "visible"
+    },
+    "videoTitle": {
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "40.768px",
+      "lineHeight": "45.6602px",
+      "textTransform": "uppercase"
+    },
+    "expSection": {
+      "paddingTop": "100px",
+      "backgroundColor": "rgb(255, 255, 255)"
+    },
+    "bannerAds": {
+      "__missing": true
+    }
+  },
+  "1536": {
+    "section": {
+      "backgroundColor": "rgb(255, 255, 255)",
+      "paddingTop": "60px",
+      "paddingBottom": "0px",
+      "paddingLeft": "0px",
+      "paddingRight": "0px"
+    },
+    "container": {
+      "maxWidth": "1360px",
+      "marginLeft": "83px",
+      "paddingLeft": "15px",
+      "paddingRight": "15px"
+    },
+    "containerRect": {
+      "w": 1360,
+      "h": 576
+    },
+    "blockTitle": {
+      "textAlign": "center",
+      "paddingTop": "0px",
+      "paddingBottom": "40px",
+      "paddingLeft": "0px",
+      "paddingRight": "0px",
+      "marginBottom": "0px"
+    },
+    "kicker": {
+      "color": "rgb(111, 111, 111)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", Barlow, sans-serif",
+      "fontSize": "18px",
+      "fontWeight": "900",
+      "lineHeight": "18px",
+      "letterSpacing": "2.7px",
+      "textTransform": "uppercase",
+      "marginBottom": "12px",
+      "display": "block"
+    },
+    "h2": {
+      "color": "rgb(0, 0, 0)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", Barlow, sans-serif",
+      "fontSize": "42.8762px",
+      "fontWeight": "600",
+      "lineHeight": "49.3076px",
+      "letterSpacing": "normal",
+      "textTransform": "uppercase",
+      "marginTop": "0px",
+      "marginBottom": "0px"
+    },
+    "newsList": {
+      "display": "block"
+    },
+    "row": {
+      "display": "flex",
+      "gap": "normal",
+      "marginLeft": "-15px",
+      "marginRight": "-15px",
+      "paddingLeft": "0px",
+      "paddingRight": "0px",
+      "gridTemplateColumns": "none"
+    },
+    "rowOverflow": {
+      "overflowX": "visible",
+      "scrolls": false
+    },
+    "col0": {
+      "width": "453.328px",
+      "maxWidth": "33.3333%",
+      "paddingLeft": "15px",
+      "paddingRight": "15px",
+      "position": "relative"
+    },
+    "col0Rect": {
+      "w": 453,
+      "h": 457
+    },
+    "item": {
+      "boxShadow": "rgba(0, 0, 0, 0.16) 0px 3px 6px 0px",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "marginBottom": "30px",
+      "borderTopWidth": "0px",
+      "borderTopStyle": "solid",
+      "borderTopColor": "rgb(0, 0, 0)",
+      "borderBottomWidth": "0px"
+    },
+    "thumb": {
+      "textAlign": "center",
+      "display": "block"
+    },
+    "thumbA": {
+      "display": "block",
+      "overflow": "hidden",
+      "backgroundRepeat": "no-repeat",
+      "backgroundSize": "cover",
+      "transition": "0.3s"
+    },
+    "img": {
+      "display": "block",
+      "width": "423.328px",
+      "maxWidth": "100%",
+      "height": "215px",
+      "objectFit": "cover",
+      "verticalAlign": "middle"
+    },
+    "imgRect": {
+      "w": 423,
+      "h": 215
+    },
+    "desc": {
+      "position": "relative",
+      "backgroundColor": "rgba(0, 0, 0, 0)"
+    },
+    "date": {
+      "position": "absolute",
+      "top": "-21px",
+      "left": "0px",
+      "display": "block",
+      "width": "170px"
+    },
+    "dateP": {
+      "position": "relative",
+      "margin": "0px",
+      "padding": "0px 0px 0px 20px",
+      "backgroundColor": "rgb(204, 9, 6)",
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "14px",
+      "fontWeight": "600",
+      "lineHeight": "42px",
+      "textTransform": "uppercase",
+      "whiteSpace": "nowrap"
+    },
+    "datePAfter": {
+      "content": "\"\"",
+      "position": "absolute",
+      "right": "-15px",
+      "bottom": "0px",
+      "width": "25px",
+      "height": "42px",
+      "backgroundColor": "rgb(204, 9, 6)",
+      "transform": "matrix(1, 0, -0.36397, 1, 0, 0)"
+    },
+    "inside": {
+      "paddingTop": "40px",
+      "paddingRight": "20px",
+      "paddingBottom": "30px",
+      "paddingLeft": "20px",
+      "backgroundColor": "rgba(0, 0, 0, 0)"
+    },
+    "titlePost": {
+      "margin": "0px 0px 5px",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "21.0771px",
+      "fontWeight": "600",
+      "lineHeight": "25.2925px",
+      "letterSpacing": "normal",
+      "textTransform": "none",
+      "color": "rgb(0, 0, 0)"
+    },
+    "titleA": {
+      "color": "rgb(0, 0, 0)",
+      "textDecorationLine": "none",
+      "fontSize": "21.0771px",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "lineHeight": "25.2925px"
+    },
+    "titleARect": {
+      "w": 372,
+      "h": 25
+    },
+    "titlePostRect": {
+      "w": 383,
+      "h": 25
+    },
+    "titleText": {
+      "t": "Tai nghe Bluetooth 5.3 là gì? Top 5 ưu điểm nổi bật"
+    },
+    "excerpt": {
+      "margin": "0px",
+      "fontSize": "19.2px",
+      "lineHeight": "28.8px",
+      "color": "rgb(0, 0, 0)",
+      "display": "block",
+      "webkitLineClamp": "none",
+      "overflow": "visible"
+    },
+    "videoTitle": {
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "43.8144px",
+      "lineHeight": "49.0721px",
+      "textTransform": "uppercase"
+    },
+    "expSection": {
+      "paddingTop": "100px",
+      "backgroundColor": "rgb(255, 255, 255)"
+    },
+    "bannerAds": {
+      "__missing": true
+    }
+  },
+  "1920": {
+    "section": {
+      "backgroundColor": "rgb(255, 255, 255)",
+      "paddingTop": "60px",
+      "paddingBottom": "0px",
+      "paddingLeft": "0px",
+      "paddingRight": "0px"
+    },
+    "container": {
+      "maxWidth": "none",
+      "marginLeft": "155px",
+      "paddingLeft": "15px",
+      "paddingRight": "15px"
+    },
+    "containerRect": {
+      "w": 1600,
+      "h": 663
+    },
+    "blockTitle": {
+      "textAlign": "center",
+      "paddingTop": "0px",
+      "paddingBottom": "40px",
+      "paddingLeft": "0px",
+      "paddingRight": "0px",
+      "marginBottom": "0px"
+    },
+    "kicker": {
+      "color": "rgb(111, 111, 111)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", Barlow, sans-serif",
+      "fontSize": "18px",
+      "fontWeight": "900",
+      "lineHeight": "18px",
+      "letterSpacing": "2.7px",
+      "textTransform": "uppercase",
+      "marginBottom": "12px",
+      "display": "block"
+    },
+    "h2": {
+      "color": "rgb(0, 0, 0)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", Barlow, sans-serif",
+      "fontSize": "47.7952px",
+      "fontWeight": "600",
+      "lineHeight": "54.9645px",
+      "letterSpacing": "normal",
+      "textTransform": "uppercase",
+      "marginTop": "0px",
+      "marginBottom": "0px"
+    },
+    "newsList": {
+      "display": "block"
+    },
+    "row": {
+      "display": "flex",
+      "gap": "normal",
+      "marginLeft": "-15px",
+      "marginRight": "-15px",
+      "paddingLeft": "0px",
+      "paddingRight": "0px",
+      "gridTemplateColumns": "none"
+    },
+    "rowOverflow": {
+      "overflowX": "visible",
+      "scrolls": false
+    },
+    "col0": {
+      "width": "533.328px",
+      "maxWidth": "33.3333%",
+      "paddingLeft": "15px",
+      "paddingRight": "15px",
+      "position": "relative"
+    },
+    "col0Rect": {
+      "w": 533,
+      "h": 538
+    },
+    "item": {
+      "boxShadow": "rgba(0, 0, 0, 0.16) 0px 3px 6px 0px",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "marginBottom": "30px",
+      "borderTopWidth": "0px",
+      "borderTopStyle": "solid",
+      "borderTopColor": "rgb(0, 0, 0)",
+      "borderBottomWidth": "0px"
+    },
+    "thumb": {
+      "textAlign": "center",
+      "display": "block"
+    },
+    "thumbA": {
+      "display": "block",
+      "overflow": "hidden",
+      "backgroundRepeat": "no-repeat",
+      "backgroundSize": "cover",
+      "transition": "0.3s"
+    },
+    "img": {
+      "display": "block",
+      "width": "503.328px",
+      "maxWidth": "100%",
+      "height": "290px",
+      "objectFit": "cover",
+      "verticalAlign": "middle"
+    },
+    "imgRect": {
+      "w": 503,
+      "h": 290
+    },
+    "desc": {
+      "position": "relative",
+      "backgroundColor": "rgba(0, 0, 0, 0)"
+    },
+    "date": {
+      "position": "absolute",
+      "top": "-21px",
+      "left": "0px",
+      "display": "block",
+      "width": "170px"
+    },
+    "dateP": {
+      "position": "relative",
+      "margin": "0px",
+      "padding": "0px 0px 0px 20px",
+      "backgroundColor": "rgb(204, 9, 6)",
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "14px",
+      "fontWeight": "600",
+      "lineHeight": "42px",
+      "textTransform": "uppercase",
+      "whiteSpace": "nowrap"
+    },
+    "datePAfter": {
+      "content": "\"\"",
+      "position": "absolute",
+      "right": "-15px",
+      "bottom": "0px",
+      "width": "25px",
+      "height": "42px",
+      "backgroundColor": "rgb(204, 9, 6)",
+      "transform": "matrix(1, 0, -0.36397, 1, 0, 0)"
+    },
+    "inside": {
+      "paddingTop": "40px",
+      "paddingRight": "20px",
+      "paddingBottom": "30px",
+      "paddingLeft": "20px",
+      "backgroundColor": "rgba(0, 0, 0, 0)"
+    },
+    "titlePost": {
+      "margin": "0px 0px 5px",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "21.4304px",
+      "fontWeight": "600",
+      "lineHeight": "25.7165px",
+      "letterSpacing": "normal",
+      "textTransform": "none",
+      "color": "rgb(0, 0, 0)"
+    },
+    "titleA": {
+      "color": "rgb(0, 0, 0)",
+      "textDecorationLine": "none",
+      "fontSize": "21.4304px",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "lineHeight": "25.7165px"
+    },
+    "titleARect": {
+      "w": 378,
+      "h": 25
+    },
+    "titlePostRect": {
+      "w": 463,
+      "h": 26
+    },
+    "titleText": {
+      "t": "Tai nghe Bluetooth 5.3 là gì? Top 5 ưu điểm nổi bật"
+    },
+    "excerpt": {
+      "margin": "0px",
+      "fontSize": "20.256px",
+      "lineHeight": "30.384px",
+      "color": "rgb(0, 0, 0)",
+      "display": "block",
+      "webkitLineClamp": "none",
+      "overflow": "visible"
+    },
+    "videoTitle": {
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "48.384px",
+      "lineHeight": "54.1901px",
+      "textTransform": "uppercase"
+    },
+    "expSection": {
+      "paddingTop": "100px",
+      "backgroundColor": "rgb(255, 255, 255)"
+    },
+    "bannerAds": {
+      "__missing": true
+    }
+  },
+  "2560": {
+    "section": {
+      "backgroundColor": "rgb(255, 255, 255)",
+      "paddingTop": "60px",
+      "paddingBottom": "0px",
+      "paddingLeft": "0px",
+      "paddingRight": "0px"
+    },
+    "container": {
+      "maxWidth": "none",
+      "marginLeft": "155px",
+      "paddingLeft": "15px",
+      "paddingRight": "15px"
+    },
+    "containerRect": {
+      "w": 2240,
+      "h": 732
+    },
+    "blockTitle": {
+      "textAlign": "center",
+      "paddingTop": "0px",
+      "paddingBottom": "40px",
+      "paddingLeft": "0px",
+      "paddingRight": "0px",
+      "marginBottom": "0px"
+    },
+    "kicker": {
+      "color": "rgb(111, 111, 111)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", Barlow, sans-serif",
+      "fontSize": "18px",
+      "fontWeight": "900",
+      "lineHeight": "18px",
+      "letterSpacing": "2.7px",
+      "textTransform": "uppercase",
+      "marginBottom": "12px",
+      "display": "block"
+    },
+    "h2": {
+      "color": "rgb(0, 0, 0)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", Barlow, sans-serif",
+      "fontSize": "55.9936px",
+      "fontWeight": "600",
+      "lineHeight": "64.3926px",
+      "letterSpacing": "normal",
+      "textTransform": "uppercase",
+      "marginTop": "0px",
+      "marginBottom": "0px"
+    },
+    "newsList": {
+      "display": "block"
+    },
+    "row": {
+      "display": "flex",
+      "gap": "normal",
+      "marginLeft": "-15px",
+      "marginRight": "-15px",
+      "paddingLeft": "0px",
+      "paddingRight": "0px",
+      "gridTemplateColumns": "none"
+    },
+    "rowOverflow": {
+      "overflowX": "visible",
+      "scrolls": false
+    },
+    "col0": {
+      "width": "746.656px",
+      "maxWidth": "33.3333%",
+      "paddingLeft": "15px",
+      "paddingRight": "15px",
+      "position": "relative"
+    },
+    "col0Rect": {
+      "w": 747,
+      "h": 597
+    },
+    "item": {
+      "boxShadow": "rgba(0, 0, 0, 0.16) 0px 3px 6px 0px",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "marginBottom": "30px",
+      "borderTopWidth": "0px",
+      "borderTopStyle": "solid",
+      "borderTopColor": "rgb(0, 0, 0)",
+      "borderBottomWidth": "0px"
+    },
+    "thumb": {
+      "textAlign": "center",
+      "display": "block"
+    },
+    "thumbA": {
+      "display": "block",
+      "overflow": "hidden",
+      "backgroundRepeat": "no-repeat",
+      "backgroundSize": "cover",
+      "transition": "0.3s"
+    },
+    "img": {
+      "display": "block",
+      "width": "716.656px",
+      "maxWidth": "100%",
+      "height": "400px",
+      "objectFit": "cover",
+      "verticalAlign": "middle"
+    },
+    "imgRect": {
+      "w": 717,
+      "h": 400
+    },
+    "desc": {
+      "position": "relative",
+      "backgroundColor": "rgba(0, 0, 0, 0)"
+    },
+    "date": {
+      "position": "absolute",
+      "top": "-21px",
+      "left": "0px",
+      "display": "block",
+      "width": "170px"
+    },
+    "dateP": {
+      "position": "relative",
+      "margin": "0px",
+      "padding": "0px 0px 0px 20px",
+      "backgroundColor": "rgb(204, 9, 6)",
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "14px",
+      "fontWeight": "600",
+      "lineHeight": "42px",
+      "textTransform": "uppercase",
+      "whiteSpace": "nowrap"
+    },
+    "datePAfter": {
+      "content": "\"\"",
+      "position": "absolute",
+      "right": "-15px",
+      "bottom": "0px",
+      "width": "25px",
+      "height": "42px",
+      "backgroundColor": "rgb(204, 9, 6)",
+      "transform": "matrix(1, 0, -0.36397, 1, 0, 0)"
+    },
+    "inside": {
+      "paddingTop": "40px",
+      "paddingRight": "20px",
+      "paddingBottom": "30px",
+      "paddingLeft": "20px",
+      "backgroundColor": "rgba(0, 0, 0, 0)"
+    },
+    "titlePost": {
+      "margin": "0px 0px 5px",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "22px",
+      "fontWeight": "600",
+      "lineHeight": "26.4px",
+      "letterSpacing": "normal",
+      "textTransform": "none",
+      "color": "rgb(0, 0, 0)"
+    },
+    "titleA": {
+      "color": "rgb(0, 0, 0)",
+      "textDecorationLine": "none",
+      "fontSize": "22px",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "lineHeight": "26.4px"
+    },
+    "titleARect": {
+      "w": 388,
+      "h": 26
+    },
+    "titlePostRect": {
+      "w": 677,
+      "h": 26
+    },
+    "titleText": {
+      "t": "Tai nghe Bluetooth 5.3 là gì? Top 5 ưu điểm nổi bật"
+    },
+    "excerpt": {
+      "margin": "0px",
+      "fontSize": "22px",
+      "lineHeight": "33px",
+      "color": "rgb(0, 0, 0)",
+      "display": "block",
+      "webkitLineClamp": "none",
+      "overflow": "visible"
+    },
+    "videoTitle": {
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "56px",
+      "lineHeight": "62.72px",
+      "textTransform": "uppercase"
+    },
+    "expSection": {
+      "paddingTop": "100px",
+      "backgroundColor": "rgb(255, 255, 255)"
+    },
+    "bannerAds": {
+      "__missing": true
+    }
+  }
+}

@@ -153,12 +153,12 @@ Token cỡ chữ expose thành Tailwind utility trong `app/globals.css` (`@theme
 
 ### Category Tiles (lưới danh mục trang chủ)
 
-- Component: `.bb-cat-list` — chỉ hiện ở desktop (`hidden md:block`, ≥ 768px). Mobile dùng `MobileCategoryGrid` (2–3 cột).
-- Cột theo breakpoint: 2 (≤ 575) · 3 (≤ 767) · 4 (desktop) · **6 (4xl ≥ 2560)**. Số cột là ước của 12 danh mục để hàng luôn đầy (12 item ở 4xl = 6 × 2 hàng).
+- Component: ô danh mục `WpCategoryListItem` dùng **chung một thiết kế** cho mọi breakpoint — chỉ responsive (co số cột + kích thước tile), không có layout mobile riêng.
+- Cột theo breakpoint: 2 (mobile) · 3 (≥ 600) · 4 (≥ 768 desktop) · **6 (4xl ≥ 2560)**. Số cột là ước của 12 danh mục để hàng luôn đầy (12 item ở 4xl = 6 × 2 hàng).
 - Divider: đường kẻ 1px grey `#CECECE` vẽ bằng **border trên từng tile** (border-right + border-bottom) + border top/left trên grid — **không** dùng nền xám lấp `gap`. Hàng cuối thiếu item sẽ không sinh mảng xám.
-- Tile: nền trắng, cao 290px, radius `0`, không shadow ở trạng thái nghỉ.
-- Icon: wrapper cố định 72px → 80px (≥ 1536) → 88px (≥ 2560), `object-contain`, căn giữa.
-- Label: Barlow Condensed, UPPERCASE, weight 600, 17 → 18 (≥ 1536) → 20px (≥ 2560), clamp tối đa 2 dòng.
+- Tile: nền trắng, cao 290px (mobile co còn 170px), radius `0`, không shadow ở trạng thái nghỉ.
+- Icon: wrapper cố định 72px (mobile 48px) → 80px (≥ 1536) → 88px (≥ 2560), `object-contain`, căn giữa.
+- Label: Barlow Condensed, UPPERCASE, weight 600, 17px (mobile 13px) → 18 (≥ 1536) → 20px (≥ 2560), clamp tối đa 2 dòng.
 - Hover: ảnh đỏ `cat-hover.jpg` phủ kín tile (200ms), icon invert trắng + scale `1.06`, label trắng.
 - Active: icon scale `0.97`. Focus-visible: outline `2px solid var(--bb-link-text)` (`#005FCC`), offset `-3px`.
 

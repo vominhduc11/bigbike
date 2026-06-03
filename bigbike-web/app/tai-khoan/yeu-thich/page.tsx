@@ -18,7 +18,7 @@ function WishlistContent() {
   return (
     <>
       <div className="flex justify-between items-end mb-5 pb-4 border-b border-border">
-        <h2 className={cn(sectionHeading, "tracking-wide m-0")}>{t("heading")}</h2>
+        <h2 className={cn(sectionHeading, "m-0")}>{t("heading")}</h2>
       </div>
 
       {error && <p className="text-brand text-sm mb-4 m-0">{(error as Error).message}</p>}

@@ -1,0 +1,912 @@
+{
+  "390": {
+    "container": {
+      "position": "relative",
+      "width": "380px",
+      "height": "300px",
+      "maxHeight": "none",
+      "overflowX": "hidden",
+      "overflowY": "hidden",
+      "backgroundColor": "rgb(13, 13, 13)"
+    },
+    "link": {
+      "position": "relative",
+      "display": "block",
+      "width": "380px",
+      "height": "300px",
+      "color": "rgb(0, 0, 0)",
+      "textDecorationLine": "none",
+      "overflowX": "hidden",
+      "overflowY": "hidden",
+      "backgroundColor": "rgb(13, 13, 13)"
+    },
+    "picture": {
+      "display": "block",
+      "width": "380px",
+      "height": "300px"
+    },
+    "img": {
+      "display": "block",
+      "width": "380px",
+      "height": "156px",
+      "minHeight": "156px",
+      "objectFit": "cover",
+      "objectPosition": "50% 50%"
+    },
+    "copyDisplay": "none",
+    "prev": {
+      "position": "absolute",
+      "top": "150px",
+      "left": "4px",
+      "right": "332px",
+      "zIndex": "10",
+      "display": "flex",
+      "alignItems": "center",
+      "justifyContent": "center",
+      "width": "44px",
+      "height": "64px",
+      "paddingTop": "0px",
+      "transform": "matrix(1, 0, 0, 1, 0, -32)",
+      "borderTopStyle": "none",
+      "borderTopWidth": "0px",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "color": "rgb(255, 255, 255)",
+      "cursor": "pointer",
+      "filter": "drop-shadow(rgba(0, 0, 0, 0.6) 0px 1px 3px)",
+      "transitionProperty": "opacity",
+      "transitionDuration": "0.001s",
+      "opacity": "1"
+    },
+    "next": {
+      "left": "332px",
+      "right": "4px",
+      "width": "44px",
+      "height": "64px"
+    },
+    "svgPrev": {
+      "display": "block",
+      "flexShrink": "0",
+      "width": "16px",
+      "height": "32px"
+    },
+    "pagination": {
+      "position": "absolute",
+      "left": "50%",
+      "bottom": "70px",
+      "zIndex": "10",
+      "display": "none",
+      "alignItems": "flex-end",
+      "columnGap": "0px",
+      "width": "min(370px, 100% - 48px)",
+      "transform": "none",
+      "paddingBottom": "10px",
+      "borderBottomStyle": "solid",
+      "borderBottomWidth": "1px",
+      "borderBottomColor": "rgba(255, 255, 255, 0.55)",
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "16px",
+      "lineHeight": "19.2px",
+      "textAlign": "left"
+    }
+  },
+  "767": {
+    "container": {
+      "position": "relative",
+      "width": "757px",
+      "height": "306.797px",
+      "maxHeight": "none",
+      "overflowX": "hidden",
+      "overflowY": "hidden",
+      "backgroundColor": "rgb(13, 13, 13)"
+    },
+    "link": {
+      "position": "relative",
+      "display": "block",
+      "width": "757px",
+      "height": "306.797px",
+      "color": "rgb(0, 0, 0)",
+      "textDecorationLine": "none",
+      "overflowX": "hidden",
+      "overflowY": "hidden",
+      "backgroundColor": "rgb(13, 13, 13)"
+    },
+    "picture": {
+      "display": "block",
+      "width": "757px",
+      "height": "306.797px"
+    },
+    "img": {
+      "display": "block",
+      "width": "757px",
+      "height": "1110.27px",
+      "minHeight": "306.8px",
+      "objectFit": "cover",
+      "objectPosition": "50% 50%"
+    },
+    "copyDisplay": "none",
+    "prev": {
+      "position": "absolute",
+      "top": "153.391px",
+      "left": "4px",
+      "right": "709px",
+      "zIndex": "10",
+      "display": "flex",
+      "alignItems": "center",
+      "justifyContent": "center",
+      "width": "44px",
+      "height": "64px",
+      "paddingTop": "0px",
+      "transform": "matrix(1, 0, 0, 1, 0, -32)",
+      "borderTopStyle": "none",
+      "borderTopWidth": "0px",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "color": "rgb(255, 255, 255)",
+      "cursor": "pointer",
+      "filter": "drop-shadow(rgba(0, 0, 0, 0.6) 0px 1px 3px)",
+      "transitionProperty": "opacity",
+      "transitionDuration": "0.001s",
+      "opacity": "1"
+    },
+    "next": {
+      "left": "709px",
+      "right": "4px",
+      "width": "44px",
+      "height": "64px"
+    },
+    "svgPrev": {
+      "display": "block",
+      "flexShrink": "0",
+      "width": "16px",
+      "height": "32px"
+    },
+    "pagination": {
+      "position": "absolute",
+      "left": "50%",
+      "bottom": "70px",
+      "zIndex": "10",
+      "display": "none",
+      "alignItems": "flex-end",
+      "columnGap": "0px",
+      "width": "min(370px, 100% - 48px)",
+      "transform": "none",
+      "paddingBottom": "10px",
+      "borderBottomStyle": "solid",
+      "borderBottomWidth": "1px",
+      "borderBottomColor": "rgba(255, 255, 255, 0.55)",
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "16px",
+      "lineHeight": "19.2px",
+      "textAlign": "left"
+    }
+  },
+  "768": {
+    "container": {
+      "position": "relative",
+      "width": "758px",
+      "height": "307.188px",
+      "maxHeight": "none",
+      "overflowX": "hidden",
+      "overflowY": "hidden",
+      "backgroundColor": "rgb(0, 0, 0)"
+    },
+    "link": {
+      "position": "relative",
+      "display": "block",
+      "width": "758px",
+      "height": "307.188px",
+      "color": "rgb(0, 0, 0)",
+      "textDecorationLine": "none",
+      "overflowX": "visible",
+      "overflowY": "visible",
+      "backgroundColor": "rgba(0, 0, 0, 0)"
+    },
+    "picture": {
+      "display": "block",
+      "width": "758px",
+      "height": "307.188px"
+    },
+    "img": {
+      "display": "block",
+      "width": "758px",
+      "height": "315.781px",
+      "minHeight": "307.2px",
+      "objectFit": "cover",
+      "objectPosition": "50% 50%"
+    },
+    "copyDisplay": "none",
+    "prev": {
+      "position": "absolute",
+      "top": "153.594px",
+      "left": "24px",
+      "right": "622px",
+      "zIndex": "10",
+      "display": "flex",
+      "alignItems": "center",
+      "justifyContent": "center",
+      "width": "112px",
+      "height": "160px",
+      "paddingTop": "0px",
+      "transform": "matrix(1, 0, 0, 1, 0, -80)",
+      "borderTopStyle": "none",
+      "borderTopWidth": "0px",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "color": "rgb(255, 255, 255)",
+      "cursor": "pointer",
+      "filter": "drop-shadow(rgba(0, 0, 0, 0.6) 0px 1px 3px)",
+      "transitionProperty": "opacity",
+      "transitionDuration": "0.001s",
+      "opacity": "1"
+    },
+    "next": {
+      "left": "622px",
+      "right": "24px",
+      "width": "112px",
+      "height": "160px"
+    },
+    "svgPrev": {
+      "display": "block",
+      "flexShrink": "0",
+      "width": "40px",
+      "height": "80px"
+    },
+    "pagination": {
+      "position": "absolute",
+      "left": "379px",
+      "bottom": "70px",
+      "zIndex": "10",
+      "display": "flex",
+      "alignItems": "flex-end",
+      "columnGap": "0px",
+      "width": "370px",
+      "transform": "matrix(1, 0, 0, 1, -185, 0)",
+      "paddingBottom": "10px",
+      "borderBottomStyle": "solid",
+      "borderBottomWidth": "1px",
+      "borderBottomColor": "rgba(255, 255, 255, 0.55)",
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "16px",
+      "lineHeight": "19.2px",
+      "textAlign": "left"
+    }
+  },
+  "1280": {
+    "container": {
+      "position": "relative",
+      "width": "1270px",
+      "height": "512px",
+      "maxHeight": "none",
+      "overflowX": "hidden",
+      "overflowY": "hidden",
+      "backgroundColor": "rgb(0, 0, 0)"
+    },
+    "link": {
+      "position": "relative",
+      "display": "block",
+      "width": "1270px",
+      "height": "512px",
+      "color": "rgb(0, 0, 0)",
+      "textDecorationLine": "none",
+      "overflowX": "visible",
+      "overflowY": "visible",
+      "backgroundColor": "rgba(0, 0, 0, 0)"
+    },
+    "picture": {
+      "display": "block",
+      "width": "1270px",
+      "height": "512px"
+    },
+    "img": {
+      "display": "block",
+      "width": "1270px",
+      "height": "529.078px",
+      "minHeight": "512px",
+      "objectFit": "cover",
+      "objectPosition": "50% 50%"
+    },
+    "copyDisplay": "none",
+    "prev": {
+      "position": "absolute",
+      "top": "256px",
+      "left": "24px",
+      "right": "1134px",
+      "zIndex": "10",
+      "display": "flex",
+      "alignItems": "center",
+      "justifyContent": "center",
+      "width": "112px",
+      "height": "160px",
+      "paddingTop": "0px",
+      "transform": "matrix(1, 0, 0, 1, 0, -80)",
+      "borderTopStyle": "none",
+      "borderTopWidth": "0px",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "color": "rgb(255, 255, 255)",
+      "cursor": "pointer",
+      "filter": "drop-shadow(rgba(0, 0, 0, 0.6) 0px 1px 3px)",
+      "transitionProperty": "opacity",
+      "transitionDuration": "0.001s",
+      "opacity": "1"
+    },
+    "next": {
+      "left": "1134px",
+      "right": "24px",
+      "width": "112px",
+      "height": "160px"
+    },
+    "svgPrev": {
+      "display": "block",
+      "flexShrink": "0",
+      "width": "40px",
+      "height": "80px"
+    },
+    "pagination": {
+      "position": "absolute",
+      "left": "635px",
+      "bottom": "70px",
+      "zIndex": "10",
+      "display": "flex",
+      "alignItems": "flex-end",
+      "columnGap": "0px",
+      "width": "370px",
+      "transform": "matrix(1, 0, 0, 1, -185, 0)",
+      "paddingBottom": "10px",
+      "borderBottomStyle": "solid",
+      "borderBottomWidth": "1px",
+      "borderBottomColor": "rgba(255, 255, 255, 0.55)",
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "16px",
+      "lineHeight": "19.2px",
+      "textAlign": "left"
+    }
+  },
+  "1535": {
+    "container": {
+      "position": "relative",
+      "width": "1525px",
+      "height": "614px",
+      "maxHeight": "none",
+      "overflowX": "hidden",
+      "overflowY": "hidden",
+      "backgroundColor": "rgb(0, 0, 0)"
+    },
+    "link": {
+      "position": "relative",
+      "display": "block",
+      "width": "1525px",
+      "height": "614px",
+      "color": "rgb(0, 0, 0)",
+      "textDecorationLine": "none",
+      "overflowX": "visible",
+      "overflowY": "visible",
+      "backgroundColor": "rgba(0, 0, 0, 0)"
+    },
+    "picture": {
+      "display": "block",
+      "width": "1525px",
+      "height": "614px"
+    },
+    "img": {
+      "display": "block",
+      "width": "1525px",
+      "height": "635.312px",
+      "minHeight": "614px",
+      "objectFit": "cover",
+      "objectPosition": "50% 50%"
+    },
+    "copyDisplay": "none",
+    "prev": {
+      "position": "absolute",
+      "top": "307px",
+      "left": "24px",
+      "right": "1389px",
+      "zIndex": "10",
+      "display": "flex",
+      "alignItems": "center",
+      "justifyContent": "center",
+      "width": "112px",
+      "height": "160px",
+      "paddingTop": "0px",
+      "transform": "matrix(1, 0, 0, 1, 0, -80)",
+      "borderTopStyle": "none",
+      "borderTopWidth": "0px",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "color": "rgb(255, 255, 255)",
+      "cursor": "pointer",
+      "filter": "drop-shadow(rgba(0, 0, 0, 0.6) 0px 1px 3px)",
+      "transitionProperty": "opacity",
+      "transitionDuration": "0.001s",
+      "opacity": "1"
+    },
+    "next": {
+      "left": "1389px",
+      "right": "24px",
+      "width": "112px",
+      "height": "160px"
+    },
+    "svgPrev": {
+      "display": "block",
+      "flexShrink": "0",
+      "width": "40px",
+      "height": "80px"
+    },
+    "pagination": {
+      "position": "absolute",
+      "left": "762.5px",
+      "bottom": "70px",
+      "zIndex": "10",
+      "display": "flex",
+      "alignItems": "flex-end",
+      "columnGap": "0px",
+      "width": "370px",
+      "transform": "matrix(1, 0, 0, 1, -185, 0)",
+      "paddingBottom": "10px",
+      "borderBottomStyle": "solid",
+      "borderBottomWidth": "1px",
+      "borderBottomColor": "rgba(255, 255, 255, 0.55)",
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "16px",
+      "lineHeight": "19.2px",
+      "textAlign": "left"
+    }
+  },
+  "1536": {
+    "container": {
+      "position": "relative",
+      "width": "1526px",
+      "height": "614.391px",
+      "maxHeight": "none",
+      "overflowX": "hidden",
+      "overflowY": "hidden",
+      "backgroundColor": "rgb(0, 0, 0)"
+    },
+    "link": {
+      "position": "relative",
+      "display": "block",
+      "width": "1526px",
+      "height": "614.391px",
+      "color": "rgb(0, 0, 0)",
+      "textDecorationLine": "none",
+      "overflowX": "visible",
+      "overflowY": "visible",
+      "backgroundColor": "rgba(0, 0, 0, 0)"
+    },
+    "picture": {
+      "display": "block",
+      "width": "1526px",
+      "height": "614.391px"
+    },
+    "img": {
+      "display": "block",
+      "width": "1526px",
+      "height": "635.719px",
+      "minHeight": "614.4px",
+      "objectFit": "cover",
+      "objectPosition": "50% 50%"
+    },
+    "copyDisplay": "none",
+    "prev": {
+      "position": "absolute",
+      "top": "307.188px",
+      "left": "32px",
+      "right": "1366px",
+      "zIndex": "10",
+      "display": "flex",
+      "alignItems": "center",
+      "justifyContent": "center",
+      "width": "128px",
+      "height": "192px",
+      "paddingTop": "0px",
+      "transform": "matrix(1, 0, 0, 1, 0, -96)",
+      "borderTopStyle": "none",
+      "borderTopWidth": "0px",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "color": "rgb(255, 255, 255)",
+      "cursor": "pointer",
+      "filter": "drop-shadow(rgba(0, 0, 0, 0.6) 0px 1px 3px)",
+      "transitionProperty": "opacity",
+      "transitionDuration": "0.001s",
+      "opacity": "1"
+    },
+    "next": {
+      "left": "1366px",
+      "right": "32px",
+      "width": "128px",
+      "height": "192px"
+    },
+    "svgPrev": {
+      "display": "block",
+      "flexShrink": "0",
+      "width": "48px",
+      "height": "96px"
+    },
+    "pagination": {
+      "position": "absolute",
+      "left": "763px",
+      "bottom": "70px",
+      "zIndex": "10",
+      "display": "flex",
+      "alignItems": "flex-end",
+      "columnGap": "0px",
+      "width": "370px",
+      "transform": "matrix(1, 0, 0, 1, -185, 0)",
+      "paddingBottom": "10px",
+      "borderBottomStyle": "solid",
+      "borderBottomWidth": "1px",
+      "borderBottomColor": "rgba(255, 255, 255, 0.55)",
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "16px",
+      "lineHeight": "19.2px",
+      "textAlign": "left"
+    }
+  },
+  "1919": {
+    "container": {
+      "position": "relative",
+      "width": "1909px",
+      "height": "767.594px",
+      "maxHeight": "none",
+      "overflowX": "hidden",
+      "overflowY": "hidden",
+      "backgroundColor": "rgb(0, 0, 0)"
+    },
+    "link": {
+      "position": "relative",
+      "display": "block",
+      "width": "1909px",
+      "height": "767.594px",
+      "color": "rgb(0, 0, 0)",
+      "textDecorationLine": "none",
+      "overflowX": "visible",
+      "overflowY": "visible",
+      "backgroundColor": "rgba(0, 0, 0, 0)"
+    },
+    "picture": {
+      "display": "block",
+      "width": "1909px",
+      "height": "767.594px"
+    },
+    "img": {
+      "display": "block",
+      "width": "1909px",
+      "height": "795.281px",
+      "minHeight": "767.6px",
+      "objectFit": "cover",
+      "objectPosition": "50% 50%"
+    },
+    "copyDisplay": "none",
+    "prev": {
+      "position": "absolute",
+      "top": "383.797px",
+      "left": "32px",
+      "right": "1749px",
+      "zIndex": "10",
+      "display": "flex",
+      "alignItems": "center",
+      "justifyContent": "center",
+      "width": "128px",
+      "height": "192px",
+      "paddingTop": "0px",
+      "transform": "matrix(1, 0, 0, 1, 0, -96)",
+      "borderTopStyle": "none",
+      "borderTopWidth": "0px",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "color": "rgb(255, 255, 255)",
+      "cursor": "pointer",
+      "filter": "drop-shadow(rgba(0, 0, 0, 0.6) 0px 1px 3px)",
+      "transitionProperty": "opacity",
+      "transitionDuration": "0.001s",
+      "opacity": "1"
+    },
+    "next": {
+      "left": "1749px",
+      "right": "32px",
+      "width": "128px",
+      "height": "192px"
+    },
+    "svgPrev": {
+      "display": "block",
+      "flexShrink": "0",
+      "width": "48px",
+      "height": "96px"
+    },
+    "pagination": {
+      "position": "absolute",
+      "left": "954.5px",
+      "bottom": "70px",
+      "zIndex": "10",
+      "display": "flex",
+      "alignItems": "flex-end",
+      "columnGap": "0px",
+      "width": "370px",
+      "transform": "matrix(1, 0, 0, 1, -185, 0)",
+      "paddingBottom": "10px",
+      "borderBottomStyle": "solid",
+      "borderBottomWidth": "1px",
+      "borderBottomColor": "rgba(255, 255, 255, 0.55)",
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "16px",
+      "lineHeight": "19.2px",
+      "textAlign": "left"
+    }
+  },
+  "1920": {
+    "container": {
+      "position": "relative",
+      "width": "1910px",
+      "height": "768px",
+      "maxHeight": "1080px",
+      "overflowX": "hidden",
+      "overflowY": "hidden",
+      "backgroundColor": "rgb(0, 0, 0)"
+    },
+    "link": {
+      "position": "relative",
+      "display": "block",
+      "width": "1910px",
+      "height": "768px",
+      "color": "rgb(0, 0, 0)",
+      "textDecorationLine": "none",
+      "overflowX": "visible",
+      "overflowY": "visible",
+      "backgroundColor": "rgba(0, 0, 0, 0)"
+    },
+    "picture": {
+      "display": "block",
+      "width": "1910px",
+      "height": "768px"
+    },
+    "img": {
+      "display": "block",
+      "width": "1910px",
+      "height": "795.703px",
+      "minHeight": "768px",
+      "objectFit": "cover",
+      "objectPosition": "50% 50%"
+    },
+    "copyDisplay": "none",
+    "prev": {
+      "position": "absolute",
+      "top": "384px",
+      "left": "48px",
+      "right": "1702px",
+      "zIndex": "10",
+      "display": "flex",
+      "alignItems": "center",
+      "justifyContent": "center",
+      "width": "160px",
+      "height": "240px",
+      "paddingTop": "0px",
+      "transform": "matrix(1, 0, 0, 1, 0, -120)",
+      "borderTopStyle": "none",
+      "borderTopWidth": "0px",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "color": "rgb(255, 255, 255)",
+      "cursor": "pointer",
+      "filter": "drop-shadow(rgba(0, 0, 0, 0.6) 0px 1px 3px)",
+      "transitionProperty": "opacity",
+      "transitionDuration": "0.001s",
+      "opacity": "1"
+    },
+    "next": {
+      "left": "1702px",
+      "right": "48px",
+      "width": "160px",
+      "height": "240px"
+    },
+    "svgPrev": {
+      "display": "block",
+      "flexShrink": "0",
+      "width": "60px",
+      "height": "120px"
+    },
+    "pagination": {
+      "position": "absolute",
+      "left": "955px",
+      "bottom": "70px",
+      "zIndex": "10",
+      "display": "flex",
+      "alignItems": "flex-end",
+      "columnGap": "0px",
+      "width": "370px",
+      "transform": "matrix(1, 0, 0, 1, -185, 0)",
+      "paddingBottom": "10px",
+      "borderBottomStyle": "solid",
+      "borderBottomWidth": "1px",
+      "borderBottomColor": "rgba(255, 255, 255, 0.55)",
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "16px",
+      "lineHeight": "19.2px",
+      "textAlign": "left"
+    }
+  },
+  "2559": {
+    "container": {
+      "position": "relative",
+      "width": "2549px",
+      "height": "1023.59px",
+      "maxHeight": "1080px",
+      "overflowX": "hidden",
+      "overflowY": "hidden",
+      "backgroundColor": "rgb(0, 0, 0)"
+    },
+    "link": {
+      "position": "relative",
+      "display": "block",
+      "width": "2549px",
+      "height": "1023.59px",
+      "color": "rgb(0, 0, 0)",
+      "textDecorationLine": "none",
+      "overflowX": "visible",
+      "overflowY": "visible",
+      "backgroundColor": "rgba(0, 0, 0, 0)"
+    },
+    "picture": {
+      "display": "block",
+      "width": "2549px",
+      "height": "1023.59px"
+    },
+    "img": {
+      "display": "block",
+      "width": "2549px",
+      "height": "1061.91px",
+      "minHeight": "1023.6px",
+      "objectFit": "cover",
+      "objectPosition": "50% 50%"
+    },
+    "copyDisplay": "none",
+    "prev": {
+      "position": "absolute",
+      "top": "511.797px",
+      "left": "48px",
+      "right": "2341px",
+      "zIndex": "10",
+      "display": "flex",
+      "alignItems": "center",
+      "justifyContent": "center",
+      "width": "160px",
+      "height": "240px",
+      "paddingTop": "0px",
+      "transform": "matrix(1, 0, 0, 1, 0, -120)",
+      "borderTopStyle": "none",
+      "borderTopWidth": "0px",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "color": "rgb(255, 255, 255)",
+      "cursor": "pointer",
+      "filter": "drop-shadow(rgba(0, 0, 0, 0.6) 0px 1px 3px)",
+      "transitionProperty": "opacity",
+      "transitionDuration": "0.001s",
+      "opacity": "1"
+    },
+    "next": {
+      "left": "2341px",
+      "right": "48px",
+      "width": "160px",
+      "height": "240px"
+    },
+    "svgPrev": {
+      "display": "block",
+      "flexShrink": "0",
+      "width": "60px",
+      "height": "120px"
+    },
+    "pagination": {
+      "position": "absolute",
+      "left": "1274.5px",
+      "bottom": "70px",
+      "zIndex": "10",
+      "display": "flex",
+      "alignItems": "flex-end",
+      "columnGap": "0px",
+      "width": "370px",
+      "transform": "matrix(1, 0, 0, 1, -185, 0)",
+      "paddingBottom": "10px",
+      "borderBottomStyle": "solid",
+      "borderBottomWidth": "1px",
+      "borderBottomColor": "rgba(255, 255, 255, 0.55)",
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "16px",
+      "lineHeight": "19.2px",
+      "textAlign": "left"
+    }
+  },
+  "2560": {
+    "container": {
+      "position": "relative",
+      "width": "2550px",
+      "height": "1024px",
+      "maxHeight": "1200px",
+      "overflowX": "hidden",
+      "overflowY": "hidden",
+      "backgroundColor": "rgb(0, 0, 0)"
+    },
+    "link": {
+      "position": "relative",
+      "display": "block",
+      "width": "2550px",
+      "height": "1024px",
+      "color": "rgb(0, 0, 0)",
+      "textDecorationLine": "none",
+      "overflowX": "visible",
+      "overflowY": "visible",
+      "backgroundColor": "rgba(0, 0, 0, 0)"
+    },
+    "picture": {
+      "display": "block",
+      "width": "2550px",
+      "height": "1024px"
+    },
+    "img": {
+      "display": "block",
+      "width": "2550px",
+      "height": "1062.33px",
+      "minHeight": "1024px",
+      "objectFit": "cover",
+      "objectPosition": "50% 50%"
+    },
+    "copyDisplay": "none",
+    "prev": {
+      "position": "absolute",
+      "top": "512px",
+      "left": "64px",
+      "right": "2294px",
+      "zIndex": "10",
+      "display": "flex",
+      "alignItems": "center",
+      "justifyContent": "center",
+      "width": "192px",
+      "height": "288px",
+      "paddingTop": "0px",
+      "transform": "matrix(1, 0, 0, 1, 0, -144)",
+      "borderTopStyle": "none",
+      "borderTopWidth": "0px",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "color": "rgb(255, 255, 255)",
+      "cursor": "pointer",
+      "filter": "drop-shadow(rgba(0, 0, 0, 0.6) 0px 1px 3px)",
+      "transitionProperty": "opacity",
+      "transitionDuration": "0.001s",
+      "opacity": "1"
+    },
+    "next": {
+      "left": "2294px",
+      "right": "64px",
+      "width": "192px",
+      "height": "288px"
+    },
+    "svgPrev": {
+      "display": "block",
+      "flexShrink": "0",
+      "width": "72px",
+      "height": "144px"
+    },
+    "pagination": {
+      "position": "absolute",
+      "left": "1275px",
+      "bottom": "70px",
+      "zIndex": "10",
+      "display": "flex",
+      "alignItems": "flex-end",
+      "columnGap": "0px",
+      "width": "370px",
+      "transform": "matrix(1, 0, 0, 1, -185, 0)",
+      "paddingBottom": "10px",
+      "borderBottomStyle": "solid",
+      "borderBottomWidth": "1px",
+      "borderBottomColor": "rgba(255, 255, 255, 0.55)",
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "16px",
+      "lineHeight": "19.2px",
+      "textAlign": "left"
+    }
+  }
+}

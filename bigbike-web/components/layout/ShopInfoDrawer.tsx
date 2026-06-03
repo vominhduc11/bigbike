@@ -112,11 +112,11 @@ export function ShopInfoDrawer({
             />
 
             <div className="mt-[30px]">
-              <p className="m-0 text-[#6f6f6f] text-[length:var(--fs-caption)] leading-[1.75]">{desc}</p>
+              <p className="m-0 text-muted-foreground text-[length:var(--fs-caption)] leading-[1.75]">{desc}</p>
             </div>
 
             <div className="mt-[70px]">
-              <h2 className="m-0 text-foreground font-display text-[16px] font-semibold uppercase">
+              <h2 className="m-0 text-foreground font-display text-ui-16 font-semibold uppercase">
                 {t("shopInfoContactHeading")}
               </h2>
 

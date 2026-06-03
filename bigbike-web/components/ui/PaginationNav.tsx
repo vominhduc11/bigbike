@@ -43,10 +43,10 @@ export function PaginationNav({ page, totalPages, baseHref, variant = "default" 
     // Inline Tailwind port of the legacy .bb-archive-pagination rules. The unlayered
     // CSS set 20px/40px padding, beating the old (now-dropped) pb-40/pt-20 utilities,
     // so the effective rhythm is pt-5/pb-10. 1.5rem font + 1.2 line-height per WP parity.
-    const itemCls = "inline-block px-2 text-[1.5rem] font-semibold";
+    const itemCls = "inline-block px-2 text-ui-24 font-semibold";
     const linkBase =
-      "inline-flex items-center justify-center px-2.5 py-[5px] text-[1.5rem] leading-[1.2] no-underline";
-    const iconCls = "text-[22px] leading-none";
+      "inline-flex items-center justify-center px-2.5 py-[5px] text-ui-24 leading-[1.2] no-underline";
+    const iconCls = "text-ui-22 leading-none";
     return (
       <nav className="m-0 pb-10 pt-5 text-right" aria-label={t("paginationAria")}>
         <ul className="m-0 w-full list-none p-0">

@@ -46,7 +46,7 @@ const NAV_LINK_BASE =
   "text-white md:text-foreground hover:text-brand-on-dark " +
   "focus-visible:text-brand-on-dark focus-visible:outline-none pointer-coarse:min-h-11 " +
   "max-md:min-h-11 max-md:py-0 max-md:px-[14px] max-md:border-b " +
-  "max-md:border-[color:var(--bb-mobile-shell-border)] max-md:text-[14px] max-md:tracking-[0.02em] " +
+  "max-md:border-[color:var(--bb-mobile-shell-border)] max-md:text-ui-14 max-md:tracking-[0.02em] " +
   "md:px-[25px] md:py-5 md:text-base " +
   OUTLINE_MOBILE;
 
@@ -58,8 +58,9 @@ const NAV_TOGGLE =
   "absolute inline-flex items-center justify-center border-0 bg-transparent cursor-pointer " +
   "text-white md:text-foreground hover:text-brand-on-dark " +
   "focus-visible:text-brand-on-dark focus-visible:outline-none " +
-  "max-md:top-2 max-md:right-[10px] max-md:w-11 max-md:h-11 max-md:min-h-11 " +
-  "md:top-[18px] md:right-[18px] md:w-9 md:h-9 " +
+  "top-1/2 -translate-y-1/2 " +
+  "max-md:right-[10px] max-md:w-11 max-md:h-11 max-md:min-h-11 " +
+  "md:right-[18px] md:w-9 md:h-9 " +
   OUTLINE_MOBILE;
 
 const ACCOUNT_BASE =
@@ -335,7 +336,7 @@ export function MobileHeaderMenu({
             ))}
           </nav>
 
-          <div className="border-t text-left text-[#cecece] md:text-[#6f6f6f] max-md:mt-auto max-md:px-[14px] max-md:pt-[18px] max-md:pb-[calc(16px_+_env(safe-area-inset-bottom))] max-md:border-[color:var(--bb-mobile-shell-border)] max-md:bg-[var(--bb-mobile-shell-surface-2)] md:px-[25px] md:py-[30px] md:border-[#e8e8e8]">
+          <div className="border-t text-left text-[#cecece] md:text-[#6f6f6f] max-md:px-[14px] max-md:pt-[18px] max-md:pb-[calc(16px_+_env(safe-area-inset-bottom))] max-md:border-[color:var(--bb-mobile-shell-border)] max-md:bg-[var(--bb-mobile-shell-surface-2)] md:px-[25px] md:py-[30px] md:border-[#e8e8e8]">
             <h2 className="m-0 font-display text-base font-semibold uppercase text-white md:text-foreground">
               {t("shopInfoContactHeading")}
             </h2>

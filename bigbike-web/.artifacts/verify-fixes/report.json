@@ -1,0 +1,48 @@
+{
+  "checkoutError": "no validation error rendered (cart may be empty / form not submitted)",
+  "inject_390": {
+    "productGridCols": "332px",
+    "catGridCols": "160px 160px",
+    "catCell": {
+      "position": "relative",
+      "aspectRatio": "1 / 1",
+      "w": 160,
+      "h": 160
+    },
+    "filterSidebar": {
+      "alignSelf": "flex-start",
+      "borderRight": "1px solid",
+      "paddingRight": "28px"
+    }
+  },
+  "inject_768": {
+    "productGridCols": "343px 343px",
+    "catGridCols": "168.5px 168.5px 168.5px 168.5px",
+    "catCell": {
+      "position": "relative",
+      "aspectRatio": "1 / 1",
+      "w": 169,
+      "h": 169
+    },
+    "filterSidebar": {
+      "alignSelf": "flex-start",
+      "borderRight": "1px solid",
+      "paddingRight": "28px"
+    }
+  },
+  "inject_1280": {
+    "productGridCols": "391.328px 391.328px 391.344px",
+    "catGridCols": "296.5px 296.5px 296.5px 296.5px",
+    "catCell": {
+      "position": "relative",
+      "aspectRatio": "1 / 1",
+      "w": 297,
+      "h": 297
+    },
+    "filterSidebar": {
+      "alignSelf": "flex-start",
+      "borderRight": "1px solid",
+      "paddingRight": "28px"
+    }
+  }
+}

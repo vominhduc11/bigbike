@@ -10,8 +10,9 @@ import { telHref } from "@/lib/utils/format";
 // legacy CSS intended are DEAD — `.b24-widget-button-bottom` was scoped as a wrapper
 // ancestor but the markup put it on the button itself — so the open FAB keeps the same
 // colour and only swaps the chat icon for the close icon. !rounded-[50%] beats the
-// unlayered .bb-theme border-radius reset. The closed FAB lives inside the anchor, so
-// it gets the mobile 48/60px sizes; the open FAB renders in a portal (no anchor) → 66px.
+// unlayered .bb-theme border-radius reset. Both the closed FAB (in the anchor) and the
+// open FAB (portal) use the same mobile 48/60px sizes and the same bottom-right offset, so
+// toggling open/closed never makes the button jump — only the icon swaps.
 const fabContainer = "relative inline-block";
 const fabMask =
   "absolute -top-2 -left-2 w-[calc(100%+16px)] h-[82px] min-w-[66px] !rounded-[50%] bg-[var(--bb-chat-title-bg)] opacity-20 pointer-events-none";
@@ -23,9 +24,14 @@ const fabIconItem =
   "absolute top-0 left-0 flex items-center justify-center w-full h-full [transition:opacity_0.6s_ease-out]";
 const fabBlockMobile = " max-md:w-[48px] max-md:h-[48px]";
 const fabMaskMobile = " max-md:w-[60px] max-md:h-[60px]";
-const chatItem = "block text-[#333] overflow-hidden no-underline px-4 py-2 hover:bg-[#f2f2f2]";
-const chatItemIcon = "float-left mr-[5px] [&_svg]:block [&_svg]:w-10 [&_svg]:h-10";
-const chatItemLabel = "h-10 leading-10 text-[#333] m-0 text-[1.1em] font-[Arial,sans-serif] [&_strong]:font-bold";
+// Radiating halo ring — sits behind the closed FAB and rides the bb-chat-halo loop.
+// inset-0 auto-matches the button size (66px / 48px mobile); hidden for reduced motion.
+const fabHaloRing =
+  "absolute inset-0 !rounded-[50%] bg-[var(--bb-chat-title-bg)] opacity-0 pointer-events-none motion-reduce:hidden";
+const chatItem =
+  "flex items-center gap-2.5 px-4 py-3 no-underline transition-colors hover:bg-accent";
+const chatItemIcon = "shrink-0 inline-flex [&_svg]:block [&_svg]:w-9 [&_svg]:h-9";
+const chatItemLabel = "min-w-0 m-0 text-sm leading-snug break-words [&_strong]:font-semibold";
 
 type FloatingChatProps = {
   hotline?: string;
@@ -150,40 +156,21 @@ function ChatOverlay({
 
   if (typeof document === "undefined") return null;
 
-  const BOTTOM_FAB = "max(20px, calc(env(safe-area-inset-bottom) + 20px))";
-  const RIGHT_FAB  = "max(20px, env(safe-area-inset-right))";
-
   const portal = (
     <>
-      {/* Backdrop — KHÔNG có onClick, chỉ là màn hình mờ */}
+      {/* Backdrop — chạm ra ngoài để đóng (mobile không có Esc) */}
       <div
         aria-hidden="true"
-        style={{
-          position: "fixed",
-          inset: 0,
-          zIndex: 2147483644,
-          background: "rgba(0,0,0,0.45)",
-          backdropFilter: "blur(2px)",
-          WebkitBackdropFilter: "blur(2px)",
-        }}
+        onClick={onClose}
+        className="fixed inset-0 z-[2147483644] cursor-default bg-black/55 [backdrop-filter:blur(2px)] [-webkit-backdrop-filter:blur(2px)]"
       />
 
-      {/* Contact panel */}
+      {/* Contact panel — vuông góc, token popover, đủ rộng để không cắt nội dung */}
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Liên hệ hỗ trợ"
-        style={{
-          position: "fixed",
-          bottom: "max(96px, calc(env(safe-area-inset-bottom) + 96px))",
-          right: RIGHT_FAB,
-          zIndex: 2147483645,
-          background: "#fff",
-          borderRadius: 8,
-          boxShadow: "0 4px 24px rgba(0,0,0,0.18)",
-          overflow: "hidden",
-          minWidth: 220,
-        }}
+        className="fixed z-[2147483645] w-[min(86vw,320px)] bottom-[calc(var(--bb-mobile-nav-height)+env(safe-area-inset-bottom)+76px)] md:bottom-[max(102px,calc(env(safe-area-inset-bottom)+102px))] right-[max(16px,env(safe-area-inset-right))] md:right-[max(24px,env(safe-area-inset-right))] border border-border bg-popover text-popover-foreground shadow-lg"
       >
         {items.map((item) => (
           <a
@@ -193,38 +180,28 @@ function ChatOverlay({
             target="_blank"
             rel="nofollow noreferrer"
           >
-            <div className={chatItemIcon}>{item.icon}</div>
-            <div className={chatItemLabel}>
+            <span className={chatItemIcon}>{item.icon}</span>
+            <span className={chatItemLabel}>
               {item.label}: <strong>{item.value}</strong>
-            </div>
+            </span>
           </a>
         ))}
       </div>
 
-      {/* FAB button — trong portal, z cao nhất, chỉ nó mới đóng được overlay */}
-      <div
-        style={{
-          position: "fixed",
-          bottom: BOTTOM_FAB,
-          right: RIGHT_FAB,
-          zIndex: 2147483647,
-        }}
-      >
+      {/* FAB — cùng kích thước & vị trí với lúc đóng (không nhảy), chỉ đổi icon */}
+      <div className="fixed z-[2147483647] bottom-[calc(var(--bb-mobile-nav-height)+env(safe-area-inset-bottom)+16px)] md:bottom-[max(24px,env(safe-area-inset-bottom))] right-[max(16px,env(safe-area-inset-right))] md:right-[max(24px,env(safe-area-inset-right))]">
         <div className={fabContainer}>
-          <div className={fabMask} aria-hidden="true" />
-          <div className={fabBlock}>
+          <div className={`${fabMask}${fabMaskMobile}`} aria-hidden="true" />
+          <div className={`${fabBlock}${fabBlockMobile}`}>
             <button
               type="button"
-              className={fabInnerBlock}
+              className={`${fabInnerBlock}${fabBlockMobile}`}
               onClick={onToggle}
               aria-label="Đóng hỗ trợ"
               aria-expanded={true}
               aria-haspopup="dialog"
             >
               <div className={fabIconWrap}>
-                <div className={`${fabIconItem} opacity-100 hidden`}>
-                  <IconToggleOpen />
-                </div>
                 <div className={`${fabIconItem} opacity-100 [animation:socialRotate_0.4s]`}>
                   <IconToggleClose />
                 </div>
@@ -305,6 +282,8 @@ export function FloatingChat({ hotline, zaloUrl, messengerUrl }: Readonly<Floati
             Bạn cần hỗ trợ?
           </div>
           <div className={fabContainer} id="sudovn-btn-inner-container">
+            <div className={`${fabHaloRing} [animation:bb-chat-halo_2.4s_ease-out_infinite]`} aria-hidden="true" />
+            <div className={`${fabHaloRing} [animation:bb-chat-halo_2.4s_ease-out_1.2s_infinite]`} aria-hidden="true" />
             <div className={`${fabMask}${fabMaskMobile}`} aria-hidden="true" />
             <div className={`${fabBlock}${fabBlockMobile}`}>
               <button

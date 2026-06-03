@@ -1,0 +1,102 @@
+{
+  "390": {
+    "wrapper": {
+      "paddingTop": "32px",
+      "paddingRight": "24px",
+      "paddingBottom": "24px",
+      "paddingLeft": "24px",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "color": "rgb(0, 0, 0)"
+    }
+  },
+  "767": {
+    "wrapper": {
+      "paddingTop": "32px",
+      "paddingRight": "24px",
+      "paddingBottom": "24px",
+      "paddingLeft": "24px",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "color": "rgb(0, 0, 0)"
+    }
+  },
+  "768": {
+    "wrapper": {
+      "paddingTop": "80px",
+      "paddingRight": "0px",
+      "paddingBottom": "80px",
+      "paddingLeft": "0px",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "color": "rgb(0, 0, 0)"
+    }
+  },
+  "800": {
+    "wrapper": {
+      "paddingTop": "80px",
+      "paddingRight": "0px",
+      "paddingBottom": "80px",
+      "paddingLeft": "0px",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "color": "rgb(0, 0, 0)"
+    }
+  },
+  "1023": {
+    "wrapper": {
+      "paddingTop": "80px",
+      "paddingRight": "0px",
+      "paddingBottom": "80px",
+      "paddingLeft": "0px",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "color": "rgb(0, 0, 0)"
+    }
+  },
+  "1024": {
+    "wrapper": {
+      "paddingTop": "120px",
+      "paddingRight": "0px",
+      "paddingBottom": "120px",
+      "paddingLeft": "0px",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "color": "rgb(0, 0, 0)"
+    }
+  },
+  "1280": {
+    "wrapper": {
+      "paddingTop": "120px",
+      "paddingRight": "0px",
+      "paddingBottom": "120px",
+      "paddingLeft": "0px",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "color": "rgb(0, 0, 0)"
+    }
+  },
+  "1536": {
+    "wrapper": {
+      "paddingTop": "120px",
+      "paddingRight": "0px",
+      "paddingBottom": "120px",
+      "paddingLeft": "0px",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "color": "rgb(0, 0, 0)"
+    }
+  },
+  "1920": {
+    "wrapper": {
+      "paddingTop": "120px",
+      "paddingRight": "0px",
+      "paddingBottom": "120px",
+      "paddingLeft": "0px",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "color": "rgb(0, 0, 0)"
+    }
+  },
+  "2560": {
+    "wrapper": {
+      "paddingTop": "120px",
+      "paddingRight": "0px",
+      "paddingBottom": "120px",
+      "paddingLeft": "0px",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "color": "rgb(0, 0, 0)"
+    }
+  }
+}

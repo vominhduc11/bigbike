@@ -17,7 +17,7 @@ export function SaleBadge({ percent, variant = "ribbon" }: SaleBadgeProps) {
   if (variant === "tilted") {
     return (
       <div className="absolute left-0 top-5 z-[2] h-8 w-20">
-        <p className="relative m-0 w-auto -rotate-[20deg] bg-brand p-0 text-center font-display text-[18px] font-semibold leading-7 text-white">
+        <p className="relative m-0 w-auto -rotate-[20deg] bg-brand p-0 text-center font-display text-ui-18 font-semibold leading-7 text-white">
           {percent}%
         </p>
       </div>
@@ -27,7 +27,7 @@ export function SaleBadge({ percent, variant = "ribbon" }: SaleBadgeProps) {
   if (variant === "ticket") {
     return (
       <div className="absolute left-0 top-5 h-8 w-20 bg-[url('/wp/ticket.svg')] bg-left-top bg-no-repeat text-white">
-        <p className="m-0 -rotate-[20deg] p-0 text-center font-cta text-[18px] font-semibold leading-7 text-white">
+        <p className="m-0 -rotate-[20deg] p-0 text-center font-cta text-ui-18 font-semibold leading-7 text-white">
           {percent}%
         </p>
       </div>

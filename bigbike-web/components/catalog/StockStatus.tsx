@@ -99,7 +99,7 @@ export function StockStatus({
         rawState === "OUT_OF_STOCK" && "bb-pdp-stock-badge--out",
       )}
     >
-      <span className="block font-cta text-[13px] font-semibold uppercase tracking-normal !leading-[42px] text-white max-md:!leading-[38px]">
+      <span className="block font-cta text-ui-13 font-semibold uppercase tracking-normal !leading-[42px] text-white max-md:!leading-[38px]">
         {label}
       </span>
     </span>

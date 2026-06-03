@@ -1,0 +1,332 @@
+{
+  "390": {
+    "section": {
+      "paddingTop": "28px",
+      "paddingBottom": "0px",
+      "paddingLeft": "0px",
+      "paddingRight": "0px",
+      "backgroundColor": "rgb(255, 255, 255)"
+    },
+    "inner": {
+      "paddingTop": "0px",
+      "paddingBottom": "40px",
+      "backgroundColor": "rgb(20, 20, 20)"
+    },
+    "wrapper": {
+      "paddingTop": "36px",
+      "paddingBottom": "20px"
+    },
+    "h2": {
+      "marginTop": "0px",
+      "marginBottom": "0px",
+      "marginLeft": "0px",
+      "marginRight": "0px",
+      "maxWidth": "820px",
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "20.0742px",
+      "fontWeight": "600",
+      "lineHeight": "22.4831px",
+      "letterSpacing": "normal",
+      "textTransform": "uppercase",
+      "textWrap": "balance"
+    }
+  },
+  "767": {
+    "section": {
+      "paddingTop": "28px",
+      "paddingBottom": "0px",
+      "paddingLeft": "0px",
+      "paddingRight": "0px",
+      "backgroundColor": "rgb(255, 255, 255)"
+    },
+    "inner": {
+      "paddingTop": "0px",
+      "paddingBottom": "40px",
+      "backgroundColor": "rgb(20, 20, 20)"
+    },
+    "wrapper": {
+      "paddingTop": "36px",
+      "paddingBottom": "20px"
+    },
+    "h2": {
+      "marginTop": "0px",
+      "marginBottom": "0px",
+      "marginLeft": "0px",
+      "marginRight": "0px",
+      "maxWidth": "820px",
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "21.8009px",
+      "fontWeight": "600",
+      "lineHeight": "24.417px",
+      "letterSpacing": "normal",
+      "textTransform": "uppercase",
+      "textWrap": "balance"
+    }
+  },
+  "768": {
+    "section": {
+      "paddingTop": "64px",
+      "paddingBottom": "0px",
+      "paddingLeft": "0px",
+      "paddingRight": "0px",
+      "backgroundColor": "rgba(0, 0, 0, 0)"
+    },
+    "inner": {
+      "paddingTop": "0px",
+      "paddingBottom": "52px",
+      "backgroundColor": "rgba(0, 0, 0, 0)"
+    },
+    "wrapper": {
+      "paddingTop": "48px",
+      "paddingBottom": "32px"
+    },
+    "h2": {
+      "marginTop": "0px",
+      "marginBottom": "0px",
+      "marginLeft": "0px",
+      "marginRight": "0px",
+      "maxWidth": "820px",
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "26.8698px",
+      "fontWeight": "600",
+      "lineHeight": "29.5567px",
+      "letterSpacing": "normal",
+      "textTransform": "uppercase",
+      "textWrap": "balance"
+    }
+  },
+  "800": {
+    "section": {
+      "paddingTop": "64px",
+      "paddingBottom": "0px",
+      "paddingLeft": "0px",
+      "paddingRight": "0px",
+      "backgroundColor": "rgba(0, 0, 0, 0)"
+    },
+    "inner": {
+      "paddingTop": "0px",
+      "paddingBottom": "52px",
+      "backgroundColor": "rgba(0, 0, 0, 0)"
+    },
+    "wrapper": {
+      "paddingTop": "48px",
+      "paddingBottom": "32px"
+    },
+    "h2": {
+      "marginTop": "0px",
+      "marginBottom": "0px",
+      "marginLeft": "0px",
+      "marginRight": "0px",
+      "maxWidth": "820px",
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "27.104px",
+      "fontWeight": "600",
+      "lineHeight": "29.8144px",
+      "letterSpacing": "normal",
+      "textTransform": "uppercase",
+      "textWrap": "balance"
+    }
+  },
+  "1023": {
+    "section": {
+      "paddingTop": "64px",
+      "paddingBottom": "0px",
+      "paddingLeft": "0px",
+      "paddingRight": "0px",
+      "backgroundColor": "rgba(0, 0, 0, 0)"
+    },
+    "inner": {
+      "paddingTop": "0px",
+      "paddingBottom": "52px",
+      "backgroundColor": "rgba(0, 0, 0, 0)"
+    },
+    "wrapper": {
+      "paddingTop": "48px",
+      "paddingBottom": "32px"
+    },
+    "h2": {
+      "marginTop": "0px",
+      "marginBottom": "0px",
+      "marginLeft": "86.5px",
+      "marginRight": "86.5px",
+      "maxWidth": "820px",
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "28.7364px",
+      "fontWeight": "600",
+      "lineHeight": "31.61px",
+      "letterSpacing": "normal",
+      "textTransform": "uppercase",
+      "textWrap": "balance"
+    }
+  },
+  "1024": {
+    "section": {
+      "paddingTop": "80px",
+      "paddingBottom": "0px",
+      "paddingLeft": "0px",
+      "paddingRight": "0px",
+      "backgroundColor": "rgba(0, 0, 0, 0)"
+    },
+    "inner": {
+      "paddingTop": "0px",
+      "paddingBottom": "64px",
+      "backgroundColor": "rgba(0, 0, 0, 0)"
+    },
+    "wrapper": {
+      "paddingTop": "72px",
+      "paddingBottom": "52px"
+    },
+    "h2": {
+      "marginTop": "0px",
+      "marginBottom": "0px",
+      "marginLeft": "87px",
+      "marginRight": "87px",
+      "maxWidth": "820px",
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "37.7216px",
+      "fontWeight": "600",
+      "lineHeight": "42.2482px",
+      "letterSpacing": "normal",
+      "textTransform": "uppercase",
+      "textWrap": "balance"
+    }
+  },
+  "1280": {
+    "section": {
+      "paddingTop": "80px",
+      "paddingBottom": "0px",
+      "paddingLeft": "0px",
+      "paddingRight": "0px",
+      "backgroundColor": "rgba(0, 0, 0, 0)"
+    },
+    "inner": {
+      "paddingTop": "0px",
+      "paddingBottom": "64px",
+      "backgroundColor": "rgba(0, 0, 0, 0)"
+    },
+    "wrapper": {
+      "paddingTop": "72px",
+      "paddingBottom": "52px"
+    },
+    "h2": {
+      "marginTop": "0px",
+      "marginBottom": "0px",
+      "marginLeft": "175px",
+      "marginRight": "175px",
+      "maxWidth": "820px",
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "40.768px",
+      "fontWeight": "600",
+      "lineHeight": "45.6602px",
+      "letterSpacing": "normal",
+      "textTransform": "uppercase",
+      "textWrap": "balance"
+    }
+  },
+  "1536": {
+    "section": {
+      "paddingTop": "80px",
+      "paddingBottom": "0px",
+      "paddingLeft": "0px",
+      "paddingRight": "0px",
+      "backgroundColor": "rgba(0, 0, 0, 0)"
+    },
+    "inner": {
+      "paddingTop": "0px",
+      "paddingBottom": "64px",
+      "backgroundColor": "rgba(0, 0, 0, 0)"
+    },
+    "wrapper": {
+      "paddingTop": "72px",
+      "paddingBottom": "52px"
+    },
+    "h2": {
+      "marginTop": "0px",
+      "marginBottom": "0px",
+      "marginLeft": "255px",
+      "marginRight": "255px",
+      "maxWidth": "820px",
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "43.8144px",
+      "fontWeight": "600",
+      "lineHeight": "49.0721px",
+      "letterSpacing": "normal",
+      "textTransform": "uppercase",
+      "textWrap": "balance"
+    }
+  },
+  "1920": {
+    "section": {
+      "paddingTop": "80px",
+      "paddingBottom": "0px",
+      "paddingLeft": "0px",
+      "paddingRight": "0px",
+      "backgroundColor": "rgba(0, 0, 0, 0)"
+    },
+    "inner": {
+      "paddingTop": "0px",
+      "paddingBottom": "64px",
+      "backgroundColor": "rgba(0, 0, 0, 0)"
+    },
+    "wrapper": {
+      "paddingTop": "72px",
+      "paddingBottom": "52px"
+    },
+    "h2": {
+      "marginTop": "0px",
+      "marginBottom": "0px",
+      "marginLeft": "375px",
+      "marginRight": "375px",
+      "maxWidth": "820px",
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "48.384px",
+      "fontWeight": "600",
+      "lineHeight": "54.1901px",
+      "letterSpacing": "normal",
+      "textTransform": "uppercase",
+      "textWrap": "balance"
+    }
+  },
+  "2560": {
+    "section": {
+      "paddingTop": "80px",
+      "paddingBottom": "0px",
+      "paddingLeft": "0px",
+      "paddingRight": "0px",
+      "backgroundColor": "rgba(0, 0, 0, 0)"
+    },
+    "inner": {
+      "paddingTop": "0px",
+      "paddingBottom": "64px",
+      "backgroundColor": "rgba(0, 0, 0, 0)"
+    },
+    "wrapper": {
+      "paddingTop": "72px",
+      "paddingBottom": "52px"
+    },
+    "h2": {
+      "marginTop": "0px",
+      "marginBottom": "0px",
+      "marginLeft": "695px",
+      "marginRight": "695px",
+      "maxWidth": "820px",
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "fontSize": "56px",
+      "fontWeight": "600",
+      "lineHeight": "62.72px",
+      "letterSpacing": "normal",
+      "textTransform": "uppercase",
+      "textWrap": "balance"
+    }
+  }
+}

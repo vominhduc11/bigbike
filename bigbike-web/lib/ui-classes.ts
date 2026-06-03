@@ -40,8 +40,17 @@ export const accountSidebar =
 
 /** Form field label (was `.bb-field-label`). */
 export const fieldLabel = "text-sm font-bold uppercase tracking-display text-muted-foreground";
-/** Section heading, display font (was `.bb-section-heading`). */
-export const sectionHeading = "font-display text-26 font-semibold uppercase text-foreground";
+/** Section eyebrow / kicker — the small uppercase label above a section title.
+ * Canonical: muted gray, wide tracking, condensed black. The ONE eyebrow style
+ * (home/compare/recently-viewed previously split between muted-grey and brand-red).
+ * Compose with spacing, e.g. `cn(sectionEyebrow, "mb-3")`. */
+export const sectionEyebrow =
+  "text-[var(--bb-text-muted)] font-cta text-[length:var(--bb-text-section-kicker)] tracking-[0.15em] font-black leading-none uppercase";
+/** Primary section heading (h2-level), fluid 30→50px. The ONE canonical section
+ * title — unified from the prior split (`text-26` here vs the home inline
+ * `--bb-text-section-title`). Compose with spacing, e.g. `cn(sectionHeading, "mb-4")`. */
+export const sectionHeading =
+  "m-0 font-heading text-[length:var(--bb-text-section-title)] font-semibold leading-[1.2] tracking-normal uppercase text-foreground";
 /** Smaller section subheading (was `.bb-section-subheading`). */
 export const sectionSubheading = "font-heading text-base font-semibold uppercase text-foreground";
 /** Empty/error state title (was `.bb-state-title`). */

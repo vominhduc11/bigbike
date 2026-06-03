@@ -77,7 +77,7 @@ export default async function NotFoundPage() {
 
           {recent.length > 0 && (
             <section className="mt-6 text-left" aria-label={t("recentArticlesAriaLabel")}>
-              <h2 className={cn(sectionHeading, "tracking-wide mb-[18px]")}>{t("recentArticlesHeading")}</h2>
+              <h2 className={cn(sectionHeading, "mb-[18px]")}>{t("recentArticlesHeading")}</h2>
               <div className="grid grid-cols-1 gap-[22px] sm:grid-cols-2 lg:grid-cols-3 xl:gap-6 2xl:gap-8">
                 {recent.map((article) => (
                   <ArticleCard key={article.id} article={article} />

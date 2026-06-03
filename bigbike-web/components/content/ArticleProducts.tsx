@@ -1,5 +1,7 @@
 import type { Product } from "@/lib/contracts/public";
 import { ProductCard } from "@/components/catalog/ProductCard";
+import { cn } from "@/lib/utils";
+import { sectionHeading } from "@/lib/ui-classes";
 
 type ArticleProductsProps = {
   products: Product[];
@@ -11,7 +13,7 @@ export function ArticleProducts({ products, title }: ArticleProductsProps) {
 
   return (
     <section className="mt-10 pt-9 border-t border-border" aria-label={title}>
-      <h2 className="font-display text-h3 font-semibold uppercase tracking-display text-foreground text-center m-0 mb-6">
+      <h2 className={cn(sectionHeading, "text-center mb-6")}>
         {title}
       </h2>
       <div className="grid grid-cols-2 gap-4 sm:gap-6 md:grid-cols-3 lg:grid-cols-4 xl:gap-8">

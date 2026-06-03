@@ -121,7 +121,7 @@ export function MobileStickyPurchaseBar({
           href={zaloUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="max-md:flex-none max-md:inline-flex max-md:items-center max-md:justify-center max-md:h-12 max-md:px-4 max-md:border-2 max-md:border-black max-md:rounded-none max-md:text-black max-md:font-body max-md:text-[13px] max-md:font-bold max-md:no-underline max-md:uppercase max-md:whitespace-nowrap"
+          className="max-md:flex-none max-md:inline-flex max-md:items-center max-md:justify-center max-md:h-12 max-md:px-4 max-md:border-2 max-md:border-black max-md:rounded-none max-md:text-black max-md:font-body max-md:text-ui-13 max-md:font-bold max-md:no-underline max-md:uppercase max-md:whitespace-nowrap"
           aria-label="Tư vấn qua Zalo"
           tabIndex={visible ? 0 : -1}
         >

@@ -106,6 +106,27 @@
   --text-40: var(--bb-text-40);
   --text-50: var(--bb-text-50);
 
+  /* Fixed-px UI text scale: text-ui-N = exactly N px. The "fixed" text group
+     (TYPOGRAPHY §10) — buttons, badges, prices, steppers, dense panel labels —
+     where size must NOT scale. Names are accurate px (unlike legacy --text-9/13/22
+     above, whose names drifted from values). Use instead of raw `text-[Npx]`. */
+  --text-ui-9: 9px;
+  --text-ui-10: 10px;
+  --text-ui-11: 11px;
+  --text-ui-12: 12px;
+  --text-ui-13: 13px;
+  --text-ui-14: 14px;
+  --text-ui-15: 15px;
+  --text-ui-16: 16px;
+  --text-ui-17: 17px;
+  --text-ui-18: 18px;
+  --text-ui-20: 20px;
+  --text-ui-22: 22px;
+  --text-ui-24: 24px;
+  --text-ui-26: 26px;
+  --text-ui-30: 30px;
+  --text-ui-35: 35px;
+
   /* Responsive heading tokens — scale theo breakpoint qua brand-tokens.css.
      Dùng text-h1/h2/hero/section-title/news-title cho heading thay vì size cố định. */
   --text-hero: var(--bb-text-hero);
@@ -937,7 +958,8 @@ body {
   overflow: hidden;
   grid-template-rows: 0fr;
   opacity: 0;
-  transition: grid-template-rows 0.25s ease, opacity 0.25s ease;
+  transition: grid-template-rows 0.2s var(--bb-ease-standard), opacity 0.2s ease;
+  will-change: grid-template-rows;
 }
 
 .bb-mobile-nav-children > * {
@@ -2588,6 +2610,14 @@ body:has(.bb-home) {
   100%     { transform: scale(1); }
 }
 
+/* Pulsing "halo" rings radiating outward from the floating chat FAB to draw
+   attention. Two staggered rings (see FloatingChat.tsx) share this loop. */
+@keyframes bb-chat-halo {
+  0%   { transform: scale(1);   opacity: 0.5; }
+  70%  { opacity: 0; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
 /* WooCommerce single-product parity scope.
    .bb-wp-pdp base color/background migrated to inline Tailwind (text-black bg-white)
    on the page wrapper; the class is kept as a marker for the body:has() emblem
@@ -3335,56 +3365,10 @@ body:has(.bb-search-results-page) {
     color: var(--bb-text-inverse);
   }
 
-  .bb-home-mobile-categories,
   .bb-home-products-parity,
   .bb-home .content-bottom {
     background: var(--bb-mobile-shell-bg);
     color: var(--bb-text-inverse);
-  }
-
-  .bb-mobile-section-header h2 {
-    color: var(--bb-text-inverse);
-    font-size: 24px;
-    line-height: 1.05;
-    letter-spacing: 0;
-  }
-
-  .bb-mobile-section-header a {
-    color: var(--bb-brand-primary);
-  }
-
-  .bb-home-mobile-category-card,
-  .bb-home-mobile-trust-card {
-    border-color: var(--bb-mobile-shell-border);
-    background: var(--bb-mobile-shell-surface);
-    color: var(--bb-text-inverse);
-  }
-
-  .bb-home-mobile-category-card .text-foreground,
-  .bb-home-mobile-trust-card .text-foreground {
-    color: var(--bb-text-inverse);
-  }
-
-  .bb-home-mobile-trust {
-    position: relative;
-    border-color: var(--bb-mobile-shell-border);
-    background: var(--bb-mobile-shell-surface-2);
-  }
-
-  .bb-home-mobile-trust::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    width: 48px;
-    background: linear-gradient(to right, transparent, var(--bb-mobile-shell-surface-2));
-    pointer-events: none;
-    z-index: 1;
-  }
-
-  .bb-home-mobile-trust-card .text-muted-foreground {
-    color: var(--bb-text-inverse-muted);
   }
 
   .bb-home-products-parity {
@@ -3500,7 +3484,6 @@ body:has(.bb-search-results-page) {
   }
 
   .bb-home,
-  .bb-home-mobile-categories,
   .bb-home-products-parity,
   .bb-home .content-bottom {
     background: var(--bb-bg-page);
@@ -3509,32 +3492,6 @@ body:has(.bb-search-results-page) {
 
   .bb-home {
     padding-bottom: calc(var(--bb-mobile-nav-height) + env(safe-area-inset-bottom) + 16px);
-  }
-
-  .bb-home-mobile-category-card,
-  .bb-home-mobile-trust-card {
-    border-color: var(--bb-border-subtle);
-    background: var(--bb-bg-surface);
-    color: var(--bb-text-primary);
-  }
-
-  .bb-home-mobile-category-card .text-foreground,
-  .bb-home-mobile-trust-card .text-foreground,
-  .bb-mobile-section-header h2 {
-    color: var(--bb-text-primary);
-  }
-
-  .bb-home-mobile-trust {
-    border-color: var(--bb-border-subtle);
-    background: var(--bb-bg-surface-raised);
-  }
-
-  .bb-home-mobile-trust::after {
-    background: linear-gradient(to right, transparent, var(--bb-bg-page));
-  }
-
-  .bb-home-mobile-trust-card .text-muted-foreground {
-    color: var(--bb-text-secondary);
   }
 
   .bb-home-products-parity {
@@ -3820,17 +3777,6 @@ body > footer .bg-footer-top a:focus-visible {
   color: var(--bb-brand-primary-inverse);
 }
 
-@media (max-width: 767px) {
-  .bb-mobile-section-header a {
-    color: var(--bb-link-text);
-  }
-
-  .bb-mobile-section-header a:hover,
-  .bb-mobile-section-header a:focus-visible {
-    color: var(--bb-text-brand);
-  }
-}
-
 html[data-bb-header-panel] .bb-floating-chat-anchor,
 html[data-bb-keyboard-focus] .bb-floating-chat-anchor,
 html[data-bb-nav-dropdown-open] .bb-floating-chat-anchor,
@@ -3868,7 +3814,6 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
     visibility: hidden;
   }
 
-  html[data-bb-chat-sensitive] .bb-floating-chat-anchor,
   body:has(.bb-page--auth) .bb-floating-chat-anchor,
   body:has(.bb-account-layout) .bb-floating-chat-anchor {
     display: none !important;
@@ -3920,23 +3865,10 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
     min-height: var(--bb-touch-target);
   }
 
-  .bb-home-mobile-category-card {
-    background: var(--bb-bg-surface);
-    color: var(--bb-text-primary);
-  }
-
-  .bb-home-mobile-category-image img,
   .bb-category-image {
     object-fit: contain !important;
     background: var(--bb-bg-surface);
-  }
-
-  .bb-category-image {
     padding: 12px;
-  }
-
-  .bb-home-mobile-category-card .text-foreground {
-    color: var(--bb-text-primary);
   }
 
   .bb-product-image img,
@@ -3944,7 +3876,6 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
     object-fit: contain !important;
   }
 
-  .bb-mobile-section-header h2,
   .bb-home .content-bottom.wyswyg h1,
   .bb-home .content-bottom.wyswyg h2 {
     max-width: 100%;
@@ -4013,23 +3944,6 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
 /* Homepage mobile polish pass. Keep this block late in the cascade so it can
    normalize the legacy WP parity rules without changing desktop composition. */
 @media (max-width: 767px) {
-  .bb-home-mobile-categories {
-    padding: 20px 0 4px;
-  }
-
-  .bb-home-mobile-category-grid {
-    gap: 10px;
-    padding-inline: var(--bb-mobile-page-x);
-  }
-
-  .bb-home-mobile-category-card {
-    min-width: 0;
-  }
-
-  .bb-home-mobile-category-image img {
-    object-fit: contain !important;
-  }
-
   .bb-home .content-bottom.bb-seo-content {
     padding: 32px 0;
   }

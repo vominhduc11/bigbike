@@ -20,14 +20,14 @@ import { useHeaderUi } from "./HeaderUiContext";
 
 // Dark-shell micro label (GIỎ HÀNG / TỔNG TẠM TÍNH / line SKU)
 const microLabel =
-  "m-0 font-cta text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--bb-text-inverse-muted)]";
+  "m-0 font-cta text-ui-10 font-semibold uppercase tracking-[0.16em] text-[var(--bb-text-inverse-muted)]";
 // Shared CTA button chrome (empty link / primary / secondary)
 const ctaBtn =
-  "inline-flex min-h-11 items-center justify-center px-4 font-cta text-[13px] font-semibold uppercase tracking-[0.1em] no-underline";
+  "inline-flex min-h-11 items-center justify-center px-4 font-cta text-ui-13 font-semibold uppercase tracking-[0.1em] no-underline";
 const ctaBtnFilled = "border border-[var(--bb-brand-primary)] bg-brand text-[var(--bb-text-inverse)]";
 const qtyBtn =
   "inline-flex h-11 w-11 items-center justify-center border-0 bg-transparent cursor-pointer disabled:cursor-not-allowed disabled:opacity-45";
-const lineMeta = "mt-1 text-[12px] leading-[1.25]";
+const lineMeta = "mt-1 text-ui-12 leading-[1.25]";
 
 function CartSheetThumb({ item }: { item: CartItem }) {
   return (
@@ -158,7 +158,7 @@ export function MobileCartSheet() {
                     <CartSheetThumb item={item} />
                     <div className="min-w-0 flex-1">
                       <p className={microLabel}>{item.sku || "BIGBIKE"}</p>
-                      <h3 className="mt-[2px] mr-7 line-clamp-2 font-cta text-[13px] font-medium leading-[1.2] text-[var(--bb-text-inverse)]">
+                      <h3 className="mt-[2px] mr-7 line-clamp-2 font-cta text-ui-13 font-medium leading-[1.2] text-[var(--bb-text-inverse)]">
                         {item.productName}
                       </h3>
                       {item.variantName ? (
@@ -178,7 +178,7 @@ export function MobileCartSheet() {
                           >
                             -
                           </button>
-                          <span className="inline-flex min-w-[30px] items-center justify-center text-[var(--bb-text-inverse)] text-[13px]">
+                          <span className="inline-flex min-w-[30px] items-center justify-center text-[var(--bb-text-inverse)] text-ui-13">
                             {item.quantity}
                           </span>
                           <button
@@ -191,7 +191,7 @@ export function MobileCartSheet() {
                             +
                           </button>
                         </div>
-                        <strong className="text-brand-on-dark font-heading text-[14px]">{formatVnd(item.lineTotal)}</strong>
+                        <strong className="text-brand-on-dark font-heading text-ui-14">{formatVnd(item.lineTotal)}</strong>
                       </div>
                     </div>
                     <button
@@ -214,13 +214,13 @@ export function MobileCartSheet() {
           <div className="flex-none pt-3 px-[18px] pb-[max(16px,env(safe-area-inset-bottom))] border-t border-[var(--bb-mobile-shell-border)] bg-[var(--bb-mobile-shell-surface-2)]">
             <div className="flex items-baseline justify-between gap-3 mb-3">
               <span className={microLabel}>TỔNG TẠM TÍNH</span>
-              <strong className="text-[var(--bb-text-inverse)] font-heading text-[22px]">
+              <strong className="text-[var(--bb-text-inverse)] font-heading text-ui-22">
                 {formatVnd(cart?.totals.totalAmount ?? 0)}
               </strong>
             </div>
             {unavailable ? (
               <p
-                className="mt-[-2px] mb-3 border border-[var(--bb-state-warning-border)] bg-[var(--bb-state-warning-bg)] px-3 py-[10px] text-[var(--bb-state-warning-text)] text-[13px] leading-[1.35]"
+                className="mt-[-2px] mb-3 border border-[var(--bb-state-warning-border)] bg-[var(--bb-state-warning-bg)] px-3 py-[10px] text-[var(--bb-state-warning-text)] text-ui-13 leading-[1.35]"
                 role="alert"
               >
                 Có sản phẩm tạm thời không khả dụng. Vui lòng cập nhật giỏ hàng trước khi thanh toán.

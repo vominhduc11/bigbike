@@ -4,12 +4,12 @@ import Link from "next/link";
 import { getLocale } from "next-intl/server";
 import { Container } from "@/components/layout/Container";
 import { cn } from "@/lib/utils";
+import { sectionEyebrow, sectionHeading } from "@/lib/ui-classes";
 import { BrandCarousel } from "@/components/home/BrandCarousel";
 import { ExperienceCarousel } from "@/components/home/ExperienceCarousel";
 import { FeaturedProductsCarousel } from "@/components/home/FeaturedProductsCarousel";
 import { HeroSlider } from "@/components/home/HeroSlider";
 import { HomeAnalytics } from "@/components/home/HomeAnalytics";
-import { MobileCategoryGrid } from "@/components/home/MobileCategoryGrid";
 import { HomeVideoCarousel } from "@/components/home/HomeVideoCarousel";
 import type {
   Article,
@@ -125,10 +125,10 @@ function WpCategoryListItem({ category }: { category: Category }) {
   return (
     <Link
       href={toCategoryPath(category.slug)}
-      className="group relative flex flex-col items-center justify-center h-[290px] p-[30px] bg-white border-r border-b border-r-[#cecece] border-b-[#cecece] text-center no-underline cursor-pointer overflow-hidden before:content-[''] before:absolute before:inset-0 before:bg-[url('/wp/cat-hover.jpg')] before:bg-[position:top_center] before:bg-cover before:bg-no-repeat before:opacity-0 before:[transition:opacity_0.2s_ease] hover:before:opacity-100 focus-visible:[outline:var(--bb-focus-outline)] focus-visible:[outline-offset:-3px] focus-visible:z-[2]"
+      className="group relative flex flex-col items-center justify-center h-[290px] max-md:h-[170px] p-[30px] max-md:p-4 bg-white border-r border-b border-r-[#cecece] border-b-[#cecece] text-center no-underline cursor-pointer overflow-hidden before:content-[''] before:absolute before:inset-0 before:bg-[url('/wp/cat-hover.jpg')] before:bg-[position:top_center] before:bg-cover before:bg-no-repeat before:opacity-0 before:[transition:opacity_0.2s_ease] hover:before:opacity-100 focus-visible:[outline:var(--bb-focus-outline)] focus-visible:[outline-offset:-3px] focus-visible:z-[2]"
     >
       <span
-        className="relative z-[1] flex items-center justify-center w-[72px] h-[72px] min-[1536px]:w-20 min-[1536px]:h-20 min-[2560px]:w-[88px] min-[2560px]:h-[88px] pointer-events-none"
+        className="relative z-[1] flex items-center justify-center w-[72px] h-[72px] max-md:w-12 max-md:h-12 min-[1536px]:w-20 min-[1536px]:h-20 min-[2560px]:w-[88px] min-[2560px]:h-[88px] pointer-events-none"
         aria-hidden="true"
       >
         <Image
@@ -140,7 +140,7 @@ function WpCategoryListItem({ category }: { category: Category }) {
           className="block w-full h-full object-contain [transition:filter_0.2s_ease,transform_0.2s_ease] group-hover:[filter:brightness(0)_invert(1)] group-hover:[transform:scale(1.06)] group-active:[transform:scale(0.97)]"
         />
       </span>
-      <span className="relative z-[1] line-clamp-2 mt-6 font-[family-name:var(--bb-font-cta)] font-semibold text-[17px] min-[1536px]:text-[18px] min-[2560px]:text-[20px] leading-[1.2] tracking-[0.02em] uppercase text-foreground [transition:color_0.2s_ease] group-hover:text-white">
+      <span className="relative z-[1] line-clamp-2 mt-6 max-md:mt-3 font-[family-name:var(--bb-font-cta)] font-semibold text-ui-17 max-md:text-ui-13 min-[1536px]:text-ui-18 min-[2560px]:text-ui-20 leading-[1.2] tracking-[0.02em] uppercase text-foreground [transition:color_0.2s_ease] group-hover:text-white">
         {name}
       </span>
     </Link>
@@ -182,14 +182,14 @@ function HomeCategoryHighlights({ items }: { items: HomeHighlightItem[] }) {
                   <Link className="hidden" href={categoryHref}>
                     {item.categoryName}
                   </Link>
-                  <h3 className="mb-[40px] min-[2560px]:mb-[50px] max-md:mb-[16px] max-w-[55%] max-md:max-w-[56%] font-[family-name:var(--bb-font-display)] text-[clamp(1.125rem,0.645rem_+_1vw,2.25rem)] max-md:text-[0.875rem] font-semibold leading-[1.2] max-md:leading-[1.25] line-clamp-2">
+                  <h3 className="mb-[40px] min-[2560px]:mb-[50px] max-md:mb-[16px] max-w-[55%] max-md:max-w-[56%] font-[family-name:var(--bb-font-display)] text-[clamp(1.125rem,0.645rem_+_1vw,2.25rem)] max-md:text-ui-14 font-semibold leading-[1.2] max-md:leading-[1.25] line-clamp-2">
                     <Link href={href} className="!text-black">
                       {item.productName}
                     </Link>
                   </h3>
                   <Link
                     href={href}
-                    className="!text-brand font-[family-name:var(--bb-font-display)] text-[clamp(0.875rem,0.5rem_+_0.5vw,1.375rem)] max-md:text-[0.8125rem] font-semibold normal-case"
+                    className="!text-brand font-[family-name:var(--bb-font-display)] text-[clamp(0.875rem,0.5rem_+_0.5vw,1.375rem)] max-md:text-ui-13 font-semibold normal-case"
                   >
                     Mua ngay <i className="fal fa-chevron-right ml-[5px]" aria-hidden="true" />
                   </Link>
@@ -228,8 +228,8 @@ function PromoBanner({
   );
 
   return (
-    <div className="banner-ads pt-15 pb-0 max-[1024px]:pt-13 max-md:pt-5 max-md:pb-2 max-md:px-[var(--bb-mobile-page-x)] max-md:bg-background">
-      <div className="mx-auto w-full max-w-[var(--bb-container-xl)] px-0 max-md:max-w-none max-md:border max-md:border-border max-md:bg-card">
+    <div className="banner-ads pt-15 pb-0 max-[1024px]:pt-13 max-md:pt-5 max-md:pb-2 max-md:px-[var(--bb-mobile-page-x)]">
+      <div className="mx-auto w-full max-w-[var(--bb-container-xl)] px-0 max-md:max-w-none">
         <div className="flex flex-wrap -mx-[15px]">
           <div className="relative w-full px-[15px] md:flex-[0_0_100%] md:max-w-full">
             {href ? <Link href={href}>{content}</Link> : content}
@@ -277,7 +277,7 @@ function WpNewsCard({ article }: { article: Article }) {
 
   return (
     <div className="relative w-full max-w-full px-0 md:flex-[0_0_33.3333%] md:max-w-[33.3333%] md:px-[15px]">
-      <div className="mb-[30px] bg-white [box-shadow:0_3px_6px_rgba(0,0,0,0.16)] max-md:border max-md:border-solid max-md:border-[#dddddd]">
+      <div className="mb-[30px] bg-white [box-shadow:0_3px_6px_rgba(0,0,0,0.16)]">
         <div className="text-center">
           <Link
             className="lazy group block overflow-hidden bg-cover bg-no-repeat [transition:all_0.3s_ease]"
@@ -297,14 +297,14 @@ function WpNewsCard({ article }: { article: Article }) {
         <div className="relative max-md:bg-white">
           {dateStr && (
             <div className="absolute left-0 top-[-21px] w-[170px] max-md:top-[-17px] max-md:w-[132px]">
-              <p className="relative m-0 p-0 pl-[20px] font-heading text-[14px] font-semibold uppercase leading-[42px] whitespace-nowrap bg-brand text-white after:absolute after:bottom-0 after:right-[-15px] after:h-[42px] after:w-[25px] after:bg-brand after:[transform:skewX(-20deg)] after:content-[''] max-md:pl-[14px] max-md:text-[12px] max-md:leading-[34px] max-md:after:right-[-11px] max-md:after:h-[34px] max-md:after:w-[19px]">
+              <p className="relative m-0 p-0 pl-[20px] font-heading text-ui-14 font-semibold uppercase leading-[42px] whitespace-nowrap bg-brand text-white after:absolute after:bottom-0 after:right-[-15px] after:h-[42px] after:w-[25px] after:bg-brand after:[transform:skewX(-20deg)] after:content-[''] max-md:pl-[14px] max-md:text-ui-12 max-md:leading-[34px] max-md:after:right-[-11px] max-md:after:h-[34px] max-md:after:w-[19px]">
                 {dateStr}
               </p>
             </div>
           )}
           <div className="[padding:40px_20px_30px] max-md:bg-white max-md:[padding:40px_16px_22px]">
             <p className="m-0 mb-[5px] font-heading text-[clamp(1.25rem,1.229rem_+_0.092vw,1.375rem)] font-semibold normal-case leading-[var(--bb-line-snug)] tracking-[normal] text-black">
-              <Link href={href} className="text-black no-underline [transition:color_0.2s_ease] hover:text-brand max-md:font-cta max-md:text-[15px] max-md:leading-[1.25]">
+              <Link href={href} className="text-black no-underline [transition:color_0.2s_ease] hover:text-brand">
                 {title}
               </Link>
             </p>
@@ -439,9 +439,9 @@ export default async function HomePage() {
           <div className="mx-auto w-full max-w-[var(--bb-container-xl)] px-[15px] max-md:max-w-none max-md:px-[var(--bb-mobile-page-x)]">
             {(aboutSubtitle || aboutTitle) && (
               <div className="text-center mb-[40px] max-md:mb-[24px]">
-                {aboutSubtitle ? <p className="mb-3 text-[var(--bb-text-muted)] font-cta text-[length:var(--bb-text-section-kicker)] tracking-[0.15em] font-black leading-none uppercase">{aboutSubtitle}</p> : null}
+                {aboutSubtitle ? <p className={cn(sectionEyebrow, "mb-3")}>{aboutSubtitle}</p> : null}
                 {aboutTitle ? (
-                  <h2 className="m-0 text-black font-heading text-[length:var(--bb-text-section-title)] font-semibold leading-[1.2] tracking-normal uppercase">
+                  <h2 className={sectionHeading}>
                     {aboutTitle}
                   </h2>
                 ) : null}
@@ -463,32 +463,25 @@ export default async function HomePage() {
           aria-labelledby="home-products-heading"
         >
           <Container>
-            <div className="flex flex-col items-center justify-center gap-0 m-0 mb-[40px] p-0 [border-bottom:0] text-foreground [text-align:center] max-md:mb-[14px] max-md:px-[var(--bb-mobile-page-x)] max-md:[text-align:left]">
-              <p className="m-0 mb-2.5 text-[var(--bb-text-muted)] font-cta text-[length:var(--bb-text-section-kicker)] leading-[var(--bb-line-section-kicker)] tracking-[0.15em] font-black uppercase max-md:flex max-md:items-center max-md:gap-2 max-md:mb-1 max-md:text-[10px] max-md:tracking-[0.18em] max-md:before:content-[''] max-md:before:w-4 max-md:before:h-px max-md:before:bg-[var(--bb-action-primary)]">Sản phẩm nổi bật</p>
+            <div className="flex flex-col items-center justify-center gap-0 m-0 mb-[40px] p-0 [border-bottom:0] text-foreground [text-align:center] max-md:mb-[14px] max-md:px-[var(--bb-mobile-page-x)]">
+              <p className={cn(sectionEyebrow, "mb-3")}>Sản phẩm nổi bật</p>
               <h2
                 id="home-products-heading"
-                className="m-0 font-heading text-[length:var(--bb-text-section-title)] max-md:text-[length:var(--fs-h2)] font-semibold leading-[var(--bb-line-section-title)] max-md:leading-[1.08] tracking-normal uppercase text-black [text-align:center] max-md:max-w-full max-md:text-balance"
+                className={sectionHeading}
               >
                 Sản phẩm nổi bật tại BigBike
               </h2>
             </div>
             <FeaturedProductsCarousel products={carouselProducts} />
             {categoriesResult.data.length > 0 && (
-              <>
-                <div className="block md:hidden">
-                  <MobileCategoryGrid categories={categoriesResult.data} />
-                </div>
-                <div className="hidden md:block">
-                  <div
-                    className="grid grid-cols-4 min-[2560px]:grid-cols-6 gap-0 border-t border-l border-t-[#cecece] border-l-[#cecece] mt-[130px] max-[1024px]:mt-20 mb-2.5"
-                    aria-label="Danh mục sản phẩm"
-                  >
-                    {categoriesResult.data.map((category) => (
-                      <WpCategoryListItem key={category.id} category={category} />
-                    ))}
-                  </div>
-                </div>
-              </>
+              <div
+                className="grid grid-cols-2 min-[600px]:grid-cols-3 md:grid-cols-4 min-[2560px]:grid-cols-6 gap-0 border-t border-l border-t-[#cecece] border-l-[#cecece] mt-[130px] max-[1024px]:mt-20 max-md:mt-8 mb-2.5"
+                aria-label="Danh mục sản phẩm"
+              >
+                {categoriesResult.data.map((category) => (
+                  <WpCategoryListItem key={category.id} category={category} />
+                ))}
+              </div>
             )}
           </Container>
         </section>
@@ -497,15 +490,10 @@ export default async function HomePage() {
       {carouselProducts.length === 0 && categoriesResult.data.length > 0 && (
         <section className="bb-products-section" aria-label="Danh mục sản phẩm">
           <Container>
-            <div className="block md:hidden">
-              <MobileCategoryGrid categories={categoriesResult.data} />
-            </div>
-            <div className="hidden md:block">
-              <div className="grid grid-cols-4 min-[2560px]:grid-cols-6 gap-0 border-t border-l border-t-[#cecece] border-l-[#cecece] mt-0 mb-2.5">
-                {categoriesResult.data.map((category) => (
-                  <WpCategoryListItem key={category.id} category={category} />
-                ))}
-              </div>
+            <div className="grid grid-cols-2 min-[600px]:grid-cols-3 md:grid-cols-4 min-[2560px]:grid-cols-6 gap-0 border-t border-l border-t-[#cecece] border-l-[#cecece] mt-0 mb-2.5">
+              {categoriesResult.data.map((category) => (
+                <WpCategoryListItem key={category.id} category={category} />
+              ))}
             </div>
           </Container>
         </section>
@@ -522,23 +510,23 @@ export default async function HomePage() {
         <section className="bb-experience bb-experience--home bg-background text-foreground pt-[100px] max-[1024px]:pt-[72px] max-md:pt-8 pb-0" aria-labelledby="home-exp-heading">
           {(expSubtitle || expTitle || expDesc) && (
             <div className="mx-auto w-full max-w-[var(--bb-container-xl)] px-[15px]">
-              <div className="[text-align:center] max-md:[text-align:left] pb-10 max-md:pb-4">
+              <div className="[text-align:center] pb-10 max-md:pb-4">
                 {expSubtitle ? (
-                  <p className="mb-3 text-[var(--bb-text-muted)] font-cta text-[length:var(--bb-text-section-kicker)] tracking-[0.15em] font-black leading-none uppercase">
+                  <p className={cn(sectionEyebrow, "mb-3")}>
                     {expSubtitle}
                   </p>
                 ) : null}
                 {expTitle ? (
                   <h2
                     id="home-exp-heading"
-                    className="m-0 font-heading text-[length:var(--bb-text-section-title)] max-md:text-[length:var(--fs-h2)] font-semibold uppercase leading-[1.2] max-md:leading-[1.08] text-foreground max-md:max-w-full max-md:text-balance"
+                    className={sectionHeading}
                   >
                     {expTitle}
                   </h2>
                 ) : null}
                 {expDesc ? (
                   <div className="mx-auto w-full pt-[30px] max-md:pt-4 max-md:px-[var(--bb-mobile-page-x)] md:w-2/3 min-[1200px]:max-w-[770px]">
-                    <p className="text-[var(--bb-color-footer-top)] max-md:text-muted-foreground max-w-full m-0 text-base max-md:text-[15px] leading-[1.375] max-md:leading-[1.55]">
+                    <p className="text-[var(--bb-color-footer-top)] max-w-full m-0 text-base max-md:text-ui-15 leading-[1.375] max-md:leading-[1.55]">
                       {expDesc}
                     </p>
                   </div>
@@ -553,9 +541,9 @@ export default async function HomePage() {
       {newsArticles.length > 0 && (
         <div className="bb-home-news-parity bg-white pb-0 pt-[60px] max-[1024px]:pt-[52px] max-[768px]:pt-[20px]">
           <div className="mx-auto w-full max-w-[1200px] px-[15px] min-[1536px]:max-w-[1360px] min-[1920px]:w-[min(100%_-_2_*_var(--bb-page-padding-desktop),100rem)] min-[1920px]:max-w-none min-[2560px]:w-[min(100%_-_2_*_var(--bb-page-padding-desktop),140rem)] max-md:max-w-none max-md:px-[var(--bb-mobile-page-x)]">
-            <div className="px-0 pt-0 pb-[40px] [text-align:center] max-md:px-[var(--bb-mobile-page-x)] max-md:pb-[14px] max-md:[text-align:left]">
-              <p className="mb-3 text-[var(--bb-text-muted)] font-cta text-[length:var(--bb-text-section-kicker)] tracking-[0.15em] font-black leading-none uppercase">Tin tức & cập nhật</p>
-              <h2 className="m-0 font-cta text-[clamp(1.75rem,1.45rem_+_1.281vw,3.5rem)] font-semibold uppercase leading-[1.15] tracking-[normal] text-black max-md:leading-[1.2]">
+            <div className="px-0 pt-0 pb-[40px] [text-align:center] max-md:px-[var(--bb-mobile-page-x)] max-md:pb-[14px]">
+              <p className={cn(sectionEyebrow, "mb-3")}>Tin tức & cập nhật</p>
+              <h2 className={sectionHeading}>
                 Cập nhật xu hướng cùng BigBike
               </h2>
             </div>
@@ -571,14 +559,14 @@ export default async function HomePage() {
       )}
 
       {homeVideos.length > 0 && (
-        <section className="videos-slide pt-20 pb-0 max-[1024px]:pt-16 max-md:pt-7 max-md:bg-background" aria-labelledby="home-video-heading">
+        <section className="videos-slide pt-20 pb-0 max-[1024px]:pt-16 max-md:pt-7" aria-labelledby="home-video-heading">
           {/*
             Overlay strategy:
             - Layer 1 (before): solid dark base ở bottom-up để nền không flat
             - Layer 2 (after):  gradient top-down nhẹ để title area tối hơn, cards nổi
             Tổng mức tối ~60% — giữ mood mạnh mẽ nhưng sharp hơn black/40 cũ
           */}
-          <div className="relative bg-[url('/wp/video-bg.jpg')] bg-cover bg-center bg-no-repeat pb-16 max-[1024px]:pb-13 max-md:pb-10 max-md:bg-[color:var(--bb-bg-surface-dark)] before:absolute before:inset-0 before:bg-black/55 before:content-[''] after:absolute after:inset-0 after:bg-gradient-to-b after:from-black/30 after:via-transparent after:to-black/25 after:content-['']">
+          <div className="relative bg-[url('/wp/video-bg.jpg')] bg-cover bg-center bg-no-repeat pb-16 max-[1024px]:pb-13 max-md:pb-10 before:absolute before:inset-0 before:bg-black/55 before:content-[''] after:absolute after:inset-0 after:bg-gradient-to-b after:from-black/30 after:via-transparent after:to-black/25 after:content-['']">
             <div className="relative z-[1] mx-auto w-full max-w-[var(--bb-container-xl)] px-[15px]">
               <div className="text-center text-white pt-18 max-[1024px]:pt-12 max-md:pt-9 pb-13 max-[1024px]:pb-8 max-md:pb-5">
                 <h2
@@ -599,7 +587,7 @@ export default async function HomePage() {
       )}
 
       {brandsResult.data.length > 0 && (
-        <div className="partner-slide pt-30 pb-30 max-[1024px]:pt-20 max-[1024px]:pb-20 max-md:pt-8 max-md:pb-6 max-md:px-[var(--bb-mobile-page-x)] max-md:bg-background max-md:text-foreground">
+        <div className="partner-slide pt-30 pb-30 max-[1024px]:pt-20 max-[1024px]:pb-20 max-md:pt-8 max-md:pb-6">
           <BrandCarousel brands={brandsResult.data} />
         </div>
       )}

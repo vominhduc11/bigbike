@@ -17,7 +17,7 @@ export function CartIcon() {
   const showBadge = badgeCount > 0;
   const renderBadge = () =>
     showBadge ? (
-      <span className="absolute top-[-8px] right-[-8px] inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 pt-0 pb-[3px] !rounded-[50%] bg-[var(--bb-action-primary)] text-white font-[family-name:var(--bb-font-body)] text-[11px] font-bold leading-none text-center max-md:top-[-6px] max-md:right-[-6px] max-md:min-w-4 max-md:h-4 max-md:pb-0 max-md:border-2 max-md:border-[var(--bb-color-black)] max-md:text-[9px] max-md:leading-[12px]">
+      <span className="absolute top-[-8px] right-[-8px] inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 pt-0 pb-[3px] !rounded-[50%] bg-[var(--bb-action-primary)] text-white font-[family-name:var(--bb-font-body)] text-ui-11 font-bold leading-none text-center max-md:top-[-6px] max-md:right-[-6px] max-md:min-w-4 max-md:h-4 max-md:pb-0 max-md:border-2 max-md:border-[var(--bb-color-black)] max-md:text-ui-9 max-md:leading-[12px]">
         {badgeCount > 99 ? "99+" : badgeCount}
       </span>
     ) : null;

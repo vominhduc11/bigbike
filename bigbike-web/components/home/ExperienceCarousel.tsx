@@ -105,13 +105,13 @@ function ExperienceSlide({
         ) : null}
 
         <div className="text-center max-[767px]:mt-3">
-          <h3 className="m-0 font-heading text-[length:var(--fs-h3)] max-md:text-[18px] font-semibold uppercase leading-[30px] max-md:leading-[1.3] text-black max-md:text-white max-md:max-w-[min(280px,78vw)] max-md:mx-auto max-md:line-clamp-2">
+          <h3 className="m-0 font-heading text-[length:var(--fs-h3)] max-md:text-ui-18 font-semibold uppercase leading-[30px] max-md:leading-[1.3] text-black max-md:text-white max-md:max-w-[min(280px,78vw)] max-md:mx-auto max-md:line-clamp-2">
             {media.title}
           </h3>
           <div className="pt-[40px] text-center max-[767px]:pt-3">
             <Link
               href={toArticlePath(article.slug)}
-              className="bb-exp-slide-link inline-block w-[170px] max-md:w-[150px] p-0 border border-[var(--bb-border-default)] text-black font-[family-name:var(--bb-font-cta)] text-[16px] max-md:text-[14px] font-semibold leading-[52px] max-md:leading-[44px] no-underline uppercase [transition:border-color_var(--bb-duration-fast)_var(--bb-ease-standard),color_var(--bb-duration-fast)_var(--bb-ease-standard)] focus-visible:[outline:var(--bb-focus-outline)] focus-visible:outline-offset-4"
+              className="bb-exp-slide-link inline-block w-[170px] max-md:w-[150px] p-0 border border-[var(--bb-border-default)] text-black font-[family-name:var(--bb-font-cta)] text-ui-16 max-md:text-ui-14 font-semibold leading-[52px] max-md:leading-[44px] no-underline uppercase [transition:border-color_var(--bb-duration-fast)_var(--bb-ease-standard),color_var(--bb-duration-fast)_var(--bb-ease-standard)] focus-visible:[outline:var(--bb-focus-outline)] focus-visible:outline-offset-4"
               tabIndex={isActive ? 0 : -1}
             >
               XEM CHI TIẾT

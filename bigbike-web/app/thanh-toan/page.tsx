@@ -34,7 +34,7 @@ const coStepCard =
   "max-md:border max-md:border-[var(--bb-border-subtle)] max-md:bg-[var(--bb-bg-surface)] max-md:px-3.5 max-md:py-4";
 const coGrid = "max-md:grid max-md:grid-cols-1 max-md:gap-3";
 const coSectionH3 =
-  "max-md:m-0 max-md:mb-3 max-md:font-heading max-md:text-[16px] max-md:font-semibold max-md:uppercase max-md:leading-[1.2]";
+  "max-md:m-0 max-md:mb-3 max-md:font-heading max-md:text-ui-16 max-md:font-semibold max-md:uppercase max-md:leading-[1.2]";
 const coRadioRow =
   "max-md:flex max-md:min-h-11 max-md:items-center max-md:gap-2.5 max-md:border max-md:border-[var(--bb-border-subtle)] max-md:bg-[var(--bb-bg-surface)] max-md:px-3 max-md:py-2.5";
 const coCardRaised =
@@ -62,7 +62,7 @@ function isZoneMismatch(method: ShippingMethodOption, userRegion: "MB" | "MT" | 
 function CheckoutStepTitle({ step, children }: { step: number; children: React.ReactNode }) {
   return (
     <div className="max-md:mb-4">
-      <h2 className="max-md:m-0 max-md:flex max-md:items-center max-md:gap-2.5 max-md:font-heading max-md:text-[18px] max-md:font-semibold max-md:uppercase max-md:leading-[1.15]">
+      <h2 className="max-md:m-0 max-md:flex max-md:items-center max-md:gap-2.5 max-md:font-heading max-md:text-ui-18 max-md:font-semibold max-md:uppercase max-md:leading-[1.15]">
         <span className="max-md:inline-flex max-md:h-[34px] max-md:w-[34px] max-md:basis-[34px] max-md:items-center max-md:justify-center max-md:bg-brand max-md:font-cta max-md:text-[var(--bb-text-inverse)]">
           <b className="max-md:font-semibold">{step}</b>
         </span>
@@ -504,7 +504,7 @@ export default function CheckoutPage() {
                               <span>{paymentLabel(method)}</span>
                             </label>
                             {checked && description && (
-                              <div className="max-md:border max-md:border-t-0 max-md:border-[var(--bb-border-subtle)] max-md:bg-[var(--bb-bg-surface-raised)] max-md:p-3 max-md:text-[14px] max-md:leading-[1.5]">
+                              <div className="max-md:border max-md:border-t-0 max-md:border-[var(--bb-border-subtle)] max-md:bg-[var(--bb-bg-surface-raised)] max-md:p-3 max-md:text-ui-14 max-md:leading-[1.5]">
                                 <p className="max-md:m-0">{description}</p>
                               </div>
                             )}
@@ -521,7 +521,7 @@ export default function CheckoutPage() {
                   <Button
                     type="submit"
                     variant="primary"
-                    className="max-md:!min-h-[52px] max-md:w-full max-md:font-cta max-md:text-[14px] max-md:font-semibold max-md:uppercase max-md:tracking-[0.08em]"
+                    className="max-md:!min-h-[52px] max-md:w-full max-md:font-cta max-md:text-ui-14 max-md:font-semibold max-md:uppercase max-md:tracking-[0.08em]"
                     disabled={submitting || cartLoading || !cart.items.length || belowMinOrder || selectedShippingZoneMismatch}
                   >
                     {submitting ? t("placingOrder") : t("placeOrder")}

@@ -1,0 +1,434 @@
+{
+  "768": {
+    "grid": {
+      "display": "grid",
+      "gridTemplateColumns": "177.25px 177.25px 177.25px 177.25px",
+      "columnGap": "0px",
+      "rowGap": "0px",
+      "borderTopWidth": "1px",
+      "borderTopStyle": "solid",
+      "borderTopColor": "rgb(206, 206, 206)",
+      "borderLeftColor": "rgb(206, 206, 206)",
+      "marginTop": "80px",
+      "marginBottom": "10px"
+    },
+    "item": {
+      "position": "relative",
+      "display": "flex",
+      "flexDirection": "column",
+      "alignItems": "center",
+      "justifyContent": "center",
+      "height": "290px",
+      "paddingTop": "30px",
+      "paddingLeft": "30px",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "borderRightColor": "rgb(206, 206, 206)",
+      "borderBottomColor": "rgb(206, 206, 206)",
+      "textAlign": "center",
+      "overflow": "hidden"
+    },
+    "before": {
+      "content": "\"\"",
+      "position": "absolute",
+      "top": "0px",
+      "left": "0px",
+      "backgroundImage": "url(\"http://localhost:3001/wp/cat-hover.jpg\")",
+      "backgroundSize": "cover",
+      "backgroundRepeat": "no-repeat",
+      "opacity": "0"
+    },
+    "imgSpan": {
+      "position": "relative",
+      "zIndex": "1",
+      "display": "flex",
+      "alignItems": "center",
+      "justifyContent": "center",
+      "width": "72px",
+      "height": "72px",
+      "pointerEvents": "none"
+    },
+    "img": {
+      "display": "block",
+      "width": "72px",
+      "height": "80px",
+      "objectFit": "contain"
+    },
+    "desc": {
+      "position": "relative",
+      "zIndex": "1",
+      "display": "flow-root",
+      "webkitLineClamp": "2",
+      "overflow": "hidden",
+      "marginTop": "24px",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", Barlow, sans-serif",
+      "fontWeight": "600",
+      "fontSize": "17px",
+      "lineHeight": "20.4px",
+      "letterSpacing": "0.34px",
+      "textTransform": "uppercase",
+      "color": "rgb(0, 0, 0)"
+    }
+  },
+  "1024": {
+    "grid": {
+      "display": "grid",
+      "gridTemplateColumns": "241.25px 241.25px 241.25px 241.25px",
+      "columnGap": "0px",
+      "rowGap": "0px",
+      "borderTopWidth": "1px",
+      "borderTopStyle": "solid",
+      "borderTopColor": "rgb(206, 206, 206)",
+      "borderLeftColor": "rgb(206, 206, 206)",
+      "marginTop": "130px",
+      "marginBottom": "10px"
+    },
+    "item": {
+      "position": "relative",
+      "display": "flex",
+      "flexDirection": "column",
+      "alignItems": "center",
+      "justifyContent": "center",
+      "height": "290px",
+      "paddingTop": "30px",
+      "paddingLeft": "30px",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "borderRightColor": "rgb(206, 206, 206)",
+      "borderBottomColor": "rgb(206, 206, 206)",
+      "textAlign": "center",
+      "overflow": "hidden"
+    },
+    "before": {
+      "content": "\"\"",
+      "position": "absolute",
+      "top": "0px",
+      "left": "0px",
+      "backgroundImage": "url(\"http://localhost:3001/wp/cat-hover.jpg\")",
+      "backgroundSize": "cover",
+      "backgroundRepeat": "no-repeat",
+      "opacity": "0"
+    },
+    "imgSpan": {
+      "position": "relative",
+      "zIndex": "1",
+      "display": "flex",
+      "alignItems": "center",
+      "justifyContent": "center",
+      "width": "72px",
+      "height": "72px",
+      "pointerEvents": "none"
+    },
+    "img": {
+      "display": "block",
+      "width": "72px",
+      "height": "80px",
+      "objectFit": "contain"
+    },
+    "desc": {
+      "position": "relative",
+      "zIndex": "1",
+      "display": "flow-root",
+      "webkitLineClamp": "2",
+      "overflow": "hidden",
+      "marginTop": "24px",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", Barlow, sans-serif",
+      "fontWeight": "600",
+      "fontSize": "17px",
+      "lineHeight": "20.4px",
+      "letterSpacing": "0.34px",
+      "textTransform": "uppercase",
+      "color": "rgb(0, 0, 0)"
+    }
+  },
+  "1280": {
+    "grid": {
+      "display": "grid",
+      "gridTemplateColumns": "299.75px 299.75px 299.75px 299.75px",
+      "columnGap": "0px",
+      "rowGap": "0px",
+      "borderTopWidth": "1px",
+      "borderTopStyle": "solid",
+      "borderTopColor": "rgb(206, 206, 206)",
+      "borderLeftColor": "rgb(206, 206, 206)",
+      "marginTop": "130px",
+      "marginBottom": "10px"
+    },
+    "item": {
+      "position": "relative",
+      "display": "flex",
+      "flexDirection": "column",
+      "alignItems": "center",
+      "justifyContent": "center",
+      "height": "290px",
+      "paddingTop": "30px",
+      "paddingLeft": "30px",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "borderRightColor": "rgb(206, 206, 206)",
+      "borderBottomColor": "rgb(206, 206, 206)",
+      "textAlign": "center",
+      "overflow": "hidden"
+    },
+    "before": {
+      "content": "\"\"",
+      "position": "absolute",
+      "top": "0px",
+      "left": "0px",
+      "backgroundImage": "url(\"http://localhost:3001/wp/cat-hover.jpg\")",
+      "backgroundSize": "cover",
+      "backgroundRepeat": "no-repeat",
+      "opacity": "0"
+    },
+    "imgSpan": {
+      "position": "relative",
+      "zIndex": "1",
+      "display": "flex",
+      "alignItems": "center",
+      "justifyContent": "center",
+      "width": "72px",
+      "height": "72px",
+      "pointerEvents": "none"
+    },
+    "img": {
+      "display": "block",
+      "width": "72px",
+      "height": "80px",
+      "objectFit": "contain"
+    },
+    "desc": {
+      "position": "relative",
+      "zIndex": "1",
+      "display": "flow-root",
+      "webkitLineClamp": "2",
+      "overflow": "hidden",
+      "marginTop": "24px",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", Barlow, sans-serif",
+      "fontWeight": "600",
+      "fontSize": "17px",
+      "lineHeight": "20.4px",
+      "letterSpacing": "0.34px",
+      "textTransform": "uppercase",
+      "color": "rgb(0, 0, 0)"
+    }
+  },
+  "1536": {
+    "grid": {
+      "display": "grid",
+      "gridTemplateColumns": "339.75px 339.75px 339.75px 339.75px",
+      "columnGap": "0px",
+      "rowGap": "0px",
+      "borderTopWidth": "1px",
+      "borderTopStyle": "solid",
+      "borderTopColor": "rgb(206, 206, 206)",
+      "borderLeftColor": "rgb(206, 206, 206)",
+      "marginTop": "130px",
+      "marginBottom": "10px"
+    },
+    "item": {
+      "position": "relative",
+      "display": "flex",
+      "flexDirection": "column",
+      "alignItems": "center",
+      "justifyContent": "center",
+      "height": "290px",
+      "paddingTop": "30px",
+      "paddingLeft": "30px",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "borderRightColor": "rgb(206, 206, 206)",
+      "borderBottomColor": "rgb(206, 206, 206)",
+      "textAlign": "center",
+      "overflow": "hidden"
+    },
+    "before": {
+      "content": "\"\"",
+      "position": "absolute",
+      "top": "0px",
+      "left": "0px",
+      "backgroundImage": "url(\"http://localhost:3001/wp/cat-hover.jpg\")",
+      "backgroundSize": "cover",
+      "backgroundRepeat": "no-repeat",
+      "opacity": "0"
+    },
+    "imgSpan": {
+      "position": "relative",
+      "zIndex": "1",
+      "display": "flex",
+      "alignItems": "center",
+      "justifyContent": "center",
+      "width": "80px",
+      "height": "80px",
+      "pointerEvents": "none"
+    },
+    "img": {
+      "display": "block",
+      "width": "80px",
+      "height": "88.875px",
+      "objectFit": "contain"
+    },
+    "desc": {
+      "position": "relative",
+      "zIndex": "1",
+      "display": "flow-root",
+      "webkitLineClamp": "2",
+      "overflow": "hidden",
+      "marginTop": "24px",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", Barlow, sans-serif",
+      "fontWeight": "600",
+      "fontSize": "18px",
+      "lineHeight": "21.6px",
+      "letterSpacing": "0.36px",
+      "textTransform": "uppercase",
+      "color": "rgb(0, 0, 0)"
+    }
+  },
+  "1920": {
+    "grid": {
+      "display": "grid",
+      "gridTemplateColumns": "399.75px 399.75px 399.75px 399.75px",
+      "columnGap": "0px",
+      "rowGap": "0px",
+      "borderTopWidth": "1px",
+      "borderTopStyle": "solid",
+      "borderTopColor": "rgb(206, 206, 206)",
+      "borderLeftColor": "rgb(206, 206, 206)",
+      "marginTop": "130px",
+      "marginBottom": "10px"
+    },
+    "item": {
+      "position": "relative",
+      "display": "flex",
+      "flexDirection": "column",
+      "alignItems": "center",
+      "justifyContent": "center",
+      "height": "290px",
+      "paddingTop": "30px",
+      "paddingLeft": "30px",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "borderRightColor": "rgb(206, 206, 206)",
+      "borderBottomColor": "rgb(206, 206, 206)",
+      "textAlign": "center",
+      "overflow": "hidden"
+    },
+    "before": {
+      "content": "\"\"",
+      "position": "absolute",
+      "top": "0px",
+      "left": "0px",
+      "backgroundImage": "url(\"http://localhost:3001/wp/cat-hover.jpg\")",
+      "backgroundSize": "cover",
+      "backgroundRepeat": "no-repeat",
+      "opacity": "0"
+    },
+    "imgSpan": {
+      "position": "relative",
+      "zIndex": "1",
+      "display": "flex",
+      "alignItems": "center",
+      "justifyContent": "center",
+      "width": "80px",
+      "height": "80px",
+      "pointerEvents": "none"
+    },
+    "img": {
+      "display": "block",
+      "width": "80px",
+      "height": "88.875px",
+      "objectFit": "contain"
+    },
+    "desc": {
+      "position": "relative",
+      "zIndex": "1",
+      "display": "flow-root",
+      "webkitLineClamp": "2",
+      "overflow": "hidden",
+      "marginTop": "24px",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", Barlow, sans-serif",
+      "fontWeight": "600",
+      "fontSize": "18px",
+      "lineHeight": "21.6px",
+      "letterSpacing": "0.36px",
+      "textTransform": "uppercase",
+      "color": "rgb(0, 0, 0)"
+    }
+  },
+  "2560": {
+    "grid": {
+      "display": "grid",
+      "gridTemplateColumns": "373.156px 373.172px 373.156px 373.172px 373.172px 373.156px",
+      "columnGap": "0px",
+      "rowGap": "0px",
+      "borderTopWidth": "1px",
+      "borderTopStyle": "solid",
+      "borderTopColor": "rgb(206, 206, 206)",
+      "borderLeftColor": "rgb(206, 206, 206)",
+      "marginTop": "130px",
+      "marginBottom": "10px"
+    },
+    "item": {
+      "position": "relative",
+      "display": "flex",
+      "flexDirection": "column",
+      "alignItems": "center",
+      "justifyContent": "center",
+      "height": "290px",
+      "paddingTop": "30px",
+      "paddingLeft": "30px",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "borderRightColor": "rgb(206, 206, 206)",
+      "borderBottomColor": "rgb(206, 206, 206)",
+      "textAlign": "center",
+      "overflow": "hidden"
+    },
+    "before": {
+      "content": "\"\"",
+      "position": "absolute",
+      "top": "0px",
+      "left": "0px",
+      "backgroundImage": "url(\"http://localhost:3001/wp/cat-hover.jpg\")",
+      "backgroundSize": "cover",
+      "backgroundRepeat": "no-repeat",
+      "opacity": "0"
+    },
+    "imgSpan": {
+      "position": "relative",
+      "zIndex": "1",
+      "display": "flex",
+      "alignItems": "center",
+      "justifyContent": "center",
+      "width": "88px",
+      "height": "88px",
+      "pointerEvents": "none"
+    },
+    "img": {
+      "display": "block",
+      "width": "88px",
+      "height": "97.7656px",
+      "objectFit": "contain"
+    },
+    "desc": {
+      "position": "relative",
+      "zIndex": "1",
+      "display": "flow-root",
+      "webkitLineClamp": "2",
+      "overflow": "hidden",
+      "marginTop": "24px",
+      "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", Barlow, sans-serif",
+      "fontWeight": "600",
+      "fontSize": "20px",
+      "lineHeight": "24px",
+      "letterSpacing": "0.4px",
+      "textTransform": "uppercase",
+      "color": "rgb(0, 0, 0)"
+    }
+  },
+  "hover": {
+    "beforeOpacity": {
+      "opacity": "1"
+    },
+    "img": {
+      "filter": "brightness(0) invert(1)",
+      "transform": "matrix(1.06, 0, 0, 1.06, 0, 0)"
+    },
+    "desc": {
+      "color": "rgb(255, 255, 255)"
+    }
+  }
+}

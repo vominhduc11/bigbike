@@ -306,13 +306,13 @@ export default function CartPage() {
                           </div>
 
                           <div className="min-w-0 flex-auto p-0 pl-10 max-[600px]:pl-0">
-                            <h3 className="m-0 mb-2 font-heading text-[1rem] font-semibold leading-[1.25] text-[#3a3a3a] max-md:text-[15px] max-md:leading-[1.2]">{item.productName}</h3>
+                            <h3 className="m-0 mb-2 font-heading text-ui-16 font-semibold leading-[1.25] text-foreground max-md:text-ui-15 max-md:leading-[1.2]">{item.productName}</h3>
                             {item.variantName ? (
-                              <p className="m-0 mb-2 text-[#3a3a3a]">{item.variantName}</p>
+                              <p className="m-0 mb-2 text-foreground">{item.variantName}</p>
                             ) : (
-                              <p aria-hidden="true" className="m-0 mb-2 text-[#3a3a3a]">&nbsp;</p>
+                              <p aria-hidden="true" className="m-0 mb-2 text-foreground">&nbsp;</p>
                             )}
-                            <p className="m-0 text-[#3a3a3a]">
+                            <p className="m-0 text-foreground">
                               <b>
                                 {item.quantity} x {formatVnd(item.unitPrice)} = {formatVnd(item.lineTotal)}
                               </b>
@@ -377,7 +377,7 @@ export default function CartPage() {
                     <div className="mb-[30px] text-right max-[600px]:text-left">
                       <button
                         type="submit"
-                        className="h-[42px] min-w-[180px] border-0 bg-black px-5 font-cta text-[14px] font-semibold leading-[42px] text-white disabled:cursor-not-allowed disabled:opacity-50 max-[600px]:w-full"
+                        className="h-[42px] min-w-[180px] border-0 bg-black px-5 font-cta text-ui-14 font-semibold leading-[42px] text-white disabled:cursor-not-allowed disabled:opacity-50 max-[600px]:w-full"
                         name="update_cart"
                         value={COPY.updateCart}
                         disabled={!hasQuantityChanges || cartUpdating}
@@ -408,7 +408,7 @@ export default function CartPage() {
                 <div className="relative min-h-px w-full max-w-[33.333333%] basis-1/3 px-[15px] max-[991px]:mt-9 max-[991px]:max-w-full max-[991px]:basis-full">
                   <div>
                     <div>
-                      <h2 className="m-0 mb-5 font-heading text-[1.5rem] font-semibold leading-[1.25] text-black">{COPY.totalsHeading}</h2>
+                      <h2 className="m-0 mb-5 font-heading text-ui-24 font-semibold leading-[1.25] text-black">{COPY.totalsHeading}</h2>
 
                       <div className="mb-5 flex flex-nowrap justify-between gap-4 max-md:gap-2.5">
                         <div>
@@ -431,7 +431,7 @@ export default function CartPage() {
                       )}
 
                       <div className="mb-5">
-                        <p className="m-0 text-[12px] italic leading-[1.45] text-[#3a3a3a]">
+                        <p className="m-0 text-ui-12 italic leading-[1.45] text-foreground">
                           {cart.totals.shippingAmount > 0 ? (
                             <>
                               {COPY.shipping}: <b>{formatVnd(cart.totals.shippingAmount)}</b>
@@ -444,11 +444,11 @@ export default function CartPage() {
 
                       <div className="mt-5">
                         {hasUnavailable ? (
-                          <span className="block min-h-[52px] w-full rounded-none border-0 bg-brand px-5 py-3.5 text-center font-[family-name:var(--bb-font-cta)] text-[14px] font-semibold leading-6 text-white no-underline opacity-50 pointer-events-none" aria-disabled="true">
+                          <span className="block min-h-[52px] w-full rounded-none border-0 bg-brand px-5 py-3.5 text-center font-[family-name:var(--bb-font-cta)] text-ui-14 font-semibold leading-6 text-white no-underline opacity-50 pointer-events-none" aria-disabled="true">
                             {COPY.checkoutProceed}
                           </span>
                         ) : (
-                          <Link href={toCheckoutPath()} className="block min-h-[52px] w-full rounded-none border-0 bg-brand px-5 py-3.5 text-center font-[family-name:var(--bb-font-cta)] text-[14px] font-semibold leading-6 text-white no-underline">
+                          <Link href={toCheckoutPath()} className="block min-h-[52px] w-full rounded-none border-0 bg-brand px-5 py-3.5 text-center font-[family-name:var(--bb-font-cta)] text-ui-14 font-semibold leading-6 text-white no-underline">
                             {COPY.checkoutProceed}
                           </Link>
                         )}
@@ -464,7 +464,7 @@ export default function CartPage() {
                             {code}
                             <button
                               type="button"
-                              className="border-0 bg-transparent text-[18px] leading-none text-brand"
+                              className="border-0 bg-transparent text-ui-18 leading-none text-brand"
                               onClick={() => handleRemoveCoupon(code)}
                               disabled={couponLoading}
                               aria-label={`${COPY.removeCoupon} ${code}`}

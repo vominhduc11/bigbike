@@ -66,7 +66,7 @@ const PRICE_FALLBACK: { key: string; label: string; min?: number; max?: number }
  * by a second @media block: wrapper min(86vw,340px)/18px pad, overlay color-mix 58%, widget 20/16). */
 const WIDGET = "mb-[30px] border-b border-[var(--bb-border-default)] pb-[15px] last:border-b-0 max-md:mb-5 max-md:pb-4";
 const WIDGET_TITLE_H3 =
-  "m-0 font-[family-name:var(--bb-font-display)] text-[1.5rem] font-semibold uppercase text-black";
+  "m-0 font-[family-name:var(--bb-font-display)] text-ui-24 font-semibold uppercase text-black";
 const LIST = "m-0 list-none p-0"; // widget--body ul
 const LIST_LINK =
   "relative block pr-5 text-sm font-semibold leading-[1.3] text-muted-foreground no-underline hover:text-brand";
@@ -205,10 +205,10 @@ export function CatalogFilters({
         )}
       >
         <div className="hidden max-md:relative max-md:mb-[18px] max-md:block max-md:border-b max-md:border-[var(--bb-border-default)] max-md:pb-[14px] max-md:text-black">
-          <p className="m-0 bg-white text-[24px] font-semibold">BỘ LỌC</p>
+          <p className="m-0 bg-white text-ui-24 font-semibold">BỘ LỌC</p>
           <button
             type="button"
-            className="absolute right-0 top-2 cursor-pointer border-none bg-transparent text-[24px] leading-none text-black"
+            className="absolute right-0 top-2 cursor-pointer border-none bg-transparent text-ui-24 leading-none text-black"
             onClick={onMobileClose}
             aria-label={t("filterToggleCollapse")}
           >

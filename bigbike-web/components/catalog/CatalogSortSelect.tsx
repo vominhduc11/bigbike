@@ -37,7 +37,7 @@ export function CatalogSortSelect({ current }: { current: string }) {
         <select
           id="sort-select"
           name="orderby"
-          className="w-full h-[52px] py-0 pr-10 pl-5 border border-[var(--bb-border-default)] rounded-none bg-white text-black text-[14px] font-semibold uppercase appearance-none text-left max-md:h-11 max-md:min-h-11 max-md:text-[12px] max-md:font-[family-name:var(--bb-font-cta)] max-md:leading-[42px]"
+          className="w-full h-[52px] py-0 pr-10 pl-5 border border-[var(--bb-border-default)] rounded-none bg-white text-black text-ui-14 font-semibold uppercase appearance-none text-left max-md:h-11 max-md:min-h-11 max-md:text-ui-12 max-md:font-[family-name:var(--bb-font-cta)] max-md:leading-[42px]"
           value={selectedValue}
           onChange={(event) => handleChange(event.target.value)}
           aria-label="Sắp xếp"

@@ -89,20 +89,18 @@ function SocialIcon({ id }: { id: string }) {
         </svg>
       );
     case "zalo":
+      // Filled chat-bubble with a knocked-out "Z" (fill-rule evenodd) so Zalo
+      // matches the solid style of Facebook/Messenger instead of an outline.
       return (
         <svg
           width="18"
           height="18"
           viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.9"
-          strokeLinejoin="round"
-          strokeLinecap="round"
+          fill="currentColor"
+          fillRule="evenodd"
           aria-hidden="true"
         >
-          <path d="M4 3.6h16a2 2 0 0 1 2 2v8.4a2 2 0 0 1-2 2h-7.2L8 19.8V16H4a2 2 0 0 1-2-2V5.6a2 2 0 0 1 2-2Z" />
-          <path d="M9 8.2h5.4l-5.4 6.2h5.4" />
+          <path d="M4 3.6h16a2 2 0 0 1 2 2v8.4a2 2 0 0 1-2 2h-7.2L8 19.8V16H4a2 2 0 0 1-2-2V5.6a2 2 0 0 1 2-2ZM8 6.5L16 6.5L16 7.9L11 11.2L16 11.2L16 12.5L8 12.5L8 11.1L13 7.8L8 7.8Z" />
         </svg>
       );
     default:
@@ -305,7 +303,7 @@ export async function SiteFooter() {
                               href={item.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-3 text-base leading-none text-white no-underline transition-colors hover:text-brand-inverse focus-visible:text-brand-inverse focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+                              className="inline-flex items-center gap-6 text-base leading-none text-white no-underline transition-colors hover:text-brand-inverse focus-visible:text-brand-inverse focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white md:gap-3"
                             >
                               <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center">
                                 <SocialIcon id={item.id} />

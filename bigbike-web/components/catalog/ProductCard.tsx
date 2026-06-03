@@ -51,7 +51,7 @@ function stockBadgeClassName(state: Product["stockState"]): string {
       return "border border-[var(--bb-state-warning)] bg-[var(--bb-state-warning)] text-black";
     case "OUT_OF_STOCK":
     default:
-      return "border border-border bg-border text-[#4a4a4a]";
+      return "border border-border bg-border text-muted-foreground";
   }
 }
 
@@ -350,7 +350,7 @@ export function ProductCard({ product, variant = "compact", surface = "article" 
                 </div>
               ) : null}
 
-              <div className="mt-2 text-[18px] max-[767px]:text-sm">
+              <div className="mt-2 text-ui-18 max-[767px]:text-sm">
                 <RatingStars value={ratingValue} />
               </div>
             </div>

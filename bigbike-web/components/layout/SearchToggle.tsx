@@ -23,14 +23,14 @@ const SEARCH_PATH = "/tim-kiem/";
 // per the CLAUDE.md keyframe/complex-pseudo exemption). Search reds use
 // --bb-brand-primary (#ff0c09) → text-brand-on-dark (the exact-value token).
 const preLabelRow = "flex items-center justify-between border-b border-border bg-card px-4 pt-2 pb-1";
-const preLabel = "font-cta text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground";
+const preLabel = "font-cta text-ui-10 font-bold uppercase tracking-[0.1em] text-muted-foreground";
 const preChips = "flex flex-wrap gap-1.5 px-4 pb-3 pt-2.5";
 const preChip =
-  "inline-flex cursor-pointer items-center gap-[5px] border border-border bg-card px-3 py-[5px] font-cta text-[12px] font-semibold uppercase text-foreground transition-colors duration-fast hover:text-brand-on-dark focus-visible:text-brand-on-dark focus-visible:outline-none";
+  "inline-flex cursor-pointer items-center gap-[5px] border border-border bg-card px-3 py-[5px] font-cta text-ui-12 font-semibold uppercase text-foreground transition-colors duration-fast hover:text-brand-on-dark focus-visible:text-brand-on-dark focus-visible:outline-none";
 const resultItem =
   "flex cursor-pointer items-center gap-3 border-b border-border px-4 py-2.5 text-foreground no-underline transition-colors duration-fast hover:bg-card focus-visible:bg-card focus-visible:outline-none";
 const resultsLabel =
-  "m-0 border-b border-border bg-card px-4 pt-2 pb-1 font-cta text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground";
+  "m-0 border-b border-border bg-card px-4 pt-2 pb-1 font-cta text-ui-10 font-bold uppercase tracking-[0.1em] text-muted-foreground";
 
 // Mobile-only search body (≤767). The dark 9437 layer is fully overridden by the
 // "whole-site refactor pass" to LIGHT, so these are the merged light values; the
@@ -43,7 +43,7 @@ const mBody =
   "hidden max-md:block flex-none min-h-0 overflow-y-auto bg-background px-6 pt-[18px] pb-[calc(24px_+_env(safe-area-inset-bottom))] text-foreground [-webkit-overflow-scrolling:touch]";
 const mSection = "mb-[22px]";
 const mLabel =
-  "m-0 mb-2 font-cta text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground";
+  "m-0 mb-2 font-cta text-ui-11 font-semibold uppercase tracking-[0.16em] text-muted-foreground";
 const mList = "grid [&_svg]:text-muted-foreground";
 const mListBtn =
   "flex min-h-11 cursor-pointer items-center gap-3 border-b border-border bg-transparent p-0 text-left font-body text-foreground " +
@@ -52,7 +52,7 @@ const mRecentRemove =
   "flex h-7 w-7 min-h-11 shrink-0 cursor-pointer items-center justify-center border-b border-border bg-transparent p-0 " +
   mFocusRing;
 const mChip =
-  "inline-flex min-h-11 cursor-pointer items-center gap-1.5 border border-border bg-card px-[14px] py-0 font-cta text-[13px] font-medium uppercase text-foreground [&>svg]:text-brand-on-dark " +
+  "inline-flex min-h-11 cursor-pointer items-center gap-1.5 border border-border bg-card px-[14px] py-0 font-cta text-ui-13 font-medium uppercase text-foreground [&>svg]:text-brand-on-dark " +
   mFocusRing;
 const mGridCard =
   "grid min-h-11 cursor-pointer gap-0.5 border border-border bg-card px-3 py-2.5 text-left font-body text-foreground no-underline " +
@@ -102,10 +102,10 @@ const sClose =
 const sInput =
   // `!` mirrors the legacy !important — guarantees these win over the shadcn Input
   // base regardless of twMerge grouping of the arbitrary properties.
-  "h-full [border:none]! bg-transparent! [padding:0_48px_0_34px]! [box-shadow:none]! text-white! text-[24px]! " +
+  "h-full [border:none]! bg-transparent! [padding:0_48px_0_34px]! [box-shadow:none]! text-white! text-ui-24! " +
   "placeholder:text-white placeholder:opacity-100 placeholder:font-normal focus-visible:outline-none " +
   "max-md:h-[var(--bb-touch-target)]! max-md:[border:1px_solid_rgba(255,255,255,0.18)]! max-md:bg-[var(--bb-bg-surface)]! " +
-  "max-md:[padding:0_12px]! max-md:text-[color:var(--bb-text-primary)]! max-md:text-[16px]! max-md:leading-none! " +
+  "max-md:[padding:0_12px]! max-md:text-[color:var(--bb-text-primary)]! max-md:text-ui-16! max-md:leading-none! " +
   "max-md:min-w-0 max-md:placeholder:text-[color:var(--bb-text-secondary)]";
 const sResults =
   "absolute top-full left-[-40px] right-[-40px] z-[1] bg-white [border-top:2px_solid_var(--bb-brand-primary)] " +
@@ -310,7 +310,7 @@ export function SearchToggle({ popularCategories: categoriesFromApi = [] }: Sear
                 <>
                   <div className={preLabelRow}>
                     <span className={preLabel}>{t("recentLabel")}</span>
-                    <button type="button" className="cursor-pointer border-none bg-transparent p-0 text-[12px] text-brand-on-dark hover:underline" onClick={clearAll}>
+                    <button type="button" className="cursor-pointer border-none bg-transparent p-0 text-ui-12 text-brand-on-dark hover:underline" onClick={clearAll}>
                       {t("recentClear")}
                     </button>
                   </div>
@@ -400,7 +400,7 @@ export function SearchToggle({ popularCategories: categoriesFromApi = [] }: Sear
                       )}
                       <div className="flex min-w-0 flex-1 flex-col gap-1">
                         <span className="truncate text-caption font-medium text-foreground">{product.name}</span>
-                        <span className="text-[13px] font-bold text-brand-on-dark">
+                        <span className="text-ui-13 font-bold text-brand-on-dark">
                           {formatVnd(product.price?.salePrice ?? product.price?.retailPrice)}
                         </span>
                       </div>
@@ -419,9 +419,9 @@ export function SearchToggle({ popularCategories: categoriesFromApi = [] }: Sear
                           onClick={handleClose}
                         >
                           <div className="flex min-w-0 flex-1 flex-col gap-1">
-                            <span className="text-[13px] font-normal text-foreground line-clamp-2">{article.title}</span>
+                            <span className="text-ui-13 font-normal text-foreground line-clamp-2">{article.title}</span>
                             {article.category?.name && (
-                              <span className="text-[11px] font-semibold uppercase tracking-[0.04em] text-brand-on-dark">
+                              <span className="text-ui-11 font-semibold uppercase tracking-[0.04em] text-brand-on-dark">
                                 {article.category.name}
                               </span>
                             )}
@@ -432,7 +432,7 @@ export function SearchToggle({ popularCategories: categoriesFromApi = [] }: Sear
                   )}
                   <Link
                     href={`${SEARCH_PATH}?s=${encodeURIComponent(trimmedQuery)}`}
-                    className="flex items-center justify-center px-4 py-[13px] font-cta text-[13px] font-semibold uppercase tracking-[0.04em] text-brand-on-dark no-underline transition-colors duration-fast hover:bg-card focus-visible:bg-card focus-visible:outline-none"
+                    className="flex items-center justify-center px-4 py-[13px] font-cta text-ui-13 font-semibold uppercase tracking-[0.04em] text-brand-on-dark no-underline transition-colors duration-fast hover:bg-card focus-visible:bg-card focus-visible:outline-none"
                     onClick={handleClose}
                   >
                     {t("viewAllResultsBtn", { query: trimmedQuery })}
@@ -461,7 +461,7 @@ export function SearchToggle({ popularCategories: categoriesFromApi = [] }: Sear
                   <p className="m-0">{t("recentLabel")}</p>
                   <button
                     type="button"
-                    className="cursor-pointer border-0 bg-transparent px-0 py-1 font-body text-[13px] text-brand-on-dark"
+                    className="cursor-pointer border-0 bg-transparent px-0 py-1 font-body text-ui-13 text-brand-on-dark"
                     onClick={clearAll}
                   >
                     {t("recentClear")}
@@ -527,8 +527,8 @@ export function SearchToggle({ popularCategories: categoriesFromApi = [] }: Sear
                     className={mGridCard}
                     onClick={handleClose}
                   >
-                    <span className="font-cta text-[13px] font-semibold uppercase">{cat.name}</span>
-                    <small className="font-cta text-[10px] tracking-[0.08em] text-muted-foreground">BIGBIKE</small>
+                    <span className="font-cta text-ui-13 font-semibold uppercase">{cat.name}</span>
+                    <small className="font-cta text-ui-10 tracking-[0.08em] text-muted-foreground">BIGBIKE</small>
                   </Link>
                 ))}
               </div>

@@ -186,4 +186,36 @@ Còn lại (~195 px) **GIỮ NGUYÊN có chủ đích**: nhãn/kicker/badge/butt
 
 ---
 
+## 9. Section header pattern — eyebrow + title (class dùng chung)
+
+Mọi **section header** (cặp subtitle/kicker + tiêu đề section) trên toàn site dùng **hai class chung** trong [`lib/ui-classes.ts`](../lib/ui-classes.ts) — không viết inline mỗi nơi một kiểu:
+
+| Vai trò | Class | Giá trị canonical |
+|---|---|---|
+| Subtitle / kicker / eyebrow | `sectionEyebrow` | `text-[var(--bb-text-muted)]` (xám muted) · `font-cta` (Condensed) · `text-[length:var(--bb-text-section-kicker)]` (13→18px) · `tracking-[0.15em]` · `font-black` · `leading-none` · `uppercase` |
+| Tiêu đề section (h2-level) | `sectionHeading` | `font-heading` (Condensed) · `text-[length:var(--bb-text-section-title)]` (**30→50px**) · `font-semibold` · `leading-[1.2]` · `tracking-normal` · `uppercase` · `text-foreground` |
+
+**Lưu ý chốt (giải quyết mâu thuẫn cũ):** tiêu đề section dùng token `--bb-text-section-title` (30→50), **không** dùng `text-h2` (24→40). Bảng §5 (`h2 = 24→40`) là thang chữ chung; riêng tiêu đề section đã chốt cỡ lớn hơn theo `--bb-text-section-title`. Kicker thống nhất **một màu xám muted** (không dùng đỏ brand cho kicker section).
+
+Dùng: `className={sectionHeading}` hoặc `cn(sectionHeading, "mb-4")`; `className={cn(sectionEyebrow, "mb-3")}`. **Ngoại lệ có chủ đích — KHÔNG ép theo:** tiêu đề rail compact trong trang chi tiết (RecentlyViewed dùng `text-h4`, related products), tên bài trong card bài viết (giữ `normal-case`), và các biến thể card/giá/nút khác cỡ theo ngữ cảnh. (Tiêu đề **khối** blog — "Danh mục tin tức", "Có thể bạn quan tâm" — đã chuyển sang `sectionHeading` IN HOA 30→50 cho khớp toàn site.)
+
+---
+
+## 10. Hai nhóm chữ — "mọi chữ phải thuộc một nhóm"
+
+Mọi text trong dự án thuộc **đúng một** trong hai nhóm; không có giá trị tùy tiện lạc lõng ngoài hai nhóm này:
+
+1. **Nhóm chữ đọc (fluid)** — heading, section title/eyebrow, body, lead, caption, meta. **Bắt buộc** dùng token fluid (`text-h1…h4`, `text-body`, `text-caption`, `text-overline`, `--bb-text-section-title`/`-kicker`) hoặc class chung trong `lib/ui-classes.ts`. Không hardcode px/hex.
+2. **Nhóm chữ cố định (UI vận hành)** — nút/CTA, badge, giá, ô nhập số (stepper giỏ hàng), nhãn dày đặc trong panel (search, mobile cart sheet), breadcrumb, pagination, số/rating. Kích thước cần chính xác, **không** co giãn. Dùng bộ token **`text-ui-N`** (`text-ui-9/10/11/12/13/14/16/18/20/22/24/30/35`) — **tên đúng px** (`text-ui-14` = đúng 14px). **Không** viết raw `text-[Npx]` trong className nữa.
+
+**Màu chữ:** luôn dùng token (`text-foreground` = đen brand, `text-muted-foreground` = xám, `text-brand`…). **Cấm** hex hardcode (`text-[#6f6f6f]`) và màu Tailwind mặc định (`text-red-500`). *Ngoại lệ cơ chế giữ nguyên:* `FloatingChat` (widget chat) và `MobileHeaderMenu` (drawer mobile light-on-dark) còn dùng hex/px theo cơ chế riêng — đã ghi nhận.
+
+**⚠️ Hai bộ token số — đừng nhầm:**
+- **`text-ui-N`** (mới, trong `@theme inline`): **= đúng N px cố định.** Dùng cho nhóm chữ cố định.
+- **`text-9/10/11/13/22/26…`** (legacy, từ `--bb-text-*`): tên **SAI** giá trị (`text-13`=14px, `text-22`=clamp). Chỉ còn vài chỗ cũ dùng; **không dùng cho code mới** — thay bằng `text-ui-N` (cố định) hoặc token fluid (chữ đọc).
+
+**Ngoại lệ còn raw `text-[…]` có chủ đích:** vài giá trị rem lẻ kế thừa WooCommerce ở trang giỏ hàng (`1.143rem`/`1.429rem`/`1.714rem`/`1em` — stepper số lượng, coupon) không khớp thang px chẵn → giữ nguyên; và `FloatingChat` (cơ chế chat).
+
+---
+
 *Source of truth typography cho bigbike-web. Anchor: 375px (sàn) · 2560px (trần — cả content lẫn display, để chữ không quá nhỏ trên màn 3xl/4xl). Root 16px.*

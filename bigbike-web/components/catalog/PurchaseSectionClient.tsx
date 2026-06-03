@@ -53,11 +53,11 @@ export type PurchaseSectionClientProps = {
 
 // Shared red add-to-cart / buy-now CTA (mobile swaps body→cta font + uppercase).
 const ADD_BTN =
-  "inline-flex items-center justify-center gap-2.5 w-full h-[52px] border-none rounded-none bg-brand text-white font-body text-[16px] font-semibold !leading-[52px] normal-case cursor-pointer disabled:cursor-not-allowed disabled:bg-[var(--bb-color-gray-450)] disabled:opacity-70 max-md:min-h-[52px] max-md:font-cta max-md:text-[14px] max-md:uppercase max-md:tracking-[0.08em]";
+  "inline-flex items-center justify-center gap-2.5 w-full h-[52px] border-none rounded-none bg-brand text-white font-body text-ui-16 font-semibold !leading-[52px] normal-case cursor-pointer disabled:cursor-not-allowed disabled:bg-[var(--bb-color-gray-450)] disabled:opacity-70 max-md:min-h-[52px] max-md:font-cta max-md:text-ui-14 max-md:uppercase max-md:tracking-[0.08em]";
 
 // Share icon links + native-share button (1em icons, brand on hover).
 const SOCIAL_LINK =
-  "inline-flex items-center justify-center mr-[30px] p-0 border-none bg-transparent text-muted-foreground text-[1.5rem] no-underline align-middle cursor-pointer hover:text-brand [&_svg]:w-[1em] [&_svg]:h-[1em]";
+  "inline-flex items-center justify-center mr-[30px] p-0 border-none bg-transparent text-muted-foreground text-ui-24 no-underline align-middle cursor-pointer hover:text-brand [&_svg]:w-[1em] [&_svg]:h-[1em]";
 
 function RatingRow({
   rating,
@@ -75,12 +75,12 @@ function RatingRow({
 
   if (!hasReviews) {
     return (
-      <div className="text-black text-[14px]">
+      <div className="text-black text-ui-14">
         <span
-          className="inline-block text-rating-star text-[18px] tracking-normal before:content-['★★★★★']"
+          className="inline-block text-rating-star text-ui-18 tracking-normal before:content-['★★★★★']"
           aria-hidden="true"
         />
-        <p className="m-0 mt-1 text-black text-[14px] !leading-[1.4]">{t("noReviews")}</p>
+        <p className="m-0 mt-1 text-black text-ui-14 !leading-[1.4]">{t("noReviews")}</p>
       </div>
     );
   }
@@ -89,17 +89,17 @@ function RatingRow({
 
   return (
     <div
-      className="text-black text-[14px]"
+      className="text-black text-ui-14"
       itemProp="aggregateRating"
       itemScope
       itemType="https://schema.org/AggregateRating"
     >
       <span
-        className="inline-block text-rating-star text-[18px] tracking-normal before:content-['★★★★★']"
+        className="inline-block text-rating-star text-ui-18 tracking-normal before:content-['★★★★★']"
         aria-label={`${displayValue}/5`}
       />
       <meta itemProp="bestRating" content="5" />
-      <p className="m-0 mt-1 text-black text-[14px] !leading-[1.4]">
+      <p className="m-0 mt-1 text-black text-ui-14 !leading-[1.4]">
         <span itemProp="ratingValue">{displayValue}</span>
         <span aria-hidden="true">★</span>{" "}
         <span className="rating-count">
@@ -129,7 +129,7 @@ function WpQuantitySelector({
   }
 
   const stepBtn =
-    "block w-full h-[26px] border border-[#707070] rounded-none border-l-0 bg-transparent text-black text-[10px] cursor-pointer hover:bg-black hover:text-white";
+    "block w-full h-[26px] border border-[#707070] rounded-none border-l-0 bg-transparent text-black text-ui-10 cursor-pointer hover:bg-black hover:text-white";
 
   return (
     <div className="flex flex-wrap w-full">
@@ -145,7 +145,7 @@ function WpQuantitySelector({
           value={value}
           onChange={(event) => commit(Number.parseInt(event.target.value, 10))}
           inputMode="numeric"
-          className="w-full h-[52px] border border-[#707070] rounded-none bg-transparent text-center text-black text-[1.5rem] font-semibold"
+          className="w-full h-[52px] border border-[#707070] rounded-none bg-transparent text-center text-black text-ui-24 font-semibold"
         />
       </div>
       <div className="flex-[0_0_60px] max-w-[60px]">
@@ -318,7 +318,7 @@ export function PurchaseSectionClient({
 
       <div className="bb-wp-pdp-info-col product-information min-w-0 max-[1024px]:order-2 max-[1024px]:w-full">
         <div className="mb-5 max-md:mb-3">
-          <h1 className="m-0 font-[family-name:var(--bb-font-display)] text-[30px] max-[1024px]:text-[26px] max-md:text-[24px] font-semibold !leading-[3.75rem] max-[1024px]:!leading-[1.25] max-md:!leading-[1.12] tracking-normal normal-case max-md:uppercase text-black">
+          <h1 className="m-0 font-[family-name:var(--bb-font-display)] text-ui-30 max-[1024px]:text-ui-26 max-md:text-ui-24 font-semibold !leading-[3.75rem] max-[1024px]:!leading-[1.25] max-md:!leading-[1.12] tracking-normal normal-case max-md:uppercase text-black">
             {productName}
           </h1>
         </div>
@@ -442,7 +442,7 @@ export function PurchaseSectionClient({
         </div>
 
         <div className="mt-[30px] max-md:mt-[22px] text-left">
-          <p className="inline-block m-0 mr-[30px] text-black text-[1.5rem] font-semibold lowercase">
+          <p className="inline-block m-0 mr-[30px] text-black text-ui-24 font-semibold lowercase">
             {t("shareLabel")}
           </p>
           <button

@@ -46,10 +46,10 @@ export function PdpRelatedProductsCarousel({
     // (custom-prop calc transform + mobile scroll-snap); decoration is inline.
     <section className="mx-auto max-w-[1140px] px-[15px] mt-20 mb-10 max-md:mt-9 max-md:px-[var(--bb-mobile-page-x)] min-[1536px]:max-w-[1360px] min-[1920px]:max-w-[1600px] min-[2560px]:max-w-[2240px]">
       <div className="mb-10 text-center">
-        <p className="m-0 text-black font-[family-name:var(--bb-font-display)] text-[35px] font-semibold leading-[4.286rem] tracking-[0] uppercase max-md:text-2xl max-md:leading-[1.25]">
+        <p className="m-0 text-black font-[family-name:var(--bb-font-display)] text-ui-35 font-semibold leading-[4.286rem] tracking-[0] uppercase max-md:text-2xl max-md:leading-[1.25]">
           {kicker}
         </p>
-        <p className="m-0 text-[#717171] font-body text-sm font-semibold leading-none uppercase">{heading}</p>
+        <p className="m-0 text-muted-foreground font-body text-sm font-semibold leading-none uppercase">{heading}</p>
       </div>
 
       <div className="row">

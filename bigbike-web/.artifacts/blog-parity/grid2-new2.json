@@ -1,0 +1,116 @@
+{
+  "390": {
+    "asideW": 0,
+    "asideDisplay": "none",
+    "sectionW": 362,
+    "cardW": 362,
+    "cardDisplay": "flex",
+    "row": {
+      "display": "flex",
+      "flexWrap": "wrap",
+      "marginLeft": "-15px",
+      "marginRight": "-15px"
+    },
+    "cardCol": {
+      "paddingLeft": "15px",
+      "paddingRight": "15px",
+      "marginBottom": "30px",
+      "flexDirection": "column"
+    }
+  },
+  "575": {
+    "asideW": 0,
+    "asideDisplay": "none",
+    "sectionW": 547,
+    "cardW": 547,
+    "cardDisplay": "flex",
+    "row": {
+      "display": "flex",
+      "flexWrap": "wrap",
+      "marginLeft": "-15px",
+      "marginRight": "-15px"
+    },
+    "cardCol": {
+      "paddingLeft": "15px",
+      "paddingRight": "15px",
+      "marginBottom": "30px",
+      "flexDirection": "column"
+    }
+  },
+  "576": {
+    "asideW": 0,
+    "asideDisplay": "none",
+    "sectionW": 548,
+    "cardW": 274,
+    "cardDisplay": "flex",
+    "row": {
+      "display": "flex",
+      "flexWrap": "wrap",
+      "marginLeft": "-15px",
+      "marginRight": "-15px"
+    },
+    "cardCol": {
+      "paddingLeft": "15px",
+      "paddingRight": "15px",
+      "marginBottom": "30px",
+      "flexDirection": "column"
+    }
+  },
+  "767": {
+    "asideW": 0,
+    "asideDisplay": "none",
+    "sectionW": 739,
+    "cardW": 369.5,
+    "cardDisplay": "flex",
+    "row": {
+      "display": "flex",
+      "flexWrap": "wrap",
+      "marginLeft": "-15px",
+      "marginRight": "-15px"
+    },
+    "cardCol": {
+      "paddingLeft": "15px",
+      "paddingRight": "15px",
+      "marginBottom": "30px",
+      "flexDirection": "column"
+    }
+  },
+  "768": {
+    "asideW": 189.5,
+    "asideDisplay": "block",
+    "sectionW": 568.5,
+    "cardW": 189.48,
+    "cardDisplay": "flex",
+    "row": {
+      "display": "flex",
+      "flexWrap": "wrap",
+      "marginLeft": "-15px",
+      "marginRight": "-15px"
+    },
+    "cardCol": {
+      "paddingLeft": "15px",
+      "paddingRight": "15px",
+      "marginBottom": "30px",
+      "flexDirection": "column"
+    }
+  },
+  "1280": {
+    "asideW": 300,
+    "asideDisplay": "block",
+    "sectionW": 900,
+    "cardW": 299.98,
+    "cardDisplay": "flex",
+    "row": {
+      "display": "flex",
+      "flexWrap": "wrap",
+      "marginLeft": "-15px",
+      "marginRight": "-15px"
+    },
+    "cardCol": {
+      "paddingLeft": "15px",
+      "paddingRight": "15px",
+      "marginBottom": "30px",
+      "flexDirection": "column"
+    }
+  }
+}

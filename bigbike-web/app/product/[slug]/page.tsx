@@ -211,7 +211,7 @@ export default async function ProductDetailPage({
                 key={index}
                 className="group border-b border-border first:border-t"
               >
-                <summary className="flex justify-between items-start gap-3 py-3.5 text-[15px] font-semibold text-foreground cursor-pointer list-none [&::-webkit-details-marker]:hidden after:content-['+'] after:shrink-0 after:text-xl after:font-normal after:text-muted-foreground after:leading-none group-[[open]]:after:content-['−']">
+                <summary className="flex justify-between items-start gap-3 py-3.5 text-ui-15 font-semibold text-foreground cursor-pointer list-none [&::-webkit-details-marker]:hidden after:content-['+'] after:shrink-0 after:text-xl after:font-normal after:text-muted-foreground after:leading-none group-[[open]]:after:content-['−']">
                   {faq.question}
                 </summary>
                 <div className="pb-3.5 text-[length:var(--fs-caption)] text-muted-foreground">

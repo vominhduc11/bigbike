@@ -1,0 +1,98 @@
+{
+  "390": {
+    "nav": {
+      "display": "block",
+      "paddingTop": "20px",
+      "paddingBottom": "40px",
+      "textAlign": "right"
+    },
+    "outerUl": {
+      "display": "block",
+      "marginTop": "0px",
+      "paddingLeft": "0px",
+      "listStyleType": "none",
+      "textAlign": "right"
+    },
+    "li": {
+      "display": "inline-block",
+      "paddingLeft": "8px",
+      "paddingRight": "8px",
+      "color": "rgb(0, 0, 0)",
+      "fontSize": "24px",
+      "fontWeight": "600"
+    },
+    "cell": {
+      "display": "inline-block",
+      "paddingTop": "5px",
+      "paddingLeft": "10px",
+      "color": "rgb(204, 9, 6)",
+      "fontSize": "24px",
+      "textDecorationLine": "none"
+    },
+    "link": {
+      "display": "inline-block",
+      "paddingTop": "5px",
+      "paddingLeft": "10px",
+      "color": "rgb(0, 0, 0)",
+      "fontSize": "24px",
+      "textDecorationLine": "none"
+    },
+    "current": {
+      "color": "rgb(204, 9, 6)"
+    },
+    "icon": {
+      "fontStyle": "normal"
+    },
+    "iconBefore": {
+      "content": "\"›\""
+    }
+  },
+  "1280": {
+    "nav": {
+      "display": "block",
+      "paddingTop": "20px",
+      "paddingBottom": "40px",
+      "textAlign": "start"
+    },
+    "outerUl": {
+      "display": "block",
+      "marginTop": "0px",
+      "paddingLeft": "0px",
+      "listStyleType": "none",
+      "textAlign": "right"
+    },
+    "li": {
+      "display": "inline-block",
+      "paddingLeft": "8px",
+      "paddingRight": "8px",
+      "color": "rgb(0, 0, 0)",
+      "fontSize": "24px",
+      "fontWeight": "600"
+    },
+    "cell": {
+      "display": "inline-block",
+      "paddingTop": "5px",
+      "paddingLeft": "10px",
+      "color": "rgb(204, 9, 6)",
+      "fontSize": "24px",
+      "textDecorationLine": "none"
+    },
+    "link": {
+      "display": "inline-block",
+      "paddingTop": "5px",
+      "paddingLeft": "10px",
+      "color": "rgb(0, 0, 0)",
+      "fontSize": "24px",
+      "textDecorationLine": "none"
+    },
+    "current": {
+      "color": "rgb(204, 9, 6)"
+    },
+    "icon": {
+      "fontStyle": "normal"
+    },
+    "iconBefore": {
+      "content": "\"›\""
+    }
+  }
+}

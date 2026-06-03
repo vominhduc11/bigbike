@@ -12,7 +12,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Button } from "@/components/ui/button";
 import { toProductListPath } from "@/lib/utils/routes";
-import { sectionHeading } from "@/lib/ui-classes";
+import { sectionEyebrow, sectionHeading } from "@/lib/ui-classes";
 import type { Product } from "@/lib/contracts/public";
 
 export function CompareClient() {
@@ -38,7 +38,7 @@ export function CompareClient() {
     <section className="bb-page bb-compare-page">
       <Container className="pb-28">
         <header className="mb-6">
-          <p className="mb-3 text-brand font-cta text-[length:var(--bb-text-section-kicker)] tracking-normal font-black leading-none uppercase">
+          <p className={`${sectionEyebrow} mb-3`}>
             {t("kicker")}
           </p>
           <h1 className={sectionHeading}>

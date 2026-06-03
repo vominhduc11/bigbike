@@ -104,73 +104,32 @@ export function HeaderUiProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!("IntersectionObserver" in window)) return;
 
-    const sensitiveSelectors = [
-      "footer",
-      ".bb-page--auth",
-      ".bb-account-layout",
-      ".bb-home-mobile-categories",
-      ".bb-home-products-parity",
-      ".bb-home .bb-experience",
-      ".bb-home .bb-home-news-parity",
-      ".bb-home .videos-slide",
-      ".bb-home .partner-slide",
-      ".bb-home .content-bottom",
-    ];
-    const visibleByElement = new Map<Element, boolean>();
-    let observer: IntersectionObserver | null = null;
-    let footerEl: Element | null = null;
+    // Hide the floating chat on every breakpoint while the footer is in view, so the
+    // button never overlaps the footer's own contact links. Mobile and desktop behave
+    // identically — the chat stays visible through the rest of the page on both.
+    const footerEl = document.querySelector("footer");
+    if (!footerEl) return;
 
-    function updateSensitiveAttr() {
-      const hasSensitiveVisible = Array.from(visibleByElement.values()).some(Boolean);
-      if (hasSensitiveVisible) {
-        document.documentElement.setAttribute("data-bb-chat-sensitive", "");
-      } else {
-        document.documentElement.removeAttribute("data-bb-chat-sensitive");
-      }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const footerVisible = entries.some((entry) => entry.isIntersecting);
+        if (footerVisible) {
+          document.documentElement.setAttribute("data-bb-footer-visible", "");
+        } else {
+          document.documentElement.removeAttribute("data-bb-footer-visible");
+        }
+      },
+      {
+        root: null,
+        rootMargin: "0px 0px -18% 0px",
+        threshold: 0.01,
+      },
+    );
 
-      // Footer-only signal — hides the floating chat on every breakpoint when the
-      // footer is in view (the broad chat-sensitive flag above is mobile-only by design).
-      const footerVisible = footerEl ? visibleByElement.get(footerEl) === true : false;
-      if (footerVisible) {
-        document.documentElement.setAttribute("data-bb-footer-visible", "");
-      } else {
-        document.documentElement.removeAttribute("data-bb-footer-visible");
-      }
-    }
-
-    const timer = window.setTimeout(() => {
-      const elements = sensitiveSelectors.flatMap((selector) =>
-        Array.from(document.querySelectorAll(selector)),
-      );
-
-      if (elements.length === 0) return;
-
-      footerEl = document.querySelector("footer");
-
-      observer = new IntersectionObserver(
-        (entries) => {
-          for (const entry of entries) {
-            visibleByElement.set(entry.target, entry.isIntersecting);
-          }
-          updateSensitiveAttr();
-        },
-        {
-          root: null,
-          rootMargin: "0px 0px -18% 0px",
-          threshold: 0.01,
-        },
-      );
-
-      for (const element of elements) {
-        visibleByElement.set(element, false);
-        observer.observe(element);
-      }
-    }, 120);
+    observer.observe(footerEl);
 
     return () => {
-      window.clearTimeout(timer);
-      observer?.disconnect();
-      document.documentElement.removeAttribute("data-bb-chat-sensitive");
+      observer.disconnect();
       document.documentElement.removeAttribute("data-bb-footer-visible");
     };
   }, [pathname]);

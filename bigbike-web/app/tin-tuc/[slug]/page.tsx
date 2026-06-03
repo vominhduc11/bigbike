@@ -14,6 +14,8 @@ import {
   serializeJsonLd,
 } from "@/lib/seo/json-ld";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
+import { cn } from "@/lib/utils";
+import { sectionHeading } from "@/lib/ui-classes";
 import { safeText } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import { stripHtmlTags } from "@/lib/utils/text";
@@ -162,13 +164,13 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
                 </div>
 
                 <div className="my-5">
-                  <p className="category inline-block m-0 text-black text-[0.875rem] leading-[1.5625rem] [&:not(:last-child)]:after:content-['/'] [&:not(:last-child)]:after:inline-block [&:not(:last-child)]:after:mx-1.5 [&:not(:last-child)]:after:text-black">
+                  <p className="category inline-block m-0 text-black text-ui-14 leading-[1.5625rem] [&:not(:last-child)]:after:content-['/'] [&:not(:last-child)]:after:inline-block [&:not(:last-child)]:after:mx-1.5 [&:not(:last-child)]:after:text-black">
                     <Link href={categoryHref} className="text-brand font-semibold no-underline">
                       {categoryLabel}
                     </Link>
                   </p>
                   {articleDate ? (
-                    <p className="inline-block m-0 text-black text-[0.875rem] leading-[1.5625rem] [&:not(:last-child)]:after:content-['/'] [&:not(:last-child)]:after:inline-block [&:not(:last-child)]:after:mx-1.5 [&:not(:last-child)]:after:text-black">
+                    <p className="inline-block m-0 text-black text-ui-14 leading-[1.5625rem] [&:not(:last-child)]:after:content-['/'] [&:not(:last-child)]:after:inline-block [&:not(:last-child)]:after:mx-1.5 [&:not(:last-child)]:after:text-black">
                       {articleDate}
                     </p>
                   ) : null}
@@ -267,11 +269,11 @@ function SidebarArticleItem({ article }: Readonly<{ article: Article }>) {
       </div>
       <div className="flex-[0_0_60%] max-w-[60%] max-md:bg-white">
         <div className="flex flex-wrap pl-[15px]">
-          <p className="m-0 text-[#6f6f6f] text-[12px] leading-[18px] [&:not(:last-child)]:after:content-['/'] [&:not(:last-child)]:after:mx-1.5 [&:not(:last-child)]:after:inline-block [&:not(:last-child)]:after:text-[#6f6f6f]">{categoryLabel}</p>
-          {date ? <p className="m-0 text-[#6f6f6f] text-[12px] leading-[18px] [&:not(:last-child)]:after:content-['/'] [&:not(:last-child)]:after:mx-1.5 [&:not(:last-child)]:after:inline-block [&:not(:last-child)]:after:text-[#6f6f6f]">{date}</p> : null}
+          <p className="m-0 text-muted-foreground text-ui-12 leading-[18px] [&:not(:last-child)]:after:content-['/'] [&:not(:last-child)]:after:mx-1.5 [&:not(:last-child)]:after:inline-block [&:not(:last-child)]:after:text-muted-foreground">{categoryLabel}</p>
+          {date ? <p className="m-0 text-muted-foreground text-ui-12 leading-[18px] [&:not(:last-child)]:after:content-['/'] [&:not(:last-child)]:after:mx-1.5 [&:not(:last-child)]:after:inline-block [&:not(:last-child)]:after:text-muted-foreground">{date}</p> : null}
         </div>
         <div className="pl-[15px] max-md:bg-white">
-          <h3 className="m-0 text-black font-heading text-[14px] font-semibold leading-[18px] normal-case">
+          <h3 className="m-0 text-black font-heading text-ui-14 font-semibold leading-[18px] normal-case">
             <Link href={href} className="text-inherit no-underline [transition:all_0.3s_ease] hover:text-brand">{title}</Link>
           </h3>
           <p className="hidden">{makeExcerpt(article, 95)}</p>
@@ -290,7 +292,7 @@ function RelatedArticlesSection({ articles }: Readonly<{ articles: Article[] }>)
     <section id="related" className="pb-10">
       <div className="w-full max-w-[var(--bb-container-xl)] mx-auto px-[15px]">
         <div>
-          <h3 className="m-0 mb-[30px] text-black font-heading text-[2.143rem] font-bold leading-[1.3] normal-case max-md:text-[24px] max-md:leading-[30px]">CÓ THỂ BẠN QUAN TÂM</h3>
+          <h3 className={cn(sectionHeading, "mb-[30px]")}>CÓ THỂ BẠN QUAN TÂM</h3>
         </div>
         <div className="flex flex-wrap -mx-[15px]">
           {articles.map((article) => (
@@ -319,12 +321,12 @@ function RelatedArticleCard({ article }: Readonly<{ article: Article }>) {
         </Link>
       </div>
       <div className="max-md:bg-white">
-        <div className="flex flex-wrap px-5 pt-5 pb-2.5">{date ? <p className="m-0 text-[#6f6f6f] text-[12px] leading-5">{date}</p> : null}</div>
+        <div className="flex flex-wrap px-5 pt-5 pb-2.5">{date ? <p className="m-0 text-muted-foreground text-ui-12 leading-5">{date}</p> : null}</div>
         <div className="px-5 pb-[30px] max-md:bg-white">
-          <p className="m-0 mb-2.5 text-black font-heading text-[20px] font-semibold leading-6 normal-case">
+          <p className="m-0 mb-2.5 text-black font-heading text-ui-20 font-semibold leading-6 normal-case">
             <Link href={href} className="text-inherit no-underline [transition:all_0.3s_ease] hover:text-brand">{title}</Link>
           </p>
-          <p className="block m-0 text-black text-[14px] leading-[25px]">{makeExcerpt(article, 140)}</p>
+          <p className="block m-0 text-black text-ui-14 leading-[25px]">{makeExcerpt(article, 140)}</p>
         </div>
       </div>
     </div>

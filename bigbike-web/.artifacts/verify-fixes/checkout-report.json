@@ -1,0 +1,11 @@
+{
+  "addedToCart": true,
+  "checkoutHasForm": true,
+  "realError": [],
+  "injectedError": {
+    "color": "rgb(204, 9, 6)",
+    "fontSize": "14px",
+    "marginTop": "4px",
+    "marginBottom": "0px"
+  }
+}

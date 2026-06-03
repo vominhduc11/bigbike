@@ -1,0 +1,128 @@
+{
+  "home_1280": {
+    "featured": {
+      "self": {
+        "color": "rgb(111, 111, 111)",
+        "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", Barlow, sans-serif",
+        "fontSize": "17.28px",
+        "lineHeight": "20.736px",
+        "letterSpacing": "2.592px",
+        "fontWeight": "900",
+        "textTransform": "uppercase",
+        "marginTop": "0px",
+        "marginRight": "0px",
+        "marginBottom": "10px",
+        "marginLeft": "0px",
+        "display": "block",
+        "alignItems": "normal",
+        "gap": "normal"
+      },
+      "before": {
+        "content": "none",
+        "width": "auto",
+        "height": "auto",
+        "backgroundColor": "rgba(0, 0, 0, 0)"
+      }
+    },
+    "experience": {
+      "self": {
+        "color": "rgb(111, 111, 111)",
+        "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", Barlow, sans-serif",
+        "fontSize": "17.28px",
+        "lineHeight": "17.28px",
+        "letterSpacing": "2.592px",
+        "fontWeight": "900",
+        "textTransform": "uppercase",
+        "marginTop": "0px",
+        "marginRight": "0px",
+        "marginBottom": "12px",
+        "marginLeft": "0px",
+        "display": "block",
+        "alignItems": "normal",
+        "gap": "normal"
+      },
+      "before": {
+        "content": "none",
+        "width": "auto",
+        "height": "auto",
+        "backgroundColor": "rgba(0, 0, 0, 0)"
+      }
+    }
+  },
+  "home_390": {
+    "featured": {
+      "self": {
+        "color": "rgb(111, 111, 111)",
+        "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", Barlow, sans-serif",
+        "fontSize": "10px",
+        "lineHeight": "12px",
+        "letterSpacing": "1.8px",
+        "fontWeight": "900",
+        "textTransform": "uppercase",
+        "marginTop": "0px",
+        "marginRight": "0px",
+        "marginBottom": "4px",
+        "marginLeft": "0px",
+        "display": "flex",
+        "alignItems": "center",
+        "gap": "8px"
+      },
+      "before": {
+        "content": "\"\"",
+        "width": "16px",
+        "height": "1px",
+        "backgroundColor": "rgb(204, 9, 6)"
+      }
+    },
+    "experience": {
+      "self": {
+        "color": "rgb(111, 111, 111)",
+        "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", Barlow, sans-serif",
+        "fontSize": "13.3106px",
+        "lineHeight": "13.3106px",
+        "letterSpacing": "1.99659px",
+        "fontWeight": "900",
+        "textTransform": "uppercase",
+        "marginTop": "0px",
+        "marginRight": "0px",
+        "marginBottom": "12px",
+        "marginLeft": "0px",
+        "display": "block",
+        "alignItems": "normal",
+        "gap": "normal"
+      },
+      "before": {
+        "content": "none",
+        "width": "auto",
+        "height": "auto",
+        "backgroundColor": "rgba(0, 0, 0, 0)"
+      }
+    }
+  },
+  "compare_1280": {
+    "compare": {
+      "self": {
+        "color": "rgb(204, 9, 6)",
+        "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", Barlow, sans-serif",
+        "fontSize": "17.28px",
+        "lineHeight": "17.28px",
+        "letterSpacing": "normal",
+        "fontWeight": "900",
+        "textTransform": "uppercase",
+        "marginTop": "0px",
+        "marginRight": "0px",
+        "marginBottom": "12px",
+        "marginLeft": "0px",
+        "display": "block",
+        "alignItems": "normal",
+        "gap": "normal"
+      },
+      "before": {
+        "content": "none",
+        "width": "auto",
+        "height": "auto",
+        "backgroundColor": "rgba(0, 0, 0, 0)"
+      }
+    }
+  }
+}

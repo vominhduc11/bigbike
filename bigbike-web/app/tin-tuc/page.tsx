@@ -19,6 +19,7 @@ import { toArticleListPath, toArticlePath, toHomePath } from "@/lib/utils/routes
 import { safeText } from "@/lib/utils/format";
 import { stripHtmlTags } from "@/lib/utils/text";
 import { makeSlugThumbnailFallback, resolveWpUploadUrl } from "@/lib/utils/wp-media";
+import { sectionHeading } from "@/lib/ui-classes";
 import { WpArticleImage } from "./WpArticleImage";
 
 type ArticleListPageProps = {
@@ -217,7 +218,7 @@ function WpCategoryWidget({ categories }: { categories: ContentCategoryWithCount
   return (
     <div className="pb-[15px] mb-[30px] border-b border-b-[#cecece]">
       <div className="pb-[15px]">
-        <h3 className="m-0 text-foreground font-heading text-2xl font-semibold leading-[1.3] tracking-normal normal-case">
+        <h3 className={sectionHeading}>
           Danh mục tin tức
         </h3>
       </div>
@@ -237,7 +238,7 @@ function WpCategoryWidget({ categories }: { categories: ContentCategoryWithCount
                   >
                     {cat.name}
                     <span className="absolute top-0 right-[3px] w-5 h-5 text-white font-semibold text-center after:content-[''] after:absolute after:inset-0 after:z-0 after:block after:bg-[#cecece] after:[transform:rotate(45deg)]">
-                      <span className="relative z-[1] block text-[14px] leading-5">{cat.articleCount}</span>
+                      <span className="relative z-[1] block text-ui-14 leading-5">{cat.articleCount}</span>
                     </span>
                   </Link>
                 </li>
@@ -307,9 +308,9 @@ function WpPagination({
   }
 
   const pages = buildWpPageItems(page, totalPages);
-  const liCls = "inline-block px-2 text-foreground text-[1.5rem] font-semibold";
-  const cellCls = "inline-block px-2.5 py-[5px] text-foreground text-[1.5rem] no-underline";
-  const cellCurrentCls = "inline-block px-2.5 py-[5px] text-brand text-[1.5rem] no-underline";
+  const liCls = "inline-block px-2 text-foreground text-ui-24 font-semibold";
+  const cellCls = "inline-block px-2.5 py-[5px] text-foreground text-ui-24 no-underline";
+  const cellCurrentCls = "inline-block px-2.5 py-[5px] text-brand text-ui-24 no-underline";
 
   return (
     <nav className="block pt-5 pb-10 max-[576px]:text-right" aria-label="Phân trang bài viết">

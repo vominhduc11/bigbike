@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 // Account nav is dual-layout: desktop = vertical card rows with a clip-path diamond ::before
 // marker (revealed on active); mobile (<=767px) = horizontal-scroll chips with the marker hidden.
 const accountNavItem =
-  "flex w-full cursor-pointer items-center gap-[9px] border-b border-[#ededed] bg-transparent px-0 py-4 text-left font-body text-[14px] font-normal text-[#4a4a4a] no-underline transition-colors last:border-b-0 hover:text-brand before:h-[7px] before:w-[7px] before:shrink-0 before:bg-brand before:opacity-0 before:transition-opacity before:content-[''] before:[clip-path:polygon(50%_0,100%_50%,50%_100%,0_50%)] max-md:w-auto max-md:min-h-11 max-md:flex-[0_0_auto] max-md:whitespace-nowrap max-md:border max-md:border-[var(--bb-border-subtle)] max-md:bg-[var(--bb-bg-surface)] max-md:px-3.5 max-md:py-0 max-md:before:hidden";
+  "flex w-full cursor-pointer items-center gap-[9px] border-b border-[#ededed] bg-transparent px-0 py-4 text-left font-body text-ui-14 font-normal text-muted-foreground no-underline transition-colors last:border-b-0 hover:text-brand before:h-[7px] before:w-[7px] before:shrink-0 before:bg-brand before:opacity-0 before:transition-opacity before:content-[''] before:[clip-path:polygon(50%_0,100%_50%,50%_100%,0_50%)] max-md:w-auto max-md:min-h-11 max-md:flex-[0_0_auto] max-md:whitespace-nowrap max-md:border max-md:border-[var(--bb-border-subtle)] max-md:bg-[var(--bb-bg-surface)] max-md:px-3.5 max-md:py-0 max-md:before:hidden";
 const accountNavItemActive =
   "font-semibold text-brand before:opacity-100 max-md:border-[var(--bb-action-primary)]";
 
@@ -52,7 +52,7 @@ export function AccountSectionHeading({
 }) {
   return (
     <div className={accountHeaderShell}>
-      <h1 className="m-0 flex items-center gap-[11px] font-[family-name:var(--bb-font-display)] text-[22px] font-bold uppercase tracking-[0.03em] text-[#1a1a1a] before:h-0 before:w-0 before:shrink-0 before:border-y-[7px] before:border-l-[11px] before:border-y-transparent before:border-l-[var(--bb-brand-primary)] before:content-[''] max-md:text-[20px] max-md:leading-[1.15]">
+      <h1 className="m-0 flex items-center gap-[11px] font-[family-name:var(--bb-font-display)] text-ui-22 font-bold uppercase tracking-[0.03em] text-foreground before:h-0 before:w-0 before:shrink-0 before:border-y-[7px] before:border-l-[11px] before:border-y-transparent before:border-l-[var(--bb-brand-primary)] before:content-[''] max-md:text-ui-20 max-md:leading-[1.15]">
         {title}
       </h1>
     </div>
@@ -114,10 +114,10 @@ export function AccountShell({ children, loginRedirect }: Props) {
                 {(profile.displayName?.[0] ?? profile.email?.[0] ?? "U").toUpperCase()}
               </div>
               <div className="min-w-0 flex-1">
-                <b className="block overflow-hidden text-ellipsis whitespace-nowrap font-[family-name:var(--bb-font-display)] text-[14px] font-bold uppercase leading-[1.25] tracking-[0.04em] text-[#1a1a1a]">
+                <b className="block overflow-hidden text-ellipsis whitespace-nowrap font-[family-name:var(--bb-font-display)] text-ui-14 font-bold uppercase leading-[1.25] tracking-[0.04em] text-foreground">
                   {profile.displayName ?? profile.email?.split("@")[0]}
                 </b>
-                <span className="mt-[3px] block overflow-hidden text-ellipsis whitespace-nowrap text-[12px] text-[#6f6f6f]">
+                <span className="mt-[3px] block overflow-hidden text-ellipsis whitespace-nowrap text-ui-12 text-muted-foreground">
                   {profile.email}
                 </span>
               </div>

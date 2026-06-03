@@ -1,0 +1,421 @@
+{
+  "390": {
+    "data": {
+      "card": {
+        "display": "flex",
+        "flexDirection": "column",
+        "backgroundColor": "rgb(255, 255, 255)",
+        "borderTopStyle": "solid",
+        "borderTopWidth": "1px",
+        "borderTopColor": "rgb(221, 221, 221)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "textDecorationLine": "none",
+        "color": "rgb(0, 0, 0)",
+        "transitionProperty": "box-shadow",
+        "transitionDuration": "0.3s"
+      },
+      "imgWrap": {
+        "position": "relative",
+        "aspectRatio": "16 / 9",
+        "overflow": "hidden",
+        "flexShrink": "0",
+        "backgroundColor": "rgb(255, 255, 255)"
+      },
+      "img": {
+        "display": "block",
+        "objectFit": "cover",
+        "transitionProperty": "transform",
+        "transitionDuration": "0.3s"
+      },
+      "date": {
+        "position": "absolute",
+        "top": "-21px",
+        "left": "0px",
+        "zIndex": "2",
+        "display": "flex",
+        "alignItems": "center",
+        "height": "42px",
+        "minWidth": "168px",
+        "paddingTop": "0px",
+        "paddingRight": "28px",
+        "paddingBottom": "0px",
+        "paddingLeft": "22px",
+        "backgroundColor": "rgb(204, 9, 6)",
+        "color": "rgb(255, 255, 255)",
+        "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", Barlow, sans-serif",
+        "fontSize": "14px",
+        "fontWeight": "600",
+        "letterSpacing": "normal",
+        "textTransform": "uppercase",
+        "whiteSpace": "nowrap",
+        "borderRadius": "0px",
+        "clipPath": "polygon(0px 0px, 100% 0px, calc(100% - 18px) 100%, 0px 100%)"
+      },
+      "body": {
+        "position": "relative",
+        "paddingTop": "34px",
+        "paddingRight": "14px",
+        "paddingBottom": "18px",
+        "paddingLeft": "14px",
+        "display": "flex",
+        "flexDirection": "column",
+        "rowGap": "8px",
+        "flexGrow": "1",
+        "backgroundColor": "rgb(255, 255, 255)"
+      },
+      "bodyInside": {
+        "display": "flex",
+        "flexDirection": "column",
+        "rowGap": "8px",
+        "flexGrow": "1"
+      },
+      "title": {
+        "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+        "fontSize": "18.0485px",
+        "fontWeight": "600",
+        "color": "rgb(0, 0, 0)",
+        "textTransform": "none",
+        "lineHeight": "21.6582px",
+        "marginTop": "0px",
+        "marginBottom": "0px",
+        "transitionProperty": "color",
+        "transitionDuration": "0.14s",
+        "display": "flow-root",
+        "webkitLineClamp": "2"
+      },
+      "excerpt": {
+        "fontSize": "14.0223px",
+        "color": "rgb(111, 111, 111)",
+        "lineHeight": "21.7346px",
+        "marginTop": "0px",
+        "marginBottom": "0px",
+        "minHeight": "0px",
+        "display": "flow-root",
+        "webkitLineClamp": "3"
+      },
+      "__tag": {
+        "title": "H3",
+        "category": "P"
+      }
+    },
+    "hover": null
+  },
+  "767": {
+    "data": {
+      "card": {
+        "display": "flex",
+        "flexDirection": "column",
+        "backgroundColor": "rgb(255, 255, 255)",
+        "borderTopStyle": "solid",
+        "borderTopWidth": "1px",
+        "borderTopColor": "rgb(221, 221, 221)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "textDecorationLine": "none",
+        "color": "rgb(0, 0, 0)",
+        "transitionProperty": "box-shadow",
+        "transitionDuration": "0.3s"
+      },
+      "imgWrap": {
+        "position": "relative",
+        "aspectRatio": "16 / 9",
+        "overflow": "hidden",
+        "flexShrink": "0",
+        "backgroundColor": "rgb(255, 255, 255)"
+      },
+      "img": {
+        "display": "block",
+        "objectFit": "cover",
+        "transitionProperty": "transform",
+        "transitionDuration": "0.3s"
+      },
+      "date": {
+        "position": "absolute",
+        "top": "-21px",
+        "left": "0px",
+        "zIndex": "2",
+        "display": "flex",
+        "alignItems": "center",
+        "height": "42px",
+        "minWidth": "168px",
+        "paddingTop": "0px",
+        "paddingRight": "28px",
+        "paddingBottom": "0px",
+        "paddingLeft": "22px",
+        "backgroundColor": "rgb(204, 9, 6)",
+        "color": "rgb(255, 255, 255)",
+        "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", Barlow, sans-serif",
+        "fontSize": "14px",
+        "fontWeight": "600",
+        "letterSpacing": "normal",
+        "textTransform": "uppercase",
+        "whiteSpace": "nowrap",
+        "borderRadius": "0px",
+        "clipPath": "polygon(0px 0px, 100% 0px, calc(100% - 18px) 100%, 0px 100%)"
+      },
+      "body": {
+        "position": "relative",
+        "paddingTop": "34px",
+        "paddingRight": "14px",
+        "paddingBottom": "18px",
+        "paddingLeft": "14px",
+        "display": "flex",
+        "flexDirection": "column",
+        "rowGap": "8px",
+        "flexGrow": "1",
+        "backgroundColor": "rgb(255, 255, 255)"
+      },
+      "bodyInside": {
+        "display": "flex",
+        "flexDirection": "column",
+        "rowGap": "8px",
+        "flexGrow": "1"
+      },
+      "title": {
+        "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+        "fontSize": "19.0853px",
+        "fontWeight": "600",
+        "color": "rgb(0, 0, 0)",
+        "textTransform": "none",
+        "lineHeight": "22.9023px",
+        "marginTop": "0px",
+        "marginBottom": "0px",
+        "transitionProperty": "color",
+        "transitionDuration": "0.14s",
+        "display": "flow-root",
+        "webkitLineClamp": "2"
+      },
+      "excerpt": {
+        "fontSize": "14.5388px",
+        "color": "rgb(111, 111, 111)",
+        "lineHeight": "22.5351px",
+        "marginTop": "0px",
+        "marginBottom": "0px",
+        "minHeight": "0px",
+        "display": "flow-root",
+        "webkitLineClamp": "3"
+      },
+      "__tag": {
+        "title": "H3",
+        "category": "P"
+      }
+    },
+    "hover": null
+  },
+  "768": {
+    "data": {
+      "card": {
+        "display": "flex",
+        "flexDirection": "column",
+        "backgroundColor": "rgb(255, 255, 255)",
+        "borderTopStyle": "none",
+        "borderTopWidth": "0px",
+        "borderTopColor": "rgb(0, 0, 0)",
+        "borderRadius": "0px",
+        "boxShadow": "rgba(0, 0, 0, 0.16) 0px 3px 6px 0px",
+        "textDecorationLine": "none",
+        "color": "rgb(0, 0, 0)",
+        "transitionProperty": "box-shadow",
+        "transitionDuration": "0.3s"
+      },
+      "imgWrap": {
+        "position": "relative",
+        "aspectRatio": "16 / 9",
+        "overflow": "hidden",
+        "flexShrink": "0",
+        "backgroundColor": "rgb(255, 255, 255)"
+      },
+      "img": {
+        "display": "block",
+        "objectFit": "cover",
+        "transitionProperty": "transform",
+        "transitionDuration": "0.3s"
+      },
+      "date": {
+        "position": "absolute",
+        "top": "-21px",
+        "left": "0px",
+        "zIndex": "2",
+        "display": "flex",
+        "alignItems": "center",
+        "height": "42px",
+        "minWidth": "168px",
+        "paddingTop": "0px",
+        "paddingRight": "28px",
+        "paddingBottom": "0px",
+        "paddingLeft": "22px",
+        "backgroundColor": "rgb(204, 9, 6)",
+        "color": "rgb(255, 255, 255)",
+        "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", Barlow, sans-serif",
+        "fontSize": "14px",
+        "fontWeight": "600",
+        "letterSpacing": "normal",
+        "textTransform": "uppercase",
+        "whiteSpace": "nowrap",
+        "borderRadius": "0px",
+        "clipPath": "polygon(0px 0px, 100% 0px, calc(100% - 18px) 100%, 0px 100%)"
+      },
+      "body": {
+        "position": "relative",
+        "paddingTop": "41px",
+        "paddingRight": "20px",
+        "paddingBottom": "30px",
+        "paddingLeft": "20px",
+        "display": "flex",
+        "flexDirection": "column",
+        "rowGap": "8px",
+        "flexGrow": "1",
+        "backgroundColor": "rgb(255, 255, 255)"
+      },
+      "bodyInside": {
+        "display": "flex",
+        "flexDirection": "column",
+        "rowGap": "8px",
+        "flexGrow": "1"
+      },
+      "title": {
+        "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+        "fontSize": "19.088px",
+        "fontWeight": "600",
+        "color": "rgb(0, 0, 0)",
+        "textTransform": "none",
+        "lineHeight": "22.9056px",
+        "marginTop": "0px",
+        "marginBottom": "0px",
+        "transitionProperty": "color",
+        "transitionDuration": "0.14s",
+        "display": "flow-root",
+        "webkitLineClamp": "2"
+      },
+      "excerpt": {
+        "fontSize": "14.5402px",
+        "color": "rgb(111, 111, 111)",
+        "lineHeight": "22.5372px",
+        "marginTop": "0px",
+        "marginBottom": "0px",
+        "minHeight": "104px",
+        "display": "flow-root",
+        "webkitLineClamp": "4"
+      },
+      "__tag": {
+        "title": "H3",
+        "category": "P"
+      }
+    },
+    "hover": null
+  },
+  "1280": {
+    "data": {
+      "card": {
+        "display": "flex",
+        "flexDirection": "column",
+        "backgroundColor": "rgb(255, 255, 255)",
+        "borderTopStyle": "none",
+        "borderTopWidth": "0px",
+        "borderTopColor": "rgb(0, 0, 0)",
+        "borderRadius": "0px",
+        "boxShadow": "rgba(0, 0, 0, 0.16) 0px 3px 6px 0px",
+        "textDecorationLine": "none",
+        "color": "rgb(0, 0, 0)",
+        "transitionProperty": "box-shadow",
+        "transitionDuration": "0.3s"
+      },
+      "imgWrap": {
+        "position": "relative",
+        "aspectRatio": "16 / 9",
+        "overflow": "hidden",
+        "flexShrink": "0",
+        "backgroundColor": "rgb(255, 255, 255)"
+      },
+      "img": {
+        "display": "block",
+        "objectFit": "cover",
+        "transitionProperty": "transform",
+        "transitionDuration": "0.3s"
+      },
+      "date": {
+        "position": "absolute",
+        "top": "-21px",
+        "left": "0px",
+        "zIndex": "2",
+        "display": "flex",
+        "alignItems": "center",
+        "height": "42px",
+        "minWidth": "168px",
+        "paddingTop": "0px",
+        "paddingRight": "28px",
+        "paddingBottom": "0px",
+        "paddingLeft": "22px",
+        "backgroundColor": "rgb(204, 9, 6)",
+        "color": "rgb(255, 255, 255)",
+        "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", Barlow, sans-serif",
+        "fontSize": "14px",
+        "fontWeight": "600",
+        "letterSpacing": "normal",
+        "textTransform": "uppercase",
+        "whiteSpace": "nowrap",
+        "borderRadius": "0px",
+        "clipPath": "polygon(0px 0px, 100% 0px, calc(100% - 18px) 100%, 0px 100%)"
+      },
+      "body": {
+        "position": "relative",
+        "paddingTop": "41px",
+        "paddingRight": "20px",
+        "paddingBottom": "30px",
+        "paddingLeft": "20px",
+        "display": "flex",
+        "flexDirection": "column",
+        "rowGap": "8px",
+        "flexGrow": "1",
+        "backgroundColor": "rgb(255, 255, 255)"
+      },
+      "bodyInside": {
+        "display": "flex",
+        "flexDirection": "column",
+        "rowGap": "8px",
+        "flexGrow": "1"
+      },
+      "title": {
+        "fontFamily": "\"Barlow Condensed\", \"Barlow Condensed Fallback\", \"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+        "fontSize": "20.496px",
+        "fontWeight": "600",
+        "color": "rgb(0, 0, 0)",
+        "textTransform": "none",
+        "lineHeight": "24.5952px",
+        "marginTop": "0px",
+        "marginBottom": "0px",
+        "transitionProperty": "color",
+        "transitionDuration": "0.14s",
+        "display": "flow-root",
+        "webkitLineClamp": "2"
+      },
+      "excerpt": {
+        "fontSize": "15.2416px",
+        "color": "rgb(111, 111, 111)",
+        "lineHeight": "23.6245px",
+        "marginTop": "0px",
+        "marginBottom": "0px",
+        "minHeight": "104px",
+        "display": "flow-root",
+        "webkitLineClamp": "4"
+      },
+      "__tag": {
+        "title": "H3",
+        "category": "P"
+      }
+    },
+    "hover": {
+      "card": {
+        "boxShadow": "rgba(255, 12, 9, 0.1) 0px 4px 12px 0px",
+        "borderTopColor": "rgb(204, 9, 6)"
+      },
+      "img": {
+        "transform": "matrix(1.05, 0, 0, 1.05, 0, 0)"
+      },
+      "title": {
+        "color": "rgb(204, 9, 6)"
+      }
+    }
+  }
+}
