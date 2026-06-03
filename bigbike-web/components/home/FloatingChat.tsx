@@ -4,6 +4,29 @@ import { useState, useEffect, useRef, useCallback, type ReactElement } from "rea
 import { createPortal } from "react-dom";
 import { telHref } from "@/lib/utils/format";
 
+// b24-widget FAB structure, inlined. KEEP (in globals.css): @keyframes socialRotate /
+// b24-widget-button-visible (referenced via [animation:…]) + the .bb-floating-chat-anchor
+// parent-state hides (set in app/layout.tsx). The open-state gray-bg + scale(0.7) the
+// legacy CSS intended are DEAD — `.b24-widget-button-bottom` was scoped as a wrapper
+// ancestor but the markup put it on the button itself — so the open FAB keeps the same
+// colour and only swaps the chat icon for the close icon. !rounded-[50%] beats the
+// unlayered .bb-theme border-radius reset. The closed FAB lives inside the anchor, so
+// it gets the mobile 48/60px sizes; the open FAB renders in a portal (no anchor) → 66px.
+const fabContainer = "relative inline-block";
+const fabMask =
+  "absolute -top-2 -left-2 w-[calc(100%+16px)] h-[82px] min-w-[66px] !rounded-[50%] bg-[var(--bb-chat-title-bg)] opacity-20 pointer-events-none";
+const fabBlock = "w-[66px] h-[66px] !rounded-[50%] box-border overflow-hidden";
+const fabInnerBlock =
+  "relative w-[66px] h-[66px] !rounded-[50%] bg-[var(--bb-chat-title-bg)] text-[var(--bb-chat-title-text)] border-none cursor-pointer flex items-center justify-center [outline:none] box-border focus-visible:[outline:2px_solid_#fff] focus-visible:[outline-offset:3px]";
+const fabIconWrap = "relative flex-1 w-full h-full";
+const fabIconItem =
+  "absolute top-0 left-0 flex items-center justify-center w-full h-full [transition:opacity_0.6s_ease-out]";
+const fabBlockMobile = " max-md:w-[48px] max-md:h-[48px]";
+const fabMaskMobile = " max-md:w-[60px] max-md:h-[60px]";
+const chatItem = "block text-[#333] overflow-hidden no-underline px-4 py-2 hover:bg-[#f2f2f2]";
+const chatItemIcon = "float-left mr-[5px] [&_svg]:block [&_svg]:w-10 [&_svg]:h-10";
+const chatItemLabel = "h-10 leading-10 text-[#333] m-0 text-[1.1em] font-[Arial,sans-serif] [&_strong]:font-bold";
+
 type FloatingChatProps = {
   hotline?: string;
   zaloUrl?: string;
@@ -166,13 +189,12 @@ function ChatOverlay({
           <a
             key={item.key}
             href={item.href}
-            className="sudovn-btn-social-item bb-chat-item"
+            className={chatItem}
             target="_blank"
             rel="nofollow noreferrer"
-            style={{ textDecoration: "none", display: "block" }}
           >
-            <div className="sudovn-btn-social-item-icon bb-chat-item-icon">{item.icon}</div>
-            <div className="sudovn-btn-social-item-label bb-chat-item-label">
+            <div className={chatItemIcon}>{item.icon}</div>
+            <div className={chatItemLabel}>
               {item.label}: <strong>{item.value}</strong>
             </div>
           </a>
@@ -188,22 +210,22 @@ function ChatOverlay({
           zIndex: 2147483647,
         }}
       >
-        <div className="b24-widget-button-inner-container">
-          <div className="b24-widget-button-inner-mask" aria-hidden="true" />
-          <div className="b24-widget-button-block">
+        <div className={fabContainer}>
+          <div className={fabMask} aria-hidden="true" />
+          <div className={fabBlock}>
             <button
               type="button"
-              className="b24-widget-button-inner-block b24-widget-button-bottom"
+              className={fabInnerBlock}
               onClick={onToggle}
               aria-label="Đóng hỗ trợ"
               aria-expanded={true}
               aria-haspopup="dialog"
             >
-              <div className="b24-widget-button-icon-container">
-                <div className="b24-widget-button-inner-item b24-widget-button-icon-animation">
+              <div className={fabIconWrap}>
+                <div className={`${fabIconItem} opacity-100 hidden`}>
                   <IconToggleOpen />
                 </div>
-                <div className="b24-widget-button-inner-item b24-widget-button-close">
+                <div className={`${fabIconItem} opacity-100 [animation:socialRotate_0.4s]`}>
                   <IconToggleClose />
                 </div>
               </div>
@@ -274,28 +296,31 @@ export function FloatingChat({ hotline, zaloUrl, messengerUrl }: Readonly<Floati
         <div
           id="sudovn-btn-wrapper"
           dir="ltr"
-          className="bb-chat-float b24-widget-button-visible"
+          className="relative font-[Arial,sans-serif] flex flex-col-reverse items-end [animation:b24-widget-button-visible_1s_ease-out_forwards_1]"
         >
-          <div id="sudovn-btn-title" className="bb-chat-title">
+          <div
+            id="sudovn-btn-title"
+            className="bg-[var(--bb-chat-title-bg)] px-[5px] py-0.5 text-[var(--bb-chat-title-text)] text-[13px] font-[Arial,sans-serif] whitespace-nowrap relative bottom-[42px] right-[70px] max-md:hidden"
+          >
             Bạn cần hỗ trợ?
           </div>
-          <div className="b24-widget-button-inner-container" id="sudovn-btn-inner-container">
-            <div className="b24-widget-button-inner-mask" aria-hidden="true" />
-            <div className="b24-widget-button-block">
+          <div className={fabContainer} id="sudovn-btn-inner-container">
+            <div className={`${fabMask}${fabMaskMobile}`} aria-hidden="true" />
+            <div className={`${fabBlock}${fabBlockMobile}`}>
               <button
                 ref={triggerRef}
                 type="button"
-                className="b24-widget-button-inner-block"
+                className={`${fabInnerBlock}${fabBlockMobile}`}
                 onClick={handleOpen}
                 aria-label="Mở hỗ trợ"
                 aria-expanded={false}
                 aria-haspopup="dialog"
               >
-                <div className="b24-widget-button-icon-container" id="sudovn-btn-icon-container">
-                  <div className="b24-widget-button-inner-item b24-widget-button-icon-animation">
+                <div className={fabIconWrap} id="sudovn-btn-icon-container">
+                  <div className={`${fabIconItem} opacity-100`}>
                     <IconToggleOpen />
                   </div>
-                  <div className="b24-widget-button-inner-item b24-widget-button-close" id="sudovn-btn-close">
+                  <div className={`${fabIconItem} opacity-0`} id="sudovn-btn-close">
                     <IconToggleClose />
                   </div>
                 </div>

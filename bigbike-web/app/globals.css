@@ -2278,10 +2278,6 @@ input[type="checkbox"] {
   background: transparent;
 }
 
-.bb-chat-item-icon svg circle {
-  border-radius: 50%;
-}
-
 .bb-products-section,
 .bb-seo-content {
   padding-block: var(--bb-section-y);
@@ -2341,7 +2337,7 @@ input[type="checkbox"] {
   border-radius: 0;
 }
 
-.bb-theme :is(.bb-round, .bb-account-avatar, .swiper-pagination-bullet, .b24-widget-button-block, .b24-widget-button-inner-block, .b24-widget-button-inner-mask) {
+.bb-theme :is(.bb-round, .bb-account-avatar, .swiper-pagination-bullet) {
   border-radius: 50%;
 }
 
@@ -2721,224 +2717,9 @@ body:has(.bb-home) {
   --bb-header-stack: 5rem;
 }
 
-/* Floating contact widget — WP: b24-widget-button-wrapper, flex column-reverse */
-.bb-chat-float {
-  position: relative;
-  direction: ltr;
-  font-family: Arial, sans-serif;
-  display: flex;
-  flex-direction: column-reverse;
-  align-items: flex-end;
-}
-
-/* Full-screen overlay — position:fixed escapes parent stacking context */
-
-/* Title — WP: positioned relative, shifts up beside button */
-#sudovn-btn-title,
-.bb-chat-title {
-  background: var(--bb-chat-title-bg);
-  padding: 2px 5px;
-  border-radius: 3px;
-  color: var(--bb-chat-title-text);
-  font-size: 13px;
-  font-family: Arial, sans-serif;
-  white-space: nowrap;
-  position: relative;
-  bottom: 42px;
-  right: 70px;
-}
-
-/* Social panel — hidden by default, absolute above toggle button */
-#sudovn-btn-social {
-  opacity: 0;
-  visibility: hidden;
-  background: #fff;
-  min-width: 300px;
-  padding: 8px 0;
-  position: absolute;
-  bottom: 90px;
-  right: 0;
-  border-radius: 8px;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.18);
-}
-
-/* Downward triangle arrow */
-#sudovn-btn-social::before {
-  content: "";
-  position: absolute;
-  bottom: -7px;
-  right: 25px;
-  display: inline-block;
-  border-right: 8px solid transparent;
-  border-top: 8px solid #fff;
-  border-left: 8px solid transparent;
-}
-
-/* Show state — fade in animation matching WP */
-
-@keyframes bbWidgetShow {
-  0%   { opacity: 0; visibility: hidden; }
-  50%  { opacity: 0; visibility: hidden; }
-  100% { opacity: 1; visibility: visible; }
-}
-
-/* Social items — flat list */
-.sudovn-btn-social-item,
-.bb-chat-item {
-  display: block;
-  color: #333;
-  overflow: hidden;
-  text-decoration: none;
-  padding: 0.5rem 1rem;
-}
-
-.sudovn-btn-social-item:hover,
-.bb-chat-item:hover {
-  background: #f2f2f2;
-}
-
-/* Item icon — float left */
-.sudovn-btn-social-item-icon,
-.bb-chat-item-icon {
-  float: left;
-  margin-right: 5px;
-}
-
-.sudovn-btn-social-item-icon img,
-.sudovn-btn-social-item-icon svg,
-.bb-chat-item-icon img,
-.bb-chat-item-icon svg {
-  width: 40px;
-  height: 40px;
-  display: block;
-}
-
-/* Item label */
-.sudovn-btn-social-item-label,
-.bb-chat-item-label {
-  height: 40px;
-  line-height: 40px;
-  color: #333;
-  margin: 0;
-  font-size: 1.1em;
-  font-family: Arial, sans-serif;
-}
-
-.sudovn-btn-social-item-label strong,
-.bb-chat-item-label strong {
-  font-weight: 700;
-}
-
-/* Circle clip wrapper — WP: b24-widget-button-block */
-.b24-widget-button-block {
-  width: 66px;
-  height: 66px;
-  border-radius: 100%;
-  box-sizing: border-box;
-  overflow: hidden;
-}
-
-/* Toggle button — WP: CIRCLE 66px (border-radius: 100px, not 10px) */
-.b24-widget-button-inner-block {
-  position: relative;
-  width: 66px;
-  height: 66px;
-  border-radius: 100px;
-  background: var(--bb-chat-title-bg);
-  color: var(--bb-chat-title-text);
-  border: 0;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  outline: none;
-  box-sizing: border-box;
-}
-
-.b24-widget-button-inner-block:focus-visible {
-  outline: 2px solid #fff;
-  outline-offset: 3px;
-}
-
-/* Halo ring — WP: circular, 82px height, calc(100%+16px) width */
-.b24-widget-button-inner-mask {
-  position: absolute;
-  top: -8px;
-  left: -8px;
-  width: calc(100% + 16px);
-  height: 82px;
-  min-width: 66px;
-  border-radius: 100px;
-  background: var(--bb-chat-title-bg);
-  opacity: 0.2;
-  pointer-events: none;
-}
-
-.b24-widget-button-inner-container {
-  position: relative;
-  display: inline-block;
-}
-
-/* Icon items inside button */
-.b24-widget-button-icon-container {
-  position: relative;
-  flex: 1;
-  width: 100%;
-  height: 100%;
-}
-
-.b24-widget-button-inner-item {
-  position: absolute;
-  top: 0;
-  left: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  transition: opacity 0.6s ease-out;
-  opacity: 0;
-}
-
-.b24-widget-button-icon-animation {
-  opacity: 1;
-}
-
-/* === OPEN STATE: .b24-widget-button-bottom added to wrapper === */
-
-/* Button + halo turn gray */
-.b24-widget-button-bottom .b24-widget-button-inner-block,
-.b24-widget-button-bottom .b24-widget-button-inner-mask {
-  background: #d6d6d6 !important;
-  transition: background 0.3s linear;
-}
-
-/* Button scales down */
-.b24-widget-button-bottom .b24-widget-button-inner-container {
-  transform: scale(0.7);
-  transition: transform 0.3s linear;
-}
-
-/* Hide chat icon when open */
-.b24-widget-button-bottom .b24-widget-button-inner-item {
-  display: none;
-}
-
-/* Show close icon when open */
-.b24-widget-button-bottom .b24-widget-button-close {
-  display: flex;
-  opacity: 1;
-  animation: socialRotate 0.4s;
-}
-
 @keyframes socialRotate {
   0%   { transform: rotate(-90deg); }
   100% { transform: rotate(0deg); }
-}
-
-/* Load-in scale animation */
-.b24-widget-button-visible {
-  animation: b24-widget-button-visible 1s ease-out forwards 1;
 }
 
 @keyframes b24-widget-button-visible {
@@ -2957,21 +2738,6 @@ body:has(.bb-home) {
   body:has(.bb-home) .bb-logo-img {
     width: 80px;
     max-width: 80px;
-  }
-}
-
-@media (max-width: 767px) {
-  /* Icon-only FAB across the whole mobile range — the "Bạn cần hỗ trợ?" title
-     bubble overlapped PDP content (description text / right-most swatch). */
-  #sudovn-btn-title,
-  .bb-chat-title {
-    display: none;
-  }
-}
-
-@media (max-width: 430px) {
-  #sudovn-btn-social {
-    min-width: 260px;
   }
 }
 
@@ -3629,22 +3395,6 @@ body:has(.bb-search-results-page) {
 
   .bb-header-info-trigger {
     display: none !important;
-  }
-
-  .bb-floating-chat-anchor {
-    right: max(14px, env(safe-area-inset-right)) !important;
-    bottom: calc(var(--bb-mobile-nav-height) + env(safe-area-inset-bottom) + 12px) !important;
-  }
-
-  .bb-floating-chat-anchor .b24-widget-button-block,
-  .bb-floating-chat-anchor .b24-widget-button-inner-block {
-    width: 52px;
-    height: 52px;
-  }
-
-  .bb-floating-chat-anchor .b24-widget-button-inner-mask {
-    width: 64px;
-    height: 64px;
   }
 
   .bb-header-search-layer::before {
@@ -4358,11 +4108,6 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
   display: none !important;
 }
 
-/* FAB nổi trên mọi UI thường — portal panel tự quản lý z-index riêng qua createPortal */
-.bb-floating-chat-anchor {
-  z-index: 660;
-}
-
 @media (max-width: 767px) {
   html,
   body {
@@ -4397,23 +4142,6 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
   body:has(.bb-page--auth) .bb-floating-chat-anchor,
   body:has(.bb-account-layout) .bb-floating-chat-anchor {
     display: none !important;
-  }
-
-  .bb-floating-chat-anchor {
-    right: max(16px, env(safe-area-inset-right)) !important;
-    bottom: calc(var(--bb-mobile-nav-height) + env(safe-area-inset-bottom) + 16px) !important;
-    z-index: 660 !important;
-  }
-
-  .bb-floating-chat-anchor .b24-widget-button-block,
-  .bb-floating-chat-anchor .b24-widget-button-inner-block {
-    width: 48px !important;
-    height: 48px !important;
-  }
-
-  .bb-floating-chat-anchor .b24-widget-button-inner-mask {
-    width: 60px !important;
-    height: 60px !important;
   }
 
   .bb-site-header {
