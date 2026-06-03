@@ -1639,35 +1639,13 @@ body {
 /* -- Shared Carousel Nav Buttons ------------------------ */
 
 /* -- Featured 3 Product Tiles ---------------------------- */
-/* -- Homepage hero (WP #main-banner parity) --------------- */
-/* 40vw ≈ 2.5:1 — khớp với AR thực tế của ảnh banner (2.38–2.56:1).
-   Dùng 16:9 (56.25vw) trước đây khiến container cao hơn ảnh ~50%: object-fit:cover
-   phải scale up và clip ~26–31% ngang. Với 40vw clip tối đa còn ~5%.
-   max() clamp từ dưới: viewport nhỏ (≤750px) giữ tối thiểu 300px.
-   Chỉ cap tại 3XL (1920px) trở lên để tránh hero quá lớn. */
-.bb-main-banner {
-  position: relative;
-  width: 100%;
-  height: max(40vw, 300px);
-  overflow: hidden;
-  background: #000;
-}
-
-@media (min-width: 1920px) {
-  .bb-main-banner     { max-height: 1080px; }
-  .bb-main-banner-img { min-height: min(40vw, 1080px); }
-}
-
-@media (min-width: 2560px) {
-  .bb-main-banner     { max-height: 1200px; }
-  .bb-main-banner-img { min-height: min(40vw, 1200px); }
-}
+/* -- Homepage hero (WP #main-banner parity) — container/img/arrows/pagination
+   leaf styling inlined in HeroSlider.tsx (height max(40vw,300px) ≈ 2.5:1 banner AR,
+   capped at 3XL 1080 / 4XL 1200). Swiper-generated DOM keeps its mechanism rules below. */
 
 .bb-main-banner .swiper,
 .bb-main-banner .swiper-wrapper,
-.bb-main-banner .swiper-slide,
-.bb-main-banner-link,
-.bb-main-banner-link picture {
+.bb-main-banner .swiper-slide {
   display: block;
   width: 100%;
   height: 100%;
@@ -1683,152 +1661,6 @@ body {
   flex-shrink: 0;
 }
 
-.bb-main-banner-link {
-  position: relative;
-  color: inherit;
-  text-decoration: none;
-}
-
-.bb-main-banner-img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  min-height: 40vw;
-  object-fit: cover;
-  object-position: center center;
-}
-
-.bb-main-banner-arrow {
-  position: absolute;
-  top: 50%;
-  z-index: 10;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 112px;
-  height: 160px;
-  padding: 0;
-  transform: translateY(-50%);
-  border: 0;
-  background: transparent;
-  color: #fff;
-  cursor: pointer;
-  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.6));
-  transition: opacity 0.15s ease;
-  opacity: 1;
-}
-
-.bb-main-banner-arrow:hover {
-  opacity: 0.75;
-}
-
-.bb-main-banner-arrow:focus-visible {
-  outline: 2px solid rgba(255, 255, 255, 0.7);
-  outline-offset: 2px;
-}
-
-.bb-main-banner-arrow svg {
-  display: block;
-  flex-shrink: 0;
-  width: 40px;
-  height: 80px;
-}
-
-.bb-main-banner-arrow-prev {
-  left: 24px;
-}
-
-.bb-main-banner-arrow-next {
-  right: 24px;
-}
-
-.bb-main-banner-pagination {
-  position: absolute;
-  left: 50%;
-  bottom: 70px;
-  z-index: 10;
-  display: flex;
-  align-items: flex-end;
-  gap: 0;
-  width: min(370px, calc(100% - 48px));
-  transform: translateX(-50%);
-  padding-bottom: 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.55);
-  color: #fff;
-  font-family: var(--bb-font-display);
-  font-size: 1rem;
-  line-height: 1.2;
-  text-align: left;
-}
-
-@media (max-width: 767px) {
-  .bb-main-banner-pagination {
-    display: none;
-  }
-
-  .bb-main-banner-arrow {
-    width: 44px;
-    height: 64px;
-  }
-
-  .bb-main-banner-arrow svg {
-    width: 16px;
-    height: 32px;
-  }
-
-  .bb-main-banner-arrow-prev {
-    left: 4px;
-  }
-
-  .bb-main-banner-arrow-next {
-    right: 4px;
-  }
-}
-
-@media (min-width: 1536px) {
-  .bb-main-banner-arrow {
-    width: 128px;
-    height: 192px;
-  }
-
-  .bb-main-banner-arrow svg {
-    width: 48px;
-    height: 96px;
-  }
-
-  .bb-main-banner-arrow-prev { left: 32px; }
-  .bb-main-banner-arrow-next { right: 32px; }
-}
-
-@media (min-width: 1920px) {
-  .bb-main-banner-arrow {
-    width: 160px;
-    height: 240px;
-  }
-
-  .bb-main-banner-arrow svg {
-    width: 60px;
-    height: 120px;
-  }
-
-  .bb-main-banner-arrow-prev { left: 48px; }
-  .bb-main-banner-arrow-next { right: 48px; }
-}
-
-@media (min-width: 2560px) {
-  .bb-main-banner-arrow {
-    width: 192px;
-    height: 288px;
-  }
-
-  .bb-main-banner-arrow svg {
-    width: 72px;
-    height: 144px;
-  }
-
-  .bb-main-banner-arrow-prev { left: 64px; }
-  .bb-main-banner-arrow-next { right: 64px; }
-}
 
 /* -- Products Section ------------------------------------ */
 .bb-products-section {
@@ -4990,27 +4822,10 @@ body .bb-home .white.block-title h3 {
   opacity: 1;
 }
 
-.bb-home #main-banner {
-  position: relative;
-  overflow: hidden;
-}
-
 .bb-home #main-banner .swiper,
 .bb-home #main-banner .swiper-container,
 .bb-home #main-banner .swiper-wrapper,
 .bb-home #main-banner .swiper-slide {
-  height: 100%;
-}
-
-.bb-home #main-banner .swiper-slide a,
-.bb-home #main-banner .swiper-slide .bb-main-banner-link {
-  display: block;
-}
-
-.bb-home #main-banner .swiper-slide a span,
-.bb-home #main-banner .swiper-slide .bb-main-banner-link span {
-  display: block;
-  width: 100%;
   height: 100%;
 }
 
@@ -5428,8 +5243,7 @@ body .bb-home .white.block-title h3 {
 
 /* Mobile homepage prototype parity. Scoped to small mobile only so tablet/desktop
    keep the existing WP-parity composition. */
-.bb-mobile-drawer-head,
-.bb-main-banner-copy {
+.bb-mobile-drawer-head {
   display: none;
 }
 
@@ -5775,85 +5589,6 @@ body .bb-home .white.block-title h3 {
     padding-bottom: calc(var(--bb-mobile-nav-height) + env(safe-area-inset-bottom) + 16px);
     background: var(--bb-mobile-shell-bg);
     color: var(--bb-text-inverse);
-  }
-
-  .bb-home #main-banner,
-  .bb-home #main-banner .swiper-slide a,
-  .bb-home #main-banner .swiper-slide .bb-main-banner-link {
-    background-color: var(--bb-mobile-shell-bg);
-  }
-
-  .bb-main-banner-link {
-    position: relative;
-    overflow: hidden;
-  }
-
-  .bb-main-banner-link::after {
-    position: absolute;
-    inset: 35% 0 0;
-    content: "";
-    background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.58) 58%, rgba(0, 0, 0, 0.9) 100%);
-    pointer-events: none;
-  }
-
-  .bb-main-banner-copy {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    z-index: 2;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 24px 18px 28px;
-    color: var(--bb-text-inverse);
-  }
-
-  .bb-main-banner-kicker {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 0 0 10px;
-    color: var(--bb-brand-primary);
-    font-family: var(--bb-font-cta);
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-  }
-
-  .bb-main-banner-kicker::before {
-    width: 18px;
-    height: 1px;
-    background: var(--bb-action-primary);
-    content: "";
-  }
-
-  .bb-main-banner-copy .bb-main-banner-title {
-    max-width: 330px;
-    margin: 0;
-    color: var(--bb-text-inverse);
-    font-family: var(--bb-font-heading);
-    font-size: 38px;
-    font-weight: 700;
-    line-height: 0.96;
-    text-transform: uppercase;
-  }
-
-  .bb-main-banner-copy span {
-    display: inline-flex;
-    min-height: 48px;
-    align-items: center;
-    margin-top: 18px;
-    border: 1px solid var(--bb-brand-primary);
-    background: var(--bb-action-primary);
-    padding: 0 22px;
-    color: var(--bb-text-inverse);
-    font-family: var(--bb-font-cta);
-    font-size: 14px;
-    font-weight: 600;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
   }
 
   .bb-home-mobile-categories,
@@ -6844,16 +6579,6 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
     text-wrap: balance;
   }
 
-  .bb-main-banner-copy {
-    padding: 22px 24px 26px;
-  }
-
-  .bb-main-banner-copy .bb-main-banner-title {
-    max-width: calc(100vw - 48px);
-    font-size: var(--fs-h1);
-    line-height: 1;
-  }
-
   .bb-product-name,
   .bb-home-products-parity .bb-fp-title a,
   .bb-category-body h3 {
@@ -6916,11 +6641,6 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
 /* Homepage mobile polish pass. Keep this block late in the cascade so it can
    normalize the legacy WP parity rules without changing desktop composition. */
 @media (max-width: 767px) {
-  .bb-home #main-banner .bb-main-banner-link::after,
-  .bb-home #main-banner .bb-main-banner-copy {
-    display: none;
-  }
-
   .bb-home-mobile-categories {
     padding: 20px 0 4px;
   }
