@@ -8,7 +8,7 @@ import { ProductCard } from "@/components/catalog/ProductCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { sectionHeading, skelBase, skelStack } from "@/lib/ui-classes";
+import { productGrid, sectionHeading, skelBase, skelStack } from "@/lib/ui-classes";
 
 function WishlistContent() {
   const t = useTranslations("Account.wishlist");
@@ -24,7 +24,7 @@ function WishlistContent() {
       {error && <p className="text-brand text-sm mb-4 m-0">{(error as Error).message}</p>}
 
       {isLoading ? (
-        <div className="bb-product-grid" aria-busy="true">
+        <div className={productGrid} aria-busy="true">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="bb-product-card">
               <div className={cn("bb-product-image", skelBase)} style={{ aspectRatio: "1/1" }} />
@@ -43,7 +43,7 @@ function WishlistContent() {
           action={<Button asChild variant="primary" size="sm"><Link href="/san-pham/">{t("emptyAction")}</Link></Button>}
         />
       ) : (
-        <div className="bb-product-grid">
+        <div className={productGrid}>
           {products.map((p) => <ProductCard key={p.id} product={p} />)}
         </div>
       )}

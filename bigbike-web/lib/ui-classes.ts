@@ -104,6 +104,12 @@ export const sectionPad =
 export const bbSection =
   "mx-auto max-w-[var(--bb-container-xl)] px-6 max-[600px]:px-4 " + sectionPad;
 
+/** Product card grid — 1 col / 2 cols ≥576 / 3 cols ≥992, 24px gap. Was the
+ * `.bb-product-grid` rule (removed when catalog/archive moved inline); shared by
+ * the favorites page and its loading skeleton so the two stay in lockstep. */
+export const productGrid =
+  "grid grid-cols-1 gap-6 min-[576px]:grid-cols-2 min-[992px]:grid-cols-3";
+
 /* ── Skeleton shimmer system (was `.bb-skel*` in globals.css) ──────────────────
  * Loading-placeholder primitives shared by Skeletons.tsx + the per-page loading
  * states. Shapes are square by default (the global `.bb-theme :is(span…)` rule

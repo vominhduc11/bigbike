@@ -9,9 +9,10 @@
  * the `skeleton-shimmer` keyframe stays in globals.css. Shapes are the atoms below
  * (SkelText/SkelTitle/SkelBlock/SkelCircle/SkelChip/SkelButton).
  *
- * NOTE: page-layout classes SHARED with a real page (bb-product-grid, bb-breadcrumb,
- * bb-page-head, …) are intentionally NOT migrated here — this file MIRRORS those
- * pages, so it keeps their classes until each page itself moves to Tailwind.
+ * NOTE: page-layout classes SHARED with a real page (bb-breadcrumb, bb-page-head, …)
+ * are intentionally NOT migrated here — this file MIRRORS those pages, so it keeps
+ * their classes until each page itself moves to Tailwind. (The product grid is now the
+ * shared `productGrid` constant, used by both the favorites page and this file.)
  * Skeleton-OWNED layout (no real page uses it) is migrated independently: the PDP
  * grid (formerly bb-pdp / bb-pdp-below, with the real .bb-wp-pdp shell) and the
  * catalog grid rail (formerly bb-cat-layout, see bbCatLayout below) are inline.
@@ -21,7 +22,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { Card } from "@/components/ui/card";
 import { Container } from "@/components/layout/Container";
 import { cn } from "@/lib/utils";
-import { accountHeaderShell, accountSidebar, bbCard, bbSection, skelBase, skelCol, skelRow, skelStack } from "@/lib/ui-classes";
+import { accountHeaderShell, accountSidebar, bbCard, bbSection, productGrid, skelBase, skelCol, skelRow, skelStack } from "@/lib/ui-classes";
 
 /**
  * Skeleton-only catalog grid rail (the real archive page uses the bootstrap
@@ -36,14 +37,6 @@ const bbCatLayout =
   "md:w-[min(100%_-_calc(var(--bb-page-padding-tablet)_*_2),var(--bb-container-xl))] " +
   "lg:grid-cols-[240px_1fr] lg:w-[min(100%_-_calc(var(--bb-page-padding-desktop)_*_2),var(--bb-container-xl))] " +
   "xl:grid-cols-[260px_1fr] xl:gap-9";
-
-/**
- * Skeleton-only card grid (the real archive uses the bootstrap col-md flex grid,
- * not this — see ProductArchiveResults). Ported from the former base
- * `.bb-product-grid` rule: 1 col / 2 cols ≥576 / 3 cols ≥992, 24px gap.
- */
-const bbProductGridSkel =
-  "grid grid-cols-1 gap-6 min-[576px]:grid-cols-2 min-[992px]:grid-cols-3";
 
 /** Skeleton catalog-head row (former `.bb-catalog-head`). */
 const bbCatalogHead = "mb-[18px] flex items-center justify-between";
@@ -388,7 +381,7 @@ export function CatalogSkeleton({ withHero = false }: { withHero?: boolean }) {
             <SkelText w={140} />
             <SkelButton w={160} />
           </div>
-          <div className={bbProductGridSkel}>
+          <div className={productGrid}>
             {Array.from({ length: 8 }).map((_, i) => <ProductCardSkel key={i} />)}
           </div>
         </div>
@@ -479,7 +472,7 @@ export function BrandDetailSkeleton() {
             <SkelText w={140} />
             <SkelButton w={160} />
           </div>
-          <div className={bbProductGridSkel}>
+          <div className={productGrid}>
             {Array.from({ length: 8 }).map((_, i) => <ProductCardSkel key={i} />)}
           </div>
         </div>
