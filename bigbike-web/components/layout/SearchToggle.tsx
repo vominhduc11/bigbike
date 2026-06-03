@@ -58,6 +58,61 @@ const mGridCard =
   "grid min-h-11 cursor-pointer gap-0.5 border border-border bg-card px-3 py-2.5 text-left font-body text-foreground no-underline " +
   mFocusRing;
 
+// ── Search SHELL bundles (were the `.bb-header-search*` overlay rules in
+// globals.css). Dual layout: desktop centered-bar dropdown ↔ mobile (≤767 =
+// max-md) full-screen. Raw var() refs + `color:`-hinted arbitraries mirror the
+// legacy cascade exactly (the mobile "light reskin" layer is already merged in).
+// The `bb-suggest-in` keyframe, the shared `.is-active` trigger color, and the
+// global prefers-reduced-motion duration override all stay in globals.css.
+const sLayer =
+  "pointer-events-none opacity-0 invisible [transition:opacity_0.3s_ease,visibility_0s_linear_0.3s] " +
+  "max-md:z-[var(--bb-z-modal)] " +
+  // fixed black bar across the header strip (desktop only; hidden on the mobile full-screen panel)
+  "before:content-[''] before:fixed before:inset-x-0 before:top-0 before:h-[var(--bb-header-height)] " +
+  "before:bg-black before:opacity-0 before:z-[var(--bb-z-modal)] before:[transition:opacity_0.2s_ease] max-md:before:hidden";
+const sLayerOpen =
+  "pointer-events-auto opacity-100 visible [transition:opacity_0.3s_ease,visibility_0s_linear_0s] before:opacity-100";
+const sOverlay =
+  "fixed inset-0 [border:none] bg-[rgba(0,0,0,0.64)] " +
+  "max-md:bg-[color-mix(in_srgb,var(--bb-color-black)_58%,transparent)]";
+// open: the .is-open .overlay rule lifts the overlay just under the mobile panel
+const sOverlayOpen = "max-md:z-[calc(var(--bb-mobile-panel-z)_-_1)]";
+const sPanel =
+  "fixed top-0 left-1/2 z-[calc(var(--bb-z-modal)_+_1)] w-[min(calc(100vw_-_24px),770px)] h-[var(--bb-header-height)] " +
+  "px-10 py-0 [transform:translateX(-50%)] " +
+  "max-md:left-0 max-md:z-[var(--bb-mobile-panel-z)] max-md:flex max-md:w-screen max-md:h-[100dvh] max-md:max-h-[100dvh] " +
+  "max-md:flex-col max-md:p-0 max-md:overflow-hidden max-md:bg-[var(--bb-bg-page)] max-md:text-[color:var(--bb-text-primary)] max-md:[transform:none]";
+const sForm =
+  "relative flex items-center h-full " +
+  "max-md:h-auto max-md:min-h-[calc(var(--bb-header-height)_+_env(safe-area-inset-top))] " +
+  "max-md:[padding:max(10px,env(safe-area-inset-top))_14px_10px] max-md:gap-2 " +
+  "max-md:[border-bottom:1px_solid_var(--bb-mobile-shell-border)] max-md:bg-[var(--bb-bg-surface-dark-2)] max-md:flex-[0_0_auto]";
+const sIcon =
+  "absolute top-1/2 left-0 mt-[3px] [transform:translateY(-50%)] text-white " +
+  "max-md:static max-md:inline-flex max-md:w-[var(--bb-touch-target)] max-md:h-[var(--bb-touch-target)] " +
+  "max-md:min-w-[var(--bb-touch-target)] max-md:min-h-[var(--bb-touch-target)] max-md:items-center max-md:justify-center " +
+  "max-md:[transform:none] max-md:text-[color:var(--bb-text-inverse)]";
+const sClose =
+  // min-h-0 / p-0 ungated: the base `.bb-header-search-close` rule was !important,
+  // beating the ≤767 touch-target min-height, so the close stays min-height:0 everywhere.
+  "absolute top-1/2 right-0 [transform:translateY(-50%)] min-h-0 p-0 text-white " +
+  "hover:bg-transparent hover:text-[color:var(--bb-brand-primary)] focus-visible:bg-transparent focus-visible:text-[color:var(--bb-brand-primary)] " +
+  "max-md:static max-md:right-auto max-md:w-[var(--bb-touch-target)] max-md:h-[var(--bb-touch-target)] " +
+  "max-md:min-w-[var(--bb-touch-target)] max-md:items-center max-md:justify-center max-md:[transform:none] max-md:text-[color:var(--bb-text-inverse)]";
+const sInput =
+  // `!` mirrors the legacy !important — guarantees these win over the shadcn Input
+  // base regardless of twMerge grouping of the arbitrary properties.
+  "h-full [border:none]! bg-transparent! [padding:0_48px_0_34px]! [box-shadow:none]! text-white! text-[24px]! " +
+  "placeholder:text-white placeholder:opacity-100 placeholder:font-normal focus-visible:outline-none " +
+  "max-md:h-[var(--bb-touch-target)]! max-md:[border:1px_solid_rgba(255,255,255,0.18)]! max-md:bg-[var(--bb-bg-surface)]! " +
+  "max-md:[padding:0_12px]! max-md:text-[color:var(--bb-text-primary)]! max-md:text-[16px]! max-md:leading-none! " +
+  "max-md:min-w-0 max-md:placeholder:text-[color:var(--bb-text-secondary)]";
+const sResults =
+  "absolute top-full left-[-40px] right-[-40px] z-[1] bg-white [border-top:2px_solid_var(--bb-brand-primary)] " +
+  "[box-shadow:0_8px_32px_rgba(0,0,0,0.18)] animate-[bb-suggest-in_180ms_var(--bb-ease-standard)_both] motion-reduce:animate-none " +
+  "max-md:static max-md:left-auto max-md:right-auto max-md:flex-[1_1_auto] max-md:min-h-0 max-md:max-h-none " +
+  "max-md:overflow-y-auto max-md:[-webkit-overflow-scrolling:touch] max-md:[box-shadow:none] max-md:animate-none max-md:rounded-none";
+
 type PopularCategory = { name: string; slug: string };
 
 type SearchSuggestion = {
@@ -175,7 +230,7 @@ export function SearchToggle({ popularCategories: categoriesFromApi = [] }: Sear
   }
 
   return (
-    <div className="bb-header-search">
+    <div className="relative max-md:static max-md:order-2 max-md:ml-auto">
       <Button
         variant="ghost"
         className={cn(
@@ -193,31 +248,31 @@ export function SearchToggle({ popularCategories: categoriesFromApi = [] }: Sear
       </Button>
 
       <div
-        className={cn("bb-header-search-layer", open && "is-open")}
+        className={cn(sLayer, open && sLayerOpen)}
         aria-hidden={!open}
       >
         <button
           type="button"
-          className="bb-header-search-overlay"
+          className={cn(sOverlay, open && sOverlayOpen)}
           aria-label={t("closeAriaLabel")}
           onClick={handleClose}
         />
 
         <div
-          className="bb-header-search-panel"
+          className={sPanel}
           role="dialog"
           aria-modal="true"
           aria-label={t("dialogAriaLabel")}
         >
           <form
             role="search"
-            className="bb-header-search-form"
+            className={sForm}
             onSubmit={(event) => {
               event.preventDefault();
               runSearch();
             }}
           >
-            <span className="bb-header-search-icon" aria-hidden="true">
+            <span className={sIcon} aria-hidden="true">
               <Search size={20} />
             </span>
 
@@ -233,13 +288,13 @@ export function SearchToggle({ popularCategories: categoriesFromApi = [] }: Sear
               aria-autocomplete="list"
               aria-expanded={showSuggestions}
               aria-controls={showSuggestions ? "bb-search-suggestions" : undefined}
-              className="bb-header-search-input"
+              className={sInput}
             />
 
             <Button
               type="button"
               variant="ghost"
-              className="bb-header-search-close"
+              className={sClose}
               aria-label={isLoading ? t("inputPlaceholder") : t("closeAriaLabel")}
               onClick={isLoading ? undefined : handleClose}
             >
@@ -250,7 +305,7 @@ export function SearchToggle({ popularCategories: categoriesFromApi = [] }: Sear
           </form>
 
           {showPreSuggestions && (
-            <div className="bb-header-search-results max-[767px]:hidden" aria-label={t("suggestionsLabel")}>
+            <div className={cn(sResults, "max-[767px]:hidden")} aria-label={t("suggestionsLabel")}>
               {recentSearches.length > 0 && (
                 <>
                   <div className={preLabelRow}>
@@ -313,7 +368,7 @@ export function SearchToggle({ popularCategories: categoriesFromApi = [] }: Sear
           {showSuggestions && (
             <div
               id="bb-search-suggestions"
-              className="bb-header-search-results"
+              className={sResults}
               role="listbox"
               aria-label={t("suggestionsLabel")}
             >

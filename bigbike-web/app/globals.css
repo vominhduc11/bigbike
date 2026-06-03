@@ -798,146 +798,23 @@ body {
 
 /* Cart badge (.bb-cart-badge) migrated to inline Tailwind in CartIcon.tsx. */
 
-.bb-header-search {
-  position: relative;
-}
-
 .bb-header-search-trigger.is-active,
 .bb-header-info-trigger.is-active,
 .bb-menu-toggle.is-active {
   color: var(--bb-brand-primary);
 }
 
-.bb-header-search-layer {
-  pointer-events: none;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.3s ease, visibility 0s linear 0.3s;
-}
-
-.bb-header-search-layer::before {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: var(--bb-header-height);
-  background: #000000;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  z-index: var(--bb-z-modal);
-}
-
-.bb-header-search-layer.is-open {
-  pointer-events: auto;
-  opacity: 1;
-  visibility: visible;
-  transition: opacity 0.3s ease, visibility 0s linear 0s;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .bb-header-search-layer,
   .bb-header-info-sheet,
   .bb-mobile-header-panel {
     transition-duration: 1ms !important;
   }
 }
 
-.bb-header-search-layer.is-open::before {
-  opacity: 1;
-}
-
-.bb-header-search-overlay {
-  position: fixed;
-  inset: 0;
-  border: none;
-  background: rgba(0, 0, 0, 0.64);
-}
-
-.bb-header-search-panel {
-  position: fixed;
-  top: 0;
-  left: 50%;
-  z-index: calc(var(--bb-z-modal) + 1);
-  width: min(calc(100vw - 24px), 770px);
-  height: var(--bb-header-height);
-  padding: 0 40px;
-  transform: translateX(-50%);
-}
-
-.bb-header-search-form {
-  position: relative;
-  display: flex;
-  align-items: center;
-  height: 100%;
-}
-
-.bb-header-search-icon,
-.bb-header-search-close {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #ffffff;
-}
-
-.bb-header-search-icon {
-  left: 0;
-  margin-top: 3px;
-}
-
-.bb-header-search-input {
-  height: 100%;
-  border: none !important;
-  background: transparent !important;
-  padding: 0 48px 0 34px !important;
-  box-shadow: none !important;
-  color: #ffffff !important;
-  font-size: 24px !important;
-  font-weight: 400 !important;
-}
-
-.bb-header-search-input::placeholder {
-  color: #ffffff;
-  opacity: 1;
-  font-weight: 400;
-}
-
-.bb-header-search-input:focus-visible {
-  outline: none;
-}
-
-.bb-header-search-close {
-  right: 0;
-  min-height: 0 !important;
-  padding: 0 !important;
-}
-
-.bb-header-search-close:hover,
-.bb-header-search-close:focus-visible {
-  color: var(--bb-brand-primary);
-  background: transparent !important;
-}
-
 /* Live search suggestions dropdown */
 @keyframes bb-suggest-in {
   from { opacity: 0; transform: translateY(-6px); }
   to   { opacity: 1; transform: translateY(0); }
-}
-
-.bb-header-search-results {
-  position: absolute;
-  top: 100%;
-  left: -40px;
-  right: -40px;
-  background: #ffffff;
-  border-top: 2px solid var(--bb-brand-primary);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
-  z-index: 1;
-  animation: bb-suggest-in 180ms var(--bb-ease-standard) both;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .bb-header-search-results { animation: none; }
 }
 
 .bb-account-avatar {
@@ -1081,25 +958,6 @@ body {
 @media (min-width: 768px) and (max-width: 1260px) {
   .bb-mobile-nav-children {
     background: rgba(0, 0, 0, 0.02);
-  }
-}
-
-/* -- Responsive: WP header collapse rules ------------------ */
-/* Desktop ≥ 1200px: nav visible. Mobile/tablet < 1200px: nav hidden via
-   max-[1199px]:hidden in SiteHeader.tsx — no CSS rule needed here. */
-
-@media (max-width: 639px) {
-  .bb-header-search-panel {
-    width: calc(100vw - 24px);
-    padding-inline: 16px;
-  }
-  .bb-header-search-icon,
-  .bb-header-search-close {
-    display: none;
-  }
-  .bb-header-search-input {
-    padding: 0 !important;
-    font-size: 18px !important;
   }
 }
 
@@ -3387,76 +3245,8 @@ body:has(.bb-search-results-page) {
     margin-right: auto;
   }
 
-  .bb-header-search {
-    position: static;
-    order: 2;
-    margin-left: auto;
-  }
-
   .bb-header-info-trigger {
     display: none !important;
-  }
-
-  .bb-header-search-layer::before {
-    display: none;
-  }
-
-  .bb-header-search-overlay {
-    background: color-mix(in srgb, var(--bb-color-black) 72%, transparent);
-  }
-
-  .bb-header-search-panel {
-    top: 0;
-    left: 0;
-    display: flex;
-    width: 100vw;
-    height: 100dvh;
-    padding: 0;
-    flex-direction: column;
-    background: var(--bb-mobile-shell-bg);
-    color: var(--bb-text-inverse);
-    transform: none;
-  }
-
-  .bb-header-search-form {
-    height: auto;
-    min-height: calc(var(--bb-header-height) + env(safe-area-inset-top));
-    padding: max(10px, env(safe-area-inset-top)) 12px 10px;
-    gap: 8px;
-    border-bottom: 1px solid var(--bb-mobile-shell-border);
-    background: var(--bb-mobile-shell-surface-2);
-  }
-
-  .bb-header-search-icon,
-  .bb-header-search-close {
-    position: static;
-    display: inline-flex;
-    width: var(--bb-touch-target);
-    height: var(--bb-touch-target);
-    min-width: var(--bb-touch-target);
-    align-items: center;
-    justify-content: center;
-    color: var(--bb-text-inverse);
-    transform: none;
-  }
-
-  .bb-header-search-input {
-    height: var(--bb-touch-target) !important;
-    border: 1px solid var(--bb-mobile-shell-border) !important;
-    background: var(--bb-mobile-shell-surface) !important;
-    padding: 0 12px !important;
-    color: var(--bb-text-inverse) !important;
-    font-size: 14px !important;
-    line-height: 1 !important;
-  }
-
-  .bb-header-search-input::placeholder {
-    color: var(--bb-text-inverse-muted);
-  }
-
-  .bb-header-search-close {
-    right: auto;
-    padding: 0 !important;
   }
 
   .bb-mobile-header-panel {
@@ -3690,38 +3480,6 @@ body:has(.bb-search-results-page) {
 
   .bb-logo {
     pointer-events: auto;
-  }
-
-  .bb-header-search-layer {
-    z-index: var(--bb-z-modal);
-  }
-
-  .bb-header-search-overlay {
-    background: color-mix(in srgb, var(--bb-color-black) 58%, transparent);
-  }
-
-  .bb-header-search-panel {
-    background: var(--bb-bg-page);
-    color: var(--bb-text-primary);
-  }
-
-  .bb-header-search-form {
-    background: var(--bb-bg-surface-dark-2);
-  }
-
-  .bb-header-search-input {
-    border-color: rgba(255, 255, 255, 0.18) !important;
-    background: var(--bb-bg-surface) !important;
-    color: var(--bb-text-primary) !important;
-  }
-
-  .bb-header-search-input::placeholder {
-    color: var(--bb-text-secondary);
-  }
-
-  .bb-header-search-icon,
-  .bb-header-search-close {
-    color: var(--bb-text-inverse);
   }
 
   .bb-page {
@@ -4167,51 +3925,6 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
     width: 112px;
     max-width: 112px;
     height: auto;
-  }
-
-  .bb-header-search-layer.is-open .bb-header-search-overlay {
-    z-index: calc(var(--bb-mobile-panel-z) - 1);
-  }
-
-  .bb-header-search-panel {
-    z-index: var(--bb-mobile-panel-z);
-    height: 100dvh;
-    max-height: 100dvh;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-  }
-
-  /* On mobile the autocomplete is part of the panel flow, not an absolute dropdown */
-  .bb-header-search-results {
-    position: static;
-    left: auto;
-    right: auto;
-    flex: 1 1 auto;
-    min-height: 0;
-    border-top: 2px solid var(--bb-brand-primary);
-    box-shadow: none;
-    animation: none;
-    border-radius: 0;
-    max-height: none;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .bb-header-search-form {
-    flex: 0 0 auto;
-    min-height: calc(var(--bb-header-height) + env(safe-area-inset-top));
-    padding: max(10px, env(safe-area-inset-top)) 14px 10px;
-  }
-
-  .bb-header-search-input {
-    min-width: 0;
-    font-size: 16px !important;
-  }
-
-  .bb-header-search-close,
-  .bb-header-search-icon {
-    min-height: var(--bb-touch-target);
   }
 
   .bb-mobile-header-panel {
