@@ -291,6 +291,10 @@ public class PosOrderService {
             li.setProductId(tryParseUUID(product.getId()));
             li.setProductPk(product.getId());
             li.setProductVariantId(variant != null ? tryParseUUID(variant.getId()) : null);
+            // Snapshot the variant's string PK so refund/return restore can resolve the exact
+            // variant (productVariantId is null for migrated wp-* / admin-created variants). POS
+            // decrements the variant by this same string id, so restore stays symmetric. See V158.
+            li.setProductVariantPk(variant != null ? variant.getId() : null);
             li.setSku(variant != null && variant.getSku() != null ? variant.getSku() : product.getSku());
             li.setProductName(product.getName());
             li.setVariantName(variant != null ? variant.getName() : null);

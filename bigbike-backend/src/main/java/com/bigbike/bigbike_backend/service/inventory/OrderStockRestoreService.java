@@ -48,14 +48,18 @@ public class OrderStockRestoreService {
         int threshold = inventoryPolicyService.lowStockThreshold();
 
         for (OrderLineItemEntity item : items) {
-            if (item.getProductId() == null) continue;
+            // Resolve product/variant by UUID column (regular products) or varchar PK
+            // (migrated wp-* / admin-created — productId/productVariantId are null, see V74/V158).
+            String variantKey = item.resolveVariantKey();
+            String productKey = item.resolveProductKey();
+            if (variantKey == null && productKey == null) continue;
 
             // Serial-tracked line items: stock is restored by SerialLifecycleService (DB trigger syncs qty).
             // This service only handles non-serial (legacy) quantity restore.
             if (!olisRepo.findByOrderLineItemId(item.getId()).isEmpty()) continue;
 
-            if (item.getProductVariantId() != null) {
-                variantRepo.findByIdForUpdate(item.getProductVariantId().toString()).ifPresent(variant -> {
+            if (variantKey != null) {
+                variantRepo.findByIdForUpdate(variantKey).ifPresent(variant -> {
                     int before = variant.getQuantityOnHand();
                     int after = before + item.getQuantity();
                     variant.setQuantityOnHand(after);
@@ -74,7 +78,7 @@ public class OrderStockRestoreService {
                     stockMovementRepo.save(m);
                 });
             } else {
-                productRepo.findByIdForUpdate(item.getProductId().toString()).ifPresent(product -> {
+                productRepo.findByIdForUpdate(productKey).ifPresent(product -> {
                     if (!Boolean.TRUE.equals(product.getManageStock()) || product.getStockQuantity() == null) return;
                     int before = product.getStockQuantity();
                     int after = before + item.getQuantity();
