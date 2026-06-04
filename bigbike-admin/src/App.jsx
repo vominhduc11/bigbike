@@ -2,7 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react
 import { useTranslation } from 'react-i18next'
 import {
   Activity, AlignLeft, ArrowRightLeft, Award, BarChart2, FileText, Hash, Image, KeyRound, LayoutDashboard,
-  Package, Palette, RotateCcw, Send, Settings, Shield, ShieldCheck, ShoppingCart, Star, Store, Tag, Ticket,
+  Package, RotateCcw, Send, Settings, Shield, ShieldCheck, ShoppingCart, Star, Store, Tag, Ticket,
   Truck, Users, Wallet,
 } from 'lucide-react'
 import { AdminShell } from './components/AdminShell'
@@ -70,7 +70,6 @@ const ReceivableDetailScreen = lazyScreen(() => import('./screens/ReceivableDeta
 const WarrantyListScreen     = lazyScreen(() => import('./screens/WarrantyListScreen'),     'WarrantyListScreen')
 const SerialListScreen       = lazyScreen(() => import('./screens/SerialListScreen'),       'SerialListScreen')
 const NewsletterSubscribersScreen = lazyScreen(() => import('./screens/NewsletterSubscribersScreen'), 'NewsletterSubscribersScreen')
-const AttributeListScreen        = lazyScreen(() => import('./screens/AttributeListScreen'),        'AttributeListScreen')
 const HomeHighlightsScreen       = lazyScreen(() => import('./screens/HomeHighlightsScreen'),       'HomeHighlightsScreen')
 const FeaturedProductsScreen     = lazyScreen(() => import('./screens/FeaturedProductsScreen'),     'FeaturedProductsScreen')
 
@@ -102,7 +101,6 @@ const NAV_GROUP_DEFS = [
       { path: '/admin/warranties',        labelKey: 'nav.warranties',        permission: 'warranty.read',     icon: ShieldCheck },
       { path: '/admin/categories',        labelKey: 'nav.categories',        permission: 'catalog.read',   icon: Tag },
       { path: '/admin/brands',            labelKey: 'nav.brands',            permission: 'catalog.read',   icon: Award },
-      { path: '/admin/attributes',        labelKey: 'nav.attributes',        permission: 'catalog.read',   icon: Palette },
     ],
   },
   {
@@ -169,7 +167,6 @@ function parseRoute(pathname) {
   if (module === 'brands' && id === 'new') return { kind: 'screen', name: 'brand-create' }
   if (module === 'brands' && id)           return { kind: 'screen', name: 'brand-detail', brandId: id }
 
-  if (module === 'attributes')         return { kind: 'screen', name: 'attributes-list' }
   if (module === 'featured-products') return { kind: 'screen', name: 'featured-products' }
 
   if (module === 'content' && !id) return { kind: 'screen', name: 'content-list' }
@@ -223,7 +220,6 @@ function routePermission(routeName) {
     case 'category-detail':
     case 'brands-list':
     case 'brand-detail':                 return 'catalog.read'
-    case 'attributes-list':              return 'catalog.read'
     case 'featured-products':           return 'products.update'
     case 'content-create':               return 'content.update'
     case 'content-list':
@@ -458,8 +454,6 @@ function AdminApp() {
       screen = <ReceivablesListScreen navigate={navigate} canRecordPayment={hasPermission('receivables.record_payment')} canWriteOff={hasPermission('receivables.write_off')} />; break
     case 'receivable-detail':
       screen = <ReceivableDetailScreen key={route.receivableId} receivableId={route.receivableId} navigate={navigate} canRecordPayment={hasPermission('receivables.record_payment')} canWriteOff={hasPermission('receivables.write_off')} />; break
-    case 'attributes-list':
-      screen = <AttributeListScreen canUpdate={hasPermission('catalog.update')} />; break
     case 'featured-products':
       screen = <FeaturedProductsScreen canUpdate={hasPermission('products.update')} />; break
     default:

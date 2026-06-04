@@ -9,8 +9,12 @@ import com.bigbike.bigbike_backend.api.admin.dto.VariantOptionRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.VariantRequest;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeValueEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.AttributeJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.AttributeValueJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
 import com.bigbike.bigbike_backend.repository.catalog.CatalogReadRepository;
@@ -41,6 +45,8 @@ class VariantGalleryRoundtripTest {
     @Autowired CatalogReadRepository readRepository;
     @Autowired CategoryJpaRepository categoryRepo;
     @Autowired ProductVariantJpaRepository variantRepo;
+    @Autowired AttributeJpaRepository attributeRepo;
+    @Autowired AttributeValueJpaRepository attributeValueRepo;
     @PersistenceContext EntityManager entityManager;
 
     private CategoryEntity category;
@@ -196,25 +202,26 @@ class VariantGalleryRoundtripTest {
         create.setRetailPrice(new BigDecimal("1000000"));
         create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
 
-        // Red-S carries the main image; Red-M does not â€” backend should apply Red's image to both.
+        // Cover image is derived from the FIRST image of the color gallery. Red-S
+        // carries Red's gallery; Red-M does not — backend applies Red's cover to both.
         VariantRequest redS = variant("Red / S", "Red", "S");
-        redS.setImageUrl("https://cdn.example.com/red-main.jpg");
+        redS.setGallery(List.of(galleryItem("https://cdn.example.com/red-main.jpg", "Red main", 0)));
         VariantRequest redM = variant("Red / M", "Red", "M");
         VariantRequest blueL = variant("Blue / L", "Blue", "L");
-        blueL.setImageUrl("https://cdn.example.com/blue-main.jpg");
+        blueL.setGallery(List.of(galleryItem("https://cdn.example.com/blue-main.jpg", "Blue main", 0)));
         create.setVariants(List.of(redS, redM, blueL));
 
         Product saved = mutationService.createProduct(create, DEV_ADMIN_ID);
 
         assertThat(saved.variants()).hasSize(3);
         assertThat(saved.variants().get(0).image().url())
-                .as("Red/S gets Red color image")
+                .as("Red/S cover = first image of Red gallery")
                 .isEqualTo("https://cdn.example.com/red-main.jpg");
         assertThat(saved.variants().get(1).image().url())
-                .as("Red/M inherits Red color image")
+                .as("Red/M inherits Red color cover (first gallery image)")
                 .isEqualTo("https://cdn.example.com/red-main.jpg");
         assertThat(saved.variants().get(2).image().url())
-                .as("Blue/L gets Blue color image")
+                .as("Blue/L cover = first image of Blue gallery")
                 .isEqualTo("https://cdn.example.com/blue-main.jpg");
     }
 
@@ -228,7 +235,7 @@ class VariantGalleryRoundtripTest {
         create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
 
         VariantRequest greenS = variant("Green / S", "Green", "S");
-        greenS.setImageUrl("https://cdn.example.com/green-v1.jpg");
+        greenS.setGallery(List.of(galleryItem("https://cdn.example.com/green-v1.jpg", "Green v1", 0)));
         VariantRequest greenM = variant("Green / M", "Green", "M");
         create.setVariants(List.of(greenS, greenM));
 
@@ -248,17 +255,17 @@ class VariantGalleryRoundtripTest {
         updatedS.setId(idS);
         VariantRequest updatedM = variant("Green / M", "Green", "M");
         updatedM.setId(idM);
-        updatedM.setImageUrl("https://cdn.example.com/green-v2.jpg");
+        updatedM.setGallery(List.of(galleryItem("https://cdn.example.com/green-v2.jpg", "Green v2", 0)));
         update.setVariants(List.of(updatedS, updatedM));
 
         mutationService.updateProduct(saved.id(), update, DEV_ADMIN_ID);
 
         Product reread = readRepository.findProductById(saved.id()).orElseThrow();
         assertThat(reread.variants().get(0).image().url())
-                .as("Green/S gets updated color image from Green/M")
+                .as("Green/S cover updated from Green/M's new first gallery image")
                 .isEqualTo("https://cdn.example.com/green-v2.jpg");
         assertThat(reread.variants().get(1).image().url())
-                .as("Green/M retains its own updated image")
+                .as("Green/M cover = its own updated first gallery image")
                 .isEqualTo("https://cdn.example.com/green-v2.jpg");
     }
 
@@ -275,13 +282,12 @@ class VariantGalleryRoundtripTest {
         sizeOnly.setName("Size M");
         sizeOnly.setIsAvailable(true);
         sizeOnly.setOptions(List.of(option("Size", "M")));
-        sizeOnly.setImageUrl("https://cdn.example.com/ignored.jpg");
         create.setVariants(List.of(sizeOnly));
 
         Product saved = mutationService.createProduct(create, DEV_ADMIN_ID);
 
         assertThat(saved.variants().get(0).image())
-                .as("imageUrl on a no-color variant must be ignored by the backend")
+                .as("a no-color variant has no gallery, so no derived cover image")
                 .isNull();
     }
 
@@ -303,7 +309,6 @@ class VariantGalleryRoundtripTest {
         create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
 
         VariantRequest yellowS = variant("Yellow / S", "Yellow", "S");
-        yellowS.setImageUrl("https://cdn.example.com/yellow-canonical.jpg");
         VariantRequest yellowM = variant("Yellow / M", "Yellow", "M");
         VariantRequest yellowL = variant("Yellow / L", "Yellow", "L");
         create.setVariants(List.of(yellowS, yellowM, yellowL));
@@ -396,6 +401,175 @@ class VariantGalleryRoundtripTest {
         assertThatThrownBy(() -> mutationService.createProduct(create, DEV_ADMIN_ID))
                 .isInstanceOf(ValidationException.class)
                 .hasMessageContaining("Validation failed");
+    }
+
+    @Test
+    void multiWordColor_swatchSurvivesLabelRoundtrip() {
+        // Dictionary term whose slug is hyphenated ("den-bong") but whose label is a
+        // multi-word, diacritic Vietnamese string ("Đen bóng"). The read path returns
+        // the label, so an edit-then-resave sends the label back as the option value
+        // (no explicit attributeValueId), which must still relink to the swatch.
+        AttributeEntity attr = attributeRepo.findByCode("test-color-mw").orElseGet(() -> {
+            AttributeEntity a = new AttributeEntity();
+            a.setId("test-color-mw");
+            a.setCode("test-color-mw");
+            a.setName("Test Color MW");
+            a.setKind("select");
+            a.setVariation(true);
+            return attributeRepo.save(a);
+        });
+        if (attributeValueRepo.findByAttributeIdAndSlug(attr.getId(), "den-bong").isEmpty()) {
+            AttributeValueEntity v = new AttributeValueEntity();
+            v.setId("test-color-mw-den-bong");
+            v.setAttribute(attr);
+            v.setSlug("den-bong");
+            v.setLabel("Đen bóng");
+            v.setSortOrder(0);
+            attributeValueRepo.save(v);
+        }
+        entityManager.flush();
+
+        // ── 1. Create using the SLUG as the option value (no attributeValueId) ──
+        UpsertProductRequest create = new UpsertProductRequest();
+        create.setSlug("mw-color-product");
+        create.setName("MW Color Product");
+        create.setCategoryId(category.getId());
+        create.setRetailPrice(new BigDecimal("1000000"));
+        create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+
+        VariantRequest v1 = new VariantRequest();
+        v1.setName("Đen bóng");
+        v1.setIsAvailable(true);
+        v1.setOptions(List.of(option("test-color-mw", "den-bong")));
+        create.setVariants(List.of(v1));
+
+        Product saved = mutationService.createProduct(create, DEV_ADMIN_ID);
+        String variantId = saved.variants().get(0).id();
+
+        Product afterCreate = readRepository.findProductById(saved.id()).orElseThrow();
+        assertThat(afterCreate.variants().get(0).options().get(0).value())
+                .as("read path returns the human label, not the slug")
+                .isEqualTo("Đen bóng");
+        assertThat(afterCreate.variants().get(0).options().get(0).attributeValueId())
+                .as("admin read exposes the dictionary value id for round-trip")
+                .isEqualTo("test-color-mw-den-bong");
+
+        // The public storefront view must NOT carry the internal dictionary id.
+        Product publicView = readRepository
+                .findProductByIdPublicView(saved.id(), "vi").orElseThrow();
+        assertThat(publicView.variants().get(0).options().get(0).attributeValueId())
+                .as("public view omits attributeValueId")
+                .isNull();
+
+        // ── 2. Re-save sending the LABEL back (the edit-reload round-trip) ──
+        UpsertProductRequest update = new UpsertProductRequest();
+        update.setSlug("mw-color-product");
+        update.setName("MW Color Product");
+        update.setCategoryId(category.getId());
+        update.setRetailPrice(new BigDecimal("1000000"));
+        update.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+
+        VariantRequest v2 = new VariantRequest();
+        v2.setId(variantId);
+        v2.setName("Đen bóng");
+        v2.setIsAvailable(true);
+        v2.setOptions(List.of(option("test-color-mw", "Đen bóng")));
+        update.setVariants(List.of(v2));
+
+        mutationService.updateProduct(saved.id(), update, DEV_ADMIN_ID);
+
+        Product afterUpdate = readRepository.findProductById(saved.id()).orElseThrow();
+        assertThat(afterUpdate.variants().get(0).options().get(0).value())
+                .as("multi-word label must survive the round-trip on re-save")
+                .isEqualTo("Đen bóng");
+
+        // The write path must also relink & persist the attribute_value FK, so the
+        // read doesn't fall back to the label→slug lookup on every subsequent read.
+        entityManager.flush();
+        entityManager.clear();
+        ProductVariantEntity storedVariant = variantRepo.findById(variantId).orElseThrow();
+        assertThat(storedVariant.getOptions().get(0).getAttributeValue())
+                .as("re-save with the label must relink and persist the attribute_value FK")
+                .isNotNull();
+    }
+
+    @Test
+    void dedupSuffixSlug_roundTripsViaAttributeValueId() {
+        // A WP dedup-suffixed slug ("xam-2") whose label ("Xám") cannot be normalised
+        // back to the slug ("xam" != "xam-2"). Only the explicit attributeValueId —
+        // returned by the admin read and sent back on save — keeps the swatch linked.
+        AttributeEntity attr = attributeRepo.findByCode("test-color-dedup").orElseGet(() -> {
+            AttributeEntity a = new AttributeEntity();
+            a.setId("test-color-dedup");
+            a.setCode("test-color-dedup");
+            a.setName("Test Color Dedup");
+            a.setKind("select");
+            a.setVariation(true);
+            return attributeRepo.save(a);
+        });
+        if (attributeValueRepo.findByAttributeIdAndSlug(attr.getId(), "xam-2").isEmpty()) {
+            AttributeValueEntity v = new AttributeValueEntity();
+            v.setId("test-color-dedup-xam-2");
+            v.setAttribute(attr);
+            v.setSlug("xam-2");
+            v.setLabel("Xám");
+            v.setSortOrder(0);
+            attributeValueRepo.save(v);
+        }
+        entityManager.flush();
+
+        // ── Create with the explicit attributeValueId (the admin dictionary pick) ──
+        UpsertProductRequest create = new UpsertProductRequest();
+        create.setSlug("dedup-color-product");
+        create.setName("Dedup Color Product");
+        create.setCategoryId(category.getId());
+        create.setRetailPrice(new BigDecimal("1000000"));
+        create.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+
+        VariantRequest v1 = new VariantRequest();
+        v1.setName("Xám");
+        v1.setIsAvailable(true);
+        v1.setOptions(List.of(colorOption("test-color-dedup", "xam-2", "test-color-dedup-xam-2")));
+        create.setVariants(List.of(v1));
+
+        Product saved = mutationService.createProduct(create, DEV_ADMIN_ID);
+        String variantId = saved.variants().get(0).id();
+
+        Product afterCreate = readRepository.findProductById(saved.id()).orElseThrow();
+        String roundTrippedId = afterCreate.variants().get(0).options().get(0).attributeValueId();
+        assertThat(roundTrippedId).isEqualTo("test-color-dedup-xam-2");
+        assertThat(afterCreate.variants().get(0).options().get(0).value()).isEqualTo("Xám");
+
+        // ── Re-save sending the LABEL back plus the round-tripped id (what the admin
+        //    form does). The label alone would not relink; the explicit id does. ──
+        UpsertProductRequest update = new UpsertProductRequest();
+        update.setSlug("dedup-color-product");
+        update.setName("Dedup Color Product");
+        update.setCategoryId(category.getId());
+        update.setRetailPrice(new BigDecimal("1000000"));
+        update.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.PUBLISHED);
+
+        VariantRequest v2 = new VariantRequest();
+        v2.setId(variantId);
+        v2.setName("Xám");
+        v2.setIsAvailable(true);
+        v2.setOptions(List.of(colorOption("test-color-dedup", "Xám", roundTrippedId)));
+        update.setVariants(List.of(v2));
+
+        mutationService.updateProduct(saved.id(), update, DEV_ADMIN_ID);
+
+        entityManager.flush();
+        entityManager.clear();
+        ProductVariantEntity storedVariant = variantRepo.findById(variantId).orElseThrow();
+        assertThat(storedVariant.getOptions().get(0).getAttributeValue())
+                .as("explicit attributeValueId relinks a dedup-suffixed slug the label can't reconstruct")
+                .isNotNull();
+    }
+
+    private VariantOptionRequest colorOption(String name, String value, String attributeValueId) {
+        VariantOptionRequest option = option(name, value);
+        option.setAttributeValueId(attributeValueId);
+        return option;
     }
 
     private VariantRequest variant(String name, String color, String size) {

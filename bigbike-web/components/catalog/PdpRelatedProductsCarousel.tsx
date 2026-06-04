@@ -14,7 +14,6 @@ type PdpRelatedProductsCarouselProps = {
 };
 
 function getColumns(width: number) {
-  if (width >= 2560) return 5;
   if (width >= 767) return 4;
   if (width >= 420) return 2;
   return 1;
@@ -44,7 +43,7 @@ export function PdpRelatedProductsCarousel({
   return (
     // `bb-wp-related-track` + `swiper-slide` are KEPT as the carousel mechanism
     // (custom-prop calc transform + mobile scroll-snap); decoration is inline.
-    <section className="mx-auto max-w-[1140px] px-[15px] mt-20 mb-10 max-md:mt-9 max-md:px-[var(--bb-mobile-page-x)] min-[1536px]:max-w-[1360px] min-[1920px]:max-w-[1600px] min-[2560px]:max-w-[2240px]">
+    <section className="mx-auto max-w-[1140px] px-[15px] mt-20 mb-10 max-md:mt-9 max-md:px-[var(--bb-mobile-page-x)] min-[1536px]:max-w-[1360px] min-[1920px]:max-w-[1600px]">
       <div className="mb-10 text-center">
         <p className="m-0 text-black font-[family-name:var(--bb-font-display)] text-ui-35 font-semibold leading-[4.286rem] tracking-[0] uppercase max-md:text-2xl max-md:leading-[1.25]">
           {kicker}

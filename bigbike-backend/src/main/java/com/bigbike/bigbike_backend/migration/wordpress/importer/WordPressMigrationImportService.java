@@ -478,7 +478,7 @@ public class WordPressMigrationImportService {
             // ── 11. Products (with category/brand resolution) ─────────────────
             if (options.includesDomain(MigrationDomain.PRODUCTS) || options.includesDomain(MigrationDomain.PRODUCT_VARIATIONS)) {
                 // Import attribute taxonomies and values before variations run.
-                List<MappedAttribute> attributes = buildAttributeMappings(attributeTaxonomyByTermId, termsById, metaByTerm);
+                List<MappedAttribute> attributes = buildAttributeMappings(attributeTaxonomyByTermId, termsById);
                 attributeImporter.importBatch(attributes, options);
             }
 
@@ -759,8 +759,7 @@ public class WordPressMigrationImportService {
 
     private List<MappedAttribute> buildAttributeMappings(
             Map<Long, WpTermTaxonomy> attributeTaxonomyByTermId,
-            Map<Long, WpTerm> termsById,
-            Map<Long, List<WpTermMeta>> metaByTerm) {
+            Map<Long, WpTerm> termsById) {
         Map<String, List<MappedAttributeValue>> valuesByCode = new LinkedHashMap<>();
         Map<String, Long> taxonomyIdByCode = new LinkedHashMap<>();
         Map<String, String> nameByCode = new LinkedHashMap<>();
@@ -777,19 +776,11 @@ public class WordPressMigrationImportService {
             taxonomyIdByCode.putIfAbsent(code, taxonomy.termTaxonomyId());
             nameByCode.putIfAbsent(code, humanize(code));
 
-            String colorHex = readFirstTermMeta(metaByTerm.get(entry.getKey()), "color", "_color", "swatch_color", "swatch_hex");
-            String swatchImageId = readFirstTermMeta(metaByTerm.get(entry.getKey()), "image", "_image", "swatch_image");
-            if (swatchImageId != null && swatchImageId.isBlank()) {
-                swatchImageId = null;
-            }
-
             valuesByCode.computeIfAbsent(code, k -> new ArrayList<>())
                     .add(new MappedAttributeValue(
                             term.termId(),
                             term.slug(),
                             term.name(),
-                            colorHex,
-                            swatchImageId,
                             valuesByCode.getOrDefault(code, List.of()).size()));
         }
 
@@ -809,30 +800,6 @@ public class WordPressMigrationImportService {
         return attributes;
     }
 
-    private String readTermMeta(List<WpTermMeta> metas, String key) {
-        if (metas == null || key == null) {
-            return null;
-        }
-        for (WpTermMeta meta : metas) {
-            if (meta.metaKey() != null && meta.metaKey().equals(key)) {
-                return meta.metaValue();
-            }
-        }
-        return null;
-    }
-
-    private String readFirstTermMeta(List<WpTermMeta> metas, String... keys) {
-        if (keys == null) {
-            return null;
-        }
-        for (String key : keys) {
-            String value = readTermMeta(metas, key);
-            if (value != null && !value.isBlank()) {
-                return value;
-            }
-        }
-        return null;
-    }
 
     private String humanize(String value) {
         if (value == null || value.isBlank()) {

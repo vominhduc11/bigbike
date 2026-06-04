@@ -28,13 +28,11 @@ import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantOpti
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVideoEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeValueEntity;
-import com.bigbike.bigbike_backend.persistence.entity.media.MediaEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.AttributeJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.AttributeValueJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.BrandJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.media.MediaJpaRepository;
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import jakarta.persistence.criteria.JoinType;
@@ -91,7 +89,6 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     private final ProductJpaRepository productJpaRepository;
     private final CategoryJpaRepository categoryJpaRepository;
     private final BrandJpaRepository brandJpaRepository;
-    private final MediaJpaRepository mediaJpaRepository;
     private final AttributeJpaRepository attributeJpaRepository;
     private final AttributeValueJpaRepository attributeValueJpaRepository;
 
@@ -213,10 +210,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 predicates.add(cb.equal(root.join("brand", JoinType.LEFT).get("id"), brandId));
             }
             if (categoryId != null && !categoryId.isBlank()) {
-                Predicate primaryMatch = cb.equal(root.get("category").get("id"), categoryId);
-                Predicate m2mMatch = cb.equal(root.join("categories", JoinType.LEFT).get("id"), categoryId);
-                predicates.add(cb.or(primaryMatch, m2mMatch));
-                criteriaQuery.distinct(true);
+                predicates.add(cb.equal(root.get("category").get("id"), categoryId));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         };
@@ -815,7 +809,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 ? List.of()
                 : entity.getOptions().stream()
                         .sorted(VARIANT_OPTION_ORDER)
-                        .map(this::toVariantOption)
+                        .map(option -> toVariantOption(option, publicView))
                         .toList();
 
         List<ImageAsset> gallery = entity.getGallery() == null
@@ -864,12 +858,13 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
 
     /**
      * Build a {@link ProductVariantOption} from one stored option row,
-     * resolving the AttributeValue dictionary lazily when the FK is null.
-     * Without the lazy lookup, products imported / saved before V42's
-     * backfill would render text-only chips even though the per-term
-     * swatch metadata exists in the dictionary tables.
+     * resolving the AttributeValue dictionary lazily when the FK is null so the
+     * read path can return the human label ("Đen bóng") rather than the raw
+     * slug. Colour variants render on the storefront from the variant's own
+     * gallery image (see {@code VariantSelector.tsx}), so no per-term swatch or
+     * hex value is surfaced here.
      */
-    private ProductVariantOption toVariantOption(ProductVariantOptionEntity option) {
+    private ProductVariantOption toVariantOption(ProductVariantOptionEntity option, boolean publicView) {
         AttributeEntity attribute = option.getAttribute();
         AttributeValueEntity value = option.getAttributeValue();
 
@@ -895,16 +890,22 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                     value = attributeValueJpaRepository
                             .findByAttributeIdAndSlug(attribute.getId(), normalizedSlug)
                             .orElse(null);
+                    if (value == null) {
+                        // Slugs are hyphenated ("den-bong"); the normalised token is
+                        // space-separated ("den bong"). Recover multi-word labels
+                        // ("Đen bóng") by trying the hyphenated slug shape.
+                        value = attributeValueJpaRepository
+                                .findByAttributeIdAndSlug(attribute.getId(), normalizedSlug.replace(' ', '-'))
+                                .orElse(null);
+                    }
                 }
             }
         }
 
-        // Priority 1: direct swatch picked by admin on this variant option row
-        String resolvedSwatchUrl = resolveSwatchUrl(option.getSwatchImageId());
-        // Priority 2: dictionary swatch from attribute_values (existing behaviour)
-        if (resolvedSwatchUrl == null && value != null) {
-            resolvedSwatchUrl = resolveSwatchUrl(value.getSwatchImageId());
-        }
+        // Admin-only round-trip reference — the read path returns the human label,
+        // so the editor needs the raw dictionary id to re-save without losing the
+        // colour link. Omitted from the public response (@JsonInclude NON_NULL).
+        String attributeValueId = publicView || value == null ? null : value.getId();
 
         return new ProductVariantOption(
                 preferLabel(
@@ -915,8 +916,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         value != null ? value.getLabel() : null,
                         option.getOptionValue()
                 ),
-                value != null ? value.getColorHex() : null,
-                resolvedSwatchUrl
+                attributeValueId
         );
     }
 
@@ -925,41 +925,6 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         if (preferred != null && !preferred.isBlank()) return preferred;
         if (fallback != null && !fallback.isBlank()) return fallback;
         return "";
-    }
-
-    /**
-     * Resolve a value stored in {@code attribute_values.swatch_image_id} to a public URL.
-     * Handles three formats (newest-first precedence):
-     * - Direct URL (new admin uploads store the publicUrl directly)
-     * - UUID string (media entity primary key)
-     * - Numeric string (legacy WP attachment ID from migration importer)
-     * Returns null silently when the value is blank or unresolvable.
-     */
-    private String resolveSwatchUrl(String swatchImageId) {
-        if (swatchImageId == null || swatchImageId.isBlank()) return null;
-        final String trimmed = swatchImageId.trim();
-        // Direct URL — new admin uploads store publicUrl in this column
-        if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed;
-        // UUID lookup — media entity primary key
-        try {
-            java.util.UUID uuid = java.util.UUID.fromString(trimmed);
-            return mediaJpaRepository.findById(uuid)
-                    .map(MediaEntity::getPublicUrl)
-                    .filter(url -> url != null && !url.isBlank())
-                    .orElse(null);
-        } catch (IllegalArgumentException ignored) {
-            // not a UUID — fall through
-        }
-        // Fallback: legacy WP attachment numeric ID
-        try {
-            long legacyId = Long.parseLong(trimmed);
-            return mediaJpaRepository.findByLegacyId(legacyId)
-                    .map(MediaEntity::getPublicUrl)
-                    .filter(url -> url != null && !url.isBlank())
-                    .orElse(null);
-        } catch (NumberFormatException e) {
-            return null;
-        }
     }
 
     private CategorySummary toCategorySummary(CategoryEntity entity) {

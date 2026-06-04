@@ -25,11 +25,9 @@ public class VariantRequest {
 
     // stockState is a derived field (computed from quantityOnHand). Removed from input — backend ignores it.
 
-    @Size(max = 2048, message = "Variant image URL is too long.")
-    private String imageUrl;
-
-    @Size(max = 255, message = "Variant image alt is too long.")
-    private String imageAlt;
+    // The variant cover image is no longer entered separately — it is always the
+    // first image of the color gallery (see AdminCatalogMutationService.applyVariants
+    // / colorCoverImages). The former imageUrl/imageAlt request fields were removed.
 
     private Boolean isAvailable;
 
@@ -78,12 +76,6 @@ public class VariantRequest {
     }
 
     public boolean isSalePricePresent() { return salePricePresent; }
-
-    public String getImageUrl() { return imageUrl; }
-    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
-
-    public String getImageAlt() { return imageAlt; }
-    public void setImageAlt(String imageAlt) { this.imageAlt = imageAlt; }
 
     public Boolean getIsAvailable() { return isAvailable; }
     public void setIsAvailable(Boolean isAvailable) { this.isAvailable = isAvailable; }

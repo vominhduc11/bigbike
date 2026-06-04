@@ -2664,11 +2664,6 @@ body:has(.bb-home) {
    The gallery/info col classes are kept as markers — .bb-wp-pdp-info-col is a
    MobileStickyPurchaseBar scroll-target hook. */
 
-@keyframes bb-gallery-fade-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
 .bb-wp-pdp .product-information * {
   line-height: 1;
 }
@@ -2687,10 +2682,15 @@ body:has(.bb-home) {
 
 .bb-wp-pdp .product-information .desc p,
 .bb-wp-pdp .product-information .desc li {
-  margin: 0;
+  margin: 0 0 0.625rem;
   color: #000;
   font-size: 1.1rem;
   line-height: 1.7rem;
+}
+
+.bb-wp-pdp .product-information .desc p:last-child,
+.bb-wp-pdp .product-information .desc li:last-child {
+  margin-bottom: 0;
 }
 
 .bb-wp-pdp .product-information .desc ul,
@@ -4161,10 +4161,14 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
 
 @media (min-width: 2560px) {
   .bb-product-archive .bb-wp-container,
-  .bb-product-archive .container.bb-wp-container,
-  .bb-wp-pdp .bb-breadcrumb {
+  .bb-product-archive .container.bb-wp-container {
     max-width: 2240px;
   }
+
+  /* PDP breadcrumb intentionally stops at the 1920 tier (1600px) so it aligns
+     with the product overview/tabs/related rails, which cap at 1600px at 4xl
+     (the gallery is column-filling, not 2240-wide). See STYLEGUIDE container
+     exception for /product/[slug]. */
 
   /* Bootstrap `col-md-3` produces 4 cards / row by default. At ≥2560px the
      content column is ~1680px → each 4-col card is ~420px. Bump search-result

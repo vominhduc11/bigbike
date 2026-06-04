@@ -3,17 +3,21 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
-  AlertCircle, Check, ChevronDown, Info, Loader2, Lock, Save, Search as PfSearch, Users, X,
+  AlertCircle, Check, ChevronDown, Info, Loader2, Lock, Pencil, Plus, Save, Search as PfSearch, Users, X,
 } from 'lucide-react'
 import {
+  createAttributeValue,
   createProduct,
   fetchAttributes,
+  fetchAttributeValues,
   fetchBrands,
   fetchCategoryTree,
   fetchProductAssignment,
   fetchProductDetail,
   fetchProducts,
   mapValidationErrors,
+  updateAttribute,
+  updateAttributeValueLabel,
   updateProduct,
 } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
@@ -144,9 +148,7 @@ function getVariantColorValue(variant) {
 
 function getVariantColorKey(variant) {
   const value = getVariantColorValue(variant)
-  if (value) return normalizeVariantToken(value)
-  const swatchOpt = (variant.options || []).find((o) => isColorAttributeName(o.name) && o._directSwatchImageId)
-  return swatchOpt?._directSwatchImageId ?? ''
+  return value ? normalizeVariantToken(value) : ''
 }
 
 function cloneGallery(gallery = []) {
@@ -159,7 +161,6 @@ function hasGalleryImages(gallery = []) {
 
 function withColorScopedMedia(variants = []) {
   const galleryByColor = new Map()
-  const imageByColor = new Map()
 
   variants.forEach((variant) => {
     const colorKey = getVariantColorKey(variant)
@@ -167,16 +168,14 @@ function withColorScopedMedia(variants = []) {
     if (hasGalleryImages(variant.gallery) && !galleryByColor.has(colorKey)) {
       galleryByColor.set(colorKey, cloneGallery(variant.gallery))
     }
-    if (String(variant.imageUrl || '').trim() && !imageByColor.has(colorKey)) {
-      imageByColor.set(colorKey, variant.imageUrl.trim())
-    }
   })
 
+  // The variant cover image is derived backend-side from the first gallery image
+  // (no separate cover field), so the editor only scopes the gallery by color.
   return variants.map((variant) => {
     const colorKey = getVariantColorKey(variant)
     const gallery = colorKey ? galleryByColor.get(colorKey) || [] : []
-    const imageUrl = colorKey ? imageByColor.get(colorKey) || '' : ''
-    return { ...variant, gallery: cloneGallery(gallery), imageUrl }
+    return { ...variant, gallery: cloneGallery(gallery) }
   })
 }
 
@@ -248,15 +247,11 @@ function buildFormFromItem(item) {
     id: v.id || '',
     sku: v.sku || '',
     name: v.name || '',
-    imageUrl: v.image?.rawUrl || v.image?.url || '',
     isAvailable: v.isAvailable !== false,
     options: (v.options || []).map((o) => ({
       name: o.name || '',
       value: o.value || '',
       attributeValueId: o.attributeValueId || null,
-      _colorHex: o.colorHex || null,
-      _swatchImageUrl: o.swatchImageUrl || null,
-      _directSwatchImageId: o.swatchImageId || null,
     })),
     gallery: (v.gallery || []).map((img) => ({ url: img.rawUrl || img.url || '' })),
   })))
@@ -467,19 +462,15 @@ function toPayload(form) {
   }
 
   const scopedVariants = withColorScopedMedia(form.variants).filter((v) => v.name.trim())
-  const emittedImageColors = new Set()
   const emittedGalleryColors = new Set()
 
   payload.variants = scopedVariants.map((v, i) => {
     const colorKey = getVariantColorKey(v)
-    const imageUrl = String(v.imageUrl || '').trim()
     const gallery = (v.gallery ?? [])
       .filter((img) => img.url.trim())
       .map((img, j) => ({ url: img.url.trim(), sortOrder: j }))
 
-    const shouldSendImage = Boolean(colorKey && imageUrl && !emittedImageColors.has(colorKey))
     const shouldSendGallery = Boolean(colorKey && gallery.length > 0 && !emittedGalleryColors.has(colorKey))
-    if (shouldSendImage) emittedImageColors.add(colorKey)
     if (shouldSendGallery) emittedGalleryColors.add(colorKey)
 
     return {
@@ -488,7 +479,8 @@ function toPayload(form) {
       name: v.name.trim(),
       // Variant price fields intentionally omitted — see ProductDetailScreen
       // variant form section. Cart/checkout always use product price.
-      imageUrl: shouldSendImage ? imageUrl : undefined,
+      // Cover image is derived backend-side from the first gallery image; no
+      // separate variant image field is sent.
       isAvailable: Boolean(v.isAvailable),
       sortOrder: i,
       options: v.options
@@ -497,7 +489,6 @@ function toPayload(form) {
           optionName: o.name.trim(),
           optionValue: o.value.trim(),
           ...(o.attributeValueId ? { attributeValueId: o.attributeValueId } : {}),
-          ...(o._directSwatchImageId ? { swatchImageId: o._directSwatchImageId } : {}),
           sortOrder: j,
         })),
       gallery: shouldSendGallery ? gallery : [],
@@ -974,6 +965,355 @@ function FaqEditor({ items, onChange, disabled, validationErrors, contentLang = 
   )
 }
 
+// Resolve an attribute from the catalog by matching option name against code or name
+function resolveAttr(attributes, optionName) {
+  const norm = normalizeVariantToken(optionName)
+  return attributes.find(
+    (a) => normalizeVariantToken(a.name) === norm || normalizeVariantToken(a.code) === norm,
+  ) ?? null
+}
+
+// Rename an attribute's display name. The code/key stays immutable (shown
+// read-only) so existing variant options that resolve via the code keep working.
+function AttributeRenameModal({ open, onClose, attribute }) {
+  const { t } = useTranslation()
+  const queryClient = useQueryClient()
+  // Mounted only while open (see caller), so initialising from the current name
+  // is correct on every open — no effect-sync needed.
+  const [name, setName] = useState(attribute?.name ?? '')
+
+  const renameMut = useMutation({
+    mutationFn: (newName) => updateAttribute(attribute.id, { name: newName }),
+    onSuccess: () => {
+      toast.success(t('products.detail.variant.attrRenamed', { defaultValue: 'Đã đổi tên thuộc tính.' }))
+      queryClient.invalidateQueries({ queryKey: ['attributes'] })
+      onClose()
+    },
+    onError: (err) =>
+      toast.error(err?.message || t('products.detail.variant.attrSaveError', { defaultValue: 'Không lưu được thuộc tính.' })),
+  })
+
+  const trimmed = name.trim()
+  const dirty = trimmed && trimmed !== attribute?.name
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={t('products.detail.variant.attrRenameTitle', { defaultValue: 'Đổi tên thuộc tính' })}
+      actions={(
+        <>
+          <Button variant="outline" onClick={onClose}>{t('common.close', { defaultValue: 'Đóng' })}</Button>
+          <Button onClick={() => renameMut.mutate(trimmed)} disabled={renameMut.isPending || !dirty}>
+            {t('common.save', { defaultValue: 'Lưu' })}
+          </Button>
+        </>
+      )}
+    >
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1.5">
+          <span className="text-sm font-medium">{t('products.detail.variant.attrNameLabel', { defaultValue: 'Tên hiển thị' })}</span>
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            disabled={renameMut.isPending}
+            onKeyDown={(e) => { if (e.key === 'Enter' && dirty && !renameMut.isPending) renameMut.mutate(trimmed) }}
+          />
+        </div>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span>{t('products.detail.variant.attrCodeLabel', { defaultValue: 'Mã (không đổi):' })}</span>
+          <span className="font-mono">{attribute?.code}</span>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+// One editable row in the colour manager: rename an existing value's label.
+// The slug (shown read-only) stays fixed so variant references keep working.
+function AttributeValueEditRow({ value, onSave, saving }) {
+  const { t } = useTranslation()
+  const [label, setLabel] = useState(value.label)
+  const dirty = label.trim() && label.trim() !== value.label
+  return (
+    <div className="flex items-center gap-2">
+      <Input
+        value={label}
+        onChange={(e) => setLabel(e.target.value)}
+        className="flex-1"
+        disabled={saving}
+      />
+      <span className="font-mono text-xs text-muted-foreground w-28 shrink-0 truncate" title={value.slug}>
+        {value.slug}
+      </span>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => onSave(label.trim())}
+        disabled={saving || !dirty}
+      >
+        {t('common.save', { defaultValue: 'Lưu' })}
+      </Button>
+    </div>
+  )
+}
+
+// Modal to add a new colour to the catalog and rename existing ones. Scoped to
+// one attribute; on add it auto-selects the new value back into the variant row.
+function AttributeValueManagerModal({ open, onClose, attribute, values, onPicked }) {
+  const { t } = useTranslation()
+  const queryClient = useQueryClient()
+  const [newLabel, setNewLabel] = useState('')
+
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: ['attributeValues', attribute?.id] })
+
+  const createMut = useMutation({
+    mutationFn: (label) => createAttributeValue(attribute.id, { label }),
+    onSuccess: (created) => {
+      toast.success(t('products.detail.variant.colorAdded', { defaultValue: 'Đã thêm màu mới.' }))
+      setNewLabel('')
+      invalidate()
+      if (created?.slug) onPicked?.(created)
+    },
+    onError: (err) =>
+      toast.error(err?.message || t('products.detail.variant.colorSaveError', { defaultValue: 'Không lưu được màu.' })),
+  })
+
+  const renameMut = useMutation({
+    mutationFn: ({ id, label }) => updateAttributeValueLabel(id, { label }),
+    onSuccess: () => {
+      toast.success(t('products.detail.variant.colorRenamed', { defaultValue: 'Đã đổi tên màu.' }))
+      invalidate()
+    },
+    onError: (err) =>
+      toast.error(err?.message || t('products.detail.variant.colorSaveError', { defaultValue: 'Không lưu được màu.' })),
+  })
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      wide
+      title={t('products.detail.variant.colorManagerTitle', { defaultValue: 'Quản lý màu' })}
+      actions={<Button variant="outline" onClick={onClose}>{t('common.close', { defaultValue: 'Đóng' })}</Button>}
+    >
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1.5">
+          <span className="text-sm font-medium">{t('products.detail.variant.colorAddLabel', { defaultValue: 'Thêm màu mới' })}</span>
+          <div className="flex items-center gap-2">
+            <Input
+              value={newLabel}
+              onChange={(e) => setNewLabel(e.target.value)}
+              placeholder={t('products.detail.variant.colorAddPlaceholder', { defaultValue: 'Ví dụ: Đỏ đô' })}
+              onKeyDown={(e) => { if (e.key === 'Enter' && newLabel.trim() && !createMut.isPending) createMut.mutate(newLabel.trim()) }}
+              className="flex-1"
+            />
+            <Button onClick={() => createMut.mutate(newLabel.trim())} disabled={createMut.isPending || !newLabel.trim()}>
+              <Plus size={16} /> {t('products.detail.variant.colorAddButton', { defaultValue: 'Thêm' })}
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2 border-t border-border pt-3">
+          <span className="text-sm font-medium">{t('products.detail.variant.colorListLabel', { defaultValue: 'Đổi tên màu hiện có' })}</span>
+          <div className="flex flex-col gap-2 max-h-[45vh] overflow-y-auto pr-1">
+            {values.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t('products.detail.variant.colorEmpty', { defaultValue: 'Chưa có màu nào.' })}</p>
+            ) : (
+              values.map((v) => (
+                <AttributeValueEditRow
+                  key={v.id}
+                  value={v}
+                  saving={renameMut.isPending}
+                  onSave={(label) => renameMut.mutate({ id: v.id, label })}
+                />
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+// One variant-attribute row. Extracted so color rows can fetch the attribute's
+// catalog values via a hook (hooks can't run inside the parent's .map()).
+function VariantOptionRow({ opt, attributes, onUpdate, onRemove, disabled }) {
+  const { t } = useTranslation()
+  const attr = resolveAttr(attributes, opt.name)
+  const isColor = Boolean(attr?.kind === 'color' || isColorAttributeName(opt.name))
+  const [managerOpen, setManagerOpen] = useState(false)
+  const [renameAttrOpen, setRenameAttrOpen] = useState(false)
+
+  // Catalog values for the selected color attribute (e.g. Đen / Đỏ / Xanh lá).
+  const { data: attrValues = [] } = useQuery({
+    queryKey: ['attributeValues', attr?.id],
+    queryFn: () => fetchAttributeValues(attr.id),
+    enabled: isColor && Boolean(attr?.id),
+    staleTime: 5 * 60 * 1000,
+  })
+
+  // The read API returns the value as a display label ("Đen"), not the stored slug
+  // ("den"). Resolve the current value back to a catalog slug so the Select selects the
+  // right entry and a re-save round-trips the slug (kept in sync with web color filters).
+  const matchedValue = attrValues.find(
+    (v) =>
+      v.slug === opt.value ||
+      v.label === opt.value ||
+      normalizeVariantToken(v.slug) === normalizeVariantToken(opt.value) ||
+      normalizeVariantToken(v.label) === normalizeVariantToken(opt.value),
+  )
+  const selectValue = matchedValue ? matchedValue.slug : opt.value
+
+  return (
+    <div className="list-editor-row variant-option-row">
+      {/* Name — Select from attribute catalog; falls back to text input when catalog not loaded */}
+      <div className="flex-1 flex items-center gap-2">
+        <div className="flex-1 min-w-0">
+        {attributes.length > 0 ? (
+          <Select
+            value={opt.name}
+            onValueChange={(val) =>
+              onUpdate({
+                name: val,
+                value: '',
+                attributeValueId: null,
+              })
+            }
+            disabled={disabled}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder={t('products.detail.variant.optionNamePlaceholder')} />
+            </SelectTrigger>
+            <SelectContent>
+              {opt.name && !attributes.some((a) => a.name === opt.name) && (
+                <SelectItem value={opt.name}>{opt.name}</SelectItem>
+              )}
+              {attributes.map((a) => (
+                <SelectItem key={a.id} value={a.name}>{a.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <Input
+            placeholder={t('products.detail.variant.optionNamePlaceholder')}
+            value={opt.name}
+            onChange={(e) =>
+              onUpdate({
+                name: e.target.value,
+                value: '',
+                attributeValueId: null,
+              })
+            }
+            disabled={disabled}
+          />
+        )}
+        </div>
+        {attr?.id && (
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="shrink-0"
+            onClick={() => setRenameAttrOpen(true)}
+            disabled={disabled}
+            aria-label={t('products.detail.variant.attrRenameTitle', { defaultValue: 'Đổi tên thuộc tính' })}
+            title={t('products.detail.variant.attrRenameTitle', { defaultValue: 'Đổi tên thuộc tính' })}
+          >
+            <Pencil size={15} />
+          </Button>
+        )}
+        {attr?.id && renameAttrOpen && (
+          <AttributeRenameModal
+            open
+            onClose={() => setRenameAttrOpen(false)}
+            attribute={attr}
+          />
+        )}
+      </div>
+
+      {/* Value — for color attributes a Select from the catalog colour list
+          (sets value + attributeValueId); for other attributes a plain text value. */}
+      <div className="flex flex-col gap-1 flex-1">
+        {isColor ? (
+          <>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 min-w-0">
+                <Select
+                  value={selectValue}
+                  onValueChange={(val) => {
+                    const picked = attrValues.find((v) => v.slug === val)
+                    onUpdate({
+                      value: val,
+                      attributeValueId: picked?.id || null,
+                    })
+                  }}
+                  disabled={disabled || !attr?.id}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('products.detail.variant.optionValuePlaceholder')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {selectValue && !attrValues.some((v) => v.slug === selectValue) && (
+                      <SelectItem value={selectValue}>{opt.value}</SelectItem>
+                    )}
+                    {attrValues.map((v) => (
+                      <SelectItem key={v.id} value={v.slug}>{v.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {attr?.id && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="shrink-0"
+                  onClick={() => setManagerOpen(true)}
+                  disabled={disabled}
+                  aria-label={t('products.detail.variant.colorManagerTitle', { defaultValue: 'Quản lý màu' })}
+                  title={t('products.detail.variant.colorManagerTitle', { defaultValue: 'Quản lý màu' })}
+                >
+                  <Pencil size={15} />
+                </Button>
+              )}
+            </div>
+            {attr?.id && (
+              <AttributeValueManagerModal
+                open={managerOpen}
+                onClose={() => setManagerOpen(false)}
+                attribute={attr}
+                values={attrValues}
+                onPicked={(created) => onUpdate({ value: created.slug, attributeValueId: created.id })}
+              />
+            )}
+          </>
+        ) : (
+          <Input
+            className="flex-1"
+            placeholder={t('products.detail.variant.optionValuePlaceholder')}
+            value={opt.value}
+            onChange={(e) => onUpdate({ value: e.target.value })}
+            disabled={disabled}
+          />
+        )}
+      </div>
+
+      <Button
+        variant="ghost"
+        size="icon"
+        className="text-destructive hover:text-destructive"
+        onClick={onRemove}
+        disabled={disabled}
+        aria-label={t('products.detail.variant.removeOption')}
+      >
+        ✕
+      </Button>
+    </div>
+  )
+}
+
 function VariantOptionsEditor({ options, onChange, disabled }) {
   const { t } = useTranslation()
 
@@ -983,20 +1323,12 @@ function VariantOptionsEditor({ options, onChange, disabled }) {
     staleTime: 5 * 60 * 1000,
   })
 
-  // Resolve an attribute from the catalog by matching option name against code or name
-  function resolveAttr(optionName) {
-    const norm = normalizeVariantToken(optionName)
-    return attributes.find(
-      (a) => normalizeVariantToken(a.name) === norm || normalizeVariantToken(a.code) === norm,
-    ) ?? null
-  }
-
   function updateOptionFields(i, updates) {
     onChange(options.map((o, idx) => (idx === i ? { ...o, ...updates } : o)))
   }
 
   function addOption() {
-    onChange([...options, { name: '', value: '', attributeValueId: null, _colorHex: null, _swatchImageUrl: null, _directSwatchImageId: null }])
+    onChange([...options, { name: '', value: '', attributeValueId: null }])
   }
 
   function removeOption(i) {
@@ -1005,108 +1337,16 @@ function VariantOptionsEditor({ options, onChange, disabled }) {
 
   return (
     <div className="variant-options-editor">
-      {options.map((opt, i) => {
-        const attr = resolveAttr(opt.name)
-        const isColor = Boolean(attr?.kind === 'color' || isColorAttributeName(opt.name))
-        const hasSwatch = Boolean(opt._swatchImageUrl || opt._colorHex || opt._directSwatchImageId)
-
-        return (
-          <div key={i} className="list-editor-row variant-option-row">
-            {/* Name — Select from attribute catalog; falls back to text input when catalog not loaded */}
-            <div className="flex-1">
-              {attributes.length > 0 ? (
-                <Select
-                  value={opt.name}
-                  onValueChange={(val) =>
-                    updateOptionFields(i, {
-                      name: val,
-                      attributeValueId: null,
-                      _colorHex: null,
-                      _swatchImageUrl: null,
-                    })
-                  }
-                  disabled={disabled}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={t('products.detail.variant.optionNamePlaceholder')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {opt.name && !attributes.some((a) => a.name === opt.name) && (
-                      <SelectItem value={opt.name}>{opt.name}</SelectItem>
-                    )}
-                    {attributes.map((a) => (
-                      <SelectItem key={a.id} value={a.name}>{a.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Input
-                  placeholder={t('products.detail.variant.optionNamePlaceholder')}
-                  value={opt.name}
-                  onChange={(e) =>
-                    updateOptionFields(i, {
-                      name: e.target.value,
-                      attributeValueId: null,
-                      _colorHex: null,
-                      _swatchImageUrl: null,
-                    })
-                  }
-                  disabled={disabled}
-                />
-              )}
-            </div>
-
-            {/* Value — swatch image for color attributes, plain text for others */}
-            <div className="flex flex-col gap-1 flex-1">
-              {isColor ? (
-                <>
-                  {hasSwatch && (
-                    <span
-                      className="shrink-0 size-5 rounded-full border border-border"
-                      style={
-                        opt._swatchImageUrl
-                          ? { backgroundImage: `url(${opt._swatchImageUrl})`, backgroundSize: 'cover' }
-                          : { backgroundColor: opt._colorHex }
-                      }
-                      aria-label={t('products.detail.variant.colorPreview')}
-                    />
-                  )}
-                  <p className="text-xs text-muted-foreground mb-1">{t('products.detail.variant.directSwatchImage')}</p>
-                  <ImageUrlInput
-                    value={opt._directSwatchImageId || ''}
-                    onChange={(url) =>
-                      updateOptionFields(i, {
-                        _directSwatchImageId: url || null,
-                        _swatchImageUrl: url || null,
-                      })
-                    }
-                    disabled={disabled}
-                  />
-                </>
-              ) : (
-                <Input
-                  className="flex-1"
-                  placeholder={t('products.detail.variant.optionValuePlaceholder')}
-                  value={opt.value}
-                  onChange={(e) => updateOptionFields(i, { value: e.target.value })}
-                  disabled={disabled}
-                />
-              )}
-            </div>
-
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-destructive hover:text-destructive"
-              onClick={() => removeOption(i)}
-              disabled={disabled}
-              aria-label={t('products.detail.variant.removeOption')}
-            >
-              ✕
-            </Button>
-          </div>
-        )
-      })}
+      {options.map((opt, i) => (
+        <VariantOptionRow
+          key={i}
+          opt={opt}
+          attributes={attributes}
+          onUpdate={(updates) => updateOptionFields(i, updates)}
+          onRemove={() => removeOption(i)}
+          disabled={disabled}
+        />
+      ))}
       <Button variant="outline" size="sm" onClick={addOption} disabled={disabled}>
         + {t('products.detail.variant.addOption')}
       </Button>
@@ -1134,9 +1374,7 @@ function VariantCard({
   const optionSummary = variant.options.filter((o) => o.name && o.value).map((o) => `${o.name}: ${o.value}`).join(', ')
   const hasErrors = Object.keys(fieldErrors).length > 0
   const colorValue = getVariantColorValue(variant)
-  const hasColor = Boolean(colorValue) || (variant.options || []).some(
-    (o) => isColorAttributeName(o.name) && o._directSwatchImageId,
-  )
+  const hasColor = Boolean(colorValue)
 
   return (
     <div className={`variant-card${hasErrors ? ' variant-card--error' : ''}`}>
@@ -1206,30 +1444,6 @@ function VariantCard({
               the parent product price regardless of variant, so collecting
               per-variant prices here would silently diverge from what the
               customer sees and pays. */}
-
-          <div className="form-field form-field-wide">
-            <span className="form-field-label">
-              {hasColor
-                ? t('products.detail.variant.colorImageLabelWithValue', { color: colorValue })
-                : t('products.detail.variant.colorImageLabel')}
-            </span>
-            <p className="detail-section-desc mt-0 mb-2">
-              {hasColor
-                ? t('products.detail.variant.colorImageHintWithColor')
-                : t('products.detail.variant.colorImageHintNoColor')}
-            </p>
-            {hasColor && (
-              <>
-                <ImageUrlInput
-                  value={variant.imageUrl}
-                  onChange={(url) => updateField('imageUrl', url)}
-                  disabled={disabled}
-                  error={fieldErrors.imageUrl}
-                />
-                {fieldErrors.imageUrl && <small className="field-error">{fieldErrors.imageUrl}</small>}
-              </>
-            )}
-          </div>
 
           <label className="form-checkbox form-field-wide">
             <Checkbox
@@ -1315,17 +1529,6 @@ function VariantsEditor({ items, onChange, disabled, validationErrors = {}, onOp
 
     const nextCurrent = { ...current, ...partial }
 
-    if (Object.prototype.hasOwnProperty.call(partial, 'imageUrl')) {
-      const colorKey = getVariantColorKey(nextCurrent)
-      const imageUrl = colorKey ? (partial.imageUrl ?? '') : ''
-      onChange(items.map((v) => (
-        v._key === key || (colorKey && getVariantColorKey(v) === colorKey)
-          ? { ...v, ...(v._key === key ? partial : {}), imageUrl }
-          : v
-      )))
-      return
-    }
-
     if (Object.prototype.hasOwnProperty.call(partial, 'gallery')) {
       const colorKey = getVariantColorKey(nextCurrent)
       const gallery = colorKey ? cloneGallery(partial.gallery) : []
@@ -1345,16 +1548,13 @@ function VariantsEditor({ items, onChange, disabled, validationErrors = {}, onOp
           const existingColorGallery = nextColorKey
             ? items.find((v) => v._key !== key && getVariantColorKey(v) === nextColorKey && hasGalleryImages(v.gallery))?.gallery
             : []
-          const existingColorImage = nextColorKey
-            ? (items.find((v) => v._key !== key && getVariantColorKey(v) === nextColorKey && String(v.imageUrl || '').trim())?.imageUrl ?? '')
-            : ''
           onChange(items.map((v) => (
             v._key === key
-              ? { ...nextCurrent, gallery: cloneGallery(existingColorGallery || []), imageUrl: existingColorImage }
+              ? { ...nextCurrent, gallery: cloneGallery(existingColorGallery || []) }
               : v
           )))
         }
-        const hasData = hasGalleryImages(current.gallery) || String(current.imageUrl || '').trim()
+        const hasData = hasGalleryImages(current.gallery)
         if (hasData) {
           showConfirm(
             t('products.detail.variant.changeColorConfirm'),
@@ -1376,7 +1576,6 @@ function VariantsEditor({ items, onChange, disabled, validationErrors = {}, onOp
       id: '',
       sku: '',
       name: '',
-      imageUrl: '',
       isAvailable: true,
       options: [],
       gallery: [],
@@ -1625,7 +1824,6 @@ function VariantMatrixWizard({ onGenerate, onClose }) {
       id: '',
       sku: '',
       name: combo.map((o) => o.value).join(' - '),
-      imageUrl: '',
       isAvailable: true,
       options: combo.map((o) => ({ name: o.name, value: o.value })),
       gallery: [],
@@ -2360,7 +2558,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     { ok: seoTitleVal.length >= 30 && seoTitleVal.length <= 60, hint: seoTitleVal.length, label: t('products.detail.seoCheckTitle', { defaultValue: 'SEO title 30–60 ký tự' }) },
     { ok: seoDescVal.length >= 140 && seoDescVal.length <= 160, hint: seoDescVal.length, label: t('products.detail.seoCheckDesc', { defaultValue: 'SEO description 140–160 ký tự' }) },
     { ok: !!form.slug && /^[a-z0-9-]+$/.test(form.slug), label: t('products.detail.seoCheckSlug', { defaultValue: 'Slug chữ thường, không dấu, dùng "-"' }) },
-    { ok: !!form.imageUrl && !!form.imageAlt, label: t('products.detail.seoCheckImageAlt', { defaultValue: 'Ảnh đại diện có alt text' }) },
+    { ok: !!form.imageUrl?.trim() && !!form.imageAlt?.trim(), label: t('products.detail.seoCheckImageAlt', { defaultValue: 'Ảnh đại diện có alt text' }) },
     { ok: !!form.seoOgImageUrl, label: t('products.detail.seoCheckOg', { defaultValue: 'OG image cho chia sẻ MXH' }) },
     { ok: !!form.imageUrl?.trim() && Number(form.retailPrice) > 0, label: t('products.detail.seoCheckSchema', { defaultValue: 'Schema Product (đủ ảnh + giá)' }) },
   ]
@@ -2624,18 +2822,16 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   <Field
                     full
                     label={t('products.detail.shortDescription')}
-                    count={`${langValue('shortDescription').length} / 500`}
-                    countWarn={langValue('shortDescription').length > 450}
                     hint={t('products.detail.shortDescriptionHint')}
                     error={validationErrors.shortDescription}
                   >
-                    <Textarea
-                      className={validationErrors.shortDescription ? 'border-danger' : undefined}
+                    <RichTextEditor
+                      key={`shortDescription-${contentLang}`}
                       value={langValue('shortDescription')}
-                      onChange={(e) => langChange('shortDescription', e.target.value)}
-                      maxLength={500}
+                      onChange={(html) => langChange('shortDescription', html)}
                       placeholder={t('products.detail.shortDescriptionPlaceholder')}
                       disabled={isReadOnly}
+                      hasError={Boolean(validationErrors.shortDescription)}
                     />
                   </Field>
 
@@ -3071,16 +3267,16 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 <p className="text-xs text-muted-foreground mb-2">{t('products.detail.relatedHint')}</p>
 
                 {form.relatedProductChips.length > 0 && (
-                  <div className="chip-row mt-2">
+                  <div className="flex flex-wrap gap-2 mt-2">
                     {form.relatedProductChips.map((chip) => (
-                      <span key={chip.id} className="chip">
+                      <span key={chip.id} className="inline-flex items-center gap-1.5 px-2 py-1 border border-border bg-muted text-sm">
                         {chip.imageUrl && (
                           <img src={resolveDisplayUrl(chip.imageUrl)} alt="" className="w-5 h-5 object-cover" />
                         )}
-                        <strong>{chip.name}</strong>
+                        <strong className="font-medium">{chip.name}</strong>
                         {!isReadOnly && (
                           <span
-                            className="x"
+                            className="cursor-pointer text-muted-foreground hover:text-foreground leading-none text-base"
                             role="button"
                             tabIndex={0}
                             onClick={() => removeRelatedProduct(chip.id)}
@@ -3101,13 +3297,13 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                       placeholder={t('products.detail.relatedSearch')}
                     />
                     {relatedSearchDebounced.length >= 1 && (
-                      <div className="row-menu left-0 right-0 min-w-0 max-h-64 overflow-y-auto">
+                      <div className="absolute z-50 left-0 right-0 mt-1 bg-background border border-border shadow-md max-h-64 overflow-y-auto">
                         {isSearchingRelated ? (
-                          <p className="text-sm text-muted-foreground px-2.5 py-2">
+                          <p className="text-sm text-muted-foreground px-3 py-2">
                             {t('products.detail.relatedSearching')}
                           </p>
                         ) : relatedSearchItems.length === 0 ? (
-                          <p className="text-sm text-muted-foreground px-2.5 py-2">
+                          <p className="text-sm text-muted-foreground px-3 py-2">
                             {t('products.detail.relatedEmpty')}
                           </p>
                         ) : (
@@ -3119,14 +3315,14 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                                 type="button"
                                 disabled={already}
                                 onClick={() => addRelatedProduct(product)}
-                                className={already ? 'opacity-50 cursor-not-allowed' : undefined}
+                                className={cn('flex items-center gap-3 w-full px-3 py-2 text-left hover:bg-muted text-sm', already && 'opacity-50 cursor-not-allowed')}
                               >
                                 {product.image?.url && (
-                                  <img src={product.image.url} alt="" className="w-6 h-6 object-cover" />
+                                  <img src={product.image.url} alt="" className="w-8 h-8 object-cover shrink-0" />
                                 )}
-                                <span className="flex-1">{product.name}</span>
+                                <span className="flex-1 min-w-0 truncate">{product.name}</span>
                                 {already && (
-                                  <span className="text-xs text-muted-foreground">{t('products.detail.relatedAdded')}</span>
+                                  <span className="text-xs text-muted-foreground shrink-0">{t('products.detail.relatedAdded')}</span>
                                 )}
                               </button>
                             )

@@ -2,13 +2,17 @@ package com.bigbike.bigbike_backend.service.admin;
 
 import com.bigbike.bigbike_backend.api.admin.dto.AttributeSummaryResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.AttributeValueResponse;
-import com.bigbike.bigbike_backend.api.admin.dto.AttributeValueSwatchRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.CreateAttributeValueRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.UpdateAttributeRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.UpdateAttributeValueRequest;
+import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
+import com.bigbike.bigbike_backend.api.error.ValidationException;
+import com.bigbike.bigbike_backend.migration.wordpress.normalizer.ProductSlugGenerator;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeValueEntity;
-import com.bigbike.bigbike_backend.persistence.entity.media.MediaEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.AttributeJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.AttributeValueJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.media.MediaJpaRepository;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +25,6 @@ public class AdminAttributeService {
 
     private final AttributeJpaRepository attributeRepo;
     private final AttributeValueJpaRepository valueRepo;
-    private final MediaJpaRepository mediaRepo;
 
     @Transactional(readOnly = true)
     public List<AttributeSummaryResponse> listAttributes() {
@@ -41,58 +44,85 @@ public class AdminAttributeService {
         attributeRepo.findById(attributeId)
                 .orElseThrow(() -> new NotFoundException("Attribute not found: " + attributeId));
         return valueRepo.findAllByAttributeIdOrderBySortOrderAsc(attributeId).stream()
-                .map(v -> toResponse(v, resolveSwatchUrl(v.getSwatchImageId())))
+                .map(this::toResponse)
                 .toList();
     }
 
+    /**
+     * Rename an attribute's display name. The {@code code} (machine key) stays
+     * immutable so variant options that resolve via the code keep working.
+     */
     @Transactional
-    public AttributeValueResponse updateSwatch(String valueId, AttributeValueSwatchRequest req) {
-        AttributeValueEntity value = valueRepo.findById(valueId)
-                .orElseThrow(() -> new NotFoundException("AttributeValue not found: " + valueId));
-        if (req.colorHex() != null) {
-            value.setColorHex(req.colorHex().isBlank() ? null : req.colorHex().trim());
-        }
-        if (req.swatchImageUrl() != null) {
-            value.setSwatchImageId(req.swatchImageUrl().isBlank() ? null : req.swatchImageUrl().trim());
-        }
-        valueRepo.save(value);
-        return toResponse(value, resolveSwatchUrl(value.getSwatchImageId()));
+    public AttributeSummaryResponse updateAttributeName(String attributeId, UpdateAttributeRequest request) {
+        AttributeEntity attribute = attributeRepo.findById(attributeId)
+                .orElseThrow(() -> new NotFoundException("Attribute not found: " + attributeId));
+        attribute.setName(request.name().trim());
+        AttributeEntity saved = attributeRepo.save(attribute);
+        return new AttributeSummaryResponse(
+                saved.getId(),
+                saved.getCode(),
+                saved.getName(),
+                saved.getKind(),
+                saved.getValues().size()
+        );
     }
 
-    private AttributeValueResponse toResponse(AttributeValueEntity v, String swatchImageUrl) {
+    /**
+     * Create a new value under an attribute. The slug is derived from the label
+     * (or the optional explicit slug) using the same diacritic-insensitive
+     * kebab-case rule as product slugs, so it matches the storefront colour
+     * filter keys. Duplicate slugs within the same attribute are rejected.
+     */
+    @Transactional
+    public AttributeValueResponse createValue(String attributeId, CreateAttributeValueRequest request) {
+        AttributeEntity attribute = attributeRepo.findById(attributeId)
+                .orElseThrow(() -> new NotFoundException("Attribute not found: " + attributeId));
+
+        String label = request.label().trim();
+        String slugSource = request.slug() != null && !request.slug().isBlank() ? request.slug() : label;
+        String slug = ProductSlugGenerator.toSlug(slugSource);
+        if (slug.isBlank()) {
+            throw ValidationException.fromField("label", "INVALID_SLUG",
+                    "Tên không tạo được mã hợp lệ. Vui lòng dùng chữ hoặc số.");
+        }
+
+        valueRepo.findByAttributeIdAndSlug(attributeId, slug).ifPresent(existing -> {
+            throw new ConflictException("Giá trị đã tồn tại trong thuộc tính này: " + slug);
+        });
+
+        int nextSortOrder = valueRepo.findAllByAttributeIdOrderBySortOrderAsc(attributeId).stream()
+                .mapToInt(AttributeValueEntity::getSortOrder)
+                .max()
+                .orElse(-1) + 1;
+
+        AttributeValueEntity entity = new AttributeValueEntity();
+        entity.setId("attr-value-" + UUID.randomUUID());
+        entity.setAttribute(attribute);
+        entity.setSlug(slug);
+        entity.setLabel(label);
+        entity.setSortOrder(nextSortOrder);
+        return toResponse(valueRepo.save(entity));
+    }
+
+    /**
+     * Rename an existing value. Only the display label changes; the slug stays
+     * immutable so existing variant options that reference it keep working.
+     */
+    @Transactional
+    public AttributeValueResponse updateValueLabel(String valueId, UpdateAttributeValueRequest request) {
+        AttributeValueEntity entity = valueRepo.findById(valueId)
+                .orElseThrow(() -> new NotFoundException("Attribute value not found: " + valueId));
+        entity.setLabel(request.label().trim());
+        return toResponse(valueRepo.save(entity));
+    }
+
+    private AttributeValueResponse toResponse(AttributeValueEntity v) {
         return new AttributeValueResponse(
                 v.getId(),
                 v.getAttribute() != null ? v.getAttribute().getId() : null,
                 v.getSlug(),
                 v.getLabel(),
-                v.getColorHex(),
-                swatchImageUrl,
                 v.getSortOrder()
         );
-    }
-
-    private String resolveSwatchUrl(String swatchImageId) {
-        if (swatchImageId == null || swatchImageId.isBlank()) return null;
-        final String trimmed = swatchImageId.trim();
-        // Try UUID lookup first — new admin uploads store the media entity UUID
-        try {
-            UUID uuid = UUID.fromString(trimmed);
-            return mediaRepo.findById(uuid)
-                    .map(MediaEntity::getPublicUrl)
-                    .filter(url -> url != null && !url.isBlank())
-                    .orElse(null);
-        } catch (IllegalArgumentException ignored) {
-            // not a UUID — fall through to legacy numeric lookup
-        }
-        // Fallback: legacy WP attachment numeric ID
-        try {
-            long legacyId = Long.parseLong(trimmed);
-            return mediaRepo.findByLegacyId(legacyId)
-                    .map(MediaEntity::getPublicUrl)
-                    .filter(url -> url != null && !url.isBlank())
-                    .orElse(null);
-        } catch (NumberFormatException e) {
-            return null;
-        }
     }
 }

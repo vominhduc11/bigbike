@@ -32,8 +32,6 @@ public class AttributeImporter implements DomainImporter {
             long sourceId,
             String slug,
             String label,
-            String colorHex,
-            String swatchImageId,
             int sortOrder
     ) {
     }
@@ -101,8 +99,6 @@ public class AttributeImporter implements DomainImporter {
                         entity.setSlug(value.slug());
                         entity.setLabel(value.label() == null || value.label().isBlank() ? value.slug() : value.label());
                         entity.setLegacyTermId(value.sourceId());
-                        entity.setColorHex(value.colorHex());
-                        entity.setSwatchImageId(value.swatchImageId());
                         entity.setSortOrder(value.sortOrder());
 
                         if (!options.dryRun()) {

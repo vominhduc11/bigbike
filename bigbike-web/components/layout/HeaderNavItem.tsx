@@ -38,12 +38,26 @@ function MegaPanel({
   pathname: string | null;
   active: boolean;
 }) {
+  // Column count follows item count (≈2 per column, capped at 3) so the panel —
+  // and thus the content-hugging dropdown width — never reserves empty columns
+  // for sparse categories.
+  const columnCount = Math.min(3, Math.max(1, Math.ceil(group.children.length / 2)));
   return (
-    <div className={cn("flex-1 p-6", active ? "block" : "hidden")}>
+    <div
+      className={cn(
+        // All panels share one grid cell ([grid-area:1/1]) so the wrapper width is
+        // always the widest panel → the dropdown size stays fixed when switching
+        // groups. Inactive panels stay laid out (invisible, not display:none) so
+        // they keep contributing to that max width. Content is centered so sparse
+        // groups read as balanced rather than left-hugged with a void.
+        "[grid-area:1/1] flex flex-col items-center justify-start p-6 transition-opacity duration-150",
+        active ? "opacity-100" : "invisible pointer-events-none opacity-0",
+      )}
+    >
       {group.children.length === 0 ? (
         <p className="font-nav text-13 text-muted-foreground">{group.label}</p>
       ) : (
-        <ul className="m-0 list-none columns-2 gap-x-8 p-0 xl:columns-3">
+        <ul className="m-0 list-none gap-x-8 p-0" style={{ columnCount }}>
           {group.children.map((cat) => {
             const catActive = isNodeActive(pathname, cat);
             const hasL4 = cat.children.length > 0;
@@ -98,6 +112,18 @@ function MegaPanel({
             );
           })}
         </ul>
+      )}
+      {group.children.length > 0 && (
+        <Link
+          href={normalizeMenuUrl(group.url)}
+          onClick={onItemClick}
+          target={group.openInNewTab ? "_blank" : undefined}
+          rel={group.openInNewTab ? "noreferrer" : undefined}
+          className="mt-6 inline-flex w-fit items-center gap-1.5 font-nav text-13 font-bold uppercase tracking-wide text-brand no-underline transition-opacity duration-150 hover:opacity-80"
+        >
+          Xem tất cả {group.label}
+          <ChevronRight size={14} strokeWidth={2.5} aria-hidden="true" />
+        </Link>
       )}
     </div>
   );
@@ -229,15 +255,16 @@ function MegaMenu({
       // data-dropdown kept as a JS hook (HeaderNavItem reads `[data-dropdown] a`
       // for ArrowDown focus). The legacy [data-dropdown] / .is-visible enter-exit
       // animation (opacity + translateY, was in globals.css) is inlined below.
-      // `transform:translateY()` is used (not `translate-y-*`) so it animates via
-      // the `transform` property the transition targets — and stays independent of
-      // the `-translate-x-1/2` centering, which uses v4's `translate` property.
+      // Width hugs content (`w-max`) so sparse category panels don't leave a wide
+      // void; the menu is centered in the viewport via `left-1/2` + the
+      // `-translate-x-1/2` (v4 `translate` property), independent of the entrance
+      // animation's `transform: translateY()`. Width is capped to the viewport.
       data-dropdown
       className={cn(
         "fixed left-1/2 -translate-x-1/2",
         "top-[var(--bb-header-height)]",
         "z-[var(--bb-z-dropdown)]",
-        "w-[min(75rem,calc(100vw-2rem))]",
+        "w-max max-w-[calc(100vw-2*clamp(12px,1.7vw,48px))]",
         "max-h-[calc(100vh-var(--bb-header-height)-0.5rem)] overflow-y-auto overflow-x-hidden",
         "bg-white shadow-dropdown",
         "opacity-0 [transform:translateY(6px)] pointer-events-none [transition:opacity_0.2s_ease,transform_0.2s_ease] motion-reduce:[transition-duration:1ms]",
@@ -254,7 +281,7 @@ function MegaMenu({
           onItemClick={onItemClick}
           pathname={pathname}
         />
-        <div className="min-w-0 flex-1">
+        <div className="grid">
           {node.children.map((group) => (
             <MegaPanel
               key={group.id}

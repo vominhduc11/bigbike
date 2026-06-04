@@ -44,7 +44,11 @@ export function StockStatus({
     rawState === "IN_STOCK" || rawState === "LOW_STOCK" || rawState === "OUT_OF_STOCK"
       ? rawState
       : "UNKNOWN";
-  const baseLabel = data?.label ?? tProduct(`stockState.${stateKey}`);
+  // Use `||` not `??`: the selected-variant path (PurchaseSectionClient)
+  // passes label: "" rather than null, and `??` would keep that empty string —
+  // rendering the skewed badge with no text (an empty red block on the PDP).
+  // Falling back to the i18n state label restores "Hết hàng"/"Còn hàng".
+  const baseLabel = data?.label || tProduct(`stockState.${stateKey}`);
   const qty = data?.quantity ?? null;
 
   // Mirror WP's `wc_get_stock_html()` "Chỉ còn N sản phẩm" copy when the

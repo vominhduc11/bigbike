@@ -547,18 +547,36 @@ export async function deleteBrand(brandId) {
 
 export async function fetchAttributes() {
   const payload = await requestJson('/admin/attributes')
-  return payload?.data ?? []
+  // Endpoint returns a bare JSON array (no envelope); tolerate both shapes.
+  return Array.isArray(payload) ? payload : (payload?.data ?? [])
 }
 
 export async function fetchAttributeValues(attributeId) {
   const payload = await requestJson(`/admin/attributes/${attributeId}/values`)
-  return payload?.data ?? []
+  // Endpoint returns a bare JSON array (no envelope); tolerate both shapes.
+  return Array.isArray(payload) ? payload : (payload?.data ?? [])
 }
 
-export async function updateAttributeValueSwatch(valueId, { colorHex, swatchImageUrl }) {
-  const payload = await requestJson(`/admin/attribute-values/${valueId}/swatch`, {
+export async function updateAttribute(attributeId, { name }) {
+  const payload = await requestJson(`/admin/attributes/${attributeId}`, {
     method: 'PATCH',
-    body: { colorHex, swatchImageUrl },
+    body: { name },
+  })
+  return payload?.data ?? payload
+}
+
+export async function createAttributeValue(attributeId, { label, slug } = {}) {
+  const payload = await requestJson(`/admin/attributes/${attributeId}/values`, {
+    method: 'POST',
+    body: { label, ...(slug ? { slug } : {}) },
+  })
+  return payload?.data ?? payload
+}
+
+export async function updateAttributeValueLabel(valueId, { label }) {
+  const payload = await requestJson(`/admin/attribute-values/${valueId}`, {
+    method: 'PATCH',
+    body: { label },
   })
   return payload?.data ?? payload
 }

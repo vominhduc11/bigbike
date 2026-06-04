@@ -1056,16 +1056,24 @@ public class AdminCatalogMutationService {
         return galleryByColor;
     }
 
-    private static Map<String, String> colorImageRequests(List<VariantRequest> requests) {
-        Map<String, String> imageByColor = new HashMap<>();
-        for (VariantRequest request : requests) {
-            String colorKey = variantColorKey(request);
-            String imageUrl = AdminMutationValidators.trimToNull(request.getImageUrl());
-            if (colorKey != null && imageUrl != null) {
-                imageByColor.putIfAbsent(colorKey, imageUrl);
+    /**
+     * The variant cover image is no longer entered separately by admins — it is
+     * always the FIRST image of the variant's color gallery. This derives, per
+     * color, that leading gallery image (the cover) so every same-color variant
+     * shares it. Returns the first gallery entry with a non-blank URL per color.
+     */
+    private static Map<String, GalleryImageRequest> colorCoverImages(
+            Map<String, List<GalleryImageRequest>> galleryByColor) {
+        Map<String, GalleryImageRequest> coverByColor = new HashMap<>();
+        for (Map.Entry<String, List<GalleryImageRequest>> entry : galleryByColor.entrySet()) {
+            for (GalleryImageRequest img : entry.getValue()) {
+                if (AdminMutationValidators.trimToNull(img.getUrl()) != null) {
+                    coverByColor.put(entry.getKey(), img);
+                    break;
+                }
             }
         }
-        return imageByColor;
+        return coverByColor;
     }
 
     private void applyVariants(ProductEntity entity, List<VariantRequest> requests) {
@@ -1083,7 +1091,7 @@ public class AdminCatalogMutationService {
         }
 
         Map<String, List<GalleryImageRequest>> galleryByColor = colorGalleryRequests(requests);
-        Map<String, String> imageByColor = colorImageRequests(requests);
+        Map<String, GalleryImageRequest> coverByColor = colorCoverImages(galleryByColor);
         List<ProductVariantEntity> nextVariants = new ArrayList<>();
         for (int i = 0; i < requests.size(); i++) {
             VariantRequest req = requests.get(i);
@@ -1116,8 +1124,24 @@ public class AdminCatalogMutationService {
             if (createVariant) {
                 variant.setStockState(ProductStockState.OUT_OF_STOCK);
             }
-            variant.setImageUrl(colorKey != null ? imageByColor.getOrDefault(colorKey, null) : null);
-            variant.setImageAlt(AdminMutationValidators.trimToNull(req.getImageAlt()));
+            // Cover image = first image of the color gallery (admins no longer
+            // enter it separately). Mirror every media field so the read path and
+            // cart snapshot get a complete ImageAsset; clear them when the color
+            // has no gallery, or the variant has no color.
+            GalleryImageRequest cover = colorKey != null ? coverByColor.get(colorKey) : null;
+            if (cover != null) {
+                variant.setImageUrl(AdminMutationValidators.trimToNull(cover.getUrl()));
+                variant.setImageAlt(AdminMutationValidators.trimToNull(cover.getAlt()));
+                variant.setImageWidth(cover.getWidth());
+                variant.setImageHeight(cover.getHeight());
+                variant.setImageMimeType(AdminMutationValidators.trimToNull(cover.getMimeType()));
+            } else {
+                variant.setImageUrl(null);
+                variant.setImageAlt(null);
+                variant.setImageWidth(null);
+                variant.setImageHeight(null);
+                variant.setImageMimeType(null);
+            }
             variant.setAvailable(req.getIsAvailable() == null || req.getIsAvailable());
 
             List<ProductVariantOptionEntity> options = new ArrayList<>();
@@ -1132,16 +1156,11 @@ public class AdminCatalogMutationService {
                     opt.setSortOrder(j);
                     opt.setOptionName(oName);
                     opt.setOptionValue(oValue);
-                    String swatchImageId = AdminMutationValidators.trimToNull(optReq.getSwatchImageId());
-                    if (swatchImageId != null) {
-                        opt.setSwatchImageId(swatchImageId);
-                    }
-                    // Link to the AttributeEntity / AttributeValueEntity rows
-                    // when a matching taxonomy exists. Without these FKs the
-                    // storefront cannot resolve per-term swatch metadata
-                    // (color_hex / swatch_image_id) and falls back to the
-                    // raw slug — which is why colour chips render as text
-                    // even when the dictionary has hex values populated.
+                    // Link to the AttributeEntity / AttributeValueEntity rows when a
+                    // matching taxonomy exists, so the read path can return the human
+                    // label ("Đen bóng") instead of the raw slug. Best-effort: when no
+                    // match is found the FK stays null and the storefront falls back to
+                    // the raw text value.
                     linkAttributeReferences(opt, oName, oValue, AdminMutationValidators.trimToNull(optReq.getAttributeValueId()));
                     options.add(opt);
                 }
@@ -1217,6 +1236,15 @@ public class AdminCatalogMutationService {
             if (!normalizedSlug.isEmpty()) {
                 valueOpt = attributeValueJpaRepository
                         .findByAttributeIdAndSlug(attribute.getId(), normalizedSlug);
+                if (valueOpt.isEmpty()) {
+                    // Slugs are hyphenated ("den-bong"); the normalised token is
+                    // space-separated ("den bong"). Try the hyphenated shape so a
+                    // multi-word label ("Đen bóng") re-links on save round-trip —
+                    // the read path returns the label, so re-saving sends the label
+                    // back without an explicit attributeValueId.
+                    valueOpt = attributeValueJpaRepository
+                            .findByAttributeIdAndSlug(attribute.getId(), normalizedSlug.replace(' ', '-'));
+                }
             }
         }
         valueOpt.ifPresent(opt::setAttributeValue);

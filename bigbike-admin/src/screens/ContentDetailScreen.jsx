@@ -781,16 +781,16 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
 
                     <Field full label={t('content.detail.relatedProducts')} hint={t('content.detail.relatedProductsHint')}>
                       {form.relatedProductChips.length > 0 && (
-                        <div className="chip-row mt-2">
+                        <div className="flex flex-wrap gap-2 mt-2">
                           {form.relatedProductChips.map((chip) => (
-                            <span key={chip.id} className="chip">
+                            <span key={chip.id} className="inline-flex items-center gap-1.5 px-2 py-1 border border-border bg-muted text-sm">
                               {chip.imageUrl && (
                                 <img src={chip.imageUrl} alt="" className="w-5 h-5 object-cover" />
                               )}
-                              <strong>{chip.name}</strong>
+                              <strong className="font-medium">{chip.name}</strong>
                               {!isReadOnly && (
                                 <span
-                                  className="x"
+                                  className="cursor-pointer text-muted-foreground hover:text-foreground leading-none text-base"
                                   role="button"
                                   tabIndex={0}
                                   onClick={() => removeRelatedProduct(chip.id)}
@@ -811,13 +811,13 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                             placeholder={t('content.detail.relatedProductsSearch')}
                           />
                           {productSearchDebounced.length >= 1 && (
-                            <div className="row-menu left-0 right-0 min-w-0 max-h-64 overflow-y-auto">
+                            <div className="absolute z-50 left-0 right-0 mt-1 bg-background border border-border shadow-md max-h-64 overflow-y-auto">
                               {isSearchingProducts ? (
-                                <p className="text-sm text-muted-foreground px-2.5 py-2">
+                                <p className="text-sm text-muted-foreground px-3 py-2">
                                   {t('content.detail.relatedProductsSearching')}
                                 </p>
                               ) : productSearchItems.length === 0 ? (
-                                <p className="text-sm text-muted-foreground px-2.5 py-2">
+                                <p className="text-sm text-muted-foreground px-3 py-2">
                                   {t('content.detail.relatedProductsEmpty')}
                                 </p>
                               ) : (
@@ -829,14 +829,14 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                                       type="button"
                                       disabled={already}
                                       onClick={() => addRelatedProduct(product)}
-                                      className={already ? 'opacity-50 cursor-not-allowed' : undefined}
+                                      className={cn('flex items-center gap-3 w-full px-3 py-2 text-left hover:bg-muted text-sm', already && 'opacity-50 cursor-not-allowed')}
                                     >
                                       {product.image?.url && (
-                                        <img src={product.image.url} alt="" className="w-6 h-6 object-cover" />
+                                        <img src={product.image.url} alt="" className="w-8 h-8 object-cover shrink-0" />
                                       )}
-                                      <span className="flex-1">{product.name}</span>
+                                      <span className="flex-1 min-w-0 truncate">{product.name}</span>
                                       {already && (
-                                        <span className="text-xs text-muted-foreground">{t('content.detail.relatedProductsAdded')}</span>
+                                        <span className="text-xs text-muted-foreground shrink-0">{t('content.detail.relatedProductsAdded')}</span>
                                       )}
                                     </button>
                                   )

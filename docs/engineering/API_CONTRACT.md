@@ -271,6 +271,53 @@ Status: `CONFIRMED_FROM_CODE`
 
 Evidence: `CatalogReadService.listProducts` (`toListView` / `toVariantStub` projection of the paginated slice), `CatalogController.listProducts`, `PublicReadApiTest.publicProductList_omitsDetailOnlyFields_butKeepsVariantCount`.
 
+### Variant option — admin round-trip field (`attributeValueId`)
+
+A variant option (`variants[].options[]`) is returned with these fields:
+
+| Field | Public (`GET /api/v1/products/{slug}`) | Admin (`GET /api/v1/admin/products/{id}`) |
+|---|---|---|
+| `name`, `value` | ✅ human label (e.g. `Màu sắc` / `Đen bóng`) | ✅ |
+| `attributeValueId` | ❌ omitted | ✅ the linked dictionary value id (when the option resolves to one) |
+
+`value` is the human **label** (`Đen bóng`), not the stored slug (`den-bong`) — the read path prefers the dictionary label. The admin editor cannot reliably reconstruct the dictionary link from the label alone (some slugs carry WP dedup suffixes such as `xam-2` / `trang-2` that no label maps back to). Returning `attributeValueId` lets the admin form round-trip the exact reference, so re-saving a product preserves the colour link. It is **admin-only** (`@JsonInclude(NON_NULL)`, populated only when `publicView = false`); the public storefront response never carries it.
+
+Colour variants render on the storefront using the **variant's own gallery image** (the first image of the matching variant), not a per-term colour swatch or hex value. The swatch/hex feature (`colorHex`, `swatchImageUrl`, per-option `swatchImageId`, and the `attribute_values.color_hex` / `attribute_values.swatch_image_id` / `product_variant_options.swatch_image_id` columns) was removed.
+
+Status: `CONFIRMED_FROM_CODE`
+
+Evidence: `ProductVariantOption.java` (record component `attributeValueId`, `@JsonInclude(NON_NULL)`), `JpaCatalogReadRepository.toVariantOption` (populates `attributeValueId` from `AttributeValueEntity.id`, gated on `publicView`), `VariantSelector.tsx` (renders the colour chip from `variant.gallery[0]`).
+
+### Attribute value management — admin catalog endpoints
+
+The colour/value dictionary for variant attributes is read and curated through `AdminAttributeController` (`/api/v1/admin`):
+
+| Endpoint | Body | Response | Notes |
+|---|---|---|---|
+| `GET /attributes` | — | **bare array** of `{ id, code, name, kind, valueCount }` | Not wrapped in the `{data}` envelope. |
+| `GET /attributes/{attributeId}/values` | — | **bare array** of `{ id, attributeId, slug, label, sortOrder }` | Not wrapped. |
+| `PATCH /attributes/{id}` | `{ name }` | `{ data: AttributeSummaryResponse }` | Renames an attribute's display name. **Only `name` changes; `code` is immutable** (variant options resolve to their attribute via the code). Requires `products.update`. |
+| `POST /attributes/{attributeId}/values` | `{ label, slug? }` | `{ data: AttributeValueResponse }` | Adds a new value. `slug` defaults to a diacritic-insensitive kebab-case form of `label` (same rule as product slugs, matching storefront colour-filter keys). Duplicate slug within the same attribute → `409 CONFLICT`; a label that yields an empty slug → `400 VALIDATION_ERROR`. Requires `products.update`. |
+| `PATCH /attribute-values/{id}` | `{ label }` | `{ data: AttributeValueResponse }` | Renames an existing value. **Only `label` changes; `slug` is immutable** so variant options that reference it keep working (colour-scoped galleries and web filters key off the slug). Requires `products.update`. |
+
+The two `GET` endpoints return bare arrays (legacy shape); the admin client (`fetchAttributes` / `fetchAttributeValues`) tolerates both bare arrays and `{data}`. The new `POST`/`PATCH` use the standard `ApiResponseFactory` envelope.
+
+Status: `CONFIRMED_FROM_CODE`
+
+Evidence: `AdminAttributeController.java` (`listAttributes`, `listAttributeValues`, `updateAttribute`, `createAttributeValue`, `updateAttributeValue`), `AdminAttributeService.java` (`updateAttributeName` name-only, `createValue` slug derivation via `ProductSlugGenerator.toSlug` + dedup, `updateValueLabel` label-only), `adminApi.js` (`fetchAttributes`/`fetchAttributeValues` tolerant readers, `updateAttribute`, `createAttributeValue`/`updateAttributeValueLabel`), `ProductDetailScreen.jsx` (`AttributeRenameModal`, `AttributeValueManagerModal`).
+
+### Variant cover image — derived from the first gallery image (no separate input)
+
+The variant cover image (`variants[].image`) is **always the first image of the variant's colour gallery** (`variants[].gallery[0]`). It is **not** entered separately by admins.
+
+- **Upsert request** (`POST` / `PATCH /api/v1/admin/products`): the request body **no longer accepts** `variants[].imageUrl` / `variants[].imageAlt`. Both fields were removed from `VariantRequest`. On save, the backend mirrors the colour gallery's first image into the variant's `image_url` / `image_alt` / `image_width` / `image_height` / `image_mime_type` columns (colour-scoped, so every same-colour size shares it); a colour with no gallery, or a variant with no Colour option, gets a `null` cover.
+- **Response**: `variants[].image` still returns the cover `ImageAsset` (now equal to `gallery[0]`). The read path keeps colour-scoping the stored `image_*` columns, so legacy rows where the cover diverged from `gallery[0]` are normalised on read and re-synced on the next save.
+- **Rationale**: a separately-stored cover could diverge from the gallery (different URL or stale row), which surfaced as **duplicate thumbnails** on the PDP. Deriving the cover from `gallery[0]` removes the divergence at the source. To change the cover, reorder the gallery so the desired image is first.
+
+Status: `CONFIRMED_FROM_CODE`
+
+Evidence: `VariantRequest.java` (no `imageUrl`/`imageAlt`), `AdminCatalogMutationService.applyVariants` / `colorCoverImages` (cover = first colour-gallery image), `JpaCatalogReadRepository.withColorScopedVariantMedia` (colour-scopes the stored `image_*` columns on read), `VariantGalleryRoundtripTest.variantImage_isSharedByColorAcrossSizes`.
+
 ### Product upsert — `stockState` is read-only
 
 `POST /api/v1/admin/products` and `PATCH /api/v1/admin/products/{id}` do **not** accept `stockState` in the request body. The field is derived from `quantityOnHand` via `InventoryPolicyService` and can only be mutated through the Inventory module endpoints (`/api/v1/admin/inventory/...`).

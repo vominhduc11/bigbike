@@ -75,7 +75,7 @@ function RatingRow({
 
   if (!hasReviews) {
     return (
-      <div className="text-black text-ui-14">
+      <div className="mt-2 text-black text-ui-14">
         <span
           className="inline-block text-rating-star text-ui-18 tracking-normal before:content-['★★★★★']"
           aria-hidden="true"
@@ -89,7 +89,7 @@ function RatingRow({
 
   return (
     <div
-      className="text-black text-ui-14"
+      className="mt-2 text-black text-ui-14"
       itemProp="aggregateRating"
       itemScope
       itemType="https://schema.org/AggregateRating"

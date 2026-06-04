@@ -114,10 +114,6 @@ export type ProductPrice = {
 export type ProductVariantOption = {
   name: string;
   value: string;
-  /** Hex colour from the term-level swatch metadata, e.g. "#a52a2a". */
-  colorHex?: string | null;
-  /** Term-level swatch thumbnail URL (resolved server-side from attachment id). */
-  swatchImageUrl?: string | null;
 };
 
 export type ProductVariant = {

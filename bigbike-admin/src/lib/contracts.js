@@ -212,9 +212,6 @@ function normalizeVariantOption(input) {
     name,
     value,
     attributeValueId: toTrimmedString(input.attributeValueId) || null,
-    colorHex: toTrimmedString(input.colorHex) || null,
-    swatchImageUrl: toTrimmedString(input.swatchImageUrl) || null,
-    swatchImageId: toTrimmedString(input.swatchImageId) || null,
   }
 }
 

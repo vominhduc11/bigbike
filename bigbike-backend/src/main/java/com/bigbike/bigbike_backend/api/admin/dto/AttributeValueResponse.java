@@ -5,7 +5,5 @@ public record AttributeValueResponse(
         String attributeId,
         String slug,
         String label,
-        String colorHex,
-        String swatchImageUrl,
         int sortOrder
 ) {}

@@ -79,13 +79,11 @@ function toWpAttributeSlug(value: string): string {
 
 type SwatchInfo = {
   value: string;
-  colorHex: string | null;
-  swatchImageUrl: string | null;
   variantImageUrl: string | null;
 };
 
 function hasSwatch(info: SwatchInfo): boolean {
-  return Boolean(info.colorHex || info.swatchImageUrl || info.variantImageUrl);
+  return Boolean(info.variantImageUrl);
 }
 
 function buildOptionGroups(variants: ProductVariant[], attributeFallback: string) {
@@ -101,8 +99,6 @@ function buildOptionGroups(variants: ProductVariant[], attributeFallback: string
       const existing = valueMap.get(value);
       const candidate: SwatchInfo = {
         value,
-        colorHex: opt.colorHex ?? null,
-        swatchImageUrl: opt.swatchImageUrl ?? null,
         variantImageUrl: isColorAttribute(name) ? variantImg : null,
       };
       if (!existing || (!hasSwatch(existing) && hasSwatch(candidate))) {
@@ -147,15 +143,10 @@ export function VariantSelector({
                 <label className="block m-0 font-[family-name:var(--bb-font-display)] text-ui-24 max-md:text-ui-18 font-semibold !leading-[52px] max-md:!leading-[1.2] text-black">
                   {group.name}
                 </label>
-                {currentValue ? (
-                  <span className="ml-2 max-md:ml-0 align-top text-base max-md:text-sm font-normal normal-case leading-[52px] max-md:!leading-[1.2] text-muted-foreground">
-                    {currentValue}
-                  </span>
-                ) : null}
               </div>
               <div className="inline-flex flex-wrap gap-2.5 max-md:gap-2 align-top">
                 {group.values.map((info) => {
-                  const { value, colorHex, swatchImageUrl, variantImageUrl } = info;
+                  const { value, variantImageUrl } = info;
                   const probeSelection = { ...selectedOptions, [group.name]: value };
                   const candidate =
                     findMatchingVariant(variants, probeSelection, { onlyAvailable: true }) ??
@@ -163,14 +154,12 @@ export function VariantSelector({
                   const active = normalizeValue(currentValue) === normalizeValue(value);
                   const available = Boolean(candidate?.isAvailable);
                   // Normalise to the same-origin /wp-content/uploads proxy (like
-                  // the gallery) so the swatch image isn't blocked by CSP when the
+                  // the gallery) so the variant image isn't blocked by CSP when the
                   // raw MinIO origin isn't in img-src.
-                  const effectiveImageUrl = resolveMediaUrl(swatchImageUrl || variantImageUrl);
+                  const effectiveImageUrl = resolveMediaUrl(variantImageUrl);
                   let swatchStyle: CSSProperties | undefined;
                   if (isColorGroup && effectiveImageUrl) {
                     swatchStyle = { backgroundImage: `url(${effectiveImageUrl})` };
-                  } else if (isColorGroup && colorHex) {
-                    swatchStyle = { backgroundColor: colorHex };
                   }
 
                   const inputId = `${toWpAttributeSlug(group.name)}-${toWpAttributeSlug(value)}`;
