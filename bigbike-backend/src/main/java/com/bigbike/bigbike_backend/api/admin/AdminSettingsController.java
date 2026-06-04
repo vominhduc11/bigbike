@@ -61,9 +61,10 @@ public class AdminSettingsController extends AdminControllerSupport {
             @Valid @RequestBody BatchUpdateSettingsRequest body,
             HttpServletRequest request
     ) {
-        devAdminAuthService.requirePermission(request, "settings.write");
+        var profile = devAdminAuthService.requirePermission(request, "settings.write");
+        boolean superAdmin = profile.permissions().contains("*");
         return apiResponseFactory.data(
-                adminSettingsService.batchUpdateSettings(body.updates(), resolveAdminId()), request);
+                adminSettingsService.batchUpdateSettings(body.updates(), resolveAdminId(), superAdmin), request);
     }
 
     @PatchMapping("/{settingKey}")
@@ -72,9 +73,10 @@ public class AdminSettingsController extends AdminControllerSupport {
             @Valid @RequestBody UpdateSiteSettingRequest body,
             HttpServletRequest request
     ) {
-        devAdminAuthService.requirePermission(request, "settings.write");
+        var profile = devAdminAuthService.requirePermission(request, "settings.write");
+        boolean superAdmin = profile.permissions().contains("*");
         return apiResponseFactory.data(
-                adminSettingsService.updateSetting(settingKey, resolveAdminId(), body), request);
+                adminSettingsService.updateSetting(settingKey, resolveAdminId(), superAdmin, body), request);
     }
 
 }

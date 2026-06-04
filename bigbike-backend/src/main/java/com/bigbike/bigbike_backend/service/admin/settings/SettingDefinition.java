@@ -11,6 +11,7 @@ public record SettingDefinition(
         boolean sensitive,
         boolean editable,
         boolean required,
+        boolean superAdminOnly,
         Set<String> allowedValues,
         BigDecimal min,
         BigDecimal max,
@@ -28,6 +29,7 @@ public record SettingDefinition(
         private boolean sensitive = false;
         private boolean editable = true;
         private boolean required = false;
+        private boolean superAdminOnly = false;
         private Set<String> allowedValues = Set.of();
         private BigDecimal min;
         private BigDecimal max;
@@ -43,6 +45,7 @@ public record SettingDefinition(
         public Builder sensitive() { this.sensitive = true; return this; }
         public Builder readOnly() { this.editable = false; return this; }
         public Builder required() { this.required = true; return this; }
+        public Builder superAdminOnly() { this.superAdminOnly = true; return this; }
         public Builder allowedValues(String... values) { this.allowedValues = Set.of(values); return this; }
         public Builder min(BigDecimal v) { this.min = v; return this; }
         public Builder max(BigDecimal v) { this.max = v; return this; }
@@ -53,7 +56,7 @@ public record SettingDefinition(
         public SettingDefinition build() {
             return new SettingDefinition(
                     key, group, type, publicAllowed, sensitive, editable, required,
-                    allowedValues, min, max, description);
+                    superAdminOnly, allowedValues, min, max, description);
         }
     }
 }

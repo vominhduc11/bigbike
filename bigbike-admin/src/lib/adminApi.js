@@ -1000,6 +1000,13 @@ export async function batchUpdateSettings(updates) {
   return { items }
 }
 
+// Editable "Phân công" guide text for the product create/edit banner.
+// Read is gated by products.read (not settings.read) so SHOP_MANAGER/EDITOR see it too.
+export async function fetchProductAssignment() {
+  const payload = await requestJson('/admin/product-assignment')
+  return payload?.data || {}
+}
+
 export async function fetchSerialInventoryOnly() {
   const payload = await requestJson('/admin/settings/serial_inventory_only')
   return (payload?.data?.settingValue ?? payload?.data?.item?.settingValue) === 'true'

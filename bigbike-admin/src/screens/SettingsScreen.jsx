@@ -1,7 +1,7 @@
 import { useMemo, useEffect, useState, useCallback } from 'react'
 import {
   Store, Phone, CreditCard, Tag, Globe, Settings,
-  Home, Building2, Image as ImageIcon, Package,
+  Home, Building2, Image as ImageIcon, Package, Users,
   CheckCircle2, AlertCircle,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -13,6 +13,7 @@ import { fetchSettings, batchUpdateSettings } from '../lib/adminApi'
 import { sanitizeHtml } from '../lib/sanitizeHtml'
 import { showConfirm } from '../lib/confirm'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -96,6 +97,7 @@ function validateValue(key, value) {
 
 const TAB_ORDER = [
   'GENERAL', 'CONTACT', 'PUBLIC_HOME', 'PUBLIC_HERO', 'PROMO', 'SEO', 'STORE', 'TAX', 'INVENTORY',
+  'PRODUCT_ASSIGN',
 ]
 
 // Tabs whose values directly affect pricing / checkout / operations — saving
@@ -123,6 +125,7 @@ const TAB_META = {
   STORE:       { icon: Building2,  labelKey: 'settings.group_store' },
   TAX:         { icon: CreditCard, labelKey: 'settings.group_tax' },
   INVENTORY:   { icon: Package,    labelKey: 'settings.group_inventory' },
+  PRODUCT_ASSIGN: { icon: Users,   labelKey: 'settings.group_product_assign' },
 }
 
 // Bản dịch tiếng Việt cho từng setting key (admin shop motor đọc dễ hiểu hơn description English từ migrations)
@@ -194,6 +197,14 @@ const KEY_LABELS_VI = {
   // global hero defaults
   hero_default_bg_url: 'Ảnh nền mặc định hero (dùng khi trang không có ảnh riêng)',
   hero_default_illustration_url: 'Ảnh gear mặc định hero (dùng khi trang không có ảnh minh hoạ riêng)',
+  // product_assign (banner phân công trên màn tạo/sửa sản phẩm — chỉ super admin sửa)
+  product_assign_title: 'Tiêu đề banner phân công',
+  product_assign_role_content: 'Tên vai trò 1 (mặc định: Content)',
+  product_assign_items_content: 'Công việc của vai trò Content',
+  product_assign_role_seo: 'Tên vai trò 2 (mặc định: SEO)',
+  product_assign_items_seo: 'Công việc của vai trò SEO',
+  product_assign_role_manager: 'Tên vai trò 3 (mặc định: Quản lý)',
+  product_assign_items_manager: 'Công việc của vai trò Quản lý',
 }
 
 const KEY_HINTS_VI = {
@@ -231,6 +242,7 @@ function SettingField({ setting, canUpdate, draft, error, onChange }) {
   const label = KEY_LABELS_VI[setting.key] || setting.description || setting.key
   const isHtml = setting.valueType === 'HTML'
   const isImage = setting.valueType === 'IMAGE_URL'
+  const isLongText = setting.valueType === 'LONG_TEXT'
 
   return (
     <div className="form-field">
@@ -264,6 +276,15 @@ function SettingField({ setting, canUpdate, draft, error, onChange }) {
               <span className="hint">{KEY_HINTS_VI[setting.key]}</span>
             )}
           </>
+        ) : isLongText ? (
+          <Textarea
+            className={error ? 'border-danger' : undefined}
+            rows={3}
+            value={currentValue}
+            placeholder={placeholder || (rawValue ? '' : t('settings.empty'))}
+            onChange={(e) => onChange(setting.key, e.target.value)}
+            aria-describedby={error ? `err-${setting.key}` : undefined}
+          />
         ) : (
           <Input
             className={error ? 'border-danger' : undefined}
@@ -347,7 +368,7 @@ function SettingTabPanel({ title, items, canUpdate, drafts, errors, onDraftChang
 
 // ── SettingsScreen ────────────────────────────────────────────────────────────
 
-export function SettingsScreen({ canUpdate }) {
+export function SettingsScreen({ canUpdate, isSuperAdmin = false }) {
   const { t } = useTranslation()
   const [state, setState] = useState({ status: 'loading', items: [], warning: '' })
   const [fetchKey, setFetchKey] = useState(0)
@@ -375,6 +396,8 @@ export function SettingsScreen({ canUpdate }) {
     const map = new Map()
     for (const s of state.items) {
       if (HIDDEN_KEYS.has(s.key)) continue
+      // Super-admin-only settings (vd phân công sản phẩm) chỉ hiện với super admin.
+      if (s.superAdminOnly && !isSuperAdmin) continue
       const g = (s.settingGroup || 'GENERAL').toUpperCase()
       if (HIDDEN_GROUPS.has(g)) continue
       if (!map.has(g)) map.set(g, [])
@@ -389,7 +412,7 @@ export function SettingsScreen({ canUpdate }) {
       if (!sorted.has(key)) sorted.set(key, val)
     }
     return sorted
-  }, [state.items])
+  }, [state.items, isSuperAdmin])
 
   // Derive active tab: user pick takes priority, else first available tab
   const firstTab = groups.size > 0 ? [...groups.keys()][0] : null

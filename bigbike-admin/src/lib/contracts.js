@@ -765,6 +765,7 @@ export function normalizeSetting(input) {
     description: toTrimmedStringLocal(s.description) || undefined,
     settingGroup: toTrimmedStringLocal(s.settingGroup) || 'GENERAL',
     valueType: toTrimmedStringLocal(s.valueType) || 'STRING',
+    superAdminOnly: Boolean(s.superAdminOnly),
     updatedAt: toTrimmedStringLocal(s.updatedAt) || undefined,
   }
 }

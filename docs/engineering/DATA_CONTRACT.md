@@ -732,9 +732,26 @@ Evidence: `AdminAnalyticsResponse.java`, `AdminReportService.java`, `OrderJpaRep
 | `store` | Operational: minimum checkout amount, low-stock threshold | Cửa hàng |
 | `tax` | VAT rate, tax-inclusive flag, tax registration number | Thuế & Phí |
 | `inventory` | Operational: stock reservation TTL, default warranty months, serial-only selling | Tồn kho |
+| `product_assign` | Editable text of the "Phân công" guide shown on the product create/edit screen — role names + task lists (7 keys). **Super-admin-only writable** (see below). | Phân công sản phẩm |
 | `security` | Login attempts, session timeout — devops-managed, hidden from the admin UI | (hidden) |
 
 **Removed:** `payment_sepay` — the SePay payment gateway was removed in V59; any leftover `payment_sepay` rows are deleted by V132.
+
+### `product_assign` keys + super-admin-only write (V157)
+
+The product create/edit screen shows a "Phân công" (team-assignment) guide banner. Its text is no longer hardcoded — it lives in `site_settings` (group `product_assign`, `is_public = false`), seeded by `V157__seed_product_assignment_settings.sql` with the original Vietnamese defaults.
+
+| `setting_key` | Type | Content |
+|---|---|---|
+| `product_assign_title` | STRING | Banner heading ("Phân công") |
+| `product_assign_role_content` | STRING | Role 1 label ("Content") |
+| `product_assign_items_content` | LONG_TEXT | Tasks owned by Content |
+| `product_assign_role_seo` | STRING | Role 2 label ("SEO") |
+| `product_assign_items_seo` | LONG_TEXT | Tasks owned by SEO |
+| `product_assign_role_manager` | STRING | Role 3 label ("Quản lý") |
+| `product_assign_items_manager` | LONG_TEXT | Tasks owned by Manager |
+
+**Super-admin-only write.** These keys carry a `superAdminOnly` flag in `SettingDefinitionRegistry`. `AdminSettingsService` rejects any write (single or batch) to a `superAdminOnly` key unless the caller holds the wildcard `*` permission (i.e. `SUPER_ADMIN`) — even `ADMIN` (who has `settings.write`) is blocked. `AdminSiteSettingResponse` exposes `superAdminOnly` so the admin UI hides the tab for non-super-admins. The flag is surfaced in `AdminSiteSettingResponse.superAdminOnly`.
 
 Migration `V132__cleanup_sepay_and_normalize_inventory_settings.sql`:
 - `DELETE FROM site_settings WHERE setting_group = 'payment_sepay'` — removes dead SePay rows that survived V59 in some environments.
@@ -743,6 +760,8 @@ Migration `V132__cleanup_sepay_and_normalize_inventory_settings.sql`:
 Status: `CONFIRMED_FROM_CODE`
 
 Evidence:
-- `SettingDefinitionRegistry.java` — registers keys for `general`/`contact`/`public_home`/`public_hero`/`promo`/`seo`/`store`/`tax`
-- `SettingsScreen.jsx` — `TAB_ORDER` / `TAB_META` (tab rendering), `HIDDEN_GROUPS` (`security`, `payment_sepay`)
+- `SettingDefinitionRegistry.java` — registers keys for `general`/`contact`/`public_home`/`public_hero`/`promo`/`seo`/`store`/`tax`/`product_assign`
+- `V157__seed_product_assignment_settings.sql` — seeds the 7 `product_assign_*` rows
+- `AdminProductAssignmentController.java` — `GET /api/v1/admin/product-assignment` (read for the banner, `products.read`)
+- `SettingsScreen.jsx` — `TAB_ORDER` / `TAB_META` (tab rendering), `HIDDEN_GROUPS` (`security`, `payment_sepay`), super-admin filter for `superAdminOnly` keys
 - `V59__remove_sepay_payment_artifacts.sql`, `V132__cleanup_sepay_and_normalize_inventory_settings.sql`

@@ -14,5 +14,6 @@ public record AdminSiteSettingResponse(
         Instant updatedAt,
         String valueType,
         boolean sensitive,
-        boolean masked
+        boolean masked,
+        boolean superAdminOnly
 ) {}

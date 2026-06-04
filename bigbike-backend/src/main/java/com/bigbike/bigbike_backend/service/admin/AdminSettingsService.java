@@ -1,9 +1,11 @@
 package com.bigbike.bigbike_backend.service.admin;
 
+import com.bigbike.bigbike_backend.api.admin.dto.settings.AdminProductAssignmentResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.settings.AdminSiteSettingResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.settings.BatchUpdateSettingsRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.settings.PublicSiteSettingResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.settings.UpdateSiteSettingRequest;
+import com.bigbike.bigbike_backend.api.error.ForbiddenException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
@@ -90,7 +92,8 @@ public class AdminSettingsService {
     // ── Update ────────────────────────────────────────────────────────────────
 
     @Transactional
-    public AdminSiteSettingResponse updateSetting(String settingKey, UUID adminId, UpdateSiteSettingRequest req) {
+    public AdminSiteSettingResponse updateSetting(
+            String settingKey, UUID adminId, boolean callerIsSuperAdmin, UpdateSiteSettingRequest req) {
         SiteSettingEntity entity = settingRepo.findBySettingKey(settingKey)
                 .orElseThrow(() -> new NotFoundException("Setting not found: " + settingKey));
 
@@ -101,6 +104,10 @@ public class AdminSettingsService {
             throw ValidationException.fromField("settingKey", "READ_ONLY",
                     "Setting is read-only and cannot be modified.");
         }
+
+        // Super-admin-only gate: keys flagged superAdminOnly (e.g. product_assign_*) can only be
+        // written by a caller holding wildcard '*'. ADMIN (with settings.write) is blocked.
+        requireSuperAdminForRestrictedKey(settingKey, defOpt, callerIsSuperAdmin);
 
         // Public allowlist gate: setting isPublic=true requires explicit allowlist entry
         if (Boolean.TRUE.equals(req.isPublic())) {
@@ -150,7 +157,7 @@ public class AdminSettingsService {
 
     @Transactional
     public List<AdminSiteSettingResponse> batchUpdateSettings(
-            List<BatchUpdateSettingsRequest.BatchSettingUpdate> updates, UUID adminId) {
+            List<BatchUpdateSettingsRequest.BatchSettingUpdate> updates, UUID adminId, boolean callerIsSuperAdmin) {
 
         if (updates == null || updates.isEmpty()) {
             return List.of();
@@ -168,6 +175,9 @@ public class AdminSettingsService {
                 throw ValidationException.fromField("key", "READ_ONLY",
                         "Setting is read-only and cannot be modified: " + upd.key());
             }
+
+            // Same super-admin-only gate as the single-update path.
+            requireSuperAdminForRestrictedKey(upd.key(), defOpt, callerIsSuperAdmin);
 
             // CMS-008: The batch DTO (BatchSettingUpdate) carries only key+value and does NOT
             // expose an isPublic field, so the batch endpoint cannot accidentally set
@@ -204,6 +214,31 @@ public class AdminSettingsService {
         return results;
     }
 
+    // ── Product assignment guide (banner read) ─────────────────────────────────
+
+    /**
+     * Reads the 7 {@code product_assign_*} keys for the product create/edit banner.
+     * Returns empty strings for any key not yet seeded so the admin UI can fall back to its
+     * own defaults. Gated upstream by {@code products.read} so every product editor can render it.
+     */
+    public AdminProductAssignmentResponse getProductAssignment() {
+        return new AdminProductAssignmentResponse(
+                settingValueOrEmpty("product_assign_title"),
+                settingValueOrEmpty("product_assign_role_content"),
+                settingValueOrEmpty("product_assign_items_content"),
+                settingValueOrEmpty("product_assign_role_seo"),
+                settingValueOrEmpty("product_assign_items_seo"),
+                settingValueOrEmpty("product_assign_role_manager"),
+                settingValueOrEmpty("product_assign_items_manager")
+        );
+    }
+
+    private String settingValueOrEmpty(String key) {
+        return settingRepo.findBySettingKey(key)
+                .map(SiteSettingEntity::getSettingValue)
+                .orElse("");
+    }
+
     // ── Public endpoint ───────────────────────────────────────────────────────
 
     public List<PublicSiteSettingResponse> listPublicSettings() {
@@ -227,17 +262,31 @@ public class AdminSettingsService {
                 .orElse(false);
     }
 
+    /**
+     * Blocks writes to keys flagged {@code superAdminOnly} (e.g. the {@code product_assign_*} group)
+     * unless the caller holds wildcard {@code *} (SUPER_ADMIN). Even ADMIN (with {@code settings.write})
+     * is rejected. No-op for unrestricted keys.
+     */
+    private void requireSuperAdminForRestrictedKey(
+            String settingKey, Optional<SettingDefinition> defOpt, boolean callerIsSuperAdmin) {
+        boolean restricted = defOpt.map(SettingDefinition::superAdminOnly).orElse(false);
+        if (restricted && !callerIsSuperAdmin) {
+            throw new ForbiddenException("Chỉ SUPER ADMIN mới được sửa cấu hình này: " + settingKey);
+        }
+    }
+
     private AdminSiteSettingResponse toAdminResponse(SiteSettingEntity s) {
         Optional<SettingDefinition> defOpt = definitionRegistry.find(s.getSettingKey());
         boolean sensitive = definitionRegistry.isSensitive(s.getSettingKey());
         String valueType = defOpt.map(d -> d.type().name()).orElse(null);
         boolean masked = sensitive && s.getSettingValue() != null && !s.getSettingValue().isEmpty();
         String displayValue = masked ? MASKED_VALUE : s.getSettingValue();
+        boolean superAdminOnly = defOpt.map(SettingDefinition::superAdminOnly).orElse(false);
         return new AdminSiteSettingResponse(
                 s.getId(), s.getSettingKey(), displayValue,
                 s.getSettingGroup(), s.isPublic(), s.getDescription(),
                 s.getCreatedAt(), s.getUpdatedAt(),
-                valueType, sensitive, masked
+                valueType, sensitive, masked, superAdminOnly
         );
     }
 

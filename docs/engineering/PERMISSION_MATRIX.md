@@ -48,6 +48,16 @@ Enforced in `AdminRoleService` (Admin Roles API, gated by `roles.write`):
 - **Admin-user guardrails** (`AdminAdminUsersService`): an admin cannot disable/suspend their own account, cannot demote themselves out of `SUPER_ADMIN`, and cannot demote the last active `SUPER_ADMIN`.
 - `CUSTOMER` (`ROLE_CUSTOMER`) is a separate storefront auth realm enforced in `SecurityConfig`; it is never managed through the admin Roles screen.
 
+## Super-admin-only settings (`product_assign`)
+
+The `product_assign_*` site-setting keys (the editable "Phân công" guide on the product create/edit screen) are flagged `superAdminOnly` in `SettingDefinitionRegistry`. There is **no dedicated permission key** for them — the gate is the wildcard `*` itself:
+
+- **Write** (`PATCH /api/v1/admin/settings[/{key}]`): `AdminSettingsService` rejects the write with 403 unless the caller's resolved permissions contain `*`. So only `SUPER_ADMIN` can edit; `ADMIN` is blocked even though it holds `settings.write`.
+- **Read for the banner** (`GET /api/v1/admin/product-assignment`): gated by `products.read`, so every role that can open the product editor (`SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER`, `EDITOR`) sees the banner text.
+- **Admin UI**: the "Phân công sản phẩm" settings tab is hidden for non-super-admins (`AdminSiteSettingResponse.superAdminOnly` + `hasPermission('*')` filter in `SettingsScreen`).
+
+Status: `CONFIRMED_FROM_CODE` — `SettingDefinitionRegistry.java`, `AdminSettingsService.java`, `AdminProductAssignmentController.java`, `SettingsScreen.jsx`
+
 ## Audit Log Permission
 
 | Permission | Roles with access | Endpoint |

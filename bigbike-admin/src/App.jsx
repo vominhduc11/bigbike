@@ -437,7 +437,7 @@ function AdminApp() {
     case 'admin-users':
       screen = <AdminUsersScreen canUpdate={hasPermission('admin-users.write')} currentUserId={authState.user?.id} />; break
     case 'settings':
-      screen = <SettingsScreen canUpdate={hasPermission('settings.write')} />; break
+      screen = <SettingsScreen canUpdate={hasPermission('settings.write')} isSuperAdmin={hasPermission('*')} />; break
     case 'audit-logs':
       screen = <AuditLogListScreen />; break
     case 'reports':

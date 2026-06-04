@@ -251,6 +251,29 @@ public class SettingDefinitionRegistry {
                 SettingDefinition.builder("tax_registration_number", "TAX", SettingValueType.STRING)
                         .description("MST của doanh nghiệp.").build(),
 
+                // ── PRODUCT_ASSIGN ── (text phân công đội ngũ trên màn tạo/sửa sản phẩm; chỉ SUPER_ADMIN sửa)
+                SettingDefinition.builder("product_assign_title", "product_assign", SettingValueType.STRING)
+                        .superAdminOnly()
+                        .description("Tiêu đề banner phân công trên màn tạo/sửa sản phẩm.").build(),
+                SettingDefinition.builder("product_assign_role_content", "product_assign", SettingValueType.STRING)
+                        .superAdminOnly()
+                        .description("Tên vai trò 1 (mặc định: Content) trên banner phân công.").build(),
+                SettingDefinition.builder("product_assign_items_content", "product_assign", SettingValueType.LONG_TEXT)
+                        .superAdminOnly()
+                        .description("Danh sách công việc do vai trò Content phụ trách.").build(),
+                SettingDefinition.builder("product_assign_role_seo", "product_assign", SettingValueType.STRING)
+                        .superAdminOnly()
+                        .description("Tên vai trò 2 (mặc định: SEO) trên banner phân công.").build(),
+                SettingDefinition.builder("product_assign_items_seo", "product_assign", SettingValueType.LONG_TEXT)
+                        .superAdminOnly()
+                        .description("Danh sách công việc do vai trò SEO phụ trách.").build(),
+                SettingDefinition.builder("product_assign_role_manager", "product_assign", SettingValueType.STRING)
+                        .superAdminOnly()
+                        .description("Tên vai trò 3 (mặc định: Quản lý) trên banner phân công.").build(),
+                SettingDefinition.builder("product_assign_items_manager", "product_assign", SettingValueType.LONG_TEXT)
+                        .superAdminOnly()
+                        .description("Danh sách công việc do vai trò Quản lý phụ trách.").build(),
+
                 // ── SECURITY ──
                 SettingDefinition.builder("login_max_attempts", "SECURITY", SettingValueType.INTEGER)
                         .min(1L).max(50L)

@@ -109,7 +109,7 @@ export function MobileBottomNav() {
           <div className="relative">
             <ShoppingCart size={22} aria-hidden />
             {badge != null && (
-              <span className="absolute -right-2 -top-1 h-4 min-w-4 rounded-full border-2 border-surface-dark bg-brand px-1 text-center text-xs font-bold leading-4 text-white">
+              <span className="absolute -right-2 -top-1 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-surface-dark bg-brand px-1 text-ui-10 font-bold leading-none text-white">
                 {badge > 99 ? "99+" : badge}
               </span>
             )}
