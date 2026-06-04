@@ -28,9 +28,13 @@ export const bbCardContent = "p-5 max-md:p-[14px]";
 /** Account section heading row (was `.bb-account-header` container). */
 export const accountHeaderShell =
   "mb-[22px] flex items-center justify-between border-b border-[#e4e4e4] pb-3.5 max-md:mb-4 max-md:pb-3";
-/** Account sidebar rail (was `.bb-account-sidebar`): sticky desktop, static <=1024px. */
+/** Account sidebar rail (was `.bb-account-sidebar`): sticky desktop, static <=1024px.
+ * `min-w-0` is load-bearing: on the mobile single-column grid (`grid-template-columns:1fr`
+ * == `minmax(auto,1fr)`) the horizontal-scroll nav chip row would otherwise set this grid
+ * item's auto-minimum and blow the shared content column past the viewport — clipped (not
+ * scrolled) by `.bb-main { overflow: clip }`, cutting off the dashboard text/cards. */
 export const accountSidebar =
-  "sticky top-[calc(var(--bb-header-height)_+_24px)] [align-self:start] max-[1024px]:static";
+  "sticky top-[calc(var(--bb-header-height)_+_24px)] [align-self:start] min-w-0 max-[1024px]:static";
 
 /* ── Shared typography bundles (were `.bb-*` leaf classes in globals.css) ──────
  * Direct-applied text-style classes with no contextual overrides. Font-size
