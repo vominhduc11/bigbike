@@ -8,7 +8,6 @@ import {
 import {
   createProduct,
   fetchAttributes,
-  fetchAttributeValues,
   fetchBrands,
   fetchCategoryTree,
   fetchProductAssignment,
@@ -145,7 +144,9 @@ function getVariantColorValue(variant) {
 
 function getVariantColorKey(variant) {
   const value = getVariantColorValue(variant)
-  return value ? normalizeVariantToken(value) : ''
+  if (value) return normalizeVariantToken(value)
+  const swatchOpt = (variant.options || []).find((o) => isColorAttributeName(o.name) && o._directSwatchImageId)
+  return swatchOpt?._directSwatchImageId ?? ''
 }
 
 function cloneGallery(gallery = []) {
@@ -446,10 +447,23 @@ function toPayload(form) {
   payload.relatedProductIds = Array.isArray(form.relatedProductIds) ? form.relatedProductIds : []
 
   // descriptionBlocks — send when user is in block-editing mode (non-null).
-  // Strip _key (frontend tracking) before sending. Omit key entirely when null
-  // so the backend presence-flag leaves both columns untouched.
+  // Strip _key (frontend tracking) before sending. Filter out blocks that would
+  // fail backend @NotBlank validation (e.g. heading with empty text). Omit key
+  // entirely when null so the backend presence-flag leaves both columns untouched.
   if (Array.isArray(form.descriptionBlocks)) {
-    payload.descriptionBlocks = form.descriptionBlocks.map(({ _key, ...rest }) => rest)
+    payload.descriptionBlocks = form.descriptionBlocks
+      .filter((b) => {
+        switch (b.type) {
+          case 'heading':   return (b.text ?? '').trim().length > 0
+          case 'paragraph': return (b.html ?? '').trim().length > 0
+          case 'list':      return (b.items ?? []).some((it) => (it ?? '').trim().length > 0)
+          case 'image':     return (b.url ?? '').trim().length > 0
+          case 'video':     return (b.url ?? '').trim().length > 0
+          case 'callout':   return (b.html ?? '').trim().length > 0
+          default:          return true
+        }
+      })
+      .map(({ _key, ...rest }) => rest)
   }
 
   const scopedVariants = withColorScopedMedia(form.variants).filter((v) => v.name.trim())
@@ -962,8 +976,6 @@ function FaqEditor({ items, onChange, disabled, validationErrors, contentLang = 
 
 function VariantOptionsEditor({ options, onChange, disabled }) {
   const { t } = useTranslation()
-  const loadedAttrIds = useRef(new Set())
-  const [attrValuesById, setAttrValuesById] = useState({})
 
   const { data: attributes = [] } = useQuery({
     queryKey: ['attributes'],
@@ -978,20 +990,6 @@ function VariantOptionsEditor({ options, onChange, disabled }) {
       (a) => normalizeVariantToken(a.name) === norm || normalizeVariantToken(a.code) === norm,
     ) ?? null
   }
-
-  // Eagerly load attribute values for color options whenever options/catalog change
-  useEffect(() => {
-    if (!attributes.length) return
-    options.forEach((o) => {
-      const attr = resolveAttr(o.name)
-      if (!attr || attr.kind !== 'color') return
-      if (loadedAttrIds.current.has(attr.id)) return
-      loadedAttrIds.current.add(attr.id)
-      fetchAttributeValues(attr.id).then((values) =>
-        setAttrValuesById((prev) => ({ ...prev, [attr.id]: values })),
-      )
-    })
-  }, [options, attributes]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function updateOptionFields(i, updates) {
     onChange(options.map((o, idx) => (idx === i ? { ...o, ...updates } : o)))
@@ -1010,8 +1008,7 @@ function VariantOptionsEditor({ options, onChange, disabled }) {
       {options.map((opt, i) => {
         const attr = resolveAttr(opt.name)
         const isColor = Boolean(attr?.kind === 'color' || isColorAttributeName(opt.name))
-        const colorValues = attr ? (attrValuesById[attr.id] ?? []) : []
-        const hasSwatch = Boolean(opt._swatchImageUrl || opt._colorHex)
+        const hasSwatch = Boolean(opt._swatchImageUrl || opt._colorHex || opt._directSwatchImageId)
 
         return (
           <div key={i} className="list-editor-row variant-option-row">
@@ -1059,81 +1056,41 @@ function VariantOptionsEditor({ options, onChange, disabled }) {
               )}
             </div>
 
-            {/* Value — swatch select for color attributes, plain text otherwise */}
+            {/* Value — swatch image for color attributes, plain text for others */}
             <div className="flex flex-col gap-1 flex-1">
-              <div className="flex items-center gap-2">
-                {hasSwatch && (
-                  <span
-                    className="shrink-0 size-5 rounded-full border border-border"
-                    style={
-                      opt._swatchImageUrl
-                        ? { backgroundImage: `url(${opt._swatchImageUrl})`, backgroundSize: 'cover' }
-                        : { backgroundColor: opt._colorHex }
-                    }
-                    aria-label={t('products.detail.variant.colorPreview')}
-                  />
-                )}
-                {isColor && colorValues.length > 0 ? (
-                  <Select
-                    value={opt.value}
-                    onValueChange={(val) => {
-                      const item = colorValues.find((v) => v.label === val)
-                      updateOptionFields(i, {
-                        value: val,
-                        attributeValueId: item?.id ?? null,
-                        _colorHex: item?.colorHex ?? null,
-                        _swatchImageUrl: item?.swatchImageUrl ?? null,
-                      })
-                    }}
-                    disabled={disabled}
-                  >
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder={t('products.detail.variant.selectColorValue')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {colorValues.map((v) => (
-                        <SelectItem key={v.id} value={v.label}>
-                          <span className="flex items-center gap-2">
-                            {(v.swatchImageUrl || v.colorHex) && (
-                              <span
-                                className="shrink-0 size-4 rounded-full border border-border"
-                                style={
-                                  v.swatchImageUrl
-                                    ? { backgroundImage: `url(${v.swatchImageUrl})`, backgroundSize: 'cover' }
-                                    : { backgroundColor: v.colorHex }
-                                }
-                              />
-                            )}
-                            {v.label}
-                          </span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <Input
-                    className="flex-1"
-                    placeholder={t('products.detail.variant.optionValuePlaceholder')}
-                    value={opt.value}
-                    onChange={(e) => updateOptionFields(i, { value: e.target.value })}
-                    disabled={disabled}
-                  />
-                )}
-              </div>
-              {isColor && (
-                <div>
+              {isColor ? (
+                <>
+                  {hasSwatch && (
+                    <span
+                      className="shrink-0 size-5 rounded-full border border-border"
+                      style={
+                        opt._swatchImageUrl
+                          ? { backgroundImage: `url(${opt._swatchImageUrl})`, backgroundSize: 'cover' }
+                          : { backgroundColor: opt._colorHex }
+                      }
+                      aria-label={t('products.detail.variant.colorPreview')}
+                    />
+                  )}
                   <p className="text-xs text-muted-foreground mb-1">{t('products.detail.variant.directSwatchImage')}</p>
                   <ImageUrlInput
                     value={opt._directSwatchImageId || ''}
                     onChange={(url) =>
                       updateOptionFields(i, {
                         _directSwatchImageId: url || null,
-                        _swatchImageUrl: url || opt._swatchImageUrl,
+                        _swatchImageUrl: url || null,
                       })
                     }
                     disabled={disabled}
                   />
-                </div>
+                </>
+              ) : (
+                <Input
+                  className="flex-1"
+                  placeholder={t('products.detail.variant.optionValuePlaceholder')}
+                  value={opt.value}
+                  onChange={(e) => updateOptionFields(i, { value: e.target.value })}
+                  disabled={disabled}
+                />
               )}
             </div>
 
@@ -1177,7 +1134,9 @@ function VariantCard({
   const optionSummary = variant.options.filter((o) => o.name && o.value).map((o) => `${o.name}: ${o.value}`).join(', ')
   const hasErrors = Object.keys(fieldErrors).length > 0
   const colorValue = getVariantColorValue(variant)
-  const hasColor = Boolean(colorValue)
+  const hasColor = Boolean(colorValue) || (variant.options || []).some(
+    (o) => isColorAttributeName(o.name) && o._directSwatchImageId,
+  )
 
   return (
     <div className={`variant-card${hasErrors ? ' variant-card--error' : ''}`}>
@@ -2264,6 +2223,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
       const savedItem = response.item || null
       const nextForm = buildFormFromItem(savedItem)
       setForm(nextForm)
+      setOriginalPublishStatus(nextForm.publishStatus)
       setIsDirty(false)
       clearFormFromStorage(autosaveKey)
       setDraftRecovery(null)
@@ -2391,14 +2351,18 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     Object.entries(TAB_SECTIONS).map(([tab, keys]) => [tab, keys.filter((k) => sectionErrors[k]).length]),
   )
 
-  // SEO checklist — same heuristics as the prototype, computed from real fields.
+  // SEO checklist — chấm theo NGÔN NGỮ đang sửa. seoTitle / seoDescription là
+  // song ngữ (theo tab VI/EN); slug, alt ảnh và OG image dùng chung nên giữ ở
+  // field base. `hint` hiển thị số ký tự hiện tại để trạng thái ✓/✗ tự giải thích.
+  const seoTitleVal = langValue('seoTitle')
+  const seoDescVal = langValue('seoDescription')
   const seoChecks = [
-    { ok: !!form.seoTitle && form.seoTitle.length >= 30 && form.seoTitle.length <= 60, label: t('products.detail.seoCheckTitle', { defaultValue: 'Title Tag 30–60 ký tự' }) },
-    { ok: !!form.seoDescription && form.seoDescription.length >= 140 && form.seoDescription.length <= 160, label: t('products.detail.seoCheckDesc', { defaultValue: 'Meta Description 140–160 ký tự' }) },
+    { ok: seoTitleVal.length >= 30 && seoTitleVal.length <= 60, hint: seoTitleVal.length, label: t('products.detail.seoCheckTitle', { defaultValue: 'SEO title 30–60 ký tự' }) },
+    { ok: seoDescVal.length >= 140 && seoDescVal.length <= 160, hint: seoDescVal.length, label: t('products.detail.seoCheckDesc', { defaultValue: 'SEO description 140–160 ký tự' }) },
     { ok: !!form.slug && /^[a-z0-9-]+$/.test(form.slug), label: t('products.detail.seoCheckSlug', { defaultValue: 'Slug chữ thường, không dấu, dùng "-"' }) },
     { ok: !!form.imageUrl && !!form.imageAlt, label: t('products.detail.seoCheckImageAlt', { defaultValue: 'Ảnh đại diện có alt text' }) },
     { ok: !!form.seoOgImageUrl, label: t('products.detail.seoCheckOg', { defaultValue: 'OG image cho chia sẻ MXH' }) },
-    { ok: true, label: t('products.detail.seoCheckSchema', { defaultValue: 'Schema Product (tự động)' }) },
+    { ok: !!form.imageUrl?.trim() && Number(form.retailPrice) > 0, label: t('products.detail.seoCheckSchema', { defaultValue: 'Schema Product (đủ ảnh + giá)' }) },
   ]
   const seoPassed = seoChecks.filter((c) => c.ok).length
 
@@ -2949,7 +2913,12 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                         )}>
                           {c.ok ? <Check size={11} /> : null}
                         </span>
-                        <span>{c.label}</span>
+                        <span>
+                          {c.label}
+                          {c.hint != null && (
+                            <span className="ml-1 font-mono text-muted-foreground">({c.hint})</span>
+                          )}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -3183,7 +3152,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
           <Button
             variant="outline"
             type="button"
-            disabled={isReadOnly || !isDirty}
+            disabled={isReadOnly || !isDirty || !allowedPublishStatuses.includes('DRAFT')}
+            title={!allowedPublishStatuses.includes('DRAFT') ? t('products.detail.saveDraftDisabledPublished') : undefined}
             onClick={() => handleSave('DRAFT')}
           >
             {t('products.detail.saveDraft')}
@@ -3211,7 +3181,11 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => handleSave('DRAFT')}>
+                <DropdownMenuItem
+                  onClick={() => handleSave('DRAFT')}
+                  disabled={!allowedPublishStatuses.includes('DRAFT')}
+                  title={!allowedPublishStatuses.includes('DRAFT') ? t('products.detail.saveDraftDisabledPublished') : undefined}
+                >
                   {t('products.detail.saveDraft')}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleSave('HIDDEN')}>

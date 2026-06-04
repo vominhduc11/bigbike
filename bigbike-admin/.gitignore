@@ -1,0 +1,5 @@
+# Playwright e2e output (generated). Keep e2e/__screenshots__/ as committed baselines.
+e2e/report/
+e2e/.artifacts/
+test-results/
+playwright-report/

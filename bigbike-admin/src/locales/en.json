@@ -692,6 +692,7 @@
       "variantSectionDescription": "Sizes, colors, and other options",
       "saveDraftTitle": "Save as draft state",
       "saveDraft": "Save draft",
+      "saveDraftDisabledPublished": "Product is published — hide it first before saving as draft",
       "saveHiddenTitle": "Save changes while keeping product hidden",
       "saveHidden": "Save (keep hidden)",
       "saveShortcutTitle": "Cmd+Enter / Ctrl+Enter",

@@ -69,10 +69,8 @@ echo "PostgreSQL backup completed ($(du -h "$BACKUP_DIR/postgres.sql.gz" | cut -
 
 echo "Syncing MinIO (incremental)..."
 
-# Bước 1: rsync từ container → mirror (chỉ copy phần thay đổi)
-docker compose exec -T "$MINIO_CONTAINER" \
-  sh -c "tar cf - -C /data ." \
-  | tar xf - -C "$MINIO_MIRROR" 2>/dev/null || true
+# Bước 1: copy từ container → mirror (dùng docker cp vì container không có tar)
+docker cp "$MINIO_CONTAINER":/data/. "$MINIO_MIRROR/" 2>/dev/null || true
 
 # Đảm bảo mirror có dữ liệu
 if [ -z "$(ls -A "$MINIO_MIRROR")" ]; then

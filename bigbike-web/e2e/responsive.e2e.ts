@@ -1,0 +1,64 @@
+import { test, expect, type Page } from "@playwright/test";
+import { gotoAndSettle, expectNoHorizontalOverflow } from "./helpers/ui-quality";
+import { VIEWPORTS } from "./helpers/viewports";
+import { SAMPLE } from "./helpers/routes";
+
+/**
+ * Responsive sweep: key routes across the full 8-viewport matrix. The headline
+ * check is horizontal overflow (the #1 responsive defect), plus landmark
+ * visibility and that fixed bars (header / mobile bottom nav) fit the viewport.
+ */
+const KEY_ROUTES: { path: string; name: string }[] = [
+  { path: "/", name: "Trang chủ" },
+  { path: "/san-pham/", name: "PLP" },
+  { path: SAMPLE.product, name: "PDP" },
+  { path: SAMPLE.category, name: "Danh mục chi tiết" },
+  { path: SAMPLE.brand, name: "Thương hiệu chi tiết" },
+  { path: "/tin-tuc/", name: "Tin tức" },
+  { path: SAMPLE.news, name: "Bài viết" },
+  { path: "/tim-kiem/", name: "Tìm kiếm" },
+  { path: "/gio-hang/", name: "Giỏ hàng" },
+  { path: "/dang-nhap/", name: "Đăng nhập" },
+  { path: "/lien-he/", name: "Liên hệ" },
+];
+
+/**
+ * Assert a (possibly fixed/sticky) bar fits the visual viewport. Uses the bar's
+ * bounding box vs window.innerWidth (which includes the scrollbar gutter), so it
+ * is immune to the clientWidth-minus-scrollbar artifact.
+ */
+async function expectBarFits(page: Page, selector: string, label: string): Promise<void> {
+  const el = page.locator(selector).first();
+  if ((await el.count()) === 0) return;
+  if (!(await el.isVisible().catch(() => false))) return;
+  const r = await el.evaluate((node) => {
+    const rect = (node as HTMLElement).getBoundingClientRect();
+    return { left: Math.round(rect.left), right: Math.round(rect.right), innerW: window.innerWidth };
+  });
+  expect(r.right, `${label}: extends past right edge (right=${r.right} > innerWidth=${r.innerW})`).toBeLessThanOrEqual(r.innerW + 2);
+  expect(r.left, `${label}: starts left of viewport (left=${r.left})`).toBeGreaterThanOrEqual(-2);
+}
+
+for (const route of KEY_ROUTES) {
+  test.describe(`Responsive — ${route.name} (${route.path})`, () => {
+    for (const vp of VIEWPORTS) {
+      test(`${vp.name}`, async ({ page }) => {
+        await page.setViewportSize({ width: vp.width, height: vp.height });
+        await gotoAndSettle(page, route.path);
+
+        await expect(page.locator("main").first()).toBeVisible();
+        await expect(page.locator("footer").first()).toBeVisible();
+        await expect(page.locator("header, .bb-header-container").first()).toBeVisible();
+
+        await expectNoHorizontalOverflow(page, `${route.name} @ ${vp.name}`);
+        await expectBarFits(page, ".bb-header-container, header", `header @ ${vp.name}`);
+
+        if (vp.kind === "mobile") {
+          const bottomNav = page.locator("nav.bb-bottom-nav");
+          await expect(bottomNav, `mobile bottom nav should be visible @ ${vp.name}`).toBeVisible();
+          await expectBarFits(page, "nav.bb-bottom-nav", `bottom nav @ ${vp.name}`);
+        }
+      });
+    }
+  });
+}

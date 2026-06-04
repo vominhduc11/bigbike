@@ -31,6 +31,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ApiErrorResponse> handleApiException(ApiException ex, HttpServletRequest request) {
+        if (ex.status().is4xxClientError()) {
+            log.warn("API error [{}] {}: {} {}", request.getMethod(), request.getRequestURI(), ex.code(), ex.details());
+        } else {
+            log.error("API error [{}] {}: {} {}", request.getMethod(), request.getRequestURI(), ex.code(), ex.details());
+        }
         return build(ex.status(), ex.code(), ex.getMessage(), ex.details(), request);
     }
 
