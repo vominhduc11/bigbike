@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -11,6 +11,7 @@ import {
   fetchAttributeValues,
   fetchBrands,
   fetchCategoryTree,
+  fetchProductAssignment,
   fetchProductDetail,
   fetchProducts,
   mapValidationErrors,
@@ -1014,25 +1015,48 @@ function VariantOptionsEditor({ options, onChange, disabled }) {
 
         return (
           <div key={i} className="list-editor-row variant-option-row">
-            {/* Name — text input with datalist suggestions from attribute catalog */}
+            {/* Name — Select from attribute catalog; falls back to text input when catalog not loaded */}
             <div className="flex-1">
-              <Input
-                list={`attr-names-${i}`}
-                placeholder={t('products.detail.variant.optionNamePlaceholder')}
-                value={opt.name}
-                onChange={(e) =>
-                  updateOptionFields(i, {
-                    name: e.target.value,
-                    attributeValueId: null,
-                    _colorHex: null,
-                    _swatchImageUrl: null,
-                  })
-                }
-                disabled={disabled}
-              />
-              <datalist id={`attr-names-${i}`}>
-                {attributes.map((a) => <option key={a.id} value={a.name} />)}
-              </datalist>
+              {attributes.length > 0 ? (
+                <Select
+                  value={opt.name}
+                  onValueChange={(val) =>
+                    updateOptionFields(i, {
+                      name: val,
+                      attributeValueId: null,
+                      _colorHex: null,
+                      _swatchImageUrl: null,
+                    })
+                  }
+                  disabled={disabled}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('products.detail.variant.optionNamePlaceholder')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {opt.name && !attributes.some((a) => a.name === opt.name) && (
+                      <SelectItem value={opt.name}>{opt.name}</SelectItem>
+                    )}
+                    {attributes.map((a) => (
+                      <SelectItem key={a.id} value={a.name}>{a.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  placeholder={t('products.detail.variant.optionNamePlaceholder')}
+                  value={opt.name}
+                  onChange={(e) =>
+                    updateOptionFields(i, {
+                      name: e.target.value,
+                      attributeValueId: null,
+                      _colorHex: null,
+                      _swatchImageUrl: null,
+                    })
+                  }
+                  disabled={disabled}
+                />
+              )}
             </div>
 
             {/* Value — swatch select for color attributes, plain text otherwise */}
@@ -1815,11 +1839,26 @@ function publishBadgeClass(status) {
   }
 }
 
+// Editable "Phân công" guide text (role names + task lists), fetched from
+// GET /admin/product-assignment. SUPER_ADMIN edits it in Cài đặt → Phân công sản phẩm.
+// Components read this via context and fall back to the i18n defaults if empty/unloaded.
+const AssignmentConfigContext = createContext(null)
+
+// Returns the configured role label for a role key, or the i18n default when the
+// admin hasn't customised it (empty/missing value).
+function useRoleLabel(role, t) {
+  const cfg = useContext(AssignmentConfigContext)
+  if (role === 'content') return cfg?.roleContent || t('products.detail.assign.roleContent', { defaultValue: 'Content' })
+  if (role === 'seo') return cfg?.roleSeo || t('products.detail.assign.roleSeo', { defaultValue: 'SEO' })
+  if (role === 'manager') return cfg?.roleManager || t('products.detail.assign.roleManager', { defaultValue: 'Quản lý' })
+  return ''
+}
+
 // Pill badge showing which team role owns a section.
 function RoleBadge({ role }) {
   const { t } = useTranslation()
+  const label = useRoleLabel(role, t)
   if (role === 'content') {
-    const label = t('products.detail.assign.roleContent', { defaultValue: 'Content' })
     return (
       <span
         className="inline-flex items-center text-[10px] uppercase tracking-wide px-1.5 py-0.5 border rounded-none"
@@ -1828,7 +1867,6 @@ function RoleBadge({ role }) {
     )
   }
   if (role === 'seo') {
-    const label = t('products.detail.assign.roleSeo', { defaultValue: 'SEO' })
     return (
       <span
         className="inline-flex items-center text-[10px] uppercase tracking-wide px-1.5 py-0.5 border rounded-none"
@@ -1837,7 +1875,6 @@ function RoleBadge({ role }) {
     )
   }
   if (role === 'manager') {
-    const label = t('products.detail.assign.roleManager', { defaultValue: 'Quản lý' })
     return (
       <span
         className="inline-flex items-center text-[10px] uppercase tracking-wide px-1.5 py-0.5 border rounded-none"
@@ -1872,36 +1909,46 @@ function SectionCard({ title, badge, required, children }) {
 }
 
 // Inline assignment guide — replaces the icon-only Popover in the header.
+// Text comes from the editable product-assignment config (context), falling back to
+// the i18n defaults whenever the admin has left a field empty / config hasn't loaded.
 function AssignmentBanner({ t }) {
+  const cfg = useContext(AssignmentConfigContext)
+  const title = cfg?.title || t('products.detail.assign.title')
+  const roleContent = cfg?.roleContent || t('products.detail.assign.roleContent')
+  const itemsContent = cfg?.itemsContent || t('products.detail.assign.itemsContent')
+  const roleSeo = cfg?.roleSeo || t('products.detail.assign.roleSeo')
+  const itemsSeo = cfg?.itemsSeo || t('products.detail.assign.itemsSeo')
+  const roleManager = cfg?.roleManager || t('products.detail.assign.roleManager')
+  const itemsManager = cfg?.itemsManager || t('products.detail.assign.itemsManager')
   return (
     <div className="px-4 py-3 bg-surface-muted border-b border-border">
       <div className="flex items-center gap-1.5 mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
         <Users size={12} />
-        <span>{t('products.detail.assign.title')}</span>
+        <span>{title}</span>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="border-l-[3px] pl-2 py-0.5" style={{ borderColor: 'var(--admin-color-primary)' }}>
           <div className="text-[11px] font-bold uppercase tracking-wide text-foreground mb-0.5">
-            {t('products.detail.assign.roleContent')}
+            {roleContent}
           </div>
           <div className="text-[11px] leading-relaxed" style={{ color: 'var(--admin-color-text-secondary)' }}>
-            {t('products.detail.assign.itemsContent')}
+            {itemsContent}
           </div>
         </div>
         <div className="border-l-[3px] pl-2 py-0.5" style={{ borderColor: 'var(--admin-color-status-warning-text)' }}>
           <div className="text-[11px] font-bold uppercase tracking-wide text-foreground mb-0.5">
-            {t('products.detail.assign.roleSeo')}
+            {roleSeo}
           </div>
           <div className="text-[11px] leading-relaxed" style={{ color: 'var(--admin-color-text-secondary)' }}>
-            {t('products.detail.assign.itemsSeo')}
+            {itemsSeo}
           </div>
         </div>
         <div className="border-l-[3px] pl-2 py-0.5" style={{ borderColor: 'var(--admin-color-text-primary)' }}>
           <div className="text-[11px] font-bold uppercase tracking-wide text-foreground mb-0.5">
-            {t('products.detail.assign.roleManager')}
+            {roleManager}
           </div>
           <div className="text-[11px] leading-relaxed" style={{ color: 'var(--admin-color-text-secondary)' }}>
-            {t('products.detail.assign.itemsManager')}
+            {itemsManager}
           </div>
         </div>
       </div>
@@ -1986,6 +2033,13 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   const { data: brandsResult } = useQuery({
     queryKey: ['brands-all'],
     queryFn: () => fetchBrands({ pageSize: 100 }),
+    staleTime: 5 * 60 * 1000,
+  })
+  // Editable "Phân công" banner text (role names + task lists). Read-only here
+  // (products.read); SUPER_ADMIN edits it in Cài đặt → Phân công sản phẩm.
+  const { data: assignmentConfig } = useQuery({
+    queryKey: ['product-assignment'],
+    queryFn: () => fetchProductAssignment(),
     staleTime: 5 * 60 * 1000,
   })
   const categories = categoriesResult?.items ?? []
@@ -2377,6 +2431,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   }
 
   return (
+    <AssignmentConfigContext.Provider value={assignmentConfig ?? null}>
     <Screen maxWidth="1440px">
         <ScreenHeader
           eyebrow={t('products.detail.eyebrow')}
@@ -3200,5 +3255,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
           />
         )}
     </Screen>
+    </AssignmentConfigContext.Provider>
   )
 }

@@ -1677,6 +1677,7 @@
     "group_store": "Store",
     "group_tax": "Tax & Fees",
     "group_inventory": "Inventory",
+    "group_product_assign": "Product assignment",
     "group_security": "Security",
     "group_public_hero": "Page hero",
     "unsavedDot": "Unsaved",

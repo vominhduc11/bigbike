@@ -73,6 +73,7 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
   const [uploadQueue, setUploadQueue] = useState([]) // { name, progress, error }
   const [uploadError, setUploadError] = useState('')
   const [isDragOver, setIsDragOver] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
   const fileInputRef = useRef(null)
   const PAGE_SIZE = 30
 
@@ -96,7 +97,7 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
         setState({ status: 'error', items: [], totalPages: 1, error: e.message })
       })
     return () => { active = false }
-  }, [debouncedSearch, page])
+  }, [debouncedSearch, page, refreshKey])
 
   // Focus trap + ESC + restore focus
   useEffect(() => {
@@ -181,10 +182,10 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
     }
 
     setUploading(false)
-    // Refresh grid
+    // Refresh grid — dùng refreshKey để force re-fetch kể cả khi page/search không đổi
     setPage(1)
     setSearch('')
-    setState((p) => ({ ...p, status: 'loading' }))
+    setRefreshKey((k) => k + 1)
     // Auto-select uploaded images
     if (uploadedUrls.length > 0) {
       if (multiSelect) {
