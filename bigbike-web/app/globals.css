@@ -876,6 +876,7 @@ body {
   width: min(100vw, 500px);
   height: calc(100dvh - var(--bb-header-height));
   overflow-y: auto;
+  overflow-anchor: none;
   scrollbar-width: none;
   padding-bottom: 30px;
   background: #000000;
@@ -3177,11 +3178,16 @@ body:has(.bb-search-results-page) {
   display: none;
 }
 
-/* Overlay: outside panel — avoids being clipped by panel overflow/transform context */
+/* Overlay: outside panel — avoids being clipped by panel overflow/transform context.
+   The site header carries backdrop-filter, which makes it the containing block for
+   fixed descendants — so the overlay needs explicit viewport sizing (like the panel)
+   or it collapses to the header's height instead of covering the screen. */
 .bb-mobile-header-overlay {
   display: none;
   position: fixed;
   inset: 0;
+  width: 100vw;
+  height: 100dvh;
   border: 0;
   z-index: var(--bb-z-overlay);
   background: color-mix(in srgb, var(--bb-color-black) 60%, transparent);
@@ -3288,6 +3294,7 @@ body:has(.bb-search-results-page) {
     width: min(86vw, 340px);
     flex-direction: column;
     overflow-y: auto;
+    overflow-anchor: none;
     scrollbar-width: none;
     border-right: 1px solid var(--bb-mobile-shell-border);
     background: var(--bb-mobile-shell-bg);
@@ -3300,6 +3307,13 @@ body:has(.bb-search-results-page) {
   .bb-mobile-header-drawer::-webkit-scrollbar {
     width: 0;
     height: 0;
+  }
+
+  /* Keep the chrome (logo head / account / contact) at natural size when the
+     menu overflows — without this, default flex-shrink squishes the head and
+     drags the logo up a few px as the accordion expands. Overflow scrolls. */
+  .bb-mobile-header-drawer > * {
+    flex-shrink: 0;
   }
 
   .bb-mobile-header-panel.is-open .bb-mobile-header-drawer {
@@ -3649,7 +3663,10 @@ body:has(.bb-search-results-page) {
   .bb-checkout-page .form-control,
   .bb-checkout-page input,
   .bb-checkout-page textarea,
-  .bb-checkout-page button,
+  /* Exclude the Radix radio/checkbox (rendered as <button> at a fixed 16px width):
+     a blanket touch-target min-height stretches them into tall rectangles — same
+     issue already handled for the auth checkbox below. */
+  .bb-checkout-page button:not([role="radio"]):not([role="checkbox"]),
   .bb-checkout-page [role="combobox"] {
     min-height: var(--bb-touch-target);
   }

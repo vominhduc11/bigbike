@@ -5,18 +5,13 @@ import { cn } from "@/lib/utils";
 
 type MobileStickyPurchaseBarProps = {
   addToCartLabel: string;
-  soldOutLabel: string;
-  zaloUrl?: string;
 };
 
 export function MobileStickyPurchaseBar({
   addToCartLabel,
-  soldOutLabel,
-  zaloUrl,
 }: MobileStickyPurchaseBarProps) {
   const [visible, setVisible] = useState(false);
   const [disabled, setDisabled] = useState(false);
-  const [soldOut, setSoldOut] = useState(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
   useEffect(() => {
@@ -36,22 +31,21 @@ export function MobileStickyPurchaseBar({
     };
   }, []);
 
-  // Mirror the inline add-to-cart button's enabled/sold-out state so the sticky
-  // CTA never reads as an actionable red bar when the product can't be added.
+  // Mirror the inline add-to-cart button's disabled state (e.g. a variant still
+  // needs picking) so the sticky CTA never reads as actionable when it isn't.
+  // Sold-out products don't render the inline button/row at all, so the sticky
+  // bar simply never appears for them — no sold-out handling needed here.
   useEffect(() => {
     const btn = document.querySelector<HTMLButtonElement>(".js-add-to-cart-btn");
     if (!btn) return;
 
-    const sync = () => {
-      setDisabled(btn.disabled);
-      setSoldOut(btn.dataset.soldout === "true");
-    };
+    const sync = () => setDisabled(btn.disabled);
     sync();
 
     const observer = new MutationObserver(sync);
     observer.observe(btn, {
       attributes: true,
-      attributeFilter: ["disabled", "data-soldout"],
+      attributeFilter: ["disabled"],
     });
     return () => observer.disconnect();
   }, []);
@@ -80,8 +74,6 @@ export function MobileStickyPurchaseBar({
     }
   }
 
-  const label = soldOut ? soldOutLabel : addToCartLabel;
-
   return (
     <div
       className={cn(
@@ -91,7 +83,7 @@ export function MobileStickyPurchaseBar({
         visible && "is-visible",
         // bottom/padding-bottom(12px)/z-index(651) are the EFFECTIVE values from the
         // mobile-audit override of .bb-pdp-sticky-cta, not the original base (10px/100).
-        "hidden max-md:flex max-md:gap-2.5 max-md:fixed max-md:bottom-0 max-md:left-0 max-md:right-0 max-md:z-[651] max-md:pt-2.5 max-md:px-4 max-md:[padding-bottom:calc(12px_+_env(safe-area-inset-bottom))] max-md:bg-white max-md:border-t max-md:border-border max-md:[box-shadow:0_-4px_16px_rgba(0,0,0,0.08)] max-md:[transition-property:transform] max-md:duration-200 max-md:ease-[ease]",
+        "hidden max-md:flex max-md:fixed max-md:bottom-0 max-md:left-0 max-md:right-0 max-md:z-[651] max-md:pt-2.5 max-md:px-4 max-md:[padding-bottom:calc(12px_+_env(safe-area-inset-bottom))] max-md:bg-white max-md:border-t max-md:border-border max-md:[box-shadow:0_-4px_16px_rgba(0,0,0,0.08)] max-md:[transition-property:transform] max-md:duration-200 max-md:ease-[ease]",
         visible
           ? "max-md:[transform:translateY(0)] max-md:pointer-events-auto"
           : "max-md:[transform:translateY(calc(100%_+_1px))] max-md:pointer-events-none",
@@ -109,25 +101,12 @@ export function MobileStickyPurchaseBar({
             : "max-md:bg-brand",
         )}
         onClick={handleAddToCart}
-        aria-label={label}
+        aria-label={addToCartLabel}
         aria-disabled={disabled}
         tabIndex={visible ? 0 : -1}
       >
-        {label}
+        {addToCartLabel}
       </button>
-
-      {zaloUrl ? (
-        <a
-          href={zaloUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="max-md:flex-none max-md:inline-flex max-md:items-center max-md:justify-center max-md:h-12 max-md:px-4 max-md:border-2 max-md:border-black max-md:rounded-none max-md:text-black max-md:font-body max-md:text-ui-13 max-md:font-bold max-md:no-underline max-md:uppercase max-md:whitespace-nowrap"
-          aria-label="Tư vấn qua Zalo"
-          tabIndex={visible ? 0 : -1}
-        >
-          Tư vấn
-        </a>
-      ) : null}
     </div>
   );
 }

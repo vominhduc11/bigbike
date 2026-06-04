@@ -266,6 +266,12 @@ export function MobileHeaderMenu({
       <div
         className={cn("bb-mobile-header-panel min-[1261px]:hidden", open && "is-open")}
         aria-hidden={!open}
+        onClick={(e) => {
+          // Tap on the empty area beside the drawer closes the menu. Only fires
+          // when the panel itself is the target (not a click bubbling up from the
+          // drawer), so taps inside the drawer are unaffected.
+          if (e.target === e.currentTarget) close();
+        }}
       >
 
         <div className="bb-mobile-header-drawer" role="dialog" aria-modal="true" aria-label={menuLabel || "BIGBIKE MENU"}>

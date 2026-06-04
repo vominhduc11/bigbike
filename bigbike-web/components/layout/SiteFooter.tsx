@@ -303,7 +303,7 @@ export async function SiteFooter() {
                               href={item.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-6 text-base leading-none text-white no-underline transition-colors hover:text-brand-inverse focus-visible:text-brand-inverse focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white md:gap-3"
+                              className="inline-flex items-center gap-4! text-base leading-none text-white no-underline transition-colors hover:text-brand-inverse focus-visible:text-brand-inverse focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white md:gap-3!"
                             >
                               <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center">
                                 <SocialIcon id={item.id} />

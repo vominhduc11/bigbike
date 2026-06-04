@@ -537,38 +537,38 @@ export default function CheckoutPage() {
                 <h3 className={coSectionH3}>{t("summaryTitle")}</h3>
               </div>
 
-              <div id="order_review" className="max-md:overflow-x-auto max-md:[-webkit-overflow-scrolling:touch]">
-                <table className="max-md:min-w-[520px]">
+              <div id="order_review">
+                <table className="max-md:w-full">
                   <thead>
                     <tr>
-                      <th className="product-name">{t("orderProducts")}</th>
-                      <th className="product-total">{t("orderSubtotal")}</th>
+                      <th className="product-name max-md:text-left">{t("orderProducts")}</th>
+                      <th className="product-total max-md:whitespace-nowrap max-md:text-right">{t("orderSubtotal")}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {cart.items.map((item) => (
                       <tr key={item.id} className="cart_item">
-                        <td className="product-name">
+                        <td className="product-name max-md:break-words max-md:text-left">
                           {item.productName}
                           {item.variantName ? ` - ${item.variantName}` : ""}
                           <strong className="product-quantity"> x {item.quantity}</strong>
                         </td>
-                        <td className="product-total">{formatVnd(item.lineTotal)}</td>
+                        <td className="product-total max-md:whitespace-nowrap max-md:text-right max-md:align-top">{formatVnd(item.lineTotal)}</td>
                       </tr>
                     ))}
                   </tbody>
                   <tfoot>
                     <tr className="cart-subtotal">
-                      <th>{t("summarySubtotal")}</th>
-                      <td>{formatVnd(cartSubtotal)}</td>
+                      <th className="max-md:text-left">{t("summarySubtotal")}</th>
+                      <td className="max-md:whitespace-nowrap max-md:text-right">{formatVnd(cartSubtotal)}</td>
                     </tr>
                     <tr className="shipping">
-                      <th>{t("summaryShipping")}</th>
-                      <td>
+                      <th className="max-md:text-left">{t("summaryShipping")}</th>
+                      <td className="max-md:text-right">
                         {selectedShipping ? (
                           <>
                             <span>{selectedShipping.title}</span>
-                            <span className="shipping-method-description">
+                            <span className="shipping-method-description max-md:block max-md:whitespace-nowrap">
                               {effectiveShippingCost > 0 ? formatVnd(effectiveShippingCost) : t("summaryShippingFree")}
                             </span>
                           </>
@@ -579,13 +579,13 @@ export default function CheckoutPage() {
                     </tr>
                     {cart.totals.discountAmount > 0 && (
                       <tr className="cart-discount">
-                        <th>{t("summaryDiscount")}</th>
-                        <td className="discount">-{formatVnd(cart.totals.discountAmount)}</td>
+                        <th className="max-md:text-left">{t("summaryDiscount")}</th>
+                        <td className="discount max-md:whitespace-nowrap max-md:text-right">-{formatVnd(cart.totals.discountAmount)}</td>
                       </tr>
                     )}
                     <tr className="order-total">
-                      <th>{t("summaryTotal")}</th>
-                      <td>
+                      <th className="max-md:text-left">{t("summaryTotal")}</th>
+                      <td className="max-md:whitespace-nowrap max-md:text-right">
                         <strong>{formatVnd(grandTotal)}</strong>
                       </td>
                     </tr>

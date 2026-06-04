@@ -143,12 +143,12 @@ export function VariantSelector({
         return (
           <div key={group.name} className="mb-[15px]">
             <div>
-              <div className="inline-block max-md:block align-top pr-[25px] max-md:pr-0">
-                <label className="block m-0 font-[family-name:var(--bb-font-display)] text-ui-24 max-md:text-ui-18 font-semibold !leading-[52px] max-md:!leading-[1.2] max-md:mb-2.5 text-black">
+              <div className="inline-block max-md:flex max-md:items-baseline max-md:gap-2 align-top pr-[25px] max-md:pr-0 max-md:mb-2.5">
+                <label className="block m-0 font-[family-name:var(--bb-font-display)] text-ui-24 max-md:text-ui-18 font-semibold !leading-[52px] max-md:!leading-[1.2] text-black">
                   {group.name}
                 </label>
                 {currentValue ? (
-                  <span className="ml-2 align-top text-base font-normal leading-[52px] text-muted-foreground">
+                  <span className="ml-2 max-md:ml-0 align-top text-base max-md:text-sm font-normal normal-case leading-[52px] max-md:!leading-[1.2] text-muted-foreground">
                     {currentValue}
                   </span>
                 ) : null}

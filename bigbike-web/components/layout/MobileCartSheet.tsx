@@ -105,7 +105,7 @@ export function MobileCartSheet() {
     >
       <SheetContent
         side="bottom"
-        className="md:hidden flex flex-col gap-0 p-0 text-[var(--bb-text-inverse)] bg-[var(--bb-mobile-shell-bg)] border-[var(--bb-mobile-shell-border)] z-[var(--bb-mobile-panel-z)] h-[min(84dvh,calc(100dvh_-_max(24px,env(safe-area-inset-top))))] max-h-[min(84dvh,calc(100dvh_-_max(24px,env(safe-area-inset-top))))] [&>button]:top-[11px] [&>button]:right-[10px] [&>button]:h-11 [&>button]:w-11 [&>button]:text-[var(--bb-text-inverse)]"
+        className="md:hidden flex flex-col gap-0 p-0 text-[var(--bb-text-inverse)] bg-[var(--bb-mobile-shell-bg)] border-[var(--bb-mobile-shell-border)] z-[var(--bb-mobile-panel-z)] max-h-[min(84dvh,calc(100dvh_-_max(24px,env(safe-area-inset-top))))] [&>button]:top-[11px] [&>button]:right-[10px] [&>button]:h-11 [&>button]:w-11 [&>button]:text-[var(--bb-text-inverse)]"
       >
         <div className="mx-auto mt-2 h-1 w-9 flex-none bg-[var(--bb-mobile-shell-border-strong)]" aria-hidden="true" />
         <div className="px-[14px] pt-3 pb-2 border-b border-[var(--bb-mobile-shell-border)]">
@@ -162,7 +162,7 @@ export function MobileCartSheet() {
                         {item.productName}
                       </h3>
                       {item.variantName ? (
-                        <p className={cn(lineMeta, "text-[var(--bb-text-inverse-muted)]")}>{item.variantName}</p>
+                        <p className={cn(lineMeta, "capitalize text-[var(--bb-text-inverse-muted)]")}>{item.variantName}</p>
                       ) : null}
                       {!item.available ? (
                         <p className={cn(lineMeta, "text-brand-on-dark")}>Sản phẩm tạm thời không khả dụng.</p>

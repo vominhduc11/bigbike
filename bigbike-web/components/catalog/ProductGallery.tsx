@@ -43,6 +43,11 @@ export function ProductGallery({
       : 0;
   const selectedImage = images[selectedIndex] ?? null;
 
+  // Holds the image shown before the current one. It stays mounted behind the
+  // incoming image during its fade-in so the swap reads as a smooth cross-fade
+  // (old fades out under the new) instead of an abrupt flash on the white box.
+  const prevImageRef = useRef<ImageAsset | null>(null);
+
   const setSelectedIndex = useCallback(
     (next: number | ((current: number) => number)) => {
       setSelection((current) => {
@@ -60,6 +65,12 @@ export function ProductGallery({
     const thumb = container.children[selectedIndex] as HTMLElement | undefined;
     thumb?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
   }, [selectedIndex]);
+
+  // Runs after paint, so during the render where the image just changed the ref
+  // still points at the outgoing image — exactly what the cross-fade needs.
+  useEffect(() => {
+    prevImageRef.current = selectedImage;
+  }, [selectedImage]);
 
   const prev = useCallback(() => {
     if (count < 2) return;
@@ -148,10 +159,24 @@ export function ProductGallery({
       )}
 
       <div className="relative min-w-0">
-        <div className="relative w-full aspect-square flex items-center justify-center overflow-hidden bg-white max-[1024px]:max-h-[380px] max-md:max-h-none max-md:border max-md:border-border max-md:bg-[var(--bb-bg-surface-raised)]">
+        <div className="relative w-full aspect-square overflow-hidden bg-white max-[1024px]:max-h-[380px] max-md:max-h-none max-md:border max-md:border-border max-md:bg-[var(--bb-bg-surface-raised)]">
+          {/* Outgoing image — static layer underneath, only while it differs
+              from the current one. The incoming image fades in over it. */}
+          {prevImageRef.current && prevImageRef.current.url !== selectedImage?.url ? (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <MediaImage
+                image={prevImageRef.current}
+                altFallback={altFallback}
+                width={1200}
+                height={1200}
+                className="w-full h-full object-contain"
+              />
+            </div>
+          ) : null}
+          {/* Incoming image — remounts on change (keyed) and fades in on top. */}
           <div
             key={selectedImage?.url ?? selectedIndex}
-            className="w-full h-full [animation:bb-gallery-fade-in_0.22s_ease]"
+            className="absolute inset-0 flex items-center justify-center [animation:bb-gallery-fade-in_0.35s_ease] motion-reduce:[animation:none]"
           >
             <MediaImage
               image={selectedImage}

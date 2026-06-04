@@ -125,7 +125,6 @@ export default async function ProductDetailPage({
   const specs = safeArray(product.specifications);
   const faqs = safeArray(product.faqs);
   const instagramUrl = pickSetting(settings, ["instagram_url"]);
-  const zaloUrl = pickSetting(settings, ["zalo_url"]);
 
   const effectiveCategory =
     product.category?.slug === "chua-phan-loai" ? null : (product.category ?? null);
@@ -305,8 +304,6 @@ export default async function ProductDetailPage({
 
         <MobileStickyPurchaseBar
           addToCartLabel={tProduct("buyBox.addToCartShort")}
-          soldOutLabel={tProduct("buyBox.soldOut")}
-          zaloUrl={zaloUrl || undefined}
         />
       </div>
     </>

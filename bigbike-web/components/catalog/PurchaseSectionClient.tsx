@@ -297,11 +297,9 @@ export function PurchaseSectionClient({
     Boolean(snapshot?.stock?.forceOutOfStock) ||
     allVariantsOut ||
     (!requiresVariantSelection && effectiveStockState === "OUT_OF_STOCK");
-  const addToCartLabel = addLoading
-    ? t("adding")
-    : soldOut
-      ? t("soldOut")
-      : t("addToCart");
+  // Sold-out products don't render this button (see the buy area below), so the
+  // label only ever covers the in-stock adding / idle states.
+  const addToCartLabel = addLoading ? t("adding") : t("addToCart");
 
   return (
     <>
@@ -365,51 +363,68 @@ export function PurchaseSectionClient({
         )}
 
         <div className="mt-[30px] max-md:mt-5">
-          {/* When sold out, drop the quantity stepper + "Mua ngay" — they're
-              non-actionable. The sold-out state is carried by the badge plus
-              the (kept) add button label and the note below. */}
-          {!soldOut && (
-            <div className="w-[41.666667%] max-[1024px]:w-full min-w-[190px] max-md:min-w-0">
-              <WpQuantitySelector
-                value={quantity}
-                onChange={setQuantity}
-                max={effectiveStockData?.quantity}
-                label={t("quantityLabel")}
-              />
-            </div>
-          )}
-
-          {/* bb-wp-buttons-row kept: MobileStickyPurchaseBar observes it. */}
-          <div className="bb-wp-buttons-row grid grid-cols-2 max-[1024px]:grid-cols-1 gap-[30px] max-[1024px]:gap-5 max-md:gap-2.5 mt-5 max-md:mt-3">
-            <div>
-              {/* Kept mounted even when sold out: MobileStickyPurchaseBar
-                  mirrors this button's disabled/data-soldout state. */}
-              <button
-                type="button"
-                className={cn("js-add-to-cart-btn", ADD_BTN)}
-                onClick={handleAddToCart}
-                disabled={busy || !isAvailable}
-                data-soldout={soldOut ? "true" : undefined}
+          {soldOut ? (
+            /* Out-of-stock state is announced once by the status badge next to
+               the price. Here we drop the buy controls entirely and show only a
+               short guidance note — no duplicate "hết hàng" CTA. Omitting
+               .bb-wp-buttons-row also keeps the mobile sticky add-to-cart bar
+               hidden (it keys off that row), since there's nothing to add. */
+            <div className="flex items-start gap-2.5 border border-border border-l-2 border-l-brand bg-muted/40 px-4 py-3.5">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                className="mt-0.5 shrink-0 text-brand"
+                aria-hidden="true"
               >
-                {addToCartLabel}
-              </button>
+                <circle cx="12" cy="12" r="9" />
+                <line x1="12" y1="8" x2="12" y2="12.5" />
+                <line x1="12" y1="16" x2="12" y2="16" />
+              </svg>
+              <p className="m-0 text-sm text-muted-foreground">{t("outOfStockNote")}</p>
             </div>
-            {!soldOut && (
-              <div>
-                <button
-                  type="button"
-                  className={ADD_BTN}
-                  disabled={!isAvailable}
-                  onClick={() => setQuickBuyOpen(true)}
-                >
-                  {t("buyNow")}
-                </button>
+          ) : (
+            <>
+              <div className="w-[41.666667%] max-[1024px]:w-full min-w-[190px] max-md:min-w-0">
+                <WpQuantitySelector
+                  value={quantity}
+                  onChange={setQuantity}
+                  max={effectiveStockData?.quantity}
+                  label={t("quantityLabel")}
+                />
               </div>
-            )}
-          </div>
 
-          {soldOut && (
-            <p className="mt-3 text-sm text-muted-foreground">{t("outOfStockNote")}</p>
+              {/* bb-wp-buttons-row kept: MobileStickyPurchaseBar observes it to
+                  know when to reveal the mobile sticky bar. */}
+              <div className="bb-wp-buttons-row grid grid-cols-2 max-[1024px]:grid-cols-1 gap-[30px] max-[1024px]:gap-5 max-md:gap-2.5 mt-5 max-md:mt-3">
+                <div>
+                  {/* js-add-to-cart-btn: the sticky bar mirrors this button's
+                      disabled state (e.g. "select a variant first"). */}
+                  <button
+                    type="button"
+                    className={cn("js-add-to-cart-btn", ADD_BTN)}
+                    onClick={handleAddToCart}
+                    disabled={busy || !isAvailable}
+                  >
+                    {addToCartLabel}
+                  </button>
+                </div>
+                <div>
+                  <button
+                    type="button"
+                    className={ADD_BTN}
+                    disabled={!isAvailable}
+                    onClick={() => setQuickBuyOpen(true)}
+                  >
+                    {t("buyNow")}
+                  </button>
+                </div>
+              </div>
+            </>
           )}
 
           <QuickBuyModal
