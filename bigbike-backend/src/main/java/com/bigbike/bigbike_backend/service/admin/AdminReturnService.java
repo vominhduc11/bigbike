@@ -359,9 +359,13 @@ public class AdminReturnService {
             // Serial-tracked return items: stock restores only after INSPECTION → IN_STOCK via serial API.
             if (!risRepo.findByReturnItemId(ri.getId()).isEmpty()) continue;
             lineItemRepo.findById(ri.getOrderLineItemId()).ifPresent((OrderLineItemEntity li) -> {
-                if (li.getProductVariantId() != null) {
+                // Resolve product/variant by UUID column (regular products) or varchar PK
+                // (migrated wp-* / admin-created — productId/productVariantId are null, see V74/V158).
+                String variantKey = li.resolveVariantKey();
+                String productKey = li.resolveProductKey();
+                if (variantKey != null) {
                     // Variant-level restore
-                    variantRepo.findByIdForUpdate(li.getProductVariantId().toString()).ifPresent(variant -> {
+                    variantRepo.findByIdForUpdate(variantKey).ifPresent(variant -> {
                         int before = variant.getQuantityOnHand();
                         int after = before + ri.getQuantity();
                         variant.setQuantityOnHand(after);
@@ -378,9 +382,9 @@ public class AdminReturnService {
                         m.setCreatedAt(now);
                         stockMovementRepo.save(m);
                     });
-                } else if (li.getProductId() != null) {
+                } else if (productKey != null) {
                     // Product-level restore (no-variant product) — mirrors OrderStockRestoreService
-                    productRepo.findByIdForUpdate(li.getProductId().toString()).ifPresent(product -> {
+                    productRepo.findByIdForUpdate(productKey).ifPresent(product -> {
                         if (!Boolean.TRUE.equals(product.getManageStock()) || product.getStockQuantity() == null) return;
                         int before = product.getStockQuantity();
                         int after = before + ri.getQuantity();

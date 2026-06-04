@@ -732,6 +732,11 @@ public class CheckoutService {
         item.setProductId(cartItem.getProductId());
         item.setProductPk(cartItem.getProductPk());
         item.setProductVariantId(cartItem.getProductVariantId());
+        // productVariantPk is intentionally NOT set here. The cart-checkout stock decrement
+        // (applyStockForLineItems) is keyed on the UUID productVariantId, so for a migrated
+        // wp-* variant the decrement is product-level; populating productVariantPk would make
+        // restore variant-level and over-restore. wp-* variant sales go through quick-buy / POS
+        // (which set it), not the cart. See V158 / OrderStockRestoreService.
         item.setSku(cartItem.getSku());
         item.setProductName(cartItem.getProductName());
         item.setVariantName(cartItem.getVariantName());
@@ -764,6 +769,10 @@ public class CheckoutService {
         item.setProductId(tryParseUUID(product.getId()));
         item.setProductPk(product.getId());
         item.setProductVariantId(variant != null ? tryParseUUID(variant.getId()) : null);
+        // Snapshot the variant's string PK so cancel/refund/return restore can resolve the exact
+        // variant (productVariantId is null for migrated wp-* / admin-created variants). Quick-buy
+        // decrements the variant by this same string id, so restore stays symmetric. See V158.
+        item.setProductVariantPk(variant != null ? variant.getId() : null);
         item.setSku(variant != null ? variant.getSku() : product.getSku());
         item.setProductName(product.getName());
         item.setVariantName(variant != null ? variant.getName() : null);

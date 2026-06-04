@@ -278,7 +278,7 @@ From checkout behavior:
 
 | Impact | Evidence | Status |
 |---|---|---|
-| `CANCELLED`, `FAILED`, or `REFUNDED` triggers `restoreStockForOrder` + `releaseReservationForOrder`. `FAILED` was a gap prior to the E2E audit fix — added in same commit. | `AdminOrderService.java`, `OrderStockRestoreService.java` | `CONFIRMED_BACKEND_ENFORCED` |
+| `CANCELLED`, `FAILED`, or `REFUNDED` triggers `restoreStockForOrder` + `releaseReservationForOrder`. `FAILED` was a gap prior to the E2E audit fix — added in same commit. Migrated wp-* products/variants (string PKs, UUID columns null) were silently skipped on restore until V158 added `product_variant_pk` and restore began resolving via `OrderLineItemEntity.resolveVariantKey()`/`resolveProductKey()` (BUG-2 — see `TEST_REPORT.md`). | `AdminOrderService.java`, `OrderStockRestoreService.java`, `DATA_CONTRACT.md` (`product_variant_pk`) | `CONFIRMED_BACKEND_ENFORCED` |
 | `COMPLETED` sets `completedAt` if missing. | `AdminOrderService.java` | `CONFIRMED_BACKEND_ENFORCED` |
 | `CANCELLED` sets `cancelledAt` if missing. | `AdminOrderService.java` | `CONFIRMED_BACKEND_ENFORCED` |
 | Full refund via `RefundService` flips order status to `REFUNDED` for any non-terminal order (PENDING, ON_HOLD, PROCESSING, COMPLETED). CANCELLED/FAILED/REFUNDED orders are not touched. | `RefundService.java` | `CONFIRMED_BACKEND_ENFORCED` |
@@ -299,7 +299,8 @@ From checkout behavior:
 ### Test Coverage
 
 - Direct tests not found by targeted search in this task.
-- Status: `MISSING_TEST_COVERAGE`.
+- Stock restore on cancel / FAILED / refund (incl. migrated wp-* variants & product-level lines, idempotency, serial-skip): `QaBug2StockRestoreTest` (Testcontainers Postgres).
+- Status: `MISSING_TEST_COVERAGE` for transition-map coverage; restore-impact covered by `QaBug2StockRestoreTest`.
 
 ### Needs Verification
 
@@ -491,7 +492,7 @@ From `ProductStockState.java`:
 | quantity `1..threshold` | `LOW_STOCK` | System | Tự động recompute. | Variant stockState updated. | `CONFIRMED_BACKEND_ENFORCED` | `InventoryPolicyService.java` |
 | quantity `<= 0` | `OUT_OF_STOCK` | System | Tự động recompute. | Variant stockState updated. | `CONFIRMED_BACKEND_ENFORCED` | `InventoryPolicyService.java` |
 | stock quantity | decrement | System | Checkout/quick-buy order created and stock available. | Stock movement `OUT` for variant; stock state recompute. | `CONFIRMED_BACKEND_ENFORCED` | `CheckoutService.java` |
-| stock quantity | increment | System | Order cancelled/refunded or return completed. | Stock movement `IN` for variant restore flow; stock state recompute. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java`, `AdminReturnService.java` |
+| stock quantity | increment | System | Order cancelled/refunded or return completed. | Stock movement `IN` for variant restore flow; stock state recompute. Variant resolved via `product_variant_id` (UUID) or `product_variant_pk` (varchar, V158) so migrated wp-* variants restock correctly. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java`, `AdminReturnService.java`, `OrderStockRestoreService.java` |
 
 ### Forbidden Transitions / States
 
@@ -512,13 +513,14 @@ From `ProductStockState.java`:
 
 ### Test Coverage
 
-- Direct tests not found by targeted search.
-- Status: `MISSING_TEST_COVERAGE`.
+- Restore-on-cancel/FAILED/refund and completed-return, with `IN` movement + stockState recompute, for both migrated wp-* (varchar PK) variants and product-level lines, plus idempotency and serial-skip: `QaBug2StockRestoreTest` (Testcontainers Postgres).
+- Other inventory transitions: direct tests not found by targeted search.
+- Status: restore-impact `COVERED` (`QaBug2StockRestoreTest`); recompute/decrement transitions remain `MISSING_TEST_COVERAGE`.
 
 ### Needs Verification
 
 - Serial-level lifecycle.
-- Product-level stock movement symmetry.
+- ~~Product-level stock movement symmetry~~ — RESOLVED: product-level restore writes an `IN` movement and is covered by `QaBug2StockRestoreTest.fullRefund_wpStyleProductLevelLine_restoresProductStockQuantity`.
 - Concurrency/oversell tests.
 - Admin manual stock adjust state recompute details.
 
@@ -584,8 +586,8 @@ From `AdminReturnService.TRANSITIONS` and notification logic:
 
 | Transition | Side Effect | Evidence | Status |
 |---|---|---|---|
-| `RECEIVED -> COMPLETED` | Restore stock for return items (RMA-level via `restoreStockForReturn`). Non-serial items: increment qty. Serial items: stay `RETURNED` (admin promotes to `IN_STOCK` later via serial inspection API). | `AdminReturnService.java` | `CONFIRMED_BACKEND_ENFORCED` |
-| `INSPECTING -> COMPLETED` | RMA-level restore stock **only for items with `inspection_result = 'PASS'`**; FAIL items skipped (kept out of inventory). | `AdminReturnService.java` (V104) | `CONFIRMED_BACKEND_ENFORCED` |
+| `RECEIVED -> COMPLETED` | Restore stock for return items (RMA-level via `restoreStockForReturn`). Non-serial items: increment qty (variant resolved via `product_variant_id` or `product_variant_pk`, V158, so migrated wp-* variants restock). Serial items: stay `RETURNED` (admin promotes to `IN_STOCK` later via serial inspection API). Covered by `QaBug2StockRestoreTest`. | `AdminReturnService.java`, `OrderLineItemEntity.resolveVariantKey()` | `CONFIRMED_BACKEND_ENFORCED` |
+| `INSPECTING -> COMPLETED` | RMA-level restore stock **only for items with `inspection_result = 'PASS'`**; FAIL items skipped (kept out of inventory). FAIL-skip covered by `QaBug2StockRestoreTest` (via the DB-reachable RECEIVED→COMPLETED path, since INSPECTING status is currently DB-unreachable — see flag below). | `AdminReturnService.java` (V104) | `CONFIRMED_BACKEND_ENFORCED` |
 | `RECEIVED -> REFUNDED` / `INSPECTING -> REFUNDED` | RMA-level `restoreStockForReturn` is **skipped**. `RefundService.applyRefund` handles stock & serial restore at order level: non-serial via `OrderStockRestoreService.restoreForRefund`, SOLD serials via `SerialLifecycleService.restoreSoldSerialsForRefund` (returned items are already RETURNED so they're skipped — admin promotes via serial inspection API as in COMPLETED path). Sync `orders.refundAmount`/`paymentStatus`/`refundedAt`; update `PaymentEntity`; write off receivable; audit; order note; WS event. Send `RETURN_REFUNDED` notification. | `AdminReturnService.java`, `RefundService.java` | `CONFIRMED_BACKEND_ENFORCED` |
 | any valid transition | Save return history. | `AdminReturnService.java` | `CONFIRMED_BACKEND_ENFORCED` |
 | `PENDING -> APPROVED` | Send approved notification. | `AdminReturnService.java` | `CONFIRMED_BACKEND_ENFORCED` for service call; delivery runtime `NEEDS_VERIFICATION` |
@@ -605,6 +607,14 @@ Per-item inspection rules:
 - Idempotent: calling again overwrites the previous decision and refreshes `inspected_at` / `inspected_by_admin_id`.
 - `INSPECTING -> COMPLETED/REFUNDED` is blocked until **every** ReturnItem has an inspection result.
 - Items marked `FAIL` are **excluded from stock restore** so customer-damaged goods cannot re-enter inventory.
+
+> **⚠️ NEEDS_VERIFICATION (separate from BUG-2):** The `INSPECTING` status is in the code's
+> transition map but **not** in the `chk_returns_status` CHECK constraint (`PENDING`, `APPROVED`,
+> `REJECTED`, `RECEIVED`, `COMPLETED`, `REFUNDED` only — V66; V104 added inspection columns but
+> did not extend the constraint). Persisting a return as `INSPECTING` therefore fails at the DB
+> level, so the `INSPECTING` sub-workflow is currently unreachable end-to-end (matches the test
+> report's "RECEIVED→INSPECTING BLOCKED"). Discovered while adding `QaBug2StockRestoreTest`;
+> tracked as a follow-up, **not** fixed under BUG-2.
 
 ### Frontend Behavior
 

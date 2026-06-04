@@ -579,6 +579,28 @@ avoids a migration/backfill — including for orders imported from WordPress.
 
 Evidence: `OrderReadService.resolveProductThumbnails`, `ProductJpaRepository.findImageUrlsByIds`.
 
+### order_line_items — `product_variant_pk` (V158)
+
+| Table | Column | Type | Nullable | Default | Purpose |
+|---|---|---|---|---|---|
+| `order_line_items` | `product_variant_pk` | `VARCHAR(64)` | YES | `null` | Varchar snapshot of `product_variants.id` for the line's variant. Variant-side counterpart of `product_pk` (V74). |
+
+`product_variants.id` is a varchar string PK (`wp-var-*` for migrated WordPress catalog,
+`var_<hex>` for admin-created), so the legacy UUID column `product_variant_id` is `null` for
+every non-UUID variant — the same UUID/varchar mismatch V74 fixed on the product side. Resolve
+the variant from a line by **`product_variant_id` (UUID) first, then `product_variant_pk`** — see
+`OrderLineItemEntity.resolveVariantKey()` (and `resolveProductKey()` for the product side). The
+stock-restore paths (`OrderStockRestoreService`, `AdminReturnService`) use this so cancel /
+refund / completed-return correctly restock variants of migrated products.
+
+Snapshotted at line creation only on the paths that decrement the variant by its string id —
+POS (`PosOrderService`) and storefront quick-buy (`CheckoutService.buildLineItemFromProduct`).
+The cart-checkout copy (`buildLineItemFromCart`) intentionally leaves it `null`: that decrement
+is keyed on the UUID `product_variant_id`, so a wp-* variant there is decremented at product
+level and must restore at product level (symmetric). Historical rows keep `product_variant_pk =
+NULL` and fall back to product-level restore. Fixed BUG-2 — see `TEST_REPORT.md` and
+`QaBug2StockRestoreTest`.
+
 ### customers / customer_sessions — social login + remember-me (V129)
 
 | Table | Column | Type | Nullable | Default | Purpose |
