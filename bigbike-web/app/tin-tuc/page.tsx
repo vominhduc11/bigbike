@@ -20,6 +20,7 @@ import { safeText } from "@/lib/utils/format";
 import { stripHtmlTags } from "@/lib/utils/text";
 import { makeSlugThumbnailFallback, resolveWpUploadUrl } from "@/lib/utils/wp-media";
 import { sectionHeading } from "@/lib/ui-classes";
+import { PaginationNav } from "@/components/ui/PaginationNav";
 import { WpArticleImage } from "./WpArticleImage";
 
 type ArticleListPageProps = {
@@ -188,16 +189,14 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
                   </div>
 
                   {result.pagination ? (
-                    <WpPagination
+                    <PaginationNav
                       page={result.pagination.page}
                       totalPages={result.pagination.totalPages}
-                      makeHref={(page) =>
-                        makeListHref({
-                          page,
-                          size: sizeParsed.value,
-                          category: categoryParsed.value,
-                        })
-                      }
+                      baseHref={makeListHref({
+                        size: sizeParsed.value,
+                        category: categoryParsed.value,
+                      })}
+                      variant="archive"
                     />
                   ) : null}
                 </>
@@ -216,7 +215,7 @@ function WpCategoryWidget({ categories }: { categories: ContentCategoryWithCount
   }
 
   return (
-    <div className="pb-[15px] mb-[30px] border-b border-b-[#cecece]">
+    <div className="pb-[15px] mb-[30px] border-b border-b-border-default">
       <div className="pb-[15px]">
         <h3 className={sectionHeading}>
           Danh mục tin tức
@@ -237,7 +236,7 @@ function WpCategoryWidget({ categories }: { categories: ContentCategoryWithCount
                     className="relative block min-h-5 pr-7 text-muted-foreground font-body text-[length:var(--fs-body)] font-normal leading-5 no-underline [transition:none] hover:text-brand"
                   >
                     {cat.name}
-                    <span className="absolute top-0 right-[3px] w-5 h-5 text-white font-semibold text-center after:content-[''] after:absolute after:inset-0 after:z-0 after:block after:bg-[#cecece] after:[transform:rotate(45deg)]">
+                    <span className="absolute top-0 right-[3px] w-5 h-5 text-white font-semibold text-center after:content-[''] after:absolute after:inset-0 after:z-0 after:block after:bg-border-default after:[transform:rotate(45deg)]">
                       <span className="relative z-[1] block text-ui-14 leading-5">{cat.articleCount}</span>
                     </span>
                   </Link>
@@ -294,69 +293,6 @@ function WpArticleCard({ article }: { article: Article }) {
   );
 }
 
-function WpPagination({
-  page,
-  totalPages,
-  makeHref,
-}: {
-  page: number;
-  totalPages: number;
-  makeHref: (page: number) => string;
-}) {
-  if (totalPages <= 1) {
-    return null;
-  }
-
-  const pages = buildWpPageItems(page, totalPages);
-  const liCls = "inline-block px-2 text-foreground text-ui-24 font-semibold";
-  const cellCls = "inline-block px-2.5 py-[5px] text-foreground text-ui-24 no-underline";
-  const cellCurrentCls = "inline-block px-2.5 py-[5px] text-brand text-ui-24 no-underline";
-
-  return (
-    <nav className="block pt-5 pb-10 max-[576px]:text-right" aria-label="Phân trang bài viết">
-      <ul className="block m-0 p-0 list-none text-right">
-        <div>
-          <ul className="block m-0 p-0 list-none">
-            {page > 1 ? (
-              <li {...{ index: 0 }} className={liCls}>
-                <Link className={cellCls} href={makeHref(page - 1)} aria-label="Trang trước">
-                  <i className="not-italic before:content-['‹']" aria-hidden="true" />
-                </Link>
-              </li>
-            ) : null}
-            {pages.map((item, itemIndex) => {
-              const index = page > 1 ? itemIndex + 1 : itemIndex;
-
-              return (
-                <li key={`${item}-${itemIndex}`} {...{ index }} className={liCls}>
-                  {item === "dots" ? (
-                    <span className={cellCls}>…</span>
-                  ) : item === page ? (
-                    <span aria-current="page" className={cellCurrentCls}>
-                      {item}
-                    </span>
-                  ) : (
-                    <Link className={cellCls} href={makeHref(item)}>
-                      {item}
-                    </Link>
-                  )}
-                </li>
-              );
-            })}
-            {page < totalPages ? (
-              <li {...{ index: pages.length + (page > 1 ? 1 : 0) }} className={liCls}>
-                <Link className={cellCls} href={makeHref(page + 1)} aria-label="Trang sau">
-                  <i className="not-italic before:content-['›']" aria-hidden="true" />
-                </Link>
-              </li>
-            ) : null}
-          </ul>
-        </div>
-      </ul>
-    </nav>
-  );
-}
-
 function WpNoResults({ query }: { query?: string }) {
   return (
     <section className="no-results not-found">
@@ -380,28 +316,6 @@ function WpNoResults({ query }: { query?: string }) {
       </div>
     </section>
   );
-}
-
-function buildWpPageItems(page: number, totalPages: number): Array<number | "dots"> {
-  if (totalPages <= 5) {
-    return Array.from({ length: totalPages }, (_, index) => index + 1);
-  }
-
-  if (page === 1) {
-    return [1, 2, "dots", totalPages];
-  }
-
-  if (page === 2) {
-    return [1, 2, 3, "dots", totalPages];
-  }
-
-  if (page >= totalPages - 1) {
-    return [1, "dots", totalPages - 2, totalPages - 1, totalPages].filter(
-      (item, index, items): item is number | "dots" => item !== items[index - 1],
-    );
-  }
-
-  return [1, "dots", page - 1, page, page + 1, "dots", totalPages];
 }
 
 function makeExcerpt(article: Article): string {

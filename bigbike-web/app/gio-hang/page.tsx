@@ -296,7 +296,7 @@ export default function CartPage() {
                         <div
                           key={item.id}
                           className={cn(
-                            "m-0 flex flex-nowrap items-center md:border-b md:border-[#cecece] md:py-[30px] md:[&:first-child]:pt-0 max-md:mb-[10px] max-md:grid-cols-[86px_minmax(0,1fr)] max-md:gap-3 max-md:border max-md:border-[var(--bb-border-subtle)] max-md:p-[10px] max-md:[&:first-child]:pt-[10px] max-[600px]:grid",
+                            "m-0 flex flex-nowrap items-center md:border-b md:border-border-default md:py-[30px] md:[&:first-child]:pt-0 max-md:mb-[10px] max-md:grid-cols-[86px_minmax(0,1fr)] max-md:gap-3 max-md:border max-md:border-[var(--bb-border-subtle)] max-md:p-[10px] max-md:[&:first-child]:pt-[10px] max-[600px]:grid",
                             isMutating && "opacity-50",
                           )}
                           role="listitem"
@@ -485,7 +485,7 @@ export default function CartPage() {
                           <input
                             type="text"
                             name="coupon_code"
-                            className="h-[52px] w-full border border-[#cecece] px-5 text-black placeholder:text-[var(--bb-text-secondary)]"
+                            className="h-[52px] w-full border border-border-default px-5 text-black placeholder:text-[var(--bb-text-secondary)]"
                             id="coupon_code"
                             value={couponInput}
                             placeholder={COPY.couponPlaceholder}
@@ -510,7 +510,7 @@ export default function CartPage() {
                     </div>
                   </div>
 
-                  <div className="mt-5 border-b border-t border-[#cecece] py-5">
+                  <div className="mt-5 border-b border-t border-border-default py-5">
                     <div className="flex flex-nowrap justify-between gap-4 max-md:gap-2.5">
                       <div>
                         <p className="m-0">{COPY.total}</p>

@@ -12,6 +12,7 @@ import type { PricingData } from "./PricingPanel";
 import type { StockData } from "./StockStatus";
 import { VariantSelector } from "./VariantSelector";
 import { useCart } from "@/lib/cart-context";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
   collectAttributeNames,
@@ -52,8 +53,11 @@ export type PurchaseSectionClientProps = {
 };
 
 // Shared red add-to-cart / buy-now CTA (mobile swaps body→cta font + uppercase).
+// Full-bleed brand CTA. Routed through <Button> (variant primary): the trailing
+// overrides (px-0 + scale-100 + normal-case + h/w) neutralise the variant's base
+// padding/hover-scale/uppercase so the WP-parity look is preserved 1:1.
 const ADD_BTN =
-  "inline-flex items-center justify-center gap-2.5 w-full h-[52px] border-none rounded-none bg-brand text-white font-body text-ui-16 font-semibold !leading-[52px] normal-case cursor-pointer disabled:cursor-not-allowed disabled:bg-[var(--bb-color-gray-450)] disabled:opacity-70 max-md:min-h-[52px] max-md:font-cta max-md:text-ui-14 max-md:uppercase max-md:tracking-[0.08em]";
+  "w-full h-[52px] px-0 border-none rounded-none bg-brand text-white font-body text-ui-16 font-semibold !leading-[52px] normal-case hover:not-disabled:scale-100 disabled:cursor-not-allowed disabled:bg-[var(--bb-color-gray-450)] disabled:opacity-70 max-md:min-h-[52px] max-md:font-cta max-md:text-ui-14 max-md:uppercase max-md:tracking-[0.08em]";
 
 // Share icon links + native-share button (1em icons, brand on hover).
 const SOCIAL_LINK =
@@ -404,24 +408,26 @@ export function PurchaseSectionClient({
                 <div>
                   {/* js-add-to-cart-btn: the sticky bar mirrors this button's
                       disabled state (e.g. "select a variant first"). */}
-                  <button
+                  <Button
                     type="button"
+                    variant="primary"
                     className={cn("js-add-to-cart-btn", ADD_BTN)}
                     onClick={handleAddToCart}
                     disabled={busy || !isAvailable}
                   >
                     {addToCartLabel}
-                  </button>
+                  </Button>
                 </div>
                 <div>
-                  <button
+                  <Button
                     type="button"
+                    variant="primary"
                     className={ADD_BTN}
                     disabled={!isAvailable}
                     onClick={() => setQuickBuyOpen(true)}
                   >
                     {t("buyNow")}
-                  </button>
+                  </Button>
                 </div>
               </div>
             </>

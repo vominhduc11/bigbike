@@ -599,8 +599,6 @@
       "colProduct": "Sản phẩm",
       "totalCell": "{total} cho {count} sản phẩm",
       "view": "Xem",
-      "previous": "Trước",
-      "next": "Sau",
       "modalDefaultTitle": "Chi tiết đơn hàng",
       "invoice": "Hoá đơn",
       "orderInfo": "Thông tin đơn đặt hàng",

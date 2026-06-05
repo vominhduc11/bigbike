@@ -125,7 +125,7 @@ function WpCategoryListItem({ category }: { category: Category }) {
   return (
     <Link
       href={toCategoryPath(category.slug)}
-      className="group relative flex flex-col items-center justify-center h-[290px] max-md:h-[170px] p-[30px] max-md:p-4 bg-white border-r border-b border-r-[#cecece] border-b-[#cecece] text-center no-underline cursor-pointer overflow-hidden before:content-[''] before:absolute before:inset-0 before:bg-[url('/wp/cat-hover.jpg')] before:bg-[position:top_center] before:bg-cover before:bg-no-repeat before:opacity-0 before:[transition:opacity_0.2s_ease] hover:before:opacity-100 focus-visible:[outline:var(--bb-focus-outline)] focus-visible:[outline-offset:-3px] focus-visible:z-[2]"
+      className="group relative flex flex-col items-center justify-center h-[290px] max-md:h-[170px] p-[30px] max-md:p-4 bg-white border-r border-b border-r-border-default border-b-border-default text-center no-underline cursor-pointer overflow-hidden before:content-[''] before:absolute before:inset-0 before:bg-[url('/wp/cat-hover.jpg')] before:bg-[position:top_center] before:bg-cover before:bg-no-repeat before:opacity-0 before:[transition:opacity_0.2s_ease] hover:before:opacity-100 focus-visible:[outline:var(--bb-focus-outline)] focus-visible:[outline-offset:-3px] focus-visible:z-[2]"
     >
       <span
         className="relative z-[1] flex items-center justify-center w-[72px] h-[72px] max-md:w-12 max-md:h-12 min-[1536px]:w-20 min-[1536px]:h-20 min-[2560px]:w-[88px] min-[2560px]:h-[88px] pointer-events-none"
@@ -163,7 +163,7 @@ function HomeCategoryHighlights({ items }: { items: HomeHighlightItem[] }) {
               <div key={item.slot} className="relative w-full px-[15px] md:flex-[0_0_33.333333%] md:max-w-[33.333333%]">
                 <div
                   className={cn(
-                    "relative h-[300px] min-[1920px]:h-[360px] min-[2560px]:h-[480px] max-md:h-[180px] p-[30px] min-[2560px]:p-10 max-md:p-[18px_20px] border border-[#cecece] bg-white uppercase",
+                    "relative h-[300px] min-[1920px]:h-[360px] min-[2560px]:h-[480px] max-md:h-[180px] p-[30px] min-[2560px]:p-10 max-md:p-[18px_20px] border border-border-default bg-white uppercase",
                     idx < items.length - 1 && "max-md:mb-5",
                   )}
                 >
@@ -475,7 +475,7 @@ export default async function HomePage() {
             <FeaturedProductsCarousel products={carouselProducts} />
             {categoriesResult.data.length > 0 && (
               <div
-                className="grid grid-cols-2 min-[600px]:grid-cols-3 md:grid-cols-4 min-[2560px]:grid-cols-6 gap-0 border-t border-l border-t-[#cecece] border-l-[#cecece] mt-[130px] max-[1024px]:mt-20 max-md:mt-8 mb-2.5"
+                className="grid grid-cols-2 min-[600px]:grid-cols-3 md:grid-cols-4 min-[2560px]:grid-cols-6 gap-0 border-t border-l border-t-border-default border-l-border-default mt-[130px] max-[1024px]:mt-20 max-md:mt-8 mb-2.5"
                 aria-label="Danh mục sản phẩm"
               >
                 {categoriesResult.data.map((category) => (
@@ -490,7 +490,7 @@ export default async function HomePage() {
       {carouselProducts.length === 0 && categoriesResult.data.length > 0 && (
         <section className="bb-products-section" aria-label="Danh mục sản phẩm">
           <Container>
-            <div className="grid grid-cols-2 min-[600px]:grid-cols-3 md:grid-cols-4 min-[2560px]:grid-cols-6 gap-0 border-t border-l border-t-[#cecece] border-l-[#cecece] mt-0 mb-2.5">
+            <div className="grid grid-cols-2 min-[600px]:grid-cols-3 md:grid-cols-4 min-[2560px]:grid-cols-6 gap-0 border-t border-l border-t-border-default border-l-border-default mt-0 mb-2.5">
               {categoriesResult.data.map((category) => (
                 <WpCategoryListItem key={category.id} category={category} />
               ))}

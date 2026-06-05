@@ -1,20 +1,25 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { OrderListItem } from "@/lib/contracts/commerce";
 import { useOrders } from "@/lib/query/hooks";
 import { AccountSectionHeading, AccountShell } from "@/components/layout/AccountShell";
+import { PaginationNav } from "@/components/ui/PaginationNav";
 import { formatDate, formatVnd, orderStatusLabelWithT } from "@/lib/utils/format";
 import { toOrderDetailPath } from "@/lib/utils/routes";
 import { cn } from "@/lib/utils";
 import { bbLink, skelBase } from "@/lib/ui-classes";
 
+const ORDERS_PATH = "/tai-khoan/don-hang/";
+
 function OrderHistoryContent() {
   const t = useTranslations("Account.orders");
   const tNav = useTranslations("Account.nav");
-  const [page, setPage] = useState(1);
+  const searchParams = useSearchParams();
+  const pageParam = Number(searchParams.get("page"));
+  const page = Number.isInteger(pageParam) && pageParam > 0 ? pageParam : 1;
 
   const { data, isLoading: loading, error: queryError } = useOrders(page);
   const orders: OrderListItem[] = data?.data ?? [];
@@ -100,29 +105,7 @@ function OrderHistoryContent() {
             </table>
           </div>
 
-          {totalPages > 1 && (
-            <div className="mt-6 flex items-center justify-end gap-4 text-sm">
-              <button
-                type="button"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1}
-                className="text-foreground underline disabled:opacity-30"
-              >
-                {t("previous")}
-              </button>
-              <span className="text-muted-foreground">
-                {page} / {totalPages}
-              </span>
-              <button
-                type="button"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page >= totalPages}
-                className="text-foreground underline disabled:opacity-30"
-              >
-                {t("next")}
-              </button>
-            </div>
-          )}
+          <PaginationNav page={page} totalPages={totalPages} baseHref={ORDERS_PATH} />
         </>
       )}
     </>

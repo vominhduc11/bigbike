@@ -1,6 +1,13 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { isWpOrderbyValue, productSortToWpOrderby } from "@/lib/utils/catalog-sort";
 
 const SORT_OPTIONS = [
@@ -31,24 +38,28 @@ export function CatalogSortSelect({ current }: { current: string }) {
   }
 
   return (
-    <form className="inline-block w-full max-w-[200px] m-0 max-md:max-w-full" method="get">
+    <div className="inline-block w-full max-w-[260px] mb-[30px] max-md:max-w-full">
       <label htmlFor="sort-select" className="sr-only">Sắp xếp</label>
-      <div className="relative w-full min-w-[200px] max-w-full mb-[30px] max-md:min-w-0 after:content-[''] after:absolute after:top-1/2 after:right-[25px] after:h-[7px] after:w-[7px] after:border-r after:border-b after:border-black after:pointer-events-none after:[transform:translateY(-65%)_rotate(45deg)]">
-        <select
+      <Select value={selectedValue} onValueChange={handleChange}>
+        <SelectTrigger
           id="sort-select"
-          name="orderby"
-          className="w-full h-[52px] py-0 pr-10 pl-5 border border-[var(--bb-border-default)] rounded-none bg-white text-black text-ui-14 font-semibold uppercase appearance-none text-left max-md:h-11 max-md:min-h-11 max-md:text-ui-12 max-md:font-[family-name:var(--bb-font-cta)] max-md:leading-[42px]"
-          value={selectedValue}
-          onChange={(event) => handleChange(event.target.value)}
           aria-label="Sắp xếp"
+          className="h-[52px] min-h-[52px] font-cta text-ui-14 font-semibold uppercase max-md:h-11 max-md:min-h-11 max-md:text-ui-12"
         >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
           {SORT_OPTIONS.map(({ value, label }) => (
-            <option key={value} value={value}>
+            <SelectItem
+              key={value}
+              value={value}
+              className="font-cta text-ui-14 font-semibold uppercase max-md:text-ui-12"
+            >
               {label}
-            </option>
+            </SelectItem>
           ))}
-        </select>
-      </div>
-    </form>
+        </SelectContent>
+      </Select>
+    </div>
   );
 }

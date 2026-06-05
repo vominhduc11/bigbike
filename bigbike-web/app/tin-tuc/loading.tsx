@@ -28,7 +28,7 @@ export default async function ArticleListLoading() {
 
           <div className="flex flex-wrap -mx-[15px]">
             <aside className="relative w-full px-[15px] flex-[0_0_25%] max-w-[25%] max-md:hidden max-md:flex-[0_0_100%] max-md:max-w-full max-md:mb-0">
-              <div className="pb-[15px] mb-[30px] border-b border-b-[#cecece]">
+              <div className="pb-[15px] mb-[30px] border-b border-b-border-default">
                 <div className="pb-[15px]">
                   <div className={cn(skelBase, "!animate-none h-[1.1em] w-4/5")} />
                 </div>

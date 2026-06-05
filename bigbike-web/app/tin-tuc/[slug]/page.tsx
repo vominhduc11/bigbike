@@ -188,7 +188,7 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
                   }}
                 />
 
-                <div className="flex items-center py-5 border-y border-y-[#cecece]">
+                <div className="flex items-center py-5 border-y border-y-border-default">
                   <p className="m-0 mr-5 text-black font-bold leading-[35px]">Chia sẻ</p>
                   <a
                     className="inline-flex w-[35px] h-[35px] items-center justify-center mr-2 !rounded-[50%] text-white text-base font-bold leading-[35px] no-underline bg-[#1a77f2]"
@@ -261,7 +261,7 @@ function SidebarArticleItem({ article }: Readonly<{ article: Article }>) {
   const date = formatWpShortDate(getArticleDate(article));
 
   return (
-    <div className="flex flex-wrap mb-[30px] bg-white pb-5 border-b border-b-[#cecece] max-md:border-t max-md:border-r max-md:border-l max-md:border-t-[#ddd] max-md:border-r-[#ddd] max-md:border-l-[#ddd]">
+    <div className="flex flex-wrap mb-[30px] bg-white pb-5 border-b border-b-border-default max-md:border-t max-md:border-r max-md:border-l max-md:border-t-[#ddd] max-md:border-r-[#ddd] max-md:border-l-[#ddd]">
       <div className="flex-[0_0_40%] max-w-[40%]">
         <Link href={href} className="block text-inherit no-underline">
           <WpArticleImage src={imageUrl} fallbackSrc={fallbackUrl} alt={title} />

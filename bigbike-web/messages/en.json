@@ -599,8 +599,6 @@
       "colProduct": "Product",
       "totalCell": "{total} for {count, plural, one {# item} other {# items}}",
       "view": "View",
-      "previous": "Previous",
-      "next": "Next",
       "modalDefaultTitle": "Order details",
       "invoice": "Invoice",
       "orderInfo": "Order details",

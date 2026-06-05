@@ -9,6 +9,7 @@ import type { Brand, CatalogFacets, Category, HomeSlider, ImageAsset } from "@/l
 import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { buildQueryString } from "@/lib/utils/query";
 import { toCategoryPath } from "@/lib/utils/routes";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 type FilterState = {
@@ -72,8 +73,10 @@ const LIST_LINK =
   "relative block pr-5 text-sm font-semibold leading-[1.3] text-muted-foreground no-underline hover:text-brand";
 const CAT_DIAMOND =
   "after:absolute after:left-[3px] after:top-[10px] after:h-[5px] after:w-[5px] after:rounded-[1px] after:bg-brand after:[transform:rotate(45deg)] after:content-['']";
+// "Xem thêm" facet reveal. Routed through <Button variant="dark">; the trailing
+// gap-0/scale-100/py-0 overrides keep the flat WP look (icon spacing stays on ml-1.5).
 const SHOW_MORE =
-  "h-[52px] w-full cursor-pointer border border-black bg-black px-2.5 text-center font-semibold uppercase leading-[52px] text-white";
+  "h-[52px] w-full gap-0 border border-black bg-black px-2.5 py-0 text-center font-semibold leading-[52px] text-white hover:not-disabled:scale-100";
 const VISIBLE_CLAMP =
   "relative max-h-[400px] overflow-hidden after:absolute after:bottom-0 after:left-0 after:z-[2] after:h-[10%] after:w-full after:bg-[linear-gradient(transparent,#ffffff)] after:content-['']";
 
@@ -122,10 +125,10 @@ function FilterList({
     <>
       <ul className={cn(className, shouldClamp && !revealed && VISIBLE_CLAMP)}>{children}</ul>
       {shouldClamp && !revealed && (
-        <button type="button" className={SHOW_MORE} onClick={() => setRevealed(true)}>
+        <Button type="button" variant="dark" className={SHOW_MORE} onClick={() => setRevealed(true)}>
           Xem thêm
           <i className="far fa-plus ml-1.5" aria-hidden="true" />
-        </button>
+        </Button>
       )}
     </>
   );
@@ -235,7 +238,7 @@ export function CatalogFilters({
                         {cat.name}
                       </Link>
                       {children.length > 0 ? (
-                        <ul className="relative m-0 block pt-2.5 after:absolute after:left-[9px] after:top-[15px] after:w-px after:[height:calc(100%_-_30px)] after:border after:border-dashed after:border-[#6f6f6f] after:content-['']">
+                        <ul className="relative m-0 block pt-2.5 after:absolute after:left-[9px] after:top-[15px] after:w-px after:[height:calc(100%_-_30px)] after:border after:border-dashed after:border-border-control-hover after:content-['']">
                           {children.map((child) => {
                             const childHref = toCategoryPath(child.slug);
                             const childActive = childHref === resetHref || current.category === child.slug;

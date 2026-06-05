@@ -48,7 +48,7 @@ export function PaginationNav({ page, totalPages, baseHref, variant = "default" 
       "inline-flex items-center justify-center px-2.5 py-[5px] text-ui-24 leading-[1.2] no-underline";
     const iconCls = "text-ui-22 leading-none";
     return (
-      <nav className="m-0 pb-10 pt-5 text-right" aria-label={t("paginationAria")}>
+      <nav className="m-0 pb-10 pt-5 text-center md:text-right" aria-label={t("paginationAria")}>
         <ul className="m-0 w-full list-none p-0">
           {page > 1 && (
             <li className={itemCls}>

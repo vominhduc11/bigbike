@@ -1,8 +1,8 @@
-import Link from "next/link";
 import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { ProductArchiveHero } from "@/components/catalog/ProductArchiveHero";
+import { PaginationNav } from "@/components/ui/PaginationNav";
 import { listProducts } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { buildQueryString, parsePositiveIntParam, parseTextParam, readSearchParamAlias } from "@/lib/utils/query";
@@ -58,7 +58,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       <div id="main-content" className="page_search bb-search-main">
         <div className="container bb-wp-container">
           <div className="row bb-wp-row bb-search-row">
-            <div className="col-md-9 bb-wp-col-md-9 bb-search-content">
+            <div className="bb-search-content">
               <div className="product-list pb-40">
                 <div className="container bb-search-inner-container">
                   <div className="product-list-filter headroom bb-search-toolbar">
@@ -116,87 +116,13 @@ async function SearchResults({ query, page }: { query: string; page: number }) {
       </div>
 
       {pagination ? (
-        <SearchPagination
+        <PaginationNav
           page={pagination.page}
           totalPages={pagination.totalPages}
-          query={query}
+          baseHref={`${SEARCH_PATH}${buildQueryString({ s: query })}`}
+          variant="archive"
         />
       ) : null}
     </>
   );
-}
-
-function SearchPagination({
-  page,
-  totalPages,
-  query,
-}: {
-  page: number;
-  totalPages: number;
-  query: string;
-}) {
-  if (totalPages <= 1) return null;
-
-  const pages = buildSearchPageList(page, totalPages);
-  const hrefFor = (nextPage: number) =>
-    `${SEARCH_PATH}${buildQueryString({
-      s: query,
-      paged: nextPage > 1 ? nextPage : undefined,
-    })}`;
-
-  return (
-    <div className="pagination pb-40 pt-20 bb-archive-pagination bb-search-pagination">
-      <div className="text-right">
-        <div className="paginate-links">
-          <ul className="page-numbers">
-            {page > 1 ? (
-              <li>
-                <Link className="prev page-numbers" href={hrefFor(page - 1)} aria-label="Trang trước">
-                  <i className="fal fa-angle-left" aria-hidden="true" />
-                </Link>
-              </li>
-            ) : null}
-            {pages.map((item, index) => (
-              <li key={item === "..." ? `dots-${index}` : item}>
-                {item === "..." ? (
-                  <span className="page-numbers dots">&hellip;</span>
-                ) : item === page ? (
-                  <span aria-current="page" className="page-numbers current">
-                    {item}
-                  </span>
-                ) : (
-                  <Link className="page-numbers" href={hrefFor(item)}>
-                    {item}
-                  </Link>
-                )}
-              </li>
-            ))}
-            {page < totalPages ? (
-              <li>
-                <Link className="next page-numbers" href={hrefFor(page + 1)} aria-label="Trang sau">
-                  <i className="fal fa-angle-right" aria-hidden="true" />
-                </Link>
-              </li>
-            ) : null}
-          </ul>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function buildSearchPageList(page: number, totalPages: number): (number | "...")[] {
-  if (totalPages <= 3) {
-    return Array.from({ length: totalPages }, (_, i) => i + 1);
-  }
-
-  if (page <= 2) {
-    return [1, 2, "...", totalPages];
-  }
-
-  if (page >= totalPages - 1) {
-    return [1, "...", totalPages - 1, totalPages];
-  }
-
-  return [1, "...", page, "...", totalPages];
 }

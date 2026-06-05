@@ -35,7 +35,7 @@ export function ProductTabs({ sections }: { sections: ProductTabSection[] }) {
       >
         <ul
           id="myTab"
-          className="relative flex flex-nowrap w-full m-0 pl-2.5 border-none list-none max-md:w-max max-md:min-w-full before:content-[''] before:absolute before:top-1/2 before:right-0 before:left-2.5 before:z-0 before:h-px before:bg-[#cecece]"
+          className="relative flex flex-nowrap w-full m-0 pl-2.5 border-none list-none max-md:w-max max-md:min-w-full before:content-[''] before:absolute before:top-1/2 before:right-0 before:left-2.5 before:z-0 before:h-px before:bg-border-default"
         >
           {sections.map((section) => {
             const tabId = toWpTabButtonId(section.id);
@@ -52,7 +52,7 @@ export function ProductTabs({ sections }: { sections: ProductTabSection[] }) {
                   id={tabId}
                   href={`#${section.id}`}
                   className={cn(
-                    "relative block w-full h-[42px] border-none bg-transparent text-[var(--bb-text-secondary)] font-body text-base font-semibold leading-[42px] text-center whitespace-nowrap no-underline normal-case cursor-pointer after:content-[''] after:absolute after:inset-0 after:-z-[1] after:border after:border-[#cecece] after:bg-white after:[transform:skewX(-20deg)] max-[1024px]:text-sm",
+                    "relative block w-full h-[42px] border-none bg-transparent text-[var(--bb-text-secondary)] font-body text-base font-semibold leading-[42px] text-center whitespace-nowrap no-underline normal-case cursor-pointer after:content-[''] after:absolute after:inset-0 after:-z-[1] after:border after:border-border-default after:bg-white after:[transform:skewX(-20deg)] max-[1024px]:text-sm",
                     active && "text-white after:border-black after:bg-black",
                   )}
                   onClick={(event) => {

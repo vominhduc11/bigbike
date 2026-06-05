@@ -74,6 +74,7 @@
   --color-brand-soft: var(--bb-brand-primary-soft);
   --color-blue: var(--bb-link-text);
   --color-cyan: var(--bb-color-cyan);
+  --color-border-default: var(--bb-border-default);
   --color-border-control: var(--bb-border-control);
   --color-border-control-hover: var(--bb-border-control-hover);
   --color-social-facebook: var(--bb-color-social-facebook);
@@ -784,7 +785,10 @@ body {
    This is intentional: the emblem gets its own breathing space on the page. */
 @media (min-width: 768px) {
   body:has(.bb-account-layout) .bb-main,
-  body:has(.bb-wp-pdp) .bb-main {
+  body:has(.bb-wp-pdp) .bb-main,
+  body:has(.bb-cart-page) .bb-main,
+  body:has(.bb-checkout-page) .bb-main,
+  body:has(.bb-compare-page) .bb-main {
     padding-top: calc(var(--bb-header-stack) + 92px);
   }
 }
@@ -1260,26 +1264,22 @@ body {
 .bb-breadcrumb a { color: #717171; font-weight: 600; text-decoration: none; cursor: pointer; }
 .bb-breadcrumb a:hover { color: var(--bb-text-brand); }
 .bb-breadcrumb .sep { margin: 0 10px; color: var(--bb-text-brand); }
-/* Clear the emblem (150px wide, overflows ~76px below header bar) so the
-   breadcrumb's first segment isn't sitting under the red diagonal stripe.
-   Emblem is hidden < 768px and fades out once data-header-scrolled - so
-   only initial-load tablet+ needs the offset. */
-@media (min-width: 768px) {
-  .bb-breadcrumb { padding-left: 184px; }
-}
-html[data-header-scrolled] .bb-breadcrumb { padding-left: 24px; }
+/* No horizontal emblem-clearance here: the only real page that renders
+   .bb-breadcrumb is the PDP, which overrides this with `padding: 30px 15px`
+   (scoped `.bb-wp-pdp .bb-breadcrumb`) and clears the hanging logo vertically
+   via body:has(.bb-wp-pdp) .bb-main. The remaining uses are loading skeletons,
+   which must mirror that same left-aligned layout — a 184px shove would push
+   the skeleton out of sync with the real page. */
 
 /* -- Page head -------------------------------------------- */
 .bb-page-head { max-width: var(--bb-container-wide); margin: 32px auto 28px; padding: 0 24px; border-bottom: 1px solid var(--bb-border-subtle); padding-bottom: 22px; }
 .bb-page-head .kicker { font-size: 14px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--bb-text-brand); font-weight: 700; display: block; margin-bottom: 8px; }
 .bb-page-head h1 { font-family: var(--bb-font-display); text-transform: uppercase; font-size: var(--fs-h1); letter-spacing: 0.01em; line-height: 1.1; margin: 0; color: var(--bb-text-primary); overflow-wrap: anywhere; }
 .bb-page-head .sub { color: var(--bb-text-muted); font-size: var(--fs-caption); margin-top: 8px; }
-/* Clear diagonal logo emblem at desktop initial-load (same 184px offset as .bb-breadcrumb).
-   Emblem is hidden <768px and replaced by compact logo once data-header-scrolled. */
-@media (min-width: 768px) {
-  .bb-page-head { padding-left: 184px; }
-}
-html[data-header-scrolled] .bb-page-head { padding-left: 24px; }
+/* No horizontal emblem-clearance: .bb-page-head is only rendered by loading
+   skeletons (no real page uses it — the real catalog/category/brand pages use
+   PageHero, whose banner already covers the hanging logo). Keep it left-aligned
+   so the skeleton matches the post-load layout. */
 
 /* -- Category Hero Banner — breadcrumb + title (dùng trong PageHero/Breadcrumb) -- */
 .bb-cat-hero-breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.5); margin-bottom: 14px; overflow: hidden; min-width: 0; }
@@ -1351,19 +1351,10 @@ html[data-header-scrolled] .bb-page-head { padding-left: 24px; }
   min-height: 1px;
   padding: 0 15px;
 }
-/* Clear diagonal logo emblem. The Bootstrap-style row uses margin:-15px which
-   pulls the column 15px left of the container edge, so we need 184 + 15 ≈ 200px
-   here to land on the same visual clearance as the 184px used by .bb-breadcrumb. */
-@media (min-width: 768px) {
-  .bb-cart-heading-col { padding-left: 200px; }
-}
-/* At ≥1920px the header rail re-centers onto the wider content container and the
-   logo emblem grows to its 228px cap (emblem right edge ≈ 388px), so the static
-   200px clearance leaves the H1 partly behind the emblem. Bump it to clear. */
-@media (min-width: 1920px) {
-  .bb-cart-heading-col { padding-left: 256px; }
-}
-html[data-header-scrolled] .bb-cart-heading-col { padding-left: 15px; }
+/* Logo-emblem clearance is handled vertically (body:has(.bb-cart-page) .bb-main
+   padding-top pushes the whole cart page below the hanging emblem), so the H1
+   keeps its natural left alignment instead of being shoved right past the emblem
+   — same pattern the PDP/account pages use. See the bb-main rule further down. */
 
 .bb-cart-heading-row h1 {
   margin: 0;
@@ -1412,35 +1403,12 @@ html[data-header-scrolled] .bb-cart-heading-col { padding-left: 15px; }
   padding-bottom: 60px;
 }
 
-/* Diagonal logo emblem clearance for hero-less top-of-page content.
-   The fixed-header logo (~172px tall, 206px at ≥1920) overhangs below the 80px
-   bar and would cover the top-left of pages that start flush (no PageHero banner
-   to absorb it): the checkout title / empty-state and the compare page header.
-   Push that content right past the emblem at ≥768px (more at ≥1920 where the
-   emblem grows and the header rail re-centers), and reset once the header swaps
-   to the compact logo on scroll — same pattern as .bb-breadcrumb / .bb-cart-heading-col. */
-@media (min-width: 768px) {
-  .bb-checkout-page > .check-out-title,
-  .bb-checkout-page > .cart-empty,
-  .bb-checkout-page > .return-to-shop,
-  .bb-page.bb-compare-page > [data-bb-rail] > header:first-child {
-    padding-left: 200px;
-  }
-}
-@media (min-width: 1920px) {
-  .bb-checkout-page > .check-out-title,
-  .bb-checkout-page > .cart-empty,
-  .bb-checkout-page > .return-to-shop,
-  .bb-page.bb-compare-page > [data-bb-rail] > header:first-child {
-    padding-left: 256px;
-  }
-}
-html[data-header-scrolled] .bb-checkout-page > .check-out-title,
-html[data-header-scrolled] .bb-checkout-page > .cart-empty,
-html[data-header-scrolled] .bb-checkout-page > .return-to-shop,
-html[data-header-scrolled] .bb-page.bb-compare-page > [data-bb-rail] > header:first-child {
-  padding-left: 0;
-}
+/* Diagonal logo emblem clearance for hero-less top-of-page content (checkout title /
+   empty-state, compare page header) is handled vertically via
+   body:has(.bb-checkout-page) .bb-main / body:has(.bb-compare-page) .bb-main
+   padding-top (see the bb-main clearance rule above), so this content keeps its
+   natural left alignment instead of being shoved right past the emblem — same
+   pattern as the cart / PDP / account pages. */
 
 .cart-table .woocommerce-notices-wrapper {
   margin: 0;
@@ -2844,11 +2812,6 @@ body:has(.bb-home) {
     flex: 0 0 25%;
     max-width: 25%;
   }
-
-  .bb-product-archive .bb-wp-col-md-9 {
-    flex: 0 0 75%;
-    max-width: 75%;
-  }
 }
 
 @media (min-width: 992px) {
@@ -2921,6 +2884,14 @@ body:has(.bb-search-results-page) {
   align-items: flex-start;
 }
 
+/* Search has no filter sidebar, so the content column spans the full row.
+   (The catalog archive keeps its 25% sidebar; this page does not.) */
+.bb-search-results-page .bb-search-content {
+  flex: 0 0 100%;
+  max-width: 100%;
+  width: 100%;
+}
+
 .bb-search-results-page .bb-search-inner-container {
   width: 100%;
   margin-inline: auto;
@@ -2952,30 +2923,25 @@ body:has(.bb-search-results-page) {
   }
 }
 
+/* Full-width content (no sidebar) → 5 cards / row from the desktop tier up so
+   the recovered 25% is used and card width stays balanced (was ≥2560px-only). */
+@media (min-width: 992px) {
+  .bb-search-results-page .bb-search-product-row > .bb-wp-col-md-3,
+  .bb-search-results-page .bb-search-product-row > .col-md-3 {
+    flex: 0 0 20%;
+    max-width: 20%;
+  }
+}
+
 .bb-search-results-page .bb-search-product-col {
   padding-inline: 15px;
-}
-
-.bb-search-results-page .bb-search-pagination {
-  margin-top: 0;
-}
-
-.bb-search-results-page .bb-search-pagination .prev i,
-.bb-search-results-page .bb-search-pagination .next i {
-  display: inline-block;
-  font-size: 30px;
-  line-height: 1;
 }
 
 @media (max-width: 767px) {
   /* col-md spans + the toolbar row flex are kept for the SEARCH page; the
      catalog archive's toolbar/sort/filter columns moved to inline Tailwind. */
-  .bb-product-archive .bb-wp-col-md-3,
-  .bb-product-archive .bb-wp-col-md-9 {
-    max-width: 100%;
-  }
-
   .bb-product-archive .bb-wp-col-md-3 {
+    max-width: 100%;
     padding: 0;
   }
 
@@ -4083,7 +4049,10 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
 
   /* Account + PDP logo-emblem clearance: logo grows to ~206px tall at 3xl, header = 88px → 118px overflow */
   body:has(.bb-account-layout) .bb-main,
-  body:has(.bb-wp-pdp) .bb-main {
+  body:has(.bb-wp-pdp) .bb-main,
+  body:has(.bb-cart-page) .bb-main,
+  body:has(.bb-checkout-page) .bb-main,
+  body:has(.bb-compare-page) .bb-main {
     padding-top: calc(var(--bb-header-stack) + 118px);
   }
 
@@ -4126,7 +4095,10 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
 
   /* Account + PDP logo-emblem clearance: logo stays ~206px tall at 4xl, header grows to 96px → 110px overflow */
   body:has(.bb-account-layout) .bb-main,
-  body:has(.bb-wp-pdp) .bb-main {
+  body:has(.bb-wp-pdp) .bb-main,
+  body:has(.bb-cart-page) .bb-main,
+  body:has(.bb-checkout-page) .bb-main,
+  body:has(.bb-compare-page) .bb-main {
     padding-top: calc(var(--bb-header-stack) + 110px);
   }
 
@@ -4169,16 +4141,6 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
      with the product overview/tabs/related rails, which cap at 1600px at 4xl
      (the gallery is column-filling, not 2240-wide). See STYLEGUIDE container
      exception for /product/[slug]. */
-
-  /* Bootstrap `col-md-3` produces 4 cards / row by default. At ≥2560px the
-     content column is ~1680px → each 4-col card is ~420px. Bump search-result
-     cards to 5/row (20% width). The catalog archive does this inline (the
-     filter sidebar keeps its 25% — not matched here). */
-  .bb-search-results-page .bb-search-product-row > .bb-wp-col-md-3,
-  .bb-search-results-page .bb-search-product-row > .col-md-3 {
-    flex: 0 0 20%;
-    max-width: 20%;
-  }
 }
 
 /* =====================================================================

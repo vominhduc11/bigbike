@@ -104,7 +104,7 @@ export function FeaturedProductsCarousel({ products }: Props) {
             <button
               key={index}
               className={cn(
-                "inline-block h-[10px] w-[10px] m-0 mx-[5px] p-0 border-none !rounded-[50%] bg-[#cecece] opacity-100 [transition:all_0.3s_ease] cursor-pointer",
+                "inline-block h-[10px] w-[10px] m-0 mx-[5px] p-0 border-none !rounded-[50%] bg-border-default opacity-100 [transition:all_0.3s_ease] cursor-pointer",
                 index === currentPage && "w-[20px] !rounded-[100px] bg-brand",
               )}
               type="button"

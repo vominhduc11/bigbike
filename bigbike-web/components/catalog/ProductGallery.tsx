@@ -331,7 +331,7 @@ export function ProductGallery({
         {zoomActive && zoomImageUrl && (
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute top-0 left-[calc(100%+12px)] z-30 w-[min(520px,42vw)] aspect-square border border-[#cecece] bg-white bg-no-repeat shadow-[0_18px_36px_rgba(0,0,0,0.25)]"
+            className="pointer-events-none absolute top-0 left-[calc(100%+12px)] z-30 w-[min(520px,42vw)] aspect-square border border-border-default bg-white bg-no-repeat shadow-[0_18px_36px_rgba(0,0,0,0.25)]"
             style={{
               backgroundImage: `url("${zoomImageUrl.replaceAll('"', "%22")}")`,
               backgroundPosition: `${zoomPos.x * 100}% ${zoomPos.y * 100}%`,
