@@ -48,16 +48,23 @@ function MegaPanel({
         // All panels share one grid cell ([grid-area:1/1]) so the wrapper width is
         // always the widest panel → the dropdown size stays fixed when switching
         // groups. Inactive panels stay laid out (invisible, not display:none) so
-        // they keep contributing to that max width. Content is centered so sparse
-        // groups read as balanced rather than left-hugged with a void.
-        "[grid-area:1/1] flex flex-col items-center justify-start p-6 transition-opacity duration-150",
+        // they keep contributing to that max width. Content is left-aligned
+        // (items-start) so categories read top-left, matching the original layout.
+        "[grid-area:1/1] flex flex-col items-start justify-start p-6 transition-opacity duration-150",
         active ? "opacity-100" : "invisible pointer-events-none opacity-0",
       )}
     >
       {group.children.length === 0 ? (
         <p className="font-nav text-13 text-muted-foreground">{group.label}</p>
       ) : (
-        <ul className="m-0 list-none gap-x-8 p-0" style={{ columnCount }}>
+        // max-width lets the fixed column-count shrink (and labels wrap) instead
+        // of pushing the panel past the viewport — where the wrapper's
+        // overflow-x-hidden would clip long-label categories on narrow desktops.
+        // 15rem = widest sidebar (xl:w-60), 3rem = panel p-6 both sides.
+        <ul
+          className="m-0 list-none gap-x-8 p-0 [max-width:calc(100vw-2*clamp(12px,1.7vw,48px)-15rem-3rem)]"
+          style={{ columnCount }}
+        >
           {group.children.map((cat) => {
             const catActive = isNodeActive(pathname, cat);
             const hasL4 = cat.children.length > 0;
@@ -113,18 +120,6 @@ function MegaPanel({
           })}
         </ul>
       )}
-      {group.children.length > 0 && (
-        <Link
-          href={normalizeMenuUrl(group.url)}
-          onClick={onItemClick}
-          target={group.openInNewTab ? "_blank" : undefined}
-          rel={group.openInNewTab ? "noreferrer" : undefined}
-          className="mt-6 inline-flex w-fit items-center gap-1.5 font-nav text-13 font-bold uppercase tracking-wide text-brand no-underline transition-opacity duration-150 hover:opacity-80"
-        >
-          Xem tất cả {group.label}
-          <ChevronRight size={14} strokeWidth={2.5} aria-hidden="true" />
-        </Link>
-      )}
     </div>
   );
 }
@@ -163,8 +158,8 @@ function MegaSidebar({
                 <Link
                   href={normalizeMenuUrl(group.url)}
                   className={cn(
-                    "flex w-full items-center gap-2.5 px-5 py-3 font-nav text-13 font-semibold text-foreground no-underline transition-colors duration-150 hover:bg-white hover:text-brand",
-                    groupPathActive && "text-brand",
+                    "relative flex w-full items-center gap-2.5 px-5 py-3 font-nav text-13 font-semibold text-foreground no-underline transition-colors duration-150 hover:bg-white hover:text-brand before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:bg-brand before:opacity-0 before:transition-opacity before:content-['']",
+                    groupPathActive && "text-brand before:opacity-100",
                   )}
                   target={group.openInNewTab ? "_blank" : undefined}
                   rel={group.openInNewTab ? "noreferrer" : undefined}
@@ -191,8 +186,9 @@ function MegaSidebar({
               <button
                 type="button"
                 className={cn(
-                  "flex w-full items-center gap-2.5 px-5 py-3 font-nav text-13 font-semibold text-foreground transition-colors duration-150 hover:bg-white hover:text-brand",
-                  isActive && "bg-white text-brand",
+                  // Left accent bar uses a before-pseudo (no layout shift on toggle).
+                  "relative flex w-full items-center gap-2.5 px-5 py-3 font-nav text-13 font-semibold text-foreground transition-colors duration-150 hover:bg-white hover:text-brand before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:bg-brand before:opacity-0 before:transition-opacity before:content-['']",
+                  isActive && "bg-white text-brand before:opacity-100",
                   groupPathActive && "text-brand",
                 )}
                 onMouseEnter={() => onActivate(group.id)}
@@ -302,7 +298,7 @@ function MegaMenu({
 const menuDelay: [number, number] = [0, CLOSE_DELAY_MS];
 
 const navLinkBase =
-  "flex h-full items-center whitespace-nowrap px-[30px] pt-[26px] pb-[27px] font-cta text-[length:var(--bb-text-17)] font-semibold uppercase leading-[1.357rem] no-underline text-white transition-colors duration-150 hover:text-brand-on-dark focus-visible:text-brand-on-dark focus-visible:outline-none";
+  "flex h-full items-center whitespace-nowrap px-[clamp(30px,2.1875vw_-_0.75rem,44px)] pt-[26px] pb-[27px] font-cta text-[length:var(--bb-text-nav)] font-semibold uppercase leading-[1.28] no-underline text-white transition-colors duration-150 hover:text-brand-on-dark focus-visible:text-brand-on-dark focus-visible:outline-none";
 
 // bb-header-nav-item kept as a marker (JS reads `.bb-header-nav-item.is-open`).
 // Base layout + the red diamond separator (rendered for every item except the

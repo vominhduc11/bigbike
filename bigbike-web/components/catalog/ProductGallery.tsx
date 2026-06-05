@@ -135,7 +135,7 @@ export function ProductGallery({
       ? Boolean(verticalRail?.overflow)
       : viewportWidth === 0
         ? false
-        : count > (viewportWidth >= 768 ? 3 : 4);
+        : count > 4;
 
   const activeImage = images[activeIndex] ?? images[0] ?? null;
   const zoomImageUrl = activeImage ? resolveMediaUrl(activeImage.url) ?? null : null;
@@ -225,7 +225,7 @@ export function ProductGallery({
             slidesPerView={4}
             spaceBetween={8}
             breakpoints={{
-              768: { direction: "horizontal", slidesPerView: 3, spaceBetween: 16 },
+              768: { direction: "horizontal", slidesPerView: "auto", spaceBetween: 12 },
               // Per-tier-size thumbs (100/120/140px); how many show comes from the
               // container's definite height (inline via verticalRail), not slidesPerView.
               1025: { direction: "vertical", slidesPerView: "auto", spaceBetween: 10 },
@@ -234,14 +234,14 @@ export function ProductGallery({
             // max-h tiers are a pre-hydration guard (before the inline definite
             // height is set) so a many-image rail doesn't flash full-content-tall.
             // Post-hydration the inline height (≤ these caps) governs.
-            className="max-[1024px]:!h-[120px] min-[1025px]:max-h-[470px] min-[1536px]:max-h-[598px] min-[1920px]:max-h-[738px]"
+            className="max-[1024px]:!h-[120px] md:max-[1024px]:!h-[112px] min-[1025px]:max-h-[470px] min-[1536px]:max-h-[598px] min-[1920px]:max-h-[738px]"
           >
             {images.map((image, index) => {
               const active = index === activeIndex;
               return (
                 <SwiperSlide
                   key={image.id ?? image.url ?? index}
-                  className="cursor-pointer bg-white min-[1025px]:!h-[100px] min-[1536px]:!h-[120px] min-[1920px]:!h-[140px]"
+                  className="cursor-pointer bg-white md:max-[1024px]:!w-[112px] min-[1025px]:!h-[100px] min-[1536px]:!h-[120px] min-[1920px]:!h-[140px]"
                   onClick={() => mainRef.current?.slideTo(index)}
                 >
                   <MediaImage

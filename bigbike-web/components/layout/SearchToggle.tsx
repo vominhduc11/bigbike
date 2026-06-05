@@ -22,15 +22,20 @@ const SEARCH_PATH = "/tim-kiem/";
 // — layer/overlay/panel/form/input + transitions/keyframe — stays in globals.css
 // per the CLAUDE.md keyframe/complex-pseudo exemption). Search reds use
 // --bb-brand-primary (#ff0c09) → text-brand-on-dark (the exact-value token).
-const preLabelRow = "flex items-center justify-between border-b border-border bg-card px-4 pt-2 pb-1";
-const preLabel = "font-cta text-ui-10 font-bold uppercase tracking-[0.1em] text-muted-foreground";
-const preChips = "flex flex-wrap gap-1.5 px-4 pb-3 pt-2.5";
+// 3xl/4xl (≥1920 / ≥2560): the fixed search labels/chips bump one text-ui step +
+// padding grows, so the panel doesn't look lost on showroom-wide screens. Exception
+// to the §10 "nhóm chữ cố định" rule, documented in docs/TYPOGRAPHY.md §8.
+const preLabelRow =
+  "flex items-center justify-between border-b border-border bg-card px-4 pt-2 pb-1 3xl:px-5 4xl:px-6";
+const preLabel =
+  "font-cta text-ui-10 font-bold uppercase tracking-[0.1em] text-muted-foreground 3xl:text-ui-11 4xl:text-ui-12";
+const preChips = "flex flex-wrap gap-1.5 px-4 pb-3 pt-2.5 3xl:gap-2 3xl:px-5 4xl:px-6";
 const preChip =
-  "inline-flex cursor-pointer items-center gap-[5px] border border-border bg-card px-3 py-[5px] font-cta text-ui-12 font-semibold uppercase text-foreground transition-colors duration-fast hover:text-brand-on-dark focus-visible:text-brand-on-dark focus-visible:outline-none";
+  "inline-flex cursor-pointer items-center gap-[5px] border border-border bg-card px-3 py-[5px] font-cta text-ui-12 font-semibold uppercase text-foreground transition-colors duration-fast hover:text-brand-on-dark focus-visible:text-brand-on-dark focus-visible:outline-none 3xl:px-3.5 3xl:py-1.5 3xl:text-ui-13 4xl:px-[18px] 4xl:py-2 4xl:text-ui-14";
 const resultItem =
-  "flex cursor-pointer items-center gap-3 border-b border-border px-4 py-2.5 text-foreground no-underline transition-colors duration-fast hover:bg-card focus-visible:bg-card focus-visible:outline-none";
+  "flex cursor-pointer items-center gap-3 border-b border-border px-4 py-2.5 text-foreground no-underline transition-colors duration-fast hover:bg-card focus-visible:bg-card focus-visible:outline-none 3xl:gap-4 3xl:px-5 3xl:py-3 4xl:px-6 4xl:py-3.5";
 const resultsLabel =
-  "m-0 border-b border-border bg-card px-4 pt-2 pb-1 font-cta text-ui-10 font-bold uppercase tracking-[0.1em] text-muted-foreground";
+  "m-0 border-b border-border bg-card px-4 pt-2 pb-1 font-cta text-ui-10 font-bold uppercase tracking-[0.1em] text-muted-foreground 3xl:px-5 3xl:text-ui-11 4xl:px-6 4xl:text-ui-12";
 
 // Mobile-only search body (≤767). The dark 9437 layer is fully overridden by the
 // "whole-site refactor pass" to LIGHT, so these are the merged light values; the
@@ -79,6 +84,7 @@ const sOverlay =
 const sOverlayOpen = "max-md:z-[calc(var(--bb-mobile-panel-z)_-_1)]";
 const sPanel =
   "fixed top-0 left-1/2 z-[calc(var(--bb-z-modal)_+_1)] w-[min(calc(100vw_-_24px),770px)] h-[var(--bb-header-height)] " +
+  "3xl:w-[min(calc(100vw_-_24px),940px)] 4xl:w-[min(calc(100vw_-_24px),1120px)] " +
   "px-10 py-0 [transform:translateX(-50%)] " +
   "max-md:left-0 max-md:z-[var(--bb-mobile-panel-z)] max-md:flex max-md:w-screen max-md:h-[100dvh] max-md:max-h-[100dvh] " +
   "max-md:flex-col max-md:p-0 max-md:overflow-hidden max-md:bg-[var(--bb-bg-page)] max-md:text-[color:var(--bb-text-primary)] max-md:[transform:none]";
@@ -101,11 +107,16 @@ const sClose =
   "max-md:min-w-[var(--bb-touch-target)] max-md:items-center max-md:justify-center max-md:[transform:none] max-md:text-[color:var(--bb-text-inverse)]";
 const sInput =
   // `!` mirrors the legacy !important — guarantees these win over the shadcn Input
-  // base regardless of twMerge grouping of the arbitrary properties.
-  "h-full [border:none]! bg-transparent! [padding:0_48px_0_34px]! [box-shadow:none]! text-white! text-ui-24! " +
+  // base regardless of twMerge grouping of the arbitrary properties. Font-size MUST
+  // be an arbitrary length (`text-[24px]`, not the named `text-ui-24`): the Input
+  // wrapper runs className through cn()/twMerge, which mis-classifies the unknown
+  // `text-ui-*` token as a text-COLOR class and collapses it with `text-white!`,
+  // silently dropping the color (→ dark text on the black bar). Arbitrary lengths
+  // are recognized as the font-size group, so color + size both survive.
+  "h-full [border:none]! bg-transparent! [padding:0_48px_0_34px]! [box-shadow:none]! text-white! text-[24px]! 3xl:text-[28px]! 4xl:text-[32px]! " +
   "placeholder:text-white placeholder:opacity-100 placeholder:font-normal focus-visible:outline-none " +
   "max-md:h-[var(--bb-touch-target)]! max-md:[border:1px_solid_rgba(255,255,255,0.18)]! max-md:bg-[var(--bb-bg-surface)]! " +
-  "max-md:[padding:0_12px]! max-md:text-[color:var(--bb-text-primary)]! max-md:text-ui-16! max-md:leading-none! " +
+  "max-md:[padding:0_12px]! max-md:text-[color:var(--bb-text-primary)]! max-md:text-[16px]! max-md:leading-none! " +
   "max-md:min-w-0 max-md:placeholder:text-[color:var(--bb-text-secondary)]";
 const sResults =
   "absolute top-full left-[-40px] right-[-40px] z-[1] bg-white [border-top:2px_solid_var(--bb-brand-primary)] " +
@@ -244,7 +255,7 @@ export function SearchToggle({ popularCategories: categoriesFromApi = [] }: Sear
         type="button"
         onClick={handleToggle}
       >
-        <Search size={20} aria-hidden />
+        <Search size={20} aria-hidden className="4xl:size-6" />
       </Button>
 
       <div
@@ -310,7 +321,7 @@ export function SearchToggle({ popularCategories: categoriesFromApi = [] }: Sear
                 <>
                   <div className={preLabelRow}>
                     <span className={preLabel}>{t("recentLabel")}</span>
-                    <button type="button" className="cursor-pointer border-none bg-transparent p-0 text-ui-12 text-brand-on-dark hover:underline" onClick={clearAll}>
+                    <button type="button" className="cursor-pointer border-none bg-transparent p-0 text-ui-12 text-brand-on-dark hover:underline 3xl:text-ui-13 4xl:text-ui-14" onClick={clearAll}>
                       {t("recentClear")}
                     </button>
                   </div>
@@ -391,16 +402,16 @@ export function SearchToggle({ popularCategories: categoriesFromApi = [] }: Sear
                         <img
                           src={resolveMediaUrl(product.image?.url)!}
                           alt={product.name}
-                          className="h-12 w-12 shrink-0 object-contain"
+                          className="h-12 w-12 shrink-0 object-contain 3xl:h-14 3xl:w-14 4xl:h-16 4xl:w-16"
                           width={48}
                           height={48}
                         />
                       ) : (
-                        <div className="h-12 w-12 shrink-0 object-contain" aria-hidden />
+                        <div className="h-12 w-12 shrink-0 object-contain 3xl:h-14 3xl:w-14 4xl:h-16 4xl:w-16" aria-hidden />
                       )}
                       <div className="flex min-w-0 flex-1 flex-col gap-1">
                         <span className="truncate text-caption font-medium text-foreground">{product.name}</span>
-                        <span className="text-ui-13 font-bold text-brand-on-dark">
+                        <span className="text-ui-13 font-bold text-brand-on-dark 3xl:text-ui-14 4xl:text-ui-16">
                           {formatVnd(product.price?.salePrice ?? product.price?.retailPrice)}
                         </span>
                       </div>
@@ -419,9 +430,9 @@ export function SearchToggle({ popularCategories: categoriesFromApi = [] }: Sear
                           onClick={handleClose}
                         >
                           <div className="flex min-w-0 flex-1 flex-col gap-1">
-                            <span className="text-ui-13 font-normal text-foreground line-clamp-2">{article.title}</span>
+                            <span className="text-ui-13 font-normal text-foreground line-clamp-2 3xl:text-ui-14 4xl:text-ui-16">{article.title}</span>
                             {article.category?.name && (
-                              <span className="text-ui-11 font-semibold uppercase tracking-[0.04em] text-brand-on-dark">
+                              <span className="text-ui-11 font-semibold uppercase tracking-[0.04em] text-brand-on-dark 3xl:text-ui-12 4xl:text-ui-13">
                                 {article.category.name}
                               </span>
                             )}
@@ -432,7 +443,7 @@ export function SearchToggle({ popularCategories: categoriesFromApi = [] }: Sear
                   )}
                   <Link
                     href={`${SEARCH_PATH}?s=${encodeURIComponent(trimmedQuery)}`}
-                    className="flex items-center justify-center px-4 py-[13px] font-cta text-ui-13 font-semibold uppercase tracking-[0.04em] text-brand-on-dark no-underline transition-colors duration-fast hover:bg-card focus-visible:bg-card focus-visible:outline-none"
+                    className="flex items-center justify-center px-4 py-[13px] font-cta text-ui-13 font-semibold uppercase tracking-[0.04em] text-brand-on-dark no-underline transition-colors duration-fast hover:bg-card focus-visible:bg-card focus-visible:outline-none 3xl:text-ui-14 4xl:py-4 4xl:text-ui-16"
                     onClick={handleClose}
                   >
                     {t("viewAllResultsBtn", { query: trimmedQuery })}

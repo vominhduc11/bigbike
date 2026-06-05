@@ -369,7 +369,7 @@ export function PurchaseSectionClient({
                short guidance note — no duplicate "hết hàng" CTA. Omitting
                .bb-wp-buttons-row also keeps the mobile sticky add-to-cart bar
                hidden (it keys off that row), since there's nothing to add. */
-            <div className="flex items-start gap-2.5 border border-border border-l-2 border-l-brand bg-muted/40 px-4 py-3.5">
+            <div className="flex items-center gap-2.5 border border-border border-l-2 border-l-brand bg-muted/40 px-4 py-3.5">
               <svg
                 width="18"
                 height="18"
@@ -378,7 +378,7 @@ export function PurchaseSectionClient({
                 stroke="currentColor"
                 strokeWidth="2"
                 strokeLinecap="round"
-                className="mt-0.5 shrink-0 text-brand"
+                className="shrink-0 text-brand"
                 aria-hidden="true"
               >
                 <circle cx="12" cy="12" r="9" />
@@ -456,8 +456,8 @@ export function PurchaseSectionClient({
           )}
         </div>
 
-        <div className="mt-[30px] max-md:mt-[22px] text-left">
-          <p className="inline-block m-0 mr-[30px] text-black text-ui-24 font-semibold lowercase">
+        <div className="mt-[30px] max-md:mt-[22px] flex flex-wrap items-center">
+          <p className="m-0 mr-[30px] text-black text-ui-24 font-semibold lowercase">
             {t("shareLabel")}
           </p>
           <button

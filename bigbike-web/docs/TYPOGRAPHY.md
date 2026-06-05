@@ -79,6 +79,7 @@ Gắn biến vào `<html>` trong `app/layout.tsx`:
 --fs-overline:   clamp(0.75rem, 0.729rem + 0.092vw, 0.875rem);     /* 12→14 */
 --fs-caption:    clamp(0.875rem, 0.843rem + 0.137vw, 1.0625rem);   /* 14→17 */
 --fs-button:     clamp(0.9375rem, 0.905rem + 0.137vw, 1.125rem);   /* 15→18 */
+--bb-text-nav:   clamp(1.0625rem, 0.3125rem + 0.625vw, 1.3125rem); /* 17→21 @1920→2560 — header primary nav; giữ 17px tới hết Full HD, chỉ lớn trên 4xl */
 --fs-body:       clamp(1rem, 0.936rem + 0.275vw, 1.375rem);        /* 16→22 */
 --fs-body-lg:    clamp(1.125rem, 1.061rem + 0.275vw, 1.5rem);      /* 18→24 */
 --fs-h4:         clamp(1.125rem, 1.061rem + 0.275vw, 1.5rem);
@@ -215,6 +216,8 @@ Mọi text trong dự án thuộc **đúng một** trong hai nhóm; không có g
 - **`text-9/10/11/13/22/26…`** (legacy, từ `--bb-text-*`): tên **SAI** giá trị (`text-13`=14px, `text-22`=clamp). Chỉ còn vài chỗ cũ dùng; **không dùng cho code mới** — thay bằng `text-ui-N` (cố định) hoặc token fluid (chữ đọc).
 
 **Ngoại lệ còn raw `text-[…]` có chủ đích:** vài giá trị rem lẻ kế thừa WooCommerce ở trang giỏ hàng (`1.143rem`/`1.429rem`/`1.714rem`/`1em` — stepper số lượng, coupon) không khớp thang px chẵn → giữ nguyên; và `FloatingChat` (cơ chế chat).
+
+**Ngoại lệ scale-lên ở 3xl/4xl — bảng gợi ý tìm kiếm (search panel):** Tuy thuộc nhóm chữ cố định, panel tìm kiếm desktop (`SearchToggle.tsx`) được phép **phóng to cả khung lẫn chữ ở ≥3xl (1920px) và ≥4xl (2560px)** để không lọt thỏm trên màn lớn — khung mở rộng `770 → 940 → 1120px`, ô nhập `24 → 28 → 32px`, và các nhãn/chip/giá/tiêu đề gợi ý tăng một bậc `text-ui-N` mỗi mốc (dùng biến thể `3xl:`/`4xl:`). Đây là exception có chủ đích **chỉ cho riêng panel này** — không áp cho nhãn cố định ở nơi khác. (Các dòng "đọc" trong panel — lịch sử tìm kiếm, tên sản phẩm — vẫn dùng `text-caption` fluid nên đã tự scale.)
 
 ---
 

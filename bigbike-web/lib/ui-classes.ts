@@ -81,7 +81,7 @@ export const authInput = "h-[52px] min-h-[52px] px-5 py-0 text-sm";
  * search / shop-info / mobile-menu triggers and the cart link. Compose with the
  * per-button visibility classes (e.g. `hidden md:inline-flex`). */
 export const iconBtn =
-  "inline-flex items-center justify-center h-full min-h-[var(--bb-header-height)] w-auto py-0 px-[clamp(10px,0.9vw,16px)] " +
+  "inline-flex items-center justify-center h-full min-h-[var(--bb-header-height)] w-auto py-0 px-[clamp(10px,0.9vw,16px)] 4xl:px-5 " +
   "text-white bg-transparent border-none rounded-none text-[1.286rem] leading-none cursor-pointer no-underline " +
   "transition-[color,background] duration-fast ease-[var(--bb-ease-standard)] " +
   // `!` on hover color: the cart link is an <a>, so the unlayered global `a:hover`

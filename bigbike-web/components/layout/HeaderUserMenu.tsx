@@ -33,8 +33,8 @@ const menuPanelOpen =
   "motion-reduce:[transition:opacity_var(--bb-duration-fast)_linear,visibility_0s_linear_0s,pointer-events_0s_linear_0s]";
 const trigger =
   "inline-flex min-h-[var(--bb-header-height)] border-none bg-transparent text-white cursor-pointer transition-colors duration-[var(--bb-duration-fast)] ease-[var(--bb-ease-standard)] hover:text-[var(--bb-brand-primary)] hover:bg-white/5 focus-visible:text-[var(--bb-brand-primary)] focus-visible:bg-white/5 focus-visible:outline-none";
-const triggerGuest = "items-center justify-center px-[clamp(10px,0.9vw,16px)] py-0";
-const triggerAuth = "w-[132px] flex-col items-start justify-center gap-[2px] pt-5 px-4 pb-4 text-left";
+const triggerGuest = "items-center justify-center px-[clamp(10px,0.9vw,16px)] 4xl:px-5 py-0";
+const triggerAuth = "w-[132px] 4xl:w-[160px] flex-col items-start justify-center gap-[2px] pt-5 px-4 pb-4 text-left";
 const menuLink =
   "flex w-full h-11 items-center justify-center border-none bg-[#111111] font-cta text-ui-14 font-semibold tracking-[0.06em] leading-none uppercase cursor-pointer !text-white !no-underline visited:!text-white transition-colors duration-[var(--bb-duration-fast)] ease-[var(--bb-ease-standard)] focus-visible:outline-none";
 const menuLinkPrimary =
@@ -53,6 +53,7 @@ function UserIcon() {
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
+      className="4xl:size-6"
     >
       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
       <circle cx="12" cy="7" r="4" />
@@ -162,11 +163,11 @@ export function HeaderUserMenu() {
             onClick={() => setOpen((current) => !current)}
             onFocus={() => setOpen(true)}
           >
-            <span className="w-full overflow-hidden font-cta text-ui-14 font-semibold leading-none uppercase text-ellipsis whitespace-nowrap">
+            <span className="w-full overflow-hidden font-cta text-ui-14 4xl:text-ui-16 font-semibold leading-none uppercase text-ellipsis whitespace-nowrap">
               {t("loggedInGreeting")}
             </span>
             <span
-              className="w-full overflow-hidden text-ui-14 font-light leading-[1.2] text-ellipsis whitespace-nowrap normal-case"
+              className="w-full overflow-hidden text-ui-14 4xl:text-ui-16 font-light leading-[1.2] text-ellipsis whitespace-nowrap normal-case"
               title={auth.profile.email}
             >
               {displayName}

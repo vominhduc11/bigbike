@@ -31,11 +31,11 @@ export function ProductTabs({ sections }: { sections: ProductTabSection[] }) {
       <div
         role="tablist"
         aria-label="Thông tin sản phẩm"
-        className="mb-10 max-[1024px]:h-[42px] max-[1024px]:overflow-x-auto max-[1024px]:overflow-y-hidden max-md:mb-[18px] max-md:hidden"
+        className="mb-10 max-[1024px]:h-[42px] max-[1024px]:overflow-x-auto max-[1024px]:overflow-y-hidden max-[1024px]:[scrollbar-width:none] max-[1024px]:[&::-webkit-scrollbar]:hidden max-md:mb-[18px] max-md:hidden"
       >
         <ul
           id="myTab"
-          className="relative flex flex-nowrap w-full m-0 pl-2.5 border-none list-none max-[1024px]:w-[800px] max-md:w-max max-md:min-w-full before:content-[''] before:absolute before:top-1/2 before:right-0 before:left-2.5 before:z-0 before:h-px before:bg-[#cecece]"
+          className="relative flex flex-nowrap w-full m-0 pl-2.5 border-none list-none max-md:w-max max-md:min-w-full before:content-[''] before:absolute before:top-1/2 before:right-0 before:left-2.5 before:z-0 before:h-px before:bg-[#cecece]"
         >
           {sections.map((section) => {
             const tabId = toWpTabButtonId(section.id);
@@ -52,7 +52,7 @@ export function ProductTabs({ sections }: { sections: ProductTabSection[] }) {
                   id={tabId}
                   href={`#${section.id}`}
                   className={cn(
-                    "relative block w-full h-[42px] border-none bg-transparent text-[var(--bb-text-secondary)] font-body text-base font-semibold leading-[42px] text-center no-underline normal-case cursor-pointer after:content-[''] after:absolute after:inset-0 after:-z-[1] after:border after:border-[#cecece] after:bg-white after:[transform:skewX(-20deg)]",
+                    "relative block w-full h-[42px] border-none bg-transparent text-[var(--bb-text-secondary)] font-body text-base font-semibold leading-[42px] text-center whitespace-nowrap no-underline normal-case cursor-pointer after:content-[''] after:absolute after:inset-0 after:-z-[1] after:border after:border-[#cecece] after:bg-white after:[transform:skewX(-20deg)] max-[1024px]:text-sm",
                     active && "text-white after:border-black after:bg-black",
                   )}
                   onClick={(event) => {
@@ -78,7 +78,7 @@ export function ProductTabs({ sections }: { sections: ProductTabSection[] }) {
               role="tabpanel"
               aria-labelledby={toWpTabButtonId(section.id)}
               className={cn(
-                "tab-panel text-black text-[length:var(--fs-body)] leading-[1.7]",
+                "tab-panel text-black text-[length:var(--fs-body)] leading-[1.7] md:leading-[2.3]",
                 active ? "block" : "hidden",
                 "max-md:block max-md:pt-6 max-md:pb-1 max-md:mt-0 max-md:border-t-[3px] max-md:border-t-border max-md:first:[border-top:none] max-md:scroll-mt-[calc(var(--bb-header-height)_+_52px)]",
                 "max-md:before:content-[attr(data-label)] max-md:before:block max-md:before:mb-4 max-md:before:font-[family-name:var(--bb-font-display)] max-md:before:text-lg max-md:before:font-semibold max-md:before:text-[var(--bb-text-primary)] max-md:before:uppercase max-md:before:tracking-[0.02em] max-md:before:leading-[1.2]",

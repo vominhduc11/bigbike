@@ -5,8 +5,10 @@
  * rendered path).
  */
 
-/** Hamburger menu icon — shared by the desktop shop-info drawer and the mobile menu. */
-export function MenuIcon() {
+/** Hamburger menu icon — shared by the desktop shop-info drawer and the mobile menu.
+ * Optional className lets callers override the 22px default (e.g. responsive size-up
+ * on 3xl/4xl). CSS width/height win over the presentation attributes below. */
+export function MenuIcon({ className }: { className?: string } = {}) {
   return (
     <svg
       width="22"
@@ -18,6 +20,7 @@ export function MenuIcon() {
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
+      className={className}
     >
       <line x1="4" y1="6" x2="17.5" y2="6" />
       <line x1="4" y1="11" x2="19" y2="11" />

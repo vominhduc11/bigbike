@@ -98,7 +98,7 @@ export function MobilePdpAnchorNav({ items }: { items: AnchorNavItem[] }) {
     <nav
       ref={navRef}
       className={cn(
-        "hidden max-md:flex max-md:overflow-x-auto max-md:[scroll-snap-type:x_mandatory] max-md:[scrollbar-width:none] max-md:[&::-webkit-scrollbar]:hidden max-md:bg-white max-md:border-b max-md:border-border max-md:fixed max-md:top-[var(--bb-header-height)] max-md:left-0 max-md:right-0 max-md:z-40 max-md:px-2 max-md:gap-0 max-md:[transition-property:transform] max-md:duration-200 max-md:ease-[ease]",
+        "hidden max-md:flex max-md:overflow-x-auto max-md:overflow-y-hidden max-md:[scroll-snap-type:x_mandatory] max-md:[scrollbar-width:none] max-md:[&::-webkit-scrollbar]:hidden max-md:bg-white max-md:border-b max-md:border-border max-md:fixed max-md:top-[var(--bb-header-height)] max-md:left-0 max-md:right-0 max-md:z-40 max-md:px-2 max-md:gap-0 max-md:[transition-property:transform] max-md:duration-200 max-md:ease-[ease]",
         visible
           ? "max-md:[transform:translateY(0)] max-md:pointer-events-auto"
           : "max-md:[transform:translateY(-100%)] max-md:pointer-events-none",

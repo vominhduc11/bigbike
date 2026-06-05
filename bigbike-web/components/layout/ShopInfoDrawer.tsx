@@ -73,7 +73,7 @@ export function ShopInfoDrawer({
         type="button"
         onClick={() => togglePanel("desktop-info")}
       >
-        <MenuIcon />
+        <MenuIcon className="4xl:size-[26px]" />
       </Button>
 
       <div

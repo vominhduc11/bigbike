@@ -154,6 +154,11 @@
   --bb-text-13: 14px;
   --bb-text-15: 15px;
   --bb-text-17: 17px;
+  /* Header primary nav (Barlow Condensed, uppercase) — single clamp.
+     Giữ ĐÚNG 17px tới hết Full HD (≤1920px) để cân với tổng thể header gốc;
+     chỉ lớn dần 17→21px trong dải 1920→2560px (4xl showroom/4K) để không bị
+     nhỏ-lọt-thỏm. Sàn = MIN 17px nên dưới 1920 luôn bị clamp về 17px. */
+  --bb-text-nav: clamp(1.0625rem, 0.3125rem + 0.625vw, 1.3125rem); /* 17→21 @1920→2560 */
   --bb-text-22: clamp(1.125rem, 0.659rem + 1.99vw, 1.375rem);   /* 18→22 */
   --bb-text-26: clamp(1.25rem, 1.022rem + 0.972vw, 1.625rem);   /* 20→26 */
   --bb-text-32: clamp(1.5rem, 1.196rem + 1.297vw, 2rem);        /* 24→32 */
