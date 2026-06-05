@@ -5,7 +5,6 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { PurchaseSectionClient } from "@/components/catalog/PurchaseSectionClient";
 import { ProductTabs } from "@/components/catalog/ProductTabs";
 import { ProductSpecTable } from "@/components/catalog/ProductSpecTable";
-import { ProductVideosTab } from "@/components/catalog/ProductVideosTab";
 import { PdpRelatedProductsCarousel } from "@/components/catalog/PdpRelatedProductsCarousel";
 import { MobilePdpAnchorNav } from "@/components/catalog/MobilePdpAnchorNav";
 import { MobileStickyPurchaseBar } from "@/components/catalog/MobileStickyPurchaseBar";
@@ -174,19 +173,6 @@ export default async function ProductDetailPage({
       ),
     },
     {
-      id: "tab-videos",
-      label: "Videos",
-      content:
-        videos.length > 0 ? (
-          <ProductVideosTab videos={videos} />
-        ) : (
-          <EmptyState
-            title={tProduct("tabsEmpty.videosTitle")}
-            description={tProduct("tabsEmpty.videosDesc")}
-          />
-        ),
-    },
-    {
       id: "tab-more_infomation",
       label: tProduct("tabs.specs"),
       content:
@@ -231,7 +217,6 @@ export default async function ProductDetailPage({
   const anchorItems = [
     { id: "pdp-overview", label: "Tổng quan" },
     { id: "tab-description", label: "Mô tả" },
-    { id: "tab-videos", label: "Videos" },
     { id: "tab-more_infomation", label: "Thông số" },
     { id: "tab-faq", label: tProduct("faqs") },
   ];

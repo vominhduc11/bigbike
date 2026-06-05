@@ -177,6 +177,7 @@ export function PurchaseSectionClient({
   initialRatingCount,
   mainImage,
   gallery,
+  videos,
   fallbackPrice,
   fallbackStockState,
   fallbackVariants,
@@ -311,6 +312,7 @@ export function PurchaseSectionClient({
         <ProductGallery
           mainImage={mainImage}
           gallery={gallery}
+          videos={videos}
           altFallback={productName}
           variantImage={previewVariant?.image ?? null}
           variantGallery={previewVariant?.gallery ?? undefined}

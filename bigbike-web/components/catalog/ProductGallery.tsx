@@ -45,6 +45,66 @@ function clamp01(value: number) {
   return Math.min(1, Math.max(0, value));
 }
 
+// --- Video helpers ---
+
+function getYouTubeId(url: string): string | null {
+  if (!url) return null;
+  const match = url.match(
+    /(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|v\/))([A-Za-z0-9_-]{11})/,
+  );
+  return match ? match[1] : null;
+}
+
+function isSupportedVideo(video: VideoAsset): boolean {
+  const url = video.url ?? "";
+  if (!url) return false;
+  if (getYouTubeId(url)) return true;
+  const path = url.split(/[?#]/, 1)[0];
+  return /\.(mp4|webm|ogg|mov|m4v)$/i.test(path);
+}
+
+function videoThumbUrl(video: VideoAsset): string | null {
+  const explicit = resolveMediaUrl(video.thumbnail?.url?.trim());
+  if (explicit) return explicit;
+  const ytId = getYouTubeId(video.url ?? "");
+  return ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : null;
+}
+
+function VideoSlide({ video }: { video: VideoAsset }) {
+  const url = video.url ?? "";
+  const ytId = getYouTubeId(url);
+  const resolved = resolveMediaUrl(url) ?? url;
+  const title = video.title ?? "Video";
+
+  if (ytId) {
+    return (
+      <iframe
+        className="block w-full h-full border-none bg-black"
+        src={`https://www.youtube.com/embed/${ytId}`}
+        title={title}
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+      />
+    );
+  }
+
+  return (
+    <video
+      className="block w-full h-full object-contain bg-black"
+      src={resolved}
+      controls
+      playsInline
+      poster={video.thumbnail?.url}
+    />
+  );
+}
+
+// --- Gallery item union type ---
+
+type ImageItem = { kind: "image"; asset: ImageAsset };
+type VideoItem = { kind: "video"; asset: VideoAsset };
+type GalleryItem = ImageItem | VideoItem;
+
 type ProductGalleryProps = {
   mainImage: ImageAsset | null | undefined;
   gallery: ImageAsset[];
@@ -52,7 +112,6 @@ type ProductGalleryProps = {
   variantImage?: ImageAsset | null;
   variantGallery?: ImageAsset[];
   variantKey?: string | null;
-  discountBadge?: number;
   videos?: VideoAsset[];
 };
 
@@ -63,6 +122,7 @@ export function ProductGallery({
   variantImage,
   variantGallery,
   variantKey,
+  videos,
 }: ProductGalleryProps) {
   const hasVariantGallery = Boolean(variantGallery && variantGallery.length > 0);
   const stripBody: ImageAsset[] = hasVariantGallery ? variantGallery! : gallery;
@@ -88,6 +148,12 @@ export function ProductGallery({
     return out;
   })();
 
+  // Videos appended after images in the gallery strip.
+  const allItems: GalleryItem[] = [
+    ...images.map((asset): GalleryItem => ({ kind: "image", asset })),
+    ...(videos ?? []).filter(isSupportedVideo).map((asset): GalleryItem => ({ kind: "video", asset })),
+  ];
+
   const currentVariantKey = variantKey ?? "__no_variant__";
   // Main image + thumbnails are two linked Swiper instances (Thumbs module):
   // clicking/scrolling thumbs drives the main carousel, and the main carousel
@@ -106,7 +172,7 @@ export function ProductGallery({
   const [canZoom, setCanZoom] = useState(false);
   const mainBoxRef = useRef<HTMLDivElement | null>(null);
 
-  const count = images.length;
+  const count = allItems.length;
 
   // Thumbnail rail sizing/arrows. Below 1025 the rail is horizontal (CSS-sized);
   // at ≥1025 it's vertical with a computed definite height so Swiper scrolls
@@ -137,8 +203,10 @@ export function ProductGallery({
         ? false
         : count > 4;
 
-  const activeImage = images[activeIndex] ?? images[0] ?? null;
-  const zoomImageUrl = activeImage ? resolveMediaUrl(activeImage.url) ?? null : null;
+  // Zoom only applies to image slides.
+  const activeItem = allItems[activeIndex] ?? allItems[0] ?? null;
+  const zoomImageUrl =
+    activeItem?.kind === "image" ? resolveMediaUrl(activeItem.asset.url) ?? null : null;
   const zoomEnabled = canZoom && Boolean(zoomImageUrl);
 
   // Variant switch swaps the whole image set; both carousels are keyed by
@@ -193,6 +261,11 @@ export function ProductGallery({
     updateZoomPos(e);
   }
 
+  function itemKey(item: GalleryItem, index: number): string {
+    if (item.kind === "image") return item.asset.id ?? item.asset.url ?? `img-${index}`;
+    return `vid-${item.asset.id ?? item.asset.url ?? index}`;
+  }
+
   return (
     <div className="grid grid-cols-[minmax(0,25%)_minmax(0,75%)] gap-[30px] min-w-0 min-[1025px]:grid-cols-[130px_minmax(0,1fr)] min-[1536px]:grid-cols-[150px_minmax(0,1fr)] min-[1920px]:grid-cols-[170px_minmax(0,1fr)] max-[1024px]:grid-cols-[1fr] max-[1024px]:gap-[10px] max-[1024px]:w-full max-md:gap-2">
       {count > 1 && (
@@ -236,16 +309,52 @@ export function ProductGallery({
             // Post-hydration the inline height (≤ these caps) governs.
             className="max-[1024px]:!h-[120px] md:max-[1024px]:!h-[112px] min-[1025px]:max-h-[470px] min-[1536px]:max-h-[598px] min-[1920px]:max-h-[738px]"
           >
-            {images.map((image, index) => {
+            {allItems.map((item, index) => {
               const active = index === activeIndex;
+              const slideClass =
+                "cursor-pointer md:max-[1024px]:!w-[112px] min-[1025px]:!h-[100px] min-[1536px]:!h-[120px] min-[1920px]:!h-[140px]";
+
+              if (item.kind === "video") {
+                const thumb = videoThumbUrl(item.asset);
+                return (
+                  <SwiperSlide
+                    key={itemKey(item, index)}
+                    className={cn(slideClass, "bg-black")}
+                    onClick={() => mainRef.current?.slideTo(index)}
+                  >
+                    <div
+                      className={cn(
+                        "relative w-full h-full border",
+                        active ? "border-[var(--bb-border-control)]" : "border-transparent",
+                      )}
+                    >
+                      {thumb ? (
+                        <img
+                          src={thumb}
+                          alt={item.asset.title ?? "Video"}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-neutral-800" />
+                      )}
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="white" aria-hidden="true">
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      </div>
+                    </div>
+                  </SwiperSlide>
+                );
+              }
+
               return (
                 <SwiperSlide
-                  key={image.id ?? image.url ?? index}
-                  className="cursor-pointer bg-white md:max-[1024px]:!w-[112px] min-[1025px]:!h-[100px] min-[1536px]:!h-[120px] min-[1920px]:!h-[140px]"
+                  key={itemKey(item, index)}
+                  className={cn(slideClass, "bg-white")}
                   onClick={() => mainRef.current?.slideTo(index)}
                 >
                   <MediaImage
-                    image={image}
+                    image={item.asset}
                     altFallback={altFallback}
                     width={220}
                     height={220}
@@ -297,19 +406,23 @@ export function ProductGallery({
             }}
             onSlideChange={(s) => setActiveIndex(s.activeIndex)}
           >
-            {images.map((image, index) => (
+            {allItems.map((item, index) => (
               <SwiperSlide
-                key={image.id ?? image.url ?? index}
+                key={itemKey(item, index)}
                 className="flex items-center justify-center bg-white"
               >
-                <MediaImage
-                  image={image}
-                  altFallback={altFallback}
-                  priority={index === 0}
-                  width={1200}
-                  height={1200}
-                  className="w-full h-full object-contain"
-                />
+                {item.kind === "video" ? (
+                  <VideoSlide video={item.asset} />
+                ) : (
+                  <MediaImage
+                    image={item.asset}
+                    altFallback={altFallback}
+                    priority={index === 0}
+                    width={1200}
+                    height={1200}
+                    className="w-full h-full object-contain"
+                  />
+                )}
               </SwiperSlide>
             ))}
           </Swiper>
