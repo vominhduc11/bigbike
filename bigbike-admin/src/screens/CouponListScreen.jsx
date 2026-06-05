@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { FilterSelect } from '../components/FilterSelect'
+import { FilterSearchInput } from '../components/FilterSearchInput'
 import { toast } from 'sonner'
-import { Copy, Pencil, Plus, Search, Send } from 'lucide-react'
+import { Copy, Pencil, Plus, Send } from 'lucide-react'
 import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
@@ -441,22 +443,22 @@ export function CouponListScreen({ canUpdate }) {
 
       {/* Filter bar */}
       <div className="bb-filter-bar">
-        <div style={{ position: 'relative' }}>
-          <Search size={14} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--bb-text-muted)', pointerEvents: 'none' }} />
-          <input type="search" className="bb-input" style={{ paddingLeft: 28 }} value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)} placeholder={t('coupons.searchPlaceholder')} />
-        </div>
-        <select
-          className="bb-select"
+        <FilterSearchInput
+          value={searchInput}
+          onChange={setSearchInput}
+          placeholder={t('coupons.searchPlaceholder')}
+        />
+        <FilterSelect
           value={query.status}
-          onChange={(e) => updateQuery({ status: e.target.value }, { resetPage: true })}
-          aria-label={t('coupons.filterStatus')}
-        >
-          <option value="ALL">{t('coupons.filterStatus')}</option>
-          <option value="ACTIVE">{t('coupons.statusActive')}</option>
-          <option value="INACTIVE">{t('coupons.statusInactive')}</option>
-          <option value="EXPIRED">{t('coupons.statusExpired')}</option>
-        </select>
+          onValueChange={(v) => updateQuery({ status: v }, { resetPage: true })}
+          ariaLabel={t('coupons.filterStatus')}
+          options={[
+            { value: 'ALL', label: t('coupons.filterStatus') },
+            { value: 'ACTIVE', label: t('coupons.statusActive') },
+            { value: 'INACTIVE', label: t('coupons.statusInactive') },
+            { value: 'EXPIRED', label: t('coupons.statusExpired') },
+          ]}
+        />
       </div>
 
       {state.status === 'error' && (

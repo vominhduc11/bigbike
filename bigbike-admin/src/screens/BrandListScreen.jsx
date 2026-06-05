@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Award, Pencil, Plus, Search } from 'lucide-react'
+import { FilterSelect } from '../components/FilterSelect'
+import { FilterSearchInput } from '../components/FilterSearchInput'
+import { Award, Pencil, Plus } from 'lucide-react'
 import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
@@ -80,37 +82,31 @@ export function BrandListScreen({ navigate, canUpdate }) {
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
 
       <div className="bb-filter-bar">
-        <div style={{ position: 'relative' }}>
-          <Search size={14} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--bb-text-muted)', pointerEvents: 'none' }} />
-          <input
-            type="search"
-            className="bb-input"
-            style={{ paddingLeft: 28 }}
-            value={searchInput}
-            onChange={(event) => setSearchInput(event.target.value)}
-            placeholder={t('brands.searchPlaceholder')}
-          />
-        </div>
-        <select
-          className="bb-select"
+        <FilterSearchInput
+          value={searchInput}
+          onChange={setSearchInput}
+          placeholder={t('brands.searchPlaceholder')}
+        />
+        <FilterSelect
           value={query.visibility}
-          onChange={(e) => updateQuery({ visibility: e.target.value }, { resetPage: true })}
-          aria-label={t('brands.filterVisibility')}
-        >
-          <option value="ALL">{t('brands.filterVisibility')}</option>
-          <option value="VISIBLE">{t('common.visible')}</option>
-          <option value="HIDDEN">{t('common.hidden')}</option>
-        </select>
-        <select
-          className="bb-select"
+          onValueChange={(v) => updateQuery({ visibility: v }, { resetPage: true })}
+          ariaLabel={t('brands.filterVisibility')}
+          options={[
+            { value: 'ALL', label: t('brands.filterVisibility') },
+            { value: 'VISIBLE', label: t('common.visible') },
+            { value: 'HIDDEN', label: t('common.hidden') },
+          ]}
+        />
+        <FilterSelect
           value={query.sort}
-          onChange={(e) => updateQuery({ sort: e.target.value }, { resetPage: true })}
-          aria-label={t('brands.filterSort')}
-        >
-          <option value="updatedAt:desc">{t('sort.newestUpdated')}</option>
-          <option value="updatedAt:asc">{t('sort.oldestUpdated')}</option>
-          <option value="name:asc">{t('sort.nameAZ')}</option>
-        </select>
+          onValueChange={(v) => updateQuery({ sort: v }, { resetPage: true })}
+          ariaLabel={t('brands.filterSort')}
+          options={[
+            { value: 'updatedAt:desc', label: t('sort.newestUpdated') },
+            { value: 'updatedAt:asc', label: t('sort.oldestUpdated') },
+            { value: 'name:asc', label: t('sort.nameAZ') },
+          ]}
+        />
       </div>
 
       {state.status === 'error' ? (

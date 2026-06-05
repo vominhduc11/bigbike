@@ -243,7 +243,7 @@ export function fetchWishlist(): Promise<string[]> {
 
 export async function fetchWishlistProducts(
   page = 1,
-  size = 50,
+  size = 12,
 ): Promise<{ data: Product[]; pagination: { page: number; pageSize: number; totalItems: number; totalPages: number } }> {
   const qs = new URLSearchParams({ page: String(page), size: String(size) });
   const res = await fetch(`${API_BASE_URL}/api/v1/customer/wishlist/products?${qs.toString()}`, {

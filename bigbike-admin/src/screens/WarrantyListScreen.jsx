@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { FilterSelect } from '../components/FilterSelect'
+import { FilterSearchInput } from '../components/FilterSearchInput'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Search } from 'lucide-react'
 import { PaginationControls } from '../components/PaginationControls'
 import { Modal } from '../components/layout'
 import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
@@ -147,29 +148,20 @@ export function WarrantyListScreen({ canUpdate }) {
       </div>
 
       <div className="bb-filter-bar">
-        <div style={{ position: 'relative' }}>
-          <Search size={14} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--bb-text-muted)', pointerEvents: 'none' }} />
-          <input
-            type="search"
-            className="bb-input"
-            style={{ paddingLeft: 28 }}
-            placeholder={t('warranty.searchPlaceholder')}
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-          />
-        </div>
-        <select
-          className="bb-select"
+        <FilterSearchInput
+          value={searchInput}
+          onChange={setSearchInput}
+          placeholder={t('warranty.searchPlaceholder')}
+        />
+        <FilterSelect
           value={query.status}
-          onChange={(e) => setQuery((q) => ({ ...q, status: e.target.value, page: 1 }))}
-          aria-label={t('warranty.filterStatus')}
-        >
-          {STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {s === 'ALL' ? t('warranty.filterStatus') : t(`warranty.status.${s}`, { defaultValue: s })}
-            </option>
-          ))}
-        </select>
+          onValueChange={(v) => setQuery((q) => ({ ...q, status: v, page: 1 }))}
+          ariaLabel={t('warranty.filterStatus')}
+          options={STATUSES.map((s) => ({
+            value: s,
+            label: s === 'ALL' ? t('warranty.filterStatus') : t(`warranty.status.${s}`, { defaultValue: s }),
+          }))}
+        />
       </div>
 
       {state.status === 'error' && (

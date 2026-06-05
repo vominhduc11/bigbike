@@ -36,6 +36,18 @@ public class PublicReviewService {
     private final ProductJpaRepository productRepo;
 
     public PublicProductReviewsResponse getProductReviews(String productId, int page, int size) {
+        return getProductReviews(productId, page, size, null, null);
+    }
+
+    /**
+     * @param rating optional star filter (1..5); {@code null} returns every approved review.
+     * @param sort   ordering key: {@code newest} (default), {@code highest}, {@code lowest}.
+     *               The rating filter narrows only the list \u2014 avgRating, totalReviews and the
+     *               ratingBreakdown histogram always reflect every approved review so the summary
+     *               panel stays stable while the customer drills into one star bucket.
+     */
+    public PublicProductReviewsResponse getProductReviews(
+            String productId, int page, int size, Integer rating, String sort) {
         if (!productRepo.existsById(productId)) {
             throw new NotFoundException("S\u1ea3n ph\u1ea9m kh\u00f4ng t\u1ed3n t\u1ea1i.");
         }
@@ -43,11 +55,11 @@ public class PublicReviewService {
         int normalizedPage = Math.max(DEFAULT_PAGE, page);
         int normalizedSize = size <= 0 ? DEFAULT_SIZE : Math.min(size, MAX_SIZE);
 
-        PageRequest pageRequest = PageRequest.of(
-                normalizedPage - 1,
-                normalizedSize,
-                Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id")));
-        Page<ReviewEntity> approvedPage = reviewRepo.findByProductIdAndStatus(productId, APPROVED_STATUS, pageRequest);
+        PageRequest pageRequest = PageRequest.of(normalizedPage - 1, normalizedSize, resolveSort(sort));
+        Page<ReviewEntity> approvedPage = (rating != null && rating >= 1 && rating <= 5)
+                ? reviewRepo.findByProductIdAndStatusAndRating(
+                        productId, APPROVED_STATUS, (short) rating.intValue(), pageRequest)
+                : reviewRepo.findByProductIdAndStatus(productId, APPROVED_STATUS, pageRequest);
         ReviewJpaRepository.ReviewAggregate aggregate =
                 reviewRepo.findAggregateByProductIdAndStatus(productId, APPROVED_STATUS);
 
@@ -60,15 +72,26 @@ public class PublicReviewService {
                 .map(this::toPublicReviewItem)
                 .toList();
 
+        // totalItems/totalPages/hasNext follow the (possibly filtered) list so "load more"
+        // pages correctly within a single star bucket; totalReviews stays the global count.
         PaginationMeta pagination = new PaginationMeta(
                 normalizedPage,
                 normalizedSize,
-                totalReviews,
+                approvedPage.getTotalElements(),
                 approvedPage.getTotalPages(),
                 approvedPage.hasNext(),
                 approvedPage.hasPrevious());
 
         return new PublicProductReviewsResponse(avgRating, totalReviews, ratingBreakdown, reviews, pagination);
+    }
+
+    private static Sort resolveSort(String sort) {
+        String key = sort != null ? sort.trim().toLowerCase(Locale.ROOT) : "";
+        return switch (key) {
+            case "highest" -> Sort.by(Sort.Order.desc("rating"), Sort.Order.desc("createdAt"), Sort.Order.desc("id"));
+            case "lowest" -> Sort.by(Sort.Order.asc("rating"), Sort.Order.desc("createdAt"), Sort.Order.desc("id"));
+            default -> Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"));
+        };
     }
 
     @Transactional

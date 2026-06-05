@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { X as XIcon, Hash } from 'lucide-react'
 import { fetchMediaTags } from '../lib/adminApi'
+import { DropdownPopover } from './DropdownPopover'
 import { cn } from '@/lib/utils'
 
 /**
@@ -65,44 +66,46 @@ export function TagInput({ value, onChange, placeholder, disabled }) {
   }
 
   return (
-    <div className="relative">
-      <div className={cn(
-        'flex flex-wrap gap-1 border border-border rounded-xs p-1 min-h-8',
-        disabled ? 'bg-surface-muted' : 'bg-surface'
-      )}>
-        {tags.map((tg) => (
-          <span key={tg} className="inline-flex items-center gap-1 bg-primary text-white rounded-full py-0.5 pl-2 pr-1 text-xs font-semibold">
-            <Hash size={10} />
-            {tg}
-            {!disabled && (
-              <button type="button" onClick={() => removeTag(tg)} aria-label={t('common.removeTag', { tag: tg })}
-                className="bg-white/20 border-none cursor-pointer w-3.5 h-3.5 rounded-full text-white inline-flex items-center justify-center p-0">
-                <XIcon size={9} />
-              </button>
-            )}
-          </span>
-        ))}
-        <input type="text" value={input} disabled={disabled}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={onKeyDown}
-          onFocus={() => setShowSugg(true)}
-          onBlur={() => setTimeout(() => setShowSugg(false), 150)}
-          placeholder={tags.length === 0 ? placeholder : ''}
-          className="flex-1 min-w-[80px] border-none outline-none bg-transparent text-sm py-0.5 px-1" />
-      </div>
-
-      {showSugg && suggestions.length > 0 && !disabled && (
-        <ul className="absolute top-full left-0 right-0 z-[5] list-none mt-0.5 p-1 bg-surface border border-border rounded-xs shadow-md max-h-[200px] overflow-y-auto">
-          {suggestions.slice(0, 10).map((s) => (
-            <li key={s}>
-              <button type="button" onMouseDown={(e) => { e.preventDefault(); addTag(s) }}
-                className="flex items-center gap-1 w-full px-2 py-1 text-xs cursor-pointer rounded-xs bg-transparent border-none hover:bg-surface-muted">
-                <Hash size={12} /> {s}
-              </button>
-            </li>
+    <DropdownPopover
+      open={showSugg && suggestions.length > 0 && !disabled}
+      onOpenChange={(next) => { if (!next) setShowSugg(false) }}
+      anchor={
+        <div className={cn(
+          'flex flex-wrap gap-1 border border-border rounded-xs p-1 min-h-8',
+          disabled ? 'bg-surface-muted' : 'bg-surface'
+        )}>
+          {tags.map((tg) => (
+            <span key={tg} className="inline-flex items-center gap-1 bg-primary text-white rounded-full py-0.5 pl-2 pr-1 text-xs font-semibold">
+              <Hash size={10} />
+              {tg}
+              {!disabled && (
+                <button type="button" onClick={() => removeTag(tg)} aria-label={t('common.removeTag', { tag: tg })}
+                  className="bg-white/20 border-none cursor-pointer w-3.5 h-3.5 rounded-full text-white inline-flex items-center justify-center p-0">
+                  <XIcon size={9} />
+                </button>
+              )}
+            </span>
           ))}
-        </ul>
-      )}
-    </div>
+          <input type="text" value={input} disabled={disabled}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={onKeyDown}
+            onFocus={() => setShowSugg(true)}
+            onBlur={() => setTimeout(() => setShowSugg(false), 150)}
+            placeholder={tags.length === 0 ? placeholder : ''}
+            className="flex-1 min-w-[80px] border-none outline-none bg-transparent text-sm py-0.5 px-1" />
+        </div>
+      }
+    >
+      <ul className="list-none p-1">
+        {suggestions.slice(0, 10).map((s) => (
+          <li key={s}>
+            <button type="button" onMouseDown={(e) => { e.preventDefault(); addTag(s) }}
+              className="flex items-center gap-1 w-full px-2 py-1 text-xs cursor-pointer rounded-xs bg-transparent border-none hover:bg-surface-muted">
+              <Hash size={12} /> {s}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </DropdownPopover>
   )
 }

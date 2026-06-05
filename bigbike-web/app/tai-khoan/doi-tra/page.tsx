@@ -8,6 +8,7 @@ import { AccountShell } from "@/components/layout/AccountShell";
 import { formatDate, formatVnd } from "@/lib/utils/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PaginationNav } from "@/components/ui/PaginationNav";
 import { FormNotice } from "@/components/ui/FormNotice";
 import { StatusBadge, type StatusTone } from "@/components/ui/StatusBadge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -28,6 +29,7 @@ type ReturnStatusKey = (typeof RETURN_STATUS_KEYS)[number];
 type ReturnReasonKey = (typeof RETURN_REASON_KEYS)[number];
 
 const RETURNABLE_STATUSES = ["COMPLETED"];
+const RETURNS_PAGE_SIZE = 10;
 
 function isReturnStatus(s: string): s is ReturnStatusKey {
   return (RETURN_STATUS_KEYS as readonly string[]).includes(s);
@@ -184,6 +186,10 @@ function ReturnsContent() {
   const reasonLabel = (key: string) => (isReturnReason(key) ? tReason(key) : key);
   const statusLabel = (key: string) => (isReturnStatus(key) ? tStatus(key) : key);
   const [returns, setReturns] = useState<CustomerReturn[]>([]);
+  // A customer's returns are bounded by their orders, so we fetch them all (cheap)
+  // and paginate client-side — each page replaces the list so the section keeps a
+  // fixed height no matter how long the history grows.
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -205,6 +211,7 @@ function ReturnsContent() {
     fetchMyReturns()
       .then((data) => {
         setReturns(Array.isArray(data) ? data : []);
+        setPage(1);
         setError("");
       })
       .catch((e: Error | undefined) => {
@@ -465,7 +472,7 @@ function ReturnsContent() {
       ) : (
         <>
           <div className="flex flex-col gap-0">
-            {returns.map((ret) => (
+            {returns.slice((page - 1) * RETURNS_PAGE_SIZE, page * RETURNS_PAGE_SIZE).map((ret) => (
               <button
                 key={ret.id}
                 type="button"
@@ -506,6 +513,12 @@ function ReturnsContent() {
               </button>
             ))}
           </div>
+
+          <PaginationNav
+            page={page}
+            totalPages={Math.ceil(returns.length / RETURNS_PAGE_SIZE)}
+            onPageChange={setPage}
+          />
 
           {selectedId && (
             <ReturnDetailPanel key={selectedId} id={selectedId} onClose={() => setSelectedId(null)} />

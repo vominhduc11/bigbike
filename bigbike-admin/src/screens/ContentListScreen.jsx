@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Download, File, FileText, Pencil, Plus, Search } from 'lucide-react'
+import { FilterSelect } from '../components/FilterSelect'
+import { FilterSearchInput } from '../components/FilterSearchInput'
+import { Download, File, FileText, Pencil, Plus } from 'lucide-react'
 import { PaginationControls } from '../components/PaginationControls'
 import { PublishStatusBadge } from '../components/StatusBadge'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
@@ -111,29 +113,23 @@ export function ContentListScreen({ navigate, canUpdate }) {
 
       {/* Filter bar */}
       <div className="bb-filter-bar">
-        <div style={{ position: 'relative' }}>
-          <Search size={14} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--bb-text-muted)', pointerEvents: 'none' }} />
-          <input
-            type="search"
-            className="bb-input"
-            style={{ paddingLeft: 28 }}
-            value={searchInput}
-            onChange={(event) => setSearchInput(event.target.value)}
-            placeholder={t('content.searchPlaceholder')}
-          />
-        </div>
-        <select
-          className="bb-select"
+        <FilterSearchInput
+          value={searchInput}
+          onChange={setSearchInput}
+          placeholder={t('content.searchPlaceholder')}
+        />
+        <FilterSelect
           value={query.publishStatus}
-          onChange={(e) => updateQuery({ publishStatus: e.target.value }, { resetPage: true })}
-          aria-label={t('content.filterPublish')}
-        >
-          <option value="ALL">{t('content.filterPublish')}</option>
-          <option value="DRAFT">{t('status.publish.DRAFT')}</option>
-          <option value="PUBLISHED">{t('status.publish.PUBLISHED')}</option>
-          <option value="HIDDEN">{t('status.publish.HIDDEN')}</option>
-          <option value="TRASH">{t('status.publish.TRASH')}</option>
-        </select>
+          onValueChange={(v) => updateQuery({ publishStatus: v }, { resetPage: true })}
+          ariaLabel={t('content.filterPublish')}
+          options={[
+            { value: 'ALL', label: t('content.filterPublish') },
+            { value: 'DRAFT', label: t('status.publish.DRAFT') },
+            { value: 'PUBLISHED', label: t('status.publish.PUBLISHED') },
+            { value: 'HIDDEN', label: t('status.publish.HIDDEN') },
+            { value: 'TRASH', label: t('status.publish.TRASH') },
+          ]}
+        />
       </div>
 
       {state.status === 'error' ? (

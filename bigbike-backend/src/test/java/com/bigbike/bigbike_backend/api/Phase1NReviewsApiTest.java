@@ -160,6 +160,68 @@ class Phase1NReviewsApiTest {
     }
 
     @Test
+    void publicGetReviews_filterByRating_returnsOnlyThatStar_summaryStaysGlobal() throws Exception {
+        TestProductRef product = createPublishedProductCopy("Filter By Star");
+        insertReview(product.id(), "Five A", 5, "5a", "APPROVED");
+        insertReview(product.id(), "Five B", 5, "5b", "APPROVED");
+        insertReview(product.id(), "Four A", 4, "4a", "APPROVED");
+        insertReview(product.id(), "Three Pending", 3, "ignored", "PENDING");
+
+        mockMvc.perform(get("/api/v1/products/" + product.id() + "/reviews")
+                        .param("rating", "5"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.reviews.length()").value(2))
+                .andExpect(jsonPath("$.data.reviews[?(@.rating != 5)]").isEmpty())
+                // Summary panel ignores the list filter: 3 approved (two 5★ + one 4★).
+                .andExpect(jsonPath("$.data.totalReviews").value(3))
+                // Pagination follows the filtered list so "load more" pages within the bucket.
+                .andExpect(jsonPath("$.data.pagination.totalItems").value(2));
+    }
+
+    @Test
+    void publicGetReviews_sortHighest_ordersByRatingDesc() throws Exception {
+        TestProductRef product = createPublishedProductCopy("Sort Highest");
+        insertReview(product.id(), "Low", 2, "low", "APPROVED", Instant.parse("2030-02-01T00:00:01Z"));
+        insertReview(product.id(), "High", 5, "high", "APPROVED", Instant.parse("2030-02-01T00:00:02Z"));
+        insertReview(product.id(), "Mid", 3, "mid", "APPROVED", Instant.parse("2030-02-01T00:00:03Z"));
+
+        mockMvc.perform(get("/api/v1/products/" + product.id() + "/reviews")
+                        .param("sort", "highest"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.reviews[0].rating").value(5))
+                .andExpect(jsonPath("$.data.reviews[1].rating").value(3))
+                .andExpect(jsonPath("$.data.reviews[2].rating").value(2));
+    }
+
+    @Test
+    void publicGetReviews_sortLowest_ordersByRatingAsc() throws Exception {
+        TestProductRef product = createPublishedProductCopy("Sort Lowest");
+        insertReview(product.id(), "Low", 2, "low", "APPROVED", Instant.parse("2030-03-01T00:00:01Z"));
+        insertReview(product.id(), "High", 5, "high", "APPROVED", Instant.parse("2030-03-01T00:00:02Z"));
+        insertReview(product.id(), "Mid", 3, "mid", "APPROVED", Instant.parse("2030-03-01T00:00:03Z"));
+
+        mockMvc.perform(get("/api/v1/products/" + product.id() + "/reviews")
+                        .param("sort", "lowest"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.reviews[0].rating").value(2))
+                .andExpect(jsonPath("$.data.reviews[1].rating").value(3))
+                .andExpect(jsonPath("$.data.reviews[2].rating").value(5));
+    }
+
+    @Test
+    void publicGetReviews_invalidRating_returns400() throws Exception {
+        mockMvc.perform(get("/api/v1/products/" + PRODUCT_ID + "/reviews")
+                        .param("rating", "0"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+
+        mockMvc.perform(get("/api/v1/products/" + PRODUCT_ID + "/reviews")
+                        .param("rating", "6"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+    }
+
+    @Test
     void publicGetReviews_invalidPagination_returns400() throws Exception {
         mockMvc.perform(get("/api/v1/products/" + PRODUCT_ID + "/reviews")
                         .param("page", "0"))

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { FilterSearchInput } from '../components/FilterSearchInput'
 import { Check, Eye, EyeOff, MessageSquare, Search } from 'lucide-react'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
@@ -216,17 +217,11 @@ export function ReviewListScreen({ navigate, canUpdate }) {
 
       {/* Search */}
       <div className="bb-filter-bar">
-        <div style={{ position: 'relative' }}>
-          <Search size={14} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--bb-text-muted)', pointerEvents: 'none' }} />
-          <input
-            type="search"
-            className="bb-input"
-            style={{ paddingLeft: 28 }}
-            value={searchInput}
-            onChange={(event) => setSearchInput(event.target.value)}
-            placeholder={t('reviews.searchPlaceholder')}
-          />
-        </div>
+        <FilterSearchInput
+          value={searchInput}
+          onChange={setSearchInput}
+          placeholder={t('reviews.searchPlaceholder')}
+        />
       </div>
 
       {state.status === 'error' && (

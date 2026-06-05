@@ -9,6 +9,7 @@ import { createAddress, deleteAddress, fetchMyAddresses, updateAddress } from "@
 import type { CustomerAddress, SaveAddressPayload } from "@/lib/contracts/commerce";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { PaginationNav } from "@/components/ui/PaginationNav";
 import { Checkbox } from "@/components/ui/checkbox";
 import { VnAddressFields } from "@/components/ui/VnAddressFields";
 import { cn } from "@/lib/utils";
@@ -18,6 +19,7 @@ import { FormNotice } from "@/components/ui/FormNotice";
 
 // 2020-mockup field label: gray, sentence-case, red asterisk appended.
 const LEGACY_LABEL = "text-sm text-muted-foreground";
+const ADDRESSES_PAGE_SIZE = 6;
 
 function ReqMark() {
   return <span className="text-brand">*</span>;
@@ -150,6 +152,9 @@ function AddressBookContent() {
   const accountEmail = profile?.email ?? "";
 
   const [addresses, setAddresses] = useState<CustomerAddress[]>([]);
+  // Address books are tiny in practice; paginate client-side so an unusually long
+  // list keeps a fixed height instead of stretching the page.
+  const [addrPage, setAddrPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [listError, setListError] = useState("");
   const [notice, setNotice] = useState("");
@@ -236,6 +241,15 @@ function AddressBookContent() {
     }
   }
 
+  // Clamp the page in render so deleting from the last page never leaves us
+  // stranded on an empty page (no need to reset on every list mutation).
+  const totalAddressPages = Math.max(1, Math.ceil(addresses.length / ADDRESSES_PAGE_SIZE));
+  const currentAddressPage = Math.min(addrPage, totalAddressPages);
+  const pagedAddresses = addresses.slice(
+    (currentAddressPage - 1) * ADDRESSES_PAGE_SIZE,
+    currentAddressPage * ADDRESSES_PAGE_SIZE,
+  );
+
   return (
     <>
       <AccountSectionHeading
@@ -265,7 +279,7 @@ function AddressBookContent() {
         <>
           {addresses.length > 0 && (
             <div className="grid grid-cols-1 gap-[18px] sm:grid-cols-2 xl:gap-6">
-              {addresses.map((addr, idx) => (
+              {pagedAddresses.map((addr, idx) => (
                 <div
                   key={addr.id}
                   className={`border bg-white p-5 ${addr.isDefault ? "border-brand-border" : "border-border"}`}
@@ -275,7 +289,7 @@ function AddressBookContent() {
                       {addr.fullName ?? "—"}
                     </b>
                     <span className="shrink-0 text-sm text-muted-foreground">
-                      {t("addressItem", { index: idx + 1 })}
+                      {t("addressItem", { index: (currentAddressPage - 1) * ADDRESSES_PAGE_SIZE + idx + 1 })}
                     </span>
                   </div>
 
@@ -340,6 +354,12 @@ function AddressBookContent() {
               ))}
             </div>
           )}
+
+          <PaginationNav
+            page={currentAddressPage}
+            totalPages={totalAddressPages}
+            onPageChange={setAddrPage}
+          />
 
           <button
             type="button"

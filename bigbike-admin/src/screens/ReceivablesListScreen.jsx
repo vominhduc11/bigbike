@@ -1,7 +1,8 @@
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { FilterSearchInput } from '../components/FilterSearchInput'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { AlertTriangle, Clock, FileX, Search, Wallet } from 'lucide-react'
+import { AlertTriangle, Clock, FileX, Wallet } from 'lucide-react'
 import {
   fetchReceivables,
   fetchReceivableSummary,
@@ -69,8 +70,8 @@ export function ReceivablesListScreen({ navigate, canRecordPayment, canWriteOff 
   const items = listData?.items ?? []
   const pagination = listData?.pagination
 
-  const handleSearch = useCallback((e) => {
-    setUrlQuery({ search: e.target.value, page: 1 })
+  const handleSearch = useCallback((value) => {
+    setUrlQuery({ search: value, page: 1 })
   }, [setUrlQuery])
 
   const handleTabChange = useCallback((key) => {
@@ -144,17 +145,12 @@ export function ReceivablesListScreen({ navigate, canRecordPayment, canWriteOff 
       </div>
 
       <div className="bb-filter-bar">
-        <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
-          <Search size={13} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--bb-text-muted)', pointerEvents: 'none' }} />
-          <input
-            type="search"
-            placeholder={t('receivables.filterSearchPlaceholder')}
-            value={urlQuery.search || ''}
-            onChange={handleSearch}
-            className="bb-input"
-            style={{ paddingLeft: 28, width: '100%' }}
-          />
-        </div>
+        <FilterSearchInput
+          value={urlQuery.search || ''}
+          onChange={handleSearch}
+          placeholder={t('receivables.filterSearchPlaceholder')}
+          wrapperClassName="flex-1 min-w-[200px]"
+        />
       </div>
 
       {isLoading && <StatePanel tone="info" title={t('receivables.loading')} />}

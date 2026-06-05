@@ -1,9 +1,11 @@
 ﻿import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { FilterSelect } from '../components/FilterSelect'
+import { FilterSearchInput } from '../components/FilterSearchInput'
 import { toast } from 'sonner'
 import { QRCodeSVG } from 'qrcode.react'
-import { AlertTriangle, CheckCircle, Download, Package, Search, XCircle } from 'lucide-react'
+import { AlertTriangle, CheckCircle, Download, Package, XCircle } from 'lucide-react'
 import { Modal } from '../components/layout'
 import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
@@ -1754,27 +1756,21 @@ export function InventoryScreen({ canUpdate = false }) {
       {state.warning && <ReadOnlyBanner warning={state.warning} />}
 
       <div className="bb-filter-bar">
-        <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
-          <Search size={13} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--bb-text-muted)', pointerEvents: 'none' }} />
-          <input
-            type="search"
-            placeholder={t('inventory.searchPlaceholder')}
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className="bb-input"
-            style={{ paddingLeft: 28, width: '100%' }}
-          />
-        </div>
-        <select
-          className="bb-select"
+        <FilterSearchInput
+          value={searchInput}
+          onChange={setSearchInput}
+          placeholder={t('inventory.searchPlaceholder')}
+          wrapperClassName="flex-1 min-w-[200px]"
+        />
+        <FilterSelect
           value={query.stockState}
-          onChange={(e) => setQuery((q) => ({ ...q, stockState: e.target.value, page: 1 }))}
-          aria-label={t('inventory.filterStock')}
-        >
-          {STOCK_STATES.map((s) => (
-            <option key={s} value={s}>{s === 'ALL' ? t('inventory.filterStock') : s.replace(/_/g, ' ')}</option>
-          ))}
-        </select>
+          onValueChange={(v) => setQuery((q) => ({ ...q, stockState: v, page: 1 }))}
+          ariaLabel={t('inventory.filterStock')}
+          options={STOCK_STATES.map((s) => ({
+            value: s,
+            label: s === 'ALL' ? t('inventory.filterStock') : s.replace(/_/g, ' '),
+          }))}
+        />
       </div>
 
       {state.status === 'error' && (

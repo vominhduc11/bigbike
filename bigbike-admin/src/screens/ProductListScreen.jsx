@@ -2,10 +2,12 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Copy, Download, MoreHorizontal, Package, Pencil, Plus, Search, Trash2, Undo2, Upload } from 'lucide-react'
+import { Copy, Download, MoreHorizontal, Package, Pencil, Plus, Trash2, Undo2, Upload } from 'lucide-react'
 import { PublishStatusBadge, StockStatusBadge } from '../components/StatusBadge'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
+import { FilterSelect } from '../components/FilterSelect'
+import { FilterSearchInput } from '../components/FilterSearchInput'
 import { showConfirm } from '../lib/confirm'
 import { ApiClientError, exportProductsCsv, fetchBrands, fetchCategoryTree, fetchProductDetail, fetchProducts, restoreProduct, softDeleteProduct } from '../lib/adminApi'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
@@ -202,70 +204,65 @@ export function ProductListScreen({ navigate, canUpdate }) {
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
 
       <div className="bb-filter-bar">
-        <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
-          <Search size={13} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--bb-text-muted)', pointerEvents: 'none' }} />
-          <input
-            type="search"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            placeholder={t('products.searchPlaceholder')}
-            className="bb-input"
-            style={{ paddingLeft: 28, width: '100%' }}
-          />
-        </div>
-        <select
-          className="bb-select"
+        <FilterSearchInput
+          value={searchInput}
+          onChange={setSearchInput}
+          placeholder={t('products.searchPlaceholder')}
+          wrapperClassName="flex-1 min-w-[200px]"
+        />
+        <FilterSelect
           value={query.categoryId || 'ALL'}
-          onChange={(e) => updateQuery({ categoryId: e.target.value === 'ALL' ? '' : e.target.value }, { resetPage: true })}
-          aria-label={t('products.filterCategory')}
-        >
-          <option value="ALL">{t('products.filterCategory')}</option>
-          {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
-        <select
-          className="bb-select"
+          onValueChange={(v) => updateQuery({ categoryId: v === 'ALL' ? '' : v }, { resetPage: true })}
+          ariaLabel={t('products.filterCategory')}
+          options={[
+            { value: 'ALL', label: t('products.filterCategory') },
+            ...categories.map((c) => ({ value: c.id, label: c.name })),
+          ]}
+        />
+        <FilterSelect
           value={query.brandId || 'ALL'}
-          onChange={(e) => updateQuery({ brandId: e.target.value === 'ALL' ? '' : e.target.value }, { resetPage: true })}
-          aria-label={t('products.filterBrand')}
-        >
-          <option value="ALL">{t('products.filterBrand')}</option>
-          {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-        </select>
-        <select
-          className="bb-select"
+          onValueChange={(v) => updateQuery({ brandId: v === 'ALL' ? '' : v }, { resetPage: true })}
+          ariaLabel={t('products.filterBrand')}
+          options={[
+            { value: 'ALL', label: t('products.filterBrand') },
+            ...brands.map((b) => ({ value: b.id, label: b.name })),
+          ]}
+        />
+        <FilterSelect
           value={query.publishStatus}
-          onChange={(e) => updateQuery({ publishStatus: e.target.value }, { resetPage: true })}
-          aria-label={t('products.filterPublish')}
-        >
-          <option value="ALL">{t('products.filterPublish')}</option>
-          <option value="DRAFT">{t('status.publish.DRAFT')}</option>
-          <option value="PUBLISHED">{t('status.publish.PUBLISHED')}</option>
-          <option value="HIDDEN">{t('status.publish.HIDDEN')}</option>
-          <option value="TRASH">{t('status.publish.TRASH')}</option>
-        </select>
-        <select
-          className="bb-select"
+          onValueChange={(v) => updateQuery({ publishStatus: v }, { resetPage: true })}
+          ariaLabel={t('products.filterPublish')}
+          options={[
+            { value: 'ALL', label: t('products.filterPublish') },
+            { value: 'DRAFT', label: t('status.publish.DRAFT') },
+            { value: 'PUBLISHED', label: t('status.publish.PUBLISHED') },
+            { value: 'HIDDEN', label: t('status.publish.HIDDEN') },
+            { value: 'TRASH', label: t('status.publish.TRASH') },
+          ]}
+        />
+        <FilterSelect
           value={query.stockState}
-          onChange={(e) => updateQuery({ stockState: e.target.value }, { resetPage: true })}
-          aria-label={t('products.filterStock')}
-        >
-          <option value="ALL">{t('products.filterStock')}</option>
-          <option value="IN_STOCK">{t('status.stock.IN_STOCK')}</option>
-          <option value="LOW_STOCK">{t('status.stock.LOW_STOCK')}</option>
-          <option value="OUT_OF_STOCK">{t('status.stock.OUT_OF_STOCK')}</option>
-        </select>
-        <select
-          className="bb-select"
+          onValueChange={(v) => updateQuery({ stockState: v }, { resetPage: true })}
+          ariaLabel={t('products.filterStock')}
+          options={[
+            { value: 'ALL', label: t('products.filterStock') },
+            { value: 'IN_STOCK', label: t('status.stock.IN_STOCK') },
+            { value: 'LOW_STOCK', label: t('status.stock.LOW_STOCK') },
+            { value: 'OUT_OF_STOCK', label: t('status.stock.OUT_OF_STOCK') },
+          ]}
+        />
+        <FilterSelect
           value={query.sort}
-          onChange={(e) => updateQuery({ sort: e.target.value }, { resetPage: true })}
-          aria-label={t('products.filterSort')}
-        >
-          <option value="updatedAt:desc">{t('sort.newestUpdated')}</option>
-          <option value="updatedAt:asc">{t('sort.oldestUpdated')}</option>
-          <option value="name:asc">{t('sort.nameAZ')}</option>
-          <option value="name:desc">{t('sort.nameZA')}</option>
-          <option value="homepageOrder:asc">{t('products.sortHomepageOrder')}</option>
-        </select>
+          onValueChange={(v) => updateQuery({ sort: v }, { resetPage: true })}
+          ariaLabel={t('products.filterSort')}
+          options={[
+            { value: 'updatedAt:desc', label: t('sort.newestUpdated') },
+            { value: 'updatedAt:asc', label: t('sort.oldestUpdated') },
+            { value: 'name:asc', label: t('sort.nameAZ') },
+            { value: 'name:desc', label: t('sort.nameZA') },
+            { value: 'homepageOrder:asc', label: t('products.sortHomepageOrder') },
+          ]}
+        />
       </div>
 
       {state.status === 'success' && HOMEPAGE_BLOCK_LIMITS[query.homepageBlock] ? (

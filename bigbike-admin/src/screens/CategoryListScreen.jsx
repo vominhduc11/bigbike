@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { FilterSelect } from '../components/FilterSelect'
+import { FilterSearchInput } from '../components/FilterSearchInput'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { ChevronRight, ExternalLink, FolderTree, GripVertical, ImageOff, Plus, Search } from 'lucide-react'
+import { ChevronRight, ExternalLink, FolderTree, GripVertical, ImageOff, Plus } from 'lucide-react'
 import {
   DndContext,
   closestCenter,
@@ -722,38 +724,32 @@ export function CategoryListScreen({ navigate, canUpdate }) {
       {paginatedState.warning ? <ReadOnlyBanner warning={paginatedState.warning} /> : null}
 
       <div className="bb-filter-bar">
-        <div style={{ position: 'relative' }}>
-          <Search size={14} aria-hidden="true" style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--bb-text-muted)', pointerEvents: 'none' }} />
-          <input
-            type="search"
-            className="bb-input"
-            style={{ paddingLeft: 28 }}
-            value={searchInput}
-            onChange={(event) => setSearchInput(event.target.value)}
-            placeholder={t('categories.searchPlaceholder')}
-          />
-        </div>
-        <select
-          className="bb-select"
+        <FilterSearchInput
+          value={searchInput}
+          onChange={setSearchInput}
+          placeholder={t('categories.searchPlaceholder')}
+        />
+        <FilterSelect
           value={query.visibility}
-          onChange={(e) => updateQuery({ visibility: e.target.value }, { resetPage: true })}
-          aria-label={t('categories.filterVisibility')}
-        >
-          <option value="ALL">{t('categories.filterVisibilityAll')}</option>
-          <option value="VISIBLE">{t('categories.filterVisibilityVisible')}</option>
-          <option value="HIDDEN">{t('categories.filterVisibilityHidden')}</option>
-        </select>
-        <select
-          className="bb-select"
+          onValueChange={(v) => updateQuery({ visibility: v }, { resetPage: true })}
+          ariaLabel={t('categories.filterVisibility')}
+          options={[
+            { value: 'ALL', label: t('categories.filterVisibilityAll') },
+            { value: 'VISIBLE', label: t('categories.filterVisibilityVisible') },
+            { value: 'HIDDEN', label: t('categories.filterVisibilityHidden') },
+          ]}
+        />
+        <FilterSelect
           value={query.sort}
-          onChange={(e) => updateQuery({ sort: e.target.value }, { resetPage: true })}
-          aria-label={t('categories.filterSort')}
-        >
-          <option value="sortOrder:asc">{t('sort.sortOrder')}</option>
-          <option value="updatedAt:desc">{t('sort.newestUpdated')}</option>
-          <option value="updatedAt:asc">{t('sort.oldestUpdated')}</option>
-          <option value="name:asc">{t('sort.nameAZ')}</option>
-        </select>
+          onValueChange={(v) => updateQuery({ sort: v }, { resetPage: true })}
+          ariaLabel={t('categories.filterSort')}
+          options={[
+            { value: 'sortOrder:asc', label: t('sort.sortOrder') },
+            { value: 'updatedAt:desc', label: t('sort.newestUpdated') },
+            { value: 'updatedAt:asc', label: t('sort.oldestUpdated') },
+            { value: 'name:asc', label: t('sort.nameAZ') },
+          ]}
+        />
         {useTreeMode && (
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
             <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" onClick={expandAll}>

@@ -35,9 +35,13 @@ export async function GET(req: Request, { params }: ProductRouteParams) {
   const upstreamParams = new URLSearchParams();
   const page = searchParams.get("page");
   const size = searchParams.get("size");
+  const rating = searchParams.get("rating");
+  const sort = searchParams.get("sort");
 
   if (page) upstreamParams.set("page", page);
   if (size) upstreamParams.set("size", size);
+  if (rating) upstreamParams.set("rating", rating);
+  if (sort) upstreamParams.set("sort", sort);
 
   const query = upstreamParams.size ? `?${upstreamParams.toString()}` : "";
 

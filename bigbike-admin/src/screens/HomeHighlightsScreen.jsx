@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -8,7 +8,7 @@ import { StatePanel } from '../components/StatePanel'
 import { Screen } from '../components/layout/Screen'
 import { ScreenHeader } from '../components/layout/ScreenHeader'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { ProductPickerCombobox } from '../components/ProductPickerCombobox'
 
 const SLOT_LABELS = { 1: 'Slot 1', 2: 'Slot 2', 3: 'Slot 3' }
 
@@ -16,7 +16,6 @@ function ProductPicker({ value, onChange, disabled }) {
   const { t } = useTranslation()
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
-  const wrapperRef = useRef(null)
 
   const { data, isFetching } = useQuery({
     queryKey: ['home-highlights-product-search', query],
@@ -27,16 +26,6 @@ function ProductPicker({ value, onChange, disabled }) {
 
   const results = data?.items ?? []
 
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
-        setOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
-
   const handleSelect = useCallback((product) => {
     onChange(product)
     setQuery('')
@@ -46,49 +35,20 @@ function ProductPicker({ value, onChange, disabled }) {
   const displayValue = query || (value ? value.name : '')
 
   return (
-    <div ref={wrapperRef} className="relative">
-      <Input
-        value={displayValue}
-        onChange={(e) => { setQuery(e.target.value); setOpen(true) }}
-        onFocus={() => setOpen(true)}
-        placeholder={t('homeHighlights.searchPlaceholder')}
-        disabled={disabled}
-        className="w-full"
-      />
-      {open && (query.trim().length > 0) && (
-        <div className="absolute z-50 left-0 right-0 mt-1 bg-background border border-border shadow-md max-h-60 overflow-y-auto">
-          {isFetching && (
-            <div className="px-3 py-2 text-sm text-muted-foreground">
-              {t('common.loading')}…
-            </div>
-          )}
-          {!isFetching && results.length === 0 && (
-            <div className="px-3 py-2 text-sm text-muted-foreground">
-              {t('homeHighlights.noResults')}
-            </div>
-          )}
-          {results.map((product) => (
-            <button
-              key={product.id}
-              type="button"
-              className="flex items-center gap-3 w-full px-3 py-2 text-left hover:bg-muted text-sm"
-              onMouseDown={(e) => { e.preventDefault(); handleSelect(product) }}
-            >
-              {product.image?.url && (
-                <img
-                  src={product.image.url}
-                  alt={product.image.alt || product.name}
-                  referrerPolicy="no-referrer"
-                  className="w-10 h-10 object-cover flex-shrink-0"
-                  loading="lazy"
-                />
-              )}
-              <span className="truncate">{product.name}</span>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+    <ProductPickerCombobox
+      search={displayValue}
+      onSearchChange={(v) => { setQuery(v); setOpen(true) }}
+      onFocus={() => setOpen(true)}
+      open={open && query.trim().length > 0}
+      onOpenChange={(next) => { if (!next) setOpen(false) }}
+      loading={isFetching}
+      items={results}
+      onPick={handleSelect}
+      placeholder={t('homeHighlights.searchPlaceholder')}
+      loadingText={`${t('common.loading')}…`}
+      emptyText={t('homeHighlights.noResults')}
+      disabled={disabled}
+    />
   )
 }
 

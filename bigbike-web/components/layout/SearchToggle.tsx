@@ -391,7 +391,7 @@ export function SearchToggle({ popularCategories: categoriesFromApi = [] }: Sear
                     {suggestions.length > 0 && (
                       <p className={resultsLabel}>{t("sectionProducts")}</p>
                     )}
-                    {suggestions.slice(0, 4).map((product) => (
+                    {suggestions.slice(0, 5).map((product) => (
                       <Link
                         key={product.id}
                         href={toProductPath(product.slug)}

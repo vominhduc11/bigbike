@@ -1,28 +1,39 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { type RecentProduct, getRecentProducts, saveRecentProduct } from "@/lib/recently-viewed";
-import { formatVnd, resolveMediaUrl, safeText } from "@/lib/utils/format";
-import { toProductPath } from "@/lib/utils/routes";
-import { categoryBadge, sectionEyebrow } from "@/lib/ui-classes";
+import type { Product } from "@/lib/contracts/public";
+import { ProductCarouselSection } from "@/components/catalog/ProductCarouselSection";
 
 type Props = {
   currentProductId: string;
-  currentProduct: {
-    id: string;
-    slug: string;
-    name: string;
-    price?: number | null;
-    imageUrl?: string | null;
-    categoryName?: string | null;
-  };
+  currentProduct: RecentProduct;
 };
 
+/**
+ * Map the lightweight localStorage record onto the Product shape the carousel
+ * cards read (name / slug / image / price / rating). Fields the home featured
+ * card never renders (category, stock, status, timestamps) get inert defaults.
+ */
+function toCardProduct(p: RecentProduct): Product {
+  return {
+    id: p.id,
+    slug: p.slug,
+    name: p.name,
+    category: { id: "", slug: "", name: p.categoryName ?? "" },
+    image: p.imageUrl ? { url: p.imageUrl, alt: p.name } : undefined,
+    price: { retailPrice: p.price ?? 0, currency: "VND" },
+    stockState: "IN_STOCK",
+    publishStatus: "PUBLISHED",
+    homepageBlock: "NONE",
+    rating: p.rating ?? null,
+    createdAt: "",
+    updatedAt: "",
+  };
+}
+
 export function RecentlyViewedSection({ currentProductId, currentProduct }: Props) {
-  const tProduct = useTranslations("Product");
   const tRecent = useTranslations("Product.recentlyViewed");
   const [items, setItems] = useState<RecentProduct[]>([]);
 
@@ -33,55 +44,15 @@ export function RecentlyViewedSection({ currentProductId, currentProduct }: Prop
     return () => clearTimeout(id);
   }, [currentProductId, currentProduct]);
 
+  // Need at least 2 other products to make a row worth showing.
   if (items.length < 2) return null;
 
   return (
-    <section className="mt-12 border-t border-[color:var(--bb-border-default)] pt-9">
-      <div className="mb-[18px]">
-        <p className={`${sectionEyebrow} mb-3`}>{tRecent("kicker")}</p>
-        <h2 className="mt-1 mb-0 font-heading text-h4 font-semibold uppercase leading-title text-foreground">
-          {tRecent("heading")}
-        </h2>
-      </div>
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-3.5">
-        {items.map((p) => {
-          const src = p.imageUrl ? resolveMediaUrl(p.imageUrl) : null;
-          return (
-            <Link
-              key={p.id}
-              href={toProductPath(p.slug)}
-              className="flex flex-col gap-2 overflow-hidden border border-[color:var(--bb-border-default)] bg-card no-underline transition-colors hover:border-brand"
-            >
-              <div className="relative aspect-square bg-white">
-                {src ? (
-                  <Image
-                    src={src}
-                    alt={safeText(p.name, tProduct("fallbackShortName"))}
-                    fill
-                    sizes="(max-width: 600px) 50vw, 200px"
-                    className="object-contain"
-                  />
-                ) : (
-                  <div className="absolute inset-0 bg-[color:var(--bb-color-gray-100)]" />
-                )}
-              </div>
-              <div className="flex flex-col gap-[3px] px-2.5 pt-2 pb-2.5">
-                {p.categoryName && (
-                  <p className={categoryBadge}>
-                    {p.categoryName}
-                  </p>
-                )}
-                <p className="m-0 line-clamp-2 text-sm font-bold uppercase leading-title tracking-wide text-foreground">
-                  {p.name}
-                </p>
-                {p.price != null && p.price > 0 && (
-                  <p className="m-0 text-sm font-bold text-brand">{formatVnd(p.price)}</p>
-                )}
-              </div>
-            </Link>
-          );
-        })}
-      </div>
-    </section>
+    <ProductCarouselSection
+      products={items.map(toCardProduct)}
+      heading={tRecent("heading")}
+      headingId="recently-viewed-heading"
+      className="mx-auto max-w-[1140px] px-[15px] mt-12 mb-10 pt-9 border-t border-[color:var(--bb-border-default)] max-md:px-[var(--bb-mobile-page-x)] min-[1536px]:max-w-[1360px] min-[1920px]:max-w-[1600px]"
+    />
   );
 }

@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { FilterSelect } from '../components/FilterSelect'
+import { FilterSearchInput } from '../components/FilterSearchInput'
 import { useQuery } from '@tanstack/react-query'
-import { Crown, Download, Search, UserCheck, UserPlus, Users } from 'lucide-react'
+import { Crown, Download, UserCheck, UserPlus, Users } from 'lucide-react'
 import { PaginationControls } from '../components/PaginationControls'
 import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
@@ -131,29 +133,24 @@ export function CustomerListScreen({ navigate }) {
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
 
       <div className="bb-filter-bar">
-        <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
-          <Search size={13} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--bb-text-muted)', pointerEvents: 'none' }} />
-          <input
-            type="search"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            placeholder={t('customers.searchPlaceholder')}
-            className="bb-input"
-            style={{ paddingLeft: 28, width: '100%' }}
-          />
-        </div>
-        <select
-          className="bb-select"
+        <FilterSearchInput
+          value={searchInput}
+          onChange={setSearchInput}
+          placeholder={t('customers.searchPlaceholder')}
+          wrapperClassName="flex-1 min-w-[200px]"
+        />
+        <FilterSelect
           value={query.status}
-          onChange={(e) => updateQuery({ status: e.target.value }, { resetPage: true })}
-          aria-label={t('customers.filterStatus')}
-        >
-          <option value="ALL">{t('customers.filterStatus')}</option>
-          <option value="ACTIVE">{t('status.customer.ACTIVE')}</option>
-          <option value="PENDING">{t('status.customer.PENDING')}</option>
-          <option value="DISABLED">{t('status.customer.DISABLED')}</option>
-          <option value="BLOCKED">{t('status.customer.BLOCKED')}</option>
-        </select>
+          onValueChange={(v) => updateQuery({ status: v }, { resetPage: true })}
+          ariaLabel={t('customers.filterStatus')}
+          options={[
+            { value: 'ALL', label: t('customers.filterStatus') },
+            { value: 'ACTIVE', label: t('status.customer.ACTIVE') },
+            { value: 'PENDING', label: t('status.customer.PENDING') },
+            { value: 'DISABLED', label: t('status.customer.DISABLED') },
+            { value: 'BLOCKED', label: t('status.customer.BLOCKED') },
+          ]}
+        />
       </div>
 
       {state.status === 'error' && (

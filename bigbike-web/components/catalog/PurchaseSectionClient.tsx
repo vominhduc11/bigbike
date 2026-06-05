@@ -13,6 +13,7 @@ import type { StockData } from "./StockStatus";
 import { VariantSelector } from "./VariantSelector";
 import { useCart } from "@/lib/cart-context";
 import { Button } from "@/components/ui/button";
+import { QuantityStepper } from "@/components/ui/QuantityStepper";
 import { cn } from "@/lib/utils";
 import {
   collectAttributeNames,
@@ -110,60 +111,6 @@ function RatingRow({
           (<span itemProp="reviewCount">{count}</span> {t("reviewsWord")})
         </span>
       </p>
-    </div>
-  );
-}
-
-function WpQuantitySelector({
-  value,
-  onChange,
-  max,
-  label,
-}: {
-  value: number;
-  onChange: (value: number) => void;
-  max?: number | null;
-  label: string;
-}) {
-  const normalizedMax = max && max > 0 ? max : undefined;
-
-  function commit(next: number) {
-    const clamped = Math.max(1, Math.min(normalizedMax ?? next, next));
-    onChange(Number.isFinite(clamped) ? clamped : 1);
-  }
-
-  const stepBtn =
-    "block w-full h-[26px] border border-[#707070] rounded-none border-l-0 bg-transparent text-black text-ui-10 cursor-pointer hover:bg-black hover:text-white";
-
-  return (
-    <div className="flex flex-wrap w-full">
-      <div className="flex-1 min-w-0">
-        <label className="sr-only" htmlFor="bb-wp-pdp-qty">
-          {label}
-        </label>
-        <input
-          id="bb-wp-pdp-qty"
-          type="number"
-          min={1}
-          max={normalizedMax}
-          value={value}
-          onChange={(event) => commit(Number.parseInt(event.target.value, 10))}
-          inputMode="numeric"
-          className="w-full h-[52px] border border-[#707070] rounded-none bg-transparent text-center text-black text-ui-24 font-semibold"
-        />
-      </div>
-      <div className="flex-[0_0_60px] max-w-[60px]">
-        <button type="button" className={stepBtn} onClick={() => commit(value + 1)}>
-          <svg width="10" height="10" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-        <button type="button" className={cn(stepBtn, "border-t-0")} onClick={() => commit(value - 1)}>
-          <svg width="10" height="10" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-      </div>
     </div>
   );
 }
@@ -396,11 +343,15 @@ export function PurchaseSectionClient({
           ) : (
             <>
               <div className="w-[41.666667%] max-[1024px]:w-full min-w-[190px] max-md:min-w-0">
-                <WpQuantitySelector
+                <QuantityStepper
                   value={quantity}
                   onChange={setQuantity}
-                  max={effectiveStockData?.quantity}
-                  label={t("quantityLabel")}
+                  max={
+                    effectiveStockData?.quantity && effectiveStockData.quantity > 0
+                      ? effectiveStockData.quantity
+                      : undefined
+                  }
+                  ariaLabel={t("quantityLabel")}
                 />
               </div>
 

@@ -8,6 +8,8 @@ export type ProductTabSection = {
   id: string;
   label: string;
   content: ReactNode;
+  /** Nếu set, click tab này sẽ scroll đến element có id này thay vì switch panel */
+  scrollTo?: string;
 };
 
 function toWpTabButtonId(id: string) {
@@ -18,9 +20,19 @@ export function ProductTabs({ sections }: { sections: ProductTabSection[] }) {
   const [active, setActive] = useState(sections[0]?.id ?? "");
 
   if (sections.length === 0) return null;
-  const activeId = sections.some((section) => section.id === active)
+  const panelSections = sections.filter((s) => !s.scrollTo);
+  const activeId = panelSections.some((s) => s.id === active)
     ? active
-    : sections[0].id;
+    : (panelSections[0]?.id ?? "");
+
+  function handleScrollTo(targetId: string) {
+    const target = document.getElementById(targetId);
+    if (!target) return;
+    const header = document.querySelector<HTMLElement>(".bb-site-header");
+    const offset = (header?.offsetHeight ?? 60) + 8;
+    const y = target.getBoundingClientRect().top + window.scrollY - offset;
+    window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+  }
 
   return (
     // `bb-wp-tabs` + `tab-panel` kept as bare markers ONLY to host the descendant
@@ -57,7 +69,11 @@ export function ProductTabs({ sections }: { sections: ProductTabSection[] }) {
                   )}
                   onClick={(event) => {
                     event.preventDefault();
-                    setActive(section.id);
+                    if (section.scrollTo) {
+                      handleScrollTo(section.scrollTo);
+                    } else {
+                      setActive(section.id);
+                    }
                   }}
                 >
                   <span data-text={section.label}>{section.label}</span>
@@ -69,7 +85,7 @@ export function ProductTabs({ sections }: { sections: ProductTabSection[] }) {
       </div>
 
       <div>
-        {sections.map((section) => {
+        {panelSections.map((section) => {
           const active = activeId === section.id;
           return (
             <div

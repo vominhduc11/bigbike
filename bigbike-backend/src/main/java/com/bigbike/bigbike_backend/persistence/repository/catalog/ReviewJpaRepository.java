@@ -16,6 +16,9 @@ public interface ReviewJpaRepository extends JpaRepository<ReviewEntity, Long> {
 
     Page<ReviewEntity> findByProductIdAndStatus(String productId, String status, Pageable pageable);
 
+    Page<ReviewEntity> findByProductIdAndStatusAndRating(
+            String productId, String status, short rating, Pageable pageable);
+
     @Query("""
             SELECT AVG(r.rating) AS avgRating, COUNT(r) AS totalReviews
             FROM ReviewEntity r

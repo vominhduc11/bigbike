@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { FilterSelect } from '../components/FilterSelect'
+import { FilterSearchInput } from '../components/FilterSearchInput'
 import { useQueryClient } from '@tanstack/react-query'
-import { Check, Download, Plus, Search, SlidersHorizontal, Store } from 'lucide-react'
+import { Check, Download, Plus, SlidersHorizontal, Store } from 'lucide-react'
 import { BulkActionBar } from '../components/BulkActionBar'
 import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
@@ -148,48 +150,41 @@ export function OrderListScreen({ navigate }) {
 
       {/* Filter bar */}
       <div className="bb-filter-bar">
-        <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
-          <Search size={13} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--bb-text-muted)', pointerEvents: 'none' }} />
-          <input
-            type="search"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            placeholder={t('orders.searchPlaceholder')}
-            className="bb-input"
-            style={{ paddingLeft: 28, width: '100%' }}
-          />
-        </div>
-        <select
-          className="bb-select"
+        <FilterSearchInput
+          value={searchInput}
+          onChange={setSearchInput}
+          placeholder={t('orders.searchPlaceholder')}
+          wrapperClassName="flex-1 min-w-[200px]"
+        />
+        <FilterSelect
           value={query.paymentStatus}
-          onChange={(e) => updateQuery({ paymentStatus: e.target.value }, { resetPage: true })}
-          aria-label={t('orders.filterPaymentStatus')}
-        >
-          <option value="ALL">{t('orders.filterPaymentStatus')}</option>
-          {PAYMENT_STATUS_KEYS.map((k) => (
-            <option key={k} value={k}>{t(`status.payment.${k}`)}</option>
-          ))}
-        </select>
-        <select
-          className="bb-select"
+          onValueChange={(v) => updateQuery({ paymentStatus: v }, { resetPage: true })}
+          ariaLabel={t('orders.filterPaymentStatus')}
+          options={[
+            { value: 'ALL', label: t('orders.filterPaymentStatus') },
+            ...PAYMENT_STATUS_KEYS.map((k) => ({ value: k, label: t(`status.payment.${k}`) })),
+          ]}
+        />
+        <FilterSelect
           value={query.sort}
-          onChange={(e) => updateQuery({ sort: e.target.value }, { resetPage: true })}
-          aria-label={t('orders.filterSort')}
-        >
-          <option value="createdAt:desc">{t('sort.newestOrder')}</option>
-          <option value="createdAt:asc">{t('sort.oldestOrder')}</option>
-          <option value="total:desc">{t('sort.highestValue')}</option>
-        </select>
-        <select
-          className="bb-select"
+          onValueChange={(v) => updateQuery({ sort: v }, { resetPage: true })}
+          ariaLabel={t('orders.filterSort')}
+          options={[
+            { value: 'createdAt:desc', label: t('sort.newestOrder') },
+            { value: 'createdAt:asc', label: t('sort.oldestOrder') },
+            { value: 'total:desc', label: t('sort.highestValue') },
+          ]}
+        />
+        <FilterSelect
           value={String(query.pageSize)}
-          onChange={(e) => updateQuery({ pageSize: Number(e.target.value) }, { resetPage: true })}
-          aria-label={t('common.rowsPerPage')}
-        >
-          <option value="20">20 / {t('common.page', { defaultValue: 'trang' })}</option>
-          <option value="50">50 / {t('common.page', { defaultValue: 'trang' })}</option>
-          <option value="100">100 / {t('common.page', { defaultValue: 'trang' })}</option>
-        </select>
+          onValueChange={(v) => updateQuery({ pageSize: Number(v) }, { resetPage: true })}
+          ariaLabel={t('common.rowsPerPage')}
+          options={[
+            { value: '20', label: `20 / ${t('common.page', { defaultValue: 'trang' })}` },
+            { value: '50', label: `50 / ${t('common.page', { defaultValue: 'trang' })}` },
+            { value: '100', label: `100 / ${t('common.page', { defaultValue: 'trang' })}` },
+          ]}
+        />
         <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" onClick={resetFilters}>
           <SlidersHorizontal size={13} />{t('orders.clearFilters')}
         </button>

@@ -1,19 +1,27 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useWishlistProducts } from "@/lib/query/hooks";
 import { AccountShell } from "@/components/layout/AccountShell";
 import { ProductCard } from "@/components/catalog/ProductCard";
+import { PaginationNav } from "@/components/ui/PaginationNav";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { productGrid, sectionHeading, skelBase, skelStack } from "@/lib/ui-classes";
 
+const WISHLIST_PATH = "/tai-khoan/yeu-thich/";
+
 function WishlistContent() {
   const t = useTranslations("Account.wishlist");
-  const { data, isLoading, error } = useWishlistProducts();
+  const searchParams = useSearchParams();
+  const pageParam = Number(searchParams.get("page"));
+  const page = Number.isInteger(pageParam) && pageParam > 0 ? pageParam : 1;
+  const { data, isLoading, error } = useWishlistProducts(page);
   const products = data?.data ?? [];
+  const totalPages = data?.pagination?.totalPages ?? 1;
 
   return (
     <>
@@ -43,9 +51,12 @@ function WishlistContent() {
           action={<Button asChild variant="primary" size="sm"><Link href="/san-pham/">{t("emptyAction")}</Link></Button>}
         />
       ) : (
-        <div className={productGrid}>
-          {products.map((p) => <ProductCard key={p.id} product={p} />)}
-        </div>
+        <>
+          <div className={productGrid}>
+            {products.map((p) => <ProductCard key={p.id} product={p} />)}
+          </div>
+          <PaginationNav page={page} totalPages={totalPages} baseHref={WISHLIST_PATH} />
+        </>
       )}
     </>
   );

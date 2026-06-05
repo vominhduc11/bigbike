@@ -2271,7 +2271,12 @@ input[type="checkbox"] {
   background: #fff;
 }
 
-.bb-home-products-parity .bb-fp-page-track {
+/* FeaturedProductsCarousel track — shared by the homepage featured carousel and
+   the PDP related-products carousel (un-scoped from .bb-home-products-parity so
+   the component renders identically off the homepage). The homepage element is
+   the only .bb-fp-page-track inside .bb-home-products-parity, so dropping the
+   ancestor leaves the homepage computed styles unchanged. */
+.bb-fp-page-track {
   display: flex;
   gap: 30px;
   transition: transform 0.3s ease;
@@ -2684,31 +2689,6 @@ body:has(.bb-home) {
    `.bb-home .videos-slide` section is also migrated to inline Tailwind (only the
    `.swiper-slide{height:auto}` mechanism rule is kept). */
 
-.bb-wp-related-track {
-  --bb-wp-related-gap: 30px;
-  display: flex;
-  gap: var(--bb-wp-related-gap);
-  transform: translateX(
-    calc(
-      var(--bb-wp-related-index) * -1 *
-      (
-        (100% - ((var(--bb-wp-related-columns) - 1) * var(--bb-wp-related-gap))) /
-        var(--bb-wp-related-columns) + var(--bb-wp-related-gap)
-      )
-    )
-  );
-  transition: transform 300ms ease;
-}
-
-.bb-wp-related-track .swiper-slide {
-  flex: 0 0
-    calc(
-      (100% - ((var(--bb-wp-related-columns) - 1) * var(--bb-wp-related-gap))) /
-      var(--bb-wp-related-columns)
-    );
-  min-width: 0;
-}
-
 /* Collapse PDP to 1-column up to 1023px (tablet inclusive). Previously this
    block fired only at <=767, leaving 768-1023 in 2-column with the WP gallery
    (7fr) + info (5fr) cramped: title wrapped to 5 lines and the breadcrumb sat
@@ -2722,16 +2702,6 @@ body:has(.bb-home) {
 
   .bb-wp-pdp .bb-breadcrumb .contents:not(:first-child):not(:last-child) {
     display: none;
-  }
-
-  .bb-wp-related-track {
-    --bb-wp-related-gap: 20px;
-  }
-}
-
-@media (max-width: 419px) {
-  .bb-wp-related-track {
-    --bb-wp-related-gap: 0px;
   }
 }
 
@@ -3356,7 +3326,7 @@ body:has(.bb-search-results-page) {
     padding-bottom: 8px;
   }
 
-  .bb-home-products-parity .bb-fp-page-track {
+  .bb-fp-page-track {
     width: max-content;
     gap: 12px;
     transform: none;
@@ -3541,22 +3511,6 @@ body:has(.bb-search-results-page) {
   .bb-wp-pdp .product-information .desc .woocommerce-product-details__short-description {
     font-size: 15px;
     line-height: 1.55;
-  }
-
-  .bb-wp-related-track {
-    overflow-x: auto;
-    transform: none !important;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none;
-  }
-
-  .bb-wp-related-track::-webkit-scrollbar {
-    display: none;
-  }
-
-  .bb-wp-related-track .swiper-slide {
-    flex-basis: 72%;
-    scroll-snap-align: start;
   }
 
   .bb-blog-listing-parity .page-title {

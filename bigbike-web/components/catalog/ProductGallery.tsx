@@ -177,9 +177,11 @@ export function ProductGallery({
     return out;
   })();
 
-  // Videos appear first in the gallery strip, then images.
+  // Videos only appear when no variant is selected; once a variant is picked
+  // the strip shows only that variant's gallery images.
+  const showVideos = variantKey == null;
   const allItems: GalleryItem[] = [
-    ...(videos ?? []).filter(isSupportedVideo).map((asset): GalleryItem => ({ kind: "video", asset })),
+    ...(showVideos ? (videos ?? []).filter(isSupportedVideo).map((asset): GalleryItem => ({ kind: "video", asset })) : []),
     ...images.map((asset): GalleryItem => ({ kind: "image", asset })),
   ];
 

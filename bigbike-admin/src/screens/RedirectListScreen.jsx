@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { FilterSelect } from '../components/FilterSelect'
+import { FilterSearchInput } from '../components/FilterSearchInput'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ExternalLink, Pencil, Plus, Search, Trash2 } from 'lucide-react'
+import { ExternalLink, Pencil, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   createRedirect,
@@ -284,39 +286,33 @@ export function RedirectListScreen({ canUpdate }) {
       )}
 
       <div className="bb-filter-bar">
-        <div style={{ position: 'relative' }}>
-          <Search size={14} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--bb-text-muted)', pointerEvents: 'none' }} />
-          <input
-            type="search"
-            className="bb-input"
-            style={{ paddingLeft: 28 }}
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            placeholder={t('redirects.searchPlaceholder', { defaultValue: 'Nguồn, đích, ghi chú, legacy ID' })}
-          />
-        </div>
-        <select
-          className="bb-select"
+        <FilterSearchInput
+          value={searchInput}
+          onChange={setSearchInput}
+          placeholder={t('redirects.searchPlaceholder', { defaultValue: 'Nguồn, đích, ghi chú, legacy ID' })}
+        />
+        <FilterSelect
           value={query.enabled}
-          onChange={(e) => updateQuery({ enabled: e.target.value }, { resetPage: true })}
-          aria-label={t('redirects.filterEnabled', { defaultValue: 'Bật' })}
-        >
-          <option value="ALL">{t('redirects.filterEnabled', { defaultValue: 'Bật' })}</option>
-          <option value="true">{t('common.on')}</option>
-          <option value="false">{t('common.off')}</option>
-        </select>
-        <select
-          className="bb-select"
+          onValueChange={(v) => updateQuery({ enabled: v }, { resetPage: true })}
+          ariaLabel={t('redirects.filterEnabled', { defaultValue: 'Bật' })}
+          options={[
+            { value: 'ALL', label: t('redirects.filterEnabled', { defaultValue: 'Bật' }) },
+            { value: 'true', label: t('common.on') },
+            { value: 'false', label: t('common.off') },
+          ]}
+        />
+        <FilterSelect
           value={query.statusCode}
-          onChange={(e) => updateQuery({ statusCode: e.target.value }, { resetPage: true })}
-          aria-label={t('redirects.filterStatusCode', { defaultValue: 'Mã trạng thái' })}
-        >
-          <option value="ALL">{t('redirects.filterStatusCode', { defaultValue: 'Mã trạng thái' })}</option>
-          <option value="301">301</option>
-          <option value="302">302</option>
-          <option value="307">307</option>
-          <option value="308">308</option>
-        </select>
+          onValueChange={(v) => updateQuery({ statusCode: v }, { resetPage: true })}
+          ariaLabel={t('redirects.filterStatusCode', { defaultValue: 'Mã trạng thái' })}
+          options={[
+            { value: 'ALL', label: t('redirects.filterStatusCode', { defaultValue: 'Mã trạng thái' }) },
+            { value: '301', label: '301' },
+            { value: '302', label: '302' },
+            { value: '307', label: '307' },
+            { value: '308', label: '308' },
+          ]}
+        />
       </div>
 
       {isError && (

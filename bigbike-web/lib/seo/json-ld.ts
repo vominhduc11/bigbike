@@ -252,6 +252,7 @@ export function buildLocalBusinessJsonLd(
   logo: string,
   address: string,
   phone: string,
+  email?: string,
 ): JsonLdObject {
   const result: JsonLdObject = {
     "@context": "https://schema.org",
@@ -262,6 +263,7 @@ export function buildLocalBusinessJsonLd(
   };
   if (address) result.address = address;
   if (phone) result.telephone = phone;
+  if (email) result.email = email;
   return result;
 }
 

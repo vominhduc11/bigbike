@@ -3,9 +3,12 @@ import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { PurchaseSectionClient } from "@/components/catalog/PurchaseSectionClient";
-import { ProductTabs } from "@/components/catalog/ProductTabs";
+import { ProductTabs, type ProductTabSection } from "@/components/catalog/ProductTabs";
 import { ProductSpecTable } from "@/components/catalog/ProductSpecTable";
 import { PdpRelatedProductsCarousel } from "@/components/catalog/PdpRelatedProductsCarousel";
+import { RecentlyViewedSection } from "@/components/catalog/RecentlyViewedSection";
+import { ProductContactCta } from "@/components/catalog/ProductContactCta";
+import { ReviewsSection } from "@/components/catalog/ReviewsSection";
 import { MobilePdpAnchorNav } from "@/components/catalog/MobilePdpAnchorNav";
 import { MobileStickyPurchaseBar } from "@/components/catalog/MobileStickyPurchaseBar";
 import { AnalyticsView } from "@/components/analytics/AnalyticsView";
@@ -17,6 +20,7 @@ import { getProductBySlug, listProducts, listPublicSettings } from "@/lib/api/pu
 import {
   buildBreadcrumbJsonLd,
   buildFaqPageJsonLd,
+  buildLocalBusinessJsonLd,
   buildProductJsonLd,
   serializeJsonLd,
 } from "@/lib/seo/json-ld";
@@ -36,6 +40,10 @@ import { isValidSlug } from "@/lib/utils/slug";
 // dynamic rendering. Underlying API fetches are still cached at the
 // data-cache level (3600 s TTL set in loadDataWithQuery).
 export const dynamic = "force-dynamic";
+
+// Same logo as the homepage LocalBusiness node so the store identity / NAP stays
+// consistent across pages for local SEO.
+const ORG_LOGO = "/wp/logo.png";
 
 export async function generateStaticParams() {
   const result = await listProducts({ page: 1, size: 100, sort: "createdAt:desc" });
@@ -124,6 +132,13 @@ export default async function ProductDetailPage({
   const specs = safeArray(product.specifications);
   const faqs = safeArray(product.faqs);
   const instagramUrl = pickSetting(settings, ["instagram_url"]);
+  // Business NAP — same setting keys as the footer / contact page, so the values
+  // shown here stay identical across the site (local-SEO consistency).
+  const siteName = pickSetting(settings, ["site_name"]) || "BigBike";
+  const contactAddress = pickSetting(settings, ["contact_address", "address"]);
+  const hotline = pickSetting(settings, ["hotline", "phone"]);
+  const contactEmail = pickSetting(settings, ["contact_email"]);
+  const zaloUrl = pickSetting(settings, ["zalo_url"]);
 
   const effectiveCategory =
     product.category?.slug === "chua-phan-loai" ? null : (product.category ?? null);
@@ -151,16 +166,18 @@ export default async function ProductDetailPage({
           ),
         )
       : null;
+  const localBusinessJsonLd =
+    contactAddress || hotline || contactEmail
+      ? serializeJsonLd(
+          buildLocalBusinessJsonLd(siteName, ORG_LOGO, contactAddress, hotline, contactEmail),
+        )
+      : null;
 
   const relatedProducts = safeArray(product.relatedProducts)
     .filter((p) => p.id !== product.id)
     .slice(0, 8);
 
-  const sections: {
-    id: string;
-    label: string;
-    content: ReactNode;
-  }[] = [
+  const sections: ProductTabSection[] = [
     {
       id: "tab-description",
       label: tProduct("tabs.description"),
@@ -204,6 +221,15 @@ export default async function ProductDetailPage({
         ]
       : []),
     {
+      id: "tab-reviews",
+      label:
+        product.ratingCount && product.ratingCount > 0
+          ? tProduct("tabs.reviewsWithCount", { count: product.ratingCount })
+          : tProduct("tabs.reviews"),
+      content: null,
+      scrollTo: "reviews",
+    },
+    {
       id: "tab-faq",
       label: tProduct("faqs"),
       content:
@@ -240,6 +266,7 @@ export default async function ProductDetailPage({
       ? [{ id: "tab-installation", label: tProduct("tabs.installation") }]
       : []),
     { id: "tab-faq", label: tProduct("faqs") },
+    { id: "reviews", label: tProduct("tabs.reviews") },
   ];
 
   return (
@@ -256,6 +283,12 @@ export default async function ProductDetailPage({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: faqJsonLd }}
+        />
+      )}
+      {localBusinessJsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: localBusinessJsonLd }}
         />
       )}
 
@@ -304,9 +337,35 @@ export default async function ProductDetailPage({
 
         <ProductTabs sections={sections} />
 
+        <ReviewsSection productId={product.id} />
+
         {relatedProducts.length > 0 && (
           <PdpRelatedProductsCarousel products={relatedProducts} />
         )}
+
+        <RecentlyViewedSection
+          currentProductId={product.id}
+          currentProduct={{
+            id: product.id,
+            slug: product.slug,
+            name: productName,
+            price:
+              product.price?.salePrice && product.price.salePrice > 0
+                ? product.price.salePrice
+                : (product.price?.retailPrice ?? null),
+            imageUrl: product.image?.url ?? null,
+            categoryName: effectiveCategory?.name ?? null,
+            rating: product.rating ?? null,
+          }}
+        />
+
+        <ProductContactCta
+          productName={productName}
+          siteName={siteName}
+          address={contactAddress || undefined}
+          hotline={hotline || undefined}
+          zaloUrl={zaloUrl || undefined}
+        />
 
         <MobileStickyPurchaseBar
           addToCartLabel={tProduct("buyBox.addToCartShort")}

@@ -154,6 +154,7 @@
       "specs": "Specifications",
       "installation": "Installation guide",
       "faqs": "FAQs",
+      "reviews": "Reviews",
       "reviewsEmpty": "Customer reviews",
       "reviewsWithCount": "Reviews ({count})"
     },
@@ -208,11 +209,18 @@
       "defaultDescription": "BigBike biker protective gear product details."
     },
     "contact": {
-      "headline": "Buy genuine <brand>{productName}</brand> at {siteName}",
-      "zaloLink": "Chat on Zalo"
+      "headline": "Buy genuine <brand>{productName}</brand> at <site>{siteName}</site>",
+      "zaloLink": "Chat on Zalo",
+      "zaloLabel": "Zalo:"
     },
     "reviews": {
       "ratingCount": "({count} reviews)",
+      "title": "Product reviews",
+      "titleWithCount": "Product reviews ({count})",
+      "subtitle": "Share your experience with this product",
+      "noReviews": "There are no reviews yet.",
+      "beFirst": "Be the first to review this product.",
+      "formEmail": "Email",
       "pickStars": "Pick a rating",
       "starsCount": "{count} stars",
       "errorPickStars": "Please pick a star rating.",
@@ -233,8 +241,15 @@
       "formCommentPlaceholder": "Great product, fits well, fast delivery…",
       "submitting": "Submitting…",
       "submit": "Submit review",
-      "loadMore": "Load more reviews",
-      "loadingMore": "Loading more…"
+      "sortLabel": "Sort",
+      "sortNewest": "Newest",
+      "sortHighest": "Highest rated",
+      "sortLowest": "Lowest rated",
+      "filterAll": "All",
+      "filterByStarHint": "Filter by stars",
+      "filterActive": "Showing: {count} stars",
+      "clearFilter": "Clear filter",
+      "noReviewsForFilter": "No {count}-star reviews yet."
     },
     "variants": {
       "attributeFallback": "Attribute",

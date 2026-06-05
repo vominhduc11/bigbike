@@ -117,6 +117,13 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         cb.like(cb.lower(root.get("name")), like),
                         cb.like(cb.lower(cb.coalesce(root.get("shortDescription"), "")), like)));
             }
+            // Sort by name length ASC (shorter = more exact match), then alphabetically.
+            // Guard against count query (Long) which does not support orderBy.
+            if (!Long.class.equals(query.getResultType())) {
+                query.orderBy(
+                        cb.asc(cb.length(root.<String>get("name"))),
+                        cb.asc(root.get("name")));
+            }
             return cb.and(preds.toArray(new Predicate[0]));
         };
         return productJpaRepository

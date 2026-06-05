@@ -19,6 +19,7 @@ import { createContentSchema, zodErrors } from '../lib/schemas'
 import { RichTextEditor } from '../components/RichTextEditor'
 import { BlockEditor } from '../components/BlockEditor'
 import { ImageUrlInput } from '../components/ImageUrlInput'
+import { ProductPickerCombobox } from '../components/ProductPickerCombobox'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { StatePanel } from '../components/StatePanel'
 import { Screen, ScreenHeader, StickyActionBar, Tabs } from '../components/layout'
@@ -847,47 +848,19 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                       )}
 
                       {!isReadOnly && (
-                        <div className="relative mt-2">
-                          <Input
-                            value={productSearch}
-                            onChange={(e) => setProductSearch(e.target.value)}
-                            placeholder={t('content.detail.relatedProductsSearch')}
-                          />
-                          {productSearchDebounced.length >= 1 && (
-                            <div className="absolute z-50 left-0 right-0 mt-1 bg-background border border-border shadow-md max-h-64 overflow-y-auto">
-                              {isSearchingProducts ? (
-                                <p className="text-sm text-muted-foreground px-3 py-2">
-                                  {t('content.detail.relatedProductsSearching')}
-                                </p>
-                              ) : productSearchItems.length === 0 ? (
-                                <p className="text-sm text-muted-foreground px-3 py-2">
-                                  {t('content.detail.relatedProductsEmpty')}
-                                </p>
-                              ) : (
-                                productSearchItems.map((product) => {
-                                  const already = form.relatedProductIds.includes(product.id)
-                                  return (
-                                    <button
-                                      key={product.id}
-                                      type="button"
-                                      disabled={already}
-                                      onClick={() => addRelatedProduct(product)}
-                                      className={cn('flex items-center gap-3 w-full px-3 py-2 text-left hover:bg-muted text-sm', already && 'opacity-50 cursor-not-allowed')}
-                                    >
-                                      {product.image?.url && (
-                                        <img src={product.image.url} alt="" className="w-8 h-8 object-cover shrink-0" />
-                                      )}
-                                      <span className="flex-1 min-w-0 truncate">{product.name}</span>
-                                      {already && (
-                                        <span className="text-xs text-muted-foreground shrink-0">{t('content.detail.relatedProductsAdded')}</span>
-                                      )}
-                                    </button>
-                                  )
-                                })
-                              )}
-                            </div>
-                          )}
-                        </div>
+                        <ProductPickerCombobox
+                          search={productSearch}
+                          onSearchChange={setProductSearch}
+                          open={productSearchDebounced.length >= 1}
+                          loading={isSearchingProducts}
+                          items={productSearchItems}
+                          addedIds={form.relatedProductIds}
+                          onPick={addRelatedProduct}
+                          placeholder={t('content.detail.relatedProductsSearch')}
+                          loadingText={t('content.detail.relatedProductsSearching')}
+                          emptyText={t('content.detail.relatedProductsEmpty')}
+                          addedText={t('content.detail.relatedProductsAdded')}
+                        />
                       )}
                     </Field>
                   </div>

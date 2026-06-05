@@ -6,7 +6,8 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { Container } from "@/components/layout/Container";
 import { PageHero } from "@/components/layout/PageHero";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { getArticleBySlug, listArticles, listPublicSettings } from "@/lib/api/public-api";
+import { getArticleBySlug, listArticles, listProducts, listPublicSettings } from "@/lib/api/public-api";
+import { ProductCarouselSection } from "@/components/catalog/ProductCarouselSection";
 import type { Article } from "@/lib/contracts/public";
 import {
   buildArticleBreadcrumbJsonLd,
@@ -107,12 +108,21 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
   }
 
   const article = result.data;
-  const [featuredResult, latestResult, settingsResult, breadcrumbJsonLd] = await Promise.all([
-    listArticles({ page: 1, size: 8, sort: "publishedAt:desc", featured: true, lang: locale }),
-    listArticles({ page: 1, size: 8, sort: "publishedAt:desc", lang: locale }),
-    listPublicSettings(),
-    Promise.resolve(serializeJsonLd(buildArticleBreadcrumbJsonLd(article))),
-  ]);
+  const [featuredResult, latestResult, settingsResult, breadcrumbJsonLd, featuredProductsResult] =
+    await Promise.all([
+      listArticles({ page: 1, size: 8, sort: "publishedAt:desc", featured: true, lang: locale }),
+      listArticles({ page: 1, size: 8, sort: "publishedAt:desc", lang: locale }),
+      listPublicSettings(),
+      Promise.resolve(serializeJsonLd(buildArticleBreadcrumbJsonLd(article))),
+      listProducts({
+        page: 1,
+        homepageBlock: "FEATURED_GRID",
+        size: 12,
+        sort: "homepageOrder:asc",
+        lang: locale,
+      }),
+    ]);
+  const featuredProducts = featuredProductsResult.data ?? [];
   const siteName = pickSetting(settingsResult.data ?? [], ["site_name"]);
   const heroSettings = readHeroSettings(settingsResult.data ?? [], "hero_news");
   const defaultHero = readDefaultHeroAssets(settingsResult.data ?? []);
@@ -215,6 +225,14 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
           </div>
         </div>
       </main>
+
+      <ProductCarouselSection
+        products={featuredProducts}
+        kicker="Gợi ý cho bạn"
+        heading="Sản phẩm nổi bật"
+        headingId="blog-featured-products"
+        className="mx-auto w-full max-w-[var(--bb-container-xl)] px-[15px] pb-10 max-md:px-[var(--bb-mobile-page-x)]"
+      />
 
       <RelatedArticlesSection articles={relatedArticles} />
     </div>

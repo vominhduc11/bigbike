@@ -180,6 +180,9 @@ export function VariantSelector({
                         className="absolute inset-0 z-[2] w-[52px] h-[52px] m-0 cursor-pointer opacity-0 max-md:w-11 max-md:h-11 max-md:!leading-[42px] disabled:cursor-not-allowed"
                         checked={active}
                         disabled={disabled || (!available && !active)}
+                        onClick={() => {
+                          if (active) onSelectOption(group.name, "");
+                        }}
                         onChange={() => {
                           if (!available && !active) return;
                           onSelectOption(group.name, value);

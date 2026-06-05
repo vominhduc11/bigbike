@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Eye, EyeOff, MoreHorizontal, Pencil, Search, UserPlus } from 'lucide-react'
+import { FilterSelect } from '../components/FilterSelect'
+import { FilterSearchInput } from '../components/FilterSearchInput'
+import { Eye, EyeOff, MoreHorizontal, Pencil, UserPlus } from 'lucide-react'
 import { PaginationControls } from '../components/PaginationControls'
 import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
 import { Modal } from '../components/layout'
@@ -290,40 +292,29 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
       {listState.warning ? <ReadOnlyBanner warning={listState.warning} /> : null}
 
       <div className="bb-filter-bar">
-        <div style={{ position: 'relative' }}>
-          <Search size={14} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--bb-text-muted)', pointerEvents: 'none' }} />
-          <input
-            type="search"
-            className="bb-input"
-            style={{ paddingLeft: 28 }}
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            placeholder={t('adminUsers.searchPlaceholder')}
-          />
-        </div>
-        <select
-          className="bb-select"
+        <FilterSearchInput
+          value={searchInput}
+          onChange={setSearchInput}
+          placeholder={t('adminUsers.searchPlaceholder')}
+        />
+        <FilterSelect
           value={roleFilter}
-          onChange={(e) => handleFilterChange('role', e.target.value)}
-          aria-label={t('adminUsers.filterRole')}
-        >
-          <option value="">{t('adminUsers.filterRole')}</option>
-          {roleOptions.map((r) => {
-            const meta = ROLE_META[r]
-            return <option key={r} value={r}>{meta ? t(meta.labelKey) : r}</option>
-          })}
-        </select>
-        <select
-          className="bb-select"
+          onValueChange={(v) => handleFilterChange('role', v)}
+          ariaLabel={t('adminUsers.filterRole')}
+          options={[
+            { value: '', label: t('adminUsers.filterRole') },
+            ...roleOptions.map((r) => ({ value: r, label: ROLE_META[r] ? t(ROLE_META[r].labelKey) : r })),
+          ]}
+        />
+        <FilterSelect
           value={statusFilter}
-          onChange={(e) => handleFilterChange('status', e.target.value)}
-          aria-label={t('adminUsers.filterStatus')}
-        >
-          <option value="">{t('adminUsers.filterStatus')}</option>
-          {Object.entries(STATUS_META).map(([key, meta]) => (
-            <option key={key} value={key}>{t(meta.labelKey)}</option>
-          ))}
-        </select>
+          onValueChange={(v) => handleFilterChange('status', v)}
+          ariaLabel={t('adminUsers.filterStatus')}
+          options={[
+            { value: '', label: t('adminUsers.filterStatus') },
+            ...Object.entries(STATUS_META).map(([key, meta]) => ({ value: key, label: t(meta.labelKey) })),
+          ]}
+        />
       </div>
 
       {listState.status === 'error' && (

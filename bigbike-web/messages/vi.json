@@ -154,6 +154,7 @@
       "specs": "Thông số kỹ thuật",
       "installation": "Hướng dẫn lắp đặt",
       "faqs": "Câu hỏi thường gặp",
+      "reviews": "Đánh giá",
       "reviewsEmpty": "Đánh giá khách hàng",
       "reviewsWithCount": "Đánh giá ({count})"
     },
@@ -208,11 +209,18 @@
       "defaultDescription": "Chi tiết sản phẩm bảo hộ biker BigBike."
     },
     "contact": {
-      "headline": "Mua <brand>{productName}</brand> chính hãng tại {siteName}",
-      "zaloLink": "Tư vấn qua Zalo"
+      "headline": "Mua <brand>{productName}</brand> chính hãng tại <site>{siteName}</site>",
+      "zaloLink": "Tư vấn qua Zalo",
+      "zaloLabel": "Zalo tư vấn:"
     },
     "reviews": {
       "ratingCount": "({count} đánh giá)",
+      "title": "Đánh giá sản phẩm",
+      "titleWithCount": "Đánh giá sản phẩm ({count})",
+      "subtitle": "Chia sẻ trải nghiệm của bạn về sản phẩm này",
+      "noReviews": "Chưa có đánh giá nào.",
+      "beFirst": "Hãy là người đầu tiên đánh giá sản phẩm này.",
+      "formEmail": "Email",
       "pickStars": "Chọn số sao",
       "starsCount": "{count} sao",
       "errorPickStars": "Vui lòng chọn số sao.",
@@ -233,8 +241,15 @@
       "formCommentPlaceholder": "Sản phẩm tốt, đúng size, giao hàng nhanh...",
       "submitting": "Đang gửi...",
       "submit": "Gửi đánh giá",
-      "loadMore": "Xem thêm đánh giá",
-      "loadingMore": "Đang tải thêm..."
+      "sortLabel": "Sắp xếp",
+      "sortNewest": "Mới nhất",
+      "sortHighest": "Điểm cao nhất",
+      "sortLowest": "Điểm thấp nhất",
+      "filterAll": "Tất cả",
+      "filterByStarHint": "Lọc theo số sao",
+      "filterActive": "Đang xem: {count} sao",
+      "clearFilter": "Bỏ lọc",
+      "noReviewsForFilter": "Chưa có đánh giá {count} sao."
     },
     "variants": {
       "attributeFallback": "Thuộc tính",

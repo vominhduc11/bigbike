@@ -8,8 +8,15 @@ import { Button } from "@/components/ui/button";
 type PaginationNavProps = {
   page: number;
   totalPages: number;
-  baseHref: string;
+  /** URL base for link-based pagination. Optional when `onPageChange` is used. */
+  baseHref?: string;
   variant?: "default" | "archive";
+  /**
+   * When provided, the default variant renders buttons that call this instead
+   * of navigating via URL — for paginating a section in place (e.g. reviews on
+   * a product page) without changing the page URL.
+   */
+  onPageChange?: (page: number) => void;
 };
 
 function buildPageList(page: number, totalPages: number): (number | "...")[] {
@@ -26,7 +33,7 @@ function buildPageList(page: number, totalPages: number): (number | "...")[] {
   return pages;
 }
 
-export function PaginationNav({ page, totalPages, baseHref, variant = "default" }: PaginationNavProps) {
+export function PaginationNav({ page, totalPages, baseHref = "", variant = "default", onPageChange }: PaginationNavProps) {
   const makeDefaultHref = (p: number) =>
     `${baseHref}${baseHref.includes("?") ? "&" : "?"}page=${p}`;
   const makeArchiveHref = (p: number) => {
@@ -90,12 +97,21 @@ export function PaginationNav({ page, totalPages, baseHref, variant = "default" 
     );
   }
 
+  const pageClass = (isCurrent: boolean) =>
+    isCurrent
+      ? "bb-pagination-page inline-flex items-center justify-center no-underline"
+      : "bb-pagination-page inline-flex items-center justify-center no-underline hover:text-brand";
+
   return (
     <nav className="mt-6 flex items-center justify-center gap-3 flex-wrap" aria-label={t("paginationAria")}>
       {page > 1 ? (
-        <Button asChild variant="secondary" size="icon">
-          <Link href={makeHref(page - 1)} aria-label={t("previousPage")}><ChevronLeft className="w-4 h-4" /></Link>
-        </Button>
+        onPageChange ? (
+          <Button type="button" variant="secondary" size="icon" onClick={() => onPageChange(page - 1)} aria-label={t("previousPage")}><ChevronLeft className="w-4 h-4" /></Button>
+        ) : (
+          <Button asChild variant="secondary" size="icon">
+            <Link href={makeHref(page - 1)} aria-label={t("previousPage")}><ChevronLeft className="w-4 h-4" /></Link>
+          </Button>
+        )
       ) : (
         <Button variant="secondary" size="icon" disabled aria-label={t("previousPage")}><ChevronLeft className="w-4 h-4" /></Button>
       )}
@@ -104,16 +120,22 @@ export function PaginationNav({ page, totalPages, baseHref, variant = "default" 
         {pages.map((p, i) =>
           p === "..." ? (
             <span key={`ellipsis-${i}`} className="inline-flex h-9 min-w-7 items-center justify-center text-sm text-muted-foreground">...</span>
+          ) : onPageChange ? (
+            <button
+              key={p}
+              type="button"
+              onClick={() => onPageChange(p)}
+              aria-current={p === page ? "page" : undefined}
+              className={pageClass(p === page)}
+            >
+              {p}
+            </button>
           ) : (
             <Link
               key={p}
               href={makeHref(p)}
               aria-current={p === page ? "page" : undefined}
-              className={
-                p === page
-                  ? "bb-pagination-page inline-flex items-center justify-center no-underline"
-                  : "bb-pagination-page inline-flex items-center justify-center no-underline hover:text-brand"
-              }
+              className={pageClass(p === page)}
             >
               {p}
             </Link>
@@ -122,9 +144,13 @@ export function PaginationNav({ page, totalPages, baseHref, variant = "default" 
       </div>
 
       {page < totalPages ? (
-        <Button asChild variant="secondary" size="icon">
-          <Link href={makeHref(page + 1)} aria-label={t("nextPage")}><ChevronRight className="w-4 h-4" /></Link>
-        </Button>
+        onPageChange ? (
+          <Button type="button" variant="secondary" size="icon" onClick={() => onPageChange(page + 1)} aria-label={t("nextPage")}><ChevronRight className="w-4 h-4" /></Button>
+        ) : (
+          <Button asChild variant="secondary" size="icon">
+            <Link href={makeHref(page + 1)} aria-label={t("nextPage")}><ChevronRight className="w-4 h-4" /></Link>
+          </Button>
+        )
       ) : (
         <Button variant="secondary" size="icon" disabled aria-label={t("nextPage")}><ChevronRight className="w-4 h-4" /></Button>
       )}

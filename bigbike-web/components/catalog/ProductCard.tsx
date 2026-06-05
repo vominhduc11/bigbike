@@ -5,7 +5,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { ShoppingCart } from "lucide-react";
 import type { Product } from "@/lib/contracts/public";
 import {
   formatVnd,
@@ -27,7 +26,7 @@ import { cn } from "@/lib/utils";
 
 type ProductCardProps = {
   product: Product;
-  variant?: "compact" | "featured" | "tile" | "archive" | "related";
+  variant?: "compact" | "featured" | "tile" | "archive";
   /**
    * Featured variant only — selects between the two render contexts that the
    * legacy `.bb-home-products-parity .bb-fp-*` cascade produced:
@@ -163,83 +162,6 @@ export function ProductCard({ product, variant = "compact", surface = "article" 
             </div>
           </div>
           <div className="mt-2">
-            <RatingStars value={ratingValue} />
-          </div>
-        </div>
-      </article>
-    );
-  }
-
-  // Related variant: PDP related products carousel (Tailwind inline).
-  if (variant === "related") {
-    const featuredCompare =
-      compare && compare > current
-        ? compare
-        : sale && retail > current
-          ? retail
-          : null;
-    const ratingValue = product.rating != null && product.rating > 0 ? product.rating : 4.5;
-    const featuredImageSrc = toLegacyWpMediaUrl(resolveMediaUrl(product.image?.url?.trim()));
-
-    return (
-      <article className="group mt-[30px]">
-        <div className="relative mb-5 min-h-[200px] overflow-hidden">
-          <Link
-            href={href}
-            aria-label={tProduct("viewProductAria", { name })}
-            className="relative block min-h-[200px]"
-          >
-            {featuredImageSrc ? (
-              <img
-                src={featuredImageSrc}
-                alt={safeText(product.image?.alt, name)}
-                className="swiper-lazy -lazy mx-auto block h-auto w-auto max-w-full transition-transform duration-300 ease-in-out group-hover:scale-105"
-                loading="lazy"
-              />
-            ) : (
-              <MediaImage
-                image={product.image}
-                altFallback={name}
-                width={480}
-                height={480}
-                className="swiper-lazy -lazy mx-auto block h-auto w-auto max-w-full transition-transform duration-300 ease-in-out group-hover:scale-105"
-              />
-            )}
-          </Link>
-          {discountPercent != null && discountPercent > 0 && (
-            <SaleBadge percent={discountPercent} />
-          )}
-          <div className="absolute bottom-0 left-0 w-full translate-y-full bg-surface-dark text-center transition-transform duration-300 group-hover:translate-y-0">
-            <Link
-              href={href}
-              className="flex items-center justify-center gap-2.5 py-[15px] font-heading text-13 uppercase text-white"
-            >
-              <ShoppingCart className="h-4 w-4" aria-hidden="true" />
-              THÊM VÀO GIỎ HÀNG
-            </Link>
-          </div>
-        </div>
-        <div>
-          <h3 className="mb-4 mt-2.5 font-heading text-sm font-semibold leading-title">
-            <Link href={href} className="text-foreground">
-              {name}
-            </Link>
-          </h3>
-          <div className="font-cta text-sm font-semibold text-brand">
-            {product.price && current > 0 ? (
-              <>
-                <span className="mr-5 inline-block leading-title">{formatVnd(current)}</span>
-                {featuredCompare && featuredCompare > current ? (
-                  <span className="mr-5 inline-block leading-title text-muted-foreground line-through">
-                    {formatVnd(featuredCompare)}
-                  </span>
-                ) : null}
-              </>
-            ) : (
-              <span className="inline-block">{tProduct("contactForPrice")}</span>
-            )}
-          </div>
-          <div className="mt-2 text-sm">
             <RatingStars value={ratingValue} />
           </div>
         </div>

@@ -3,6 +3,7 @@ import { Minus, Pencil, Plus, Printer, RotateCcw, Search, ShoppingCart, Trash2, 
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { StatePanel } from '../components/StatePanel'
+import { DropdownPopover } from '../components/DropdownPopover'
 import { formatCurrencyVnd } from '../lib/formatters'
 import { fetchCustomers, fetchCustomerCredit, posCreateOrder, posCreateRefund, posSearchProducts } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
@@ -198,29 +199,30 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
             <div className="mb-3">
               <label className="field-label">Liên kết khách hàng cũ (tuỳ chọn)</label>
               {!walkInCustomer ? (
-                <div className="relative">
-                  <Input
-                    placeholder="Tìm theo tên hoặc email..."
-                    value={walkInQuery}
-                    onChange={(e) => { setWalkInQuery(e.target.value); searchWalkIn(e.target.value) }}
-                    autoComplete="off"
-                  />
-                  {walkInResults.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 z-[100] bg-surface-raised border border-border rounded-md shadow-md max-h-[180px] overflow-y-auto">
-                      {walkInResults.map((c) => (
-                        <button
-                          key={c.id}
-                          type="button"
-                          className="block w-full text-left px-3 py-2 bg-transparent border-none cursor-pointer text-sm hover:bg-surface-hover"
-                          onClick={() => handleSelectWalkIn(c)}
-                        >
-                          <strong>{c.displayName || c.email}</strong>
-                          {c.email && c.displayName && <span className="ml-2 text-xs text-muted-foreground">{c.email}</span>}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <DropdownPopover
+                  open={walkInResults.length > 0}
+                  onOpenChange={(next) => { if (!next) setWalkInResults([]) }}
+                  anchor={
+                    <Input
+                      placeholder="Tìm theo tên hoặc email..."
+                      value={walkInQuery}
+                      onChange={(e) => { setWalkInQuery(e.target.value); searchWalkIn(e.target.value) }}
+                      autoComplete="off"
+                    />
+                  }
+                >
+                  {walkInResults.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      className="block w-full text-left px-3 py-2 bg-transparent border-none cursor-pointer text-sm hover:bg-surface-hover"
+                      onClick={() => handleSelectWalkIn(c)}
+                    >
+                      <strong>{c.displayName || c.email}</strong>
+                      {c.email && c.displayName && <span className="ml-2 text-xs text-muted-foreground">{c.email}</span>}
+                    </button>
+                  ))}
+                </DropdownPopover>
               ) : (
                 <div className="flex items-center gap-2 px-2.5 py-1.5 bg-surface border border-border rounded-md">
                   <span className="flex-1 text-sm">Đã liên kết: <strong>{walkInCustomer.displayName || walkInCustomer.email}</strong></span>
@@ -285,34 +287,35 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
           {method === 'CREDIT' && (
             <div className="mt-3">
               <label className="field-label">Tìm khách hàng *</label>
-              <div className="relative">
-                <Input
-                  placeholder="Nhập tên hoặc email khách hàng..."
-                  value={customerQuery}
-                  onChange={(e) => {
-                    setCustomerQuery(e.target.value)
-                    setSelectedCustomer(null)
-                    setCustomerCredit(null)
-                    searchCustomers(e.target.value)
-                  }}
-                  autoComplete="off"
-                 />
-                {customerResults.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 z-[100] bg-surface-raised border border-border rounded-md shadow-md max-h-[200px] overflow-y-auto">
-                    {customerResults.map((c) => (
-                      <button
-                        key={c.id}
-                        type="button"
-                        className="block w-full text-left px-3 py-2 bg-transparent border-none cursor-pointer text-sm hover:bg-surface-hover"
-                        onClick={() => handleSelectCustomer(c)}
-                      >
-                        <strong>{c.displayName || c.email}</strong>
-                        {c.email && c.displayName && <span className="ml-2 text-xs text-muted-foreground">{c.email}</span>}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <DropdownPopover
+                open={customerResults.length > 0}
+                onOpenChange={(next) => { if (!next) setCustomerResults([]) }}
+                anchor={
+                  <Input
+                    placeholder="Nhập tên hoặc email khách hàng..."
+                    value={customerQuery}
+                    onChange={(e) => {
+                      setCustomerQuery(e.target.value)
+                      setSelectedCustomer(null)
+                      setCustomerCredit(null)
+                      searchCustomers(e.target.value)
+                    }}
+                    autoComplete="off"
+                  />
+                }
+              >
+                {customerResults.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    className="block w-full text-left px-3 py-2 bg-transparent border-none cursor-pointer text-sm hover:bg-surface-hover"
+                    onClick={() => handleSelectCustomer(c)}
+                  >
+                    <strong>{c.displayName || c.email}</strong>
+                    {c.email && c.displayName && <span className="ml-2 text-xs text-muted-foreground">{c.email}</span>}
+                  </button>
+                ))}
+              </DropdownPopover>
 
               {creditLoading && <p className="text-sm text-muted-foreground mt-1.5">Đang tải thông tin tín dụng...</p>}
 

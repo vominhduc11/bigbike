@@ -37,9 +37,12 @@ public class PublicReviewController {
             @PathVariable @Size(max = 64) String productId,
             @RequestParam(defaultValue = "1") @Min(1) int page,
             @RequestParam(defaultValue = "10") @Min(1) @Max(50) int size,
+            @RequestParam(required = false) @Min(1) @Max(5) Integer rating,
+            @RequestParam(defaultValue = "newest") @Size(max = 16) String sort,
             HttpServletRequest request
     ) {
-        return apiResponseFactory.data(publicReviewService.getProductReviews(productId, page, size), request);
+        return apiResponseFactory.data(
+                publicReviewService.getProductReviews(productId, page, size, rating, sort), request);
     }
 
     @PostMapping

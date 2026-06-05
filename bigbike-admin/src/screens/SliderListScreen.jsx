@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { FilterSelect } from '../components/FilterSelect'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   DndContext,
@@ -355,14 +356,12 @@ export function SliderListScreen({ canUpdate }) {
       {warning ? <ReadOnlyBanner warning={warning} /> : null}
 
       <div className="bb-filter-bar">
-        <select
-          className="bb-select"
+        <FilterSelect
           value={location}
-          onChange={(e) => { setLocation(e.target.value); closeForm() }}
-          aria-label={t('sliders.filterLocation')}
-        >
-          {LOCATIONS.map((loc) => <option key={loc} value={loc}>{loc}</option>)}
-        </select>
+          onValueChange={(v) => { setLocation(v); closeForm() }}
+          ariaLabel={t('sliders.filterLocation')}
+          options={LOCATIONS.map((loc) => ({ value: loc, label: loc }))}
+        />
       </div>
 
       {showForm && (

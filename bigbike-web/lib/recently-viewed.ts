@@ -12,6 +12,9 @@ export type RecentProduct = {
   price?: number | null;
   imageUrl?: string | null;
   categoryName?: string | null;
+  /** Approved-review average, captured so the card shows real stars (older
+   *  cached entries without it fall back to the card's default rating). */
+  rating?: number | null;
 };
 
 export function saveRecentProduct(product: RecentProduct): void {
