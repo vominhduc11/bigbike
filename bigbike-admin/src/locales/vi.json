@@ -529,10 +529,10 @@
       },
       "specs": {
         "empty": "Chưa có thông số. Nhấn \"+ Thêm thông số\" để bắt đầu.",
-        "groupPlaceholder": "Nhóm (vd: Vật liệu, Kích thước)",
-        "groupTitle": "Tên nhóm gộp nhiều thông số lại",
-        "namePlaceholder": "Tên thông số *",
-        "valuePlaceholder": "Giá trị *",
+        "namePlaceholder": "Tên thông số",
+        "valuePlaceholder": "Giá trị",
+        "nameLabel": "Tên thông số (bắt buộc)",
+        "valueLabel": "Giá trị (bắt buộc)",
         "removeSpec": "Xoá thông số",
         "addSpec": "Thêm thông số"
       },
@@ -693,6 +693,7 @@
       "videoSectionDescription": "Link YouTube hoặc video sản phẩm",
       "specsSectionTitle": "Thông số kỹ thuật",
       "specsSectionDescription": "Hiển thị trong tab \"Thông số kỹ thuật\" trang sản phẩm",
+      "specCount": "{{count}} thông số",
       "variantSectionTitle": "Biến thể sản phẩm",
       "variantSectionDescription": "Size, màu sắc và các tùy chọn khác",
       "saveDraftTitle": "Lưu giữ trạng thái nháp",

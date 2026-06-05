@@ -299,10 +299,8 @@ function buildFormFromItem(item) {
       _key: generateId(),
       name: s.name || '',
       value: s.value || '',
-      groupName: s.group || '',
       nameEn: s.nameEn || '',
       valueEn: s.valueEn || '',
-      groupNameEn: s.groupEn || '',
     })),
     faqs: (item.faqs || []).map((f) => ({
       _key: generateId(),
@@ -420,11 +418,8 @@ function toPayload(form) {
     .map((s, i) => ({
       name: s.name.trim(),
       value: s.value.trim(),
-      groupName: s.groupName.trim() || undefined,
-      // Optional English content (V136) — rides on the same row as Vietnamese.
       nameEn: (s.nameEn || '').trim() || undefined,
       valueEn: (s.valueEn || '').trim() || undefined,
-      groupNameEn: (s.groupNameEn || '').trim() || undefined,
       sortOrder: i,
     }))
 
@@ -790,21 +785,15 @@ function VideoEditor({ items, onChange, disabled, validationErrors = {} }) {
 
 function SpecificationsEditor({ items, onChange, disabled, validationErrors, contentLang = 'vi' }) {
   const { t } = useTranslation()
-  // Which field each input binds to depends on the active content language (V136).
   const isEn = contentLang === 'en'
   const fName = isEn ? 'nameEn' : 'name'
   const fValue = isEn ? 'valueEn' : 'value'
-  const fGroup = isEn ? 'groupNameEn' : 'groupName'
   function updateItem(index, field, value) {
     const next = items.map((item, i) => i === index ? { ...item, [field]: value } : item)
     onChange(next)
   }
   function addItem() {
-    onChange([...items, {
-      _key: generateId(),
-      name: '', value: '', groupName: '',
-      nameEn: '', valueEn: '', groupNameEn: '',
-    }])
+    onChange([...items, { _key: generateId(), name: '', value: '', nameEn: '', valueEn: '' }])
   }
   function removeItem(index) {
     onChange(items.filter((_, i) => i !== index))
@@ -825,28 +814,19 @@ function SpecificationsEditor({ items, onChange, disabled, validationErrors, con
       {items.map((item, index) => {
         const errName = validationErrors?.[`specifications.${index}.name`]
         const errValue = validationErrors?.[`specifications.${index}.value`]
-        const errGroup = validationErrors?.[`specifications.${index}.groupName`]
         return (
           <div key={item._key} className="list-editor-row list-editor-row--stack">
-            <div className="list-editor-reorder">
-              <Button variant="outline" size="icon" onClick={() => moveItem(index, -1)} disabled={disabled || index === 0} aria-label={t('products.detail.moveUp')}>▲</Button>
-              <Button variant="outline" size="icon" onClick={() => moveItem(index, 1)} disabled={disabled || index === items.length - 1} aria-label={t('products.detail.moveDown')}>▼</Button>
-            </div>
-            <div className="list-editor-fields list-editor-fields-3col flex-1">
-              <div>
-                <Input className={errGroup  ? 'border-danger' : undefined}
-                  placeholder={t('products.detail.specs.groupPlaceholder')}
-                  title={t('products.detail.specs.groupTitle')}
-                  value={item[fGroup] || ''}
-                  onChange={(e) => updateItem(index, fGroup, e.target.value)}
-                  disabled={disabled}
-                  maxLength={100}
-                 />
-                {errGroup && <small className="field-error">{errGroup}</small>}
+            {items.length > 1 && (
+              <div className="list-editor-reorder">
+                <Button variant="outline" size="icon" onClick={() => moveItem(index, -1)} disabled={disabled || index === 0} aria-label={t('products.detail.moveUp')}>▲</Button>
+                <Button variant="outline" size="icon" onClick={() => moveItem(index, 1)} disabled={disabled || index === items.length - 1} aria-label={t('products.detail.moveDown')}>▼</Button>
               </div>
+            )}
+            <div className="flex-1 grid grid-cols-2 gap-2">
               <div>
-                <Input className={errName  ? 'border-danger' : undefined}
+                <Input className={errName ? 'border-danger' : undefined}
                   placeholder={t('products.detail.specs.namePlaceholder')}
+                  aria-label={t('products.detail.specs.nameLabel')}
                   value={item[fName] || ''}
                   onChange={(e) => updateItem(index, fName, e.target.value)}
                   disabled={disabled}
@@ -855,8 +835,9 @@ function SpecificationsEditor({ items, onChange, disabled, validationErrors, con
                 {errName && <small className="field-error">{errName}</small>}
               </div>
               <div>
-                <Input className={errValue  ? 'border-danger' : undefined}
+                <Input className={errValue ? 'border-danger' : undefined}
                   placeholder={t('products.detail.specs.valuePlaceholder')}
+                  aria-label={t('products.detail.specs.valueLabel')}
                   value={item[fValue] || ''}
                   onChange={(e) => updateItem(index, fValue, e.target.value)}
                   disabled={disabled}
@@ -3171,7 +3152,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 badge={
                   <div className="flex items-center gap-1.5">
                     <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5">
-                      {form.specifications.length} {t('products.detail.specUnit', { defaultValue: 'thông số' })}
+                      {t('products.detail.specCount', { count: form.specifications.length })}
                     </span>
                     <RoleBadge role="content" />
                   </div>

@@ -1140,13 +1140,26 @@ a {
   gap: var(--admin-space-2);
 }
 
-.list-editor-fields-3col {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: var(--admin-space-2);
+
+.list-editor-reorder {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-1);
+  flex-shrink: 0;
+}
+
+.list-editor-row--stack {
+  align-items: flex-start;
 }
 @media (max-width: 640px) {
-  .list-editor-fields-3col { grid-template-columns: 1fr; }
+  .list-editor-row--stack { flex-wrap: wrap; }
+}
+
+.list-editor-empty {
+  color: var(--admin-color-text-secondary);
+  font-size: var(--admin-text-sm);
+  font-style: italic;
+  padding: var(--admin-space-2) 0;
 }
 
 /* ─── Variants editor ────────────────────────────────────────────────────────*/

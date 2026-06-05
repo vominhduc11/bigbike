@@ -529,10 +529,10 @@
       },
       "specs": {
         "empty": "No specifications yet. Click \"+ Add spec\" to start.",
-        "groupPlaceholder": "Group (e.g. Material, Size)",
-        "groupTitle": "Group name for related specifications",
-        "namePlaceholder": "Spec name *",
-        "valuePlaceholder": "Spec value *",
+        "namePlaceholder": "Spec name",
+        "valuePlaceholder": "Spec value",
+        "nameLabel": "Spec name (required)",
+        "valueLabel": "Spec value (required)",
         "removeSpec": "Remove specification",
         "addSpec": "Add spec"
       },
@@ -693,6 +693,8 @@
       "videoSectionDescription": "YouTube links or uploaded product videos",
       "specsSectionTitle": "Technical specifications",
       "specsSectionDescription": "Displayed under the \"Technical specifications\" tab on the product page",
+      "specCount_one": "{{count}} spec",
+      "specCount_other": "{{count}} specs",
       "variantSectionTitle": "Product variants",
       "variantSectionDescription": "Sizes, colors, and other options",
       "saveDraftTitle": "Save as draft state",

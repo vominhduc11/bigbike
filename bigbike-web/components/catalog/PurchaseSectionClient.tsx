@@ -419,10 +419,12 @@ export function PurchaseSectionClient({
                   </Button>
                 </div>
                 <div>
+                  {/* js-buy-now-btn: the sticky bar mirrors this button's
+                      disabled state and click behaviour. */}
                   <Button
                     type="button"
                     variant="primary"
-                    className={ADD_BTN}
+                    className={cn("js-buy-now-btn", ADD_BTN)}
                     disabled={!isAvailable}
                     onClick={() => setQuickBuyOpen(true)}
                   >

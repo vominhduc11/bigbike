@@ -304,6 +304,7 @@ export default async function ProductDetailPage({
 
         <MobileStickyPurchaseBar
           addToCartLabel={tProduct("buyBox.addToCartShort")}
+          buyNowLabel={tProduct("buyBox.buyNow")}
         />
       </div>
     </>
