@@ -28,6 +28,8 @@ import { StatePanel } from '../components/StatePanel'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { MediaPickerModal } from '../components/MediaPickerModal'
 import { VideoPickerModal } from '../components/VideoPickerModal'
+import { MediaDimensionWarning } from '../components/MediaDimensionWarning'
+import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { RichTextEditor } from '../components/RichTextEditor'
 import { BlockEditor } from '../components/BlockEditor'
 import { Button } from '@/components/ui/button'
@@ -299,6 +301,7 @@ function buildFormFromItem(item) {
       _key: generateId(),
       name: s.name || '',
       value: s.value || '',
+      groupName: s.groupName || '',
       nameEn: s.nameEn || '',
       valueEn: s.valueEn || '',
     })),
@@ -563,6 +566,7 @@ function GalleryCard({ item, onUpdate, onRemove, disabled, urlError }) {
           aria-label={t('products.detail.gallery.altAriaLabel')}
         />
         {urlError && <small className="field-error">{urlError}</small>}
+        {trimmed && <MediaDimensionWarning url={item.url} recommend={IMAGE_RECO.productImage} kind="image" />}
       </div>
       {pickerOpen && (
         <MediaPickerModal
@@ -590,6 +594,7 @@ function GalleryEditor({ items, onChange, disabled, validationErrors = {} }) {
 
   return (
     <div className="gallery-editor">
+      <p className="text-xs text-muted-foreground mb-2">{t('products.detail.gallery.sizeHint')}</p>
       <div className="gallery-grid">
         {items.map((item, index) => (
           <GalleryCard
@@ -736,14 +741,6 @@ function VideoEditor({ items, onChange, disabled, validationErrors = {} }) {
                       className="mt-2 w-full max-w-xs h-auto rounded border border-border"
                     />
                   )}
-                  <div className="flex flex-col gap-1 mt-2">
-                    <span className="text-xs text-muted-foreground">{t('products.detail.video.thumbnailOptional')}</span>
-                    <ImageUrlInput
-                      value={item.thumbnailUrl || ''}
-                      onChange={(url) => updateItem(index, { thumbnailUrl: url })}
-                      disabled={disabled}
-                    />
-                  </div>
                 </div>
               )}
 
@@ -793,7 +790,7 @@ function SpecificationsEditor({ items, onChange, disabled, validationErrors, con
     onChange(next)
   }
   function addItem() {
-    onChange([...items, { _key: generateId(), name: '', value: '', nameEn: '', valueEn: '' }])
+    onChange([...items, { _key: generateId(), name: '', value: '', groupName: '', nameEn: '', valueEn: '' }])
   }
   function removeItem(index) {
     onChange(items.filter((_, i) => i !== index))
@@ -2984,6 +2981,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   onAltChange={(v) => updateField('imageAlt', v)}
                   disabled={isReadOnly}
                   error={validationErrors.imageUrl}
+                  recommend={IMAGE_RECO.productImage}
                 />
               </SectionCard>
             </>
@@ -3062,6 +3060,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                       onAltChange={(v) => updateField('seoOgImageAlt', v)}
                       disabled={isReadOnly}
                       error={validationErrors.seoOgImageUrl}
+                      recommend={IMAGE_RECO.cover}
                     />
                   </Field>
 

@@ -513,7 +513,8 @@
         "altAriaLabel": "Mô tả ảnh (alt text)",
         "addImage": "Thêm ảnh",
         "multiSelectTitle": "Chọn nhiều ảnh cùng lúc từ thư viện",
-        "multiSelect": "Chọn nhiều ảnh"
+        "multiSelect": "Chọn nhiều ảnh",
+        "sizeHint": "Nên dùng ảnh vuông, tối thiểu 1000×1000px (lý tưởng 1200×1200px). Ảnh không vuông sẽ bị viền trắng, ảnh nhỏ sẽ mờ khi khách phóng to trên web."
       },
       "video": {
         "fromLibrary": "Từ thư viện",
@@ -1229,6 +1230,15 @@
       "tabContent": "Nội dung",
       "tabSeoPublish": "SEO & Hiển thị",
       "tabsAriaLabel": "Phần của nội dung",
+      "assign": {
+        "title": "Phân công bài viết",
+        "roleContent": "Content",
+        "itemsContent": "Tiêu đề · Ảnh đại diện · Nội dung chính · Tags & danh mục · Liên kết sản phẩm",
+        "roleSeo": "SEO",
+        "itemsSeo": "Tiêu đề SEO · Meta description · Slug · OG image · Kiểm tra trước khi đăng",
+        "roleManager": "Quản lý",
+        "itemsManager": "Phê duyệt · Đăng bài · Ẩn / xóa bài"
+      },
       "saveDirty": "Có thay đổi chưa lưu",
       "saveClean": "Đã lưu",
       "savingShort": "Đang lưu...",
@@ -1398,7 +1408,7 @@
     "replacing": "Đang thay...",
     "replaceSuccess": "Đã thay file (URL không đổi)",
     "replaceError": "Không thay được file",
-    "replaceHint": "Thay file giữ nguyên URL — link đang dùng ở các sản phẩm/bài viết không bị hỏng.",
+    "replaceHint": "Thay file giữ nguyên URL — link đang dùng ở các sản phẩm/bài viết không bị hỏng. Nên thay bằng ảnh cùng tỉ lệ và kích thước bằng hoặc lớn hơn để không bị mờ/méo trên web.",
     "variants": "Phiên bản ảnh",
     "usageUsed": "Đã dùng",
     "usageUnusedOption": "Chưa dùng",
@@ -1410,6 +1420,7 @@
       "dialogLabel": "Chọn ảnh từ thư viện",
       "dropToUpload": "Thả ảnh để tải lên",
       "title": "Thư viện ảnh",
+      "sizeHint": "Tùy vị trí dùng: ảnh sản phẩm nên vuông ≥ 1000px, banner ngang ≥ 1920px, logo nền trong ~400px. Ảnh quá nhỏ hoặc sai tỉ lệ sẽ bị mờ/méo trên web.",
       "multiMode": "Chọn nhiều",
       "uploadTitle": "Kéo thả ảnh vào cửa sổ này hoặc click để chọn file",
       "uploading": "Đang tải lên...",
@@ -2630,6 +2641,7 @@
       "next": "Sau →",
       "pageInfo": "Trang {{page}} / {{totalPages}}",
       "selectHint": "Chọn một video để sử dụng",
+      "sizeHint": "Nên dùng video tỉ lệ 16:9, tối thiểu 1280×720px",
       "confirm": "Chọn video này"
     }
   },
@@ -2641,6 +2653,13 @@
     "previewLoading": "Đang tải...",
     "previewError": "URL ảnh không hợp lệ",
     "previewAlt": "Xem trước ảnh"
+  },
+  "mediaReco": {
+    "tooSmall": "Ảnh hơi nhỏ ({{w}}×{{h}}px) — nên dùng ảnh khoảng {{rw}}×{{rh}}px trở lên để không bị mờ trên web.",
+    "wrongRatio": "Ảnh chưa đúng tỉ lệ khung hiển thị ({{w}}×{{h}}px) — nên khoảng {{rw}}×{{rh}}px, nếu không web có thể cắt xén hoặc thêm viền.",
+    "videoTooSmall": "Video hơi nhỏ ({{w}}×{{h}}px) — nên dùng khoảng {{rw}}×{{rh}}px trở lên để hình rõ trên web.",
+    "videoWrongRatio": "Video chưa đúng tỉ lệ ({{w}}×{{h}}px) — nên dùng tỉ lệ 16:9 (ví dụ {{rw}}×{{rh}}px) để không bị viền đen.",
+    "uploadGuide": "Lưu ý kích thước theo mục đích dùng: ảnh sản phẩm nên vuông ≥ 1000×1000px; banner ngang ≥ 1920×600px; logo nền trong ~400×200px; video 16:9 ≥ 1280×720px. Ảnh quá nhỏ hoặc sai tỉ lệ sẽ bị mờ/méo trên web."
   },
   "refund": {
     "sectionTitle": "Hoàn tiền",

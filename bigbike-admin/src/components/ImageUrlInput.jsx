@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { MediaPickerModal } from './MediaPickerModal'
+import { MediaDimensionWarning } from './MediaDimensionWarning'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { resolveDisplayUrl } from '@/lib/contracts'
@@ -38,7 +39,7 @@ function ImagePreview({ url }) {
   return <img src={trimmed} alt={t('imageInput.previewAlt')} className="img-preview" loading="eager" />
 }
 
-export function ImageUrlInput({ value, onChange, alt, onAltChange, disabled, error }) {
+export function ImageUrlInput({ value, onChange, alt, onAltChange, disabled, error, recommend }) {
   const { t } = useTranslation()
   const [pickerOpen, setPickerOpen] = useState(false)
   const hasImage = Boolean(value?.trim())
@@ -67,6 +68,7 @@ export function ImageUrlInput({ value, onChange, alt, onAltChange, disabled, err
       </div>
       {error && <small className="field-error">{error}</small>}
       <ImagePreview url={value} />
+      {hasImage && recommend && <MediaDimensionWarning url={value} recommend={recommend} kind="image" />}
       {hasImage && onAltChange !== undefined && (
         <Input
           type="text"

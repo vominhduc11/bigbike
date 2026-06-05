@@ -38,8 +38,15 @@ public class CustomerSessionFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain
     ) throws ServletException, IOException {
+        // Skip customer session resolution for admin API paths. An expired admin JWT on an
+        // admin request should produce 401 (unauthenticated), not 403 (forbidden as customer).
+        // Without this guard the customer cookie would be picked up whenever the admin JWT
+        // expires and the browser also holds a storefront session — making the retry loop
+        // see 403 instead of 401 and never refreshing the admin token.
         String rawToken = extractCookie(request, SESSION_COOKIE);
-        if (rawToken != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+        if (rawToken != null && SecurityContextHolder.getContext().getAuthentication() == null
+                && !request.getRequestURI().startsWith("/api/v1/admin/")
+                && !request.getRequestURI().startsWith("/api/v1/auth/")) {
             Optional<CustomerSessionEntity> sessionOpt = sessionService.findBySessionToken(rawToken);
             if (sessionOpt.isPresent()) {
                 CustomerSessionEntity session = sessionOpt.get();

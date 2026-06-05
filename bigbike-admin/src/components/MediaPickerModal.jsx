@@ -303,6 +303,9 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
           </div>
         </div>
 
+        {/* Gợi ý kích thước — ảnh đăng lên web nên đúng kích thước/tỉ lệ theo vị trí dùng */}
+        <p className="px-4 pt-1 text-xs text-muted-foreground">{t('media.picker.sizeHint')}</p>
+
         {/* Upload queue */}
         {uploadQueue.length > 0 && (
           <div className="mpicker-upload-queue">

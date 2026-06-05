@@ -29,6 +29,8 @@ import {
 } from '../lib/adminApi'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { VideoPickerModal } from '../components/VideoPickerModal'
+import { MediaDimensionWarning } from '../components/MediaDimensionWarning'
+import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { showConfirm } from '../lib/confirm'
@@ -669,6 +671,7 @@ export function HomeVideoListScreen({ canUpdate }) {
               onChange={(url) => setForm((prev) => ({ ...prev, thumbnailUrl: url }))}
               alt={form.thumbnailAlt}
               onAltChange={(alt) => setForm((prev) => ({ ...prev, thumbnailAlt: alt }))}
+              recommend={IMAGE_RECO.videoThumb}
             />
             <span className="text-xs text-muted-foreground font-normal">{t('homeVideos.formThumbnailHint')}</span>
           </div>

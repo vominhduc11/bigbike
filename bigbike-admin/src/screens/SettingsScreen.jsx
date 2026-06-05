@@ -9,6 +9,7 @@ import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { RichTextEditor } from '../components/RichTextEditor'
 import { ImageUrlInput } from '../components/ImageUrlInput'
+import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { fetchSettings, batchUpdateSettings } from '../lib/adminApi'
 import { sanitizeHtml } from '../lib/sanitizeHtml'
 import { showConfirm } from '../lib/confirm'
@@ -220,6 +221,21 @@ const KEY_HINTS_VI = {
   hero_default_illustration_url:   'PNG nền trong, tỷ lệ gần vuông ~700×600px.',
 }
 
+// Chuẩn kích thước khuyến nghị theo từng cấu hình ảnh (so khớp với KEY_HINTS_VI).
+// Key không liệt kê sẽ dùng spec chung (chỉ nhắc khi quá nhỏ, không khóa tỉ lệ).
+const KEY_RECO = {
+  promo_image_url:                 IMAGE_RECO.promo,
+  og_image_url:                    IMAGE_RECO.cover,
+  hero_products_image_url:         IMAGE_RECO.bannerWide,
+  hero_products_mobile_image_url:  IMAGE_RECO.bannerMobile,
+  hero_brands_image_url:           IMAGE_RECO.bannerWide,
+  hero_brands_mobile_image_url:    IMAGE_RECO.bannerMobile,
+  hero_news_image_url:             IMAGE_RECO.bannerWide,
+  hero_news_mobile_image_url:      IMAGE_RECO.bannerMobile,
+  hero_default_bg_url:             IMAGE_RECO.bannerWide,
+  hero_default_illustration_url:   IMAGE_RECO.illustration,
+}
+
 const FALLBACK_META = { icon: Settings, labelKey: null }
 
 function tabLabel(group, t) {
@@ -271,6 +287,7 @@ function SettingField({ setting, canUpdate, draft, error, onChange }) {
               value={currentValue}
               onChange={(url) => onChange(setting.key, url)}
               error={error}
+              recommend={KEY_RECO[setting.key] || IMAGE_RECO.general}
             />
             {KEY_HINTS_VI[setting.key] && (
               <span className="hint">{KEY_HINTS_VI[setting.key]}</span>

@@ -513,7 +513,8 @@
         "altAriaLabel": "Image alt text",
         "addImage": "Add image",
         "multiSelectTitle": "Pick multiple images from the library",
-        "multiSelect": "Pick multiple images"
+        "multiSelect": "Pick multiple images",
+        "sizeHint": "Use square images, at least 1000×1000px (ideally 1200×1200px). Non-square images get white bars, and small images look blurry when customers zoom in on the website."
       },
       "video": {
         "fromLibrary": "From library",
@@ -1230,6 +1231,15 @@
       "tabContent": "Content",
       "tabSeoPublish": "SEO & Publishing",
       "tabsAriaLabel": "Content sections",
+      "assign": {
+        "title": "Content assignment",
+        "roleContent": "Content",
+        "itemsContent": "Title · Featured image · Body content · Tags & categories · Related products",
+        "roleSeo": "SEO",
+        "itemsSeo": "SEO title · Meta description · Slug · OG image · Pre-publish checklist",
+        "roleManager": "Manager",
+        "itemsManager": "Approve · Publish · Hide / delete post"
+      },
       "saveDirty": "Unsaved changes",
       "saveClean": "Saved",
       "savingShort": "Saving...",
@@ -1399,7 +1409,7 @@
     "replacing": "Replacing...",
     "replaceSuccess": "File replaced (URL unchanged)",
     "replaceError": "Replace failed",
-    "replaceHint": "Replacement keeps the same URL — links from products/articles still work.",
+    "replaceHint": "Replacement keeps the same URL — links from products/articles still work. Replace with an image of the same ratio and equal or larger size so it stays sharp and undistorted on the website.",
     "variants": "Image variants",
     "usageUsed": "In use",
     "usageUnusedOption": "Unused",
@@ -1411,6 +1421,7 @@
       "dialogLabel": "Select image from library",
       "dropToUpload": "Drop images to upload",
       "title": "Image library",
+      "sizeHint": "Depends on where it's used: product images should be square ≥ 1000px, wide banners ≥ 1920px, logos on transparent PNG ~400px. Images too small or wrong-ratio look blurry/distorted on the website.",
       "multiMode": "Multi-select",
       "uploadTitle": "Drag and drop images here or click to choose files",
       "uploading": "Uploading...",
@@ -2631,6 +2642,7 @@
       "next": "Next ?",
       "pageInfo": "Page {{page}} / {{totalPages}}",
       "selectHint": "Choose a video to use",
+      "sizeHint": "Use 16:9 videos, at least 1280×720px",
       "confirm": "Use this video"
     }
   },
@@ -2642,6 +2654,13 @@
     "previewLoading": "Loading...",
     "previewError": "Invalid image URL",
     "previewAlt": "Image preview"
+  },
+  "mediaReco": {
+    "tooSmall": "Image is a bit small ({{w}}×{{h}}px) — use around {{rw}}×{{rh}}px or larger so it isn't blurry on the website.",
+    "wrongRatio": "Image ratio doesn't match the display frame ({{w}}×{{h}}px) — aim for around {{rw}}×{{rh}}px, otherwise the website may crop it or add bars.",
+    "videoTooSmall": "Video is a bit small ({{w}}×{{h}}px) — use around {{rw}}×{{rh}}px or larger for a sharp result on the website.",
+    "videoWrongRatio": "Video ratio is off ({{w}}×{{h}}px) — use 16:9 (e.g. {{rw}}×{{rh}}px) to avoid black bars.",
+    "uploadGuide": "Mind the size per use: product images should be square ≥ 1000×1000px; wide banners ≥ 1920×600px; logos on transparent PNG ~400×200px; videos 16:9 ≥ 1280×720px. Images that are too small or wrong-ratio look blurry/distorted on the website."
   },
   "refund": {
     "sectionTitle": "Refund",

@@ -18,6 +18,7 @@ import { createCategorySchema, zodErrors } from '../lib/schemas'
 import { StatePanel } from '../components/StatePanel'
 import { PublishStatusBadge, StatusBadge } from '../components/StatusBadge'
 import { ImageUrlInput } from '../components/ImageUrlInput'
+import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { RichTextEditor } from '../components/RichTextEditor'
 import { Tabs } from '../components/layout'
 import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
@@ -632,6 +633,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                   onChange={(url) => updateField('imageUrl', url)}
                   disabled={isReadOnly}
                   error={validationErrors.imageUrl}
+                  recommend={IMAGE_RECO.categoryImage}
                 />
                 <span className="hint">{t('categories.detail.imageUrlHint')}</span>
               </div>
@@ -642,6 +644,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                   onChange={(url) => updateField('bannerImageUrl', url)}
                   disabled={isReadOnly}
                   error={validationErrors.bannerImageUrl}
+                  recommend={IMAGE_RECO.bannerWide}
                 />
                 <span className="hint">{t('categories.detail.bannerImageUrlHint')}</span>
               </div>
@@ -652,6 +655,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                   onChange={(url) => updateField('bannerMobileImageUrl', url)}
                   disabled={isReadOnly}
                   error={validationErrors.bannerMobileImageUrl}
+                  recommend={IMAGE_RECO.bannerMobile}
                 />
                 <span className="hint">{t('categories.detail.bannerMobileImageUrlHint')}</span>
               </div>

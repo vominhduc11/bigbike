@@ -389,6 +389,9 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
 
       {state.warning ? <ReadOnlyBanner warning={state.warning} /> : null}
 
+      {/* Gợi ý kích thước — kho dùng chung, nhắc admin chọn đúng kích thước theo mục đích */}
+      <p className="text-xs text-muted-foreground -mt-1">{t('mediaReco.uploadGuide')}</p>
+
       {/* Upload queue */}
       {uploadQueue.length > 0 && <UploadQueue queue={uploadQueue} onDismiss={(id) => setUploadQueue((q) => q.filter((u) => u.id !== id))} t={t} />}
 

@@ -47,6 +47,35 @@ function clamp01(value: number) {
 
 // --- Video helpers ---
 
+// Hiển thị thumbnail cho video trong strip:
+// 1. Nếu có ảnh thumbnail explicit → <img>
+// 2. Nếu YouTube → ảnh CDN YouTube
+// 3. Nếu video thư viện không có thumbnail → <video preload="metadata"> để
+//    browser tự render frame đầu tiên (trick #t=0.001 đảm bảo decode trước seek).
+function VideoThumbPreview({ video }: { video: VideoAsset }) {
+  const thumb = videoThumbUrl(video);
+  if (thumb) {
+    return <img src={thumb} alt={video.title ?? "Video"} className="w-full h-full object-cover" />;
+  }
+  const url = video.url ?? "";
+  const ytId = getYouTubeId(url);
+  if (!ytId) {
+    const resolved = resolveMediaUrl(url) ?? url;
+    const src = resolved ? `${resolved}#t=0.001` : "";
+    return (
+      <video
+        src={src}
+        className="w-full h-full object-cover"
+        muted
+        preload="metadata"
+        playsInline
+        tabIndex={-1}
+      />
+    );
+  }
+  return <div className="w-full h-full bg-neutral-800" />;
+}
+
 function getYouTubeId(url: string): string | null {
   if (!url) return null;
   const match = url.match(
@@ -148,10 +177,10 @@ export function ProductGallery({
     return out;
   })();
 
-  // Videos appended after images in the gallery strip.
+  // Videos appear first in the gallery strip, then images.
   const allItems: GalleryItem[] = [
-    ...images.map((asset): GalleryItem => ({ kind: "image", asset })),
     ...(videos ?? []).filter(isSupportedVideo).map((asset): GalleryItem => ({ kind: "video", asset })),
+    ...images.map((asset): GalleryItem => ({ kind: "image", asset })),
   ];
 
   const currentVariantKey = variantKey ?? "__no_variant__";
@@ -315,7 +344,6 @@ export function ProductGallery({
                 "cursor-pointer md:max-[1024px]:!w-[112px] min-[1025px]:!h-[100px] min-[1536px]:!h-[120px] min-[1920px]:!h-[140px]";
 
               if (item.kind === "video") {
-                const thumb = videoThumbUrl(item.asset);
                 return (
                   <SwiperSlide
                     key={itemKey(item, index)}
@@ -328,15 +356,7 @@ export function ProductGallery({
                         active ? "border-[var(--bb-border-control)]" : "border-transparent",
                       )}
                     >
-                      {thumb ? (
-                        <img
-                          src={thumb}
-                          alt={item.asset.title ?? "Video"}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-neutral-800" />
-                      )}
+                      <VideoThumbPreview video={item.asset} />
                       <div className="absolute inset-0 flex items-center justify-center bg-black/30">
                         <svg viewBox="0 0 24 24" width="20" height="20" fill="white" aria-hidden="true">
                           <path d="M8 5v14l11-7z" />

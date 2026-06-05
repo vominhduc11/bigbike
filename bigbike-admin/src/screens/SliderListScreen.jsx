@@ -22,6 +22,7 @@ import { GripVertical, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { createSlider, deleteSlider, fetchSliders, reorderSliders, updateSlider } from '../lib/adminApi'
 import { ImageUrlInput } from '../components/ImageUrlInput'
+import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { showConfirm } from '../lib/confirm'
@@ -392,7 +393,7 @@ export function SliderListScreen({ canUpdate }) {
               </label>
               <div className="form-field" style={{ gridColumn: '1 / -1' }}>
                 <span>{t('sliders.formDesktopUrl')}</span>
-                <ImageUrlInput value={form.desktopImageUrl} onChange={(url) => setForm((p) => ({ ...p, desktopImageUrl: url }))} />
+                <ImageUrlInput value={form.desktopImageUrl} onChange={(url) => setForm((p) => ({ ...p, desktopImageUrl: url }))} recommend={IMAGE_RECO.sliderDesktop} />
                 <span className="hint">{t('sliders.formDesktopUrlHint')}</span>
               </div>
               <label className="form-field" style={{ gridColumn: '1 / -1' }}>
@@ -401,7 +402,7 @@ export function SliderListScreen({ canUpdate }) {
               </label>
               <div className="form-field" style={{ gridColumn: '1 / -1' }}>
                 <span>{t('sliders.formMobileUrl')}</span>
-                <ImageUrlInput value={form.mobileImageUrl} onChange={(url) => setForm((p) => ({ ...p, mobileImageUrl: url }))} />
+                <ImageUrlInput value={form.mobileImageUrl} onChange={(url) => setForm((p) => ({ ...p, mobileImageUrl: url }))} recommend={IMAGE_RECO.bannerMobile} />
                 <span className="hint">{t('sliders.formMobileUrlHint')}</span>
               </div>
               <label className="form-field" style={{ gridColumn: '1 / -1' }}>

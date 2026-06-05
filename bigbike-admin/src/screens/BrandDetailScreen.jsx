@@ -14,6 +14,7 @@ import { formatDateTime } from '../lib/formatters'
 import { createBrandSchema, zodErrors } from '../lib/schemas'
 import { StatePanel } from '../components/StatePanel'
 import { ImageUrlInput } from '../components/ImageUrlInput'
+import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { RichTextEditor } from '../components/RichTextEditor'
 import { Tabs } from '../components/layout'
 import { Button } from '@/components/ui/button'
@@ -396,6 +397,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
                   onAltChange={(v) => updateField('logoAlt', v)}
                   disabled={isReadOnly}
                   error={validationErrors.logoUrl}
+                  recommend={IMAGE_RECO.logo}
                 />
                 <span className="hint">{t('brands.detail.logoUrlHint')}</span>
               </div>
@@ -408,6 +410,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
                   onAltChange={(v) => updateField('bannerAlt', v)}
                   disabled={isReadOnly}
                   error={validationErrors.bannerUrl}
+                  recommend={IMAGE_RECO.bannerWide}
                 />
                 <span className="hint">{t('brands.detail.bannerUrlHint')}</span>
               </div>
@@ -420,6 +423,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
                   onAltChange={(v) => updateField('mobileBannerAlt', v)}
                   disabled={isReadOnly}
                   error={validationErrors.mobileBannerUrl}
+                  recommend={IMAGE_RECO.bannerMobile}
                 />
                 <span className="hint">{t('brands.detail.mobileBannerUrlHint')}</span>
               </div>

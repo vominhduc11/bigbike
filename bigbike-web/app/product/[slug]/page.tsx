@@ -132,6 +132,10 @@ export default async function ProductDetailPage({
   const sanitizedShortDescription = product.shortDescription
     ? sanitizeRichHtml(product.shortDescription)
     : "";
+  const sanitizedInstallationGuide = product.installationGuide
+    ? sanitizeRichHtml(product.installationGuide)
+    : "";
+  const hasInstallationGuide = richHasContent(sanitizedInstallationGuide);
 
   const productForJsonLd = effectiveCategory
     ? product
@@ -185,6 +189,20 @@ export default async function ProductDetailPage({
           />
         ),
     },
+    ...(hasInstallationGuide
+      ? [
+          {
+            id: "tab-installation",
+            label: tProduct("tabs.installation"),
+            content: (
+              <article
+                className="bb-richtext"
+                dangerouslySetInnerHTML={{ __html: sanitizedInstallationGuide }}
+              />
+            ),
+          },
+        ]
+      : []),
     {
       id: "tab-faq",
       label: tProduct("faqs"),
@@ -218,6 +236,9 @@ export default async function ProductDetailPage({
     { id: "pdp-overview", label: "Tổng quan" },
     { id: "tab-description", label: "Mô tả" },
     { id: "tab-more_infomation", label: "Thông số" },
+    ...(hasInstallationGuide
+      ? [{ id: "tab-installation", label: tProduct("tabs.installation") }]
+      : []),
     { id: "tab-faq", label: tProduct("faqs") },
   ];
 

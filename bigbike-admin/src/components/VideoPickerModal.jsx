@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { fetchMedia, uploadMedia } from '../lib/adminApi'
 import { useDebounce } from '../lib/useDebounce'
+import { MediaDimensionWarning } from './MediaDimensionWarning'
+import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
@@ -307,13 +309,19 @@ export function VideoPickerModal({ onSelect, onClose }) {
           </div>
         )}
 
+        {selectedUrl && (
+          <div className="px-4">
+            <MediaDimensionWarning url={selectedUrl} recommend={IMAGE_RECO.video} kind="video" />
+          </div>
+        )}
+
         <div className="mpicker-footer">
           {selectedUrl ? (
             <span className="text-xs text-muted-foreground overflow-hidden text-ellipsis whitespace-nowrap max-w-[300px]">
               {selectedUrl.split('/').pop()}
             </span>
           ) : (
-            <span className="mpicker-hint">{t('homeVideos.picker.selectHint')}</span>
+            <span className="mpicker-hint">{t('homeVideos.picker.selectHint')} · {t('homeVideos.picker.sizeHint')}</span>
           )}
           <div className="mpicker-footer-actions">
             <Button variant="secondary" type="button" onClick={onClose}>{t('common.cancel')}</Button>

@@ -66,7 +66,7 @@ export function createProductSchema(t, isCreate = false) {
         _key: z.string().optional(),
         name: z.string().max(255, 'Tên thông số tối đa 255 ký tự.'),
         value: z.string().max(2000, 'Giá trị thông số tối đa 2000 ký tự.'),
-        groupName: z.string().max(100, 'Tên nhóm tối đa 100 ký tự.'),
+        groupName: z.string().max(100, 'Tên nhóm tối đa 100 ký tự.').optional(),
       })).optional(),
       faqs: z.array(z.object({
         _key: z.string().optional(),

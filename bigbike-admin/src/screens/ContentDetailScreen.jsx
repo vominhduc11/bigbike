@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { AlertCircle, Info, Loader2, Lock, Search, Trash2, X } from 'lucide-react'
+import { AlertCircle, Info, Loader2, Lock, Search, Trash2, Users, X } from 'lucide-react'
 import {
   createContent,
   deleteContent,
@@ -19,6 +19,7 @@ import { createContentSchema, zodErrors } from '../lib/schemas'
 import { RichTextEditor } from '../components/RichTextEditor'
 import { BlockEditor } from '../components/BlockEditor'
 import { ImageUrlInput } from '../components/ImageUrlInput'
+import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { StatePanel } from '../components/StatePanel'
 import { Screen, ScreenHeader, StickyActionBar, Tabs } from '../components/layout'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -77,6 +78,43 @@ function publishBadgeClass(status) {
     case 'TRASH':     return 'bb-badge bb-badge-danger'
     default:          return 'bb-badge bb-badge-neutral'
   }
+}
+
+function ContentAssignmentBanner({ t }) {
+  return (
+    <div className="px-4 py-3 bg-surface-muted border-b border-border">
+      <div className="flex items-center gap-1.5 mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <Users size={12} />
+        <span>{t('content.detail.assign.title', { defaultValue: 'Phân công bài viết' })}</span>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="border-l-[3px] pl-2 py-0.5" style={{ borderColor: 'var(--admin-color-primary)' }}>
+          <div className="text-[11px] font-bold uppercase tracking-wide text-foreground mb-0.5">
+            {t('content.detail.assign.roleContent', { defaultValue: 'Content' })}
+          </div>
+          <div className="text-[11px] leading-relaxed" style={{ color: 'var(--admin-color-text-secondary)' }}>
+            {t('content.detail.assign.itemsContent', { defaultValue: 'Tiêu đề · Ảnh đại diện · Nội dung chính · Tags & danh mục · Liên kết sản phẩm' })}
+          </div>
+        </div>
+        <div className="border-l-[3px] pl-2 py-0.5" style={{ borderColor: 'var(--admin-color-status-warning-text)' }}>
+          <div className="text-[11px] font-bold uppercase tracking-wide text-foreground mb-0.5">
+            {t('content.detail.assign.roleSeo', { defaultValue: 'SEO' })}
+          </div>
+          <div className="text-[11px] leading-relaxed" style={{ color: 'var(--admin-color-text-secondary)' }}>
+            {t('content.detail.assign.itemsSeo', { defaultValue: 'Tiêu đề SEO · Meta description · Slug · OG image · Kiểm tra trước khi đăng' })}
+          </div>
+        </div>
+        <div className="border-l-[3px] pl-2 py-0.5" style={{ borderColor: 'var(--admin-color-text-primary)' }}>
+          <div className="text-[11px] font-bold uppercase tracking-wide text-foreground mb-0.5">
+            {t('content.detail.assign.roleManager', { defaultValue: 'Quản lý' })}
+          </div>
+          <div className="text-[11px] leading-relaxed" style={{ color: 'var(--admin-color-text-secondary)' }}>
+            {t('content.detail.assign.itemsManager', { defaultValue: 'Phê duyệt · Đăng bài · Ẩn / xóa bài' })}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 // Section card wrapper — matches the same shape used in ProductDetailScreen.
@@ -618,6 +656,9 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
           </div>
         )}
 
+        {/* Assignment banner — always visible */}
+        <ContentAssignmentBanner t={t} />
+
         <Tabs
           ariaLabel={t('content.detail.tabsAriaLabel', { defaultValue: 'Phần của nội dung' })}
           value={activeTab}
@@ -756,6 +797,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                         onAltChange={(v) => updateField('coverImageAlt', v)}
                         disabled={isReadOnly}
                         error={validationErrors.coverImageUrl}
+                        recommend={IMAGE_RECO.cover}
                       />
                     </Field>
 
@@ -767,6 +809,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                         onAltChange={(v) => updateField('productImageAlt', v)}
                         disabled={isReadOnly}
                         error={validationErrors.productImageUrl}
+                        recommend={IMAGE_RECO.squareMedium}
                       />
                     </Field>
 
@@ -863,6 +906,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                           onAltChange={(alt) => updateField('heroImageAlt', alt)}
                           disabled={isReadOnly}
                           error={validationErrors['heroImage.url']}
+                          recommend={IMAGE_RECO.bannerWide}
                         />
                       </Field>
                       <Field label={t('content.detail.heroKicker', { defaultValue: 'Kicker' })} hint={isEnLang ? t('content.detail.enFieldHint') : undefined}>
