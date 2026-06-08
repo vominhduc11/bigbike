@@ -61,7 +61,6 @@ Status: `CONFIRMED_FROM_CODE` — `PublicCacheHeaderFilter.java`, `SecurityConfi
 | `GET` | `/api/v1/address/provinces` | List provinces | `ApiDataResponse<List<VnAddressItem>>` | `CONFIRMED_FROM_CODE` | `VnAddressController.java` |
 | `GET` | `/api/v1/address/provinces/{provinceCode}/districts` | List districts by province code | `ApiDataResponse<List<VnAddressItem>>` | `CONFIRMED_FROM_CODE` | `VnAddressController.java` |
 | `GET` | `/api/v1/address/districts/{districtCode}/wards` | List wards by district code | `ApiDataResponse<List<VnAddressItem>>` | `CONFIRMED_FROM_CODE` | `VnAddressController.java` |
-| `POST` | `/api/v1/newsletter` | Subscribe an email to the newsletter (idempotent on duplicate) | `ApiDataResponse<Void>` with HTTP `201` | `CONFIRMED_FROM_CODE` | `NewsletterController.java` |
 | `GET` | `/api/v1/content-categories` | List content (news) categories with published-article counts, for the Tin tức category filter | `ApiListResponse<ContentCategoryWithCount>` | `CONFIRMED_FROM_CODE` | `ContentController.java` |
 | `POST` | `/api/v1/customer/auth/register` | Email/phone + password registration. Body accepts `email`, optional `phone`, `password`, `firstName`, `lastName`; at least email or phone must be present. | `ApiDataResponse<CustomerAuthResponse>` | `CONFIRMED_FROM_CODE` | `CustomerAuthController.java`, `CustomerRegisterRequest.java`, `CustomerAuthService.register` |
 | `POST` | `/api/v1/customer/auth/login` | Email/phone + password login. Body accepts optional `remember` (boolean, default `false`) controlling session lifetime | `ApiDataResponse<CustomerAuthResponse>` | `CONFIRMED_FROM_CODE` | `CustomerAuthController.java`, `CustomerLoginRequest.java` |
@@ -189,8 +188,15 @@ Admin detail reads (`AdminContentItem`) của cả Article lẫn Page giờ bao 
 **Upsert mutation:**
 - Gửi key `bodyBlocks: [...]` trong `UpsertArticleRequest` / `UpsertPageRequest` → server render HTML từ blocks, ghi đè cả `body_blocks` lẫn `body`.
 - Bỏ key `bodyBlocks` hoàn toàn → `body` được patch bình thường; `body_blocks` không bị đụng (presence-flag pattern, giống `products.descriptionBlocks`).
+- **Tạo mới (`POST`):** nội dung là bắt buộc — chấp nhận **hoặc** `body` **hoặc** `bodyBlocks` non-empty. Gửi `bodyBlocks` mà bỏ `body` vẫn hợp lệ (server tự render `body` từ blocks); chỉ báo lỗi `body REQUIRED` khi thiếu cả hai.
 
 Status: `CONFIRMED_FROM_CODE` — `UpsertArticleRequest.bodyBlocksPresent`, `UpsertPageRequest.bodyBlocksPresent`, `AdminContentMutationService`, `AdminContentItem.bodyBlocks`. Xem [DATA_CONTRACT.md](DATA_CONTRACT.md) §"Article body blocks (V140)".
+
+### Article / Page EN translations on admin read — `translations` (V138)
+
+Admin detail reads (`AdminContentItem`) của cả Article lẫn Page bao gồm `translations: { en: {...} } | null` — bản dịch tiếng Anh để form admin nạp lại tab EN. `null` trên list reads; non-null trên detail reads (`GET /api/v1/admin/content/{type}/{id}`). Shape `en` là superset: `title`, `excerpt` (article-only), `body`, `heroTitle` / `heroDescription` / `heroKicker` (page-only), `seoTitle`, `seoDescription` — trường không áp dụng cho loại đó = `null`. **Public read không đổi** (đọc cột canonical + fallback VI, không trả khối `translations`).
+
+Status: `CONFIRMED_FROM_CODE` — `AdminContentItem.translations`, `ContentTranslations`, `ArticleTranslations` / `PageTranslations`, `AdminContentReadService.fromArticle` / `fromPage`. Xem [DATA_CONTRACT.md](DATA_CONTRACT.md) §"Article bilingual content (V138)".
 
 ## Commerce Mutation Contracts
 
@@ -426,6 +432,18 @@ nguyên shape** — không thêm khối `translations`.
 - `specifications[].nameEn / valueEn / groupEn` và `faqs[].questionEn / answerEn`
   — bản tiếng Anh thô của từng dòng con.
 
+**Đọc admin — danh sách theo `lang`:** các endpoint list admin
+`GET /api/v1/admin/products`, `/admin/categories`, `/admin/brands` và
+`/admin/content` nhận query param `lang` = `vi` (mặc định) hoặc `en`. Khi
+`lang=en`, **trường hiển thị** trả bản tiếng Anh (`name` cho product/category/brand,
+`title` cho content), **lùi về tiếng Việt theo từng trường** khi cột `_en` rỗng
+(`COALESCE`, theo `PRODUCT_RULE_002` / `CATEGORY_RULE_002` / `BRAND_RULE_002`).
+List response **giữ nguyên shape** — không thêm khối `translations`; chỉ trường
+hiển thị được localize (chi tiết vẫn trả cả 2 bản như trên). `bigbike-admin` truyền
+`i18n.language` (chọn ở `LanguageSwitcher` header) vào `lang`. POS
+(`/admin/pos/...`) giữ tiếng Việt. **Lọc (`q`) và sắp xếp vẫn theo cột tiếng Việt**
+— tìm theo từ khóa chỉ-tiếng-Anh có thể không khớp.
+
 **Ghi — `POST/PATCH /api/v1/admin/products`:** nhận thêm:
 - `translations.en` — object 8 trường text như trên. Toàn bộ tùy chọn (không bắt
   buộc); chỉ giới hạn độ dài như bản tiếng Việt. Theo presence-flag pattern: bỏ
@@ -433,10 +451,48 @@ nguyên shape** — không thêm khối `translations`.
 - `specifications[]` nhận thêm `nameEn`, `valueEn`, `groupNameEn`; `faqs[]` nhận
   thêm `questionEn`, `answerEn`. Đi cùng dòng tiếng Việt (full-replace như cũ).
 
-Status: `CONFIRMED_FROM_CODE` — `CatalogController` (`lang` param),
+Status: `CONFIRMED_FROM_CODE` — `CatalogController` (`lang` param public),
+`AdminCatalogController` / `AdminContentController` (`lang` param admin list),
+`AdminCatalogReadService` / `AdminContentReadService`,
 `UpsertProductRequest.translations` / `ProductTranslationRequest`,
-`AdminCatalogMutationService.applyProductPatch`, `JpaCatalogReadRepository`,
-migration `V136`.
+`AdminCatalogMutationService.applyProductPatch`, `JpaCatalogReadRepository` /
+`JpaContentReadRepository` (resolve locale), migration `V136`.
+
+### Menu bilingual label — `lang` param (V160)
+
+Mục menu có nhãn 2 ngôn ngữ (`label` VI canonical + `label_en` EN tùy chọn).
+
+**Đọc public:** `GET /api/v1/menus/{location}` nhận query `lang` = `vi` (mặc định)
+hoặc `en`. Khi `lang=en`, `label` trả bản tiếng Anh, **lùi về VI** khi `label_en`
+rỗng. Response giữ nguyên shape (không thêm khối translations). Storefront
+`bigbike-web` truyền `getLocale()` vào `lang`.
+
+**Đọc admin:** `GET /api/v1/admin/menus/...` trả thêm `labelEn` (giá trị thô cột
+`label_en`, không fallback) để editor sửa song ngữ.
+
+**Ghi admin:** `POST/PATCH /api/v1/admin/menus/{menuId}/items` nhận thêm `labelEn`
+(tùy chọn, ≤255). PATCH gửi `labelEn` rỗng/blank → xóa bản EN.
+
+Status: `CONFIRMED_FROM_CODE` — `PublicMenuController` (`lang` param),
+`AdminMenuService` (resolve locale + set/return `labelEn`),
+`CreateMenuItemRequest` / `UpdateMenuItemRequest` / `AdminMenuItemResponse`,
+migration `V160`.
+
+### Home video bilingual title — `lang` param (V161)
+
+Video trang chủ có tiêu đề 2 ngôn ngữ (`title` VI + `title_en` EN tùy chọn).
+
+**Đọc public:** `GET /api/v1/home-videos` nhận query `lang` = `vi` (mặc định) hoặc
+`en`. Khi `lang=en`, `title` trả bản tiếng Anh, **lùi về VI** khi `title_en` rỗng.
+Storefront truyền `getLocale()` vào `lang`.
+
+**Đọc admin:** `GET /api/v1/admin/home-videos` trả thêm `titleEn` thô để editor sửa
+song ngữ. **Ghi:** `POST/PATCH /api/v1/admin/home-videos` nhận thêm `titleEn` (tùy
+chọn, ≤255); PATCH gửi `titleEn` blank → xóa bản EN.
+
+Status: `CONFIRMED_FROM_CODE` — `PublicHomeVideoController` (`lang` param),
+`PublicHomeVideoResponse.from(video, lang)`, `AdminHomeVideoService`,
+`UpsertHomeVideoRequest` / `PatchHomeVideoRequest` (`titleEn`), migration `V161`.
 
 ## POS Contract
 
@@ -532,18 +588,19 @@ Concrete keys: `hero_products_*`, `hero_brands_*`, `hero_news_*` (15 total). All
 
 | Method | Path | Permission | Current behavior | Status | Evidence |
 |---|---|---|---|---|---|
+| `DELETE` | `/api/v1/admin/coupons/{couponId}` | `coupons.write` | Hard-deletes coupon by ID. Saves audit log entry `COUPON_DELETED`. Returns 204 No Content. | `CONFIRMED_FROM_CODE` | `AdminCouponController.java`, `AdminCouponService.java` |
 | `POST` | `/api/v1/admin/customers/{customerId}/coupon-gift` | `coupons.write` | Creates a unique `GIFT`-prefixed coupon locked to the customer, saves audit log, sends email async. Returns `AdminCouponDetailResponse`. Customer must have email. | `CONFIRMED_FROM_CODE` | `AdminCustomerController.java`, `AdminCouponGiftService.java` |
-| `POST` | `/api/v1/admin/coupon-gifts/bulk` | `coupons.write` | Creates one unique coupon per active customer with verified email. Emails sent async. Returns `{ sent, skipped }`. | `CONFIRMED_FROM_CODE` | `AdminCouponGiftController.java`, `AdminCouponGiftService.java` |
-| `POST` | `/api/v1/admin/coupon-gifts/targeted` | `coupons.write` | Creates one unique coupon per explicitly selected customer (by `customerIds` list). Only customers who are active and have verified email receive a coupon; others counted as `skipped`. Emails sent async. Returns `{ sent, skipped }`. | `PLANNED` | — |
+| `POST` | `/api/v1/admin/coupon-gifts/bulk` | `coupons.write` | Sends email with an existing coupon's code to every active customer with verified email. Accepts `{ couponId }`. Coupon must be ACTIVE. No new coupon created. Returns `{ sent, skipped }`. | `CONFIRMED_FROM_CODE` | `AdminCouponGiftController.java`, `AdminCouponGiftService.java` |
+| `POST` | `/api/v1/admin/coupon-gifts/targeted` | `coupons.write` | Sends email with an existing coupon's code to explicitly selected customers. Accepts `{ couponId, customerIds }`. Coupon must be ACTIVE. No new coupon created. Returns `{ sent, skipped }`. | `CONFIRMED_FROM_CODE` | `AdminCouponGiftController.java`, `AdminCouponGiftService.java` |
 
-**Bulk / targeted gift request body:**
+**Bulk notify request body:**
 ```json
-{ "discountType": "FIXED|PERCENT", "amount": 50000, "minimumAmount": null, "validDays": 30, "channel": "ALL" }
+{ "couponId": "uuid" }
 ```
 
-**Targeted gift request body** adds `customerIds` array:
+**Targeted notify request body:**
 ```json
-{ "customerIds": ["uuid1", "uuid2"], "discountType": "FIXED", "amount": 50000, "minimumAmount": null, "validDays": 30, "channel": "ALL" }
+{ "couponId": "uuid", "customerIds": ["uuid1", "uuid2"] }
 ```
 
 **Gift response shape:** `ApiDataResponse<BulkCouponGiftResult>` — `{ "sent": 3, "skipped": 0 }` where `skipped` = customers without verified email, inactive status, or not found.
@@ -629,14 +686,6 @@ All three endpoints are gated by `warranty.read` (read) or `warranty.write` (voi
 |---|---|---|---|---|---|
 | `GET` | `/api/v1/warranties/lookup?serial={serialNumber}` | None (public) | Customer-facing lookup by human-readable serial number string. Returns `ApiDataResponse<PublicWarrantyResponse>` with `{ serialNumber, productName, status, startDate, endDate, daysLeft }`. Consumed by web `/bao-hanh` and the mobile `WarrantyLookupScreen` (route `/bao-hanh`). | `CONFIRMED_FROM_CODE` | `PublicWarrantyController.java`, `WarrantyApiTest.java` |
 
-## Admin Newsletter Contract (V125)
-
-Backs the storefront footer email signup. Public `POST /api/v1/newsletter` stores one row per unique email (case-insensitive) in table `newsletter_subscribers` `{ id, email, created_at }`; duplicate submissions are idempotent and never error. Admins view the collected list:
-
-| Method | Path | Permission | Purpose | Status | Evidence |
-|---|---|---|---|---|---|
-| `GET` | `/api/v1/admin/newsletter-subscribers?page&size` | `newsletter.read` | Paginated list of newsletter email subscribers, newest first. | `CONFIRMED_FROM_CODE` | `AdminNewsletterController.java`, `NewsletterService.listSubscribers` |
-
 ## Admin Notification Center Contract (V102)
 
 Persistent counterpart of the WebSocket order feed — admins offline when an event fires still see it here. All three endpoints are gated by `orders.read` (no dedicated `notifications.*` permission).
@@ -702,12 +751,10 @@ Status: `CONFIRMED_FROM_CODE`
 - `outstanding`: `BigDecimal` — `totalAmount - paidAmount` (zero for fully paid orders)
 - `dueAt`: `Instant` nullable — payment due date for credit orders (null for non-credit)
 
-### Account page fields — newsletter, address email, order product names (V126, V127)
+### Account page fields — address email, order product names (V127)
 
 Additive fields backing the rebuilt account pages:
 
-- `CustomerSummary` (`GET`/`PATCH /api/v1/customer/me`) — adds `newsletterSubscribed: boolean`.
-  `UpdateCustomerProfileRequest` accepts optional `newsletterSubscribed: Boolean` (null = unchanged).
 - `CustomerAddressResponse` (`/api/v1/customer/addresses`) — adds `email: string` nullable.
   `SaveCustomerAddressRequest` accepts optional `email` (`@Email`, max 255 chars).
 - `OrderListItemResponse` (`GET /api/v1/customer/orders`) — adds `productNames: string[]`,

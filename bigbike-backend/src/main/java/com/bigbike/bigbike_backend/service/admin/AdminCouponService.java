@@ -276,6 +276,17 @@ public class AdminCouponService {
         return toDetail(entity);
     }
 
+    // ── Delete ────────────────────────────────────────────────────────────────
+
+    @Transactional
+    public void deleteCoupon(UUID couponId, UUID adminId) {
+        CouponEntity entity = couponRepo.findById(couponId)
+                .orElseThrow(() -> new NotFoundException("Coupon not found."));
+        String snapshot = snapshotFull(entity);
+        couponRepo.delete(entity);
+        auditLogRepo.save(buildAudit(adminId, "COUPON_DELETED", couponId, snapshot, null));
+    }
+
     // ── Mapping ───────────────────────────────────────────────────────────────
 
     private AdminCouponListItemResponse toListItem(CouponEntity c) {

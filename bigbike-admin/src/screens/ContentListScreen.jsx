@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FilterSelect } from '../components/FilterSelect'
+import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { Download, File, FileText, Pencil, Plus } from 'lucide-react'
 import { PaginationControls } from '../components/PaginationControls'
@@ -20,11 +21,11 @@ const INITIAL_QUERY = {
   publishStatus: 'ALL',
   sort: 'updatedAt:desc',
   page: 1,
-  pageSize: 8,
+  pageSize: 20,
 }
 
 export function ContentListScreen({ navigate, canUpdate }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [query, setQuery] = useState(() => readQueryFromUrl(INITIAL_QUERY))
   const [searchInput, setSearchInput] = useState(() => {
     const params = new URLSearchParams(window.location.search)
@@ -33,7 +34,7 @@ export function ContentListScreen({ navigate, canUpdate }) {
   const debouncedSearch = useDebounce(searchInput, 250)
   const isFirstSearchRender = useRef(true)
 
-  const state = useAdminList(['content', query], () => fetchContent(query))
+  const state = useAdminList(['content', query, i18n.language], () => fetchContent(query))
 
   useEffect(() => {
     syncQueryToUrl(query, INITIAL_QUERY)
@@ -129,6 +130,10 @@ export function ContentListScreen({ navigate, canUpdate }) {
             { value: 'HIDDEN', label: t('status.publish.HIDDEN') },
             { value: 'TRASH', label: t('status.publish.TRASH') },
           ]}
+        />
+        <PageSizeSelect
+          value={query.pageSize}
+          onChange={(n) => updateQuery({ pageSize: n }, { resetPage: true })}
         />
       </div>
 

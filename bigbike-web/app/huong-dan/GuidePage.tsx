@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Container } from "@/components/layout/Container";
 import { cn } from "@/lib/utils";
 import { bbCard, bbCardContent, bbLink, bbSection, sectionPad } from "@/lib/ui-classes";
@@ -127,9 +127,10 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
   }
 
   const route = resolveGuideRoute(subSegments);
+  const locale = await getLocale();
   const [pageResult, menuResult] = await Promise.all([
-    getPageBySlug(route.pageSlug),
-    getPublicMenu("guide"),
+    getPageBySlug(route.pageSlug, locale),
+    getPublicMenu("guide", locale),
   ]);
 
   if (!pageResult.data) {

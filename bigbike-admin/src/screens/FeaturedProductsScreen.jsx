@@ -1,28 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragOverlay,
-} from '@dnd-kit/core'
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
 import { GripVertical, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { fetchHomepageBlocks, saveHomepageBlocks, fetchProducts } from '../lib/adminApi'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
+import { SortableList } from '../components/Sortable'
 import { Screen } from '../components/layout/Screen'
 import { ScreenHeader } from '../components/layout/ScreenHeader'
 import { Button } from '@/components/ui/button'
@@ -68,31 +52,18 @@ function ProductPicker({ onAdd, disabledIds, disabled }) {
   )
 }
 
-function ProductRow({ product, canUpdate, onRemove }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: product.id,
-    disabled: !canUpdate,
-  })
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.4 : 1,
-  }
-
+function ProductRow({ product, canUpdate, onRemove, sortable }) {
   return (
     <div
-      ref={setNodeRef}
-      style={style}
+      ref={sortable?.setNodeRef}
+      style={{ ...sortable?.style, opacity: sortable?.isDragging ? 0.4 : 1 }}
       className="flex items-center gap-3 p-3 border border-border bg-background"
     >
-      {canUpdate && (
+      {canUpdate && sortable && (
         <button
           type="button"
-          {...attributes}
-          {...listeners}
-          className="flex-shrink-0 text-muted-foreground hover:text-foreground"
-          style={{ cursor: 'grab', touchAction: 'none' }}
+          {...sortable.handleProps}
+          className="flex-shrink-0 text-muted-foreground hover:text-foreground cursor-grab touch-none"
           aria-label="Kéo để sắp xếp"
         >
           <GripVertical size={16} />
@@ -131,7 +102,6 @@ export function FeaturedProductsScreen({ canUpdate }) {
   const queryClient = useQueryClient()
   const [items, setItems] = useState([])
   const [initialized, setInitialized] = useState(false)
-  const [activeId, setActiveId] = useState(null)
 
   const { isLoading, isError, error, data: blocksData } = useQuery({
     queryKey: ['homepage-blocks'],
@@ -140,15 +110,11 @@ export function FeaturedProductsScreen({ canUpdate }) {
 
   useEffect(() => {
     if (blocksData && !initialized) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setItems(blocksData.featuredGrid ?? [])
       setInitialized(true)
     }
   }, [blocksData, initialized])
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  )
 
   const saveMutation = useMutation({
     mutationFn: (featuredGrid) => saveHomepageBlocks(featuredGrid),
@@ -174,27 +140,11 @@ export function FeaturedProductsScreen({ canUpdate }) {
     setItems((prev) => prev.filter((p) => p.id !== productId))
   }
 
-  function handleDragStart(event) {
-    if (!canUpdate || saveMutation.isPending) return
-    setActiveId(event.active.id)
-  }
-
-  function handleDragEnd(event) {
-    if (!canUpdate || saveMutation.isPending) return
-    const { active, over } = event
-    setActiveId(null)
-    if (!over || active.id === over.id) return
-    const oldIndex = items.findIndex((p) => p.id === active.id)
-    const newIndex = items.findIndex((p) => p.id === over.id)
-    setItems((prev) => arrayMove(prev, oldIndex, newIndex))
-  }
-
   function handleSave() {
     saveMutation.mutate(items.map((p) => p.id))
   }
 
   const disabledIds = new Set(items.map((p) => p.id))
-  const activeProduct = activeId ? items.find((p) => p.id === activeId) : null
 
   if (isLoading) {
     return (
@@ -248,30 +198,23 @@ export function FeaturedProductsScreen({ canUpdate }) {
           )}
 
           {items.length > 0 && (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragStart={handleDragStart}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext items={items.map((p) => p.id)} strategy={verticalListSortingStrategy}>
-                <div className="flex flex-col gap-1">
-                  {items.map((product) => (
-                    <ProductRow
-                      key={product.id}
-                      product={product}
-                      canUpdate={canUpdate}
-                      onRemove={handleRemove}
-                    />
-                  ))}
-                </div>
-              </SortableContext>
-              <DragOverlay>
-                {activeProduct ? (
-                  <ProductRow product={activeProduct} canUpdate={false} onRemove={() => {}} />
-                ) : null}
-              </DragOverlay>
-            </DndContext>
+            <SortableList
+              items={items}
+              disabled={!canUpdate || saveMutation.isPending}
+              onReorder={setItems}
+              className="flex flex-col gap-1"
+              renderItem={(product, sortable) => (
+                <ProductRow
+                  product={product}
+                  canUpdate={canUpdate}
+                  onRemove={handleRemove}
+                  sortable={sortable}
+                />
+              )}
+              renderOverlay={(product) => (
+                <ProductRow product={product} canUpdate={false} onRemove={() => {}} />
+              )}
+            />
           )}
 
           {canUpdate && items.length < FEATURED_GRID_MAX && (

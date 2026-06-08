@@ -41,6 +41,7 @@ public class HomeVideoReadService {
                 entity.getId(),
                 entity.getSortOrder(),
                 entity.getTitle(),
+                entity.getTitleEn(),
                 entity.getVideoUrl(),
                 entity.getYoutubeId(),
                 entity.getThumbnail(),

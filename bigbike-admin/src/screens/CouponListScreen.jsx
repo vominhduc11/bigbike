@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FilterSelect } from '../components/FilterSelect'
+import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { toast } from 'sonner'
-import { Copy, Pencil, Plus, Send } from 'lucide-react'
+import { BadgeCheck, Copy, Pencil, Plus, Send, Trash2 } from 'lucide-react'
 import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
-import { createCoupon, fetchCoupons, mapValidationErrors, sendBulkCouponGift, updateCoupon, updateCouponStatus } from '../lib/adminApi'
+import { createCoupon, deleteCoupon, fetchCoupons, mapValidationErrors, sendBulkCouponGift, updateCoupon, updateCouponStatus } from '../lib/adminApi'
+import { showConfirm } from '../lib/confirm'
 import { CustomerPickerModal } from '../components/CustomerPickerModal'
 import { formatCurrencyVnd, formatDateTime } from '../lib/formatters'
 import { useDebounce } from '../lib/useDebounce'
@@ -21,9 +23,8 @@ const STATUS_BADGE = { ACTIVE: 'bb-badge-success', INACTIVE: 'bb-badge-neutral',
 const CHANNEL_BADGE = { ALL: 'bb-badge-neutral', ONLINE: 'bb-badge-info', POS: 'bb-badge-warning' }
 const CHANNEL_LABELS = { ALL: 'Tất cả kênh', ONLINE: 'Chỉ online', POS: 'Chỉ tại quầy' }
 
-const INITIAL_QUERY = { search: '', status: 'ALL', page: 1, pageSize: 10 }
+const INITIAL_QUERY = { search: '', status: 'ALL', page: 1, pageSize: 20 }
 const EMPTY_FORM = { code: '', name: '', discountType: 'FIXED', discountValue: '', minimumOrderAmount: '', maxUsage: '', expiresAt: '', channel: 'ALL' }
-const EMPTY_BULK_FORM = { discountType: 'FIXED', amount: '', minimumAmount: '', validDays: '', channel: 'ALL' }
 
 // Convert "YYYY-MM-DD" date picker value to end-of-day Vietnam time ISO instant.
 function toEndOfDayInstant(dateStr) {
@@ -69,7 +70,9 @@ export function CouponListScreen({ canUpdate }) {
   const [actionError, setActionError] = useState('')
 
   const [bulkOpen, setBulkOpen] = useState(false)
-  const [bulkForm, setBulkForm] = useState(EMPTY_BULK_FORM)
+  const [bulkCoupon, setBulkCoupon] = useState(null)
+  const [bulkCoupons, setBulkCoupons] = useState([])
+  const [bulkCouponsLoading, setBulkCouponsLoading] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [bulkSaving, setBulkSaving] = useState(false)
   const [bulkConfirm, setBulkConfirm] = useState(false)
@@ -87,6 +90,15 @@ export function CouponListScreen({ canUpdate }) {
     setQuery((prev) => ({ ...prev, search: debouncedSearch, page: 1 }))
   }, [debouncedSearch])
 
+  useEffect(() => {
+    if (!bulkOpen) { setBulkCoupon(null); setBulkCoupons([]); setBulkConfirm(false); return }
+    setBulkCouponsLoading(true)
+    fetchCoupons({ status: 'ACTIVE', page: 1, pageSize: 100, search: '' })
+      .then((r) => setBulkCoupons(r.items ?? []))
+      .catch(() => setBulkCoupons([]))
+      .finally(() => setBulkCouponsLoading(false))
+  }, [bulkOpen])
+
   const handleToggleStatus = useCallback(async (coupon) => {
     const newStatus = coupon.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
     setActionError('')
@@ -95,6 +107,21 @@ export function CouponListScreen({ canUpdate }) {
       setState((p) => ({ ...p, items: p.items.map((c) => c.id === coupon.id ? r.item : c) }))
     } catch (e) {
       setActionError(e.message || t('common.error'))
+    }
+  }, [t])
+
+  const handleDelete = useCallback(async (coupon) => {
+    const confirmed = await showConfirm(
+      `Xóa vĩnh viễn mã "${coupon.code}"?\nThao tác không thể hoàn tác.`,
+      'Xóa mã giảm giá',
+    )
+    if (!confirmed) return
+    try {
+      await deleteCoupon(coupon.id)
+      setState((p) => ({ ...p, items: p.items.filter((c) => c.id !== coupon.id) }))
+      toast.success(`Đã xóa mã ${coupon.code}.`)
+    } catch (e) {
+      toast.error(e.message || t('common.error'))
     }
   }, [t])
 
@@ -168,27 +195,16 @@ export function CouponListScreen({ canUpdate }) {
     }
   }
 
-  async function handleBulkSend(e) {
-    e.preventDefault()
+  async function handleBulkSend() {
     if (!bulkConfirm) { setBulkConfirm(true); return }
-    if (!bulkForm.amount || Number(bulkForm.amount) <= 0) {
-      toast.error('Vui lòng nhập giá trị giảm giá hợp lệ.')
-      return
-    }
+    if (!bulkCoupon) return
     setBulkSaving(true)
     try {
-      const payload = {
-        discountType: bulkForm.discountType,
-        amount: Number(bulkForm.amount),
-        minimumAmount: bulkForm.minimumAmount !== '' ? Number(bulkForm.minimumAmount) : null,
-        validDays: bulkForm.validDays !== '' ? Number(bulkForm.validDays) : null,
-        usageLimit: 1,
-        channel: bulkForm.channel,
-      }
-      const result = await sendBulkCouponGift(payload)
+      const result = await sendBulkCouponGift({ couponId: bulkCoupon.id })
       toast.success(`Đã gửi mã cho ${result?.sent ?? '?'} khách hàng. Bỏ qua: ${result?.skipped ?? 0}.`)
       setBulkOpen(false)
-      setBulkForm(EMPTY_BULK_FORM)
+      setBulkCoupon(null)
+      setBulkCoupons([])
       setBulkConfirm(false)
       setQuery((p) => ({ ...p }))
     } catch (err) {
@@ -256,70 +272,95 @@ export function CouponListScreen({ canUpdate }) {
         <div className="bb-card mb-4">
           <div className="bb-card-header">
             <div>
-              <h2>Gửi mã giảm giá đến toàn bộ khách hàng</h2>
-              <p className="sub">Mỗi khách hàng có tài khoản và email sẽ nhận một mã riêng. Email gửi tự động sau khi xác nhận.</p>
+              <h2>Gửi mã giảm giá hàng loạt</h2>
+              <p className="sub">Chọn mã để gửi thông báo — hệ thống gửi email chứa code mã đó đến toàn bộ khách ACTIVE có email xác minh. Không tạo mã mới.</p>
             </div>
           </div>
-          <form onSubmit={handleBulkSend} className="bb-card-body">
-            <div className="bb-grid-2">
-              <label className="form-field">
-                <span>Loại giảm giá</span>
-                <Select value={bulkForm.discountType} onValueChange={(val) => setBulkForm((p) => ({ ...p, discountType: val }))} disabled={bulkSaving}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="FIXED">Giảm tiền cố định (VND)</SelectItem>
-                    <SelectItem value="PERCENT">Giảm theo % đơn hàng</SelectItem>
-                  </SelectContent>
-                </Select>
-              </label>
-              <label className="form-field">
-                <span>{bulkForm.discountType === 'PERCENT' ? 'Phần trăm giảm (%)' : 'Số tiền giảm (VND)'}</span>
-                <Input
-                  type="number" min="1" required
-                  max={bulkForm.discountType === 'PERCENT' ? '100' : undefined}
-                  step={bulkForm.discountType === 'PERCENT' ? '1' : '1000'}
-                  value={bulkForm.amount}
-                  onChange={(e) => setBulkForm((p) => ({ ...p, amount: e.target.value }))}
-                  placeholder={bulkForm.discountType === 'PERCENT' ? 'VD: 10' : 'VD: 50000'}
-                  disabled={bulkSaving}
-                />
-              </label>
-              <label className="form-field">
-                <span>Đơn hàng tối thiểu (VND) — để trống nếu không yêu cầu</span>
-                <Input type="number" min="0" step="1000" value={bulkForm.minimumAmount}
-                  onChange={(e) => setBulkForm((p) => ({ ...p, minimumAmount: e.target.value }))}
-                  placeholder="Không giới hạn" disabled={bulkSaving} />
-              </label>
-              <label className="form-field">
-                <span>Hiệu lực (số ngày) — để trống nếu không hết hạn</span>
-                <Input type="number" min="1" max="365" value={bulkForm.validDays}
-                  onChange={(e) => setBulkForm((p) => ({ ...p, validDays: e.target.value }))}
-                  placeholder="VD: 30" disabled={bulkSaving} />
-              </label>
-              <label className="form-field">
-                <span>Kênh áp dụng</span>
-                <Select value={bulkForm.channel} onValueChange={(val) => setBulkForm((p) => ({ ...p, channel: val }))} disabled={bulkSaving}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ALL">Tất cả kênh</SelectItem>
-                    <SelectItem value="ONLINE">Chỉ online</SelectItem>
-                    <SelectItem value="POS">Chỉ tại quầy (POS)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </label>
-            </div>
+          <div className="bb-card-body">
+            {bulkCouponsLoading ? (
+              <p className="bb-muted text-sm py-6 text-center">Đang tải danh sách mã...</p>
+            ) : bulkCoupons.length === 0 ? (
+              <div className="text-center py-6">
+                <p className="bb-muted text-sm">Không có mã giảm giá đang hoạt động.</p>
+                <p className="bb-muted text-xs mt-1">Tạo mã trước rồi mới có thể gửi hàng loạt.</p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {bulkCoupons.map((c) => {
+                  const isSelected = bulkCoupon?.id === c.id
+                  const pct = c.maxUsage ? Math.min(100, (c.usageCount / c.maxUsage) * 100) : null
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      disabled={bulkSaving}
+                      onClick={() => { setBulkCoupon(c); setBulkConfirm(false) }}
+                      className={`w-full text-left rounded-lg border p-3 transition-colors ${
+                        isSelected
+                          ? 'border-[var(--admin-color-primary)] bg-[var(--admin-color-primary)]/5'
+                          : 'border-[var(--admin-border-default)] hover:border-[var(--admin-color-primary)]/40'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-mono font-semibold text-sm" style={{ color: 'var(--admin-color-primary)' }}>{c.code}</span>
+                            {c.name && <span className="text-sm bb-muted truncate">{c.name}</span>}
+                          </div>
+                          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                            <span className="bb-badge bb-badge-info">
+                              {c.discountType === 'PERCENT' ? `-${c.discountValue}%` : `-${formatCurrencyVnd(c.discountValue)}`}
+                            </span>
+                            <span className="bb-badge bb-badge-neutral">{CHANNEL_LABELS[c.channel] ?? c.channel}</span>
+                            {c.expiresAt && <span className="text-xs bb-muted">Hết hạn: {formatDateTime(c.expiresAt)}</span>}
+                            {c.minimumOrderAmount > 0 && <span className="text-xs bb-muted">Tối thiểu: {formatCurrencyVnd(c.minimumOrderAmount)}</span>}
+                          </div>
+                          {pct !== null && (
+                            <div className="flex items-center gap-2 mt-2">
+                              <div className="stock-bar" style={{ flex: '0 0 80px' }}><div style={{ width: pct + '%' }} /></div>
+                              <span className="text-xs bb-muted">{c.usageCount}/{c.maxUsage} đã dùng</span>
+                            </div>
+                          )}
+                        </div>
+                        {isSelected && <BadgeCheck size={18} className="shrink-0 mt-0.5" style={{ color: 'var(--admin-color-primary)' }} />}
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+
+            {bulkCoupon && (
+              <div className="mt-4 p-3 rounded-md text-sm" style={{ background: 'var(--admin-surface-muted)', border: '1px solid var(--admin-border-default)' }}>
+                Sẽ gửi email thông báo mã <span className="font-mono font-semibold" style={{ color: 'var(--admin-color-primary)' }}>{bulkCoupon.code}</span> đến <strong>toàn bộ khách ACTIVE có email xác minh</strong>. Không tạo mã mới.
+              </div>
+            )}
+
             {bulkConfirm && (
-              <Alert tone="warning" className="mt-4">
-                Xác nhận gửi? Hệ thống sẽ tạo và email mã riêng cho <strong>tất cả khách hàng ACTIVE có email</strong>. Thao tác không thể hoàn tác.
+              <Alert tone="warning" className="mt-3">
+                Xác nhận gửi? Thao tác sẽ tạo hàng loạt mã và email — <strong>không thể hoàn tác</strong>.
               </Alert>
             )}
+
             <div className="mt-4 flex gap-2">
-              <button type="submit" className="bb-btn bb-btn-primary" disabled={bulkSaving}>{bulkConfirm ? 'Xác nhận gửi' : 'Tiếp tục'}</button>
-              <button type="button" className="bb-btn bb-btn-secondary"
-                onClick={() => { setBulkOpen(false); setBulkForm(EMPTY_BULK_FORM); setBulkConfirm(false) }}
-                disabled={bulkSaving}>Hủy</button>
+              <button
+                type="button"
+                className="bb-btn bb-btn-primary"
+                disabled={!bulkCoupon || bulkSaving}
+                onClick={handleBulkSend}
+              >
+                {bulkSaving ? 'Đang gửi...' : bulkConfirm ? 'Xác nhận gửi' : 'Tiếp tục'}
+              </button>
+              <button
+                type="button"
+                className="bb-btn bb-btn-secondary"
+                onClick={() => setBulkOpen(false)}
+                disabled={bulkSaving}
+              >
+                Hủy
+              </button>
             </div>
-          </form>
+          </div>
         </div>
       )}
 
@@ -378,6 +419,7 @@ export function CouponListScreen({ canUpdate }) {
                 </Select>
               </label>
             </div>
+
             <div className="mt-4 flex gap-2">
               <button type="submit" className="bb-btn bb-btn-primary" disabled={formSaving}>{formSaving ? t('common.saving') : t('coupons.createBtn')}</button>
               <button type="button" className="bb-btn bb-btn-secondary" onClick={() => { setShowForm(false); setForm(EMPTY_FORM); setFormError(''); setFormFieldErrors({}) }}>{t('common.cancel')}</button>
@@ -459,6 +501,10 @@ export function CouponListScreen({ canUpdate }) {
             { value: 'EXPIRED', label: t('coupons.statusExpired') },
           ]}
         />
+        <PageSizeSelect
+          value={query.pageSize}
+          onChange={(n) => updateQuery({ pageSize: n }, { resetPage: true })}
+        />
       </div>
 
       {state.status === 'error' && (
@@ -537,6 +583,14 @@ export function CouponListScreen({ canUpdate }) {
                             >
                               <Copy size={14} />
                             </button>
+                            <button
+                              type="button"
+                              className="bb-icon-btn"
+                              title={t('common.delete')}
+                              onClick={() => handleDelete(c)}
+                            >
+                              <Trash2 size={14} />
+                            </button>
                           </td>
                         )}
                       </tr>
@@ -590,6 +644,14 @@ export function CouponListScreen({ canUpdate }) {
                         >
                           <Copy size={14} />
                         </button>
+                        <button
+                          type="button"
+                          className="bb-icon-btn"
+                          title={t('common.delete')}
+                          onClick={() => handleDelete(c)}
+                        >
+                          <Trash2 size={14} />
+                        </button>
                       </>
                     ) : undefined}
                   />
@@ -607,7 +669,10 @@ export function CouponListScreen({ canUpdate }) {
       )}
     </div>
 
-    <CustomerPickerModal open={pickerOpen} onClose={() => setPickerOpen(false)} />
+    <CustomerPickerModal
+      open={pickerOpen}
+      onClose={() => setPickerOpen(false)}
+    />
     </>
   )
 }

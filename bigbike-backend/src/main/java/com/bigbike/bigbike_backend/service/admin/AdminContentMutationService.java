@@ -15,17 +15,13 @@ import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.domain.content.AdminContentItem;
 import com.bigbike.bigbike_backend.domain.content.Article;
+import com.bigbike.bigbike_backend.domain.content.ContentTranslations;
 import com.bigbike.bigbike_backend.domain.content.Page;
 import com.bigbike.bigbike_backend.persistence.entity.content.ArticleEntity;
-import com.bigbike.bigbike_backend.persistence.entity.content.BlogTagEntity;
-import com.bigbike.bigbike_backend.persistence.entity.content.ContentAuthorEntity;
 import com.bigbike.bigbike_backend.persistence.entity.content.ContentCategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.content.PageEntity;
-import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
-import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
+
 import com.bigbike.bigbike_backend.persistence.repository.content.ArticleJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.content.BlogTagJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.content.ContentAuthorJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.content.ContentCategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.content.PageJpaRepository;
 import com.bigbike.bigbike_backend.repository.content.ContentReadRepository;
@@ -45,10 +41,7 @@ public class AdminContentMutationService {
 
     private final ArticleJpaRepository articleJpaRepository;
     private final PageJpaRepository pageJpaRepository;
-    private final ContentAuthorJpaRepository contentAuthorJpaRepository;
     private final ContentCategoryJpaRepository contentCategoryJpaRepository;
-    private final BlogTagJpaRepository blogTagJpaRepository;
-    private final ProductJpaRepository productJpaRepository;
     private final ContentReadRepository contentReadRepository;
     private final MediaUrlProperties mediaUrlProperties;
     private final WebRevalidationService webRevalidationService;
@@ -58,10 +51,7 @@ public class AdminContentMutationService {
     public AdminContentMutationService(
             ObjectProvider<ArticleJpaRepository> articleJpaRepositoryProvider,
             ObjectProvider<PageJpaRepository> pageJpaRepositoryProvider,
-            ObjectProvider<ContentAuthorJpaRepository> contentAuthorJpaRepositoryProvider,
             ObjectProvider<ContentCategoryJpaRepository> contentCategoryJpaRepositoryProvider,
-            ObjectProvider<BlogTagJpaRepository> blogTagJpaRepositoryProvider,
-            ObjectProvider<ProductJpaRepository> productJpaRepositoryProvider,
             ContentReadRepository contentReadRepository,
             MediaUrlProperties mediaUrlProperties,
             WebRevalidationService webRevalidationService,
@@ -70,10 +60,7 @@ public class AdminContentMutationService {
     ) {
         this.articleJpaRepository = articleJpaRepositoryProvider.getIfAvailable();
         this.pageJpaRepository = pageJpaRepositoryProvider.getIfAvailable();
-        this.contentAuthorJpaRepository = contentAuthorJpaRepositoryProvider.getIfAvailable();
         this.contentCategoryJpaRepository = contentCategoryJpaRepositoryProvider.getIfAvailable();
-        this.blogTagJpaRepository = blogTagJpaRepositoryProvider.getIfAvailable();
-        this.productJpaRepository = productJpaRepositoryProvider.getIfAvailable();
         this.contentReadRepository = contentReadRepository;
         this.mediaUrlProperties = mediaUrlProperties;
         this.webRevalidationService = webRevalidationService;
@@ -87,7 +74,6 @@ public class AdminContentMutationService {
 
         List<ApiErrorDetail> errors = new ArrayList<>();
         String slug = validateArticleRequest(request, null, true, errors);
-        ContentAuthorEntity author = resolveAuthor(request.getAuthorId(), errors);
         ContentCategoryEntity category = resolveCategory(request.getCategoryId(), errors);
         AdminMutationValidators.throwIfErrors(errors);
 
@@ -97,7 +83,7 @@ public class AdminContentMutationService {
         entity.setCreatedAt(now);
         entity.setUpdatedAt(now);
 
-        applyArticlePatch(entity, request, slug, author, category, true);
+        applyArticlePatch(entity, request, slug, category, true);
         articleJpaRepository.save(entity);
         auditLog("CONTENT_ARTICLE_CREATED", "CONTENT", adminId, null, articleJson(entity));
         revalidateArticle(entity, null);
@@ -117,14 +103,13 @@ public class AdminContentMutationService {
 
         List<ApiErrorDetail> errors = new ArrayList<>();
         String slug = validateArticleRequest(request, entity, false, errors);
-        ContentAuthorEntity author = resolveAuthor(request.getAuthorId(), errors);
         ContentCategoryEntity category = resolveCategory(request.getCategoryId(), errors);
         PublishStatus nextStatus = request.getPublishStatus() == null ? entity.getPublishStatus() : request.getPublishStatus();
         AdminMutationValidators.validatePublishTransition(entity.getPublishStatus(), nextStatus, "publishStatus", errors);
         AdminMutationValidators.throwIfErrors(errors);
 
         entity.setUpdatedAt(Instant.now());
-        applyArticlePatch(entity, request, slug, author, category, false);
+        applyArticlePatch(entity, request, slug, category, false);
         articleJpaRepository.save(entity);
         auditLog("CONTENT_ARTICLE_UPDATED", "CONTENT", adminId, null, articleJson(entity));
         revalidateArticle(entity, previousSlug);
@@ -219,10 +204,7 @@ public class AdminContentMutationService {
     private void requireJpaPersistenceEnabled() {
         if (articleJpaRepository == null
                 || pageJpaRepository == null
-                || contentAuthorJpaRepository == null
-                || contentCategoryJpaRepository == null
-                || blogTagJpaRepository == null
-                || productJpaRepository == null) {
+                || contentCategoryJpaRepository == null) {
             throw new MutationNotImplementedException(
                     "Content mutation APIs require JPA persistence profile. Mock profile is read-only."
             );
@@ -256,6 +238,11 @@ public class AdminContentMutationService {
         return s == null ? "" : s.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
+    /** True when the request carries a non-empty {@code bodyBlocks} array (server will render it into {@code body}). */
+    private static boolean hasBodyBlocks(boolean present, List<?> blocks) {
+        return present && blocks != null && !blocks.isEmpty();
+    }
+
     private String validateArticleRequest(
             UpsertArticleRequest request,
             ArticleEntity current,
@@ -266,7 +253,11 @@ public class AdminContentMutationService {
         if (create) {
             AdminMutationValidators.validateRequiredSlug(slug, "slug", errors);
             AdminMutationValidators.validateRequiredText(request.getTitle(), "title", "Title", errors);
-            AdminMutationValidators.validateRequiredText(request.getBody(), "body", "Body", errors);
+            // Content can be supplied either as legacy `body` HTML or as `bodyBlocks` (V140);
+            // the server renders blocks → body, so require body only when no blocks are sent.
+            if (!hasBodyBlocks(request.isBodyBlocksPresent(), request.getBodyBlocks())) {
+                AdminMutationValidators.validateRequiredText(request.getBody(), "body", "Body", errors);
+            }
             if (request.getPublishStatus() == null) {
                 errors.add(new ApiErrorDetail("publishStatus", "REQUIRED", "publishStatus is required."));
             }
@@ -283,12 +274,6 @@ public class AdminContentMutationService {
         AdminMutationValidators.validateImageAsset(
                 request.getCoverImage(),
                 "coverImage",
-                mediaUrlProperties.getPublicBaseUrl(),
-                errors
-        );
-        AdminMutationValidators.validateImageAsset(
-                request.getProductImage(),
-                "productImage",
                 mediaUrlProperties.getPublicBaseUrl(),
                 errors
         );
@@ -319,7 +304,11 @@ public class AdminContentMutationService {
         if (create) {
             AdminMutationValidators.validateRequiredSlug(slug, "slug", errors);
             AdminMutationValidators.validateRequiredText(request.getTitle(), "title", "Title", errors);
-            AdminMutationValidators.validateRequiredText(request.getBody(), "body", "Body", errors);
+            // Content can be supplied either as legacy `body` HTML or as `bodyBlocks` (V140);
+            // the server renders blocks → body, so require body only when no blocks are sent.
+            if (!hasBodyBlocks(request.isBodyBlocksPresent(), request.getBodyBlocks())) {
+                AdminMutationValidators.validateRequiredText(request.getBody(), "body", "Body", errors);
+            }
             if (request.getPublishStatus() == null) {
                 errors.add(new ApiErrorDetail("publishStatus", "REQUIRED", "publishStatus is required."));
             }
@@ -362,7 +351,6 @@ public class AdminContentMutationService {
             ArticleEntity entity,
             UpsertArticleRequest request,
             String normalizedSlug,
-            ContentAuthorEntity author,
             ContentCategoryEntity category,
             boolean create
     ) {
@@ -401,15 +389,6 @@ public class AdminContentMutationService {
             clearCoverImage(entity);
         }
 
-        if (request.getProductImage() != null) {
-            applyProductImage(entity, request.getProductImage());
-        } else if (create) {
-            clearProductImage(entity);
-        }
-
-        if (create || request.getAuthorId() != null) {
-            entity.setAuthor(author);
-        }
         if (create || request.getCategoryId() != null) {
             entity.setCategory(category);
             // Sync the many-to-many categories list with the primary category on both create and update.
@@ -420,13 +399,6 @@ public class AdminContentMutationService {
             }
             entity.setCategories(syncedCategories);
         }
-        if (create || request.getTags() != null) {
-            entity.setTags(resolveTags(request.getTags()));
-        }
-        if (create || request.getProductIds() != null) {
-            entity.setProducts(resolveProducts(request.getProductIds()));
-        }
-
         if (request.getSeo() != null) {
             applySeo(entity, request.getSeo());
         } else if (create) {
@@ -534,18 +506,6 @@ public class AdminContentMutationService {
         }
     }
 
-    private ContentAuthorEntity resolveAuthor(String authorIdRaw, List<ApiErrorDetail> errors) {
-        String authorId = AdminMutationValidators.trimToNull(authorIdRaw);
-        if (authorId == null) {
-            return null;
-        }
-        ContentAuthorEntity author = contentAuthorJpaRepository.findById(authorId).orElse(null);
-        if (author == null) {
-            errors.add(new ApiErrorDetail("authorId", "NOT_FOUND", "Author does not exist."));
-        }
-        return author;
-    }
-
     private ContentCategoryEntity resolveCategory(String categoryIdRaw, List<ApiErrorDetail> errors) {
         String categoryId = AdminMutationValidators.trimToNull(categoryIdRaw);
         if (categoryId == null) {
@@ -574,69 +534,6 @@ public class AdminContentMutationService {
         return parent;
     }
 
-    private List<BlogTagEntity> resolveTags(List<String> tags) {
-        if (tags == null) {
-            return new ArrayList<>();
-        }
-        List<BlogTagEntity> resolved = new ArrayList<>();
-        LinkedHashSet<String> seenSlugs = new LinkedHashSet<>();
-        for (String raw : tags) {
-            String tagValue = AdminMutationValidators.trimToNull(raw);
-            if (tagValue == null) {
-                continue;
-            }
-            String slug = toSlug(tagValue);
-            if (slug == null || !seenSlugs.add(slug)) {
-                continue;
-            }
-            BlogTagEntity tag = resolveTag(tagValue, slug);
-            if (tag != null) {
-                resolved.add(tag);
-            }
-        }
-        return resolved;
-    }
-
-    /**
-     * Resolves the article's product IDs to entities, de-duplicated and order-preserving.
-     * Unknown IDs are skipped silently (tolerant, consistent with {@link #resolveTags}).
-     */
-    private List<ProductEntity> resolveProducts(List<String> productIds) {
-        if (productIds == null) {
-            return new ArrayList<>();
-        }
-        List<ProductEntity> resolved = new ArrayList<>();
-        LinkedHashSet<String> seenIds = new LinkedHashSet<>();
-        for (String raw : productIds) {
-            String id = AdminMutationValidators.trimToNull(raw);
-            if (id == null || !seenIds.add(id)) {
-                continue;
-            }
-            productJpaRepository.findById(id).ifPresent(resolved::add);
-        }
-        return resolved;
-    }
-
-    private BlogTagEntity resolveTag(String tagValue, String slug) {
-        BlogTagEntity tag = blogTagJpaRepository.findBySlug(slug).orElse(null);
-        if (tag != null) {
-            return tag;
-        }
-        BlogTagEntity created = new BlogTagEntity();
-        created.setId(generateId("blog-tag"));
-        created.setSlug(slug);
-        created.setName(tagValue);
-        return blogTagJpaRepository.save(created);
-    }
-
-    private String toSlug(String value) {
-        String normalized = AdminMutationValidators.trimToNull(value);
-        if (normalized == null) {
-            return null;
-        }
-        return normalized.toLowerCase().replaceAll("[^a-z0-9]+", "-").replaceAll("(^-|-$)", "");
-    }
-
     private static void applyCoverImage(ArticleEntity entity, ImageAssetRequest request) {
         entity.setCoverImageId(null);
         entity.setCoverImageUrl(AdminMutationValidators.trimToNull(request.getUrl()));
@@ -653,16 +550,6 @@ public class AdminContentMutationService {
         entity.setCoverImageWidth(null);
         entity.setCoverImageHeight(null);
         entity.setCoverImageMimeType(null);
-    }
-
-    private static void applyProductImage(ArticleEntity entity, ImageAssetRequest request) {
-        entity.setProductImageUrl(AdminMutationValidators.trimToNull(request.getUrl()));
-        entity.setProductImageAlt(AdminMutationValidators.trimToNull(request.getAlt()));
-    }
-
-    private static void clearProductImage(ArticleEntity entity) {
-        entity.setProductImageUrl(null);
-        entity.setProductImageAlt(null);
     }
 
     private static void applySeo(ArticleEntity entity, SeoMetaRequest request) {
@@ -754,15 +641,11 @@ public class AdminContentMutationService {
                 article.excerpt(),
                 article.body(),
                 article.coverImage(),
-                article.productImage(),
                 article.publishStatus(),
                 article.seo(),
                 article.publishedAt(),
                 article.createdAt(),
                 article.updatedAt(),
-                article.tags(),
-                article.author(),
-                article.author() != null ? article.author().id() : null,
                 article.category(),
                 article.category() != null ? article.category().id() : null,
                 article.categories(),
@@ -772,8 +655,8 @@ public class AdminContentMutationService {
                 null,
                 null,
                 null,
-                AdminContentReadService.toRelatedProductRefs(article),
-                article.bodyBlocks()
+                article.bodyBlocks(),
+                ContentTranslations.fromArticle(article.translations())
         );
     }
 
@@ -797,15 +680,11 @@ public class AdminContentMutationService {
                 null,
                 page.body(),
                 null,
-                null,
                 page.publishStatus(),
                 page.seo(),
                 page.publishedAt(),
                 page.createdAt(),
                 page.updatedAt(),
-                null,
-                null,
-                null,
                 null,
                 null,
                 null,
@@ -815,8 +694,8 @@ public class AdminContentMutationService {
                 page.heroTitle(),
                 page.heroDescription(),
                 page.heroKicker(),
-                null,
-                page.bodyBlocks()
+                page.bodyBlocks(),
+                ContentTranslations.fromPage(page.translations())
         );
     }
 

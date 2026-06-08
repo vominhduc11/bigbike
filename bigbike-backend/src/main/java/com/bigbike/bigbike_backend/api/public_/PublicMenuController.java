@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -22,8 +23,9 @@ public class PublicMenuController {
     @GetMapping("/{location}")
     public ApiDataResponse<PublicMenuResponse> getPublicMenu(
             @PathVariable String location,
+            @RequestParam(defaultValue = "vi") String lang,
             HttpServletRequest request
     ) {
-        return apiResponseFactory.data(adminMenuService.getPublicMenuByLocation(location), request);
+        return apiResponseFactory.data(adminMenuService.getPublicMenuByLocation(location, lang), request);
     }
 }

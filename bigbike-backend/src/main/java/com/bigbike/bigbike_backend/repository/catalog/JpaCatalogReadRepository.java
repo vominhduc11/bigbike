@@ -135,10 +135,10 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     }
 
     @Override
-    public List<Product> findProductsFiltered(String query, String publishStatus, String stockState, String brandId, String categoryId) {
+    public List<Product> findProductsFiltered(String query, String publishStatus, String stockState, String brandId, String categoryId, String locale) {
         Specification<ProductEntity> spec = buildProductSpec(query, publishStatus, stockState, brandId, categoryId);
         return productJpaRepository.findAll(spec).stream()
-                .map(entity -> toDomainListItem(entity, LOCALE_VI))
+                .map(entity -> toDomainListItem(entity, locale))
                 .toList();
     }
 
@@ -267,7 +267,8 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
             String sortField,
             boolean sortAsc,
             int page,
-            int pageSize
+            int pageSize,
+            String locale
     ) {
         Specification<CategoryEntity> spec = (root, cq, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
@@ -312,7 +313,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         org.springframework.data.domain.Page<CategoryEntity> result =
                 categoryJpaRepository.findAll(spec, pageRequest);
 
-        List<Category> items = result.getContent().stream().map(this::toDomain).toList();
+        List<Category> items = result.getContent().stream().map(e -> toDomain(e, locale)).toList();
         return new CategoryPage(items, result.getTotalElements());
     }
 
@@ -419,7 +420,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         entity.getSalePrice(),
                         entity.getCurrency()
                 ),
-                toVariants(entity, publicView),
+                toVariants(entity, publicView, locale),
                 toSpecifications(entity, publicView, locale),
                 entity.getStockState(),
                 productStockQty,
@@ -702,13 +703,13 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 .toList();
     }
 
-    private List<ProductVariant> toVariants(ProductEntity entity, boolean publicView) {
+    private List<ProductVariant> toVariants(ProductEntity entity, boolean publicView, String locale) {
         if (entity.getVariants() == null) {
             return List.of();
         }
         List<ProductVariant> variants = entity.getVariants().stream()
                 .sorted(VARIANT_ORDER)
-                .map(v -> toVariant(v, publicView))
+                .map(v -> toVariant(v, publicView, locale))
                 .toList();
         return withColorScopedVariantMedia(variants);
     }
@@ -795,7 +796,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 .trim();
     }
 
-    private ProductVariant toVariant(ProductVariantEntity entity, boolean publicView) {
+    private ProductVariant toVariant(ProductVariantEntity entity, boolean publicView, String locale) {
         ProductPrice price = entity.getRetailPrice() == null
                 ? null
                 : new ProductPrice(
@@ -816,7 +817,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 ? List.of()
                 : entity.getOptions().stream()
                         .sorted(VARIANT_OPTION_ORDER)
-                        .map(option -> toVariantOption(option, publicView))
+                        .map(option -> toVariantOption(option, publicView, locale))
                         .toList();
 
         List<ImageAsset> gallery = entity.getGallery() == null
@@ -871,7 +872,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
      * gallery image (see {@code VariantSelector.tsx}), so no per-term swatch or
      * hex value is surfaced here.
      */
-    private ProductVariantOption toVariantOption(ProductVariantOptionEntity option, boolean publicView) {
+    private ProductVariantOption toVariantOption(ProductVariantOptionEntity option, boolean publicView, String locale) {
         AttributeEntity attribute = option.getAttribute();
         AttributeValueEntity value = option.getAttributeValue();
 
@@ -916,11 +917,11 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
 
         return new ProductVariantOption(
                 preferLabel(
-                        attribute != null ? attribute.getName() : null,
+                        attribute != null ? pick(attribute.getName(), attribute.getNameEn(), locale) : null,
                         option.getOptionName()
                 ),
                 preferLabel(
-                        value != null ? value.getLabel() : null,
+                        value != null ? pick(value.getLabel(), value.getLabelEn(), locale) : null,
                         option.getOptionValue()
                 ),
                 attributeValueId

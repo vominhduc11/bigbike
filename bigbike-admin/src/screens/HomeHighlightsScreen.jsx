@@ -1,8 +1,9 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { fetchHomeHighlights, saveHomeHighlights, fetchProducts } from '../lib/adminApi'
+import { normalizeImageAsset } from '../lib/contracts'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { Screen } from '../components/layout/Screen'
@@ -110,29 +111,29 @@ export function HomeHighlightsScreen({ canUpdate }) {
   ])
   const [initialized, setInitialized] = useState(false)
 
-  const { isLoading, isError, error } = useQuery({
+  const { isLoading, isError, error, data: highlightsData } = useQuery({
     queryKey: ['home-highlights'],
     queryFn: fetchHomeHighlights,
-    onSuccess(data) {
-      if (!initialized) {
-        const loaded = [1, 2, 3].map((n) => {
-          const found = (data.items ?? []).find((i) => i.slot === n)
-          if (!found) return { slot: n, product: null }
-          return {
-            slot: n,
-            product: {
-              id: found.productId,
-              name: found.productName,
-              slug: found.productSlug,
-              image: found.productImageUrl ? { url: found.productImageUrl, alt: found.productName } : null,
-            },
-          }
-        })
-        setSlots(loaded)
-        setInitialized(true)
-      }
-    },
   })
+
+  useEffect(() => {
+    if (!highlightsData || initialized) return
+    const loaded = [1, 2, 3].map((n) => {
+      const found = (highlightsData.items ?? []).find((i) => i.slot === n)
+      if (!found) return { slot: n, product: null }
+      return {
+        slot: n,
+        product: {
+          id: found.productId,
+          name: found.productName,
+          slug: found.productSlug,
+          image: normalizeImageAsset({ url: found.productImageUrl, alt: found.productName }) ?? null,
+        },
+      }
+    })
+    setSlots(loaded)
+    setInitialized(true)
+  }, [highlightsData, initialized])
 
   const saveMutation = useMutation({
     mutationFn: (slotsToSave) => saveHomeHighlights(slotsToSave),

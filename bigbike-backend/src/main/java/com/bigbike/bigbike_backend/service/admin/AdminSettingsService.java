@@ -132,6 +132,10 @@ public class AdminSettingsService {
         if (req.value() != null) {
             entity.setSettingValue(req.value());
         }
+        // Presence-flag: omit valueEn → unchanged; send blank → clears the English value.
+        if (req.valueEn() != null) {
+            entity.setSettingValueEn(req.valueEn().isBlank() ? null : req.valueEn());
+        }
         if (req.group() != null) {
             entity.setSettingGroup(req.group().isBlank() ? null : req.group());
         }
@@ -153,7 +157,7 @@ public class AdminSettingsService {
 
     // ── Batch update ─────────────────────────────────────────────────────────
 
-    private record PendingUpdate(SiteSettingEntity entity, String newValue) {}
+    private record PendingUpdate(SiteSettingEntity entity, String newValue, String newValueEn) {}
 
     @Transactional
     public List<AdminSiteSettingResponse> batchUpdateSettings(
@@ -189,7 +193,7 @@ public class AdminSettingsService {
                 valueValidator.validate(upd.key(), upd.value(), defOpt.get());
             }
 
-            pending.add(new PendingUpdate(entity, upd.value()));
+            pending.add(new PendingUpdate(entity, upd.value(), upd.valueEn()));
         }
 
         // Phase 2: apply mutations — all validation has passed
@@ -201,6 +205,9 @@ public class AdminSettingsService {
 
             if (p.newValue() != null) {
                 entity.setSettingValue(p.newValue());
+            }
+            if (p.newValueEn() != null) {
+                entity.setSettingValueEn(p.newValueEn().isBlank() ? null : p.newValueEn());
             }
             entity.setUpdatedAt(Instant.now());
             settingRepo.save(entity);
@@ -241,11 +248,19 @@ public class AdminSettingsService {
 
     // ── Public endpoint ───────────────────────────────────────────────────────
 
-    public List<PublicSiteSettingResponse> listPublicSettings() {
+    public List<PublicSiteSettingResponse> listPublicSettings(String lang) {
         return settingRepo.findByIsPublic(true).stream()
                 .filter(s -> isPubliclyExposable(s.getSettingKey()))
-                .map(s -> new PublicSiteSettingResponse(s.getSettingKey(), s.getSettingValue(), s.getSettingGroup()))
+                .map(s -> new PublicSiteSettingResponse(
+                        s.getSettingKey(),
+                        pick(s.getSettingValue(), s.getSettingValueEn(), lang),
+                        s.getSettingGroup()))
                 .toList();
+    }
+
+    /** EN-with-Vietnamese-fallback per PRODUCT_RULE_002 for the storefront language. */
+    private static String pick(String base, String en, String lang) {
+        return "en".equalsIgnoreCase(lang) && en != null && !en.isBlank() ? en : base;
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -284,6 +299,7 @@ public class AdminSettingsService {
         boolean superAdminOnly = defOpt.map(SettingDefinition::superAdminOnly).orElse(false);
         return new AdminSiteSettingResponse(
                 s.getId(), s.getSettingKey(), displayValue,
+                masked ? null : s.getSettingValueEn(),
                 s.getSettingGroup(), s.isPublic(), s.getDescription(),
                 s.getCreatedAt(), s.getUpdatedAt(),
                 valueType, sensitive, masked, superAdminOnly

@@ -8,6 +8,8 @@ public record AdminMenuItemResponse(
         UUID menuId,
         UUID parentId,
         String label,
+        /** Raw English label (V160), no fallback. Null when no English label set. For the admin editor. */
+        String labelEn,
         String url,
         String targetType,
         UUID targetId,

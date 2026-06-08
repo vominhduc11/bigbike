@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FilterSelect } from '../components/FilterSelect'
+import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ExternalLink, Pencil, Plus, Trash2 } from 'lucide-react'
@@ -30,7 +31,7 @@ const INITIAL_QUERY = {
   enabled: 'ALL',
   statusCode: 'ALL',
   page: 1,
-  pageSize: 10,
+  pageSize: 20,
 }
 
 const EMPTY_FORM = {
@@ -312,6 +313,10 @@ export function RedirectListScreen({ canUpdate }) {
             { value: '307', label: '307' },
             { value: '308', label: '308' },
           ]}
+        />
+        <PageSizeSelect
+          value={query.pageSize}
+          onChange={(n) => updateQuery({ pageSize: n }, { resetPage: true })}
         />
       </div>
 

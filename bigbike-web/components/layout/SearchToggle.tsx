@@ -28,14 +28,14 @@ const SEARCH_PATH = "/tim-kiem/";
 const preLabelRow =
   "flex items-center justify-between border-b border-border bg-card px-4 pt-2 pb-1 3xl:px-5 4xl:px-6";
 const preLabel =
-  "font-cta text-ui-10 font-bold uppercase tracking-[0.1em] text-muted-foreground 3xl:text-ui-11 4xl:text-ui-12";
+  "font-cta text-ui-10 font-bold uppercase tracking-normal text-muted-foreground 3xl:text-ui-11 4xl:text-ui-12";
 const preChips = "flex flex-wrap gap-1.5 px-4 pb-3 pt-2.5 3xl:gap-2 3xl:px-5 4xl:px-6";
 const preChip =
   "inline-flex cursor-pointer items-center gap-[5px] border border-border bg-card px-3 py-[5px] font-cta text-ui-12 font-semibold uppercase text-foreground transition-colors duration-fast hover:text-brand-on-dark focus-visible:text-brand-on-dark focus-visible:outline-none 3xl:px-3.5 3xl:py-1.5 3xl:text-ui-13 4xl:px-[18px] 4xl:py-2 4xl:text-ui-14";
 const resultItem =
   "flex cursor-pointer items-center gap-3 border-b border-border px-4 py-2.5 text-foreground no-underline transition-colors duration-fast hover:bg-card focus-visible:bg-card focus-visible:outline-none 3xl:gap-4 3xl:px-5 3xl:py-3 4xl:px-6 4xl:py-3.5";
 const resultsLabel =
-  "m-0 border-b border-border bg-card px-4 pt-2 pb-1 font-cta text-ui-10 font-bold uppercase tracking-[0.1em] text-muted-foreground 3xl:px-5 3xl:text-ui-11 4xl:px-6 4xl:text-ui-12";
+  "m-0 border-b border-border bg-card px-4 pt-2 pb-1 font-cta text-ui-10 font-bold uppercase tracking-normal text-muted-foreground 3xl:px-5 3xl:text-ui-11 4xl:px-6 4xl:text-ui-12";
 
 // Mobile-only search body (≤767). The dark 9437 layer is fully overridden by the
 // "whole-site refactor pass" to LIGHT, so these are the merged light values; the
@@ -48,7 +48,7 @@ const mBody =
   "hidden max-md:block flex-none min-h-0 overflow-y-auto bg-background px-6 pt-[18px] pb-[calc(24px_+_env(safe-area-inset-bottom))] text-foreground [-webkit-overflow-scrolling:touch]";
 const mSection = "mb-[22px]";
 const mLabel =
-  "m-0 mb-2 font-cta text-ui-11 font-semibold uppercase tracking-[0.16em] text-muted-foreground";
+  "m-0 mb-2 font-cta text-ui-11 font-semibold uppercase tracking-normal text-muted-foreground";
 const mList = "grid [&_svg]:text-muted-foreground";
 const mListBtn =
   "flex min-h-11 cursor-pointer items-center gap-3 border-b border-border bg-transparent p-0 text-left font-body text-foreground " +
@@ -435,7 +435,7 @@ export function SearchToggle({ popularCategories: categoriesFromApi = [] }: Sear
                             <div className="flex min-w-0 flex-1 flex-col gap-1">
                               <span className="text-ui-13 font-normal text-foreground line-clamp-2 3xl:text-ui-14 4xl:text-ui-16">{article.title}</span>
                               {article.category?.name && (
-                                <span className="text-ui-11 font-semibold uppercase tracking-[0.04em] text-brand-on-dark 3xl:text-ui-12 4xl:text-ui-13">
+                                <span className="text-ui-11 font-semibold uppercase tracking-normal text-brand-on-dark 3xl:text-ui-12 4xl:text-ui-13">
                                   {article.category.name}
                                 </span>
                               )}
@@ -448,7 +448,7 @@ export function SearchToggle({ popularCategories: categoriesFromApi = [] }: Sear
                   {/* "View all" always visible at bottom, never scrolls away */}
                   <Link
                     href={`${SEARCH_PATH}?s=${encodeURIComponent(trimmedQuery)}`}
-                    className="md:flex-none flex items-center justify-center px-4 py-[13px] font-cta text-ui-13 font-semibold uppercase tracking-[0.04em] text-brand-on-dark no-underline transition-colors duration-fast hover:bg-card focus-visible:bg-card focus-visible:outline-none [border-top:1px_solid_var(--bb-color-border)] 3xl:text-ui-14 4xl:py-4 4xl:text-ui-16"
+                    className="md:flex-none flex items-center justify-center px-4 py-[13px] font-cta text-ui-13 font-semibold uppercase tracking-normal text-brand-on-dark no-underline transition-colors duration-fast hover:bg-card focus-visible:bg-card focus-visible:outline-none [border-top:1px_solid_var(--bb-color-border)] 3xl:text-ui-14 4xl:py-4 4xl:text-ui-16"
                     onClick={handleClose}
                   >
                     {t("viewAllResultsBtn", { query: trimmedQuery })}
@@ -544,7 +544,7 @@ export function SearchToggle({ popularCategories: categoriesFromApi = [] }: Sear
                     onClick={handleClose}
                   >
                     <span className="font-cta text-ui-13 font-semibold uppercase">{cat.name}</span>
-                    <small className="font-cta text-ui-10 tracking-[0.08em] text-muted-foreground">BIGBIKE</small>
+                    <small className="font-cta text-ui-10 tracking-normal text-muted-foreground">BIGBIKE</small>
                   </Link>
                 ))}
               </div>

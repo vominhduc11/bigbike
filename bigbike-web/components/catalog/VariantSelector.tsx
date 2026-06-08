@@ -148,11 +148,24 @@ export function VariantSelector({
                 {group.values.map((info) => {
                   const { value, variantImageUrl } = info;
                   const probeSelection = { ...selectedOptions, [group.name]: value };
-                  const candidate =
-                    findMatchingVariant(variants, probeSelection, { onlyAvailable: true }) ??
-                    findMatchingVariant(variants, probeSelection);
                   const active = normalizeValue(currentValue) === normalizeValue(value);
-                  const available = Boolean(candidate?.isAvailable);
+                  // Selectable = this option leads to an ACTIVE variant (admin-enabled).
+                  // Out-of-stock-but-active options stay clickable so the customer can
+                  // preview that colour; the buy box then shows "Hết hàng". Only inactive
+                  // variants are locked.
+                  const selectable = Boolean(
+                    (findMatchingVariant(variants, probeSelection, { onlyAvailable: true }) ??
+                      findMatchingVariant(variants, probeSelection))?.isAvailable,
+                  );
+                  // In stock = there is a matching active, non-out-of-stock variant. Drives
+                  // the dimmed look so the customer sees at a glance which options are
+                  // buyable without clicking through each one.
+                  const inStock = Boolean(
+                    findMatchingVariant(variants, probeSelection, {
+                      onlyAvailable: true,
+                      inStockOnly: true,
+                    }),
+                  );
                   // Normalise to the same-origin /wp-content/uploads proxy (like
                   // the gallery) so the variant image isn't blocked by CSP when the
                   // raw MinIO origin isn't in img-src.
@@ -169,7 +182,8 @@ export function VariantSelector({
                       key={`${group.name}-${value}`}
                       className={cn(
                         "relative inline-block w-[52px] h-[52px] m-0 p-0 border-none bg-transparent cursor-pointer max-md:w-11 max-md:h-11 max-md:!leading-[42px]",
-                        !available && !active && "cursor-not-allowed opacity-45",
+                        !inStock && !active && "opacity-45",
+                        !selectable && !active && "cursor-not-allowed",
                       )}
                     >
                       <input
@@ -179,12 +193,12 @@ export function VariantSelector({
                         value={value}
                         className="absolute inset-0 z-[2] w-[52px] h-[52px] m-0 cursor-pointer opacity-0 max-md:w-11 max-md:h-11 max-md:!leading-[42px] disabled:cursor-not-allowed"
                         checked={active}
-                        disabled={disabled || (!available && !active)}
+                        disabled={disabled || (!selectable && !active)}
                         onClick={() => {
                           if (active) onSelectOption(group.name, "");
                         }}
                         onChange={() => {
-                          if (!available && !active) return;
+                          if (!selectable && !active) return;
                           onSelectOption(group.name, value);
                         }}
                       />

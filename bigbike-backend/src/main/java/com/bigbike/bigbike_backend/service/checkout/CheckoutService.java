@@ -427,12 +427,13 @@ public class CheckoutService {
     // ── Checkout options ──────────────────────────────────────────────────────
 
     @Transactional(readOnly = true)
-    public CheckoutOptionsResponse getOptions() {
+    public CheckoutOptionsResponse getOptions(String lang) {
+        boolean en = "en".equalsIgnoreCase(lang);
         // Only COD and BACS are supported. There is no automatic payment gateway;
         // both methods are reconciled manually by admin.
         List<PaymentMethodOptionResponse> paymentMethods = List.of(
-                new PaymentMethodOptionResponse("COD", "Thanh toán khi nhận hàng (COD)"),
-                new PaymentMethodOptionResponse("BACS", "Chuyển khoản")
+                new PaymentMethodOptionResponse("COD", en ? "Cash on delivery (COD)" : "Thanh toán khi nhận hàng (COD)"),
+                new PaymentMethodOptionResponse("BACS", en ? "Bank transfer" : "Chuyển khoản")
         );
         List<ShippingMethodOptionResponse> shippingMethods = shippingMethodRepo
                 .findByEnabledOrderBySortOrderAsc(true)
@@ -440,7 +441,7 @@ public class CheckoutService {
                 .map(m -> new ShippingMethodOptionResponse(
                         m.getId(),
                         m.getMethodCode(),
-                        m.getTitle(),
+                        en && m.getTitleEn() != null && !m.getTitleEn().isBlank() ? m.getTitleEn() : m.getTitle(),
                         m.getCost() != null ? m.getCost() : BigDecimal.ZERO,
                         m.getFreeShippingThreshold(),
                         m.getMinOrderAmount(),

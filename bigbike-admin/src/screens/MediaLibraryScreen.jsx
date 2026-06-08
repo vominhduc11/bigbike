@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Trash2, Upload, Grid as GridIcon, List as ListIcon, X as XIcon } from 'lucide-react'
 import { PaginationControls } from '../components/PaginationControls'
+import { PageSizeSelect } from '../components/PageSizeSelect'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { MediaDetailPanel } from '../components/MediaDetailPanel'
@@ -499,6 +500,11 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
                 </>
               : ''}
           </p>
+          <PageSizeSelect
+            value={query.pageSize}
+            onChange={(n) => updateQuery({ pageSize: n })}
+            options={[24, 48, 96]}
+          />
           <div className="medialib-view-switcher" role="tablist">
             <button type="button" onClick={() => updateQuery({ view: 'grid' }, { resetPage: false })}
               className={query.view === 'grid' ? 'medialib-is-active' : ''}

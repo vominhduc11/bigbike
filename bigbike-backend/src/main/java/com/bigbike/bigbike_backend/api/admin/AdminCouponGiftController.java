@@ -4,8 +4,8 @@ import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.service.admin.AdminCouponGiftService;
 import com.bigbike.bigbike_backend.service.admin.AdminCouponGiftService.BulkCouponGiftResult;
-import com.bigbike.bigbike_backend.service.admin.AdminCouponGiftService.SendCouponGiftRequest;
-import com.bigbike.bigbike_backend.service.admin.AdminCouponGiftService.TargetedCouponGiftRequest;
+import com.bigbike.bigbike_backend.service.admin.AdminCouponGiftService.BulkNotifyRequest;
+import com.bigbike.bigbike_backend.service.admin.AdminCouponGiftService.TargetedNotifyRequest;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -29,7 +29,7 @@ public class AdminCouponGiftController extends AdminControllerSupport {
     @PostMapping("/bulk")
     @ResponseStatus(HttpStatus.OK)
     public ApiDataResponse<BulkCouponGiftResult> sendBulkCouponGift(
-            @Valid @RequestBody SendCouponGiftRequest body,
+            @Valid @RequestBody BulkNotifyRequest body,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "coupons.write");
@@ -40,7 +40,7 @@ public class AdminCouponGiftController extends AdminControllerSupport {
     @PostMapping("/targeted")
     @ResponseStatus(HttpStatus.OK)
     public ApiDataResponse<BulkCouponGiftResult> sendTargetedCouponGift(
-            @Valid @RequestBody TargetedCouponGiftRequest body,
+            @Valid @RequestBody TargetedNotifyRequest body,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "coupons.write");

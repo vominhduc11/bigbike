@@ -33,6 +33,7 @@ public class AdminAttributeService {
                         a.getId(),
                         a.getCode(),
                         a.getName(),
+                        a.getNameEn(),
                         a.getKind(),
                         a.getValues().size()
                 ))
@@ -57,11 +58,16 @@ public class AdminAttributeService {
         AttributeEntity attribute = attributeRepo.findById(attributeId)
                 .orElseThrow(() -> new NotFoundException("Attribute not found: " + attributeId));
         attribute.setName(request.name().trim());
+        // Presence-flag: omit nameEn → unchanged; send blank → clears the English name.
+        if (request.nameEn() != null) {
+            attribute.setNameEn(normalizeOptional(request.nameEn()));
+        }
         AttributeEntity saved = attributeRepo.save(attribute);
         return new AttributeSummaryResponse(
                 saved.getId(),
                 saved.getCode(),
                 saved.getName(),
+                saved.getNameEn(),
                 saved.getKind(),
                 saved.getValues().size()
         );
@@ -100,6 +106,7 @@ public class AdminAttributeService {
         entity.setAttribute(attribute);
         entity.setSlug(slug);
         entity.setLabel(label);
+        entity.setLabelEn(normalizeOptional(request.labelEn()));
         entity.setSortOrder(nextSortOrder);
         return toResponse(valueRepo.save(entity));
     }
@@ -113,6 +120,10 @@ public class AdminAttributeService {
         AttributeValueEntity entity = valueRepo.findById(valueId)
                 .orElseThrow(() -> new NotFoundException("Attribute value not found: " + valueId));
         entity.setLabel(request.label().trim());
+        // Presence-flag: omit labelEn → unchanged; send blank → clears the English label.
+        if (request.labelEn() != null) {
+            entity.setLabelEn(normalizeOptional(request.labelEn()));
+        }
         return toResponse(valueRepo.save(entity));
     }
 
@@ -122,7 +133,13 @@ public class AdminAttributeService {
                 v.getAttribute() != null ? v.getAttribute().getId() : null,
                 v.getSlug(),
                 v.getLabel(),
+                v.getLabelEn(),
                 v.getSortOrder()
         );
+    }
+
+    /** Trim an optional text field; blank/null → null (so a cleared English label stores NULL). */
+    private static String normalizeOptional(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 }

@@ -46,6 +46,7 @@ public class AdminCatalogController extends AdminControllerSupport {
     private static final String VISIBILITY_REGEX = "^(VISIBLE|HIDDEN)$";
     private static final String HOMEPAGE_BLOCK_REGEX =
             "^(NONE|FEATURED_GRID)$";
+    private static final String LANG_REGEX = "^(vi|en)$";
 
     private final AdminCatalogReadService adminCatalogReadService;
     private final AdminCatalogMutationService adminCatalogMutationService;
@@ -65,6 +66,7 @@ public class AdminCatalogController extends AdminControllerSupport {
             @RequestParam(required = false) @Size(max = 100) String brandId,
             @RequestParam(required = false) @Size(max = 100) String categoryId,
             @RequestParam(required = false) @Pattern(regexp = HOMEPAGE_BLOCK_REGEX, message = "Invalid homepageBlock.") String homepageBlock,
+            @RequestParam(defaultValue = "vi") @Pattern(regexp = LANG_REGEX, message = "Invalid lang.") String lang,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "products.read");
@@ -80,7 +82,8 @@ public class AdminCatalogController extends AdminControllerSupport {
                         stockState,
                         brandId,
                         categoryId,
-                        homepageBlock
+                        homepageBlock,
+                        lang
                 ),
                 request
         );
@@ -172,6 +175,7 @@ public class AdminCatalogController extends AdminControllerSupport {
             @RequestParam(required = false) @Size(max = 100) String q,
             @RequestParam(required = false) @Size(max = 100) String search,
             @RequestParam(required = false) @Pattern(regexp = VISIBILITY_REGEX, message = "Invalid visibility.") String visibility,
+            @RequestParam(defaultValue = "vi") @Pattern(regexp = LANG_REGEX, message = "Invalid lang.") String lang,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "catalog.read");
@@ -183,7 +187,8 @@ public class AdminCatalogController extends AdminControllerSupport {
                         sort,
                         q,
                         search,
-                        visibility
+                        visibility,
+                        lang
                 ),
                 request
         );
@@ -254,6 +259,7 @@ public class AdminCatalogController extends AdminControllerSupport {
             @RequestParam(required = false) @Size(max = 100) String q,
             @RequestParam(required = false) @Size(max = 100) String search,
             @RequestParam(required = false) @Pattern(regexp = VISIBILITY_REGEX, message = "Invalid visibility.") String visibility,
+            @RequestParam(defaultValue = "vi") @Pattern(regexp = LANG_REGEX, message = "Invalid lang.") String lang,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "catalog.read");
@@ -265,7 +271,8 @@ public class AdminCatalogController extends AdminControllerSupport {
                         sort,
                         q,
                         search,
-                        visibility
+                        visibility,
+                        lang
                 ),
                 request
         );

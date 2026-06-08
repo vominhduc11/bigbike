@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FilterSelect } from '../components/FilterSelect'
+import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -8,19 +9,13 @@ import { ChevronRight, ExternalLink, FolderTree, GripVertical, ImageOff, Plus } 
 import {
   DndContext,
   closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
 } from '@dnd-kit/core'
 import {
   SortableContext,
   arrayMove,
-  sortableKeyboardCoordinates,
-  useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
+import { useDragSensors, SortableRow } from '../components/Sortable'
 import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
@@ -117,7 +112,7 @@ function highlightMatch(text, term) {
 }
 
 export function CategoryListScreen({ navigate, canUpdate }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const queryClient = useQueryClient()
   const [query, setQuery] = useState(() => readQueryFromUrl(INITIAL_QUERY))
   const [searchInput, setSearchInput] = useState(() => {
@@ -131,7 +126,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
   const debouncedSearch = useDebounce(searchInput, 250)
   const isFirstSearchRender = useRef(true)
 
-  const paginatedState = useAdminList(['categories', query], () => fetchCategories(query))
+  const paginatedState = useAdminList(['categories', query, i18n.language], () => fetchCategories(query))
 
   const { data: allCatsResult } = useQuery({
     queryKey: ['categories', 'tree'],
@@ -341,10 +336,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
 
   // ── Drag & drop reorder ──────────────────────────────────────────────
   // (state declared above so memos can read orderOverride; sensors + handler here)
-  const dndSensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  )
+  const dndSensors = useDragSensors(6)
 
   async function handleDragEnd(event) {
     const { active, over } = event
@@ -645,19 +637,17 @@ export function CategoryListScreen({ navigate, canUpdate }) {
 
   // Sortable wrapper that injects dnd-kit ref/listeners into the row.
   function SortableTreeRow({ category, depth }) {
-    const sortable = useSortable({ id: category.id })
-    const style = {
-      transform: CSS.Transform.toString(sortable.transform),
-      transition: sortable.transition,
-      zIndex: sortable.isDragging ? 2 : undefined,
-    }
-    return renderCategoryRow(category, depth, {
-      setNodeRef: sortable.setNodeRef,
-      attributes: sortable.attributes,
-      listeners: sortable.listeners,
-      isDragging: sortable.isDragging,
-      style,
-    })
+    return (
+      <SortableRow id={category.id}>
+        {(sortable) => renderCategoryRow(category, depth, {
+          setNodeRef: sortable.setNodeRef,
+          attributes: sortable.attributes,
+          listeners: sortable.listeners,
+          isDragging: sortable.isDragging,
+          style: { ...sortable.style, zIndex: sortable.isDragging ? 2 : undefined },
+        })}
+      </SortableRow>
+    )
   }
 
   const sortLabelKey = query.sort === 'updatedAt:desc'
@@ -750,6 +740,12 @@ export function CategoryListScreen({ navigate, canUpdate }) {
             { value: 'name:asc', label: t('sort.nameAZ') },
           ]}
         />
+        {!useTreeMode && (
+          <PageSizeSelect
+            value={query.pageSize}
+            onChange={(n) => updateQuery({ pageSize: n }, { resetPage: true })}
+          />
+        )}
         {useTreeMode && (
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
             <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" onClick={expandAll}>

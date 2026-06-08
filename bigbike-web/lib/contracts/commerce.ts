@@ -195,7 +195,6 @@ export type CustomerProfile = {
   gender?: string | null
   dob?: string | null
   emailVerified?: boolean
-  newsletterSubscribed?: boolean
 }
 
 export type CustomerAuthData = {
@@ -245,7 +244,6 @@ export type UpdateCustomerProfilePayload = {
   newPassword?: string
   gender?: string
   dob?: string
-  newsletterSubscribed?: boolean
 }
 
 export type SaveAddressPayload = {

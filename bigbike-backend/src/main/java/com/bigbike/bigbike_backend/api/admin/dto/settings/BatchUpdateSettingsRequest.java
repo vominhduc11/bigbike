@@ -11,6 +11,7 @@ public record BatchUpdateSettingsRequest(
 ) {
     public record BatchSettingUpdate(
             @NotBlank @Size(max = 191) String key,
-            @Size(max = 50000) String value
+            @Size(max = 50000) String value,
+            @Size(max = 50000) String valueEn
     ) {}
 }

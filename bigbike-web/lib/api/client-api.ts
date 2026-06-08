@@ -96,8 +96,9 @@ export function submitCheckout(payload: CheckoutPayload, idempotencyKey?: string
   return clientRequest("POST", "/api/v1/checkout", payload, extra);
 }
 
-export function fetchCheckoutOptions(): Promise<CheckoutOptions> {
-  return clientRequest("GET", "/api/v1/checkout/options");
+export function fetchCheckoutOptions(lang?: string): Promise<CheckoutOptions> {
+  const qs = lang ? `?lang=${encodeURIComponent(lang)}` : "";
+  return clientRequest("GET", `/api/v1/checkout/options${qs}`);
 }
 
 export type PublicSetting = { settingKey: string; settingValue: string };
@@ -191,10 +192,6 @@ export function updateAddress(id: string, payload: SaveAddressPayload): Promise<
 
 export function deleteAddress(id: string): Promise<void> {
   return clientRequest("DELETE", `/api/v1/customer/addresses/${encodeURIComponent(id)}`);
-}
-
-export function subscribeNewsletter(email: string): Promise<void> {
-  return clientRequest<void>("POST", "/api/v1/newsletter", { email });
 }
 
 // ── Orders ────────────────────────────────────────────────────────────────────

@@ -272,11 +272,6 @@ export type CatalogFacets = {
   priceBands: PriceBucket[];
 };
 
-export type AuthorSummary = {
-  id: string;
-  name: string;
-};
-
 export type ContentCategorySummary = {
   id: string;
   slug: string;
@@ -298,13 +293,8 @@ export type Article = {
   excerpt?: string;
   body: string;
   coverImage?: ImageAsset;
-  productImage?: ImageAsset;
-  author?: AuthorSummary;
   category?: ContentCategorySummary;
   categories?: ContentCategorySummary[];
-  tags?: string[];
-  /** Catalog products showcased in the "Sản phẩm sử dụng trong bài viết" section. */
-  relatedProducts?: Product[];
   publishStatus: PublishStatus;
   seo?: SeoMeta;
   publishedAt?: string;

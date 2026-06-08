@@ -388,7 +388,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
     }
 
     @Override
-    public List<Product> findProductsFiltered(String query, String publishStatus, String stockState, String brandId, String categoryId) {
+    public List<Product> findProductsFiltered(String query, String publishStatus, String stockState, String brandId, String categoryId, String locale) {
         boolean trashFilter = publishStatus != null && publishStatus.equalsIgnoreCase("TRASH");
         boolean defaultList = publishStatus == null || publishStatus.isBlank() || publishStatus.equalsIgnoreCase("ALL");
         return products.stream()
@@ -447,7 +447,8 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
             String sortField,
             boolean sortAsc,
             int page,
-            int pageSize
+            int pageSize,
+            String locale
     ) {
         var stream = categories.stream();
         if (visibility != null && !visibility.isBlank()) {

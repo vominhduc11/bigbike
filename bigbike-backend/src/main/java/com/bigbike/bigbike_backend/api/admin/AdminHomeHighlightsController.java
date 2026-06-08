@@ -30,7 +30,7 @@ public class AdminHomeHighlightsController extends AdminControllerSupport {
     @GetMapping
     public ApiDataResponse<List<HomeHighlightItemDto>> getHighlights(HttpServletRequest request) {
         devAdminAuthService.requirePermission(request, "home_highlights.read");
-        return apiResponseFactory.data(homeHighlightsService.listHighlights(), request);
+        return apiResponseFactory.data(homeHighlightsService.listHighlights("vi"), request);
     }
 
     @PutMapping

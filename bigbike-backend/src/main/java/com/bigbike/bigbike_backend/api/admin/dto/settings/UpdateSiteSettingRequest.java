@@ -5,6 +5,8 @@ import jakarta.validation.constraints.Size;
 public record UpdateSiteSettingRequest(
         @Size(max = 50000)
         String value,
+        @Size(max = 50000)
+        String valueEn,
         @Size(max = 100)
         String group,
         Boolean isPublic,

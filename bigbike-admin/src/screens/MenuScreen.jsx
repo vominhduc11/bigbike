@@ -4,20 +4,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   DndContext,
   closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
 } from '@dnd-kit/core'
 import {
   arrayMove,
   SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
 import { GripVertical, Pencil, Trash2, Search, X, Plus, AlertTriangle } from 'lucide-react'
+import { useDragSensors, SortableRow } from '../components/Sortable'
 import { toast } from 'sonner'
 import {
   createMenuItem,
@@ -74,6 +68,7 @@ const SYSTEM_SLOTS = [
 
 const EMPTY_ITEM = {
   label: '',
+  labelEn: '',
   url: '',
   sortOrder: '0',
   parentId: '',
@@ -209,7 +204,7 @@ function MenuParentSelect({ value, onChange, options, label }) {
 function ItemForm({ value, onChange, parentOptions, t, isNew }) {
   return (
     <div className="form-grid">
-      {/* Label — required */}
+      {/* Label — required (Vietnamese) */}
       <label className="form-field form-field-wide">
         {t('menus.itemLabel')}
         <Input
@@ -218,6 +213,17 @@ function ItemForm({ value, onChange, parentOptions, t, isNew }) {
           placeholder={t('menus.itemLabelPlaceholder')}
           autoFocus={isNew}
          />
+      </label>
+
+      {/* Label — English (optional) */}
+      <label className="form-field form-field-wide">
+        {t('menus.itemLabelEn')}
+        <Input
+          value={value.labelEn}
+          onChange={(e) => onChange({ labelEn: e.target.value })}
+          placeholder={t('menus.itemLabelEnPlaceholder')}
+         />
+        <small className="menu-form-hint">{t('menus.itemLabelEnHint')}</small>
       </label>
 
       {/* URL */}
@@ -276,14 +282,14 @@ function ItemForm({ value, onChange, parentOptions, t, isNew }) {
 }
 
 function SortableMenuItem({ item, parentLabel, rootLabel, canUpdate, onEdit, onDelete, isDeleting }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id })
-
   const isInactive = item.status === 'INACTIVE'
 
   return (
+    <SortableRow id={item.id}>
+      {(sortable) => (
     <tr
-      ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
+      ref={sortable.setNodeRef}
+      style={{ ...sortable.style, opacity: sortable.isDragging ? 0.4 : 1 }}
       className={isInactive ? 'is-inactive' : ''}
     >
       <td className="menu-grip-cell">
@@ -292,8 +298,7 @@ function SortableMenuItem({ item, parentLabel, rootLabel, canUpdate, onEdit, onD
             type="button"
             className="menu-grab-btn"
             title="Kéo để sắp xếp (cùng cấp)"
-            {...attributes}
-            {...listeners}
+            {...sortable.handleProps}
           >
             <GripVertical size={15} />
           </button>
@@ -329,6 +334,8 @@ function SortableMenuItem({ item, parentLabel, rootLabel, canUpdate, onEdit, onD
         </td>
       )}
     </tr>
+      )}
+    </SortableRow>
   )
 }
 
@@ -414,10 +421,7 @@ export function MenuScreen({ canUpdate }) {
     return parentOptions.filter((item) => !excluded.has(item.id))
   }, [editItem, menuItems, parentOptions])
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  )
+  const sensors = useDragSensors()
 
   // ── Mutations ──────────────────────────────────────────────────────────────
   const reorderMutation = useMutation({
@@ -446,6 +450,7 @@ export function MenuScreen({ canUpdate }) {
     mutationFn: async ({ itemId, data, parentChanged }) => {
       const patchPayload = {
         label: data.label,
+        labelEn: data.labelEn,
         url: data.url,
         targetType: 'CUSTOM',
         targetId: null,
@@ -527,6 +532,7 @@ export function MenuScreen({ canUpdate }) {
     setItemError('')
     addItemMutation.mutate({
       label: newItem.label.trim(),
+      labelEn: newItem.labelEn.trim(),
       url: newItem.url.trim(),
       targetType: 'CUSTOM',
       targetId: null,
@@ -555,6 +561,7 @@ export function MenuScreen({ canUpdate }) {
       parentChanged,
       data: {
         label: editItemForm.label.trim(),
+        labelEn: editItemForm.labelEn.trim(),
         url: editItemForm.url.trim(),
         targetType: 'CUSTOM',
         targetId: null,
@@ -571,6 +578,7 @@ export function MenuScreen({ canUpdate }) {
     setEditItem(item)
     setEditItemForm({
       label: item.label || '',
+      labelEn: item.labelEn || '',
       url: item.url || '',
       parentId: item.parentId || '',
       sortOrder: String(item.sortOrder ?? '0'),

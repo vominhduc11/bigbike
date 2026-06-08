@@ -245,6 +245,11 @@
   --bb-sidebar-w:  248px;
   --bb-topbar-h:   56px;
   --bb-row-h:      44px;
+
+  /* Max width of the centred content column. Below ~1750px viewport the content
+     fills the available space; on large / ultra-wide monitors (4xl) it caps here
+     and centres instead of stretching edge-to-edge. */
+  --bb-content-max: 1700px;
 }
 
 /* ─── Dark mode token overrides ───────────────────────────────────────────────

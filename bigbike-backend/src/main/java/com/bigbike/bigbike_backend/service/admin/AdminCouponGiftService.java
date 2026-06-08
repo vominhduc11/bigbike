@@ -1,13 +1,16 @@
 package com.bigbike.bigbike_backend.service.admin;
 
 import com.bigbike.bigbike_backend.api.admin.dto.coupon.AdminCouponDetailResponse;
+import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.mapper.CouponMapper;
 import com.bigbike.bigbike_backend.persistence.entity.coupon.CouponEntity;
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEntity;
+import com.bigbike.bigbike_backend.persistence.repository.coupon.CouponJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -27,6 +30,7 @@ public class AdminCouponGiftService {
     private static final int BULK_WARN_THRESHOLD = 500;
 
     private final CustomerJpaRepository customerRepo;
+    private final CouponJpaRepository couponRepo;
     private final CouponMapper couponMapper;
     private final CouponGiftEmailService couponGiftEmailService;
     private final CouponGiftPersistenceHelper persistenceHelper;
@@ -42,14 +46,11 @@ public class AdminCouponGiftService {
 
     public record BulkCouponGiftResult(int sent, int skipped) {}
 
-    public record TargetedCouponGiftRequest(
-            @NotEmpty List<UUID> customerIds,
-            @NotBlank String discountType,
-            BigDecimal amount,
-            BigDecimal minimumAmount,
-            Integer validDays,
-            Integer usageLimit,
-            String channel
+    public record BulkNotifyRequest(@NotNull UUID couponId) {}
+
+    public record TargetedNotifyRequest(
+            @NotNull UUID couponId,
+            @NotEmpty List<UUID> customerIds
     ) {}
 
     public AdminCouponDetailResponse sendCouponGift(UUID customerId, UUID adminId, SendCouponGiftRequest req) {
@@ -78,9 +79,12 @@ public class AdminCouponGiftService {
         return couponMapper.toDetail(coupon);
     }
 
-    public BulkCouponGiftResult sendBulkCouponGift(UUID adminId, SendCouponGiftRequest req) {
-        String discountType = normalizeType(req.discountType());
-        validateAmount(req.amount(), discountType);
+    public BulkCouponGiftResult sendBulkCouponGift(UUID adminId, BulkNotifyRequest req) {
+        CouponEntity coupon = couponRepo.findById(req.couponId())
+                .orElseThrow(() -> new NotFoundException("Mã giảm giá không tồn tại."));
+        if (!"ACTIVE".equals(coupon.getStatus())) {
+            throw new ConflictException("Mã giảm giá không đang hoạt động.");
+        }
 
         Specification<CustomerEntity> spec = (root, query, cb) -> cb.and(
                 cb.equal(root.get("status"), "ACTIVE"),
@@ -91,12 +95,8 @@ public class AdminCouponGiftService {
         List<CustomerEntity> customers = customerRepo.findAll(spec);
 
         if (customers.size() >= BULK_WARN_THRESHOLD) {
-            log.warn("Bulk coupon gift: sending to {} customers — large batch may take time", customers.size());
+            log.warn("Bulk coupon notify: sending to {} customers — large batch may take time", customers.size());
         }
-
-        String channel = req.channel() != null ? req.channel().trim().toUpperCase(Locale.ROOT) : "ALL";
-        Instant expiresAt = req.validDays() != null && req.validDays() > 0
-                ? Instant.now().plus(req.validDays(), ChronoUnit.DAYS) : null;
 
         int sent = 0;
         int skipped = 0;
@@ -107,12 +107,10 @@ public class AdminCouponGiftService {
                 continue;
             }
             try {
-                CouponEntity coupon = persistenceHelper.createAndPersist(
-                        customer, adminId, discountType, req, channel, expiresAt);
-                couponGiftEmailService.sendGiftEmail(customer, coupon);
+                couponGiftEmailService.sendNotifyEmail(customer, coupon);
                 sent++;
             } catch (Exception e) {
-                log.warn("Bulk gift skipped customer {}: {}", customer.getId(), e.getMessage());
+                log.warn("Bulk notify skipped customer {}: {}", customer.getId(), e.getMessage());
                 skipped++;
             }
         }
@@ -120,17 +118,12 @@ public class AdminCouponGiftService {
         return new BulkCouponGiftResult(sent, skipped);
     }
 
-    public BulkCouponGiftResult sendTargetedCouponGift(UUID adminId, TargetedCouponGiftRequest req) {
-        String discountType = normalizeType(req.discountType());
-        validateAmount(req.amount(), discountType);
-
-        String channel = req.channel() != null ? req.channel().trim().toUpperCase(Locale.ROOT) : "ALL";
-        Instant expiresAt = req.validDays() != null && req.validDays() > 0
-                ? Instant.now().plus(req.validDays(), ChronoUnit.DAYS) : null;
-
-        SendCouponGiftRequest giftReq = new SendCouponGiftRequest(
-                req.discountType(), req.amount(), req.minimumAmount(),
-                req.validDays(), req.usageLimit(), req.channel());
+    public BulkCouponGiftResult sendTargetedCouponGift(UUID adminId, TargetedNotifyRequest req) {
+        CouponEntity coupon = couponRepo.findById(req.couponId())
+                .orElseThrow(() -> new NotFoundException("Mã giảm giá không tồn tại."));
+        if (!"ACTIVE".equals(coupon.getStatus())) {
+            throw new ConflictException("Mã giảm giá không đang hoạt động.");
+        }
 
         int sent = 0;
         int skipped = 0;
@@ -145,12 +138,10 @@ public class AdminCouponGiftService {
                 continue;
             }
             try {
-                CouponEntity coupon = persistenceHelper.createAndPersist(
-                        customer, adminId, discountType, giftReq, channel, expiresAt);
-                couponGiftEmailService.sendGiftEmail(customer, coupon);
+                couponGiftEmailService.sendNotifyEmail(customer, coupon);
                 sent++;
             } catch (Exception e) {
-                log.warn("Targeted gift skipped customer {}: {}", customerId, e.getMessage());
+                log.warn("Targeted notify skipped customer {}: {}", customerId, e.getMessage());
                 skipped++;
             }
         }

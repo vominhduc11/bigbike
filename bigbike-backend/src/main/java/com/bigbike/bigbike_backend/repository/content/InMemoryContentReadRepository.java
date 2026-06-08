@@ -4,7 +4,7 @@ import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.domain.catalog.SeoMeta;
 import com.bigbike.bigbike_backend.domain.content.Article;
-import com.bigbike.bigbike_backend.domain.content.AuthorSummary;
+
 import com.bigbike.bigbike_backend.domain.content.ContentCategorySummary;
 import com.bigbike.bigbike_backend.domain.content.ContentCategoryWithCount;
 import com.bigbike.bigbike_backend.domain.content.Page;
@@ -32,7 +32,6 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
     public InMemoryContentReadRepository() {
         ContentCategorySummary ridingGuide = new ContentCategorySummary("content_cat_guide", "huong-dan", "Hướng dẫn");
         ContentCategorySummary news = new ContentCategorySummary("content_cat_news", "tin-tuc", "Tin tức");
-        AuthorSummary editor = new AuthorSummary("author_bigbike_editor", "BigBike Team");
 
         Article article1 = new Article(
                 "article_chon_mu_fullface",
@@ -48,11 +47,8 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
                         900,
                         "image/jpeg"
                 ),
-                null,
-                editor,
                 ridingGuide,
                 List.of(ridingGuide),
-                List.of("mu-bao-hiem", "huong-dan"),
                 PublishStatus.PUBLISHED,
                 new SeoMeta(
                         "Cách Chọn Mũ Fullface Phù Hợp",
@@ -64,7 +60,6 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
                 Instant.parse("2026-04-10T03:00:00Z"),
                 Instant.parse("2026-04-09T02:00:00Z"),
                 Instant.parse("2026-04-10T03:00:00Z"),
-                List.of(),
                 null
         );
 
@@ -82,11 +77,8 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
                         900,
                         "image/jpeg"
                 ),
-                null,
-                editor,
                 news,
                 List.of(news),
-                List.of("tin-tuc", "bao-ho"),
                 PublishStatus.DRAFT,
                 new SeoMeta(
                         "Xu Hướng Đồ Bảo Hộ 2026",
@@ -98,7 +90,6 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
                 Instant.parse("2026-04-15T03:00:00Z"),
                 Instant.parse("2026-04-14T03:00:00Z"),
                 Instant.parse("2026-04-15T03:00:00Z"),
-                List.of(),
                 null
         );
 
@@ -219,7 +210,7 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
 
     @Override
     public org.springframework.data.domain.Page<Article> listArticlesAdmin(
-            PublishStatus publishStatus, String q, Pageable pageable) {
+            PublishStatus publishStatus, String q, Pageable pageable, String locale) {
         List<Article> filtered = articles.stream()
                 .filter(a -> publishStatus == null || a.publishStatus() == publishStatus)
                 .filter(a -> matchesArticleAdminQuery(a, q))
@@ -229,7 +220,7 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
 
     @Override
     public org.springframework.data.domain.Page<Page> listPagesAdmin(
-            PublishStatus publishStatus, String q, Pageable pageable) {
+            PublishStatus publishStatus, String q, Pageable pageable, String locale) {
         List<Page> filtered = pages.stream()
                 .filter(p -> publishStatus == null || p.publishStatus() == publishStatus)
                 .filter(p -> matchesPageQuery(p, q))
@@ -238,7 +229,7 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
     }
 
     @Override
-    public List<Article> findArticlesByFilter(PublishStatus publishStatus, String q) {
+    public List<Article> findArticlesByFilter(PublishStatus publishStatus, String q, String locale) {
         return articles.stream()
                 .filter(a -> publishStatus == null || a.publishStatus() == publishStatus)
                 .filter(a -> matchesArticleAdminQuery(a, q))
@@ -246,7 +237,7 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
     }
 
     @Override
-    public List<Page> findPagesByFilter(PublishStatus publishStatus, String q) {
+    public List<Page> findPagesByFilter(PublishStatus publishStatus, String q, String locale) {
         return pages.stream()
                 .filter(p -> publishStatus == null || p.publishStatus() == publishStatus)
                 .filter(p -> matchesPageQuery(p, q))

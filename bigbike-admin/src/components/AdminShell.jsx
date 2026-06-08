@@ -46,32 +46,34 @@ function Breadcrumb({ activePath, navGroups, navigate, t }) {
 
   return (
     <nav className="bb-breadcrumb" aria-label="Breadcrumb">
-      {isDashboardRoot ? (
-        <span className="current">{t('app.overview')}</span>
-      ) : (
-        <>
-          <a
-            href="/admin/dashboard"
-            onClick={(e) => { e.preventDefault(); navigate('/admin/dashboard') }}
-          >
-            {t('app.overview')}
-          </a>
-          <span className="sep">/</span>
-          {isDetail ? (
-            <a href={match.path} onClick={(e) => { e.preventDefault(); navigate(match.path) }}>
-              {match.label}
+      <div className="bb-breadcrumb-inner">
+        {isDashboardRoot ? (
+          <span className="current">{t('app.overview')}</span>
+        ) : (
+          <>
+            <a
+              href="/admin/dashboard"
+              onClick={(e) => { e.preventDefault(); navigate('/admin/dashboard') }}
+            >
+              {t('app.overview')}
             </a>
-          ) : (
-            <span className="current">{match.label}</span>
-          )}
-          {isDetail && (
-            <>
-              <span className="sep">/</span>
-              <span className="current">{isCreate ? t('app.createNew') : t('app.detail')}</span>
-            </>
-          )}
-        </>
-      )}
+            <span className="sep">/</span>
+            {isDetail ? (
+              <a href={match.path} onClick={(e) => { e.preventDefault(); navigate(match.path) }}>
+                {match.label}
+              </a>
+            ) : (
+              <span className="current">{match.label}</span>
+            )}
+            {isDetail && (
+              <>
+                <span className="sep">/</span>
+                <span className="current">{isCreate ? t('app.createNew') : t('app.detail')}</span>
+              </>
+            )}
+          </>
+        )}
+      </div>
     </nav>
   )
 }

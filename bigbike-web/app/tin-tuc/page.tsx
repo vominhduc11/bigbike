@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Container } from "@/components/layout/Container";
 import { PageHero } from "@/components/layout/PageHero";
 import { listArticles, listContentCategories, listPublicSettings } from "@/lib/api/public-api";
@@ -98,6 +98,7 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
     );
   }
 
+  const locale = await getLocale();
   const [result, categoriesResult, settingsResult] = await Promise.all([
     listArticles({
       page: pageParsed.value,
@@ -105,9 +106,10 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
       sort: "publishedAt:desc",
       category: categoryParsed.value,
       q: qParsed.value,
+      lang: locale,
     }),
     listContentCategories(),
-    listPublicSettings(),
+    listPublicSettings(locale),
   ]);
 
   const sidebarCategories = categoriesResult.data.filter((cat) => cat.articleCount > 0);
@@ -254,7 +256,7 @@ function WpArticleCard({ article }: { article: Article }) {
   const title = safeText(article.title, "Bài viết");
   const excerpt = makeExcerpt(article);
   const publishedAt = formatWpDate(article.publishedAt ?? article.createdAt);
-  const imageUrl = (article.coverImage ?? article.productImage)?.url;
+  const imageUrl = article.coverImage?.url;
   const imageSrc = resolveWpUploadUrl(imageUrl);
   const fallbackImageSrc = makeSlugThumbnailFallback(imageUrl, article.slug);
   const href = toArticlePath(article.slug);

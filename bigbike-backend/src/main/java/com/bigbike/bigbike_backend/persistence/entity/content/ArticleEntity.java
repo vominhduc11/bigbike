@@ -3,7 +3,7 @@ package com.bigbike.bigbike_backend.persistence.entity.content;
 import com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.persistence.converter.DescriptionBlocksConverter;
-import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
@@ -57,16 +57,6 @@ public class ArticleEntity {
     private Integer coverImageHeight;
     private String coverImageMimeType;
 
-    @Column(columnDefinition = "text")
-    private String productImageUrl;
-
-    @Column(length = 500)
-    private String productImageAlt;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "author_id")
-    private ContentAuthorEntity author;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
     private ContentCategoryEntity category;
@@ -80,26 +70,6 @@ public class ArticleEntity {
     @OrderColumn(name = "sort_order")
     @BatchSize(size = 50)
     private List<ContentCategoryEntity> categories = new ArrayList<>();
-
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "article_tag_map",
-            joinColumns = @JoinColumn(name = "article_id"),
-            inverseJoinColumns = @JoinColumn(name = "tag_id")
-    )
-    @OrderColumn(name = "sort_order")
-    @BatchSize(size = 50)
-    private List<BlogTagEntity> tags = new ArrayList<>();
-
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "article_product_map",
-            joinColumns = @JoinColumn(name = "article_id"),
-            inverseJoinColumns = @JoinColumn(name = "product_id")
-    )
-    @OrderColumn(name = "sort_order")
-    @BatchSize(size = 50)
-    private List<ProductEntity> products = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

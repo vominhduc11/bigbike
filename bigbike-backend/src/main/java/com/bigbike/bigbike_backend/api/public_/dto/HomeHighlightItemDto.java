@@ -12,18 +12,23 @@ public record HomeHighlightItemDto(
         String categoryName,
         String categorySlug
 ) {
-    public static HomeHighlightItemDto from(HomeHighlightEntity e) {
+    public static HomeHighlightItemDto from(HomeHighlightEntity e, String lang) {
         var product = e.getProduct();
         var category = product.getCategory();
         return new HomeHighlightItemDto(
                 e.getSlot(),
                 product.getId(),
                 product.getSlug(),
-                product.getName(),
+                pick(product.getName(), product.getNameEn(), lang),
                 product.getImageUrl(),
                 category.getId(),
-                category.getName(),
+                pick(category.getName(), category.getNameEn(), lang),
                 category.getSlug()
         );
+    }
+
+    /** EN-with-Vietnamese-fallback per PRODUCT_RULE_002. */
+    private static String pick(String base, String en, String lang) {
+        return "en".equalsIgnoreCase(lang) && en != null && !en.isBlank() ? en : base;
     }
 }

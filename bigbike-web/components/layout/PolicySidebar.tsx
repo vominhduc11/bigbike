@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { getPublicMenu } from "@/lib/api/public-api";
 import { flattenPublicMenuTree, buildPublicMenuTree } from "@/lib/utils/public-menu";
 import { normalizeMenuUrl } from "@/lib/utils/nav";
@@ -23,7 +23,7 @@ export async function PolicySidebar({ activeHref, title, items }: Props) {
 
   const menuResult = items
     ? null
-    : await getPublicMenu(GUIDE_MENU_LOCATION);
+    : await getPublicMenu(GUIDE_MENU_LOCATION, await getLocale());
 
   if (!items && menuResult && !menuResult.data) {
     console.warn(

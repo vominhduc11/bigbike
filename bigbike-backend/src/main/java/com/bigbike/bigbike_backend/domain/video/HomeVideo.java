@@ -7,6 +7,8 @@ public record HomeVideo(
         String id,
         Integer sortOrder,
         String title,
+        /** Raw English title (V161), no fallback. Null when unset. For the admin editor; public reads localize {@code title}. */
+        String titleEn,
         String videoUrl,
         String youtubeId,
         ImageAsset thumbnail,

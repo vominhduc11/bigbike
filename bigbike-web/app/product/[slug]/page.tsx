@@ -221,15 +221,6 @@ export default async function ProductDetailPage({
         ]
       : []),
     {
-      id: "tab-reviews",
-      label:
-        product.ratingCount && product.ratingCount > 0
-          ? tProduct("tabs.reviewsWithCount", { count: product.ratingCount })
-          : tProduct("tabs.reviews"),
-      content: null,
-      scrollTo: "reviews",
-    },
-    {
       id: "tab-faq",
       label: tProduct("faqs"),
       content:

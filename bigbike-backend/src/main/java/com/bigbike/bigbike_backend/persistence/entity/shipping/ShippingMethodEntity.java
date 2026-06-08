@@ -38,6 +38,10 @@ public class ShippingMethodEntity {
     @Column(nullable = false, length = 255)
     private String title;
 
+    /** Optional English title (V163). Null/blank → checkout falls back to {@link #title}. */
+    @Column(name = "title_en", length = 255)
+    private String titleEn;
+
     @Column(columnDefinition = "text")
     private String description;
 

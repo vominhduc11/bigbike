@@ -12,6 +12,7 @@ import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -28,10 +29,11 @@ public class PublicHomeVideoController {
 
     @GetMapping("/home-videos")
     public ResponseEntity<ApiDataResponse<List<PublicHomeVideoResponse>>> listHomeVideos(
+            @RequestParam(defaultValue = "vi") String lang,
             HttpServletRequest request
     ) {
         List<PublicHomeVideoResponse> body = homeVideoReadService.listActive().stream()
-                .map(PublicHomeVideoResponse::from)
+                .map(video -> PublicHomeVideoResponse.from(video, lang))
                 .toList();
         return ResponseEntity.ok()
                 .cacheControl(VIDEO_CACHE)

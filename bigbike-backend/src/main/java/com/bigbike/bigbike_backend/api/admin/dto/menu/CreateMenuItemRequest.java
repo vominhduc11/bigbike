@@ -8,6 +8,7 @@ import java.util.UUID;
 public record CreateMenuItemRequest(
         UUID parentId,
         @NotBlank @Size(max = 255) String label,
+        @Size(max = 255) String labelEn,
         @Size(max = 2048)
         String url,
         @Size(max = 64)

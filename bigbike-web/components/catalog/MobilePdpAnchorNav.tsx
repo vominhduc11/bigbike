@@ -112,7 +112,7 @@ export function MobilePdpAnchorNav({ items }: { items: AnchorNavItem[] }) {
           type="button"
           data-id={item.id}
           className={cn(
-            "max-md:flex-none max-md:[scroll-snap-align:start] max-md:py-2.5 max-md:px-3.5 max-md:border-b-2 max-md:bg-transparent max-md:font-body max-md:text-xs max-md:font-bold max-md:uppercase max-md:tracking-[0.04em] max-md:whitespace-nowrap max-md:cursor-pointer max-md:-mb-px max-md:min-h-11",
+            "max-md:flex-none max-md:[scroll-snap-align:start] max-md:py-2.5 max-md:px-3.5 max-md:border-b-2 max-md:bg-transparent max-md:font-body max-md:text-xs max-md:font-bold max-md:uppercase max-md:tracking-normal max-md:whitespace-nowrap max-md:cursor-pointer max-md:-mb-px max-md:min-h-11",
             activeId === item.id
               ? "max-md:text-brand max-md:border-b-brand"
               : "max-md:text-muted-foreground max-md:border-b-transparent",

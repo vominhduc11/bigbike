@@ -34,6 +34,10 @@ public class MenuItemEntity {
     @Column(nullable = false, length = 255)
     private String label;
 
+    /** Optional English label (V160). Null/blank → public reads fall back to {@link #label}. */
+    @Column(name = "label_en", length = 255)
+    private String labelEn;
+
     @Column(columnDefinition = "text")
     private String url;
 

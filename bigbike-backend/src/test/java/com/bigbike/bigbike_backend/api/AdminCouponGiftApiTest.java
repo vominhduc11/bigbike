@@ -6,10 +6,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.bigbike.bigbike_backend.persistence.entity.auth.AdminUserEntity;
+import com.bigbike.bigbike_backend.persistence.entity.coupon.CouponEntity;
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEntity;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.coupon.CouponJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
 import com.bigbike.bigbike_backend.service.auth.PasswordService;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,9 +45,12 @@ class AdminCouponGiftApiTest {
     private static final String VALID_GIFT_BODY =
             "{\"discountType\":\"FIXED\",\"amount\":50000,\"validDays\":30}";
 
+    private UUID activeCouponId;
+
     @Autowired WebApplicationContext webApplicationContext;
     @Autowired AdminUserJpaRepository adminUserRepo;
     @Autowired CustomerJpaRepository customerRepo;
+    @Autowired CouponJpaRepository couponRepo;
     @Autowired PasswordService passwordService;
 
     private MockMvc mockMvc;
@@ -81,6 +87,20 @@ class AdminCouponGiftApiTest {
         noEmail.setCreatedAt(now);
         noEmail.setUpdatedAt(now);
         customerNoEmailId = customerRepo.save(noEmail).getId();
+
+        // Active coupon fixture used by bulk/targeted notify tests.
+        CouponEntity coupon = new CouponEntity();
+        coupon.setCode("TESTBULK" + UUID.randomUUID().toString().replace("-", "").substring(0, 4).toUpperCase());
+        coupon.setName("Test bulk coupon");
+        coupon.setDiscountType("FIXED");
+        coupon.setAmount(new BigDecimal("25000"));
+        coupon.setUsageLimit(999);
+        coupon.setUsageCount(0);
+        coupon.setStatus("ACTIVE");
+        coupon.setChannel("ALL");
+        coupon.setCreatedAt(now);
+        coupon.setUpdatedAt(now);
+        activeCouponId = couponRepo.save(coupon).getId();
     }
 
     // ── 1. Auth gates ──────────────────────────────────────────────────────────
@@ -154,20 +174,26 @@ class AdminCouponGiftApiTest {
 
     @Test
     void sendBulkCouponGift_returns200WithSentAndSkipped() throws Exception {
-        String body = "{\"discountType\":\"FIXED\",\"amount\":25000,\"validDays\":7}";
+        String body = "{\"couponId\":\"" + activeCouponId + "\"}";
 
-        MvcResult result = mockMvc.perform(post("/api/v1/admin/coupon-gifts/bulk")
+        mockMvc.perform(post("/api/v1/admin/coupon-gifts/bulk")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body)
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.sent").isNumber())
-                .andExpect(jsonPath("$.data.skipped").isNumber())
-                .andReturn();
+                .andExpect(jsonPath("$.data.skipped").isNumber());
+    }
 
-        // At minimum the customer with email created in @BeforeEach must be in sent.
-        int sent = Integer.parseInt(extractJsonNumber(result.getResponse().getContentAsString(), "sent"));
-        assertThat(sent).isGreaterThanOrEqualTo(1);
+    @Test
+    void sendBulkCouponGift_couponNotFound_returns404() throws Exception {
+        String body = "{\"couponId\":\"" + UUID.randomUUID() + "\"}";
+
+        mockMvc.perform(post("/api/v1/admin/coupon-gifts/bulk")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isNotFound());
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

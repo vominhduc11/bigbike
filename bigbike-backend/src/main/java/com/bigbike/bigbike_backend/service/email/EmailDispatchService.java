@@ -1,5 +1,6 @@
 package com.bigbike.bigbike_backend.service.email;
 
+import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
@@ -21,14 +22,17 @@ public class EmailDispatchService {
     private final JavaMailSender mailSender;
     private final TemplateEngine templateEngine;
     private final String fromAddress;
+    private final String fromName;
 
     public EmailDispatchService(
             Optional<JavaMailSender> mailSender,
             TemplateEngine templateEngine,
-            @Value("${bigbike.mail.from:no-reply@bigbike.vn}") String fromAddress) {
+            @Value("${bigbike.mail.from:no-reply@bigbike.vn}") String fromAddress,
+            @Value("${bigbike.mail.from-name:BigBike}") String fromName) {
         this.mailSender = mailSender.orElse(null);
         this.templateEngine = templateEngine;
         this.fromAddress = fromAddress;
+        this.fromName = fromName;
     }
 
     public boolean isEnabled() {
@@ -52,7 +56,7 @@ public class EmailDispatchService {
             String html = templateEngine.process("email/" + templateName, context);
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom(fromAddress);
+            helper.setFrom(new InternetAddress(fromAddress, fromName, "UTF-8"));
             helper.setTo(to);
             if (replyTo != null && !replyTo.isBlank()) {
                 helper.setReplyTo(replyTo);

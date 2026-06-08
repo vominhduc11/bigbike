@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { getLocale } from "next-intl/server";
 import { PageHero } from "@/components/layout/PageHero";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -59,13 +60,15 @@ export default async function BrandListPage({ searchParams }: BrandListPageProps
     );
   }
 
+  const locale = await getLocale();
   const [result, settingsResult] = await Promise.all([
     listBrands({
       page: pageParsed.value,
       size: sizeParsed.value,
       sort: sortParsed.value,
+      lang: locale,
     }),
-    listPublicSettings(),
+    listPublicSettings(locale),
   ]);
   const heroSettings = readHeroSettings(settingsResult.data ?? [], "hero_brands");
   const defaultHero = readDefaultHeroAssets(settingsResult.data ?? []);

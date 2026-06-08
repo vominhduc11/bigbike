@@ -58,7 +58,7 @@ public class AdminPosController extends AdminControllerSupport {
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "pos.read");
-        var summary = catalogReadService.listProducts(page, size, "name:asc", q, null, "PUBLISHED", null, null, null, null);
+        var summary = catalogReadService.listProducts(page, size, "name:asc", q, null, "PUBLISHED", null, null, null, null, "vi");
         // listProducts returns Products without variants (list-view optimisation).
         // POS needs variants → re-fetch detail for each result.
         // Products with no variants need a synthetic variant so the POS grid can render them.

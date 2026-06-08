@@ -7,6 +7,8 @@ public record AdminSiteSettingResponse(
         UUID id,
         String settingKey,
         String settingValue,
+        /** Raw English value (V162), no fallback. Null for config/non-translatable keys. For the admin editor. */
+        String settingValueEn,
         String settingGroup,
         boolean isPublic,
         String description,

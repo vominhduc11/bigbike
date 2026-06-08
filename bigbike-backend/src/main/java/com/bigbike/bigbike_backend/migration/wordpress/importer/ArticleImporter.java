@@ -5,12 +5,8 @@ import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressArticleMa
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressMediaMapper.MappedMedia;
 import com.bigbike.bigbike_backend.migration.wordpress.writeplan.MigrationDomain;
 import com.bigbike.bigbike_backend.persistence.entity.content.ArticleEntity;
-import com.bigbike.bigbike_backend.persistence.entity.content.BlogTagEntity;
-import com.bigbike.bigbike_backend.persistence.entity.content.ContentAuthorEntity;
 import com.bigbike.bigbike_backend.persistence.entity.content.ContentCategoryEntity;
 import com.bigbike.bigbike_backend.persistence.repository.content.ArticleJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.content.BlogTagJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.content.ContentAuthorJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.content.ContentCategoryJpaRepository;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -26,9 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ArticleImporter implements DomainImporter {
 
     private final ArticleJpaRepository repo;
-    private final ContentAuthorJpaRepository authorRepo;
     private final ContentCategoryJpaRepository categoryRepo;
-    private final BlogTagJpaRepository blogTagRepo;
 
     @Override
     public MigrationDomain domain() {
@@ -71,18 +65,14 @@ public class ArticleImporter implements DomainImporter {
                     isNew = true;
                 }
 
-                ContentAuthorEntity author = resolveAuthor(ma, options.dryRun());
                 List<ContentCategoryEntity> categories = resolveCategories(ma, options.dryRun());
-                List<BlogTagEntity> tags = resolveTags(ma, options.dryRun());
 
                 entity.setSlug(slug);
                 entity.setTitle(resolveTitle(ma, slug));
                 entity.setExcerpt(ma.excerpt());
                 entity.setBody(ma.content() != null ? ma.content() : "");
-                entity.setAuthor(author);
                 entity.setCategory(categories.isEmpty() ? null : categories.get(0));
                 entity.setCategories(categories);
-                entity.setTags(tags);
                 entity.setPublishStatus(resolveStatus(ma.status()));
                 entity.setSeoTitle(ma.seoTitle());
                 entity.setSeoDescription(ma.seoDescription());
@@ -137,18 +127,6 @@ public class ArticleImporter implements DomainImporter {
         return fallbackSlug;
     }
 
-    private ContentAuthorEntity resolveAuthor(MappedArticle article, boolean dryRun) {
-        String authorId = "wp-author-" + article.authorSourceId();
-        return authorRepo.findById(authorId).orElseGet(() -> {
-            ContentAuthorEntity entity = new ContentAuthorEntity();
-            entity.setId(authorId);
-            entity.setName(article.authorName() == null || article.authorName().isBlank()
-                    ? "Author " + article.authorSourceId()
-                    : article.authorName());
-            return dryRun ? entity : authorRepo.save(entity);
-        });
-    }
-
     private List<ContentCategoryEntity> resolveCategories(MappedArticle article, boolean dryRun) {
         if (article.categories() == null || article.categories().isEmpty()) {
             return new ArrayList<>();
@@ -162,25 +140,6 @@ public class ArticleImporter implements DomainImporter {
                 created.setSlug(ref.slug());
                 created.setName(ref.name());
                 return dryRun ? created : categoryRepo.save(created);
-            }));
-            resolved.add(entity);
-        }
-        return resolved;
-    }
-
-    private List<BlogTagEntity> resolveTags(MappedArticle article, boolean dryRun) {
-        if (article.tags() == null || article.tags().isEmpty()) {
-            return new ArrayList<>();
-        }
-        List<BlogTagEntity> resolved = new ArrayList<>();
-        for (TaxonomyRef ref : article.tags()) {
-            String id = "wp-blog-tag-" + ref.sourceId();
-            BlogTagEntity entity = blogTagRepo.findBySlug(ref.slug()).orElseGet(() -> blogTagRepo.findById(id).orElseGet(() -> {
-                BlogTagEntity created = new BlogTagEntity();
-                created.setId(id);
-                created.setSlug(ref.slug());
-                created.setName(ref.name());
-                return dryRun ? created : blogTagRepo.save(created);
             }));
             resolved.add(entity);
         }

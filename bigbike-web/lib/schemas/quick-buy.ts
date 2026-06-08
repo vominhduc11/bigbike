@@ -10,6 +10,7 @@ export type QuickBuyFormValues = {
   ward: string;
   addressLine1: string;
   quantity: number;
+  shippingMethodId: string;
   paymentMethod: "COD" | "BACS";
   customerNote?: string;
 };
@@ -25,6 +26,7 @@ export function createQuickBuySchema(t: (key: string) => string) {
     ward: z.string(),
     addressLine1: z.string().min(1, t("addressRequired")),
     quantity: z.number().int().min(1),
+    shippingMethodId: z.string(),
     paymentMethod: z.enum(["COD", "BACS"]),
     customerNote: z.string().max(1000).optional(),
   }) satisfies z.ZodType<QuickBuyFormValues>;

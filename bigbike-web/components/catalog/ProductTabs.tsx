@@ -97,7 +97,7 @@ export function ProductTabs({ sections }: { sections: ProductTabSection[] }) {
                 "tab-panel text-black text-[length:var(--fs-body)] leading-[1.7] md:leading-[2.3]",
                 active ? "block" : "hidden",
                 "max-md:block max-md:pt-6 max-md:pb-1 max-md:mt-0 max-md:border-t-[3px] max-md:border-t-border max-md:first:[border-top:none] max-md:scroll-mt-[calc(var(--bb-header-height)_+_52px)]",
-                "max-md:before:content-[attr(data-label)] max-md:before:block max-md:before:mb-4 max-md:before:font-[family-name:var(--bb-font-display)] max-md:before:text-lg max-md:before:font-semibold max-md:before:text-[var(--bb-text-primary)] max-md:before:uppercase max-md:before:tracking-[0.02em] max-md:before:leading-[1.2]",
+                "max-md:before:content-[attr(data-label)] max-md:before:block max-md:before:mb-4 max-md:before:font-[family-name:var(--bb-font-display)] max-md:before:text-lg max-md:before:font-semibold max-md:before:text-[var(--bb-text-primary)] max-md:before:uppercase max-md:before:tracking-normal max-md:before:leading-[1.2]",
               )}
               data-label={section.label}
             >

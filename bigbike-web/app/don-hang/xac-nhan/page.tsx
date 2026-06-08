@@ -76,7 +76,7 @@ type OrderConfirmTranslations = Awaited<ReturnType<typeof getTranslations<"Order
 
 function OrderShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="woocommerce">
+    <div className="bb-order-confirm-page woocommerce">
       <div className="mx-auto my-16 max-w-[var(--bb-container-xl)] px-4 md:px-6">
         <div className="woocommerce-order grid gap-8">
           {children}

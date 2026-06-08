@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Mail, PhoneCall } from "lucide-react";
 import { getPublicMenu, listPublicSettings } from "@/lib/api/public-api";
 import { flattenPublicMenuTree, buildPublicMenuTree } from "@/lib/utils/public-menu";
@@ -158,9 +158,10 @@ function buildSocialLinks(settings: { settingKey: string; settingValue: string }
 }
 
 export async function SiteFooter() {
+  const locale = await getLocale();
   const [settingsResult, menuResult, t] = await Promise.all([
-    listPublicSettings(),
-    getPublicMenu(FOOTER_MENU_LOCATION),
+    listPublicSettings(locale),
+    getPublicMenu(FOOTER_MENU_LOCATION, locale),
     getTranslations("Footer"),
   ]);
 

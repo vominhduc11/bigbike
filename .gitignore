@@ -5,7 +5,7 @@
 bigbike_mobile/
 
 # Legacy reference data
-bigbike_vn__2026_04_17/
+bigbike/
 uploads/
 
 # Design assets (large binary/zip files, not for git)

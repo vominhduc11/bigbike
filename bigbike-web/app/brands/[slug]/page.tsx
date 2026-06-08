@@ -181,8 +181,8 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
       maxPrice: maxPriceParsed.value,
       lang: locale,
     }),
-    listCategories({ page: 1, size: 100, sort: "sortOrder:asc" }),
-    listPublicSettings(),
+    listCategories({ page: 1, size: 100, sort: "sortOrder:asc", lang: locale }),
+    listPublicSettings(locale),
   ]);
   const defaultHero = readDefaultHeroAssets(settingsResult.data ?? []);
 

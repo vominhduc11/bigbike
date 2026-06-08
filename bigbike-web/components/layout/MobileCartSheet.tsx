@@ -20,10 +20,10 @@ import { useHeaderUi } from "./HeaderUiContext";
 
 // Dark-shell micro label (GIỎ HÀNG / TỔNG TẠM TÍNH / line SKU)
 const microLabel =
-  "m-0 font-cta text-ui-10 font-semibold uppercase tracking-[0.16em] text-[var(--bb-text-inverse-muted)]";
+  "m-0 font-cta text-ui-10 font-semibold uppercase tracking-normal text-[var(--bb-text-inverse-muted)]";
 // Shared CTA button chrome (empty link / primary / secondary)
 const ctaBtn =
-  "inline-flex min-h-11 items-center justify-center px-4 font-cta text-ui-13 font-semibold uppercase tracking-[0.1em] no-underline";
+  "inline-flex min-h-11 items-center justify-center px-4 font-cta text-ui-13 font-semibold uppercase tracking-normal no-underline";
 const ctaBtnFilled = "border border-[var(--bb-brand-primary)] bg-brand text-[var(--bb-text-inverse)]";
 const qtyBtn =
   "inline-flex h-11 w-11 items-center justify-center border-0 bg-transparent cursor-pointer disabled:cursor-not-allowed disabled:opacity-45";

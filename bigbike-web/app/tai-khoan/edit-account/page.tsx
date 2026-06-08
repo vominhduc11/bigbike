@@ -6,7 +6,6 @@ import { AccountSectionHeading, AccountShell, useAccount, useAccountRefresh } fr
 import { updateCustomerProfile } from "@/lib/api/client-api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { FormNotice } from "@/components/ui/FormNotice";
 
 // 2020-mockup field label: gray, sentence-case.
@@ -39,7 +38,6 @@ function EditAccountContent() {
     const currentPassword = ((fd.get("currentPassword") as string) ?? "").trim();
     const newPassword = ((fd.get("newPassword") as string) ?? "").trim();
     const confirmPassword = ((fd.get("confirmPassword") as string) ?? "").trim();
-    const newsletterSubscribed = fd.get("newsletter") === "on";
 
     const newEmailValue = email && email !== (profile?.email ?? "") ? email : undefined;
     const isSensitiveChange = !!newPassword || !!newEmailValue;
@@ -67,7 +65,6 @@ function EditAccountContent() {
         email: newEmailValue,
         currentPassword: isSensitiveChange ? currentPassword : undefined,
         newPassword: newPassword || undefined,
-        newsletterSubscribed,
       });
       await refreshProfile?.();
       setSuccess(true);
@@ -107,10 +104,6 @@ function EditAccountContent() {
           </div>
         </div>
 
-        <label className="mt-5 flex w-fit items-center gap-2 text-sm text-muted-foreground">
-          <Checkbox name="newsletter" defaultChecked={profile?.newsletterSubscribed ?? false} />
-          {t("newsletter")}
-        </label>
 
         <fieldset className="mt-5 border-0 p-0">
           <legend className="mb-3 text-sm text-muted-foreground">{t("changePassword")}</legend>

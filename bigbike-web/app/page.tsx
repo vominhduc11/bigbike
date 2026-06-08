@@ -62,7 +62,8 @@ const HOME_ORG_LOGO = "/wp/logo.png";
 const DEFAULT_SITE_NAME = "BigBike";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const settingsResult = await listPublicSettings();
+  const locale = await getLocale();
+  const settingsResult = await listPublicSettings(locale);
   const settings = settingsResult.data ?? [];
   const siteName = pickSetting(settings, ["site_name"]) || DEFAULT_SITE_NAME;
   const title = pickSetting(settings, ["seo_home_title"]) || siteName;
@@ -140,7 +141,7 @@ function WpCategoryListItem({ category }: { category: Category }) {
           className="block w-full h-full object-contain [transition:filter_0.2s_ease,transform_0.2s_ease] group-hover:[filter:brightness(0)_invert(1)] group-hover:[transform:scale(1.06)] group-active:[transform:scale(0.97)]"
         />
       </span>
-      <span className="relative z-[1] line-clamp-2 mt-6 max-md:mt-3 font-[family-name:var(--bb-font-cta)] font-semibold text-ui-17 max-md:text-ui-13 min-[1536px]:text-ui-18 min-[2560px]:text-ui-20 leading-[1.2] tracking-[0.02em] uppercase text-foreground [transition:color_0.2s_ease] group-hover:text-white">
+      <span className="relative z-[1] line-clamp-2 mt-6 max-md:mt-3 font-[family-name:var(--bb-font-cta)] font-semibold text-ui-17 max-md:text-ui-13 min-[1536px]:text-ui-18 min-[2560px]:text-ui-20 leading-[1.2] tracking-normal uppercase text-foreground [transition:color_0.2s_ease] group-hover:text-white">
         {name}
       </span>
     </Link>
@@ -356,7 +357,7 @@ export default async function HomePage() {
       lang: locale,
     }),
     listBrands({ page: 1, size: 12, sort: "name:asc", lang: locale }),
-    listPublicSettings(),
+    listPublicSettings(locale),
     listProducts({
       page: 1,
       homepageBlock: "FEATURED_GRID",
@@ -364,8 +365,8 @@ export default async function HomePage() {
       sort: "homepageOrder:asc",
       lang: locale,
     }),
-    listHomeVideos(),
-    listHomeHighlights(),
+    listHomeVideos(locale),
+    listHomeHighlights(locale),
   ]);
 
   const settings = settingsResult.data ?? [];

@@ -5,5 +5,6 @@ public record AttributeValueResponse(
         String attributeId,
         String slug,
         String label,
+        String labelEn,
         int sortOrder
 ) {}

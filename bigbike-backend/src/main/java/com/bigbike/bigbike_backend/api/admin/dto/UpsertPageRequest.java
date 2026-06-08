@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.util.List;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -60,6 +61,7 @@ public class UpsertPageRequest {
     @Size(max = 200, message = "bodyBlocks must not exceed 200 blocks.")
     private List<DescriptionBlock> bodyBlocks;
 
+    @Setter(AccessLevel.NONE)
     private boolean bodyBlocksPresent = false;
 
     public void setBodyBlocks(List<DescriptionBlock> bodyBlocks) {

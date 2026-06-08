@@ -29,6 +29,10 @@ public class AttributeValueEntity {
     @Column(nullable = false)
     private String label;
 
+    /** Optional English label (V164). Null/blank → reads fall back to {@link #label}. */
+    @Column(name = "label_en")
+    private String labelEn;
+
     @Column(name = "legacy_term_id", unique = true)
     private Long legacyTermId;
 

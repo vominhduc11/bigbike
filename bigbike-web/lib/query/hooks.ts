@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLocale } from "next-intl";
 import {
   addCartItem,
   applyCoupon,
@@ -94,9 +95,10 @@ export function useRemoveCoupon() {
 // ── Checkout ────────────────────────────────────────────────────────────────
 
 export function useCheckoutOptions() {
+  const locale = useLocale();
   return useQuery({
-    queryKey: queryKeys.checkoutOptions(),
-    queryFn: fetchCheckoutOptions,
+    queryKey: queryKeys.checkoutOptions(locale),
+    queryFn: () => fetchCheckoutOptions(locale),
     staleTime: 5 * 60 * 1000,
   });
 }

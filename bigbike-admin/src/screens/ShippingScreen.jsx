@@ -6,8 +6,10 @@ import {
   fetchShippingMethods, fetchShippingZones,
   updateShippingMethod,
 } from '../lib/adminApi'
+import { GripVertical } from 'lucide-react'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
+import { SortableList } from '../components/Sortable'
 import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
 import { showConfirm } from '../lib/confirm'
 import { formatCurrencyVnd } from '../lib/formatters'
@@ -18,7 +20,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 
 const ZONE_ORDER = ['MB', 'MT', 'MN']
 
-const EMPTY_METHOD_FORM = { title: '', cost: '0', freeShippingThreshold: '', enabled: true }
+const EMPTY_METHOD_FORM = { title: '', titleEn: '', cost: '0', freeShippingThreshold: '', enabled: true }
 
 function slugify(title) {
   return title
@@ -88,11 +90,16 @@ export function ShippingScreen({ canUpdate }) {
       const payload = {
         methodCode: editMethodId ? undefined : slugify(methodForm.title),
         title: methodForm.title.trim(),
+        titleEn: methodForm.titleEn.trim(),
 
         cost: costVal,
         minOrderAmount: 0,
         freeShippingThreshold: thresholdRaw !== '' ? Number(thresholdRaw) : null,
-        sortOrder: 0,
+        // New methods append at the end; editing preserves the method's current
+        // position instead of resetting it to 0 (drag-reorder owns sortOrder).
+        sortOrder: editMethodId
+          ? (methods.find((m) => m.id === editMethodId)?.sortOrder ?? 0)
+          : methods.length,
         enabled: methodForm.enabled,
       }
       if (editMethodId) {
@@ -124,6 +131,27 @@ export function ShippingScreen({ canUpdate }) {
   }
 
   const selectedZone = zones.find((z) => z.id === selectedZoneId)
+  const sortedMethods = [...methods].sort((a, b) => a.sortOrder - b.sortOrder)
+
+  // Persist a drag-reorder. No batch endpoint and no UNIQUE(zone, sort_order)
+  // constraint, so we PATCH each moved method sequentially (recoverable on a
+  // partial failure) and roll the list back if any call throws.
+  async function handleReorderMethods(next) {
+    const previous = methods
+    const withOrder = next.map((m, i) => ({ ...m, sortOrder: i }))
+    setMethods(withOrder)
+    setActionError('')
+    try {
+      for (const m of withOrder) {
+        const before = previous.find((p) => p.id === m.id)
+        if (before && before.sortOrder === m.sortOrder) continue
+        await updateShippingMethod(selectedZoneId, m.id, { sortOrder: m.sortOrder })
+      }
+    } catch (e) {
+      setMethods(previous)
+      setActionError(e.message || t('shipping.saveError'))
+    }
+  }
 
   return (
     <div>
@@ -183,6 +211,10 @@ export function ShippingScreen({ canUpdate }) {
                           <span>{t('shipping.formTitle')} *</span>
                           <Input required value={methodForm.title} onChange={(e) => setMethodForm((p) => ({ ...p, title: e.target.value }))} />
                         </label>
+                        <label className="form-field col-span-2">
+                          <span>{t('shipping.formTitleEn')}</span>
+                          <Input value={methodForm.titleEn} onChange={(e) => setMethodForm((p) => ({ ...p, titleEn: e.target.value }))} placeholder={t('shipping.formTitleEnHint')} />
+                        </label>
                                         <label className="form-field">
                           <span>{t('shipping.formCost')}</span>
                           <Input type="number" min="0" value={methodForm.cost} onChange={(e) => setMethodForm((p) => ({ ...p, cost: e.target.value }))} />
@@ -238,15 +270,37 @@ export function ShippingScreen({ canUpdate }) {
                         <table className="bb-table">
                           <thead>
                             <tr>
+                              {canUpdate && <th className="w-10" aria-hidden="true" />}
                               <th>{t('shipping.colTitle')}</th>
                               <th className="num">{t('shipping.colCost')}</th>
                               <th>{t('shipping.colStatus')}</th>
                               {canUpdate && <th />}
                             </tr>
                           </thead>
-                          <tbody>
-                            {[...methods].sort((a, b) => a.sortOrder - b.sortOrder).map((m) => (
-                              <tr key={m.id}>
+                          <SortableList
+                            as="tbody"
+                            items={sortedMethods}
+                            disabled={!canUpdate}
+                            onReorder={handleReorderMethods}
+                            renderItem={(m, sortable) => (
+                              <tr
+                                ref={sortable.setNodeRef}
+                                style={sortable.style}
+                                className={sortable.isDragging ? 'opacity-40' : undefined}
+                              >
+                                {canUpdate && (
+                                  <td>
+                                    <button
+                                      type="button"
+                                      {...sortable.handleProps}
+                                      className="bb-icon-btn cursor-grab touch-none"
+                                      title={t('shipping.dragToReorder', { defaultValue: 'Kéo để sắp xếp' })}
+                                      aria-label={t('shipping.dragToReorder', { defaultValue: 'Kéo để sắp xếp' })}
+                                    >
+                                      <GripVertical size={16} />
+                                    </button>
+                                  </td>
+                                )}
                                 <td className="font-semibold">{m.title}</td>
                                 <td className="num">{formatCurrencyVnd(m.cost)}</td>
                                 <td>
@@ -259,7 +313,7 @@ export function ShippingScreen({ canUpdate }) {
                                     <button
                                       type="button"
                                       className="bb-btn bb-btn-ghost bb-btn-sm"
-                                      onClick={() => { setEditMethodId(m.id); setMethodForm({ title: m.title, cost: String(m.cost), freeShippingThreshold: m.freeShippingThreshold != null ? String(m.freeShippingThreshold) : '', enabled: m.enabled }); setShowMethodForm(true) }}
+                                      onClick={() => { setEditMethodId(m.id); setMethodForm({ title: m.title, titleEn: m.titleEn || '', cost: String(m.cost), freeShippingThreshold: m.freeShippingThreshold != null ? String(m.freeShippingThreshold) : '', enabled: m.enabled }); setShowMethodForm(true) }}
                                     >
                                       {t('common.edit')}
                                     </button>
@@ -269,13 +323,13 @@ export function ShippingScreen({ canUpdate }) {
                                   </td>
                                 )}
                               </tr>
-                            ))}
-                          </tbody>
+                            )}
+                          />
                         </table>
                       </div>
                       </div>
                       <MobileCardList>
-                        {[...methods].sort((a, b) => a.sortOrder - b.sortOrder).map((m) => (
+                        {sortedMethods.map((m) => (
                           <MobileCard
                             key={m.id}
                             title={m.title}
@@ -292,7 +346,7 @@ export function ShippingScreen({ canUpdate }) {
                                 <button
                                   type="button"
                                   className="bb-btn bb-btn-ghost bb-btn-sm"
-                                  onClick={() => { setEditMethodId(m.id); setMethodForm({ title: m.title, cost: String(m.cost), freeShippingThreshold: m.freeShippingThreshold != null ? String(m.freeShippingThreshold) : '', enabled: m.enabled }); setShowMethodForm(true) }}
+                                  onClick={() => { setEditMethodId(m.id); setMethodForm({ title: m.title, titleEn: m.titleEn || '', cost: String(m.cost), freeShippingThreshold: m.freeShippingThreshold != null ? String(m.freeShippingThreshold) : '', enabled: m.enabled }); setShowMethodForm(true) }}
                                 >
                                   {t('common.edit')}
                                 </button>

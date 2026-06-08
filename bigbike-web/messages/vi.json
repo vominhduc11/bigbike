@@ -106,17 +106,6 @@
       "howToBuy": "Hướng dẫn mua hàng"
     }
   },
-  "Newsletter": {
-    "cooldown": "Vui lòng chờ một chút trước khi gửi lại.",
-    "emailRequired": "Vui lòng nhập email.",
-    "emailInvalid": "Email không hợp lệ.",
-    "submitFailed": "Đăng ký thất bại, vui lòng thử lại.",
-    "success": "Cảm ơn bạn đã đăng ký nhận tin từ BigBike!",
-    "placeholder": "Email của bạn...",
-    "ariaLabel": "Email đăng ký nhận tin",
-    "submitting": "Đang gửi...",
-    "submit": "Gửi"
-  },
   "Product": {
     "addedToCart": "Đã thêm vào giỏ",
     "addToCart": "Thêm vào giỏ",
@@ -560,6 +549,10 @@
       "summaryShippingSelectProvince": "Chọn tỉnh/thành để xem",
       "summaryShippingUnknown": "Tính khi đặt hàng",
       "summaryTotal": "Tổng cộng",
+      "shippingSection": "Phương thức vận chuyển",
+      "shippingFreeFrom": "Miễn phí từ {amount}",
+      "couponHintText": "Có mã giảm giá?",
+      "couponHintLinkText": "Thêm vào giỏ hàng để áp dụng.",
       "success": {
         "title": "Đặt hàng thành công",
         "orderNumber": "Mã đơn: #{orderNumber}",
@@ -827,7 +820,6 @@
       "fullNamePlaceholder": "Họ và tên",
       "emailLabel": "Email",
       "emailPlaceholder": "email@example.com",
-      "newsletter": "Đăng ký nhận tin",
       "changePassword": "Thay đổi mật khẩu",
       "changePasswordHint": "Xin vui lòng điền chính xác các thông tin để bảo vệ tài khoản Bigbike.",
       "currentPassword": "Mật khẩu hiện tại",
@@ -866,7 +858,22 @@
     "bankAmount": "Số tiền",
     "bankHotlineFallback": "Vui lòng liên hệ hotline <b>{hotline}</b> hoặc chờ email xác nhận để nhận thông tin tài khoản chuyển khoản. Nội dung chuyển khoản: <code>BIGBIKE {orderNumber}</code>.",
     "loadFailed": "Đơn đã được tạo, nhưng không thể tải chi tiết ngay lúc này.",
-    "continueShopping": "Tiếp tục mua hàng"
+    "continueShopping": "Tiếp tục mua hàng",
+    "receivedNotice": "Cảm ơn bạn. Đơn hàng của bạn đã được tiếp nhận.",
+    "orderNumberLabel": "Đơn hàng:",
+    "dateLabel": "Ngày đặt:",
+    "emailLabel": "Email:",
+    "totalLabel": "Tổng cộng:",
+    "paymentMethodLabel": "Phương thức thanh toán:",
+    "subtotalLabel": "Tạm tính:",
+    "discountLabel": "Giảm giá:",
+    "shippingLabel": "Phí vận chuyển:",
+    "feeLabel": "Phụ phí:",
+    "taxLabel": "Thuế:",
+    "orderDetailsTitle": "Chi tiết đơn hàng",
+    "productLabel": "Sản phẩm",
+    "billingAddressTitle": "Địa chỉ thanh toán",
+    "shippingAddressTitle": "Địa chỉ giao hàng"
   },
   "Cart": {
     "title": "Giỏ hàng",
@@ -939,7 +946,6 @@
     "shareToX": "Chia sẻ lên X",
     "relatedKicker": "Có thể bạn quan tâm",
     "relatedHeading": "Tin tức liên quan",
-    "relatedProductsHeading": "Sản phẩm sử dụng trong bài viết",
     "carouselPrev": "Cuộn trái",
     "carouselNext": "Cuộn phải",
     "articleInvalidTitle": "Bài viết không hợp lệ",

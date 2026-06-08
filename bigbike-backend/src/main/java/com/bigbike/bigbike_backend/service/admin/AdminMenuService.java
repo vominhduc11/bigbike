@@ -253,6 +253,7 @@ public class AdminMenuService {
         item.setMenu(menu);
         item.setParentId(req.parentId());
         item.setLabel(req.label().trim());
+        item.setLabelEn(normalizeOptional(req.labelEn()));
         item.setUrl(req.url());
         item.setTargetType(req.targetType());
         item.setTargetId(req.targetId());
@@ -296,6 +297,10 @@ public class AdminMenuService {
         }
         if (req.label() != null && !req.label().isBlank()) {
             item.setLabel(req.label().trim());
+        }
+        // Presence-flag: omit labelEn → unchanged; send blank → clears the English label.
+        if (req.labelEn() != null) {
+            item.setLabelEn(normalizeOptional(req.labelEn()));
         }
         if (req.url() != null) {
             validateMenuItemUrl(req.url());
@@ -426,7 +431,7 @@ public class AdminMenuService {
 
     // ── Public menu ───────────────────────────────────────────────────────────
 
-    public PublicMenuResponse getPublicMenuByLocation(String location) {
+    public PublicMenuResponse getPublicMenuByLocation(String location, String lang) {
         MenuEntity menu = menuRepo.findByLocation(location)
                 .orElseThrow(() -> new NotFoundException("Menu not found for location: " + location));
 
@@ -446,7 +451,7 @@ public class AdminMenuService {
                 .filter(i -> isAncestorChainActive(i, activeById))
                 .sorted(Comparator.comparingInt(MenuItemEntity::getSortOrder))
                 .map(i -> new PublicMenuItemResponse(
-                        i.getId(), i.getParentId(), i.getLabel(), i.getUrl(),
+                        i.getId(), i.getParentId(), pick(i.getLabel(), i.getLabelEn(), lang), i.getUrl(),
                         i.getSortOrder(), i.isOpenInNewTab(), i.getCssClass(),
                         resolveMenuIconUrl(i.getUrl())))
                 .toList();
@@ -587,10 +592,20 @@ public class AdminMenuService {
     private AdminMenuItemResponse toItemResponse(MenuItemEntity i) {
         return new AdminMenuItemResponse(
                 i.getId(), i.getMenu().getId(), i.getParentId(),
-                i.getLabel(), i.getUrl(), i.getTargetType(), i.getTargetId(),
+                i.getLabel(), i.getLabelEn(), i.getUrl(), i.getTargetType(), i.getTargetId(),
                 i.getSortOrder(), i.isOpenInNewTab(), i.getCssClass(),
                 i.getStatus(), i.getCreatedAt(), i.getUpdatedAt()
         );
+    }
+
+    /** EN-with-Vietnamese-fallback per PRODUCT_RULE_002: returns the English value only when present. */
+    private static String pick(String base, String en, String locale) {
+        return "en".equalsIgnoreCase(locale) && en != null && !en.isBlank() ? en : base;
+    }
+
+    /** Trim an optional text field; blank/null → null (so a cleared English label stores NULL). */
+    private static String normalizeOptional(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 
     // ── Audit helpers ─────────────────────────────────────────────────────────

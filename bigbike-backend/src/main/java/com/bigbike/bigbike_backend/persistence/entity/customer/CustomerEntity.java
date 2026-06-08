@@ -57,9 +57,6 @@ public class CustomerEntity {
     @Column(name = "dob")
     private LocalDate dob;
 
-    @Column(name = "newsletter_subscribed", nullable = false)
-    private boolean newsletterSubscribed = false;
-
     @Column(name = "last_login_at")
     private Instant lastLoginAt;
 
@@ -133,9 +130,6 @@ public class CustomerEntity {
 
     public LocalDate getDob() { return dob; }
     public void setDob(LocalDate dob) { this.dob = dob; }
-
-    public boolean isNewsletterSubscribed() { return newsletterSubscribed; }
-    public void setNewsletterSubscribed(boolean newsletterSubscribed) { this.newsletterSubscribed = newsletterSubscribed; }
 
     public Instant getLastLoginAt() { return lastLoginAt; }
     public void setLastLoginAt(Instant lastLoginAt) { this.lastLoginAt = lastLoginAt; }

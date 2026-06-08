@@ -26,6 +26,10 @@ public class AttributeEntity {
     @Column(nullable = false)
     private String name;
 
+    /** Optional English display name (V164). Null/blank → reads fall back to {@link #name}. */
+    @Column(name = "name_en")
+    private String nameEn;
+
     @Column(nullable = false)
     private String kind;
 

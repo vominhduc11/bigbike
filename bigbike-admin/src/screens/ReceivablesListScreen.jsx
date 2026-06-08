@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FilterSearchInput } from '../components/FilterSearchInput'
+import { PageSizeSelect } from '../components/PageSizeSelect'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { AlertTriangle, Clock, FileX, Wallet } from 'lucide-react'
 import {
@@ -150,6 +151,10 @@ export function ReceivablesListScreen({ navigate, canRecordPayment, canWriteOff 
           onChange={handleSearch}
           placeholder={t('receivables.filterSearchPlaceholder')}
           wrapperClassName="flex-1 min-w-[200px]"
+        />
+        <PageSizeSelect
+          value={urlQuery.pageSize}
+          onChange={(n) => setUrlQuery({ pageSize: n, page: 1 })}
         />
       </div>
 

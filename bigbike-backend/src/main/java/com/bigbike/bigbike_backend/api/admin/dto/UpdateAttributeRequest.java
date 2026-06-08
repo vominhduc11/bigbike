@@ -9,5 +9,6 @@ import jakarta.validation.constraints.Size;
  * their attribute via the code, so changing it would break those links.
  */
 public record UpdateAttributeRequest(
-        @NotBlank @Size(max = 255) String name
+        @NotBlank @Size(max = 255) String name,
+        @Size(max = 255) String nameEn
 ) {}

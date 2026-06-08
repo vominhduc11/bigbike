@@ -13,7 +13,7 @@ public record PublicHomeVideoResponse(
         String autoThumbnailUrl,
         ImageAsset thumbnail
 ) {
-    public static PublicHomeVideoResponse from(HomeVideo video) {
+    public static PublicHomeVideoResponse from(HomeVideo video, String lang) {
         String ytId = video.youtubeId();
         String embedUrl = ytId != null
                 ? "https://www.youtube-nocookie.com/embed/" + ytId + "?autoplay=1&rel=0"
@@ -24,12 +24,17 @@ public record PublicHomeVideoResponse(
         return new PublicHomeVideoResponse(
                 video.id(),
                 video.sortOrder(),
-                video.title(),
+                pick(video.title(), video.titleEn(), lang),
                 video.videoUrl(),
                 ytId,
                 embedUrl,
                 autoThumb,
                 video.thumbnail()
         );
+    }
+
+    /** EN-with-Vietnamese-fallback per PRODUCT_RULE_002: English only when present. */
+    private static String pick(String base, String en, String locale) {
+        return "en".equalsIgnoreCase(locale) && en != null && !en.isBlank() ? en : base;
     }
 }

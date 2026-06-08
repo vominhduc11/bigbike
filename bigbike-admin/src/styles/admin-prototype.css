@@ -246,14 +246,20 @@
 
 /* Breadcrumb */
 .bb-breadcrumb {
-  padding: 8px 24px;
   font-size: 12px;
   color: var(--bb-text-muted);
+  background: var(--bb-page);
+  border-bottom: 1px solid var(--bb-border-faint);
+}
+/* Inner column tracks --bb-content-max so the trail aligns with the page
+   content below it, while the strip + bottom divider stay full-width chrome. */
+.bb-breadcrumb-inner {
+  max-width: var(--bb-content-max);
+  margin-inline: auto;
+  padding: 8px 24px;
   display: flex;
   align-items: center;
   gap: 6px;
-  background: var(--bb-page);
-  border-bottom: 1px solid var(--bb-border-faint);
 }
 .bb-breadcrumb a {
   color: var(--bb-text-muted);
@@ -267,6 +273,11 @@
 .bb-page-content {
   padding: 20px 24px 64px;
   min-width: 0;
+  /* Cap + centre the content column so screens don't stretch edge-to-edge on
+     large / ultra-wide monitors (4xl). No effect below ~1750px viewport. */
+  width: 100%;
+  max-width: var(--bb-content-max);
+  margin-inline: auto;
 }
 
 /* ─── Page / screen header ──────────────────────────────────────────────────── */
@@ -344,7 +355,7 @@
   border-color: var(--bb-border-strong);
   color: var(--bb-text);
 }
-.bb-btn-secondary:hover:not(:disabled) { background: var(--bb-surface-hover); border-color: var(--bb-text-faint); }
+.bb-btn-secondary:hover:not(:disabled) { background: var(--bb-surface-hover); border-color: var(--bb-border); }
 .bb-btn-ghost {
   background: transparent;
   color: var(--bb-text-secondary);
@@ -715,7 +726,7 @@
   flex-wrap: wrap;
   gap: 12px;
   padding: 10px 14px;
-  background: var(--bb-text);
+  background: var(--bb-sidebar);
   color: #fff;
   border-radius: 8px;
   font-size: 13px;
@@ -1307,7 +1318,7 @@ dl.bb-info-grid dd { color: var(--bb-text); }
   align-items: center;
   gap: 6px;
   padding: 7px 12px;
-  background: var(--bb-text);
+  background: var(--bb-sidebar);
   color: #fff;
   border: none;
   border-radius: 6px;
@@ -1317,7 +1328,7 @@ dl.bb-info-grid dd { color: var(--bb-text); }
   box-shadow: var(--bb-sh-md);
   font-family: inherit;
 }
-.bb-focus-fab:hover { background: var(--bb-text-secondary); }
+.bb-focus-fab:hover { background: var(--bb-sidebar-hover); }
 .bb-focus-fab kbd {
   font-size: 10px;
   background: rgba(255,255,255,0.18);

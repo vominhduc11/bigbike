@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FilterSelect } from '../components/FilterSelect'
+import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { useQuery } from '@tanstack/react-query'
 import { Crown, Download, UserCheck, UserPlus, Users } from 'lucide-react'
@@ -23,7 +24,7 @@ const STATUS_BADGE = {
 }
 const AVATAR_VARIANTS = ['', 'b', 'c', 'd', 'e', 'f']
 
-const INITIAL_QUERY = { search: '', status: 'ALL', page: 1, pageSize: 10 }
+const INITIAL_QUERY = { search: '', status: 'ALL', page: 1, pageSize: 20 }
 
 function CustomerStatusBadge({ value }) {
   const { t } = useTranslation()
@@ -150,6 +151,10 @@ export function CustomerListScreen({ navigate }) {
             { value: 'DISABLED', label: t('status.customer.DISABLED') },
             { value: 'BLOCKED', label: t('status.customer.BLOCKED') },
           ]}
+        />
+        <PageSizeSelect
+          value={query.pageSize}
+          onChange={(n) => updateQuery({ pageSize: n }, { resetPage: true })}
         />
       </div>
 

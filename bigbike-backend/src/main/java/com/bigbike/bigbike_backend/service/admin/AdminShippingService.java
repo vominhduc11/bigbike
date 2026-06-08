@@ -129,6 +129,7 @@ public class AdminShippingService {
         entity.setZone(zone);
         entity.setMethodCode(req.methodCode().trim());
         entity.setTitle(req.title().trim());
+        entity.setTitleEn(req.titleEn() != null && !req.titleEn().isBlank() ? req.titleEn().trim() : null);
         entity.setDescription(req.description() != null ? req.description().trim() : null);
         entity.setCost(req.cost() != null ? req.cost() : BigDecimal.ZERO);
         entity.setMinOrderAmount(req.minOrderAmount() != null ? req.minOrderAmount() : BigDecimal.ZERO);
@@ -175,6 +176,11 @@ public class AdminShippingService {
             // null or empty clears description
             String desc = body.get("description").isNull() ? null : body.get("description").asText().trim();
             entity.setDescription(desc != null && desc.isEmpty() ? null : desc);
+        }
+        if (body.has("titleEn")) {
+            // null or blank clears the English title (falls back to Vietnamese at checkout)
+            String te = body.get("titleEn").isNull() ? null : body.get("titleEn").asText().trim();
+            entity.setTitleEn(te != null && te.isEmpty() ? null : te);
         }
         if (body.has("cost")) {
             if (body.get("cost").isNull()) {
@@ -251,6 +257,7 @@ public class AdminShippingService {
         map.put("zoneId", m.getZone().getId().toString());
         map.put("methodCode", m.getMethodCode());
         map.put("title", m.getTitle());
+        map.put("titleEn", m.getTitleEn() != null ? m.getTitleEn() : "");
         map.put("description", m.getDescription() != null ? m.getDescription() : "");
         map.put("cost", m.getCost() != null ? m.getCost() : BigDecimal.ZERO);
         map.put("minOrderAmount", m.getMinOrderAmount() != null ? m.getMinOrderAmount() : BigDecimal.ZERO);

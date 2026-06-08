@@ -1,7 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { CartIcon } from "@/components/cart/CartIcon";
+import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 import { HeaderNavItem, type HeaderNavNode } from "@/components/layout/HeaderNavItem";
 import { HeaderUserMenu } from "@/components/layout/HeaderUserMenu";
 import { MobileHeaderMenu } from "@/components/layout/MobileHeaderMenu";
@@ -16,10 +17,11 @@ const DEFAULT_SITE_NAME = "BigBike";
 const PRIMARY_MENU_LOCATION = "primary";
 
 export async function SiteHeader() {
+  const locale = await getLocale();
   const [menuResult, settingsResult, categoriesResult, t] = await Promise.all([
-    getPublicMenu(PRIMARY_MENU_LOCATION),
-    listPublicSettings(),
-    listCategories({ size: 8, sort: "sortOrder:asc" }),
+    getPublicMenu(PRIMARY_MENU_LOCATION, locale),
+    listPublicSettings(locale),
+    listCategories({ size: 8, sort: "sortOrder:asc", lang: locale }),
     getTranslations("Header"),
   ]);
 
@@ -145,6 +147,7 @@ export async function SiteHeader() {
             </nav>
 
             <div className="inline-flex items-stretch shrink-0 pl-[clamp(6px,0.8vw,14px)] max-md:items-center max-md:pl-0 max-md:w-full max-md:min-h-[var(--bb-header-height)]">
+              <LanguageSwitcher />
               <SearchToggle popularCategories={categoriesResult.data?.map(c => ({ name: c.name, slug: c.slug })) ?? []} />
               <CartIcon />
               <HeaderUserMenu />

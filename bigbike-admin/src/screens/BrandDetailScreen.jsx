@@ -16,7 +16,6 @@ import { StatePanel } from '../components/StatePanel'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { RichTextEditor } from '../components/RichTextEditor'
-import { Tabs } from '../components/layout'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -114,7 +113,8 @@ function toPayload(form) {
 }
 
 export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpdate }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const isEnLang = i18n.language === 'en'
   const queryClient = useQueryClient()
   const [form, setForm] = useState(buildEmptyForm)
   const [initialSnapshot, setInitialSnapshot] = useState(JSON.stringify(buildEmptyForm()))
@@ -141,9 +141,6 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
     warning: '',
     error: fetchError?.message ?? '',
   }
-
-  const [contentLang, setContentLang] = useState('vi')
-  const isEnLang = contentLang === 'en'
 
   function updateTranslation(field, value) {
     setForm((previous) => ({
@@ -332,12 +329,6 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
         <div className="bb-card mb-4">
           <div className="bb-card-header">
             <h2>{t('brands.detail.sectionBasic')}</h2>
-            <Tabs
-              ariaLabel={t('brands.detail.contentLanguageAriaLabel', { defaultValue: 'Ngôn ngữ nội dung' })}
-              value={contentLang}
-              onChange={setContentLang}
-              items={[{ key: 'vi', label: 'VI' }, { key: 'en', label: 'EN' }]}
-            />
           </div>
           <div className="bb-card-body">
             <div className="bb-grid-2">
@@ -370,7 +361,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
               <div className="form-field" style={{ gridColumn: '1 / -1' }}>
                 <span>{t('brands.detail.description')}</span>
                 <RichTextEditor
-                  key={`description-${contentLang}`}
+                  key={`description-${i18n.language}`}
                   value={isEnLang ? (form.translations?.en?.description ?? '') : form.description}
                   onChange={(html) => isEnLang ? updateTranslation('description', html) : updateField('description', html)}
                   placeholder={t('brands.detail.descriptionPlaceholder', { defaultValue: 'Nhập mô tả thương hiệu...' })}

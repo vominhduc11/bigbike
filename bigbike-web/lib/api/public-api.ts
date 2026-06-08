@@ -160,25 +160,6 @@ async function loadList<T>(
   }
 }
 
-async function loadData<T>(
-  endpoint: string,
-  revalidate = 3600,
-  tags?: string[],
-): Promise<DataResult<T>> {
-  try {
-    const response = await requestJson<ApiDataResponse<T>>(endpoint, undefined, revalidate, tags);
-    return {
-      data: response.data,
-      error: null,
-    };
-  } catch (error) {
-    return {
-      data: null,
-      error: toClientError(error),
-    };
-  }
-}
-
 async function loadDataWithQuery<T>(
   endpoint: string,
   query: RequestQuery,
@@ -340,6 +321,8 @@ export function getBrandBySlug(slug: string, lang?: string): Promise<DataResult<
 export type CatalogFacetsQuery = {
   category?: string;
   q?: string;
+  /** Content language: "vi" (default) or "en". Facet labels fall back to Vietnamese. */
+  lang?: string;
 };
 
 /** Product counts per filter value for the catalog sidebar. See /api/v1/catalog/facets. */
@@ -349,9 +332,10 @@ export function getCatalogFacets(query: CatalogFacetsQuery): Promise<DataResult<
     {
       category: query.category,
       q: query.q,
+      lang: query.lang,
     },
     3600,
-    ["products", "categories", "brands"],
+    ["products", "categories", "brands", `lang:${query.lang ?? "vi"}`],
   );
 }
 
@@ -398,12 +382,12 @@ export function getPageBySlug(slug: string, lang?: string): Promise<DataResult<P
   return loadDataWithQuery(`/api/v1/pages/${slug}`, { lang }, 3600, ["pages", `page:${slug}`, `lang:${lang ?? "vi"}`]);
 }
 
-export function getPublicMenu(location: string): Promise<DataResult<PublicMenu>> {
-  return loadData(`/api/v1/menus/${location}`, 3600, ["menus"]);
+export function getPublicMenu(location: string, lang?: string): Promise<DataResult<PublicMenu>> {
+  return loadDataWithQuery(`/api/v1/menus/${location}`, { lang }, 3600, ["menus", `lang:${lang ?? "vi"}`]);
 }
 
-export function listPublicSettings(): Promise<DataResult<PublicSiteSetting[]>> {
-  return loadData("/api/v1/settings/public", 3600, ["settings"]);
+export function listPublicSettings(lang?: string): Promise<DataResult<PublicSiteSetting[]>> {
+  return loadDataWithQuery("/api/v1/settings/public", { lang }, 3600, ["settings", `lang:${lang ?? "vi"}`]);
 }
 
 /** Active sliders for a given placement location (e.g. "home", "category_sidebar"). */
@@ -415,12 +399,12 @@ export function listHomeSliders(): Promise<DataResult<HomeSlider[]>> {
   return listSliders("home");
 }
 
-export function listHomeVideos(): Promise<DataResult<HomeVideo[]>> {
-  return loadData<HomeVideo[]>("/api/v1/home-videos", 300, ["home-videos"]);
+export function listHomeVideos(lang?: string): Promise<DataResult<HomeVideo[]>> {
+  return loadDataWithQuery<HomeVideo[]>("/api/v1/home-videos", { lang }, 300, ["home-videos", `lang:${lang ?? "vi"}`]);
 }
 
-export function listHomeHighlights(): Promise<DataResult<HomeHighlightItem[]>> {
-  return loadData<HomeHighlightItem[]>("/api/v1/home/category-highlights", 300, ["home-highlights"]);
+export function listHomeHighlights(lang?: string): Promise<DataResult<HomeHighlightItem[]>> {
+  return loadDataWithQuery<HomeHighlightItem[]>("/api/v1/home/category-highlights", { lang }, 300, ["home-highlights", `lang:${lang ?? "vi"}`]);
 }
 
 export function getOrderLookup(orderNumber: string, orderKey: string): Promise<DataResult<OrderDetail>> {

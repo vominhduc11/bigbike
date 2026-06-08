@@ -106,17 +106,6 @@
       "howToBuy": "How to buy"
     }
   },
-  "Newsletter": {
-    "cooldown": "Please wait a moment before submitting again.",
-    "emailRequired": "Please enter your email.",
-    "emailInvalid": "Invalid email address.",
-    "submitFailed": "Subscription failed. Please try again.",
-    "success": "Thanks for subscribing to BigBike updates!",
-    "placeholder": "Your email...",
-    "ariaLabel": "Newsletter signup email",
-    "submitting": "Sending...",
-    "submit": "Send"
-  },
   "Product": {
     "addedToCart": "Added to cart",
     "addToCart": "Add to cart",
@@ -560,6 +549,10 @@
       "summaryShippingSelectProvince": "Select province to view",
       "summaryShippingUnknown": "Calculated at checkout",
       "summaryTotal": "Total",
+      "shippingSection": "Shipping Method",
+      "shippingFreeFrom": "Free from {amount}",
+      "couponHintText": "Have a discount code?",
+      "couponHintLinkText": "Add to cart to apply it.",
       "success": {
         "title": "Order placed successfully",
         "orderNumber": "Order: #{orderNumber}",
@@ -827,7 +820,6 @@
       "fullNamePlaceholder": "Full name",
       "emailLabel": "Email",
       "emailPlaceholder": "email@example.com",
-      "newsletter": "Subscribe to newsletter",
       "changePassword": "Change password",
       "changePasswordHint": "Please fill in the details correctly to keep your BigBike account secure.",
       "currentPassword": "Current password",
@@ -866,7 +858,22 @@
     "bankAmount": "Amount",
     "bankHotlineFallback": "Please call our hotline <b>{hotline}</b> or wait for the confirmation email to receive the bank details. Transfer description: <code>BIGBIKE {orderNumber}</code>.",
     "loadFailed": "Your order was created, but we couldn't load its details right now.",
-    "continueShopping": "Continue shopping"
+    "continueShopping": "Continue shopping",
+    "receivedNotice": "Thank you. Your order has been received.",
+    "orderNumberLabel": "Order:",
+    "dateLabel": "Date:",
+    "emailLabel": "Email:",
+    "totalLabel": "Total:",
+    "paymentMethodLabel": "Payment method:",
+    "subtotalLabel": "Subtotal:",
+    "discountLabel": "Discount:",
+    "shippingLabel": "Shipping:",
+    "feeLabel": "Surcharge:",
+    "taxLabel": "Tax:",
+    "orderDetailsTitle": "Order details",
+    "productLabel": "Product",
+    "billingAddressTitle": "Billing address",
+    "shippingAddressTitle": "Shipping address"
   },
   "Cart": {
     "title": "Cart",
@@ -939,7 +946,6 @@
     "shareToX": "Share on X",
     "relatedKicker": "You may also like",
     "relatedHeading": "Related articles",
-    "relatedProductsHeading": "Products used in this article",
     "carouselPrev": "Scroll left",
     "carouselNext": "Scroll right",
     "articleInvalidTitle": "Invalid article",

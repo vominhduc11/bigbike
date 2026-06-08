@@ -2,14 +2,13 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { AlertCircle, Info, Loader2, Lock, Search, Trash2, Users, X } from 'lucide-react'
+import { AlertCircle, Check, Info, Loader2, Lock, Save, Search, Trash2, Users, X } from 'lucide-react'
 import {
   createContent,
   deleteContent,
-  fetchContentAuthors,
   fetchContentCategories,
   fetchContentDetail,
-  fetchProducts,
+
   mapValidationErrors,
   updateContent,
 } from '../lib/adminApi'
@@ -19,7 +18,6 @@ import { createContentSchema, zodErrors } from '../lib/schemas'
 import { RichTextEditor } from '../components/RichTextEditor'
 import { BlockEditor } from '../components/BlockEditor'
 import { ImageUrlInput } from '../components/ImageUrlInput'
-import { ProductPickerCombobox } from '../components/ProductPickerCombobox'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { StatePanel } from '../components/StatePanel'
 import { Screen, ScreenHeader, StickyActionBar, Tabs } from '../components/layout'
@@ -29,6 +27,16 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { cn, generateId } from '@/lib/utils'
+
+function findOptionById(items, id) {
+  if (!id) return null
+  return (items || []).find((item) => item?.id === id) || null
+}
+
+function prependSelectedOption(items, selected) {
+  if (!selected?.id || findOptionById(items, selected.id)) return items
+  return [selected, ...items]
+}
 
 function normalizeContentType(value) {
   return String(value || '').toUpperCase() === 'PAGE' ? 'PAGE' : 'ARTICLE'
@@ -41,10 +49,10 @@ function mutationPath(contentType) {
 // Validation-error field prefixes per section key — single source of truth
 // for derived `sectionErrors` and tab-error counts.
 const SECTION_FIELD_PREFIXES = {
-  basic:   ['title', 'slug', 'pageType', 'categoryId', 'authorId', 'excerpt'],
+  basic:   ['title', 'slug', 'pageType', 'categoryId', 'excerpt'],
   body:    ['body', 'bodyBlocks'],
-  media:   ['coverImageUrl', 'productImageUrl', 'heroImage'],
-  seo:     ['seoTitle', 'seoDescription', 'seoCanonicalUrl'],
+  media:   ['coverImageUrl', 'heroImage'],
+  seo:     ['seoTitle', 'seoDescription', 'seoCanonicalUrl', 'seoOgImageUrl'],
   publish: ['publishStatus'],
 }
 
@@ -142,11 +150,18 @@ function SectionCard({ title, badge, required, children }) {
 }
 
 // Field shell — pass `full` to span both grid columns.
-function Field({ label, hint, error, full, children }) {
+function Field({ label, hint, error, count, countWarn, full, children }) {
   return (
     <div className={cn('flex flex-col gap-1.5', full && 'md:col-span-2')}>
-      {label && (
-        <label className="text-sm font-medium text-foreground/80">{label}</label>
+      {(label || count != null) && (
+        <div className="flex items-center justify-between">
+          {label && <label className="text-sm font-medium text-foreground/80">{label}</label>}
+          {count != null && (
+            <span className={cn('text-xs tabular-nums text-muted-foreground', countWarn && 'text-[var(--admin-color-status-warning-text)] font-semibold')}>
+              {count}
+            </span>
+          )}
+        </div>
       )}
       {children}
       {error
@@ -166,20 +181,16 @@ function buildEmptyForm(contentType) {
     body: '',
     publishStatus: 'DRAFT',
     pageType: 'CUSTOM',
-    authorId: '',
     categoryId: '',
     parentId: '',
     coverImageUrl: '',
     coverImageAlt: '',
-    productImageUrl: '',
-    productImageAlt: '',
-    tags: '',
     bodyBlocks: null,
-    relatedProductIds: [],
-    relatedProductChips: [],
     seoTitle: '',
     seoDescription: '',
     seoCanonicalUrl: '',
+    seoOgImageUrl: '',
+    seoOgImageAlt: '',
     heroImageUrl: '',
     heroImageAlt: '',
     heroTitle: '',
@@ -203,28 +214,18 @@ function buildFormFromItem(contentType, item) {
     body: item.body || '',
     publishStatus: item.publishStatus === 'UNKNOWN' ? 'DRAFT' : item.publishStatus,
     pageType: item.pageType || fallback.pageType,
-    authorId: item.authorId || '',
     categoryId: item.categoryId || '',
     parentId: item.parentId || '',
     coverImageUrl: item.coverImage?.url || '',
     coverImageAlt: item.coverImage?.alt || '',
-    productImageUrl: item.productImage?.url || '',
-    productImageAlt: item.productImage?.alt || '',
     bodyBlocks: Array.isArray(item.bodyBlocks)
       ? item.bodyBlocks.map((b) => (b._key ? b : { ...b, _key: generateId() }))
       : null,
-    tags: Array.isArray(item.tags) ? item.tags.join(', ') : '',
-    relatedProductIds: Array.isArray(item.relatedProducts)
-      ? item.relatedProducts.map((p) => p.id).filter(Boolean)
-      : [],
-    relatedProductChips: Array.isArray(item.relatedProducts)
-      ? item.relatedProducts
-          .filter((p) => p && p.id)
-          .map((p) => ({ id: p.id, name: p.name || p.id, slug: p.slug || '', imageUrl: p.imageUrl || '' }))
-      : [],
     seoTitle: item.seo?.title || '',
     seoDescription: item.seo?.description || '',
     seoCanonicalUrl: item.seo?.canonicalUrl || '',
+    seoOgImageUrl: item.seo?.ogImage?.url || '',
+    seoOgImageAlt: item.seo?.ogImage?.alt || '',
     heroImageUrl: item.heroImage?.url || '',
     heroImageAlt: item.heroImage?.alt || '',
     heroTitle: item.heroTitle || '',
@@ -246,11 +247,33 @@ function buildFormFromItem(contentType, item) {
   }
 }
 
-function normalizeTagsInput(rawValue) {
-  return String(rawValue || '')
-    .split(',')
-    .map((tag) => tag.trim())
-    .filter(Boolean)
+const AUTOSAVE_TTL_MS = 60 * 60 * 1000
+
+function getAutosaveKey(contentType, contentId, isCreate) {
+  return `content-autosave:${contentType.toLowerCase()}:${isCreate ? 'new' : contentId}`
+}
+
+function saveFormToStorage(key, form) {
+  try {
+    localStorage.setItem(key, JSON.stringify({ form, ts: Date.now() }))
+  } catch { /* quota */ }
+}
+
+function loadFormFromStorage(key) {
+  try {
+    const raw = localStorage.getItem(key)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (!parsed?.ts || Date.now() - parsed.ts > AUTOSAVE_TTL_MS) {
+      localStorage.removeItem(key)
+      return null
+    }
+    return parsed
+  } catch { return null }
+}
+
+function clearFormFromStorage(key) {
+  try { localStorage.removeItem(key) } catch { /* ignore */ }
 }
 
 // P1-001: Always emit fields that can be cleared so backend can distinguish
@@ -274,20 +297,6 @@ function toPayload(form, isCreate) {
     payload.coverImage = form.coverImageUrl.trim()
       ? { url: form.coverImageUrl.trim(), alt: form.coverImageAlt.trim() || undefined }
       : { url: '' }
-
-    // Always send productImage — empty url explicitly clears it
-    payload.productImage = form.productImageUrl.trim()
-      ? { url: form.productImageUrl.trim(), alt: form.productImageAlt.trim() || undefined }
-      : { url: '' }
-
-    // Always send tags — empty array explicitly clears all tags
-    payload.tags = normalizeTagsInput(form.tags)
-
-    // Always send productIds — empty array explicitly clears all linked products
-    payload.productIds = Array.isArray(form.relatedProductIds) ? form.relatedProductIds : []
-
-    // Always send authorId — empty string clears the author
-    payload.authorId = form.authorId || ''
 
     // Always send categoryId — empty string clears the category
     payload.categoryId = form.categoryId || ''
@@ -315,6 +324,9 @@ function toPayload(form, isCreate) {
     title: form.seoTitle.trim() || null,
     description: form.seoDescription.trim() || null,
     canonicalUrl: form.seoCanonicalUrl.trim() || null,
+    ogImage: form.seoOgImageUrl.trim()
+      ? { url: form.seoOgImageUrl.trim(), alt: form.seoOgImageAlt.trim() || undefined }
+      : null,
   }
 
   payload.translations = {
@@ -334,7 +346,7 @@ function toPayload(form, isCreate) {
 }
 
 export function ContentDetailScreen({ contentType, contentId, isCreate = false, navigate, canUpdate }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const queryClient = useQueryClient()
   const normalizedType = normalizeContentType(contentType)
   const [form, setForm] = useState(() => buildEmptyForm(normalizedType))
@@ -344,6 +356,9 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
   const [validationErrors, setValidationErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  const autosaveKey = getAutosaveKey(normalizedType, contentId, isCreate)
+  const [draftRecovery, setDraftRecovery] = useState(null)
+
   const { data: fetchResult, isLoading, isError, error: fetchError } = useQuery({
     queryKey: ['content', normalizedType, contentId],
     queryFn: () => fetchContentDetail(normalizedType, contentId),
@@ -351,33 +366,21 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
   })
 
   // P1-002: Fetch reference data for dropdowns
-  const { data: authors = [] } = useQuery({
-    queryKey: ['content-reference', 'authors'],
-    queryFn: fetchContentAuthors,
-    staleTime: 5 * 60 * 1000,
-  })
-
   const { data: categories = [] } = useQuery({
     queryKey: ['content-reference', 'categories'],
     queryFn: fetchContentCategories,
     staleTime: 5 * 60 * 1000,
   })
 
-  // Product picker for the "Sản phẩm liên quan" field (articles only).
-  const [productSearch, setProductSearch] = useState('')
-  const [productSearchDebounced, setProductSearchDebounced] = useState('')
-  useEffect(() => {
-    const handle = setTimeout(() => setProductSearchDebounced(productSearch.trim()), 300)
-    return () => clearTimeout(handle)
-  }, [productSearch])
-
-  const { data: productSearchResult, isFetching: isSearchingProducts } = useQuery({
-    queryKey: ['content-product-search', productSearchDebounced],
-    queryFn: () => fetchProducts({ q: productSearchDebounced, pageSize: 8 }),
-    enabled: normalizedType === 'ARTICLE' && productSearchDebounced.length >= 1,
-    staleTime: 60 * 1000,
-  })
-  const productSearchItems = productSearchResult?.items ?? []
+  const loadedItem = fetchResult?.item ?? null
+  const selectedCategoryRef = findOptionById(
+    [loadedItem?.category, ...(Array.isArray(loadedItem?.categories) ? loadedItem.categories : [])].filter(Boolean),
+    form.categoryId,
+  )
+  const categoryOptions = prependSelectedOption(categories, selectedCategoryRef)
+  const selectedCategoryLabel =
+    findOptionById(categoryOptions, form.categoryId)?.name ||
+    (form.categoryId ? form.categoryId : undefined)
 
   useEffect(() => {
     if (!fetchResult) return
@@ -385,7 +388,13 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setForm(nextForm)
     setInitialSnapshot(JSON.stringify(nextForm))
-  }, [fetchResult, normalizedType])
+    if (!isCreate && fetchResult.item?.updatedAt) {
+      const draft = loadFormFromStorage(autosaveKey)
+      if (draft?.form && draft.ts > new Date(fetchResult.item.updatedAt).getTime()) {
+        setDraftRecovery(draft)
+      }
+    }
+  }, [autosaveKey, fetchResult, isCreate, normalizedType])
 
   const state = {
     status: isCreate ? 'success' : isLoading ? 'loading' : isError ? 'error' : 'success',
@@ -405,6 +414,18 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
     return () => window.removeEventListener('beforeunload', handler)
   }, [isDirty])
 
+  useEffect(() => {
+    if (!isCreate) return
+    const draft = loadFormFromStorage(autosaveKey)
+    if (draft?.form) setDraftRecovery(draft)
+  }, [autosaveKey, isCreate])
+
+  useEffect(() => {
+    if (!isDirty) return
+    const timer = setTimeout(() => saveFormToStorage(autosaveKey, form), 10_000)
+    return () => clearTimeout(timer)
+  }, [form, isDirty, autosaveKey])
+
   const saveMutation = useMutation({
     mutationFn: (payload) => isCreate
       ? createContent(normalizedType, payload)
@@ -414,6 +435,8 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
       const nextForm = buildFormFromItem(normalizedType, savedItem)
       setForm(nextForm)
       setInitialSnapshot(JSON.stringify(nextForm))
+      clearFormFromStorage(autosaveKey)
+      setDraftRecovery(null)
       queryClient.invalidateQueries({ queryKey: ['content'] })
       if (!isCreate) queryClient.setQueryData(['content', normalizedType, contentId], response)
       const successKey = isCreate
@@ -455,36 +478,6 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
     })
   }
 
-  function addRelatedProduct(product) {
-    if (!product?.id) return
-    setForm((previous) => {
-      if (previous.relatedProductIds.includes(product.id)) return previous
-      return {
-        ...previous,
-        relatedProductIds: [...previous.relatedProductIds, product.id],
-        relatedProductChips: [
-          ...previous.relatedProductChips,
-          {
-            id: product.id,
-            name: product.name || product.id,
-            slug: product.slug || '',
-            imageUrl: product.image?.url || product.imageUrl || '',
-          },
-        ],
-      }
-    })
-    setProductSearch('')
-    setProductSearchDebounced('')
-  }
-
-  function removeRelatedProduct(productId) {
-    setForm((previous) => ({
-      ...previous,
-      relatedProductIds: previous.relatedProductIds.filter((id) => id !== productId),
-      relatedProductChips: previous.relatedProductChips.filter((chip) => chip.id !== productId),
-    }))
-  }
-
   function handleSubmit(event) {
     if (event && typeof event.preventDefault === 'function') event.preventDefault()
     if (!canUpdate) return
@@ -508,9 +501,11 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
   const [activeTab, setActiveTab] = useState('content')
   const [savedFlash, setSavedFlash] = useState(false)
 
-  // ── Content language toggle (VI / EN) ─────────────────────────────────────
-  const [contentLang, setContentLang] = useState('vi')
-  const isEnLang = contentLang === 'en'
+  const isEnLang = i18n.language === 'en'
+
+  function langValue(field) {
+    return isEnLang ? (form.translations?.en?.[field] ?? '') : (form[field] ?? '')
+  }
 
   function updateTranslation(field, value) {
     setForm((previous) => ({
@@ -562,6 +557,17 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
   const tabCounts = Object.fromEntries(
     Object.entries(TAB_SECTIONS).map(([tab, keys]) => [tab, keys.filter((k) => sectionErrors[k]).length]),
   )
+
+  const seoTitleVal = langValue('seoTitle')
+  const seoDescVal = langValue('seoDescription')
+  const seoChecks = [
+    { ok: seoTitleVal.length >= 30 && seoTitleVal.length <= 60, hint: seoTitleVal.length, label: t('content.detail.seoCheckTitle', { defaultValue: 'SEO title 30–60 ký tự' }) },
+    { ok: seoDescVal.length >= 140 && seoDescVal.length <= 160, hint: seoDescVal.length, label: t('content.detail.seoCheckDesc', { defaultValue: 'SEO description 140–160 ký tự' }) },
+    { ok: !!form.slug && /^[a-z0-9-]+$/.test(form.slug), label: t('content.detail.seoCheckSlug', { defaultValue: 'Slug chữ thường, không dấu, dùng "-"' }) },
+    ...(isArticle ? [{ ok: !!form.coverImageUrl?.trim() && !!form.coverImageAlt?.trim(), label: t('content.detail.seoCheckImageAlt', { defaultValue: 'Ảnh bìa có alt text' }) }] : []),
+    { ok: !!form.seoOgImageUrl?.trim(), label: t('content.detail.seoCheckOg', { defaultValue: 'OG image cho chia sẻ MXH' }) },
+  ]
+  const seoPassed = seoChecks.filter((c) => c.ok).length
 
   const saveDotState = isSubmitting ? 'saving' : savedFlash ? 'saved' : isDirty ? 'dirty' : 'saved'
   const saveDotClass =
@@ -657,6 +663,30 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
           </div>
         )}
 
+        {draftRecovery && (
+          <div className="flex flex-wrap items-center gap-2 px-3 py-1.5 bg-[var(--admin-color-status-info-bg)] border border-[var(--admin-color-status-info-border)] text-[var(--admin-color-status-info-text)] text-xs">
+            <Save size={14} className="shrink-0" />
+            <span className="flex-1 truncate">
+              <strong>{t('products.detail.draftFoundShort', { defaultValue: 'Có bản nháp tạm' })}</strong>
+              {' · '}{formatDateTime(new Date(draftRecovery.ts).toISOString())}
+            </span>
+            <button
+              type="button"
+              className="text-xs font-semibold underline hover:no-underline"
+              onClick={() => { setForm(draftRecovery.form); setDraftRecovery(null) }}
+            >
+              {t('products.detail.draftRestore', { defaultValue: 'Khôi phục' })}
+            </button>
+            <button
+              type="button"
+              className="text-xs opacity-70 hover:opacity-100"
+              onClick={() => { clearFormFromStorage(autosaveKey); setDraftRecovery(null) }}
+            >
+              {t('products.detail.draftDiscard', { defaultValue: 'Bỏ qua' })}
+            </button>
+          </div>
+        )}
+
         {/* Assignment banner — always visible */}
         <ContentAssignmentBanner t={t} />
 
@@ -686,14 +716,6 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
               <SectionCard
                 title={t('content.detail.sectionCore')}
                 required
-                badge={
-                  <Tabs
-                    ariaLabel={t('content.detail.contentLanguageAriaLabel')}
-                    value={contentLang}
-                    onChange={setContentLang}
-                    items={[{ key: 'vi', label: 'VI' }, { key: 'en', label: 'EN' }]}
-                  />
-                }
               >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Field full label={t('content.detail.title')} error={!isEnLang ? validationErrors.title : undefined} hint={isEnLang ? t('content.detail.enFieldHint') : undefined}>
@@ -725,22 +747,18 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                   )}
 
                   {isArticle && (
-                    <Field label={t('content.detail.author', { defaultValue: 'Tác giả' })}>
-                      <Select value={form.authorId} onValueChange={(val) => updateField('authorId', val)} disabled={isReadOnly}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {authors.map((a) => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </Field>
-                  )}
-
-                  {isArticle && (
                     <Field label={t('content.detail.category', { defaultValue: 'Danh mục' })}>
-                      <Select value={form.categoryId} onValueChange={(val) => updateField('categoryId', val)} disabled={isReadOnly}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
+                      {/* Radix Select emits a spurious onValueChange('') while its async option
+                          list settles on load, which would wipe a pre-selected category. Ignore
+                          empty fires — this dropdown has no "clear" item, so '' is never a real pick. */}
+                      <Select value={form.categoryId} onValueChange={(val) => { if (val) updateField('categoryId', val) }} disabled={isReadOnly}>
+                        <SelectTrigger>
+                          <SelectValue placeholder={t('content.detail.categoryPlaceholder', { defaultValue: 'Chọn danh mục...' })}>
+                            {selectedCategoryLabel}
+                          </SelectValue>
+                        </SelectTrigger>
                         <SelectContent>
-                          {categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                          {categoryOptions.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </Field>
@@ -762,7 +780,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
               <SectionCard title={t('content.detail.sectionBody', { defaultValue: 'Nội dung chính' })} required>
                 {isEnLang ? (
                   <RichTextEditor
-                    key={`body-${contentLang}`}
+                    key={`body-${i18n.language}`}
                     value={form.translations?.en?.body ?? ''}
                     onChange={(html) => updateTranslation('body', html)}
                     placeholder={t('content.detail.bodyPlaceholder', { defaultValue: 'Nhập nội dung...' })}
@@ -771,7 +789,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                   />
                 ) : (
                   <BlockEditor
-                    key={`bodyBlocks-${contentLang}`}
+                    key={`bodyBlocks-${i18n.language}`}
                     value={form.bodyBlocks}
                     onChange={(blocks) => updateField('bodyBlocks', blocks)}
                     disabled={isReadOnly}
@@ -802,67 +820,6 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                       />
                     </Field>
 
-                    <Field full label={t('content.detail.productImageUrl')} hint={t('content.detail.productImageUrlHint')}>
-                      <ImageUrlInput
-                        value={form.productImageUrl}
-                        onChange={(url) => updateField('productImageUrl', url)}
-                        alt={form.productImageAlt}
-                        onAltChange={(v) => updateField('productImageAlt', v)}
-                        disabled={isReadOnly}
-                        error={validationErrors.productImageUrl}
-                        recommend={IMAGE_RECO.squareMedium}
-                      />
-                    </Field>
-
-                    <Field full label={t('content.detail.tags')}>
-                      <Input
-                        value={form.tags}
-                        onChange={(e) => updateField('tags', e.target.value)}
-                        disabled={isReadOnly}
-                        placeholder={t('content.detail.tagsPlaceholder')}
-                      />
-                    </Field>
-
-                    <Field full label={t('content.detail.relatedProducts')} hint={t('content.detail.relatedProductsHint')}>
-                      {form.relatedProductChips.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          {form.relatedProductChips.map((chip) => (
-                            <span key={chip.id} className="inline-flex items-center gap-1.5 px-2 py-1 border border-border bg-muted text-sm">
-                              {chip.imageUrl && (
-                                <img src={chip.imageUrl} alt="" className="w-5 h-5 object-cover" />
-                              )}
-                              <strong className="font-medium">{chip.name}</strong>
-                              {!isReadOnly && (
-                                <span
-                                  className="cursor-pointer text-muted-foreground hover:text-foreground leading-none text-base"
-                                  role="button"
-                                  tabIndex={0}
-                                  onClick={() => removeRelatedProduct(chip.id)}
-                                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') removeRelatedProduct(chip.id) }}
-                                  aria-label={t('content.detail.relatedProductsRemove', { name: chip.name })}
-                                >×</span>
-                              )}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-
-                      {!isReadOnly && (
-                        <ProductPickerCombobox
-                          search={productSearch}
-                          onSearchChange={setProductSearch}
-                          open={productSearchDebounced.length >= 1}
-                          loading={isSearchingProducts}
-                          items={productSearchItems}
-                          addedIds={form.relatedProductIds}
-                          onPick={addRelatedProduct}
-                          placeholder={t('content.detail.relatedProductsSearch')}
-                          loadingText={t('content.detail.relatedProductsSearching')}
-                          emptyText={t('content.detail.relatedProductsEmpty')}
-                          addedText={t('content.detail.relatedProductsAdded')}
-                        />
-                      )}
-                    </Field>
                   </div>
                 ) : (
                   <>
@@ -924,22 +881,40 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                 <div className="mb-4 p-3 border border-border bg-white">
                   <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                     <Search size={12} />
-                    <span>{t('products.detail.serpPreview', { defaultValue: 'Xem trước trên Google' })}</span>
+                    <span>{t('content.detail.serpPreview', { defaultValue: 'Xem trước trên Google' })}</span>
                   </div>
                   <div className="text-xs text-[#5f6368] break-all mb-1">
-                    https://bigbike.vn
-                    <span className="text-[#70757a]"> › {isArticle ? 'tin-tuc' : 'trang'} › {form.slug || 'duong-dan'}</span>
+                    {(() => {
+                      const canonical = form.seoCanonicalUrl?.trim()
+                      if (!canonical) {
+                        return <>https://bigbike.vn<span className="text-[#70757a]"> › {isArticle ? 'tin-tuc' : 'trang'} › {form.slug || 'duong-dan'}</span></>
+                      }
+                      try {
+                        const u = new URL(canonical)
+                        const parts = u.pathname.split('/').filter(Boolean)
+                        return <>{u.hostname}{parts.length > 0 && <span className="text-[#70757a]">{' › ' + parts.join(' › ')}</span>}</>
+                      } catch {
+                        return <>{canonical}</>
+                      }
+                    })()}
                   </div>
                   <div className="text-lg leading-snug text-[#1a0dab] break-words mb-1">
-                    {(form.seoTitle || form.title || t('products.detail.serpTitleFallback', { defaultValue: 'Tiêu đề trên Google' })).slice(0, 60)}
+                    {(langValue('seoTitle') || form.title || t('content.detail.serpTitleFallback', { defaultValue: 'Tiêu đề trên Google' })).slice(0, 60)}
                   </div>
                   <div className="text-sm leading-relaxed text-[#4d5156] break-words">
-                    {form.seoDescription || form.excerpt || t('products.detail.serpDescFallback', { defaultValue: 'Mô tả ngắn sẽ hiển thị ở đây.' })}
+                    {langValue('seoDescription') || form.excerpt || t('content.detail.serpDescFallback', { defaultValue: 'Mô tả ngắn sẽ hiển thị ở đây.' })}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Field full label={t('content.detail.seoTitle', { defaultValue: 'Tiêu đề SEO' })} error={!isEnLang ? validationErrors.seoTitle : undefined} hint={isEnLang ? t('content.detail.enFieldHint') : undefined}>
+                  <Field
+                    full
+                    label={t('content.detail.seoTitle', { defaultValue: 'Tiêu đề SEO' })}
+                    count={`${langValue('seoTitle').length} / 255`}
+                    countWarn={langValue('seoTitle').length > 230}
+                    error={!isEnLang ? validationErrors.seoTitle : undefined}
+                    hint={isEnLang ? t('content.detail.enFieldHint') : undefined}
+                  >
                     <Input
                       value={isEnLang ? (form.translations?.en?.seoTitle ?? '') : form.seoTitle}
                       onChange={(e) => isEnLang ? updateTranslation('seoTitle', e.target.value) : updateField('seoTitle', e.target.value)}
@@ -948,12 +923,19 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                     />
                   </Field>
 
-                  <Field full label={t('content.detail.seoDescription', { defaultValue: 'Mô tả SEO' })} error={!isEnLang ? validationErrors.seoDescription : undefined} hint={isEnLang ? t('content.detail.enFieldHint') : undefined}>
+                  <Field
+                    full
+                    label={t('content.detail.seoDescription', { defaultValue: 'Mô tả SEO' })}
+                    count={`${langValue('seoDescription').length} / 5000`}
+                    countWarn={langValue('seoDescription').length > 4500}
+                    error={!isEnLang ? validationErrors.seoDescription : undefined}
+                    hint={isEnLang ? t('content.detail.enFieldHint') : undefined}
+                  >
                     <Textarea
                       value={isEnLang ? (form.translations?.en?.seoDescription ?? '') : form.seoDescription}
                       onChange={(e) => isEnLang ? updateTranslation('seoDescription', e.target.value) : updateField('seoDescription', e.target.value)}
                       disabled={isReadOnly}
-                      rows={2}
+                      rows={3}
                       className={!isEnLang && validationErrors.seoDescription ? 'border-danger' : undefined}
                     />
                   </Field>
@@ -968,6 +950,55 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                     />
                   </Field>
 
+                  <Field
+                    full
+                    label={t('content.detail.seoOgImageUrl', { defaultValue: 'SEO OG image URL' })}
+                    hint={t('content.detail.seoOgImageUrlHint', { defaultValue: 'Ảnh chia sẻ MXH, 1200×630px.' })}
+                    error={validationErrors.seoOgImageUrl}
+                  >
+                    <ImageUrlInput
+                      value={form.seoOgImageUrl}
+                      onChange={(url) => updateField('seoOgImageUrl', url)}
+                      alt={form.seoOgImageAlt}
+                      onAltChange={(alt) => updateField('seoOgImageAlt', alt)}
+                      disabled={isReadOnly}
+                      error={validationErrors['seoOgImageUrl']}
+                      recommend={IMAGE_RECO.cover}
+                    />
+                  </Field>
+                </div>
+
+                {/* SEO checklist */}
+                <div className="mt-4 p-3 border border-border bg-muted/30">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="flex items-center gap-1.5 text-sm font-semibold">
+                      <Check size={14} />
+                      {t('content.detail.seoChecklist', { defaultValue: 'Checklist SEO' })}
+                    </span>
+                    <span className="font-mono font-bold text-sm text-[var(--admin-color-status-success-text)]">
+                      {seoPassed} / {seoChecks.length}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-y-1 gap-x-3">
+                    {seoChecks.map((c, i) => (
+                      <div key={i} className={cn('flex items-center gap-2 text-xs', c.ok ? 'text-foreground' : 'text-muted-foreground')}>
+                        <span className={cn(
+                          'w-4 h-4 flex items-center justify-center',
+                          c.ok
+                            ? 'bg-[var(--admin-color-status-success-bg)] text-[var(--admin-color-status-success-text)]'
+                            : 'bg-muted',
+                        )}>
+                          {c.ok ? <Check size={11} /> : null}
+                        </span>
+                        <span>
+                          {c.label}
+                          {c.hint != null && (
+                            <span className="ml-1 font-mono text-muted-foreground">({c.hint})</span>
+                          )}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </SectionCard>
 

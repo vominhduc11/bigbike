@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
-  AlertCircle, Check, ChevronDown, Info, Loader2, Lock, Pencil, Plus, Save, Search as PfSearch, Users, X,
+  AlertCircle, Check, ChevronDown, GripVertical, ImageOff, Info, Loader2, Lock, Pencil, Plus, Save, Search as PfSearch, Users, X,
 } from 'lucide-react'
 import {
   createAttributeValue,
@@ -33,6 +33,7 @@ import { MediaDimensionWarning } from '../components/MediaDimensionWarning'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { RichTextEditor } from '../components/RichTextEditor'
 import { BlockEditor } from '../components/BlockEditor'
+import { SortableList } from '../components/Sortable'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
@@ -256,7 +257,7 @@ function buildFormFromItem(item) {
       value: o.value || '',
       attributeValueId: o.attributeValueId || null,
     })),
-    gallery: (v.gallery || []).map((img) => ({ url: img.rawUrl || img.url || '' })),
+    gallery: (v.gallery || []).map((img) => ({ _key: generateId(), url: img.rawUrl || img.url || '' })),
   })))
 
   return {
@@ -291,7 +292,7 @@ function buildFormFromItem(item) {
     seoCanonicalUrl: item.seo?.canonicalUrl || '',
     seoOgImageUrl: item.seo?.ogImage?.rawUrl || item.seo?.ogImage?.url || '',
     seoOgImageAlt: item.seo?.ogImage?.alt || '',
-    gallery: (item.gallery || []).map((img) => ({ url: img.rawUrl || img.url || '', alt: img.alt || '' })),
+    gallery: (item.gallery || []).map((img) => ({ _key: generateId(), url: img.rawUrl || img.url || '', alt: img.alt || '' })),
     videos: (item.videos || []).map((v) => ({
       url: v.url || '',
       title: v.title || '',
@@ -515,15 +516,20 @@ function IconChevronUp() {
   )
 }
 
-function GalleryCard({ item, onUpdate, onRemove, disabled, urlError }) {
+function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sortable }) {
   const { t } = useTranslation()
   const [pickerOpen, setPickerOpen] = useState(false)
   const trimmed = item.url.trim()
   const displayUrl = resolveDisplayUrl(trimmed)
   const thumbState = trimmed ? 'ok' : 'empty'
+  const dragLabel = t('products.detail.gallery.dragToReorder', { defaultValue: 'Kéo để sắp xếp' })
 
   return (
-    <div className={`gallery-card${urlError ? ' gallery-card--error' : ''}`}>
+    <div
+      ref={sortable?.setNodeRef}
+      style={{ ...sortable?.style, opacity: sortable?.isDragging ? 0.4 : undefined }}
+      className={`gallery-card${urlError ? ' gallery-card--error' : ''}`}
+    >
       <div
         className="gallery-card-thumb"
         role="button"
@@ -536,6 +542,18 @@ function GalleryCard({ item, onUpdate, onRemove, disabled, urlError }) {
         {thumbState === 'loading' && <span className="gallery-thumb-status">⋯</span>}
         {thumbState === 'error' && <span className="gallery-thumb-status gallery-thumb-error">!</span>}
         {thumbState === 'empty' && <span className="gallery-thumb-status">🖼</span>}
+        {!disabled && sortable && (
+          <button
+            type="button"
+            {...sortable.handleProps}
+            className="absolute top-1 left-1 z-10 inline-flex items-center justify-center w-6 h-6 bg-black/55 text-white cursor-grab touch-none rounded-sm"
+            onClick={(e) => e.stopPropagation()}
+            title={dragLabel}
+            aria-label={dragLabel}
+          >
+            <GripVertical size={14} />
+          </button>
+        )}
         {!disabled && (
           <button
             type="button"
@@ -590,30 +608,36 @@ function GalleryEditor({ items, onChange, disabled, validationErrors = {} }) {
     onChange(items.filter((_, i) => i !== index))
   }
   function addItem() {
-    onChange([...items, { url: '', alt: '' }])
+    onChange([...items, { _key: generateId(), url: '', alt: '' }])
   }
 
   return (
     <div className="gallery-editor">
       <p className="text-xs text-muted-foreground mb-2">{t('products.detail.gallery.sizeHint')}</p>
-      <div className="gallery-grid">
-        {items.map((item, index) => (
+      <SortableList
+        items={items}
+        getId={(it) => it._key}
+        onReorder={(next) => onChange(next)}
+        disabled={disabled}
+        layout="grid"
+        className="gallery-grid"
+        renderItem={(item, sortable, index) => (
           <GalleryCard
-            key={item.url || `gallery-${index}`}
+            sortable={sortable}
             item={item}
             onUpdate={(field, value) => updateItem(index, field, value)}
             onRemove={() => removeItem(index)}
             disabled={disabled}
             urlError={validationErrors[`gallery.${index}.url`]}
           />
-        ))}
-        {!disabled && (
+        )}
+        footer={!disabled && (
           <button type="button" className="gallery-card-add" onClick={addItem}>
             <span className="gallery-add-icon">+</span>
             <span>{t('products.detail.gallery.addImage')}</span>
           </button>
         )}
-      </div>
+      />
       {!disabled && (
         <Button
           variant="outline"
@@ -631,7 +655,7 @@ function GalleryEditor({ items, onChange, disabled, validationErrors = {} }) {
           onSelectMultiple={(urls) => {
             onChange([
               ...items,
-              ...urls.map((url) => ({ url, alt: '' })),
+              ...urls.map((url) => ({ _key: generateId(), url, alt: '' })),
             ])
             setMultiPickerOpen(false)
           }}
@@ -814,13 +838,11 @@ function SpecificationsEditor({ items, onChange, disabled, validationErrors, con
         const errValue = validationErrors?.[`specifications.${index}.value`]
         return (
           <div key={item._key} className="list-editor-row list-editor-row--stack">
-            {items.length > 1 && (
-              <div className="list-editor-reorder">
-                <Button variant="outline" size="icon" onClick={() => moveItem(index, -1)} disabled={disabled || index === 0} aria-label={t('products.detail.moveUp')}>▲</Button>
-                <Button variant="outline" size="icon" onClick={() => moveItem(index, 1)} disabled={disabled || index === items.length - 1} aria-label={t('products.detail.moveDown')}>▼</Button>
-              </div>
-            )}
-            <div className="flex-1 grid grid-cols-2 gap-2">
+            <div className="list-editor-reorder">
+              <Button variant="outline" size="icon" onClick={() => moveItem(index, -1)} disabled={disabled || index === 0} aria-label={t('products.detail.moveUp')}>▲</Button>
+              <Button variant="outline" size="icon" onClick={() => moveItem(index, 1)} disabled={disabled || index === items.length - 1} aria-label={t('products.detail.moveDown')}>▼</Button>
+            </div>
+            <div className="flex flex-1 flex-col gap-2">
               <div>
                 <Input className={errName ? 'border-danger' : undefined}
                   placeholder={t('products.detail.specs.namePlaceholder')}
@@ -833,12 +855,13 @@ function SpecificationsEditor({ items, onChange, disabled, validationErrors, con
                 {errName && <small className="field-error">{errName}</small>}
               </div>
               <div>
-                <Input className={errValue ? 'border-danger' : undefined}
+                <Textarea className={errValue ? 'border-danger' : undefined}
                   placeholder={t('products.detail.specs.valuePlaceholder')}
                   aria-label={t('products.detail.specs.valueLabel')}
                   value={item[fValue] || ''}
                   onChange={(e) => updateItem(index, fValue, e.target.value)}
                   disabled={disabled}
+                  rows={3}
                   maxLength={2000}
                  />
                 {errValue && <small className="field-error">{errValue}</small>}
@@ -960,9 +983,10 @@ function AttributeRenameModal({ open, onClose, attribute }) {
   // Mounted only while open (see caller), so initialising from the current name
   // is correct on every open — no effect-sync needed.
   const [name, setName] = useState(attribute?.name ?? '')
+  const [nameEn, setNameEn] = useState(attribute?.nameEn ?? '')
 
   const renameMut = useMutation({
-    mutationFn: (newName) => updateAttribute(attribute.id, { name: newName }),
+    mutationFn: (vars) => updateAttribute(attribute.id, vars),
     onSuccess: () => {
       toast.success(t('products.detail.variant.attrRenamed', { defaultValue: 'Đã đổi tên thuộc tính.' }))
       queryClient.invalidateQueries({ queryKey: ['attributes'] })
@@ -973,7 +997,8 @@ function AttributeRenameModal({ open, onClose, attribute }) {
   })
 
   const trimmed = name.trim()
-  const dirty = trimmed && trimmed !== attribute?.name
+  const dirty = trimmed && (trimmed !== attribute?.name || nameEn.trim() !== (attribute?.nameEn ?? ''))
+  const saveRename = () => renameMut.mutate({ name: trimmed, nameEn: nameEn.trim() })
 
   return (
     <Modal
@@ -983,7 +1008,7 @@ function AttributeRenameModal({ open, onClose, attribute }) {
       actions={(
         <>
           <Button variant="outline" onClick={onClose}>{t('common.close', { defaultValue: 'Đóng' })}</Button>
-          <Button onClick={() => renameMut.mutate(trimmed)} disabled={renameMut.isPending || !dirty}>
+          <Button onClick={saveRename} disabled={renameMut.isPending || !dirty}>
             {t('common.save', { defaultValue: 'Lưu' })}
           </Button>
         </>
@@ -996,7 +1021,17 @@ function AttributeRenameModal({ open, onClose, attribute }) {
             value={name}
             onChange={(e) => setName(e.target.value)}
             disabled={renameMut.isPending}
-            onKeyDown={(e) => { if (e.key === 'Enter' && dirty && !renameMut.isPending) renameMut.mutate(trimmed) }}
+            onKeyDown={(e) => { if (e.key === 'Enter' && dirty && !renameMut.isPending) saveRename() }}
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <span className="text-sm font-medium">{t('products.detail.variant.attrNameEnLabel', { defaultValue: 'Tên hiển thị (Tiếng Anh)' })}</span>
+          <Input
+            value={nameEn}
+            onChange={(e) => setNameEn(e.target.value)}
+            disabled={renameMut.isPending}
+            placeholder={t('products.detail.variant.attrEnPlaceholder', { defaultValue: 'Để trống sẽ dùng tên tiếng Việt' })}
+            onKeyDown={(e) => { if (e.key === 'Enter' && dirty && !renameMut.isPending) saveRename() }}
           />
         </div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -1013,26 +1048,35 @@ function AttributeRenameModal({ open, onClose, attribute }) {
 function AttributeValueEditRow({ value, onSave, saving }) {
   const { t } = useTranslation()
   const [label, setLabel] = useState(value.label)
-  const dirty = label.trim() && label.trim() !== value.label
+  const [labelEn, setLabelEn] = useState(value.labelEn ?? '')
+  const dirty = label.trim() && (label.trim() !== value.label || labelEn.trim() !== (value.labelEn ?? ''))
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center gap-2">
+        <Input
+          value={label}
+          onChange={(e) => setLabel(e.target.value)}
+          className="flex-1"
+          disabled={saving}
+        />
+        <span className="font-mono text-xs text-muted-foreground w-28 shrink-0 truncate" title={value.slug}>
+          {value.slug}
+        </span>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onSave({ label: label.trim(), labelEn: labelEn.trim() })}
+          disabled={saving || !dirty}
+        >
+          {t('common.save', { defaultValue: 'Lưu' })}
+        </Button>
+      </div>
       <Input
-        value={label}
-        onChange={(e) => setLabel(e.target.value)}
-        className="flex-1"
+        value={labelEn}
+        onChange={(e) => setLabelEn(e.target.value)}
         disabled={saving}
+        placeholder={t('products.detail.variant.valueEnPlaceholder', { defaultValue: 'Tên tiếng Anh (tùy chọn)' })}
       />
-      <span className="font-mono text-xs text-muted-foreground w-28 shrink-0 truncate" title={value.slug}>
-        {value.slug}
-      </span>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => onSave(label.trim())}
-        disabled={saving || !dirty}
-      >
-        {t('common.save', { defaultValue: 'Lưu' })}
-      </Button>
     </div>
   )
 }
@@ -1043,15 +1087,17 @@ function AttributeValueManagerModal({ open, onClose, attribute, values, onPicked
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [newLabel, setNewLabel] = useState('')
+  const [newLabelEn, setNewLabelEn] = useState('')
 
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: ['attributeValues', attribute?.id] })
 
   const createMut = useMutation({
-    mutationFn: (label) => createAttributeValue(attribute.id, { label }),
+    mutationFn: (vars) => createAttributeValue(attribute.id, vars),
     onSuccess: (created) => {
       toast.success(t('products.detail.variant.colorAdded', { defaultValue: 'Đã thêm màu mới.' }))
       setNewLabel('')
+      setNewLabelEn('')
       invalidate()
       if (created?.slug) onPicked?.(created)
     },
@@ -1060,7 +1106,7 @@ function AttributeValueManagerModal({ open, onClose, attribute, values, onPicked
   })
 
   const renameMut = useMutation({
-    mutationFn: ({ id, label }) => updateAttributeValueLabel(id, { label }),
+    mutationFn: ({ id, label, labelEn }) => updateAttributeValueLabel(id, { label, labelEn }),
     onSuccess: () => {
       toast.success(t('products.detail.variant.colorRenamed', { defaultValue: 'Đã đổi tên màu.' }))
       invalidate()
@@ -1080,17 +1126,24 @@ function AttributeValueManagerModal({ open, onClose, attribute, values, onPicked
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
           <span className="text-sm font-medium">{t('products.detail.variant.colorAddLabel', { defaultValue: 'Thêm màu mới' })}</span>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <Input
+                value={newLabel}
+                onChange={(e) => setNewLabel(e.target.value)}
+                placeholder={t('products.detail.variant.colorAddPlaceholder', { defaultValue: 'Ví dụ: Đỏ đô' })}
+                onKeyDown={(e) => { if (e.key === 'Enter' && newLabel.trim() && !createMut.isPending) createMut.mutate({ label: newLabel.trim(), labelEn: newLabelEn.trim() }) }}
+                className="flex-1"
+              />
+              <Button onClick={() => createMut.mutate({ label: newLabel.trim(), labelEn: newLabelEn.trim() })} disabled={createMut.isPending || !newLabel.trim()}>
+                <Plus size={16} /> {t('products.detail.variant.colorAddButton', { defaultValue: 'Thêm' })}
+              </Button>
+            </div>
             <Input
-              value={newLabel}
-              onChange={(e) => setNewLabel(e.target.value)}
-              placeholder={t('products.detail.variant.colorAddPlaceholder', { defaultValue: 'Ví dụ: Đỏ đô' })}
-              onKeyDown={(e) => { if (e.key === 'Enter' && newLabel.trim() && !createMut.isPending) createMut.mutate(newLabel.trim()) }}
-              className="flex-1"
+              value={newLabelEn}
+              onChange={(e) => setNewLabelEn(e.target.value)}
+              placeholder={t('products.detail.variant.valueEnPlaceholder', { defaultValue: 'Tên tiếng Anh (tùy chọn)' })}
             />
-            <Button onClick={() => createMut.mutate(newLabel.trim())} disabled={createMut.isPending || !newLabel.trim()}>
-              <Plus size={16} /> {t('products.detail.variant.colorAddButton', { defaultValue: 'Thêm' })}
-            </Button>
           </div>
         </div>
 
@@ -1105,7 +1158,7 @@ function AttributeValueManagerModal({ open, onClose, attribute, values, onPicked
                   key={v.id}
                   value={v}
                   saving={renameMut.isPending}
-                  onSave={(label) => renameMut.mutate({ id: v.id, label })}
+                  onSave={(vals) => renameMut.mutate({ id: v.id, ...vals })}
                 />
               ))
             )}
@@ -1991,6 +2044,57 @@ function useRoleLabel(role, t) {
 }
 
 // Pill badge showing which team role owns a section.
+// Backend caps related products at 24 (UpsertProductRequest.relatedProductIds @Size(max = 24),
+// docs/engineering/API_CONTRACT.md §"Product related products" / DATA_CONTRACT.md §V135).
+const RELATED_PRODUCTS_MAX = 24
+
+// One row in the related-products list — draggable (dnd-kit) so the admin can curate the
+// storefront carousel order, with a generous thumbnail and an icon remove button.
+function RelatedProductRow({ chip, canEdit, onRemove, t, sortable }) {
+  return (
+    <div
+      ref={sortable?.setNodeRef}
+      style={{ ...sortable?.style, opacity: sortable?.isDragging ? 0.4 : 1 }}
+      className="flex items-center gap-2 sm:gap-3 p-2 border border-border bg-background"
+    >
+      {canEdit && sortable && (
+        <button
+          type="button"
+          {...sortable.handleProps}
+          className="flex-shrink-0 text-muted-foreground hover:text-foreground cursor-grab touch-none"
+          aria-label={t('products.detail.relatedDragHint')}
+        >
+          <GripVertical size={16} />
+        </button>
+      )}
+      {chip.imageUrl ? (
+        <img
+          src={resolveDisplayUrl(chip.imageUrl)}
+          alt=""
+          referrerPolicy="no-referrer"
+          loading="lazy"
+          className="w-10 h-10 sm:w-12 sm:h-12 object-cover flex-shrink-0 border border-border"
+        />
+      ) : (
+        <div className="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 border border-border bg-muted flex items-center justify-center text-muted-foreground">
+          <ImageOff size={16} />
+        </div>
+      )}
+      <span className="flex-1 min-w-0 truncate text-sm font-medium" title={chip.name}>{chip.name}</span>
+      {canEdit && (
+        <button
+          type="button"
+          className="flex-shrink-0 p-1.5 text-muted-foreground hover:text-destructive"
+          onClick={() => onRemove(chip.id)}
+          aria-label={t('products.detail.relatedRemove', { name: chip.name })}
+        >
+          <X size={16} />
+        </button>
+      )}
+    </div>
+  )
+}
+
 function RoleBadge({ role }) {
   const { t } = useTranslation()
   const label = useRoleLabel(role, t)
@@ -2124,7 +2228,7 @@ function Field({ label, hint, error, count, countWarn, full, children }) {
 // ── Main screen ────────────────────────────────────────────────────────────────
 
 export function ProductDetailScreen({ productId, isCreate = false, navigate, canUpdate }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const queryClient = useQueryClient()
   const [form, setForm] = useState(buildEmptyForm)
   // Dirty tracking via boolean flag (set true on any field update, reset on
@@ -2134,9 +2238,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   const [isDirty, setIsDirty] = useState(false)
   const [validationErrors, setValidationErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
-  // Content language being edited (V136). Independent of the admin UI language
-  // (i18n) — it only switches which language the text fields read/write.
-  const [contentLang, setContentLang] = useState('vi')
   const slugEditedByUser = useRef(false)
   const [originalPublishStatus, setOriginalPublishStatus] = useState(null)
 
@@ -2214,6 +2315,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     staleTime: 60 * 1000,
   })
   const relatedSearchItems = (relatedSearchResult?.items ?? []).filter((p) => p.id !== productId)
+  const relatedAtMax = form.relatedProductIds.length >= RELATED_PRODUCTS_MAX
 
   useEffect(() => {
     if (!fetchResult) return
@@ -2325,7 +2427,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     setIsDirty(true)
   }
 
-  const isEnLang = contentLang === 'en'
+  const isEnLang = i18n.language === 'en'
 
   // Value of a translatable product-level text field for the active language.
   function langValue(field) {
@@ -2340,6 +2442,10 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
 
   function addRelatedProduct(product) {
     if (!product?.id) return
+    if (form.relatedProductIds.length >= RELATED_PRODUCTS_MAX) {
+      toast.error(t('products.detail.relatedLimitReached', { max: RELATED_PRODUCTS_MAX }))
+      return
+    }
     setForm((previous) => {
       if (previous.relatedProductIds.includes(product.id)) return previous
       return {
@@ -2366,6 +2472,17 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
       ...previous,
       relatedProductIds: previous.relatedProductIds.filter((id) => id !== removeId),
       relatedProductChips: previous.relatedProductChips.filter((chip) => chip.id !== removeId),
+    }))
+    setIsDirty(true)
+  }
+
+  // Drag-to-reorder: reorder the rendered chips, then mirror the new order into
+  // relatedProductIds (what the upsert payload sends — sort_order is significant).
+  function reorderRelatedProducts(chips) {
+    setForm((previous) => ({
+      ...previous,
+      relatedProductChips: chips,
+      relatedProductIds: chips.map((c) => c.id),
     }))
     setIsDirty(true)
   }
@@ -2615,15 +2732,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
           }
           actions={
             <div className="flex items-center gap-3">
-              <Tabs
-                ariaLabel={t('products.detail.contentLanguageAriaLabel', { defaultValue: 'Ngôn ngữ nội dung' })}
-                value={contentLang}
-                onChange={setContentLang}
-                items={[
-                  { key: 'vi', label: 'VI' },
-                  { key: 'en', label: 'EN' },
-                ]}
-              />
               <Button
                 variant="ghost"
                 size="icon"
@@ -2805,7 +2913,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     error={validationErrors.shortDescription}
                   >
                     <RichTextEditor
-                      key={`shortDescription-${contentLang}`}
+                      key={`shortDescription-${i18n.language}`}
                       value={langValue('shortDescription')}
                       onChange={(html) => langChange('shortDescription', html)}
                       placeholder={t('products.detail.shortDescriptionPlaceholder')}
@@ -3163,7 +3271,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   onChange={(next) => updateField('specifications', next)}
                   disabled={isReadOnly}
                   validationErrors={validationErrors}
-                  contentLang={contentLang}
+                  contentLang={i18n.language}
                 />
               </SectionCard>
 
@@ -3171,7 +3279,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               <SectionCard title={t('products.detail.sectionInstallation')} badge={<RoleBadge role="content" />}>
                 <p className="text-xs text-muted-foreground mb-2">{t('products.detail.installationHint')}</p>
                 <RichTextEditor
-                  key={`installationGuide-${contentLang}`}
+                  key={`installationGuide-${i18n.language}`}
                   value={langValue('installationGuide')}
                   onChange={(html) => langChange('installationGuide', html)}
                   placeholder={t('products.detail.installationPlaceholder')}
@@ -3204,7 +3312,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   onChange={(next) => updateField('faqs', next)}
                   disabled={isReadOnly}
                   validationErrors={validationErrors}
-                  contentLang={contentLang}
+                  contentLang={i18n.language}
                 />
               </SectionCard>
             </>
@@ -3238,52 +3346,64 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 title={t('products.detail.sectionRelated')}
                 badge={
                   <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5">
-                      {form.relatedProductIds.length} {t('products.detail.relatedUnit', { defaultValue: 'sản phẩm' })}
+                    <span
+                      className="text-xs font-bold tabular-nums px-2 py-0.5 border border-border text-muted-foreground"
+                      style={relatedAtMax ? { color: 'var(--admin-color-status-warning-text)', borderColor: 'var(--admin-color-status-warning-text)' } : undefined}
+                    >
+                      {form.relatedProductIds.length} / {RELATED_PRODUCTS_MAX}
                     </span>
                     <RoleBadge role="content" />
                   </div>
                 }
               >
-                <p className="text-xs text-muted-foreground mb-2">{t('products.detail.relatedHint')}</p>
+                <p className="text-xs text-muted-foreground mb-3">{t('products.detail.relatedHint')}</p>
 
                 {form.relatedProductChips.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {form.relatedProductChips.map((chip) => (
-                      <span key={chip.id} className="inline-flex items-center gap-1.5 px-2 py-1 border border-border bg-muted text-sm">
-                        {chip.imageUrl && (
-                          <img src={resolveDisplayUrl(chip.imageUrl)} alt="" className="w-5 h-5 object-cover" />
-                        )}
-                        <strong className="font-medium">{chip.name}</strong>
-                        {!isReadOnly && (
-                          <span
-                            className="cursor-pointer text-muted-foreground hover:text-foreground leading-none text-base"
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => removeRelatedProduct(chip.id)}
-                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') removeRelatedProduct(chip.id) }}
-                            aria-label={t('products.detail.relatedRemove', { name: chip.name })}
-                          >×</span>
-                        )}
-                      </span>
-                    ))}
-                  </div>
+                  <SortableList
+                    items={form.relatedProductChips}
+                    disabled={isReadOnly}
+                    onReorder={reorderRelatedProducts}
+                    className="flex flex-col gap-1.5 mb-3 max-h-[22rem] overflow-y-auto pr-1"
+                    renderItem={(chip, sortable) => (
+                      <RelatedProductRow
+                        chip={chip}
+                        canEdit={!isReadOnly}
+                        onRemove={removeRelatedProduct}
+                        t={t}
+                        sortable={sortable}
+                      />
+                    )}
+                    renderOverlay={(chip) => (
+                      <RelatedProductRow chip={chip} canEdit={false} onRemove={() => {}} t={t} />
+                    )}
+                  />
                 )}
 
                 {!isReadOnly && (
-                  <ProductPickerCombobox
-                    search={relatedSearch}
-                    onSearchChange={setRelatedSearch}
-                    open={relatedSearchDebounced.length >= 1}
-                    loading={isSearchingRelated}
-                    items={relatedSearchItems}
-                    addedIds={form.relatedProductIds}
-                    onPick={addRelatedProduct}
-                    placeholder={t('products.detail.relatedSearch')}
-                    loadingText={t('products.detail.relatedSearching')}
-                    emptyText={t('products.detail.relatedEmpty')}
-                    addedText={t('products.detail.relatedAdded')}
-                  />
+                  <>
+                    <ProductPickerCombobox
+                      search={relatedSearch}
+                      onSearchChange={setRelatedSearch}
+                      open={relatedSearchDebounced.length >= 1}
+                      loading={isSearchingRelated}
+                      items={relatedSearchItems}
+                      addedIds={form.relatedProductIds}
+                      onPick={addRelatedProduct}
+                      placeholder={t('products.detail.relatedSearch')}
+                      loadingText={t('products.detail.relatedSearching')}
+                      emptyText={t('products.detail.relatedEmpty')}
+                      addedText={t('products.detail.relatedAdded')}
+                      disabled={relatedAtMax}
+                    />
+                    {relatedAtMax && (
+                      <p
+                        className="text-xs mt-2"
+                        style={{ color: 'var(--admin-color-status-warning-text)' }}
+                      >
+                        {t('products.detail.relatedLimitHint', { max: RELATED_PRODUCTS_MAX })}
+                      </p>
+                    )}
+                  </>
                 )}
               </SectionCard>
             </>
@@ -3360,8 +3480,12 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               const existing = form.variants
               function variantSig(options) {
                 return JSON.stringify(
-                  [...(options || [])].sort((a, b) => a.name.localeCompare(b.name))
-                    .map(o => `${o.name}:::${o.value.trim().toLowerCase()}`)
+                  [...(options || [])].map((o) => ({
+                    k: isColorAttributeName(o.name) ? '__color__' : normalizeVariantToken(o.name),
+                    v: normalizeVariantToken(o.value),
+                  }))
+                    .sort((a, b) => a.k.localeCompare(b.k))
+                    .map(({ k, v }) => `${k}:::${v}`)
                 )
               }
               const existingSigs = new Set(existing.map(v => variantSig(v.options)))
@@ -3372,6 +3496,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               }
               if (deduped.length > 0) {
                 updateField('variants', [...existing, ...deduped])
+                toast.success(t('products.detail.matrix.added', { count: deduped.length }))
               }
             }}
             onClose={() => setShowMatrixWizard(false)}

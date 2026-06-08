@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 /* eslint-disable @next/next/no-img-element */
 
@@ -109,18 +109,18 @@ export function ProductCard({ product, variant = "compact", surface = "article" 
     const descClass = isHome ? "flex flex-col px-3 pt-2.5 pb-3 md:p-0" : "flex flex-col";
     const insideClass = isHome ? "mt-2.5" : undefined;
     const titleClass = isHome
-      ? "m-0 min-h-[34px] font-cta text-sm font-medium leading-title text-black md:mb-4 md:min-h-12 md:font-display md:text-h4 md:font-semibold md:leading-normal"
-      : "m-0 font-heading text-h4 font-semibold uppercase leading-5 text-foreground";
+      ? "m-0 min-h-[34px] font-display text-sm font-medium leading-title text-black md:mb-4 md:min-h-12 md:font-display md:text-product-title md:font-semibold md:leading-normal"
+      : "m-0 font-heading text-product-title font-semibold uppercase leading-5 text-foreground";
     const titleLinkClass = "text-foreground no-underline hover:text-brand max-[767px]:line-clamp-2";
     const priceClass = isHome
-      ? "mt-1 block text-left font-cta text-sm font-semibold text-brand md:mt-0"
+      ? "mt-1 block text-left font-display text-sm font-semibold text-brand md:mt-0"
       : "mt-2 flex flex-col items-start text-left font-display font-semibold text-foreground";
     const priceCurrentClass = isHome
       ? "mr-5 inline-block text-sm leading-[1.214rem] text-brand"
-      : "m-0 font-cta text-base font-semibold leading-6 text-brand";
+      : "m-0 font-display text-sm font-semibold leading-6 text-brand";
     const priceOldClass = isHome
       ? "mr-5 inline-block text-sm leading-[1.214rem] text-muted-foreground line-through"
-      : "m-0 text-[0.9rem] leading-[1.214rem] text-muted-foreground line-through";
+      : "m-0 text-sm leading-[1.214rem] text-muted-foreground line-through";
 
     return (
       <article className={itemClass}>
@@ -330,12 +330,12 @@ export function ProductCard({ product, variant = "compact", surface = "article" 
         />
       </div>
       <div className="relative z-[2] flex flex-col gap-1 p-4">
-        <p className="font-cta text-sm uppercase tracking-[0.12em] text-brand">{brandName}</p>
+        <p className="font-cta text-sm uppercase tracking-normal text-brand">{brandName}</p>
         <h3 className="font-display text-h4 font-semibold leading-5 text-foreground max-[767px]:line-clamp-2">
           {name}
         </h3>
         {product.rating != null && product.rating > 0 && (
-          <div className="text-sm tracking-[0.1em]">
+          <div className="text-sm tracking-normal">
             <RatingStars value={product.rating} />
           </div>
         )}

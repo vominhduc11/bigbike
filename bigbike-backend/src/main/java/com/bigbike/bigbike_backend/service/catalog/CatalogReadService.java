@@ -44,16 +44,16 @@ public class CatalogReadService {
      * display names. Order matches the legacy WordPress color widget.
      */
     private static final List<ColorFacet> COLOR_FACETS = List.of(
-            new ColorFacet("bac", "Bạc"),
-            new ColorFacet("cam", "Cam"),
-            new ColorFacet("hong", "Hồng"),
-            new ColorFacet("trang", "Trắng"),
-            new ColorFacet("xam", "Xám"),
-            new ColorFacet("xanh-da-troi", "Xanh da trời"),
-            new ColorFacet("xanh-la-cay", "Xanh lá cây"),
-            new ColorFacet("vang", "Vàng"),
-            new ColorFacet("den", "Đen"),
-            new ColorFacet("do", "Đỏ")
+            new ColorFacet("bac", "Bạc", "Silver"),
+            new ColorFacet("cam", "Cam", "Orange"),
+            new ColorFacet("hong", "Hồng", "Pink"),
+            new ColorFacet("trang", "Trắng", "White"),
+            new ColorFacet("xam", "Xám", "Gray"),
+            new ColorFacet("xanh-da-troi", "Xanh da trời", "Sky blue"),
+            new ColorFacet("xanh-la-cay", "Xanh lá cây", "Green"),
+            new ColorFacet("vang", "Vàng", "Yellow"),
+            new ColorFacet("den", "Đen", "Black"),
+            new ColorFacet("do", "Đỏ", "Red")
     );
 
     /**
@@ -61,21 +61,21 @@ public class CatalogReadService {
      * intentional — it replicates the legacy WordPress price widget exactly.
      */
     private static final List<PriceBand> PRICE_BANDS = List.of(
-            new PriceBand("0-1tr", "0đ - 1.000.000đ", 0L, 1_000_000L),
-            new PriceBand("1-2tr", "1.000.000đ - 2.000.000đ", 1_000_000L, 2_000_000L),
-            new PriceBand("2-3tr", "2.000.000đ - 3.000.000đ", 2_000_000L, 3_000_000L),
-            new PriceBand("3-4tr", "3.000.000đ - 4.000.000đ", 3_000_000L, 4_000_000L),
-            new PriceBand("4-5tr", "4.000.000đ - 5.000.000đ", 4_000_000L, 5_000_000L),
-            new PriceBand("5-6tr", "5.000.000đ - 6.000.000đ", 5_000_000L, 6_000_000L),
-            new PriceBand("6-7tr", "6.000.000đ - 7.000.000đ", 6_000_000L, 7_000_000L),
-            new PriceBand("7-8tr", "7.000.000đ - 8.000.000đ", 7_000_000L, 8_000_000L),
-            new PriceBand("tren-9tr", "Trên 9.000.000đ", 9_000_000L, null)
+            new PriceBand("0-1tr", "0đ - 1.000.000đ", null, 0L, 1_000_000L),
+            new PriceBand("1-2tr", "1.000.000đ - 2.000.000đ", null, 1_000_000L, 2_000_000L),
+            new PriceBand("2-3tr", "2.000.000đ - 3.000.000đ", null, 2_000_000L, 3_000_000L),
+            new PriceBand("3-4tr", "3.000.000đ - 4.000.000đ", null, 3_000_000L, 4_000_000L),
+            new PriceBand("4-5tr", "4.000.000đ - 5.000.000đ", null, 4_000_000L, 5_000_000L),
+            new PriceBand("5-6tr", "5.000.000đ - 6.000.000đ", null, 5_000_000L, 6_000_000L),
+            new PriceBand("6-7tr", "6.000.000đ - 7.000.000đ", null, 6_000_000L, 7_000_000L),
+            new PriceBand("7-8tr", "7.000.000đ - 8.000.000đ", null, 7_000_000L, 8_000_000L),
+            new PriceBand("tren-9tr", "Trên 9.000.000đ", "Over 9.000.000đ", 9_000_000L, null)
     );
 
-    private record ColorFacet(String slug, String label) {
+    private record ColorFacet(String slug, String label, String labelEn) {
     }
 
-    private record PriceBand(String key, String label, Long min, Long max) {
+    private record PriceBand(String key, String label, String labelEn, Long min, Long max) {
     }
 
     private final CatalogReadRepository catalogReadRepository;
@@ -295,12 +295,13 @@ public class CatalogReadService {
      * Counts are not cross-excluded per dimension — this matches the legacy WordPress
      * filter widget and keeps the endpoint a single pass over the catalog.
      */
-    public CatalogFacets computeFacets(String categorySlug, String q) {
+    public CatalogFacets computeFacets(String categorySlug, String q, String lang) {
+        String locale = "en".equalsIgnoreCase(lang) ? "en" : "vi";
         // findAllPublishedProducts() applies the PUBLISHED filter in SQL; the
         // explicit predicate below is kept as a defensive guard and is a no-op.
-        // Facet labels are taxonomy-driven (not product text), so Vietnamese
-        // content is fine here regardless of the storefront's display language.
-        List<Product> publishedMatchingQuery = catalogReadRepository.findAllPublishedProducts("vi").stream()
+        // Facet labels are localized to the storefront language: category/brand
+        // names resolve via locale; color/price labels fall back to Vietnamese.
+        List<Product> publishedMatchingQuery = catalogReadRepository.findAllPublishedProducts(locale).stream()
                 .filter(product -> product.publishStatus() == PublishStatus.PUBLISHED)
                 .filter(product -> matchesQuery(product, q))
                 .toList();
@@ -310,15 +311,20 @@ public class CatalogReadService {
                 .toList();
 
         return new CatalogFacets(
-                buildCategoryBuckets(publishedMatchingQuery),
-                buildBrandBuckets(inCategory),
-                buildColorBuckets(inCategory),
-                buildPriceBuckets(inCategory)
+                buildCategoryBuckets(publishedMatchingQuery, locale),
+                buildBrandBuckets(inCategory, locale),
+                buildColorBuckets(inCategory, locale),
+                buildPriceBuckets(inCategory, locale)
         );
     }
 
-    private List<CatalogFacets.FacetBucket> buildCategoryBuckets(List<Product> products) {
-        return catalogReadRepository.findAllCategories().stream()
+    /** EN-with-Vietnamese-fallback per PRODUCT_RULE_002 for fixed facet labels. */
+    private static String pick(String base, String en, String locale) {
+        return "en".equalsIgnoreCase(locale) && en != null && !en.isBlank() ? en : base;
+    }
+
+    private List<CatalogFacets.FacetBucket> buildCategoryBuckets(List<Product> products, String locale) {
+        return catalogReadRepository.findAllCategories(locale).stream()
                 .filter(Category::isVisible)
                 .sorted(Comparator.comparing(category ->
                         category.sortOrder() == null ? Integer.MAX_VALUE : category.sortOrder()))
@@ -331,8 +337,8 @@ public class CatalogReadService {
                 .toList();
     }
 
-    private List<CatalogFacets.FacetBucket> buildBrandBuckets(List<Product> products) {
-        return catalogReadRepository.findAllBrands().stream()
+    private List<CatalogFacets.FacetBucket> buildBrandBuckets(List<Product> products, String locale) {
+        return catalogReadRepository.findAllBrands(locale).stream()
                 .filter(Brand::isVisible)
                 .sorted(Comparator.comparing(Brand::name, String.CASE_INSENSITIVE_ORDER))
                 .map(brand -> new CatalogFacets.FacetBucket(
@@ -344,22 +350,22 @@ public class CatalogReadService {
                 .toList();
     }
 
-    private static List<CatalogFacets.FacetBucket> buildColorBuckets(List<Product> products) {
+    private static List<CatalogFacets.FacetBucket> buildColorBuckets(List<Product> products, String locale) {
         return COLOR_FACETS.stream()
                 .map(color -> new CatalogFacets.FacetBucket(
                         color.slug(),
-                        color.label(),
+                        pick(color.label(), color.labelEn(), locale),
                         null,
                         products.stream().filter(p -> matchesColor(p, color.slug())).count()
                 ))
                 .toList();
     }
 
-    private static List<CatalogFacets.PriceBucket> buildPriceBuckets(List<Product> products) {
+    private static List<CatalogFacets.PriceBucket> buildPriceBuckets(List<Product> products, String locale) {
         return PRICE_BANDS.stream()
                 .map(band -> new CatalogFacets.PriceBucket(
                         band.key(),
-                        band.label(),
+                        pick(band.label(), band.labelEn(), locale),
                         band.min(),
                         band.max(),
                         products.stream().filter(p -> matchesPrice(p, band.min(), band.max())).count()

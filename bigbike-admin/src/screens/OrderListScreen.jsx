@@ -5,6 +5,7 @@ import { FilterSearchInput } from '../components/FilterSearchInput'
 import { useQueryClient } from '@tanstack/react-query'
 import { Check, Download, Plus, SlidersHorizontal, Store } from 'lucide-react'
 import { BulkActionBar } from '../components/BulkActionBar'
+import { PageSizeSelect } from '../components/PageSizeSelect'
 import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
@@ -175,15 +176,9 @@ export function OrderListScreen({ navigate }) {
             { value: 'total:desc', label: t('sort.highestValue') },
           ]}
         />
-        <FilterSelect
-          value={String(query.pageSize)}
-          onValueChange={(v) => updateQuery({ pageSize: Number(v) }, { resetPage: true })}
-          ariaLabel={t('common.rowsPerPage')}
-          options={[
-            { value: '20', label: `20 / ${t('common.page', { defaultValue: 'trang' })}` },
-            { value: '50', label: `50 / ${t('common.page', { defaultValue: 'trang' })}` },
-            { value: '100', label: `100 / ${t('common.page', { defaultValue: 'trang' })}` },
-          ]}
+        <PageSizeSelect
+          value={query.pageSize}
+          onChange={(n) => updateQuery({ pageSize: n }, { resetPage: true })}
         />
         <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" onClick={resetFilters}>
           <SlidersHorizontal size={13} />{t('orders.clearFilters')}

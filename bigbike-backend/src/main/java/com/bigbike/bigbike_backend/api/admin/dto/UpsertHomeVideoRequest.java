@@ -22,6 +22,9 @@ public class UpsertHomeVideoRequest {
     @Size(max = 255, message = "title is too long.")
     private String title;
 
+    @Size(max = 255, message = "titleEn is too long.")
+    private String titleEn;
+
     @NotBlank(message = "videoUrl is required.")
     @Size(max = 2048, message = "videoUrl is too long.")
     private String videoUrl;

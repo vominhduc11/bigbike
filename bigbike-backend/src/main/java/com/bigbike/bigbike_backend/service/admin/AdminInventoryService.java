@@ -534,12 +534,16 @@ public class AdminInventoryService {
         );
     }
 
+    // Product-level aggregate of variant stock states (BUSINESS_RULES STOCK_RULE_008,
+    // kept in sync at write time by the V165 trigger). A product is only OUT_OF_STOCK
+    // when ALL variants are out; if any variant still has stock the product is
+    // IN_STOCK (any variant IN_STOCK) or LOW_STOCK (only low-stock variants remain).
     private String computeAggregateState(List<ProductVariantEntity> variants) {
-        boolean anyOut = variants.stream().anyMatch(v -> v.getStockState() == ProductStockState.OUT_OF_STOCK);
-        if (anyOut) return "OUT_OF_STOCK";
+        boolean anyIn = variants.stream().anyMatch(v -> v.getStockState() == ProductStockState.IN_STOCK);
+        if (anyIn) return "IN_STOCK";
         boolean anyLow = variants.stream().anyMatch(v -> v.getStockState() == ProductStockState.LOW_STOCK);
         if (anyLow) return "LOW_STOCK";
-        return "IN_STOCK";
+        return "OUT_OF_STOCK";
     }
 
     private AdminStockItemResponse.ImageRef buildProductImageRef(ProductEntity p) {

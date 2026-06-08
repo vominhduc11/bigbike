@@ -112,7 +112,7 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
     await Promise.all([
       listArticles({ page: 1, size: 8, sort: "publishedAt:desc", featured: true, lang: locale }),
       listArticles({ page: 1, size: 8, sort: "publishedAt:desc", lang: locale }),
-      listPublicSettings(),
+      listPublicSettings(locale),
       Promise.resolve(serializeJsonLd(buildArticleBreadcrumbJsonLd(article))),
       listProducts({
         page: 1,
@@ -170,7 +170,11 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
             <div className="relative w-full px-[15px] md:flex-[0_0_66.666667%] md:max-w-[66.666667%]">
               <div className="mb-10 max-md:pb-6">
                 <div className="m-0 mb-5">
-                  <WpArticleImage src={ARTICLE_DETAIL_THUMBNAIL} alt="" />
+                  <WpArticleImage
+                    src={resolveArticleImageUrl(article) ?? ARTICLE_DETAIL_THUMBNAIL}
+                    fallbackSrc={ARTICLE_DETAIL_THUMBNAIL}
+                    alt={articleTitle}
+                  />
                 </div>
 
                 <div className="my-5">
@@ -426,6 +430,6 @@ function getWpDateParts(value: string | null | undefined): { day: string; month:
 }
 
 function resolveArticleImageUrl(article: Article): string | null {
-  return resolveWpUploadUrl(article.coverImage?.url ?? article.productImage?.url);
+  return resolveWpUploadUrl(article.coverImage?.url);
 }
 

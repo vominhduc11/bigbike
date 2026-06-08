@@ -6,9 +6,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
 } from '@/components/ui/dropdown-menu'
+import { GripVertical } from 'lucide-react'
 import { MediaPickerModal } from './MediaPickerModal'
 import { VideoPickerModal } from './VideoPickerModal'
 import { RichTextEditor } from './RichTextEditor'
+import { SortableList } from './Sortable'
 import { cn, generateId } from '@/lib/utils'
 
 const BLOCK_TYPES = ['heading', 'paragraph', 'list', 'image', 'video', 'callout', 'divider']
@@ -27,16 +29,10 @@ function createBlock(type) {
   }
 }
 
-function BlockControls({ index, total, disabled, onMoveUp, onMoveDown, onDuplicate, onRemove }) {
+function BlockControls({ disabled, onDuplicate, onRemove }) {
   const { t } = useTranslation()
   return (
     <div className="flex items-center gap-1 shrink-0">
-      <Button variant="outline" size="icon" className="h-7 w-7"
-        onClick={onMoveUp} disabled={disabled || index === 0}
-        aria-label={t('products.detail.blocks.moveUp')}>▲</Button>
-      <Button variant="outline" size="icon" className="h-7 w-7"
-        onClick={onMoveDown} disabled={disabled || index === total - 1}
-        aria-label={t('products.detail.blocks.moveDown')}>▼</Button>
       <Button variant="outline" size="icon" className="h-7 w-7"
         onClick={onDuplicate} disabled={disabled}
         aria-label={t('products.detail.blocks.duplicate')}>⎘</Button>
@@ -270,9 +266,25 @@ function BlockTypeLabel({ type }) {
   )
 }
 
-function BlockCard({ block, index, total, disabled, onUpdate, onRemove, onMoveUp, onMoveDown, onDuplicate, onPickImage, onPickVideo }) {
+function BlockCard({ block, disabled, sortable, onUpdate, onRemove, onDuplicate, onPickImage, onPickVideo }) {
+  const { t } = useTranslation()
   return (
-    <div className="flex gap-2 p-3 border border-border rounded-none bg-background hover:bg-muted/30 transition-colors">
+    <div
+      ref={sortable?.setNodeRef}
+      style={{ ...sortable?.style, opacity: sortable?.isDragging ? 0.5 : undefined }}
+      className="flex gap-2 p-3 border border-border rounded-none bg-background hover:bg-muted/30 transition-colors"
+    >
+      {!disabled && sortable && (
+        <button
+          type="button"
+          {...sortable.handleProps}
+          className="shrink-0 self-start pt-1 cursor-grab touch-none text-muted-foreground hover:text-foreground"
+          title={t('products.detail.blocks.dragToReorder', { defaultValue: 'Kéo để sắp xếp' })}
+          aria-label={t('products.detail.blocks.dragToReorder', { defaultValue: 'Kéo để sắp xếp' })}
+        >
+          <GripVertical size={16} />
+        </button>
+      )}
       <BlockTypeLabel type={block.type} />
       <div className="flex-1 min-w-0">
         {block.type === 'heading'   && <HeadingBlockEditor   block={block} onChange={onUpdate} disabled={disabled} />}
@@ -284,11 +296,7 @@ function BlockCard({ block, index, total, disabled, onUpdate, onRemove, onMoveUp
         {block.type === 'divider'   && <DividerBlockEditor />}
       </div>
       <BlockControls
-        index={index}
-        total={total}
         disabled={disabled}
-        onMoveUp={onMoveUp}
-        onMoveDown={onMoveDown}
         onDuplicate={onDuplicate}
         onRemove={onRemove}
       />
@@ -325,14 +333,6 @@ export function BlockEditor({ value, onChange, disabled, hasError, fallbackHtml 
     onChange(blocks.filter((_, i) => i !== index))
   }
 
-  function moveBlock(index, dir) {
-    const next = [...blocks]
-    const target = index + dir
-    if (target < 0 || target >= next.length) return
-    ;[next[index], next[target]] = [next[target], next[index]]
-    onChange(next)
-  }
-
   function duplicateBlock(index) {
     const copy = { ...blocks[index], _key: generateId() }
     const next = [...blocks]
@@ -361,22 +361,25 @@ export function BlockEditor({ value, onChange, disabled, hasError, fallbackHtml 
         <p className="text-sm text-muted-foreground py-2">{t('products.detail.blocks.empty')}</p>
       )}
 
-      {blocks.map((block, index) => (
-        <BlockCard
-          key={block._key}
-          block={block}
-          index={index}
-          total={blocks.length}
-          disabled={disabled}
-          onUpdate={(patch) => updateBlock(index, patch)}
-          onRemove={() => removeBlock(index)}
-          onMoveUp={() => moveBlock(index, -1)}
-          onMoveDown={() => moveBlock(index, 1)}
-          onDuplicate={() => duplicateBlock(index)}
-          onPickImage={() => setMediaPickerIndex(index)}
-          onPickVideo={() => setVideoPickerIndex(index)}
-        />
-      ))}
+      <SortableList
+        items={blocks}
+        getId={(b) => b._key}
+        onReorder={(next) => onChange(next)}
+        disabled={disabled}
+        className="flex flex-col gap-2"
+        renderItem={(block, sortable, index) => (
+          <BlockCard
+            sortable={sortable}
+            block={block}
+            disabled={disabled}
+            onUpdate={(patch) => updateBlock(index, patch)}
+            onRemove={() => removeBlock(index)}
+            onDuplicate={() => duplicateBlock(index)}
+            onPickImage={() => setMediaPickerIndex(index)}
+            onPickVideo={() => setVideoPickerIndex(index)}
+          />
+        )}
+      />
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>

@@ -25,6 +25,10 @@ public class SiteSettingEntity {
     @Column(name = "setting_value", nullable = false, columnDefinition = "text")
     private String settingValue;
 
+    /** Optional English value (V162). Null/blank → public reads fall back to {@link #settingValue}. */
+    @Column(name = "setting_value_en", columnDefinition = "text")
+    private String settingValueEn;
+
     @Column(name = "setting_group", length = 100)
     private String settingGroup;
 
@@ -48,6 +52,9 @@ public class SiteSettingEntity {
 
     public String getSettingValue() { return settingValue; }
     public void setSettingValue(String settingValue) { this.settingValue = settingValue; }
+
+    public String getSettingValueEn() { return settingValueEn; }
+    public void setSettingValueEn(String settingValueEn) { this.settingValueEn = settingValueEn; }
 
     public String getSettingGroup() { return settingGroup; }
     public void setSettingGroup(String settingGroup) { this.settingGroup = settingGroup; }

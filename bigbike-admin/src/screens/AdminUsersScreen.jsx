@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FilterSelect } from '../components/FilterSelect'
+import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { Eye, EyeOff, MoreHorizontal, Pencil, UserPlus } from 'lucide-react'
 import { PaginationControls } from '../components/PaginationControls'
@@ -314,6 +315,10 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
             { value: '', label: t('adminUsers.filterStatus') },
             ...Object.entries(STATUS_META).map(([key, meta]) => ({ value: key, label: t(meta.labelKey) })),
           ]}
+        />
+        <PageSizeSelect
+          value={query.pageSize}
+          onChange={(n) => setQuery((p) => ({ ...p, pageSize: n, page: 1 }))}
         />
       </div>
 

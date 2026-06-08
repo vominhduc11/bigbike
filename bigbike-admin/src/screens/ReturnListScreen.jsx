@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FilterSelect } from '../components/FilterSelect'
+import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -403,6 +404,10 @@ export function ReturnListScreen({ canUpdate, navigate }) {
             value: s,
             label: s === 'ALL' ? t('returns.filterStatus') : t(`returns.status.${s}`, { defaultValue: s }),
           }))}
+        />
+        <PageSizeSelect
+          value={query.pageSize}
+          onChange={(n) => setQuery((q) => ({ ...q, pageSize: n, page: 1 }))}
         />
       </div>
 

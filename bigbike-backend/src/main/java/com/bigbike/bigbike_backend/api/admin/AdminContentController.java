@@ -1,14 +1,14 @@
 package com.bigbike.bigbike_backend.api.admin;
 
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertArticleRequest;
-import com.bigbike.bigbike_backend.api.admin.dto.UpsertAuthorRequest;
+
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertCategoryRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertPageRequest;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiListResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.domain.content.AdminContentItem;
-import com.bigbike.bigbike_backend.domain.content.ContentAuthorItem;
+
 import com.bigbike.bigbike_backend.domain.content.ContentCategoryItem;
 import com.bigbike.bigbike_backend.domain.content.ContentPageRefItem;
 import com.bigbike.bigbike_backend.api.error.UnauthorizedException;
@@ -51,6 +51,7 @@ public class AdminContentController extends AdminControllerSupport {
     private static final String CONTENT_TYPE_REGEX = "^(?i)(ARTICLE|PAGE)$";
     private static final String CONTENT_PATH_TYPE_REGEX = "^(?i)(article|page)$";
     private static final String PUBLISH_STATUS_REGEX = "^(DRAFT|PUBLISHED|HIDDEN|TRASH)$";
+    private static final String LANG_REGEX = "^(vi|en)$";
 
     private final AdminContentReadService adminContentReadService;
     private final AdminContentMutationService adminContentMutationService;
@@ -78,6 +79,7 @@ public class AdminContentController extends AdminControllerSupport {
             @RequestParam(required = false) @Size(max = 100) String search,
             @RequestParam(required = false) @Pattern(regexp = CONTENT_TYPE_REGEX, message = "Invalid type.") String type,
             @RequestParam(required = false) @Pattern(regexp = PUBLISH_STATUS_REGEX, message = "Invalid publishStatus.") String publishStatus,
+            @RequestParam(defaultValue = "vi") @Pattern(regexp = LANG_REGEX, message = "Invalid lang.") String lang,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "content.read");
@@ -90,7 +92,8 @@ public class AdminContentController extends AdminControllerSupport {
                         q,
                         search,
                         type,
-                        publishStatus
+                        publishStatus,
+                        lang
                 ),
                 request
         );
@@ -184,13 +187,6 @@ public class AdminContentController extends AdminControllerSupport {
 
     // ── Reference lists (for article/page form dropdowns) ────────────────────
 
-    @GetMapping("/reference/authors")
-    public ApiListResponse<ContentAuthorItem> listAuthorRefs(HttpServletRequest request) {
-        devAdminAuthService.requirePermission(request, "content.read");
-        List<ContentAuthorItem> items = adminContentReferenceService.listAuthors();
-        return apiResponseFactory.list(new PageResult<>(items, 1, items.size(), items.size(), 1), request);
-    }
-
     @GetMapping("/reference/categories")
     public ApiListResponse<ContentCategoryItem> listCategoryRefs(HttpServletRequest request) {
         devAdminAuthService.requirePermission(request, "content.read");
@@ -203,27 +199,6 @@ public class AdminContentController extends AdminControllerSupport {
         devAdminAuthService.requirePermission(request, "content.read");
         List<ContentPageRefItem> items = adminContentReferenceService.listPageRefs();
         return apiResponseFactory.list(new PageResult<>(items, 1, items.size(), items.size(), 1), request);
-    }
-
-    // ── Author CRUD ──────────────────────────────────────────────────────────
-
-    @PostMapping("/authors")
-    public ApiDataResponse<ContentAuthorItem> createAuthor(
-            @Valid @RequestBody UpsertAuthorRequest payload,
-            HttpServletRequest request
-    ) {
-        devAdminAuthService.requirePermission(request, "content.update");
-        return apiResponseFactory.data(adminContentReferenceService.createAuthor(payload), request);
-    }
-
-    @PatchMapping("/authors/{id}")
-    public ApiDataResponse<ContentAuthorItem> updateAuthor(
-            @PathVariable @Pattern(regexp = ID_REGEX, message = "Invalid id.") String id,
-            @Valid @RequestBody UpsertAuthorRequest payload,
-            HttpServletRequest request
-    ) {
-        devAdminAuthService.requirePermission(request, "content.update");
-        return apiResponseFactory.data(adminContentReferenceService.updateAuthor(id, payload), request);
     }
 
     // ── Content Category CRUD ────────────────────────────────────────────────

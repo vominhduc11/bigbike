@@ -46,7 +46,8 @@ Evidence:
   - `ALL` coupons work on both channels. `CONFIRMED_FROM_CODE`
 - A coupon may be restricted to a specific customer via `customer_id` (nullable FK). `NULL` = shared for all customers. `CONFIRMED_FROM_CODE`
 - Admin can send a personalized coupon gift to a single customer (`POST /api/v1/admin/customers/{id}/coupon-gift`): creates a unique `GIFT`-prefixed code, sets `customer_id`, and emails it. Requires `coupons.write` permission and the customer must have an email address. `CONFIRMED_FROM_CODE`
-- Admin can bulk-gift a unique coupon to every active customer who has an email (`POST /api/v1/admin/coupon-gifts/bulk`): each customer gets an individual code. Email is sent async per recipient. Returns `{ sent, skipped }`. Requires `coupons.write` permission. `CONFIRMED_FROM_CODE`
+- Admin can bulk-notify all active customers (`POST /api/v1/admin/coupon-gifts/bulk`): sends email with an existing coupon's code to every active customer with a verified email. Accepts `{ couponId }` — selected coupon must be ACTIVE. No new coupon is created. Returns `{ sent, skipped }`. Requires `coupons.write` permission. `CONFIRMED_FROM_CODE`
+- Admin can targeted-notify selected customers (`POST /api/v1/admin/coupon-gifts/targeted`): sends email with an existing coupon's code to a specified list of customers. Accepts `{ couponId, customerIds }` — coupon must be ACTIVE. No new coupon is created. Returns `{ sent, skipped }`. Requires `coupons.write` permission. `CONFIRMED_FROM_CODE`
 
 Evidence:
 
@@ -133,14 +134,15 @@ Evidence:
 
 ### Stock State Derivation Rules `CONFIRMED_FROM_CODE`
 
-- `stockState` (`IN_STOCK`, `LOW_STOCK`, `OUT_OF_STOCK`) is always **derived** from `quantityOnHand` (or `stockQuantity` for no-variant products). Admin cannot set it manually via the catalog create/update API.
+- `stockState` (`IN_STOCK`, `LOW_STOCK`, `OUT_OF_STOCK`) is always **derived**: from `variant.quantityOnHand` per variant, from `product.stockQuantity` for no-variant products, and — for products **with** variants — the product-level `stockState` is an **aggregate of its variants** (see `STOCK_RULE_008`). Admin cannot set it manually via the catalog create/update API.
 - `STOCK_RULE_001`: New product or variant is always created with `stockState = OUT_OF_STOCK` (initial `quantityOnHand = 0`).
 - `STOCK_RULE_002`: Every time `quantityOnHand` changes (stock-in, sale, cancel, return), `stockState` is recomputed via `InventoryPolicyService.recomputeStockState()`.
 - `STOCK_RULE_003`: Thresholds — `quantityOnHand <= 0` → `OUT_OF_STOCK`; `0 < quantityOnHand <= low_stock_threshold` → `LOW_STOCK`; `quantityOnHand > low_stock_threshold` → `IN_STOCK`. Default threshold is 5 (configurable via `low_stock_threshold` site setting).
 - `STOCK_RULE_004`: `forceOutOfStock` (product-level boolean) is a separate emergency override. It disables purchase on web even when `stockState = IN_STOCK`. It is still manually controlled by admin.
-- `STOCK_RULE_005`: For products with variants, checkout enforces stock via `variant.quantityOnHand` directly (not `variant.stockState`). `variant.stockState` is used for display only (web UI disables "Mua ngay" when `OUT_OF_STOCK`).
+- `STOCK_RULE_005`: For products with variants, checkout enforces stock via `variant.quantityOnHand` directly (not `variant.stockState`). `variant.stockState` is used for display only (web UI disables "Mua ngay" when `OUT_OF_STOCK`). The web variant selector (`VariantSelector.tsx`) also **dims out-of-stock options by `stockState`** (still clickable for image preview) so customers see at a glance which colour/size combinations are buyable without clicking through each one; truly inactive variants (`isAvailable = false`) remain locked.
 - `STOCK_RULE_006`: For no-variant products, checkout enforces via `product.stockState == OUT_OF_STOCK` AND `product.stockQuantity`. Both are derived from stock movements.
 - `STOCK_RULE_007`: Sản phẩm có tồn kho = 0 → khách chỉ xem được, không thể đặt hàng. Không có chế độ "đặt trước" hay "HÀNG ODER" qua web. Muốn nhận đơn ODER, admin phải nhập hàng về trước (tồn kho > 0) thì khách mới đặt được.
+- `STOCK_RULE_008`: For products **with variants**, the product-level `stockState` is an **aggregate** of its variants, not a manually maintained field: `IN_STOCK` if **any** variant is `IN_STOCK`; else `LOW_STOCK` if any variant is `LOW_STOCK`; else `OUT_OF_STOCK` (only when **all** variants are out). This is what the storefront product-level badge reads (`products.stock_state`) and what the admin inventory grouped view shows. It is maintained by the DB trigger `fn_sync_product_state_from_variants` on `product_variants` (`V165`), which fires whenever any variant's `stock_state` changes — including serial-driven changes that flow through `fn_sync_qty_from_serial_lifecycle` (`V89`) → variant row → this trigger. **Rationale / prior bug:** before `V165` nothing recomputed the product-level state for variant products. `V108` set `products.stock_state` from `stock_quantity`, which is null/0 for variant products, so they were stuck at `OUT_OF_STOCK` permanently — the storefront showed "Hết hàng" even while a variant still had stock. `CONFIRMED_FROM_CODE`
 
 Evidence:
 
@@ -152,6 +154,8 @@ Evidence:
 - `V57__add_stock_movement_serials.sql`
 - `V108__backfill_stock_state_from_quantity.sql`
 - `V120__drop_stock_receipt_tables.sql`
+- `V165__aggregate_variant_product_stock_state.sql` (product-level aggregate trigger + backfill — `STOCK_RULE_008`)
+- `V89__add_product_serial_lifecycle.sql` (`fn_sync_qty_from_serial_lifecycle` — variant qty/state from serial count)
 
 ## Product Catalog Rules
 

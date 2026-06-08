@@ -75,9 +75,6 @@ public class MediaReferenceService {
         collectLike(refs, "SELECT id::text, title FROM articles WHERE cover_image_url LIKE ?",
                 suffix, rs -> new MediaReferenceItem("CONTENT", rs.getString(1), rs.getString(2), "/content/" + rs.getString(1)));
 
-        collectLike(refs, "SELECT id::text, title FROM articles WHERE product_image_url LIKE ?",
-                suffix, rs -> new MediaReferenceItem("CONTENT_PRODUCT_IMG", rs.getString(1), rs.getString(2), "/content/" + rs.getString(1)));
-
         collectLike(refs, "SELECT id::text, title FROM articles WHERE seo_og_image_url LIKE ?",
                 suffix, rs -> new MediaReferenceItem("CONTENT_SEO_OG", rs.getString(1), rs.getString(2), "/content/" + rs.getString(1)));
 
@@ -130,7 +127,6 @@ public class MediaReferenceService {
                 "SELECT DISTINCT logo_url FROM brands WHERE logo_url IS NOT NULL AND logo_url <> ''",
                 "SELECT DISTINCT video_url FROM home_videos WHERE video_url IS NOT NULL AND video_url <> ''",
                 "SELECT DISTINCT cover_image_url FROM articles WHERE cover_image_url IS NOT NULL AND cover_image_url <> ''",
-                "SELECT DISTINCT product_image_url FROM articles WHERE product_image_url IS NOT NULL AND product_image_url <> ''",
                 "SELECT DISTINCT seo_og_image_url FROM articles WHERE seo_og_image_url IS NOT NULL AND seo_og_image_url <> ''",
                 "SELECT DISTINCT seo_og_image_url FROM pages WHERE seo_og_image_url IS NOT NULL AND seo_og_image_url <> ''",
                 "SELECT COALESCE(desktop_image::text,'') || ' ' || COALESCE(mobile_image::text,'') FROM sliders",
@@ -180,7 +176,6 @@ public class MediaReferenceService {
                 "SELECT logo_url FROM brands WHERE logo_url IS NOT NULL AND logo_url <> ''",
                 "SELECT video_url FROM home_videos WHERE video_url IS NOT NULL AND video_url <> ''",
                 "SELECT cover_image_url FROM articles WHERE cover_image_url IS NOT NULL AND cover_image_url <> ''",
-                "SELECT product_image_url FROM articles WHERE product_image_url IS NOT NULL AND product_image_url <> ''",
                 "SELECT seo_og_image_url FROM articles WHERE seo_og_image_url IS NOT NULL AND seo_og_image_url <> ''",
                 "SELECT seo_og_image_url FROM pages WHERE seo_og_image_url IS NOT NULL AND seo_og_image_url <> ''",
                 "SELECT COALESCE(desktop_image::text,'') || ' ' || COALESCE(mobile_image::text,'') FROM sliders",

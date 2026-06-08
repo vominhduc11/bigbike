@@ -2,25 +2,9 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FilterSelect } from '../components/FilterSelect'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragOverlay,
-} from '@dnd-kit/core'
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
 import { GripVertical, Plus } from 'lucide-react'
 import { toast } from 'sonner'
+import { SortableList } from '../components/Sortable'
 import { createSlider, deleteSlider, fetchSliders, reorderSliders, updateSlider } from '../lib/adminApi'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
@@ -46,31 +30,21 @@ const EMPTY_FORM = {
   isActive: true,
 }
 
-function SliderCard({ slider, canUpdate, onEdit, onDelete, onToggleActive }) {
+function SliderCard({ slider, canUpdate, onEdit, onDelete, onToggleActive, sortable }) {
   const { t } = useTranslation()
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging: isSelf } = useSortable({
-    id: slider.id,
-    disabled: !canUpdate,
-  })
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isSelf ? 0.4 : 1,
-  }
+  const dragOpacity = sortable?.isDragging ? 0.4 : 1
 
   return (
     <div
-      ref={setNodeRef}
-      style={{ ...style, opacity: slider.isActive === false ? 0.55 : style.opacity }}
+      ref={sortable?.setNodeRef}
+      style={{ ...sortable?.style, opacity: slider.isActive === false ? 0.55 : dragOpacity }}
       className="bb-card"
     >
       <div className="bb-card-body" style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '12px 16px' }}>
-        {canUpdate && (
+        {canUpdate && sortable && (
           <button
             type="button"
-            {...attributes}
-            {...listeners}
+            {...sortable.handleProps}
             className="bb-icon-btn"
             style={{ cursor: 'grab', touchAction: 'none', flexShrink: 0 }}
             title={t('sliders.dragToReorder', { defaultValue: 'Kéo để sắp xếp' })}
@@ -145,7 +119,6 @@ export function SliderListScreen({ canUpdate }) {
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState({ ...EMPTY_FORM, location: 'home' })
   const [formError, setFormError] = useState('')
-  const [activeId, setActiveId] = useState(null)
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['sliders', location],
@@ -154,11 +127,6 @@ export function SliderListScreen({ canUpdate }) {
 
   const items = [...(data?.items ?? [])].sort((a, b) => a.sortOrder - b.sortOrder)
   const warning = ''
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  )
 
   const reorderMutation = useMutation({
     mutationFn: ({ location: loc, items }) => reorderSliders(loc, items),
@@ -299,20 +267,8 @@ export function SliderListScreen({ canUpdate }) {
     }
   }
 
-  function handleDragStart(event) {
-    if (!canUpdate || reorderMutation.isPending) return
-    setActiveId(event.active.id)
-  }
-
-  function handleDragEnd(event) {
-    if (!canUpdate || reorderMutation.isPending) return
-    const { active, over } = event
-    setActiveId(null)
-    if (!over || active.id === over.id) return
-
-    const oldIndex = items.findIndex((i) => i.id === active.id)
-    const newIndex = items.findIndex((i) => i.id === over.id)
-    const reordered = arrayMove(items, oldIndex, newIndex)
+  function handleReorder(reordered) {
+    if (reorderMutation.isPending) return
 
     // Optimistic update
     queryClient.setQueryData(['sliders', location], (prev) => {
@@ -328,7 +284,6 @@ export function SliderListScreen({ canUpdate }) {
     })
   }
 
-  const activeSlider = activeId ? items.find((i) => i.id === activeId) : null
   const isSaving = createMutation.isPending || editMutation.isPending
     || reorderMutation.isPending || toggleActiveMutation.isPending
 
@@ -433,32 +388,25 @@ export function SliderListScreen({ canUpdate }) {
       )}
 
       {items.length > 0 && (
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
-            <div className="flex flex-col gap-2">
-              {items.map((slider) => (
-                <SliderCard
-                  key={slider.id}
-                  slider={slider}
-                  canUpdate={canUpdate}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                  onToggleActive={handleToggleActive}
-                />
-              ))}
-            </div>
-          </SortableContext>
-          <DragOverlay>
-            {activeSlider ? (
-              <SliderCard slider={activeSlider} canUpdate={false} onEdit={() => {}} onDelete={() => {}} onToggleActive={() => {}} />
-            ) : null}
-          </DragOverlay>
-        </DndContext>
+        <SortableList
+          items={items}
+          disabled={!canUpdate || reorderMutation.isPending}
+          onReorder={handleReorder}
+          className="flex flex-col gap-2"
+          renderItem={(slider, sortable) => (
+            <SliderCard
+              slider={slider}
+              canUpdate={canUpdate}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onToggleActive={handleToggleActive}
+              sortable={sortable}
+            />
+          )}
+          renderOverlay={(slider) => (
+            <SliderCard slider={slider} canUpdate={false} onEdit={() => {}} onDelete={() => {}} onToggleActive={() => {}} />
+          )}
+        />
       )}
     </div>
   )

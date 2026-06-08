@@ -236,10 +236,10 @@ export default async function CategoryDetailPage({
       maxPrice: maxPriceParsed.value,
       lang: locale,
     }),
-    listBrands({ page: 1, size: 100, sort: "name:asc" }),
-    listCategories({ page: 1, size: 100, sort: "sortOrder:asc" }),
-    getCatalogFacets({ category: category.slug, q: qParsed.value }),
-    listPublicSettings(),
+    listBrands({ page: 1, size: 100, sort: "name:asc", lang: locale }),
+    listCategories({ page: 1, size: 100, sort: "sortOrder:asc", lang: locale }),
+    getCatalogFacets({ category: category.slug, q: qParsed.value, lang: locale }),
+    listPublicSettings(locale),
   ]);
   const defaultHero = readDefaultHeroAssets(settingsResult.data ?? []);
   const canonicalPath = toCategoryPath(category.slug);

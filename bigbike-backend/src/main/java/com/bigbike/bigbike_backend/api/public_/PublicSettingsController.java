@@ -9,6 +9,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -21,8 +22,9 @@ public class PublicSettingsController {
 
     @GetMapping("/public")
     public ApiDataResponse<List<PublicSiteSettingResponse>> getPublicSettings(
+            @RequestParam(defaultValue = "vi") String lang,
             HttpServletRequest request
     ) {
-        return apiResponseFactory.data(adminSettingsService.listPublicSettings(), request);
+        return apiResponseFactory.data(adminSettingsService.listPublicSettings(lang), request);
     }
 }

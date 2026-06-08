@@ -11,6 +11,5 @@ public record CustomerSummary(
         String status,
         String gender,
         LocalDate dob,
-        boolean emailVerified,
-        boolean newsletterSubscribed
+        boolean emailVerified
 ) {}

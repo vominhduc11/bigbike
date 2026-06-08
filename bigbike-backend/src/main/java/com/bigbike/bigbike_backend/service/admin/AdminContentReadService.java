@@ -4,6 +4,7 @@ import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.domain.content.AdminContentItem;
 import com.bigbike.bigbike_backend.domain.content.Article;
+import com.bigbike.bigbike_backend.domain.content.ContentTranslations;
 import com.bigbike.bigbike_backend.domain.content.Page;
 import com.bigbike.bigbike_backend.repository.content.ContentReadRepository;
 import com.bigbike.bigbike_backend.service.common.PageResult;
@@ -34,29 +35,30 @@ public class AdminContentReadService {
 
     @Transactional(readOnly = true)
     public PageResult<AdminContentItem> listContent(
-            int page, int size, String sort, String q, String search, String type, String publishStatus) {
+            int page, int size, String sort, String q, String search, String type, String publishStatus, String lang) {
         SortSpec sortSpec = sortParser.parse(sort, "updatedAt", SortDirection.DESC, CONTENT_SORT_FIELDS);
         String query = coalesceSearch(q, search);
         PublishStatus statusFilter = parsePublishStatus(publishStatus);
         String normalizedType = normalizeType(type);
+        String locale = normalizeLocale(lang);
 
         if ("ARTICLE".equals(normalizedType)) {
             org.springframework.data.domain.Page<Article> ap = contentReadRepository
-                    .listArticlesAdmin(statusFilter, query, toPageable(sortSpec, page, size));
+                    .listArticlesAdmin(statusFilter, query, toPageable(sortSpec, page, size), locale);
             return mapToPageResult(ap, AdminContentReadService::fromArticle);
         }
         if ("PAGE".equals(normalizedType)) {
             org.springframework.data.domain.Page<Page> pp = contentReadRepository
-                    .listPagesAdmin(statusFilter, query, toPageable(sortSpec, page, size));
+                    .listPagesAdmin(statusFilter, query, toPageable(sortSpec, page, size), locale);
             return mapToPageResult(pp, AdminContentReadService::fromPage);
         }
 
         // Combined: load filtered articles + pages from DB, merge+sort+paginate in Java
         List<AdminContentItem> articles = contentReadRepository
-                .findArticlesByFilter(statusFilter, query)
+                .findArticlesByFilter(statusFilter, query, locale)
                 .stream().map(AdminContentReadService::fromArticle).toList();
         List<AdminContentItem> pages = contentReadRepository
-                .findPagesByFilter(statusFilter, query)
+                .findPagesByFilter(statusFilter, query, locale)
                 .stream().map(AdminContentReadService::fromPage).toList();
 
         List<AdminContentItem> merged = Stream.concat(articles.stream(), pages.stream())
@@ -89,15 +91,11 @@ public class AdminContentReadService {
                 article.excerpt(),
                 article.body(),
                 article.coverImage(),
-                article.productImage(),
                 article.publishStatus(),
                 article.seo(),
                 article.publishedAt(),
                 article.createdAt(),
                 article.updatedAt(),
-                article.tags(),
-                article.author(),
-                article.author() != null ? article.author().id() : null,
                 article.category(),
                 article.category() != null ? article.category().id() : null,
                 article.categories(),
@@ -107,22 +105,9 @@ public class AdminContentReadService {
                 null,
                 null,
                 null,
-                toRelatedProductRefs(article),
-                article.bodyBlocks()
+                article.bodyBlocks(),
+                ContentTranslations.fromArticle(article.translations())
         );
-    }
-
-    static List<com.bigbike.bigbike_backend.domain.content.RelatedProductRef> toRelatedProductRefs(Article article) {
-        if (article.relatedProducts() == null) {
-            return List.of();
-        }
-        return article.relatedProducts().stream()
-                .map(p -> new com.bigbike.bigbike_backend.domain.content.RelatedProductRef(
-                        p.id(),
-                        p.slug(),
-                        p.name(),
-                        p.image() != null ? p.image().url() : null))
-                .toList();
     }
 
     static AdminContentItem fromPage(Page page) {
@@ -134,15 +119,11 @@ public class AdminContentReadService {
                 null,
                 page.body(),
                 null,
-                null,
                 page.publishStatus(),
                 page.seo(),
                 page.publishedAt(),
                 page.createdAt(),
                 page.updatedAt(),
-                null,
-                null,
-                null,
                 null,
                 null,
                 null,
@@ -152,8 +133,8 @@ public class AdminContentReadService {
                 page.heroTitle(),
                 page.heroDescription(),
                 page.heroKicker(),
-                null,
-                page.bodyBlocks()
+                page.bodyBlocks(),
+                ContentTranslations.fromPage(page.translations())
         );
     }
 
@@ -199,6 +180,11 @@ public class AdminContentReadService {
     private static String coalesceSearch(String q, String search) {
         if (q != null && !q.isBlank()) return q;
         return search;
+    }
+
+    /** Normalize the requested content language to the repository locale ("vi" default, "en"). */
+    private static String normalizeLocale(String lang) {
+        return "en".equalsIgnoreCase(lang) ? "en" : "vi";
     }
 
     private static String normalizeType(String type) {

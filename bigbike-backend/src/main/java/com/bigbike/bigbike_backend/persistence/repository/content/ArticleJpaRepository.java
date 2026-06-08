@@ -18,7 +18,6 @@ public interface ArticleJpaRepository extends JpaRepository<ArticleEntity, Strin
     /** Public search: DB-level filter on title + excerpt to avoid full-table scan. */
     @Query("""
         SELECT a FROM ArticleEntity a
-        LEFT JOIN FETCH a.author
         LEFT JOIN FETCH a.category
         WHERE a.publishStatus = :status
           AND (LOWER(a.title) LIKE LOWER(CONCAT('%', CAST(:term AS string), '%'))
@@ -92,7 +91,6 @@ public interface ArticleJpaRepository extends JpaRepository<ArticleEntity, Strin
      */
     @Query("""
             SELECT a FROM ArticleEntity a
-            LEFT JOIN FETCH a.author
             LEFT JOIN FETCH a.category
             WHERE a.id IN :ids
             """)
@@ -104,7 +102,6 @@ public interface ArticleJpaRepository extends JpaRepository<ArticleEntity, Strin
      */
     @Query("""
             SELECT a FROM ArticleEntity a
-            LEFT JOIN FETCH a.author
             LEFT JOIN FETCH a.category
             WHERE (:publishStatus IS NULL OR a.publishStatus = :publishStatus)
             AND (:q IS NULL

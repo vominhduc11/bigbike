@@ -58,7 +58,7 @@ export type PurchaseSectionClientProps = {
 // overrides (px-0 + scale-100 + normal-case + h/w) neutralise the variant's base
 // padding/hover-scale/uppercase so the WP-parity look is preserved 1:1.
 const ADD_BTN =
-  "w-full h-[52px] px-0 border-none rounded-none bg-brand text-white font-body text-ui-16 font-semibold !leading-[52px] normal-case hover:not-disabled:scale-100 disabled:cursor-not-allowed disabled:bg-[var(--bb-color-gray-450)] disabled:opacity-70 max-md:min-h-[52px] max-md:font-cta max-md:text-ui-14 max-md:uppercase max-md:tracking-[0.08em]";
+  "w-full h-[52px] px-0 border-none rounded-none bg-brand text-white font-body text-ui-16 font-semibold !leading-[52px] normal-case hover:not-disabled:scale-100 disabled:cursor-not-allowed disabled:bg-[var(--bb-color-gray-450)] disabled:opacity-70 max-md:min-h-[52px] max-md:font-cta max-md:text-ui-14 max-md:uppercase max-md:tracking-normal";
 
 // Share icon links + native-share button (1em icons, brand on hover).
 const SOCIAL_LINK =

@@ -207,9 +207,6 @@ public class CustomerAuthService {
                 throw ValidationException.fromField("dob", "INVALID", "Ngày sinh không hợp lệ. Định dạng: YYYY-MM-DD.");
             }
         }
-        if (req.newsletterSubscribed() != null) {
-            customer.setNewsletterSubscribed(req.newsletterSubscribed());
-        }
         customer.setUpdatedAt(Instant.now());
         try {
             return toSummary(customerRepo.saveAndFlush(customer));
@@ -242,7 +239,7 @@ public class CustomerAuthService {
 
     private CustomerSummary toSummary(CustomerEntity c) {
         return new CustomerSummary(c.getId(), c.getEmail(), c.getPhone(), c.getDisplayName(), c.getStatus(),
-                c.getGender(), c.getDob(), c.getEmailVerifiedAt() != null, c.isNewsletterSubscribed());
+                c.getGender(), c.getDob(), c.getEmailVerifiedAt() != null);
     }
 
     public CustomerSessionResult createSessionForCustomer(CustomerEntity customer, String ipAddress, String userAgent) {

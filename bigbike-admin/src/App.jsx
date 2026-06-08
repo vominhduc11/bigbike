@@ -2,7 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react
 import { useTranslation } from 'react-i18next'
 import {
   Activity, AlignLeft, ArrowRightLeft, Award, BarChart2, FileText, Hash, Image, KeyRound, LayoutDashboard,
-  Package, RotateCcw, Send, Settings, Shield, ShieldCheck, ShoppingCart, Star, Store, Tag, Ticket,
+  Package, RotateCcw, Settings, Shield, ShieldCheck, ShoppingCart, Star, Store, Tag, Ticket,
   Truck, Users, Wallet,
 } from 'lucide-react'
 import { AdminShell } from './components/AdminShell'
@@ -69,7 +69,6 @@ const ReceivablesListScreen  = lazyScreen(() => import('./screens/ReceivablesLis
 const ReceivableDetailScreen = lazyScreen(() => import('./screens/ReceivableDetailScreen'), 'ReceivableDetailScreen')
 const WarrantyListScreen     = lazyScreen(() => import('./screens/WarrantyListScreen'),     'WarrantyListScreen')
 const SerialListScreen       = lazyScreen(() => import('./screens/SerialListScreen'),       'SerialListScreen')
-const NewsletterSubscribersScreen = lazyScreen(() => import('./screens/NewsletterSubscribersScreen'), 'NewsletterSubscribersScreen')
 const HomeHighlightsScreen       = lazyScreen(() => import('./screens/HomeHighlightsScreen'),       'HomeHighlightsScreen')
 const FeaturedProductsScreen     = lazyScreen(() => import('./screens/FeaturedProductsScreen'),     'FeaturedProductsScreen')
 
@@ -83,7 +82,6 @@ const NAV_GROUP_DEFS = [
       { path: '/admin/orders',     labelKey: 'nav.orders',     permission: 'orders.read',    icon: ShoppingCart },
       { path: '/admin/pos',        labelKey: 'nav.pos',        permission: 'pos.read',       icon: Store },
       { path: '/admin/customers',  labelKey: 'nav.customers',  permission: 'customers.read', icon: Users },
-      { path: '/admin/newsletter-subscribers', labelKey: 'nav.newsletter', permission: 'newsletter.read', icon: Send },
       { path: '/admin/returns',      labelKey: 'nav.returns',      permission: 'orders.read',       icon: RotateCcw },
       { path: '/admin/receivables', labelKey: 'nav.receivables', permission: 'receivables.read', icon: Wallet },
       { path: '/admin/reviews',    labelKey: 'nav.reviews',    permission: 'reviews.read',   icon: Star },
@@ -179,8 +177,6 @@ function parseRoute(pathname) {
   if (module === 'customers' && !id) return { kind: 'screen', name: 'customers-list' }
   if (module === 'customers' && id)  return { kind: 'screen', name: 'customer-detail', customerId: id }
 
-  if (module === 'newsletter-subscribers') return { kind: 'screen', name: 'newsletter-subscribers' }
-
   if (module === 'reviews' && !id) return { kind: 'screen', name: 'reviews' }
   if (module === 'reviews' && id)  return { kind: 'screen', name: 'review-detail', reviewId: id }
 
@@ -228,7 +224,6 @@ function routePermission(routeName) {
     case 'order-detail':                 return 'orders.read'
     case 'customers-list':
     case 'customer-detail':              return 'customers.read'
-    case 'newsletter-subscribers':       return 'newsletter.read'
     case 'media-library':                return 'media.read'
     case 'coupons-list':                 return 'coupons.read'
     case 'menus':                        return 'menus.read'
@@ -408,8 +403,6 @@ function AdminApp() {
       screen = <CustomerListScreen navigate={navigate} />; break
     case 'customer-detail':
       screen = <CustomerDetailScreen key={route.customerId} customerId={route.customerId} navigate={navigate} canUpdate={hasPermission('customers.write')} hasPermission={hasPermission} />; break
-    case 'newsletter-subscribers':
-      screen = <NewsletterSubscribersScreen />; break
     case 'media-library':
       screen = <MediaLibraryScreen canUpdate={hasPermission('media.write')} canHardDelete={hasPermission('*')} />; break
     case 'coupons-list':

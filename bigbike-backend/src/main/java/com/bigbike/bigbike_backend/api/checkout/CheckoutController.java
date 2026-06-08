@@ -31,6 +31,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -86,8 +87,10 @@ public class CheckoutController {
     }
 
     @GetMapping("/checkout/options")
-    public ApiDataResponse<CheckoutOptionsResponse> getOptions(HttpServletRequest request) {
-        return apiResponseFactory.data(checkoutService.getOptions(), request);
+    public ApiDataResponse<CheckoutOptionsResponse> getOptions(
+            @RequestParam(defaultValue = "vi") String lang,
+            HttpServletRequest request) {
+        return apiResponseFactory.data(checkoutService.getOptions(lang), request);
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────

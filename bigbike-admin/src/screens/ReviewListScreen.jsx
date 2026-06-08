@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FilterSearchInput } from '../components/FilterSearchInput'
+import { PageSizeSelect } from '../components/PageSizeSelect'
 import { Check, Eye, EyeOff, MessageSquare, Search } from 'lucide-react'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
@@ -221,6 +222,10 @@ export function ReviewListScreen({ navigate, canUpdate }) {
           value={searchInput}
           onChange={setSearchInput}
           placeholder={t('reviews.searchPlaceholder')}
+        />
+        <PageSizeSelect
+          value={query.pageSize}
+          onChange={(n) => setQuery((prev) => ({ ...prev, pageSize: n, page: 1 }))}
         />
       </div>
 

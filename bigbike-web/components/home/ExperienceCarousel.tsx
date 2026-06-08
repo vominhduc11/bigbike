@@ -54,10 +54,8 @@ function resolveArticleMedia(article: Article): {
     title,
     bgSrc: resolveMediaUrl(article.coverImage?.url?.trim()) ?? null,
     bgAlt: safeText(article.coverImage?.alt, title),
-    productSrc:
-      normalizeLegacyUploadUrl(article.productImage?.url?.trim()) ||
-      normalizeLegacyUploadUrl(extractFirstImageUrl(article.body)),
-    productAlt: safeText(article.productImage?.alt, title),
+    productSrc: normalizeLegacyUploadUrl(extractFirstImageUrl(article.body)),
+    productAlt: title,
   };
 }
 

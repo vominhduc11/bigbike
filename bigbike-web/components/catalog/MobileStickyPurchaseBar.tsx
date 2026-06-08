@@ -108,7 +108,7 @@ export function MobileStickyPurchaseBar({
   }
 
   const BASE_BTN =
-    "flex-1 h-12 border-none rounded-none font-body text-sm font-bold uppercase tracking-[0.04em] cursor-pointer active:opacity-85";
+    "flex-1 h-12 border-none rounded-none font-body text-sm font-bold uppercase tracking-normal cursor-pointer active:opacity-85";
 
   return (
     <div

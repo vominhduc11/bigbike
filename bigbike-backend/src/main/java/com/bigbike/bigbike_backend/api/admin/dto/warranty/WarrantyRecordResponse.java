@@ -7,7 +7,11 @@ import java.util.UUID;
 public record WarrantyRecordResponse(
         UUID id,
         UUID serialId,
+        String serialNumber,
         UUID orderLineItemId,
+        String orderNumber,
+        String productName,
+        String variantName,
         UUID customerId,
         String customerEmail,
         String customerPhone,

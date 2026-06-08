@@ -15,15 +15,11 @@ public record AdminContentItem(
         String excerpt,
         String body,
         ImageAsset coverImage,
-        ImageAsset productImage,
         PublishStatus publishStatus,
         SeoMeta seo,
         Instant publishedAt,
         Instant createdAt,
         Instant updatedAt,
-        List<String> tags,
-        AuthorSummary author,
-        String authorId,
         ContentCategorySummary category,
         String categoryId,
         List<ContentCategorySummary> categories,
@@ -33,9 +29,9 @@ public record AdminContentItem(
         String heroTitle,
         String heroDescription,
         String heroKicker,
-        /** Article-only: catalog products linked to the article. Null for pages. */
-        List<RelatedProductRef> relatedProducts,
         /** Structured body blocks (V140). Non-null only on admin detail reads. */
-        List<DescriptionBlock> bodyBlocks
+        List<DescriptionBlock> bodyBlocks,
+        /** English translations (V138). Non-null only on admin detail reads. */
+        ContentTranslations translations
 ) {
 }

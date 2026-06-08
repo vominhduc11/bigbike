@@ -1,13 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Copy, Download, MoreHorizontal, Package, Pencil, Plus, Trash2, Undo2, Upload } from 'lucide-react'
+import { Check, Copy, Download, MoreHorizontal, Package, Pencil, Plus, Trash2, Undo2, Upload } from 'lucide-react'
 import { PublishStatusBadge, StockStatusBadge } from '../components/StatusBadge'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
+import { BulkActionBar } from '../components/BulkActionBar'
 import { FilterSelect } from '../components/FilterSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
+import { PageSizeSelect } from '../components/PageSizeSelect'
 import { showConfirm } from '../lib/confirm'
 import { ApiClientError, exportProductsCsv, fetchBrands, fetchCategoryTree, fetchProductDetail, fetchProducts, restoreProduct, softDeleteProduct } from '../lib/adminApi'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
@@ -40,8 +42,33 @@ const HOMEPAGE_BLOCK_LABEL_KEYS = {
   FEATURED_GRID: 'products.hbFeatured',
 }
 
-export function ProductListScreen({ navigate, canUpdate }) {
+// Stock cell: prominent on-hand quantity (the number a shop manager actually
+// scans for) plus the colour-coded state badge. Falls back to "—" when the
+// product does not track inventory (stockQuantity === null).
+function StockCell({ quantity, state }) {
   const { t } = useTranslation()
+  const hasQty = Number.isFinite(quantity)
+  return (
+    <span className="inline-flex items-center gap-2">
+      <span
+        className="font-semibold tabular-nums"
+        style={{ minWidth: 26, textAlign: 'right' }}
+        title={hasQty ? undefined : t('products.stockNotTracked')}
+      >
+        {hasQty ? quantity : '—'}
+      </span>
+      <StockStatusBadge value={state} />
+    </span>
+  )
+}
+
+function categoryLabel(product) {
+  const category = product.category
+  return category && category.id !== 'uncategorized' ? category.name : null
+}
+
+export function ProductListScreen({ navigate, canUpdate }) {
+  const { t, i18n } = useTranslation()
   const queryClient = useQueryClient()
   const [query, setQuery] = useState(() => readQueryFromUrl(INITIAL_QUERY))
   const [searchInput, setSearchInput] = useState(() => {
@@ -53,8 +80,10 @@ export function ProductListScreen({ navigate, canUpdate }) {
   const [deletingId, setDeletingId] = useState(null)
   const [restoringId, setRestoringId] = useState(null)
   const [openMenu, setOpenMenu] = useState(null)
+  const [selected, setSelected] = useState(() => new Set())
+  const [bulkBusy, setBulkBusy] = useState(false)
 
-  const state = useAdminList(['products', query], () => fetchProducts(query))
+  const state = useAdminList(['products', query, i18n.language], () => fetchProducts(query))
 
   const { data: brandsData } = useQuery({ queryKey: ['brands-all'], queryFn: () => fetchBrands({ pageSize: 100, sort: 'name:asc' }), staleTime: 5 * 60_000 })
   const { data: categoriesData } = useQuery({ queryKey: ['categories', 'tree'], queryFn: () => fetchCategoryTree(), staleTime: 5 * 60_000 })
@@ -70,6 +99,7 @@ export function ProductListScreen({ navigate, canUpdate }) {
       isFirstSearchRender.current = false
       return
     }
+    setSelected(new Set())
     setQuery((prev) => ({ ...prev, search: debouncedSearch, page: 1 }))
   }, [debouncedSearch])
 
@@ -155,6 +185,7 @@ export function ProductListScreen({ navigate, canUpdate }) {
       }
 
   function updateQuery(partial, options = { resetPage: false }) {
+    setSelected(new Set())
     setQuery((previous) => {
       const next = { ...previous, ...partial }
       if (options.resetPage) next.page = 1
@@ -167,8 +198,71 @@ export function ProductListScreen({ navigate, canUpdate }) {
     setQuery(INITIAL_QUERY)
   }
 
-  const items = state.items || []
+  const items = useMemo(() => state.items || [], [state.items])
   const pagination = state.pagination
+
+  const isTrashView = query.publishStatus === 'TRASH'
+
+  const toggle = useCallback((id) => {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }, [])
+  const toggleAll = useCallback(() => {
+    setSelected((prev) => (
+      prev.size === items.length ? new Set() : new Set(items.map((p) => p.id))
+    ))
+  }, [items])
+  const allChecked = items.length > 0 && selected.size === items.length
+
+  const runBulk = useCallback(async ({ confirmKey, titleKey, confirmLabel, variant, action, successKey }) => {
+    const ids = [...selected]
+    if (ids.length === 0) return
+    const confirmed = await showConfirm(
+      t(confirmKey, { count: ids.length }),
+      t(titleKey),
+      { confirmLabel: t(confirmLabel), variant },
+    )
+    if (!confirmed) return
+    setBulkBusy(true)
+    try {
+      const results = await Promise.allSettled(ids.map((id) => action(id)))
+      const ok = results.filter((r) => r.status === 'fulfilled').length
+      const fail = results.length - ok
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      setSelected(new Set())
+      if (fail === 0) toast.success(t(successKey, { count: ok }))
+      else toast.error(t('products.bulkPartial', { ok, fail }))
+    } finally {
+      setBulkBusy(false)
+    }
+  }, [selected, queryClient, t])
+
+  const handleBulkDelete = useCallback(() => runBulk({
+    confirmKey: 'products.bulkDeleteConfirm',
+    titleKey: 'products.deleteConfirmTitle',
+    confirmLabel: 'products.deleteConfirmTitle',
+    variant: 'danger',
+    action: softDeleteProduct,
+    successKey: 'products.bulkDeleteSuccess',
+  }), [runBulk])
+
+  const handleBulkRestore = useCallback(() => runBulk({
+    confirmKey: 'products.bulkRestoreConfirm',
+    titleKey: 'products.restoreConfirmTitle',
+    confirmLabel: 'products.restore',
+    variant: 'default',
+    action: restoreProduct,
+    successKey: 'products.bulkRestoreSuccess',
+  }), [runBulk])
+
+  const bulkActions = canUpdate
+    ? (isTrashView
+        ? [{ label: t('products.bulkRestore'), onClick: handleBulkRestore, disabled: bulkBusy }]
+        : [{ label: t('products.bulkDelete'), onClick: handleBulkDelete, tone: 'danger', disabled: bulkBusy }])
+    : []
 
   return (
     <div>
@@ -263,7 +357,17 @@ export function ProductListScreen({ navigate, canUpdate }) {
             { value: 'homepageOrder:asc', label: t('products.sortHomepageOrder') },
           ]}
         />
+        <PageSizeSelect
+          value={query.pageSize}
+          onChange={(n) => updateQuery({ pageSize: n }, { resetPage: true })}
+        />
       </div>
+
+      <BulkActionBar
+        selectedCount={selected.size}
+        onClear={() => setSelected(new Set())}
+        actions={bulkActions}
+      />
 
       {state.status === 'success' && HOMEPAGE_BLOCK_LIMITS[query.homepageBlock] ? (
         (() => {
@@ -307,13 +411,27 @@ export function ProductListScreen({ navigate, canUpdate }) {
             <table className="bb-table">
               <thead>
                 <tr>
+                  <th className="col-check">
+                    <span
+                      className={`bb-cb${allChecked ? ' checked' : ''}`}
+                      role="checkbox"
+                      aria-checked={allChecked}
+                      tabIndex={0}
+                      onClick={toggleAll}
+                      onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleAll() } }}
+                    >
+                      {allChecked && <Check size={11} />}
+                    </span>
+                  </th>
                   <th>{t('products.colProduct')}</th>
-                  <th>SKU</th>
+                  <th className="hidden lg:table-cell">SKU</th>
                   <th className="num">{t('products.colPrice')}</th>
                   <th>{t('products.colStock')}</th>
-                  <th>{t('products.colHomepage')}</th>
+                  <th className="hidden xl:table-cell">{t('products.colCategory')}</th>
+                  <th className="hidden 2xl:table-cell">{t('products.colBrand')}</th>
+                  <th className="hidden xl:table-cell">{t('products.colHomepage')}</th>
                   <th>{t('products.colPublish')}</th>
-                  <th>{t('products.colUpdated')}</th>
+                  <th className="hidden lg:table-cell">{t('products.colUpdated')}</th>
                   <th className="col-actions" />
                 </tr>
               </thead>
@@ -321,7 +439,7 @@ export function ProductListScreen({ navigate, canUpdate }) {
                 {state.status === 'loading' && items.length === 0 && (
                   [...Array(8)].map((_, i) => (
                     <tr key={`sk-${i}`}>
-                      <td colSpan={8}><div className="bb-skeleton-block" style={{ height: 32 }} /></td>
+                      <td colSpan={11}><div className="bb-skeleton-block" style={{ height: 32 }} /></td>
                     </tr>
                   ))
                 )}
@@ -331,8 +449,15 @@ export function ProductListScreen({ navigate, canUpdate }) {
                   const isTrashed = product.publishStatus === 'TRASH'
                   const isBusy = isDeleting || isRestoring
                   const block = product.homepageBlock
+                  const checked = selected.has(product.id)
+                  const catName = categoryLabel(product)
                   return (
-                    <tr key={product.id} onClick={() => navigate(`/admin/products/${product.id}`)}>
+                    <tr key={product.id} className={checked ? 'selected' : ''} onClick={() => navigate(`/admin/products/${product.id}`)}>
+                      <td className="col-check" onClick={(e) => { e.stopPropagation(); toggle(product.id) }}>
+                        <span className={`bb-cb${checked ? ' checked' : ''}`} role="checkbox" aria-checked={checked}>
+                          {checked && <Check size={11} />}
+                        </span>
+                      </td>
                       <td>
                         <div className="bb-product-cell">
                           <span className="bb-product-thumb" style={{ width: 40, height: 40 }}>
@@ -351,7 +476,7 @@ export function ProductListScreen({ navigate, canUpdate }) {
                           <span>{formatText(product.name)}</span>
                         </div>
                       </td>
-                      <td className="mono">{formatText(product.sku, 'SKU TBD')}</td>
+                      <td className="mono hidden lg:table-cell">{formatText(product.sku, 'SKU TBD')}</td>
                       <td className="num" style={{ fontWeight: 700 }}>
                         {formatCurrencyVnd(product.price?.retailPrice)}
                         {product.price?.salePrice ? (
@@ -360,8 +485,14 @@ export function ProductListScreen({ navigate, canUpdate }) {
                           </div>
                         ) : null}
                       </td>
-                      <td><StockStatusBadge value={product.stockState} /></td>
-                      <td>
+                      <td><StockCell quantity={product.stockQuantity} state={product.stockState} /></td>
+                      <td className="hidden xl:table-cell">
+                        {catName ? formatText(catName) : <span className="bb-muted">—</span>}
+                      </td>
+                      <td className="hidden 2xl:table-cell">
+                        {product.brand?.name ? formatText(product.brand.name) : <span className="bb-muted">—</span>}
+                      </td>
+                      <td className="hidden xl:table-cell">
                         {!block || block === 'NONE' ? (
                           <span className="bb-muted">—</span>
                         ) : (
@@ -372,7 +503,7 @@ export function ProductListScreen({ navigate, canUpdate }) {
                         )}
                       </td>
                       <td><PublishStatusBadge value={product.publishStatus} /></td>
-                      <td className="bb-muted">{formatDateTime(product.updatedAt)}</td>
+                      <td className="bb-muted hidden lg:table-cell">{formatDateTime(product.updatedAt)}</td>
                       <td className="col-actions" onClick={(e) => e.stopPropagation()}>
                         <button
                           type="button"
@@ -471,7 +602,9 @@ export function ProductListScreen({ navigate, canUpdate }) {
                       ),
                       tone: 'strong',
                     },
-                    { label: t('products.colStock'), value: <StockStatusBadge value={product.stockState} /> },
+                    { label: t('products.colStock'), value: <StockCell quantity={product.stockQuantity} state={product.stockState} /> },
+                    { label: t('products.colCategory'), value: categoryLabel(product) ? formatText(categoryLabel(product)) : <span className="bb-muted">—</span> },
+                    { label: t('products.colBrand'), value: product.brand?.name ? formatText(product.brand.name) : <span className="bb-muted">—</span> },
                     {
                       label: t('products.colHomepage'),
                       value: (!block || block === 'NONE') ? (

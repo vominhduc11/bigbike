@@ -41,17 +41,18 @@ public interface ContentReadRepository {
 
     // --- DB-paginated admin listing ---
 
+    /** {@code locale} = "vi" (default) or "en"; display title falls back to Vietnamese when title_en is blank. */
     org.springframework.data.domain.Page<Article> listArticlesAdmin(
-            PublishStatus publishStatus, String q, Pageable pageable);
+            PublishStatus publishStatus, String q, Pageable pageable, String locale);
 
     org.springframework.data.domain.Page<Page> listPagesAdmin(
-            PublishStatus publishStatus, String q, Pageable pageable);
+            PublishStatus publishStatus, String q, Pageable pageable, String locale);
 
     // --- Non-paginated admin filter (for combined article+page admin listing) ---
 
-    List<Article> findArticlesByFilter(PublishStatus publishStatus, String q);
+    List<Article> findArticlesByFilter(PublishStatus publishStatus, String q, String locale);
 
-    List<Page> findPagesByFilter(PublishStatus publishStatus, String q);
+    List<Page> findPagesByFilter(PublishStatus publishStatus, String q, String locale);
 
     // --- Content categories with published-article counts (Tin tức filter) ---
 

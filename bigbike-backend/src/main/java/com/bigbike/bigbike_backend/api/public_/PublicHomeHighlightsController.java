@@ -12,6 +12,7 @@ import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -28,9 +29,10 @@ public class PublicHomeHighlightsController {
 
     @GetMapping("/home/category-highlights")
     public ResponseEntity<ApiDataResponse<List<HomeHighlightItemDto>>> listHighlights(
+            @RequestParam(defaultValue = "vi") String lang,
             HttpServletRequest request
     ) {
-        List<HomeHighlightItemDto> body = homeHighlightsService.listHighlights();
+        List<HomeHighlightItemDto> body = homeHighlightsService.listHighlights(lang);
         return ResponseEntity.ok()
                 .cacheControl(HIGHLIGHTS_CACHE)
                 .body(apiResponseFactory.data(body, request));

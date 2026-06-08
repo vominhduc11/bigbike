@@ -168,9 +168,9 @@ export default async function ProductListPage({ searchParams }: ProductListPageP
       maxPrice: maxPriceParsed.value,
       lang: locale,
     }),
-    listBrands({ page: 1, size: 100, sort: "name:asc" }),
-    listCategories({ page: 1, size: 100, sort: "sortOrder:asc" }),
-    listPublicSettings(),
+    listBrands({ page: 1, size: 100, sort: "name:asc", lang: locale }),
+    listCategories({ page: 1, size: 100, sort: "sortOrder:asc", lang: locale }),
+    listPublicSettings(locale),
   ]);
   const heroSettings = readHeroSettings(settingsResult.data ?? [], "hero_products");
   const defaultHero = readDefaultHeroAssets(settingsResult.data ?? []);

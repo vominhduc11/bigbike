@@ -11,5 +11,6 @@ import jakarta.validation.constraints.Size;
  */
 public record CreateAttributeValueRequest(
         @NotBlank @Size(max = 255) String label,
+        @Size(max = 255) String labelEn,
         @Size(max = 255) String slug
 ) {}

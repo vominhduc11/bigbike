@@ -28,7 +28,12 @@ public interface CatalogReadRepository {
      */
     List<Product> searchPublishedProducts(java.util.List<String> tokens, String locale, int limit);
 
-    List<Product> findProductsFiltered(String query, String publishStatus, String stockState, String brandId, String categoryId);
+    /**
+     * Admin product list (all statuses). {@code locale} = {@code "vi"} or
+     * {@code "en"}; the display {@code name} falls back to Vietnamese when
+     * {@code name_en} is blank (see {@code PRODUCT_RULE_002}).
+     */
+    List<Product> findProductsFiltered(String query, String publishStatus, String stockState, String brandId, String categoryId, String locale);
 
     Optional<Product> findProductBySlug(String slug, String locale);
 
@@ -55,6 +60,8 @@ public interface CatalogReadRepository {
      * @param sortAsc      true = ASC, false = DESC
      * @param page         1-indexed
      * @param pageSize     items per page
+     * @param locale       "vi" or "en"; display name falls back to Vietnamese
+     *                     when name_en is blank (CATEGORY_RULE_002)
      */
     CategoryPage findCategoriesPaged(
             String query,
@@ -62,7 +69,8 @@ public interface CatalogReadRepository {
             String sortField,
             boolean sortAsc,
             int page,
-            int pageSize
+            int pageSize,
+            String locale
     );
 
     record CategoryPage(List<Category> items, long totalItems) {}

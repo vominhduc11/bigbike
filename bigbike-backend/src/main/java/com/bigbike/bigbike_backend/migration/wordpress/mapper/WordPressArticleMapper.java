@@ -20,8 +20,8 @@ public class WordPressArticleMapper {
 
     public record MappedArticle(
             long sourceId,
-            long authorSourceId,
-            String authorName,
+            Long authorSourceId,
+            String authorDisplayName,
             String slug,
             String title,
             String excerpt,

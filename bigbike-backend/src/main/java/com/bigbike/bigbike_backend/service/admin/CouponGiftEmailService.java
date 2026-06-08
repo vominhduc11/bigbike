@@ -67,6 +67,38 @@ public class CouponGiftEmailService {
         }
     }
 
+    @Async
+    public void sendNotifyEmail(CustomerEntity customer, CouponEntity coupon) {
+        if (!emailDispatch.isEnabled()) return;
+
+        String discountLabel = "PERCENT".equals(coupon.getDiscountType())
+                ? coupon.getAmount().stripTrailingZeros().toPlainString() + "%"
+                : VND.format(coupon.getAmount().longValue()) + " VND";
+
+        Context ctx = new Context();
+        ctx.setVariable("customerName", displayName(customer));
+        ctx.setVariable("couponCode", coupon.getCode());
+        ctx.setVariable("discountLabel", discountLabel);
+        ctx.setVariable("hasMinAmount",
+                coupon.getMinAmount() != null && coupon.getMinAmount().compareTo(BigDecimal.ZERO) > 0);
+        ctx.setVariable("minAmountFormatted",
+                coupon.getMinAmount() != null ? VND.format(coupon.getMinAmount().longValue()) + " VND" : "");
+        ctx.setVariable("hasExpiry", coupon.getExpiresAt() != null);
+        ctx.setVariable("expiresAt", coupon.getExpiresAt());
+        ctx.setVariable("shopUrl", siteBaseUrl);
+
+        try {
+            emailDispatch.send(
+                    customer.getEmail(),
+                    "[BigBike] Mã giảm giá dành cho bạn: " + coupon.getCode(),
+                    "coupon-gift",
+                    ctx);
+        } catch (Exception e) {
+            log.error("Gửi email thông báo mã {} thất bại cho {}: {}",
+                    coupon.getCode(), customer.getEmail(), e.getMessage());
+        }
+    }
+
     private static String displayName(CustomerEntity c) {
         if (c.getDisplayName() != null && !c.getDisplayName().isBlank()) return c.getDisplayName();
         if (c.getEmail() != null) return c.getEmail();

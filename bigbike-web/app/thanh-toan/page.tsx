@@ -28,17 +28,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { getVietnamRegion } from "@/lib/utils/vn-region";
 
-// Checkout is styled MOBILE-ONLY (<=767px); at >=768px it intentionally falls back to plain
-// shadcn/block defaults (pre-existing parity), so every migrated rule is max-md:-scoped.
 const coStepCard =
-  "max-md:border max-md:border-[var(--bb-border-subtle)] max-md:bg-[var(--bb-bg-surface)] max-md:px-3.5 max-md:py-4";
-const coGrid = "max-md:grid max-md:grid-cols-1 max-md:gap-3";
+  "border border-[var(--bb-border-subtle)] bg-[var(--bb-bg-surface)] px-3.5 py-4 md:px-6 md:py-6";
+const coGrid = "grid grid-cols-1 gap-3";
 const coSectionH3 =
-  "max-md:m-0 max-md:mb-3 max-md:font-heading max-md:text-ui-16 max-md:font-semibold max-md:uppercase max-md:leading-[1.2]";
+  "m-0 mb-3 font-heading text-ui-16 font-semibold uppercase leading-[1.2] md:text-ui-18";
 const coRadioRow =
-  "max-md:flex max-md:min-h-11 max-md:items-center max-md:gap-2.5 max-md:border max-md:border-[var(--bb-border-subtle)] max-md:bg-[var(--bb-bg-surface)] max-md:px-3 max-md:py-2.5";
+  "flex min-h-11 items-center gap-2.5 border border-[var(--bb-border-subtle)] bg-[var(--bb-bg-surface)] px-3 py-2.5";
 const coCardRaised =
-  "max-md:mt-3.5 max-md:border max-md:border-[var(--bb-border-subtle)] max-md:bg-[var(--bb-bg-surface-raised)] max-md:p-3";
+  "mt-3.5 border border-[var(--bb-border-subtle)] bg-[var(--bb-bg-surface-raised)] p-3";
 
 function pickDefaultAddress(addresses: CustomerAddress[] | undefined): CustomerAddress | null {
   if (!addresses?.length) return null;
@@ -61,10 +59,10 @@ function isZoneMismatch(method: ShippingMethodOption, userRegion: "MB" | "MT" | 
 
 function CheckoutStepTitle({ step, children }: { step: number; children: React.ReactNode }) {
   return (
-    <div className="max-md:mb-4">
-      <h2 className="max-md:m-0 max-md:flex max-md:items-center max-md:gap-2.5 max-md:font-heading max-md:text-ui-18 max-md:font-semibold max-md:uppercase max-md:leading-[1.15]">
-        <span className="max-md:inline-flex max-md:h-[34px] max-md:w-[34px] max-md:basis-[34px] max-md:items-center max-md:justify-center max-md:bg-brand max-md:font-cta max-md:text-[var(--bb-text-inverse)]">
-          <b className="max-md:font-semibold">{step}</b>
+    <div className="mb-4">
+      <h2 className="m-0 flex items-center gap-2.5 font-heading text-ui-18 font-semibold uppercase leading-[1.15]">
+        <span className="inline-flex h-[34px] w-[34px] shrink-0 items-center justify-center bg-brand font-cta text-[var(--bb-text-inverse)]">
+          <b className="font-semibold">{step}</b>
         </span>
         {children}
       </h2>
@@ -317,8 +315,8 @@ export default function CheckoutPage() {
 
   return (
     <Container className="cart-table bb-checkout-page">
-      <div className="check-out-title">
-        <h1>{t("title")}</h1>
+      <div className="check-out-title mb-5 border-b border-[var(--bb-border-subtle)] pb-4">
+        <h1 className="m-0 font-heading text-h1 font-semibold uppercase leading-[1.08]">{t("title")}</h1>
       </div>
 
       <form className="checkout woocommerce-checkout" onSubmit={handleSubmit} noValidate>
@@ -351,13 +349,13 @@ export default function CheckoutPage() {
           )}
         </div>
 
-        <div className="max-md:grid max-md:grid-cols-1 max-md:gap-4">
-          <div className="max-md:min-w-0">
-            <section className={cn(coStepCard, "max-md:mb-3.5")}>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_360px] md:items-start md:gap-8">
+          <div className="min-w-0">
+            <section className={cn(coStepCard, "mb-3.5")}>
               <CheckoutStepTitle step={1}>{t("step1Title")}</CheckoutStepTitle>
 
               <div className={coGrid}>
-                <div className="max-md:m-0 max-md:min-w-0">
+                <div className="min-w-0">
                   <label htmlFor="billing_full_name">
                     {t("fullName")} {reqMark}
                   </label>
@@ -371,7 +369,7 @@ export default function CheckoutPage() {
                   <FieldError message={addressErrors.fullName?.message} />
                 </div>
 
-                <div className="max-md:m-0 max-md:min-w-0">
+                <div className="min-w-0">
                   <label htmlFor="billing_phone">
                     {t("phone")} {reqMark}
                   </label>
@@ -388,7 +386,7 @@ export default function CheckoutPage() {
                   <FieldError message={addressErrors.phone?.message} />
                 </div>
 
-                <div className="max-md:m-0 max-md:min-w-0">
+                <div className="min-w-0">
                   <label htmlFor="billing_email">{t("email")}</label>
                   <Input
                     id="billing_email"
@@ -401,7 +399,7 @@ export default function CheckoutPage() {
                   <FieldError message={addressErrors.email?.message} />
                 </div>
 
-                <div className="max-md:m-0 max-md:min-w-0">
+                <div className="min-w-0">
                   <label htmlFor="billing_address_1">
                     {t("address")} {reqMark}
                   </label>
@@ -431,13 +429,13 @@ export default function CheckoutPage() {
                   />
                 </div>
                 {(addressErrors.province || addressErrors.district) && (
-                  <p className="max-md:m-0 max-md:min-w-0">
+                  <p className="min-w-0">
                     {addressErrors.province?.message ?? addressErrors.district?.message}
                   </p>
                 )}
               </div>
 
-              <div className="max-md:m-0 max-md:mt-3.5 max-md:min-w-0">
+              <div className="mt-3.5 min-w-0">
                 <label htmlFor="order_comments">
                   {t("noteLabel")} <span className="optional">{t("noteOptional")}</span>
                 </label>
@@ -452,10 +450,10 @@ export default function CheckoutPage() {
               </div>
             </section>
 
-            <section className={cn(coStepCard, "max-md:mb-3.5")}>
+            <section className={cn(coStepCard, "mb-3.5")}>
               <CheckoutStepTitle step={2}>{t("step2Title")}</CheckoutStepTitle>
 
-              <div className="max-md:mt-3.5 max-md:grid max-md:grid-cols-1 max-md:gap-3 max-md:border-t max-md:border-[var(--bb-border-subtle)] max-md:pt-3.5">
+              <div className="mt-3.5 grid grid-cols-1 gap-3 border-t border-[var(--bb-border-subtle)] pt-3.5">
                 <h3 className={coSectionH3}>{t("shippingMethodSectionTitle")}</h3>
                 {optionsLoading ? (
                   <p className="woocommerce-info">{t("paymentLoading")}</p>
@@ -467,7 +465,7 @@ export default function CheckoutPage() {
                       return (
                         <label
                           key={method.id}
-                          className={cn(coRadioRow, disabled && "max-md:opacity-50")}
+                          className={cn(coRadioRow, disabled && "opacity-50")}
                           htmlFor={`shipping_method_${method.id}`}
                         >
                           <RadioGroupItem
@@ -475,8 +473,8 @@ export default function CheckoutPage() {
                             id={`shipping_method_${method.id}`}
                             disabled={disabled}
                           />
-                          <span className="max-md:min-w-0 max-md:flex-1 max-md:font-semibold">{method.title}</span>
-                          <span className="max-md:whitespace-nowrap max-md:font-cta max-md:font-semibold max-md:text-brand">
+                          <span className="min-w-0 flex-1 font-semibold">{method.title}</span>
+                          <span className="whitespace-nowrap font-cta font-semibold text-brand">
                             {cost > 0 ? formatVnd(cost) : t("shippingMethodFree")}
                           </span>
                         </label>
@@ -488,12 +486,12 @@ export default function CheckoutPage() {
                 )}
               </div>
 
-              <div id="payment" className="max-md:mt-3.5 max-md:border-t max-md:border-[var(--bb-border-subtle)] max-md:pt-3.5">
+              <div id="payment" className="mt-3.5 border-t border-[var(--bb-border-subtle)] pt-3.5">
                 {optionsLoading ? (
                   <p className="woocommerce-info">{t("paymentLoading")}</p>
                 ) : paymentMethods.length > 0 ? (
                   <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} asChild>
-                    <ul className="max-md:gap-2.5">
+                    <ul className="gap-2.5">
                       {paymentMethods.map((method) => {
                         const checked = paymentMethod === method.code;
                         const description = paymentDescription(method.code);
@@ -504,8 +502,8 @@ export default function CheckoutPage() {
                               <span>{paymentLabel(method)}</span>
                             </label>
                             {checked && description && (
-                              <div className="max-md:border max-md:border-t-0 max-md:border-[var(--bb-border-subtle)] max-md:bg-[var(--bb-bg-surface-raised)] max-md:p-3 max-md:text-ui-14 max-md:leading-[1.5]">
-                                <p className="max-md:m-0">{description}</p>
+                              <div className="border border-t-0 border-[var(--bb-border-subtle)] bg-[var(--bb-bg-surface-raised)] p-3 text-ui-14 leading-[1.5]">
+                                <p className="m-0">{description}</p>
                               </div>
                             )}
                           </li>
@@ -517,11 +515,11 @@ export default function CheckoutPage() {
                   <p className="woocommerce-error">{t("paymentNone")}</p>
                 )}
 
-                <div className="max-md:mt-3.5">
+                <div className="mt-3.5">
                   <Button
                     type="submit"
                     variant="primary"
-                    className="max-md:!min-h-[52px] max-md:w-full max-md:font-cta max-md:text-ui-14 max-md:font-semibold max-md:uppercase max-md:tracking-[0.08em]"
+                    className="!min-h-[52px] w-full font-cta text-ui-14 font-semibold uppercase tracking-normal"
                     disabled={submitting || cartLoading || !cart.items.length || belowMinOrder || selectedShippingZoneMismatch}
                   >
                     {submitting ? t("placingOrder") : t("placeOrder")}
@@ -531,44 +529,44 @@ export default function CheckoutPage() {
             </section>
           </div>
 
-          <aside className="max-md:mt-[2px] max-md:min-w-0">
+          <aside className="min-w-0 md:sticky md:top-[calc(var(--bb-header-stack)+16px)]">
             <div className={coStepCard}>
               <div className="checkout-summary-title">
                 <h3 className={coSectionH3}>{t("summaryTitle")}</h3>
               </div>
 
               <div id="order_review">
-                <table className="max-md:w-full">
+                <table className="w-full">
                   <thead>
                     <tr>
-                      <th className="product-name max-md:text-left">{t("orderProducts")}</th>
-                      <th className="product-total max-md:whitespace-nowrap max-md:text-right">{t("orderSubtotal")}</th>
+                      <th className="product-name text-left">{t("orderProducts")}</th>
+                      <th className="product-total whitespace-nowrap text-right">{t("orderSubtotal")}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {cart.items.map((item) => (
                       <tr key={item.id} className="cart_item">
-                        <td className="product-name max-md:break-words max-md:text-left">
+                        <td className="product-name break-words text-left">
                           {item.productName}
                           {item.variantName ? ` - ${item.variantName}` : ""}
                           <strong className="product-quantity"> x {item.quantity}</strong>
                         </td>
-                        <td className="product-total max-md:whitespace-nowrap max-md:text-right max-md:align-top">{formatVnd(item.lineTotal)}</td>
+                        <td className="product-total whitespace-nowrap text-right align-top">{formatVnd(item.lineTotal)}</td>
                       </tr>
                     ))}
                   </tbody>
                   <tfoot>
                     <tr className="cart-subtotal">
-                      <th className="max-md:text-left">{t("summarySubtotal")}</th>
-                      <td className="max-md:whitespace-nowrap max-md:text-right">{formatVnd(cartSubtotal)}</td>
+                      <th className="text-left">{t("summarySubtotal")}</th>
+                      <td className="whitespace-nowrap text-right">{formatVnd(cartSubtotal)}</td>
                     </tr>
                     <tr className="shipping">
-                      <th className="max-md:text-left">{t("summaryShipping")}</th>
-                      <td className="max-md:text-right">
+                      <th className="text-left">{t("summaryShipping")}</th>
+                      <td className="text-right">
                         {selectedShipping ? (
                           <>
                             <span>{selectedShipping.title}</span>
-                            <span className="shipping-method-description max-md:block max-md:whitespace-nowrap">
+                            <span className="shipping-method-description block whitespace-nowrap">
                               {effectiveShippingCost > 0 ? formatVnd(effectiveShippingCost) : t("summaryShippingFree")}
                             </span>
                           </>
@@ -579,13 +577,13 @@ export default function CheckoutPage() {
                     </tr>
                     {cart.totals.discountAmount > 0 && (
                       <tr className="cart-discount">
-                        <th className="max-md:text-left">{t("summaryDiscount")}</th>
-                        <td className="discount max-md:whitespace-nowrap max-md:text-right">-{formatVnd(cart.totals.discountAmount)}</td>
+                        <th className="text-left">{t("summaryDiscount")}</th>
+                        <td className="discount whitespace-nowrap text-right">-{formatVnd(cart.totals.discountAmount)}</td>
                       </tr>
                     )}
                     <tr className="order-total">
-                      <th className="max-md:text-left">{t("summaryTotal")}</th>
-                      <td className="max-md:whitespace-nowrap max-md:text-right">
+                      <th className="text-left">{t("summaryTotal")}</th>
+                      <td className="whitespace-nowrap text-right">
                         <strong>{formatVnd(grandTotal)}</strong>
                       </td>
                     </tr>
@@ -601,8 +599,8 @@ export default function CheckoutPage() {
 
                 {paymentMethod && (
                   <div className={coCardRaised}>
-                    <p className="max-md:m-0">{t("summaryPaymentInfo")}</p>
-                    <strong className="max-md:m-0">{paymentLabel(paymentMethod)}</strong>
+                    <p className="m-0">{t("summaryPaymentInfo")}</p>
+                    <strong className="m-0">{paymentLabel(paymentMethod)}</strong>
                   </div>
                 )}
               </div>

@@ -445,6 +445,27 @@ export function normalizeBrand(input) {
   }
 }
 
+// EN translations for the content editor's VI/EN toggle. Mirrors the backend
+// AdminContentItem.translations (V138) superset shape; missing fields default to ''.
+function normalizeContentTranslations(source) {
+  const en = source && typeof source === 'object' && source.en && typeof source.en === 'object'
+    ? source.en
+    : {}
+  return {
+    en: {
+      title: toTrimmedString(en.title) || '',
+      excerpt: toTrimmedString(en.excerpt) || '',
+      // body is rich HTML — keep verbatim, don't trim away markup whitespace
+      body: typeof en.body === 'string' ? en.body : '',
+      seoTitle: toTrimmedString(en.seoTitle) || '',
+      seoDescription: toTrimmedString(en.seoDescription) || '',
+      heroTitle: toTrimmedString(en.heroTitle) || '',
+      heroDescription: toTrimmedString(en.heroDescription) || '',
+      heroKicker: toTrimmedString(en.heroKicker) || '',
+    },
+  }
+}
+
 export function normalizeContentItem(input) {
   const source = input && typeof input === 'object' ? input : {}
   const id = toTrimmedString(source.id) || 'unknown-content'
@@ -452,14 +473,6 @@ export function normalizeContentItem(input) {
   const publishStatus = normalizePublishStatus(source.publishStatus)
   const type = normalizeContentType(source.type || source.contentType)
 
-  const authorSource = source.author && typeof source.author === 'object' ? source.author : null
-
-  // authorId/categoryId: prefer explicit flat scalar; fall back to nested object id
-  // so existing data without the flat field still resolves correctly.
-  const authorId =
-    toTrimmedString(source.authorId) ||
-    (authorSource ? toTrimmedString(authorSource.id) : undefined) ||
-    undefined
   const categorySource = source.category && typeof source.category === 'object' ? source.category : null
   const categoryId =
     toTrimmedString(source.categoryId) ||
@@ -474,11 +487,9 @@ export function normalizeContentItem(input) {
     excerpt: toTrimmedString(source.excerpt) || undefined,
     body: toTrimmedString(source.body) || undefined,
     coverImage: normalizeImageAsset(source.coverImage),
-    productImage: normalizeImageAsset(source.productImage),
     pageType: toTrimmedString(source.pageType) || undefined,
-    // Flat id scalars — required by ContentDetailScreen to pre-select dropdowns
+    // Flat id scalar — required by ContentDetailScreen to pre-select dropdown
     // and to re-send on save so backend does not clear the association.
-    authorId,
     categoryId,
     parentId: toTrimmedString(source.parentId) || undefined,
     // Hero fields for PAGE type
@@ -486,38 +497,17 @@ export function normalizeContentItem(input) {
     heroTitle: toTrimmedString(source.heroTitle) || undefined,
     heroDescription: toTrimmedString(source.heroDescription) || undefined,
     heroKicker: toTrimmedString(source.heroKicker) || undefined,
-    tags: Array.isArray(source.tags)
-      ? source.tags.filter((t) => typeof t === 'string' && t.trim()).map((t) => t.trim())
-      : [],
-    // Article ↔ product links — lightweight refs used to render product chips in the editor.
-    relatedProducts: Array.isArray(source.relatedProducts)
-      ? source.relatedProducts
-          .map((p) => (p && typeof p === 'object'
-            ? {
-                id: toTrimmedString(p.id) || undefined,
-                slug: toTrimmedString(p.slug) || undefined,
-                name: toTrimmedString(p.name) || undefined,
-                imageUrl: toTrimmedString(p.imageUrl) || undefined,
-              }
-            : null))
-          .filter((p) => p && p.id)
-      : [],
     categories: Array.isArray(source.categories)
       ? source.categories.map(normalizeCategorySummary).filter(Boolean)
       : [],
     category: normalizeCategorySummary(source.category),
-    author: authorSource
-      ? {
-          id: toTrimmedString(authorSource.id) || undefined,
-          name: toTrimmedString(authorSource.name) || undefined,
-        }
-      : undefined,
     publishStatus,
     seo: normalizeSeoMeta(source.seo),
     publishedAt: toTrimmedString(source.publishedAt) || undefined,
     createdAt: toTrimmedString(source.createdAt) || undefined,
     updatedAt: toTrimmedString(source.updatedAt) || undefined,
     bodyBlocks: Array.isArray(source.bodyBlocks) ? source.bodyBlocks : null,
+    translations: normalizeContentTranslations(source.translations),
   }
 }
 
@@ -759,6 +749,7 @@ export function normalizeSetting(input) {
   return {
     key: toTrimmedStringLocal(s.key) || toTrimmedStringLocal(s.settingKey) || 'unknown',
     value: toTrimmedStringLocal(s.value) || toTrimmedStringLocal(s.settingValue) || undefined,
+    valueEn: toTrimmedStringLocal(s.valueEn) || toTrimmedStringLocal(s.settingValueEn) || undefined,
     description: toTrimmedStringLocal(s.description) || undefined,
     settingGroup: toTrimmedStringLocal(s.settingGroup) || 'GENERAL',
     valueType: toTrimmedStringLocal(s.valueType) || 'STRING',
@@ -802,6 +793,7 @@ function normalizeMenuItem(input) {
   return {
     id: toTrimmedStringLocal(s.id) || 'unknown',
     label: toTrimmedStringLocal(s.label) || 'Untitled',
+    labelEn: toTrimmedStringLocal(s.labelEn) || '',
     url: toTrimmedStringLocal(s.url) || '#',
     sortOrder: toIntegerLocal(s.sortOrder, 0),
     parentId: toTrimmedStringLocal(s.parentId) || undefined,

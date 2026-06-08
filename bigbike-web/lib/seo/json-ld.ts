@@ -76,12 +76,6 @@ export function buildArticleJsonLd(
     headline: article.seo?.title ?? article.title,
     description: article.seo?.description ?? article.excerpt ?? "",
     image: images.length > 0 ? images : undefined,
-    author: article.author?.name
-      ? {
-          "@type": "Person",
-          name: article.author.name,
-        }
-      : undefined,
     articleSection: article.category?.name ?? undefined,
     datePublished: article.publishedAt ?? article.createdAt,
     dateModified: article.updatedAt,

@@ -4,21 +4,15 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   DndContext,
   closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
   DragOverlay,
 } from '@dnd-kit/core'
 import {
   arrayMove,
   SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
 import { GripVertical, Play, Plus } from 'lucide-react'
+import { useDragSensors, SortableRow } from '../components/Sortable'
 import { toast } from 'sonner'
 import {
   fetchHomeVideos,
@@ -43,6 +37,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 const EMPTY_FORM = {
   title: '',
+  titleEn: '',
   videoType: 'youtube',
   videoUrl: '',
   thumbnailUrl: '',
@@ -114,26 +109,17 @@ function VideoPreviewModal({ video, onClose }) {
 
 function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPreview, selected, onSelect, selectionMode }) {
   const { t } = useTranslation()
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: video.id,
-    disabled: !canUpdate || selectionMode,
-  })
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.4 : 1,
-  }
-
   const thumbSrc = video.thumbnail?.url
     || (video.youtubeId ? `https://img.youtube.com/vi/${video.youtubeId}/mqdefault.jpg` : null)
 
   return (
+    <SortableRow id={video.id} disabled={!canUpdate || selectionMode}>
+      {(sortable) => (
     <div
-      ref={setNodeRef}
+      ref={sortable.setNodeRef}
       style={{
-        ...style,
-        opacity: video.isActive === false && !selected ? 0.55 : style.opacity,
+        ...sortable.style,
+        opacity: video.isActive === false && !selected ? 0.55 : (sortable.isDragging ? 0.4 : 1),
         ...(selected ? { borderColor: 'var(--admin-color-primary)', background: 'var(--admin-color-surface-selected)' } : {}),
         display: 'flex', gap: 12, alignItems: 'flex-start', padding: '12px 16px',
       }}
@@ -149,8 +135,7 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPrevi
           {!selectionMode && (
             <button
               type="button"
-              {...attributes}
-              {...listeners}
+              {...sortable.handleProps}
               className="bg-transparent border-none cursor-grab px-1 py-0.5 text-muted-foreground touch-none"
               aria-label={t('homeVideos.dragToReorder')}
             >
@@ -207,6 +192,8 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPrevi
         </div>
       )}
     </div>
+      )}
+    </SortableRow>
   )
 }
 
@@ -226,10 +213,7 @@ export function HomeVideoListScreen({ canUpdate }) {
   const [searchText, setSearchText] = useState('')
   const [statusFilter, setStatusFilter] = useState('ALL')
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  )
+  const sensors = useDragSensors()
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['home-videos'],
@@ -307,6 +291,7 @@ export function HomeVideoListScreen({ canUpdate }) {
     setEditingVideo(video)
     setForm({
       title: video.title,
+      titleEn: video.titleEn || '',
       videoType: video.youtubeId ? 'youtube' : 'upload',
       videoUrl: video.videoUrl,
       thumbnailUrl: video.thumbnail?.url || '',
@@ -361,6 +346,7 @@ export function HomeVideoListScreen({ canUpdate }) {
       : 0
     const input = {
       title,
+      titleEn: form.titleEn.trim(),
       videoUrl: videoCheck.normalized,
       sortOrder: editingVideo ? editingVideo.sortOrder : newSortOrder,
       isActive: form.isActive,
@@ -589,6 +575,16 @@ export function HomeVideoListScreen({ canUpdate }) {
               onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
               placeholder={t('homeVideos.formTitlePlaceholder')}
             />
+          </label>
+
+          <label className="flex flex-col gap-1 text-sm font-semibold">
+            {t('homeVideos.formTitleEn')}
+            <Input
+              value={form.titleEn}
+              onChange={(event) => setForm((prev) => ({ ...prev, titleEn: event.target.value }))}
+              placeholder={t('homeVideos.formTitleEnPlaceholder')}
+            />
+            <span className="text-xs font-normal text-muted-foreground">{t('homeVideos.formTitleEnHint')}</span>
           </label>
 
           <div className="flex flex-col gap-1.5 text-sm font-semibold">

@@ -180,7 +180,7 @@ export function ReceivableDetailScreen({ receivableId, navigate, canRecordPaymen
               <dd>
                 <button
                   type="button"
-                  className="btn-ghost text-xs text-primary-red fw-600"
+                  className="bg-transparent border-none p-0 cursor-pointer text-xs font-semibold text-primary hover:underline"
                   onClick={() => navigate(`/admin/orders/${ar.orderId}`)}
                 >
                   {ar.orderNumber || ar.orderId}

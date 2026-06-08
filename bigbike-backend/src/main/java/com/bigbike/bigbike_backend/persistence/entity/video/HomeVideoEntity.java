@@ -33,6 +33,10 @@ public class HomeVideoEntity {
     @Column(nullable = false, length = 255)
     private String title;
 
+    /** Optional English title (V161). Null/blank → public reads fall back to {@link #title}. */
+    @Column(name = "title_en", length = 255)
+    private String titleEn;
+
     @Column(name = "video_url", nullable = false, columnDefinition = "text")
     private String videoUrl;
 
@@ -60,6 +64,9 @@ public class HomeVideoEntity {
 
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
+
+    public String getTitleEn() { return titleEn; }
+    public void setTitleEn(String titleEn) { this.titleEn = titleEn; }
 
     public String getVideoUrl() { return videoUrl; }
     public void setVideoUrl(String videoUrl) { this.videoUrl = videoUrl; }

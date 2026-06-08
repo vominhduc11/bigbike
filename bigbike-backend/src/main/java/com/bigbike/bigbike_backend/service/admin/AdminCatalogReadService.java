@@ -41,13 +41,14 @@ public class AdminCatalogReadService {
             String stockState,
             String brandId,
             String categoryId,
-            String homepageBlock
+            String homepageBlock,
+            String lang
     ) {
         SortSpec sortSpec = sortParser.parse(sort, "updatedAt", SortDirection.DESC, PRODUCT_SORT_FIELDS);
         String query = coalesceSearch(q, search);
         com.bigbike.bigbike_backend.domain.catalog.HomepageBlock blockFilter = parseHomepageBlock(homepageBlock);
 
-        List<Product> result = catalogReadRepository.findProductsFiltered(query, publishStatus, stockState, brandId, categoryId)
+        List<Product> result = catalogReadRepository.findProductsFiltered(query, publishStatus, stockState, brandId, categoryId, normalizeLocale(lang))
                 .stream()
                 .filter(product -> blockFilter == null || product.homepageBlock() == blockFilter)
                 .sorted(productComparator(sortSpec))
@@ -77,14 +78,15 @@ public class AdminCatalogReadService {
             String sort,
             String q,
             String search,
-            String visibility
+            String visibility,
+            String lang
     ) {
         SortSpec sortSpec = sortParser.parse(sort, "updatedAt", SortDirection.DESC, CATEGORY_SORT_FIELDS);
         String query = coalesceSearch(q, search);
         boolean asc = sortSpec.direction() == SortDirection.ASC;
 
         var paged = catalogReadRepository.findCategoriesPaged(
-                query, visibility, sortSpec.field(), asc, page, size
+                query, visibility, sortSpec.field(), asc, page, size, normalizeLocale(lang)
         );
 
         long total = paged.totalItems();
@@ -124,12 +126,13 @@ public class AdminCatalogReadService {
             String sort,
             String q,
             String search,
-            String visibility
+            String visibility,
+            String lang
     ) {
         SortSpec sortSpec = sortParser.parse(sort, "updatedAt", SortDirection.DESC, BRAND_SORT_FIELDS);
         String query = coalesceSearch(q, search);
 
-        List<Brand> result = catalogReadRepository.findAllBrands().stream()
+        List<Brand> result = catalogReadRepository.findAllBrands(normalizeLocale(lang)).stream()
                 .filter(brand -> matchesVisibility(brand.isVisible(), visibility))
                 .filter(brand -> matchesBrandQuery(brand, query))
                 .sorted(brandComparator(sortSpec))
@@ -148,6 +151,11 @@ public class AdminCatalogReadService {
             return q;
         }
         return search;
+    }
+
+    /** Normalize the requested content language to the repository locale ("vi" default, "en"). */
+    private static String normalizeLocale(String lang) {
+        return "en".equalsIgnoreCase(lang) ? "en" : "vi";
     }
 
     private static boolean matchesVisibility(boolean isVisible, String visibilityRaw) {

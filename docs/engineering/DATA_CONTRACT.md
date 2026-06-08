@@ -327,9 +327,14 @@ vẫn lùi về tiếng Việt. Bản tiếng Việt không bao giờ bị thi�
 **Không dịch ở đợt này:** `slug` (URL dùng chung 1 bản), alt ảnh, tên video,
 tên biến thể, `seo_canonical_url`.
 
+**Admin list reads:** danh sách admin (product/category/brand/content) nay cũng
+resolve **trường hiển thị** (`name` / `title`) theo `lang` qua cùng cơ chế
+`COALESCE(<field>_en, <field>)` — khối `translations` vẫn `null` ở list (chỉ có ở
+detail). Mặc định `vi`; chỉ detail trả cả 2 bản để soạn thảo song ngữ.
+
 Status: `CONFIRMED_FROM_CODE` — `ProductEntity`, `ProductSpecificationEntity`,
 `ProductFaqEntity` (các trường `*En`), `ProductTranslations` domain record,
-`JpaCatalogReadRepository` (resolve locale), migration `V136`.
+`JpaCatalogReadRepository` (resolve locale list + detail), migration `V136`.
 
 ### Category bilingual content — English columns (V137)
 
@@ -406,6 +411,45 @@ Bản tiếng Anh lưu trên các cột `_en` nullable cùng dòng trong bảng 
 Fallback: giống `PRODUCT_RULE_002` — mỗi trường lùi về VI khi EN bị null/blank. Xem `PAGE_RULE_001/002`.
 
 Status: `CONFIRMED_FROM_CODE` — `PageEntity`, `PageTranslations` domain record, migration `V138`.
+
+### Menu item bilingual label — English column (V160)
+
+Mục menu điều hướng có 2 bản nhãn: **tiếng Việt** (canonical, bắt buộc) và **tiếng
+Anh** (tùy chọn). Bản tiếng Anh lưu trên cột `_en` nullable cùng dòng trong bảng
+`menu_items`.
+
+**Cột `_en` trên `menu_items`** (nullable):
+
+| Cột tiếng Việt | Cột tiếng Anh | Kiểu |
+|---|---|---|
+| `label` | `label_en` | `VARCHAR(255)` |
+
+Fallback: giống `PRODUCT_RULE_002` — `label` lùi về VI khi `label_en` null/blank.
+Đọc public (`GET /api/v1/menus/{location}?lang=`) trả `label` đã resolve; đọc admin
+(`GET /api/v1/admin/menus/...`) trả thêm `labelEn` thô để editor sửa song ngữ. Các
+cột khác (url, target, cssClass, status) không dịch.
+
+Status: `CONFIRMED_FROM_CODE` — `MenuItemEntity.labelEn`, `AdminMenuService` (pick
+locale + `getPublicMenuByLocation(location, lang)`), migration `V160`.
+
+### Home video bilingual title — English column (V161)
+
+Video trang chủ có 2 bản tiêu đề: **tiếng Việt** (canonical, bắt buộc) và **tiếng
+Anh** (tùy chọn). Bản tiếng Anh lưu trên cột `_en` nullable cùng dòng trong bảng
+`home_videos`.
+
+**Cột `_en` trên `home_videos`** (nullable):
+
+| Cột tiếng Việt | Cột tiếng Anh | Kiểu |
+|---|---|---|
+| `title` | `title_en` | `VARCHAR(255)` |
+
+Fallback: giống `PRODUCT_RULE_002` — `title` lùi về VI khi `title_en` null/blank.
+Đọc public (`GET /api/v1/home-videos?lang=`) trả `title` đã resolve; đọc admin
+(`GET /api/v1/admin/home-videos`) trả thêm `titleEn` thô để editor sửa song ngữ.
+
+Status: `CONFIRMED_FROM_CODE` — `HomeVideoEntity.titleEn`, `HomeVideo.titleEn`,
+`PublicHomeVideoResponse.from(video, lang)`, migration `V161`.
 
 ### Article body blocks — `body_blocks` (V140)
 
@@ -560,11 +604,10 @@ Status: `CONFIRMED_FROM_CODE` — implemented in `V75__add_credit_and_receivable
 | `credit_status` | `VARCHAR(50)` | NO | `'ACTIVE'` | `ACTIVE` / `SUSPENDED` / `BLOCKED` |
 | `credit_note` | `TEXT` | YES | `null` | Internal admin note on credit profile |
 
-### customers / customer_addresses — account page fields (V126, V127)
+### customers / customer_addresses — account page fields (V127)
 
 | Table | Column | Type | Nullable | Default | Purpose |
 |---|---|---|---|---|---|
-| `customers` | `newsletter_subscribed` | `BOOLEAN` | NO | `false` | Newsletter opt-in; backs the "Đăng ký nhận tin" checkbox on the account info page |
 | `customer_addresses` | `email` | `VARCHAR(255)` | YES | `null` | Per-address contact email; backs the "Email" field on the address book popup |
 
 ### Order line-item thumbnail — `productThumbnailUrl` (response-only, no DB column)

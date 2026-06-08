@@ -9,6 +9,8 @@ public record UpdateMenuItemRequest(
         Boolean clearParentId,
         @Size(max = 255)
         String label,
+        @Size(max = 255)
+        String labelEn,
         @Size(max = 2048)
         String url,
         @Size(max = 64)

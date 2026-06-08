@@ -15,6 +15,7 @@ class PublicHomeVideoResponseTest {
                 "hv_demo",
                 0,
                 "Demo video",
+                null,
                 "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
                 "dQw4w9WgXcQ",
                 new ImageAsset(null, "/media/thumb.jpg", "Thumb", 1280, 720, "image/jpeg"),
@@ -23,7 +24,7 @@ class PublicHomeVideoResponseTest {
                 Instant.now()
         );
 
-        PublicHomeVideoResponse response = PublicHomeVideoResponse.from(video);
+        PublicHomeVideoResponse response = PublicHomeVideoResponse.from(video, "vi");
 
         assertThat(response.embedUrl()).isEqualTo("https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?autoplay=1&rel=0");
         assertThat(response.autoThumbnailUrl()).isEqualTo("https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg");

@@ -52,7 +52,7 @@ public class ContentReadService {
     }
 
     public List<Page> listPublishedPages() {
-        return contentReadRepository.findPagesByFilter(PublishStatus.PUBLISHED, null);
+        return contentReadRepository.findPagesByFilter(PublishStatus.PUBLISHED, null, "vi");
     }
 
     /** Content (news) categories with their PUBLISHED-article counts, for the Tin tức filter. */

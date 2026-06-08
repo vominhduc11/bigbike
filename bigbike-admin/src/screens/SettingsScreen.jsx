@@ -94,6 +94,20 @@ function validateValue(key, value) {
   return null
 }
 
+// Groups whose display text is shown on the storefront and can carry an English
+// translation. Config / contact / store / tax keys stay Vietnamese-only.
+const TRANSLATABLE_GROUPS = new Set(['GENERAL', 'PUBLIC_HOME', 'PUBLIC_HERO', 'SEO'])
+
+// A setting is English-translatable when it lives in a translatable group AND renders
+// as text (rich-text, long-text, or a plain text input) — never images/URLs/numbers/phones.
+function isTranslatableSetting(setting) {
+  const group = (setting.settingGroup || '').toUpperCase()
+  if (!TRANSLATABLE_GROUPS.has(group)) return false
+  if (setting.valueType === 'IMAGE_URL') return false
+  if (setting.valueType === 'HTML' || setting.valueType === 'LONG_TEXT') return true
+  return inputTypeFor(setting.key) === 'text'
+}
+
 // ── Tab config ────────────────────────────────────────────────────────────────
 
 const TAB_ORDER = [
@@ -248,11 +262,14 @@ function tabLabel(group, t) {
 
 // ── SettingField ──────────────────────────────────────────────────────────────
 
-function SettingField({ setting, canUpdate, draft, error, onChange }) {
+function SettingField({ setting, canUpdate, draft, draftEn, error, onChange, onChangeEn }) {
   const { t } = useTranslation()
   const rawValue = displayValue(setting.value)
   const currentValue = draft !== undefined ? draft : rawValue
-  const isDirty = draft !== undefined && draft !== rawValue
+  const rawValueEn = displayValue(setting.valueEn)
+  const currentValueEn = draftEn !== undefined ? draftEn : rawValueEn
+  const translatable = isTranslatableSetting(setting)
+  const isDirty = (draft !== undefined && draft !== rawValue) || (draftEn !== undefined && draftEn !== rawValueEn)
   const type = inputTypeFor(setting.key)
   const placeholder = placeholderFor(setting.key)
   const label = KEY_LABELS_VI[setting.key] || setting.description || setting.key
@@ -330,6 +347,33 @@ function SettingField({ setting, canUpdate, draft, error, onChange }) {
         </div>
       )}
 
+      {canUpdate && translatable && (
+        <div style={{ marginTop: 8 }}>
+          <span className="hint" style={{ display: 'block', marginBottom: 4 }}>{t('settings.englishLabel')}</span>
+          {isHtml ? (
+            <RichTextEditor
+              value={currentValueEn}
+              onChange={(html) => onChangeEn(setting.key, html)}
+              placeholder={t('settings.englishPlaceholder')}
+              enableImagePicker
+            />
+          ) : isLongText ? (
+            <Textarea
+              rows={3}
+              value={currentValueEn}
+              placeholder={t('settings.englishPlaceholder')}
+              onChange={(e) => onChangeEn(setting.key, e.target.value)}
+            />
+          ) : (
+            <Input
+              value={currentValueEn}
+              placeholder={t('settings.englishPlaceholder')}
+              onChange={(e) => onChangeEn(setting.key, e.target.value)}
+            />
+          )}
+        </div>
+      )}
+
       {error && (
         <span id={`err-${setting.key}`} className="bb-muted" style={{ color: 'var(--bb-danger)' }}>{error}</span>
       )}
@@ -339,10 +383,10 @@ function SettingField({ setting, canUpdate, draft, error, onChange }) {
 
 // ── SettingTabPanel ───────────────────────────────────────────────────────────
 
-function SettingTabPanel({ title, items, canUpdate, drafts, errors, onDraftChange, onSave, onDiscard, saving }) {
+function SettingTabPanel({ title, items, canUpdate, drafts, draftsEn, errors, onDraftChange, onDraftChangeEn, onSave, onDiscard, saving }) {
   const { t } = useTranslation()
-  const dirtyCount = Object.keys(drafts).filter(
-    (k) => items.some((s) => s.key === k)
+  const dirtyCount = items.filter(
+    (s) => drafts[s.key] !== undefined || draftsEn[s.key] !== undefined
   ).length
 
   const hasError = items.some((s) => errors[s.key])
@@ -357,8 +401,10 @@ function SettingTabPanel({ title, items, canUpdate, drafts, errors, onDraftChang
             setting={setting}
             canUpdate={canUpdate}
             draft={drafts[setting.key]}
+            draftEn={draftsEn[setting.key]}
             error={errors[setting.key]}
             onChange={onDraftChange}
+            onChangeEn={onDraftChangeEn}
           />
         ))}
       </div>
@@ -391,6 +437,7 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false }) {
   const [fetchKey, setFetchKey] = useState(0)
   const [activeTabOverride, setActiveTabOverride] = useState(null)
   const [drafts, setDrafts] = useState({})
+  const [draftsEn, setDraftsEn] = useState({})
   const [errors, setErrors] = useState({})
   const [saving, setSaving] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
@@ -447,25 +494,29 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false }) {
     setErrors((p) => ({ ...p, [key]: err ? t(err) : '' }))
   }, [t])
 
+  // English drafts: text-only, no validation (titles/descriptions).
+  const handleDraftChangeEn = useCallback((key, value) => {
+    setDraftsEn((p) => ({ ...p, [key]: value }))
+  }, [])
+
   const handleDiscard = useCallback(() => {
     const keys = activeItems.map((s) => s.key)
-    setDrafts((p) => {
-      const n = { ...p }
+    const dropKeys = (obj) => {
+      const n = { ...obj }
       keys.forEach((k) => delete n[k])
       return n
-    })
-    setErrors((p) => {
-      const n = { ...p }
-      keys.forEach((k) => delete n[k])
-      return n
-    })
+    }
+    setDrafts(dropKeys)
+    setDraftsEn(dropKeys)
+    setErrors(dropKeys)
   }, [activeItems])
 
   const handleSave = useCallback(async () => {
-    // Validate all dirty fields in this tab
-    const dirty = activeItems.filter((s) => drafts[s.key] !== undefined)
+    // Validate all dirty fields in this tab (VI values only; EN is free text)
+    const dirty = activeItems.filter((s) => drafts[s.key] !== undefined || draftsEn[s.key] !== undefined)
     const newErrors = {}
     for (const s of dirty) {
+      if (drafts[s.key] === undefined) continue
       const err = validateValue(s.key, drafts[s.key])
       if (err) newErrors[s.key] = t(err)
     }
@@ -486,7 +537,12 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false }) {
     setSaveSuccess(false)
     try {
       const result = await batchUpdateSettings(
-        dirty.map((s) => ({ key: s.key, value: drafts[s.key] }))
+        dirty.map((s) => {
+          const u = { key: s.key }
+          if (drafts[s.key] !== undefined) u.value = drafts[s.key]
+          if (draftsEn[s.key] !== undefined) u.valueEn = draftsEn[s.key]
+          return u
+        })
       )
       // Update state with fresh items from server
       setState((p) => {
@@ -495,16 +551,14 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false }) {
       })
       // Clear drafts for saved keys
       const savedKeys = dirty.map((s) => s.key)
-      setDrafts((p) => {
-        const n = { ...p }
+      const dropSaved = (obj) => {
+        const n = { ...obj }
         savedKeys.forEach((k) => delete n[k])
         return n
-      })
-      setErrors((p) => {
-        const n = { ...p }
-        savedKeys.forEach((k) => delete n[k])
-        return n
-      })
+      }
+      setDrafts(dropSaved)
+      setDraftsEn(dropSaved)
+      setErrors(dropSaved)
       setSaveSuccess(true)
       setTimeout(() => setSaveSuccess(false), 2500)
     } catch (e) {
@@ -514,7 +568,7 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false }) {
     } finally {
       setSaving(false)
     }
-  }, [activeItems, drafts, activeTab, t])
+  }, [activeItems, drafts, draftsEn, activeTab, t])
 
   if (state.status === 'loading') {
     return <StatePanel tone="info" title={t('settings.loading')} description={t('common.pleaseWait')} />
@@ -554,7 +608,7 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false }) {
               const Icon = meta.icon
               const label = tabLabel(group, t)
               const isActive = activeTab === group
-              const dirtyInGroup = items.filter((s) => drafts[s.key] !== undefined).length
+              const dirtyInGroup = items.filter((s) => drafts[s.key] !== undefined || draftsEn[s.key] !== undefined).length
 
               return (
                 <button
@@ -594,8 +648,10 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false }) {
                 items={activeItems}
                 canUpdate={canUpdate}
                 drafts={drafts}
+                draftsEn={draftsEn}
                 errors={errors}
                 onDraftChange={handleDraftChange}
+                onDraftChangeEn={handleDraftChangeEn}
                 onSave={handleSave}
                 onDiscard={handleDiscard}
                 saving={saving}

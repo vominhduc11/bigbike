@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FilterSelect } from '../components/FilterSelect'
+import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { Award, Pencil, Plus } from 'lucide-react'
 import { PaginationControls } from '../components/PaginationControls'
@@ -23,7 +24,7 @@ const INITIAL_QUERY = {
 }
 
 export function BrandListScreen({ navigate, canUpdate }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [query, setQuery] = useState(() => readQueryFromUrl(INITIAL_QUERY))
   const [searchInput, setSearchInput] = useState(() => {
     const params = new URLSearchParams(window.location.search)
@@ -32,7 +33,7 @@ export function BrandListScreen({ navigate, canUpdate }) {
   const debouncedSearch = useDebounce(searchInput, 250)
   const isFirstSearchRender = useRef(true)
 
-  const state = useAdminList(['brands', query], () => fetchBrands(query))
+  const state = useAdminList(['brands', query, i18n.language], () => fetchBrands(query))
 
   useEffect(() => {
     syncQueryToUrl(query, INITIAL_QUERY)
@@ -106,6 +107,10 @@ export function BrandListScreen({ navigate, canUpdate }) {
             { value: 'updatedAt:asc', label: t('sort.oldestUpdated') },
             { value: 'name:asc', label: t('sort.nameAZ') },
           ]}
+        />
+        <PageSizeSelect
+          value={query.pageSize}
+          onChange={(n) => updateQuery({ pageSize: n }, { resetPage: true })}
         />
       </div>
 

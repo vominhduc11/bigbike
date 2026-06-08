@@ -5,7 +5,7 @@ import { DetailSection } from '../components/DetailSection'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
-import { fetchCustomerCoupons, fetchCustomerCredit, fetchCustomerDetail, sendCouponGift, updateCustomer, updateCustomerCredit, updateCustomerStatus } from '../lib/adminApi'
+import { fetchCustomerCoupons, fetchCustomerCredit, fetchCustomerDetail, updateCustomer, updateCustomerCredit, updateCustomerStatus } from '../lib/adminApi'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
@@ -66,17 +66,10 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
   const [creditSaving, setCreditSaving] = useState(false)
   const canReadReceivables = hasPermission ? hasPermission('receivables.read') : false
   const canEditCredit = hasPermission ? hasPermission('receivables.create') : false
-  const canSendCoupon = hasPermission ? hasPermission('coupons.write') : false
   const canReadCoupons = hasPermission ? hasPermission('coupons.read') : false
 
   // Customer coupons state
   const [coupons, setCoupons] = useState({ status: 'idle', items: [], totalItems: 0 })
-
-  // Coupon gift state
-  const EMPTY_COUPON_FORM = { discountType: 'FIXED', amount: '', minimumAmount: '', validDays: '', channel: 'ALL' }
-  const [couponGiftOpen, setCouponGiftOpen] = useState(false)
-  const [couponGiftForm, setCouponGiftForm] = useState(EMPTY_COUPON_FORM)
-  const [couponGiftSaving, setCouponGiftSaving] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -180,32 +173,6 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
     }
   }
 
-  async function handleCouponGiftSend(e) {
-    e.preventDefault()
-    if (!couponGiftForm.amount || Number(couponGiftForm.amount) <= 0) {
-      toast.error('Vui lòng nhập giá trị giảm giá hợp lệ.')
-      return
-    }
-    setCouponGiftSaving(true)
-    try {
-      const payload = {
-        discountType: couponGiftForm.discountType,
-        amount: Number(couponGiftForm.amount),
-        minimumAmount: couponGiftForm.minimumAmount !== '' ? Number(couponGiftForm.minimumAmount) : null,
-        validDays: couponGiftForm.validDays !== '' ? Number(couponGiftForm.validDays) : null,
-        usageLimit: 1,
-        channel: couponGiftForm.channel,
-      }
-      const result = await sendCouponGift(customerId, payload)
-      toast.success(`Đã tạo và gửi mã "${result.item?.code ?? ''}" cho khách hàng.`)
-      setCouponGiftOpen(false)
-      setCouponGiftForm(EMPTY_COUPON_FORM)
-    } catch (err) {
-      toast.error(err.message || 'Gửi mã thất bại.')
-    } finally {
-      setCouponGiftSaving(false)
-    }
-  }
 
   if (state.status === 'loading') return <StatePanel tone="info" title={t('customers.detail.loading')} description={t('common.pleaseWait')} />
   if (state.status === 'error') return <StatePanel tone="danger" title={t('customers.detail.error')} description={state.error} actionLabel={t('common.back')} onAction={() => navigate('/admin/customers')} />
@@ -552,106 +519,7 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
         </div>
       )}
 
-      {/* Coupon gift section — full width below credit */}
-      {canSendCoupon && customer.email && (
-        <div className="mt-6">
-          <DetailSection title="Gửi mã giảm giá">
-            {!couponGiftOpen ? (
-              <div className="flex items-center gap-4">
-                <Button onClick={() => { setCouponGiftForm(EMPTY_COUPON_FORM); setCouponGiftOpen(true) }}>
-                  Tạo & gửi mã giảm giá
-                </Button>
-                <span className="text-sm text-muted-foreground">
-                  Mã sẽ được gửi qua email đến <strong>{customer.email}</strong>
-                </span>
-              </div>
-            ) : (
-              <form onSubmit={handleCouponGiftSend} className="flex flex-col gap-3 max-w-[480px]">
-                <label>
-                  Loại giảm giá
-                  <Select
-                    value={couponGiftForm.discountType}
-                    onValueChange={(val) => setCouponGiftForm((p) => ({ ...p, discountType: val }))}
-                    disabled={couponGiftSaving}
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="FIXED">Giảm tiền cố định (VND)</SelectItem>
-                      <SelectItem value="PERCENT">Giảm theo % đơn hàng</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </label>
 
-                <label>
-                  {couponGiftForm.discountType === 'PERCENT' ? 'Phần trăm giảm (%)' : 'Số tiền giảm (VND)'}
-                  <Input
-                    type="number"
-                    min="1"
-                    max={couponGiftForm.discountType === 'PERCENT' ? '100' : undefined}
-                    step={couponGiftForm.discountType === 'PERCENT' ? '1' : '1000'}
-                    value={couponGiftForm.amount}
-                    onChange={(e) => setCouponGiftForm((p) => ({ ...p, amount: e.target.value }))}
-                    placeholder={couponGiftForm.discountType === 'PERCENT' ? 'VD: 10' : 'VD: 50000'}
-                    disabled={couponGiftSaving}
-                    required
-                  />
-                </label>
-
-                <label>
-                  Đơn hàng tối thiểu (VND) — để trống nếu không yêu cầu
-                  <Input
-                    type="number"
-                    min="0"
-                    step="1000"
-                    value={couponGiftForm.minimumAmount}
-                    onChange={(e) => setCouponGiftForm((p) => ({ ...p, minimumAmount: e.target.value }))}
-                    placeholder="Không giới hạn"
-                    disabled={couponGiftSaving}
-                  />
-                </label>
-
-                <label>
-                  Hiệu lực (số ngày) — để trống nếu không hết hạn
-                  <Input
-                    type="number"
-                    min="1"
-                    max="365"
-                    value={couponGiftForm.validDays}
-                    onChange={(e) => setCouponGiftForm((p) => ({ ...p, validDays: e.target.value }))}
-                    placeholder="VD: 30"
-                    disabled={couponGiftSaving}
-                  />
-                </label>
-
-                <label>
-                  Kênh áp dụng
-                  <Select
-                    value={couponGiftForm.channel}
-                    onValueChange={(val) => setCouponGiftForm((p) => ({ ...p, channel: val }))}
-                    disabled={couponGiftSaving}
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ALL">Tất cả kênh</SelectItem>
-                      <SelectItem value="ONLINE">Chỉ online</SelectItem>
-                      <SelectItem value="POS">Chỉ tại quầy (POS)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </label>
-
-                <div className="flex gap-2 mt-1">
-                  <Button type="submit" disabled={couponGiftSaving}>
-                    {couponGiftSaving ? 'Đang gửi...' : 'Tạo & gửi mã'}
-                  </Button>
-                  <Button type="button" variant="outline" onClick={() => setCouponGiftOpen(false)} disabled={couponGiftSaving}>
-                    Hủy
-                  </Button>
-                </div>
-              </form>
-            )}
-          </DetailSection>
-        </div>
-      )}
     </div>
   )
 }

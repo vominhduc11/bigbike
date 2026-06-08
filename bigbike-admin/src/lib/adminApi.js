@@ -14,6 +14,7 @@ import {
   normalizeSetting,
 } from './contracts'
 import { clearTokens, hasAccessToken, readTokens, writeTokens } from './authStorage'
+import i18n from './i18n'
 
 const API_BASE = (import.meta.env.VITE_ADMIN_API_BASE || '/api/v1').replace(/\/$/, '')
 
@@ -222,12 +223,13 @@ function buildProductQuery(query) {
     page: query?.page,
     size: query?.pageSize,
     sort: query?.sort,
-    q: query?.search,
+    q: query?.q ?? query?.search,
     publishStatus: query?.publishStatus,
     stockState: query?.stockState,
     brandId: query?.brandId || undefined,
     categoryId: query?.categoryId || undefined,
     homepageBlock: query?.homepageBlock,
+    lang: i18n.language,
   }
 }
 
@@ -238,6 +240,7 @@ function buildCategoryQuery(query) {
     sort: query?.sort,
     q: query?.search,
     visibility: query?.visibility,
+    lang: i18n.language,
   }
 }
 
@@ -248,6 +251,7 @@ function buildBrandQuery(query) {
     sort: query?.sort,
     q: query?.search,
     visibility: query?.visibility,
+    lang: i18n.language,
   }
 }
 
@@ -259,6 +263,7 @@ function buildContentQuery(query) {
     q: query?.search,
     type: query?.type,
     publishStatus: query?.publishStatus,
+    lang: i18n.language,
   }
 }
 
@@ -557,26 +562,26 @@ export async function fetchAttributeValues(attributeId) {
   return Array.isArray(payload) ? payload : (payload?.data ?? [])
 }
 
-export async function updateAttribute(attributeId, { name }) {
+export async function updateAttribute(attributeId, { name, nameEn }) {
   const payload = await requestJson(`/admin/attributes/${attributeId}`, {
     method: 'PATCH',
-    body: { name },
+    body: { name, nameEn },
   })
   return payload?.data ?? payload
 }
 
-export async function createAttributeValue(attributeId, { label, slug } = {}) {
+export async function createAttributeValue(attributeId, { label, labelEn, slug } = {}) {
   const payload = await requestJson(`/admin/attributes/${attributeId}/values`, {
     method: 'POST',
-    body: { label, ...(slug ? { slug } : {}) },
+    body: { label, labelEn, ...(slug ? { slug } : {}) },
   })
   return payload?.data ?? payload
 }
 
-export async function updateAttributeValueLabel(valueId, { label }) {
+export async function updateAttributeValueLabel(valueId, { label, labelEn }) {
   const payload = await requestJson(`/admin/attribute-values/${valueId}`, {
     method: 'PATCH',
-    body: { label },
+    body: { label, labelEn },
   })
   return payload?.data ?? payload
 }
@@ -624,11 +629,6 @@ export async function deleteContent(contentType, contentId) {
   const pathType = normalizeContentPathType(contentType)
   const payload = await requestJson(`/admin/content/${pathType}/${contentId}`, { method: 'DELETE' })
   return parseDetailPayload(payload, normalizeContentItem)
-}
-
-export async function fetchContentAuthors() {
-  const payload = await requestJson('/admin/content/reference/authors')
-  return (payload?.data ?? []).map((a) => ({ id: String(a.id ?? ''), name: String(a.name ?? '') }))
 }
 
 export async function fetchContentCategories() {
@@ -1064,6 +1064,10 @@ export async function updateCoupon(couponId, input) {
   return parseDetailPayload(payload, normalizeCoupon)
 }
 
+export async function deleteCoupon(couponId) {
+  await requestJson(`/admin/coupons/${couponId}`, { method: 'DELETE' })
+}
+
 export async function sendCouponGift(customerId, input) {
   const payload = await requestJson(`/admin/customers/${customerId}/coupon-gift`, {
     method: 'POST',
@@ -1156,8 +1160,8 @@ function normalizeSlider(input) {
     location: String(s.location || 'home'),
     sortOrder: Number(s.sortOrder ?? 0),
     isActive: s.isActive !== false,
-    desktopImage: s.desktopImage || null,
-    mobileImage: s.mobileImage || null,
+    desktopImage: normalizeImageAsset(s.desktopImage) ?? null,
+    mobileImage: normalizeImageAsset(s.mobileImage) ?? null,
     externalLink: s.externalLink || null,
     productId: s.productId || null,
   }
@@ -1223,9 +1227,10 @@ function normalizeHomeVideo(input) {
     id: input.id ?? '',
     sortOrder: input.sortOrder ?? 0,
     title: input.title ?? '',
+    titleEn: input.titleEn ?? '',
     videoUrl: input.videoUrl ?? '',
     youtubeId: input.youtubeId ?? null,
-    thumbnail: input.thumbnail ?? null,
+    thumbnail: normalizeImageAsset(input.thumbnail) ?? null,
     isActive: input.isActive !== false,
     createdAt: input.createdAt ?? null,
     updatedAt: input.updatedAt ?? null,
@@ -1947,27 +1952,6 @@ export async function fetchReturnsByOrder(orderId) {
   return raw.map(normalizeReturn)
 }
 
-function normalizeNewsletterSubscriber(s) {
-  if (!s || typeof s !== 'object') return {}
-  return {
-    id: s.id || '',
-    email: s.email || '',
-    createdAt: s.createdAt || null,
-  }
-}
-
-export async function fetchNewsletterSubscribers(query = {}) {
-  try {
-    const params = {}
-    if (query.page) params.page = query.page
-    if (query.pageSize) params.size = query.pageSize
-    const payload = await requestJson('/admin/newsletter-subscribers', { query: params })
-    return parseListPayload(payload, normalizeNewsletterSubscriber, Number(query.pageSize) || 20)
-  } catch (error) {
-    throw normalizeError(error)
-  }
-}
-
 // Dashboard
 
 export async function fetchDashboardSummary(period = '30d') {
@@ -2193,7 +2177,11 @@ function normalizeWarranty(w = {}) {
   return {
     id: w.id ?? '',
     serialId: w.serialId ?? '',
+    serialNumber: w.serialNumber ?? null,
     orderLineItemId: w.orderLineItemId ?? null,
+    orderNumber: w.orderNumber ?? null,
+    productName: w.productName ?? null,
+    variantName: w.variantName ?? null,
     customerId: w.customerId ?? null,
     customerEmail: w.customerEmail ?? null,
     customerPhone: w.customerPhone ?? null,

@@ -20,7 +20,6 @@ import { PublishStatusBadge, StatusBadge } from '../components/StatusBadge'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { RichTextEditor } from '../components/RichTextEditor'
-import { Tabs } from '../components/layout'
 import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
@@ -63,7 +62,6 @@ function buildEmptyForm() {
     parentId: '',
     visible: true,
     showOnHomepage: false,
-    sortOrder: '',
     imageUrl: '',
     bannerImageUrl: '',
     bannerMobileImageUrl: '',
@@ -83,7 +81,6 @@ function buildFormFromItem(item) {
     parentId: item.parentId || '',
     visible: item.isVisible !== false,
     showOnHomepage: Boolean(item.showOnHomepage),
-    sortOrder: item.sortOrder != null ? String(item.sortOrder) : '',
     imageUrl: item.image?.url || '',
     bannerImageUrl: item.bannerImage?.url || '',
     bannerMobileImageUrl: item.mobileBannerImage?.url || '',
@@ -102,7 +99,10 @@ function buildFormFromItem(item) {
 }
 
 function toPayload(form) {
-  const sortStr = form.sortOrder.trim()
+  // sortOrder is intentionally omitted: category ordering is owned solely by the
+  // drag-reorder on CategoryListScreen. The backend update preserves the existing
+  // sortOrder when the field is absent (presence-flag: AdminCatalogMutationService
+  // only sets it when non-null), so the detail form never clobbers the list order.
   const payload = {
     slug: form.slug.trim(),
     name: form.name.trim(),
@@ -110,7 +110,6 @@ function toPayload(form) {
     parentId: form.parentId.trim(),
     visible: Boolean(form.visible),
     showOnHomepage: Boolean(form.showOnHomepage),
-    sortOrder: sortStr !== '' ? parseInt(sortStr, 10) : null,
   }
 
   const imageUrl = form.imageUrl.trim()
@@ -144,7 +143,8 @@ function toPayload(form) {
 }
 
 export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, canUpdate }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const isEnLang = i18n.language === 'en'
   const queryClient = useQueryClient()
   const [form, setForm] = useState(buildEmptyForm)
   const [initialSnapshot, setInitialSnapshot] = useState(JSON.stringify(buildEmptyForm()))
@@ -250,9 +250,6 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
     warning: '',
     error: fetchError?.message ?? '',
   }
-
-  const [contentLang, setContentLang] = useState('vi')
-  const isEnLang = contentLang === 'en'
 
   function updateTranslation(field, value) {
     setForm((previous) => ({
@@ -574,12 +571,6 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
               <h2>{t('categories.sectionBasic')}</h2>
               <p className="sub">{t('categories.sectionBasicDesc')}</p>
             </div>
-            <Tabs
-              ariaLabel={t('categories.detail.contentLanguageAriaLabel', { defaultValue: 'Ngôn ngữ nội dung' })}
-              value={contentLang}
-              onChange={setContentLang}
-              items={[{ key: 'vi', label: 'VI' }, { key: 'en', label: 'EN' }]}
-            />
           </div>
           <div className="bb-card-body">
             <div className="bb-grid-2">
@@ -616,7 +607,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
               <div className="form-field" style={{ gridColumn: '1 / -1' }}>
                 <span>{t('categories.detail.description')}</span>
                 <RichTextEditor
-                  key={`description-${contentLang}`}
+                  key={`description-${i18n.language}`}
                   value={isEnLang ? (form.translations?.en?.description ?? '') : form.description}
                   onChange={(html) => isEnLang ? updateTranslation('description', html) : updateField('description', html)}
                   placeholder={t('categories.descriptionPlaceholder')}

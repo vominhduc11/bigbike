@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { iconBtn, submenuIcon } from "@/lib/ui-classes";
 import { parsePhones, parseShopHours } from "@/lib/utils/shop";
 import { useMediaQueryChange } from "@/lib/hooks/useMediaQueryChange";
+import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 
 type MobileHeaderMenuProps = {
   menuTree: HeaderNavNode[];
@@ -46,7 +47,7 @@ const NAV_LINK_BASE =
   "text-white md:text-foreground hover:text-brand-on-dark " +
   "focus-visible:text-brand-on-dark focus-visible:outline-none pointer-coarse:min-h-11 " +
   "max-md:min-h-11 max-md:py-0 max-md:px-[14px] max-md:border-b " +
-  "max-md:border-[color:var(--bb-mobile-shell-border)] max-md:text-ui-14 max-md:tracking-[0.02em] " +
+  "max-md:border-[color:var(--bb-mobile-shell-border)] max-md:text-ui-14 max-md:tracking-normal " +
   "md:px-[25px] md:py-5 md:text-base " +
   OUTLINE_MOBILE;
 
@@ -341,6 +342,10 @@ export function MobileHeaderMenu({
               />
             ))}
           </nav>
+
+          <div className="border-t flex items-center max-md:px-[14px] max-md:py-4 max-md:border-[color:var(--bb-mobile-shell-border)] max-md:bg-[var(--bb-mobile-shell-surface-2)] md:px-[25px] md:py-4 md:border-[#e8e8e8]">
+            <LanguageSwitcher variant="inline" />
+          </div>
 
           <div className="border-t text-left text-[#cecece] md:text-muted-foreground max-md:px-[14px] max-md:pt-[18px] max-md:pb-[calc(16px_+_env(safe-area-inset-bottom))] max-md:border-[color:var(--bb-mobile-shell-border)] max-md:bg-[var(--bb-mobile-shell-surface-2)] md:px-[25px] md:py-[30px] md:border-[#e8e8e8]">
             <h2 className="m-0 font-display text-base font-semibold uppercase text-white md:text-foreground">

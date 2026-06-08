@@ -59,6 +59,7 @@ public class AdminHomeVideoService {
         entity.setId("hv_" + UUID.randomUUID());
         entity.setSortOrder(request.getSortOrder());
         entity.setTitle(request.getTitle().trim());
+        entity.setTitleEn(normalizeOptional(request.getTitleEn()));
         entity.setVideoUrl(videoUrl);
         entity.setYoutubeId(YouTubeUrlParser.extractId(videoUrl));
         entity.setThumbnail(toImageAsset(request.getThumbnail()));
@@ -81,6 +82,10 @@ public class AdminHomeVideoService {
                 throw ValidationException.fromField("title", "REQUIRED", "title must not be blank.");
             }
             entity.setTitle(request.getTitle().trim());
+        }
+        // Presence-flag: omit titleEn → unchanged; send blank → clears the English title.
+        if (request.getTitleEn() != null) {
+            entity.setTitleEn(normalizeOptional(request.getTitleEn()));
         }
         if (request.getVideoUrl() != null) {
             if (request.getVideoUrl().isBlank()) {
@@ -224,5 +229,10 @@ public class AdminHomeVideoService {
     private static String esc(String s) {
         if (s == null) return "";
         return s.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
+    /** Trim an optional text field; blank/null → null (so a cleared English title stores NULL). */
+    private static String normalizeOptional(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 }

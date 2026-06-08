@@ -127,7 +127,7 @@ export default async function AboutPage() {
   const [pageResult, brandsResult, settingsResult, t] = await Promise.all([
     getPageBySlug("gioi-thieu", locale),
     listBrands({ page: 1, size: 8, sort: "name:asc", lang: locale }),
-    listPublicSettings(),
+    listPublicSettings(locale),
     getTranslations("StaticPage"),
   ]);
 

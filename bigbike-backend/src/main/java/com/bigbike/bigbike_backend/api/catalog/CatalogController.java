@@ -182,9 +182,10 @@ public class CatalogController {
     public ApiDataResponse<CatalogFacets> getCatalogFacets(
             @RequestParam(required = false) @Pattern(regexp = SLUG_REGEX, message = "Invalid category slug.") String category,
             @RequestParam(required = false) @Size(max = 100) String q,
+            @RequestParam(defaultValue = "vi") @Pattern(regexp = LANG_REGEX, message = "Invalid lang.") String lang,
             HttpServletRequest request
     ) {
-        return apiResponseFactory.data(catalogReadService.computeFacets(category, q), request);
+        return apiResponseFactory.data(catalogReadService.computeFacets(category, q, lang), request);
     }
 
     @GetMapping("/brands")

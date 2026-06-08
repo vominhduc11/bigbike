@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FilterSelect } from '../components/FilterSelect'
+import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -59,6 +60,18 @@ function WarrantyDetailModal({ item, onClose, onVoided, canUpdate }) {
             <span className="text-muted-foreground">{t('warranty.modalCreatedAtLabel')}: </span>
             <span>{formatDateTime(detail.createdAt)}</span>
           </div>
+          <div className="col-span-2">
+            <span className="text-muted-foreground">{t('warranty.modalProductName')}: </span>
+            <span>{detail.productName ?? '—'}{detail.variantName ? ` · ${detail.variantName}` : ''}</span>
+          </div>
+          <div className="col-span-2">
+            <span className="text-muted-foreground">{t('warranty.modalSerialNumber')}: </span>
+            <span className="font-mono text-xs">{detail.serialNumber ?? '—'}</span>
+          </div>
+          <div>
+            <span className="text-muted-foreground">{t('warranty.modalOrderNumber')}: </span>
+            <span className="font-mono text-xs">{detail.orderNumber ?? '—'}</span>
+          </div>
           <div>
             <span className="text-muted-foreground">{t('warranty.modalCustomerEmail')}: </span>
             <span>{detail.customerEmail ?? '—'}</span>
@@ -74,10 +87,6 @@ function WarrantyDetailModal({ item, onClose, onVoided, canUpdate }) {
           <div>
             <span className="text-muted-foreground">{t('warranty.modalEndDate')}: </span>
             <span>{formatDate(detail.endDate)}</span>
-          </div>
-          <div className="col-span-2">
-            <span className="text-muted-foreground">{t('warranty.modalSerialId')}: </span>
-            <span className="font-mono text-xs">{detail.serialId}</span>
           </div>
         </div>
 
@@ -161,6 +170,10 @@ export function WarrantyListScreen({ canUpdate }) {
             value: s,
             label: s === 'ALL' ? t('warranty.filterStatus') : t(`warranty.status.${s}`, { defaultValue: s }),
           }))}
+        />
+        <PageSizeSelect
+          value={query.pageSize}
+          onChange={(n) => setQuery((q) => ({ ...q, pageSize: n, page: 1 }))}
         />
       </div>
 

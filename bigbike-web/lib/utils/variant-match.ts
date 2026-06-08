@@ -77,16 +77,18 @@ function getColorSelection(
 export function findMatchingVariant(
   variants: ProductVariant[],
   selection: Record<string, string>,
-  options?: { onlyAvailable?: boolean; requireAll?: boolean },
+  options?: { onlyAvailable?: boolean; requireAll?: boolean; inStockOnly?: boolean },
 ): ProductVariant | null {
   const onlyAvailable = options?.onlyAvailable ?? false;
   const requireAll = options?.requireAll ?? false;
+  const inStockOnly = options?.inStockOnly ?? false;
   const selectionEntries = Object.entries(selection).filter(([, v]) => v);
   if (selectionEntries.length === 0) return null;
 
   return (
     variants.find((v) => {
       if (onlyAvailable && !v.isAvailable) return false;
+      if (inStockOnly && v.stockState === "OUT_OF_STOCK") return false;
       // Every picked attribute must match this variant's value.
       const matchesAllPicks = selectionEntries.every(([key, val]) => {
         const variantValue = getOptionValue(v, key);

@@ -21,10 +21,10 @@ public class HomeHighlightsService {
     private final ProductJpaRepository productRepo;
 
     @Transactional(readOnly = true)
-    public List<HomeHighlightItemDto> listHighlights() {
+    public List<HomeHighlightItemDto> listHighlights(String lang) {
         return highlightRepo.findAllWithProductAndCategoryOrderBySlot()
                 .stream()
-                .map(HomeHighlightItemDto::from)
+                .map(e -> HomeHighlightItemDto.from(e, lang))
                 .toList();
     }
 
@@ -51,6 +51,6 @@ public class HomeHighlightsService {
                 .toList();
 
         highlightRepo.saveAllAndFlush(entities);
-        return listHighlights();
+        return listHighlights("vi");
     }
 }
