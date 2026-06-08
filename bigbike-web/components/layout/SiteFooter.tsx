@@ -43,7 +43,7 @@ function splitHeading(value: string): string[] {
 
 function ContactIcon({ icon }: { icon: FooterContact["icon"] }) {
   return (
-    <span className="mt-0.5 shrink-0 text-brand-inverse md:mt-1" aria-hidden="true">
+    <span className="shrink-0 text-brand-inverse" aria-hidden="true">
       {icon === "phone" ? (
         <PhoneCall size={22} strokeWidth={2} />
       ) : (
@@ -214,7 +214,9 @@ export async function SiteFooter() {
         <Container>
           <div className="grid grid-cols-1 gap-8 md:grid-cols-12 md:gap-10">
             <div className="md:col-span-7">
-              <h2 className="m-0 mb-[2.857rem] font-cta text-footer-slogan font-medium uppercase leading-title text-white lg:max-w-[43rem]">
+              {/* WP .newletters form h3 = weight 500; Barlow Condensed web chưa load 500
+                  (chỉ 400/600/700/900) → font-medium rơi về 400 (mảnh). Dùng 600 cho có weight. */}
+              <h2 className="m-0 mb-[2.857rem] font-cta text-footer-slogan font-semibold uppercase leading-title text-white lg:max-w-[43rem]">
                 {splitHeading(footerTagline).map((line) => (
                   <span key={line} className="block">
                     {line}
@@ -233,7 +235,7 @@ export async function SiteFooter() {
                     <a
                       key={item.id}
                       href={href}
-                      className="flex min-w-0 items-start gap-3.5 font-cta font-medium text-white no-underline transition-colors hover:text-brand-inverse md:gap-5 text-ui-30 leading-heading"
+                      className="flex min-w-0 items-center gap-3.5 font-cta font-semibold text-white no-underline transition-colors hover:text-brand-inverse md:gap-5 text-ui-30 leading-heading"
                     >
                       <ContactIcon icon={item.icon} />
                       <span className="min-w-0 [overflow-wrap:anywhere]">{item.label}</span>
