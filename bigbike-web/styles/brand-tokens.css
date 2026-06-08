@@ -1,4 +1,4 @@
-/**
+﻿/**
  * BigBike Brand Tokens
  * Source: C:\Users\vomin\Downloads\DESIGN.md
  * Track B light-first WP-parity (2026-05-12): nền trang #fff, chữ đen,
@@ -108,33 +108,31 @@
   /* Cart discount/coupon savings — WP parity (.summary--items .discount) */
   --bb-discount: var(--bb-color-purple);
 
-  /* Typography — source of truth: docs/TYPOGRAPHY.md (superfamily Barlow).
-     Display / heading / nav / CTA / label → Barlow Condensed (kèm UPPERCASE);
-     body / link → Barlow. Oswald đã gỡ bỏ hoàn toàn — không dùng nữa. */
-  --bb-font-display: var(--font-barlow-condensed), "Barlow Condensed", "Arial Narrow", sans-serif;
-  --bb-font-heading: var(--font-barlow-condensed), "Barlow Condensed", "Arial Narrow", sans-serif;
-  --bb-font-body: var(--font-barlow), "Barlow", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
-  --bb-font-link: var(--font-barlow), "Barlow", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
-  --bb-font-cta: var(--font-barlow-condensed), "Barlow Condensed", "Barlow", sans-serif;
-  --bb-font-nav: var(--font-barlow-condensed), "Barlow Condensed", "Barlow", sans-serif;
+  /* Typography — source of truth: docs/TYPOGRAPHY.md
+     Chỉ 2 font thực: Arial (body/UI) và Barlow Condensed (CTA/nav desktop).
+     font-cta = Barlow Condensed (injected by next/font via layout.tsx). */
+  --bb-font-body: Arial, Helvetica, "Helvetica Neue", sans-serif;
+  --bb-font-cta:  var(--font-barlow-condensed), Arial, Helvetica, "Helvetica Neue", sans-serif;
 
-  /* ── Fluid type scale (clamp) — docs/TYPOGRAPHY.md mục 4/7 ──────────────────
-     Một token = một clamp(); KHÔNG override font-size theo breakpoint.
-     Anchor: 375px (sàn) → 2560px (trần). Content/UI scale tới 2560px (trước đây
-     chốt 1440px → quá nhỏ trên màn 3xl/4xl showroom) · Display/Heading tới 2560px.
+  /* ── Type scale — WP-parity FIXED (đã gỡ toàn bộ clamp fluid) ───────────────
+     Mô hình mới (2026-06-08): cỡ chữ CỐ ĐỊNH theo px thực của site WordPress gốc,
+     neo root 16px → rem@16 = px_WP / 16 (WP neo root 14px nên px_WP = rem_WP × 14).
+     KHÔNG fluid, KHÔNG vw, KHÔNG scale theo màn lớn — chữ giữ nguyên cỡ từ desktop
+     trở lên, khớp đúng những gì WP cũ render. Chỉ section-title nhảy bậc một lần
+     @768px (xem --bb-text-section-title bên dưới). Xem docs/TYPOGRAPHY.md.
      Dùng qua Tailwind: text-overline / text-caption / text-button / text-body /
      text-body-lg / text-h4…h1 / text-display / text-display-xl. */
-  --fs-overline:   clamp(0.75rem, 0.729rem + 0.092vw, 0.875rem);     /* 12→14 */
-  --fs-caption:    clamp(0.875rem, 0.843rem + 0.137vw, 1.0625rem);   /* 14→17 */
-  --fs-button:     clamp(0.9375rem, 0.905rem + 0.137vw, 1.125rem);   /* 15→18 */
-  --fs-body:       clamp(1rem, 0.936rem + 0.275vw, 1.375rem);        /* 16→22 */
-  --fs-body-lg:    clamp(1.125rem, 1.061rem + 0.275vw, 1.5rem);      /* 18→24 */
-  --fs-h4:         clamp(1.125rem, 1.061rem + 0.275vw, 1.5rem);
-  --fs-h3:         clamp(1.25rem, 1.143rem + 0.458vw, 1.875rem);
-  --fs-h2:         clamp(1.5rem, 1.328rem + 0.732vw, 2.5rem);
-  --fs-h1:         clamp(1.875rem, 1.596rem + 1.19vw, 3.5rem);
-  --fs-display:    clamp(2.5rem, 1.985rem + 2.197vw, 5.5rem);
-  --fs-display-xl: clamp(3rem, 2.313rem + 2.93vw, 7rem);
+  --fs-overline:   0.75rem;    /* 12px — nhãn nhỏ / eyebrow */
+  --fs-caption:    0.875rem;   /* 14px — meta / desc / excerpt (WP 14px) */
+  --fs-button:     1rem;       /* 16px — CTA phụ */
+  --fs-body:       1rem;       /* 16px — body (WP body = 16px) */
+  --fs-body-lg:    1.125rem;   /* 18px — lead */
+  --fs-h4:         1.125rem;   /* 18px — card / sub-heading */
+  --fs-h3:         1.25rem;    /* 20px — sub-heading */
+  --fs-h2:         1.5rem;     /* 24px — heading (WP cụm heading ~24px) */
+  --fs-h1:         1.5rem;     /* 24px — page banner/title: WP body .page-title h1 = 24px ở MỌI màn hình */
+  --fs-display:    2.5rem;     /* 40px — display (trang trí, không có WP equivalent) */
+  --fs-display-xl: 5rem;       /* 80px — display-xl (trang trí: số 404…) */
 
   --bb-text-xs: 12px;
   --bb-text-sm: 14px;
@@ -146,42 +144,38 @@
 
   /* WP-parity exact font sizes — token hóa các cỡ chữ lệch scale chuẩn.
      Expose thành Tailwind utility text-9 … text-50 trong globals.css @theme.
-     text-9…17 cố định (meta/label phụ); text-22…50 đã chuyển sang single clamp()
-     fluid (bám dải px WP mobile→desktop), không còn override @media. */
+     Tất cả CỐ ĐỊNH (đã gỡ clamp) — khớp px thực của WP, không scale theo màn. */
   --bb-text-9: 12px;
   --bb-text-10: 12px;
   --bb-text-11: 12px;
   --bb-text-13: 14px;
   --bb-text-15: 15px;
   --bb-text-17: 17px;
-  /* Header primary nav (Barlow Condensed, uppercase) — single clamp.
-     Giữ ĐÚNG 17px tới hết Full HD (≤1920px) để cân với tổng thể header gốc;
-     chỉ lớn dần 17→21px trong dải 1920→2560px (4xl showroom/4K) để không bị
-     nhỏ-lọt-thỏm. Sàn = MIN 17px nên dưới 1920 luôn bị clamp về 17px. */
-  --bb-text-nav: clamp(1.0625rem, 0.3125rem + 0.625vw, 1.3125rem); /* 17→21 @1920→2560 */
-  --bb-text-22: clamp(1.125rem, 0.659rem + 1.99vw, 1.375rem);   /* 18→22 */
-  --bb-text-26: clamp(1.25rem, 1.022rem + 0.972vw, 1.625rem);   /* 20→26 */
-  --bb-text-32: clamp(1.5rem, 1.196rem + 1.297vw, 2rem);        /* 24→32 */
-  --bb-text-40: clamp(1.625rem, 1.093rem + 2.269vw, 2.5rem);    /* 26→40 */
-  --bb-text-50: clamp(1.875rem, 1.115rem + 3.241vw, 3.125rem);  /* 30→50 */
+  /* Header primary nav (system font, uppercase) — WP header .navigation = 16px, cố định. */
+  --bb-text-nav: 1rem;       /* 16px (WP) */
+  --bb-text-22: 1.125rem;    /* 18px */
+  --bb-text-26: 1.25rem;     /* 20px */
+  --bb-text-32: 1.5rem;      /* 24px */
+  --bb-text-40: 1.625rem;    /* 26px */
+  --bb-text-50: 1.875rem;    /* 30px */
 
-  /* Heading tokens: single clamp() bám đúng size WP hiện hữu, fluid mobile→desktop,
-     thay cho override @media (đã xoá). Comment = dải px sàn→trần. */
-  --bb-text-hero: clamp(1.125rem, 0.669rem + 1.945vw, 1.875rem);          /* 18→30 */
-  --bb-text-section-title: clamp(1.875rem, 1.115rem + 3.241vw, 3.125rem); /* 30→50 */
+  /* Heading tokens — WP-parity CỐ ĐỊNH (đã gỡ clamp). Riêng section-title nhảy bậc
+     một lần @768px: 24px (mobile, WP body .block-title h3 @≤767) → 35px (≥768). */
+  --bb-text-hero: 1.125rem;          /* 18px */
+  --bb-text-section-title: 1.5rem;   /* 24px mobile (WP); → 35px @≥768 (override @media bên dưới) */
   --bb-line-section-title: 1.2;
-  --bb-text-section-kicker: clamp(0.8125rem, 0.7232rem + 0.446vw, 1.125rem); /* 13→18px */
-  --bb-line-section-kicker: var(--bb-line-snug); /* 19px → unitless ~1.2 (16px text); TYPOGRAPHY §7.4 */
+  --bb-text-section-kicker: 1rem;    /* 16px (WP .block-title p.sub-title) */
+  --bb-line-section-kicker: var(--bb-line-snug); /* ~1.2 ≈ WP lh 19px trên 16px */
   --bb-text-news-title: 20px;
-  --bb-line-news-title: var(--bb-line-snug); /* 24px → unitless ~1.2 (20px text); TYPOGRAPHY §7.4 */
-  --bb-text-product-title: 16px;
-  --bb-line-product-title: 1.25; /* 20px → unitless ~1.25 (16px text); TYPOGRAPHY §7.4 */
-  /* WP .slogan-bigbike: Barlow Condensed 500, uppercase, white. Single clamp 46→54.86px. */
-  --bb-text-footer-slogan: clamp(2.875rem, 1.842rem + 4.408vw, 3.429rem);
+  --bb-line-news-title: var(--bb-line-snug);
+  --bb-text-product-title: 16px;    /* WP .product--item-title a = 16px */
+  --bb-line-product-title: 1.25;
+  /* WP footer slogan (.newletters form h3) = 48px / lh 58px (≈1.2), uppercase, cố định. */
+  --bb-text-footer-slogan: 3rem;     /* 48px */
   --bb-line-footer-slogan: 1.2;
-  --bb-text-footer-slogan-mobile: 2.875rem;
-  --bb-text-h1: clamp(1.25rem, 0.794rem + 1.945vw, 2rem);    /* 20→32 */
-  --bb-text-h2: clamp(1.125rem, 0.897rem + 0.972vw, 1.5rem); /* 18→24 */
+  --bb-text-footer-slogan-mobile: 3rem;
+  --bb-text-h1: 1.5rem;      /* 24px (legacy, đồng bộ page banner) */
+  --bb-text-h2: 1.125rem;    /* 18px */
   --bb-text-h3: 18px;
 
   --bb-font-weight-regular: 400;
@@ -328,7 +322,7 @@
 
 .bb-richtext h1,
 .bb-richtext h2 {
-  font-family: var(--bb-font-heading);
+  font-family: var(--bb-font-cta);
   font-weight: 600;
   line-height: var(--bb-line-heading);
   letter-spacing: 0;
@@ -404,8 +398,8 @@
 
 @media (max-width: 575px) {
   :root {
-    /* Toàn bộ heading + numeric token đã fluid qua clamp() — không còn override
-       font-size theo breakpoint. Chỉ còn spacing (--bb-section-y) đổi theo tier. */
+    /* Type tokens đều CỐ ĐỊNH (WP-parity); breakpoint type duy nhất là 768px cho
+       section-title (xem dưới). Ở tier này chỉ còn spacing (--bb-section-y) đổi. */
     --bb-section-y: 2rem;
   }
 }
@@ -416,10 +410,15 @@
   }
 }
 
-/* ≥1920px / ≥2560px: heading tokens KHÔNG còn bump theo breakpoint — đã chuyển sang
-   clamp() fluid, chốt trần ở desktop (đúng quy tắc "một token = một clamp()" của
-   docs/TYPOGRAPHY.md). Cần heading scale tiếp lên ultra-wide/showroom → dùng token
-   --fs-display / --fs-display-xl (scale tới 2560px). */
+/* WP-parity type breakpoint — DUY NHẤT một mốc 768px (Bootstrap md của WP).
+   Section title (.block-title h3): WP render 24px ở mobile (≤767) → 35px ở desktop
+   (≥768). Mọi token type khác CỐ ĐỊNH, không nhảy bậc, không scale theo màn lớn
+   (kể cả ≥1920/2560) — đúng cách WP cũ hiển thị. */
+@media (min-width: 768px) {
+  :root {
+    --bb-text-section-title: 2.1875rem; /* 35px — WP body .block-title h3 (desktop) */
+  }
+}
 
 @media (prefers-reduced-motion: reduce) {
   *,

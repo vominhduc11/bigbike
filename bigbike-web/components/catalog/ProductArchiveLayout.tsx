@@ -67,7 +67,7 @@ export function ProductArchiveLayout({
                 <div className="sticky top-20 z-[2] bg-white max-md:top-[var(--bb-header-height)] max-md:z-30 max-md:[margin-inline:calc(var(--bb-mobile-page-x)*-1)] max-md:border-b max-md:border-border max-md:bg-[color-mix(in_srgb,var(--bb-bg-page)_96%,transparent)] max-md:px-[var(--bb-mobile-page-x)] max-md:py-2.5 max-md:backdrop-blur-[10px]">
                   <div className="flex flex-wrap items-center -mx-[15px]">
                     <div className="min-w-0 w-full px-[15px] flex-[0_0_100%] max-w-full md:flex-[0_0_50%] md:max-w-[50%]">
-                      <div className="min-h-[52px] mb-[30px] text-ui-24 font-semibold leading-[52px] max-md:min-h-0 max-md:m-0 max-md:mb-2.5 max-md:text-sm max-md:leading-[1.35]">
+                      <div className="min-h-[52px] mb-[30px] text-ui-24 font-semibold leading-[52px] max-md:min-h-0 max-md:m-0 max-md:mb-2.5 max-md:leading-[1.35]">
                         {totalItems != null ? `${totalItems} Sản phẩm` : null}
                       </div>
                     </div>
@@ -84,7 +84,7 @@ export function ProductArchiveLayout({
                         className="w-full cursor-pointer border-none bg-transparent text-left text-black"
                         onClick={openMobileFilters}
                       >
-                        <p className="relative m-0 h-[52px] border-[color:var(--bb-border-default)] border-t border-r border-b [border-left:none] py-0 pr-10 pl-5 text-sm font-semibold leading-[50px] max-md:h-11 max-md:min-h-11 max-md:[border-left:1px_solid_var(--bb-border-default)] max-md:font-[family-name:var(--bb-font-cta)] max-md:text-xs max-md:leading-[42px]">
+                        <p className="relative m-0 h-[52px] border-[color:var(--bb-border-default)] border-t border-r border-b [border-left:none] py-0 pr-10 pl-5 text-sm font-semibold leading-[50px] max-md:h-11 max-md:min-h-11 max-md:[border-left:1px_solid_var(--bb-border-default)] max-md:font-[family-name:var(--bb-font-cta)] max-md:leading-[42px]">
                           BỘ LỌC
                           <i
                             className="far fa-sliders-v absolute top-1/2 right-[25px] [transform:translateY(-50%)]"

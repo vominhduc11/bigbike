@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { createContext, useContext, useEffect, useState } from "react";
@@ -52,7 +52,7 @@ export function AccountSectionHeading({
 }) {
   return (
     <div className={accountHeaderShell}>
-      <h1 className="m-0 flex items-center gap-[11px] font-[family-name:var(--bb-font-display)] text-ui-22 font-bold uppercase tracking-normal text-foreground before:h-0 before:w-0 before:shrink-0 before:border-y-[7px] before:border-l-[11px] before:border-y-transparent before:border-l-[var(--bb-brand-primary)] before:content-[''] max-md:text-ui-20 max-md:leading-[1.15]">
+      <h1 className="m-0 flex items-center gap-[11px] font-body text-ui-22 font-bold uppercase tracking-normal text-foreground before:h-0 before:w-0 before:shrink-0 before:border-y-[7px] before:border-l-[11px] before:border-y-transparent before:border-l-[var(--bb-brand-primary)] before:content-[''] max-md:leading-[1.15]">
         {title}
       </h1>
     </div>
@@ -114,7 +114,7 @@ export function AccountShell({ children, loginRedirect }: Props) {
                 {(profile.displayName?.[0] ?? profile.email?.[0] ?? "U").toUpperCase()}
               </div>
               <div className="min-w-0 flex-1">
-                <b className="block overflow-hidden text-ellipsis whitespace-nowrap font-[family-name:var(--bb-font-display)] text-ui-14 font-bold uppercase leading-[1.25] tracking-normal text-foreground">
+                <b className="block overflow-hidden text-ellipsis whitespace-nowrap font-body text-ui-14 font-bold uppercase leading-[1.25] tracking-normal text-foreground">
                   {profile.displayName ?? profile.email?.split("@")[0]}
                 </b>
                 <span className="mt-[3px] block overflow-hidden text-ellipsis whitespace-nowrap text-ui-12 text-muted-foreground">

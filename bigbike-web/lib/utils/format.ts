@@ -31,6 +31,8 @@ export function formatVnd(value: number | null | undefined): string {
 const LEGACY_CDN_PREFIX = "https://cdn.bigbike.vn/uploads/";
 const WP_UPLOADS_PROXY = "/wp-content/uploads/";
 const MINIO_UPLOADS_SUBPATH = "/wp-uploads/";
+const MEDIA_PROXY_PREFIX = "/media-proxy/";
+const MEDIA_PREFIX = "/media/";
 const PUBLIC_BASE_URL = "https://bigbike.vn";
 const SAFE_YOUTUBE_HOSTS = new Set([
   "youtube.com",
@@ -45,6 +47,9 @@ export function resolveMediaUrl(url: string | null | undefined): string | null |
   if (!url) return url;
   if (url.startsWith(LEGACY_CDN_PREFIX)) {
     return WP_UPLOADS_PROXY + url.slice(LEGACY_CDN_PREFIX.length);
+  }
+  if (url.startsWith(MEDIA_PROXY_PREFIX)) {
+    return MEDIA_PREFIX + url.slice(MEDIA_PROXY_PREFIX.length);
   }
   if (/^https:\/\/(?:www\.)?bigbike\.vn\/wp-content\/uploads\//.test(url)) {
     const parsed = new URL(url);

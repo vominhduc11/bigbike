@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -348,7 +348,7 @@ export function MobileHeaderMenu({
           </div>
 
           <div className="border-t text-left text-[#cecece] md:text-muted-foreground max-md:px-[14px] max-md:pt-[18px] max-md:pb-[calc(16px_+_env(safe-area-inset-bottom))] max-md:border-[color:var(--bb-mobile-shell-border)] max-md:bg-[var(--bb-mobile-shell-surface-2)] md:px-[25px] md:py-[30px] md:border-[#e8e8e8]">
-            <h2 className="m-0 font-display text-base font-semibold uppercase text-white md:text-foreground">
+            <h2 className="m-0 font-body text-base font-semibold uppercase text-white md:text-foreground">
               {t("shopInfoContactHeading")}
             </h2>
 

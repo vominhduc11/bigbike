@@ -185,6 +185,8 @@ function buildEmptyForm(contentType) {
     parentId: '',
     coverImageUrl: '',
     coverImageAlt: '',
+    productImageUrl: '',
+    productImageAlt: '',
     bodyBlocks: null,
     seoTitle: '',
     seoDescription: '',
@@ -218,6 +220,8 @@ function buildFormFromItem(contentType, item) {
     parentId: item.parentId || '',
     coverImageUrl: item.coverImage?.url || '',
     coverImageAlt: item.coverImage?.alt || '',
+    productImageUrl: item.productImage?.url || '',
+    productImageAlt: item.productImage?.alt || '',
     bodyBlocks: Array.isArray(item.bodyBlocks)
       ? item.bodyBlocks.map((b) => (b._key ? b : { ...b, _key: generateId() }))
       : null,
@@ -276,6 +280,22 @@ function clearFormFromStorage(key) {
   try { localStorage.removeItem(key) } catch { /* ignore */ }
 }
 
+// Filters out blocks that would fail Bean Validation on the backend (e.g. heading
+// with empty text imported from WordPress). Keeps the save working without losing
+// real content.
+function isBlockValid(block) {
+  if (!block || !block.type) return false
+  switch (block.type) {
+    case 'heading':  return Boolean(block.text && block.text.trim())
+    case 'paragraph': return block.html != null
+    case 'list':     return Array.isArray(block.items) && block.items.length > 0
+    case 'image':    return Boolean(block.url && block.url.trim())
+    case 'video':    return Boolean(block.url && block.url.trim())
+    case 'callout':  return block.html != null
+    default:         return true
+  }
+}
+
 // P1-001: Always emit fields that can be cleared so backend can distinguish
 // "omitted = keep" vs "sent = apply (possibly clear)".
 function toPayload(form, isCreate) {
@@ -286,7 +306,7 @@ function toPayload(form, isCreate) {
     // bodyBlocks presence-flag: send when non-null so backend overwrites both body_blocks + body columns.
     // When null (new form, no blocks added yet) omit so backend leaves columns unchanged.
     bodyBlocks: form.bodyBlocks !== null
-      ? form.bodyBlocks.map(({ _key: _k, ...rest }) => rest)
+      ? form.bodyBlocks.map(({ _key: _k, ...rest }) => rest).filter(isBlockValid)
       : undefined,
   }
 
@@ -296,6 +316,11 @@ function toPayload(form, isCreate) {
     // Always send coverImage so clearing a URL removes it on backend
     payload.coverImage = form.coverImageUrl.trim()
       ? { url: form.coverImageUrl.trim(), alt: form.coverImageAlt.trim() || undefined }
+      : { url: '' }
+
+    // Always send productImage so clearing a URL removes it on backend
+    payload.productImage = form.productImageUrl.trim()
+      ? { url: form.productImageUrl.trim(), alt: form.productImageAlt.trim() || undefined }
       : { url: '' }
 
     // Always send categoryId — empty string clears the category
@@ -819,7 +844,17 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                         recommend={IMAGE_RECO.cover}
                       />
                     </Field>
-
+                    <Field full label={t('content.detail.productImageUrl', { defaultValue: 'Ảnh sản phẩm (overlay carousel)' })} hint={t('content.detail.productImageUrlHint', { defaultValue: 'Ảnh PNG nền trong hiển thị chồng lên ảnh bìa trong carousel Góc Trải Nghiệm ở trang chủ.' })}>
+                      <ImageUrlInput
+                        value={form.productImageUrl}
+                        onChange={(url) => updateField('productImageUrl', url)}
+                        alt={form.productImageAlt}
+                        onAltChange={(v) => updateField('productImageAlt', v)}
+                        disabled={isReadOnly}
+                        error={validationErrors.productImageUrl}
+                        recommend={IMAGE_RECO.squareMedium}
+                      />
+                    </Field>
                   </div>
                 ) : (
                   <>

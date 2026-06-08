@@ -8,6 +8,9 @@ bigbike_mobile/
 bigbike/
 uploads/
 
+# Old WordPress site export (reference only, not for git)
+bigbike_vn__2026_04_17/
+
 # Design assets (large binary/zip files, not for git)
 *.zip
 Bigbike Design System-web/

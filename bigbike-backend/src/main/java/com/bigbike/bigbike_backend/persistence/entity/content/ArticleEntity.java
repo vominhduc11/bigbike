@@ -57,6 +57,11 @@ public class ArticleEntity {
     private Integer coverImageHeight;
     private String coverImageMimeType;
 
+    @Column(columnDefinition = "text")
+    private String productImageUrl;
+
+    private String productImageAlt;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
     private ContentCategoryEntity category;

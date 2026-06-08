@@ -16,7 +16,7 @@
 | Link / tương tác phụ | Xanh `#007BFF` |
 | Chat / hỗ trợ | Cyan `#00BFFF`, nút tròn cố định góc phải dưới |
 | Bo góc | `0px` cho mọi component thường; chỉ phần tử tròn thật sự dùng `50%` |
-| Font body / link | Barlow |
+| Font body / link | Arial |
 | Font heading / display / nav / CTA / label | Barlow Condensed (UPPERCASE) — **Oswald đã gỡ bỏ** |
 | Card | Nền trắng, chữ đen, border `#DDDDDD`, không shadow ở trạng thái nghỉ |
 | Product card | Ảnh vuông 1:1, hover border đỏ + shadow nhẹ đỏ |
@@ -80,55 +80,74 @@ Accessibility mappings:
 
 ## Typography
 
-> Source of truth chi tiết: [`docs/TYPOGRAPHY.md`](docs/TYPOGRAPHY.md) — superfamily Barlow, fluid `clamp()`. **Oswald đã gỡ bỏ.** Một token = một `clamp()`; KHÔNG override font-size theo breakpoint.
+> Source of truth chi tiết: [`docs/TYPOGRAPHY.md`](docs/TYPOGRAPHY.md). **Oswald đã gỡ bỏ.** Mô hình hiện tại: cỡ chữ **CỐ ĐỊNH theo pixel WP-parity** (đã gỡ toàn bộ `clamp()` fluid kể từ 2026-06-08). Chỉ section-title có một bậc nhảy tại `@768px`. Không scale theo màn lớn.
 
-Superfamily **Barlow**: Barlow Condensed cho mọi display/heading/nav/CTA/label (UPPERCASE); Barlow cho body/link. Size fluid qua token `--fs-*` (rem + clamp).
+Hai font thực: **Arial / Helvetica** (body/UI toàn trang) và **Barlow Condensed** (CTA/nav/heading/label, UPPERCASE).
 
-| Vai trò | Font | Size (sàn→trần) | Weight | Line height |
+| Vai trò | Font | Cỡ chữ | Weight | Line height |
 |---|---|---:|---:|---:|
-| Display / H1 | Barlow Condensed | 30→56px (`--fs-h1`) | 600 (700 nhấn) | 1.1 |
-| H2 | Barlow Condensed | 24→40px (`--fs-h2`) | 600 (700 nhấn) | 1.2 |
-| H3–H6 | Barlow Condensed | 20→30px (`--fs-h3`); richtext h3–h6 giữ 18px (`--bb-text-h3`) | 600 | 1.2 |
-| Section title | Barlow Condensed | 30→50px (`--bb-text-section-title`) | 600 | 1.2 |
-| Body | Barlow | 16→22px (`--fs-body`) | 400 | 1.6 |
-| Button / CTA | Barlow Condensed | 15→18px | 600 | 1.2 |
-| Nav | Barlow Condensed | 17px | 600 | 1 |
-| Link (body) | Barlow | 16→22px | 400 | 1.6 |
-| Meta / badge | Barlow Condensed | 12→14px | 600 | 1.4 |
+| Display-XL | — | 80px (`--fs-display-xl`) | 600 | 1.1 |
+| Display | — | 40px (`--fs-display`) | 600 | 1.1 |
+| H1 / Page banner | Arial | 24px (`--fs-h1`) | 600 | 1.1 |
+| H2 | Arial | 24px (`--fs-h2`) | 600 | 1.2 |
+| H3 | Arial | 20px (`--fs-h3`) | 600 | 1.2 |
+| H4 | Arial | 18px (`--fs-h4`) | 600 | 1.2 |
+| Section title | Arial | 24px mobile → 35px (≥768px) (`--bb-text-section-title`) | 600 | 1.2 |
+| Body | Arial | 16px (`--fs-body`) | 400 | 1.5 |
+| Body-LG | Arial | 18px (`--fs-body-lg`) | 400 | 1.5 |
+| Button / CTA | Barlow Condensed | 16px (`--fs-button`) | 600 | 1.2 |
+| Nav | Barlow Condensed | 16px (`--bb-text-nav`) | 600 | 1 |
+| Meta / overline / badge | Barlow Condensed | 12px (`--fs-overline`) | 900 | 1 |
+| Caption | Arial | 14px (`--fs-caption`) | 400 | 1.5 |
 | News title | Barlow Condensed | 20px (`--bb-text-news-title`) | 600 | 1.2 |
-| Price | Barlow Condensed | 16px | 600 | 1.5 |
-| Footer slogan | Barlow Condensed | 46→54.86px | 500 | 1.2 |
+| Product title | Arial | 16px (`--bb-text-product-title`) | 600 | 1.25 |
+| Footer slogan | Barlow Condensed | 48px (`--bb-text-footer-slogan`) | 500 | 1.2 |
 
 Quy tắc:
 
-- Heading, nav, badge, CTA: uppercase + Barlow Condensed.
-- Body text dùng sentence case + Barlow.
-- Không dùng letter-spacing âm (trừ display token theo `docs/TYPOGRAPHY.md`).
+- Section title, product title: uppercase + Arial.
+- Nav, badge, CTA, eyebrow, kicker: uppercase + Barlow Condensed.
+- Body text dùng sentence case + Arial.
+- Không dùng letter-spacing âm.
 - Letter-spacing chuẩn hóa về 3 token: `tracking-normal` (0) mặc định, `tracking-wide` (0.04em) cho uppercase nav/button/kicker, `tracking-display` (0.08em) cho eyebrow nổi bật. KHÔNG dùng arbitrary `tracking-[…]` hay thêm bậc mới (`tracking-wider/widest`).
 - Không render chữ trắng nhỏ hơn 16px trên nền tối, trừ meta phụ có màu `#CECECE`.
 - Form input dùng `--fs-body` (≥16px) → tránh iOS auto-zoom.
 
 ### Tailwind font-size utilities
 
-Token cỡ chữ expose thành Tailwind utility trong `app/globals.css` (`@theme inline`). Heading cấp trang phải dùng **utility token** — KHÔNG dùng `text-2xl`/`text-3xl` cố định hay arbitrary `text-[26px]`.
+Token cỡ chữ expose thành Tailwind utility trong `app/globals.css` (`@theme inline`). Heading cấp trang phải dùng **utility token** — KHÔNG dùng `text-2xl`/`text-3xl` Tailwind cố định hay arbitrary `text-[26px]`.
 
-**Canonical fluid scale (dùng cho component mới / refactor)** — map tới `--fs-*` (một clamp, fluid mobile→ultra-wide):
+**Canonical scale (dùng cho component mới / refactor)** — map tới `--fs-*` (cố định, WP-parity):
 
-| Utility | Token nguồn |
+| Utility | Token nguồn | Giá trị |
+|---|---|---|
+| `text-display-xl` / `text-display` | `--fs-display-xl` / `--fs-display` | 80px / 40px |
+| `text-h1` / `text-h2` / `text-h3` / `text-h4` | `--fs-h1…h4` | 24px / 24px / 20px / 18px |
+| `text-body-lg` / `text-body` | `--fs-body-lg` / `--fs-body` | 18px / 16px |
+| `text-button` / `text-caption` / `text-overline` | `--fs-button` / `--fs-caption` / `--fs-overline` | 16px / 14px / 12px |
+
+**Fixed-px UI scale** — dùng cho button, badge, price, dense label (KHÔNG scale):
+
+| Utility | Giá trị |
 |---|---|
-| `text-display-xl` / `text-display` | `--fs-display-xl` / `--fs-display` |
-| `text-h1` / `text-h2` / `text-h3` / `text-h4` | `--fs-h1…h4` (canonical; KHÔNG qua `--bb-text-*`) |
-| `text-body-lg` / `text-body` | `--fs-body-lg` / `--fs-body` |
-| `text-button` / `text-caption` / `text-overline` | `--fs-button` / `--fs-caption` / `--fs-overline` |
+| `text-ui-9` … `text-ui-17` | 9–17px (mỗi bước) |
+| `text-ui-18` / `text-ui-20` / `text-ui-22` / `text-ui-24` / `text-ui-26` / `text-ui-30` / `text-ui-35` | 18–35px |
 
-**Legacy WP-parity (đang migrate dần, vẫn dùng được):**
+**WP-parity heading + section:**
 
-| Utility | Token nguồn |
-|---|---|
-| `text-section-title` / `text-hero` | `--bb-text-section-title` (30→50px) / `--bb-text-hero` (18→30px) — đã fluid qua clamp |
-| `text-news-title` / `text-product-title` | `--bb-text-news-title` (20px) / `--bb-text-product-title` (16px) — cố định |
-| `text-22` / `text-26` / `text-32` / `text-40` / `text-50` | `--bb-text-22…50` — numeric WP, vẫn step theo breakpoint |
-| `text-9` / `text-10` / `text-11` / `text-13` / `text-15` / `text-17` | `--bb-text-9…17` (12–17px) — cố định, chỉ cho meta / label phụ |
+| Utility | Token nguồn | Giá trị |
+|---|---|---|
+| `text-section-title` | `--bb-text-section-title` | 24px mobile → 35px (≥768px) |
+| `text-hero` | `--bb-text-hero` | 18px cố định |
+| `text-news-title` / `text-product-title` | `--bb-text-news-title` / `--bb-text-product-title` | 20px / 16px cố định |
+| `text-footer-slogan` | `--bb-text-footer-slogan` | 48px cố định |
+
+**Numeric WP-parity (chỉ dùng khi khớp pixel WP gốc):**
+
+| Utility | Token nguồn | Giá trị thực |
+|---|---|---|
+| `text-22` / `text-26` / `text-32` / `text-40` / `text-50` | `--bb-text-22…50` | 18 / 20 / 24 / 26 / 30px |
+| `text-9` / `text-10` / `text-11` / `text-13` / `text-15` / `text-17` | `--bb-text-9…17` | 12 / 12 / 12 / 14 / 15 / 17px |
 
 ---
 

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
@@ -68,7 +68,7 @@ const DialogTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Title
     ref={ref}
-    className={cn("font-heading text-lg font-semibold uppercase leading-tight text-foreground", className)}
+    className={cn("font-body text-lg font-semibold uppercase leading-tight text-foreground", className)}
     {...props}
   />
 ));

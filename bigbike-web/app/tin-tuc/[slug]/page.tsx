@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
@@ -257,7 +257,7 @@ function ArticleSidebarWidget({
   return (
     <div className="mb-[30px]">
       <div>
-        <h3 className="m-0 mb-5 text-black font-heading text-h3 font-semibold leading-[1.3] normal-case">{title}</h3>
+        <h3 className="m-0 mb-5 text-black font-body text-h3 font-semibold leading-[1.3] normal-case">{title}</h3>
       </div>
       <div>
         <div>
@@ -295,7 +295,7 @@ function SidebarArticleItem({ article }: Readonly<{ article: Article }>) {
           {date ? <p className="m-0 text-muted-foreground text-ui-12 leading-[18px] [&:not(:last-child)]:after:content-['/'] [&:not(:last-child)]:after:mx-1.5 [&:not(:last-child)]:after:inline-block [&:not(:last-child)]:after:text-muted-foreground">{date}</p> : null}
         </div>
         <div className="pl-[15px] max-md:bg-white">
-          <h3 className="m-0 text-black font-heading text-ui-14 font-semibold leading-[18px] normal-case">
+          <h3 className="m-0 text-black font-body text-ui-14 font-semibold leading-[18px] normal-case">
             <Link href={href} className="text-inherit no-underline [transition:all_0.3s_ease] hover:text-brand">{title}</Link>
           </h3>
           <p className="hidden">{makeExcerpt(article, 95)}</p>
@@ -345,7 +345,7 @@ function RelatedArticleCard({ article }: Readonly<{ article: Article }>) {
       <div className="max-md:bg-white">
         <div className="flex flex-wrap px-5 pt-5 pb-2.5">{date ? <p className="m-0 text-muted-foreground text-ui-12 leading-5">{date}</p> : null}</div>
         <div className="px-5 pb-[30px] max-md:bg-white">
-          <p className="m-0 mb-2.5 text-black font-heading text-ui-20 font-semibold leading-6 normal-case">
+          <p className="m-0 mb-2.5 text-black font-body text-h4 font-semibold leading-6 normal-case">
             <Link href={href} className="text-inherit no-underline [transition:all_0.3s_ease] hover:text-brand">{title}</Link>
           </p>
           <p className="block m-0 text-black text-ui-14 leading-[25px]">{makeExcerpt(article, 140)}</p>

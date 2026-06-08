@@ -1,4 +1,4 @@
-type SaleBadgeProps = Readonly<{
+﻿type SaleBadgeProps = Readonly<{
   /** Discount percent (already validated > 0 by caller). */
   percent: number;
   /**
@@ -17,7 +17,7 @@ export function SaleBadge({ percent, variant = "ribbon" }: SaleBadgeProps) {
   if (variant === "tilted") {
     return (
       <div className="absolute left-0 top-5 z-[2] h-8 w-20">
-        <p className="relative m-0 w-auto -rotate-[20deg] bg-brand p-0 text-center font-display text-ui-18 font-semibold leading-7 text-white">
+        <p className="relative m-0 w-auto -rotate-[20deg] bg-brand p-0 text-center font-body text-ui-18 font-semibold leading-7 text-white">
           {percent}%
         </p>
       </div>
@@ -36,7 +36,7 @@ export function SaleBadge({ percent, variant = "ribbon" }: SaleBadgeProps) {
 
   return (
     <div className="absolute left-0 top-5 z-[2]">
-      <p className="relative m-0 w-[70px] bg-brand text-center font-display text-base font-semibold leading-[42px] text-white after:absolute after:right-[-33px] after:top-0 after:h-0 after:w-0 after:border-b-0 after:border-l-[42px] after:border-r-[33px] after:border-t-[42px] after:border-l-transparent after:border-r-transparent after:border-t-brand after:content-['']">
+      <p className="relative m-0 w-[70px] bg-brand text-center font-body text-base font-semibold leading-[42px] text-white after:absolute after:right-[-33px] after:top-0 after:h-0 after:w-0 after:border-b-0 after:border-l-[42px] after:border-r-[33px] after:border-t-[42px] after:border-l-transparent after:border-r-transparent after:border-t-brand after:content-['']">
         {percent}%
       </p>
     </div>

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
@@ -77,7 +77,7 @@ function VideoCard({ video, onPlay }: { video: HomeVideo; onPlay: () => void }) 
           />
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2.5 bg-brand" aria-hidden="true">
-            <span className="font-display text-h3 font-bold uppercase tracking-display text-white/80">
+            <span className="font-body text-h3 font-bold uppercase tracking-display text-white/80">
               BIGBIKE
             </span>
           </div>

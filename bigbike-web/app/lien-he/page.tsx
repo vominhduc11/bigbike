@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+﻿import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { Metadata } from "next";
 import Image from "next/image";
@@ -109,7 +109,7 @@ export default async function ContactPage() {
 
           <div className="grid grid-cols-1 items-start gap-10 pb-[60px] pt-8 lg:grid-cols-2 lg:gap-[60px] 3xl:gap-20 4xl:gap-[100px]">
             <div className="min-w-0 2xl:max-w-[640px] 4xl:max-w-[760px]">
-              <h2 className={cn(sectionHeading, "mb-6")}>
+              <h2 className={cn(sectionHeading, "mb-6 !text-ui-24")}>
                 {t("contactInfoHeading")}
               </h2>
               <ContactInfoList
@@ -188,7 +188,7 @@ export default async function ContactPage() {
 
             {(mapEmbedSrc || address || hotline) ? (
               <div className="min-w-0">
-                <h2 className={cn(sectionHeading, "mb-6")}>
+                <h2 className={cn(sectionHeading, "mb-6 !text-ui-24")}>
                   {t("storeSystemHeading")}
                 </h2>
                 {mapEmbedSrc ? (
@@ -213,7 +213,7 @@ export default async function ContactPage() {
                             height={48}
                             className="h-12 w-12 object-contain"
                           />
-                          <h3 className="font-display text-h4 font-bold uppercase text-foreground">
+                          <h3 className="font-body text-h4 font-bold uppercase text-foreground">
                             {pageTitle}
                           </h3>
                         </div>

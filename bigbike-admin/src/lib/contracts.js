@@ -487,6 +487,7 @@ export function normalizeContentItem(input) {
     excerpt: toTrimmedString(source.excerpt) || undefined,
     body: toTrimmedString(source.body) || undefined,
     coverImage: normalizeImageAsset(source.coverImage),
+    productImage: normalizeImageAsset(source.productImage),
     pageType: toTrimmedString(source.pageType) || undefined,
     // Flat id scalar — required by ContentDetailScreen to pre-select dropdown
     // and to re-send on save so backend does not clear the association.

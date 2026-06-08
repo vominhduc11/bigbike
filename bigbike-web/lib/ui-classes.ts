@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Shared Tailwind class bundles — the "1 CSS rule for many elements" cases.
  *
  * Replaces shared multi-selector groups that used to live in globals.css
@@ -54,15 +54,15 @@ export const sectionEyebrow =
  * title — unified from the prior split (`text-26` here vs the home inline
  * `--bb-text-section-title`). Compose with spacing, e.g. `cn(sectionHeading, "mb-4")`. */
 export const sectionHeading =
-  "m-0 font-heading text-[length:var(--bb-text-section-title)] font-semibold leading-[1.2] tracking-normal uppercase text-foreground";
+  "m-0 font-body text-[length:var(--bb-text-section-title)] font-semibold leading-[1.2] tracking-normal uppercase text-foreground";
 /** Smaller section subheading (was `.bb-section-subheading`). */
-export const sectionSubheading = "font-heading text-base font-semibold uppercase text-foreground";
+export const sectionSubheading = "font-body text-base font-semibold uppercase text-foreground";
 /** Empty/error state title (was `.bb-state-title`). */
-export const stateTitle = "m-0 font-heading text-base font-semibold uppercase text-foreground";
+export const stateTitle = "m-0 font-body text-base font-semibold uppercase text-foreground";
 /** Inline meta label (was `.bb-meta-label`). */
 export const metaLabel = "text-sm uppercase tracking-display text-muted-foreground";
 /** Table column header (was `.bb-table-header`). */
-export const tableHeader = "font-heading text-xs font-semibold uppercase tracking-wide";
+export const tableHeader = "font-body text-xs font-semibold uppercase tracking-wide";
 /** Detail value cell (was `.bb-detail-table-cell`). */
 export const detailTableCell = "mt-[3px] block text-sm font-bold normal-case tracking-wide text-foreground";
 /** Category badge text (was `.bb-category-badge`). */
@@ -70,7 +70,7 @@ export const categoryBadge = "m-0 text-sm font-bold uppercase tracking-display t
 
 /** Auth card heading (was `.bb-auth-heading`). On auth-wrap h1s the kept marker
  * rule `.bb-page--auth .bb-auth-wrap h1` overrides this (text-32/uppercase). */
-export const authHeading = "font-heading text-[length:var(--fs-h3)] font-semibold normal-case";
+export const authHeading = "font-body text-[length:var(--fs-h3)] font-semibold normal-case";
 /** Auth form input sizing (was `.bb-auth-input`). */
 export const authInput = "h-[52px] min-h-[52px] px-5 py-0 text-sm";
 
@@ -82,7 +82,7 @@ export const authInput = "h-[52px] min-h-[52px] px-5 py-0 text-sm";
  * per-button visibility classes (e.g. `hidden md:inline-flex`). */
 export const iconBtn =
   "inline-flex items-center justify-center h-full min-h-[var(--bb-header-height)] w-auto py-0 px-[clamp(10px,0.9vw,16px)] 4xl:px-5 " +
-  "text-white bg-transparent border-none rounded-none text-[1.286rem] leading-none cursor-pointer no-underline " +
+  "!text-white bg-transparent border-none rounded-none text-ui-18 leading-none cursor-pointer no-underline " +
   "transition-[color,background] duration-fast ease-[var(--bb-ease-standard)] " +
   // `!` on hover color: the cart link is an <a>, so the unlayered global `a:hover`
   // (brand red #cc0906) would otherwise beat this; rgba (not the /opacity form) to

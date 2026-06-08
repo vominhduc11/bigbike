@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Fragment, type ReactNode } from "react";
 import Link from "next/link";
@@ -146,7 +146,7 @@ export function ComparisonTable({ products }: ComparisonTableProps) {
                     </Link>
                     <Link
                       href={toProductPath(product.slug)}
-                      className="line-clamp-3 text-left font-heading text-sm font-semibold uppercase leading-tight text-foreground transition-colors hover:text-brand"
+                      className="line-clamp-3 text-left font-body text-sm font-semibold uppercase leading-tight text-foreground transition-colors hover:text-brand"
                     >
                       {name}
                     </Link>
@@ -162,7 +162,7 @@ export function ComparisonTable({ products }: ComparisonTableProps) {
             const { current, compare } = priceOf(p);
             return (
               <span className="flex flex-col">
-                <b className="font-display text-base text-brand">
+                <b className="font-body text-base text-brand">
                   {current > 0 ? formatVnd(current) : t("contactPrice")}
                 </b>
                 {compare && (

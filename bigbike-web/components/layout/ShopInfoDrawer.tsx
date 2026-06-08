@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
 import { useTranslations } from "next-intl";
@@ -116,7 +116,7 @@ export function ShopInfoDrawer({
             </div>
 
             <div className="mt-[70px]">
-              <h2 className="m-0 text-foreground font-display text-ui-16 font-semibold uppercase">
+              <h2 className="m-0 text-foreground font-body text-ui-16 font-semibold uppercase">
                 {t("shopInfoContactHeading")}
               </h2>
 

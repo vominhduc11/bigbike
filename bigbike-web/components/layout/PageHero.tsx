@@ -1,4 +1,4 @@
-import Image from "next/image";
+﻿import Image from "next/image";
 import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { Breadcrumb, type BreadcrumbItem } from "@/components/ui/Breadcrumb";
 import { Container } from "@/components/layout/Container";
@@ -90,12 +90,12 @@ function WelcomeHero({ title, watermark, illustration, imageUrl, defaultBgUrl }:
           {watermark ? (
             <span
               aria-hidden="true"
-              className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 select-none whitespace-nowrap font-display font-bold uppercase leading-none tracking-wide text-white/[0.07] text-[clamp(64px,19vw,200px)]"
+              className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 select-none whitespace-nowrap font-body font-bold uppercase leading-none tracking-wide text-white/[0.07] text-[clamp(64px,19vw,200px)]"
             >
               {watermark}
             </span>
           ) : null}
-          <h1 className="relative m-0 font-display text-h1 font-bold uppercase leading-display tracking-wide text-white [text-shadow:0_2px_14px_rgba(0,0,0,0.7)]">
+          <h1 className="relative m-0 font-body text-h1 font-bold uppercase leading-display tracking-wide text-white [text-shadow:0_2px_14px_rgba(0,0,0,0.7)]">
             {title}
           </h1>
         </div>

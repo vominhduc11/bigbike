@@ -15,6 +15,8 @@ public record Article(
         String excerpt,
         String body,
         ImageAsset coverImage,
+        /** ACF product_image overlay for the Experience Carousel (re-added V171). Null when not set. */
+        ImageAsset productImage,
         ContentCategorySummary category,
         List<ContentCategorySummary> categories,
         PublishStatus publishStatus,

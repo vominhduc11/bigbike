@@ -3,6 +3,7 @@ package com.bigbike.bigbike_backend.api.admin.dto;
 import com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.domain.content.PageType;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -18,7 +19,7 @@ import lombok.Setter;
 @Setter
 @Builder
 @NoArgsConstructor
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class UpsertPageRequest {
 
     private static final String SLUG_REGEX = "^[a-z0-9]+(?:-[a-z0-9]+)*$";
@@ -61,6 +62,7 @@ public class UpsertPageRequest {
     @Size(max = 200, message = "bodyBlocks must not exceed 200 blocks.")
     private List<DescriptionBlock> bodyBlocks;
 
+    @JsonIgnore
     @Setter(AccessLevel.NONE)
     private boolean bodyBlocksPresent = false;
 
@@ -69,6 +71,7 @@ public class UpsertPageRequest {
         this.bodyBlocksPresent = true;
     }
 
+    @JsonIgnore
     public boolean isBodyBlocksPresent() {
         return bodyBlocksPresent;
     }

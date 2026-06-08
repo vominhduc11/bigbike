@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { PageHero } from "@/components/layout/PageHero";
 import { Container } from "@/components/layout/Container";
@@ -34,10 +34,10 @@ export default async function NotFoundPage() {
           <div className="flex justify-center select-none" aria-hidden="true">
             <div className="relative">
               {/* bespoke: display-only ghost text, no token at this scale */}
-              <span className="font-display font-bold text-[clamp(7rem,22vw,14rem)] leading-none tracking-normal text-foreground/[0.07] select-none">
+              <span className="font-body font-bold text-[clamp(7rem,22vw,14rem)] leading-none tracking-normal text-foreground/[0.07] select-none">
                 404
               </span>
-              <span className="absolute inset-0 flex items-center justify-center font-display font-bold text-display-xl leading-none tracking-normal text-brand">
+              <span className="absolute inset-0 flex items-center justify-center font-body font-bold text-display-xl leading-none tracking-normal text-brand">
                 404
               </span>
             </div>

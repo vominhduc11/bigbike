@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useTranslations } from "next-intl";
 import { safeText } from "@/lib/utils/format";
@@ -19,7 +19,7 @@ export function ProductSpecTable({
     <div className="mb-4 leading-relaxed!">
       {/* Tiêu đề chỉ hiện desktop — mobile đã có nhãn section do ProductTabs
           tự chèn qua `before:content-[attr(data-label)]`, không lặp lại. */}
-      <h3 className="mb-6 font-[family-name:var(--bb-font-display)] text-xl font-semibold tracking-normal text-[var(--bb-text-primary)] leading-tight! max-md:hidden">
+      <h3 className="mb-6 font-body text-xl font-semibold tracking-normal text-[var(--bb-text-primary)] leading-tight! max-md:hidden">
         {tProduct("specifications")}
       </h3>
       <dl className="m-0 border-t border-border">

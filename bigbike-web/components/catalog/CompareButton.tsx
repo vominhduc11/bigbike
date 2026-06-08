@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCart } from "@/lib/cart-context";
 import { useCompare } from "@/lib/compare-context";
@@ -58,7 +58,7 @@ export function CompareButton({ product, variant = "icon" }: CompareButtonProps)
         onClick={handleClick}
         aria-pressed={active}
         className={cn(
-          "mt-2 flex items-center justify-center gap-2 border-2 px-4 py-3 font-heading text-sm font-semibold uppercase tracking-wide transition-colors",
+          "mt-2 flex items-center justify-center gap-2 border-2 px-4 py-3 font-body text-sm font-semibold uppercase tracking-wide transition-colors",
           active
             ? "border-brand bg-brand-soft text-brand"
             : "border-border text-foreground hover:border-brand hover:text-brand",

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import * as SelectPrimitive from "@radix-ui/react-select";
@@ -94,7 +94,7 @@ const SelectLabel = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SelectPrimitive.Label
     ref={ref}
-    className={cn("px-3 py-1.5 text-sm font-semibold font-heading uppercase text-muted-foreground", className)}
+    className={cn("px-3 py-1.5 text-sm font-semibold font-body uppercase text-muted-foreground", className)}
     {...props}
   />
 ));

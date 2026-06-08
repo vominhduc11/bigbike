@@ -124,7 +124,7 @@ export function LanguageSwitcher({ variant = "icon" }: { variant?: "icon" | "inl
         disabled={isPending}
       >
         <Globe size={18} aria-hidden className="shrink-0" />
-        <span className="font-cta text-[11px] font-bold uppercase leading-none">{locale.toUpperCase()}</span>
+        <span className="font-cta text-ui-11 font-bold uppercase leading-none">{locale.toUpperCase()}</span>
       </button>
 
       <div

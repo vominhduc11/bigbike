@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
@@ -88,7 +88,7 @@ function ServiceTileCard({ tile }: { tile: ServiceTile }) {
       />
       <div className="min-w-0">
         <h4
-          className={`mb-1.5 font-display text-base font-semibold uppercase leading-tight ${
+          className={`mb-1.5 font-body text-base font-semibold uppercase leading-tight ${
             tile.highlight ? "text-white" : "text-foreground"
           }`}
         >
@@ -168,7 +168,7 @@ export default async function AboutPage() {
         <Container>
           <div className="grid grid-cols-1 items-start gap-6 pb-10 lg:grid-cols-[4fr_5fr_3fr] lg:gap-[30px] xl:gap-[48px] 2xl:gap-[60px]">
             <div>
-              <h3 className={cn(sectionHeading, "mb-4")}>
+              <h3 className={cn(sectionHeading, "mb-4 !text-ui-24")}>
                 {t("aboutBigbike")}
               </h3>
               <p className="m-0 text-body leading-snug text-muted-foreground">
@@ -201,7 +201,7 @@ export default async function AboutPage() {
                           className="max-h-12 w-auto object-contain"
                         />
                       ) : (
-                        <span className="text-center font-display text-overline font-semibold uppercase text-foreground">
+                        <span className="text-center font-body text-overline font-semibold uppercase text-foreground">
                           {brand.name}
                         </span>
                       )}
@@ -214,7 +214,7 @@ export default async function AboutPage() {
 
           <div className="grid grid-cols-1 items-start gap-[30px] py-[60px] lg:grid-cols-[4fr_8fr] xl:gap-[48px] xl:py-[80px] 2xl:py-[100px]">
             <div>
-              <h3 className={cn(sectionHeading, "mb-4")}>
+              <h3 className={cn(sectionHeading, "mb-4 !text-ui-24")}>
                 {t("aboutQualityTitle")}
               </h3>
               <p className="m-0 text-body leading-relaxed text-muted-foreground">
@@ -238,7 +238,7 @@ export default async function AboutPage() {
 
           {(address || hotline || hotline2 || facebookUrl) ? (
             <div className="py-10">
-              <h3 className={cn(sectionHeading, "mb-3")}>
+              <h3 className={cn(sectionHeading, "mb-3 !text-ui-24")}>
                 {t("aboutConnectTitle")}
               </h3>
               <p className="mb-2 text-muted-foreground">{t("aboutConnectBody1")}</p>

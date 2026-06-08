@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import ImageExt from '@tiptap/extension-image'
+import LinkExt from '@tiptap/extension-link'
+import UnderlineExt from '@tiptap/extension-underline'
 import Placeholder from '@tiptap/extension-placeholder'
 import {
   Bold, Code, Heading2, Heading3, Image, Italic, Link, Link2Off, List, ListOrdered,
@@ -51,10 +53,11 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
       StarterKit.configure({
         heading: { levels: [2, 3] },
         codeBlock: { languageClassPrefix: 'language-' },
-        link: {
-          openOnClick: false,
-          HTMLAttributes: { rel: 'noopener noreferrer', target: '_blank' },
-        },
+      }),
+      UnderlineExt,
+      LinkExt.configure({
+        openOnClick: false,
+        HTMLAttributes: { rel: 'noopener noreferrer', target: '_blank' },
       }),
       ImageExt.configure({
         HTMLAttributes: { class: 'rte-image' },

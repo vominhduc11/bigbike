@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -191,7 +191,7 @@ export function MobileCartSheet() {
                             +
                           </button>
                         </div>
-                        <strong className="text-brand-on-dark font-heading text-ui-14">{formatVnd(item.lineTotal)}</strong>
+                        <strong className="text-brand-on-dark font-body text-ui-14">{formatVnd(item.lineTotal)}</strong>
                       </div>
                     </div>
                     <button
@@ -214,7 +214,7 @@ export function MobileCartSheet() {
           <div className="flex-none pt-3 px-[18px] pb-[max(16px,env(safe-area-inset-bottom))] border-t border-[var(--bb-mobile-shell-border)] bg-[var(--bb-mobile-shell-surface-2)]">
             <div className="flex items-baseline justify-between gap-3 mb-3">
               <span className={microLabel}>TỔNG TẠM TÍNH</span>
-              <strong className="text-[var(--bb-text-inverse)] font-heading text-ui-22">
+              <strong className="text-[var(--bb-text-inverse)] font-body text-ui-22">
                 {formatVnd(cart?.totals.totalAmount ?? 0)}
               </strong>
             </div>

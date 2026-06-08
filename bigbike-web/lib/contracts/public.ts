@@ -293,6 +293,8 @@ export type Article = {
   excerpt?: string;
   body: string;
   coverImage?: ImageAsset;
+  /** ACF product_image overlay used by the Experience Carousel. Null when not set. */
+  productImage?: ImageAsset | null;
   category?: ContentCategorySummary;
   categories?: ContentCategorySummary[];
   publishStatus: PublishStatus;

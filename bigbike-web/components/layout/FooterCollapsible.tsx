@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useId, useState } from "react";
 import type { ReactNode } from "react";
@@ -10,7 +10,7 @@ export function FooterCollapsible({ title, children }: { title: string; children
 
   return (
     <section className="mb-[2.286rem] max-md:mb-7 max-md:border-b max-md:border-white/20 max-md:pb-6">
-      <h3 className="m-0 font-heading text-h4 font-medium uppercase text-brand-on-dark">
+      <h3 className="m-0 font-body text-h4 font-medium uppercase text-brand-on-dark">
         {/* Desktop/tablet: static heading — content is always visible, so no fake toggle */}
         <span className="block max-md:hidden">{title}</span>
         {/* Mobile: real collapse toggle with state-accurate ARIA */}

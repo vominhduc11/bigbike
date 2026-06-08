@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /* eslint-disable @next/next/no-img-element */
 
@@ -67,7 +67,7 @@ const PRICE_FALLBACK: { key: string; label: string; min?: number; max?: number }
  * by a second @media block: wrapper min(86vw,340px)/18px pad, overlay color-mix 58%, widget 20/16). */
 const WIDGET = "mb-[30px] border-b border-[var(--bb-border-default)] pb-[15px] last:border-b-0 max-md:mb-5 max-md:pb-4";
 const WIDGET_TITLE_H3 =
-  "m-0 font-[family-name:var(--bb-font-display)] text-ui-24 font-semibold uppercase text-black";
+  "m-0 font-body text-ui-24 font-semibold uppercase text-black";
 const LIST = "m-0 list-none p-0"; // widget--body ul
 const LIST_LINK =
   "relative block pr-5 text-sm font-semibold leading-[1.3] text-muted-foreground no-underline hover:text-brand";

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -58,7 +58,7 @@ export type PurchaseSectionClientProps = {
 // overrides (px-0 + scale-100 + normal-case + h/w) neutralise the variant's base
 // padding/hover-scale/uppercase so the WP-parity look is preserved 1:1.
 const ADD_BTN =
-  "w-full h-[52px] px-0 border-none rounded-none bg-brand text-white font-body text-ui-16 font-semibold !leading-[52px] normal-case hover:not-disabled:scale-100 disabled:cursor-not-allowed disabled:bg-[var(--bb-color-gray-450)] disabled:opacity-70 max-md:min-h-[52px] max-md:font-cta max-md:text-ui-14 max-md:uppercase max-md:tracking-normal";
+  "w-full h-[52px] px-0 border-none rounded-none bg-brand text-white font-body text-ui-16 font-semibold !leading-[52px] normal-case hover:not-disabled:scale-100 disabled:cursor-not-allowed disabled:bg-[var(--bb-color-gray-450)] disabled:opacity-70 max-md:min-h-[52px] max-md:font-cta max-md:uppercase max-md:tracking-normal";
 
 // Share icon links + native-share button (1em icons, brand on hover).
 const SOCIAL_LINK =
@@ -105,7 +105,7 @@ function RatingRow({
       />
       <meta itemProp="bestRating" content="5" />
       <p className="m-0 mt-1 text-black text-ui-14 !leading-[1.4]">
-        <span itemProp="ratingValue">{displayValue}</span>
+        <span itemProp="ratingValue" className="text-ui-22 align-middle font-semibold">{displayValue}</span>
         <span aria-hidden="true">★</span>{" "}
         <span className="rating-count">
           (<span itemProp="reviewCount">{count}</span> {t("reviewsWord")})
@@ -269,7 +269,7 @@ export function PurchaseSectionClient({
 
       <div className="bb-wp-pdp-info-col product-information min-w-0 max-[1024px]:order-2 max-[1024px]:w-full">
         <div className="mb-5 max-md:mb-3">
-          <h1 className="m-0 font-[family-name:var(--bb-font-display)] text-ui-30 max-[1024px]:text-ui-26 max-md:text-ui-24 font-semibold !leading-[3.75rem] max-[1024px]:!leading-[1.25] max-md:!leading-[1.12] tracking-normal normal-case max-md:uppercase text-black">
+          <h1 className="m-0 font-body text-ui-30 font-semibold !leading-[1.25] tracking-normal normal-case max-md:uppercase text-black">
             {productName}
           </h1>
         </div>

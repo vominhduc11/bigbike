@@ -371,11 +371,9 @@ public class AdminMediaService {
         if (query.mimeType() != null && !query.mimeType().isBlank()) {
             spec = spec.and(MediaSpecifications.withMimeTypePrefix(query.mimeType()));
         }
-        // Default to MINIO so editors don't see legacy WordPress metadata that has no
-        // public URL. The param is still honored when explicitly passed for migration debugging.
-        String effectiveProvider = (query.storageProvider() != null && !query.storageProvider().isBlank())
-                ? query.storageProvider() : "MINIO";
-        spec = spec.and(MediaSpecifications.withStorageProvider(effectiveProvider));
+        if (query.storageProvider() != null && !query.storageProvider().isBlank()) {
+            spec = spec.and(MediaSpecifications.withStorageProvider(query.storageProvider()));
+        }
 
         if (query.uploadedFrom() != null) {
             spec = spec.and(MediaSpecifications.uploadedAfter(query.uploadedFrom()));

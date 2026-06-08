@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import * as SheetPrimitive from "@radix-ui/react-dialog";
@@ -94,7 +94,7 @@ const SheetTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SheetPrimitive.Title
     ref={ref}
-    className={cn("font-heading text-lg font-semibold uppercase leading-tight text-foreground", className)}
+    className={cn("font-body text-lg font-semibold uppercase leading-tight text-foreground", className)}
     {...props}
   />
 ));

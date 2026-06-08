@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { getLocale } from "next-intl/server";
@@ -129,7 +129,7 @@ function WpCategoryListItem({ category }: { category: Category }) {
       className="group relative flex flex-col items-center justify-center h-[290px] max-md:h-[170px] p-[30px] max-md:p-4 bg-white border-r border-b border-r-border-default border-b-border-default text-center no-underline cursor-pointer overflow-hidden before:content-[''] before:absolute before:inset-0 before:bg-[url('/wp/cat-hover.jpg')] before:bg-[position:top_center] before:bg-cover before:bg-no-repeat before:opacity-0 before:[transition:opacity_0.2s_ease] hover:before:opacity-100 focus-visible:[outline:var(--bb-focus-outline)] focus-visible:[outline-offset:-3px] focus-visible:z-[2]"
     >
       <span
-        className="relative z-[1] flex items-center justify-center w-[72px] h-[72px] max-md:w-12 max-md:h-12 min-[1536px]:w-20 min-[1536px]:h-20 min-[2560px]:w-[88px] min-[2560px]:h-[88px] pointer-events-none"
+        className="relative z-[1] flex items-center justify-center h-[60px] max-md:h-10 min-[1536px]:h-[68px] min-[2560px]:h-[76px] pointer-events-none"
         aria-hidden="true"
       >
         <Image
@@ -137,11 +137,11 @@ function WpCategoryListItem({ category }: { category: Category }) {
           alt=""
           width={96}
           height={96}
-          sizes="(min-width: 2560px) 88px, (min-width: 1536px) 80px, 72px"
-          className="block w-full h-full object-contain [transition:filter_0.2s_ease,transform_0.2s_ease] group-hover:[filter:brightness(0)_invert(1)] group-hover:[transform:scale(1.06)] group-active:[transform:scale(0.97)]"
+          sizes="96px"
+          className="h-full w-auto [transition:filter_0.2s_ease,transform_0.2s_ease] group-hover:[filter:brightness(0)_invert(1)] group-hover:[transform:scale(1.06)] group-active:[transform:scale(0.97)]"
         />
       </span>
-      <span className="relative z-[1] line-clamp-2 mt-6 max-md:mt-3 font-[family-name:var(--bb-font-cta)] font-semibold text-ui-17 max-md:text-ui-13 min-[1536px]:text-ui-18 min-[2560px]:text-ui-20 leading-[1.2] tracking-normal uppercase text-foreground [transition:color_0.2s_ease] group-hover:text-white">
+      <span className="relative z-[1] line-clamp-2 mt-6 max-md:mt-3 font-[family-name:var(--bb-font-cta)] font-semibold text-ui-17 leading-[1.2] tracking-normal uppercase text-foreground [transition:color_0.2s_ease] group-hover:text-white">
         {name}
       </span>
     </Link>
@@ -152,7 +152,7 @@ function HomeCategoryHighlights({ items }: { items: HomeHighlightItem[] }) {
   if (items.length === 0) return null;
 
   return (
-    <div className="category-list py-15 max-[1024px]:py-13 max-md:py-10">
+    <div className="category-list py-15">
       <div className="mx-auto w-full max-w-[var(--bb-container-xl)] px-[15px] max-md:max-w-none max-md:px-[var(--bb-mobile-page-x)]">
         <div className="flex flex-wrap -mx-[15px]">
           {items.map((item, idx) => {
@@ -164,17 +164,17 @@ function HomeCategoryHighlights({ items }: { items: HomeHighlightItem[] }) {
               <div key={item.slot} className="relative w-full px-[15px] md:flex-[0_0_33.333333%] md:max-w-[33.333333%]">
                 <div
                   className={cn(
-                    "relative h-[300px] min-[1920px]:h-[360px] min-[2560px]:h-[480px] max-md:h-[180px] p-[30px] min-[2560px]:p-10 max-md:p-[18px_20px] border border-border-default bg-white uppercase",
+                    "relative h-[300px] min-[1920px]:h-[360px] min-[2560px]:h-[480px] p-[30px] min-[2560px]:p-10 border border-border-default bg-white uppercase",
                     idx < items.length - 1 && "max-md:mb-5",
                   )}
                 >
-                  <div className="absolute right-[30px] min-[2560px]:right-10 max-md:right-[18px] bottom-0">
+                  <div className="absolute right-[30px] min-[2560px]:right-10 bottom-0">
                     <Link href={href}>
                       {imageSrc ? (
                         <img
                           src={imageSrc}
                           alt={item.productName}
-                          className="w-auto max-h-[180px] min-[1920px]:max-h-[220px] min-[2560px]:max-h-[310px] max-md:max-h-[130px]"
+                          className="w-auto max-h-[180px] min-[1920px]:max-h-[220px] min-[2560px]:max-h-[310px]"
                           loading="lazy"
                         />
                       ) : null}
@@ -183,14 +183,14 @@ function HomeCategoryHighlights({ items }: { items: HomeHighlightItem[] }) {
                   <Link className="hidden" href={categoryHref}>
                     {item.categoryName}
                   </Link>
-                  <h3 className="mb-[40px] min-[2560px]:mb-[50px] max-md:mb-[16px] max-w-[55%] max-md:max-w-[56%] font-[family-name:var(--bb-font-display)] text-[clamp(1.125rem,0.645rem_+_1vw,2.25rem)] max-md:text-ui-14 font-semibold leading-[1.2] max-md:leading-[1.25] line-clamp-2">
+                  <h3 className="mb-[40px] min-[2560px]:mb-[50px] font-body text-ui-18 font-semibold leading-[20px]">
                     <Link href={href} className="!text-black">
                       {item.productName}
                     </Link>
                   </h3>
                   <Link
                     href={href}
-                    className="!text-brand font-[family-name:var(--bb-font-display)] text-[clamp(0.875rem,0.5rem_+_0.5vw,1.375rem)] max-md:text-ui-13 font-semibold normal-case"
+                    className="!text-brand font-body text-ui-16 font-semibold uppercase"
                   >
                     Mua ngay <i className="fal fa-chevron-right ml-[5px]" aria-hidden="true" />
                   </Link>
@@ -298,13 +298,13 @@ function WpNewsCard({ article }: { article: Article }) {
         <div className="relative max-md:bg-white">
           {dateStr && (
             <div className="absolute left-0 top-[-21px] w-[170px] max-md:top-[-17px] max-md:w-[132px]">
-              <p className="relative m-0 p-0 pl-[20px] font-heading text-ui-14 font-semibold uppercase leading-[42px] whitespace-nowrap bg-brand text-white after:absolute after:bottom-0 after:right-[-15px] after:h-[42px] after:w-[25px] after:bg-brand after:[transform:skewX(-20deg)] after:content-[''] max-md:pl-[14px] max-md:text-ui-12 max-md:leading-[34px] max-md:after:right-[-11px] max-md:after:h-[34px] max-md:after:w-[19px]">
+              <p className="relative m-0 p-0 pl-[20px] font-body text-ui-14 font-semibold uppercase leading-[42px] whitespace-nowrap bg-brand text-white after:absolute after:bottom-0 after:right-[-15px] after:h-[42px] after:w-[25px] after:bg-brand after:[transform:skewX(-20deg)] after:content-[''] max-md:pl-[14px] max-md:leading-[34px] max-md:after:right-[-11px] max-md:after:h-[34px] max-md:after:w-[19px]">
                 {dateStr}
               </p>
             </div>
           )}
           <div className="[padding:40px_20px_30px] max-md:bg-white max-md:[padding:40px_16px_22px]">
-            <p className="m-0 mb-[5px] font-heading text-[clamp(1.25rem,1.229rem_+_0.092vw,1.375rem)] font-semibold normal-case leading-[var(--bb-line-snug)] tracking-[normal] text-black">
+            <p className="m-0 mb-[5px] font-body text-ui-18 font-semibold normal-case leading-[var(--bb-line-snug)] tracking-[normal] text-black">
               <Link href={href} className="text-black no-underline [transition:color_0.2s_ease] hover:text-brand">
                 {title}
               </Link>
@@ -373,7 +373,6 @@ export default async function HomePage() {
   const siteName = pickSetting(settings, ["site_name"]) || DEFAULT_SITE_NAME;
   const hotline = pickSetting(settings, ["hotline", "phone"]);
   const address = pickSetting(settings, ["contact_address", "address"]);
-  const homeH1 = pickSetting(settings, ["seo_home_h1", "seo_home_title", "site_name"]) || siteName;
   const aboutTitle = pickSetting(settings, ["about_title"]);
   const aboutSubtitle = pickSetting(settings, ["about_subtitle", "site_name"]);
   const aboutHtml = pickSetting(settings, ["about_content_html"]);
@@ -430,7 +429,6 @@ export default async function HomePage() {
         dangerouslySetInnerHTML={{ __html: jsonLdLocalBusiness }}
       />
 
-      <h1 className="sr-only">{homeH1}</h1>
       <HeroSlider slides={slides} />
 
       <HomeCategoryHighlights items={homeHighlights} />
@@ -442,9 +440,9 @@ export default async function HomePage() {
               <div className="text-center mb-[40px] max-md:mb-[24px]">
                 {aboutSubtitle ? <p className={cn(sectionEyebrow, "mb-3")}>{aboutSubtitle}</p> : null}
                 {aboutTitle ? (
-                  <h2 className={sectionHeading}>
+                  <h1 className={sectionHeading}>
                     {aboutTitle}
-                  </h2>
+                  </h1>
                 ) : null}
               </div>
             )}
@@ -527,7 +525,7 @@ export default async function HomePage() {
                 ) : null}
                 {expDesc ? (
                   <div className="mx-auto w-full pt-[30px] max-md:pt-4 max-md:px-[var(--bb-mobile-page-x)] md:w-2/3 min-[1200px]:max-w-[770px]">
-                    <p className="text-[var(--bb-color-footer-top)] max-w-full m-0 text-base max-md:text-ui-15 leading-[1.375] max-md:leading-[1.55]">
+                    <p className="text-[var(--bb-color-footer-top)] max-w-full m-0 text-base leading-[1.375] max-md:leading-[1.55]">
                       {expDesc}
                     </p>
                   </div>
@@ -572,7 +570,7 @@ export default async function HomePage() {
               <div className="text-center text-white pt-18 max-[1024px]:pt-12 max-md:pt-9 pb-13 max-[1024px]:pb-8 max-md:pb-5">
                 <h2
                   id="home-video-heading"
-                  className="my-0 mx-auto max-w-[820px] text-white font-heading text-[length:var(--fs-h1)] max-[1024px]:text-[length:var(--fs-h2)] max-md:text-[length:var(--fs-h3)] font-semibold leading-[1.12] max-[1024px]:leading-[1.1] max-md:leading-[1.12] tracking-normal uppercase text-balance drop-shadow-[0_2px_12px_rgba(0,0,0,0.6)]"
+                  className="my-0 mx-auto max-w-[820px] text-white font-body text-[length:var(--bb-text-section-title)] font-semibold leading-[1.12] max-[1024px]:leading-[1.1] max-md:leading-[1.12] tracking-normal uppercase text-balance drop-shadow-[0_2px_12px_rgba(0,0,0,0.6)]"
                 >
                   {/* Tách thành 2 cụm nghĩa, mỗi cụm không xuống dòng giữa chừng:
                       desktop lớn cho ra "TRẢI NGHIỆM SẢN PHẨM" / "CÙNG BIGBIKE.VN",

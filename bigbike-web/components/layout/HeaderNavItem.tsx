@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -55,14 +55,14 @@ function MegaPanel({
       )}
     >
       {group.children.length === 0 ? (
-        <p className="font-nav text-13 text-muted-foreground">{group.label}</p>
+        <p className="font-body text-13 text-muted-foreground">{group.label}</p>
       ) : (
         // max-width lets the fixed column-count shrink (and labels wrap) instead
         // of pushing the panel past the viewport — where the wrapper's
         // overflow-x-hidden would clip long-label categories on narrow desktops.
         // 15rem = widest sidebar (xl:w-60), 3rem = panel p-6 both sides.
         <ul
-          className="m-0 list-none gap-x-8 p-0 [max-width:calc(100vw-2*clamp(12px,1.7vw,48px)-15rem-3rem)]"
+          className="m-0 list-none gap-x-8 p-0 [max-width:clamp(480px,43vw,760px)]"
           style={{ columnCount }}
         >
           {group.children.map((cat) => {
@@ -73,7 +73,7 @@ function MegaPanel({
                 <Link
                   href={normalizeMenuUrl(cat.url)}
                   className={cn(
-                    "mb-1.5 flex items-center gap-2 font-nav text-13 font-bold uppercase tracking-wide text-foreground no-underline transition-colors duration-150 hover:text-brand",
+                    "mb-1.5 flex items-center gap-2 font-body text-13 font-bold uppercase tracking-wide text-foreground no-underline transition-colors duration-150 hover:text-brand",
                     catActive && "text-brand",
                   )}
                   target={cat.openInNewTab ? "_blank" : undefined}
@@ -101,7 +101,7 @@ function MegaPanel({
                           <Link
                             href={normalizeMenuUrl(item.url)}
                             className={cn(
-                              "block py-1 font-heading text-sm leading-snug text-foreground/75 no-underline transition-colors duration-150 hover:text-brand",
+                              "block py-1 font-body text-sm leading-snug text-foreground/75 no-underline transition-colors duration-150 hover:text-brand",
                               itemActive && "text-brand",
                             )}
                             target={item.openInNewTab ? "_blank" : undefined}
@@ -144,7 +144,7 @@ function MegaSidebar({
   return (
     <nav
       aria-label="Danh mục sản phẩm"
-      className="w-52 shrink-0 border-r border-border bg-[#f9f9f9] py-3 xl:w-60"
+      className="w-52 shrink-0 border-r border-border bg-[#f9f9f9] py-2 xl:w-60 3xl:w-64 4xl:w-72"
     >
       <ul className="m-0 list-none p-0">
         {groups.map((group) => {
@@ -158,7 +158,7 @@ function MegaSidebar({
                 <Link
                   href={normalizeMenuUrl(group.url)}
                   className={cn(
-                    "relative flex w-full items-center gap-2.5 px-5 py-3 font-nav text-13 font-semibold text-foreground no-underline transition-colors duration-150 hover:bg-white hover:text-brand before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:bg-brand before:opacity-0 before:transition-opacity before:content-['']",
+                    "relative flex w-full items-center gap-2.5 px-5 py-2 font-body text-13 font-semibold text-foreground no-underline transition-colors duration-150 hover:bg-white hover:text-brand before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:bg-brand before:opacity-0 before:transition-opacity before:content-['']",
                     groupPathActive && "text-brand before:opacity-100",
                   )}
                   target={group.openInNewTab ? "_blank" : undefined}
@@ -187,7 +187,7 @@ function MegaSidebar({
                 type="button"
                 className={cn(
                   // Left accent bar uses a before-pseudo (no layout shift on toggle).
-                  "relative flex w-full items-center gap-2.5 px-5 py-3 font-nav text-13 font-semibold text-foreground transition-colors duration-150 hover:bg-white hover:text-brand before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:bg-brand before:opacity-0 before:transition-opacity before:content-['']",
+                  "relative flex w-full items-center gap-2.5 px-5 py-2 font-body text-13 font-semibold text-foreground transition-colors duration-150 hover:bg-white hover:text-brand before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:bg-brand before:opacity-0 before:transition-opacity before:content-['']",
                   isActive && "bg-white text-brand before:opacity-100",
                   groupPathActive && "text-brand",
                 )}
@@ -260,7 +260,7 @@ function MegaMenu({
         "fixed left-1/2 -translate-x-1/2",
         "top-[var(--bb-header-height)]",
         "z-[var(--bb-z-dropdown)]",
-        "w-max max-w-[calc(100vw-2*clamp(12px,1.7vw,48px))]",
+        "w-max max-w-[clamp(820px,65vw,1200px)]",
         "max-h-[calc(100vh-var(--bb-header-height)-0.5rem)] overflow-y-auto overflow-x-hidden",
         "bg-white shadow-dropdown",
         "opacity-0 [transform:translateY(6px)] pointer-events-none [transition:opacity_0.2s_ease,transform_0.2s_ease] motion-reduce:[transition-duration:1ms]",
@@ -269,7 +269,7 @@ function MegaMenu({
       role="menu"
       aria-label={node.label}
     >
-      <div className="flex min-h-[320px]">
+      <div className="flex">
         <MegaSidebar
           groups={node.children}
           activeId={activeId}

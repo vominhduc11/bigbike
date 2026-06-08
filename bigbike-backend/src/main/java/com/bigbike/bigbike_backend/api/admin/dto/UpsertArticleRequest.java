@@ -2,6 +2,7 @@ package com.bigbike.bigbike_backend.api.admin.dto;
 
 import com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -17,7 +18,7 @@ import lombok.Setter;
 @Setter
 @Builder
 @NoArgsConstructor
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class UpsertArticleRequest {
 
     private static final String SLUG_REGEX = "^[a-z0-9]+(?:-[a-z0-9]+)*$";
@@ -35,6 +36,9 @@ public class UpsertArticleRequest {
 
     @Valid
     private ImageAssetRequest coverImage;
+
+    @Valid
+    private ImageAssetRequest productImage;
 
     @Size(max = 64, message = "Category ID is too long.")
     private String categoryId;
@@ -55,6 +59,7 @@ public class UpsertArticleRequest {
     @Size(max = 200, message = "bodyBlocks must not exceed 200 blocks.")
     private List<DescriptionBlock> bodyBlocks;
 
+    @JsonIgnore
     @Setter(AccessLevel.NONE)
     private boolean bodyBlocksPresent = false;
 
@@ -63,6 +68,7 @@ public class UpsertArticleRequest {
         this.bodyBlocksPresent = true;
     }
 
+    @JsonIgnore
     public boolean isBodyBlocksPresent() {
         return bodyBlocksPresent;
     }

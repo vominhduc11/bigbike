@@ -389,6 +389,12 @@ public class AdminContentMutationService {
             clearCoverImage(entity);
         }
 
+        if (request.getProductImage() != null) {
+            applyProductImage(entity, request.getProductImage());
+        } else if (create) {
+            clearProductImage(entity);
+        }
+
         if (create || request.getCategoryId() != null) {
             entity.setCategory(category);
             // Sync the many-to-many categories list with the primary category on both create and update.
@@ -552,6 +558,16 @@ public class AdminContentMutationService {
         entity.setCoverImageMimeType(null);
     }
 
+    private static void applyProductImage(ArticleEntity entity, ImageAssetRequest request) {
+        entity.setProductImageUrl(AdminMutationValidators.trimToNull(request.getUrl()));
+        entity.setProductImageAlt(AdminMutationValidators.trimToNull(request.getAlt()));
+    }
+
+    private static void clearProductImage(ArticleEntity entity) {
+        entity.setProductImageUrl(null);
+        entity.setProductImageAlt(null);
+    }
+
     private static void applySeo(ArticleEntity entity, SeoMetaRequest request) {
         entity.setSeoTitle(AdminMutationValidators.trimToNull(request.getTitle()));
         entity.setSeoDescription(AdminMutationValidators.trimToNull(request.getDescription()));
@@ -641,6 +657,7 @@ public class AdminContentMutationService {
                 article.excerpt(),
                 article.body(),
                 article.coverImage(),
+                article.productImage(),
                 article.publishStatus(),
                 article.seo(),
                 article.publishedAt(),
@@ -679,6 +696,7 @@ public class AdminContentMutationService {
                 page.title(),
                 null,
                 page.body(),
+                null,
                 null,
                 page.publishStatus(),
                 page.seo(),

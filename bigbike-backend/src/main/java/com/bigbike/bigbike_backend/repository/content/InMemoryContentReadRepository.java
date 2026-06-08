@@ -47,6 +47,7 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
                         900,
                         "image/jpeg"
                 ),
+                null,
                 ridingGuide,
                 List.of(ridingGuide),
                 PublishStatus.PUBLISHED,
@@ -77,6 +78,7 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
                         900,
                         "image/jpeg"
                 ),
+                null,
                 news,
                 List.of(news),
                 PublishStatus.DRAFT,

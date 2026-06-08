@@ -1,4 +1,4 @@
-import { getTranslations } from "next-intl/server";
+﻿import { getTranslations } from "next-intl/server";
 import { Container } from "@/components/layout/Container";
 import { cn } from "@/lib/utils";
 import { skelBase, skelStack } from "@/lib/ui-classes";
@@ -66,7 +66,7 @@ export default async function ArticleListLoading() {
                             <p className={cn(skelBase, "!animate-none h-[0.85em] w-2/5")} />
                           </div>
                           <div className={cn("px-5 pb-[30px] max-md:bg-card", skelStack)}>
-                            <p className="m-0 mb-[25px] font-heading text-xl font-semibold leading-6 text-foreground">
+                            <p className="m-0 mb-[25px] font-body text-xl font-semibold leading-6 text-foreground">
                               <span className={cn(skelBase, "!animate-none h-[1.1em] w-full")} />
                             </p>
                             <p className={cn(skelBase, "!animate-none h-[0.85em] w-4/5")} />

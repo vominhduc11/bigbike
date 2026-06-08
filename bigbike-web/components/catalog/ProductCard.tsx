@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /* eslint-disable @next/next/no-img-element */
 
@@ -104,20 +104,20 @@ export function ProductCard({ product, variant = "compact", surface = "article" 
         : "translate-y-full group-hover:translate-y-0 [@media(hover:none)]:translate-y-0 [@media(pointer:coarse)]:translate-y-0",
     );
     const cartLinkClass = isHome
-      ? "flex items-center justify-center gap-2.5 py-[15px] font-display text-13 font-semibold uppercase leading-normal text-white"
+      ? "flex items-center justify-center gap-2.5 py-[15px] font-body text-13 font-semibold uppercase leading-normal text-white"
       : "flex items-center justify-center gap-2.5 py-[15px] font-cta text-base font-semibold uppercase leading-6 text-white";
     const descClass = isHome ? "flex flex-col px-3 pt-2.5 pb-3 md:p-0" : "flex flex-col";
     const insideClass = isHome ? "mt-2.5" : undefined;
     const titleClass = isHome
-      ? "m-0 min-h-[34px] font-display text-sm font-medium leading-title text-black md:mb-4 md:min-h-12 md:font-display md:text-product-title md:font-semibold md:leading-normal"
-      : "m-0 font-heading text-product-title font-semibold uppercase leading-5 text-foreground";
+      ? "m-0 min-h-[34px] font-body text-product-title font-medium leading-title text-black md:mb-4 md:min-h-12 md:font-body md:font-semibold md:leading-normal"
+      : "m-0 font-body text-product-title font-semibold uppercase leading-5 text-foreground";
     const titleLinkClass = "text-foreground no-underline hover:text-brand max-[767px]:line-clamp-2";
     const priceClass = isHome
-      ? "mt-1 block text-left font-display text-sm font-semibold text-brand md:mt-0"
-      : "mt-2 flex flex-col items-start text-left font-display font-semibold text-foreground";
+      ? "mt-1 block text-left font-body text-sm font-semibold text-brand md:mt-0"
+      : "mt-2 flex flex-col items-start text-left font-body font-semibold text-foreground";
     const priceCurrentClass = isHome
       ? "mr-5 inline-block text-sm leading-[1.214rem] text-brand"
-      : "m-0 font-display text-sm font-semibold leading-6 text-brand";
+      : "m-0 font-body text-sm font-semibold leading-6 text-brand";
     const priceOldClass = isHome
       ? "mr-5 inline-block text-sm leading-[1.214rem] text-muted-foreground line-through"
       : "m-0 text-sm leading-[1.214rem] text-muted-foreground line-through";
@@ -181,10 +181,10 @@ export function ProductCard({ product, variant = "compact", surface = "article" 
           className="absolute inset-0 z-[2]"
         />
         <div className="relative z-[1] flex h-full flex-col px-10 pt-10 pb-8 pr-[40%] max-[900px]:px-8 max-[900px]:pt-8 max-[900px]:pr-[38%] max-[600px]:min-h-[320px] max-[600px]:px-6 max-[600px]:pt-6 max-[600px]:pr-[36%]">
-          <h3 className="font-heading text-h4 font-semibold uppercase leading-display text-foreground">
+          <h3 className="flex-1 font-body text-h4 font-semibold uppercase leading-display text-foreground">
             {name}
           </h3>
-          <span className="mt-14 inline-flex w-fit font-heading text-17 font-semibold uppercase leading-none text-brand max-[600px]:mt-10">
+          <span className="mt-6 inline-flex w-fit font-body text-17 font-semibold uppercase leading-none text-brand max-[600px]:mt-4">
             {tProduct("buyNow").toUpperCase()}
           </span>
         </div>
@@ -243,7 +243,7 @@ export function ProductCard({ product, variant = "compact", surface = "article" 
           <div className="absolute -bottom-[51px] left-0 w-full bg-black text-center transition-all duration-300 group-hover:bottom-0 max-[767px]:bottom-0">
             <Link
               href={href}
-              className="block py-[15px] font-cta text-13 font-semibold uppercase text-white max-[767px]:flex max-[767px]:min-h-10 max-[767px]:items-center max-[767px]:justify-center max-[767px]:px-2 max-[767px]:text-11"
+              className="block py-[15px] font-cta text-13 font-semibold uppercase text-white max-[767px]:flex max-[767px]:min-h-10 max-[767px]:items-center max-[767px]:justify-center max-[767px]:px-2"
             >
               {archiveCta}
             </Link>
@@ -253,7 +253,7 @@ export function ProductCard({ product, variant = "compact", surface = "article" 
         <div>
           <div className="mx-[-5px] mt-2.5 max-[767px]:m-0">
             <div className="px-[5px] max-[767px]:px-2.5 max-[767px]:pb-3">
-              <h3 className="mb-2.5 font-display text-h4 font-semibold leading-[1.25] text-foreground max-[767px]:mb-2 max-[767px]:line-clamp-2 max-[767px]:min-h-9 max-[767px]:font-cta max-[767px]:text-sm max-[767px]:uppercase">
+              <h3 className="mb-2.5 font-body text-h4 font-semibold leading-[1.25] text-foreground max-[767px]:mb-2 max-[767px]:line-clamp-2 max-[767px]:min-h-9 max-[767px]:uppercase">
                 <Link href={href} className="text-foreground hover:text-brand">
                   {name}
                 </Link>
@@ -272,7 +272,7 @@ export function ProductCard({ product, variant = "compact", surface = "article" 
                 </div>
               ) : null}
 
-              <div className="mt-2 text-ui-18 max-[767px]:text-sm">
+              <div className="mt-2 text-ui-18">
                 <RatingStars value={ratingValue} />
               </div>
             </div>
@@ -331,7 +331,7 @@ export function ProductCard({ product, variant = "compact", surface = "article" 
       </div>
       <div className="relative z-[2] flex flex-col gap-1 p-4">
         <p className="font-cta text-sm uppercase tracking-normal text-brand">{brandName}</p>
-        <h3 className="font-display text-h4 font-semibold leading-5 text-foreground max-[767px]:line-clamp-2">
+        <h3 className="font-body text-h4 font-semibold leading-5 text-foreground max-[767px]:line-clamp-2">
           {name}
         </h3>
         {product.rating != null && product.rating > 0 && (

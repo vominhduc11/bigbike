@@ -277,7 +277,7 @@ export function FloatingChat({ hotline, zaloUrl, messengerUrl }: Readonly<Floati
         >
           <div
             id="sudovn-btn-title"
-            className="bg-[var(--bb-chat-title-bg)] px-[5px] py-0.5 text-[var(--bb-chat-title-text)] text-[13px] font-[Arial,sans-serif] whitespace-nowrap relative bottom-[42px] right-[70px] max-md:hidden"
+            className="bg-[var(--bb-chat-title-bg)] px-[5px] py-0.5 text-[var(--bb-chat-title-text)] text-ui-13 font-[Arial,sans-serif] whitespace-nowrap relative bottom-[42px] right-[70px] max-md:hidden"
           >
             Bạn cần hỗ trợ?
           </div>

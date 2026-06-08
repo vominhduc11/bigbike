@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+﻿import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 export type ContactInfoEntry = {
@@ -48,7 +48,7 @@ export function ContactInfoList({ entries, variant = "columns", className }: Con
               {entry.icon}
             </span>
             <div className="min-w-0">
-              <p className="font-display text-button font-semibold text-foreground mb-1">
+              <p className="font-body text-button font-semibold text-foreground mb-1">
                 {entry.label}
               </p>
               {entry.content}
@@ -76,7 +76,7 @@ export function ContactInfoList({ entries, variant = "columns", className }: Con
             <span className="flex text-brand" aria-hidden="true">
               {entry.icon}
             </span>
-            <span className="font-display text-base font-semibold uppercase text-foreground">
+            <span className="font-body text-base font-semibold uppercase text-foreground">
               {entry.label}
             </span>
           </div>

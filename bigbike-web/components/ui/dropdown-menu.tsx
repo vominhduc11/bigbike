@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
@@ -138,7 +138,7 @@ const DropdownMenuLabel = React.forwardRef<
   <DropdownMenuPrimitive.Label
     ref={ref}
     className={cn(
-      "px-3 py-1.5 text-sm font-semibold font-heading uppercase text-muted-foreground",
+      "px-3 py-1.5 text-sm font-semibold font-body uppercase text-muted-foreground",
       inset && "pl-8",
       className,
     )}

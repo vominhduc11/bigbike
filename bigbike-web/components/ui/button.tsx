@@ -4,7 +4,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  // Base: uppercase, Barlow Condensed, radius 0, min 44px touch target
+  // Base: uppercase, system font (font-cta), radius 0, min 44px touch target
   "inline-flex items-center justify-center gap-2 min-h-[44px] px-8 py-4 border border-transparent font-cta text-base font-semibold uppercase tracking-normal transition-[background-color,border-color,color,transform] duration-[var(--bb-duration-fast)] ease-[var(--bb-ease-standard)] cursor-pointer select-none outline-none focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-[3px] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-60 aria-disabled:pointer-events-none aria-disabled:cursor-not-allowed aria-disabled:opacity-60 hover:not-disabled:scale-[1.02]",
   {
     variants: {

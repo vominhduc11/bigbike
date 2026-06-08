@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -32,7 +32,7 @@ const coStepCard =
   "border border-[var(--bb-border-subtle)] bg-[var(--bb-bg-surface)] px-3.5 py-4 md:px-6 md:py-6";
 const coGrid = "grid grid-cols-1 gap-3";
 const coSectionH3 =
-  "m-0 mb-3 font-heading text-ui-16 font-semibold uppercase leading-[1.2] md:text-ui-18";
+  "m-0 mb-3 font-body text-ui-16 font-semibold uppercase leading-[1.2]";
 const coRadioRow =
   "flex min-h-11 items-center gap-2.5 border border-[var(--bb-border-subtle)] bg-[var(--bb-bg-surface)] px-3 py-2.5";
 const coCardRaised =
@@ -60,7 +60,7 @@ function isZoneMismatch(method: ShippingMethodOption, userRegion: "MB" | "MT" | 
 function CheckoutStepTitle({ step, children }: { step: number; children: React.ReactNode }) {
   return (
     <div className="mb-4">
-      <h2 className="m-0 flex items-center gap-2.5 font-heading text-ui-18 font-semibold uppercase leading-[1.15]">
+      <h2 className="m-0 flex items-center gap-2.5 font-body text-ui-18 font-semibold uppercase leading-[1.15]">
         <span className="inline-flex h-[34px] w-[34px] shrink-0 items-center justify-center bg-brand font-cta text-[var(--bb-text-inverse)]">
           <b className="font-semibold">{step}</b>
         </span>
@@ -316,7 +316,7 @@ export default function CheckoutPage() {
   return (
     <Container className="cart-table bb-checkout-page">
       <div className="check-out-title mb-5 border-b border-[var(--bb-border-subtle)] pb-4">
-        <h1 className="m-0 font-heading text-h1 font-semibold uppercase leading-[1.08]">{t("title")}</h1>
+        <h1 className="m-0 font-body text-h1 font-semibold uppercase leading-[1.08]">{t("title")}</h1>
       </div>
 
       <form className="checkout woocommerce-checkout" onSubmit={handleSubmit} noValidate>

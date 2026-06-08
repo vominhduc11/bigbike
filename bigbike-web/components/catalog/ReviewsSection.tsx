@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
@@ -127,7 +127,7 @@ function StarRatingInput({
         })}
       </div>
       {display > 0 && (
-        <span className="font-[family-name:var(--bb-font-display)] text-lg font-semibold text-[var(--bb-text-primary)]">
+        <span className="font-body text-lg font-semibold text-[var(--bb-text-primary)]">
           {display}/5
         </span>
       )}
@@ -153,7 +153,7 @@ function RatingSummary({
     <div className="flex flex-col gap-6 border border-border p-6 sm:flex-row sm:items-center sm:gap-8">
       <div className="flex shrink-0 flex-col items-center justify-center gap-2 max-sm:border-b max-sm:border-border max-sm:pb-6 sm:w-[160px] sm:border-r sm:border-border">
         <div className="flex items-baseline gap-1">
-          <span className="font-[family-name:var(--bb-font-display)] text-5xl font-semibold leading-none text-[var(--bb-text-primary)]">
+          <span className="font-body text-5xl font-semibold leading-none text-[var(--bb-text-primary)]">
             {avg.toFixed(1)}
           </span>
           <span className="text-sm text-muted-foreground">/5</span>
@@ -205,7 +205,7 @@ function ReviewCard({ review }: { review: Review }) {
     <li className="flex gap-4 border-b border-border py-5 first:pt-0">
       <span
         aria-hidden="true"
-        className="flex h-10 w-10 shrink-0 items-center justify-center bg-muted font-[family-name:var(--bb-font-display)] text-lg font-semibold text-[var(--bb-text-primary)]"
+        className="flex h-10 w-10 shrink-0 items-center justify-center bg-muted font-body text-lg font-semibold text-[var(--bb-text-primary)]"
       >
         {initial}
       </span>
@@ -300,7 +300,7 @@ function WriteReviewForm({ productId, onSuccess }: { productId: string; onSucces
 
   return (
     <div className="border border-border p-6">
-      <h3 className="m-0 mb-5 font-[family-name:var(--bb-font-display)] text-lg font-semibold uppercase tracking-wide text-[var(--bb-text-primary)]">
+      <h3 className="m-0 mb-5 font-body text-lg font-semibold uppercase tracking-wide text-[var(--bb-text-primary)]">
         {t("formTitle")}
       </h3>
 
@@ -484,7 +484,7 @@ export function ReviewsSection({ productId }: ReviewsSectionProps) {
       className="mx-auto mt-16 mb-10 max-w-[1140px] scroll-mt-[var(--bb-header-height)] border-t border-border px-[15px] pt-14 max-md:mt-9 max-md:px-[var(--bb-mobile-page-x)] max-md:pt-10 min-[1536px]:max-w-[1360px] min-[1920px]:max-w-[1600px]"
     >
       <div className="mb-10 text-center max-md:mb-8">
-        <h2 className="m-0 font-[family-name:var(--bb-font-display)] text-ui-35 font-semibold uppercase leading-[4.286rem] tracking-[0] text-black max-md:text-2xl max-md:leading-[1.25]">
+        <h2 className="m-0 font-body text-ui-35 font-semibold uppercase leading-[4.286rem] tracking-[0] text-black max-md:text-2xl max-md:leading-[1.25]">
           {total > 0 ? t("titleWithCount", { count: total }) : t("title")}
         </h2>
         <p className="m-0 mt-1 text-sm text-muted-foreground">{t("subtitle")}</p>

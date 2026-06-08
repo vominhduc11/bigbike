@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
@@ -42,7 +42,7 @@ function CartPageHeading() {
   return (
     <div className="mt-5 max-md:mt-0">
       {/* WP-parity: page-title h1 = 24px (--fs-h1), Oswald, UPPERCASE, mọi viewport. */}
-      <h1 className="m-0 font-heading text-h1 font-semibold uppercase leading-[1.1] text-black">
+      <h1 className="m-0 font-body text-h1 font-semibold uppercase leading-[1.1] text-black">
         {COPY.title}
       </h1>
       <Breadcrumb
@@ -252,7 +252,7 @@ export default function CartPage() {
               <div className="-mx-[15px] flex flex-wrap items-start">
                 <div className="relative min-h-px w-full max-w-[66.666667%] basis-2/3 px-[15px] max-[991px]:max-w-full max-[991px]:basis-full">
                   <div className="mb-[30px] text-cart-total">
-                    <h3 className="m-0 font-heading text-[1em] font-semibold leading-[1.2] text-black">
+                    <h3 className="m-0 font-body text-[1em] font-semibold leading-[1.2] text-black">
                       {COPY.cartHeading}
                     </h3>
                   </div>
@@ -276,7 +276,7 @@ export default function CartPage() {
                           </div>
 
                           <div className="min-w-0 flex-auto p-0 pl-10 max-[600px]:pl-0">
-                            <h3 className="m-0 mb-2 font-heading text-ui-16 font-semibold leading-[1.25] text-foreground max-md:text-ui-15 max-md:leading-[1.2]">{item.productName}</h3>
+                            <h3 className="m-0 mb-2 font-body text-ui-16 font-semibold leading-[1.25] text-foreground max-md:leading-[1.2]">{item.productName}</h3>
                             {item.variantName ? (
                               <p className="m-0 mb-2 text-foreground">{item.variantName}</p>
                             ) : (
@@ -349,7 +349,7 @@ export default function CartPage() {
 
                 <div className="relative min-h-px w-full max-w-[33.333333%] basis-1/3 px-[15px] max-[991px]:mt-9 max-[991px]:max-w-full max-[991px]:basis-full md:sticky md:top-[calc(var(--bb-header-stack)+24px)] md:self-start">
                   <div>
-                    <h2 className="m-0 mb-5 font-heading text-ui-24 font-semibold leading-[1.25] text-black">{COPY.totalsHeading}</h2>
+                    <h2 className="m-0 mb-5 font-body text-ui-24 font-semibold leading-[1.25] text-black">{COPY.totalsHeading}</h2>
 
                     <div className="mb-5 flex flex-nowrap justify-between gap-4 max-md:gap-2.5">
                       <div>

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -285,7 +285,7 @@ function AddressBookContent() {
                   className={`border bg-white p-5 ${addr.isDefault ? "border-brand-border" : "border-border"}`}
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <b className="font-display text-base font-semibold text-foreground">
+                    <b className="font-body text-base font-semibold text-foreground">
                       {addr.fullName ?? "—"}
                     </b>
                     <span className="shrink-0 text-sm text-muted-foreground">

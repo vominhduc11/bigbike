@@ -1,4 +1,4 @@
-@import "tailwindcss";
+﻿@import "tailwindcss";
 @import "tw-animate-css";
 @import "../styles/brand-tokens.css";
 
@@ -87,11 +87,8 @@
   --color-rating-star: var(--bb-rating-star);
   --color-discount: var(--bb-discount);
 
-  --font-display: var(--font-barlow-condensed);
   --font-body: var(--bb-font-body);
-  --font-heading: var(--bb-font-heading);
   --font-cta: var(--bb-font-cta);
-  --font-nav: var(--bb-font-nav);
 
   /* Font-size utilities for WP-parity exact sizes (text-9 … text-40).
      Base scale (text-xs/sm/base/lg/xl/2xl/3xl) uses Tailwind defaults. */
@@ -326,8 +323,7 @@ body {
   background: var(--bb-bg-page);
   color: var(--bb-text-primary);
   font-family: var(--bb-font-body);
-  /* Fluid body 16→18px (rem-based) — docs/TYPOGRAPHY.md mục 9. KHÔNG hardcode 16px.
-     Sàn 1rem ≥16px nên form input không bị iOS auto-zoom. */
+  /* 16px cố định (WP-parity) — docs/TYPOGRAPHY.md. Sàn ≥16px → tránh iOS auto-zoom. */
   font-size: var(--fs-body);
   line-height: var(--bb-line-body);
   font-weight: var(--bb-font-weight-regular);
@@ -377,7 +373,7 @@ body {
 }
 
 .bb-page h1 {
-  font-family: var(--bb-font-display);
+  font-family: var(--bb-font-body);
   font-size: var(--fs-h1);
   letter-spacing: 0.01em;
   line-height: 1.08;
@@ -548,7 +544,7 @@ body {
 .bb-richtext h2,
 .bb-richtext h3 {
   color: var(--bb-text-primary);
-  font-family: var(--bb-font-heading);
+  font-family: var(--bb-font-cta);
   font-weight: 600;
   line-height: 1.3;
   text-transform: uppercase;
@@ -650,7 +646,7 @@ body {
   }
 
   .bb-page h1 {
-    font-size: 2rem;
+    font-size: var(--fs-h1); /* WP page banner = 24px */
   }
 }
 
@@ -664,7 +660,7 @@ body {
 .bb-page--auth .bb-auth-wrap h1 {
   margin: 0 0 8px;
   color: var(--bb-text-primary);
-  font-family: var(--bb-font-heading);
+  font-family: var(--bb-font-body);
   font-size: var(--bb-text-32);
   font-weight: 600;
   line-height: 1.2;
@@ -1175,7 +1171,7 @@ body {
 .bb-seo-content h5,
 .bb-seo-content h6 {
   color: #000000;
-  font-family: var(--bb-font-body);
+  font-family: var(--bb-font-body) !important;
   font-weight: 600;
   letter-spacing: 0;
   line-height: 1.5;
@@ -1191,7 +1187,7 @@ body {
 }
 
 .bb-seo-content h2 {
-  font-size: var(--fs-h3);
+  font-size: var(--fs-body-lg); /* 18px — WP .seo-block-content h2 span */
   line-height: 36px;
 }
 
@@ -1199,13 +1195,23 @@ body {
 .bb-seo-content h4,
 .bb-seo-content h5,
 .bb-seo-content h6 {
-  font-size: var(--fs-h4);
+  font-size: var(--fs-body); /* 16px — WP .seo-block-content h3 */
   line-height: 27px;
+}
+
+.bb-seo-content h1 strong, .bb-seo-content h1 b,
+.bb-seo-content h2 strong, .bb-seo-content h2 b,
+.bb-seo-content h3 strong, .bb-seo-content h3 b,
+.bb-seo-content h4 strong, .bb-seo-content h4 b,
+.bb-seo-content h5 strong, .bb-seo-content h5 b,
+.bb-seo-content h6 strong, .bb-seo-content h6 b {
+  font-family: inherit !important;
+  font-weight: inherit;
 }
 
 .bb-seo-content p {
   color: #000000;
-  font-size: var(--fs-body);
+  font-size: var(--fs-caption); /* 14px — WP .seo-block-content p */
   line-height: 24px;
   margin: 0 0 14px;
   text-align: justify;
@@ -1219,7 +1225,7 @@ body {
 
 .bb-seo-content ul {
   color: var(--bb-text-primary);
-  font-size: var(--fs-body);
+  font-size: var(--fs-caption); /* 14px — WP .seo-block-content li */
   line-height: 24px;
   list-style: disc;
   margin: 0 0 14px;
@@ -1260,7 +1266,7 @@ body {
 @keyframes bb-toast-in { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
 
 /* -- Breadcrumb -------------------------------------------- */
-.bb-breadcrumb { max-width: var(--bb-container-wide); margin: 0 auto; padding: 16px 24px; font-size: 16px; letter-spacing: 0; text-transform: none; color: #717171; display: flex; flex-wrap: wrap; align-items: center; }
+.bb-breadcrumb { max-width: var(--bb-container-wide); margin: 0 auto; padding: 16px 24px; font-size: var(--bb-text-base); letter-spacing: 0; text-transform: none; color: #717171; display: flex; flex-wrap: wrap; align-items: center; }
 .bb-breadcrumb a { color: #717171; font-weight: 600; text-decoration: none; cursor: pointer; }
 .bb-breadcrumb a:hover { color: var(--bb-text-brand); }
 .bb-breadcrumb .sep { margin: 0 10px; color: var(--bb-text-brand); }
@@ -1273,8 +1279,8 @@ body {
 
 /* -- Page head -------------------------------------------- */
 .bb-page-head { max-width: var(--bb-container-wide); margin: 32px auto 28px; padding: 0 24px; border-bottom: 1px solid var(--bb-border-subtle); padding-bottom: 22px; }
-.bb-page-head .kicker { font-size: 14px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--bb-text-brand); font-weight: 700; display: block; margin-bottom: 8px; }
-.bb-page-head h1 { font-family: var(--bb-font-display); text-transform: uppercase; font-size: var(--fs-h1); letter-spacing: 0.01em; line-height: 1.1; margin: 0; color: var(--bb-text-primary); overflow-wrap: anywhere; }
+.bb-page-head .kicker { font-size: var(--bb-text-sm); letter-spacing: 0.18em; text-transform: uppercase; color: var(--bb-text-brand); font-weight: 700; display: block; margin-bottom: 8px; }
+.bb-page-head h1 { font-family: var(--bb-font-body); text-transform: uppercase; font-size: var(--fs-h1); letter-spacing: 0.01em; line-height: 1.1; margin: 0; color: var(--bb-text-primary); overflow-wrap: anywhere; }
 .bb-page-head .sub { color: var(--bb-text-muted); font-size: var(--fs-caption); margin-top: 8px; }
 /* No horizontal emblem-clearance: .bb-page-head is only rendered by loading
    skeletons (no real page uses it — the real catalog/category/brand pages use
@@ -1282,12 +1288,12 @@ body {
    so the skeleton matches the post-load layout. */
 
 /* -- Category Hero Banner — breadcrumb + title (dùng trong PageHero/Breadcrumb) -- */
-.bb-cat-hero-breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.5); margin-bottom: 14px; overflow: hidden; min-width: 0; }
+.bb-cat-hero-breadcrumb { display: flex; align-items: center; gap: 8px; font-size: var(--bb-text-sm); letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.5); margin-bottom: 14px; overflow: hidden; min-width: 0; }
 .bb-cat-hero-breadcrumb a { color: rgba(255,255,255,0.5); text-decoration: none; transition: color 140ms; white-space: nowrap; flex-shrink: 0; }
 .bb-cat-hero-breadcrumb a:hover { color: var(--bb-brand-primary-on-dark); }
 .bb-cat-hero-breadcrumb span[aria-hidden] { color: var(--bb-brand-primary-on-dark); white-space: nowrap; flex-shrink: 0; }
 .bb-cat-hero-breadcrumb span[aria-current] { color: rgba(255,255,255,0.85); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex-shrink: 1; }
-.bb-cat-hero-title { font-family: var(--bb-font-display); text-transform: uppercase; font-size: clamp(2.5rem, 5vw, 4.375rem); letter-spacing: 0.02em; line-height: 1.05; margin: 0; color: #fff; }
+.bb-cat-hero-title { font-family: var(--bb-font-body); text-transform: uppercase; font-size: var(--fs-h1); letter-spacing: 0.02em; line-height: 1.2; margin: 0; color: #fff; }
 
 /* -- Category SEO description block (below product grid) -- */
 
@@ -1359,8 +1365,8 @@ body {
 .bb-cart-heading-row h1 {
   margin: 0;
   color: #000;
-  font-family: var(--bb-font-heading);
-  font-size: 2.5rem;
+  font-family: var(--bb-font-body);
+  font-size: var(--fs-h1); /* WP page banner = 24px */
   line-height: 1.2;
   font-weight: 600;
   text-transform: none;
@@ -1444,7 +1450,7 @@ body {
   background: var(--bb-action-primary);
   color: #fff;
   font-family: var(--bb-font-cta);
-  font-size: 14px;
+  font-size: var(--bb-text-sm);
   font-weight: 600;
   line-height: 52px;
   text-decoration: none;
@@ -1474,20 +1480,20 @@ body:has(.bb-account-layout) .bb-breadcrumb {
 .bb-order-card { background: var(--bb-bg-surface); border: 1px solid var(--bb-border-subtle); border-radius: var(--bb-radius-none); margin-bottom: 14px; overflow: hidden; }
 .bb-order-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; background: var(--bb-bg-surface-raised); border-bottom: 1px solid var(--bb-border-subtle); gap: 14px; flex-wrap: wrap; }
 .bb-order-head .meta { display: flex; gap: 22px; }
-.bb-order-head .meta div { font-size: 14px; color: var(--bb-text-muted); letter-spacing: 0.1em; text-transform: uppercase; }
-.bb-order-head .meta b { display: block; font-size: 14px; color: var(--bb-text-primary); font-weight: 700; margin-top: 3px; letter-spacing: 0.04em; text-transform: none; font-family: monospace; }
+.bb-order-head .meta div { font-size: var(--bb-text-sm); color: var(--bb-text-muted); letter-spacing: 0.1em; text-transform: uppercase; }
+.bb-order-head .meta b { display: block; font-size: var(--bb-text-sm); color: var(--bb-text-primary); font-weight: 700; margin-top: 3px; letter-spacing: 0.04em; text-transform: none; font-family: monospace; }
 .bb-order-body { display: flex; padding: 16px 20px; gap: 18px; align-items: center; }
 /* Clickable return cards */
 /* Return detail overlay */
 
 /* -- Order success page ------------------------------------ */
 .bb-success { max-width: 720px; margin: 60px auto; padding: 0 24px; text-align: center; }
-.bb-success .kicker { font-size: 14px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--bb-text-brand); font-weight: 700; margin-bottom: 10px; }
-.bb-success h1 { font-family: var(--bb-font-display); font-size: var(--bb-text-40); letter-spacing: 0.01em; text-transform: uppercase; margin: 0 0 10px 0; }
+.bb-success .kicker { font-size: var(--bb-text-sm); letter-spacing: 0.2em; text-transform: uppercase; color: var(--bb-text-brand); font-weight: 700; margin-bottom: 10px; }
+.bb-success h1 { font-family: var(--bb-font-body); font-size: var(--bb-text-40); letter-spacing: 0.01em; text-transform: uppercase; margin: 0 0 10px 0; }
 .bb-success p { color: var(--bb-text-muted); margin: 0 0 28px 0; }
 .bb-success .order-card { background: var(--bb-bg-surface); border: 1px solid var(--bb-border-subtle); border-radius: var(--bb-radius-none); padding: 22px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; text-align: left; margin-bottom: 22px; }
-.bb-success .order-card .label { font-size: 14px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--bb-text-muted); margin-bottom: 6px; }
-.bb-success .order-card b { display: block; font-family: var(--bb-font-display); font-size: 16px; color: var(--bb-text-primary); letter-spacing: 0.02em; }
+.bb-success .order-card .label { font-size: var(--bb-text-sm); letter-spacing: 0.14em; text-transform: uppercase; color: var(--bb-text-muted); margin-bottom: 6px; }
+.bb-success .order-card b { display: block; font-family: var(--bb-font-body); font-size: var(--bb-text-base); color: var(--bb-text-primary); letter-spacing: 0.02em; }
 .bb-success .order-card b.red { color: var(--bb-text-brand); }
 /* WP `.woocommerce-order-overview` parity - flexbox list, separator vertical bars */
 .bb-success .cta-row { display: flex; gap: 10px; justify-content: center; }
@@ -1501,9 +1507,9 @@ body:has(.bb-account-layout) .bb-breadcrumb {
 /* -- Shared utility: alert banners ------------------------ */
 
 /* -- Shared utility: pagination controls ------------------ */
-/* WP parity: .pagination ul li { font-size: 1.5rem; font-weight: 600 } */
+/* WP parity: .pagination ul li = 1.5rem@14 = 21px → 1.3125rem@16 */
 .bb-pagination-page {
-  font-size: 1.5rem;
+  font-size: 1.3125rem;
   font-weight: 600;
   color: var(--bb-text-primary);
   padding: 5px 10px;
@@ -1553,7 +1559,7 @@ body:has(.bb-account-layout) .bb-breadcrumb {
 /* -- Checkout ---------------------------------------------- */
 
 /* -- Product / cart thumbnail text ------------------------ */
-.bb-thumb-initials { font-family: var(--bb-font-display); font-size: 14px; color: var(--bb-text-muted); text-transform: uppercase; }
+.bb-thumb-initials { font-family: var(--bb-font-body); font-size: var(--bb-text-sm); color: var(--bb-text-muted); text-transform: uppercase; }
 
 /* -- Order confirmation ------------------------------------ */
 
@@ -1769,7 +1775,7 @@ img, picture, video, svg, canvas { max-width: 100%; }
 .bb-blog-listing-parity .no-results .page-title {
   margin: 0 0 16px;
   color: var(--bb-text-primary);
-  font-family: var(--bb-font-heading);
+  font-family: var(--bb-font-body);
   font-size: var(--fs-h2);
   font-weight: 600;
   line-height: 1.3;
@@ -1965,7 +1971,7 @@ img, picture, video, svg, canvas { max-width: 100%; }
 /* ============================================================
  * DESIGN.md Enforcement
  * Dark-first, #FF0C09 CTA red, #007BFF secondary interaction,
- * Barlow + Barlow Condensed type (Oswald removed), and zero-radius non-circular UI.
+ * System font (Arial/Helvetica), and zero-radius non-circular UI.
  * ============================================================ */
 
 html,
@@ -2020,7 +2026,7 @@ a:not(.font-cta):hover {
 .bb-page h1,
 .bb-page-head h1 {
   color: var(--bb-text-primary);
-  font-family: var(--bb-font-heading);
+  font-family: var(--bb-font-body);
   font-weight: 600;
   letter-spacing: 0;
   line-height: 1.5;
@@ -2052,8 +2058,8 @@ a:not(.font-cta):hover {
   border-radius: 0;
   background: #ffffff;
   color: #000000;
-  font-family: var(--bb-font-link);
-  font-size: 16px;
+  font-family: var(--bb-font-body);
+  font-size: var(--bb-text-base);
   font-weight: 400;
   line-height: 52px;
 }
@@ -2071,10 +2077,10 @@ input[type="checkbox"] {
 
 .bb-cat-hero-title {
   color: #ffffff;
-  font-family: var(--bb-font-display);
-  font-size: var(--bb-text-hero);
+  font-family: var(--bb-font-body);
+  font-size: var(--fs-h1); /* WP page banner = 24px, cố định mọi màn hình */
   font-weight: 700;
-  line-height: 45px;
+  line-height: 1.2;
   letter-spacing: 0;
   text-transform: uppercase;
 }
@@ -2161,8 +2167,8 @@ input[type="checkbox"] {
 @media (max-width: 639px) {
 
   .bb-cat-hero-title {
-    font-size: 18px;
-    line-height: 27px;
+    font-size: var(--fs-h1); /* WP page banner = 24px ở mọi màn hình */
+    line-height: 1.2;
   }
 
   .bb-products-section,
@@ -2173,7 +2179,7 @@ input[type="checkbox"] {
 
 @media (min-width: 640px) and (max-width: 1023px) {
   .bb-cat-hero-title {
-    font-size: 24px;
+    font-size: var(--fs-h1);
     line-height: 36px;
   }
 
@@ -2429,8 +2435,8 @@ body:has(.bb-article-detail-page) footer [data-bb-rail].relative > button.absolu
   justify-content: center;
   background: #f5f5f5;
   color: #6f6f6f;
-  font-family: var(--bb-font-heading);
-  font-size: 14px;
+  font-family: var(--bb-font-body);
+  font-size: var(--bb-text-sm);
 }
 
 @media (max-width: 767px) {
@@ -2468,7 +2474,7 @@ body:has(.bb-article-detail-page) footer [data-bb-rail].relative > button.absolu
   margin-top: 0;
   margin-bottom: 0.5rem;
   color: #000;
-  font-family: var(--bb-font-heading);
+  font-family: var(--bb-font-body);
   font-weight: 600;
   line-height: 1.2;
   letter-spacing: 0;
@@ -2613,7 +2619,7 @@ body:has(.bb-home) {
 .bb-wp-pdp .bb-breadcrumb a,
 .bb-wp-pdp .bb-breadcrumb span {
   color: #717171;
-  font-size: 14px;
+  font-size: var(--bb-text-sm);
   font-weight: 400;
   text-decoration: none;
 }
@@ -2649,16 +2655,16 @@ body:has(.bb-home) {
 
 .bb-wp-pdp .product-information .desc .woocommerce-product-details__short-description {
   color: #000;
-  font-size: 1.1rem;
-  line-height: 1.7rem;
+  font-size: 0.9625rem; /* WP .product-information .desc = 1.1rem@14 = 15.4px */
+  line-height: 1.55;
 }
 
 .bb-wp-pdp .product-information .desc p,
 .bb-wp-pdp .product-information .desc li {
   margin: 0 0 0.625rem;
   color: #000;
-  font-size: 1.1rem;
-  line-height: 1.7rem;
+  font-size: 0.9625rem; /* WP .product-information .desc = 1.1rem@14 = 15.4px */
+  line-height: 1.55;
 }
 
 .bb-wp-pdp .product-information .desc p:last-child,
@@ -2829,16 +2835,16 @@ body:has(.bb-search-results-page) {
 }
 
 .bb-product-archive .product .desc p {
-  font-size: 14px;
+  font-size: var(--bb-text-sm);
 }
 
 .bb-product-archive .product .desc h2 {
-  font-size: 16px;
+  font-size: var(--bb-text-base);
   font-weight: 600;
 }
 
 .bb-product-archive .product .desc h2 span {
-  font-size: 16px;
+  font-size: var(--bb-text-base);
   font-weight: 600 !important;
 }
 
@@ -3509,7 +3515,7 @@ body:has(.bb-search-results-page) {
   .bb-wp-pdp .product-information .desc p,
   .bb-wp-pdp .product-information .desc li,
   .bb-wp-pdp .product-information .desc .woocommerce-product-details__short-description {
-    font-size: 15px;
+    font-size: var(--bb-text-15);
     line-height: 1.55;
   }
 
@@ -3518,8 +3524,8 @@ body:has(.bb-search-results-page) {
   }
 
   .bb-blog-listing-parity .page-title h1 {
-    font-size: 28px;
-    line-height: 1.05;
+    font-size: var(--fs-h1); /* WP page banner = 24px mọi màn hình */
+    line-height: 1.2;
   }
 
   .bb-blog-listing-parity #main-content {
@@ -3541,8 +3547,8 @@ body:has(.bb-search-results-page) {
   }
 
   .bb-cart-heading-row h1 {
-    font-size: 28px;
-    line-height: 1.1;
+    font-size: var(--fs-h1); /* WP page banner = 24px mọi màn hình */
+    line-height: 1.2;
     text-transform: uppercase;
   }
 
@@ -3567,10 +3573,10 @@ body:has(.bb-search-results-page) {
 
   .bb-checkout-page .check-out-title h1 {
     margin: 0;
-    font-family: var(--bb-font-heading);
-    font-size: 28px;
+    font-family: var(--bb-font-body);
+    font-size: var(--fs-h1); /* WP page banner = 24px mọi màn hình */
     font-weight: 600;
-    line-height: 1.08;
+    line-height: 1.2;
     text-transform: uppercase;
   }
 
@@ -3617,7 +3623,7 @@ body:has(.bb-search-results-page) {
 
   .bb-page--auth .bb-auth-wrap h1,
   .bb-auth-wrap h1 {
-    font-size: 24px;
+    font-size: var(--fs-h1);
     line-height: 1.12;
     text-transform: uppercase;
   }
@@ -3636,7 +3642,7 @@ body:has(.bb-search-results-page) {
 
   .bb-breadcrumb {
     padding: 12px var(--bb-mobile-page-x);
-    font-size: 14px;
+    font-size: var(--bb-text-sm);
   }
 
   .bb-success {
@@ -3900,12 +3906,12 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
 
   .bb-home .content-bottom.bb-seo-content h1,
   .bb-home .content-bottom.bb-seo-content .bb-seo-content-body > h2:first-child {
-    font-size: 28px;
+    font-size: var(--fs-h2); /* 24px — đồng bộ base, WP-parity */
     line-height: 1.2;
   }
 
   .bb-home .content-bottom.bb-seo-content h2 {
-    font-size: 26px;
+    font-size: var(--fs-body-lg); /* 18px — WP seo h2 */
     line-height: 1.25;
   }
 
@@ -3913,13 +3919,13 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
   .bb-home .content-bottom.bb-seo-content h4,
   .bb-home .content-bottom.bb-seo-content h5,
   .bb-home .content-bottom.bb-seo-content h6 {
-    font-size: 20px;
+    font-size: var(--fs-body); /* 16px — WP seo h3 */
     line-height: 1.3;
   }
 
   .bb-home .content-bottom.bb-seo-content p,
   .bb-home .content-bottom.bb-seo-content li {
-    font-size: 16px;
+    font-size: var(--fs-caption); /* 14px — WP seo p/li */
     line-height: 1.7;
   }
 

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import type { CSSProperties } from "react";
 import { useTranslations } from "next-intl";
@@ -140,7 +140,7 @@ export function VariantSelector({
           <div key={group.name} className="mb-[15px]">
             <div>
               <div className="inline-block max-md:flex max-md:items-baseline max-md:gap-2 align-top pr-[25px] max-md:pr-0 max-md:mb-2.5">
-                <label className="block m-0 font-[family-name:var(--bb-font-display)] text-ui-24 max-md:text-ui-18 font-semibold !leading-[52px] max-md:!leading-[1.2] text-black">
+                <label className="block m-0 font-body text-ui-24 font-semibold !leading-[52px] max-md:!leading-[1.2] text-black">
                   {group.name}
                 </label>
               </div>
