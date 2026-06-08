@@ -203,20 +203,24 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
                 />
 
                 <div className="flex items-center py-5 border-y border-y-border-default">
-                  <p className="m-0 mr-5 text-black font-bold leading-[35px]">Chia sẻ</p>
+                  <p className="m-0 mr-[30px] text-muted-foreground font-semibold uppercase text-base leading-none">Chia sẻ</p>
                   <a
-                    className="inline-flex w-[35px] h-[35px] items-center justify-center mr-2 !rounded-[50%] text-white text-base font-bold leading-[35px] no-underline bg-[#1a77f2]"
+                    className="mr-[30px] inline-flex items-center text-muted-foreground no-underline transition-colors hover:text-brand"
                     href={facebookShareHref}
                     aria-label="Facebook"
                   >
-                    <i className="not-italic before:content-['f']" aria-hidden="true" />
+                    <svg width="24" height="24" viewBox="0 0 320 512" fill="currentColor" aria-hidden="true">
+                      <path d="M279.14 288l14.22-92.66h-88.91v-60.13c0-25.35 12.42-50.06 52.24-50.06h40.42V6.26S260.43 0 225.36 0c-73.22 0-121.08 44.38-121.08 124.72v70.62H22.89V288h81.39v224h100.17V288z" />
+                    </svg>
                   </a>
                   <a
-                    className="inline-flex w-[35px] h-[35px] items-center justify-center mr-2 !rounded-[50%] text-white text-base font-bold leading-[35px] no-underline bg-[#1da1f2]"
+                    className="inline-flex items-center text-muted-foreground no-underline transition-colors hover:text-brand"
                     href={twitterShareHref}
                     aria-label="Twitter"
                   >
-                    <i className="not-italic before:content-['t']" aria-hidden="true" />
+                    <svg width="24" height="24" viewBox="0 0 512 512" fill="currentColor" aria-hidden="true">
+                      <path d="M459.37 151.716c.325 4.548.325 9.097.325 13.645 0 138.72-105.583 298.558-298.558 298.558-59.452 0-114.68-17.219-161.137-47.106 8.447.974 16.568 1.299 25.34 1.299 49.055 0 94.213-16.568 130.274-44.832-46.132-.975-84.792-31.188-98.112-72.772 6.498.974 12.995 1.624 19.818 1.624 9.421 0 18.843-1.3 27.614-3.573-48.081-9.747-84.143-51.98-84.143-102.985v-1.299c13.969 7.797 30.214 12.67 47.431 13.319-28.264-18.843-46.781-51.005-46.781-87.391 0-19.492 5.197-37.36 14.294-52.954 51.655 63.675 129.3 105.258 216.365 109.807-1.624-7.797-2.599-15.918-2.599-24.04 0-57.828 46.782-104.934 104.934-104.934 30.213 0 57.502 12.67 76.67 33.137 23.715-4.548 46.456-13.32 66.599-25.34-7.798 24.366-24.366 44.833-46.132 57.827 21.117-2.273 41.584-8.122 60.426-16.243-14.292 20.791-32.161 39.308-52.628 54.253z" />
+                    </svg>
                   </a>
                 </div>
               </div>
@@ -257,7 +261,7 @@ function ArticleSidebarWidget({
   return (
     <div className="mb-[30px]">
       <div>
-        <h3 className="m-0 mb-5 text-black font-body text-h3 font-semibold leading-[1.3] normal-case">{title}</h3>
+        <h3 className="m-0 mb-5 text-black font-body text-h3 font-bold leading-[1.3] uppercase">{title}</h3>
       </div>
       <div>
         <div>

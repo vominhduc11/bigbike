@@ -255,7 +255,7 @@ export function PurchaseSectionClient({
 
   return (
     <>
-      <div className="bb-wp-pdp-gallery-col min-w-0 max-[1024px]:order-1 max-[1024px]:w-full">
+      <div className="bb-wp-pdp-gallery-col min-w-0 max-md:order-2 max-md:w-full">
         <ProductGallery
           mainImage={mainImage}
           gallery={gallery}
@@ -267,7 +267,7 @@ export function PurchaseSectionClient({
         />
       </div>
 
-      <div className="bb-wp-pdp-info-col product-information min-w-0 max-[1024px]:order-2 max-[1024px]:w-full">
+      <div className="bb-wp-pdp-info-col product-information min-w-0 max-md:order-1 max-md:w-full">
         <div className="mb-5 max-md:mb-3">
           <h1 className="m-0 font-body text-ui-30 font-semibold !leading-[1.25] tracking-normal normal-case max-md:uppercase text-black">
             {productName}
@@ -418,7 +418,7 @@ export function PurchaseSectionClient({
         </div>
 
         <div className="mt-[30px] max-md:mt-[22px] flex flex-wrap items-center">
-          <p className="m-0 mr-[30px] text-black text-ui-24 font-semibold lowercase">
+          <p className="m-0 mr-[30px] text-black text-ui-21 font-semibold lowercase">
             {t("shareLabel")}
           </p>
           <button

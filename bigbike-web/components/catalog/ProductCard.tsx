@@ -80,10 +80,11 @@ export function ProductCard({ product, variant = "compact", surface = "article" 
     const ratingValue = product.rating != null && product.rating > 0 ? product.rating : 4.5;
     const featuredImageSrc = toLegacyWpMediaUrl(resolveMediaUrl(product.image?.url?.trim()));
 
-    // Home classes are mobile-first: base = mobile (<768px, the ≤767 carousel-scroll
-    // card), `md:` = desktop (≥768), `2xl:`/`min-[2560px]:` = wide (5/6 columns).
+    // Home classes are mobile-first. Flex-basis follows the WP paged tiers so each
+    // page fills the track exactly: 1-up <380px, 2-up 380–767px (gap 20 → /2),
+    // 4-up ≥768px (gap 30 → /4), then Next-only 5-up ≥1536 / 6-up ≥2560.
     const itemClass = isHome
-      ? "group relative mt-0 flex h-full w-[184px] min-w-0 flex-col bg-transparent text-black flex-[0_0_184px] md:mt-[30px] md:w-auto md:flex-[0_0_calc((100%_-_90px)_/_4)] 2xl:flex-[0_0_calc((100%_-_120px)_/_5)] min-[2560px]:flex-[0_0_calc((100%_-_150px)_/_6)]"
+      ? "group relative mt-0 flex h-full min-w-0 flex-col bg-transparent text-black flex-[0_0_100%] min-[380px]:flex-[0_0_calc((100%_-_20px)_/_2)] md:mt-[30px] md:flex-[0_0_calc((100%_-_90px)_/_4)] 2xl:flex-[0_0_calc((100%_-_120px)_/_5)] min-[2560px]:flex-[0_0_calc((100%_-_150px)_/_6)]"
       : cn("group relative flex h-full flex-col p-5", cardChrome);
     const thumbClass = isHome
       ? "relative m-0 aspect-square overflow-hidden bg-white md:mb-5"
@@ -95,12 +96,12 @@ export function ProductCard({ product, variant = "compact", surface = "article" 
     // `text-white` lives on the container (not just the link) because the homepage
     // `.bb-home a { color: inherit }` rule (0,1,1) outranks the link's own `text-white`
     // (0,1,0); the link then inherits white from this container.
-    // Home: cart is revealed on the touch carousel (mobile), hover-slide on desktop.
+    // Home: hover-only slide (WP parity — hidden by default, reveal on hover desktop).
     // Article: hover-slide, plus always-visible on touch (hover:none/coarse).
     const cartClass = cn(
       "absolute bottom-0 left-0 z-[2] w-full bg-black text-center text-white transition-transform duration-300",
       isHome
-        ? "translate-y-0 md:translate-y-full md:group-hover:translate-y-0"
+        ? "translate-y-full group-hover:translate-y-0"
         : "translate-y-full group-hover:translate-y-0 [@media(hover:none)]:translate-y-0 [@media(pointer:coarse)]:translate-y-0",
     );
     const cartLinkClass = isHome
@@ -109,9 +110,14 @@ export function ProductCard({ product, variant = "compact", surface = "article" 
     const descClass = isHome ? "flex flex-col px-3 pt-2.5 pb-3 md:p-0" : "flex flex-col";
     const insideClass = isHome ? "mt-2.5" : undefined;
     const titleClass = isHome
-      ? "m-0 min-h-[34px] font-body text-product-title font-medium leading-title text-black md:mb-4 md:min-h-12 md:font-body md:font-semibold md:leading-normal"
+      ? "m-0 min-h-[34px] font-body text-product-title font-semibold leading-title text-black md:mb-4 md:min-h-12 md:leading-normal"
       : "m-0 font-body text-product-title font-semibold uppercase leading-5 text-foreground";
-    const titleLinkClass = "text-foreground no-underline hover:text-brand max-[767px]:line-clamp-2";
+    // Home (carousel): show the full product name like WP (no line clamp). The
+    // article grid keeps the 2-line clamp so its fixed-height cards stay aligned.
+    const titleLinkClass = cn(
+      "text-foreground no-underline hover:text-brand",
+      !isHome && "max-[767px]:line-clamp-2",
+    );
     const priceClass = isHome
       ? "mt-1 block text-left font-body text-sm font-semibold text-brand md:mt-0"
       : "mt-2 flex flex-col items-start text-left font-body font-semibold text-foreground";
@@ -220,8 +226,8 @@ export function ProductCard({ product, variant = "compact", surface = "article" 
           : "Thêm vào giỏ hàng";
 
     return (
-      <article className="group mt-[30px] text-foreground max-[767px]:m-0 max-[767px]:h-full max-[767px]:border max-[767px]:border-border max-[767px]:bg-card">
-        <div className="relative mb-5 aspect-square overflow-hidden bg-white max-[767px]:m-0 max-[767px]:border-b max-[767px]:border-border">
+      <article className="group mt-[30px] text-foreground max-[767px]:m-0 max-[767px]:h-full">
+        <div className="relative mb-5 aspect-square overflow-hidden bg-white max-[767px]:m-0">
           <Link
             href={href}
             aria-label={tProduct("viewProductAria", { name })}
@@ -253,7 +259,7 @@ export function ProductCard({ product, variant = "compact", surface = "article" 
         <div>
           <div className="mx-[-5px] mt-2.5 max-[767px]:m-0">
             <div className="px-[5px] max-[767px]:px-2.5 max-[767px]:pb-3">
-              <h3 className="mb-2.5 font-body text-h4 font-semibold leading-[1.25] text-foreground max-[767px]:mb-2 max-[767px]:line-clamp-2 max-[767px]:min-h-9 max-[767px]:uppercase">
+              <h3 className="mb-2.5 font-body text-product-title font-semibold leading-[1.25] text-foreground max-[767px]:mb-2 max-[767px]:line-clamp-2 max-[767px]:min-h-9 max-[767px]:uppercase">
                 <Link href={href} className="text-foreground hover:text-brand">
                   {name}
                 </Link>

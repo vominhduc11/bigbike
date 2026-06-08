@@ -59,10 +59,10 @@ function isZoneMismatch(method: ShippingMethodOption, userRegion: "MB" | "MT" | 
 
 function CheckoutStepTitle({ step, children }: { step: number; children: React.ReactNode }) {
   return (
-    <div className="mb-4">
+    <div className="mb-6">
       <h2 className="m-0 flex items-center gap-2.5 font-body text-ui-18 font-semibold uppercase leading-[1.15]">
-        <span className="inline-flex h-[34px] w-[34px] shrink-0 items-center justify-center bg-brand font-cta text-[var(--bb-text-inverse)]">
-          <b className="font-semibold">{step}</b>
+        <span className="inline-flex h-5 w-5 shrink-0 rotate-45 items-center justify-center bg-brand text-[var(--bb-text-inverse)] [box-shadow:var(--bb-shadow-md)]">
+          <b className="-rotate-45 font-cta text-ui-12 font-semibold leading-none">{step}</b>
         </span>
         {children}
       </h2>
@@ -349,9 +349,9 @@ export default function CheckoutPage() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_360px] md:items-start md:gap-8">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-[2fr_1fr] md:items-start md:gap-8">
           <div className="min-w-0">
-            <section className={cn(coStepCard, "mb-3.5")}>
+            <section className={cn(coStepCard, "mb-6")}>
               <CheckoutStepTitle step={1}>{t("step1Title")}</CheckoutStepTitle>
 
               <div className={coGrid}>
@@ -450,7 +450,7 @@ export default function CheckoutPage() {
               </div>
             </section>
 
-            <section className={cn(coStepCard, "mb-3.5")}>
+            <section className={cn(coStepCard, "mb-6")}>
               <CheckoutStepTitle step={2}>{t("step2Title")}</CheckoutStepTitle>
 
               <div className="mt-3.5 grid grid-cols-1 gap-3 border-t border-[var(--bb-border-subtle)] pt-3.5">

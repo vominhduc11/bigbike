@@ -43,7 +43,7 @@ export function ProductArchiveResults({
         emptyContent
       ) : (
         <>
-          <div className="grid grid-cols-2 flex-wrap gap-[var(--bb-mobile-card-gap)] mx-0 max-[375px]:grid-cols-1 max-md:items-stretch md:flex md:gap-0 md:-mx-[15px]">
+          <div className="grid grid-cols-2 flex-wrap gap-[30px] mx-0 max-md:items-stretch md:flex md:gap-0 md:-mx-[15px]">
             {products.map((product) => (
               <div
                 key={product.id}

@@ -23,7 +23,7 @@ export function CompareBar() {
   const canCompare = items.length >= 2;
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-white shadow-[0_-4px_14px_rgba(0,0,0,0.1)] pb-[env(safe-area-inset-bottom)]">
+    <div className="fixed inset-x-0 z-40 border-t border-border bg-white shadow-[0_-4px_14px_rgba(0,0,0,0.1)] bottom-[calc(var(--bb-mobile-nav-height)+env(safe-area-inset-bottom))] md:bottom-0 md:pb-[env(safe-area-inset-bottom)]">
       <div className="mx-auto flex max-w-[var(--bb-container-xl)] items-center gap-3 px-4 py-2.5 pr-[84px]">
         <span className="hidden shrink-0 font-body text-xs font-semibold uppercase tracking-display text-muted-foreground sm:block">
           {t("barLabel")}
@@ -56,7 +56,7 @@ export function CompareBar() {
                   type="button"
                   onClick={() => remove(item.id)}
                   aria-label={t("barRemoveAriaLabel", { name })}
-                  className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center text-muted-foreground transition-colors hover:text-brand"
+                  className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center text-muted-foreground transition-colors hover:text-brand pointer-coarse:after:absolute pointer-coarse:after:-inset-[10px] pointer-coarse:after:content-['']"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
                     <path d="M18 6 6 18M6 6l12 12" />

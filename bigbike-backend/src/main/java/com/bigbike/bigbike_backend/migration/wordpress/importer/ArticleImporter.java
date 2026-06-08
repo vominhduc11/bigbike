@@ -97,6 +97,20 @@ public class ArticleImporter implements DomainImporter {
                     }
                 }
 
+                if (ma.productImageId() != null) {
+                    MappedMedia productImg = mediaByLegacyId.get(ma.productImageId());
+                    if (productImg != null && productImg.storagePath() != null && !productImg.storagePath().isBlank()) {
+                        String base = mediaPublicBaseUrl.endsWith("/")
+                                ? mediaPublicBaseUrl.substring(0, mediaPublicBaseUrl.length() - 1)
+                                : mediaPublicBaseUrl;
+                        String storagePath = productImg.storagePath().startsWith("/")
+                                ? productImg.storagePath().substring(1)
+                                : productImg.storagePath();
+                        entity.setProductImageUrl(base + "/wp-uploads/" + storagePath);
+                        entity.setProductImageAlt(productImg.altText());
+                    }
+                }
+
                 if (!options.dryRun()) {
                     repo.save(entity);
                 }

@@ -210,11 +210,11 @@ export async function SiteFooter() {
 
   return (
     <footer className="bg-black text-white">
-      <div className="bg-footer-top py-[60px] max-md:pb-0 max-md:pt-9">
+      <div className="bg-footer-top py-[60px] max-md:pb-0">
         <Container>
           <div className="grid grid-cols-1 gap-8 md:grid-cols-12 md:gap-10">
             <div className="md:col-span-7">
-              <h2 className="m-0 mb-7 font-cta text-footer-slogan font-medium uppercase leading-title text-white md:mb-[2.857rem] lg:max-w-[43rem]">
+              <h2 className="m-0 mb-[2.857rem] font-cta text-footer-slogan font-medium uppercase leading-title text-white lg:max-w-[43rem]">
                 {splitHeading(footerTagline).map((line) => (
                   <span key={line} className="block">
                     {line}
@@ -233,11 +233,7 @@ export async function SiteFooter() {
                     <a
                       key={item.id}
                       href={href}
-                      className={`flex min-w-0 items-start gap-3.5 font-cta font-medium text-white no-underline transition-colors hover:text-brand-inverse md:gap-5 ${
-                        isEmail
-                          ? "text-h3 leading-title"
-                          : "text-h2 leading-heading"
-                      }`}
+                      className="flex min-w-0 items-start gap-3.5 font-cta font-medium text-white no-underline transition-colors hover:text-brand-inverse md:gap-5 text-ui-30 leading-heading"
                     >
                       <ContactIcon icon={item.icon} />
                       <span className="min-w-0 [overflow-wrap:anywhere]">{item.label}</span>
@@ -254,13 +250,13 @@ export async function SiteFooter() {
 
             <div className="md:col-span-5">
               {footerDescription ? (
-                <p className="m-0 mb-7 text-caption leading-body text-white md:mb-[2.286rem] md:max-w-[40rem]">
+                <p className="m-0 mb-7 text-base leading-body text-white md:mb-[2.286rem] md:max-w-[40rem]">
                   {footerDescription}
                 </p>
               ) : null}
 
-              <div className="grid grid-cols-1 gap-0 xl:grid-cols-12">
-                <div className="xl:col-span-7">
+              <div className="grid grid-cols-1 gap-0 md:grid-cols-12">
+                <div className="md:col-span-7">
                   <FooterCollapsible title={t("infoHeading")}>
                     {footerLinks.length > 0 ? (
                       <ul className="m-0 list-none p-0">
@@ -294,10 +290,10 @@ export async function SiteFooter() {
                   </FooterCollapsible>
                 </div>
 
-                <div className="xl:col-span-5">
+                <div className="md:col-span-5">
                   <FooterCollapsible title={t("socialHeading")}>
                     {socialLinks.length > 0 ? (
-                      <ul className="m-0 flex list-none flex-col gap-[1.571rem] p-0">
+                      <ul className="m-0 flex list-none flex-col gap-[22px] p-0">
                         {socialLinks.map((item) => (
                           <li key={item.id}>
                             <a
@@ -327,27 +323,34 @@ export async function SiteFooter() {
         </Container>
       </div>
 
-      <div className="bg-black py-[30px] max-md:pb-5 max-md:pt-6">
+      {/* WP .foot — desktop padding 30px; mobile pt:0 pb:15px (WP @max-767) */}
+      <div className="bg-black py-[30px] max-md:pb-[15px] max-md:pt-0">
         <Container className="relative">
           <ScrollToTopButton />
-          <div className="grid grid-cols-1 items-center gap-5 md:grid-cols-12 md:gap-0">
-            <div className="md:col-span-2 max-md:order-1">
+          {/* Desktop (DOM order): logo(2) | copyright(4) | license(6) một hàng.
+              Mobile (WP @max-767): đảo thứ tự → giấy phép lên trên (full-width),
+              copyright(2/3) + logo(1/3) chung hàng dưới. */}
+          <div className="grid grid-cols-3 items-center gap-0 md:grid-cols-12">
+            <div className="md:col-span-2 max-md:order-3 max-md:col-span-1 max-md:pt-[15px]">
               <Image
                 src="/wp/logo-footer.png"
                 alt={siteName}
                 width={200}
                 height={66}
-                className="block h-auto w-[132px] max-md:w-[118px] 3xl:w-[160px] 4xl:w-[180px]"
+                className="block h-auto w-[132px] max-md:w-[118px] max-md:max-w-full 3xl:w-[160px] 4xl:w-[180px]"
               />
             </div>
 
-            <div className="md:col-span-4 max-md:order-2">
-              <p className="m-0 max-w-[22rem] text-caption leading-body text-white">
+            <div className="md:col-span-4 max-md:order-2 max-md:col-span-2 max-md:pt-[15px]">
+              {/* WP: copyright 16px ở desktop, 14px ở mobile (.foot .col-md-4) */}
+              <p className="m-0 max-w-[22rem] text-base max-md:text-caption leading-body text-white">
                 {t("copyright", { year: new Date().getFullYear() })}
               </p>
             </div>
 
-            <div className="md:col-span-6 max-md:order-3">
+            {/* Giấy phép: khối trên cùng trên mobile (giữ thứ tự WP), nhưng BỎ nền xám
+                #3a3a3a + chữ xám của WP vì tương phản thấp khó đọc — để nền đen chữ trắng. */}
+            <div className="md:col-span-6 max-md:order-1 max-md:col-span-3 max-md:pt-[15px]">
               {bctUrl ? (
                 <div className="md:relative md:pl-[138px]">
                   <a
@@ -355,11 +358,11 @@ export async function SiteFooter() {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label="Đã thông báo Bộ Công Thương"
-                    className="mb-3 block md:absolute md:left-0 md:top-0 md:mb-0"
+                    className="mb-3 block max-md:mb-5 md:absolute md:left-0 md:top-0 md:mb-0"
                   >
                     <BctBadge alt="Đã thông báo Bộ Công Thương" height={40} />
                   </a>
-                  <p className="m-0 mt-[10px] text-caption leading-5 text-muted-foreground md:mt-0">
+                  <p className="m-0 mt-[10px] text-base leading-5 text-white md:mt-0">
                     {t("businessReg")}
                   </p>
                 </div>

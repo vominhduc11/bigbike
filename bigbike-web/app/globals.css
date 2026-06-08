@@ -89,6 +89,7 @@
 
   --font-body: var(--bb-font-body);
   --font-cta: var(--bb-font-cta);
+  --font-barlow: var(--bb-font-barlow);
 
   /* Font-size utilities for WP-parity exact sizes (text-9 … text-40).
      Base scale (text-xs/sm/base/lg/xl/2xl/3xl) uses Tailwind defaults. */
@@ -119,6 +120,7 @@
   --text-ui-17: 17px;
   --text-ui-18: 18px;
   --text-ui-20: 20px;
+  --text-ui-21: 21px; /* WP PDP price/labels: 1.5rem on WP 14px base = 21px */
   --text-ui-22: 22px;
   --text-ui-24: 24px;
   --text-ui-26: 26px;
@@ -599,6 +601,13 @@ body {
   .bb-grid-categories {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  /* Detail (guide) sidebar+content go 2-col from md(768) to match WP
+     col-md-3/col-md-9 (was 1024 → blank 768-1023 tablet band). Ratio 3fr/9fr =
+     25%/75% (WP); sidebar placed left via md:order in GuidePage. */
+  .bb-detail-layout {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 9fr);
+  }
 }
 
 @media (min-width: 1024px) {
@@ -608,10 +617,6 @@ body {
 
   .bb-grid-categories {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .bb-detail-layout {
-    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
   }
 }
 
@@ -1211,7 +1216,7 @@ body {
 
 .bb-seo-content p {
   color: #000000;
-  font-size: var(--fs-caption); /* 14px — WP .seo-block-content p */
+  font-size: var(--fs-body); /* 16px — WP .content-bottom.wyswyg p = 16px */
   line-height: 24px;
   margin: 0 0 14px;
   text-align: justify;
@@ -1369,7 +1374,7 @@ body {
   font-size: var(--fs-h1); /* WP page banner = 24px */
   line-height: 1.2;
   font-weight: 600;
-  text-transform: none;
+  text-transform: uppercase; /* match loaded H1 + TYPOGRAPHY §5 (h1 = UPPER); was none-on-desktop, causing loaded≠loading */
 }
 
 .bb-cart-breadcrumb {
@@ -1458,14 +1463,14 @@ body {
 
 /* -- Account page ------------------------------------------ */
 /* === Account section — 2020 legacy mockup parity ===================== */
-.bb-account-layout { display: grid; grid-template-columns: 282px 1fr; gap: 30px; max-width: 1280px; margin: 8px auto 56px; padding: 0 24px; }
+.bb-account-layout { display: grid; grid-template-columns: 282px 1fr; gap: 30px; max-width: var(--bb-container-xl); margin: 8px auto 56px; padding: 0 24px; }
 
 /* Breadcrumb on account pages: match account layout max-width so the two
    containers share the same margin: auto rail — text aligns with sidebar.
    Also reset the 184px emblem-clearance padding since logo is now above
    the breadcrumb (not beside it) thanks to the bb-main top-padding offset. */
 body:has(.bb-account-layout) .bb-breadcrumb {
-  max-width: 1280px;
+  max-width: var(--bb-container-xl);
   padding-left: 24px;
 }
 
@@ -1564,7 +1569,7 @@ body:has(.bb-account-layout) .bb-breadcrumb {
 /* -- Order confirmation ------------------------------------ */
 
 /* -- Responsive overrides ---------------------------------- */
-@media (max-width: 1024px) {
+@media (max-width: 767px) {
   .bb-account-layout { grid-template-columns: 1fr; }
 }
 
@@ -1667,7 +1672,7 @@ img, picture, video, svg, canvas { max-width: 100%; }
 
 /* -- Account: single-column on mobile. The section nav collapses to a
  *    dropdown (rendered in AccountShell, shown via Tailwind md:hidden). */
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .bb-account-layout { grid-template-columns: 1fr; gap: 16px; }
   .bb-account-avatar { width: 44px; height: 44px; }
 }
@@ -2272,7 +2277,7 @@ input[type="checkbox"] {
 
 /* Homepage product carousel: legacy WP parity for page-home.php #main-product-slide. */
 .bb-home-products-parity {
-  padding-top: 60px;
+  padding-top: 40px; /* WP .product-list .pt-40 = 40px (was 60) */
   padding-bottom: 40px;
   background: #fff;
 }
@@ -3229,19 +3234,19 @@ body:has(.bb-search-results-page) {
 
   .bb-mobile-header-drawer {
     position: absolute;
-    top: 0;
+    top: var(--bb-header-height); /* WP: drawer opens BELOW the header (header stays visible) */
     bottom: 0;
-    left: 0;
+    right: 0; /* WP: off-canvas enters from the RIGHT */
     display: flex;
-    width: min(86vw, 340px);
+    width: min(100vw, 500px); /* WP: phone full-width (≤500), tablet capped 500px */
     flex-direction: column;
     overflow-y: auto;
     overflow-anchor: none;
     scrollbar-width: none;
-    border-right: 1px solid var(--bb-mobile-shell-border);
+    border-left: 1px solid var(--bb-mobile-shell-border);
     background: var(--bb-mobile-shell-bg);
     box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
-    transform: translateX(-100%);
+    transform: translateX(100%);
     transition: transform 280ms cubic-bezier(0.2, 0.7, 0.2, 1);
     -webkit-overflow-scrolling: touch;
   }
@@ -3261,7 +3266,7 @@ body:has(.bb-search-results-page) {
   .bb-mobile-header-panel.is-open .bb-mobile-header-drawer {
     transform: translateX(0);
     @starting-style {
-      transform: translateX(-100%);
+      transform: translateX(100%);
     }
   }
 
@@ -3330,12 +3335,6 @@ body:has(.bb-search-results-page) {
   .bb-home-products-parity {
     padding-top: 20px;
     padding-bottom: 8px;
-  }
-
-  .bb-fp-page-track {
-    width: max-content;
-    gap: 12px;
-    transform: none;
   }
 
   .bb-home .content-bottom {
@@ -3582,7 +3581,7 @@ body:has(.bb-search-results-page) {
 
   .bb-checkout-page label,
   .bb-checkout-label {
-    font-size: 13px;
+    font-size: 14px; /* WP .form-group label = 14px (was 13) */
     line-height: 1.35;
   }
 
@@ -3652,7 +3651,9 @@ body:has(.bb-search-results-page) {
   body > footer .bg-footer-top a {
     min-width: 0;
     gap: 12px;
-    font-size: var(--fs-h3);
+    /* Hotline/email = WP .contact-infor--item 2.143rem ≈ 30px, no mobile shrink.
+       (Trước đây để var(--fs-h3)=20px → nhỏ hơn WP; đồng bộ về text-ui-30.) */
+    font-size: var(--text-ui-30);
   }
 
   /* Nav links (accordion) and social links are NOT hotline numbers — reset to body size */
@@ -3795,7 +3796,7 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
   }
 
   .bb-mobile-header-drawer {
-    width: min(88vw, 360px);
+    width: min(100vw, 500px); /* WP: phone full-width, tablet ≤500 (was min(88vw,360px)) */
     transition: transform 280ms var(--bb-ease-standard);
   }
 
@@ -3944,13 +3945,9 @@ html[data-bb-footer-visible] .bb-floating-chat-anchor {
     overflow-wrap: anywhere;
   }
 
-  body > footer .bg-footer-top a[href^="tel:"] {
-    font-size: var(--fs-h3);
-  }
-
-  body > footer .bg-footer-top a[href^="mailto:"] {
-    font-size: var(--fs-h4);
-  }
+  /* Footer contact (tel/mailto) stays a uniform 30px on mobile too — WP
+     .contact-infor--item = 2.143rem (≈30px) with no mobile shrink. Base
+     text-ui-30 now applies at all widths (was fs-h3/fs-h4 here). */
 }
 
 /* ══════════════════════════════════════════════════════════════════════

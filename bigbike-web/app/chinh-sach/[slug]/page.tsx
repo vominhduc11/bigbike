@@ -110,7 +110,7 @@ export default async function PolicyPage({ params }: Props) {
         ]}
       />
       <section className="bb-page">
-        <Container className="grid grid-cols-1 gap-[30px] pt-10 pb-[60px] items-start lg:grid-cols-[3fr_9fr] xl:gap-[48px] xl:pt-12 xl:pb-[80px]">
+        <Container className="grid grid-cols-1 gap-[30px] pt-10 pb-[60px] items-start md:grid-cols-[3fr_9fr] xl:gap-[48px] xl:pt-12 xl:pb-[80px]">
           <PolicySidebar activeHref={`/chinh-sach/${slug}`} title={t("policy.sidebarTitle")} />
           <div className="min-w-0">
             <article

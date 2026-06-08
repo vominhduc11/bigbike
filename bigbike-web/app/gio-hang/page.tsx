@@ -16,6 +16,7 @@ const COPY = {
   title: "Giỏ hàng",
   emptyMessage: "Chưa có sản phẩm nào trong giỏ hàng.",
   returnToShop: "Quay trở lại cửa hàng",
+  continueShopping: "Tiếp tục mua hàng",
   cartHeading: "GIỎ HÀNG CỦA BẠN",
   updateCart: "Cập nhật giỏ hàng",
   checkoutProceed: "Tiến hành thanh toán",
@@ -47,7 +48,7 @@ function CartPageHeading() {
       </h1>
       <Breadcrumb
         variant="onLight"
-        className="!px-0"
+        className="!px-0 !py-[30px] max-md:!py-[14px]"
         items={[{ label: "Bigbike.vn", href: "/" }, { label: COPY.title }]}
       />
     </div>
@@ -250,10 +251,16 @@ export default function CartPage() {
           ) : (
             <div>
               <div className="-mx-[15px] flex flex-wrap items-start">
-                <div className="relative min-h-px w-full max-w-[66.666667%] basis-2/3 px-[15px] max-[991px]:max-w-full max-[991px]:basis-full">
-                  <div className="mb-[30px] text-cart-total">
-                    <h3 className="m-0 font-body text-[1em] font-semibold leading-[1.2] text-black">
+                <div className="relative min-h-px w-full max-w-[66.666667%] basis-2/3 px-[15px] max-md:max-w-full max-md:basis-full">
+                  <div className="mb-[30px]">
+                    <h3 className="m-0 flex items-center gap-2.5 font-body text-ui-24 font-semibold leading-[1.2] text-black">
                       {COPY.cartHeading}
+                      {/* WP-parity: red rotated-square badge with the cart item count */}
+                      <span className="inline-flex h-5 w-5 rotate-45 items-center justify-center bg-brand [box-shadow:var(--bb-shadow-md)]" aria-hidden="true">
+                        <b className="-rotate-45 font-cta text-ui-12 font-semibold leading-none text-white">
+                          {cart.items.reduce((sum, i) => sum + i.quantity, 0)}
+                        </b>
+                      </span>
                     </h3>
                   </div>
 
@@ -297,11 +304,11 @@ export default function CartPage() {
                               <button
                                 type="button"
                                 className="flex w-9 min-h-[44px] items-center justify-center text-lg leading-none text-foreground transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2"
-                                onClick={() => handleQuantityStep(item.id, -1)}
-                                disabled={isMutating || !item.available || draftQuantity <= 1}
-                                aria-label={`Giảm số lượng ${item.productName}`}
+                                onClick={() => handleQuantityStep(item.id, 1)}
+                                disabled={isMutating || !item.available}
+                                aria-label={`Tăng số lượng ${item.productName}`}
                               >
-                                −
+                                +
                               </button>
                               <input
                                 type="number"
@@ -318,11 +325,11 @@ export default function CartPage() {
                               <button
                                 type="button"
                                 className="flex w-9 min-h-[44px] items-center justify-center text-lg leading-none text-foreground transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2"
-                                onClick={() => handleQuantityStep(item.id, 1)}
-                                disabled={isMutating || !item.available}
-                                aria-label={`Tăng số lượng ${item.productName}`}
+                                onClick={() => handleQuantityStep(item.id, -1)}
+                                disabled={isMutating || !item.available || draftQuantity <= 1}
+                                aria-label={`Giảm số lượng ${item.productName}`}
                               >
-                                +
+                                −
                               </button>
                             </div>
                           </div>
@@ -345,9 +352,18 @@ export default function CartPage() {
                     })}
                   </div>
 
+                  {/* WP-parity: black "continue shopping" action under the items column */}
+                  <div className="mt-[30px]">
+                    <Link
+                      href={continueHref}
+                      className="inline-flex h-[62px] items-center justify-center bg-black px-8 font-cta text-base font-semibold uppercase leading-none text-white no-underline transition-colors hover:bg-foreground max-md:w-full"
+                    >
+                      {COPY.continueShopping}
+                    </Link>
+                  </div>
                 </div>
 
-                <div className="relative min-h-px w-full max-w-[33.333333%] basis-1/3 px-[15px] max-[991px]:mt-9 max-[991px]:max-w-full max-[991px]:basis-full md:sticky md:top-[calc(var(--bb-header-stack)+24px)] md:self-start">
+                <div className="relative min-h-px w-full max-w-[33.333333%] basis-1/3 px-[15px] max-md:mt-9 max-md:max-w-full max-md:basis-full md:sticky md:top-[calc(var(--bb-header-stack)+24px)] md:self-start">
                   <div>
                     <h2 className="m-0 mb-5 font-body text-ui-24 font-semibold leading-[1.25] text-black">{COPY.totalsHeading}</h2>
 
@@ -442,7 +458,7 @@ export default function CartPage() {
                         <p className="m-0">{COPY.total}</p>
                       </div>
                       <div className="text-right">
-                        <p className="m-0 text-cart-total text-brand">
+                        <p className="m-0 text-ui-24 text-brand">
                           <strong>{formatVnd(cart.totals.totalAmount)}</strong>
                         </p>
                       </div>

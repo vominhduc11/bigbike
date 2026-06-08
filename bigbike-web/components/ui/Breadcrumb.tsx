@@ -35,8 +35,12 @@ export function Breadcrumb({ items, variant = "onLight", className }: Breadcrumb
     >
       {items.map((item, index) => {
         const isLast = index === items.length - 1;
+        // WP-parity: on mobile collapse to first + last only (hide the middle
+        // crumbs and their separators) — WP @max-767 .breadcrumb li{display:none}
+        // except first/last. Avoids hard-clipping a long chain on narrow hero banners.
+        const isMiddle = index !== 0 && !isLast;
         return (
-          <span key={`${item.label}-${index}`} className="contents">
+          <span key={`${item.label}-${index}`} className={cn("contents", isMiddle && "max-md:hidden")}>
             {index > 0 ? (
               <span className={isHero ? undefined : "sep"} aria-hidden="true">
                 /

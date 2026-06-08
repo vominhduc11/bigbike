@@ -138,7 +138,7 @@ Cỡ CỐ ĐỊNH (WP-parity) — không scale theo màn. Chỉ `section-title` 
 | `button` | 16 | 1.2 | 600 | UPPER | Nút / CTA phụ |
 | `caption` | 14 | 1.4 | 400 | none | Chú thích, meta, desc (WP 14px) |
 | `overline` | 12 | 1.4 | 600 | UPPER | Badge, label nhỏ |
-| `footer-slogan` | 48 | 1.2 | 500 | UPPER | Slogan footer (WP `.newletters form h3`) |
+| `footer-slogan` | 16 | 1.2 | 500 | UPPER | Slogan footer — WP markup là `<h2 class="slogan-bigbike">`; rule 48px chỉ áp `.newletters form h3` nên h2 slogan fallback về `h2{16px}` → render thực = 16px (sửa 2026-06-08) |
 
 > Phông chữ: xem §1 (đang được cập nhật riêng). Cột Family đã bỏ khỏi bảng này để bảng chỉ nói về **cỡ** (WP-parity).
 
@@ -219,7 +219,7 @@ Dùng: `className={sectionHeading}` hoặc `cn(sectionHeading, "mb-4")`; `classN
 Mọi text trong dự án thuộc **đúng một** trong hai nhóm; không có giá trị tùy tiện lạc lõng ngoài hai nhóm này:
 
 1. **Nhóm chữ đọc (WP-parity cố định)** — heading, section title/eyebrow, body, lead, caption, meta. **Bắt buộc** dùng token (`text-h1…h4`, `text-body`, `text-caption`, `text-overline`, `--bb-text-section-title`/`-kicker`) hoặc class chung trong `lib/ui-classes.ts`. Cỡ cố định theo WP, **không** `clamp()`/`vw`/hardcode px-hex.
-2. **Nhóm chữ cố định (UI vận hành)** — nút/CTA, badge, giá, ô nhập số (stepper giỏ hàng), nhãn dày đặc trong panel (search, mobile cart sheet), breadcrumb, pagination, số/rating. Kích thước cần chính xác, **không** co giãn. Dùng bộ token **`text-ui-N`** (`text-ui-9/10/11/12/13/14/16/18/20/22/24/30/35`) — **tên đúng px** (`text-ui-14` = đúng 14px). **Không** viết raw `text-[Npx]` trong className nữa.
+2. **Nhóm chữ cố định (UI vận hành)** — nút/CTA, badge, giá, ô nhập số (stepper giỏ hàng), nhãn dày đặc trong panel (search, mobile cart sheet), breadcrumb, pagination, số/rating. Kích thước cần chính xác, **không** co giãn. Dùng bộ token **`text-ui-N`** (`text-ui-9/10/11/12/13/14/15/16/17/18/20/21/22/24/26/30/35`) — **tên đúng px** (`text-ui-14` = đúng 14px). `text-ui-21` = giá/nhãn PDP (WP 1.5rem trên base 14px = 21px). **Không** viết raw `text-[Npx]` trong className nữa.
 
 **Màu chữ:** luôn dùng token (`text-foreground` = đen brand, `text-muted-foreground` = xám, `text-brand`…). **Cấm** hex hardcode (`text-[#6f6f6f]`) và màu Tailwind mặc định (`text-red-500`). *Ngoại lệ cơ chế giữ nguyên:* `FloatingChat` (widget chat) và `MobileHeaderMenu` (drawer mobile light-on-dark) còn dùng hex/px theo cơ chế riêng — đã ghi nhận.
 

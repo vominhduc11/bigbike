@@ -426,6 +426,7 @@ public class WordPressMigrationImportService {
                             mapped.seoTitle(),
                             mapped.seoDescription(),
                             mapped.thumbnailId(),
+                            mapped.productImageId(),
                             articleCategoryRefs(post, relsByObject, ttIdToTermId, termsById, blogCategoryByTermId),
                             articleTagRefs(post, relsByObject, ttIdToTermId, termsById, blogTagByTermId),
                             mapped.expectedUrl(),

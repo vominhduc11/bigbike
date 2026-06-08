@@ -93,7 +93,7 @@ function EditAccountContent() {
       )}
 
       <form onSubmit={handleSubmit}>
-        <div className="grid grid-cols-1 gap-x-6 gap-y-[18px] sm:grid-cols-2 xl:gap-x-8">
+        <div className="grid grid-cols-1 gap-x-6 gap-y-[18px] md:grid-cols-2 xl:gap-x-8">
           <div className="flex flex-col gap-1.5">
             <label className={LEGACY_LABEL}>{t("fullNameLabel")}</label>
             <Input name="displayName" defaultValue={profile?.displayName ?? ""} placeholder={t("fullNamePlaceholder")} />
@@ -110,8 +110,8 @@ function EditAccountContent() {
           <p className="mb-3 text-sm text-muted-foreground">
             {t("changePasswordHint")}
           </p>
-          <div className="grid grid-cols-1 gap-x-6 gap-y-[18px] sm:grid-cols-3 xl:gap-x-8">
-            <div className="flex flex-col gap-1.5">
+          <div className="grid grid-cols-1 gap-x-6 gap-y-[18px] md:grid-cols-2 xl:gap-x-8">
+            <div className="flex flex-col gap-1.5 md:col-span-2">
               <label className={LEGACY_LABEL}>{t("currentPassword")}<ReqMark /></label>
               <Input
                 type="password"
@@ -142,7 +142,7 @@ function EditAccountContent() {
           {passwordError && <p className="mt-2 text-sm text-destructive">{passwordError}</p>}
         </fieldset>
 
-        <Button type="submit" variant="primary" disabled={saving} className="mt-6 min-w-[160px]">
+        <Button type="submit" variant="primary" disabled={saving} className="mt-6 w-full sm:w-auto sm:min-w-[160px]">
           {saving ? t("saving") : t("save")}
         </Button>
       </form>

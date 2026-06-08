@@ -5,12 +5,14 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 export function FooterCollapsible({ title, children }: { title: string; children: ReactNode }) {
-  const [open, setOpen] = useState(false);
+  // WP-parity: footer info/social are expanded by default on mobile (custom.css
+  // @max-767 forces .toggle--item-body{display:block}); the +/- only collapses.
+  const [open, setOpen] = useState(true);
   const contentId = useId();
 
   return (
-    <section className="mb-[2.286rem] max-md:mb-7 max-md:border-b max-md:border-white/20 max-md:pb-6">
-      <h3 className="m-0 font-body text-h4 font-medium uppercase text-brand-on-dark">
+    <section className="mb-[2.286rem] max-md:mb-10 max-md:border-b max-md:border-[#4b4b4b] max-md:pb-10">
+      <h3 className="m-0 font-body text-base font-medium uppercase text-brand-on-dark">
         {/* Desktop/tablet: static heading — content is always visible, so no fake toggle */}
         <span className="block max-md:hidden">{title}</span>
         {/* Mobile: real collapse toggle with state-accurate ARIA */}
@@ -27,7 +29,7 @@ export function FooterCollapsible({ title, children }: { title: string; children
           </span>
         </button>
       </h3>
-      <div id={contentId} className={cn("mt-4 md:mt-[30px] md:block", open ? "block" : "hidden")}>
+      <div id={contentId} className={cn("mt-[30px] md:block", open ? "block" : "hidden")}>
         {children}
       </div>
     </section>

@@ -18,10 +18,10 @@ export const IMAGE_RECO = {
   categoryImage: { idealW: 400, idealH: 400, minW: 300, minH: 300, ratio: [1, 1], ratioTolerance: 0.15 },
   // Banner ngang rộng (hãng/danh mục/hero): ~1920×600.
   bannerWide: { idealW: 1920, idealH: 600, minW: 1280, minH: 360, ratio: [16, 5], ratioTolerance: 0.2 },
-  // Banner mobile: ảnh dọc hoặc vuông ~768×900 — không khóa tỉ lệ.
-  bannerMobile: { idealW: 768, idealH: 900, minW: 600, minH: 600, ratio: null },
-  // Slider trang chủ desktop: ~1920×800.
-  sliderDesktop: { idealW: 1920, idealH: 800, minW: 1280, minH: 500, ratio: [12, 5], ratioTolerance: 0.2 },
+  // Banner mobile: ảnh dọc ~750×1125 (2:3) — khớp tỉ lệ 75vh trên mobile — không khóa tỉ lệ.
+  bannerMobile: { idealW: 750, idealH: 1125, minW: 600, minH: 900, ratio: null },
+  // Slider trang chủ desktop: ~1920×880 (calc(100vh-200px) tại 1080p).
+  sliderDesktop: { idealW: 1920, idealH: 880, minW: 1280, minH: 550, ratio: [12, 5], ratioTolerance: 0.2 },
   // Logo: tỉ lệ tự do (vuông hoặc ngang), nên dùng PNG nền trong ~400×200.
   logo: { idealW: 400, idealH: 200, minW: 200, minH: 100, ratio: null },
   // Ảnh bìa bài viết / OG mạng xã hội: ~1200×630 (tỉ lệ 1.91:1).

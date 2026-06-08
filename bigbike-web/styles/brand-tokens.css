@@ -113,6 +113,7 @@
      font-cta = Barlow Condensed (injected by next/font via layout.tsx). */
   --bb-font-body: Arial, Helvetica, "Helvetica Neue", sans-serif;
   --bb-font-cta:  var(--font-barlow-condensed), Arial, Helvetica, "Helvetica Neue", sans-serif;
+  --bb-font-barlow: var(--font-barlow), Arial, Helvetica, "Helvetica Neue", sans-serif;
 
   /* ── Type scale — WP-parity FIXED (đã gỡ toàn bộ clamp fluid) ───────────────
      Mô hình mới (2026-06-08): cỡ chữ CỐ ĐỊNH theo px thực của site WordPress gốc,
@@ -170,8 +171,12 @@
   --bb-line-news-title: var(--bb-line-snug);
   --bb-text-product-title: 16px;    /* WP .product--item-title a = 16px */
   --bb-line-product-title: 1.25;
-  /* WP footer slogan (.newletters form h3) = 48px / lh 58px (≈1.2), uppercase, cố định. */
-  --bb-text-footer-slogan: 3rem;     /* 48px */
+  /* WP footer slogan markup is <h2 class="slogan-bigbike">; the 48px rule targets
+     `.newletters form h3` { font-size: 3.429rem; line-height: 4.143rem;
+     font-family: Barlow Condensed; font-weight: 500; text-transform: uppercase }.
+     WP html root = 14px → 3.429rem = 48px (no mobile shrink). Web root = 16px,
+     so 48px = 3rem. Line-height 4.143rem/14 = 58px ≈ 1.2 (leading-title). */
+  --bb-text-footer-slogan: 3rem;       /* 48px — WP .newletters form h3 render */
   --bb-line-footer-slogan: 1.2;
   --bb-text-footer-slogan-mobile: 3rem;
   --bb-text-h1: 1.5rem;      /* 24px (legacy, đồng bộ page banner) */

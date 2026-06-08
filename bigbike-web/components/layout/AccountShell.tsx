@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 // Account nav is dual-layout: desktop = vertical card rows with a clip-path diamond ::before
 // marker (revealed on active); mobile (<=767px) = horizontal-scroll chips with the marker hidden.
 const accountNavItem =
-  "flex w-full cursor-pointer items-center gap-[9px] border-b border-[#ededed] bg-transparent px-0 py-4 text-left font-body text-ui-14 font-normal text-muted-foreground no-underline transition-colors last:border-b-0 hover:text-brand before:h-[7px] before:w-[7px] before:shrink-0 before:bg-brand before:opacity-0 before:transition-opacity before:content-[''] before:[clip-path:polygon(50%_0,100%_50%,50%_100%,0_50%)] max-md:w-auto max-md:min-h-11 max-md:flex-[0_0_auto] max-md:whitespace-nowrap max-md:border max-md:border-[var(--bb-border-subtle)] max-md:bg-[var(--bb-bg-surface)] max-md:px-3.5 max-md:py-0 max-md:before:hidden";
+  "flex w-full cursor-pointer items-center gap-[9px] border-b border-[#ededed] bg-transparent px-0 py-6 text-left font-body text-ui-14 font-normal text-muted-foreground no-underline transition-colors last:border-b-0 hover:text-brand before:h-[7px] before:w-[7px] before:shrink-0 before:bg-brand before:opacity-0 before:transition-opacity before:content-[''] before:[clip-path:polygon(50%_0,100%_50%,50%_100%,0_50%)] max-md:w-auto max-md:min-h-11 max-md:flex-[0_0_auto] max-md:whitespace-nowrap max-md:border max-md:border-[var(--bb-border-subtle)] max-md:bg-[var(--bb-bg-surface)] max-md:px-3.5 max-md:py-0 max-md:before:hidden";
 const accountNavItemActive =
   "font-semibold text-brand before:opacity-100 max-md:border-[var(--bb-action-primary)]";
 

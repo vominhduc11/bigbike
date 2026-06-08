@@ -126,10 +126,10 @@ function WpCategoryListItem({ category }: { category: Category }) {
   return (
     <Link
       href={toCategoryPath(category.slug)}
-      className="group relative flex flex-col items-center justify-center h-[290px] max-md:h-[170px] p-[30px] max-md:p-4 bg-white border-r border-b border-r-border-default border-b-border-default text-center no-underline cursor-pointer overflow-hidden before:content-[''] before:absolute before:inset-0 before:bg-[url('/wp/cat-hover.jpg')] before:bg-[position:top_center] before:bg-cover before:bg-no-repeat before:opacity-0 before:[transition:opacity_0.2s_ease] hover:before:opacity-100 focus-visible:[outline:var(--bb-focus-outline)] focus-visible:[outline-offset:-3px] focus-visible:z-[2]"
+      className="group relative flex flex-col items-center justify-center h-[290px] p-[30px] bg-white border-r border-b border-r-border-default border-b-border-default text-center no-underline cursor-pointer overflow-hidden before:content-[''] before:absolute before:inset-0 before:bg-[url('/wp/cat-hover.jpg')] before:bg-[position:top_center] before:bg-cover before:bg-no-repeat before:opacity-0 before:[transition:opacity_0.5s_ease] hover:before:opacity-100 focus-visible:[outline:var(--bb-focus-outline)] focus-visible:[outline-offset:-3px] focus-visible:z-[2]"
     >
       <span
-        className="relative z-[1] flex items-center justify-center h-[60px] max-md:h-10 min-[1536px]:h-[68px] min-[2560px]:h-[76px] pointer-events-none"
+        className="relative z-[1] flex items-center justify-center w-[72px] h-[72px] min-[1536px]:w-20 min-[1536px]:h-20 min-[2560px]:w-[88px] min-[2560px]:h-[88px] pointer-events-none"
         aria-hidden="true"
       >
         <Image
@@ -137,13 +137,17 @@ function WpCategoryListItem({ category }: { category: Category }) {
           alt=""
           width={96}
           height={96}
-          sizes="96px"
-          className="h-full w-auto [transition:filter_0.2s_ease,transform_0.2s_ease] group-hover:[filter:brightness(0)_invert(1)] group-hover:[transform:scale(1.06)] group-active:[transform:scale(0.97)]"
+          sizes="(min-width: 2560px) 88px, (min-width: 1536px) 80px, 72px"
+          className="block w-full h-full object-contain [transition:filter_0.2s_ease,transform_0.2s_ease] group-hover:[filter:brightness(0)_invert(1)] group-hover:[transform:scale(1.06)] group-active:[transform:scale(0.97)]"
         />
       </span>
-      <span className="relative z-[1] line-clamp-2 mt-6 max-md:mt-3 font-[family-name:var(--bb-font-cta)] font-semibold text-ui-17 leading-[1.2] tracking-normal uppercase text-foreground [transition:color_0.2s_ease] group-hover:text-white">
+      <span className="relative z-[1] line-clamp-2 mt-[30px] font-[family-name:var(--bb-font-cta)] font-semibold text-[17px] min-[1536px]:text-[18px] min-[2560px]:text-[20px] leading-[1.2] tracking-[0.02em] uppercase text-foreground [transition:color_0.2s_ease] group-hover:text-white">
         {name}
       </span>
+      <i
+        className="fal fa-chevron-circle-right relative z-[1] text-2xl text-black h-0 opacity-0 overflow-hidden [transition:all_0.3s_ease] group-hover:text-white group-hover:h-6 group-hover:mt-[30px] group-hover:opacity-100"
+        aria-hidden="true"
+      />
     </Link>
   );
 }
@@ -277,7 +281,7 @@ function WpNewsCard({ article }: { article: Article }) {
   const dateStr = formatWpHomeDate(article.publishedAt ?? article.createdAt);
 
   return (
-    <div className="relative w-full max-w-full px-0 md:flex-[0_0_33.3333%] md:max-w-[33.3333%] md:px-[15px]">
+    <div className="relative w-full max-w-full px-0 min-[576px]:flex-[0_0_50%] min-[576px]:max-w-[50%] min-[576px]:px-[15px] md:flex-[0_0_33.3333%] md:max-w-[33.3333%]">
       <div className="mb-[30px] bg-white [box-shadow:0_3px_6px_rgba(0,0,0,0.16)]">
         <div className="text-center">
           <Link
@@ -289,28 +293,28 @@ function WpNewsCard({ article }: { article: Article }) {
               <img
                 src={src}
                 alt={safeText(article.coverImage?.alt, title)}
-                className="lazy block !h-[215px] w-full max-w-full object-cover align-middle [transition:transform_0.3s_ease] max-[992px]:!h-[200px] max-[768px]:!h-[180px] min-[1920px]:!h-[290px] min-[2560px]:!h-[400px] group-hover:[transform:scale(1.03)]"
+                className="lazy block !h-[215px] w-full max-w-full object-cover align-middle [transition:transform_0.3s_ease] max-[767px]:!h-[180px] min-[1920px]:!h-[290px] min-[2560px]:!h-[400px] group-hover:[transform:scale(1.03)]"
                 loading="lazy"
               />
             ) : null}
           </Link>
         </div>
-        <div className="relative max-md:bg-white">
+        <div className="relative">
           {dateStr && (
-            <div className="absolute left-0 top-[-21px] w-[170px] max-md:top-[-17px] max-md:w-[132px]">
-              <p className="relative m-0 p-0 pl-[20px] font-body text-ui-14 font-semibold uppercase leading-[42px] whitespace-nowrap bg-brand text-white after:absolute after:bottom-0 after:right-[-15px] after:h-[42px] after:w-[25px] after:bg-brand after:[transform:skewX(-20deg)] after:content-[''] max-md:pl-[14px] max-md:leading-[34px] max-md:after:right-[-11px] max-md:after:h-[34px] max-md:after:w-[19px]">
+            <div className="absolute left-0 top-[-21px] w-[170px]">
+              <p className="relative m-0 p-0 pl-[20px] font-body text-ui-14 font-semibold uppercase leading-[42px] whitespace-nowrap bg-brand text-white after:absolute after:bottom-0 after:right-[-15px] after:h-[42px] after:w-[25px] after:bg-brand after:[transform:skewX(-20deg)] after:content-['']">
                 {dateStr}
               </p>
             </div>
           )}
-          <div className="[padding:40px_20px_30px] max-md:bg-white max-md:[padding:40px_16px_22px]">
-            <p className="m-0 mb-[5px] font-body text-ui-18 font-semibold normal-case leading-[var(--bb-line-snug)] tracking-[normal] text-black">
+          <div className="[padding:41px_20px_30px]">
+            <p className="m-0 mb-[5px] font-body text-ui-16 font-semibold normal-case leading-[1.25] tracking-[normal] text-black">
               <Link href={href} className="text-black no-underline [transition:color_0.2s_ease] hover:text-brand">
                 {title}
               </Link>
             </p>
             {excerpt ? (
-              <p className="m-0 text-[length:var(--fs-body)] leading-[var(--bb-line-body)] text-black max-md:overflow-hidden max-md:[display:flow-root] max-md:[-webkit-line-clamp:3]">
+              <p className="m-0 text-ui-16 leading-[1.25] text-black max-[575px]:overflow-hidden max-[575px]:[display:flow-root] max-[575px]:[-webkit-line-clamp:3]">
                 {excerpt}
               </p>
             ) : null}
@@ -434,13 +438,17 @@ export default async function HomePage() {
       <HomeCategoryHighlights items={homeHighlights} />
 
       {(aboutSubtitle || aboutTitle || aboutMarkup) && (
-        <div className="about-bigbike py-10 max-md:pt-8">
+        <div className="about-bigbike py-10">
           <div className="mx-auto w-full max-w-[var(--bb-container-xl)] px-[15px] max-md:max-w-none max-md:px-[var(--bb-mobile-page-x)]">
             {(aboutSubtitle || aboutTitle) && (
               <div className="text-center mb-[40px] max-md:mb-[24px]">
-                {aboutSubtitle ? <p className={cn(sectionEyebrow, "mb-3")}>{aboutSubtitle}</p> : null}
+                {aboutSubtitle ? (
+                  <p className={cn(sectionEyebrow, "mb-[10px] text-[var(--bb-color-gray-300)]")}>
+                    {aboutSubtitle}
+                  </p>
+                ) : null}
                 {aboutTitle ? (
-                  <h1 className={sectionHeading}>
+                  <h1 className={cn(sectionHeading, "leading-[1.25] min-[768px]:leading-[1.714]")}>
                     {aboutTitle}
                   </h1>
                 ) : null}
@@ -448,7 +456,7 @@ export default async function HomePage() {
             )}
             {aboutMarkup ? (
               <div
-                className="block-content text-center max-w-[970px] mx-auto"
+                className="block-content text-center max-w-[970px] mx-auto [&_p]:text-[var(--bb-text-muted)]"
                 dangerouslySetInnerHTML={{ __html: aboutMarkup }}
               />
             ) : null}
@@ -462,11 +470,13 @@ export default async function HomePage() {
           aria-labelledby="home-products-heading"
         >
           <Container>
-            <div className="flex flex-col items-center justify-center gap-0 m-0 mb-[40px] p-0 [border-bottom:0] text-foreground [text-align:center] max-md:mb-[14px] max-md:px-[var(--bb-mobile-page-x)]">
-              <p className={cn(sectionEyebrow, "mb-3")}>Sản phẩm nổi bật</p>
+            <div className="flex flex-col items-center justify-center gap-0 m-0 mb-[40px] p-0 [border-bottom:0] text-foreground [text-align:center]">
+              <p className={cn(sectionEyebrow, "mb-[10px] text-[var(--bb-color-gray-300)]")}>
+                Sản phẩm nổi bật
+              </p>
               <h2
                 id="home-products-heading"
-                className={sectionHeading}
+                className={cn(sectionHeading, "leading-[1.25] min-[768px]:leading-[1.714]")}
               >
                 Sản phẩm nổi bật tại BigBike
               </h2>
@@ -474,7 +484,7 @@ export default async function HomePage() {
             <FeaturedProductsCarousel products={carouselProducts} />
             {categoriesResult.data.length > 0 && (
               <div
-                className="grid grid-cols-2 min-[600px]:grid-cols-3 md:grid-cols-4 min-[2560px]:grid-cols-6 gap-0 border-t border-l border-t-border-default border-l-border-default mt-[130px] max-[1024px]:mt-20 max-md:mt-8 mb-2.5"
+                className="grid grid-cols-2 min-[576px]:grid-cols-3 md:grid-cols-4 min-[2560px]:grid-cols-6 gap-0 border-t border-l border-t-border-default border-l-border-default mt-[130px] max-[767px]:mt-[70px] mb-2.5"
                 aria-label="Danh mục sản phẩm"
               >
                 {categoriesResult.data.map((category) => (
@@ -489,7 +499,7 @@ export default async function HomePage() {
       {carouselProducts.length === 0 && categoriesResult.data.length > 0 && (
         <section className="bb-products-section" aria-label="Danh mục sản phẩm">
           <Container>
-            <div className="grid grid-cols-2 min-[600px]:grid-cols-3 md:grid-cols-4 min-[2560px]:grid-cols-6 gap-0 border-t border-l border-t-border-default border-l-border-default mt-0 mb-2.5">
+            <div className="grid grid-cols-2 min-[576px]:grid-cols-3 md:grid-cols-4 min-[2560px]:grid-cols-6 gap-0 border-t border-l border-t-border-default border-l-border-default mt-0 mb-2.5">
               {categoriesResult.data.map((category) => (
                 <WpCategoryListItem key={category.id} category={category} />
               ))}
@@ -511,7 +521,7 @@ export default async function HomePage() {
             <div className="mx-auto w-full max-w-[var(--bb-container-xl)] px-[15px]">
               <div className="[text-align:center] pb-10 max-md:pb-4">
                 {expSubtitle ? (
-                  <p className={cn(sectionEyebrow, "mb-3")}>
+                  <p className={cn(sectionEyebrow, "mb-3 text-[var(--bb-color-gray-300)]")}>
                     {expSubtitle}
                   </p>
                 ) : null}
@@ -524,7 +534,7 @@ export default async function HomePage() {
                   </h2>
                 ) : null}
                 {expDesc ? (
-                  <div className="mx-auto w-full pt-[30px] max-md:pt-4 max-md:px-[var(--bb-mobile-page-x)] md:w-2/3 min-[1200px]:max-w-[770px]">
+                  <div className="mx-auto w-full pt-[30px] max-md:pt-4 md:w-2/3">
                     <p className="text-[var(--bb-color-footer-top)] max-w-full m-0 text-base leading-[1.375] max-md:leading-[1.55]">
                       {expDesc}
                     </p>
@@ -538,16 +548,16 @@ export default async function HomePage() {
       )}
 
       {newsArticles.length > 0 && (
-        <div className="bb-home-news-parity bg-white pb-0 pt-[60px] max-[1024px]:pt-[52px] max-[768px]:pt-[20px]">
+        <div className="bb-home-news-parity bg-white pb-0 pt-[60px]">
           <div className="mx-auto w-full max-w-[1200px] px-[15px] min-[1536px]:max-w-[1360px] min-[1920px]:w-[min(100%_-_2_*_var(--bb-page-padding-desktop),100rem)] min-[1920px]:max-w-none min-[2560px]:w-[min(100%_-_2_*_var(--bb-page-padding-desktop),140rem)] max-md:max-w-none max-md:px-[var(--bb-mobile-page-x)]">
-            <div className="px-0 pt-0 pb-[40px] [text-align:center] max-md:px-[var(--bb-mobile-page-x)] max-md:pb-[14px]">
-              <p className={cn(sectionEyebrow, "mb-3")}>Tin tức & cập nhật</p>
+            <div className="px-0 pt-0 pb-[40px] [text-align:center]">
+              <p className={cn(sectionEyebrow, "mb-3 text-[var(--bb-color-gray-300)]")}>Tin tức & cập nhật</p>
               <h2 className={sectionHeading}>
                 Cập nhật xu hướng cùng BigBike
               </h2>
             </div>
             <div>
-              <div className="-mx-[15px] flex flex-wrap max-md:mx-0 max-md:grid max-md:grid-cols-1 max-md:gap-4">
+              <div className="-mx-[15px] flex flex-wrap max-[575px]:mx-0 max-[575px]:flex-col">
                 {newsArticles.map((article) => (
                   <WpNewsCard key={article.id} article={article} />
                 ))}
@@ -565,9 +575,9 @@ export default async function HomePage() {
             - Layer 2 (after):  gradient top-down nhẹ để title area tối hơn, cards nổi
             Tổng mức tối ~60% — giữ mood mạnh mẽ nhưng sharp hơn black/40 cũ
           */}
-          <div className="relative bg-[url('/wp/video-bg.jpg')] bg-cover bg-center bg-no-repeat pb-16 max-[1024px]:pb-13 max-md:pb-10 before:absolute before:inset-0 before:bg-black/55 before:content-[''] after:absolute after:inset-0 after:bg-gradient-to-b after:from-black/30 after:via-transparent after:to-black/25 after:content-['']">
+          <div className="relative bg-[url('/wp/video-bg.jpg')] bg-cover bg-center bg-no-repeat pb-[90px] max-[1024px]:pb-13 max-md:pb-10 before:absolute before:inset-0 before:bg-black/55 before:content-[''] after:absolute after:inset-0 after:bg-gradient-to-b after:from-black/30 after:via-transparent after:to-black/25 after:content-['']">
             <div className="relative z-[1] mx-auto w-full max-w-[var(--bb-container-xl)] px-[15px]">
-              <div className="text-center text-white pt-18 max-[1024px]:pt-12 max-md:pt-9 pb-13 max-[1024px]:pb-8 max-md:pb-5">
+              <div className="text-center text-white pt-[90px] max-[1024px]:pt-12 max-md:pt-9 pb-[70px] max-[1024px]:pb-8 max-md:pb-5">
                 <h2
                   id="home-video-heading"
                   className="my-0 mx-auto max-w-[820px] text-white font-body text-[length:var(--bb-text-section-title)] font-semibold leading-[1.12] max-[1024px]:leading-[1.1] max-md:leading-[1.12] tracking-normal uppercase text-balance drop-shadow-[0_2px_12px_rgba(0,0,0,0.6)]"

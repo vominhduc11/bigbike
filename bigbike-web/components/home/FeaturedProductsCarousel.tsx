@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Product } from "@/lib/contracts/public";
@@ -13,10 +13,9 @@ type Props = { products: Product[] };
 function resolveSlidesPerView(width: number) {
   if (width >= 2560) return 6;
   if (width >= 1536) return 5;
-  if (width >= 1024) return 4;  // desktop lg+ (was 767 — too many cards at tablet)
-  if (width >= 640)  return 3;  // tablet sm-md: 3 cards fits ~720px comfortably
-  if (width >= 380)  return 2;
-  return 1;
+  if (width >= 768)  return 4;  // desktop md+ — matches ProductCard md/2xl/2560 flex tiers (4/5/6) & WP 767 breakpoint.
+  if (width >= 380)  return 2;  // 380–767px: paged 2-up (WP main-product-slide / product-related-bigbike breakpoint 380).
+  return 1;                     // <380px: paged 1-up (WP breakpoint 320).
 }
 
 function resolveGap(slidesPerView: number) {
@@ -34,7 +33,8 @@ function resolveGap(slidesPerView: number) {
 // arrows just inside the carousel edges (CSS-only, SSR-safe — no width JS).
 // Arrow color stays foreground (no hover-red) — the legacy `.bb-home-products-parity
 // .bb-fp-arrow:hover{color:#000}` override pinned it black, so we drop hover:text-brand.
-// Hidden ≤767 (mobile is a native horizontal scroll, no paged nav).
+// Hidden ≤767: mobile is paged via touch-swipe + pagination dots (WP parity — WP hid
+// the swiper arrows on mobile and relied on Swiper's touch drag).
 const CAR_BTN =
   "absolute top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-foreground transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand max-md:hidden [&>svg]:h-9 [&>svg]:w-9 min-[1328px]:h-24 min-[1328px]:w-24 min-[1328px]:[&>svg]:h-16 min-[1328px]:[&>svg]:w-16";
 
@@ -48,20 +48,39 @@ export function FeaturedProductsCarousel({ products }: Props) {
     [products.length, slidesPerView],
   );
   const currentPage = Math.min(page, Math.max(0, pageCount - 1));
-  const offsetGap = currentPage * resolveGap(slidesPerView);
+  // Gap drives both the inter-card spacing and the per-page translate offset, so
+  // both come from the single resolveGap() source (WP: 0 / 20 / 30 by tier).
+  const gap = resolveGap(slidesPerView);
+  const offsetGap = currentPage * gap;
 
-  // On mobile (≤767px) CSS overrides the track to native horizontal scroll
-  // (overflow-x: auto, transform: none !important). Skip JS-driven navigation.
-  const isMobileScroll = slidesPerView <= 2;
+  // Touch-swipe paging (WP relied on Swiper's drag). Mouse drag is ignored so the
+  // desktop arrows/dots stay the only pointer controls and text selection works.
+  const dragStartX = useRef<number | null>(null);
 
   if (products.length === 0) return null;
 
-  const hasMultiplePages = !isMobileScroll && pageCount > 1;
+  // Paged at every viewport (WP main-product-slide: 1-up <380, 2-up 380–767, 4-up
+  // ≥767; Next adds 5-up ≥1536 / 6-up ≥2560). Navigation wraps around (WP loop).
+  const hasMultiplePages = pageCount > 1;
   const goPrev = () => setPage((currentPage - 1 + pageCount) % pageCount);
   const goNext = () => setPage((currentPage + 1) % pageCount);
 
+  const onPointerDown = (event: React.PointerEvent) => {
+    if (!hasMultiplePages || event.pointerType === "mouse") return;
+    dragStartX.current = event.clientX;
+  };
+  const onPointerEnd = (event: React.PointerEvent) => {
+    const start = dragStartX.current;
+    dragStartX.current = null;
+    if (start == null) return;
+    const dx = event.clientX - start;
+    if (Math.abs(dx) < 40) return;
+    if (dx < 0) goNext();
+    else goPrev();
+  };
+
   return (
-    <div className="relative max-md:after:content-[''] max-md:after:absolute max-md:after:top-0 max-md:after:right-0 max-md:after:bottom-[6px] max-md:after:w-12 max-md:after:bg-[linear-gradient(to_right,transparent,var(--bb-bg-page))] max-md:after:pointer-events-none max-md:after:z-[1]">
+    <div className="relative">
       {hasMultiplePages && (
         <button
           className={cn(CAR_BTN, "left-0 min-[1328px]:-left-16")}
@@ -73,10 +92,16 @@ export function FeaturedProductsCarousel({ products }: Props) {
         </button>
       )}
 
-      <div className="relative w-full overflow-x-hidden overflow-y-hidden max-md:overflow-x-auto max-md:pt-0 max-md:pb-[6px] max-md:px-[var(--bb-mobile-page-x)] max-md:[scrollbar-width:none]! max-md:[&::-webkit-scrollbar]:hidden">
+      <div
+        className="relative w-full overflow-hidden"
+        style={hasMultiplePages ? { touchAction: "pan-y" } : undefined}
+        onPointerDown={onPointerDown}
+        onPointerUp={onPointerEnd}
+        onPointerCancel={() => { dragStartX.current = null; }}
+      >
         <div
           className="bb-fp-page-track"
-          style={isMobileScroll ? undefined : { transform: `translate3d(calc(-${currentPage * 100}% - ${offsetGap}px), 0, 0)` }}
+          style={{ gap: `${gap}px`, transform: `translate3d(calc(-${currentPage * 100}% - ${offsetGap}px), 0, 0)` }}
         >
           {products.map((product) => (
             <ProductCard key={product.id} product={product} variant="featured" surface="home" />
@@ -97,7 +122,7 @@ export function FeaturedProductsCarousel({ products }: Props) {
 
       {hasMultiplePages && (
         <div
-          className="relative flex justify-center gap-[5px] mt-[60px] max-md:mt-[20px] max-md:hidden"
+          className="relative flex justify-center gap-[5px] mt-[60px] max-md:mt-[20px]"
           aria-label={t("carouselPagination")}
         >
           {Array.from({ length: pageCount }, (_, index) => (

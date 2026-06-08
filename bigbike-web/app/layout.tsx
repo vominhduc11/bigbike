@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
-import { fontBarlowCondensed } from "./fonts";
+import { fontBarlow, fontBarlowCondensed } from "./fonts";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import "./globals.css";
@@ -48,7 +48,7 @@ export default async function RootLayout({
   const locale = await getLocale();
   const messages = await getMessages();
   return (
-    <html lang={locale} className={`h-full antialiased ${fontBarlowCondensed.variable}`} suppressHydrationWarning>
+    <html lang={locale} className={`h-full antialiased ${fontBarlowCondensed.variable} ${fontBarlow.variable}`} suppressHydrationWarning>
       <body className="bb-theme min-h-full flex flex-col" suppressHydrationWarning>
         {GTM_ID && (
           <Script

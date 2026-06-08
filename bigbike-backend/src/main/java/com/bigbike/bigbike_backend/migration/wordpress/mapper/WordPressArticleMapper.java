@@ -31,6 +31,7 @@ public class WordPressArticleMapper {
             String seoTitle,
             String seoDescription,
             Long thumbnailId,
+            Long productImageId,
             List<TaxonomyRef> categories,
             List<TaxonomyRef> tags,
             String expectedUrl,
@@ -69,6 +70,12 @@ public class WordPressArticleMapper {
             try { thumbnailId = Long.parseLong(thumbnailIdStr.trim()); } catch (NumberFormatException ignored) {}
         }
 
+        Long productImageId = null;
+        String productImageIdStr = meta.get("product_image");
+        if (productImageIdStr != null && !productImageIdStr.isBlank()) {
+            try { productImageId = Long.parseLong(productImageIdStr.trim()); } catch (NumberFormatException ignored) {}
+        }
+
         return new MappedArticle(
                 post.id(),
                 post.authorId(),
@@ -82,6 +89,7 @@ public class WordPressArticleMapper {
                 seoTitle,
                 seoDescription,
                 thumbnailId,
+                productImageId,
                 List.of(),
                 List.of(),
                 expectedUrl,

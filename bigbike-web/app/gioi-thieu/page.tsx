@@ -77,12 +77,12 @@ function ServiceTileCard({ tile }: { tile: ServiceTile }) {
   const Icon = tile.icon;
   return (
     <div
-      className={`flex gap-4 p-5 ${
-        tile.highlight ? "bg-brand" : "border border-border bg-card shadow-sm"
+      className={`flex h-full flex-col gap-4 p-[30px] ${
+        tile.highlight ? "bg-brand" : "bg-card [box-shadow:0_0_30px_rgba(0,0,0,0.16)]"
       }`}
     >
       <Icon
-        className={`h-9 w-9 shrink-0 ${tile.highlight ? "text-white" : "text-brand"}`}
+        className={`h-10 w-10 shrink-0 ${tile.highlight ? "text-white" : "text-brand"}`}
         strokeWidth={1.5}
         aria-hidden="true"
       />
@@ -166,12 +166,12 @@ export default async function AboutPage() {
       />
       <section className="bb-page">
         <Container>
-          <div className="grid grid-cols-1 items-start gap-6 pb-10 lg:grid-cols-[4fr_5fr_3fr] lg:gap-[30px] xl:gap-[48px] 2xl:gap-[60px]">
+          <div className="grid grid-cols-1 items-start gap-6 pb-10 md:grid-cols-[4fr_5fr_3fr] md:gap-[30px] xl:gap-[48px] 2xl:gap-[60px]">
             <div>
-              <h3 className={cn(sectionHeading, "mb-4 !text-ui-24")}>
+              <h3 className={cn(sectionHeading, "mb-4 !text-display")}>
                 {t("aboutBigbike")}
               </h3>
-              <p className="m-0 text-body leading-snug text-muted-foreground">
+              <p className="m-0 text-body font-black leading-snug text-muted-foreground">
                 {t("aboutSubtitle")}
               </p>
             </div>
@@ -212,7 +212,7 @@ export default async function AboutPage() {
             ) : null}
           </div>
 
-          <div className="grid grid-cols-1 items-start gap-[30px] py-[60px] lg:grid-cols-[4fr_8fr] xl:gap-[48px] xl:py-[80px] 2xl:py-[100px]">
+          <div className="grid grid-cols-1 items-start gap-[30px] py-[60px] md:grid-cols-[4fr_8fr] xl:gap-[48px] xl:py-[80px] 2xl:py-[100px]">
             <div>
               <h3 className={cn(sectionHeading, "mb-4 !text-ui-24")}>
                 {t("aboutQualityTitle")}
@@ -221,7 +221,7 @@ export default async function AboutPage() {
                 {t("aboutQualityBody")}
               </p>
             </div>
-            <div className="flex flex-col gap-5">
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               {SERVICE_TILE_DEFS.map((tile) => (
                 <ServiceTileCard
                   key={tile.titleKey}

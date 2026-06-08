@@ -31,9 +31,7 @@ export default async function OrderConfirmPage({ searchParams }: Props) {
   if (!orderNumber || !orderKey) {
     return (
       <OrderShell>
-        <p className="woocommerce-notice woocommerce-notice--success woocommerce-thankyou-order-received m-0 text-base text-foreground">
-          {t("receivedNotice")}
-        </p>
+        <ThankYouHero message={t("receivedNotice")} />
       </OrderShell>
     );
   }
@@ -56,9 +54,7 @@ export default async function OrderConfirmPage({ searchParams }: Props) {
       )}
 
       <OrderShell>
-        <p className="woocommerce-notice woocommerce-notice--success woocommerce-thankyou-order-received m-0 text-base text-foreground">
-          {t("receivedNotice")}
-        </p>
+        <ThankYouHero message={t("receivedNotice")} />
 
         {order && (
           <>
@@ -82,6 +78,23 @@ function OrderShell({ children }: { children: React.ReactNode }) {
           {children}
         </div>
       </div>
+    </div>
+  );
+}
+
+// WP-parity: a centered "thank you" hero (success check + message) above the
+// order details, echoing WP's .payment-success block (centered, ~370-480px).
+function ThankYouHero({ message }: { message: string }) {
+  return (
+    <div className="mx-auto max-w-[480px] py-2 text-center">
+      <span className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--bb-brand-primary-soft)] text-brand">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M20 6 9 17l-5-5" />
+        </svg>
+      </span>
+      <p className="woocommerce-notice woocommerce-notice--success woocommerce-thankyou-order-received m-0 font-heading text-ui-24 font-semibold uppercase text-foreground">
+        {message}
+      </p>
     </div>
   );
 }

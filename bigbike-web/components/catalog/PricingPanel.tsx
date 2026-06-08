@@ -18,7 +18,7 @@ type PricingPanelProps = {
 };
 
 export function PricingPanel({ data, fallback, isLoading }: PricingPanelProps) {
-  const priceText = "m-0 text-ui-24 font-semibold text-black";
+  const priceText = "m-0 text-ui-21 font-semibold text-black";
 
   if (isLoading && !fallback) {
     return (

@@ -66,19 +66,19 @@ export function ProductArchiveLayout({
               <div className="w-full mx-auto px-[var(--bb-mobile-page-x)] md:px-[15px]">
                 <div className="sticky top-20 z-[2] bg-white max-md:top-[var(--bb-header-height)] max-md:z-30 max-md:[margin-inline:calc(var(--bb-mobile-page-x)*-1)] max-md:border-b max-md:border-border max-md:bg-[color-mix(in_srgb,var(--bb-bg-page)_96%,transparent)] max-md:px-[var(--bb-mobile-page-x)] max-md:py-2.5 max-md:backdrop-blur-[10px]">
                   <div className="flex flex-wrap items-center -mx-[15px]">
-                    <div className="min-w-0 w-full px-[15px] flex-[0_0_100%] max-w-full md:flex-[0_0_50%] md:max-w-[50%]">
-                      <div className="min-h-[52px] mb-[30px] text-ui-24 font-semibold leading-[52px] max-md:min-h-0 max-md:m-0 max-md:mb-2.5 max-md:leading-[1.35]">
+                    <div className="min-w-0 w-full px-[15px] flex-[0_0_50%] max-w-[50%] md:flex-[0_0_50%] md:max-w-[50%]">
+                      <div className="min-h-[52px] mb-[30px] text-ui-24 font-semibold leading-[52px] max-md:min-h-0 max-md:m-0 max-md:mb-2.5 max-md:leading-[1.35] max-md:text-ui-12">
                         {totalItems != null ? `${totalItems} Sản phẩm` : null}
                       </div>
                     </div>
 
-                    <div className="text-right min-w-0 w-full px-[15px] flex-[0_0_100%] max-w-full order-3 md:flex-[0_0_50%] md:max-w-[50%] md:order-none">
+                    <div className="text-right min-w-0 w-full px-[15px] flex-[0_0_50%] max-w-[50%] order-3 md:flex-[0_0_50%] md:max-w-[50%] md:order-none">
                       <Suspense fallback={null}>
                         <CatalogSortSelect current={sortCurrent} />
                       </Suspense>
                     </div>
 
-                    <div className="hidden mb-[30px] min-w-0 w-full px-[15px] md:flex-[0_0_50%] md:max-w-[50%] max-md:block max-md:flex-[0_0_100%] max-md:max-w-full max-md:order-2">
+                    <div className="hidden mb-[30px] min-w-0 w-full px-[15px] md:flex-[0_0_50%] md:max-w-[50%] max-md:block max-md:flex-[0_0_50%] max-md:max-w-[50%] max-md:order-2">
                       <button
                         type="button"
                         className="w-full cursor-pointer border-none bg-transparent text-left text-black"

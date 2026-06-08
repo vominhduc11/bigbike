@@ -125,8 +125,8 @@ export function ExperienceCarousel({ articles }: Props) {
     <Swiper
       className="bb-exp-carousel w-full touch-pan-y !pb-16 max-md:!pb-7 [&_.swiper-slide]:h-auto [&_.swiper-slide]:cursor-pointer"
       speed={1000}
-      slidesPerView={1.1}
-      spaceBetween={12}
+      slidesPerView={1.2}
+      spaceBetween={13}
       centeredSlides
       loop={hasSideSlides}
       initialSlide={hasSideSlides ? articles.length - 1 : 0}

@@ -107,7 +107,7 @@ export default async function ContactPage() {
             />
           ) : null}
 
-          <div className="grid grid-cols-1 items-start gap-10 pb-[60px] pt-8 lg:grid-cols-2 lg:gap-[60px] 3xl:gap-20 4xl:gap-[100px]">
+          <div className="grid grid-cols-1 items-start gap-10 pb-[60px] pt-8 md:grid-cols-2 md:gap-[60px] 3xl:gap-20 4xl:gap-[100px]">
             <div className="min-w-0 2xl:max-w-[640px] 4xl:max-w-[760px]">
               <h2 className={cn(sectionHeading, "mb-6 !text-ui-24")}>
                 {t("contactInfoHeading")}

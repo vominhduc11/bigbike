@@ -182,7 +182,7 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
                       {result.data.map((article) => (
                         <div
                           key={article.id}
-                          className="relative w-full px-[15px] flex-[0_0_33.333333%] max-w-[33.333333%] mb-[30px] flex flex-col max-[768px]:flex-[0_0_50%] max-[768px]:max-w-[50%] max-[576px]:flex-[0_0_100%] max-[576px]:max-w-full"
+                          className="relative w-full px-[15px] mb-[30px] flex flex-col flex-[0_0_100%] max-w-full min-[576px]:flex-[0_0_50%] min-[576px]:max-w-[50%] md:flex-[0_0_33.333333%] md:max-w-[33.333333%]"
                         >
                           <WpArticleCard article={article} />
                         </div>
@@ -262,7 +262,7 @@ function WpArticleCard({ article }: { article: Article }) {
   const href = toArticlePath(article.slug);
 
   return (
-    <article className="flex flex-col flex-1 mb-0 bg-card [box-shadow:var(--bb-shadow-md)] max-md:border max-md:border-solid max-md:border-border max-md:[box-shadow:none]">
+    <article className="flex flex-col flex-1 mb-0 bg-card [box-shadow:var(--bb-shadow-md)]">
       <div className="news--item-thumbnail">
         <Link
           href={href}
@@ -281,7 +281,7 @@ function WpArticleCard({ article }: { article: Article }) {
           </div>
         ) : null}
         <div className="px-5 pb-[30px] max-md:bg-card">
-          <p className="m-0 mb-[25px] font-body text-h4 font-semibold leading-6 text-foreground">
+          <p className="m-0 mb-[25px] font-body text-body font-semibold leading-5 text-foreground">
             <Link href={href} className="text-black no-underline [transition:none]">
               {title}
             </Link>

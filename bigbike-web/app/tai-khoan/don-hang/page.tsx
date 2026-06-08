@@ -64,7 +64,8 @@ function OrderHistoryContent() {
         </div>
       ) : (
         <>
-          <div className="overflow-x-auto">
+          {/* Desktop (md+): full 5-column table */}
+          <div className="hidden overflow-x-auto md:block">
             <table className="w-full border-collapse text-left text-sm">
               <thead>
                 <tr className="border-b border-border">
@@ -104,6 +105,34 @@ function OrderHistoryContent() {
               </tbody>
             </table>
           </div>
+
+          {/* Mobile (≤767): stacked labelled cards — WP shop_table_responsive parity (no horizontal scroll) */}
+          <ul className="m-0 flex list-none flex-col gap-3 p-0 md:hidden">
+            {orders.map((order) => (
+              <li key={order.id} className="border border-border bg-card p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <Link href={toOrderDetailPath(order.id)} className={`${bbLink} font-semibold`}>
+                    #{order.orderNumber}
+                  </Link>
+                  <span className="text-sm text-muted-foreground">{orderStatusLabelWithT(order.status, t)}</span>
+                </div>
+                <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
+                  <dt className="font-semibold text-foreground">{t("colDate")}</dt>
+                  <dd className="m-0 text-muted-foreground">{formatDate(order.placedAt)}</dd>
+                  <dt className="font-semibold text-foreground">{t("colTotal")}</dt>
+                  <dd className="m-0 text-muted-foreground">
+                    {t("totalCell", { total: formatVnd(order.totalAmount), count: order.itemCount })}
+                  </dd>
+                </dl>
+                <Link
+                  href={toOrderDetailPath(order.id)}
+                  className="mt-3 inline-flex h-11 w-full items-center justify-center bg-brand px-5 font-cta text-sm font-semibold uppercase text-white hover:bg-brand-hover"
+                >
+                  {t("view")}
+                </Link>
+              </li>
+            ))}
+          </ul>
 
           <PaginationNav page={page} totalPages={totalPages} baseHref={ORDERS_PATH} />
         </>

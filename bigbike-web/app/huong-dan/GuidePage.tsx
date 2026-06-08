@@ -165,7 +165,7 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
       <section className="bb-page">
         <Container>
           <div className={cn("bb-detail-layout", bbSection)}>
-            <div className={cn(bbCard, bbCardContent)}>
+            <div className={cn(bbCard, bbCardContent, "md:order-2")}>
               <article
                 className="bb-richtext"
                 dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(page.body) }}
@@ -173,7 +173,7 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
               <p className="bb-updated-date">{t("updatedAt", { date: formatDate(page.updatedAt) })}</p>
             </div>
 
-            <aside className="bb-sidebar-grid">
+            <aside className="bb-sidebar-grid md:order-1">
               <div className={cn(bbCard, bbCardContent)}>
                 <h2 className="bb-sidebar-heading">{t("sidebarTitle")}</h2>
                 {menuResult.error ? (

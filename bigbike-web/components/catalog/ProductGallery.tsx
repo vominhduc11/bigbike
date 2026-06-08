@@ -213,7 +213,7 @@ export function ProductGallery({
   const thumbContentH =
     count * thumbSlideH + Math.max(0, count - 1) * THUMB_SLIDE_GAP;
   const verticalRail =
-    viewportWidth >= 1025 && mainImageH > 0
+    viewportWidth >= 993 && mainImageH > 0
       ? (() => {
           const overflow = thumbContentH > mainImageH;
           // When overflowing, the up/down buttons sit OUTSIDE the thumbs (above &
@@ -228,7 +228,7 @@ export function ProductGallery({
         })()
       : null;
   const showThumbArrows =
-    viewportWidth >= 1025
+    viewportWidth >= 993
       ? Boolean(verticalRail?.overflow)
       : viewportWidth === 0
         ? false
@@ -298,22 +298,22 @@ export function ProductGallery({
   }
 
   return (
-    <div className="grid grid-cols-[minmax(0,25%)_minmax(0,75%)] gap-[30px] min-w-0 min-[1025px]:grid-cols-[130px_minmax(0,1fr)] min-[1536px]:grid-cols-[150px_minmax(0,1fr)] min-[1920px]:grid-cols-[170px_minmax(0,1fr)] max-[1024px]:grid-cols-[1fr] max-[1024px]:gap-[10px] max-[1024px]:w-full max-md:gap-2">
+    <div className="grid grid-cols-[minmax(0,25%)_minmax(0,75%)] gap-[30px] min-w-0 min-[993px]:grid-cols-[130px_minmax(0,1fr)] min-[1536px]:grid-cols-[150px_minmax(0,1fr)] min-[1920px]:grid-cols-[170px_minmax(0,1fr)] max-[992px]:grid-cols-[1fr] max-[992px]:gap-[10px] max-[992px]:w-full max-md:gap-2">
       {count > 1 && (
         // Thumbnail rail. ≥1025 it's vertical with a computed definite height
         // (`verticalRail.height` = content capped at the main image) so Swiper
         // can scroll on overflow; `self-start` stops the grid row from
         // stretching it. <1025 it's a horizontal CSS-sized strip. Arrows render
         // only when the thumbnails actually overflow (`showThumbArrows`).
-        <div className="relative min-w-0 max-[1024px]:px-9 max-md:px-10 min-[1025px]:self-start">
+        <div className="relative min-w-0 max-[992px]:px-9 max-md:px-10 min-[993px]:self-start">
           {showThumbArrows && (
             <button
               type="button"
-              className="absolute left-0 top-1/2 z-[2] [transform:translateY(-50%)] min-[1025px]:static min-[1025px]:[transform:none] min-[1025px]:mx-auto min-[1025px]:mb-2 flex items-center justify-center w-9 h-9 max-md:w-10 max-md:h-10 cursor-pointer text-black transition-colors hover:text-[var(--bb-text-brand)] focus-visible:[outline:var(--bb-focus-outline)] focus-visible:[outline-offset:2px]"
+              className="absolute left-0 top-1/2 z-[2] [transform:translateY(-50%)] min-[993px]:static min-[993px]:[transform:none] min-[993px]:mx-auto min-[993px]:mb-2 flex items-center justify-center w-9 h-9 max-md:w-10 max-md:h-10 cursor-pointer text-black transition-colors hover:text-[var(--bb-text-brand)] focus-visible:[outline:var(--bb-focus-outline)] focus-visible:[outline-offset:2px]"
               aria-label="Cuộn thumbnail lên"
               onClick={() => thumbsSwiper?.slidePrev()}
             >
-              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" className="max-[1024px]:[transform:rotate(-90deg)]">
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" className="max-[992px]:[transform:rotate(-90deg)]">
                 <path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
@@ -332,18 +332,18 @@ export function ProductGallery({
               768: { direction: "horizontal", slidesPerView: "auto", spaceBetween: 12 },
               // Per-tier-size thumbs (100/120/140px); how many show comes from the
               // container's definite height (inline via verticalRail), not slidesPerView.
-              1025: { direction: "vertical", slidesPerView: "auto", spaceBetween: 10 },
+              993: { direction: "vertical", slidesPerView: "auto", spaceBetween: 10 },
             }}
             style={verticalRail ? { height: `${verticalRail.height}px` } : undefined}
             // max-h tiers are a pre-hydration guard (before the inline definite
             // height is set) so a many-image rail doesn't flash full-content-tall.
             // Post-hydration the inline height (≤ these caps) governs.
-            className="max-[1024px]:!h-[120px] md:max-[1024px]:!h-[112px] min-[1025px]:max-h-[470px] min-[1536px]:max-h-[598px] min-[1920px]:max-h-[738px]"
+            className="max-[992px]:!h-[120px] md:max-[992px]:!h-[112px] min-[993px]:max-h-[470px] min-[1536px]:max-h-[598px] min-[1920px]:max-h-[738px]"
           >
             {allItems.map((item, index) => {
               const active = index === activeIndex;
               const slideClass =
-                "cursor-pointer md:max-[1024px]:!w-[112px] min-[1025px]:!h-[100px] min-[1536px]:!h-[120px] min-[1920px]:!h-[140px]";
+                "cursor-pointer md:max-[992px]:!w-[112px] min-[993px]:!h-[100px] min-[1536px]:!h-[120px] min-[1920px]:!h-[140px]";
 
               if (item.kind === "video") {
                 return (
@@ -393,11 +393,11 @@ export function ProductGallery({
           {showThumbArrows && (
             <button
               type="button"
-              className="absolute right-0 top-1/2 z-[2] [transform:translateY(-50%)] min-[1025px]:static min-[1025px]:[transform:none] min-[1025px]:mx-auto min-[1025px]:mt-2 flex items-center justify-center w-9 h-9 max-md:w-10 max-md:h-10 cursor-pointer text-black transition-colors hover:text-[var(--bb-text-brand)] focus-visible:[outline:var(--bb-focus-outline)] focus-visible:[outline-offset:2px]"
+              className="absolute right-0 top-1/2 z-[2] [transform:translateY(-50%)] min-[993px]:static min-[993px]:[transform:none] min-[993px]:mx-auto min-[993px]:mt-2 flex items-center justify-center w-9 h-9 max-md:w-10 max-md:h-10 cursor-pointer text-black transition-colors hover:text-[var(--bb-text-brand)] focus-visible:[outline:var(--bb-focus-outline)] focus-visible:[outline-offset:2px]"
               aria-label="Cuộn thumbnail xuống"
               onClick={() => thumbsSwiper?.slideNext()}
             >
-              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" className="max-[1024px]:[transform:rotate(-90deg)]">
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" className="max-[992px]:[transform:rotate(-90deg)]">
                 <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
@@ -408,7 +408,7 @@ export function ProductGallery({
       <div className={cn("relative min-w-0", count <= 1 && "col-span-full")}>
         <div
           ref={mainBoxRef}
-          className="relative w-full aspect-square overflow-hidden bg-white max-[1024px]:max-h-[380px] max-md:max-h-none max-md:border max-md:border-border max-md:bg-[var(--bb-bg-surface-raised)]"
+          className="relative w-full aspect-square overflow-hidden bg-white max-[992px]:max-h-[380px] max-md:max-h-none max-md:border max-md:border-border max-md:bg-[var(--bb-bg-surface-raised)]"
           onMouseEnter={handleMainMouseEnter}
           onMouseMove={handleMainMouseMove}
           onMouseLeave={() => setZoomActive(false)}
