@@ -326,7 +326,7 @@ export async function SiteFooter() {
       </div>
 
       {/* WP .foot — desktop padding 30px; mobile pt:0 pb:15px (WP @max-767) */}
-      <div className="bg-black py-[30px] max-md:pb-[15px] max-md:pt-0">
+      <div className="bg-black py-[30px] max-md:pb-[calc(15px+var(--bb-mobile-nav-height)+env(safe-area-inset-bottom))] max-md:pt-0">
         <Container className="relative">
           <ScrollToTopButton />
           {/* Desktop (DOM order): logo(2) | copyright(4) | license(6) một hàng.
@@ -339,32 +339,39 @@ export async function SiteFooter() {
                 alt={siteName}
                 width={200}
                 height={66}
-                className="block h-auto w-[132px] max-md:w-[118px] max-md:max-w-full 3xl:w-[160px] 4xl:w-[180px]"
+                className="block h-auto w-[150px] max-md:w-[118px] max-md:max-w-full 3xl:w-[160px] 4xl:w-[180px]"
               />
             </div>
 
             <div className="md:col-span-4 max-md:order-2 max-md:col-span-2 max-md:pt-[15px]">
               {/* WP: copyright 16px ở desktop, 14px ở mobile (.foot .col-md-4) */}
-              <p className="m-0 max-w-[22rem] text-base max-md:text-caption leading-body text-white">
+              <p suppressHydrationWarning className="m-0 max-w-[22rem] text-base max-md:text-caption leading-body text-white">
                 {t("copyright", { year: new Date().getFullYear() })}
               </p>
             </div>
 
-            {/* Giấy phép: khối trên cùng trên mobile (giữ thứ tự WP), nhưng BỎ nền xám
-                #3a3a3a + chữ xám của WP vì tương phản thấp khó đọc — để nền đen chữ trắng. */}
-            <div className="md:col-span-6 max-md:order-1 max-md:col-span-3 max-md:pt-[15px]">
+            {/* Giấy phép: badge + text XẾP DỌC ở mọi breakpoint đúng như WP (rule global
+                `.foot .license img{position:relative;width:200px}` đè rule absolute trước đó):
+                badge rộng 200px ở trên, text ở dưới (margin-top 10px). Desktop thụt trái 138px
+                (md:pl) + nền đen chữ trắng. Mobile (≤767, WP @max-767): nền xám full-width
+                (token footer-top = #3a3a3a, âm margin = padding Container để tràn sát mép) +
+                chữ xám #7e7e7e; tương phản thấp là đúng WP cũ theo yêu cầu parity. */}
+            <div className="md:col-span-6 max-md:order-1 max-md:col-span-3 max-md:mx-[calc(var(--bb-mobile-page-x)_*_-1)] max-md:bg-footer-top max-md:px-[var(--bb-mobile-page-x)] max-md:pb-[15px] max-md:pt-[15px]">
               {bctUrl ? (
-                <div className="md:relative md:pl-[138px]">
+                <div className="md:pl-[138px]">
                   <a
                     href={bctUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label="Đã thông báo Bộ Công Thương"
-                    className="mb-3 block max-md:mb-5 md:absolute md:left-0 md:top-0 md:mb-0"
+                    className="mb-[10px] block"
                   >
-                    <BctBadge alt="Đã thông báo Bộ Công Thương" height={40} />
+                    <BctBadge
+                      alt="Đã thông báo Bộ Công Thương"
+                      className="h-auto w-[200px]"
+                    />
                   </a>
-                  <p className="m-0 mt-[10px] text-base leading-5 text-white md:mt-0">
+                  <p className="m-0 mt-[10px] text-base leading-5 text-white max-md:pr-[33.333%] max-md:text-[#7e7e7e]">
                     {t("businessReg")}
                   </p>
                 </div>

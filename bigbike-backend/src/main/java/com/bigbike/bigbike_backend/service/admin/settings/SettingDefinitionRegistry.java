@@ -92,9 +92,15 @@ public class SettingDefinitionRegistry {
                 SettingDefinition.builder("messenger_url", "contact", SettingValueType.URL)
                         .publicAllowed()
                         .description("Deep link Facebook Messenger cho floating chat.").build(),
+                SettingDefinition.builder("messenger_display", "contact", SettingValueType.STRING)
+                        .publicAllowed()
+                        .description("Chữ hiển thị dòng Messenger trong floating chat (mặc định lấy từ link nếu để trống).").build(),
                 SettingDefinition.builder("zalo_url", "contact", SettingValueType.URL)
                         .publicAllowed()
                         .description("URL Zalo cho floating chat.").build(),
+                SettingDefinition.builder("zalo_display", "contact", SettingValueType.STRING)
+                        .publicAllowed()
+                        .description("Chữ hiển thị dòng Zalo trong floating chat (mặc định lấy từ link nếu để trống).").build(),
                 SettingDefinition.builder("youtube_url", "contact", SettingValueType.URL)
                         .publicAllowed()
                         .description("URL kênh YouTube.").build(),

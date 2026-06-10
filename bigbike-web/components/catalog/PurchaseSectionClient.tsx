@@ -15,6 +15,7 @@ import { useCart } from "@/lib/cart-context";
 import { Button } from "@/components/ui/button";
 import { QuantityStepper } from "@/components/ui/QuantityStepper";
 import { cn } from "@/lib/utils";
+import { RatingStars } from "@/components/ui/RatingStars";
 import {
   collectAttributeNames,
   findColorPreviewVariant,
@@ -72,20 +73,13 @@ function RatingRow({
   count: number | null;
 }) {
   const t = useTranslations("Product.buyBox");
-  // Only show a rating when it's backed by real reviews. Previously this
-  // fabricated 5★/125 reviews for products with none — fake data that also
-  // leaked into the schema.org AggregateRating microdata.
   const hasReviews =
     typeof rating === "number" && rating > 0 && typeof count === "number" && count > 0;
 
   if (!hasReviews) {
     return (
-      <div className="mt-2 text-black text-ui-14">
-        <span
-          className="inline-block text-rating-star text-ui-18 tracking-normal before:content-['★★★★★']"
-          aria-hidden="true"
-        />
-        <p className="m-0 mt-1 text-black text-ui-14 !leading-[1.4]">{t("noReviews")}</p>
+      <div className="mt-2 text-ui-14 text-muted-foreground">
+        <p className="m-0 !leading-[1.4]">{t("noReviews")}</p>
       </div>
     );
   }
@@ -94,22 +88,19 @@ function RatingRow({
 
   return (
     <div
-      className="mt-2 text-black text-ui-14"
+      className="mt-2 text-ui-14"
       itemProp="aggregateRating"
       itemScope
       itemType="https://schema.org/AggregateRating"
     >
-      <span
-        className="inline-block text-rating-star text-ui-18 tracking-normal before:content-['★★★★★']"
-        aria-label={`${displayValue}/5`}
-      />
+      <span className="text-ui-18">
+        <RatingStars value={rating} />
+      </span>
       <meta itemProp="bestRating" content="5" />
-      <p className="m-0 mt-1 text-black text-ui-14 !leading-[1.4]">
+      <p className="m-0 mt-1 text-black !leading-[1.4]">
         <span itemProp="ratingValue" className="text-ui-22 align-middle font-semibold">{displayValue}</span>
         <span aria-hidden="true">★</span>{" "}
-        <span className="rating-count">
-          (<span itemProp="reviewCount">{count}</span> {t("reviewsWord")})
-        </span>
+        (<span itemProp="reviewCount">{count}</span> {t("reviewsWord")})
       </p>
     </div>
   );
@@ -255,7 +246,7 @@ export function PurchaseSectionClient({
 
   return (
     <>
-      <div className="bb-wp-pdp-gallery-col min-w-0 max-md:order-2 max-md:w-full">
+      <div className="bb-wp-pdp-gallery-col min-w-0 max-md:order-1 max-md:w-full">
         <ProductGallery
           mainImage={mainImage}
           gallery={gallery}
@@ -267,15 +258,15 @@ export function PurchaseSectionClient({
         />
       </div>
 
-      <div className="bb-wp-pdp-info-col product-information min-w-0 max-md:order-1 max-md:w-full">
+      <div className="bb-wp-pdp-info-col product-information min-w-0 max-md:order-2 max-md:w-full">
         <div className="mb-5 max-md:mb-3">
           <h1 className="m-0 font-body text-ui-30 font-semibold !leading-[1.25] tracking-normal normal-case max-md:uppercase text-black">
             {productName}
           </h1>
         </div>
 
-        <div className="flex flex-wrap mx-[-15px] max-md:mx-0 max-md:gap-3">
-          <div className="flex-[0_0_41.666667%] max-[1024px]:flex-[0_0_100%] max-w-[41.666667%] max-[1024px]:max-w-full px-[15px] max-md:px-0">
+        <div className="flex flex-wrap mx-[-15px] max-md:mx-0 max-md:flex-nowrap max-md:items-start max-md:gap-2">
+          <div className="flex-[0_0_41.666667%] max-[1024px]:flex-[0_0_100%] max-w-[41.666667%] max-[1024px]:max-w-full px-[15px] max-md:px-0 max-md:flex-auto max-md:max-w-none">
             <PricingPanel
               data={effectivePricing}
               fallback={fallbackPrice}
@@ -283,8 +274,8 @@ export function PurchaseSectionClient({
             />
             <RatingRow rating={initialRating} count={initialRatingCount} />
           </div>
-          <div className="flex justify-end max-[1024px]:justify-start flex-[0_0_58.333333%] max-[1024px]:flex-[0_0_100%] max-w-[58.333333%] max-[1024px]:max-w-full px-[15px] max-md:px-0 text-right max-[1024px]:text-left max-[1024px]:mt-3 max-md:mt-0">
-            <p className="relative isolate w-full max-w-[190px] max-md:max-w-[170px] h-[42px] max-md:h-[38px] m-0 ml-auto max-[1024px]:ml-0 border-none bg-transparent text-center font-cta font-semibold uppercase text-white after:content-[''] after:absolute after:inset-0 after:-z-10 after:bg-black after:[transform:skewX(-20deg)] has-[.bb-pdp-stock-badge--out]:after:bg-brand">
+          <div className="flex justify-end max-[1024px]:justify-start max-md:justify-end flex-[0_0_58.333333%] max-[1024px]:flex-[0_0_100%] max-w-[58.333333%] max-[1024px]:max-w-full px-[15px] max-md:px-0 text-right max-[1024px]:text-left max-md:text-right max-[1024px]:mt-3 max-md:mt-0 max-md:flex-none max-md:pr-3">
+            <p className="relative isolate flex items-center justify-center w-[190px] h-[42px] m-0 ml-auto max-[1024px]:ml-0 max-md:ml-auto border-none bg-transparent font-cta font-semibold uppercase text-white antialiased after:content-[''] after:absolute after:inset-0 after:-z-10 after:bg-black after:[transform:skewX(-20deg)] has-[.bb-pdp-stock-badge--out]:after:bg-brand">
               <StockStatus
                 variant="badge"
                 data={effectiveStockData}

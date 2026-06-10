@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
-import { ProductArchiveHero } from "@/components/catalog/ProductArchiveHero";
-import { ProductArchiveLayout } from "@/components/catalog/ProductArchiveLayout";
-import { ProductArchiveResults } from "@/components/catalog/ProductArchiveResults";
-import { Container } from "@/components/layout/Container";
+import { WpCategoryHero, type WpCategoryCrumb } from "@/components/wp/WpCategoryHero";
+import { WpCategorySidebar } from "@/components/wp/WpCategorySidebar";
+import { WpCatalogResults } from "@/components/wp/WpCatalogResults";
 import {
-  PRODUCT_SORT_VALUES,
   getCatalogFacets,
   getCategoryBySlug,
   listBrands,
@@ -14,34 +12,14 @@ import {
   listProducts,
   listPublicSettings,
 } from "@/lib/api/public-api";
-import { readDefaultHeroAssets } from "@/lib/utils/page-hero";
 import { buildCatalogTitle } from "@/lib/utils/catalog";
-import {
-  DEFAULT_PRODUCT_PAGE_SIZE as DEFAULT_PAGE_SIZE,
-  DEFAULT_PRODUCT_SORT as DEFAULT_SORT,
-  PRICE_PARAM_MAX,
-} from "@/lib/constants/catalog";
-import {
-  DEFAULT_WP_ORDERBY,
-  isWpOrderbyValue,
-  productSortToWpOrderby,
-  wpOrderbyToProductSort,
-} from "@/lib/utils/catalog-sort";
+import { DEFAULT_WP_ORDERBY } from "@/lib/utils/catalog-sort";
 import { buildCategoryBreadcrumbJsonLd, serializeJsonLd } from "@/lib/seo/json-ld";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
-import { safeText } from "@/lib/utils/format";
+import { resolveMediaUrl, safeText, toLegacyWpMediaUrl } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
-import {
-  buildQueryString,
-  collectErrors,
-  parseOptionalPositiveIntParam,
-  parsePositiveIntParam,
-  parseSlugParam,
-  parseSortParam,
-  parseTextParam,
-  readSearchParamAlias,
-  readSingleSearchParam,
-} from "@/lib/utils/query";
+import { parseCatalogListParams } from "@/lib/utils/catalog-list-params";
+import { readSearchParamAlias, readSingleSearchParam } from "@/lib/utils/query";
 import { toCategoryPath, toHomePath } from "@/lib/utils/routes";
 import { isValidSlug } from "@/lib/utils/slug";
 
@@ -139,59 +117,14 @@ export default async function CategoryDetailPage({
 
   const tCatalog = await getTranslations("Catalog");
   const pageParams = await searchParams;
-  const pageParsed = parsePositiveIntParam(readSearchParamAlias(pageParams, "page", "paged"), {
-    defaultValue: 1,
-    min: 1,
-    max: 999,
-    field: "page",
-  });
-  const sizeParsed = parsePositiveIntParam(pageParams.size, {
-    defaultValue: DEFAULT_PAGE_SIZE,
-    min: 1,
-    max: 100,
-    field: "size",
-  });
-  const brandParsed = parseSlugParam(readSearchParamAlias(pageParams, "pwb-brand", "brand"), "pwb-brand");
-  const qParsed = parseTextParam(pageParams.q, 100);
-  const colorParsed = parseSlugParam(pageParams.filter_color, "filter_color");
-  const minPriceParsed = parseOptionalPositiveIntParam(pageParams.min_price, {
-    min: 0,
-    max: PRICE_PARAM_MAX,
-    field: "min_price",
-  });
-  const maxPriceParsed = parseOptionalPositiveIntParam(pageParams.max_price, {
-    min: 0,
-    max: PRICE_PARAM_MAX,
-    field: "max_price",
-  });
-  const orderbyParam = readSingleSearchParam(pageParams.orderby);
-  const orderbyError = orderbyParam && !isWpOrderbyValue(orderbyParam) ? "orderby không hợp lệ." : null;
-  const sortParsed = parseSortParam(pageParams.sort, PRODUCT_SORT_VALUES, DEFAULT_SORT);
-  const orderbyCurrent = isWpOrderbyValue(orderbyParam)
-    ? orderbyParam
-    : productSortToWpOrderby(sortParsed.value ?? DEFAULT_SORT);
-  const productSort = isWpOrderbyValue(orderbyParam)
-    ? wpOrderbyToProductSort(orderbyParam, DEFAULT_SORT)
-    : sortParsed.value;
+  const catalog = parseCatalogListParams(pageParams);
+  const { filters, validationErrors, orderbyCurrent } = catalog;
 
-  const validationErrors = collectErrors(
-    pageParsed.error,
-    sizeParsed.error,
-    brandParsed.error,
-    qParsed.error,
-    colorParsed.error,
-    minPriceParsed.error,
-    maxPriceParsed.error,
-    orderbyError ? "orderby không hợp lệ." : null,
-    orderbyParam ? null : sortParsed.error,
-  );
   if (validationErrors.length > 0) {
     return (
-      <div className="bb-product-archive archive tax-product_cat">
-        <div id="main-content" className="pb-0 max-md:pb-6">
-          <Container>
-            <p className="woocommerce-info">{validationErrors.join(" ")}</p>
-          </Container>
+      <div id="main-content">
+        <div className="container">
+          <p className="woocommerce-info">{validationErrors.join(" ")}</p>
         </div>
       </div>
     );
@@ -206,11 +139,9 @@ export default async function CategoryDetailPage({
 
   if (!categoryResult.data) {
     return (
-      <div className="bb-product-archive archive tax-product_cat">
-        <div id="main-content" className="pb-0 max-md:pb-6">
-          <Container>
-            <p className="woocommerce-info">{categoryResult.error?.message ?? "Không tải được thông tin danh mục."}</p>
-          </Container>
+      <div id="main-content">
+        <div className="container">
+          <p className="woocommerce-info">{categoryResult.error?.message ?? "Không tải được thông tin danh mục."}</p>
         </div>
       </div>
     );
@@ -225,23 +156,24 @@ export default async function CategoryDetailPage({
     settingsResult,
   ] = await Promise.all([
     listProducts({
-      page: pageParsed.value,
-      size: sizeParsed.value,
-      sort: productSort,
+      page: catalog.page,
+      size: catalog.size,
+      sort: catalog.productSort,
       category: category.slug,
-      brand: brandParsed.value,
-      q: qParsed.value,
-      filterColor: colorParsed.value,
-      minPrice: minPriceParsed.value,
-      maxPrice: maxPriceParsed.value,
+      brand: filters.brand,
+      q: filters.q,
+      filterColor: filters.color,
+      minPrice: filters.minPrice,
+      maxPrice: filters.maxPrice,
       lang: locale,
     }),
     listBrands({ page: 1, size: 100, sort: "name:asc", lang: locale }),
     listCategories({ page: 1, size: 100, sort: "sortOrder:asc", lang: locale }),
-    getCatalogFacets({ category: category.slug, q: qParsed.value, lang: locale }),
+    getCatalogFacets({ category: category.slug, q: filters.q, lang: locale }),
     listPublicSettings(locale),
   ]);
-  const defaultHero = readDefaultHeroAssets(settingsResult.data ?? []);
+  void settingsResult;
+
   const canonicalPath = toCategoryPath(category.slug);
   const allCategories = allCategoriesResult.data ?? [];
   const parentCategory = category.parentId
@@ -251,77 +183,83 @@ export default async function CategoryDetailPage({
 
   const breadcrumbJsonLd = serializeJsonLd(buildCategoryBreadcrumbJsonLd(category, parentCategory));
   const categoryName = safeText(category.name, tCatalog("categoryFallback"));
+  const products = productsResult.data;
   const pagination = productsResult.pagination;
-  const currentFilters = {
-    q: qParsed.value,
-    brand: brandParsed.value,
-    color: colorParsed.value,
-    minPrice: minPriceParsed.value,
-    maxPrice: maxPriceParsed.value,
-  };
   const categoryDescriptionHtml = category.description?.trim()
     ? sanitizeRichHtml(category.description, { rewriteMediaUrls: true })
     : null;
 
-  const heroBreadcrumb = [
-    { label: "Trang chủ", href: toHomePath() },
+  const heroBreadcrumb: WpCategoryCrumb[] = [
+    { label: "Bigbike.vn", href: toHomePath() },
     ...(parentCategory
       ? [{ label: safeText(parentCategory.name, "Danh mục"), href: toCategoryPath(parentCategory.slug) }]
       : []),
     { label: categoryName },
   ];
 
-  return (
-    <div className="bb-product-archive archive tax-product_cat">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }} />
-      <ProductArchiveHero
-        title={categoryName}
-        breadcrumb={heroBreadcrumb}
-        imageUrl={category.bannerImage?.url}
-        mobileImageUrl={category.mobileBannerImage?.url}
-        imageAlt={category.bannerImage?.alt ?? categoryName}
-        illustrationUrl={(category.image ?? category.icon)?.url}
-        illustrationAlt={(category.image ?? category.icon)?.alt ?? categoryName}
-        defaultBgUrl={defaultHero.defaultBgUrl}
-        defaultIllustrationUrl={defaultHero.defaultIllustrationUrl}
-      />
+  const heroBgUrl = toLegacyWpMediaUrl(resolveMediaUrl(category.bannerImage?.url?.trim()));
+  const heroIllustration = category.image ?? category.icon;
+  const heroIllustrationUrl = toLegacyWpMediaUrl(resolveMediaUrl(heroIllustration?.url?.trim()));
 
-      <ProductArchiveLayout
-        totalItems={pagination?.totalItems ?? null}
-        sortCurrent={orderbyCurrent}
-        filters={{
-          brands: brandsResult.data,
-          categories: filterCategories,
-          facets: facetsResult.data,
-          current: currentFilters,
-          resetHref: canonicalPath,
-          hiddenParams: {
-            orderby: orderbyCurrent !== DEFAULT_WP_ORDERBY ? orderbyCurrent : undefined,
-          },
-        }}
-      >
-        <ProductArchiveResults
-          products={productsResult.data}
-          hasError={!!productsResult.error}
-          pagination={pagination}
-          baseHref={`${canonicalPath}${buildQueryString({
-            size: sizeParsed.value !== DEFAULT_PAGE_SIZE ? sizeParsed.value : undefined,
-            orderby: orderbyCurrent !== DEFAULT_WP_ORDERBY ? orderbyCurrent : undefined,
-            "pwb-brand": brandParsed.value,
-            q: qParsed.value,
-            filter_color: colorParsed.value,
-            min_price: minPriceParsed.value,
-            max_price: maxPriceParsed.value,
-          })}`}
-          emptyContent={<p className="woocommerce-info">Không tìm thấy sản phẩm phù hợp.</p>}
-          errorContent={<p className="woocommerce-info">{productsResult.error?.message}</p>}
-          leadingContent={
-            categoryDescriptionHtml ? (
-              <div className="desc" dangerouslySetInnerHTML={{ __html: categoryDescriptionHtml }} />
-            ) : null
-          }
+  const paginationBaseHref = catalog.buildPaginationHref(canonicalPath);
+
+  const notice =
+    productsResult.error && products.length === 0
+      ? productsResult.error.message
+      : products.length === 0
+        ? "Không tìm thấy sản phẩm phù hợp."
+        : null;
+
+  return (
+    <>
+      <link
+        rel="stylesheet"
+        href="/wp-content/themes/bigbike/css/wp-theme-category.css?v=2"
+        precedence="default"
+      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }} />
+
+      <div className="archive tax-product_cat post-type-archive-product">
+        <WpCategoryHero
+          title={categoryName}
+          breadcrumb={heroBreadcrumb}
+          bgUrl={heroBgUrl}
+          illustrationUrl={heroIllustrationUrl}
+          illustrationAlt={heroIllustration?.alt ?? categoryName}
         />
-      </ProductArchiveLayout>
-    </div>
+
+        <div id="main-content">
+          <div className="container">
+            <div className="row">
+              <div className="col-md-3">
+                <WpCategorySidebar
+                  brands={brandsResult.data}
+                  categories={filterCategories}
+                  facets={facetsResult.data}
+                  current={catalog.currentFilters}
+                  resetHref={canonicalPath}
+                  hiddenParams={{
+                    orderby: orderbyCurrent !== DEFAULT_WP_ORDERBY ? orderbyCurrent : undefined,
+                  }}
+                />
+              </div>
+
+              <WpCatalogResults
+                orderbyCurrent={orderbyCurrent}
+                pagination={pagination}
+                products={products}
+                notice={notice}
+                beforeGrid={
+                  categoryDescriptionHtml ? (
+                    <div className="desc" dangerouslySetInnerHTML={{ __html: categoryDescriptionHtml }} />
+                  ) : null
+                }
+                paginationBaseHref={paginationBaseHref}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }

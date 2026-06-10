@@ -33,6 +33,12 @@ export type PageHeroProps = {
   imageAlt?: string | null;
   title: string;
   breadcrumb?: PageHeroBreadcrumbItem[];
+  /**
+   * Đặt breadcrumb DƯỚI tiêu đề (WP-parity cho trang shop `/san-pham`: WP render
+   * `<h1>` rồi `.breadcrumb` bên dưới). Mặc định `false` → breadcrumb trên tiêu đề
+   * như các trang hero khác. Chỉ ảnh hưởng variant `contact`.
+   */
+  breadcrumbBelowTitle?: boolean;
   /** Chữ chìm cỡ lớn phía sau tiêu đề — chỉ dùng cho variant `welcome`. */
   watermark?: string | null;
   /** Ảnh minh hoạ nổi trước banner — variant `welcome` (tràn xuống giữa) và `contact` (đặt bên phải). */
@@ -117,7 +123,7 @@ function WelcomeHero({ title, watermark, illustration, imageUrl, defaultBgUrl }:
 /* Variant `contact` (mặc định) — banner cắt chéo: ảnh nền + clip-path chéo,
    tiêu đề căn trái + breadcrumb, ảnh minh hoạ tuỳ chọn đặt bên phải.
    Heights: md=450 (no illus) / md=560 (with illus), 3xl=+70px, 4xl=+150px vs md. */
-function ContactHero({ imageUrl, mobileImageUrl, imageAlt, title, breadcrumb, illustration, showDefaultIllustration = true, defaultBgUrl, defaultIllustrationUrl }: PageHeroProps) {
+function ContactHero({ imageUrl, mobileImageUrl, imageAlt, title, breadcrumb, breadcrumbBelowTitle = false, illustration, showDefaultIllustration = true, defaultBgUrl, defaultIllustrationUrl }: PageHeroProps) {
   const trimmedUrl = imageUrl?.trim();
   const trimmedMobileUrl = mobileImageUrl?.trim();
   // Ưu tiên: imageUrl của trang → defaultBgUrl từ settings → fallback solid.
@@ -163,10 +169,17 @@ function ContactHero({ imageUrl, mobileImageUrl, imageAlt, title, breadcrumb, il
 
       <div className="absolute inset-x-0 top-0 flex h-[300px] items-center md:h-[450px] 3xl:h-[520px] 4xl:h-[600px]">
         <Container>
-          <Breadcrumb items={breadcrumb ?? []} variant="onHero" />
-          <h1 className="bb-cat-hero-title">
-            {title}
-          </h1>
+          {breadcrumbBelowTitle ? (
+            <>
+              <h1 className="bb-cat-hero-title">{title}</h1>
+              <Breadcrumb items={breadcrumb ?? []} variant="onHero" />
+            </>
+          ) : (
+            <>
+              <Breadcrumb items={breadcrumb ?? []} variant="onHero" />
+              <h1 className="bb-cat-hero-title">{title}</h1>
+            </>
+          )}
         </Container>
       </div>
 

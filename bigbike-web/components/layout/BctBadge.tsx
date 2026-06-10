@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 
 interface BctBadgeProps {
   alt: string;
-  height: number;
+  className?: string;
 }
 
-export function BctBadge({ alt, height }: BctBadgeProps) {
+export function BctBadge({ alt, className }: BctBadgeProps) {
   const [hidden, setHidden] = useState(false);
 
   if (hidden) return null;
@@ -17,9 +18,12 @@ export function BctBadge({ alt, height }: BctBadgeProps) {
     <img
       src="/wp/license.png"
       alt={alt}
-      height={height}
-      // Tailwind preflight `img { height: auto }` overrides the HTML attribute — inline style wins.
-      style={{ height: `${height}px`, width: 'auto' }}
+      // Sizing comes from Tailwind utilities (utilities layer) which override the
+      // preflight `img { height: auto }` base rule. The WP original sized this badge
+      // by WIDTH on mobile (200px), so width — not height — is the driving axis there;
+      // that keeps the ratio intact when preflight `max-width:100%` caps it on narrow
+      // screens. Desktop drives by height instead (see caller).
+      className={cn(className)}
       loading="lazy"
       onError={() => setHidden(true)}
     />

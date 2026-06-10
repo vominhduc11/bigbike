@@ -19,6 +19,12 @@ const fabMask =
 const fabBlock = "w-[66px] h-[66px] !rounded-[50%] box-border overflow-hidden";
 const fabInnerBlock =
   "relative w-[66px] h-[66px] !rounded-[50%] bg-[var(--bb-chat-title-bg)] text-[var(--bb-chat-title-text)] border-none cursor-pointer flex items-center justify-center [outline:none] box-border focus-visible:[outline:2px_solid_#fff] focus-visible:[outline-offset:3px]";
+// Open state: FAB + mask turn gray (WP sudovn parity). Same size/position as the closed
+// FAB so toggling never makes the button jump — only the colour and icon change.
+const fabInnerBlockOpen =
+  "relative w-[66px] h-[66px] !rounded-[50%] bg-[var(--bb-chat-close-bg)] text-[var(--bb-chat-title-text)] border-none cursor-pointer flex items-center justify-center [outline:none] box-border [transition:background_0.3s_linear] focus-visible:[outline:2px_solid_#fff] focus-visible:[outline-offset:3px]";
+const fabMaskOpen =
+  "absolute -top-2 -left-2 w-[calc(100%+16px)] h-[82px] min-w-[66px] !rounded-[50%] bg-[var(--bb-chat-close-bg)] opacity-20 pointer-events-none";
 const fabIconWrap = "relative flex-1 w-full h-full";
 const fabIconItem =
   "absolute top-0 left-0 flex items-center justify-center w-full h-full [transition:opacity_0.6s_ease-out]";
@@ -28,15 +34,31 @@ const fabMaskMobile = " max-md:w-[60px] max-md:h-[60px]";
 // inset-0 auto-matches the button size (66px / 48px mobile); hidden for reduced motion.
 const fabHaloRing =
   "absolute inset-0 !rounded-[50%] bg-[var(--bb-chat-title-bg)] opacity-0 pointer-events-none motion-reduce:hidden";
+// "Bạn cần hỗ trợ?" pill — cyan box up-left of the FAB, shown in both closed and open
+// states (WP sudovn parity). Hidden on mobile to avoid covering the bottom nav.
+const chatTitlePill =
+  "bg-[var(--bb-chat-title-bg)] !rounded-[3px] px-[5px] py-0.5 text-[var(--bb-color-white)] text-ui-13 font-[Arial,sans-serif] whitespace-nowrap relative bottom-[42px] right-[70px] max-md:hidden";
+// WP .sudovn-btn-social-item: padding .5rem 1rem, color #333, hover #f2f2f2; icon
+// margin-right 5px (= gap). The #333 text overrides the global blue <a> link colour.
+// hover:!text keeps the row text #333 — overrides the global `a:hover` brand-red rule
+// so the only hover change is the #f2f2f2 background, exactly like WP.
 const chatItem =
-  "flex items-center gap-2.5 px-4 py-3 no-underline transition-colors hover:bg-accent";
-const chatItemIcon = "shrink-0 inline-flex [&_svg]:block [&_svg]:w-9 [&_svg]:h-9";
-const chatItemLabel = "min-w-0 m-0 text-sm leading-snug break-words [&_strong]:font-semibold";
+  "flex items-center gap-[5px] px-4 py-2 no-underline text-[var(--bb-chat-text)] ![transition:none] hover:!bg-[#f2f2f2] hover:!text-[var(--bb-chat-text)]";
+// WP .sudovn-btn-social-item-icon img: 40×40px (svg or png both clamped to 40px)
+const chatItemIcon =
+  "shrink-0 inline-flex [&_svg]:block [&_svg]:w-10 [&_svg]:h-10 [&_img]:block [&_img]:w-10 [&_img]:h-10";
+// WP .sudovn-btn-social-item-label: font-size 1.1em, line-height 40px, color #333; value in <strong> (bold)
+const chatItemLabel =
+  "min-w-0 m-0 text-[1.1em] leading-10 break-words text-[var(--bb-chat-text)] [&_strong]:font-bold";
 
 type FloatingChatProps = {
   hotline?: string;
   zaloUrl?: string;
   messengerUrl?: string;
+  // Optional display text shown in the popup (e.g. "0764640679", "Bigbike.vn").
+  // When empty, the value is derived from the URL (last path segment / hostname).
+  zaloDisplay?: string;
+  messengerDisplay?: string;
 };
 
 type ContactItem = {
@@ -47,15 +69,18 @@ type ContactItem = {
   icon: ReactElement;
 };
 
+// WP sudovn widget icons are PNG assets (green rounded-square phone, Messenger
+// gradient), not the circular SVGs used before — extracted verbatim from the WP theme.
 function IconHotline() {
   return (
-    <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true">
-      <circle cx="20" cy="20" r="20" fill="#00b14f" />
-      <path
-        d="M14.6 13.2a1.6 1.6 0 0 1 1.6-1.2h2.1c.7 0 1.3.5 1.4 1.2l.5 2.5a1.4 1.4 0 0 1-.4 1.3l-1.4 1.3c1 1.9 2.5 3.4 4.4 4.4l1.3-1.4a1.4 1.4 0 0 1 1.3-.4l2.5.5c.7.1 1.2.7 1.2 1.4v2.1a1.6 1.6 0 0 1-1.6 1.6c-7.7 0-14-6.3-14-14Z"
-        fill="currentColor"
-      />
-    </svg>
+    // eslint-disable-next-line @next/next/no-img-element -- tiny static WP-parity icon, no optimization needed
+    <img
+      src="/wp-content/themes/bigbike/images/chat-hotline.png"
+      width="40"
+      height="40"
+      alt=""
+      aria-hidden="true"
+    />
   );
 }
 
@@ -74,19 +99,14 @@ function IconZalo() {
 
 function IconMessenger() {
   return (
-    <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true">
-      <defs>
-        <linearGradient id="bb-msg-grad" x1="50%" y1="0%" x2="50%" y2="100%">
-          <stop offset="0%" stopColor="#00B2FF" />
-          <stop offset="100%" stopColor="#006AFF" />
-        </linearGradient>
-      </defs>
-      <circle cx="20" cy="20" r="20" fill="url(#bb-msg-grad)" />
-      <path
-        fill="currentColor"
-        d="M20 9C13.925 9 9 13.582 9 19.2c0 3.265 1.628 6.178 4.175 8.099V31l3.778-2.078c1.01.28 2.08.428 3.19.428 6.075 0 11-4.582 11-10.15C31 13.582 26.075 9 20 9zm1.082 13.652L18.64 20.1l-4.86 2.677 5.35-5.685 2.523 2.552 4.86-2.677-5.35 5.685z"
-      />
-    </svg>
+    // eslint-disable-next-line @next/next/no-img-element -- tiny static WP-parity icon, no optimization needed
+    <img
+      src="/wp-content/themes/bigbike/images/chat-messenger.png"
+      width="40"
+      height="40"
+      alt=""
+      aria-hidden="true"
+    />
   );
 }
 
@@ -158,19 +178,21 @@ function ChatOverlay({
 
   const portal = (
     <>
-      {/* Backdrop — chạm ra ngoài để đóng (mobile không có Esc) */}
+      {/* Backdrop — click ra ngoài để đóng. Dim/blur chỉ ở mobile (dễ chạm đóng);
+          desktop trong suốt để giống WP — popup nổi trên nội dung trang, không che tối. */}
       <div
         aria-hidden="true"
         onClick={onClose}
-        className="fixed inset-0 z-[2147483644] cursor-default bg-black/55 [backdrop-filter:blur(2px)] [-webkit-backdrop-filter:blur(2px)]"
+        className="fixed inset-0 z-[2147483644] cursor-default bg-black/55 [backdrop-filter:blur(2px)] [-webkit-backdrop-filter:blur(2px)] md:bg-transparent md:[backdrop-filter:none] md:[-webkit-backdrop-filter:none]"
       />
 
-      {/* Contact panel — vuông góc, token popover, đủ rộng để không cắt nội dung */}
+      {/* Contact panel — WP #sudovn-btn-social: white card, min-width 300px,
+          8px radius, 8px 0 padding, no border, down-arrow pointer toward the FAB. */}
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Liên hệ hỗ trợ"
-        className="fixed z-[2147483645] w-[min(86vw,320px)] bottom-[calc(var(--bb-mobile-nav-height)+env(safe-area-inset-bottom)+76px)] md:bottom-[max(102px,calc(env(safe-area-inset-bottom)+102px))] right-[max(16px,env(safe-area-inset-right))] md:right-[max(24px,env(safe-area-inset-right))] border border-border bg-popover text-popover-foreground shadow-lg"
+        className="fixed z-[2147483645] w-[min(86vw,320px)] min-w-[300px] bottom-[calc(var(--bb-mobile-nav-height)+env(safe-area-inset-bottom)+136px)] md:bottom-[max(124px,calc(env(safe-area-inset-bottom)+124px))] right-[max(16px,env(safe-area-inset-right))] md:right-[max(24px,env(safe-area-inset-right))] !rounded-[8px] bg-[var(--bb-color-white)] py-2 text-[var(--bb-chat-text)] shadow-[0_6px_24px_rgba(0,0,0,0.18)] before:content-[''] before:absolute before:-bottom-[7px] before:right-[25px] before:border-x-[8px] before:border-x-transparent before:border-t-[8px] before:border-t-[var(--bb-color-white)]"
       >
         {items.map((item) => (
           <a
@@ -189,13 +211,15 @@ function ChatOverlay({
       </div>
 
       {/* FAB — cùng kích thước & vị trí với lúc đóng (không nhảy), chỉ đổi icon */}
-      <div className="fixed z-[2147483647] bottom-[calc(var(--bb-mobile-nav-height)+env(safe-area-inset-bottom)+16px)] md:bottom-[max(24px,env(safe-area-inset-bottom))] right-[max(16px,env(safe-area-inset-right))] md:right-[max(24px,env(safe-area-inset-right))]">
-        <div className={fabContainer}>
-          <div className={`${fabMask}${fabMaskMobile}`} aria-hidden="true" />
+      <div className="fixed z-[2147483647] bottom-[calc(var(--bb-mobile-nav-height)+env(safe-area-inset-bottom)+80px)] md:bottom-[max(24px,env(safe-area-inset-bottom))] right-[max(16px,env(safe-area-inset-right))] md:right-[max(24px,env(safe-area-inset-right))]">
+        <div dir="ltr" className="relative flex flex-col-reverse items-end">
+          <div className={chatTitlePill}>Bạn cần hỗ trợ?</div>
+          <div className={fabContainer}>
+          <div className={`${fabMaskOpen}${fabMaskMobile}`} aria-hidden="true" />
           <div className={`${fabBlock}${fabBlockMobile}`}>
             <button
               type="button"
-              className={`${fabInnerBlock}${fabBlockMobile}`}
+              className={`${fabInnerBlockOpen}${fabBlockMobile}`}
               onClick={onToggle}
               aria-label="Đóng hỗ trợ"
               aria-expanded={true}
@@ -208,6 +232,7 @@ function ChatOverlay({
               </div>
             </button>
           </div>
+          </div>
         </div>
       </div>
     </>
@@ -216,7 +241,13 @@ function ChatOverlay({
   return createPortal(portal, document.body);
 }
 
-export function FloatingChat({ hotline, zaloUrl, messengerUrl }: Readonly<FloatingChatProps>) {
+export function FloatingChat({
+  hotline,
+  zaloUrl,
+  messengerUrl,
+  zaloDisplay,
+  messengerDisplay,
+}: Readonly<FloatingChatProps>) {
   const [isOpen, setIsOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
@@ -238,7 +269,8 @@ export function FloatingChat({ hotline, zaloUrl, messengerUrl }: Readonly<Floati
         key: "hotline",
         href: tel,
         label: "Hotline",
-        value: hotline,
+        // WP popup shows the number with no spaces (e.g. 02862797251)
+        value: hotline.replace(/\s+/g, ""),
         icon: <IconHotline />,
       });
     }
@@ -249,7 +281,7 @@ export function FloatingChat({ hotline, zaloUrl, messengerUrl }: Readonly<Floati
       key: "zalo",
       href: zaloUrl,
       label: "Zalo",
-      value: extractDisplayValue(zaloUrl),
+      value: zaloDisplay?.trim() || extractDisplayValue(zaloUrl),
       icon: <IconZalo />,
     });
   }
@@ -258,8 +290,9 @@ export function FloatingChat({ hotline, zaloUrl, messengerUrl }: Readonly<Floati
     items.push({
       key: "messenger",
       href: messengerUrl,
-      label: "Messenger",
-      value: extractDisplayValue(messengerUrl),
+      // "Messager" matches the WP sudovn widget label verbatim (WP's own typo).
+      label: "Messager",
+      value: messengerDisplay?.trim() || extractDisplayValue(messengerUrl),
       icon: <IconMessenger />,
     });
   }
@@ -275,10 +308,7 @@ export function FloatingChat({ hotline, zaloUrl, messengerUrl }: Readonly<Floati
           dir="ltr"
           className="relative font-[Arial,sans-serif] flex flex-col-reverse items-end [animation:b24-widget-button-visible_1s_ease-out_forwards_1]"
         >
-          <div
-            id="sudovn-btn-title"
-            className="bg-[var(--bb-chat-title-bg)] px-[5px] py-0.5 text-[var(--bb-chat-title-text)] text-ui-13 font-[Arial,sans-serif] whitespace-nowrap relative bottom-[42px] right-[70px] max-md:hidden"
-          >
+          <div id="sudovn-btn-title" className={chatTitlePill}>
             Bạn cần hỗ trợ?
           </div>
           <div className={fabContainer} id="sudovn-btn-inner-container">

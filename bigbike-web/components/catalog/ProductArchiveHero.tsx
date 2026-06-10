@@ -5,6 +5,8 @@ export type ProductArchiveBreadcrumbItem = PageHeroBreadcrumbItem;
 type ProductArchiveHeroProps = {
   title: string;
   breadcrumb: ProductArchiveBreadcrumbItem[];
+  /** WP-parity: đặt breadcrumb dưới tiêu đề (trang shop). */
+  breadcrumbBelowTitle?: boolean;
   imageUrl?: string | null;
   mobileImageUrl?: string | null;
   imageAlt?: string | null;
@@ -17,6 +19,7 @@ type ProductArchiveHeroProps = {
 export function ProductArchiveHero({
   title,
   breadcrumb,
+  breadcrumbBelowTitle,
   imageUrl,
   mobileImageUrl,
   imageAlt,
@@ -33,6 +36,7 @@ export function ProductArchiveHero({
     <PageHero
       title={title}
       breadcrumb={breadcrumb}
+      breadcrumbBelowTitle={breadcrumbBelowTitle}
       imageUrl={imageUrl}
       mobileImageUrl={mobileImageUrl}
       imageAlt={imageAlt}

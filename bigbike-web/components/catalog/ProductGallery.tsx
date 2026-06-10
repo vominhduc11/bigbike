@@ -305,7 +305,7 @@ export function ProductGallery({
         // can scroll on overflow; `self-start` stops the grid row from
         // stretching it. <1025 it's a horizontal CSS-sized strip. Arrows render
         // only when the thumbnails actually overflow (`showThumbArrows`).
-        <div className="relative min-w-0 max-[992px]:px-9 max-md:px-10 min-[993px]:self-start">
+        <div className="relative min-w-0 max-[992px]:px-9 max-md:px-10 min-[993px]:self-start max-[992px]:order-2">
           {showThumbArrows && (
             <button
               type="button"
@@ -405,7 +405,7 @@ export function ProductGallery({
         </div>
       )}
 
-      <div className={cn("relative min-w-0", count <= 1 && "col-span-full")}>
+      <div className={cn("relative min-w-0 max-[992px]:order-1", count <= 1 && "col-span-full")}>
         <div
           ref={mainBoxRef}
           className="relative w-full aspect-square overflow-hidden bg-white max-[992px]:max-h-[380px] max-md:max-h-none max-md:border max-md:border-border max-md:bg-[var(--bb-bg-surface-raised)]"

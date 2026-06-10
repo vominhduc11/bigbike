@@ -38,7 +38,7 @@ export function CatalogSortSelect({ current }: { current: string }) {
   }
 
   return (
-    <div className="inline-block w-full max-w-[260px] mb-[30px] max-md:max-w-full">
+    <div className="inline-block w-full max-w-[260px] mb-[30px] max-md:max-w-full max-md:mb-0">
       <label htmlFor="sort-select" className="sr-only">Sắp xếp</label>
       <Select value={selectedValue} onValueChange={handleChange}>
         <SelectTrigger
@@ -48,7 +48,7 @@ export function CatalogSortSelect({ current }: { current: string }) {
         >
           <SelectValue />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent position="popper" sideOffset={4}>
           {SORT_OPTIONS.map(({ value, label }) => (
             <SelectItem
               key={value}

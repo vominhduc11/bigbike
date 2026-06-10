@@ -4,10 +4,10 @@ import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { readSingleSearchParam } from "@/lib/utils/query";
 import { isSafeReturnTo } from "@/lib/utils/auth";
 import { toAccountPath } from "@/lib/utils/routes";
-import { authHeading, bbLink } from "@/lib/ui-classes";
-import { cn } from "@/lib/utils";
-import { Container } from "@/components/layout/Container";
+import { WpStaticShell } from "@/components/wp/WpStaticShell";
 import { RegisterForm } from "./RegisterForm";
+
+const AUTH_CSS = "/wp-content/themes/bigbike/css/wp-theme-auth.css?v=1";
 
 type RegisterPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -20,30 +20,35 @@ export const metadata: Metadata = buildPublicMetadata({
   noIndex: true,
 });
 
+/**
+ * Đăng ký — port từ page-templates/page-register.php (KHÔNG hero):
+ * `.user-activity > .container > .register > .user-activity-content > [title + form]`.
+ * Server component bọc WpStaticShell (header/footer WP) + form client.
+ */
 export default async function RegisterPage({ searchParams }: RegisterPageProps) {
   const params = await searchParams;
   const rawReturnTo = readSingleSearchParam(params.tiep) ?? "";
   const returnTo = isSafeReturnTo(rawReturnTo) ? rawReturnTo : toAccountPath();
 
   return (
-    <section className="bb-page bb-page--auth">
-      <Container>
-        <div className="bb-auth-wrap">
-          <div className="mb-5">
-            <h1 className={cn(authHeading, "mb-2")}>Đăng ký</h1>
-            <p className="m-0 text-body text-foreground">
-              Nếu bạn đã có tài khoản, đăng nhập tại{" "}
-              <Link href="/dang-nhap/" className={bbLink}>
-                đây
-              </Link>
-            </p>
-            <p className="m-0 mt-2 text-body text-foreground">
-              Xin vui lòng điền chính xác các thông tin để tạo tài khoản Bigbike.
-            </p>
+    <WpStaticShell title="" breadcrumb={[]} showHero={false} mainClassName="" cssHref={AUTH_CSS}>
+      <div className="user-activity">
+        <div className="container">
+          <div className="register">
+            <div className="user-activity-content">
+              <div className="user-activity-content-title mb-[30px]">
+                <h1 className="mb-2">Đăng ký</h1>
+                <p className="m-0">
+                  Nếu bạn đã có tài khoản, đăng nhập tại{" "}
+                  <Link href="/dang-nhap/">đây</Link>
+                </p>
+                <p className="m-0 mt-1">Xin vui lòng điền chính xác các thông tin để tạo tài khoản Bigbike.</p>
+              </div>
+              <RegisterForm returnTo={returnTo} />
+            </div>
           </div>
-          <RegisterForm returnTo={returnTo} />
         </div>
-      </Container>
-    </section>
+      </div>
+    </WpStaticShell>
   );
 }

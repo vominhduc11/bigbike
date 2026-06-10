@@ -1,13 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
-import { Container } from "@/components/layout/Container";
-import { PageHero } from "@/components/layout/PageHero";
-import { ErrorState } from "@/components/ui/ErrorState";
-import { getPageBySlug, listPublicSettings } from "@/lib/api/public-api";
-import { readDefaultHeroAssets } from "@/lib/utils/page-hero";
+import { WpStaticShell } from "@/components/wp/WpStaticShell";
+import { getPageBySlug } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
-import { formatDate, safeText } from "@/lib/utils/format";
+import { safeText } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import { toHomePath, toPagePath } from "@/lib/utils/routes";
 import { isValidSlug } from "@/lib/utils/slug";
@@ -58,53 +55,36 @@ export default async function StaticPageDetail({ params }: StaticPageDetailProps
   }
 
   const locale = await getLocale();
-  const [result, settingsResult] = await Promise.all([
-    getPageBySlug(slug, locale),
-    listPublicSettings(),
-  ]);
-  const defaultHero = readDefaultHeroAssets(settingsResult.data ?? []);
-  if (!result.data && result.error?.status === 404) {
-    notFound();
-  }
+  const result = await getPageBySlug(slug, locale);
+  // WP page.php trả 404 khi không có page — không có data nghĩa là không tồn tại.
   if (!result.data) {
-    return (
-      <section className="bb-page">
-        <Container>
-          <ErrorState message={result.error?.message ?? t("loadFailed")} />
-        </Container>
-      </section>
-    );
+    notFound();
   }
 
   const page = result.data;
   const pageTitle = safeText(page.title, t("contentFallback"));
 
+  // page.php: .page-title (banner + breadcrumb) + #main-content > .container > .row
+  // > .col-md-12 > .static-page.wyswyg.
   return (
-    <>
-      <PageHero
-        imageUrl={page.heroImageUrl}
-        imageAlt={page.heroImageAlt}
-        title={page.heroTitle ?? pageTitle}
-        defaultBgUrl={defaultHero.defaultBgUrl}
-        defaultIllustrationUrl={defaultHero.defaultIllustrationUrl}
-        breadcrumb={[
-          { label: tBreadcrumb("home"), href: toHomePath() },
-          { label: pageTitle },
-        ]}
-      />
-      <section className="bb-page">
-        <Container className="pt-8 pb-[60px]">
-          <article
-            className="bb-richtext"
-            dangerouslySetInnerHTML={{
-              __html: sanitizeRichHtml(page.body),
-            }}
-          />
-          <p className="text-muted-foreground text-caption mt-4">
-            {t("updatedAt", { date: formatDate(page.updatedAt) })}
-          </p>
-        </Container>
-      </section>
-    </>
+    <WpStaticShell
+      title={page.heroTitle ?? pageTitle}
+      heroBgUrl={page.heroImageUrl}
+      breadcrumb={[
+        { label: tBreadcrumb("home"), href: toHomePath() },
+        { label: pageTitle },
+      ]}
+    >
+      <div className="container">
+        <div className="row">
+          <div className="col-md-12">
+            <div
+              className="static-page wyswyg"
+              dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(page.body) }}
+            />
+          </div>
+        </div>
+      </div>
+    </WpStaticShell>
   );
 }

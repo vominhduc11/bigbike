@@ -3,6 +3,8 @@ import { getTranslations } from "next-intl/server";
 import { getOrderLookup } from "@/lib/api/public-api";
 import { PurchaseEvent } from "@/components/analytics/PurchaseEvent";
 import type { OrderAddress, OrderDetail } from "@/lib/contracts/commerce";
+import { WpStaticShell } from "@/components/wp/WpStaticShell";
+import { WpCheckoutPageHeading } from "@/components/wp/WpCheckoutPageHeading";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { sectionHeading } from "@/lib/ui-classes";
 import { cn } from "@/lib/utils";
@@ -70,15 +72,29 @@ export default async function OrderConfirmPage({ searchParams }: Props) {
 
 type OrderConfirmTranslations = Awaited<ReturnType<typeof getTranslations<"OrderConfirm">>>;
 
-function OrderShell({ children }: { children: React.ReactNode }) {
+// WP-parity: order-received là endpoint của trang checkout trong WooCommerce, nên
+// dùng đúng khung của page-checkout.php — WpHeader/WpFooter + bundle CSS checkout,
+// không hero, .container > [row: h1 + breadcrumb] — đồng bộ với /gio-hang và
+// /thanh-toan. Nội dung "cảm ơn + chi tiết đơn" render bên trong main-content.
+async function OrderShell({ children }: { children: React.ReactNode }) {
+  const title = "Thanh toán";
   return (
-    <div className="bb-order-confirm-page woocommerce">
-      <div className="mx-auto my-16 max-w-[var(--bb-container-xl)] px-4 md:px-6">
-        <div className="woocommerce-order grid gap-8">
-          {children}
+    <WpStaticShell
+      title={title}
+      breadcrumb={[{ label: "Bigbike.vn", href: "/" }, { label: title }]}
+      showHero={false}
+      mainClassName=""
+      cssHref="/wp-content/themes/bigbike/css/wp-theme-checkout.css?v=2"
+    >
+      <div className="bb-order-confirm-page woocommerce">
+        <div className="container">
+          <WpCheckoutPageHeading title={title} />
+          <div className="woocommerce-order mt-10 grid gap-8 pb-24">
+            {children}
+          </div>
         </div>
       </div>
-    </div>
+    </WpStaticShell>
   );
 }
 

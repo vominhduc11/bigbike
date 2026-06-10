@@ -103,8 +103,12 @@
 
   --bb-product-price: var(--bb-brand-primary-aa);
   --bb-rating-star: #b45309;
-  --bb-chat-title-bg: var(--bb-color-cyan);
-  --bb-chat-title-text: var(--bb-color-black);
+  /* Floating-chat (WP sudovn widget) — exact source colours, kept as dedicated
+     widget tokens so they live in one place. Values mirror the WP theme verbatim. */
+  --bb-chat-title-bg: #00aeef;       /* FAB + "Bạn cần hỗ trợ?" pill background (#sudovn-btn-title) */
+  --bb-chat-title-text: var(--bb-color-black);  /* FAB icon — dark X on the gray open button */
+  --bb-chat-close-bg: #d6d6d6;       /* FAB background while the popup is open (.b24-widget-button-bottom) */
+  --bb-chat-text: #333333;           /* contact-row label + value text (.sudovn-btn-social-item) */
   /* Cart discount/coupon savings — WP parity (.summary--items .discount) */
   --bb-discount: var(--bb-color-purple);
 

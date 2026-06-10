@@ -6,15 +6,15 @@ import { useQueries } from "@tanstack/react-query";
 import { useCompare } from "@/lib/compare-context";
 import { fetchPublicProduct } from "@/lib/api/client-api";
 import { queryKeys } from "@/lib/query/keys";
-import { Container } from "@/components/layout/Container";
 import { ComparisonTable } from "@/components/catalog/ComparisonTable";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Button } from "@/components/ui/button";
 import { toProductListPath } from "@/lib/utils/routes";
-import { sectionEyebrow, sectionHeading } from "@/lib/ui-classes";
 import type { Product } from "@/lib/contracts/public";
 
+// Tiêu đề + breadcrumb đã do WpStaticShell (.page-title) render ở page.tsx;
+// component này chỉ render phần nội dung bên trong .container của khung WP.
 export function CompareClient() {
   const t = useTranslations("Compare");
   const { items, hydrated } = useCompare();
@@ -35,43 +35,31 @@ export function CompareClient() {
     .filter((p): p is Product => Boolean(p));
 
   return (
-    <section className="bb-page bb-compare-page">
-      <Container className="pb-28">
-        <header className="mb-6">
-          <p className={`${sectionEyebrow} mb-3`}>
-            {t("kicker")}
-          </p>
-          <h1 className={sectionHeading}>
-            {t("heading")}
-          </h1>
-          <p className="mt-1 text-muted-foreground">
-            {t("subheading")}
-          </p>
-        </header>
+    <div className="py-10 md:py-14">
+      <p className="mb-8 max-w-2xl text-muted-foreground">{t("subheading")}</p>
 
-        {!hydrated ? (
-          <p className="text-muted-foreground">{t("loading")}</p>
-        ) : items.length === 0 ? (
-          <EmptyState
-            title={t("emptyTitle")}
-            description={t("emptyDescription")}
-            action={
-              <Button asChild variant="primary">
-                <Link href={toProductListPath()}>{t("browseProducts")}</Link>
-              </Button>
-            }
-          />
-        ) : loading && products.length === 0 ? (
-          <p className="text-muted-foreground">{t("loadingProducts")}</p>
-        ) : products.length === 0 ? (
-          <ErrorState
-            message={t("loadFailed")}
-            retryHref={toProductListPath()}
-          />
-        ) : (
-          <ComparisonTable products={products} />
-        )}
-      </Container>
-    </section>
+      {!hydrated ? (
+        <p className="text-muted-foreground">{t("loading")}</p>
+      ) : items.length === 0 ? (
+        <EmptyState
+          title={t("emptyTitle")}
+          description={t("emptyDescription")}
+          action={
+            <Button asChild variant="primary">
+              <Link href={toProductListPath()}>{t("browseProducts")}</Link>
+            </Button>
+          }
+        />
+      ) : loading && products.length === 0 ? (
+        <p className="text-muted-foreground">{t("loadingProducts")}</p>
+      ) : products.length === 0 ? (
+        <ErrorState
+          message={t("loadFailed")}
+          retryHref={toProductListPath()}
+        />
+      ) : (
+        <ComparisonTable products={products} />
+      )}
+    </div>
   );
 }

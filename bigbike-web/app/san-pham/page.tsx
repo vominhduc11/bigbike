@@ -1,42 +1,23 @@
 import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
-import { ProductArchiveResults } from "@/components/catalog/ProductArchiveResults";
-import { ProductArchiveHero } from "@/components/catalog/ProductArchiveHero";
-import { ProductArchiveLayout } from "@/components/catalog/ProductArchiveLayout";
-import { Container } from "@/components/layout/Container";
+import { WpCategoryHero, type WpCategoryCrumb } from "@/components/wp/WpCategoryHero";
+import { WpCategorySidebar } from "@/components/wp/WpCategorySidebar";
+import { WpCatalogResults } from "@/components/wp/WpCatalogResults";
 import {
-  PRODUCT_SORT_VALUES,
+  getCatalogFacets,
   listBrands,
   listCategories,
   listProducts,
   listPublicSettings,
 } from "@/lib/api/public-api";
 import { buildCatalogTitle } from "@/lib/utils/catalog";
-import {
-  DEFAULT_PRODUCT_PAGE_SIZE as DEFAULT_PAGE_SIZE,
-  DEFAULT_PRODUCT_SORT as DEFAULT_SORT,
-  PRICE_PARAM_MAX,
-} from "@/lib/constants/catalog";
-import {
-  DEFAULT_WP_ORDERBY,
-  isWpOrderbyValue,
-  productSortToWpOrderby,
-  wpOrderbyToProductSort,
-} from "@/lib/utils/catalog-sort";
+import { DEFAULT_WP_ORDERBY } from "@/lib/utils/catalog-sort";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
+import { resolveMediaUrl, toLegacyWpMediaUrl } from "@/lib/utils/format";
 import { readDefaultHeroAssets, readHeroSettings } from "@/lib/utils/page-hero";
 import { toHomePath, toProductListPath } from "@/lib/utils/routes";
-import {
-  buildQueryString,
-  collectErrors,
-  parseOptionalPositiveIntParam,
-  parsePositiveIntParam,
-  parseSlugParam,
-  parseSortParam,
-  parseTextParam,
-  readSearchParamAlias,
-  readSingleSearchParam,
-} from "@/lib/utils/query";
+import { parseCatalogListParams } from "@/lib/utils/catalog-list-params";
+import { readSearchParamAlias, readSingleSearchParam } from "@/lib/utils/query";
 
 type ProductListPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -81,156 +62,130 @@ export async function generateMetadata({ searchParams }: ProductListPageProps): 
 
 export default async function ProductListPage({ searchParams }: ProductListPageProps) {
   const params = await searchParams;
-  const [tCatalog, tBreadcrumb] = await Promise.all([
-    getTranslations("Catalog"),
-    getTranslations("Breadcrumb"),
-  ]);
+  const tCatalog = await getTranslations("Catalog");
 
-  const pageParsed = parsePositiveIntParam(readSearchParamAlias(params, "page", "paged"), {
-    defaultValue: 1,
-    min: 1,
-    max: 999,
-    field: "page",
-  });
-  const sizeParsed = parsePositiveIntParam(params.size, {
-    defaultValue: DEFAULT_PAGE_SIZE,
-    min: 1,
-    max: 100,
-    field: "size",
-  });
-  const categoryParsed = parseSlugParam(params.category, "category");
-  const brandParsed = parseSlugParam(readSearchParamAlias(params, "pwb-brand", "brand"), "pwb-brand");
-  const qParsed = parseTextParam(params.q, 100);
-  const colorParsed = parseSlugParam(params.filter_color, "filter_color");
-  const minPriceParsed = parseOptionalPositiveIntParam(params.min_price, {
-    min: 0,
-    max: PRICE_PARAM_MAX,
-    field: "min_price",
-  });
-  const maxPriceParsed = parseOptionalPositiveIntParam(params.max_price, {
-    min: 0,
-    max: PRICE_PARAM_MAX,
-    field: "max_price",
-  });
-  const orderbyParam = readSingleSearchParam(params.orderby);
-  const orderbyError = orderbyParam && !isWpOrderbyValue(orderbyParam) ? "orderby không hợp lệ." : null;
-  const sortParsed = parseSortParam(params.sort, PRODUCT_SORT_VALUES, DEFAULT_SORT);
-  const orderbyCurrent = isWpOrderbyValue(orderbyParam)
-    ? orderbyParam
-    : productSortToWpOrderby(sortParsed.value ?? DEFAULT_SORT);
-  const productSort = isWpOrderbyValue(orderbyParam)
-    ? wpOrderbyToProductSort(orderbyParam, DEFAULT_SORT)
-    : sortParsed.value;
+  const catalog = parseCatalogListParams(params, { includeCategoryParam: true });
+  const { filters, validationErrors, orderbyCurrent } = catalog;
 
-  const validationErrors = collectErrors(
-    pageParsed.error,
-    sizeParsed.error,
-    categoryParsed.error,
-    brandParsed.error,
-    qParsed.error,
-    colorParsed.error,
-    minPriceParsed.error,
-    maxPriceParsed.error,
-    orderbyError,
-    orderbyParam ? null : sortParsed.error,
+  const locale = await getLocale();
+  const [settingsResult] = await Promise.all([listPublicSettings(locale)]);
+
+  const heroSettings = readHeroSettings(settingsResult.data ?? [], "hero_products");
+  const defaultHero = readDefaultHeroAssets(settingsResult.data ?? []);
+  const heroTitle = heroSettings.title ?? tCatalog("allProducts");
+  const heroBgUrl = toLegacyWpMediaUrl(
+    resolveMediaUrl(heroSettings.imageUrl?.trim()) || defaultHero.defaultBgUrl?.trim(),
   );
+  const heroIllustrationUrl = toLegacyWpMediaUrl(
+    resolveMediaUrl(defaultHero.defaultIllustrationUrl?.trim()),
+  );
+  const heroBreadcrumb: WpCategoryCrumb[] = [
+    { label: "Bigbike.vn", href: toHomePath() },
+    { label: heroTitle },
+  ];
 
   if (validationErrors.length > 0) {
     return (
-      <div className="bb-product-archive archive post-type-archive-product">
-        <ProductArchiveHero
-          title={tCatalog("allProducts")}
-          breadcrumb={[
-            { label: tBreadcrumb("home"), href: toHomePath() },
-            { label: tCatalog("allProducts") },
-          ]}
+      <>
+        <link
+          rel="stylesheet"
+          href="/wp-content/themes/bigbike/css/wp-theme-category.css?v=2"
+          precedence="default"
         />
-        <div id="main-content" className="pb-0 max-md:pb-6">
-          <Container>
-            <p className="woocommerce-info">{validationErrors.join(" ")}</p>
-          </Container>
+        <div className="archive post-type-archive-product">
+          <WpCategoryHero
+            title={heroTitle}
+            breadcrumb={heroBreadcrumb}
+            bgUrl={heroBgUrl}
+            illustrationUrl={heroIllustrationUrl}
+            illustrationAlt={heroSettings.imageAlt ?? heroTitle}
+          />
+          <div id="main-content">
+            <div className="container">
+              <p className="woocommerce-info">{validationErrors.join(" ")}</p>
+            </div>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
-  const locale = await getLocale();
-  const [result, brandsResult, categoriesResult, settingsResult] = await Promise.all([
+  const [result, brandsResult, categoriesResult, facetsResult] = await Promise.all([
     listProducts({
-      page: pageParsed.value,
-      size: sizeParsed.value,
-      sort: productSort,
-      category: categoryParsed.value,
-      brand: brandParsed.value,
-      q: qParsed.value,
-      filterColor: colorParsed.value,
-      minPrice: minPriceParsed.value,
-      maxPrice: maxPriceParsed.value,
+      page: catalog.page,
+      size: catalog.size,
+      sort: catalog.productSort,
+      category: filters.category,
+      brand: filters.brand,
+      q: filters.q,
+      filterColor: filters.color,
+      minPrice: filters.minPrice,
+      maxPrice: filters.maxPrice,
       lang: locale,
     }),
     listBrands({ page: 1, size: 100, sort: "name:asc", lang: locale }),
     listCategories({ page: 1, size: 100, sort: "sortOrder:asc", lang: locale }),
-    listPublicSettings(locale),
+    getCatalogFacets({ category: filters.category, q: filters.q, lang: locale }),
   ]);
-  const heroSettings = readHeroSettings(settingsResult.data ?? [], "hero_products");
-  const defaultHero = readDefaultHeroAssets(settingsResult.data ?? []);
 
+  const products = result.data;
   const pagination = result.pagination;
-  const currentFilters = {
-    q: qParsed.value,
-    category: categoryParsed.value,
-    brand: brandParsed.value,
-    color: colorParsed.value,
-    minPrice: minPriceParsed.value,
-    maxPrice: maxPriceParsed.value,
-  };
+  const filterCategories = (categoriesResult.data ?? []).filter((c) => c.isVisible);
+
+  const canonicalPath = toProductListPath();
+  const paginationBaseHref = catalog.buildPaginationHref(canonicalPath);
+
+  const notice =
+    result.error && products.length === 0
+      ? result.error.message
+      : products.length === 0
+        ? tCatalog("noResults")
+        : null;
 
   return (
-    <div className="bb-product-archive archive post-type-archive-product">
-      <ProductArchiveHero
-        title={heroSettings.title ?? tCatalog("allProducts")}
-        breadcrumb={[
-          { label: tBreadcrumb("home"), href: toHomePath() },
-          { label: heroSettings.title ?? tCatalog("allProducts") },
-        ]}
-        imageUrl={heroSettings.imageUrl}
-        mobileImageUrl={heroSettings.mobileImageUrl}
-        imageAlt={heroSettings.imageAlt}
-        defaultBgUrl={defaultHero.defaultBgUrl}
-        defaultIllustrationUrl={defaultHero.defaultIllustrationUrl}
+    <>
+      <link
+        rel="stylesheet"
+        href="/wp-content/themes/bigbike/css/wp-theme-category.css?v=2"
+        precedence="default"
       />
 
-      <ProductArchiveLayout
-        totalItems={pagination?.totalItems ?? null}
-        sortCurrent={orderbyCurrent}
-        filters={{
-          brands: brandsResult.data,
-          categories: categoriesResult.data,
-          current: currentFilters,
-          resetHref: toProductListPath(),
-          hiddenParams: {
-            orderby: orderbyCurrent !== DEFAULT_WP_ORDERBY ? orderbyCurrent : undefined,
-          },
-        }}
-      >
-          <ProductArchiveResults
-            products={result.data}
-            hasError={!!result.error}
-            pagination={pagination}
-            baseHref={`${toProductListPath()}${buildQueryString({
-              size: sizeParsed.value !== DEFAULT_PAGE_SIZE ? sizeParsed.value : undefined,
-              orderby: orderbyCurrent !== DEFAULT_WP_ORDERBY ? orderbyCurrent : undefined,
-              category: categoryParsed.value,
-              "pwb-brand": brandParsed.value,
-              q: qParsed.value,
-              filter_color: colorParsed.value,
-              min_price: minPriceParsed.value,
-              max_price: maxPriceParsed.value,
-            })}`}
-            emptyContent={<p className="woocommerce-info">{tCatalog("noResults")}</p>}
-            errorContent={<p className="woocommerce-info">{result.error?.message}</p>}
-          />
-      </ProductArchiveLayout>
-    </div>
+      <div className="archive post-type-archive-product">
+        <WpCategoryHero
+          title={heroTitle}
+          breadcrumb={heroBreadcrumb}
+          bgUrl={heroBgUrl}
+          illustrationUrl={heroIllustrationUrl}
+          illustrationAlt={heroSettings.imageAlt ?? heroTitle}
+        />
+
+        <div id="main-content">
+          <div className="container">
+            <div className="row">
+              <div className="col-md-3">
+                <WpCategorySidebar
+                  brands={brandsResult.data}
+                  categories={filterCategories}
+                  facets={facetsResult.data}
+                  current={catalog.currentFilters}
+                  resetHref={canonicalPath}
+                  hiddenParams={{
+                    orderby: orderbyCurrent !== DEFAULT_WP_ORDERBY ? orderbyCurrent : undefined,
+                  }}
+                />
+              </div>
+
+              <WpCatalogResults
+                orderbyCurrent={orderbyCurrent}
+                pagination={pagination}
+                products={products}
+                notice={notice}
+                paginationBaseHref={paginationBaseHref}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }

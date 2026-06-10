@@ -156,10 +156,12 @@ const KEY_LABELS_VI = {
   contact_address: 'Địa chỉ cửa hàng',
   facebook_url: 'Link trang Facebook',
   messenger_url: 'Link Messenger (popup chat)',
+  messenger_display: 'Chữ hiển thị Messenger (popup chat)',
   google_maps_url: 'URL nhúng Google Maps (trang Liên hệ)',
   // public_home (homepage)
   hotline: 'Hotline chính (hiển thị nổi bật)',
   zalo_url: 'Link Zalo (popup liên hệ)',
+  zalo_display: 'Chữ hiển thị Zalo (popup liên hệ)',
   promo_title: 'Tiêu đề banner khuyến mãi trang chủ',
   promo_off: 'Nhãn % giảm trên banner (vd: 20% OFF)',
   promo_href: 'URL khi khách click banner khuyến mãi',

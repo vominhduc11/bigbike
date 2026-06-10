@@ -29,8 +29,15 @@ export function FooterCollapsible({ title, children }: { title: string; children
           </span>
         </button>
       </h3>
-      <div id={contentId} className={cn("mt-[30px] md:block", open ? "block" : "hidden")}>
-        {children}
+      <div
+        id={contentId}
+        className={cn(
+          "md:mt-[30px] md:block",
+          "max-md:grid max-md:transition-[grid-template-rows] max-md:duration-300 max-md:ease-in-out",
+          open ? "max-md:grid-rows-[1fr]" : "max-md:grid-rows-[0fr]"
+        )}
+      >
+        <div className="max-md:overflow-hidden">{children}</div>
       </div>
     </section>
   );

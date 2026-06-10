@@ -77,7 +77,6 @@ export function ProductCard({ product, variant = "compact", surface = "article" 
         : sale && retail > current
           ? retail
           : null;
-    const ratingValue = product.rating != null && product.rating > 0 ? product.rating : 4.5;
     const featuredImageSrc = toLegacyWpMediaUrl(resolveMediaUrl(product.image?.url?.trim()));
 
     // Home classes are mobile-first. Flex-basis follows the WP paged tiers so each
@@ -167,9 +166,11 @@ export function ProductCard({ product, variant = "compact", surface = "article" 
               )}
             </div>
           </div>
-          <div className="mt-2">
-            <RatingStars value={ratingValue} />
-          </div>
+          {product.rating != null && product.rating > 0 && (
+            <div className="mt-2">
+              <RatingStars value={product.rating} />
+            </div>
+          )}
         </div>
       </article>
     );
@@ -217,7 +218,6 @@ export function ProductCard({ product, variant = "compact", surface = "article" 
         : sale && retail > current
           ? retail
           : null;
-    const ratingValue = product.rating != null && product.rating > 0 ? product.rating : 5;
     const archiveCta =
       product.stockState === "OUT_OF_STOCK"
         ? "Hết hàng"
@@ -246,7 +246,9 @@ export function ProductCard({ product, variant = "compact", surface = "article" 
             <SaleBadge percent={discountPercent} variant="ticket" />
           )}
 
-          <div className="absolute -bottom-[51px] left-0 w-full bg-black text-center transition-all duration-300 group-hover:bottom-0 max-[767px]:bottom-0">
+          {/* WP-parity: nút mua chỉ trượt lên khi hover (desktop). Mobile WP không có
+              nút trên card — chạm ảnh/tên để vào trang sản phẩm. */}
+          <div className="absolute -bottom-[51px] left-0 w-full bg-black text-center transition-all duration-300 group-hover:bottom-0">
             <Link
               href={href}
               className="block py-[15px] font-cta text-13 font-semibold uppercase text-white max-[767px]:flex max-[767px]:min-h-10 max-[767px]:items-center max-[767px]:justify-center max-[767px]:px-2"
@@ -259,7 +261,7 @@ export function ProductCard({ product, variant = "compact", surface = "article" 
         <div>
           <div className="mx-[-5px] mt-2.5 max-[767px]:m-0">
             <div className="px-[5px] max-[767px]:px-2.5 max-[767px]:pb-3">
-              <h3 className="mb-2.5 font-body text-product-title font-semibold leading-[1.25] text-foreground max-[767px]:mb-2 max-[767px]:line-clamp-2 max-[767px]:min-h-9 max-[767px]:uppercase">
+              <h3 className="mb-2.5 font-body text-product-title font-semibold leading-[1.25] text-foreground max-[767px]:mb-2 max-[767px]:uppercase">
                 <Link href={href} className="text-foreground hover:text-brand">
                   {name}
                 </Link>
@@ -278,9 +280,11 @@ export function ProductCard({ product, variant = "compact", surface = "article" 
                 </div>
               ) : null}
 
-              <div className="mt-2 text-ui-18">
-                <RatingStars value={ratingValue} />
-              </div>
+              {product.rating != null && product.rating > 0 && (
+                <div className="mt-2 text-ui-18">
+                  <RatingStars value={product.rating} />
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -1,0 +1,405 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { Check, Mail, MapPin, Phone, Plus, SquarePen, Trash2 } from "lucide-react";
+import { WpAccountSectionHeading, useWpAccount } from "@/components/wp/WpAccountNav";
+import { createAddress, deleteAddress, fetchMyAddresses, updateAddress } from "@/lib/api/client-api";
+import type { CustomerAddress, SaveAddressPayload } from "@/lib/contracts/commerce";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { PaginationNav } from "@/components/ui/PaginationNav";
+import { Checkbox } from "@/components/ui/checkbox";
+import { VnAddressFields } from "@/components/ui/VnAddressFields";
+import { cn } from "@/lib/utils";
+import { skelBase } from "@/lib/ui-classes";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { FormNotice } from "@/components/ui/FormNotice";
+
+// 2020-mockup field label: gray, sentence-case, red asterisk appended.
+const LEGACY_LABEL = "text-sm text-muted-foreground";
+const ADDRESSES_PAGE_SIZE = 6;
+
+function ReqMark() {
+  return <span className="text-brand">*</span>;
+}
+
+type AddressFormProps = {
+  editing: CustomerAddress | null;
+  accountEmail: string;
+  saving: boolean;
+  error: string;
+  onSubmit: (payload: SaveAddressPayload) => void;
+};
+
+function AddressForm({ editing, accountEmail, saving, error, onSubmit }: AddressFormProps) {
+  const t = useTranslations("Account.addresses");
+  const [vnAddress, setVnAddress] = useState({
+    province: editing?.province ?? "",
+    district: editing?.district ?? "",
+    ward: editing?.ward ?? "",
+  });
+  const [vnError, setVnError] = useState("");
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!vnAddress.province || !vnAddress.district || !vnAddress.ward) {
+      setVnError(t("errorRequiredAddress"));
+      return;
+    }
+    setVnError("");
+    const fd = new FormData(e.currentTarget);
+    const email = (fd.get("email") as string).trim();
+    onSubmit({
+      type: editing?.type ?? "SHIPPING",
+      fullName: (fd.get("fullName") as string).trim(),
+      phone: (fd.get("phone") as string).trim(),
+      email: email || undefined,
+      province: vnAddress.province,
+      district: vnAddress.district,
+      ward: vnAddress.ward,
+      addressLine1: (fd.get("addressLine1") as string).trim(),
+      isDefault: fd.get("isDefault") === "on",
+    });
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="p-6">
+      {error && (
+        <FormNotice tone="danger" className="mb-4">{error}</FormNotice>
+      )}
+
+      <div className="grid grid-cols-1 gap-x-6 gap-y-[18px] sm:grid-cols-2 xl:gap-x-8">
+        <div className="flex flex-col gap-1.5">
+          <label className={LEGACY_LABEL}>{t("fullNameLabel")}<ReqMark /></label>
+          <Input
+            name="fullName"
+            required
+            defaultValue={editing?.fullName ?? ""}
+            placeholder={t("fullNamePlaceholder")}
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label className={LEGACY_LABEL}>{t("phoneLabel")}<ReqMark /></label>
+          <Input
+            name="phone"
+            type="tel"
+            required
+            defaultValue={editing?.phone ?? ""}
+            placeholder={t("phonePlaceholder")}
+          />
+        </div>
+        <div className="flex flex-col gap-1.5 sm:col-span-2">
+          <label className={LEGACY_LABEL}>{t("emailLabel")}</label>
+          <Input
+            type="email"
+            name="email"
+            defaultValue={editing?.email ?? accountEmail}
+            placeholder={t("emailPlaceholder")}
+          />
+        </div>
+        <div className="flex flex-col gap-1.5 sm:col-span-2">
+          <label className={LEGACY_LABEL}>{t("addressLabel")}<ReqMark /></label>
+          <Input
+            name="addressLine1"
+            required
+            defaultValue={editing?.addressLine1 ?? ""}
+            placeholder={t("addressPlaceholder")}
+          />
+        </div>
+        <div className="sm:col-span-2 grid grid-cols-1 gap-x-6 gap-y-[18px] sm:grid-cols-3 xl:gap-x-8">
+          {vnError && (
+            <p className="sm:col-span-3 text-sm text-destructive">{vnError}</p>
+          )}
+          <VnAddressFields
+            value={vnAddress}
+            onChange={(field, val) => setVnAddress((prev) => ({ ...prev, [field]: val }))}
+            required
+            labelClassName={LEGACY_LABEL}
+            selectContentClassName="z-[var(--bb-z-modal-dropdown)]"
+          />
+        </div>
+      </div>
+
+      <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        {/* Default-address toggle only on "add" — the 2020 edit modal has none;
+            an existing address is made default via the card's "Đặt mặc định" button. */}
+        {!editing && (
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Checkbox name="isDefault" defaultChecked={false} />
+            {t("setDefault")}
+          </label>
+        )}
+        <Button
+          type="submit"
+          variant="primary"
+          disabled={saving}
+          className="w-full sm:w-auto sm:min-w-[160px]"
+        >
+          {saving ? t("saving") : t("save")}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+export function AddressBookContent() {
+  const t = useTranslations("Account.addresses");
+  const tNav = useTranslations("Account.nav");
+  const profile = useWpAccount();
+  const router = useRouter();
+  const accountEmail = profile?.email ?? "";
+
+  const [addresses, setAddresses] = useState<CustomerAddress[]>([]);
+  // Address books are tiny in practice; paginate client-side so an unusually long
+  // list keeps a fixed height instead of stretching the page.
+  const [addrPage, setAddrPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [listError, setListError] = useState("");
+  const [notice, setNotice] = useState("");
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<CustomerAddress | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState("");
+
+  useEffect(() => {
+    let ignore = false;
+    fetchMyAddresses()
+      .then((all) => { if (!ignore) setAddresses(all); })
+      .catch(() => { if (!ignore) setListError(t("errorLoad")); })
+      .finally(() => { if (!ignore) setLoading(false); });
+    return () => { ignore = true; };
+  }, []);
+
+  function openAdd() {
+    setEditing(null);
+    setFormError("");
+    setModalOpen(true);
+  }
+
+  function openEdit(addr: CustomerAddress) {
+    setEditing(addr);
+    setFormError("");
+    setModalOpen(true);
+  }
+
+  async function handleSubmit(payload: SaveAddressPayload) {
+    setSaving(true);
+    setFormError("");
+    try {
+      if (editing) {
+        const updated = await updateAddress(editing.id, payload);
+        setAddresses((prev) => prev.map((a) => (a.id === editing.id ? updated : a)));
+      } else {
+        const created = await createAddress(payload);
+        setAddresses((prev) => [...prev, created]);
+      }
+      // Backend keeps a single default per type — re-sync if this one became default.
+      if (payload.isDefault) {
+        const all = await fetchMyAddresses();
+        setAddresses(all);
+      }
+      setNotice(editing ? t("noticeUpdated") : t("noticeAdded"));
+      setModalOpen(false);
+    } catch (err: unknown) {
+      setFormError(err instanceof Error ? err.message : t("errorGeneric"));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleSetDefault(addr: CustomerAddress) {
+    try {
+      await updateAddress(addr.id, {
+        type: addr.type,
+        fullName: addr.fullName ?? "",
+        phone: addr.phone ?? "",
+        province: addr.province ?? "",
+        district: addr.district ?? "",
+        ward: addr.ward ?? "",
+        addressLine1: addr.addressLine1 ?? "",
+        isDefault: true,
+      });
+      const all = await fetchMyAddresses();
+      setAddresses(all);
+      setNotice(t("noticeDefault"));
+    } catch (err: unknown) {
+      setListError(err instanceof Error ? err.message : t("errorSetDefault"));
+    }
+  }
+
+  async function handleDelete(addr: CustomerAddress) {
+    if (!window.confirm(t("confirmDelete"))) return;
+    try {
+      await deleteAddress(addr.id);
+      setAddresses((prev) => prev.filter((a) => a.id !== addr.id));
+      setNotice(t("noticeDeleted"));
+    } catch (err: unknown) {
+      setListError(err instanceof Error ? err.message : t("errorDelete"));
+    }
+  }
+
+  // Clamp the page in render so deleting from the last page never leaves us
+  // stranded on an empty page (no need to reset on every list mutation).
+  const totalAddressPages = Math.max(1, Math.ceil(addresses.length / ADDRESSES_PAGE_SIZE));
+  const currentAddressPage = Math.min(addrPage, totalAddressPages);
+  const pagedAddresses = addresses.slice(
+    (currentAddressPage - 1) * ADDRESSES_PAGE_SIZE,
+    currentAddressPage * ADDRESSES_PAGE_SIZE,
+  );
+
+  return (
+    <>
+      <WpAccountSectionHeading title={tNav("addresses")} />
+
+      {notice && (
+        <FormNotice tone="success" className="mb-4">{notice}</FormNotice>
+      )}
+      {listError && (
+        <FormNotice tone="danger" className="mb-4">{listError}</FormNotice>
+      )}
+
+      {loading ? (
+        <div className="grid grid-cols-1 gap-[18px] sm:grid-cols-2 xl:gap-6" aria-busy="true">
+          {[1, 2].map((i) => (
+            <div key={i} className="border border-border p-5">
+              <span className={cn(skelBase, "h-[1.1em] w-1/2")} />
+              <span className={cn(skelBase, "h-[0.85em] w-3/5")} style={{ marginTop: 14 }} />
+              <span className={cn(skelBase, "h-[0.85em] w-4/5")} style={{ marginTop: 8 }} />
+              <span className={cn(skelBase, "h-[0.85em] w-full")} style={{ marginTop: 8 }} />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <>
+          {addresses.length > 0 && (
+            <div className="grid grid-cols-1 gap-[18px] sm:grid-cols-2 xl:gap-6">
+              {pagedAddresses.map((addr, idx) => (
+                <div
+                  key={addr.id}
+                  className={`border bg-white p-5 ${addr.isDefault ? "border-brand-border" : "border-border"}`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <b className="font-body text-base font-semibold text-foreground">
+                      {addr.fullName ?? "—"}
+                    </b>
+                    <span className="shrink-0 text-sm text-muted-foreground">
+                      {t("addressItem", { index: (currentAddressPage - 1) * ADDRESSES_PAGE_SIZE + idx + 1 })}
+                    </span>
+                  </div>
+
+                  <div className="mt-4 flex flex-col gap-[10px] text-sm text-muted-foreground">
+                    {addr.phone && (
+                      <p className="m-0 flex items-center gap-2.5">
+                        <Phone className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                        {addr.phone}
+                      </p>
+                    )}
+                    {(addr.email ?? accountEmail) && (
+                      <p className="m-0 flex items-center gap-2.5">
+                        <Mail className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                        {addr.email ?? accountEmail}
+                      </p>
+                    )}
+                    <p className="m-0 flex items-start gap-2.5">
+                      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                      <span>
+                        {[addr.addressLine1, addr.ward, addr.district, addr.province]
+                          .filter(Boolean)
+                          .join(", ") || t("addressMissing")}
+                      </span>
+                    </p>
+                  </div>
+
+                  <div className="mt-4 flex items-center justify-between border-t border-border pt-3.5">
+                    {addr.isDefault ? (
+                      <span className="flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide text-brand">
+                        <Check className="h-4 w-4" aria-hidden />
+                        {t("defaultBadge")}
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleSetDefault(addr)}
+                        className="text-sm font-bold uppercase tracking-wide text-discount hover:underline"
+                      >
+                        {t("setDefaultButton")}
+                      </button>
+                    )}
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => openEdit(addr)}
+                        aria-label={t("editAria")}
+                        className="p-1.5 text-muted-foreground hover:text-brand"
+                      >
+                        <SquarePen className="h-[18px] w-[18px]" aria-hidden />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(addr)}
+                        aria-label={t("deleteAria")}
+                        className="p-1.5 text-muted-foreground hover:text-brand"
+                      >
+                        <Trash2 className="h-[18px] w-[18px]" aria-hidden />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <PaginationNav
+            page={currentAddressPage}
+            totalPages={totalAddressPages}
+            onPageChange={setAddrPage}
+          />
+
+          <button
+            type="button"
+            onClick={openAdd}
+            className="mt-5 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-brand hover:underline"
+          >
+            <Plus className="h-4 w-4" aria-hidden />
+            {t("addNew")}
+          </button>
+
+          {addresses.length === 0 && (
+            <p className="mt-3 text-sm text-muted-foreground">{t("empty")}</p>
+          )}
+
+          {/* "Cập nhật" — closes out the address book (each card already saves
+              itself via the popup); returns to the account info screen. */}
+          <Button
+            type="button"
+            variant="primary"
+            onClick={() => router.push("/tai-khoan/edit-account/")}
+            className="mt-6 w-full"
+          >
+            {t("updateButton")}
+          </Button>
+        </>
+      )}
+
+      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <DialogContent className="max-w-[920px] w-[calc(100%-32px)] p-0">
+          <DialogHeader className="p-6">
+            <DialogTitle>{editing ? t("modalUpdate") : t("modalAdd")}</DialogTitle>
+            <DialogDescription className="sr-only">{editing ? t("modalUpdate") : t("modalAdd")}</DialogDescription>
+          </DialogHeader>
+          <AddressForm
+            key={editing?.id ?? "new"}
+            editing={editing}
+            accountEmail={accountEmail}
+            saving={saving}
+            error={formError}
+            onSubmit={handleSubmit}
+          />
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}

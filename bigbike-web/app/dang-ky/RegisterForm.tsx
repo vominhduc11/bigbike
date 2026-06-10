@@ -9,13 +9,15 @@ import { registerCustomer } from "@/lib/api/client-api";
 import { refreshAuth } from "@/lib/auth/auth-store";
 import { createRegisterSchema, type RegisterFormValues } from "@/lib/schemas/auth";
 import { toAccountPath } from "@/lib/utils/routes";
-import { authHeading } from "@/lib/ui-classes";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { AuthField } from "@/components/ui/AuthField";
 import { FormRootError } from "@/components/ui/FormRootError";
+import { WpAuthField } from "@/components/wp/WpAuthField";
 import { SocialLoginButtons } from "@/app/dang-nhap/SocialLoginButtons";
 
+/**
+ * Form đăng ký theo theme WP — port `form.form` của page-register.php (lưới
+ * name/email + phone + password/repassword, .form-submit button đỏ).
+ * GIỮ NGUYÊN logic auth (RHF + zod + registerCustomer + refreshAuth + success state).
+ */
 export function RegisterForm({ returnTo = toAccountPath() }: { returnTo?: string }) {
   const t = useTranslations("Auth.register");
   const tValidation = useTranslations("Auth.validation");
@@ -45,93 +47,104 @@ export function RegisterForm({ returnTo = toAccountPath() }: { returnTo?: string
 
   if (registered) {
     return (
-      <div className="text-center">
-        <h2 className={cn(authHeading, "mb-3")}>{t("successHeading")}</h2>
-        {confirmedEmail && (
-          <p className="bb-auth-footer mb-5">
-            {t.rich("successDescription", {
-              email: confirmedEmail,
-              strong: (chunks) => <strong className="text-foreground">{chunks}</strong>,
-            })}
-          </p>
-        )}
-        <Button
-          type="button"
-          variant="primary"
-          size="auth"
-          onClick={() => router.push(returnTo)}
-        >
-          {t("successCta")}
-        </Button>
+      <div className="row">
+        <div className="col-12">
+          <div className="text-center">
+            <h2 className="mb-3">{t("successHeading")}</h2>
+            {confirmedEmail && (
+              <p className="mb-[30px]">
+                {t.rich("successDescription", {
+                  email: confirmedEmail,
+                  strong: (chunks) => <strong>{chunks}</strong>,
+                })}
+              </p>
+            )}
+            <div className="form-submit form-group">
+              <button type="button" onClick={() => router.push(returnTo)}>
+                {t("successCta")}
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div>
-      <FormRootError message={errors.root?.message} />
+    <div className="row">
+      <div className="col-12">
+        <FormRootError message={errors.root?.message} />
 
-      <form onSubmit={handleSubmit(onSubmit)} className="grid gap-[30px]" noValidate>
-        <AuthField
-          id="reg-fullName"
-          label={t("fullNameLabel")}
-          autoComplete="name"
-          placeholder={t("fullNamePlaceholder")}
-          registration={register("fullName")}
-          error={errors.fullName}
-        />
+        <form className="form" onSubmit={handleSubmit(onSubmit)} noValidate>
+          <div className="row">
+            <div className="col-md-12">
+              <div className="row">
+                <div className="col-md-6">
+                  <WpAuthField
+                    id="reg-fullName"
+                    label={t("fullNameLabel")}
+                    autoComplete="name"
+                    placeholder={t("fullNamePlaceholder")}
+                    registration={register("fullName")}
+                    error={errors.fullName}
+                  />
+                </div>
+                <div className="col-md-6">
+                  <WpAuthField
+                    id="reg-email"
+                    type="email"
+                    label={t("emailLabel")}
+                    autoComplete="email"
+                    placeholder={t("emailPlaceholder")}
+                    registration={register("email")}
+                    error={errors.email}
+                  />
+                </div>
+                <div className="col-md-12">
+                  <WpAuthField
+                    id="reg-phone"
+                    type="tel"
+                    label={t("phoneLabel")}
+                    autoComplete="tel"
+                    placeholder={t("phonePlaceholder")}
+                    registration={register("phone")}
+                    error={errors.phone}
+                  />
+                </div>
+                <div className="col-md-6">
+                  <WpAuthField
+                    id="reg-password"
+                    type="password"
+                    label={t("passwordLabel")}
+                    autoComplete="new-password"
+                    placeholder={t("passwordPlaceholder")}
+                    registration={register("password")}
+                    error={errors.password}
+                  />
+                </div>
+                <div className="col-md-6">
+                  <WpAuthField
+                    id="reg-confirm"
+                    type="password"
+                    label={t("confirmLabel")}
+                    autoComplete="new-password"
+                    placeholder={t("confirmPlaceholder")}
+                    registration={register("confirm")}
+                    error={errors.confirm}
+                  />
+                </div>
+              </div>
+              <div className="form-submit form-group">
+                <button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? t("submitting") : t("submit")}
+                </button>
+              </div>
+            </div>
+          </div>
+        </form>
 
-        <AuthField
-          id="reg-email"
-          type="email"
-          label={t("emailLabel")}
-          autoComplete="email"
-          placeholder={t("emailPlaceholder")}
-          registration={register("email")}
-          error={errors.email}
-        />
-
-        <AuthField
-          id="reg-phone"
-          type="tel"
-          label={t("phoneLabel")}
-          autoComplete="tel"
-          placeholder={t("phonePlaceholder")}
-          registration={register("phone")}
-          error={errors.phone}
-        />
-
-        <AuthField
-          id="reg-password"
-          type="password"
-          label={t("passwordLabel")}
-          autoComplete="new-password"
-          placeholder={t("passwordPlaceholder")}
-          registration={register("password")}
-          error={errors.password}
-        />
-
-        <AuthField
-          id="reg-confirm"
-          type="password"
-          label={t("confirmLabel")}
-          autoComplete="new-password"
-          placeholder={t("confirmPlaceholder")}
-          registration={register("confirm")}
-          error={errors.confirm}
-        />
-
-        <Button
-          type="submit"
-          variant="primary"
-          size="auth"
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? t("submitting") : t("submit")}
-        </Button>
-      </form>
-
-      <SocialLoginButtons returnTo={returnTo} />
+        <SocialLoginButtons returnTo={returnTo} />
+      </div>
     </div>
   );
 }

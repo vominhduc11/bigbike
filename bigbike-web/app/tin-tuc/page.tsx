@@ -1,11 +1,16 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
-import { Container } from "@/components/layout/Container";
-import { PageHero } from "@/components/layout/PageHero";
-import { listArticles, listContentCategories, listPublicSettings } from "@/lib/api/public-api";
+import { WpCategoryHero, type WpCategoryCrumb } from "@/components/wp/WpCategoryHero";
+import { WpCategoryPagination } from "@/components/wp/WpCategoryPagination";
+import {
+  listArticles,
+  listContentCategories,
+  listPublicSettings,
+} from "@/lib/api/public-api";
 import type { Article, ContentCategoryWithCount } from "@/lib/contracts/public";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
+import { resolveMediaUrl, safeText, toLegacyWpMediaUrl } from "@/lib/utils/format";
 import { readDefaultHeroAssets, readHeroSettings } from "@/lib/utils/page-hero";
 import {
   buildQueryString,
@@ -16,11 +21,8 @@ import {
   readSingleSearchParam,
 } from "@/lib/utils/query";
 import { toArticleListPath, toArticlePath, toHomePath } from "@/lib/utils/routes";
-import { safeText } from "@/lib/utils/format";
 import { stripHtmlTags } from "@/lib/utils/text";
 import { makeSlugThumbnailFallback, resolveWpUploadUrl } from "@/lib/utils/wp-media";
-import { sectionHeading } from "@/lib/ui-classes";
-import { PaginationNav } from "@/components/ui/PaginationNav";
 import { WpArticleImage } from "./WpArticleImage";
 
 type ArticleListPageProps = {
@@ -29,7 +31,26 @@ type ArticleListPageProps = {
 
 const DEFAULT_PAGE_SIZE = 12;
 const ROOT_CATEGORY_SLUG = "tin-tuc";
-const WP_EXCERPT_WORDS = 20;
+const WP_EXCERPT_CHARS = 120;
+
+// content_top / content_bottom — ACF của category "Tin tức" trên WP (backend
+// content-categories không lưu field này nên giữ tĩnh, port 1:1 từ bigbike.vn).
+// Chỉ hiển thị ở view gốc /tin-tuc (không lọc danh mục, không tìm kiếm).
+const NEWS_CONTENT_TOP =
+  "Bên cạnh việc mang đến khách hàng các sản phẩm phượt moto cao cấp chính hãng, " +
+  "Bigbike mong muốn chia sẻ các thông tin chi tiết cũng như các bí quyết lựa chọn " +
+  "quần áo bảo hộ, mũ bảo hiểm, găng tay, giày bảo hộ và các phụ kiện phượt moto khác " +
+  "trên trang TIN TỨC của chúng tôi. Ngoài ra, các bài đánh giá và xếp hạng sản phẩm " +
+  "bảo hộ phượt moto uy tín, chất lượng và các xu hướng mới nhất trên thị trường cũng " +
+  "luôn được cập nhật thường xuyên.";
+const NEWS_CONTENT_BOTTOM =
+  "Qua những thông tin và các bài viết được chia sẻ, Bigbike hy vọng các anh em biker " +
+  "sẽ cập nhật thêm nhiều thông tin bổ ích và có thể chọn lựa sản phẩm bảo hộ phượt moto " +
+  "phù hợp cho mình. Tuy nhiên, các sản phẩm bảo hộ phượt moto là những mặt hàng đòi hỏi " +
+  "người mua phải cân nhắc trên nhiều khía cạnh như kích cỡ, chất liệu và thiết kế. " +
+  "Chính vì thế, Bigbike khuyên rằng khách hàng nên đến trực tiếp cửa hàng để được tư vấn, " +
+  "hỗ trợ thêm về thông tin các sản phẩm và các dịch vụ tại Bigbike. " +
+  "Xin chân thành cảm ơn sự tín nhiệm của khách hàng dành cho Bigbike!";
 
 export async function generateMetadata({ searchParams }: ArticleListPageProps): Promise<Metadata> {
   const [params, t] = await Promise.all([searchParams, getTranslations("Blog")]);
@@ -48,10 +69,9 @@ export async function generateMetadata({ searchParams }: ArticleListPageProps): 
 }
 
 export default async function ArticleListPage({ searchParams }: ArticleListPageProps) {
-  const [params, t, tBreadcrumb] = await Promise.all([
+  const [params, t] = await Promise.all([
     searchParams,
     getTranslations("Blog"),
-    getTranslations("Breadcrumb"),
   ]);
 
   const pageParsed = parsePositiveIntParam(params.paged ?? params.page, {
@@ -79,27 +99,53 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
     qParsed.error,
   );
 
+  const locale = await getLocale();
+  const settingsResult = await listPublicSettings(locale);
+
+  const heroSettings = readHeroSettings(settingsResult.data ?? [], "hero_news");
+  const defaultHero = readDefaultHeroAssets(settingsResult.data ?? []);
+  const heroBgUrl = toLegacyWpMediaUrl(
+    resolveMediaUrl(heroSettings.imageUrl?.trim()) || defaultHero.defaultBgUrl?.trim(),
+  );
+  const heroIllustrationUrl = toLegacyWpMediaUrl(
+    resolveMediaUrl(defaultHero.defaultIllustrationUrl?.trim()),
+  );
+
+  const stylesheet = (
+    <link
+      rel="stylesheet"
+      href="/wp-content/themes/bigbike/css/wp-theme-news.css?v=4"
+      precedence="default"
+    />
+  );
+
   if (validationErrors.length > 0) {
+    const errorTitle = heroSettings.title ?? "Tin tức";
     return (
-      <div className="bb-blog-listing-parity">
-        <PageHero
-          title={t("title")}
-          breadcrumb={[
-            { label: tBreadcrumb("home"), href: toHomePath() },
-            { label: t("breadcrumb") },
-          ]}
-        />
-        <div id="main-content" className="pb-0">
-          <Container variant="blog" className="container">
-            <WpNoResults query={qParsed.value} />
-          </Container>
+      <>
+        {stylesheet}
+        <div className="archive category">
+          <WpCategoryHero
+            title={errorTitle}
+            breadcrumb={[
+              { label: "Bigbike.vn", href: toHomePath() },
+              { label: t("breadcrumb") },
+            ]}
+            bgUrl={heroBgUrl}
+            illustrationUrl={heroIllustrationUrl}
+            illustrationAlt={heroSettings.imageAlt ?? errorTitle}
+          />
+          <div id="main-content">
+            <div className="container">
+              <p className="woocommerce-info">{validationErrors.join(" ")}</p>
+            </div>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
-  const locale = await getLocale();
-  const [result, categoriesResult, settingsResult] = await Promise.all([
+  const [result, categoriesResult] = await Promise.all([
     listArticles({
       page: pageParsed.value,
       size: sizeParsed.value,
@@ -109,27 +155,29 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
       lang: locale,
     }),
     listContentCategories(),
-    listPublicSettings(locale),
   ]);
 
   const sidebarCategories = categoriesResult.data.filter((cat) => cat.articleCount > 0);
-  const heroSettings = readHeroSettings(settingsResult.data ?? [], "hero_news");
-  const defaultHero = readDefaultHeroAssets(settingsResult.data ?? []);
   const activeCategory = sidebarCategories.find((cat) => cat.slug === categoryParsed.value);
-  const basePageTitle = activeCategory?.name ?? heroSettings.title ?? "Tin tức";
-  const pageTitle =
-    pageParsed.value > 1 ? `${basePageTitle} - Trang ${pageParsed.value}` : basePageTitle;
+  const heroTitle = activeCategory?.name ?? heroSettings.title ?? "Tin tức";
+  // content_top/bottom chỉ thuộc category gốc "Tin tức" — ẩn khi lọc danh mục/tìm kiếm.
+  const showCategoryIntro = !categoryParsed.value && !qParsed.value;
 
-  const makeListHref = (overrides: {
-    page?: number;
-    category?: string;
-    size?: number;
-  }) => {
-    const nextPage = overrides.page && overrides.page > 1 ? overrides.page : undefined;
-    const nextSize = overrides.size && overrides.size !== DEFAULT_PAGE_SIZE ? overrides.size : undefined;
+  const heroBreadcrumb: WpCategoryCrumb[] = activeCategory
+    ? [
+        { label: "Bigbike.vn", href: toHomePath() },
+        { label: t("breadcrumb"), href: toArticleListPath() },
+        { label: activeCategory.name },
+      ]
+    : [
+        { label: "Bigbike.vn", href: toHomePath() },
+        { label: t("breadcrumb") },
+      ];
 
+  const makeListHref = (overrides: { category?: string; size?: number }) => {
+    const nextSize =
+      overrides.size && overrides.size !== DEFAULT_PAGE_SIZE ? overrides.size : undefined;
     return `${toArticleListPath()}${buildQueryString({
-      paged: nextPage,
       size: nextSize,
       category: overrides.category,
       q: qParsed.value,
@@ -137,109 +185,118 @@ export default async function ArticleListPage({ searchParams }: ArticleListPageP
   };
 
   return (
-    <div className="bb-blog-listing-parity">
-      <PageHero
-        title={pageTitle}
-        imageUrl={heroSettings.imageUrl}
-        mobileImageUrl={heroSettings.mobileImageUrl}
-        imageAlt={heroSettings.imageAlt}
-        defaultBgUrl={defaultHero.defaultBgUrl}
-        defaultIllustrationUrl={defaultHero.defaultIllustrationUrl}
-        breadcrumb={
-          activeCategory
-            ? [
-                { label: tBreadcrumb("home"), href: toHomePath() },
-                { label: t("breadcrumb"), href: toArticleListPath() },
-                { label: activeCategory.name },
-              ]
-            : [
-                { label: tBreadcrumb("home"), href: toHomePath() },
-                { label: t("breadcrumb") },
-              ]
-        }
-      />
+    <>
+      {stylesheet}
 
-      <div id="main-content" className="pb-0">
-        <Container variant="blog" className="container">
-          <div className="flex flex-wrap -mx-[15px]">
-            <aside
-              className="relative w-full px-[15px] flex-[0_0_25%] max-w-[25%] max-md:hidden max-md:flex-[0_0_100%] max-md:max-w-full max-md:mb-0"
-              aria-label="Danh mục tin tức"
-            >
-              <WpCategoryWidget categories={sidebarCategories} />
-            </aside>
+      <div className="archive category">
+        <WpCategoryHero
+          title={heroTitle}
+          breadcrumb={heroBreadcrumb}
+          bgUrl={heroBgUrl}
+          illustrationUrl={heroIllustrationUrl}
+          illustrationAlt={heroSettings.imageAlt ?? heroTitle}
+        />
 
-            <section
-              className="relative w-full px-[15px] flex-[0_0_75%] max-w-[75%] max-md:flex-[0_0_100%] max-md:max-w-full"
-              aria-label="Danh sách bài viết"
-            >
-              {result.data.length === 0 ? (
-                <WpNoResults query={qParsed.value} />
-              ) : (
-                <>
-                  <div className="news-list">
-                    <div className="flex flex-wrap -mx-[15px]">
-                      {result.data.map((article) => (
-                        <div
-                          key={article.id}
-                          className="relative w-full px-[15px] mb-[30px] flex flex-col flex-[0_0_100%] max-w-full min-[576px]:flex-[0_0_50%] min-[576px]:max-w-[50%] md:flex-[0_0_33.333333%] md:max-w-[33.333333%]"
-                        >
-                          <WpArticleCard article={article} />
-                        </div>
-                      ))}
+        <div id="main-content">
+          <div className="container">
+            {showCategoryIntro ? (
+              <div className="block-text pb-60">
+                <div>
+                  <p style={{ textAlign: "justify" }}>{NEWS_CONTENT_TOP}</p>
+                </div>
+                <div>&nbsp;</div>
+              </div>
+            ) : null}
+
+            <div className="row">
+              <div className="col-md-3">
+                <WpNewsCategoryWidget
+                  categories={sidebarCategories}
+                  activeSlug={categoryParsed.value}
+                />
+              </div>
+
+              <div className="col-md-9 bb-blog-listing-parity">
+                {result.data.length === 0 ? (
+                  <p className="woocommerce-info">
+                    {result.error?.message ?? "Chưa có bài viết nào."}
+                  </p>
+                ) : (
+                  <>
+                    <div className="news-list">
+                      <div className="row">
+                        {result.data.map((article) => (
+                          <div className="col-md-4 col-sm-6 col-12" key={article.id}>
+                            <WpBlogGridItem article={article} />
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
 
-                  {result.pagination ? (
-                    <PaginationNav
-                      page={result.pagination.page}
-                      totalPages={result.pagination.totalPages}
-                      baseHref={makeListHref({
-                        size: sizeParsed.value,
-                        category: categoryParsed.value,
-                      })}
-                      variant="archive"
-                    />
-                  ) : null}
-                </>
-              )}
-            </section>
+                    {result.pagination ? (
+                      <WpCategoryPagination
+                        page={result.pagination.page}
+                        totalPages={result.pagination.totalPages}
+                        baseHref={makeListHref({
+                          size: sizeParsed.value,
+                          category: categoryParsed.value,
+                        })}
+                      />
+                    ) : null}
+                  </>
+                )}
+              </div>
+            </div>
+
+            {showCategoryIntro ? (
+              <div className="block-text pt-100 pb-60">
+                <p>&nbsp;</p>
+                <p style={{ textAlign: "justify" }}>{NEWS_CONTENT_BOTTOM}</p>
+              </div>
+            ) : null}
           </div>
-        </Container>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
-function WpCategoryWidget({ categories }: { categories: ContentCategoryWithCount[] }) {
+/**
+ * Sidebar widget — port 1:1 từ category.php: danh sách danh mục tin tức
+ * với badge số bài (.product-category .count).
+ */
+function WpNewsCategoryWidget({
+  categories,
+  activeSlug,
+}: {
+  categories: ContentCategoryWithCount[];
+  activeSlug?: string;
+}) {
   if (categories.length === 0) {
     return null;
   }
 
   return (
-    <div className="pb-[15px] mb-[30px] border-b border-b-border-default">
-      <div className="pb-[15px]">
-        <h3 className={sectionHeading}>
-          Danh mục tin tức
-        </h3>
+    <div className="widget">
+      <div className="widget--title">
+        <h3>Danh mục tin tức</h3>
       </div>
-      <div>
-        <div>
-          <ul className="m-0 p-0 list-none">
+      <div className="widget--body">
+        <div className="product-category">
+          <ul>
             {categories.map((cat) => {
-              const href = cat.slug === ROOT_CATEGORY_SLUG
+              const isRoot = cat.slug === ROOT_CATEGORY_SLUG;
+              const href = isRoot
                 ? toArticleListPath()
                 : `${toArticleListPath()}${buildQueryString({ category: cat.slug })}`;
+              const isActive = isRoot ? !activeSlug : cat.slug === activeSlug;
 
               return (
-                <li key={cat.id} className="relative m-0 py-[15px]">
-                  <Link
-                    href={href}
-                    className="relative block min-h-5 pr-7 text-muted-foreground font-body text-[length:var(--fs-body)] font-normal leading-5 no-underline [transition:none] hover:text-brand"
-                  >
+                <li key={cat.id} className={isActive ? "current" : undefined}>
+                  <Link href={href}>
                     {cat.name}
-                    <span className="absolute top-0 right-[3px] w-5 h-5 text-white font-semibold text-center after:content-[''] after:absolute after:inset-0 after:z-0 after:block after:bg-border-default after:[transform:rotate(45deg)]">
-                      <span className="relative z-[1] block text-ui-14 leading-5">{cat.articleCount}</span>
+                    <span className="count">
+                      <span>{cat.articleCount}</span>
                     </span>
                   </Link>
                 </li>
@@ -252,7 +309,10 @@ function WpCategoryWidget({ categories }: { categories: ContentCategoryWithCount
   );
 }
 
-function WpArticleCard({ article }: { article: Article }) {
+/**
+ * content-blog-grid-item.php — thẻ bài viết trong lưới tin tức.
+ */
+function WpBlogGridItem({ article }: { article: Article }) {
   const title = safeText(article.title, "Bài viết");
   const excerpt = makeExcerpt(article);
   const publishedAt = formatWpDate(article.publishedAt ?? article.createdAt);
@@ -262,78 +322,44 @@ function WpArticleCard({ article }: { article: Article }) {
   const href = toArticlePath(article.slug);
 
   return (
-    <article className="flex flex-col flex-1 mb-0 bg-card [box-shadow:var(--bb-shadow-md)]">
+    <div className="news--item">
       <div className="news--item-thumbnail">
-        <Link
-          href={href}
-          className="lazy"
-          data-background-image={imageSrc ?? fallbackImageSrc ?? undefined}
-        >
+        <Link href={href} className="lazy">
           <WpArticleImage src={imageSrc} fallbackSrc={fallbackImageSrc} alt={title} />
         </Link>
       </div>
-      <div className="relative max-md:bg-card">
+      <div className="news--item-desc">
         {publishedAt ? (
-          <div className="pt-5 px-5 pb-2.5">
-            <p className="inline-block m-0 text-foreground font-body text-ui-12 font-normal leading-5 before:content-['/'] before:mr-2.5 before:inline-block">
-              {publishedAt}
-            </p>
+          <div className="news-date">
+            <p>{publishedAt}</p>
           </div>
         ) : null}
-        <div className="px-5 pb-[30px] max-md:bg-card">
-          <p className="m-0 mb-[25px] font-body text-body font-semibold leading-5 text-foreground">
-            <Link href={href} className="text-black no-underline [transition:none]">
-              {title}
-            </Link>
+        <div className="news--item-inside">
+          <p className="title-post">
+            <Link href={href}>{title}</Link>
           </p>
-          {excerpt ? (
-            <p className="m-0 text-foreground font-body text-base font-normal leading-5">{excerpt}</p>
-          ) : null}
+          {excerpt ? <p>{excerpt}</p> : null}
         </div>
       </div>
-    </article>
-  );
-}
-
-function WpNoResults({ query }: { query?: string }) {
-  return (
-    <section className="no-results not-found">
-      <header className="page-header">
-        <h1 className="page-title">Nothing Found</h1>
-      </header>
-      <div className="page-content">
-        <p>It seems we can’t find what you’re looking for. Perhaps searching can help.</p>
-        <form role="search" method="get" className="search-form" action="/">
-          <label>
-            <span className="screen-reader-text">Search for:</span>
-            <input
-              className="form-control"
-              type="text"
-              placeholder="Tìm kiếm..."
-              name="s"
-              defaultValue={query ?? ""}
-            />
-          </label>
-        </form>
-      </div>
-    </section>
+    </div>
   );
 }
 
 function makeExcerpt(article: Article): string {
-  const source = article.excerpt ?? article.body;
+  // excerpt có thể là chuỗi rỗng "" (API trả "") → dùng || để fallback sang body.
+  // Không dùng ?? vì ?? chỉ fallback null/undefined, "" sẽ lọt qua làm mất mô tả.
+  const source = article.excerpt || article.body;
   const plain = stripHtmlTags(source).replace(/\s+/g, " ").trim();
 
   if (!plain) {
     return "";
   }
 
-  const words = plain.split(/\s+/);
-  if (words.length <= WP_EXCERPT_WORDS) {
-    return plain.replace(/\.\.\.$/, "…");
+  if (plain.length <= WP_EXCERPT_CHARS) {
+    return plain;
   }
 
-  return `${words.slice(0, WP_EXCERPT_WORDS).join(" ")}…`;
+  return `${plain.slice(0, WP_EXCERPT_CHARS).trimEnd()}…`;
 }
 
 function formatWpDate(value: string | null | undefined): string {
@@ -348,4 +374,3 @@ function formatWpDate(value: string | null | undefined): string {
 
   return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
 }
-

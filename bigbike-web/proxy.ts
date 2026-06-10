@@ -147,6 +147,12 @@ function isLoop(currentPath: string, target: string): boolean {
 export async function proxy(request: NextRequest): Promise<NextResponse> {
   const pathname = request.nextUrl.pathname;
 
+  // Forward the current pathname to server components so Root Layout can hide the
+  // default bigbike-web shell on routes ported to the WordPress theme.
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-pathname", pathname);
+  const forward = () => NextResponse.next({ request: { headers: requestHeaders } });
+
   if (
     pathname !== "/" &&
     !pathname.endsWith("/") &&
@@ -184,10 +190,10 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   }
 
   const rule = await lookupRedirect(pathname);
-  if (!rule) return NextResponse.next();
+  if (!rule) return forward();
 
   if (isLoop(pathname, rule.target)) {
-    return NextResponse.next();
+    return forward();
   }
 
   const destination = rule.target.startsWith("/")

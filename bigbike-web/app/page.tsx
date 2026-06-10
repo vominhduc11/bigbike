@@ -1,24 +1,12 @@
-﻿import type { Metadata } from "next";
-import Image from "next/image";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { getLocale } from "next-intl/server";
-import { Container } from "@/components/layout/Container";
-import { cn } from "@/lib/utils";
-import { sectionEyebrow, sectionHeading } from "@/lib/ui-classes";
-import { BrandCarousel } from "@/components/home/BrandCarousel";
-import { ExperienceCarousel } from "@/components/home/ExperienceCarousel";
-import { FeaturedProductsCarousel } from "@/components/home/FeaturedProductsCarousel";
-import { HeroSlider } from "@/components/home/HeroSlider";
+
 import { HomeAnalytics } from "@/components/home/HomeAnalytics";
+import { ExperienceCarousel } from "@/components/home/ExperienceCarousel";
 import { HomeVideoCarousel } from "@/components/home/HomeVideoCarousel";
-import type {
-  Article,
-  Category,
-  HomeHighlightItem,
-  HomeSlider,
-  HomeVideo,
-  Product,
-} from "@/lib/contracts/public";
+import { WpProductSwipeItem } from "@/components/wp/WpProductSwipeItem";
+import type { Article, HomeSlider, Product } from "@/lib/contracts/public";
 import {
   getProductBySlug,
   listArticles,
@@ -50,14 +38,16 @@ import { stripHtmlToText } from "@/lib/utils/text";
 import { pickSetting } from "@/lib/utils/settings";
 import {
   toArticlePath,
-toCategoryPath,
+  toCategoryPath,
   toHomePath,
   toProductListPath,
   toProductPath,
 } from "@/lib/utils/routes";
+import type { HomeVideo } from "@/lib/contracts/public";
 
 export const dynamic = "force-dynamic";
 
+const T = "/wp-content/themes/bigbike";
 const HOME_ORG_LOGO = "/wp/logo.png";
 const DEFAULT_SITE_NAME = "BigBike";
 
@@ -92,162 +82,24 @@ function toHeroSlide(slider: HomeSlider, product: Product | null) {
   const desktopSrc = toLegacyWpMediaUrl(resolveMediaUrl(slider.desktopImage?.url?.trim()));
   if (!desktopSrc) return null;
 
-  const mobileSrc =
-    toLegacyWpMediaUrl(resolveMediaUrl(slider.mobileImage?.url?.trim())) || desktopSrc;
-
   return {
     id: slider.id,
-    desktopSrc,
-    mobileSrc,
+    src: desktopSrc,
     href: toSafePublicHref(
       slider.link || slider.productLink || slider.externalLink,
       toProductListPath(),
     ),
-    alt: safeText(slider.desktopImage?.alt || slider.mobileImage?.alt, DEFAULT_SITE_NAME),
-    productName: product ? safeText(product.name, "") : "",
-    categoryName: product?.category?.name ?? "",
-    productCode: product?.sku?.trim() || DEFAULT_SITE_NAME,
+    productCode: product?.sku?.trim() || "BIGBIKE",
   };
 }
 
 function isRenderableHomeVideo(video: HomeVideo): boolean {
-  if (video.youtubeId && /^[A-Za-z0-9_-]{11}$/.test(video.youtubeId)) {
-    return true;
-  }
-
+  if (video.youtubeId && /^[A-Za-z0-9_-]{11}$/.test(video.youtubeId)) return true;
   return isSafeHomeVideoUrl(video.videoUrl);
-}
-
-function WpCategoryListItem({ category }: { category: Category }) {
-  const name = safeText(category.name, "Danh mục");
-  const imgAsset = category.image ?? category.icon;
-  const src = resolveMediaUrl(imgAsset?.url?.trim()) || "/wp/category-fallback.png";
-
-  return (
-    <Link
-      href={toCategoryPath(category.slug)}
-      className="group relative flex flex-col items-center justify-center h-[290px] p-[30px] bg-white border-r border-b border-r-border-default border-b-border-default text-center no-underline cursor-pointer overflow-hidden before:content-[''] before:absolute before:inset-0 before:bg-[url('/wp/cat-hover.jpg')] before:bg-[position:top_center] before:bg-cover before:bg-no-repeat before:opacity-0 before:[transition:opacity_0.5s_ease] hover:before:opacity-100 focus-visible:[outline:var(--bb-focus-outline)] focus-visible:[outline-offset:-3px] focus-visible:z-[2]"
-    >
-      <span
-        className="relative z-[1] flex items-center justify-center w-[72px] h-[72px] min-[1536px]:w-20 min-[1536px]:h-20 min-[2560px]:w-[88px] min-[2560px]:h-[88px] pointer-events-none"
-        aria-hidden="true"
-      >
-        <Image
-          src={src}
-          alt=""
-          width={96}
-          height={96}
-          sizes="(min-width: 2560px) 88px, (min-width: 1536px) 80px, 72px"
-          className="block w-full h-full object-contain [transition:filter_0.2s_ease,transform_0.2s_ease] group-hover:[filter:brightness(0)_invert(1)] group-hover:[transform:scale(1.06)] group-active:[transform:scale(0.97)]"
-        />
-      </span>
-      <span className="relative z-[1] line-clamp-2 mt-[30px] font-[family-name:var(--bb-font-cta)] font-semibold text-[17px] min-[1536px]:text-[18px] min-[2560px]:text-[20px] leading-[1.2] tracking-[0.02em] uppercase text-foreground [transition:color_0.2s_ease] group-hover:text-white">
-        {name}
-      </span>
-      <i
-        className="fal fa-chevron-circle-right relative z-[1] text-2xl text-black h-0 opacity-0 overflow-hidden [transition:all_0.3s_ease] group-hover:text-white group-hover:h-6 group-hover:mt-[30px] group-hover:opacity-100"
-        aria-hidden="true"
-      />
-    </Link>
-  );
-}
-
-function HomeCategoryHighlights({ items }: { items: HomeHighlightItem[] }) {
-  if (items.length === 0) return null;
-
-  return (
-    <div className="category-list py-15">
-      <div className="mx-auto w-full max-w-[var(--bb-container-xl)] px-[15px] max-md:max-w-none max-md:px-[var(--bb-mobile-page-x)]">
-        <div className="flex flex-wrap -mx-[15px]">
-          {items.map((item, idx) => {
-            const href = toProductPath(item.productSlug);
-            const categoryHref = toCategoryPath(item.categorySlug);
-            const imageSrc = toLegacyWpMediaUrl(resolveMediaUrl(item.productImageUrl));
-
-            return (
-              <div key={item.slot} className="relative w-full px-[15px] md:flex-[0_0_33.333333%] md:max-w-[33.333333%]">
-                <div
-                  className={cn(
-                    "relative h-[300px] min-[1920px]:h-[360px] min-[2560px]:h-[480px] p-[30px] min-[2560px]:p-10 border border-border-default bg-white uppercase",
-                    idx < items.length - 1 && "max-md:mb-5",
-                  )}
-                >
-                  <div className="absolute right-[30px] min-[2560px]:right-10 bottom-0">
-                    <Link href={href}>
-                      {imageSrc ? (
-                        <img
-                          src={imageSrc}
-                          alt={item.productName}
-                          className="w-auto max-h-[180px] min-[1920px]:max-h-[220px] min-[2560px]:max-h-[310px]"
-                          loading="lazy"
-                        />
-                      ) : null}
-                    </Link>
-                  </div>
-                  <Link className="hidden" href={categoryHref}>
-                    {item.categoryName}
-                  </Link>
-                  <h3 className="mb-[40px] min-[2560px]:mb-[50px] font-body text-ui-18 font-semibold leading-[20px]">
-                    <Link href={href} className="!text-black">
-                      {item.productName}
-                    </Link>
-                  </h3>
-                  <Link
-                    href={href}
-                    className="!text-brand font-body text-ui-16 font-semibold uppercase"
-                  >
-                    Mua ngay <i className="fal fa-chevron-right ml-[5px]" aria-hidden="true" />
-                  </Link>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function PromoBanner({
-  imageSrc,
-  href,
-  title,
-  offLabel,
-}: {
-  imageSrc: string | null;
-  href: string | null;
-  title: string;
-  offLabel: string;
-}) {
-  if (!imageSrc) return null;
-
-  const alt = [title, offLabel].filter(Boolean).join(" - ") || "Khuyến mãi BigBike";
-  const content = (
-    <img
-      src={imageSrc}
-      alt={alt}
-      className="lazy w-full"
-      loading="lazy"
-      suppressHydrationWarning
-    />
-  );
-
-  return (
-    <div className="banner-ads pt-15 pb-0 max-[1024px]:pt-13 max-md:pt-5 max-md:pb-2 max-md:px-[var(--bb-mobile-page-x)]">
-      <div className="mx-auto w-full max-w-[var(--bb-container-xl)] px-0 max-md:max-w-none">
-        <div className="flex flex-wrap -mx-[15px]">
-          <div className="relative w-full px-[15px] md:flex-[0_0_100%] md:max-w-full">
-            {href ? <Link href={href}>{content}</Link> : content}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 function truncateWpExcerpt(text: string, maxLength = 120): string {
   if (text.length <= maxLength) return text;
-
   const ending = "…";
   const cut = text.lastIndexOf(" ", maxLength - ending.length);
   const pos = cut > maxLength - 30 ? cut : maxLength - ending.length;
@@ -257,72 +109,15 @@ function truncateWpExcerpt(text: string, maxLength = 120): string {
 function resolveWpNewsExcerpt(article: Article): string {
   const manualExcerpt = article.excerpt?.trim();
   if (manualExcerpt) return truncateWpExcerpt(manualExcerpt);
-
   const bodyText = article.body ? stripHtmlToText(article.body) : "";
   return bodyText ? truncateWpExcerpt(bodyText) : "";
 }
 
-function formatWpHomeDate(value: string | null | undefined): string {
+/** get_the_date('j/n/Y') — ngày/tháng/năm không số 0 đầu. */
+function formatWpDate(value: string | null | undefined): string {
   const date = new Date(value ?? "");
   if (Number.isNaN(date.valueOf())) return "";
-
-  return new Intl.DateTimeFormat("vi-VN", {
-    day: "numeric",
-    month: "numeric",
-    year: "numeric",
-  }).format(date);
-}
-
-function WpNewsCard({ article }: { article: Article }) {
-  const title = safeText(article.title, "Bài viết");
-  const excerpt = resolveWpNewsExcerpt(article);
-  const src = toLegacyWpMediaUrl(resolveMediaUrl(article.coverImage?.url?.trim()));
-  const href = toArticlePath(article.slug);
-  const dateStr = formatWpHomeDate(article.publishedAt ?? article.createdAt);
-
-  return (
-    <div className="relative w-full max-w-full px-0 min-[576px]:flex-[0_0_50%] min-[576px]:max-w-[50%] min-[576px]:px-[15px] md:flex-[0_0_33.3333%] md:max-w-[33.3333%]">
-      <div className="mb-[30px] bg-white [box-shadow:0_3px_6px_rgba(0,0,0,0.16)]">
-        <div className="text-center">
-          <Link
-            className="lazy group block overflow-hidden bg-cover bg-no-repeat [transition:all_0.3s_ease]"
-            href={href}
-            style={src ? { backgroundImage: `url("${src}")` } : undefined}
-          >
-            {src ? (
-              <img
-                src={src}
-                alt={safeText(article.coverImage?.alt, title)}
-                className="lazy block !h-[215px] w-full max-w-full object-cover align-middle [transition:transform_0.3s_ease] max-[767px]:!h-[180px] min-[1920px]:!h-[290px] min-[2560px]:!h-[400px] group-hover:[transform:scale(1.03)]"
-                loading="lazy"
-              />
-            ) : null}
-          </Link>
-        </div>
-        <div className="relative">
-          {dateStr && (
-            <div className="absolute left-0 top-[-21px] w-[170px]">
-              <p className="relative m-0 p-0 pl-[20px] font-body text-ui-14 font-semibold uppercase leading-[42px] whitespace-nowrap bg-brand text-white after:absolute after:bottom-0 after:right-[-15px] after:h-[42px] after:w-[25px] after:bg-brand after:[transform:skewX(-20deg)] after:content-['']">
-                {dateStr}
-              </p>
-            </div>
-          )}
-          <div className="[padding:41px_20px_30px]">
-            <p className="m-0 mb-[5px] font-body text-ui-16 font-semibold normal-case leading-[1.25] tracking-[normal] text-black">
-              <Link href={href} className="text-black no-underline [transition:color_0.2s_ease] hover:text-brand">
-                {title}
-              </Link>
-            </p>
-            {excerpt ? (
-              <p className="m-0 text-ui-16 leading-[1.25] text-black max-[575px]:overflow-hidden max-[575px]:[display:flow-root] max-[575px]:[-webkit-line-clamp:3]">
-                {excerpt}
-              </p>
-            ) : null}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
 }
 
 export default async function HomePage() {
@@ -346,20 +141,8 @@ export default async function HomePage() {
       showOnHomepage: true,
       lang: locale,
     }),
-    listArticles({
-      page: 1,
-      category: "reviews",
-      size: 3,
-      sort: "publishedAt:desc",
-      lang: locale,
-    }),
-    listArticles({
-      page: 1,
-      category: "tin-tuc",
-      size: 3,
-      sort: "publishedAt:desc",
-      lang: locale,
-    }),
+    listArticles({ page: 1, category: "reviews", size: 3, sort: "publishedAt:desc", lang: locale }),
+    listArticles({ page: 1, category: "tin-tuc", size: 3, sort: "publishedAt:desc", lang: locale }),
     listBrands({ page: 1, size: 12, sort: "name:asc", lang: locale }),
     listPublicSettings(locale),
     listProducts({
@@ -384,8 +167,6 @@ export default async function HomePage() {
   const expSubtitle = pickSetting(settings, ["home_exp_subtitle"]);
   const expTitle = pickSetting(settings, ["home_exp_title"]);
   const expDesc = pickSetting(settings, ["home_exp_desc"]);
-  const promoTitle = pickSetting(settings, ["promo_title"]);
-  const promoOff = pickSetting(settings, ["promo_off"]);
   const promoHrefValue = pickSetting(settings, ["promo_href"]);
   const promoImageValue = pickSetting(settings, ["promo_image_url"]);
 
@@ -396,26 +177,26 @@ export default async function HomePage() {
       return slug ? getProductBySlug(slug, locale) : Promise.resolve(null);
     }),
   );
-
   const slides = rawSliders
     .map((slider, index) => toHeroSlide(slider, sliderProducts[index]?.data ?? null))
-    .filter((slide): slide is NonNullable<typeof slide> => slide !== null);
+    .filter((s): s is NonNullable<typeof s> => s !== null);
 
-  const expArticles = expArticlesResult.data;
-  const newsArticles = newsArticlesResult.data;
-  const carouselProducts = carouselProductsResult.data;
+  const categories = categoriesResult.data ?? [];
+  const expArticles = expArticlesResult.data ?? [];
+  const newsArticles = newsArticlesResult.data ?? [];
+  const brands = brandsResult.data ?? [];
+  const carouselProducts = carouselProductsResult.data ?? [];
   const homeHighlights = homeHighlightsResult.data ?? [];
   const homeVideos = (homeVideosResult.data ?? []).filter(isRenderableHomeVideo);
+
   const aboutMarkup = aboutHtml
     ? sanitizeRichHtml(aboutHtml, { allowInlineStyles: true, rewriteMediaUrls: true })
     : "";
   const homeContentBottomMarkup = homeContentBottomHtml
-    ? sanitizeRichHtml(homeContentBottomHtml, {
-        allowInlineStyles: true,
-        rewriteMediaUrls: true,
-      })
+    ? sanitizeRichHtml(homeContentBottomHtml, { allowInlineStyles: true, rewriteMediaUrls: true })
     : "";
-  const promoImageSrc = toLegacyWpMediaUrl(resolveMediaUrl(promoImageValue));
+  const promoImageSrc =
+    toLegacyWpMediaUrl(resolveMediaUrl(promoImageValue)) || `${T}/images/banner-ads.jpg`;
   const promoHref = isSafePublicHref(promoHrefValue) ? promoHrefValue.trim() : null;
 
   const jsonLdOrg = serializeJsonLd(buildOrganizationJsonLd(siteName, HOME_ORG_LOGO));
@@ -425,38 +206,90 @@ export default async function HomePage() {
   );
 
   return (
-    <div className="bb-home">
+    <>
+      {/* CSS theme WP nạp từ public/ (không qua Turbopack — file minified làm bundler nghẽn).
+          precedence để Next hoist vào <head> và tự gỡ khi rời route. */}
+      <link
+        rel="stylesheet"
+        href="/wp-content/themes/bigbike/css/wp-theme-home.css?v=2"
+        precedence="default"
+      />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdOrg }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdWeb }} />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: jsonLdLocalBusiness }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdLocalBusiness }} />
 
-      <HeroSlider slides={slides} />
-
-      <HomeCategoryHighlights items={homeHighlights} />
-
-      {(aboutSubtitle || aboutTitle || aboutMarkup) && (
-        <div className="about-bigbike py-10">
-          <div className="mx-auto w-full max-w-[var(--bb-container-xl)] px-[15px] max-md:max-w-none max-md:px-[var(--bb-mobile-page-x)]">
-            {(aboutSubtitle || aboutTitle) && (
-              <div className="text-center mb-[40px] max-md:mb-[24px]">
-                {aboutSubtitle ? (
-                  <p className={cn(sectionEyebrow, "mb-[10px] text-[var(--bb-color-gray-300)]")}>
-                    {aboutSubtitle}
-                  </p>
-                ) : null}
-                {aboutTitle ? (
-                  <h1 className={cn(sectionHeading, "leading-[1.25] min-[768px]:leading-[1.714]")}>
-                    {aboutTitle}
-                  </h1>
-                ) : null}
+      {/* ===== 1. Main banner ===== */}
+      <div id="main-banner">
+        <div className="swiper-container js-home-banner">
+          <div className="swiper-wrapper">
+            {slides.map((s) => (
+              <div className="swiper-slide" key={s.id} {...{ "product-code": s.productCode }}>
+                <a
+                  href={s.href}
+                  style={{ background: `url('${s.src}')`, backgroundSize: "cover" }}
+                  className="-swiper-lazy"
+                >
+                  <span style={{ backgroundImage: `url('${s.src}')` }} />
+                </a>
               </div>
-            )}
+            ))}
+          </div>
+          <div className="swiper-pagination" />
+          <div className="swiper-button-next" />
+          <div className="swiper-button-prev" />
+        </div>
+      </div>
+
+      {/* ===== 2. Category list (3 sản phẩm nổi bật) ===== */}
+      {homeHighlights.length > 0 && (
+        <div className="category-list">
+          <div className="container">
+            <div className="row">
+              {homeHighlights.map((h) => {
+                const img = toLegacyWpMediaUrl(resolveMediaUrl(h.productImageUrl));
+                const href = toProductPath(h.productSlug);
+                return (
+                  <div className="col-md-4" key={h.slot}>
+                    <div className="item">
+                      <div className="item--thumbnail">
+                        <Link href={href}>
+                          {img ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={img} loading="lazy" className="-swiper-lazy lazy" alt={h.productName} />
+                          ) : null}
+                        </Link>
+                      </div>
+                      {h.categoryName ? (
+                        <Link className="item--category" href={toCategoryPath(h.categorySlug)}>
+                          {h.categoryName}
+                        </Link>
+                      ) : null}
+                      <h3 className="item--title">
+                        <Link href={href}>{h.productName}</Link>
+                      </h3>
+                      <Link className="item--btn" href={href}>
+                        Mua ngay <i className="fal fa-chevron-right" />
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== 3. About bigbike ===== */}
+      {(aboutSubtitle || aboutTitle || aboutMarkup) && (
+        <div className="about-bigbike">
+          <div className="container">
+            <div className="block-title text-center mb-40">
+              {aboutSubtitle ? <p className="sub-title">{aboutSubtitle}</p> : null}
+              {aboutTitle ? <h3>{aboutTitle}</h3> : null}
+            </div>
             {aboutMarkup ? (
               <div
-                className="block-content text-center max-w-[970px] mx-auto [&_p]:text-[var(--bb-text-muted)]"
+                className="block-content text-center"
                 dangerouslySetInnerHTML={{ __html: aboutMarkup }}
               />
             ) : null}
@@ -464,153 +297,196 @@ export default async function HomePage() {
         </div>
       )}
 
-      {carouselProducts.length > 0 && (
-        <section
-          className="bb-products-section bb-home-products-parity"
-          aria-labelledby="home-products-heading"
-        >
-          <Container>
-            <div className="flex flex-col items-center justify-center gap-0 m-0 mb-[40px] p-0 [border-bottom:0] text-foreground [text-align:center]">
-              <p className={cn(sectionEyebrow, "mb-[10px] text-[var(--bb-color-gray-300)]")}>
-                Sản phẩm nổi bật
-              </p>
-              <h2
-                id="home-products-heading"
-                className={cn(sectionHeading, "leading-[1.25] min-[768px]:leading-[1.714]")}
-              >
-                Sản phẩm nổi bật tại BigBike
-              </h2>
-            </div>
-            <FeaturedProductsCarousel products={carouselProducts} />
-            {categoriesResult.data.length > 0 && (
-              <div
-                className="grid grid-cols-2 min-[576px]:grid-cols-3 md:grid-cols-4 min-[2560px]:grid-cols-6 gap-0 border-t border-l border-t-border-default border-l-border-default mt-[130px] max-[767px]:mt-[70px] mb-2.5"
-                aria-label="Danh mục sản phẩm"
-              >
-                {categoriesResult.data.map((category) => (
-                  <WpCategoryListItem key={category.id} category={category} />
-                ))}
+      {/* ===== 4. Product list + category grid ===== */}
+      <div className="product-list pt-40 pb-40">
+        <div className="container">
+          <div className="block-title text-center mb-40">
+            <p className="sub-title">SẢN PHẨM NỔI BẬT</p>
+            <h3>SẢN PHẨM NỔI BẬT TẠI BIGBIKE</h3>
+          </div>
+          {carouselProducts.length > 0 && (
+            <div className="product" id="main-product-slide">
+              <div className="swiper-container">
+                <div className="swiper-wrapper">
+                  {carouselProducts.map((p) => (
+                    <WpProductSwipeItem product={p} key={p.id} />
+                  ))}
+                </div>
+                <div className="swiper-button-next" />
+                <div className="swiper-button-prev" />
               </div>
-            )}
-          </Container>
-        </section>
-      )}
-
-      {carouselProducts.length === 0 && categoriesResult.data.length > 0 && (
-        <section className="bb-products-section" aria-label="Danh mục sản phẩm">
-          <Container>
-            <div className="grid grid-cols-2 min-[576px]:grid-cols-3 md:grid-cols-4 min-[2560px]:grid-cols-6 gap-0 border-t border-l border-t-border-default border-l-border-default mt-0 mb-2.5">
-              {categoriesResult.data.map((category) => (
-                <WpCategoryListItem key={category.id} category={category} />
-              ))}
+              <div className="swiper-pagination custom-pagination" />
             </div>
-          </Container>
-        </section>
-      )}
+          )}
 
-      <PromoBanner
-        imageSrc={promoImageSrc}
-        href={promoHref}
-        title={promoTitle}
-        offLabel={promoOff}
-      />
+          {categories.length > 0 && (
+            <div className="product-category-list mb-10">
+              <div className="row">
+                {categories.map((c) => {
+                  const img =
+                    resolveMediaUrl((c.image ?? c.icon)?.url?.trim()) || `${T}/images/Union-2.png`;
+                  return (
+                    <div className="col-6 col-md-3 col-sm-4 item" key={c.id}>
+                      <Link href={toCategoryPath(c.slug)} className="row align-items-center">
+                        <span className="col-12">
+                          <span className="img">
+                            {/* mx-auto: căn giữa lại ảnh — Tailwind preflight ép img thành block
+                                nên text-align:center của theme không còn căn giữa được (WP gốc img inline). */}
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={img} className="lazy mx-auto" alt="" width={1} height={1} />
+                          </span>
+                          <span className="desc">{c.name}</span>
+                          <i className="fal fa-chevron-circle-right" />
+                        </span>
+                      </Link>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
 
+      {/* ===== 5. Banner ads ===== */}
+      <div className="banner-ads pt-60">
+        <div className="container">
+          <div className="row">
+            <div className="col-md-12">
+              <a href={promoHref ?? "#"}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img className="lazy" src={promoImageSrc} alt="" />
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ===== 6. Content carousel (trải nghiệm/review) ===== */}
       {expArticles.length > 0 && (
-        <section className="bb-experience bb-experience--home bg-background text-foreground pt-[100px] max-[1024px]:pt-[72px] max-md:pt-8 pb-0" aria-labelledby="home-exp-heading">
+        <div className="content-carousel pt-100">
           {(expSubtitle || expTitle || expDesc) && (
-            <div className="mx-auto w-full max-w-[var(--bb-container-xl)] px-[15px]">
-              <div className="[text-align:center] pb-10 max-md:pb-4">
-                {expSubtitle ? (
-                  <p className={cn(sectionEyebrow, "mb-3 text-[var(--bb-color-gray-300)]")}>
-                    {expSubtitle}
-                  </p>
-                ) : null}
-                {expTitle ? (
-                  <h2
-                    id="home-exp-heading"
-                    className={sectionHeading}
-                  >
-                    {expTitle}
-                  </h2>
-                ) : null}
+            <div className="container">
+              <div className="block-title text-center pb-40">
+                {expSubtitle ? <p className="sub-title">{expSubtitle}</p> : null}
+                {expTitle ? <h3>{expTitle}</h3> : null}
                 {expDesc ? (
-                  <div className="mx-auto w-full pt-[30px] max-md:pt-4 md:w-2/3">
-                    <p className="text-[var(--bb-color-footer-top)] max-w-full m-0 text-base leading-[1.375] max-md:leading-[1.55]">
-                      {expDesc}
-                    </p>
+                  <div className="row pt-30">
+                    <div className="col-md-8 offset-md-2">
+                      <div className="block-title--content">{expDesc}</div>
+                    </div>
                   </div>
                 ) : null}
               </div>
             </div>
           )}
-          <ExperienceCarousel articles={expArticles} />
-        </section>
+          <div className="container mw-1920">
+            <ExperienceCarousel articles={expArticles} />
+          </div>
+        </div>
       )}
 
+      {/* ===== 7. News ===== */}
       {newsArticles.length > 0 && (
-        <div className="bb-home-news-parity bg-white pb-0 pt-[60px]">
-          <div className="mx-auto w-full max-w-[1200px] px-[15px] min-[1536px]:max-w-[1360px] min-[1920px]:w-[min(100%_-_2_*_var(--bb-page-padding-desktop),100rem)] min-[1920px]:max-w-none min-[2560px]:w-[min(100%_-_2_*_var(--bb-page-padding-desktop),140rem)] max-md:max-w-none max-md:px-[var(--bb-mobile-page-x)]">
-            <div className="px-0 pt-0 pb-[40px] [text-align:center]">
-              <p className={cn(sectionEyebrow, "mb-3 text-[var(--bb-color-gray-300)]")}>Tin tức & cập nhật</p>
-              <h2 className={sectionHeading}>
-                Cập nhật xu hướng cùng BigBike
-              </h2>
+        <div className="news bb-home-news-parity pt-60 pb-60">
+          <div className="container">
+            <div className="block-title text-center pb-40">
+              <p className="sub-title">TIN TỨC MỚI UPDATE</p>
+              <h3>CẬP NHẬT XU HƯỚNG CÙNG BIGBIKE</h3>
             </div>
-            <div>
-              <div className="-mx-[15px] flex flex-wrap max-[575px]:mx-0 max-[575px]:flex-col">
-                {newsArticles.map((article) => (
-                  <WpNewsCard key={article.id} article={article} />
-                ))}
+            <div className="news-list">
+              <div className="row">
+                {newsArticles.map((a) => {
+                  const img = toLegacyWpMediaUrl(resolveMediaUrl(a.coverImage?.url?.trim()));
+                  const href = toArticlePath(a.slug);
+                  const title = safeText(a.title, "");
+                  return (
+                    <div className="col-md-4 col-sm-6" key={a.id}>
+                      <div className="news--item">
+                        <div className="news--item-thumbnail">
+                          <Link className="lazy" href={href}>
+                            {img ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={img} alt={title} className="lazy" />
+                            ) : null}
+                          </Link>
+                        </div>
+                        <div className="news--item-desc">
+                          <div className="news-date">
+                            <p>{formatWpDate(a.publishedAt ?? a.createdAt)}</p>
+                          </div>
+                          <div className="news--item-inside">
+                            <p className="title-post">
+                              <Link href={href}>{title}</Link>
+                            </p>
+                            <p>{resolveWpNewsExcerpt(a)}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
         </div>
       )}
 
+      {/* ===== 8. Videos slide ===== */}
       {homeVideos.length > 0 && (
-        <section className="videos-slide pt-20 pb-0 max-[1024px]:pt-16 max-md:pt-7" aria-labelledby="home-video-heading">
-          {/*
-            Overlay strategy:
-            - Layer 1 (before): solid dark base ở bottom-up để nền không flat
-            - Layer 2 (after):  gradient top-down nhẹ để title area tối hơn, cards nổi
-            Tổng mức tối ~60% — giữ mood mạnh mẽ nhưng sharp hơn black/40 cũ
-          */}
-          <div className="relative bg-[url('/wp/video-bg.jpg')] bg-cover bg-center bg-no-repeat pb-[90px] max-[1024px]:pb-13 max-md:pb-10 before:absolute before:inset-0 before:bg-black/55 before:content-[''] after:absolute after:inset-0 after:bg-gradient-to-b after:from-black/30 after:via-transparent after:to-black/25 after:content-['']">
-            <div className="relative z-[1] mx-auto w-full max-w-[var(--bb-container-xl)] px-[15px]">
-              <div className="text-center text-white pt-[90px] max-[1024px]:pt-12 max-md:pt-9 pb-[70px] max-[1024px]:pb-8 max-md:pb-5">
-                <h2
-                  id="home-video-heading"
-                  className="my-0 mx-auto max-w-[820px] text-white font-body text-[length:var(--bb-text-section-title)] font-semibold leading-[1.12] max-[1024px]:leading-[1.1] max-md:leading-[1.12] tracking-normal uppercase text-balance drop-shadow-[0_2px_12px_rgba(0,0,0,0.6)]"
-                >
-                  {/* Tách thành 2 cụm nghĩa, mỗi cụm không xuống dòng giữa chừng:
-                      desktop lớn cho ra "TRẢI NGHIỆM SẢN PHẨM" / "CÙNG BIGBIKE.VN",
-                      không bao giờ tách "SẢN PHẨM"; viewport hẹp vẫn wrap theo cụm gọn. */}
-                  <span className="whitespace-nowrap">Trải nghiệm sản phẩm</span>{" "}
-                  <span className="whitespace-nowrap">cùng BigBike.vn</span>
-                </h2>
-              </div>
-              <HomeVideoCarousel videos={homeVideos} />
+        <section className="relative overflow-hidden bg-[#111] py-[90px] max-md:py-[60px]">
+          <div
+            aria-hidden
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat [background-image:url('/wp/video-bg.jpg')] [filter:brightness(1.2)]"
+          />
+          <div className="relative z-[1] mx-auto w-full max-w-[var(--bb-container-xl)] px-4 md:px-6">
+            <div className="block-title text-center white pb-40">
+              <h3>TRẢI NGHIỆM SẢN PHẨM CÙNG BIGBIKE.VN</h3>
             </div>
+            <HomeVideoCarousel videos={homeVideos} />
           </div>
         </section>
       )}
 
-      {brandsResult.data.length > 0 && (
-        <div className="partner-slide pt-30 pb-30 max-[1024px]:pt-20 max-[1024px]:pb-20 max-md:pt-8 max-md:pb-6">
-          <BrandCarousel brands={brandsResult.data} />
+      {/* ===== 9. Partner slide (thương hiệu) ===== */}
+      {brands.length > 0 && (
+        <div className="partner-slide pt-120 pb-120">
+          <div className="container">
+            {/* suppressHydrationWarning: home.min.js (Swiper + jQuery) mutates these
+                elements after load — navigation overlays and lazy-load markers cause
+                intentional DOM divergence from server HTML. */}
+            <div className="swiper-container" suppressHydrationWarning>
+              <div className="swiper-wrapper" suppressHydrationWarning>
+                {brands.map((b) => {
+                  const logo = toLegacyWpMediaUrl(resolveMediaUrl(b.logo?.url?.trim()));
+                  return (
+                    <div className="swiper-slide" key={b.id} suppressHydrationWarning>
+                      <Link href={`/brands/${b.slug}`}>
+                        {/* Logo tải trực tiếp — thiếu logo thì dùng placeholder dùng chung,
+                            KHÔNG để vòng xoay swiper-lazy-preloader treo. */}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={logo ?? "/wp/logo-1.png"} className="swiper-lazy" alt={b.name} width={1} height={1} />
+                      </Link>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
+      {/* ===== 10. Content bottom (SEO wyswyg) ===== */}
       {homeContentBottomMarkup ? (
-        <div className="content-bottom wyswyg bb-seo-content">
+        <div className="content-bottom wyswyg">
           <div
-            className="bb-seo-content-body mx-auto w-full max-w-[var(--bb-container-xl)] px-[15px] max-md:max-w-none max-md:px-[var(--bb-mobile-page-x)]"
+            className="container"
             dangerouslySetInnerHTML={{ __html: homeContentBottomMarkup }}
           />
         </div>
       ) : null}
 
       <HomeAnalytics />
-    </div>
+    </>
   );
 }

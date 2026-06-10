@@ -12,16 +12,6 @@ import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 
 type Props = { videos: HomeVideo[] };
 
-function getVisibleVideoSlides(width: number): number {
-  if (width >= 2560) return 7;
-  if (width >= 1920) return 6;
-  if (width >= 1280) return 5;
-  if (width >= 1024) return 4;
-  if (width >= 768)  return 3;
-  if (width >= 480)  return 2;
-  return 1;
-}
-
 function PlayIcon() {
   return (
     <span
@@ -71,7 +61,9 @@ function VideoCard({ video, onPlay }: { video: HomeVideo; onPlay: () => void }) 
             src={thumbSrc}
             alt={safeText(video.thumbnail?.alt, title)}
             fill
-            className="object-cover opacity-90 transition-transform duration-300 group-hover:scale-[1.03]"
+            // !h-full thắng rule WP của trang chủ `body img{height:auto!important}`
+            // (wp-theme-home.css) — nếu không ảnh fill bị ép height:auto và sụp xuống.
+            className="!h-full object-cover opacity-90 transition-transform duration-300 group-hover:scale-[1.03]"
             sizes="(max-width: 479px) calc(100vw - 30px), (max-width: 767px) 48vw, (max-width: 1199px) 32vw, 240px"
             onError={() => setThumbIdx((prev) => prev + 1)}
           />
@@ -99,21 +91,43 @@ function ArrowButton({
   direction,
   onClick,
   label,
+  disabled = false,
 }: {
   direction: "prev" | "next";
   onClick: () => void;
   label: string;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-label={label}
-      className="flex items-center justify-center appearance-none w-10 h-10 bg-transparent border-0 p-0 text-white transition-colors duration-150 hover:text-brand focus-visible:outline-[var(--bb-focus-outline)] focus-visible:outline-offset-2"
+      disabled={disabled}
+      // Inline style để thắng CSS WP/Bootstrap cũ ghi đè <button> trên trang chủ.
+      // Không khung nền: chỉ mũi tên trắng to, dùng drop-shadow để nổi trên mọi nền
+      // (giống nút Play trên thumbnail video).
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: 76,
+        height: 76,
+        flexShrink: 0,
+        padding: 0,
+        background: "transparent",
+        border: "none",
+        color: "#fff",
+        cursor: disabled ? "default" : "pointer",
+        opacity: disabled ? 0.4 : 1,
+        outline: "none",
+        filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.6))",
+      }}
+      className="transition-transform duration-150 hover:!scale-110 focus-visible:outline-[var(--bb-focus-outline)] focus-visible:outline-offset-2"
     >
       {direction === "prev"
-        ? <ChevronLeft aria-hidden="true" className="h-9 w-9 shrink-0" strokeWidth={2} />
-        : <ChevronRight aria-hidden="true" className="h-9 w-9 shrink-0" strokeWidth={2} />
+        ? <ChevronLeft aria-hidden="true" style={{ width: 64, height: 64, flexShrink: 0 }} strokeWidth={2} />
+        : <ChevronRight aria-hidden="true" style={{ width: 64, height: 64, flexShrink: 0 }} strokeWidth={2} />
       }
     </button>
   );
@@ -350,32 +364,44 @@ function VideoModal({
 }
 
 export function HomeVideoCarousel({ videos }: Props) {
-  const [selectedIndex, setSelectedIndex] = useState(0);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  const [visibleSlides, setVisibleSlides] = useState(1);
   const [canScroll, setCanScroll] = useState(videos.length > 1);
+  // Chỉ hiện mũi tên từ 1024px (desktop) trở lên — tablet (768–1023) và mobile không có.
+  // Dùng JS thay cho class responsive Tailwind để không phụ thuộc việc class có được sinh ra.
+  const [isDesktop, setIsDesktop] = useState(true);
+  // Số dots & dot active lấy TRỰC TIẾP từ Swiper (snapGrid = các vị trí cuộn thật),
+  // nên luôn khớp số lần cuộn thực tế thay vì tự tính theo window (vốn lệch với container).
+  const [snapCount, setSnapCount] = useState(0);
+  const [snapIndex, setSnapIndex] = useState(0);
   const swiperRef = useRef<SwiperType | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
 
-  const syncViewportState = useCallback(
-    (_swiper?: SwiperType | null) => {
-      const width = typeof window === "undefined" ? 0 : window.innerWidth;
-      const nextVisibleSlides = getVisibleVideoSlides(width);
-      const nextMaxSlideIndex = Math.max(0, videos.length - nextVisibleSlides);
-      setVisibleSlides(nextVisibleSlides);
-      setCanScroll(videos.length > nextVisibleSlides);
-      setSelectedIndex((prev) => Math.min(prev, nextMaxSlideIndex));
-    },
-    [videos.length],
-  );
+  // Mũi tên chỉ phụ thuộc desktop width, không liên quan layout slide.
+  const syncViewportState = useCallback(() => {
+    const width = typeof window === "undefined" ? 0 : window.innerWidth;
+    setIsDesktop(width >= 1024);
+  }, []);
+
+  // Đồng bộ dots theo trạng thái thật của Swiper.
+  const updateSnap = useCallback((swiper?: SwiperType | null) => {
+    const s = swiper ?? swiperRef.current;
+    if (!s) return;
+    const count = s.snapGrid?.length ?? 0;
+    setSnapCount(count);
+    setSnapIndex(s.snapIndex ?? 0);
+    setCanScroll(count > 1);
+  }, []);
 
   useEffect(() => {
-    syncViewportState(swiperRef.current);
+    syncViewportState();
 
-    const handleResize = () => syncViewportState(swiperRef.current);
+    const handleResize = () => {
+      syncViewportState();
+      updateSnap();
+    };
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, [syncViewportState]);
+  }, [syncViewportState, updateSnap]);
 
   const handleOpen = useCallback((idx: number) => {
     triggerRef.current = document.activeElement as HTMLElement;
@@ -397,48 +423,45 @@ export function HomeVideoCarousel({ videos }: Props) {
 
   if (videos.length === 0) return null;
 
-  const maxSlideIndex = Math.max(0, videos.length - visibleSlides);
-  const dotCount = canScroll ? maxSlideIndex + 1 : 0;
-  const activeDotIndex = Math.min(selectedIndex, maxSlideIndex);
+  // dotCount = số vị trí cuộn thật của Swiper (snapGrid.length); active = snap hiện tại.
+  const dotCount = canScroll ? snapCount : 0;
+  const activeDotIndex = Math.min(snapIndex, Math.max(0, snapCount - 1));
   const paginationDots = Array.from({ length: dotCount }, (_, idx) => idx);
 
-  // Mũi tên hiện từ 768px (tablet trở lên) qua wrapper `hidden md:block` bên dưới;
-  // dưới 768px ẩn mũi tên, ưu tiên swipe. showArrows chỉ quyết định render mũi tên
-  // hay placeholder giữ chỗ (true khi còn đủ video để cuộn).
-  const showArrows = canScroll;
+  // Mũi tên chỉ hiện trên desktop (>=1024px) qua `isDesktop`; tablet/mobile ẩn, ưu tiên swipe.
+  // Khi không đủ video để cuộn (canScroll=false) thì nút hiện mờ (disabled) thay vì biến mất.
 
   return (
     <>
-      {/* Layout: arrows ở hai bên container, không đè lên carousel */}
-      <div className="flex items-center gap-2 md:gap-3 min-[1200px]:gap-4">
-        {/* Prev arrow — chỉ render từ 768px, chiếm không gian cố định để không shift layout */}
-        <div className="hidden md:block shrink-0">
-          {showArrows ? (
+      {/* Layout: arrows đặt tuyệt đối ngoài hai mép carousel (đẩy ra lề bằng inline style) */}
+      <div style={{ position: "relative" }}>
+        {/* Prev arrow — render từ 768px (qua isDesktop); disabled khi không đủ video để cuộn */}
+        {isDesktop && (
+          <div style={{ position: "absolute", top: "50%", left: -72, transform: "translateY(-50%)", zIndex: 2 }}>
             <ArrowButton
               direction="prev"
               onClick={() => swiperRef.current?.slidePrev()}
               label="Video trước"
+              disabled={!canScroll}
             />
-          ) : (
-            <div className="w-10" aria-hidden="true" />
-          )}
-        </div>
+          </div>
+        )}
 
-        <div className="min-w-0 flex-1 overflow-hidden">
+        <div className="min-w-0 overflow-hidden">
           <Swiper
             onSwiper={(s) => {
               swiperRef.current = s;
-              setSelectedIndex(s.realIndex);
-              syncViewportState(s);
+              syncViewportState();
+              updateSnap(s);
             }}
-            onSlideChange={(s) => {
-              setSelectedIndex(s.realIndex);
+            onSnapIndexChange={(s) => {
+              setSnapIndex(s.snapIndex ?? 0);
             }}
             onBreakpoint={(s) => {
-              syncViewportState(s);
+              updateSnap(s);
             }}
             onResize={(s) => {
-              syncViewportState(s);
+              updateSnap(s);
             }}
             loop={false}
             speed={1000}
@@ -461,18 +484,17 @@ export function HomeVideoCarousel({ videos }: Props) {
           </Swiper>
         </div>
 
-        {/* Next arrow — chỉ render từ 768px */}
-        <div className="hidden md:block shrink-0">
-          {showArrows ? (
+        {/* Next arrow — render từ 768px (qua isDesktop); disabled khi không đủ video để cuộn */}
+        {isDesktop && (
+          <div style={{ position: "absolute", top: "50%", right: -72, transform: "translateY(-50%)", zIndex: 2 }}>
             <ArrowButton
               direction="next"
               onClick={() => swiperRef.current?.slideNext()}
               label="Video tiếp"
+              disabled={!canScroll}
             />
-          ) : (
-            <div className="w-10" aria-hidden="true" />
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Dots: hiện khi canScroll và có ≥2 dots */}

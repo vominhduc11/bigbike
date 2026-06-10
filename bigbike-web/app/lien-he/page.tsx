@@ -1,34 +1,19 @@
-﻿import { existsSync } from "node:fs";
-import { join } from "node:path";
 import type { Metadata } from "next";
-import Image from "next/image";
 import { getLocale, getTranslations } from "next-intl/server";
-import { Container } from "@/components/layout/Container";
-import { PageHero } from "@/components/layout/PageHero";
-import { Button } from "@/components/ui/button";
-import { ContactInfoList } from "@/components/ui/ContactInfoList";
-import { ErrorState } from "@/components/ui/ErrorState";
+import { WpStaticShell } from "@/components/wp/WpStaticShell";
 import { getPageBySlug, listPublicSettings } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
-import { bbLink, sectionHeading } from "@/lib/ui-classes";
-import { cn } from "@/lib/utils";
 import { safeText, telHref } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
-import { toHomePath, toPagePath } from "@/lib/utils/routes";
+import { toPagePath } from "@/lib/utils/routes";
 import { pickSetting } from "@/lib/utils/settings";
 
-const PHONE_ASSET = "/wp/contact-phone.png";
-const HERO_BG_CANDIDATES = ["/wp/contact-hero-bg.jpg", "/wp/contact-hero-bg.png"];
+/* eslint-disable @next/next/no-img-element */
 
-function publicAsset(relPath: string): string | null {
-  return existsSync(join(process.cwd(), "public", relPath)) ? relPath : null;
-}
+const T = "/wp-content/themes/bigbike";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const [locale, t] = await Promise.all([
-    getLocale(),
-    getTranslations("StaticPage"),
-  ]);
+  const [locale, t] = await Promise.all([getLocale(), getTranslations("StaticPage")]);
   const pageResult = await getPageBySlug("lien-he", locale);
   const page = pageResult.data;
 
@@ -42,26 +27,14 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function ContactPage() {
   const locale = await getLocale();
-  const [pageResult, settingsResult, t, tBreadcrumb] = await Promise.all([
+  const [pageResult, settingsResult] = await Promise.all([
     getPageBySlug("lien-he", locale),
-    listPublicSettings(),
-    getTranslations("StaticPage"),
-    getTranslations("Breadcrumb"),
+    listPublicSettings(locale),
   ]);
-
-  if (!pageResult.data) {
-    return (
-      <section className="bb-page">
-        <Container>
-          <ErrorState message={pageResult.error?.message ?? t("contactLoadFailed")} />
-        </Container>
-      </section>
-    );
-  }
 
   const page = pageResult.data;
   const settings = settingsResult.data ?? [];
-  const pageTitle = safeText(page.title, t("contactTitle"));
+  const pageTitle = safeText(page?.title, "Liên hệ");
 
   const hotline = pickSetting(settings, ["hotline"]);
   const hotline2 = pickSetting(settings, ["hotline_2"]);
@@ -70,182 +43,156 @@ export default async function ContactPage() {
   const facebookUrl = pickSetting(settings, ["facebook_url"]);
   const mapUrl = pickSetting(settings, ["google_maps_url"]);
 
+  // Map embed: ưu tiên URL nhúng Google Maps trong settings, fallback theo địa chỉ.
   const canEmbedMap = /^https?:\/\/(www\.)?google\.com\/maps[/?#]/.test(mapUrl);
   const fallbackMap = address
     ? `https://www.google.com/maps?q=${encodeURIComponent(address)}&z=17&output=embed`
     : "";
   const mapEmbedSrc = canEmbedMap ? mapUrl : fallbackMap;
-  const directionsHref = address
-    ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`
-    : "";
+  const sanitizedBody = page?.body ? sanitizeRichHtml(page.body) : "";
 
-  const hasPhoneAsset = publicAsset(PHONE_ASSET) !== null;
-  const localHeroBg = HERO_BG_CANDIDATES.map(publicAsset).find(Boolean) ?? null;
-  const heroImageUrl = page.heroImageUrl?.trim() || localHeroBg || undefined;
-  const sanitizedBody = page.body ? sanitizeRichHtml(page.body) : "";
-
+  // page-contact.php: #main-content.contact-page (KHÔNG có .page-title) > .iframe
+  // (map full-width) > .container > .static-page.wyswyg > .row [.information +
+  // .contact-form]. Số điện thoại / địa chỉ / kênh online lấy từ settings.
   return (
-    <>
-      <PageHero
-        variant="contact"
-        title={page.heroTitle ?? pageTitle}
-        imageUrl={heroImageUrl}
-        imageAlt={page.heroImageAlt}
-        breadcrumb={[
-          { label: tBreadcrumb("home"), href: toHomePath() },
-          { label: t("contactBreadcrumb") },
-        ]}
-        illustration={hasPhoneAsset ? { src: PHONE_ASSET } : null}
-      />
+    <WpStaticShell title={pageTitle} breadcrumb={[]} showHero={false} mainClassName="pb-40 contact-page">
+      {mapEmbedSrc ? (
+        <div className="iframe">
+          <iframe
+            title={pageTitle}
+            src={mapEmbedSrc}
+            width="100%"
+            height="375"
+            style={{ border: 0 }}
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            allowFullScreen
+          />
+        </div>
+      ) : null}
 
-      <section className="bb-page">
-        <Container>
-          {sanitizedBody ? (
-            <article
-              className="bb-richtext pt-8"
-              dangerouslySetInnerHTML={{ __html: sanitizedBody }}
-            />
-          ) : null}
-
-          <div className="grid grid-cols-1 items-start gap-10 pb-[60px] pt-8 md:grid-cols-2 md:gap-[60px] 3xl:gap-20 4xl:gap-[100px]">
-            <div className="min-w-0 2xl:max-w-[640px] 4xl:max-w-[760px]">
-              <h2 className={cn(sectionHeading, "mb-6 !text-ui-24")}>
-                {t("contactInfoHeading")}
-              </h2>
-              <ContactInfoList
-                variant="list"
-                entries={[
-                  ...(address
-                    ? [{
-                        icon: (
-                          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><path d="M9 9v.01"/><path d="M9 12v.01"/><path d="M9 15v.01"/><path d="M9 18v.01"/></svg>
-                        ),
-                        label: t("mainStore"),
-                        content: <p className="leading-relaxed text-muted-foreground">{address}</p>,
-                      }]
-                    : []),
-                  ...((hotline || hotline2 || zaloUrl)
-                    ? [{
-                        icon: (
-                          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.86 19.86 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.86 19.86 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                        ),
-                        label: t("hotline"),
-                        content: (
-                          <>
-                            {hotline ? (
-                              <p className="leading-relaxed text-muted-foreground">
-                                <a href={telHref(hotline)} className={bbLink}>
-                                  {hotline}
-                                </a>
-                              </p>
-                            ) : null}
-                            {hotline2 ? (
-                              <p className="leading-relaxed text-muted-foreground">
-                                <a href={telHref(hotline2)} className={bbLink}>
-                                  {hotline2}
-                                </a>
-                              </p>
-                            ) : null}
-                            {zaloUrl ? (
-                              <p className="leading-relaxed text-muted-foreground">
-                                <a
-                                  href={zaloUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className={bbLink}
-                                >
-                                  {t("chatViaZalo")}
-                                </a>
-                              </p>
-                            ) : null}
-                          </>
-                        ),
-                      }]
-                    : []),
-                  ...(facebookUrl
-                    ? [{
-                        icon: (
-                          <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M22 12a10 10 0 1 0-11.56 9.88v-6.99H7.9V12h2.54V9.8c0-2.5 1.49-3.89 3.77-3.89 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.78l-.44 2.89h-2.34v6.99A10 10 0 0 0 22 12z"/></svg>
-                        ),
-                        label: t("facebook"),
-                        content: (
-                          <p className="break-words leading-relaxed text-muted-foreground">
-                            <a
-                              href={facebookUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className={bbLink}
-                            >
-                              {facebookUrl.replace(/^https?:\/\/(www\.)?/, "")}
-                            </a>
-                          </p>
-                        ),
-                      }]
-                    : []),
-                ]}
-              />
-            </div>
-
-            {(mapEmbedSrc || address || hotline) ? (
-              <div className="min-w-0">
-                <h2 className={cn(sectionHeading, "mb-6 !text-ui-24")}>
-                  {t("storeSystemHeading")}
-                </h2>
-                {mapEmbedSrc ? (
-                  <div className="relative h-[420px] w-full border border-border bg-secondary 3xl:h-[520px] 4xl:h-[600px]">
-                    <iframe
-                      title={t("mapTitle")}
-                      src={mapEmbedSrc}
-                      width="100%"
-                      height="100%"
-                      className="block h-full w-full border-0"
-                      loading="lazy"
-                      referrerPolicy="no-referrer-when-downgrade"
-                      allowFullScreen
-                    />
-                    {(address || hotline) ? (
-                      <div className="absolute bottom-4 left-4 right-4 border border-border bg-white p-4 sm:right-auto sm:max-w-[300px] 3xl:max-w-[360px]">
-                        <div className="flex items-center gap-3">
-                          <Image
-                            src="/brand/logo-primary.png"
-                            alt={pageTitle}
-                            width={48}
-                            height={48}
-                            className="h-12 w-12 object-contain"
-                          />
-                          <h3 className="font-body text-h4 font-bold uppercase text-foreground">
-                            {pageTitle}
-                          </h3>
-                        </div>
+      <div className="container">
+        <div className="row">
+          <div className="col-md-12">
+            <div className="static-page wyswyg">
+              <div className="row">
+                <div className="col-md-6">
+                  <div className="information">
+                    <div className="title">
+                      <h1 style={{ fontSize: "24px" }}>{pageTitle}</h1>
+                      {sanitizedBody ? (
+                        <div dangerouslySetInnerHTML={{ __html: sanitizedBody }} />
+                      ) : null}
+                    </div>
+                    <div className="desc">
+                      <ul>
+                        {(hotline || hotline2) ? (
+                          <li className="row">
+                            <div className="icon col">
+                              <img src={`${T}/images/contact-call-icon.png`} alt="Liên hệ" />
+                            </div>
+                            <div className="text col">
+                              <p>Liên hệ với chúng tôi</p>
+                              {hotline ? (
+                                <p>
+                                  <b>
+                                    <a href={telHref(hotline)}>{hotline}</a>
+                                  </b>
+                                </p>
+                              ) : null}
+                              {hotline2 ? (
+                                <p>
+                                  <b>
+                                    <a href={telHref(hotline2)}>{hotline2}</a>
+                                  </b>
+                                </p>
+                              ) : null}
+                            </div>
+                          </li>
+                        ) : null}
                         {address ? (
-                          <p className="mt-2 text-caption leading-relaxed text-muted-foreground">
-                            {address}
-                          </p>
+                          <li className="row">
+                            <div className="icon col">
+                              <img src={`${T}/images/contact-marker-icon.png`} alt="Địa chỉ" />
+                            </div>
+                            <div className="text col">
+                              <p>Cửa hàng Bigbike</p>
+                              <p><b>{address}</b></p>
+                            </div>
+                          </li>
+                        ) : null}
+                        <li className="row">
+                          <div className="icon col">
+                            <img src={`${T}/images/contact-calendar-icon.png`} alt="Giờ làm việc" />
+                          </div>
+                          <div className="text col">
+                            <p>Giờ làm việc</p>
+                            <p><b>T2 - T6: 09h00 - 21h00</b></p>
+                            <p><b>T7 / CN: 09h00 - 18h00</b></p>
+                            <p><b>Lễ / Tết: nghỉ</b></p>
+                          </div>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                <div className="col-md-6">
+                  <div className="contact-form">
+                    <div className="title">
+                      <h3>Liên hệ trực tuyến</h3>
+                      <p>Để được tư vấn nhanh nhất, vui lòng liên hệ với Bigbike qua các kênh dưới đây.</p>
+                    </div>
+                    <div className="webform">
+                      <ul>
+                        {zaloUrl ? (
+                          <li className="row">
+                            <div className="text col">
+                              <p>Zalo</p>
+                              <p>
+                                <b>
+                                  <a href={zaloUrl} target="_blank" rel="noopener noreferrer">
+                                    Chat qua Zalo
+                                  </a>
+                                </b>
+                              </p>
+                            </div>
+                          </li>
+                        ) : null}
+                        {facebookUrl ? (
+                          <li className="row">
+                            <div className="text col">
+                              <p>Facebook</p>
+                              <p>
+                                <b>
+                                  <a href={facebookUrl} target="_blank" rel="noopener noreferrer">
+                                    {facebookUrl.replace(/^https?:\/\/(www\.)?/, "")}
+                                  </a>
+                                </b>
+                              </p>
+                            </div>
+                          </li>
                         ) : null}
                         {hotline ? (
-                          <p className="mt-1 text-caption text-muted-foreground">
-                            {t("hotline")}:{" "}
-                            <a href={telHref(hotline)} className={bbLink}>
-                              {hotline}
-                            </a>
-                          </p>
+                          <li className="row">
+                            <div className="text col">
+                              <p>Hotline</p>
+                              <p>
+                                <b>
+                                  <a href={telHref(hotline)}>{hotline}</a>
+                                </b>
+                              </p>
+                            </div>
+                          </li>
                         ) : null}
-                      </div>
-                    ) : null}
+                      </ul>
+                    </div>
                   </div>
-                ) : null}
-                {directionsHref ? (
-                  <Button asChild variant="primary" className="mt-5 w-full">
-                    <a href={directionsHref} target="_blank" rel="noopener noreferrer">
-                      {t("directions")}
-                    </a>
-                  </Button>
-                ) : null}
+                </div>
               </div>
-            ) : null}
+            </div>
           </div>
-        </Container>
-      </section>
-    </>
+        </div>
+      </div>
+    </WpStaticShell>
   );
 }

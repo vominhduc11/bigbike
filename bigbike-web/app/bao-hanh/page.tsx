@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
-import { PageHero } from "@/components/layout/PageHero";
-import { listPublicSettings } from "@/lib/api/public-api";
+import { WpStaticShell } from "@/components/wp/WpStaticShell";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
-import { readDefaultHeroAssets } from "@/lib/utils/page-hero";
 import { toHomePath } from "@/lib/utils/routes";
 import { WarrantyContent } from "./WarrantyContent";
 
@@ -18,25 +16,22 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function WarrantyLookupPage() {
-  const [t, tBreadcrumb, settingsResult] = await Promise.all([
+  const [t, tBreadcrumb] = await Promise.all([
     getTranslations("Warranty"),
     getTranslations("Breadcrumb"),
-    listPublicSettings(),
   ]);
-  const defaultHero = readDefaultHeroAssets(settingsResult.data ?? []);
 
+  // Khung WP page.php: banner + breadcrumb; bên trong là công cụ tra cứu bảo hành
+  // (tự mang Container riêng nên đặt thẳng trong #main-content).
   return (
-    <>
-      <PageHero
-        title={t("heading")}
-        breadcrumb={[
-          { label: tBreadcrumb("home"), href: toHomePath() },
-          { label: t("heading") },
-        ]}
-        defaultBgUrl={defaultHero.defaultBgUrl}
-        defaultIllustrationUrl={defaultHero.defaultIllustrationUrl}
-      />
+    <WpStaticShell
+      title={t("heading")}
+      breadcrumb={[
+        { label: tBreadcrumb("home"), href: toHomePath() },
+        { label: t("heading") },
+      ]}
+    >
       <WarrantyContent />
-    </>
+    </WpStaticShell>
   );
 }

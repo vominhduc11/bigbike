@@ -1,15 +1,16 @@
-﻿import Link from "next/link";
+import Link from "next/link";
+import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
-import { Container } from "@/components/layout/Container";
-import { cn } from "@/lib/utils";
-import { bbCard, bbCardContent, bbLink, bbSection, sectionPad } from "@/lib/ui-classes";
-import { PageHero } from "@/components/layout/PageHero";
-import { ErrorState } from "@/components/ui/ErrorState";
-import { getPageBySlug, getPublicMenu, listPublicSettings } from "@/lib/api/public-api";
-import { readDefaultHeroAssets } from "@/lib/utils/page-hero";
-import { formatDate, safeText } from "@/lib/utils/format";
-import { sanitizeRichHtml } from "@/lib/utils/html";
+import { WpStaticShell } from "@/components/wp/WpStaticShell";
+import type { WpStaticSidebarItem } from "@/components/wp/WpStaticSidebar";
+import { WpStaticSidebarLayout } from "@/components/wp/WpStaticSidebarLayout";
+import { getPageBySlug, getPublicMenu } from "@/lib/api/public-api";
+import { safeText } from "@/lib/utils/format";
+import { normalizeMenuUrl } from "@/lib/utils/nav";
 import { toHomePath } from "@/lib/utils/routes";
+
+const GUIDE_HERO_BG = "/wp-content/themes/bigbike/images/policy1.png";
+const GUIDE_HERO_ILLUSTRATION = "/wp-content/themes/bigbike/images/policy.png";
 
 type GuidePageProps = {
   subSegments?: string[];
@@ -43,13 +44,6 @@ const GUIDE_ROUTE_MAP: Record<string, GuideRoute> = {
   },
 };
 
-function normalizeMenuUrl(url: string): string {
-  if (!url) {
-    return "/";
-  }
-  return url.startsWith("/") ? url : `/${url}`;
-}
-
 function buildCurrentPath(subSegments?: string[]): string {
   if (!subSegments || subSegments.length === 0) {
     return "/huong-dan/";
@@ -82,127 +76,115 @@ export function resolveGuideRoute(subSegments?: string[]): GuideRoute {
   };
 }
 
+/**
+ * Sidebar .static-navigation cho nhóm Hướng dẫn — port từ menu theme_location
+ * "guide" của page-guide.php. Khi menu chưa cấu hình, fall back về các route
+ * hướng dẫn tĩnh đã biết để sidebar không rỗng.
+ */
+function buildGuideSidebar(
+  menuItems: { id: string | number; url: string; label: string }[],
+  currentPath: string,
+  fallbackLabel: (route: GuideRoute) => string,
+  menuFallback: string,
+): WpStaticSidebarItem[] {
+  if (menuItems.length > 0) {
+    return menuItems.map((item) => {
+      const href = normalizeMenuUrl(item.url);
+      return {
+        label: safeText(item.label, menuFallback),
+        href,
+        current: href === currentPath || href === `${currentPath}index.html`,
+      };
+    });
+  }
+  return Object.values(GUIDE_ROUTE_MAP).map((route) => ({
+    label: fallbackLabel(route),
+    href: route.path,
+    current: route.path === currentPath,
+  }));
+}
+
 export async function GuidePage({ subSegments }: GuidePageProps) {
-  const [t, tBreadcrumb, settingsResult] = await Promise.all([
+  const [t, tBreadcrumb, locale] = await Promise.all([
     getTranslations("Guide"),
     getTranslations("Breadcrumb"),
-    listPublicSettings(),
+    getLocale(),
   ]);
-  const defaultHero = readDefaultHeroAssets(settingsResult.data ?? []);
   const isRoot = !subSegments || subSegments.length === 0;
+  const route = resolveGuideRoute(subSegments);
+  const currentPath = route.path;
 
-  // Root landing: static index without CMS dependency (CMS page "huong-dan" may not exist)
+  const menuResult = await getPublicMenu("guide", locale);
+  const menuItems = menuResult.data?.items ?? [];
+  const sidebarItems = buildGuideSidebar(
+    menuItems,
+    currentPath,
+    (r) => t(r.titleKey),
+    t("menuFallback"),
+  );
+
+  // Root landing: CMS page "huong-dan" có thể không tồn tại → dựng lưới index các
+  // bài hướng dẫn thay cho the_content, vẫn nằm trong khung WP + sidebar.
   if (isRoot) {
     return (
-      <>
-        <PageHero
-          title={t("heroTitle")}
-          defaultBgUrl={defaultHero.defaultBgUrl}
-          defaultIllustrationUrl={defaultHero.defaultIllustrationUrl}
-          breadcrumb={[
-            { label: tBreadcrumb("home"), href: toHomePath() },
-            { label: t("breadcrumb") },
-          ]}
-        />
-        <section className="bb-page">
-        <Container className={sectionPad}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 xl:gap-6 2xl:gap-8">
+      <WpStaticShell
+        title={t("heroTitle")}
+        heroBgUrl={GUIDE_HERO_BG}
+        heroIllustrationUrl={GUIDE_HERO_ILLUSTRATION}
+        breadcrumb={[
+          { label: tBreadcrumb("home"), href: toHomePath() },
+          { label: t("breadcrumb") },
+        ]}
+      >
+        <WpStaticSidebarLayout sidebarItems={sidebarItems} sidebarEmptyLabel={t("emptyMenu")}>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:gap-6">
             {Object.values(GUIDE_ROUTE_MAP).map((guide) => (
               <Link
                 key={guide.pageSlug}
                 href={guide.path}
-                className="group block bg-card border border-border p-6 no-underline text-inherit transition-colors duration-200 hover:border-brand"
+                className="group block border border-neutral-200 bg-white p-6 no-underline transition-colors hover:border-neutral-900"
               >
-                <h2 className="font-body text-h4 uppercase tracking-wide m-0 mb-2 leading-title transition-colors duration-200 group-hover:text-brand">
+                <h2 className="m-0 mb-2 text-lg font-semibold uppercase tracking-wide text-neutral-900">
                   {t(guide.titleKey)}
                 </h2>
-                <p className="text-caption text-muted-foreground m-0 leading-relaxed">{t(guide.descriptionKey)}</p>
+                <p className="m-0 text-sm leading-relaxed text-neutral-500">
+                  {t(guide.descriptionKey)}
+                </p>
               </Link>
             ))}
           </div>
-        </Container>
-        </section>
-      </>
+        </WpStaticSidebarLayout>
+      </WpStaticShell>
     );
   }
 
-  const route = resolveGuideRoute(subSegments);
-  const locale = await getLocale();
-  const [pageResult, menuResult] = await Promise.all([
-    getPageBySlug(route.pageSlug, locale),
-    getPublicMenu("guide", locale),
-  ]);
-
+  const pageResult = await getPageBySlug(route.pageSlug, locale);
+  // WP trả 404 khi page hướng dẫn không tồn tại.
   if (!pageResult.data) {
-    return (
-      <section className="bb-page">
-        <Container>
-          <ErrorState message={pageResult.error?.message ?? t("loadFailed")} />
-        </Container>
-      </section>
-    );
+    notFound();
   }
 
   const page = pageResult.data;
-  const currentPath = route.path;
-  const menuItems = menuResult.data?.items ?? [];
   const pageTitle = safeText(page.title, t(route.titleKey));
 
+  // page-guide.php: .page-title + #main-content > .container > .row
+  // > [.col-md-3 sidebar] + [.col-md-9 > .static-page.wyswyg].
   return (
-    <>
-      <PageHero
-        imageUrl={page.heroImageUrl}
-        imageAlt={page.heroImageAlt}
-        title={page.heroTitle ?? pageTitle}
-        defaultBgUrl={defaultHero.defaultBgUrl}
-        defaultIllustrationUrl={defaultHero.defaultIllustrationUrl}
-        breadcrumb={[
-          { label: tBreadcrumb("home"), href: toHomePath() },
-          { label: t("breadcrumb"), href: "/huong-dan/" },
-          { label: pageTitle },
-        ]}
+    <WpStaticShell
+      title={page.heroTitle ?? pageTitle}
+      heroBgUrl={page.heroImageUrl ?? GUIDE_HERO_BG}
+      heroIllustrationUrl={GUIDE_HERO_ILLUSTRATION}
+      breadcrumb={[
+        { label: tBreadcrumb("home"), href: toHomePath() },
+        { label: t("breadcrumb"), href: "/huong-dan/" },
+        { label: pageTitle },
+      ]}
+    >
+      <WpStaticSidebarLayout
+        sidebarItems={sidebarItems}
+        sidebarEmptyLabel={t("emptyMenu")}
+        body={page.body}
       />
-      <section className="bb-page">
-        <Container>
-          <div className={cn("bb-detail-layout", bbSection)}>
-            <div className={cn(bbCard, bbCardContent, "md:order-2")}>
-              <article
-                className="bb-richtext"
-                dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(page.body) }}
-              />
-              <p className="bb-updated-date">{t("updatedAt", { date: formatDate(page.updatedAt) })}</p>
-            </div>
-
-            <aside className="bb-sidebar-grid md:order-1">
-              <div className={cn(bbCard, bbCardContent)}>
-                <h2 className="bb-sidebar-heading">{t("sidebarTitle")}</h2>
-                {menuResult.error ? (
-                  <p className="text-sm text-destructive px-2 py-1.5">{menuResult.error.message}</p>
-                ) : menuItems.length === 0 ? (
-                  <p className="text-muted-foreground text-sm">{t("emptyMenu")}</p>
-                ) : (
-                  <nav className="bb-nav-links">
-                    {menuItems.map((item) => {
-                      const href = normalizeMenuUrl(item.url);
-                      const active = href === currentPath || href === `${currentPath}index.html`;
-                      return (
-                        <Link
-                          key={item.id}
-                          href={href}
-                          className={bbLink}
-                          aria-current={active ? "page" : undefined}
-                        >
-                          {safeText(item.label, t("menuFallback"))}
-                        </Link>
-                      );
-                    })}
-                  </nav>
-                )}
-              </div>
-            </aside>
-          </div>
-        </Container>
-      </section>
-    </>
+    </WpStaticShell>
   );
 }

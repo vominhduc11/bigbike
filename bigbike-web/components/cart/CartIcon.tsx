@@ -25,7 +25,7 @@ export function CartIcon() {
   return (
     <Link
       href={toCartPath()}
-      className={cn(iconBtn, "relative hidden md:flex")}
+      className={cn(iconBtn, "relative max-md:hidden")}
       aria-label={t("iconAria")}
       onClick={closePanel}
     >

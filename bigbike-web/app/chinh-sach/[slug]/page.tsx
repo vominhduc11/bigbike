@@ -1,16 +1,13 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
-import { PageHero } from "@/components/layout/PageHero";
-import { PolicySidebar } from "@/components/layout/PolicySidebar";
-import { ErrorState } from "@/components/ui/ErrorState";
-import { getPageBySlug, listPublicSettings } from "@/lib/api/public-api";
-import { readDefaultHeroAssets } from "@/lib/utils/page-hero";
+import { WpStaticShell } from "@/components/wp/WpStaticShell";
+import type { WpStaticSidebarItem } from "@/components/wp/WpStaticSidebar";
+import { WpStaticSidebarLayout } from "@/components/wp/WpStaticSidebarLayout";
+import { getPageBySlug } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
-import { formatDate, safeText } from "@/lib/utils/format";
-import { sanitizeRichHtml } from "@/lib/utils/html";
+import { safeText } from "@/lib/utils/format";
 import { toHomePath } from "@/lib/utils/routes";
-import { Container } from "@/components/layout/Container";
 
 // Map URL slug → backend page slug
 const POLICY_SLUG_MAP: Record<string, string> = {
@@ -72,57 +69,36 @@ export default async function PolicyPage({ params }: Props) {
   if (!backendSlug) notFound();
 
   const locale = await getLocale();
-  const [result, settingsResult] = await Promise.all([
-    getPageBySlug(backendSlug, locale),
-    listPublicSettings(),
-  ]);
-  const defaultHero = readDefaultHeroAssets(settingsResult.data ?? []);
-  if (!result.data && result.error?.status === 404) {
-    notFound();
-  }
+  const result = await getPageBySlug(backendSlug, locale);
+  // WP trả 404 khi page không tồn tại.
   if (!result.data) {
-    return (
-      <section className="bb-page">
-        <Container>
-          <ErrorState message={result.error?.message ?? t("loadFailed")} />
-        </Container>
-      </section>
-    );
+    notFound();
   }
 
   const page = result.data;
   const meta = POLICY_META_KEYS[slug];
   const pageTitle = safeText(page.title, meta ? t(meta.title) : t("policy.title"));
 
+  // Sidebar .static-navigation: 4 nhóm chính sách, mục đang xem mang class "current".
+  const sidebarItems: WpStaticSidebarItem[] = Object.keys(POLICY_SLUG_MAP).map((key) => ({
+    label: t(POLICY_META_KEYS[key].title),
+    href: `/chinh-sach/${key}`,
+    current: key === slug,
+  }));
+
+  // page-static.php: .page-title + #main-content > .container > .row
+  // > [.col-md-3 sidebar] + [.col-md-9 > .static-page.wyswyg].
   return (
-    <>
-      {/* Hero render ngoài .bb-page để rule global `.bb-page h1` không ghi đè màu tiêu đề. */}
-      <PageHero
-        imageUrl={page.heroImageUrl}
-        imageAlt={page.heroImageAlt}
-        title={page.heroTitle ?? pageTitle}
-        defaultBgUrl={defaultHero.defaultBgUrl}
-        defaultIllustrationUrl={defaultHero.defaultIllustrationUrl}
-        breadcrumb={[
-          { label: tBreadcrumb("home"), href: toHomePath() },
-          { label: t("policy.title") },
-          { label: pageTitle },
-        ]}
-      />
-      <section className="bb-page">
-        <Container className="grid grid-cols-1 gap-[30px] pt-10 pb-[60px] items-start md:grid-cols-[3fr_9fr] xl:gap-[48px] xl:pt-12 xl:pb-[80px]">
-          <PolicySidebar activeHref={`/chinh-sach/${slug}`} title={t("policy.sidebarTitle")} />
-          <div className="min-w-0">
-            <article
-              className="bb-richtext"
-              dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(page.body) }}
-            />
-            <p className="text-muted-foreground text-caption text-right mb-10">
-              {t("updatedAt", { date: formatDate(page.updatedAt) })}
-            </p>
-          </div>
-        </Container>
-      </section>
-    </>
+    <WpStaticShell
+      title={page.heroTitle ?? pageTitle}
+      heroBgUrl={page.heroImageUrl}
+      breadcrumb={[
+        { label: tBreadcrumb("home"), href: toHomePath() },
+        { label: t("policy.title") },
+        { label: pageTitle },
+      ]}
+    >
+      <WpStaticSidebarLayout sidebarItems={sidebarItems} body={page.body} />
+    </WpStaticShell>
   );
 }

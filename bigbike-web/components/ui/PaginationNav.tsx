@@ -53,10 +53,10 @@ export function PaginationNav({ page, totalPages, baseHref = "", variant = "defa
     const itemCls = "inline-block px-2 text-ui-24 font-semibold";
     const linkBase =
       "inline-flex items-center justify-center px-2.5 py-[5px] text-ui-24 leading-[1.2] no-underline";
-    const iconCls = "text-ui-22 leading-none";
+    // WP-parity: căn trái trên mobile (WP `.woocommerce-pagination` mobile), phải ở desktop.
     return (
-      <nav className="m-0 pb-10 pt-5 text-center md:text-right" aria-label={t("paginationAria")}>
-        <ul className="m-0 w-full list-none p-0">
+      <nav className="m-0 pb-10 pt-5 text-left md:text-right" aria-label={t("paginationAria")}>
+        <ul className="m-0 w-full list-none whitespace-nowrap p-0">
           {page > 1 && (
             <li className={itemCls}>
               <Link
@@ -64,7 +64,7 @@ export function PaginationNav({ page, totalPages, baseHref = "", variant = "defa
                 className={`${linkBase} text-black hover:text-brand`}
                 aria-label={t("previousPage")}
               >
-                <i className={`fal fa-angle-left ${iconCls}`} aria-hidden="true" />
+                <ChevronLeft className="h-[1.375rem] w-[1.375rem]" strokeWidth={1.5} aria-hidden="true" />
               </Link>
             </li>
           )}
@@ -88,7 +88,7 @@ export function PaginationNav({ page, totalPages, baseHref = "", variant = "defa
                 className={`${linkBase} text-black hover:text-brand`}
                 aria-label={t("nextPage")}
               >
-                <i className={`fal fa-angle-right ${iconCls}`} aria-hidden="true" />
+                <ChevronRight className="h-[1.375rem] w-[1.375rem]" strokeWidth={1.5} aria-hidden="true" />
               </Link>
             </li>
           )}

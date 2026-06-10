@@ -144,7 +144,7 @@ function MegaSidebar({
   return (
     <nav
       aria-label="Danh mục sản phẩm"
-      className="w-52 shrink-0 border-r border-border bg-[#f9f9f9] py-2 xl:w-60 3xl:w-64 4xl:w-72"
+      className="w-64 shrink-0 border-r border-border bg-[#f9f9f9] py-2 xl:w-72 3xl:w-80 4xl:w-80"
     >
       <ul className="m-0 list-none p-0">
         {groups.map((group) => {
@@ -164,6 +164,7 @@ function MegaSidebar({
                   target={group.openInNewTab ? "_blank" : undefined}
                   rel={group.openInNewTab ? "noreferrer" : undefined}
                   onClick={onItemClick}
+                  title={group.label}
                 >
                   {group.iconUrl && (
                     <span
@@ -175,7 +176,9 @@ function MegaSidebar({
                       aria-hidden="true"
                     />
                   )}
-                  <span className="min-w-0 flex-1">{group.label}</span>
+                  {/* Hiển thị đủ tên danh mục (không cắt …) — cột rộng + leading-snug
+                      để tên dài vẫn đọc gọn trong ~2 dòng. */}
+                  <span className="min-w-0 flex-1 leading-snug">{group.label}</span>
                 </Link>
               </li>
             );
@@ -194,6 +197,7 @@ function MegaSidebar({
                 onMouseEnter={() => onActivate(group.id)}
                 onFocus={() => onActivate(group.id)}
                 aria-expanded={isActive}
+                title={group.label}
               >
                 {group.iconUrl && (
                   <span
@@ -205,7 +209,7 @@ function MegaSidebar({
                     aria-hidden="true"
                   />
                 )}
-                <span className="min-w-0 flex-1 text-left">{group.label}</span>
+                <span className="min-w-0 flex-1 text-left leading-snug">{group.label}</span>
                 <ChevronRight
                   size={13}
                   strokeWidth={2.5}
@@ -228,7 +232,7 @@ function MegaSidebar({
 // Container: owns activeGroupId, renders sidebar + all panels side-by-side.
 // Wrapped by the existing [data-dropdown] / is-visible animation mechanism.
 
-function MegaMenu({
+export function MegaMenu({
   id,
   node,
   visible,

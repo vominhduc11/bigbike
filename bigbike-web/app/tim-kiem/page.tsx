@@ -1,26 +1,39 @@
 import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
-import { ProductCard } from "@/components/catalog/ProductCard";
-import { ProductArchiveHero } from "@/components/catalog/ProductArchiveHero";
-import { PaginationNav } from "@/components/ui/PaginationNav";
-import { listProducts } from "@/lib/api/public-api";
+import { WpCategoryHero, type WpCategoryCrumb } from "@/components/wp/WpCategoryHero";
+import { WpCategorySidebar } from "@/components/wp/WpCategorySidebar";
+import { WpCatalogResults } from "@/components/wp/WpCatalogResults";
+import {
+  getCatalogFacets,
+  listBrands,
+  listCategories,
+  listProducts,
+  listPublicSettings,
+} from "@/lib/api/public-api";
+import { DEFAULT_WP_ORDERBY } from "@/lib/utils/catalog-sort";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
-import { buildQueryString, parsePositiveIntParam, parseTextParam, readSearchParamAlias } from "@/lib/utils/query";
+import { resolveMediaUrl, toLegacyWpMediaUrl } from "@/lib/utils/format";
+import { readDefaultHeroAssets, readHeroSettings } from "@/lib/utils/page-hero";
 import { toHomePath } from "@/lib/utils/routes";
+import { parseCatalogListParams } from "@/lib/utils/catalog-list-params";
+import { parseTextParam, readSearchParamAlias } from "@/lib/utils/query";
 
 const SEARCH_PATH = "/tim-kiem/";
-const DEFAULT_PAGE_SIZE = 10;
 
 type SearchPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
 export async function generateMetadata({ searchParams }: SearchPageProps): Promise<Metadata> {
-  const [params, t] = await Promise.all([searchParams, getTranslations("Search")]);
-  const q = readSearchParamAlias(params, "s", "q");
+  const [params, tCatalog, tSearch] = await Promise.all([
+    searchParams,
+    getTranslations("Catalog"),
+    getTranslations("Search"),
+  ]);
+  const q = parseTextParam(readSearchParamAlias(params, "s", "q"), 100).value?.trim();
   return buildPublicMetadata({
-    title: q ? `${q} - Bigbike.vn` : t("title"),
-    description: t("metaDescription"),
+    title: q ? tCatalog("searchResult", { query: q }) : tSearch("title"),
+    description: tSearch("metaDescription"),
     canonicalPath: SEARCH_PATH,
     noIndex: true,
     ogType: "article",
@@ -28,101 +41,125 @@ export async function generateMetadata({ searchParams }: SearchPageProps): Promi
 }
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
-  const [params, t, tBreadcrumb] = await Promise.all([
-    searchParams,
+  const params = await searchParams;
+  const [tCatalog, tSearch] = await Promise.all([
+    getTranslations("Catalog"),
     getTranslations("Search"),
-    getTranslations("Breadcrumb"),
   ]);
-  const qParsed = parseTextParam(readSearchParamAlias(params, "s", "q"), 200);
-  const pageParsed = parsePositiveIntParam(readSearchParamAlias(params, "paged", "page"), {
-    defaultValue: 1,
-    min: 1,
-    max: 999,
-    field: "paged",
-  });
 
-  const query = qParsed.value?.trim() ?? "";
-  const heroTitle = query ? `Kết quả tìm kiếm: “${query}”` : t("title");
-  const page = pageParsed.value;
+  const catalog = parseCatalogListParams(params, {
+    includeCategoryParam: true,
+    queryParamKeys: ["s", "q"],
+  });
+  const { filters, validationErrors, orderbyCurrent } = catalog;
+
+  const query = filters.q?.trim() ?? "";
+  const hasQuery = query.length > 0 && validationErrors.length === 0;
+  const heroTitle = query ? tCatalog("searchResult", { query }) : tSearch("title");
+
+  const locale = await getLocale();
+  const [settingsResult, brandsResult, categoriesResult] =
+    await Promise.all([
+      listPublicSettings(locale),
+      listBrands({ page: 1, size: 100, sort: "name:asc", lang: locale }),
+      listCategories({ page: 1, size: 100, sort: "sortOrder:asc", lang: locale }),
+    ]);
+
+  // Tái dùng đúng hero của trang sản phẩm để trang tìm kiếm trông cùng một archive.
+  const heroSettings = readHeroSettings(settingsResult.data ?? [], "hero_products");
+  const defaultHero = readDefaultHeroAssets(settingsResult.data ?? []);
+  const heroBgUrl = toLegacyWpMediaUrl(
+    resolveMediaUrl(heroSettings.imageUrl?.trim()) || defaultHero.defaultBgUrl?.trim(),
+  );
+  const heroIllustrationUrl = toLegacyWpMediaUrl(
+    resolveMediaUrl(defaultHero.defaultIllustrationUrl?.trim()),
+  );
+  const heroBreadcrumb: WpCategoryCrumb[] = [
+    { label: "Bigbike.vn", href: toHomePath() },
+    { label: heroTitle },
+  ];
+
+  // Chỉ truy vấn sản phẩm/facet khi có từ khoá hợp lệ — tránh liệt kê toàn bộ
+  // sản phẩm cho lần tìm kiếm rỗng.
+  const [result, facetsResult] = hasQuery
+    ? await Promise.all([
+        listProducts({
+          page: catalog.page,
+          size: catalog.size,
+          sort: catalog.productSort,
+          category: filters.category,
+          brand: filters.brand,
+          q: filters.q,
+          filterColor: filters.color,
+          minPrice: filters.minPrice,
+          maxPrice: filters.maxPrice,
+          lang: locale,
+        }),
+        getCatalogFacets({ category: filters.category, q: filters.q, lang: locale }),
+      ])
+    : [null, null];
+
+  const products = result?.data ?? [];
+  const pagination = result?.pagination;
+  const filterCategories = (categoriesResult.data ?? []).filter((c) => c.isVisible);
+
+  const paginationBaseHref = catalog.buildPaginationHref(SEARCH_PATH);
+
+  const notice =
+    validationErrors.length > 0
+      ? validationErrors.join(" ")
+      : !hasQuery
+        ? tSearch("emptyTitle")
+        : result?.error && products.length === 0
+          ? result.error.message
+          : products.length === 0
+            ? tSearch("noResultTitle", { query })
+            : null;
 
   return (
-    <div className="bb-product-archive bb-search-results-page search search-results">
-      <ProductArchiveHero
-        title={heroTitle}
-        breadcrumb={[
-          { label: tBreadcrumb("home"), href: toHomePath() },
-          { label: heroTitle },
-        ]}
+    <>
+      <link
+        rel="stylesheet"
+        href="/wp-content/themes/bigbike/css/wp-theme-category.css?v=2"
+        precedence="default"
       />
 
-      <div id="main-content" className="page_search bb-search-main">
-        <div className="container bb-wp-container">
-          <div className="row bb-wp-row bb-search-row">
-            <div className="bb-search-content">
-              <div className="product-list pb-40">
-                <div className="container bb-search-inner-container">
-                  <div className="product-list-filter headroom bb-search-toolbar">
-                    <div className="row align-items-center bb-wp-row">
-                      <div className="woocommerce-notices-wrapper" />
-                    </div>
-                  </div>
-                  <div className="product-count" />
-                  <div className="product">
-                    {query.length === 0 || qParsed.error || pageParsed.error ? (
-                      <p className="woocommerce-info">
-                        {qParsed.error || pageParsed.error || "Không tìm thấy sản phẩm nào khớp với lựa chọn của bạn."}
-                      </p>
-                    ) : (
-                      <SearchResults query={query} page={page} />
-                    )}
-                  </div>
-                </div>
+      <div className="archive post-type-archive-product">
+        <WpCategoryHero
+          title={heroTitle}
+          breadcrumb={heroBreadcrumb}
+          bgUrl={heroBgUrl}
+          illustrationUrl={heroIllustrationUrl}
+          illustrationAlt={heroSettings.imageAlt ?? heroTitle}
+        />
+
+        <div id="main-content">
+          <div className="container">
+            <div className="row">
+              <div className="col-md-3">
+                <WpCategorySidebar
+                  brands={brandsResult.data}
+                  categories={filterCategories}
+                  facets={facetsResult?.data}
+                  current={catalog.currentFilters}
+                  resetHref={SEARCH_PATH}
+                  hiddenParams={{
+                    orderby: orderbyCurrent !== DEFAULT_WP_ORDERBY ? orderbyCurrent : undefined,
+                  }}
+                />
               </div>
+
+              <WpCatalogResults
+                orderbyCurrent={orderbyCurrent}
+                pagination={pagination}
+                products={products}
+                notice={notice}
+                paginationBaseHref={paginationBaseHref}
+              />
             </div>
           </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-async function SearchResults({ query, page }: { query: string; page: number }) {
-  const locale = await getLocale();
-  const result = await listProducts({
-    page,
-    size: DEFAULT_PAGE_SIZE,
-    q: query,
-    lang: locale,
-  });
-
-  if (result.error && result.data.length === 0) {
-    return <p className="woocommerce-info">{result.error.message}</p>;
-  }
-
-  if (result.data.length === 0) {
-    return <p className="woocommerce-info">Không tìm thấy sản phẩm nào khớp với lựa chọn của bạn.</p>;
-  }
-
-  const pagination = result.pagination;
-
-  return (
-    <>
-      <div className="row bb-wp-row bb-search-product-row">
-        {result.data.map((product) => (
-          <div key={product.id} className="col-md-3 col-6 bb-wp-col-md-3 bb-wp-col-6 bb-search-product-col">
-            <ProductCard product={product} variant="archive" />
-          </div>
-        ))}
-      </div>
-
-      {pagination ? (
-        <PaginationNav
-          page={pagination.page}
-          totalPages={pagination.totalPages}
-          baseHref={`${SEARCH_PATH}${buildQueryString({ s: query })}`}
-          variant="archive"
-        />
-      ) : null}
     </>
   );
 }

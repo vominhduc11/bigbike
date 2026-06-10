@@ -1,5 +1,5 @@
-import { BrandDetailSkeleton } from "@/components/ui/Skeletons";
+import { CatalogSkeleton } from "@/components/ui/Skeletons";
 
 export default function BrandDetailLoading() {
-  return <BrandDetailSkeleton />;
+  return <CatalogSkeleton withHero />;
 }

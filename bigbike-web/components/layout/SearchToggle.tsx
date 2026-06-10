@@ -45,7 +45,7 @@ const resultsLabel =
 const mFocusRing =
   "focus-visible:[outline:var(--bb-focus-outline)] focus-visible:[outline-offset:2px]";
 const mBody =
-  "hidden max-md:block flex-none min-h-0 overflow-y-auto bg-background px-6 pt-[18px] pb-[calc(24px_+_env(safe-area-inset-bottom))] text-foreground [-webkit-overflow-scrolling:touch]";
+  "block md:hidden flex-none min-h-0 overflow-y-auto bg-background px-6 pt-[18px] pb-[calc(24px_+_env(safe-area-inset-bottom))] text-foreground [-webkit-overflow-scrolling:touch]";
 const mSection = "mb-[22px]";
 const mLabel =
   "m-0 mb-2 font-cta text-ui-11 font-semibold uppercase tracking-normal text-muted-foreground";
@@ -145,9 +145,15 @@ type ArticleSuggestion = {
 
 type SearchToggleProps = {
   popularCategories?: PopularCategory[];
+  // Khi false: chỉ dựng panel/overlay, KHÔNG render nút trigger riêng. Dùng cho
+  // route WP — nút bấm là WpSearchIcon trong header, SearchToggle chỉ là "panel host".
+  renderTrigger?: boolean;
 };
 
-export function SearchToggle({ popularCategories: categoriesFromApi = [] }: SearchToggleProps) {
+export function SearchToggle({
+  popularCategories: categoriesFromApi = [],
+  renderTrigger = true,
+}: SearchToggleProps) {
   const t = useTranslations("Search");
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -242,22 +248,36 @@ export function SearchToggle({ popularCategories: categoriesFromApi = [] }: Sear
   }
 
   return (
-    <div className="relative max-md:static max-md:order-2 max-md:ml-auto">
-      <Button
-        variant="ghost"
-        className={cn(
-          iconBtn,
-          "bb-header-search-trigger hidden md:inline-flex",
-          open && "is-active",
-        )}
-        aria-label={t("toggleAriaLabel")}
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        type="button"
-        onClick={handleToggle}
-      >
-        <Search size={20} aria-hidden className="4xl:size-6" />
-      </Button>
+    <div
+      className={cn(
+        "relative max-md:static max-md:order-2 max-md:ml-auto",
+        // Panel host trên route WP: header WP đặt cứng `height:80px` (px tuyệt đối,
+        // theme gốc). Nhưng --bb-header-height = 5rem, mà root font-size trên trang WP
+        // là 14px → 5rem chỉ ra 70px. Lệch 10px: thanh tìm kiếm (70px) thấp hơn header
+        // (80px) nên dropdown (mốc top = 70px) đè lên 10px mép dưới header. Ghim token
+        // về đúng 80px px tại md+ để thanh + dropdown bám sát mép dưới header. Mirror
+        // cách mega-menu ghim cứng 80px trong globals.css. Mobile (<md) giữ nguyên
+        // (panel full-screen, không phụ thuộc mép header).
+        !renderTrigger && "md:[--bb-header-height:80px]",
+      )}
+    >
+      {renderTrigger && (
+        <Button
+          variant="ghost"
+          className={cn(
+            iconBtn,
+            "bb-header-search-trigger hidden md:inline-flex",
+            open && "is-active",
+          )}
+          aria-label={t("toggleAriaLabel")}
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          type="button"
+          onClick={handleToggle}
+        >
+          <Search size={20} aria-hidden className="4xl:size-6" />
+        </Button>
+      )}
 
       <div
         className={cn(sLayer, open && sLayerOpen)}

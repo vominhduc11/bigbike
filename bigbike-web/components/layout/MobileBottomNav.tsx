@@ -2,11 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Grid2X2, Home, Search, ShoppingCart, User } from "lucide-react";
-import { useHeaderUi } from "@/components/layout/HeaderUiContext";
+import { Home, ShoppingCart, User } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { cn } from "@/lib/utils";
-import { toAccountPath, toHomePath } from "@/lib/utils/routes";
+import { toAccountPath, toCartPath, toHomePath } from "@/lib/utils/routes";
 
 function isHomePath(pathname: string) {
   return pathname === "/" || pathname === "";
@@ -24,24 +23,22 @@ function tabClass(active: boolean) {
   return cn(
     "relative flex flex-col items-center justify-center gap-1 px-1 min-h-[58px] min-w-0 [flex:1_1_0] " +
       "border-none bg-transparent cursor-pointer touch-manipulation font-cta tracking-normal " +
-      "text-[color:var(--bb-text-inverse-muted)]",
-    active && "text-brand-on-dark",
+      // `!` defeats the legacy unlayered wp-theme `a{color:#007bff}` that otherwise
+      // paints every tab bootstrap-blue and erases the active/inactive distinction.
+      "text-white/50! transition-colors duration-150",
+    active && "text-[color:var(--bb-brand-primary-on-dark)]!",
   );
 }
 
 function ActiveBar() {
-  return <span className="absolute left-1/2 top-0 h-0.5 w-6 -translate-x-1/2 bg-brand-on-dark" />;
+  return <span className="absolute left-1/2 top-0 h-0.5 w-6 -translate-x-1/2 bg-[color:var(--bb-brand-primary-on-dark)]" />;
 }
 
 export function MobileBottomNav() {
   const pathname = usePathname();
   const { cartCount } = useCart();
-  const { openPanel, isPanelOpen } = useHeaderUi();
 
   const badge = cartCount != null && cartCount > 0 ? cartCount : null;
-  const searchActive = isPanelOpen("search");
-  const menuActive = isPanelOpen("mobile-menu");
-  const cartActive = isPanelOpen("cart");
   const cartRouteActive = pathname.startsWith("/gio-hang");
   const homeActive = isHomePath(pathname);
   const accountActive = pathname.startsWith("/tai-khoan");
@@ -70,42 +67,12 @@ export function MobileBottomNav() {
           </span>
         </Link>
 
-        <button
-          onClick={() => openPanel("mobile-menu")}
-          className={tabClass(menuActive)}
-          aria-pressed={menuActive}
-          aria-label="Mở danh mục"
-          type="button"
+        <Link
+          href={toCartPath()}
+          className={tabClass(cartRouteActive)}
+          aria-current={cartRouteActive ? "page" : undefined}
         >
-          {menuActive && <ActiveBar />}
-          <Grid2X2 size={22} aria-hidden />
-          <span className={cn(labelCls,menuActive ? "font-semibold" : "font-medium")}>
-            Danh mục
-          </span>
-        </button>
-
-        <button
-          onClick={() => openPanel("search")}
-          className={tabClass(searchActive)}
-          aria-pressed={searchActive}
-          aria-label="Mở tìm kiếm"
-          type="button"
-        >
-          {searchActive && <ActiveBar />}
-          <Search size={22} aria-hidden />
-          <span className={cn(labelCls,searchActive ? "font-semibold" : "font-medium")}>
-            Tìm kiếm
-          </span>
-        </button>
-
-        <button
-          onClick={() => openPanel("cart")}
-          className={tabClass(cartActive || cartRouteActive)}
-          aria-pressed={cartActive}
-          aria-label="Mở giỏ hàng"
-          type="button"
-        >
-          {(cartActive || cartRouteActive) && <ActiveBar />}
+          {cartRouteActive && <ActiveBar />}
           <div className="relative">
             <ShoppingCart size={22} aria-hidden />
             {badge != null && (
@@ -114,10 +81,10 @@ export function MobileBottomNav() {
               </span>
             )}
           </div>
-          <span className={cn(labelCls,cartActive || cartRouteActive ? "font-semibold" : "font-medium")}>
+          <span className={cn(labelCls,cartRouteActive ? "font-semibold" : "font-medium")}>
             Giỏ hàng
           </span>
-        </button>
+        </Link>
 
         <Link
           href={toAccountPath()}

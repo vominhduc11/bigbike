@@ -1,3 +1,5 @@
+import { Star } from "lucide-react";
+
 type RatingStarsProps = {
   value: number;
 };
@@ -9,17 +11,23 @@ export function RatingStars({ value }: RatingStarsProps) {
 
   return (
     <span
-      className="relative inline-block whitespace-nowrap leading-none text-muted-foreground"
+      className="relative inline-flex leading-none"
       aria-label={`${normalized.toFixed(1)} sao`}
       title={`${normalized.toFixed(1)} sao`}
     >
-      <span aria-hidden="true">☆☆☆☆☆</span>
+      <span className="inline-flex" aria-hidden="true">
+        {Array.from({ length: 5 }, (_, i) => (
+          <Star key={i} className="h-[1em] w-[1em] shrink-0 text-muted-foreground" />
+        ))}
+      </span>
       <span
-        className="absolute inset-y-0 left-0 overflow-hidden whitespace-nowrap text-rating-star"
+        className="absolute inset-0 overflow-hidden inline-flex"
         style={{ width: `${(normalized / 5) * 100}%` }}
         aria-hidden="true"
       >
-        ★★★★★
+        {Array.from({ length: 5 }, (_, i) => (
+          <Star key={i} className="h-[1em] w-[1em] shrink-0 fill-rating-star text-rating-star" />
+        ))}
       </span>
     </span>
   );

@@ -1,16 +1,18 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
-import { Container } from "@/components/layout/Container";
-import { PageHero } from "@/components/layout/PageHero";
-import { PolicySidebar } from "@/components/layout/PolicySidebar";
-import { ErrorState } from "@/components/ui/ErrorState";
-import { getPageBySlug, listPublicSettings } from "@/lib/api/public-api";
-import { readDefaultHeroAssets } from "@/lib/utils/page-hero";
+import { WpStaticShell } from "@/components/wp/WpStaticShell";
+import type { WpStaticSidebarItem } from "@/components/wp/WpStaticSidebar";
+import { WpStaticSidebarLayout } from "@/components/wp/WpStaticSidebarLayout";
+import { getPageBySlug, getPublicMenu } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
-import { formatDate, safeText } from "@/lib/utils/format";
-import { sanitizeRichHtml } from "@/lib/utils/html";
+import { safeText } from "@/lib/utils/format";
+import { normalizeMenuUrl } from "@/lib/utils/nav";
 import { toHomePath, toPagePath } from "@/lib/utils/routes";
+
+const GUIDE_HERO_BG = "/wp-content/themes/bigbike/images/policy1.png";
+const GUIDE_HERO_ILLUSTRATION = "/wp-content/themes/bigbike/images/policy.png";
+const CURRENT_PATH = "/huong-dan-mua-hang/";
 
 export async function generateMetadata(): Promise<Metadata> {
   const [locale, t] = await Promise.all([
@@ -29,57 +31,48 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function HowToBuyPage() {
   const locale = await getLocale();
-  const [pageResult, t, tBreadcrumb, settingsResult] = await Promise.all([
+  const [pageResult, menuResult, t, tBreadcrumb] = await Promise.all([
     getPageBySlug("huong-dan-mua-hang", locale),
+    getPublicMenu("guide", locale),
     getTranslations("StaticPage"),
     getTranslations("Breadcrumb"),
-    listPublicSettings(),
   ]);
-  const defaultHero = readDefaultHeroAssets(settingsResult.data ?? []);
 
-  if (!pageResult.data && pageResult.error?.status === 404) {
-    notFound();
-  }
+  // WP trả 404 khi page không tồn tại.
   if (!pageResult.data) {
-    return (
-      <section className="bb-page">
-        <Container>
-          <ErrorState message={pageResult.error?.message ?? t("howToBuy.loadFailed")} />
-        </Container>
-      </section>
-    );
+    notFound();
   }
 
   const page = pageResult.data;
   const pageTitle = safeText(page.title, t("howToBuy.title"));
 
+  // Sidebar .static-navigation dùng chung menu "guide" như nhóm /huong-dan.
+  const sidebarItems: WpStaticSidebarItem[] = (menuResult.data?.items ?? []).map((item) => {
+    const href = normalizeMenuUrl(item.url);
+    return {
+      label: safeText(item.label, t("howToBuy.title")),
+      href,
+      current: href === CURRENT_PATH,
+    };
+  });
+
+  // page-guide.php: .page-title + #main-content > .container > .row
+  // > [.col-md-3 sidebar] + [.col-md-9 > .static-page.wyswyg].
   return (
-    <>
-      <PageHero
-        imageUrl={page.heroImageUrl}
-        imageAlt={page.heroImageAlt}
-        title={page.heroTitle ?? pageTitle}
-        defaultBgUrl={defaultHero.defaultBgUrl}
-        defaultIllustrationUrl={defaultHero.defaultIllustrationUrl}
-        breadcrumb={[
-          { label: tBreadcrumb("home"), href: toHomePath() },
-          { label: pageTitle },
-        ]}
+    <WpStaticShell
+      title={page.heroTitle ?? pageTitle}
+      heroBgUrl={page.heroImageUrl ?? GUIDE_HERO_BG}
+      heroIllustrationUrl={GUIDE_HERO_ILLUSTRATION}
+      breadcrumb={[
+        { label: tBreadcrumb("home"), href: toHomePath() },
+        { label: pageTitle },
+      ]}
+    >
+      <WpStaticSidebarLayout
+        sidebarItems={sidebarItems}
+        sidebarEmptyLabel={t("howToBuy.title")}
+        body={page.body}
       />
-      <section className="bb-page">
-        <Container className="grid grid-cols-1 gap-[30px] pt-10 pb-[60px] items-start lg:grid-cols-[3fr_9fr] xl:gap-10 2xl:gap-12">
-          <PolicySidebar activeHref="/huong-dan-mua-hang" title={t("howToBuy.sidebarTitle")} />
-          <div className="min-w-0">
-            <article
-              className="bb-richtext"
-              dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(page.body) }}
-            />
-            <p className="text-muted-foreground text-caption text-right mb-10">
-              {t("updatedAt", { date: formatDate(page.updatedAt) })}
-            </p>
-          </div>
-        </Container>
-      </section>
-    </>
+    </WpStaticShell>
   );
 }

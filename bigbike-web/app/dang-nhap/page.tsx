@@ -4,10 +4,10 @@ import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { readSingleSearchParam } from "@/lib/utils/query";
 import { isSafeReturnTo } from "@/lib/utils/auth";
 import { toAccountPath } from "@/lib/utils/routes";
-import { authHeading, bbLink } from "@/lib/ui-classes";
-import { cn } from "@/lib/utils";
-import { Container } from "@/components/layout/Container";
+import { WpStaticShell } from "@/components/wp/WpStaticShell";
 import { LoginForm } from "./LoginForm";
+
+const AUTH_CSS = "/wp-content/themes/bigbike/css/wp-theme-auth.css?v=1";
 
 type LoginPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -20,27 +20,34 @@ export const metadata: Metadata = buildPublicMetadata({
   noIndex: true,
 });
 
+/**
+ * Đăng nhập — port từ page-templates/page-login.php (KHÔNG hero):
+ * `.user-activity > .container > .login > .user-activity-content > [title + form]`.
+ * Server component bọc WpStaticShell (header/footer WP) + form client.
+ */
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = await searchParams;
   const rawReturnTo = readSingleSearchParam(params.tiep) ?? "";
   const returnTo = isSafeReturnTo(rawReturnTo) ? rawReturnTo : toAccountPath();
 
   return (
-    <section className="bb-page bb-page--auth">
-      <Container>
-        <div className="bb-auth-wrap">
-          <div className="mb-5">
-            <h1 className={cn(authHeading, "mb-2")}>Đăng nhập</h1>
-            <p className="m-0 text-body text-foreground">
-              Đăng ký thành viên mới tại{" "}
-              <Link href="/dang-ky/" className={bbLink}>
-                đây
-              </Link>
-            </p>
+    <WpStaticShell title="" breadcrumb={[]} showHero={false} mainClassName="" cssHref={AUTH_CSS}>
+      <div className="user-activity">
+        <div className="container">
+          <div className="login">
+            <div className="user-activity-content">
+              <div className="user-activity-content-title mb-[30px]">
+                <h1 className="mb-2">Đăng nhập</h1>
+                <p className="m-0">
+                  Đăng ký thành viên mới tại{" "}
+                  <Link href="/dang-ky/">đây</Link>
+                </p>
+              </div>
+              <LoginForm returnTo={returnTo} />
+            </div>
           </div>
-          <LoginForm returnTo={returnTo} />
         </div>
-      </Container>
-    </section>
+      </div>
+    </WpStaticShell>
   );
 }
