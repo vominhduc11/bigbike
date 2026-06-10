@@ -13,6 +13,8 @@ import {
   isColorAttribute,
 } from "@/lib/utils/variant-match";
 import { WishlistButton } from "@/components/catalog/WishlistButton";
+import { ProductGallery } from "@/components/catalog/ProductGallery";
+import { MobileStickyPurchaseBar } from "@/components/catalog/MobileStickyPurchaseBar";
 
 type Props = {
   product: Product;
@@ -51,7 +53,6 @@ export function WpPurchaseSection({
 
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [quantity, setQuantity] = useState(1);
-  const [activeIndex, setActiveIndex] = useState(0);
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState("");
 
@@ -65,18 +66,6 @@ export function WpPurchaseSection({
     () => findColorPreviewVariant(variants, selectedOptions),
     [variants, selectedOptions],
   );
-
-  const galleryImages: ImageAsset[] = useMemo(() => {
-    const colorGallery = colorVariant?.gallery?.length ? colorVariant.gallery : null;
-    const base = colorGallery ?? (gallery.length ? gallery : product.image ? [product.image] : []);
-    return base;
-  }, [colorVariant, gallery, product.image]);
-
-  const resolvedImages = useMemo(
-    () => galleryImages.map((g) => imgUrl(g)).filter(Boolean),
-    [galleryImages],
-  );
-  const mainSrc = resolvedImages[Math.min(activeIndex, resolvedImages.length - 1)] || imgUrl(product.image);
 
   const priceSource = selectedVariant?.price ?? product.price;
   const { current, compare, isSale } = derivePricing(priceSource);
@@ -95,7 +84,6 @@ export function WpPurchaseSection({
       else next[attr] = value;
       return next;
     });
-    if (isColorAttribute(attr)) setActiveIndex(0);
   }
 
   async function handleAdd() {
@@ -114,56 +102,25 @@ export function WpPurchaseSection({
   const name = safeText(product.name, "");
 
   return (
-    <div className="row" itemProp="itemReviewed" itemScope itemType="https://schema.org/Product">
-      {/* Gallery col */}
-      <div className="col-md-7">
-        <div className="thumbnail-slider js-thumbnail-slider">
-          <div className="row">
-            <div className="col-md-3">
-              <div className="slider-thumbnail active">
-                <div className="gallery-thumbs swiper-container js-thumbs-gallery active">
-                  <div className="swiper-wrapper">
-                    {resolvedImages.map((src, i) => (
-                      <div
-                        key={src + i}
-                        className={"woocommerce-product-gallery__image swiper-slide" + (i === activeIndex ? " swiper-slide-active" : "")}
-                        data-thumb={src}
-                        onClick={() => setActiveIndex(i)}
-                        role="button"
-                        tabIndex={0}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img className="thum-bigbike" src={src} alt={name} />
-                      </div>
-                    ))}
-                  </div>
-                  <div className="swiper-button-prev" onClick={() => setActiveIndex((i) => Math.max(0, i - 1))} />
-                  <div className="swiper-button-next" onClick={() => setActiveIndex((i) => Math.min(resolvedImages.length - 1, i + 1))} />
-                </div>
-              </div>
-            </div>
-            <div className="col-md-9">
-              <div className="slider">
-                <div className="swiper-container gallery-top js-top-gallery">
-                  <div className="swiper-wrapper">
-                    <div className="woocommerce-product-gallery__image swiper-slide swiper-slide-active" data-thumb={mainSrc}>
-                      {mainSrc ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img className="thum-bigbike" src={mainSrc} alt={name} />
-                      ) : null}
-                    </div>
-                  </div>
-                  <div className="swiper-button-prev swiper-button" onClick={() => setActiveIndex((i) => Math.max(0, i - 1))} />
-                  <div className="swiper-button-next swiper-button" onClick={() => setActiveIndex((i) => Math.min(resolvedImages.length - 1, i + 1))} />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+    <>
+    <div className="row bb-wp-pdp" itemProp="itemReviewed" itemScope itemType="https://schema.org/Product">
+      {/* Gallery col — dùng ProductGallery (Swiper) y như PurchaseSectionClient.
+          Ảnh chính + dải thumbnail là 2 Swiper liên kết qua module Thumbs; tập ảnh
+          (cover-đầu + khử trùng + theo màu) do ProductGallery tự xử lý. Video KHÔNG
+          đẩy vào đây vì PDP WP đã có tab "Videos" riêng. */}
+      <div className="col-md-7 min-w-0 max-[1023px]:!flex-[0_0_100%] max-[1023px]:!max-w-full">
+        <ProductGallery
+          mainImage={product.image}
+          gallery={gallery}
+          altFallback={name}
+          variantImage={colorVariant?.image ?? null}
+          variantGallery={colorVariant?.gallery ?? undefined}
+          variantKey={colorVariant?.id ?? null}
+        />
       </div>
 
       {/* Info col */}
-      <div className="col-md-5">
+      <div className="col-md-5 bb-wp-pdp-info-col max-[1023px]:!flex-[0_0_100%] max-[1023px]:!max-w-full">
         <div className="product-information">
           <div className="title" itemProp="name">
             <h1 className="product_title entry-title">{name}</h1>
@@ -177,21 +134,10 @@ export function WpPurchaseSection({
                 </p>
               </div>
               <div className="rating" itemProp="aggregateRating" itemScope itemType="https://schema.org/AggregateRating">
-                <div className="rating-star" data-rating={rating}>
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <svg
-                      key={i}
-                      viewBox="0 0 24 24"
-                      width="18"
-                      height="18"
-                      style={{ display: "inline-block", marginRight: 2 }}
-                      fill={i < Math.round(rating) ? "#fbbf24" : "#d8d8d8"}
-                      aria-hidden="true"
-                    >
-                      <path d="M12 .587l3.668 7.431 8.2 1.192-5.934 5.787 1.401 8.168L12 18.896l-7.335 3.871 1.401-8.168L.132 9.21l8.2-1.192z" />
-                    </svg>
-                  ))}
-                </div>
+                {/* Để RỖNG + data-rating: JS theme WP (home.min.js qua WpThemeScripts,
+                    chạy mọi route WP gồm PDP) tự inject 5 sao (có nửa sao). Trước đây nhét
+                    thêm 5 SVG vào trong → "2 lần 5 sao". Giống WpProductSwipeItem. */}
+                <div className="rating-star" data-rating={rating} />
                 <br />
                 <p>
                   Đánh giá: <span itemProp="ratingValue">{rating}/</span>
@@ -294,7 +240,7 @@ export function WpPurchaseSection({
                   <div className="col-md-7" />
                 </div>
 
-                <div className="row" style={{ marginTop: "20px", padding: "0px" }}>
+                <div className="row bb-wp-buttons-row" style={{ marginTop: "20px", padding: "0px" }}>
                   <div className="add-to-cart col-md-6" style={{ padding: "0px" }}>
                     <button
                       type="button"
@@ -308,7 +254,7 @@ export function WpPurchaseSection({
                   <div className="add-to-cart quick-add-to-cart col-md-6">
                     <button
                       type="button"
-                      className={"btn single_add_to_cart_button button btn-quick-buy js-quickby" + (canBuy ? "" : " disabled")}
+                      className={"btn single_add_to_cart_button button btn-quick-buy js-quickby js-buy-now-btn" + (canBuy ? "" : " disabled")}
                       disabled={!canBuy}
                       onClick={handleAdd}
                     >
@@ -327,5 +273,14 @@ export function WpPurchaseSection({
         </div>
       </div>
     </div>
+
+    {/* Thanh mua dính đáy trên mobile: hiện khi hàng nút mua (.bb-wp-buttons-row)
+        cuộn khỏi viewport. Bám DOM qua .js-add-to-cart-btn / .js-buy-now-btn —
+        mirror trạng thái disabled và click lại nút gốc. Hết hàng thì không render
+        (không có gì để mua). */}
+    {!isOutOfStock ? (
+      <MobileStickyPurchaseBar addToCartLabel="Thêm vào giỏ" buyNowLabel="Mua ngay" />
+    ) : null}
+    </>
   );
 }

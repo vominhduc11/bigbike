@@ -1,10 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { MobilePdpAnchorNav } from "@/components/catalog/MobilePdpAnchorNav";
 
 export type WpTab = { id: string; label: string; content: React.ReactNode };
 
-/** Tabs WooCommerce (Mô tả / Videos / Thông số) — DOM/class WP, toggle bằng React. */
+/** Tabs WooCommerce (Mô tả / Videos / Thông số) — DOM/class WP, toggle bằng React.
+ *  Trên mobile, khi khối mua (.bb-wp-pdp) cuộn khỏi tầm nhìn, hiện lại thanh nav nổi
+ *  dưới header — TÁI SỬ DỤNG MobilePdpAnchorNav (đúng giao diện code cũ) ở controlled
+ *  mode: bấm 1 mục = đổi tab + cuộn vùng tab về dưới header. */
 export function WpProductTabs({ tabs }: { tabs: WpTab[] }) {
   const [active, setActive] = useState(tabs[0]?.id ?? "");
   if (tabs.length === 0) return null;
@@ -45,6 +49,14 @@ export function WpProductTabs({ tabs }: { tabs: WpTab[] }) {
           </div>
         ))}
       </div>
+
+      <MobilePdpAnchorNav
+        items={tabs.map((t) => ({ id: t.id, label: t.label }))}
+        activeId={active}
+        onSelect={setActive}
+        triggerSelector=".bb-wp-pdp"
+        scrollTargetSelector=".woocommerce-tabs"
+      />
     </div>
   );
 }

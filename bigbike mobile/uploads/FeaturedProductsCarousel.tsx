@@ -1,0 +1,109 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import type { Product } from "@/lib/contracts/public";
+import { ProductCard } from "@/components/catalog/ProductCard";
+import { cn } from "@/lib/utils";
+
+type Props = { products: Product[] };
+
+function resolveSlidesPerView(width: number) {
+  if (width >= 767) return 4;
+  if (width >= 380) return 2;
+  return 1;
+}
+
+function resolveGap(slidesPerView: number) {
+  if (slidesPerView >= 4) return 30;
+  if (slidesPerView === 2) return 20;
+  return 0;
+}
+
+const CAR_BTN =
+  "bb-fp-arrow absolute top-1/2 z-10 flex h-24 w-24 -translate-y-1/2 cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-foreground transition-colors hover:text-brand focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand";
+
+export function FeaturedProductsCarousel({ products }: Props) {
+  const t = useTranslations("Common");
+  const [slidesPerView, setSlidesPerView] = useState(4);
+  const [page, setPage] = useState(0);
+
+  useEffect(() => {
+    const updateSlidesPerView = () => {
+      setSlidesPerView(resolveSlidesPerView(window.innerWidth));
+    };
+
+    updateSlidesPerView();
+    window.addEventListener("resize", updateSlidesPerView);
+    return () => window.removeEventListener("resize", updateSlidesPerView);
+  }, []);
+
+  const pageCount = useMemo(
+    () => Math.max(1, Math.ceil(products.length / slidesPerView)),
+    [products.length, slidesPerView],
+  );
+  const currentPage = Math.min(page, Math.max(0, pageCount - 1));
+  const offsetGap = currentPage * resolveGap(slidesPerView);
+
+  if (products.length === 0) return null;
+
+  const hasMultiplePages = pageCount > 1;
+  const goPrev = () => setPage((currentPage - 1 + pageCount) % pageCount);
+  const goNext = () => setPage((currentPage + 1) % pageCount);
+
+  return (
+    <div className="bb-fp-carousel relative">
+      {hasMultiplePages && (
+        <button
+          className={cn(CAR_BTN, "-left-16")}
+          type="button"
+          onClick={goPrev}
+          aria-label={t("scrollPrev")}
+        >
+          <ChevronLeft size={64} />
+        </button>
+      )}
+
+      <div className="bb-fp-viewport relative w-full overflow-hidden">
+        <div
+          className="bb-fp-page-track"
+          style={{ transform: `translate3d(calc(-${currentPage * 100}% - ${offsetGap}px), 0, 0)` }}
+        >
+          {products.map((product) => (
+            <ProductCard key={product.id} product={product} variant="featured" />
+          ))}
+        </div>
+      </div>
+
+      {hasMultiplePages && (
+        <button
+          className={cn(CAR_BTN, "-right-16")}
+          type="button"
+          onClick={goNext}
+          aria-label={t("scrollNext")}
+        >
+          <ChevronRight size={64} />
+        </button>
+      )}
+
+      {hasMultiplePages && (
+        <div className="bb-fp-pagination" aria-label={t("carouselPagination")}>
+          {Array.from({ length: pageCount }, (_, index) => (
+            <button
+              key={index}
+              className={cn(
+                "swiper-pagination-bullet",
+                index === currentPage && "swiper-pagination-bullet-active",
+              )}
+              type="button"
+              onClick={() => setPage(index)}
+              aria-label={t("carouselPage", { page: index + 1 })}
+              aria-current={index === currentPage ? "true" : undefined}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

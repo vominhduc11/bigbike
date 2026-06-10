@@ -107,8 +107,11 @@ export function MobileStickyPurchaseBar({
     }
   }
 
+  // h-14 (56px) + pt-3 (12px) + border 1px + padding-bottom max(8px, safe-area) khớp
+  // ĐÚNG chiều cao bottom nav (.bb-bottom-nav = 69px + max(8px, safe)) để khi bar thế
+  // chỗ nav lúc nav trượt ra thì không bị giật chiều cao.
   const BASE_BTN =
-    "flex-1 h-12 border-none rounded-none font-body text-sm font-bold uppercase tracking-normal cursor-pointer active:opacity-85";
+    "flex-1 h-14 border-none rounded-none font-body text-sm font-bold uppercase tracking-normal cursor-pointer active:opacity-85";
 
   return (
     <div
@@ -117,10 +120,16 @@ export function MobileStickyPurchaseBar({
         // coordination rules (bottom-nav / floating-chat) can't be expressed inline.
         "bb-pdp-sticky-cta",
         visible && "is-visible",
-        "hidden max-md:flex max-md:fixed max-md:bottom-0 max-md:left-0 max-md:right-0 max-md:z-[651] max-md:pt-2.5 max-md:px-4 max-md:[padding-bottom:calc(12px_+_env(safe-area-inset-bottom))] max-md:gap-2.5 max-md:bg-white max-md:border-t max-md:border-border max-md:[box-shadow:0_-4px_16px_rgba(0,0,0,0.08)] max-md:[transition-property:transform] max-md:duration-200 max-md:ease-[ease]",
+        // Display toggle uses the proven `flex md:hidden` pattern (same as
+        // MobileBottomNav): in Tailwind v4 a base `hidden` + `max-md:flex` can
+        // leave `hidden` winning the cascade, so the bar stayed display:none
+        // while still matching body:has(.is-visible) (which hides the bottom nav
+        // even for a display:none element) — that produced "nav disappears but
+        // bar never shows". `flex` is the mobile state; `md:hidden` hides ≥768.
+        "flex md:hidden fixed bottom-0 left-0 right-0 z-[651] pt-3 px-4 [padding-bottom:max(8px,env(safe-area-inset-bottom))] gap-2.5 bg-white border-t border-border [box-shadow:0_-4px_16px_rgba(0,0,0,0.08)] [transition-property:transform] duration-200 ease-[ease]",
         visible
-          ? "max-md:[transform:translateY(0)] max-md:pointer-events-auto"
-          : "max-md:[transform:translateY(calc(100%_+_1px))] max-md:pointer-events-none",
+          ? "[transform:translateY(0)] pointer-events-auto"
+          : "[transform:translateY(calc(100%_+_1px))] pointer-events-none",
       )}
       aria-hidden={!visible}
     >

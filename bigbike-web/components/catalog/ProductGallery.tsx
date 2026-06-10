@@ -354,8 +354,11 @@ export function ProductGallery({
                   >
                     <div
                       className={cn(
-                        "relative w-full h-full border",
-                        active ? "border-[var(--bb-border-control)]" : "border-transparent",
+                        // !border-solid: thắng rule global `img{border-style:none}` của
+                        // wp-theme-product.css — nếu không, border-2 chỉ có width+màu mà
+                        // style=none nên KHÔNG vẽ viền (và width tính bằng 0).
+                        "relative w-full h-full border-2 !border-solid",
+                        active ? "border-brand" : "border-transparent",
                       )}
                     >
                       <VideoThumbPreview video={item.asset} />
@@ -381,8 +384,10 @@ export function ProductGallery({
                     width={220}
                     height={220}
                     className={cn(
-                      "w-full h-full object-contain border",
-                      active ? "border-[var(--bb-border-control)]" : "border-transparent",
+                      // !border-solid: thắng rule global `img{border-style:none}` của
+                      // wp-theme-product.css (xem ghi chú ở thumbnail video phía trên).
+                      "w-full h-full object-contain border-2 !border-solid",
+                      active ? "border-brand" : "border-transparent",
                     )}
                   />
                 </SwiperSlide>

@@ -131,7 +131,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
     <>
       <link
         rel="stylesheet"
-        href="/wp-content/themes/bigbike/css/wp-theme-product.css?v=8"
+        href="/wp-content/themes/bigbike/css/wp-theme-product.css?v=11"
         precedence="default"
       />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: productJsonLd }} />

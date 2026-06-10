@@ -639,3 +639,15 @@ html{font-size:14px}body{font-size:16px;font-family:Barlow,sans-serif}
   .product-detail .gallery-thumbs .swiper-slide{width:31% !important;height:auto !important;aspect-ratio:1/1}
 }
 .product-detail .gallery-thumbs .swiper-slide{box-sizing:border-box}
+
+/* ===== Thanh tab WP gốc KHÔNG được sticky/fixed trên mobile — mọi hành vi "dính
+   dưới header" là của thanh nổi MobilePdpAnchorNav. Ép static để chặn rule sticky
+   cũ còn sót/cache (từng làm tab đen đè lên header). ===== */
+@media (max-width:767px){
+  .woocommerce-tabs,
+  .woocommerce-tabs .tabs-nav{
+    position: static !important;
+    top: auto !important;
+    z-index: auto !important;
+  }
+}
