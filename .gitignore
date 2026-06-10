@@ -4,9 +4,9 @@
 # Mobile app (local only, not pushed to remote)
 bigbike_mobile/
 
-# Legacy reference data
-bigbike/
-uploads/
+# Legacy reference data (root-level only — KHONG chan themes/bigbike, wp-content/uploads...)
+/bigbike/
+/uploads/
 
 # Old WordPress site export (reference only, not for git)
 bigbike_vn__2026_04_17/
@@ -19,11 +19,11 @@ BigBike Design System-admin.zip
 # Java build output
 bigbike-backend/target/
 
-# Test/screenshot output
-output/
+# Test/screenshot output (root-level only)
+/output/
 
-# Local backup output
-backups/
+# Local backup output (root-level only)
+/backups/
 
 # Local agent/tooling state
 # .claude/
@@ -40,7 +40,9 @@ backups/
 node_modules/
 .next/
 out/
-dist/
+# Build output cua frontend app — neo cu the, KHONG chan 'dist' trong public/wp-content (theme/plugin assets goc)
+bigbike-admin/dist/
+bigbike-web/dist/
 coverage/
 *.tsbuildinfo
 
