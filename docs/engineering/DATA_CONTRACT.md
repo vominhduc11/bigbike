@@ -199,6 +199,8 @@ Evidence:
 - `CheckoutService.java`
 - `BUSINESS_RULES.md` STOCK_RULE_001–007
 - `V108__backfill_stock_state_from_quantity.sql`
+- `V165__aggregate_variant_product_stock_state.sql` (trigger giữ `products.stockState` đồng bộ với variants)
+- `V174__recompute_stock_state_from_real_inventory.sql` (backfill: dọn "còn hàng ảo" của hàng WP-import — variant + sản phẩm không variant về `OUT_OF_STOCK` khi `quantity <= 0` và không còn serial `IN_STOCK`)
 
 ### Product rich-text content fields
 
