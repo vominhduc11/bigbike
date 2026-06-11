@@ -69,19 +69,34 @@ function StarIcon({ filled, className }: { filled: boolean; className?: string }
 
 function StarRow({ rating, iconClassName }: { rating: number; iconClassName?: string }) {
   const t = useTranslations("Product.reviews");
-  const rounded = Math.round(rating);
   return (
     <span
       className="inline-flex items-center gap-0.5"
       aria-label={t("starsCount", { count: rating.toFixed(1) })}
     >
-      {Array.from({ length: 5 }, (_, i) => (
-        <StarIcon
-          key={i}
-          filled={i < rounded}
-          className={cn(iconClassName, i < rounded ? "text-brand" : "text-[var(--bb-text-secondary)]")}
-        />
-      ))}
+      {Array.from({ length: 5 }, (_, i) => {
+        // Tô theo tỷ lệ liên tục như RatingStars (REVIEW_RULE_002): 4.5 → nửa
+        // sao thứ 5, không Math.round thành 5 sao đầy. Sao lẻ = overlay sao đầy
+        // cắt theo % width trên nền sao rỗng.
+        const fill = Math.max(0, Math.min(1, rating - i));
+        return (
+          <span key={i} className="relative inline-flex">
+            <StarIcon
+              filled={fill >= 1}
+              className={cn(iconClassName, fill >= 1 ? "text-brand" : "text-[var(--bb-text-secondary)]")}
+            />
+            {fill > 0 && fill < 1 && (
+              <span
+                aria-hidden="true"
+                className="absolute inset-0 overflow-hidden"
+                style={{ width: `${fill * 100}%` }}
+              >
+                <StarIcon filled className={cn(iconClassName, "text-brand")} />
+              </span>
+            )}
+          </span>
+        );
+      })}
     </span>
   );
 }
@@ -435,7 +450,7 @@ export function ReviewsSection({ productId }: ReviewsSectionProps) {
   const [page, setPage] = useState(1);
   const queryKey = ["product-reviews", productId, ratingFilter, sort, page] as const;
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey,
     queryFn: () => fetchReviewsPage(productId, page, ratingFilter, sort, t("errorLoad")),
     // Keep the previous page visible while the next one loads so the list and
@@ -494,6 +509,14 @@ export function ReviewsSection({ productId }: ReviewsSectionProps) {
         <div className="min-w-0 flex-1">
           {isLoading ? (
             <ReviewsLoading />
+          ) : isError ? (
+            <div className="mt-4 flex flex-col items-center justify-center gap-3 border border-dashed border-border py-16 text-center">
+              <StarIcon filled={false} className="h-10 w-10 text-[var(--bb-text-secondary)]" />
+              <p className="m-0 font-semibold text-[var(--bb-text-primary)]">{t("errorLoad")}</p>
+              <Button type="button" variant="outline" size="sm" onClick={() => refetch()}>
+                {t("retry")}
+              </Button>
+            </div>
           ) : total > 0 ? (
             <>
               <RatingSummary

@@ -1,13 +1,16 @@
 import { Star } from "lucide-react";
 
 type RatingStarsProps = {
-  value: number;
+  value: number | null | undefined;
 };
 
 export function RatingStars({ value }: RatingStarsProps) {
-  const normalized = Number.isFinite(value)
-    ? Math.min(5, Math.max(0, value))
-    : 4.5;
+  // REVIEW_RULE_003: không có giá trị hợp lệ (> 0) thì ẨN hoàn toàn — tuyệt đối
+  // không vẽ sao mặc định (4.5 cũ) khi thiếu dữ liệu / 0 review.
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+    return null;
+  }
+  const normalized = Math.min(5, value);
 
   return (
     <span

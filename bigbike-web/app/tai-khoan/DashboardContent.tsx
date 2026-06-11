@@ -1,8 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { WpAccountSectionHeading, useWpAccount } from "@/components/wp/WpAccountNav";
+import { resendEmailVerification } from "@/lib/api/client-api";
+import { Button } from "@/components/ui/button";
 
 /**
  * Nội dung bảng điều khiển — port từ woocommerce/myaccount/dashboard.php
@@ -13,10 +16,40 @@ export function DashboardContent() {
   const tNav = useTranslations("Account.nav");
   const profile = useWpAccount();
   const displayName = profile?.displayName ?? profile?.email?.split("@")[0] ?? tNav("dashboard");
+  const [resendState, setResendState] = useState<"idle" | "sending" | "sent" | "error">("idle");
+
+  async function handleResendVerification() {
+    setResendState("sending");
+    try {
+      await resendEmailVerification();
+      setResendState("sent");
+    } catch {
+      setResendState("error");
+    }
+  }
 
   return (
     <>
       <WpAccountSectionHeading title={tNav("dashboard")} />
+      {profile?.emailVerified === false && (
+        <div className="mb-6 border border-[var(--bb-danger)]/30 bg-[var(--bb-danger)]/5 px-4 py-3">
+          <p className="m-0 text-sm font-semibold text-foreground">{t("emailNotVerified")}</p>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={handleResendVerification}
+              disabled={resendState === "sending" || resendState === "sent"}
+            >
+              {resendState === "sent" ? t("emailVerifySent") : t("emailVerifyResend")}
+            </Button>
+            {resendState === "error" && (
+              <span className="text-sm text-[var(--bb-danger)]">{t("emailVerifyError")}</span>
+            )}
+          </div>
+        </div>
+      )}
       <div className="main-account">
         <p>
           {t.rich("dashboardGreeting", {

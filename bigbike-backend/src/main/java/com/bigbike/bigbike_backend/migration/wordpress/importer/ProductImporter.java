@@ -119,7 +119,7 @@ public class ProductImporter implements DomainImporter {
                 entity.setSalePrice(salePrice != null && salePrice.signum() > 0 ? salePrice : null);
                 entity.setCurrency("VND");
 
-                entity.setStockState(resolveStockState(mp.stockStatus()));
+                entity.setStockState(resolveStockState(mp.stockQuantity()));
                 entity.setPublishStatus(resolveStatus(mp.status()));
 
                 // Category link (required)
@@ -231,13 +231,13 @@ public class ProductImporter implements DomainImporter {
         return fallbackSlug;
     }
 
-    private ProductStockState resolveStockState(String status) {
-        if (status == null) return ProductStockState.IN_STOCK;
-        return switch (status.toLowerCase()) {
-            case "outofstock", "out_of_stock" -> ProductStockState.OUT_OF_STOCK;
-            case "onbackorder" -> ProductStockState.OUT_OF_STOCK;
-            default -> ProductStockState.IN_STOCK;
-        };
+    private ProductStockState resolveStockState(Integer stockQuantity) {
+        // STOCK_RULE_001/003: stockState là field SUY RA từ tồn thật, KHÔNG lấy theo
+        // cờ "instock/outofstock" của WP — cờ đó tạo "còn hàng ảo" khi tồn = 0.
+        // Sản phẩm không biến thể: suy ra từ stockQuantity đã quản lý; không có tồn
+        // → OUT_OF_STOCK. Ngưỡng 5 mirror InventoryPolicyService.FALLBACK_THRESHOLD.
+        if (stockQuantity == null || stockQuantity <= 0) return ProductStockState.OUT_OF_STOCK;
+        return stockQuantity <= 5 ? ProductStockState.LOW_STOCK : ProductStockState.IN_STOCK;
     }
 
     private PublishStatus resolveStatus(String status) {

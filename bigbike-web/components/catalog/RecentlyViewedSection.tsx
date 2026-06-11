@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { type RecentProduct, getRecentProducts, saveRecentProduct } from "@/lib/recently-viewed";
 import type { Product } from "@/lib/contracts/public";
-import { ProductCarouselSection } from "@/components/catalog/ProductCarouselSection";
+import { ProductSwiper } from "@/components/catalog/ProductSwiper";
 
 type Props = {
   currentProductId: string;
@@ -12,9 +12,9 @@ type Props = {
 };
 
 /**
- * Map the lightweight localStorage record onto the Product shape the carousel
- * cards read (name / slug / image / price / rating). Fields the home featured
- * card never renders (category, stock, status, timestamps) get inert defaults.
+ * Map the lightweight localStorage record onto the Product shape the card reads
+ * (name / slug / image / price / rating). Fields the WP card never renders
+ * (stock, status, timestamps) get inert defaults.
  */
 function toCardProduct(p: RecentProduct): Product {
   return {
@@ -28,6 +28,7 @@ function toCardProduct(p: RecentProduct): Product {
     publishStatus: "PUBLISHED",
     homepageBlock: "NONE",
     rating: p.rating ?? null,
+    ratingCount: p.ratingCount ?? null,
     createdAt: "",
     updatedAt: "",
   };
@@ -47,12 +48,16 @@ export function RecentlyViewedSection({ currentProductId, currentProduct }: Prop
   // Need at least 2 other products to make a row worth showing.
   if (items.length < 2) return null;
 
+  // Dùng chung ProductSwiper (chuẩn carousel sản phẩm trang chủ).
   return (
-    <ProductCarouselSection
-      products={items.map(toCardProduct)}
-      heading={tRecent("heading")}
-      headingId="recently-viewed-heading"
-      className="mx-auto max-w-[1140px] px-[15px] mt-12 mb-10 pt-9 border-t border-[color:var(--bb-border-default)] max-md:px-[var(--bb-mobile-page-x)] min-[1536px]:max-w-[1360px] min-[1920px]:max-w-[1600px]"
-    />
+    <div className="product-list pt-40 pb-40">
+      <div className="container">
+        <div className="block-title text-center mb-40">
+          <p className="sub-title">{tRecent("kicker")}</p>
+          <h3 id="recently-viewed-heading">{tRecent("heading")}</h3>
+        </div>
+        <ProductSwiper products={items.map(toCardProduct)} />
+      </div>
+    </div>
   );
 }

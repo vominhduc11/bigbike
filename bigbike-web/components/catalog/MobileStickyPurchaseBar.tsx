@@ -36,7 +36,7 @@ export function MobileStickyPurchaseBar({
 
   // Mirror inline add-to-cart disabled state (e.g. variant not yet picked).
   useEffect(() => {
-    const btn = document.querySelector<HTMLButtonElement>(".js-add-to-cart-btn");
+    const btn = document.querySelector<HTMLButtonElement>(".js-bb-add-to-cart");
     if (!btn) return;
 
     const sync = () => setAddToCartDisabled(btn.disabled);
@@ -61,7 +61,7 @@ export function MobileStickyPurchaseBar({
   }, []);
 
   function handleAddToCart() {
-    const btn = document.querySelector<HTMLButtonElement>(".js-add-to-cart-btn");
+    const btn = document.querySelector<HTMLButtonElement>(".js-bb-add-to-cart");
 
     if (btn && !btn.disabled) {
       btn.click();

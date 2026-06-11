@@ -641,6 +641,23 @@ export async function fetchContentPageRefs() {
   return (payload?.data ?? []).map((p) => ({ id: String(p.id ?? ''), slug: String(p.slug ?? ''), title: String(p.title ?? '') }))
 }
 
+function mapContentCategory(c) {
+  const s = c && typeof c === 'object' ? c : {}
+  return { id: String(s.id ?? ''), slug: String(s.slug ?? ''), name: String(s.name ?? '') }
+}
+
+// Content (blog) category CRUD — POST/PATCH /admin/content/content-categories (perm content.update).
+// Note: createCategory() above targets /admin/categories (product categories) — a different resource.
+export async function createContentCategory(input) {
+  const payload = await requestJson('/admin/content/content-categories', { method: 'POST', body: input })
+  return mapContentCategory(payload?.data)
+}
+
+export async function updateContentCategory(categoryId, input) {
+  const payload = await requestJson(`/admin/content/content-categories/${categoryId}`, { method: 'PATCH', body: input })
+  return mapContentCategory(payload?.data)
+}
+
 export async function fetchRedirects(query) {
   try {
     const payload = await requestJson('/admin/redirects', { query: buildRedirectQuery(query) })
@@ -712,7 +729,9 @@ export async function fetchOrderDetail(orderId) {
 
 export async function updateOrderStatus(orderId, orderStatus, reason) {
   const body = { status: orderStatus }
-  if (reason) body.reason = reason
+  // BE DTO UpdateOrderStatusRequest field is `note` (not `reason`); the cancel/fail reason
+  // the admin types is persisted as the order note. Sending `reason` was silently dropped.
+  if (reason) body.note = reason
   const payload = await requestJson(`/admin/orders/${orderId}/status`, {
     method: 'PATCH',
     body,
@@ -1164,6 +1183,7 @@ function normalizeSlider(input) {
     mobileImage: normalizeImageAsset(s.mobileImage) ?? null,
     externalLink: s.externalLink || null,
     productId: s.productId || null,
+    productName: (s.product && typeof s.product === 'object' ? s.product.name : null) || null,
   }
 }
 
@@ -1293,9 +1313,13 @@ function normalizeShippingMethod(input) {
     zoneId: String(s.zoneId || ''),
     methodCode: String(s.methodCode || ''),
     title: String(s.title || ''),
+    titleEn: String(s.titleEn || ''),
     description: String(s.description || ''),
     cost: Number(s.cost ?? 0),
     minOrderAmount: Number(s.minOrderAmount ?? 0),
+    // Preserve null (no free-ship threshold) vs a real number so the edit form does not
+    // wipe an existing threshold on save. BE returns this field; dropping it lost data.
+    freeShippingThreshold: s.freeShippingThreshold != null ? Number(s.freeShippingThreshold) : null,
     sortOrder: Number(s.sortOrder ?? 0),
     enabled: s.enabled !== false,
   }
@@ -2232,4 +2256,53 @@ export async function saveHomepageBlocks(featuredGrid) {
     body: { featuredGrid },
   })
   return payload
+}
+
+// ── Admin notifications (server-persisted, V102) ─────────────────────────────
+// Complements the realtime /topic/admin/orders WebSocket feed: lets an admin on a
+// new browser / after being offline catch up on order events the backend stored.
+function normalizeAdminNotification(input) {
+  const s = input && typeof input === 'object' ? input : {}
+  let parsed = {}
+  if (typeof s.payload === 'string') {
+    try { parsed = JSON.parse(s.payload) } catch { parsed = {} }
+  } else if (s.payload && typeof s.payload === 'object') {
+    parsed = s.payload
+  }
+  return {
+    id: s.id != null ? String(s.id) : '',
+    type: s.type || parsed.type || 'ORDER_UPDATE',
+    orderId: s.orderId ? String(s.orderId) : '',
+    orderNumber: s.orderNumber || parsed.orderNumber || '',
+    status: parsed.status,
+    paymentMethod: parsed.paymentMethod,
+    at: s.createdAt ? new Date(s.createdAt).getTime() : Date.now(),
+    read: s.isRead === true,
+    fromServer: true,
+  }
+}
+
+export async function fetchAdminNotifications() {
+  const payload = await requestJson('/admin/notifications')
+  const data = payload?.data ?? {}
+  const items = Array.isArray(data.items) ? data.items : []
+  return {
+    unreadCount: Number(data.unreadCount ?? items.length),
+    items: items.map(normalizeAdminNotification),
+  }
+}
+
+export async function markAdminNotificationsRead(ids) {
+  const list = Array.isArray(ids) ? ids.filter(Boolean) : []
+  if (list.length === 0) return { updated: 0 }
+  const payload = await requestJson('/admin/notifications/mark-read', {
+    method: 'POST',
+    body: { ids: list },
+  })
+  return payload?.data ?? { updated: 0 }
+}
+
+export async function markAllAdminNotificationsRead() {
+  const payload = await requestJson('/admin/notifications/mark-all-read', { method: 'POST' })
+  return payload?.data ?? { updated: 0 }
 }

@@ -89,6 +89,8 @@ Current POS flow persists or emits these notable fields:
 - `customerNote`
 - payment record with provider `POS`
 
+`AdminOrderListItemResponse` (admin order list) exposes `source` so the list can render a POS badge — previously `source` was only on the order detail response. `PosOrderResponse` exposes `customerName`/`customerPhone` so the POS receipt can print buyer info. Evidence: `AdminOrderListItemResponse.java`, `OrderMapper.toAdminListItem`, `PosOrderService.PosOrderResponse`.
+
 Status: `CONFIRMED_FROM_CODE`
 
 Evidence:
@@ -292,6 +294,26 @@ There is **no category fallback** — an empty list hides the PDP section entire
 Status: `CONFIRMED_FROM_CODE` — `ProductEntity.relatedProducts`,
 `UpsertProductRequest.relatedProductIds`, `AdminCatalogMutationService.resolveRelatedProducts`,
 `JpaCatalogReadRepository.toRelatedProducts`, migration `V135`.
+
+### Product rating denormalization — `products.rating` / `products.rating_count`
+
+Cache denormalized của review **APPROVED**, phục vụ list/detail đọc nhanh không join bảng `reviews`:
+
+- `products.rating` — `numeric(3,2)`, nullable, **không có default** (thêm ở `V18`, check constraint `ck_products_rating`: `NULL` hoặc `0..5`). Giá trị = trung bình cộng điểm review đã duyệt, làm tròn **1 decimal HALF_UP** (`AdminReviewService.toCachedRating`).
+- `products.rating_count` — `integer`, nullable, **không có default** (thêm ở `V43`). Giá trị = số review đã duyệt.
+- `reviews.rating` — `smallint NOT NULL`, check `1..5` (`V14`) — nên hễ có ≥ 1 review đã duyệt thì trung bình luôn ≥ 1.
+
+**Recompute flow (đường duy nhất được ghi cache):** `AdminReviewService.recomputeProductReviewAggregate` chạy sau **mọi** chuyển trạng thái review (`updateStatus`, kể cả APPROVED → PENDING/SPAM/TRASH) và sau `deleteReview`. Khi 0 review approved: `rating = NULL` (không phải 0) và `rating_count = 0`. `PublicReviewService.submitReview` tạo review PENDING và **không** recompute (đúng — pending không được tính). Admin upsert product **không thể** set tay 2 field này (`UpsertProductRequest` cố ý không khai báo field; xem comment "Phase 2D" trong `AdminCatalogMutationService`).
+
+**Trạng thái NULL hợp lệ:** sản phẩm admin tạo mới có `rating = NULL` và `rating_count = NULL` (chưa từng recompute) cho tới khi review đầu tiên được duyệt.
+
+**Invariant `rating_count ≥ 1 ⟺ rating > 0`: `PARTIAL` — chỉ được đảm bảo trên đường moderation.** Pipeline WordPress import phá invariant: `WordPressProductMapper` default `rating = 4.5` khi WP meta thiếu, `ProductImporter` ghi `rating` mà **không ghi** `rating_count`, `ReviewImporter` không recompute; `V63` backfill chỉ chạy một lần lúc Flyway migrate. Hệ quả: tồn tại sản phẩm `rating = 4.5`, `rating_count = NULL`, 0 review thật. **Web/mobile gate hiển thị sao bắt buộc theo `ratingCount ≥ 1`** (NULL/0 → ẩn), không dùng `rating > 0` đơn lẻ — xem `BUSINESS_RULES.md` `REVIEW_RULE_003`/`REVIEW_RULE_004`. Dọn rating ảo của data import + sửa importer là task backend riêng.
+
+**API mapping:** list-item + detail `Product` trả `rating` / `ratingCount` (optional, nullable — `bigbike-web/lib/contracts/public.ts`). API public reviews trả `avgRating` (1-decimal; **`0.0` khi 0 review**, không phải null — `PublicReviewService.roundAverage`) và `totalReviews`; FE phải gate bằng `totalReviews`, không bằng `avgRating > 0`.
+
+Status: `CONFIRMED_FROM_CODE` — `AdminReviewService.java`, `PublicReviewService.java`,
+`ReviewJpaRepository.java`, `ProductEntity.java`, `UpsertProductRequest.java`,
+`WordPressProductMapper.java`, `ProductImporter.java`, migrations `V14`, `V18`, `V43`, `V63`.
 
 ### Product bilingual content — English columns (V136)
 

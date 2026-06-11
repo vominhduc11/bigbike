@@ -88,7 +88,7 @@ function SliderCard({ slider, canUpdate, onEdit, onDelete, onToggleActive, sorta
           )}
           {slider.productId && (
             <p className="bb-muted" style={{ margin: 0, fontSize: 12 }}>
-              {t('sliders.productLabel')} {slider.productId}
+              {t('sliders.productLabel')} {slider.productName || slider.productId}
             </p>
           )}
         </div>

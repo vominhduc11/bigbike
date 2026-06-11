@@ -2,10 +2,17 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Bell, Check, ShoppingCart } from 'lucide-react'
 import { subscribeAdminWs } from '../lib/adminWebSocket'
+import { fetchAdminNotifications, markAllAdminNotificationsRead } from '../lib/adminApi'
 import { formatCurrencyVnd } from '../lib/formatters'
 
 const STORAGE_KEY = 'bb-admin-notifications'
 const MAX_ITEMS = 30
+
+// Dedupe key shared by WS events and server-persisted items: an order can raise both
+// a NEW_ORDER and later ORDER_UPDATE event, so key on orderId + type.
+function keyOf(it) {
+  return it.orderId ? `${it.orderId}:${it.type}` : `id:${it.id}`
+}
 
 function loadStored() {
   try {
@@ -53,6 +60,34 @@ export function NotificationBell({ navigate }) {
     return unsubscribe
   }, [])
 
+  // Hydrate from the server-persisted notification store (V102) so a fresh browser or a
+  // previously-offline admin catches up on stored order events, not only live WS ones.
+  useEffect(() => {
+    let active = true
+    fetchAdminNotifications()
+      .then(({ items: serverItems }) => {
+        if (!active || serverItems.length === 0) return
+        setItems((prev) => {
+          const prevByKey = new Map(prev.map((it) => [keyOf(it), it]))
+          const merged = new Map()
+          // server unread items are authoritative; keep a locally-read flag if we have one
+          for (const it of serverItems) {
+            const local = prevByKey.get(keyOf(it))
+            merged.set(keyOf(it), local?.read ? { ...it, read: true } : it)
+          }
+          // keep local items the server did not return (live WS not yet persisted, read history)
+          for (const it of prev) {
+            if (!merged.has(keyOf(it))) merged.set(keyOf(it), it)
+          }
+          const next = [...merged.values()].sort((a, b) => b.at - a.at).slice(0, MAX_ITEMS)
+          persist(next)
+          return next
+        })
+      })
+      .catch(() => { /* offline / error: keep showing localStorage items (graceful) */ })
+    return () => { active = false }
+  }, [])
+
   useEffect(() => {
     if (!open) return
     function onClickOutside(e) {
@@ -75,6 +110,8 @@ export function NotificationBell({ navigate }) {
       persist(next)
       return next
     })
+    // Sync to the server so the unread state stays cleared across browsers and reloads.
+    markAllAdminNotificationsRead().catch(() => { /* best-effort, UI already updated */ })
   }, [])
 
   function toggle() {
@@ -153,10 +190,10 @@ export function NotificationBell({ navigate }) {
                       {item.type === 'NEW_ORDER' ? t('notifications.newOrder') : t('notifications.orderUpdate')}
                     </span>
                     <span className="block truncate text-xs text-muted-foreground">
-                      {item.orderNumber} — {item.customerName}
+                      {item.orderNumber}{item.customerName ? ` — ${item.customerName}` : ''}
                     </span>
                     <span className="mt-0.5 block text-xs text-muted-foreground">
-                      {formatCurrencyVnd(item.total)} · {formatWhen(item.at, i18n.language)}
+                      {item.total ? `${formatCurrencyVnd(item.total)} · ` : ''}{formatWhen(item.at, i18n.language)}
                     </span>
                   </span>
                 </button>

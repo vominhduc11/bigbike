@@ -762,7 +762,7 @@ public class AdminOrderService {
         return new AdminOrderListItemResponse(
                 dto.id(), dto.orderNumber(), dto.status(), dto.paymentStatus(),
                 dto.customerEmail(), dto.customerPhone(), fallback,
-                dto.totalAmount(), dto.currency(), dto.placedAt(), dto.itemCount());
+                dto.totalAmount(), dto.currency(), dto.placedAt(), dto.itemCount(), dto.source());
     }
 
     private AdminOrderDetailResponse toDetail(OrderEntity order) {

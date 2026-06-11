@@ -143,6 +143,10 @@ Evidence:
 - `STOCK_RULE_006`: For no-variant products, checkout enforces via `product.stockState == OUT_OF_STOCK` AND `product.stockQuantity`. Both are derived from stock movements.
 - `STOCK_RULE_007`: Sản phẩm có tồn kho = 0 → khách chỉ xem được, không thể đặt hàng. Không có chế độ "đặt trước" hay "HÀNG ODER" qua web. Muốn nhận đơn ODER, admin phải nhập hàng về trước (tồn kho > 0) thì khách mới đặt được.
 - `STOCK_RULE_008`: For products **with variants**, the product-level `stockState` is an **aggregate** of its variants, not a manually maintained field: `IN_STOCK` if **any** variant is `IN_STOCK`; else `LOW_STOCK` if any variant is `LOW_STOCK`; else `OUT_OF_STOCK` (only when **all** variants are out). This is what the storefront product-level badge reads (`products.stock_state`) and what the admin inventory grouped view shows. It is maintained by the DB trigger `fn_sync_product_state_from_variants` on `product_variants` (`V165`), which fires whenever any variant's `stock_state` changes — including serial-driven changes that flow through `fn_sync_qty_from_serial_lifecycle` (`V89`) → variant row → this trigger. **Rationale / prior bug:** before `V165` nothing recomputed the product-level state for variant products. `V108` set `products.stock_state` from `stock_quantity`, which is null/0 for variant products, so they were stuck at `OUT_OF_STOCK` permanently — the storefront showed "Hết hàng" even while a variant still had stock. `CONFIRMED_FROM_CODE`
+- `STOCK_RULE_009`: **Hiển thị badge tồn kho ở buy-box trang chi tiết sản phẩm (web — chỉ phần nhìn, KHÔNG đổi điều kiện mua ở `STOCK_RULE_005`/`006`).** Cài đặt trong `WpPurchaseSection.tsx`.
+  - **Sản phẩm có biến thể, khách CHƯA chọn biến thể:** badge chỉ hiện **"Còn hàng" / "Hết hàng"** theo product-level aggregate `stockState` (`STOCK_RULE_008`) — **không** hiện "Sắp hết". "Hết hàng" ⟺ `product.stockState == OUT_OF_STOCK` (mọi biến thể đều 0 serial) hoặc `forceOutOfStock`. (`product.stockQuantity` là null/0 cho sản phẩm có biến thể nên không dùng để phân tầng — xem prior bug ở `STOCK_RULE_008`.)
+  - **Khi đã xác định một đơn vị tồn cụ thể** — biến thể đã chọn đủ (`variant.stockQuantity`) hoặc sản phẩm không biến thể (`product.stockQuantity`): phân tầng theo **số serial còn lại** — `>= 10` → "Còn hàng"; `1..9` → "Sắp hết"; `<= 0` → "Hết hàng". Ngưỡng **10** (`PDP_LOW_STOCK_CUTOFF`) là hằng số hiển thị riêng của PDP, **độc lập** với `low_stock_threshold` (mặc định 5 ở `STOCK_RULE_003`) vốn chỉ chi phối checkout enforcement và cảnh báo tồn kho ở admin.
+  - Biến thể 0 serial vẫn theo `STOCK_RULE_005`: làm mờ option (vẫn click được để xem ảnh màu), chỉ khoá khi `isAvailable = false`; nếu khách chọn trúng biến thể 0 serial → buy-box "Hết hàng" và nút mua bị vô hiệu. `CONFIRMED_FROM_CODE`
 
 Evidence:
 
@@ -156,6 +160,7 @@ Evidence:
 - `V120__drop_stock_receipt_tables.sql`
 - `V165__aggregate_variant_product_stock_state.sql` (product-level aggregate trigger + backfill — `STOCK_RULE_008`)
 - `V89__add_product_serial_lifecycle.sql` (`fn_sync_qty_from_serial_lifecycle` — variant qty/state from serial count)
+- `bigbike-web/components/wp/WpPurchaseSection.tsx` (`STOCK_RULE_009` — PDP buy-box badge display)
 
 ## Product Catalog Rules
 
@@ -171,6 +176,23 @@ Evidence:
 - `AdminCatalogMutationService.java` (`applyProductPatch` ghi cột `_en`)
 - `V136__add_product_bilingual_content.sql`
 - `DATA_CONTRACT.md` — "Product bilingual content"
+
+## Review And Rating Display Rules
+
+- `REVIEW_RULE_001`: Chỉ review trạng thái **APPROVED** được tính vào điểm trung bình và số lượng đánh giá hiển thị. Review `PENDING` / `SPAM` / `TRASH` không bao giờ xuất hiện trên web và không được tính. `CONFIRMED_FROM_CODE`
+- `REVIEW_RULE_002`: Điểm hiển thị = **trung bình cộng** điểm của tất cả review đã duyệt, làm tròn **1 chữ số thập phân, half-up** (ví dụ `[5, 4, 3]` → `4.0`; `[5, 2]` → `3.5`). Quy ước này thống nhất ở 3 nơi: cache `products.rating` (`AdminReviewService.toCachedRating` — `RoundingMode.HALF_UP`), `avgRating` của API public reviews (`PublicReviewService.roundAverage`), và SQL backfill `V63`. Giá trị hiển thị trên web phải khớp giữa `rating` (denormalized trên Product), `avgRating` (API reviews) và trung bình cộng thực tế. `CONFIRMED_FROM_CODE`
+- `REVIEW_RULE_003`: **Widget 5 sao chỉ hiển thị khi sản phẩm có ≥ 1 review đã duyệt.** Gate hiển thị bắt buộc dựa trên `ratingCount` / `totalReviews` ≥ 1 (kết hợp `rating > 0` để vẽ), **không được** dùng `rating > 0` làm tín hiệu duy nhất. Sản phẩm 0 review → **ẩn hoàn toàn sao** (có thể thay bằng dòng "Chưa có đánh giá"); cấm mọi giá trị sao mặc định khi thiếu dữ liệu (4.5 ở component, 2 sao của plugin `starRating` theme WP khi `.rating-star` thiếu `data-rating`). Microdata/schema.org `aggregateRating` cũng chỉ được xuất khi có ≥ 1 review đã duyệt. `CONFIRMED_FROM_CODE`
+- `REVIEW_RULE_004`: Lý do gate theo `ratingCount` thay vì `rating`: dữ liệu WordPress import có thể mang `rating` ảo (mapper default `4.5` khi WP meta thiếu — `WordPressProductMapper.java`) với `rating_count = NULL` và **không có review thật**; pipeline import không recompute cache. `rating > 0` vì vậy không chứng minh sản phẩm có review. Việc dọn rating ảo trong data import + sửa importer là task backend riêng, không thuộc phạm vi hiển thị web. `CONFIRMED_FROM_CODE`
+
+Evidence:
+
+- `AdminReviewService.java` (`updateStatus`, `deleteReview` → `recomputeProductReviewAggregate`: 0 approved → `rating = NULL`, `rating_count = 0`; `toCachedRating` HALF_UP 1 decimal)
+- `PublicReviewService.java` (`getProductReviews` — chỉ APPROVED; `roundAverage`)
+- `ReviewJpaRepository.java` (`findAggregateByProductIdAndStatus`)
+- `WordPressProductMapper.java`, `ProductImporter.java` (nguồn rating ảo 4.5 — `REVIEW_RULE_004`)
+- `bigbike-web/lib/rating.ts` (`hasApprovedReviews` — gate dùng chung phía web)
+- `bigbike-web/components/ui/RatingStars.tsx`, `ProductCard.tsx`, `ComparisonTable.tsx`, `WpProductSwipeItem.tsx`, `WpPurchaseSection.tsx`, `ReviewsSection.tsx` (các nơi render sao theo `REVIEW_RULE_003`)
+- `API_CONTRACT.md` — "Public Reviews Contract"; `DATA_CONTRACT.md` — "Product rating denormalization"
 
 ## Category Catalog Rules
 

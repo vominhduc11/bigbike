@@ -656,6 +656,14 @@ export function normalizeOrder(input) {
     shippingItems: Array.isArray(s.shippingItems) ? s.shippingItems : [],
     payments,
     notes: Array.isArray(s.notes) ? s.notes.map(normalizeOrderNote) : [],
+    // Applied coupons (code + per-coupon discount) so the detail screen can show which
+    // promotions were used, not just the total discount.
+    appliedCoupons: Array.isArray(s.appliedCoupons)
+      ? s.appliedCoupons.map((c) => ({
+          code: toTrimmedStringLocal(c?.code) || '',
+          discountAmount: toIntegerLocal(c?.discountAmount, 0),
+        }))
+      : [],
     // Amounts — backend uses *Amount suffix
     subtotal: toIntegerLocal(s.subtotalAmount, 0),
     shippingFee: toIntegerLocal(s.shippingAmount, 0),

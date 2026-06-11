@@ -5,7 +5,7 @@ import { getLocale } from "next-intl/server";
 import { HomeAnalytics } from "@/components/home/HomeAnalytics";
 import { ExperienceCarousel } from "@/components/home/ExperienceCarousel";
 import { HomeVideoCarousel } from "@/components/home/HomeVideoCarousel";
-import { WpProductSwipeItem } from "@/components/wp/WpProductSwipeItem";
+import { ProductSwiper } from "@/components/catalog/ProductSwiper";
 import type { Article, HomeSlider, Product } from "@/lib/contracts/public";
 import {
   getProductBySlug,
@@ -82,9 +82,14 @@ function toHeroSlide(slider: HomeSlider, product: Product | null) {
   const desktopSrc = toLegacyWpMediaUrl(resolveMediaUrl(slider.desktopImage?.url?.trim()));
   if (!desktopSrc) return null;
 
+  // Banner WP: desktop dùng background của <a>, mobile (≤767px) dùng <span>.
+  // Khi slider có ảnh mobile riêng thì <span> dùng ảnh đó, fallback về ảnh desktop.
+  const mobileSrc = toLegacyWpMediaUrl(resolveMediaUrl(slider.mobileImage?.url?.trim())) || desktopSrc;
+
   return {
     id: slider.id,
     src: desktopSrc,
+    mobileSrc,
     href: toSafePublicHref(
       slider.link || slider.productLink || slider.externalLink,
       toProductListPath(),
@@ -229,7 +234,7 @@ export default async function HomePage() {
                   style={{ background: `url('${s.src}')`, backgroundSize: "cover" }}
                   className="-swiper-lazy"
                 >
-                  <span style={{ backgroundImage: `url('${s.src}')` }} />
+                  <span style={{ backgroundImage: `url('${s.mobileSrc}')` }} />
                 </a>
               </div>
             ))}
@@ -304,20 +309,7 @@ export default async function HomePage() {
             <p className="sub-title">SẢN PHẨM NỔI BẬT</p>
             <h3>SẢN PHẨM NỔI BẬT TẠI BIGBIKE</h3>
           </div>
-          {carouselProducts.length > 0 && (
-            <div className="product" id="main-product-slide">
-              <div className="swiper-container">
-                <div className="swiper-wrapper">
-                  {carouselProducts.map((p) => (
-                    <WpProductSwipeItem product={p} key={p.id} />
-                  ))}
-                </div>
-                <div className="swiper-button-next" />
-                <div className="swiper-button-prev" />
-              </div>
-              <div className="swiper-pagination custom-pagination" />
-            </div>
-          )}
+          {carouselProducts.length > 0 && <ProductSwiper products={carouselProducts} />}
 
           {categories.length > 0 && (
             <div className="product-category-list mb-10">

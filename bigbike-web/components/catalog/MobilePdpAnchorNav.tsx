@@ -63,8 +63,12 @@ export function MobilePdpAnchorNav({
   }, [triggerSelector]);
 
   // Bám mép dưới header WP thật (cao ~80px ≠ --bb-header-height 60px, lại co/giãn
-  // theo headroom) để thanh nằm SÁT DƯỚI header, không đè lên. Đo LIÊN TỤC (kể cả
-  // lúc thanh đang ẩn) để khi hiện ra đã đúng vị trí ngay, không nhảy/nhấp nháy.
+  // theo headroom) để thanh nằm SÁT DƯỚI header, không đè lên. CHỈ bám khi thanh
+  // đang HIỆN: lúc ẩn (cuộn lên), header headroom trượt xuống hiện lại nên mép dưới
+  // của nó tăng dần 0→80px — nếu vẫn bám, topPx kéo thanh ĐI XUỐNG đúng lúc nó đang
+  // trượt-lên/fade để ẩn → hai chiều ngược nhau → GIẬT. Vì vậy `visible=false` thì
+  // ngừng cập nhật, để thanh trượt thẳng lên gọn từ vị trí đã ghim. Đo lại ngay mỗi
+  // khi `visible` đổi (đưa vào deps) để khi hiện ra đã đúng vị trí, không nhấp nháy.
   useEffect(() => {
     const header = document.querySelector<HTMLElement>(headerSelector);
     if (!header) return;
@@ -74,6 +78,7 @@ export function MobilePdpAnchorNav({
       setTopPx(Math.max(0, Math.round(header.getBoundingClientRect().bottom)));
     };
     const onScroll = () => {
+      if (!visible) return; // đang ẩn → đóng băng top, không để header kéo thanh lệch khi biến mất
       if (!raf) raf = requestAnimationFrame(measure);
     };
     measure();
@@ -84,7 +89,7 @@ export function MobilePdpAnchorNav({
       window.removeEventListener("resize", onScroll);
       if (raf) cancelAnimationFrame(raf);
     };
-  }, [headerSelector]);
+  }, [headerSelector, visible]);
 
   // Uncontrolled: theo dõi section đang xem để tô đậm. Controlled thì cha lo state.
   useEffect(() => {
@@ -143,7 +148,9 @@ export function MobilePdpAnchorNav({
     }, 800);
     setInternalActive(id);
 
-    const headerEl = document.querySelector<HTMLElement>(".bb-site-header");
+    const headerEl =
+      document.querySelector<HTMLElement>(headerSelector) ??
+      document.querySelector<HTMLElement>(".bb-site-header");
     const offset = (headerEl?.offsetHeight ?? 60) + (navRef.current?.offsetHeight ?? 44) + 8;
     const y = el.getBoundingClientRect().top + window.scrollY - offset;
     window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
@@ -154,16 +161,34 @@ export function MobilePdpAnchorNav({
   return (
     <nav
       ref={navRef}
-      // `flex md:hidden` (không `hidden max-md:flex`) để tránh lỗi cascade Tailwind v4
-      // khiến `hidden` thắng → thanh kẹt display:none. `top` đặt runtime bằng mép dưới
-      // header thật (style inline), CSS var chỉ là fallback frame đầu. Ẩn/hiện TỨC
-      // THÌ bằng visibility — KHÔNG transition/translate, để hiện ngay dưới header,
-      // không trượt từ trên xuống.
+      // `flex flex-nowrap whitespace-nowrap`: KHÓA MỘT-HÀNG ở CẢ cấp thanh chứa, không chỉ
+      // trên từng nút. Khi nhiều mục dài hơn bề ngang (4 mục tiếng Việt trên màn mobile hẹp),
+      // thanh phải CUỘN NGANG một dòng — KHÔNG xuống dòng. `flex-nowrap` chặn wrap ở chế độ
+      // flex; `whitespace-nowrap` ở thanh chứa là lớp phòng hờ: nếu `display:flex` thua cascade
+      // Tailwind v4 (đúng lỗi đã gặp bên dưới) → nút rơi về inline-block, lúc đó chính
+      // `whitespace-nowrap` giữ chúng trên một dòng để `overflow-x-auto` cuộn, thay vì tràn xuống.
+      // `flex md:!hidden` (không `hidden max-md:flex`) để tránh lỗi cascade Tailwind v4
+      // khiến `hidden` thắng → thanh kẹt display:none. `!hidden` (important) ở md để ép
+      // ẩn HẲN trên desktop — nếu chỉ `md:hidden` thì `flex` có thể thắng cascade và thanh
+      // lọt ra desktop (chỉ được phép xuất hiện ở mobile). `top` đặt runtime bằng mép dưới
+      // header thật (style inline), CSS var chỉ là fallback frame đầu. Hiệu ứng reveal:
+      // thanh TRƯỢT XUỐNG TỪ SAU HEADER (-translate-y-full → 0) kèm fade. Header WP là nền
+      // ĐEN ĐẶC, z-index:10 (xem `header{…z-index:10}` trong app/globals.css + wp-theme-*.css)
+      // → thanh PHẢI có z THẤP HƠN 10 (đặt `z-[9]`) để chui SAU header và bị header che kín
+      // khi trượt. Trước đây để `z-40` (cao hơn header) nên thanh ĐÈ LÊN header, lúc trượt/
+      // lúc header headroom đang slide thì hở ra cảnh chồng chữ lên logo/menu — KHÔNG dùng lại.
+      // z-[9] vẫn nổi trên nội dung trang (nội dung không tạo stacking context cao).
+      // Easing ease-out-expo (cubic-bezier .16,1,.3,1) giảm tốc mượt, 300ms; will-change
+      // để GPU lo transform. Lúc ẩn dùng pointer-events-none để không chặn tương tác bên
+      // dưới. Tôn trọng prefers-reduced-motion (tắt transition → hiện tức thì, không trượt).
       className={cn(
-        "flex md:hidden fixed top-[var(--bb-header-height)] left-0 right-0 z-40",
+        "flex flex-nowrap whitespace-nowrap md:!hidden fixed top-[var(--bb-header-height)] left-0 right-0 z-[9]",
         "overflow-x-auto overflow-y-hidden [scroll-snap-type:x_mandatory] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
-        "bg-white border-b border-border px-2 gap-0",
-        visible ? "visible pointer-events-auto" : "invisible pointer-events-none",
+        "bg-white border-b border-border px-2 gap-0 shadow-[0_4px_12px_-6px_rgba(0,0,0,0.25)]",
+        "transition-[opacity,transform] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform motion-reduce:transition-none",
+        visible
+          ? "opacity-100 translate-y-0 pointer-events-auto"
+          : "opacity-0 -translate-y-full pointer-events-none",
       )}
       style={topPx != null ? { top: topPx } : undefined}
       aria-label="Điều hướng nội dung sản phẩm"

@@ -58,7 +58,7 @@ export function CompareButton({ product, variant = "icon" }: CompareButtonProps)
         onClick={handleClick}
         aria-pressed={active}
         className={cn(
-          "mt-2 flex items-center justify-center gap-2 border-2 px-4 py-3 font-body text-sm font-semibold uppercase tracking-wide transition-colors",
+          "flex flex-1 min-w-[150px] items-center justify-center gap-2 border-2 px-4 py-3 font-body text-sm font-semibold uppercase tracking-wide transition-colors",
           active
             ? "border-brand bg-brand-soft text-brand"
             : "border-border text-foreground hover:border-brand hover:text-brand",

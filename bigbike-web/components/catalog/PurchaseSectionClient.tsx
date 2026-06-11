@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { QuantityStepper } from "@/components/ui/QuantityStepper";
 import { cn } from "@/lib/utils";
 import { RatingStars } from "@/components/ui/RatingStars";
+import { hasApprovedReviews } from "@/lib/rating";
 import {
   collectAttributeNames,
   findColorPreviewVariant,
@@ -73,10 +74,8 @@ function RatingRow({
   count: number | null;
 }) {
   const t = useTranslations("Product.buyBox");
-  const hasReviews =
-    typeof rating === "number" && rating > 0 && typeof count === "number" && count > 0;
-
-  if (!hasReviews) {
+  // REVIEW_RULE_003 — gate dùng chung; check null lặp lại chỉ để narrow type.
+  if (!hasApprovedReviews(rating, count) || rating == null || count == null) {
     return (
       <div className="mt-2 text-ui-14 text-muted-foreground">
         <p className="m-0 !leading-[1.4]">{t("noReviews")}</p>

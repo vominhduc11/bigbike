@@ -21,6 +21,7 @@ import { SaleBadge } from "@/components/catalog/SaleBadge";
 import { WishlistButton } from "@/components/catalog/WishlistButton";
 import { CompareButton } from "@/components/catalog/CompareButton";
 import { RatingStars } from "@/components/ui/RatingStars";
+import { hasApprovedReviews } from "@/lib/rating";
 import { cardChrome } from "@/lib/ui-classes";
 import { cn } from "@/lib/utils";
 
@@ -166,7 +167,7 @@ export function ProductCard({ product, variant = "compact", surface = "article" 
               )}
             </div>
           </div>
-          {product.rating != null && product.rating > 0 && (
+          {hasApprovedReviews(product.rating, product.ratingCount) && (
             <div className="mt-2">
               <RatingStars value={product.rating} />
             </div>
@@ -280,7 +281,7 @@ export function ProductCard({ product, variant = "compact", surface = "article" 
                 </div>
               ) : null}
 
-              {product.rating != null && product.rating > 0 && (
+              {hasApprovedReviews(product.rating, product.ratingCount) && (
                 <div className="mt-2 text-ui-18">
                   <RatingStars value={product.rating} />
                 </div>
@@ -344,7 +345,7 @@ export function ProductCard({ product, variant = "compact", surface = "article" 
         <h3 className="font-body text-h4 font-semibold leading-5 text-foreground max-[767px]:line-clamp-2">
           {name}
         </h3>
-        {product.rating != null && product.rating > 0 && (
+        {hasApprovedReviews(product.rating, product.ratingCount) && (
           <div className="text-sm tracking-normal">
             <RatingStars value={product.rating} />
           </div>

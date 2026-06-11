@@ -138,7 +138,7 @@ Query params (all optional):
 - `sort` — ordering of the list: `newest` (default — `createdAt` desc), `highest` (`rating` desc, then `createdAt` desc), `lowest` (`rating` asc, then `createdAt` desc). Unknown values fall back to `newest`.
 
 Response `data` shape:
-- `avgRating` (number, 1-decimal), `totalReviews` (long) — **always global**, never affected by `rating`.
+- `avgRating` (number, 1-decimal, **HALF_UP** — `PublicReviewService.roundAverage`), `totalReviews` (long) — **always global**, never affected by `rating`. Khi 0 review approved: `avgRating = 0.0` (không phải null) và `totalReviews = 0` — FE gate hiển thị sao bắt buộc bằng `totalReviews ≥ 1`, không bằng `avgRating > 0` (xem `BUSINESS_RULES.md` `REVIEW_RULE_003`).
 - `ratingBreakdown` — `{ "5": n, "4": n, "3": n, "2": n, "1": n }`, every key present, global counts.
 - `reviews` — `[{ id, authorName, rating, comment, createdAt }]`, filtered + sorted per params.
 - `pagination` — `{ page, pageSize, totalItems, totalPages, hasNext, hasPrevious }`. `totalItems`/`totalPages`/`hasNext` follow the **filtered** list (so "load more" pages correctly within one star bucket); when `rating` is absent these equal the global approved count.
@@ -158,6 +158,15 @@ No query params. Response shape: `ApiListResponse<ContentCategoryWithCount>`:
 - `articleCount` — number of `PUBLISHED` articles in that category.
 
 **Counting semantics:** an article counts toward a category when that category is its primary `category` **or** appears in its many-to-many `categories` list — the same membership rule as the `category` filter of `GET /api/v1/articles`. Every content category is returned (including `articleCount = 0`), ordered by `name`. Status: `CONFIRMED_FROM_CODE` — `ContentController.listContentCategories`, `ContentReadService.listContentCategories`.
+
+**Admin CRUD** (consumed by the admin Content screen "Quản lý danh mục bài viết" modal — `ContentCategoryManagerModal`):
+
+| Method | Path | Permission | Body | Response |
+|---|---|---|---|---|
+| `POST` | `/api/v1/admin/content/content-categories` | `content.update` | `UpsertCategoryRequest` (`slug` lowercase-kebab, `name`, optional `description`/`visible`/`showOnHomepage`/`sortOrder`/`parentId`) | `ApiDataResponse<ContentCategoryItem>` (`{ id, slug, name }`) |
+| `PATCH` | `/api/v1/admin/content/content-categories/{id}` | `content.update` | same `UpsertCategoryRequest` | `ApiDataResponse<ContentCategoryItem>` |
+
+No DELETE endpoint exists for content categories. Status: `CONFIRMED_FROM_CODE` — `AdminContentController.createCategory/updateCategory`, `adminApi.createContentCategory/updateContentCategory`. (Note: `createCategory()` in `adminApi.js` targets `/admin/categories` — **product** categories — a separate resource.)
 
 ## Article Content Contract
 
@@ -516,6 +525,8 @@ Response fields verified in `PosOrderResponse` usage:
 - `items` — danh sách line item
 - `discountAmount` — tổng discount từ coupon (BigDecimal, 0 khi không có coupon)
 - `couponCode` — mã coupon đã áp dụng (String, null khi không có coupon)
+- `customerName` — tên khách nhập lúc bán POS (String, null nếu không nhập) — dùng in lên hoá đơn
+- `customerPhone` — SĐT khách nhập lúc bán POS (String, null nếu không nhập) — dùng in lên hoá đơn
 
 **Ghi chú:**
 - Credit limit được check SAU khi tính coupon discount (`totalAfterDiscount`), không check trên `subtotal` trước coupon.

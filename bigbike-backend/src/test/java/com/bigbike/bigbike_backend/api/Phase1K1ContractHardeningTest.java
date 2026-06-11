@@ -7,17 +7,22 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.bigbike.bigbike_backend.persistence.entity.auth.AdminRoleEntity;
 import com.bigbike.bigbike_backend.persistence.entity.auth.AdminUserEntity;
 import com.bigbike.bigbike_backend.persistence.entity.menu.MenuEntity;
 import com.bigbike.bigbike_backend.persistence.entity.menu.MenuItemEntity;
 import com.bigbike.bigbike_backend.persistence.entity.settings.SiteSettingEntity;
+import com.bigbike.bigbike_backend.persistence.repository.auth.AdminRoleJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.menu.MenuItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.menu.MenuJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.settings.SiteSettingJpaRepository;
+import com.bigbike.bigbike_backend.service.auth.AdminPermissionService;
 import com.bigbike.bigbike_backend.service.auth.PasswordService;
 import java.time.Instant;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,6 +43,8 @@ class Phase1K1ContractHardeningTest {
 
     @Autowired WebApplicationContext webApplicationContext;
     @Autowired AdminUserJpaRepository adminUserRepo;
+    @Autowired AdminRoleJpaRepository roleRepo;
+    @Autowired AdminPermissionService adminPermissionService;
     @Autowired MenuJpaRepository menuRepo;
     @Autowired MenuItemJpaRepository menuItemRepo;
     @Autowired SiteSettingJpaRepository settingRepo;
@@ -52,8 +59,29 @@ class Phase1K1ContractHardeningTest {
                 .webAppContextSetup(webApplicationContext)
                 .apply(SecurityMockMvcConfigurers.springSecurity())
                 .build();
+        ensureSuperAdminRole();
         ensureAdminUser();
         adminToken = loginAdmin();
+    }
+
+    // The test profile disables Flyway and uses ddl-auto=create-drop, so the role_permissions
+    // seed never runs and the admin_roles table is empty. requirePermission() (JWT path) resolves
+    // permissions from that table via AdminPermissionService, so without a seeded role every
+    // permission-gated request 403s. Seed SUPER_ADMIN with the "*" wildcard for this test.
+    private void ensureSuperAdminRole() {
+        if (!roleRepo.existsById("SUPER_ADMIN")) {
+            AdminRoleEntity role = new AdminRoleEntity();
+            role.setId("SUPER_ADMIN");
+            role.setName("Super Admin");
+            role.setDescription("Phase1K1 hardening test role");
+            role.setSystem(true);
+            role.setPermissions(new LinkedHashSet<>(Set.of("*")));
+            Instant now = Instant.now();
+            role.setCreatedAt(now);
+            role.setUpdatedAt(now);
+            roleRepo.save(role);
+        }
+        adminPermissionService.evict("SUPER_ADMIN");
     }
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -207,6 +235,34 @@ class Phase1K1ContractHardeningTest {
     }
 
     // ══════════════════════════════════════════════════════════════════════════
+    // SECTION 5 — Missing required request parameter must be 400, not 500
+    // ══════════════════════════════════════════════════════════════════════════
+
+    // A required @RequestParam that is absent must map to 400 VALIDATION_ERROR via
+    // GlobalExceptionHandler, never fall through to the generic 500 SERVER_ERROR.
+    @Test
+    void missingRequiredQueryParam_returns400NotServerError() throws Exception {
+        MvcResult result = mockMvc.perform(get("/api/v1/admin/pos/products/search")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest())
+                .andReturn();
+        String body = result.getResponse().getContentAsString();
+        assertThat(body).contains("VALIDATION_ERROR");
+        assertThat(body).contains("\"q\"");
+        assertThat(body).contains("REQUIRED");
+    }
+
+    // Same endpoint with the required param present must succeed (2xx), proving the
+    // 400 above is specifically about the missing parameter, not a broken endpoint.
+    @Test
+    void presentRequiredQueryParam_returns2xx() throws Exception {
+        mockMvc.perform(get("/api/v1/admin/pos/products/search")
+                        .param("q", "mu")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().is2xxSuccessful());
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
     // HELPERS
     // ══════════════════════════════════════════════════════════════════════════
 
@@ -216,7 +272,10 @@ class Phase1K1ContractHardeningTest {
             admin.setEmail(ADMIN_EMAIL);
             admin.setPasswordHash(passwordService.hash(ADMIN_PASS));
             admin.setDisplayName("Phase1K1 Test Admin");
-            admin.setRole("ADMIN");
+            // Hardening tests exercise settings.write / menus.write validation paths; the seed
+            // user must hold those permissions or requirePermission short-circuits with 403 before
+            // the validation under test runs. SUPER_ADMIN carries the "*" wildcard (AdminRolePermissions).
+            admin.setRole("SUPER_ADMIN");
             admin.setStatus("ACTIVE");
             Instant now = Instant.now();
             admin.setCreatedAt(now);

@@ -192,6 +192,7 @@ function buildEmptyForm() {
     description: '',
     descriptionBlocks: null,
     installationGuide: '',
+    promotionContent: '',
     brandId: '',
     categoryId: '',
     retailPrice: '',
@@ -226,6 +227,7 @@ function buildEmptyTranslation() {
     shortDescription: '',
     description: '',
     installationGuide: '',
+    promotionContent: '',
     seoTitle: '',
     seoDescription: '',
   }
@@ -268,6 +270,7 @@ function buildFormFromItem(item) {
     description: item.description || '',
     descriptionBlocks: item.descriptionBlocks ?? null,
     installationGuide: item.installationGuide || '',
+    promotionContent: item.promotionContent || '',
     brandId: item.brandId || item.brand?.id || '',
     categoryId: item.categoryId || item.category?.id || item.categories?.[0]?.id || '',
     retailPrice:
@@ -303,7 +306,9 @@ function buildFormFromItem(item) {
       _key: generateId(),
       name: s.name || '',
       value: s.value || '',
-      groupName: s.groupName || '',
+      // Response record exposes spec group as `group` (ProductSpecification); the form field
+      // and the save DTO (SpecificationRequest) use `groupName`. Read both so the group loads.
+      groupName: s.group || s.groupName || '',
       nameEn: s.nameEn || '',
       valueEn: s.valueEn || '',
     })),
@@ -375,6 +380,7 @@ function toPayload(form) {
     shortDescription: form.shortDescription.trim() || undefined,
     description: Array.isArray(form.descriptionBlocks) ? undefined : (form.description.trim() || undefined),
     installationGuide: form.installationGuide.trim() ? form.installationGuide.trim() : null,
+    promotionContent: form.promotionContent.trim() ? form.promotionContent.trim() : null,
     brandId: form.brandId.trim() || undefined,
     categoryId: form.categoryId.trim(),
     // Send null when cleared so backend (presence-flag logic) can distinguish
@@ -485,11 +491,10 @@ function toPayload(form) {
       sortOrder: i,
       options: v.options
         .filter((o) => o.name.trim() && o.value.trim())
-        .map((o, j) => ({
+        .map((o) => ({
           optionName: o.name.trim(),
           optionValue: o.value.trim(),
           ...(o.attributeValueId ? { attributeValueId: o.attributeValueId } : {}),
-          sortOrder: j,
         })),
       gallery: shouldSendGallery ? gallery : [],
     }
@@ -1994,7 +1999,7 @@ const SECTION_FIELD_PREFIXES = {
   gallery:       ['gallery'],
   videos:        ['videos'],
   specs:         ['specifications'],
-  installation:  ['installationGuide'],
+  installation:  ['installationGuide', 'promotionContent'],
   faqs:          ['faqs'],
   variants:      ['variants'],
   related:       ['relatedProductIds'],
@@ -3290,6 +3295,30 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 {validationErrors.installationGuide && (
                   <span className="text-xs text-[var(--admin-color-status-danger-text)] font-semibold mt-2 block">
                     {validationErrors.installationGuide}
+                  </span>
+                )}
+              </SectionCard>
+
+              {/* ── Card: Nội dung khuyến mãi ── */}
+              <SectionCard
+                title={t('products.detail.sectionPromotion', { defaultValue: 'Nội dung khuyến mãi' })}
+                badge={<RoleBadge role="content" />}
+              >
+                <p className="text-xs text-muted-foreground mb-2">
+                  {t('products.detail.promotionHint', { defaultValue: 'Nội dung khuyến mãi hiển thị trong tab "Khuyến mãi" trên trang sản phẩm.' })}
+                </p>
+                <RichTextEditor
+                  key={`promotionContent-${i18n.language}`}
+                  value={langValue('promotionContent')}
+                  onChange={(html) => langChange('promotionContent', html)}
+                  placeholder={t('products.detail.promotionPlaceholder', { defaultValue: 'Nhập nội dung khuyến mãi, ưu đãi kèm theo...' })}
+                  disabled={isReadOnly}
+                  hasError={Boolean(validationErrors.promotionContent)}
+                  enableImagePicker
+                />
+                {validationErrors.promotionContent && (
+                  <span className="text-xs text-[var(--admin-color-status-danger-text)] font-semibold mt-2 block">
+                    {validationErrors.promotionContent}
                   </span>
                 )}
               </SectionCard>

@@ -279,6 +279,13 @@ export function paymentStatusLabelWithT(status: string | null | undefined, t: TF
   return status ?? t("paymentStatus.UNKNOWN");
 }
 
+/** Locale-aware label for fulfillment (giao hàng) status. Pass t from useTranslations("Account.orders"). */
+export function fulfillmentStatusLabelWithT(status: string | null | undefined, t: TFn): string {
+  const known = ["UNFULFILLED", "PROCESSING", "SHIPPED", "DELIVERED", "RETURNED", "CANCELLED"];
+  if (status && known.includes(status)) return t(`fulfillmentStatus.${status}`);
+  return status ?? t("fulfillmentStatus.UNKNOWN");
+}
+
 /** Locale-aware variant of paymentMethodLabel. Pass t from useTranslations("Checkout"). */
 export function paymentMethodLabelWithT(method: string | null | undefined, t: TFn): string {
   const code = (method ?? "").trim().toUpperCase();

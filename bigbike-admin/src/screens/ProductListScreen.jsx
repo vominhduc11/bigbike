@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Check, Copy, Download, MoreHorizontal, Package, Pencil, Plus, Trash2, Undo2, Upload } from 'lucide-react'
+import { Check, Copy, Download, MoreHorizontal, Package, Pencil, Plus, Trash2, Undo2 } from 'lucide-react'
 import { PublishStatusBadge, StockStatusBadge } from '../components/StatusBadge'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
@@ -273,9 +273,6 @@ export function ProductListScreen({ navigate, canUpdate }) {
           <p className="bb-muted">{t('products.description')}</p>
         </div>
         <div className="bb-screen-actions">
-          <button type="button" className="bb-btn bb-btn-secondary" disabled title={t('products.importHint', { defaultValue: 'Nhập CSV' })}>
-            <Upload size={14} />{t('products.importCsv', { defaultValue: 'Import CSV' })}
-          </button>
           <button
             type="button"
             className="bb-btn bb-btn-secondary"

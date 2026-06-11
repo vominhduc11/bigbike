@@ -220,6 +220,7 @@
       "errorNetwork": "Connection error — please try again.",
       "errorLoad": "Couldn't load reviews.",
       "errorLoadMore": "Couldn't load more reviews.",
+      "retry": "Try again",
       "thanks": "Thanks for your review! It's pending moderation.",
       "writeButton": "Write a review",
       "formTitle": "Your review",
@@ -579,6 +580,10 @@
     "logoutConfirm": "Sign out of your account?",
     "dashboardGreeting": "Hello <strong>{name}</strong>.",
     "dashboardIntro": "From your account page you can view your <orders>recent orders</orders>, manage your <addresses>shipping and billing addresses</addresses>, and edit your <account>password and account details</account>.",
+    "emailNotVerified": "Your email is not verified yet. Verify it to keep your account secure.",
+    "emailVerifyResend": "Resend verification email",
+    "emailVerifySent": "Sent! Please check your inbox.",
+    "emailVerifyError": "Couldn't send, please try again.",
     "dashboardCards": {
       "ordersDesc": "Track the status and history of your orders",
       "addressesDesc": "Manage your shipping and billing addresses",
@@ -687,6 +692,16 @@
         "UNPAID": "Unpaid",
         "PAID": "Paid",
         "REFUNDED": "Refunded",
+        "CANCELLED": "Cancelled",
+        "UNKNOWN": "Updating"
+      },
+      "fulfillmentLabel": "Delivery status",
+      "fulfillmentStatus": {
+        "UNFULFILLED": "Not shipped",
+        "PROCESSING": "Preparing",
+        "SHIPPED": "Shipping",
+        "DELIVERED": "Delivered",
+        "RETURNED": "Returned",
         "CANCELLED": "Cancelled",
         "UNKNOWN": "Updating"
       },

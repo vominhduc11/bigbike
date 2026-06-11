@@ -15,5 +15,6 @@ public record AdminOrderListItemResponse(
         BigDecimal totalAmount,
         String currency,
         Instant placedAt,
-        int itemCount
+        int itemCount,
+        String source
 ) {}

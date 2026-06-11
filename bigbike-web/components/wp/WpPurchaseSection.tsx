@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { ImageAsset, Product, ProductVariant } from "@/lib/contracts/public";
+import type { ImageAsset, Product, ProductVariant, VideoAsset } from "@/lib/contracts/public";
 import { useCart } from "@/lib/cart-context";
 import { derivePricing } from "@/lib/pricing";
 import { formatVndNumber, resolveMediaUrl, safeText, toLegacyWpMediaUrl } from "@/lib/utils/format";
@@ -13,15 +13,21 @@ import {
   isColorAttribute,
 } from "@/lib/utils/variant-match";
 import { WishlistButton } from "@/components/catalog/WishlistButton";
+import { CompareButton } from "@/components/catalog/CompareButton";
 import { ProductGallery } from "@/components/catalog/ProductGallery";
+import { hasApprovedReviews } from "@/lib/rating";
 import { MobileStickyPurchaseBar } from "@/components/catalog/MobileStickyPurchaseBar";
+import { QuickBuyModal } from "@/components/catalog/QuickBuyModal";
+import { QuickBuySuccessModal } from "@/components/catalog/QuickBuySuccessModal";
+import { cn } from "@/lib/utils";
 
 type Props = {
   product: Product;
   gallery: ImageAsset[];
+  videos: VideoAsset[];
   shortDescriptionHtml: string;
-  rating: number;
-  ratingCount: number;
+  rating: number | null;
+  ratingCount: number | null;
 };
 
 function imgUrl(a: ImageAsset | null | undefined): string {
@@ -42,6 +48,7 @@ function distinctOptions(variants: ProductVariant[], attrName: string) {
 export function WpPurchaseSection({
   product,
   gallery,
+  videos,
   shortDescriptionHtml,
   rating,
   ratingCount,
@@ -55,6 +62,12 @@ export function WpPurchaseSection({
   const [quantity, setQuantity] = useState(1);
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState("");
+  const [quickBuyOpen, setQuickBuyOpen] = useState(false);
+  const [successOrder, setSuccessOrder] = useState<{
+    orderNumber: string;
+    orderKey: string;
+    paymentMethod: string;
+  } | null>(null);
 
   const selectedVariant = useMemo(
     () => (hasVariants ? findMatchingVariant(variants, selectedOptions, { requireAll: true }) : null),
@@ -72,10 +85,45 @@ export function WpPurchaseSection({
   const showOld = compare != null && compare > current;
 
   const requiresSelection = hasVariants && !selectedVariant;
-  const isOutOfStock = hasVariants
-    ? variants.every((v) => v.stockState === "OUT_OF_STOCK")
-    : product.stockState === "OUT_OF_STOCK";
+
+  // STOCK_RULE_009 — hiển thị buy-box PDP (display-only, KHÔNG đổi điều kiện mua
+  // ở STOCK_RULE_005/006):
+  //  • Sản phẩm CÓ biến thể, khách CHƯA chọn → chỉ "Còn hàng" / "Hết hàng" theo
+  //    product.stockState (aggregate STOCK_RULE_008). KHÔNG hiện "Sắp hết".
+  //    (product.stockQuantity là null/0 cho hàng có biến thể nên không phân tầng được.)
+  //  • Đã xác định 1 đơn vị tồn cụ thể (biến thể đã chọn → variant.stockQuantity,
+  //    hoặc sản phẩm không biến thể → product.stockQuantity): phân tầng theo SỐ
+  //    SERIAL còn lại — >=10 "Còn hàng", 1..9 "Sắp hết", <=0 "Hết hàng". Ngưỡng 10
+  //    là hằng số hiển thị riêng của PDP, độc lập với low_stock_threshold (mặc
+  //    định 5) vốn chỉ chi phối checkout/cảnh báo admin.
+  const PDP_LOW_STOCK_CUTOFF = 10;
+  const stockUnitKnown = !hasVariants || !!selectedVariant;
+  const unitQty = selectedVariant ? selectedVariant.stockQuantity : product.stockQuantity;
+  const unitState = selectedVariant?.stockState ?? product.stockState;
+  // Tồn của đơn vị đang xét: ưu tiên số serial; thiếu số thì suy từ stockState.
+  const unitOut = typeof unitQty === "number" ? unitQty <= 0 : unitState === "OUT_OF_STOCK";
+  const unitLow =
+    !unitOut &&
+    (typeof unitQty === "number" ? unitQty < PDP_LOW_STOCK_CUTOFF : unitState === "LOW_STOCK");
+
+  const isOutOfStock =
+    Boolean(product.forceOutOfStock) ||
+    (stockUnitKnown ? unitOut : product.stockState === "OUT_OF_STOCK");
+  // "Sắp hết" chỉ khi đã xác định đơn vị tồn cụ thể (chưa chọn biến thể → bỏ qua).
+  const isLowStock = !isOutOfStock && stockUnitKnown && unitLow;
   const canBuy = !isOutOfStock && (!hasVariants || (!!selectedVariant && selectedVariant.isAvailable));
+
+  // Chỉ hiện sao + microdata aggregateRating khi có đánh giá thật; tránh số ảo
+  // (REVIEW_RULE_003 — gate theo ratingCount, dùng chung toàn app).
+  const hasReviews = hasApprovedReviews(rating, ratingCount);
+
+  // Cuộn mượt xuống khu vực đánh giá thay vì nhảy giật tới #reviews như anchor mặc định.
+  function scrollToReviews(e: React.MouseEvent<HTMLAnchorElement>) {
+    const target = document.getElementById("reviews");
+    if (!target) return;
+    e.preventDefault();
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 
   function pick(attr: string, value: string) {
     setSelectedOptions((prev) => {
@@ -106,12 +154,14 @@ export function WpPurchaseSection({
     <div className="row bb-wp-pdp" itemProp="itemReviewed" itemScope itemType="https://schema.org/Product">
       {/* Gallery col — dùng ProductGallery (Swiper) y như PurchaseSectionClient.
           Ảnh chính + dải thumbnail là 2 Swiper liên kết qua module Thumbs; tập ảnh
-          (cover-đầu + khử trùng + theo màu) do ProductGallery tự xử lý. Video KHÔNG
-          đẩy vào đây vì PDP WP đã có tab "Videos" riêng. */}
+          (cover-đầu + khử trùng + theo màu) do ProductGallery tự xử lý. Video được
+          ghép thẳng vào dải gallery (sau ảnh) — đúng như code cũ, KHÔNG tách tab
+          "Videos" riêng. ProductGallery chỉ hiện video khi chưa chọn biến thể. */}
       <div className="col-md-7 min-w-0 max-[1023px]:!flex-[0_0_100%] max-[1023px]:!max-w-full">
         <ProductGallery
           mainImage={product.image}
           gallery={gallery}
+          videos={videos}
           altFallback={name}
           variantImage={colorVariant?.image ?? null}
           variantGallery={colorVariant?.gallery ?? undefined}
@@ -125,34 +175,45 @@ export function WpPurchaseSection({
           <div className="title" itemProp="name">
             <h1 className="product_title entry-title">{name}</h1>
           </div>
-          <div className="row">
-            <div className="col-5">
-              <div className="price">
-                <p className="price js-single-price">
-                  {formatVndNumber(current)} ₫
-                  {showOld ? <del> {formatVndNumber(compare!)} ₫</del> : null}
-                </p>
-              </div>
-              <div className="rating" itemProp="aggregateRating" itemScope itemType="https://schema.org/AggregateRating">
-                {/* Để RỖNG + data-rating: JS theme WP (home.min.js qua WpThemeScripts,
-                    chạy mọi route WP gồm PDP) tự inject 5 sao (có nửa sao). Trước đây nhét
-                    thêm 5 SVG vào trong → "2 lần 5 sao". Giống WpProductSwipeItem. */}
-                <div className="rating-star" data-rating={rating} />
-                <br />
-                <p>
-                  Đánh giá: <span itemProp="ratingValue">{rating}/</span>
-                  <span itemProp="reviewCount">{ratingCount}</span>
-                </p>
-              </div>
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div className="price">
+              <p className="price js-single-price">
+                {formatVndNumber(current)} ₫
+                {showOld ? <del> {formatVndNumber(compare!)} ₫</del> : null}
+              </p>
             </div>
-            <div className="col-7 text-right">
-              <div className="status">
-                <p className={"stock " + (isOutOfStock ? "out-of-stock" : "in-stock")}>
-                  <span>{isOutOfStock ? "HẾT HÀNG" : "CÒN HÀNG"}</span>
-                </p>
-              </div>
+            <div className="status">
+              <p className={"stock " + (isOutOfStock ? "out-of-stock" : isLowStock ? "low-stock" : "in-stock")} style={{ paddingLeft: "2rem", paddingRight: "2rem" }}>
+                <span>{isOutOfStock ? "HẾT HÀNG" : isLowStock ? "SẮP HẾT HÀNG" : "CÒN HÀNG"}</span>
+              </p>
             </div>
           </div>
+          {hasReviews ? (
+            <div className="rating" itemProp="aggregateRating" itemScope itemType="https://schema.org/AggregateRating">
+              {/* Để RỖNG + data-rating: JS theme WP (home.min.js qua WpThemeScripts,
+                  chạy mọi route WP gồm PDP) tự inject 5 sao (có nửa sao). Trước đây nhét
+                  thêm 5 SVG vào trong → "2 lần 5 sao". Giống WpProductSwipeItem. */}
+              <div className="rating-star" data-rating={rating ?? undefined} />
+              <br />
+              <p>
+                Đánh giá: <span itemProp="ratingValue">{rating}/</span>
+                <span itemProp="reviewCount">{ratingCount}</span>
+                {" — "}
+                <a href="#reviews" onClick={scrollToReviews} className="text-brand underline-offset-2 hover:underline">
+                  Xem tất cả đánh giá
+                </a>
+              </p>
+            </div>
+          ) : (
+            <div className="rating">
+              <p>
+                Chưa có đánh giá —{" "}
+                <a href="#reviews" onClick={scrollToReviews} className="text-brand underline-offset-2 hover:underline">
+                  Viết đánh giá đầu tiên
+                </a>
+              </p>
+            </div>
+          )}
 
           {shortDescriptionHtml ? (
             <div className="desc wyswyg">
@@ -186,8 +247,29 @@ export function WpPurchaseSection({
                             {opts.map((o) => {
                               const checked = selectedOptions[attr] === o.value;
                               const swatch = color ? imgUrl(o.rep.image ?? o.rep.gallery?.[0]) : "";
+                              // STOCK_RULE_005: làm mờ option hết hàng (vẫn click được để
+                              // xem ảnh màu), chỉ KHÓA option của biến thể không bán
+                              // (isAvailable=false). Probe = lựa chọn hiện tại + option này.
+                              const probe = { ...selectedOptions, [attr]: o.value };
+                              const optInStock = Boolean(
+                                findMatchingVariant(variants, probe, {
+                                  onlyAvailable: true,
+                                  inStockOnly: true,
+                                }),
+                              );
+                              const optSelectable = Boolean(
+                                (findMatchingVariant(variants, probe, { onlyAvailable: true }) ??
+                                  findMatchingVariant(variants, probe))?.isAvailable,
+                              );
                               return (
-                                <div className="form-group" key={o.value}>
+                                <div
+                                  className={cn(
+                                    "form-group",
+                                    !optInStock && !checked && "opacity-45",
+                                    !optSelectable && !checked && "cursor-not-allowed",
+                                  )}
+                                  key={o.value}
+                                >
                                   <input
                                     type="radio"
                                     id={`${slug}-${o.value}`}
@@ -195,6 +277,14 @@ export function WpPurchaseSection({
                                     name={`attribute_pa_${slug}`}
                                     value={o.value}
                                     checked={checked}
+                                    disabled={!optSelectable && !checked}
+                                    // Radio đã chọn thì bấm lại KHÔNG bắn onChange,
+                                    // nên dùng onClick để bỏ chọn (toggle off) — giống
+                                    // VariantSelector của code cũ. onChange vẫn lo việc
+                                    // chọn option mới.
+                                    onClick={() => {
+                                      if (checked) pick(attr, o.value);
+                                    }}
                                     onChange={() => pick(attr, o.value)}
                                   />
                                   <label
@@ -215,36 +305,39 @@ export function WpPurchaseSection({
 
               <div className="single_variation_wrap">
                 <div className="woocommerce-variation single_variation" />
-                <div className="row woocommerce-variation-add-to-cart variations_button js-add-to-cart-wrap">
-                  <div className="col-md-5" style={{ padding: "0px" }}>
-                    <div className="quantity-group js-quantity-wrap">
-                      <div className="quantity">
-                        <input
-                          type="number"
-                          className="qty"
-                          min={1}
-                          value={quantity}
-                          onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
-                        />
-                      </div>
-                      <div className="button">
-                        <button type="button" className="minus js-plus" onClick={() => setQuantity((q) => q + 1)}>
-                          <i className="far fa-chevron-up" />
-                        </button>
-                        <button type="button" className="plus js-minus" onClick={() => setQuantity((q) => Math.max(1, q - 1))}>
-                          <i className="far fa-chevron-down" />
-                        </button>
-                      </div>
+                <div className="woocommerce-variation-add-to-cart variations_button js-add-to-cart-wrap">
+                  <div className="quantity-group js-quantity-wrap" style={{ width: "fit-content" }}>
+                    <div className="quantity">
+                      <input
+                        type="number"
+                        className="qty"
+                        min={1}
+                        value={quantity}
+                        onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
+                      />
+                    </div>
+                    <div className="button">
+                      <button type="button" className="minus js-plus" onClick={() => setQuantity((q) => q + 1)}>
+                        <i className="far fa-chevron-up" />
+                      </button>
+                      <button type="button" className="plus js-minus" onClick={() => setQuantity((q) => Math.max(1, q - 1))}>
+                        <i className="far fa-chevron-down" />
+                      </button>
                     </div>
                   </div>
-                  <div className="col-md-7" />
                 </div>
 
                 <div className="row bb-wp-buttons-row" style={{ marginTop: "20px", padding: "0px" }}>
                   <div className="add-to-cart col-md-6" style={{ padding: "0px" }}>
+                    {/* Hook class React riêng (js-bb-add-to-cart), KHÔNG dùng
+                        `js-add-to-cart-btn`: JS theme WP cũ (home.min.js) bám vào
+                        class đó, khi chọn đủ biến thể sẽ ghi đè chữ nút thành "Đang
+                        kiểm tra hàng..." rồi gọi AJAX find_variation_product về backend
+                        WordPress (đã không còn) → nút kẹt vĩnh viễn. React tự quản nhãn
+                        + add-to-cart nên cắt móc đó đi; nhãn luôn là "THÊM VÀO GIỎ HÀNG". */}
                     <button
                       type="button"
-                      className={"single_add_to_cart_button button alt btn js-add-to-cart-btn" + (canBuy ? "" : " disabled")}
+                      className={"single_add_to_cart_button button alt btn js-bb-add-to-cart" + (canBuy ? "" : " disabled")}
                       disabled={!canBuy || adding}
                       onClick={handleAdd}
                     >
@@ -256,26 +349,57 @@ export function WpPurchaseSection({
                       type="button"
                       className={"btn single_add_to_cart_button button btn-quick-buy js-quickby js-buy-now-btn" + (canBuy ? "" : " disabled")}
                       disabled={!canBuy}
-                      onClick={handleAdd}
+                      onClick={() => setQuickBuyOpen(true)}
                     >
                       <i className="fal fa-shopping-cart" /> Mua ngay
                     </button>
                   </div>
                 </div>
                 {addError ? <p className="stock out-of-stock" style={{ color: "red" }}>{addError}</p> : null}
+
+                {/* "Mua ngay" = mua nhanh: mở form nhập địa chỉ/giao hàng rồi tạo đơn
+                    trực tiếp qua /orders/quick-buy (không qua giỏ). Khôi phục luồng cũ. */}
+                <QuickBuyModal
+                  open={quickBuyOpen}
+                  onClose={() => setQuickBuyOpen(false)}
+                  productId={product.id}
+                  productName={name}
+                  selectedVariantId={selectedVariant?.id ?? null}
+                  variantLabel={selectedVariant?.name ?? null}
+                  unitPrice={current}
+                  onSuccess={(order) => {
+                    setQuickBuyOpen(false);
+                    setSuccessOrder(order);
+                  }}
+                />
+                <QuickBuySuccessModal order={successOrder} onClose={() => setSuccessOrder(null)} />
               </div>
             </div>
           </div>
 
-          <div className="social text-left mt-30">
-            <WishlistButton productId={product.id} />
+          {/* Hành động phụ: Yêu thích + So sánh — hàng nút đồng bộ, tự xuống dòng
+              trên màn hình hẹp. So sánh lưu cục bộ trình duyệt (tối đa 3, cùng loại). */}
+          <div className="social mt-30 flex flex-wrap items-stretch gap-3">
+            <WishlistButton productId={product.id} variant="inline" />
+            <CompareButton
+              variant="full"
+              product={{
+                id: product.id,
+                slug: product.slug,
+                name,
+                imageUrl: product.image?.url ?? null,
+                price: current > 0 ? current : null,
+                categoryId: product.category.id,
+                categoryName: product.category.name,
+              }}
+            />
           </div>
         </div>
       </div>
     </div>
 
     {/* Thanh mua dính đáy trên mobile: hiện khi hàng nút mua (.bb-wp-buttons-row)
-        cuộn khỏi viewport. Bám DOM qua .js-add-to-cart-btn / .js-buy-now-btn —
+        cuộn khỏi viewport. Bám DOM qua .js-bb-add-to-cart / .js-buy-now-btn —
         mirror trạng thái disabled và click lại nút gốc. Hết hàng thì không render
         (không có gì để mua). */}
     {!isOutOfStock ? (

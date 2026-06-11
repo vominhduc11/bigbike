@@ -7,6 +7,7 @@ import { formatVndNumber, resolveMediaUrl, safeText, toLegacyWpMediaUrl } from "
 import { toProductPath } from "@/lib/utils/routes";
 import { WishlistButton } from "@/components/catalog/WishlistButton";
 import { CompareButton } from "@/components/catalog/CompareButton";
+import { hasApprovedReviews } from "@/lib/rating";
 
 /**
  * content-product-swipe-item — port 1:1 từ theme WP.
@@ -29,7 +30,10 @@ export function WpProductSwipeItem({
   const href = toProductPath(product.slug);
   const img = toLegacyWpMediaUrl(resolveMediaUrl(product.image?.url?.trim()));
   const name = safeText(product.name, "");
-  const rating = product.rating ?? 4.5;
+  // REVIEW_RULE_003: chỉ hiện sao khi có ≥ 1 review đã duyệt — không còn default
+  // 4.5. Khi 0 review, KHÔNG render `.rating-star` (plugin starRating của theme
+  // WP vẽ 2 sao mặc định cho mọi `.rating-star` thiếu data-rating).
+  const hasReviews = hasApprovedReviews(product.rating, product.ratingCount);
   const showOld = compare != null && compare > current;
 
   return (
@@ -100,7 +104,7 @@ export function WpProductSwipeItem({
             </div>
           </div>
           <div className="rating">
-            <div className="rating-star" data-rating={rating} />
+            {hasReviews ? <div className="rating-star" data-rating={product.rating} /> : null}
           </div>
         </div>
       </div>

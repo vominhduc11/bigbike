@@ -495,7 +495,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
           <p className="medialib-result-summary">
             {state.pagination
               ? <>
-                  {t('media.found')}: <strong>{formatNumber(state.pagination.total)}</strong>
+                  {t('media.found')}: <strong>{formatNumber(state.pagination.totalItems)}</strong>
                   {stats?.totalSizeBytes ? <span> · {formatBytes(stats.totalSizeBytes)}</span> : null}
                 </>
               : ''}

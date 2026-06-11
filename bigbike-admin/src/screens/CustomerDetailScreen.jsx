@@ -496,15 +496,15 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
                     <span className="text-muted-foreground">{c.name}</span>
                     <span className="font-medium">
                       {c.discountType === 'PERCENT'
-                        ? `${c.amount}%`
-                        : formatCurrencyVnd(c.amount)}
+                        ? `${c.discountValue}%`
+                        : formatCurrencyVnd(c.discountValue)}
                     </span>
                     <StatusBadge status={c.status} type="coupon" />
                     {c.expiresAt && (
                       <span className="text-xs text-muted-foreground">HSD: {formatDateTime(c.expiresAt)}</span>
                     )}
                     <span className="text-xs text-muted-foreground ml-auto">
-                      {c.usageCount}/{c.usageLimit ?? '∞'} lần dùng
+                      {c.usageCount}/{c.maxUsage ?? '∞'} lần dùng
                     </span>
                   </div>
                 ))}

@@ -115,7 +115,9 @@ public class PosOrderService {
             BigDecimal refundAmount,
             List<PosOrderItemResponse> items,
             BigDecimal discountAmount,
-            String couponCode
+            String couponCode,
+            String customerName,
+            String customerPhone
     ) {}
 
     private static final String CHANNEL_IN_STORE = "IN_STORE";
@@ -190,7 +192,8 @@ public class PosOrderService {
                         found.getId(), found.getOrderNumber(), found.getStatus(), found.getPaymentStatus(),
                         found.getPaymentMethod(), found.getTotalAmount(), req.tenderedAmount(), changeAmt,
                         found.getPaidAmount(), found.getRefundAmount(),
-                        loadItemsForOrder(found.getId()), foundDiscount1, foundCouponCode1);
+                        loadItemsForOrder(found.getId()), foundDiscount1, foundCouponCode1,
+                        found.getCustomerName(), found.getCustomerPhone());
             }
         }
 
@@ -432,7 +435,8 @@ public class PosOrderService {
                         found.getId(), found.getOrderNumber(), found.getStatus(), found.getPaymentStatus(),
                         found.getPaymentMethod(), found.getTotalAmount(), req.tenderedAmount(), changeAmt,
                         found.getPaidAmount(), found.getRefundAmount(),
-                        loadItemsForOrder(found.getId()), foundDiscount2, foundCouponCode2);
+                        loadItemsForOrder(found.getId()), foundDiscount2, foundCouponCode2,
+                        found.getCustomerName(), found.getCustomerPhone());
             }
             throw ex;
         }
@@ -570,7 +574,9 @@ public class PosOrderService {
                 resolvedPaidAmount, BigDecimal.ZERO,
                 responseItems,
                 discountAmount,
-                appliedCoupon != null ? appliedCoupon.getCode() : null
+                appliedCoupon != null ? appliedCoupon.getCode() : null,
+                savedOrder.getCustomerName(),
+                savedOrder.getCustomerPhone()
         );
     }
 

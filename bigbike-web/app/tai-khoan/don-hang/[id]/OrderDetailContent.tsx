@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { WpAccountSectionHeading } from "@/components/wp/WpAccountNav";
 import { useOrder } from "@/lib/query/hooks";
-import { formatAddress, formatDate, formatVnd, orderStatusLabelWithT, paymentMethodLabelWithT, safeText } from "@/lib/utils/format";
+import { formatAddress, formatDate, formatVnd, fulfillmentStatusLabelWithT, orderStatusLabelWithT, paymentMethodLabelWithT, safeText } from "@/lib/utils/format";
 import { toOrderHistoryPath } from "@/lib/utils/routes";
 import { cn } from "@/lib/utils";
 import { bbLink, sectionSubheading } from "@/lib/ui-classes";
@@ -45,13 +45,20 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
     <>
       <WpAccountSectionHeading title={t("detailHeading")} />
 
-      <p className="mb-5 text-sm leading-relaxed text-foreground">
+      <p className="mb-2 text-sm leading-relaxed text-foreground">
         {t("orderSummary", {
           orderNumber: order.orderNumber,
           date: formatDate(order.placedAt),
           status: orderStatusLabelWithT(order.status, t),
         })}
       </p>
+
+      {order.fulfillmentStatus && (
+        <p className="mb-5 text-sm text-muted-foreground">
+          <strong className="text-foreground">{t("fulfillmentLabel")}:</strong>{" "}
+          {fulfillmentStatusLabelWithT(order.fulfillmentStatus, t)}
+        </p>
+      )}
 
       <h2 className={cn(sectionSubheading, "mb-3")}>{t("invoice")}</h2>
       <div className="overflow-x-auto">

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -567,6 +567,14 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                       <dd style={{ textAlign: 'right', color: 'var(--bb-danger)' }}>-{formatCurrencyVnd(order.discount)}</dd>
                     </>
                   )}
+                  {order.appliedCoupons?.length > 0 && order.appliedCoupons.map((c) => (
+                    <Fragment key={c.code}>
+                      <dt style={{ textTransform: 'none', fontSize: 12, letterSpacing: 0, fontWeight: 400, paddingLeft: 12, color: 'var(--bb-text-secondary)' }}>
+                        {t('orders.detail.coupon', { defaultValue: 'Mã giảm giá' })}: <span style={{ fontFamily: 'var(--font-mono, monospace)' }}>{c.code}</span>
+                      </dt>
+                      <dd style={{ textAlign: 'right', fontSize: 12, color: 'var(--bb-text-secondary)' }}>-{formatCurrencyVnd(c.discountAmount)}</dd>
+                    </Fragment>
+                  ))}
                   <dt style={{ textTransform: 'none', fontWeight: 700, fontSize: 15, paddingTop: 8 }}>{t('orders.detail.total')}</dt>
                   <dd style={{ textAlign: 'right', fontSize: 18, fontWeight: 800, color: 'var(--bb-primary)', paddingTop: 8 }}>
                     {formatCurrencyVnd(order.total)}

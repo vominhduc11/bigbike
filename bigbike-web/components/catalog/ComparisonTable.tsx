@@ -7,6 +7,7 @@ import { useCompare } from "@/lib/compare-context";
 import { useCart } from "@/lib/cart-context";
 import { MediaImage } from "@/components/ui/MediaImage";
 import { RatingStars } from "@/components/ui/RatingStars";
+import { hasApprovedReviews } from "@/lib/rating";
 import { formatVnd, safeText, stockStateLabelWithT } from "@/lib/utils/format";
 import { derivePricing } from "@/lib/pricing";
 import { toProductPath } from "@/lib/utils/routes";
@@ -172,14 +173,13 @@ export function ComparisonTable({ products }: ComparisonTableProps) {
             );
           })}
           {criterionRow(t("ratingRow"), (p) =>
-            p.rating != null && p.rating > 0 ? (
+            hasApprovedReviews(p.rating, p.ratingCount) ? (
               <span className="flex flex-col gap-0.5">
                 <RatingStars value={p.rating} />
-                {p.ratingCount != null && p.ratingCount > 0 && (
-                  <span className="text-xs text-muted-foreground">
-                    {t("ratingCount", { count: p.ratingCount })}
-                  </span>
-                )}
+                <span className="text-xs text-muted-foreground">
+                  {/* Gate đã đảm bảo ratingCount ≥ 1 — `?? 0` chỉ để narrow type. */}
+                  {t("ratingCount", { count: p.ratingCount ?? 0 })}
+                </span>
               </span>
             ) : (
               <span className="text-muted-foreground">{t("noRating")}</span>

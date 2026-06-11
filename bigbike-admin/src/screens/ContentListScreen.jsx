@@ -3,12 +3,13 @@ import { useTranslation } from 'react-i18next'
 import { FilterSelect } from '../components/FilterSelect'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
-import { Download, File, FileText, Pencil, Plus } from 'lucide-react'
+import { File, FileText, FolderTree, Pencil, Plus } from 'lucide-react'
 import { PaginationControls } from '../components/PaginationControls'
 import { PublishStatusBadge } from '../components/StatusBadge'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
+import { ContentCategoryManagerModal } from '../components/ContentCategoryManagerModal'
 import { fetchContent } from '../lib/adminApi'
 import { formatDateTime, formatText } from '../lib/formatters'
 import { useAdminList } from '../lib/useAdminList'
@@ -33,6 +34,7 @@ export function ContentListScreen({ navigate, canUpdate }) {
   })
   const debouncedSearch = useDebounce(searchInput, 250)
   const isFirstSearchRender = useRef(true)
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false)
 
   const state = useAdminList(['content', query, i18n.language], () => fetchContent(query))
 
@@ -79,8 +81,14 @@ export function ContentListScreen({ navigate, canUpdate }) {
           <p className="bb-muted">{t('content.description')}</p>
         </div>
         <div className="bb-screen-actions">
-          <button type="button" className="bb-btn bb-btn-secondary" disabled title={t('common.exportCsv', { defaultValue: 'Xuất CSV' })}>
-            <Download size={14} />{t('common.exportCsv', { defaultValue: 'Xuất CSV' })}
+          <button
+            type="button"
+            className="bb-btn bb-btn-secondary"
+            disabled={!canUpdate}
+            onClick={() => setCategoryModalOpen(true)}
+            title={t('content.categoryManager.title', { defaultValue: 'Quản lý danh mục bài viết' })}
+          >
+            <FolderTree size={14} />{t('content.categoryManager.button', { defaultValue: 'Danh mục' })}
           </button>
           <button
             type="button"
@@ -274,6 +282,11 @@ export function ContentListScreen({ navigate, canUpdate }) {
           )}
         </div>
       )}
+
+      <ContentCategoryManagerModal
+        open={categoryModalOpen}
+        onClose={() => setCategoryModalOpen(false)}
+      />
     </div>
   )
 }

@@ -220,6 +220,7 @@
       "errorNetwork": "Lỗi kết nối, vui lòng thử lại.",
       "errorLoad": "Không thể tải đánh giá.",
       "errorLoadMore": "Không thể tải thêm đánh giá.",
+      "retry": "Thử lại",
       "thanks": "Cảm ơn bạn đã đánh giá! Đánh giá đang chờ kiểm duyệt.",
       "writeButton": "Viết đánh giá",
       "formTitle": "Đánh giá của bạn",
@@ -579,6 +580,10 @@
     "logoutConfirm": "Đăng xuất khỏi tài khoản?",
     "dashboardGreeting": "Xin chào <strong>{name}</strong>.",
     "dashboardIntro": "Từ trang tài khoản, bạn có thể xem <orders>đơn hàng gần đây</orders>, quản lý <addresses>địa chỉ giao hàng và thanh toán</addresses>, và chỉnh sửa <account>mật khẩu và chi tiết tài khoản</account>.",
+    "emailNotVerified": "Email của bạn chưa được xác minh. Hãy xác minh để bảo vệ tài khoản.",
+    "emailVerifyResend": "Gửi lại email xác minh",
+    "emailVerifySent": "Đã gửi! Vui lòng kiểm tra hộp thư của bạn.",
+    "emailVerifyError": "Gửi không thành công, vui lòng thử lại.",
     "dashboardCards": {
       "ordersDesc": "Theo dõi trạng thái và lịch sử đơn đặt hàng của bạn",
       "addressesDesc": "Quản lý địa chỉ giao hàng và thanh toán",
@@ -688,6 +693,16 @@
         "PAID": "Đã thanh toán",
         "REFUNDED": "Đã hoàn tiền",
         "CANCELLED": "Đã huỷ thanh toán",
+        "UNKNOWN": "Đang cập nhật"
+      },
+      "fulfillmentLabel": "Trạng thái giao hàng",
+      "fulfillmentStatus": {
+        "UNFULFILLED": "Chưa giao",
+        "PROCESSING": "Đang chuẩn bị",
+        "SHIPPED": "Đang giao",
+        "DELIVERED": "Đã giao",
+        "RETURNED": "Đã trả hàng",
+        "CANCELLED": "Đã huỷ",
         "UNKNOWN": "Đang cập nhật"
       },
       "timeline": {

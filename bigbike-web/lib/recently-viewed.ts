@@ -12,9 +12,11 @@ export type RecentProduct = {
   price?: number | null;
   imageUrl?: string | null;
   categoryName?: string | null;
-  /** Approved-review average, captured so the card shows real stars (older
-   *  cached entries without it fall back to the card's default rating). */
+  /** Approved-review average — chỉ dùng khi ratingCount ≥ 1 (REVIEW_RULE_003). */
   rating?: number | null;
+  /** Approved-review count — gate hiển thị sao. Entry cũ thiếu field này
+   *  được coi là "chưa xác minh có review" → card ẨN sao (không default). */
+  ratingCount?: number | null;
 };
 
 export function saveRecentProduct(product: RecentProduct): void {

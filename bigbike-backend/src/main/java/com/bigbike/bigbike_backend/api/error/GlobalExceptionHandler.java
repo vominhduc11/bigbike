@@ -17,6 +17,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -49,6 +51,26 @@ public class GlobalExceptionHandler {
         List<ApiErrorDetail> details = ValidationErrorMapper.from(ex);
         log.warn("Validation failed [{}]: {}", request.getRequestURI(), details);
         return build(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Validation failed.", details, request);
+    }
+
+    @ExceptionHandler({
+            MissingServletRequestParameterException.class,
+            MissingServletRequestPartException.class
+    })
+    public ResponseEntity<ApiErrorResponse> handleMissingRequestParameter(
+            Exception ex,
+            HttpServletRequest request
+    ) {
+        String paramName = ex instanceof MissingServletRequestParameterException missingParam
+                ? missingParam.getParameterName()
+                : ((MissingServletRequestPartException) ex).getRequestPartName();
+        ApiErrorDetail detail = new ApiErrorDetail(
+                paramName,
+                "REQUIRED",
+                paramName + " is required."
+        );
+        log.warn("Missing required request parameter [{}]: {}", request.getRequestURI(), paramName);
+        return build(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Validation failed.", List.of(detail), request);
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)

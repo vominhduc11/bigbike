@@ -23,6 +23,7 @@ public interface OrderMapper {
     OrderListItemResponse toCustomerListItem(OrderEntity entity, int itemCount, List<String> productNames);
 
     @Mapping(target = "itemCount", source = "itemCount")
+    @Mapping(target = "source", source = "entity.source")
     AdminOrderListItemResponse toAdminListItem(OrderEntity entity, int itemCount);
 
     @Mapping(target = "orderKey", source = "orderKey")

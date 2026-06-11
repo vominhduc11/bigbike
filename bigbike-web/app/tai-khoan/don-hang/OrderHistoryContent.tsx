@@ -83,6 +83,11 @@ export function OrderHistoryContent() {
                       <Link href={toOrderDetailPath(order.id)} className={bbLink}>
                         #{order.orderNumber}
                       </Link>
+                      {order.productNames && order.productNames.length > 0 && (
+                        <p className="m-0 mt-1 line-clamp-2 text-xs text-muted-foreground">
+                          {order.productNames.join(", ")}
+                        </p>
+                      )}
                     </td>
                     <td className="py-4 pr-4 align-top text-muted-foreground">{formatDate(order.placedAt)}</td>
                     <td className="py-4 pr-4 align-top text-muted-foreground">{orderStatusLabelWithT(order.status, t)}</td>
@@ -116,6 +121,11 @@ export function OrderHistoryContent() {
                   </Link>
                   <span className="text-sm text-muted-foreground">{orderStatusLabelWithT(order.status, t)}</span>
                 </div>
+                {order.productNames && order.productNames.length > 0 && (
+                  <p className="m-0 mt-1 line-clamp-2 text-xs text-muted-foreground">
+                    {order.productNames.join(", ")}
+                  </p>
+                )}
                 <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
                   <dt className="font-semibold text-foreground">{t("colDate")}</dt>
                   <dd className="m-0 text-muted-foreground">{formatDate(order.placedAt)}</dd>

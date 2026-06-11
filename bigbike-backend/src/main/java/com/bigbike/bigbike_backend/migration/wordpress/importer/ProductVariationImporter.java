@@ -115,9 +115,12 @@ public class ProductVariationImporter implements DomainImporter {
                 entity.setSalePrice(salePrice != null && salePrice.signum() > 0 ? salePrice : null);
                 entity.setCurrency("VND");
 
-                ProductStockState stockState = resolveStockState(mv.stockStatus());
-                entity.setStockState(stockState);
-                entity.setAvailable("ACTIVE".equals(mv.status()) && stockState == ProductStockState.IN_STOCK);
+                // STOCK_RULE_001/003 + STOCK_RULE_005: import không nạp serial, biến thể
+                // luôn khởi tạo OUT_OF_STOCK (xem resolveStockState). isAvailable giữ theo
+                // trạng thái ACTIVE để biến thể vẫn chọn được (làm mờ, không khoá),
+                // độc lập với mức tồn.
+                entity.setStockState(resolveStockState(mv.stockStatus()));
+                entity.setAvailable("ACTIVE".equals(mv.status()));
                 entity.setSortOrder(0);
 
                 warnings.addAll(mv.warnings());
@@ -184,7 +187,8 @@ public class ProductVariationImporter implements DomainImporter {
         entity.setCategory(category);
         entity.setRetailPrice(BigDecimal.ZERO);
         entity.setCurrency("VND");
-        entity.setStockState(ProductStockState.IN_STOCK);
+        // STOCK_RULE_001: sản phẩm mới khởi tạo OUT_OF_STOCK tới khi có tồn/serial thật.
+        entity.setStockState(ProductStockState.OUT_OF_STOCK);
         entity.setPublishStatus(com.bigbike.bigbike_backend.domain.catalog.PublishStatus.DRAFT);
         entity.setHomepageBlock(com.bigbike.bigbike_backend.domain.catalog.HomepageBlock.NONE);
         entity.setCreatedAt(Instant.now());
@@ -342,11 +346,10 @@ public class ProductVariationImporter implements DomainImporter {
     }
 
     private ProductStockState resolveStockState(String stockStatus) {
-        if (stockStatus == null) return ProductStockState.IN_STOCK;
-        return switch (stockStatus.toLowerCase()) {
-            case "outofstock", "out_of_stock" -> ProductStockState.OUT_OF_STOCK;
-            case "onbackorder" -> ProductStockState.OUT_OF_STOCK;
-            default -> ProductStockState.IN_STOCK;
-        };
+        // STOCK_RULE_001/003: tồn kho biến thể suy ra từ số serial IN_STOCK. Import WP
+        // KHÔNG nạp serial nào → biến thể luôn khởi tạo OUT_OF_STOCK; chỉ chuyển
+        // "Còn hàng" khi nhập serial/tồn thật. Cờ stockStatus của WP cố ý bị bỏ qua
+        // để không tái tạo tình trạng "còn hàng ảo".
+        return ProductStockState.OUT_OF_STOCK;
     }
 }
