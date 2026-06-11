@@ -1,15 +1,9 @@
 # Documentation (local only, not pushed to remote)
 # docs/
 
-# Mobile app (local only, not pushed to remote)
-bigbike_mobile/
-
 # Legacy reference data (root-level only — KHONG chan themes/bigbike, wp-content/uploads...)
 /bigbike/
 /uploads/
-
-# Old WordPress site export (reference only, not for git)
-bigbike_vn__2026_04_17/
 
 # Design assets (large binary/zip files, not for git)
 *.zip
