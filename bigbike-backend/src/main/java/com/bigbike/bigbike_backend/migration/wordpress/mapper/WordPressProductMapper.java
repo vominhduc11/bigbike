@@ -93,9 +93,10 @@ public class WordPressProductMapper {
                 metaMap.get("homepage_product")
         ));
         BigDecimal rating = parseBigDecimal(firstNonBlank(metaMap.get("rating"), metaMap.get("_rating")), "rating", warnings);
-        if (rating == null) {
-            rating = new BigDecimal("4.5");
-        } else if (rating.compareTo(BigDecimal.ZERO) < 0 || rating.compareTo(new BigDecimal("5")) > 0) {
+        // REVIEW_RULE_004: KHÔNG default rating ảo 4.5 khi WP meta thiếu. Cache
+        // rating/rating_count chỉ được suy ra từ review APPROVED (ReviewImporter
+        // recompute) — meta thiếu/lệch range → để null (web gate sao theo ratingCount).
+        if (rating != null && (rating.compareTo(BigDecimal.ZERO) < 0 || rating.compareTo(new BigDecimal("5")) > 0)) {
             warnings.add("rating out of range [0,5]: " + rating);
             rating = null;
         }

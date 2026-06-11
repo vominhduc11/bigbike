@@ -94,7 +94,10 @@ public class ProductImporter implements DomainImporter {
                                 ? com.bigbike.bigbike_backend.domain.catalog.HomepageBlock.FEATURED_GRID
                                 : com.bigbike.bigbike_backend.domain.catalog.HomepageBlock.NONE;
                 entity.setHomepageBlock(block);
-                entity.setRating(mp.rating());
+                // REVIEW_RULE_004: KHÔNG seed rating từ meta sản phẩm WP (nguồn rating
+                // ảo). rating/rating_count là cache suy từ review APPROVED — được
+                // ReviewImporter recompute sau khi import review. Sản phẩm chưa có
+                // review đã duyệt → để null (web gate sao theo ratingCount).
 
                 // Duplicate SKU handling: append suffix to avoid constraint violation
                 String sku = mp.sku();

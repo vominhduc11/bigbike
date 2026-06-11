@@ -307,13 +307,13 @@ Cache denormalized của review **APPROVED**, phục vụ list/detail đọc nha
 
 **Trạng thái NULL hợp lệ:** sản phẩm admin tạo mới có `rating = NULL` và `rating_count = NULL` (chưa từng recompute) cho tới khi review đầu tiên được duyệt.
 
-**Invariant `rating_count ≥ 1 ⟺ rating > 0`: `PARTIAL` — chỉ được đảm bảo trên đường moderation.** Pipeline WordPress import phá invariant: `WordPressProductMapper` default `rating = 4.5` khi WP meta thiếu, `ProductImporter` ghi `rating` mà **không ghi** `rating_count`, `ReviewImporter` không recompute; `V63` backfill chỉ chạy một lần lúc Flyway migrate. Hệ quả: tồn tại sản phẩm `rating = 4.5`, `rating_count = NULL`, 0 review thật. **Web/mobile gate hiển thị sao bắt buộc theo `ratingCount ≥ 1`** (NULL/0 → ẩn), không dùng `rating > 0` đơn lẻ — xem `BUSINESS_RULES.md` `REVIEW_RULE_003`/`REVIEW_RULE_004`. Dọn rating ảo của data import + sửa importer là task backend riêng.
+**Invariant `rating_count ≥ 1 ⟺ rating > 0`: `PARTIAL`.** Đường moderation luôn giữ invariant. Pipeline WordPress import **đã được sửa** để cũng tuân theo: `WordPressProductMapper` không còn default `4.5` (meta thiếu → `null`), `ProductImporter` không seed `rating` từ meta sản phẩm, `ReviewImporter.recomputeRatingCache` recompute `rating`/`rating_count` từ review APPROVED sau import (mirror `AdminReviewService`). Còn lại một lỗ hổng dữ liệu tồn dư: bản ghi từ lần import cũ (trước fix) có thể vẫn mang `rating` ảo với `rating_count = NULL` cho tới khi re-import / backfill mới; `V63` backfill chỉ chạy một lần lúc Flyway migrate. **Web/mobile vì vậy vẫn bắt buộc gate hiển thị sao theo `ratingCount ≥ 1`** (NULL/0 → ẩn), không dùng `rating > 0` đơn lẻ — xem `BUSINESS_RULES.md` `REVIEW_RULE_003`/`REVIEW_RULE_004`.
 
 **API mapping:** list-item + detail `Product` trả `rating` / `ratingCount` (optional, nullable — `bigbike-web/lib/contracts/public.ts`). API public reviews trả `avgRating` (1-decimal; **`0.0` khi 0 review**, không phải null — `PublicReviewService.roundAverage`) và `totalReviews`; FE phải gate bằng `totalReviews`, không bằng `avgRating > 0`.
 
 Status: `CONFIRMED_FROM_CODE` — `AdminReviewService.java`, `PublicReviewService.java`,
 `ReviewJpaRepository.java`, `ProductEntity.java`, `UpsertProductRequest.java`,
-`WordPressProductMapper.java`, `ProductImporter.java`, migrations `V14`, `V18`, `V43`, `V63`.
+`WordPressProductMapper.java`, `ProductImporter.java`, `ReviewImporter.java`, migrations `V14`, `V18`, `V43`, `V63`.
 
 ### Product bilingual content — English columns (V136)
 
