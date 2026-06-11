@@ -1,7 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { ImageAsset, Product, ProductVariant, VideoAsset } from "@/lib/contracts/public";
+import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
+import type { ImageAsset, Product, ProductPrice, ProductStockState, ProductVariant, VideoAsset } from "@/lib/contracts/public";
 import { useCart } from "@/lib/cart-context";
 import { derivePricing } from "@/lib/pricing";
 import { formatVndNumber, resolveMediaUrl, safeText, toLegacyWpMediaUrl } from "@/lib/utils/format";
@@ -16,9 +18,12 @@ import { WishlistButton } from "@/components/catalog/WishlistButton";
 import { CompareButton } from "@/components/catalog/CompareButton";
 import { ProductGallery } from "@/components/catalog/ProductGallery";
 import { hasApprovedReviews } from "@/lib/rating";
+import { useLocalizedField } from "@/components/i18n/LocalizedContent";
+import { sanitizeRichHtml } from "@/lib/utils/html";
 import { MobileStickyPurchaseBar } from "@/components/catalog/MobileStickyPurchaseBar";
 import { QuickBuyModal } from "@/components/catalog/QuickBuyModal";
 import { QuickBuySuccessModal } from "@/components/catalog/QuickBuySuccessModal";
+import { Minus, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -28,6 +33,13 @@ type Props = {
   shortDescriptionHtml: string;
   rating: number | null;
   ratingCount: number | null;
+};
+
+/** Shape trả về của /api/products/[slug]/snapshot — chỉ phần cần freshness (giá/tồn/variants). */
+type ProductSnapshot = {
+  pricing: { retailPrice: number; compareAtPrice: number | null; salePrice: number | null; discountPercent: number; currency: string };
+  stock: { stockState: string; label: string; forceOutOfStock: boolean; quantity?: number | null };
+  variants: ProductVariant[];
 };
 
 function imgUrl(a: ImageAsset | null | undefined): string {
@@ -53,8 +65,42 @@ export function WpPurchaseSection({
   rating,
   ratingCount,
 }: Props) {
+  const tb = useTranslations("PdpBuyBox");
   const { addToCart } = useCart();
-  const variants = product.variants ?? [];
+
+  // ISR + CSR hybrid: mô tả/ảnh/thông số render từ props (ISR — phần cần SEO). GIÁ + TỒN
+  // KHO fetch lại ở CLIENT sau khi load để luôn tươi (shop bán cả online lẫn walk-in/POS
+  // → tồn đổi liên tục, không cần SEO). Props ISR là giá trị ban đầu hợp lệ nên cập nhật
+  // liền mạch, KHÔNG layout-shift/skeleton; refetch khi quay lại tab.
+  const { data: snapshot } = useQuery<ProductSnapshot>({
+    queryKey: ["product-snapshot", product.slug],
+    queryFn: async () => {
+      const res = await fetch(`/api/products/${product.slug}/snapshot/`);
+      if (!res.ok) throw new Error("snapshot");
+      return res.json() as Promise<ProductSnapshot>;
+    },
+    staleTime: 30 * 1000,
+    refetchOnWindowFocus: true,
+    retry: 2,
+  });
+
+  // Override giá/tồn/variants bằng snapshot khi đã có; props ISR làm fallback.
+  const variants = useMemo<ProductVariant[]>(
+    () => snapshot?.variants ?? product.variants ?? [],
+    [snapshot?.variants, product.variants],
+  );
+  const freshPrice: ProductPrice = snapshot
+    ? {
+        retailPrice: snapshot.pricing.retailPrice,
+        compareAtPrice: snapshot.pricing.compareAtPrice,
+        salePrice: snapshot.pricing.salePrice,
+        currency: "VND",
+      }
+    : product.price;
+  const freshStockState = (snapshot?.stock.stockState as ProductStockState | undefined) ?? product.stockState;
+  const freshStockQty = snapshot ? (snapshot.stock.quantity ?? null) : product.stockQuantity;
+  const freshForceOutOfStock = snapshot ? snapshot.stock.forceOutOfStock : product.forceOutOfStock;
+
   const hasVariants = variants.length > 0;
   const attributeNames = useMemo(() => Array.from(collectAttributeNames(variants)), [variants]);
 
@@ -80,7 +126,7 @@ export function WpPurchaseSection({
     [variants, selectedOptions],
   );
 
-  const priceSource = selectedVariant?.price ?? product.price;
+  const priceSource = selectedVariant?.price ?? freshPrice;
   const { current, compare, isSale } = derivePricing(priceSource);
   const showOld = compare != null && compare > current;
 
@@ -98,8 +144,8 @@ export function WpPurchaseSection({
   //    định 5) vốn chỉ chi phối checkout/cảnh báo admin.
   const PDP_LOW_STOCK_CUTOFF = 10;
   const stockUnitKnown = !hasVariants || !!selectedVariant;
-  const unitQty = selectedVariant ? selectedVariant.stockQuantity : product.stockQuantity;
-  const unitState = selectedVariant?.stockState ?? product.stockState;
+  const unitQty = selectedVariant ? selectedVariant.stockQuantity : freshStockQty;
+  const unitState = selectedVariant?.stockState ?? freshStockState;
   // Tồn của đơn vị đang xét: ưu tiên số serial; thiếu số thì suy từ stockState.
   const unitOut = typeof unitQty === "number" ? unitQty <= 0 : unitState === "OUT_OF_STOCK";
   const unitLow =
@@ -107,8 +153,8 @@ export function WpPurchaseSection({
     (typeof unitQty === "number" ? unitQty < PDP_LOW_STOCK_CUTOFF : unitState === "LOW_STOCK");
 
   const isOutOfStock =
-    Boolean(product.forceOutOfStock) ||
-    (stockUnitKnown ? unitOut : product.stockState === "OUT_OF_STOCK");
+    Boolean(freshForceOutOfStock) ||
+    (stockUnitKnown ? unitOut : freshStockState === "OUT_OF_STOCK");
   // "Sắp hết" chỉ khi đã xác định đơn vị tồn cụ thể (chưa chọn biến thể → bỏ qua).
   const isLowStock = !isOutOfStock && stockUnitKnown && unitLow;
   const canBuy = !isOutOfStock && (!hasVariants || (!!selectedVariant && selectedVariant.isAvailable));
@@ -141,13 +187,24 @@ export function WpPurchaseSection({
     try {
       await addToCart(product.id, quantity, selectedVariant?.id || undefined);
     } catch (e) {
-      setAddError(e instanceof Error ? e.message : "Không thêm được vào giỏ");
+      setAddError(e instanceof Error ? e.message : tb("addToCartFailed"));
     } finally {
       setAdding(false);
     }
   }
 
-  const name = safeText(product.name, "");
+  // Đổi ngôn ngữ ở CLIENT: tên + mô tả ngắn lấy bản EN từ LocalizedContentProvider nếu có,
+  // fallback về bản `vi` (prop) — render đầu khớp server (giữ ISR/SEO).
+  const enName = useLocalizedField<string>("name");
+  const enShortDesc = useLocalizedField<string>("shortDescription");
+  const name = safeText(
+    typeof enName === "string" && enName.trim() ? enName : product.name,
+    "",
+  );
+  const localizedShortDescriptionHtml =
+    typeof enShortDesc === "string" && enShortDesc.trim()
+      ? sanitizeRichHtml(enShortDesc)
+      : shortDescriptionHtml;
 
   return (
     <>
@@ -184,7 +241,7 @@ export function WpPurchaseSection({
             </div>
             <div className="status">
               <p className={"stock " + (isOutOfStock ? "out-of-stock" : isLowStock ? "low-stock" : "in-stock")} style={{ paddingLeft: "2rem", paddingRight: "2rem" }}>
-                <span>{isOutOfStock ? "HẾT HÀNG" : isLowStock ? "SẮP HẾT HÀNG" : "CÒN HÀNG"}</span>
+                <span>{isOutOfStock ? tb("stockOut") : isLowStock ? tb("stockLow") : tb("stockIn")}</span>
               </p>
             </div>
           </div>
@@ -196,30 +253,30 @@ export function WpPurchaseSection({
               <div className="rating-star" data-rating={rating ?? undefined} />
               <br />
               <p>
-                Đánh giá: <span itemProp="ratingValue">{rating}/</span>
+                {tb("ratingLabel")} <span itemProp="ratingValue">{rating}/</span>
                 <span itemProp="reviewCount">{ratingCount}</span>
                 {" — "}
                 <a href="#reviews" onClick={scrollToReviews} className="text-brand underline-offset-2 hover:underline">
-                  Xem tất cả đánh giá
+                  {tb("viewAllReviews")}
                 </a>
               </p>
             </div>
           ) : (
             <div className="rating">
               <p>
-                Chưa có đánh giá —{" "}
+                {tb("noReviews")} —{" "}
                 <a href="#reviews" onClick={scrollToReviews} className="text-brand underline-offset-2 hover:underline">
-                  Viết đánh giá đầu tiên
+                  {tb("writeFirst")}
                 </a>
               </p>
             </div>
           )}
 
-          {shortDescriptionHtml ? (
+          {localizedShortDescriptionHtml ? (
             <div className="desc wyswyg">
               <div
                 className="woocommerce-product-details__short-description"
-                dangerouslySetInnerHTML={{ __html: shortDescriptionHtml }}
+                dangerouslySetInnerHTML={{ __html: localizedShortDescriptionHtml }}
               />
             </div>
           ) : null}
@@ -228,7 +285,7 @@ export function WpPurchaseSection({
             <div className="variations_form cart">
               {requiresSelection ? (
                 <div className="alert alert-danger note-buy-product">
-                  <p>Vui lòng chọn size/màu sắc để mua hàng:</p>
+                  <p>{tb("pickVariant")}</p>
                 </div>
               ) : null}
 
@@ -303,25 +360,42 @@ export function WpPurchaseSection({
                   })
                 : null}
 
-              <div className="single_variation_wrap">
-                <div className="woocommerce-variation single_variation" />
-                <div className="woocommerce-variation-add-to-cart variations_button js-add-to-cart-wrap">
-                  <div className="quantity-group js-quantity-wrap" style={{ width: "fit-content" }}>
-                    <div className="quantity">
+              <div className="single_variation_wrap mt-6">
+                {/* Chọn số lượng — wrapper .options.size để nhãn .group-label ăn đúng
+                    rule `.product-information .size .group .group-label` của theme WP →
+                    chữ "Số lượng" hiển thị y hệt nhãn SIZE/COLOR (Oswald 24px/600) và có
+                    padding-right:25px tách khỏi stepper. Stepper cao 52px khớp ô biến thể. */}
+                <div className="options size">
+                  <div className="group flex items-center">
+                    <div className="group-label">
+                      <label htmlFor="bb-qty">{tb("quantity")}</label>
+                    </div>
+                    <div className="inline-flex items-stretch border border-border-control">
+                      <button
+                        type="button"
+                        aria-label={tb("decreaseQty")}
+                        onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                        disabled={quantity <= 1}
+                        className="flex h-[52px] w-11 items-center justify-center text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <Minus className="h-4 w-4" />
+                      </button>
                       <input
+                        id="bb-qty"
                         type="number"
-                        className="qty"
                         min={1}
                         value={quantity}
                         onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
+                        aria-label={tb("quantity")}
+                        className="h-[52px] w-16 border-x border-border-control bg-white text-center font-body text-2xl font-semibold text-foreground [appearance:textfield] focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                       />
-                    </div>
-                    <div className="button">
-                      <button type="button" className="minus js-plus" onClick={() => setQuantity((q) => q + 1)}>
-                        <i className="far fa-chevron-up" />
-                      </button>
-                      <button type="button" className="plus js-minus" onClick={() => setQuantity((q) => Math.max(1, q - 1))}>
-                        <i className="far fa-chevron-down" />
+                      <button
+                        type="button"
+                        aria-label={tb("increaseQty")}
+                        onClick={() => setQuantity((q) => q + 1)}
+                        className="flex h-[52px] w-11 items-center justify-center text-foreground transition-colors hover:bg-muted"
+                      >
+                        <Plus className="h-4 w-4" />
                       </button>
                     </div>
                   </div>
@@ -335,13 +409,16 @@ export function WpPurchaseSection({
                         kiểm tra hàng..." rồi gọi AJAX find_variation_product về backend
                         WordPress (đã không còn) → nút kẹt vĩnh viễn. React tự quản nhãn
                         + add-to-cart nên cắt móc đó đi; nhãn luôn là "THÊM VÀO GIỎ HÀNG". */}
+                    {/* Nút phụ: viền đỏ nền trắng (secondary). Override !important để
+                        thắng `.add-to-cart .btn{background:#ff0c09;color:#fff;border:none}`
+                        của theme; vẫn giữ shape/size 52px từ chính rule đó. */}
                     <button
                       type="button"
-                      className={"single_add_to_cart_button button alt btn js-bb-add-to-cart" + (canBuy ? "" : " disabled")}
+                      className={"single_add_to_cart_button button alt btn js-bb-add-to-cart !border-2 !border-brand !bg-white !text-brand transition-colors hover:!bg-brand-soft" + (canBuy ? "" : " disabled")}
                       disabled={!canBuy || adding}
                       onClick={handleAdd}
                     >
-                      <i className="fal fa-shopping-cart" /> {adding ? "ĐANG THÊM..." : "THÊM VÀO GIỎ HÀNG"}
+                      <i className="fal fa-shopping-cart" /> {adding ? tb("adding") : tb("addToCart")}
                     </button>
                   </div>
                   <div className="add-to-cart quick-add-to-cart col-md-6">
@@ -351,7 +428,7 @@ export function WpPurchaseSection({
                       disabled={!canBuy}
                       onClick={() => setQuickBuyOpen(true)}
                     >
-                      <i className="fal fa-shopping-cart" /> Mua ngay
+                      <i className="fal fa-bolt" /> {tb("buyNow")}
                     </button>
                   </div>
                 </div>
@@ -379,7 +456,7 @@ export function WpPurchaseSection({
 
           {/* Hành động phụ: Yêu thích + So sánh — hàng nút đồng bộ, tự xuống dòng
               trên màn hình hẹp. So sánh lưu cục bộ trình duyệt (tối đa 3, cùng loại). */}
-          <div className="social mt-30 flex flex-wrap items-stretch gap-3">
+          <div className="social mt-6 flex flex-wrap items-stretch gap-3">
             <WishlistButton productId={product.id} variant="inline" />
             <CompareButton
               variant="full"
@@ -403,7 +480,7 @@ export function WpPurchaseSection({
         mirror trạng thái disabled và click lại nút gốc. Hết hàng thì không render
         (không có gì để mua). */}
     {!isOutOfStock ? (
-      <MobileStickyPurchaseBar addToCartLabel="Thêm vào giỏ" buyNowLabel="Mua ngay" />
+      <MobileStickyPurchaseBar addToCartLabel={tb("mobileAddToCart")} buyNowLabel={tb("mobileBuyNow")} />
     ) : null}
     </>
   );

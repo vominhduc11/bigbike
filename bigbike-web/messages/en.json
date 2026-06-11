@@ -145,7 +145,8 @@
       "faqs": "FAQs",
       "reviews": "Reviews",
       "reviewsEmpty": "Customer reviews",
-      "reviewsWithCount": "Reviews ({count})"
+      "reviewsWithCount": "Reviews ({count})",
+      "overview": "Overview"
     },
     "tabsEmpty": {
       "descriptionTitle": "No description",
@@ -239,7 +240,9 @@
       "filterByStarHint": "Filter by stars",
       "filterActive": "Showing: {count} stars",
       "clearFilter": "Clear filter",
-      "noReviewsForFilter": "No {count}-star reviews yet."
+      "noReviewsForFilter": "No {count}-star reviews yet.",
+      "showMore": "Show more",
+      "showLess": "Show less"
     },
     "variants": {
       "attributeFallback": "Attribute",
@@ -342,7 +345,8 @@
     "categoryFallback": "Category",
     "parentCategoryFallback": "Parent category",
     "childrenLabel": "Sub-categories:",
-    "totalProductsCount": "<strong>{count}</strong> products"
+    "totalProductsCount": "<strong>{count}</strong> products",
+    "enterKeywordToSearch": "Enter a keyword to search for products."
   },
   "States": {
     "errorTitle": "Couldn't load data",
@@ -1187,5 +1191,59 @@
     "howToBuy": "Loading buying guide",
     "about": "Loading about page",
     "search": "Loading search results"
+  },
+  "CartWp": {
+    "emptyMessage": "There are no products in your cart yet.",
+    "returnToShop": "Return to shop",
+    "cartHeading": "YOUR CART",
+    "continueShopping": "CONTINUE SHOPPING",
+    "checkoutSubmit": "CHECKOUT",
+    "totalsHeading": "Cart totals",
+    "subtotal": "Subtotal",
+    "discount": "Discount",
+    "shipping": "Shipping fee",
+    "shippingPending": "Shipping is 35,000₫ and free for orders from 2,000,000₫",
+    "total": "Total",
+    "couponLegend": "Enter promo code",
+    "couponPlaceholder": "Enter discount code...",
+    "couponApply": "APPLY",
+    "couponApplying": "...",
+    "loadFailed": "Could not load the cart.",
+    "removeItem": "Remove product",
+    "removeCoupon": "Remove code",
+    "backorderNotice": "Product temporarily out of stock",
+    "decreaseQtyAria": "Decrease quantity {name}",
+    "increaseQtyAria": "Increase quantity {name}",
+    "quantityAria": "Quantity {name}",
+    "loadingAria": "Loading cart"
+  },
+  "PdpBuyBox": {
+    "stockOut": "OUT OF STOCK",
+    "stockLow": "LOW STOCK",
+    "stockIn": "IN STOCK",
+    "ratingLabel": "Rating:",
+    "viewAllReviews": "View all reviews",
+    "noReviews": "No reviews yet",
+    "writeFirst": "Write the first review",
+    "pickVariant": "Please choose a size/color to buy:",
+    "quantity": "Quantity",
+    "decreaseQty": "Decrease quantity",
+    "increaseQty": "Increase quantity",
+    "adding": "ADDING...",
+    "addToCart": "ADD TO CART",
+    "buyNow": "Buy now",
+    "addToCartFailed": "Could not add to cart",
+    "mobileAddToCart": "Add to cart",
+    "mobileBuyNow": "Buy now"
+  },
+  "Home": {
+    "featuredKicker": "FEATURED PRODUCTS",
+    "featuredTitle": "FEATURED PRODUCTS AT BIGBIKE",
+    "newsKicker": "LATEST NEWS",
+    "newsTitle": "STAY ON TREND WITH BIGBIKE",
+    "videosTitle": "EXPERIENCE PRODUCTS WITH BIGBIKE.VN",
+    "buyNow": "Buy now",
+    "relatedKicker": "RELATED PRODUCTS",
+    "relatedTitle": "Similar products"
   }
 }

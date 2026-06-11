@@ -52,8 +52,10 @@ import com.bigbike.bigbike_backend.domain.catalog.HomepageBlock;
 import java.math.BigDecimal;
 import java.text.Normalizer;
 import java.time.Instant;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -1703,8 +1705,14 @@ public class AdminCatalogMutationService {
     }
 
     /**
-     * Hard-delete a single category.
-     * Rejected when the category still has children or products assigned.
+     * Hard-delete a category together with its entire sub-tree (all descendant
+     * categories), in a single transaction.
+     *
+     * <p>Deletion is rejected when ANY category in the sub-tree (the root itself
+     * or any descendant) still has products assigned to it as their primary
+     * category. Products are never deleted as a side effect — the admin must
+     * reassign them to another category first. When the whole sub-tree is free
+     * of products, the root and every descendant category are removed.
      */
     @Transactional
     public void hardDeleteCategory(String categoryId, UUID adminId) {
@@ -1713,26 +1721,46 @@ public class AdminCatalogMutationService {
         CategoryEntity entity = categoryJpaRepository.findById(categoryId)
                 .orElseThrow(() -> new NotFoundException("Category not found."));
 
-        long childCount = categoryJpaRepository.countByParent_Id(categoryId);
-        if (childCount > 0) {
-            throw new ConflictException(
-                    "Cannot delete category: it has " + childCount +
-                    " child categor" + (childCount == 1 ? "y" : "ies") +
-                    ". Re-parent or delete child categories first."
-            );
+        // Root-first ordering of the category and all of its descendants.
+        List<CategoryEntity> subtree = collectCategorySubtree(entity);
+
+        // Block if any category in the sub-tree still has products assigned —
+        // we do not orphan or delete products when removing a category.
+        for (CategoryEntity node : subtree) {
+            long productCount = productJpaRepository.countByCategory_Id(node.getId());
+            if (productCount > 0) {
+                throw new ConflictException(
+                        "Cannot delete: " + productCount +
+                        " product" + (productCount == 1 ? " uses" : "s use") +
+                        " category \"" + node.getName() + "\" as primary category. Reassign them first."
+                );
+            }
         }
 
-        long productCount = productJpaRepository.countByCategory_Id(entity.getId());
-        if (productCount > 0) {
-            throw new ConflictException(
-                    "Cannot delete: " + productCount +
-                    " product" + (productCount == 1 ? " uses" : "s use") +
-                    " category \"" + entity.getName() + "\" as primary category. Reassign them first."
-            );
+        // Delete deepest-first so a child row is removed before its parent
+        // (category.parent_id is a self-referential foreign key).
+        for (int i = subtree.size() - 1; i >= 0; i--) {
+            CategoryEntity node = subtree.get(i);
+            auditLog("CATEGORY_HARD_DELETED", "CATEGORY", adminId, categoryJson(node), null);
+            categoryJpaRepository.delete(node);
         }
+    }
 
-        auditLog("CATEGORY_HARD_DELETED", "CATEGORY", adminId, categoryJson(entity), null);
-        categoryJpaRepository.delete(entity);
+    /**
+     * Collect a category and all of its descendants breadth-first. The returned
+     * list is root-first, so iterating it in reverse yields a leaves-first order
+     * safe for deletion under the self-referential {@code parent_id} FK.
+     */
+    private List<CategoryEntity> collectCategorySubtree(CategoryEntity root) {
+        List<CategoryEntity> ordered = new ArrayList<>();
+        Deque<CategoryEntity> queue = new ArrayDeque<>();
+        queue.add(root);
+        while (!queue.isEmpty()) {
+            CategoryEntity node = queue.poll();
+            ordered.add(node);
+            queue.addAll(categoryJpaRepository.findByParent_Id(node.getId()));
+        }
+        return ordered;
     }
 
     private void assertNoVisibleChildren(String categoryId) {

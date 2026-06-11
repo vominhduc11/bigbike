@@ -96,12 +96,17 @@ class AdminMutationApiTest {
                   "currency": "VND",
                   "stockState": "IN_STOCK",
                   "publishStatus": "DRAFT",
+                  "seo": {
+                    "title": "Phase 4G SEO title %s",
+                    "description": "Phase 4G SEO description %s",
+                    "canonicalUrl": "https://bigbike.vn/products/%s"
+                  },
                   "image": {
                     "url": "%s/wp-uploads/products/%s.jpg",
                     "alt": "Phase 4G Product"
                   }
                 }
-                """.formatted(slug, suffix, MEDIA_PUBLIC_BASE_URL, slug);
+                """.formatted(slug, suffix, suffix, suffix, slug, MEDIA_PUBLIC_BASE_URL, slug);
 
         mockMvc.perform(post("/api/v1/admin/products")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -206,7 +211,6 @@ class AdminMutationApiTest {
                   "retailPrice": 2500000,
                   "stockState": "IN_STOCK",
                   "publishStatus": "DRAFT",
-                  "contentBottom": "<p>Phase 3 SEO content %s</p>",
                   "seo": {
                     "title": "Phase 3 SEO title %s",
                     "description": "Phase 3 SEO description %s",
@@ -214,8 +218,7 @@ class AdminMutationApiTest {
                     "ogImage": {
                       "url": "%s",
                       "alt": "Phase 3 SEO OG image %s"
-                    },
-                    "noIndex": true
+                    }
                   },
                   "image": {
                     "url": "%s/wp-uploads/products/%s.jpg",
@@ -224,7 +227,6 @@ class AdminMutationApiTest {
                 }
                 """.formatted(
                 slug,
-                suffix,
                 suffix,
                 suffix,
                 suffix,
@@ -242,9 +244,7 @@ class AdminMutationApiTest {
                         .content(createPayload))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.slug").value(slug))
-                .andExpect(jsonPath("$.data.contentBottom").value("<p>Phase 3 SEO content " + suffix + "</p>"))
-                .andExpect(jsonPath("$.data.seo.title").value("Phase 3 SEO title " + suffix))
-                .andExpect(jsonPath("$.data.seo.noIndex").value(true));
+                .andExpect(jsonPath("$.data.seo.title").value("Phase 3 SEO title " + suffix));
 
         ProductEntity created = productJpaRepository.findBySlug(slug)
                 .orElseThrow(() -> new IllegalStateException("Expected created product."));
@@ -258,7 +258,6 @@ class AdminMutationApiTest {
         String updatePayload = """
                 {
                   "name": "Phase 3 SEO Content Product Updated %s",
-                  "contentBottom": "<p>Phase 3 SEO content updated %s</p>",
                   "seo": {
                     "title": "Phase 3 SEO title updated %s",
                     "description": "Phase 3 SEO description updated %s",
@@ -266,12 +265,10 @@ class AdminMutationApiTest {
                     "ogImage": {
                       "url": "%s/wp-uploads/products/%s-seo-updated.jpg",
                       "alt": "Phase 3 SEO OG image updated %s"
-                    },
-                    "noIndex": false
+                    }
                   }
                 }
                 """.formatted(
-                suffix,
                 suffix,
                 suffix,
                 suffix,
@@ -288,9 +285,7 @@ class AdminMutationApiTest {
                         .content(updatePayload))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.name").value("Phase 3 SEO Content Product Updated " + suffix))
-                .andExpect(jsonPath("$.data.contentBottom").value("<p>Phase 3 SEO content updated " + suffix + "</p>"))
-                .andExpect(jsonPath("$.data.seo.title").value("Phase 3 SEO title updated " + suffix))
-                .andExpect(jsonPath("$.data.seo.noIndex").value(false));
+                .andExpect(jsonPath("$.data.seo.title").value("Phase 3 SEO title updated " + suffix));
 
         ProductEntity updated = productJpaRepository.findById(created.getId())
                 .orElseThrow(() -> new IllegalStateException("Expected updated product."));
@@ -635,16 +630,18 @@ class AdminMutationApiTest {
     // ── Category hide-guard tests ─────────────────────────────────────────────
 
     @Test
-    void deleteCategoryWithVisibleChildShouldReturnConflict() throws Exception {
+    void deleteCategoryWithChildrenButNoProductsShouldCascade() throws Exception {
+        // CATEGORY_RULE_004: deleting a category cascades to its whole sub-tree
+        // when no category in the tree has products assigned.
         String suffix = String.valueOf(System.currentTimeMillis());
-        String parentSlug = "hide-guard-del-parent-" + suffix;
-        String childSlug = "hide-guard-del-child-" + suffix;
+        String parentSlug = "cascade-del-parent-" + suffix;
+        String childSlug = "cascade-del-child-" + suffix;
 
         mockMvc.perform(post("/api/v1/admin/categories")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-Admin-Permissions", "catalog.update")
                         .content("""
-                                {"slug":"%s","name":"Hide Guard Del Parent %s","visible":true}
+                                {"slug":"%s","name":"Cascade Del Parent %s","visible":true}
                                 """.formatted(parentSlug, suffix)))
                 .andExpect(status().isOk());
 
@@ -655,18 +652,78 @@ class AdminMutationApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-Admin-Permissions", "catalog.update")
                         .content("""
-                                {"slug":"%s","name":"Hide Guard Del Child %s","parentId":"%s","visible":true}
+                                {"slug":"%s","name":"Cascade Del Child %s","parentId":"%s","visible":true}
                                 """.formatted(childSlug, suffix, parent.getId())))
                 .andExpect(status().isOk());
 
+        CategoryEntity child = categoryJpaRepository.findBySlug(childSlug)
+                .orElseThrow(() -> new IllegalStateException("Expected child category."));
+
+        mockMvc.perform(delete("/api/v1/admin/categories/{id}", parent.getId())
+                        .header("X-Admin-Permissions", "catalog.update"))
+                .andExpect(status().isNoContent());
+
+        assertThat(categoryJpaRepository.findById(parent.getId())).isEmpty();
+        assertThat(categoryJpaRepository.findById(child.getId())).isEmpty();
+    }
+
+    @Test
+    void deleteCategoryWithProductInSubtreeShouldReturnConflict() throws Exception {
+        // CATEGORY_RULE_004: a product assigned anywhere in the sub-tree blocks
+        // deletion; the category (and its product) must survive untouched.
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String parentSlug = "prodblock-del-parent-" + suffix;
+        String childSlug = "prodblock-del-child-" + suffix;
+        String productSlug = "prodblock-del-product-" + suffix;
+
+        mockMvc.perform(post("/api/v1/admin/categories")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {"slug":"%s","name":"ProdBlock Del Parent %s","visible":true}
+                                """.formatted(parentSlug, suffix)))
+                .andExpect(status().isOk());
+
+        CategoryEntity parent = categoryJpaRepository.findBySlug(parentSlug)
+                .orElseThrow(() -> new IllegalStateException("Expected parent category."));
+
+        mockMvc.perform(post("/api/v1/admin/categories")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "catalog.update")
+                        .content("""
+                                {"slug":"%s","name":"ProdBlock Del Child %s","parentId":"%s","visible":true}
+                                """.formatted(childSlug, suffix, parent.getId())))
+                .andExpect(status().isOk());
+
+        CategoryEntity child = categoryJpaRepository.findBySlug(childSlug)
+                .orElseThrow(() -> new IllegalStateException("Expected child category."));
+
+        // Assign a product to the CHILD category (deeper in the sub-tree).
+        mockMvc.perform(post("/api/v1/admin/products")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "products.update")
+                        .content("""
+                                {
+                                  "slug": "%s",
+                                  "name": "ProdBlock Del Product %s",
+                                  "categoryId": "%s",
+                                  "retailPrice": 1000000,
+                                  "stockState": "IN_STOCK",
+                                  "publishStatus": "DRAFT",
+                                  "image": { "url": "%s/wp-uploads/products/%s.jpg", "alt": "p" }
+                                }
+                                """.formatted(productSlug, suffix, child.getId(), MEDIA_PUBLIC_BASE_URL, productSlug)))
+                .andExpect(status().isOk());
+
+        // Deleting the PARENT must be blocked because a descendant has a product.
         mockMvc.perform(delete("/api/v1/admin/categories/{id}", parent.getId())
                         .header("X-Admin-Permissions", "catalog.update"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error.code").value("CONFLICT"));
 
-        CategoryEntity stillVisible = categoryJpaRepository.findById(parent.getId())
-                .orElseThrow(() -> new IllegalStateException("Expected parent category."));
-        assertThat(stillVisible.isVisible()).isTrue();
+        assertThat(categoryJpaRepository.findById(parent.getId())).isPresent();
+        assertThat(categoryJpaRepository.findById(child.getId())).isPresent();
     }
 
     @Test
@@ -875,16 +932,14 @@ class AdminMutationApiTest {
                                     "title":"Cat SEO title %s",
                                     "description":"Cat SEO desc %s",
                                     "canonicalUrl":"https://bigbike.vn/danh-muc/%s",
-                                    "ogImage":{"url":"%s","alt":"Cat OG alt %s"},
-                                    "noIndex":true
+                                    "ogImage":{"url":"%s","alt":"Cat OG alt %s"}
                                   }
                                 }
                                 """.formatted(slug, suffix, suffix, suffix, slug, ogUrl, suffix)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.seo.title").value("Cat SEO title " + suffix))
                 .andExpect(jsonPath("$.data.seo.ogImage.url").value(ogUrl))
-                .andExpect(jsonPath("$.data.seo.ogImage.alt").value("Cat OG alt " + suffix))
-                .andExpect(jsonPath("$.data.seo.noIndex").value(true));
+                .andExpect(jsonPath("$.data.seo.ogImage.alt").value("Cat OG alt " + suffix));
 
         CategoryEntity created = categoryJpaRepository.findBySlug(slug)
                 .orElseThrow(() -> new IllegalStateException("Expected created category."));

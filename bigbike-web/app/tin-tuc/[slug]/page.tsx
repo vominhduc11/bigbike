@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 
 import { WpCategoryHero, type WpCategoryCrumb } from "@/components/wp/WpCategoryHero";
+import { LHtml, LText, LocalizedContentProvider } from "@/components/i18n/LocalizedContent";
 import {
   getArticleBySlug,
   listArticles,
@@ -32,17 +33,15 @@ import { isValidSlug } from "@/lib/utils/slug";
 import { WpArticleImage } from "../WpArticleImage";
 import { ArticleTableOfContents } from "./ArticleTableOfContents";
 
-// Locale is read from a cookie (next-intl) - opt into dynamic rendering.
-export const dynamic = "force-dynamic";
-
 const WP_TIME_ZONE = "Asia/Ho_Chi_Minh";
 // Ảnh trang trí cố định của blog-thumbnail — port 1:1 từ single.php.
 const BLOG_THUMBNAIL =
   "/wp-content/themes/bigbike/images/85f3273578840b12abf6a48a6e8c5bd1.png";
 
+// ISR on-demand: bài viết là dữ liệu admin quản lý → KHÔNG prebuild lúc build. Trả [] để
+// sinh khi truy cập lần đầu + revalidate theo tag article:{slug}/articles khi admin sửa.
 export async function generateStaticParams() {
-  const result = await listArticles({ page: 1, size: 100, sort: "publishedAt:desc" });
-  return (result.data ?? []).map((a) => ({ slug: a.slug }));
+  return [];
 }
 
 type ArticleDetailPageProps = Readonly<{
@@ -178,11 +177,16 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
   const heroBreadcrumb: WpCategoryCrumb[] = [
     { label: "Bigbike.vn", href: toHomePath() },
     { label: categoryLabel, href: categoryHref },
-    { label: articleTitle },
+    { label: articleTitle, labelNode: <LText field="title">{articleTitle}</LText> },
   ];
 
+  const articleBodyHtml = sanitizeRichHtml(article.body, {
+    allowInlineStyles: true,
+    rewriteMediaUrls: true,
+  });
+
   return (
-    <>
+    <LocalizedContentProvider kind="article" slug={article.slug}>
       {stylesheet}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: articleJsonLd }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }} />
@@ -190,6 +194,7 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
       <div className="single single-post single-format-standard">
         <WpCategoryHero
           title={articleTitle}
+          titleNode={<LText field="title">{articleTitle}</LText>}
           breadcrumb={heroBreadcrumb}
           bgUrl={heroBgUrl}
           illustrationUrl={heroIllustrationUrl}
@@ -214,14 +219,12 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
 
                   <ArticleTableOfContents />
 
-                  <div
+                  <LHtml
+                    field="body"
+                    viHtml={articleBodyHtml}
                     className="blog-content wyswyg"
-                    dangerouslySetInnerHTML={{
-                      __html: sanitizeRichHtml(article.body, {
-                        allowInlineStyles: true,
-                        rewriteMediaUrls: true,
-                      }),
-                    }}
+                    allowInlineStyles
+                    rewriteMediaUrls
                   />
 
                   <div className="social-sharing">
@@ -265,7 +268,7 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
           </div>
         ) : null}
       </div>
-    </>
+    </LocalizedContentProvider>
   );
 }
 

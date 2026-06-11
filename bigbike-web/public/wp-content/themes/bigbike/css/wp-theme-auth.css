@@ -618,6 +618,13 @@ html{font-size:14px}body{font-size:16px;font-family:Barlow,sans-serif}
    .register rộng hơn vì form 2 cột (tên/email, mật khẩu/nhập lại). */
 .user-activity .login{margin-left:auto;margin-right:auto}
 .user-activity .register{max-width:640px;margin-left:auto;margin-right:auto}
+/* Form auth (login/register/forgot) KHÔNG bọc trong .webform nên input không
+   nhận rule `width:100%` của theme → ô nhập rớt về chiều rộng mặc định ~212px,
+   hẹp hơn nút submit và để trống ~2/3 ô SĐT (col-md-12). Cho .form-control giãn
+   đầy cột; giữ nguyên height/border 52px của theme (không kéo .webform vào để
+   tránh đổi height→40px, border→#dfdfdf). Checkbox không có .form-control nên
+   không bị ảnh hưởng. */
+.user-activity .form-group .form-control{width:100%}
 .user-activity .form-group.form-checkbox label:before,
 .user-activity .form-group.form-radio label:before{
   content:"";font-family:inherit;width:16px;height:16px;box-sizing:border-box;

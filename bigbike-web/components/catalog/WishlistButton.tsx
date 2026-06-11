@@ -62,7 +62,7 @@ export function WishlistButton({ productId, variant = "overlay" }: WishlistButto
         disabled={auth.status === "loading"}
         onClick={handleClick}
         className={cn(
-          "flex flex-1 min-w-[150px] cursor-pointer items-center justify-center gap-2 border-2 px-4 py-3 font-body text-sm font-semibold uppercase tracking-wide transition-colors disabled:cursor-not-allowed disabled:opacity-60",
+          "flex flex-1 min-w-[130px] cursor-pointer items-center justify-center gap-2 whitespace-nowrap border-2 px-4 py-3 font-body text-sm font-semibold uppercase tracking-wide transition-colors disabled:cursor-not-allowed disabled:opacity-60",
           active
             ? "border-brand bg-brand-soft text-brand"
             : "border-border text-foreground hover:border-brand hover:text-brand",

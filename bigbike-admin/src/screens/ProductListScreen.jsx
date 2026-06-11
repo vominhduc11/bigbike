@@ -14,6 +14,7 @@ import { showConfirm } from '../lib/confirm'
 import { ApiClientError, exportProductsCsv, fetchBrands, fetchCategoryTree, fetchProductDetail, fetchProducts, restoreProduct, softDeleteProduct } from '../lib/adminApi'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
 import { useAdminList } from '../lib/useAdminList'
+import { useContentLang } from '../lib/contentLang'
 import { useDebounce } from '../lib/useDebounce'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 import { Alert } from '@/components/ui/alert'
@@ -68,7 +69,8 @@ function categoryLabel(product) {
 }
 
 export function ProductListScreen({ navigate, canUpdate }) {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
+  const contentLang = useContentLang()
   const queryClient = useQueryClient()
   const [query, setQuery] = useState(() => readQueryFromUrl(INITIAL_QUERY))
   const [searchInput, setSearchInput] = useState(() => {
@@ -83,7 +85,7 @@ export function ProductListScreen({ navigate, canUpdate }) {
   const [selected, setSelected] = useState(() => new Set())
   const [bulkBusy, setBulkBusy] = useState(false)
 
-  const state = useAdminList(['products', query, i18n.language], () => fetchProducts(query))
+  const state = useAdminList(['products', query, contentLang], () => fetchProducts(query))
 
   const { data: brandsData } = useQuery({ queryKey: ['brands-all'], queryFn: () => fetchBrands({ pageSize: 100, sort: 'name:asc' }), staleTime: 5 * 60_000 })
   const { data: categoriesData } = useQuery({ queryKey: ['categories', 'tree'], queryFn: () => fetchCategoryTree(), staleTime: 5 * 60_000 })

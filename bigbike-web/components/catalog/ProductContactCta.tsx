@@ -30,6 +30,11 @@ function zaloDisplayNumber(value: string): string {
  * system. All shop details come from system settings so they stay editable in one
  * place and consistent with the footer / contact page and the LocalBusiness
  * structured data.
+ *
+ * Width/horizontal gutter are NOT set here — the band must render inside the PDP
+ * `.container` so it shares the exact same rail (max-width steps + 15px gutter) as
+ * every other section on the page at every breakpoint. Don't re-add a bespoke
+ * max-width/px wrapper or move it outside `.container`.
  */
 export function ProductContactCta({
   productName,
@@ -44,7 +49,7 @@ export function ProductContactCta({
   const zaloNumber = zaloUrl ? zaloDisplayNumber(zaloUrl) : "";
 
   return (
-    <section className="mx-auto mt-16 mb-12 max-w-[1140px] px-[15px] max-md:mt-9 max-md:px-[var(--bb-mobile-page-x)] min-[1536px]:max-w-[1360px] min-[1920px]:max-w-[1600px]">
+    <section className="mt-16 mb-12 max-md:mt-9">
       <div className="border border-border border-t-2 border-t-brand bg-card px-6 py-5 text-center max-md:px-4 max-md:py-4">
         <h3 className="font-cta text-15 leading-title text-balance text-muted-foreground max-md:text-13">
           {t.rich("headline", {
@@ -56,7 +61,7 @@ export function ProductContactCta({
         </h3>
 
         {address && (
-          <p className="mt-2.5 flex items-center justify-center gap-1.5 text-13 leading-body text-muted-foreground">
+          <p className="mt-2.5 text-13 leading-body text-balance break-words text-muted-foreground">
             <svg
               width="14"
               height="14"
@@ -64,13 +69,13 @@ export function ProductContactCta({
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
-              className="shrink-0 text-brand"
+              className="mr-1.5 inline-block align-[-2px] text-brand"
               aria-hidden="true"
             >
               <path d="M12 21s-7-5.33-7-11a7 7 0 1 1 14 0c0 5.67-7 11-7 11Z" />
               <circle cx="12" cy="10" r="2.5" />
             </svg>
-            <span className="min-w-0 break-words">{address}</span>
+            {address}
           </p>
         )}
 

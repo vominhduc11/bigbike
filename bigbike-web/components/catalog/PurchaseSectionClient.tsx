@@ -160,7 +160,9 @@ export function PurchaseSectionClient({
         return res.json() as Promise<ProductSnapshot>;
       },
       staleTime: 30 * 1000,
-      refetchOnWindowFocus: false,
+      // Tồn kho có thể đổi (bán online + walk-in POS) khi khách rời tab xem PDP →
+      // làm mới khi quay lại để tránh hiển thị "còn hàng" sai. Override global false.
+      refetchOnWindowFocus: true,
       retry: 2,
     });
 

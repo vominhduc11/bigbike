@@ -1,24 +1,24 @@
 "use client";
 
 import { useLocale } from "next-intl";
-import { useRouter } from "next/navigation";
 import { useTransition } from "react";
-import { LOCALES, LOCALE_COOKIE, type Locale } from "@/i18n/locale";
+import { LOCALES, type Locale } from "@/i18n/locale";
+import { useSetLocale } from "@/components/providers/ClientIntlProvider";
 
 /**
  * Đổi ngôn ngữ — control bigbike-web giữ lại nhưng style hợp theme WP
- * (cụm VI|EN nằm trong .user-control của header WP). Logic cookie-based
- * giống LanguageSwitcher: ghi NEXT_LOCALE + refresh để server re-render.
+ * (cụm VI|EN nằm trong .user-control của header WP). Đổi ngôn ngữ ngay ở CLIENT
+ * qua ClientIntlProvider (ghi cookie NEXT_LOCALE + swap message), KHÔNG router.refresh
+ * — vì server render tĩnh locale `vi` để giữ kiến trúc ISR/SSG.
  */
 export function WpLangSwitch() {
   const locale = useLocale() as Locale;
-  const router = useRouter();
+  const setLocale = useSetLocale();
   const [isPending, startTransition] = useTransition();
 
   function selectLocale(next: Locale) {
     if (next === locale || isPending) return;
-    document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
-    startTransition(() => router.refresh());
+    startTransition(() => setLocale(next));
   }
 
   return (

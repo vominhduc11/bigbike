@@ -2,38 +2,26 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getLocale } from "next-intl/server";
 import { WpCategoryHero, type WpCategoryCrumb } from "@/components/wp/WpCategoryHero";
-import { WpCategorySidebar } from "@/components/wp/WpCategorySidebar";
-import { WpCatalogResults } from "@/components/wp/WpCatalogResults";
-import {
-  getBrandBySlug,
-  getCatalogFacets,
-  listBrands,
-  listCategories,
-  listProducts,
-} from "@/lib/api/public-api";
-import { buildCatalogTitle } from "@/lib/utils/catalog";
-import { DEFAULT_WP_ORDERBY } from "@/lib/utils/catalog-sort";
+import { WpCatalogClient } from "@/components/wp/WpCatalogClient";
+import { LText, LocalizedContentProvider } from "@/components/i18n/LocalizedContent";
+import { getBrandBySlug, getCatalogFacets, listBrands, listCategories } from "@/lib/api/public-api";
 import { buildBrandBreadcrumbJsonLd, serializeJsonLd } from "@/lib/seo/json-ld";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { resolveMediaUrl, safeText, toLegacyWpMediaUrl } from "@/lib/utils/format";
-import { parseCatalogListParams } from "@/lib/utils/catalog-list-params";
-import { readSearchParamAlias, readSingleSearchParam } from "@/lib/utils/query";
 import { toBrandListPath, toBrandPath, toHomePath } from "@/lib/utils/routes";
 import { isValidSlug } from "@/lib/utils/slug";
 
-export const dynamic = "force-dynamic";
-
+// ISR on-demand: thương hiệu là dữ liệu admin quản lý → KHÔNG prebuild lúc build. Trả [] để
+// sinh khi truy cập lần đầu + revalidate theo tag brand:{slug}/brands khi admin sửa.
 export async function generateStaticParams() {
-  const result = await listBrands({ page: 1, size: 1000, sort: "name:asc" });
-  return (result.data ?? []).map((b) => ({ slug: b.slug }));
+  return [];
 }
 
 type BrandDetailPageProps = {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export async function generateMetadata({ params, searchParams }: BrandDetailPageProps): Promise<Metadata> {
+export async function generateMetadata({ params }: BrandDetailPageProps): Promise<Metadata> {
   const { slug } = await params;
   if (!isValidSlug(slug)) {
     return buildPublicMetadata({
@@ -56,81 +44,28 @@ export async function generateMetadata({ params, searchParams }: BrandDetailPage
     });
   }
 
-  const query = await searchParams;
-  const page = Number(readSearchParamAlias(query, "page", "paged") ?? "1");
-  const brandFilter = readSearchParamAlias(query, "pwb-brand", "brand");
-  const q = readSingleSearchParam(query.q);
-  const color = readSingleSearchParam(query.filter_color);
-  const minPrice = readSingleSearchParam(query.min_price);
-  const maxPrice = readSingleSearchParam(query.max_price);
-  const orderby = readSingleSearchParam(query.orderby);
-
+  // Metadata base (trang tĩnh) — canonical về thương hiệu; tham số lọc xử lý ở client.
   return buildPublicMetadata({
-    title:
-      brand.seo?.title ??
-      buildCatalogTitle(brand.name, {
-        page,
-        minPrice: minPrice ? Number(minPrice) : undefined,
-        maxPrice: maxPrice ? Number(maxPrice) : undefined,
-        colorName: color,
-      }),
+    title: brand.seo?.title ?? brand.name,
     description: brand.seo?.description ?? brand.description ?? "Chi tiết thương hiệu BigBike.",
     canonicalPath: toBrandPath(brand.slug),
-    noIndex:
-      page > 1 ||
-      Boolean(brandFilter) ||
-      Boolean(q) ||
-      Boolean(color) ||
-      Boolean(minPrice) ||
-      Boolean(maxPrice) ||
-      Boolean(orderby && orderby !== DEFAULT_WP_ORDERBY),
     ogImage: brand.seo?.ogImage?.url ?? brand.logo?.url ?? undefined,
   });
 }
 
-export default async function BrandDetailPage({ params, searchParams }: BrandDetailPageProps) {
+export default async function BrandDetailPage({ params }: BrandDetailPageProps) {
   const { slug } = await params;
   if (!isValidSlug(slug)) {
     notFound();
   }
 
-  const query = await searchParams;
-  const catalog = parseCatalogListParams(query);
-  const { filters, validationErrors, orderbyCurrent } = catalog;
-
-  if (validationErrors.length > 0) {
-    return (
-      <div id="main-content">
-        <div className="container">
-          <p className="woocommerce-info">{validationErrors.join(" ")}</p>
-        </div>
-      </div>
-    );
-  }
-
   const locale = await getLocale();
-  const [
-    brandResult,
-    productsResult,
-    brandsResult,
-    categoriesResult,
-    facetsResult,
-  ] = await Promise.all([
+  // Shell tĩnh theo slug — KHÔNG đọc searchParams (lưới lọc/phân trang nằm ở client).
+  const [brandResult, brandsResult, categoriesResult, facetsResult] = await Promise.all([
     getBrandBySlug(slug, locale),
-    listProducts({
-      page: catalog.page,
-      size: catalog.size,
-      sort: catalog.productSort,
-      brand: slug,
-      q: filters.q,
-      filterColor: filters.color,
-      minPrice: filters.minPrice,
-      maxPrice: filters.maxPrice,
-      lang: locale,
-    }),
     listBrands({ page: 1, size: 100, sort: "name:asc", lang: locale }),
     listCategories({ page: 1, size: 100, sort: "sortOrder:asc", lang: locale }),
-    getCatalogFacets({ q: filters.q, lang: locale }),
+    getCatalogFacets({ lang: locale }),
   ]);
 
   if (!brandResult.data && brandResult.error?.status === 404) {
@@ -147,32 +82,19 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
   }
 
   const brand = brandResult.data;
-
   const canonicalPath = toBrandPath(brand.slug);
   const filterCategories = (categoriesResult.data ?? []).filter((c) => c.isVisible);
-
   const breadcrumbJsonLd = serializeJsonLd(buildBrandBreadcrumbJsonLd(brand));
   const brandName = safeText(brand.name, "Thương hiệu");
-  const products = productsResult.data;
-  const pagination = productsResult.pagination;
 
   const heroBreadcrumb: WpCategoryCrumb[] = [
     { label: "Bigbike.vn", href: toHomePath() },
     { label: "Thương hiệu", href: toBrandListPath() },
-    { label: brandName },
+    { label: brandName, labelNode: <LText field="name">{brandName}</LText> },
   ];
 
   const heroBgUrl = toLegacyWpMediaUrl(resolveMediaUrl(brand.bannerImage?.url?.trim()));
   const heroIllustrationUrl = toLegacyWpMediaUrl(resolveMediaUrl(brand.logo?.url?.trim()));
-
-  const paginationBaseHref = catalog.buildPaginationHref(canonicalPath);
-
-  const notice =
-    productsResult.error && products.length === 0
-      ? productsResult.error.message
-      : products.length === 0
-        ? "Không tìm thấy sản phẩm phù hợp."
-        : null;
 
   return (
     <>
@@ -183,42 +105,30 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
       />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }} />
 
-      <div className="archive tax-pwb-brand post-type-archive-product">
-        <WpCategoryHero
-          title={brandName}
-          breadcrumb={heroBreadcrumb}
-          bgUrl={heroBgUrl}
-          illustrationUrl={heroIllustrationUrl}
-          illustrationAlt={brand.logo?.alt ?? brandName}
-        />
+      <LocalizedContentProvider kind="brand" slug={brand.slug}>
+        <div className="archive tax-pwb-brand post-type-archive-product">
+          <WpCategoryHero
+            title={brandName}
+            titleNode={<LText field="name">{brandName}</LText>}
+            breadcrumb={heroBreadcrumb}
+            bgUrl={heroBgUrl}
+            illustrationUrl={heroIllustrationUrl}
+            illustrationAlt={brand.logo?.alt ?? brandName}
+          />
 
-        <div id="main-content">
-          <div className="container">
-            <div className="row">
-              <div className="col-md-3">
-                <WpCategorySidebar
-                  brands={brandsResult.data}
-                  categories={filterCategories}
-                  facets={facetsResult.data}
-                  current={catalog.currentFilters}
-                  resetHref={canonicalPath}
-                  hiddenParams={{
-                    orderby: orderbyCurrent !== DEFAULT_WP_ORDERBY ? orderbyCurrent : undefined,
-                  }}
-                />
-              </div>
-
-              <WpCatalogResults
-                orderbyCurrent={orderbyCurrent}
-                pagination={pagination}
-                products={products}
-                notice={notice}
-                paginationBaseHref={paginationBaseHref}
+          <div id="main-content">
+            <div className="container">
+              <WpCatalogClient
+                canonicalPath={canonicalPath}
+                brands={brandsResult.data}
+                categories={filterCategories}
+                facets={facetsResult.data}
+                routeBrandSlug={brand.slug}
               />
             </div>
           </div>
         </div>
-      </div>
+      </LocalizedContentProvider>
     </>
   );
 }

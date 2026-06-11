@@ -15,7 +15,7 @@ import type {
   SaveAddressPayload,
   UpdateCustomerProfilePayload,
 } from "@/lib/contracts/commerce";
-import type { Product } from "@/lib/contracts/public";
+import type { Article, Brand, Category, Page, Product } from "@/lib/contracts/public";
 import { env } from "@/env";
 
 // Re-export for consumers that import from client-api
@@ -109,13 +109,195 @@ export function fetchPublicSettings(): Promise<PublicSetting[]> {
 
 // ── Catalog ───────────────────────────────────────────────────────────────────
 
+/** Append `?lang=` only when a non-empty language is supplied (vi is backend default). */
+function withLang(path: string, lang?: string): string {
+  return lang ? `${path}?lang=${encodeURIComponent(lang)}` : path;
+}
+
 /**
- * Client-side product detail fetch — used by the comparison page, which reads
- * the product list from localStorage and needs the full payload (incl.
- * `specifications`, only present on the detail endpoint).
+ * Client-side product detail fetch — used by the comparison page (reads the
+ * product list from localStorage, needs the full payload incl. `specifications`)
+ * AND by the client-side content localizer (refetch in EN on locale switch).
  */
-export function fetchPublicProduct(slug: string): Promise<Product> {
-  return clientRequest("GET", `/api/v1/products/${encodeURIComponent(slug)}`);
+export function fetchPublicProduct(slug: string, lang?: string): Promise<Product> {
+  return clientRequest("GET", withLang(`/api/v1/products/${encodeURIComponent(slug)}`, lang));
+}
+
+/** Client-side detail fetches — used by the content localizer to swap detail-page
+ *  data to EN after a locale switch, keeping the server render static `vi` (ISR). */
+export function fetchPublicArticle(slug: string, lang?: string): Promise<Article> {
+  return clientRequest("GET", withLang(`/api/v1/articles/${encodeURIComponent(slug)}`, lang));
+}
+
+export function fetchPublicBrand(slug: string, lang?: string): Promise<Brand> {
+  return clientRequest("GET", withLang(`/api/v1/brands/${encodeURIComponent(slug)}`, lang));
+}
+
+export function fetchPublicCategory(slug: string, lang?: string): Promise<Category> {
+  return clientRequest("GET", withLang(`/api/v1/categories/${encodeURIComponent(slug)}`, lang));
+}
+
+export function fetchPublicPage(slug: string, lang?: string): Promise<Page> {
+  return clientRequest("GET", withLang(`/api/v1/pages/${encodeURIComponent(slug)}`, lang));
+}
+
+export type PublicProductListQuery = {
+  page?: number;
+  size?: number;
+  sort?: string;
+  category?: string;
+  brand?: string;
+  q?: string;
+  filterColor?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  homepageBlock?: "NONE" | "FEATURED_GRID";
+  lang?: string;
+};
+
+export type PublicProductListResult = {
+  data: Product[];
+  pagination: { page: number; totalPages: number; totalItems?: number | null } | null;
+};
+
+/**
+ * Client-side catalog list fetch — dùng cho lưới sản phẩm CSR ở các trang archive
+ * (danh mục / tất cả sản phẩm / tìm kiếm). Trang chỉ render shell tĩnh (ISR), lưới
+ * lọc/phân trang fetch ở client theo searchParams. Param names khớp backend như
+ * `listProducts` của public-api (pwb-brand, filter_color, min_price, max_price).
+ */
+export async function fetchPublicProductList(
+  query: PublicProductListQuery,
+): Promise<PublicProductListResult> {
+  const qs = new URLSearchParams();
+  const put = (k: string, v: string | number | undefined) => {
+    if (v !== undefined && v !== null && `${v}` !== "") qs.set(k, `${v}`);
+  };
+  put("page", query.page);
+  put("size", query.size);
+  put("sort", query.sort ?? "createdAt:desc");
+  put("category", query.category);
+  put("pwb-brand", query.brand);
+  put("q", query.q);
+  put("filter_color", query.filterColor);
+  put("min_price", query.minPrice);
+  put("max_price", query.maxPrice);
+  put("homepage_block", query.homepageBlock);
+  put("lang", query.lang);
+
+  const res = await fetch(`${API_BASE_URL}/api/v1/products?${qs.toString()}`, {
+    method: "GET",
+    credentials: "include",
+    headers: { Accept: "application/json" },
+  });
+  const payload = await res.json().catch(() => null);
+  if (!res.ok) {
+    const msg = (payload as { error?: { message?: string } } | null)?.error?.message ?? `HTTP ${res.status}`;
+    throw new Error(msg);
+  }
+  const body = (payload ?? {}) as { data?: Product[]; pagination?: PublicProductListResult["pagination"] };
+  return { data: body.data ?? [], pagination: body.pagination ?? null };
+}
+
+export type PublicArticleListQuery = {
+  page?: number;
+  size?: number;
+  category?: string;
+  q?: string;
+  lang?: string;
+};
+
+export type PublicArticleListResult = {
+  data: Article[];
+  pagination: { page: number; totalPages: number; totalItems?: number | null } | null;
+};
+
+/** Client-side article list fetch — lưới tin tức CSR (lọc danh mục/tìm/phân trang). */
+export async function fetchPublicArticleList(
+  query: PublicArticleListQuery,
+): Promise<PublicArticleListResult> {
+  const qs = new URLSearchParams();
+  const put = (k: string, v: string | number | undefined) => {
+    if (v !== undefined && v !== null && `${v}` !== "") qs.set(k, `${v}`);
+  };
+  put("page", query.page);
+  put("size", query.size);
+  put("sort", "publishedAt:desc");
+  put("category", query.category);
+  put("q", query.q);
+  put("lang", query.lang);
+
+  const res = await fetch(`${API_BASE_URL}/api/v1/articles?${qs.toString()}`, {
+    method: "GET",
+    credentials: "include",
+    headers: { Accept: "application/json" },
+  });
+  const payload = await res.json().catch(() => null);
+  if (!res.ok) {
+    const msg = (payload as { error?: { message?: string } } | null)?.error?.message ?? `HTTP ${res.status}`;
+    throw new Error(msg);
+  }
+  const body = (payload ?? {}) as { data?: Article[]; pagination?: PublicArticleListResult["pagination"] };
+  return { data: body.data ?? [], pagination: body.pagination ?? null };
+}
+
+export type PublicBrandListResult = {
+  data: Brand[];
+  pagination: { page: number; totalPages: number; totalItems?: number | null } | null;
+};
+
+/** Client-side brand list fetch — lưới thương hiệu CSR (phân trang/sắp xếp). */
+export async function fetchPublicBrandList(
+  query: { page?: number; size?: number; sort?: string; lang?: string },
+): Promise<PublicBrandListResult> {
+  const qs = new URLSearchParams();
+  const put = (k: string, v: string | number | undefined) => {
+    if (v !== undefined && v !== null && `${v}` !== "") qs.set(k, `${v}`);
+  };
+  put("page", query.page);
+  put("size", query.size);
+  put("sort", query.sort ?? "name:asc");
+  put("lang", query.lang);
+
+  const res = await fetch(`${API_BASE_URL}/api/v1/brands?${qs.toString()}`, {
+    method: "GET",
+    credentials: "include",
+    headers: { Accept: "application/json" },
+  });
+  const payload = await res.json().catch(() => null);
+  if (!res.ok) {
+    const msg = (payload as { error?: { message?: string } } | null)?.error?.message ?? `HTTP ${res.status}`;
+    throw new Error(msg);
+  }
+  const body = (payload ?? {}) as { data?: Brand[]; pagination?: PublicBrandListResult["pagination"] };
+  return { data: body.data ?? [], pagination: body.pagination ?? null };
+}
+
+/** Client-side category list fetch — dùng cho lưới danh mục trang chủ refetch theo lang. */
+export async function fetchPublicCategoryList(
+  query: { size?: number; sort?: string; showOnHomepage?: boolean; lang?: string },
+): Promise<Category[]> {
+  const qs = new URLSearchParams();
+  const put = (k: string, v: string | number | undefined) => {
+    if (v !== undefined && v !== null && `${v}` !== "") qs.set(k, `${v}`);
+  };
+  put("size", query.size);
+  put("sort", query.sort ?? "sortOrder:asc");
+  if (query.showOnHomepage) qs.set("showOnHomepage", "true");
+  put("lang", query.lang);
+
+  const res = await fetch(`${API_BASE_URL}/api/v1/categories?${qs.toString()}`, {
+    method: "GET",
+    credentials: "include",
+    headers: { Accept: "application/json" },
+  });
+  const payload = await res.json().catch(() => null);
+  if (!res.ok) {
+    const msg = (payload as { error?: { message?: string } } | null)?.error?.message ?? `HTTP ${res.status}`;
+    throw new Error(msg);
+  }
+  const body = (payload ?? {}) as { data?: Category[] };
+  return body.data ?? [];
 }
 
 export function submitQuickBuy(payload: QuickBuyPayload, idempotencyKey?: string): Promise<OrderSummary> {

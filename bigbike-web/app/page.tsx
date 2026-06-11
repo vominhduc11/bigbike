@@ -3,10 +3,13 @@ import Link from "next/link";
 import { getLocale } from "next-intl/server";
 
 import { HomeAnalytics } from "@/components/home/HomeAnalytics";
+import { Tr } from "@/components/i18n/Tr";
 import { ExperienceCarousel } from "@/components/home/ExperienceCarousel";
 import { HomeVideoCarousel } from "@/components/home/HomeVideoCarousel";
-import { ProductSwiper } from "@/components/catalog/ProductSwiper";
-import type { Article, HomeSlider, Product } from "@/lib/contracts/public";
+import { HomeFeaturedProducts } from "@/components/home/HomeFeaturedProducts";
+import { HomeCategoryGrid } from "@/components/home/HomeCategoryGrid";
+import { HomeNewsList } from "@/components/home/HomeNewsList";
+import type { HomeSlider, Product } from "@/lib/contracts/public";
 import {
   getProductBySlug,
   listArticles,
@@ -29,15 +32,12 @@ import {
   isSafeHomeVideoUrl,
   isSafePublicHref,
   resolveMediaUrl,
-  safeText,
   toLegacyWpMediaUrl,
   toSafePublicHref,
 } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
-import { stripHtmlToText } from "@/lib/utils/text";
 import { pickSetting } from "@/lib/utils/settings";
 import {
-  toArticlePath,
   toCategoryPath,
   toHomePath,
   toProductListPath,
@@ -45,7 +45,8 @@ import {
 } from "@/lib/utils/routes";
 import type { HomeVideo } from "@/lib/contracts/public";
 
-export const dynamic = "force-dynamic";
+// ISR: render tĩnh + revalidate on-demand theo tag (home/products/sliders…) do backend
+// WebRevalidationService phát khi admin đổi nội dung. Bỏ force-dynamic để không SSR.
 
 const T = "/wp-content/themes/bigbike";
 const HOME_ORG_LOGO = "/wp/logo.png";
@@ -101,28 +102,6 @@ function toHeroSlide(slider: HomeSlider, product: Product | null) {
 function isRenderableHomeVideo(video: HomeVideo): boolean {
   if (video.youtubeId && /^[A-Za-z0-9_-]{11}$/.test(video.youtubeId)) return true;
   return isSafeHomeVideoUrl(video.videoUrl);
-}
-
-function truncateWpExcerpt(text: string, maxLength = 120): string {
-  if (text.length <= maxLength) return text;
-  const ending = "…";
-  const cut = text.lastIndexOf(" ", maxLength - ending.length);
-  const pos = cut > maxLength - 30 ? cut : maxLength - ending.length;
-  return `${text.slice(0, pos).trimEnd()}${ending}`;
-}
-
-function resolveWpNewsExcerpt(article: Article): string {
-  const manualExcerpt = article.excerpt?.trim();
-  if (manualExcerpt) return truncateWpExcerpt(manualExcerpt);
-  const bodyText = article.body ? stripHtmlToText(article.body) : "";
-  return bodyText ? truncateWpExcerpt(bodyText) : "";
-}
-
-/** get_the_date('j/n/Y') — ngày/tháng/năm không số 0 đầu. */
-function formatWpDate(value: string | null | undefined): string {
-  const date = new Date(value ?? "");
-  if (Number.isNaN(date.valueOf())) return "";
-  return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
 }
 
 export default async function HomePage() {
@@ -273,7 +252,7 @@ export default async function HomePage() {
                         <Link href={href}>{h.productName}</Link>
                       </h3>
                       <Link className="item--btn" href={href}>
-                        Mua ngay <i className="fal fa-chevron-right" />
+                        <Tr ns="Home" k="buyNow" /> <i className="fal fa-chevron-right" />
                       </Link>
                     </div>
                   </div>
@@ -306,37 +285,12 @@ export default async function HomePage() {
       <div className="product-list pt-40 pb-40">
         <div className="container">
           <div className="block-title text-center mb-40">
-            <p className="sub-title">SẢN PHẨM NỔI BẬT</p>
-            <h3>SẢN PHẨM NỔI BẬT TẠI BIGBIKE</h3>
+            <p className="sub-title"><Tr ns="Home" k="featuredKicker" /></p>
+            <h3><Tr ns="Home" k="featuredTitle" /></h3>
           </div>
-          {carouselProducts.length > 0 && <ProductSwiper products={carouselProducts} />}
+          <HomeFeaturedProducts initialProducts={carouselProducts} />
 
-          {categories.length > 0 && (
-            <div className="product-category-list mb-10">
-              <div className="row">
-                {categories.map((c) => {
-                  const img =
-                    resolveMediaUrl((c.image ?? c.icon)?.url?.trim()) || `${T}/images/Union-2.png`;
-                  return (
-                    <div className="col-6 col-md-3 col-sm-4 item" key={c.id}>
-                      <Link href={toCategoryPath(c.slug)} className="row align-items-center">
-                        <span className="col-12">
-                          <span className="img">
-                            {/* mx-auto: căn giữa lại ảnh — Tailwind preflight ép img thành block
-                                nên text-align:center của theme không còn căn giữa được (WP gốc img inline). */}
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={img} className="lazy mx-auto" alt="" width={1} height={1} />
-                          </span>
-                          <span className="desc">{c.name}</span>
-                          <i className="fal fa-chevron-circle-right" />
-                        </span>
-                      </Link>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+          <HomeCategoryGrid initialCategories={categories} />
         </div>
       </div>
 
@@ -383,43 +337,10 @@ export default async function HomePage() {
         <div className="news bb-home-news-parity pt-60 pb-60">
           <div className="container">
             <div className="block-title text-center pb-40">
-              <p className="sub-title">TIN TỨC MỚI UPDATE</p>
-              <h3>CẬP NHẬT XU HƯỚNG CÙNG BIGBIKE</h3>
+              <p className="sub-title"><Tr ns="Home" k="newsKicker" /></p>
+              <h3><Tr ns="Home" k="newsTitle" /></h3>
             </div>
-            <div className="news-list">
-              <div className="row">
-                {newsArticles.map((a) => {
-                  const img = toLegacyWpMediaUrl(resolveMediaUrl(a.coverImage?.url?.trim()));
-                  const href = toArticlePath(a.slug);
-                  const title = safeText(a.title, "");
-                  return (
-                    <div className="col-md-4 col-sm-6" key={a.id}>
-                      <div className="news--item">
-                        <div className="news--item-thumbnail">
-                          <Link className="lazy" href={href}>
-                            {img ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img src={img} alt={title} className="lazy" />
-                            ) : null}
-                          </Link>
-                        </div>
-                        <div className="news--item-desc">
-                          <div className="news-date">
-                            <p>{formatWpDate(a.publishedAt ?? a.createdAt)}</p>
-                          </div>
-                          <div className="news--item-inside">
-                            <p className="title-post">
-                              <Link href={href}>{title}</Link>
-                            </p>
-                            <p>{resolveWpNewsExcerpt(a)}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+            <HomeNewsList initialArticles={newsArticles} />
           </div>
         </div>
       )}
@@ -433,7 +354,7 @@ export default async function HomePage() {
           />
           <div className="relative z-[1] mx-auto w-full max-w-[var(--bb-container-xl)] px-4 md:px-6">
             <div className="block-title text-center white pb-40">
-              <h3>TRẢI NGHIỆM SẢN PHẨM CÙNG BIGBIKE.VN</h3>
+              <h3><Tr ns="Home" k="videosTitle" /></h3>
             </div>
             <HomeVideoCarousel videos={homeVideos} />
           </div>

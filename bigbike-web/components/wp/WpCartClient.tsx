@@ -1,13 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { applyCoupon, fetchCart, removeCoupon, removeCartItem, updateCartItem } from "@/lib/api/client-api";
 import type { Cart, CartItem } from "@/lib/contracts/commerce";
 import { pushDataLayer, toGtmCartItems } from "@/lib/analytics";
 import { formatVnd } from "@/lib/utils/format";
 import { toProductListPath, toCheckoutPath } from "@/lib/utils/routes";
 import { MediaImage } from "@/components/ui/MediaImage";
+import { Skeleton } from "@/components/ui/skeleton";
 
 /**
  * Nội dung giỏ hàng — port 1:1 markup từ woocommerce/cart/cart.php + cart-totals.php
@@ -16,29 +19,6 @@ import { MediaImage } from "@/components/ui/MediaImage";
  * apply/remove coupon, GTM view_cart) — chỉ reskin sang theme WP. WP gốc submit form
  * cho mọi thao tác; bản React drive trực tiếp nên các nút +/- và xoá cập nhật ngay.
  */
-
-const COPY = {
-  emptyMessage: "Chưa có sản phẩm nào trong giỏ hàng.",
-  returnToShop: "Quay trở lại cửa hàng",
-  cartHeading: "GIỎ HÀNG CỦA BẠN",
-  updateCart: "CẬP NHẬT GIỎ HÀNG",
-  continueShopping: "TIẾP TỤC MUA HÀNG",
-  checkoutSubmit: "THANH TOÁN",
-  checkoutProceed: "Tiến hành thanh toán",
-  totalsHeading: "Tổng cộng giỏ hàng",
-  subtotal: "Tạm tính",
-  discount: "Khuyến mãi",
-  shipping: "Phí vận chuyển",
-  shippingPending: "Phí vận chuyển là 35.000đ và miễn phí vận chuyển với đơn hàng từ 2.000.000đ",
-  total: "Tổng",
-  couponLegend: "Nhập mã khuyến mãi",
-  couponPlaceholder: "Nhập mã giảm giá...",
-  couponApply: "ÁP DỤNG",
-  couponApplying: "...",
-  loadFailed: "Không tải được giỏ hàng.",
-  removeItem: "Xóa sản phẩm",
-  removeCoupon: "Xóa mã",
-};
 
 function cartToDrafts(cart: Cart): Record<string, number> {
   return Object.fromEntries(cart.items.map((item) => [item.id, item.quantity]));
@@ -70,6 +50,7 @@ function CartItemRow({
   onBlur: (id: string, serverQty: number) => void;
   onRemove: (id: string) => void;
 }) {
+  const t = useTranslations("CartWp");
   return (
     <div className={`table--items row${isMutating ? " opacity-50" : ""}`} role="listitem">
       <div className="table--items-item col thumbnail">
@@ -88,19 +69,20 @@ function CartItemRow({
             {item.quantity} x {formatVnd(item.unitPrice)} = {formatVnd(item.lineTotal)}
           </b>
         </p>
-        {!item.available && <p className="backorder_notification">Sản phẩm tạm hết hàng</p>}
+        {!item.available && <p className="backorder_notification">{t("backorderNotice")}</p>}
       </div>
 
       <div className="table--items-item col quantity">
+        {/* Thứ tự chuẩn UX: [-] [ô số] [+] — giảm bên trái, tăng bên phải. */}
         <div className="quantity-form js-quantity-wrap">
           <button
             type="button"
-            className="plus js-plus"
-            onClick={() => onStep(item.id, 1)}
-            disabled={isMutating || !item.available}
-            aria-label={`Tăng số lượng ${item.productName}`}
+            className="minus js-minus"
+            onClick={() => onStep(item.id, -1)}
+            disabled={isMutating || !item.available || draftQuantity <= 1}
+            aria-label={t("decreaseQtyAria", { name: item.productName })}
           >
-            +
+            -
           </button>
           <input
             type="number"
@@ -112,16 +94,16 @@ function CartItemRow({
             onChange={(e) => onDraft(item.id, Number(e.target.value))}
             onBlur={() => onBlur(item.id, item.quantity)}
             disabled={isMutating || !item.available}
-            aria-label={`Số lượng ${item.productName}`}
+            aria-label={t("quantityAria", { name: item.productName })}
           />
           <button
             type="button"
-            className="minus js-minus"
-            onClick={() => onStep(item.id, -1)}
-            disabled={isMutating || !item.available || draftQuantity <= 1}
-            aria-label={`Giảm số lượng ${item.productName}`}
+            className="plus js-plus"
+            onClick={() => onStep(item.id, 1)}
+            disabled={isMutating || !item.available}
+            aria-label={t("increaseQtyAria", { name: item.productName })}
           >
-            -
+            +
           </button>
         </div>
       </div>
@@ -133,7 +115,7 @@ function CartItemRow({
             className="remove"
             onClick={() => onRemove(item.id)}
             disabled={isMutating}
-            aria-label={COPY.removeItem}
+            aria-label={t("removeItem")}
           >
             <RemoveIcon />
           </button>
@@ -144,6 +126,7 @@ function CartItemRow({
 }
 
 export function WpCartClient() {
+  const t = useTranslations("CartWp");
   const [cart, setCart] = useState<Cart | null>(null);
   const [quantityDrafts, setQuantityDrafts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
@@ -234,16 +217,6 @@ export function WpCartClient() {
     [setItemMutating, syncCart],
   );
 
-  const handleRefresh = useCallback(async () => {
-    setError("");
-    try {
-      const updated = await fetchCart();
-      syncCart(updated);
-    } catch (e: unknown) {
-      setError((e as Error).message);
-    }
-  }, [syncCart]);
-
   const handleApplyCoupon = useCallback(
     async (e: React.SyntheticEvent) => {
       e.preventDefault();
@@ -283,7 +256,26 @@ export function WpCartClient() {
   const continueHref = toProductListPath();
 
   if (loading) {
-    return <div className="woocommerce-notices-wrapper" aria-busy="true" />;
+    return (
+      <div className="row" aria-busy="true" aria-label={t("loadingAria")}>
+        <div className="col-md-8">
+          <Skeleton className="mb-30 h-8 w-48" />
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="flex items-start gap-4 border-b border-[#cecece] py-[30px]">
+              <Skeleton className="h-[110px] w-[110px] shrink-0" />
+              <div className="flex-1 space-y-3 pt-1">
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-4 w-1/3" />
+              </div>
+              <Skeleton className="h-9 w-[120px]" />
+            </div>
+          ))}
+        </div>
+        <div className="col-md-4">
+          <Skeleton className="h-[220px] w-full" />
+        </div>
+      </div>
+    );
   }
 
   if (!cart) {
@@ -291,12 +283,12 @@ export function WpCartClient() {
       <>
         <div className="woocommerce-notices-wrapper">
           <div className="woocommerce-error" role="alert">
-            {error || COPY.loadFailed}
+            {error || t("loadFailed")}
           </div>
         </div>
         <p className="return-to-shop">
           <Link className="button wc-backward" href={continueHref}>
-            {COPY.returnToShop}
+            {t("returnToShop")}
           </Link>
         </p>
       </>
@@ -318,11 +310,11 @@ export function WpCartClient() {
           </div>
         )}
         <p className="cart-empty woocommerce-info" role="status">
-          {COPY.emptyMessage}
+          {t("emptyMessage")}
         </p>
         <p className="return-to-shop">
           <Link className="button wc-backward" href={continueHref}>
-            {COPY.returnToShop}
+            {t("returnToShop")}
           </Link>
         </p>
       </>
@@ -350,7 +342,7 @@ export function WpCartClient() {
         <div className="col-md-8">
           <div className="cart-avalable">
             <h3>
-              {COPY.cartHeading}{" "}
+              {t("cartHeading")}{" "}
               <span>
                 <b>{itemCount}</b>
               </span>
@@ -374,28 +366,11 @@ export function WpCartClient() {
 
           <div className="check-out">
             <div className="row align-items-center">
-              <div className="col-md-12 text-right mb-30">
-                <button type="button" className="button" name="update_cart" onClick={handleRefresh}>
-                  {COPY.updateCart}
-                </button>
-              </div>
-            </div>
-            <div className="row align-items-center">
               <div className="col">
                 <Link className="btn btn-continue-shopping" href={continueHref}>
-                  <i className="fal fa-chevron-left" aria-hidden="true" /> {COPY.continueShopping}
+                  <ChevronLeft size={16} strokeWidth={2} className="inline-block align-middle" aria-hidden="true" />{" "}
+                  {t("continueShopping")}
                 </Link>
-              </div>
-              <div className="col text-right">
-                {hasUnavailable ? (
-                  <span className="btn btn-submit opacity-50 pointer-events-none" aria-disabled="true">
-                    {COPY.checkoutSubmit}
-                  </span>
-                ) : (
-                  <Link className="btn btn-submit" href={toCheckoutPath()}>
-                    {COPY.checkoutSubmit}
-                  </Link>
-                )}
               </div>
             </div>
           </div>
@@ -404,11 +379,11 @@ export function WpCartClient() {
         <div className="col-md-4">
           <div className="summary">
             <div className="cart_totals">
-              <h2>{COPY.totalsHeading}</h2>
+              <h2>{t("totalsHeading")}</h2>
 
               <div className="summary--items row">
                 <div className="summary--items-item col">
-                  <p>{COPY.subtotal}</p>
+                  <p>{t("subtotal")}</p>
                 </div>
                 <div className="summary--items-item col text-right">
                   <p>
@@ -420,7 +395,7 @@ export function WpCartClient() {
               {cart.totals.discountAmount > 0 && (
                 <div className="summary--items row cart-discount">
                   <div className="summary--items-item col">
-                    <p>{COPY.discount}</p>
+                    <p>{t("discount")}</p>
                   </div>
                   <div className="summary--items-item col text-right">
                     <p className="discount">
@@ -433,7 +408,7 @@ export function WpCartClient() {
               {cart.totals.shippingAmount > 0 ? (
                 <div className="summary--items row">
                   <div className="summary--items-item col">
-                    <p>{COPY.shipping}</p>
+                    <p>{t("shipping")}</p>
                   </div>
                   <div className="summary--items-item col text-right">
                     <p>
@@ -444,7 +419,7 @@ export function WpCartClient() {
               ) : (
                 <div className="summary--items row">
                   <div className="summary--items-item col">
-                    <p className="text-12 italic leading-snug">{COPY.shippingPending}</p>
+                    <p className="text-12 italic leading-snug">{t("shippingPending")}</p>
                   </div>
                 </div>
               )}
@@ -455,11 +430,11 @@ export function WpCartClient() {
                     className="checkout-button button alt wc-forward opacity-50 pointer-events-none"
                     aria-disabled="true"
                   >
-                    {COPY.checkoutProceed}
+                    {t("checkoutSubmit")}
                   </span>
                 ) : (
                   <Link className="checkout-button button alt wc-forward" href={toCheckoutPath()}>
-                    {COPY.checkoutProceed}
+                    {t("checkoutSubmit")}
                   </Link>
                 )}
               </div>
@@ -477,7 +452,7 @@ export function WpCartClient() {
                         type="button"
                         onClick={() => handleRemoveCoupon(code)}
                         disabled={couponLoading}
-                        aria-label={`${COPY.removeCoupon} ${code}`}
+                        aria-label={`${t("removeCoupon")} ${code}`}
                       >
                         ×
                       </button>
@@ -490,7 +465,7 @@ export function WpCartClient() {
             <div className="promotion-form">
               <form onSubmit={handleApplyCoupon}>
                 <fieldset>
-                  <legend>{COPY.couponLegend}</legend>
+                  <legend>{t("couponLegend")}</legend>
                 </fieldset>
                 <div className="form-group">
                   <input
@@ -498,7 +473,7 @@ export function WpCartClient() {
                     name="coupon_code"
                     id="coupon_code"
                     value={couponInput}
-                    placeholder={COPY.couponPlaceholder}
+                    placeholder={t("couponPlaceholder")}
                     onChange={(e) => {
                       setCouponInput(e.target.value);
                       setCouponError("");
@@ -510,7 +485,7 @@ export function WpCartClient() {
                     name="apply_coupon"
                     disabled={couponLoading || !couponInput.trim()}
                   >
-                    {couponLoading ? COPY.couponApplying : COPY.couponApply}
+                    {couponLoading ? t("couponApplying") : t("couponApply")}
                   </button>
                 </div>
               </form>
@@ -520,7 +495,7 @@ export function WpCartClient() {
           <div className="total-summary summary">
             <div className="summary--items row">
               <div className="summary--items-item col">
-                <p>{COPY.total}</p>
+                <p>{t("total")}</p>
               </div>
               <div className="summary--items-item col text-right">
                 <p className="total-price">{formatVnd(cart.totals.totalAmount)}</p>

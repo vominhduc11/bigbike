@@ -8,6 +8,13 @@ export type Locale = (typeof LOCALES)[number];
 
 export const DEFAULT_LOCALE: Locale = "vi";
 
+/**
+ * Timezone canonical của storefront (Việt Nam). Phải khai báo tường minh để next-intl
+ * format ngày/giờ nhất quán giữa server (render tĩnh) và client — nếu không, render tĩnh
+ * sẽ ném ENVIRONMENT_FALLBACK và có nguy cơ lệch hydration.
+ */
+export const DEFAULT_TIME_ZONE = "Asia/Ho_Chi_Minh";
+
 /** Name of the cookie that holds the visitor's locale preference. */
 export const LOCALE_COOKIE = "NEXT_LOCALE";
 

@@ -48,6 +48,7 @@ Evidence:
 - Admin can send a personalized coupon gift to a single customer (`POST /api/v1/admin/customers/{id}/coupon-gift`): creates a unique `GIFT`-prefixed code, sets `customer_id`, and emails it. Requires `coupons.write` permission and the customer must have an email address. `CONFIRMED_FROM_CODE`
 - Admin can bulk-notify all active customers (`POST /api/v1/admin/coupon-gifts/bulk`): sends email with an existing coupon's code to every active customer with a verified email. Accepts `{ couponId }` — selected coupon must be ACTIVE. No new coupon is created. Returns `{ sent, skipped }`. Requires `coupons.write` permission. `CONFIRMED_FROM_CODE`
 - Admin can targeted-notify selected customers (`POST /api/v1/admin/coupon-gifts/targeted`): sends email with an existing coupon's code to a specified list of customers. Accepts `{ couponId, customerIds }` — coupon must be ACTIVE. No new coupon is created. Returns `{ sent, skipped }`. Requires `coupons.write` permission. `CONFIRMED_FROM_CODE`
+- **Xoá coupon** (`DELETE /api/v1/admin/coupons/{id}`): chỉ xoá được khi coupon **chưa từng được áp dụng vào đơn hàng nào**. Nếu đã có ≥1 dòng `order_applied_coupons` tham chiếu → **chặn (HTTP 409)** kèm thông báo gợi ý admin **chuyển sang INACTIVE** thay vì xoá, để giữ lịch sử đơn. (Trước đây không guard → khoá ngoại RESTRICT ném 500 thô.) `CONFIRMED_FROM_CODE`
 
 Evidence:
 
@@ -57,6 +58,7 @@ Evidence:
 - `PosOrderService.java`
 - `CouponExpiryScheduler.java`
 - `AdminCouponGiftService.java`
+- `AdminCouponService.java` (`deleteCoupon` — guard `order_applied_coupons` reference)
 - `AdminCustomerController.java`
 - `AdminCouponGiftController.java`
 - `V73__enforce_one_coupon_per_cart.sql`
@@ -199,10 +201,14 @@ Evidence:
 - `CATEGORY_RULE_001`: Mỗi danh mục bắt buộc có **bản nội dung tiếng Việt** (canonical). **Bản tiếng Anh là tùy chọn**. `CONFIRMED_FROM_CODE`
 - `CATEGORY_RULE_002`: Khi đọc danh mục bằng tiếng Anh (`lang=en`), mỗi trường thiếu bản tiếng Anh sẽ **tự lùi về bản tiếng Việt theo từng trường**. `CONFIRMED_FROM_CODE`
 - `CATEGORY_RULE_003`: `slug` của danh mục dùng chung 1 bản (không dịch theo ngôn ngữ). `CONFIRMED_FROM_CODE`
+- `CATEGORY_RULE_004`: **Xoá vĩnh viễn danh mục** xoá luôn **toàn bộ cây danh mục con** bên dưới nó trong cùng một thao tác. Chỉ cho phép xoá khi **không danh mục nào trong cả cây** (danh mục gốc lẫn mọi danh mục con) còn sản phẩm xếp làm danh mục chính; nếu còn → **chặn** (HTTP 409) kèm yêu cầu admin chuyển sản phẩm sang danh mục khác trước. **Không bao giờ xoá sản phẩm** như tác dụng phụ của việc xoá danh mục (sản phẩm bắt buộc có đúng 1 danh mục — `category_id NOT NULL`, xem `DATA_CONTRACT.md`). `CONFIRMED_FROM_CODE`
 
 Evidence:
 
 - `CategoryEntity.java` (các cột `name_en`, `description_en`, `seo_title_en`, `seo_description_en`)
+- `AdminCatalogMutationService.java` (`hardDeleteCategory` — gom cây con, chặn khi còn sản phẩm, xoá leaves-first)
+- `AdminCatalogController.java` (`DELETE /admin/categories/{id}`, permission `catalog.update`)
+- `ProductEntity.java` (`category_id` `nullable = false`)
 - `JpaCatalogReadRepository.java` (resolve locale + fallback cho category)
 - `CatalogController.java` (`lang` param trên category endpoints)
 - `AdminCatalogMutationService.java` (`applyCategoryPatch` ghi cột `_en`)

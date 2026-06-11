@@ -145,7 +145,8 @@
       "faqs": "Câu hỏi thường gặp",
       "reviews": "Đánh giá",
       "reviewsEmpty": "Đánh giá khách hàng",
-      "reviewsWithCount": "Đánh giá ({count})"
+      "reviewsWithCount": "Đánh giá ({count})",
+      "overview": "Tổng quan"
     },
     "tabsEmpty": {
       "descriptionTitle": "Chưa có mô tả",
@@ -239,7 +240,9 @@
       "filterByStarHint": "Lọc theo số sao",
       "filterActive": "Đang xem: {count} sao",
       "clearFilter": "Bỏ lọc",
-      "noReviewsForFilter": "Chưa có đánh giá {count} sao."
+      "noReviewsForFilter": "Chưa có đánh giá {count} sao.",
+      "showMore": "Xem thêm",
+      "showLess": "Thu gọn"
     },
     "variants": {
       "attributeFallback": "Thuộc tính",
@@ -342,7 +345,8 @@
     "categoryFallback": "Danh mục",
     "parentCategoryFallback": "Danh mục cha",
     "childrenLabel": "Danh mục con:",
-    "totalProductsCount": "<strong>{count}</strong> sản phẩm"
+    "totalProductsCount": "<strong>{count}</strong> sản phẩm",
+    "enterKeywordToSearch": "Nhập từ khoá để tìm kiếm sản phẩm."
   },
   "States": {
     "errorTitle": "Không tải được dữ liệu",
@@ -1187,5 +1191,59 @@
     "howToBuy": "Đang tải hướng dẫn mua hàng",
     "about": "Đang tải trang giới thiệu",
     "search": "Đang tải kết quả tìm kiếm"
+  },
+  "CartWp": {
+    "emptyMessage": "Chưa có sản phẩm nào trong giỏ hàng.",
+    "returnToShop": "Quay trở lại cửa hàng",
+    "cartHeading": "GIỎ HÀNG CỦA BẠN",
+    "continueShopping": "TIẾP TỤC MUA HÀNG",
+    "checkoutSubmit": "THANH TOÁN",
+    "totalsHeading": "Tổng cộng giỏ hàng",
+    "subtotal": "Tạm tính",
+    "discount": "Khuyến mãi",
+    "shipping": "Phí vận chuyển",
+    "shippingPending": "Phí vận chuyển là 35.000đ và miễn phí vận chuyển với đơn hàng từ 2.000.000đ",
+    "total": "Tổng",
+    "couponLegend": "Nhập mã khuyến mãi",
+    "couponPlaceholder": "Nhập mã giảm giá...",
+    "couponApply": "ÁP DỤNG",
+    "couponApplying": "...",
+    "loadFailed": "Không tải được giỏ hàng.",
+    "removeItem": "Xóa sản phẩm",
+    "removeCoupon": "Xóa mã",
+    "backorderNotice": "Sản phẩm tạm hết hàng",
+    "decreaseQtyAria": "Giảm số lượng {name}",
+    "increaseQtyAria": "Tăng số lượng {name}",
+    "quantityAria": "Số lượng {name}",
+    "loadingAria": "Đang tải giỏ hàng"
+  },
+  "PdpBuyBox": {
+    "stockOut": "HẾT HÀNG",
+    "stockLow": "SẮP HẾT HÀNG",
+    "stockIn": "CÒN HÀNG",
+    "ratingLabel": "Đánh giá:",
+    "viewAllReviews": "Xem tất cả đánh giá",
+    "noReviews": "Chưa có đánh giá",
+    "writeFirst": "Viết đánh giá đầu tiên",
+    "pickVariant": "Vui lòng chọn size/màu sắc để mua hàng:",
+    "quantity": "Số lượng",
+    "decreaseQty": "Giảm số lượng",
+    "increaseQty": "Tăng số lượng",
+    "adding": "ĐANG THÊM...",
+    "addToCart": "THÊM VÀO GIỎ HÀNG",
+    "buyNow": "Mua ngay",
+    "addToCartFailed": "Không thêm được vào giỏ",
+    "mobileAddToCart": "Thêm vào giỏ",
+    "mobileBuyNow": "Mua ngay"
+  },
+  "Home": {
+    "featuredKicker": "SẢN PHẨM NỔI BẬT",
+    "featuredTitle": "SẢN PHẨM NỔI BẬT TẠI BIGBIKE",
+    "newsKicker": "TIN TỨC MỚI UPDATE",
+    "newsTitle": "CẬP NHẬT XU HƯỚNG CÙNG BIGBIKE",
+    "videosTitle": "TRẢI NGHIỆM SẢN PHẨM CÙNG BIGBIKE.VN",
+    "buyNow": "Mua ngay",
+    "relatedKicker": "SẢN PHẨM LIÊN QUAN",
+    "relatedTitle": "Sản phẩm tương tự"
   }
 }

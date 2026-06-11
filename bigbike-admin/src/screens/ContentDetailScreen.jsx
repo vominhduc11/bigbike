@@ -14,6 +14,7 @@ import {
 } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import { formatDateTime } from '../lib/formatters'
+import { useContentLang } from '../lib/contentLang'
 import { createContentSchema, zodErrors } from '../lib/schemas'
 import { RichTextEditor } from '../components/RichTextEditor'
 import { BlockEditor } from '../components/BlockEditor'
@@ -92,32 +93,32 @@ function publishBadgeClass(status) {
 function ContentAssignmentBanner({ t }) {
   return (
     <div className="px-4 py-3 bg-surface-muted border-b border-border">
-      <div className="flex items-center gap-1.5 mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+      <div className="flex items-center gap-1.5 mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         <Users size={12} />
         <span>{t('content.detail.assign.title', { defaultValue: 'Phân công bài viết' })}</span>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="border-l-[3px] pl-2 py-0.5" style={{ borderColor: 'var(--admin-color-primary)' }}>
-          <div className="text-[11px] font-bold uppercase tracking-wide text-foreground mb-0.5">
+          <div className="text-xs font-bold uppercase tracking-wide text-foreground mb-0.5">
             {t('content.detail.assign.roleContent', { defaultValue: 'Content' })}
           </div>
-          <div className="text-[11px] leading-relaxed" style={{ color: 'var(--admin-color-text-secondary)' }}>
+          <div className="text-xs leading-relaxed" style={{ color: 'var(--admin-color-text-secondary)' }}>
             {t('content.detail.assign.itemsContent', { defaultValue: 'Tiêu đề · Ảnh đại diện · Nội dung chính · Tags & danh mục · Liên kết sản phẩm' })}
           </div>
         </div>
         <div className="border-l-[3px] pl-2 py-0.5" style={{ borderColor: 'var(--admin-color-status-warning-text)' }}>
-          <div className="text-[11px] font-bold uppercase tracking-wide text-foreground mb-0.5">
+          <div className="text-xs font-bold uppercase tracking-wide text-foreground mb-0.5">
             {t('content.detail.assign.roleSeo', { defaultValue: 'SEO' })}
           </div>
-          <div className="text-[11px] leading-relaxed" style={{ color: 'var(--admin-color-text-secondary)' }}>
+          <div className="text-xs leading-relaxed" style={{ color: 'var(--admin-color-text-secondary)' }}>
             {t('content.detail.assign.itemsSeo', { defaultValue: 'Tiêu đề SEO · Meta description · Slug · OG image · Kiểm tra trước khi đăng' })}
           </div>
         </div>
         <div className="border-l-[3px] pl-2 py-0.5" style={{ borderColor: 'var(--admin-color-text-primary)' }}>
-          <div className="text-[11px] font-bold uppercase tracking-wide text-foreground mb-0.5">
+          <div className="text-xs font-bold uppercase tracking-wide text-foreground mb-0.5">
             {t('content.detail.assign.roleManager', { defaultValue: 'Quản lý' })}
           </div>
-          <div className="text-[11px] leading-relaxed" style={{ color: 'var(--admin-color-text-secondary)' }}>
+          <div className="text-xs leading-relaxed" style={{ color: 'var(--admin-color-text-secondary)' }}>
             {t('content.detail.assign.itemsManager', { defaultValue: 'Phê duyệt · Đăng bài · Ẩn / xóa bài' })}
           </div>
         </div>
@@ -371,7 +372,8 @@ function toPayload(form, isCreate) {
 }
 
 export function ContentDetailScreen({ contentType, contentId, isCreate = false, navigate, canUpdate }) {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
+  const contentLang = useContentLang()
   const queryClient = useQueryClient()
   const normalizedType = normalizeContentType(contentType)
   const [form, setForm] = useState(() => buildEmptyForm(normalizedType))
@@ -526,7 +528,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
   const [activeTab, setActiveTab] = useState('content')
   const [savedFlash, setSavedFlash] = useState(false)
 
-  const isEnLang = i18n.language === 'en'
+  const isEnLang = contentLang === 'en'
 
   function langValue(field) {
     return isEnLang ? (form.translations?.en?.[field] ?? '') : (form[field] ?? '')
@@ -805,7 +807,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
               <SectionCard title={t('content.detail.sectionBody', { defaultValue: 'Nội dung chính' })} required>
                 {isEnLang ? (
                   <RichTextEditor
-                    key={`body-${i18n.language}`}
+                    key={`body-${contentLang}`}
                     value={form.translations?.en?.body ?? ''}
                     onChange={(html) => updateTranslation('body', html)}
                     placeholder={t('content.detail.bodyPlaceholder', { defaultValue: 'Nhập nội dung...' })}
@@ -814,7 +816,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                   />
                 ) : (
                   <BlockEditor
-                    key={`bodyBlocks-${i18n.language}`}
+                    key={`bodyBlocks-${contentLang}`}
                     value={form.bodyBlocks}
                     onChange={(blocks) => updateField('bodyBlocks', blocks)}
                     disabled={isReadOnly}

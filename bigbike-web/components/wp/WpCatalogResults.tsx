@@ -1,10 +1,22 @@
 import type { ReactNode } from "react";
 import type { Product } from "@/lib/contracts/public";
 import type { WpOrderbyValue } from "@/lib/utils/catalog-sort";
+import { Skeleton } from "@/components/ui/skeleton";
 import { WpCategorySort } from "./WpCategorySort";
 import { WpMobileFilterTrigger } from "./WpMobileFilterTrigger";
 import { WpCategoryPagination } from "./WpCategoryPagination";
 import { WpProductSwipeItem } from "./WpProductSwipeItem";
+
+/** Placeholder 1 thẻ sản phẩm khi lưới CSR đang tải lần đầu — giữ chiều cao, tránh layout shift. */
+function ProductCardSkeleton() {
+  return (
+    <div className="mb-6">
+      <Skeleton className="aspect-square w-full rounded-none" />
+      <Skeleton className="mt-3 h-4 w-4/5" />
+      <Skeleton className="mt-2 h-4 w-2/5" />
+    </div>
+  );
+}
 
 type CatalogPagination = {
   page: number;
@@ -21,6 +33,8 @@ export type WpCatalogResultsProps = {
   /** Nội dung phụ ngay trên lưới (vd: mô tả danh mục). Luôn render kể cả khi có notice. */
   beforeGrid?: ReactNode;
   paginationBaseHref: string;
+  /** Lưới CSR đang tải lần đầu (chưa có data) → hiện skeleton thay vì notice. */
+  isLoading?: boolean;
 };
 
 /**
@@ -36,6 +50,7 @@ export function WpCatalogResults({
   notice = null,
   beforeGrid,
   paginationBaseHref,
+  isLoading = false,
 }: WpCatalogResultsProps) {
   return (
     <div className="col-md-9">
@@ -58,7 +73,15 @@ export function WpCatalogResults({
           <div className="product-count" />
           <div className="product">
             {beforeGrid}
-            {notice != null ? (
+            {isLoading ? (
+              <div className="row">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div className="col-md-3 col-6" key={i}>
+                    <ProductCardSkeleton />
+                  </div>
+                ))}
+              </div>
+            ) : notice != null ? (
               <p className="woocommerce-info">{notice}</p>
             ) : (
               <div className="row">

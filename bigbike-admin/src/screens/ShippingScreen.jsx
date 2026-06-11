@@ -13,6 +13,7 @@ import { SortableList } from '../components/Sortable'
 import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
 import { showConfirm } from '../lib/confirm'
 import { formatCurrencyVnd } from '../lib/formatters'
+import { useContentLang } from '../lib/contentLang'
 import { Button } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
@@ -34,6 +35,10 @@ function slugify(title) {
 
 export function ShippingScreen({ canUpdate }) {
   const { t } = useTranslation()
+  // Ngôn ngữ NỘI DUNG (nút VI/EN ở header). Chỉ đổi tên hiển thị của phương thức
+  // vận chuyển; giao diện admin vẫn cố định tiếng Việt.
+  const contentLang = useContentLang()
+  const methodTitle = (m) => (contentLang === 'en' ? (m.titleEn || m.title) : m.title)
   const [zones, setZones] = useState([])
   const [zonesStatus, setZonesStatus] = useState('loading')
   const [zonesWarning, setZonesWarning] = useState('')
@@ -301,7 +306,7 @@ export function ShippingScreen({ canUpdate }) {
                                     </button>
                                   </td>
                                 )}
-                                <td className="font-semibold">{m.title}</td>
+                                <td className="font-semibold">{methodTitle(m)}</td>
                                 <td className="num">{formatCurrencyVnd(m.cost)}</td>
                                 <td>
                                   <span className={`bb-badge ${m.enabled ? 'bb-badge-success' : 'bb-badge-neutral'}`}>
@@ -332,7 +337,7 @@ export function ShippingScreen({ canUpdate }) {
                         {sortedMethods.map((m) => (
                           <MobileCard
                             key={m.id}
-                            title={m.title}
+                            title={methodTitle(m)}
                             status={(
                               <span className={`bb-badge ${m.enabled ? 'bb-badge-success' : 'bb-badge-neutral'}`}>
                                 <span className="dot" />{m.enabled ? t('common.on') : t('common.off')}

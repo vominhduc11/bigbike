@@ -143,7 +143,7 @@ function ImageBlockEditor({ block, onChange, disabled, onPickImage }) {
       <div className="flex gap-2 items-start">
         {block.url ? (
           <div className="relative shrink-0">
-            <img src={block.url} alt={block.alt || ''} className="h-24 w-36 object-cover rounded-none border border-border" />
+            <img src={block.url} alt={block.alt || ''} className="h-24 w-36 object-cover rounded-sm border border-border" />
             <Button variant="outline" size="sm" className="mt-1 w-36 text-xs"
               onClick={onPickImage} disabled={disabled}>
               {t('products.detail.blocks.imageChange')}
@@ -272,7 +272,7 @@ function BlockCard({ block, disabled, sortable, onUpdate, onRemove, onDuplicate,
     <div
       ref={sortable?.setNodeRef}
       style={{ ...sortable?.style, opacity: sortable?.isDragging ? 0.5 : undefined }}
-      className="flex gap-2 p-3 border border-border rounded-none bg-background hover:bg-muted/30 transition-colors"
+      className="flex gap-2 p-3 border border-border rounded-sm bg-background hover:bg-muted/30 transition-colors"
     >
       {!disabled && sortable && (
         <button
@@ -343,7 +343,7 @@ export function BlockEditor({ value, onChange, disabled, hasError, fallbackHtml 
   const showFallback = blocks.length === 0 && fallbackHtml && fallbackHtml.trim().length > 0
 
   return (
-    <div className={cn('flex flex-col gap-2', hasError && 'ring-1 ring-destructive rounded-none')}>
+    <div className={cn('flex flex-col gap-2', hasError && 'ring-1 ring-destructive rounded-sm')}>
       {showFallback && (
         <div className="border border-border p-3 bg-muted/40 flex flex-col gap-2">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">

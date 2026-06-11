@@ -29,12 +29,14 @@ const EMPTY = { products: [] as ProductSummary[], articles: [] as ArticleSummary
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const q = searchParams.get("q")?.trim() ?? "";
+  const lang = searchParams.get("lang")?.trim() || "";
   if (q.length < 1) return NextResponse.json(EMPTY);
 
   try {
     const url = new URL(`${BACKEND}/api/v1/search-suggest`);
     url.searchParams.set("q", q);
     url.searchParams.set("limit", "10");
+    if (lang) url.searchParams.set("lang", lang);
 
     const res = await fetch(url.toString(), {
       next: { revalidate: 30 },

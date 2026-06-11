@@ -25,6 +25,7 @@ import { FilterChips } from '../components/FilterChips'
 import { fetchCategories, fetchCategoryTree, updateCategory } from '../lib/adminApi'
 import { formatDateTime, formatText, stripHtml } from '../lib/formatters'
 import { useAdminList } from '../lib/useAdminList'
+import { useContentLang } from '../lib/contentLang'
 import { useDebounce } from '../lib/useDebounce'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -112,7 +113,8 @@ function highlightMatch(text, term) {
 }
 
 export function CategoryListScreen({ navigate, canUpdate }) {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
+  const contentLang = useContentLang()
   const queryClient = useQueryClient()
   const [query, setQuery] = useState(() => readQueryFromUrl(INITIAL_QUERY))
   const [searchInput, setSearchInput] = useState(() => {
@@ -126,10 +128,10 @@ export function CategoryListScreen({ navigate, canUpdate }) {
   const debouncedSearch = useDebounce(searchInput, 250)
   const isFirstSearchRender = useRef(true)
 
-  const paginatedState = useAdminList(['categories', query, i18n.language], () => fetchCategories(query))
+  const paginatedState = useAdminList(['categories', query, contentLang], () => fetchCategories(query))
 
   const { data: allCatsResult } = useQuery({
-    queryKey: ['categories', 'tree'],
+    queryKey: ['categories', 'tree', contentLang],
     queryFn: () => fetchCategoryTree(),
   })
 
@@ -821,7 +823,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
                   {Array.from({ length: 8 }).map((_, i) => (
                     <tr key={i} className="skel-row">
                       {Array.from({ length: canUpdate ? 6 : 5 }).map((__, j) => (
-                        <td key={j}><span className="bb-skel w-4/5 h-[18px]" /></td>
+                        <td key={j}><span className="bb-skel w-4/5 h-5" /></td>
                       ))}
                     </tr>
                   ))}
@@ -951,7 +953,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
                       ? Array.from({ length: query.pageSize }).map((_, i) => (
                           <tr key={i} className="skel-row">
                             {Array.from({ length: canUpdate ? 7 : 6 }).map((__, j) => (
-                              <td key={j}><span className="bb-skel w-4/5 h-[18px]" /></td>
+                              <td key={j}><span className="bb-skel w-4/5 h-5" /></td>
                             ))}
                           </tr>
                         ))

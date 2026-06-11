@@ -3,8 +3,9 @@ import { initReactI18next } from 'react-i18next'
 import vi from '../locales/vi.json'
 import en from '../locales/en.json'
 
-const STORAGE_KEY = 'bigbike-admin-lang'
-
+// Giao diện admin KHOÁ CỨNG tiếng Việt — chữ menu/nút/nhãn không đổi theo nút
+// VI/EN ở header. Nút đó chỉ đổi ngôn ngữ NỘI DUNG (xem lib/contentLang.js).
+// Vẫn nạp resource 'en' để màn hình chi tiết hiển thị nhãn bản tiếng Anh khi cần.
 i18n
   .use(initReactI18next)
   .init({
@@ -12,16 +13,11 @@ i18n
       vi: { translation: vi },
       en: { translation: en },
     },
-    lng: localStorage.getItem(STORAGE_KEY) || 'vi',
+    lng: 'vi',
     fallbackLng: 'vi',
     interpolation: { escapeValue: false },
   })
 
-i18n.on('languageChanged', (lng) => {
-  localStorage.setItem(STORAGE_KEY, lng)
-  document.documentElement.lang = lng
-})
-
-document.documentElement.lang = i18n.language
+document.documentElement.lang = 'vi'
 
 export default i18n

@@ -193,6 +193,7 @@ Category/Brand does not have a full enum state machine in audited evidence. They
 
 - Public category/brand list/detail filters `visible` in `CatalogReadService`.
 - Category hide with visible children is blocked in `AdminCatalogMutationService`.
+- Category **hard-delete** (`DELETE /admin/categories/{id}`) xoá danh mục **cùng toàn bộ cây con** (cascade). Chặn (409) nếu bất kỳ danh mục nào trong cây còn sản phẩm xếp làm danh mục chính; không xoá sản phẩm. Xem `BUSINESS_RULES.md` `CATEGORY_RULE_004`. `CONFIRMED_BACKEND_ENFORCED` — `AdminCatalogMutationService.hardDeleteCategory`.
 
 ### Test Coverage
 

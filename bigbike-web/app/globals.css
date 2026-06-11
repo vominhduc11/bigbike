@@ -809,6 +809,42 @@ body {
   }
 }
 
+/* Off-canvas mobile (≤1260): căn giữa chevron (.arrow do home.min.js chèn) theo
+   ĐÚNG dòng chữ của mục menu. Theme gốc dùng `top:28px` + `padding:10px` cố định
+   (và rule căn riêng cho sub-item dựa vào class `menu-item-object-product_cat`
+   mà bản port React KHÔNG gắn) → mọi chevron bị đẩy xuống thấp hơn tâm dòng, lệch
+   trên/dưới. Ở mỗi cấp: ghim đỉnh arrow trùng padding-top của dòng link rồi cho hộp
+   arrow cao đúng 1 dòng link + flex-center glyph → tâm chevron khớp tâm chữ. Mốc đo
+   từ link-top (không phải 50% cả li) nên arrow vẫn bám hàng link khi submenu mở. */
+@media (max-width: 1260px) {
+  /* Cấp 1 — li `.navigation--item` padding-top 26px, link 1.143rem */
+  header .navigation .header-nav > .navigation--item > a {
+    display: block;
+    line-height: 1.4;
+  }
+  header .navigation .header-nav > .navigation--item.menu-item-has-children > .arrow {
+    /* !important để thắng rule trùng selector của theme nằm trong cùng @media
+       (wp-theme-home.css load SAU globals nên thắng tie nếu chỉ dựa specificity). */
+    top: 26px !important;
+    right: 16px !important;
+    padding: 0 8px !important;
+    height: calc(1.143rem * 1.4) !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+  }
+  /* Cấp 2+ — link `.sub-menu li a` padding-top 15px, font 14px */
+  header .navigation .sub-menu .menu-item-has-children > .arrow {
+    top: 15px !important;
+    right: 16px !important;
+    padding: 0 8px !important;
+    height: calc(14px * 1.4) !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
 /* Header chrome (.bb-header-container / .bb-header-row / .bb-right-header / .bb-user-control
    layout) migrated to inline Tailwind in SiteHeader.tsx. The icon-btn base it used to host
    is now the shared `iconBtn` constant (lib/ui-classes.ts); the bb-user-control marker has

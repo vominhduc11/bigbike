@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import {
   keepPreviousData,
@@ -168,13 +168,13 @@ function RatingSummary({
     <div className="flex flex-col gap-6 border border-border p-6 sm:flex-row sm:items-center sm:gap-8">
       <div className="flex shrink-0 flex-col items-center justify-center gap-2 max-sm:border-b max-sm:border-border max-sm:pb-6 sm:w-[160px] sm:border-r sm:border-border">
         <div className="flex items-baseline gap-1">
-          <span className="font-body text-5xl font-semibold leading-none text-[var(--bb-text-primary)]">
+          <span className="font-cta text-5xl font-semibold leading-none text-[var(--bb-text-primary)]">
             {avg.toFixed(1)}
           </span>
-          <span className="text-sm text-muted-foreground">/5</span>
+          <span className="text-caption text-muted-foreground">/5</span>
         </div>
         <StarRow rating={avg} iconClassName="h-5 w-5" />
-        <span className="text-sm text-muted-foreground">{t("ratingCount", { count: total })}</span>
+        <span className="text-caption text-muted-foreground">{t("ratingCount", { count: total })}</span>
       </div>
 
       <div className="flex flex-1 flex-col justify-center gap-1.5" role="group" aria-label={t("filterByStarHint")}>
@@ -198,18 +198,59 @@ function RatingSummary({
                 isActive && "bg-muted",
               )}
             >
-              <span className="flex w-9 shrink-0 items-center gap-1 text-sm text-[var(--bb-text-secondary)]">
+              <span className="flex w-9 shrink-0 items-center gap-1 text-caption text-[var(--bb-text-secondary)]">
                 {star}
                 <StarIcon filled className="h-3.5 w-3.5 text-brand" />
               </span>
               <span className="h-2 flex-1 overflow-hidden bg-background">
                 <span className="block h-full bg-brand" style={{ width: `${pct}%` }} />
               </span>
-              <span className="w-7 shrink-0 text-right text-sm text-muted-foreground">{count}</span>
+              <span className="w-7 shrink-0 text-right text-caption text-muted-foreground">{count}</span>
             </button>
           );
         })}
       </div>
+    </div>
+  );
+}
+
+// Nội dung bình luận: chống tràn ngang (break-words cho chuỗi dài không khoảng
+// trắng như link dán) + cắt còn 5 dòng kèm nút Xem thêm/Thu gọn để một review dài
+// (tối đa 1000 ký tự) không đẩy các review khác xuống quá xa. Nút chỉ hiện khi nội
+// dung thực sự bị cắt — đo scrollHeight vs clientHeight lúc đang thu gọn.
+function ReviewComment({ text }: { text: string }) {
+  const t = useTranslations("Product.reviews");
+  const ref = useRef<HTMLParagraphElement>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [clamped, setClamped] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    setClamped(el.scrollHeight > el.clientHeight + 1);
+  }, [text]);
+
+  return (
+    <div className="mt-2">
+      <p
+        ref={ref}
+        className={cn(
+          "text-[length:var(--fs-body)] leading-relaxed text-[var(--bb-text-primary)] [overflow-wrap:anywhere]",
+          !expanded && "line-clamp-5",
+        )}
+      >
+        {text}
+      </p>
+      {clamped && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+          className="mt-1 text-caption font-semibold text-brand outline-none hover:underline focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+        >
+          {expanded ? t("showLess") : t("showMore")}
+        </button>
+      )}
     </div>
   );
 }
@@ -226,17 +267,15 @@ function ReviewCard({ review }: { review: Review }) {
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-          <strong className="font-semibold text-[var(--bb-text-primary)]">{review.authorName}</strong>
-          <time dateTime={review.createdAt} className="text-sm text-muted-foreground">
+          <strong className="min-w-0 font-semibold text-[var(--bb-text-primary)] [overflow-wrap:anywhere]">
+            {review.authorName}
+          </strong>
+          <time dateTime={review.createdAt} className="shrink-0 text-caption text-muted-foreground">
             {new Date(review.createdAt).toLocaleDateString("vi-VN")}
           </time>
         </div>
         <StarRow rating={review.rating} />
-        {review.comment && (
-          <p className="mt-2 text-[length:var(--fs-body)] leading-relaxed text-[var(--bb-text-primary)]">
-            {review.comment}
-          </p>
-        )}
+        {review.comment && <ReviewComment text={review.comment} />}
       </div>
     </li>
   );
@@ -320,7 +359,7 @@ function WriteReviewForm({ productId, onSuccess }: { productId: string; onSucces
       </h3>
 
       {done ? (
-        <p className="m-0 border border-border bg-muted px-4 py-3 text-sm text-[var(--bb-text-primary)]">
+        <p className="m-0 border border-border bg-muted px-4 py-3 text-caption text-[var(--bb-text-primary)]">
           {t("thanks")}
         </p>
       ) : (
@@ -338,7 +377,7 @@ function WriteReviewForm({ productId, onSuccess }: { productId: string; onSucces
           />
 
           <div className="flex flex-col gap-1.5">
-            <Label className="text-sm font-semibold text-[var(--bb-text-primary)]">
+            <Label className="text-caption font-semibold text-[var(--bb-text-primary)]">
               {t("formStars")} <span className="text-brand">*</span>
             </Label>
             <StarRatingInput value={rating} onChange={setRating} />
@@ -347,7 +386,7 @@ function WriteReviewForm({ productId, onSuccess }: { productId: string; onSucces
           <div className="flex flex-col gap-1.5">
             <Label
               htmlFor="review-author"
-              className="text-sm font-semibold text-[var(--bb-text-primary)]"
+              className="text-caption font-semibold text-[var(--bb-text-primary)]"
             >
               {t("formName")} <span className="text-brand">*</span>
             </Label>
@@ -366,7 +405,7 @@ function WriteReviewForm({ productId, onSuccess }: { productId: string; onSucces
           <div className="flex flex-col gap-1.5">
             <Label
               htmlFor="review-email"
-              className="text-sm font-semibold text-[var(--bb-text-primary)]"
+              className="text-caption font-semibold text-[var(--bb-text-primary)]"
             >
               {t("formEmail")}
             </Label>
@@ -382,7 +421,7 @@ function WriteReviewForm({ productId, onSuccess }: { productId: string; onSucces
           <div className="flex flex-col gap-1.5">
             <Label
               htmlFor="review-comment"
-              className="text-sm font-semibold text-[var(--bb-text-primary)]"
+              className="text-caption font-semibold text-[var(--bb-text-primary)]"
             >
               {t("formComment")}
             </Label>
@@ -397,7 +436,7 @@ function WriteReviewForm({ productId, onSuccess }: { productId: string; onSucces
             />
           </div>
 
-          {error && <p className="m-0 text-sm text-brand">{error}</p>}
+          {error && <p className="m-0 text-caption text-brand">{error}</p>}
 
           <Button type="submit" disabled={submitting} className="w-full">
             {submitting ? t("submitting") : t("submit")}
@@ -496,13 +535,13 @@ export function ReviewsSection({ productId }: ReviewsSectionProps) {
     <section
       ref={sectionRef}
       id="reviews"
-      className="mx-auto mt-16 mb-10 max-w-[1140px] scroll-mt-[var(--bb-header-height)] border-t border-border px-[15px] pt-14 max-md:mt-9 max-md:px-[var(--bb-mobile-page-x)] max-md:pt-10 min-[1536px]:max-w-[1360px] min-[1920px]:max-w-[1600px]"
+      className="mt-16 mb-10 scroll-mt-[var(--bb-header-height)] border-t border-border pt-14 max-md:mt-9 max-md:pt-10"
     >
       <div className="mb-10 text-center max-md:mb-8">
-        <h2 className="m-0 font-body text-ui-35 font-semibold uppercase leading-[4.286rem] tracking-[0] text-black max-md:text-2xl max-md:leading-[1.25]">
+        <h2 className="m-0 font-cta text-ui-35 font-semibold uppercase leading-[4.286rem] tracking-[0] text-black max-md:text-2xl max-md:leading-[1.25]">
           {total > 0 ? t("titleWithCount", { count: total }) : t("title")}
         </h2>
-        <p className="m-0 mt-1 text-sm text-muted-foreground">{t("subtitle")}</p>
+        <p className="m-0 mt-1 text-caption text-muted-foreground">{t("subtitle")}</p>
       </div>
 
       <div className="flex gap-10 max-md:flex-col max-md:gap-8 max-[1024px]:gap-8">
@@ -531,7 +570,7 @@ export function ReviewsSection({ productId }: ReviewsSectionProps) {
                 <div className="flex min-h-[36px] items-center gap-2">
                   {ratingFilter !== null && (
                     <>
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-caption text-muted-foreground">
                         {t("filterActive", { count: ratingFilter })}
                       </span>
                       <Button
@@ -547,7 +586,7 @@ export function ReviewsSection({ productId }: ReviewsSectionProps) {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="shrink-0 text-sm text-muted-foreground">{t("sortLabel")}</span>
+                  <span className="shrink-0 text-caption text-muted-foreground">{t("sortLabel")}</span>
                   <Select value={sort} onValueChange={(value) => handleSortChange(value as SortKey)}>
                     <SelectTrigger className="w-[180px] min-h-[40px]" aria-label={t("sortLabel")}>
                       <SelectValue />
@@ -582,7 +621,7 @@ export function ReviewsSection({ productId }: ReviewsSectionProps) {
             <div className="flex flex-col items-center justify-center gap-3 border border-dashed border-border py-16 text-center">
               <StarIcon filled={false} className="h-10 w-10 text-[var(--bb-text-secondary)]" />
               <p className="m-0 font-semibold text-[var(--bb-text-primary)]">{t("noReviews")}</p>
-              <p className="m-0 text-sm text-muted-foreground">{t("beFirst")}</p>
+              <p className="m-0 text-caption text-muted-foreground">{t("beFirst")}</p>
             </div>
           )}
         </div>

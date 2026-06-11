@@ -13,6 +13,7 @@ import { WpCategoryHero, type WpCategoryCrumb } from "./WpCategoryHero";
  */
 export function WpStaticShell({
   title,
+  titleNode,
   breadcrumb,
   heroBgUrl,
   heroIllustrationUrl,
@@ -23,6 +24,8 @@ export function WpStaticShell({
   children,
 }: {
   title: string;
+  /** Tiêu đề dạng node (vd `<LText>` đổi ngôn ngữ ở client) — ưu tiên hơn `title` cho `<h1>`. */
+  titleNode?: React.ReactNode;
   breadcrumb: WpCategoryCrumb[];
   heroBgUrl?: string | null;
   heroIllustrationUrl?: string | null;
@@ -42,6 +45,7 @@ export function WpStaticShell({
       {showHero ? (
         <WpCategoryHero
           title={title}
+          titleNode={titleNode}
           breadcrumb={breadcrumb}
           bgUrl={heroBgUrl}
           illustrationUrl={heroIllustrationUrl}

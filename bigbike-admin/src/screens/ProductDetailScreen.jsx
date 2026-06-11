@@ -22,6 +22,7 @@ import {
 } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import { formatDateTime } from '../lib/formatters'
+import { useContentLang } from '../lib/contentLang'
 import { createProductSchema, zodErrors, COLOR_ATTRIBUTE_KEYS, normalizeVariantToken, isColorAttributeName } from '../lib/schemas'
 import { Modal, Screen, ScreenHeader, StickyActionBar, Tabs } from '../components/layout'
 import { StatePanel } from '../components/StatePanel'
@@ -2106,7 +2107,7 @@ function RoleBadge({ role }) {
   if (role === 'content') {
     return (
       <span
-        className="inline-flex items-center text-[10px] uppercase tracking-wide px-1.5 py-0.5 border rounded-none"
+        className="inline-flex items-center text-xs uppercase tracking-wide px-1.5 py-0.5 border rounded-xs"
         style={{ color: 'var(--admin-color-primary)', borderColor: 'var(--admin-color-primary)' }}
       >{label}</span>
     )
@@ -2114,7 +2115,7 @@ function RoleBadge({ role }) {
   if (role === 'seo') {
     return (
       <span
-        className="inline-flex items-center text-[10px] uppercase tracking-wide px-1.5 py-0.5 border rounded-none"
+        className="inline-flex items-center text-xs uppercase tracking-wide px-1.5 py-0.5 border rounded-xs"
         style={{ color: 'var(--admin-color-status-warning-text)', borderColor: 'var(--admin-color-status-warning-text)' }}
       >{label}</span>
     )
@@ -2122,7 +2123,7 @@ function RoleBadge({ role }) {
   if (role === 'manager') {
     return (
       <span
-        className="inline-flex items-center text-[10px] uppercase tracking-wide px-1.5 py-0.5 border rounded-none"
+        className="inline-flex items-center text-xs uppercase tracking-wide px-1.5 py-0.5 border rounded-xs"
         style={{ color: 'var(--admin-color-text-primary)', borderColor: 'var(--admin-color-text-primary)' }}
       >{label}</span>
     )
@@ -2167,32 +2168,32 @@ function AssignmentBanner({ t }) {
   const itemsManager = cfg?.itemsManager || t('products.detail.assign.itemsManager')
   return (
     <div className="px-4 py-3 bg-surface-muted border-b border-border">
-      <div className="flex items-center gap-1.5 mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+      <div className="flex items-center gap-1.5 mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         <Users size={12} />
         <span>{title}</span>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="border-l-[3px] pl-2 py-0.5" style={{ borderColor: 'var(--admin-color-primary)' }}>
-          <div className="text-[11px] font-bold uppercase tracking-wide text-foreground mb-0.5">
+          <div className="text-xs font-bold uppercase tracking-wide text-foreground mb-0.5">
             {roleContent}
           </div>
-          <div className="text-[11px] leading-relaxed" style={{ color: 'var(--admin-color-text-secondary)' }}>
+          <div className="text-xs leading-relaxed" style={{ color: 'var(--admin-color-text-secondary)' }}>
             {itemsContent}
           </div>
         </div>
         <div className="border-l-[3px] pl-2 py-0.5" style={{ borderColor: 'var(--admin-color-status-warning-text)' }}>
-          <div className="text-[11px] font-bold uppercase tracking-wide text-foreground mb-0.5">
+          <div className="text-xs font-bold uppercase tracking-wide text-foreground mb-0.5">
             {roleSeo}
           </div>
-          <div className="text-[11px] leading-relaxed" style={{ color: 'var(--admin-color-text-secondary)' }}>
+          <div className="text-xs leading-relaxed" style={{ color: 'var(--admin-color-text-secondary)' }}>
             {itemsSeo}
           </div>
         </div>
         <div className="border-l-[3px] pl-2 py-0.5" style={{ borderColor: 'var(--admin-color-text-primary)' }}>
-          <div className="text-[11px] font-bold uppercase tracking-wide text-foreground mb-0.5">
+          <div className="text-xs font-bold uppercase tracking-wide text-foreground mb-0.5">
             {roleManager}
           </div>
-          <div className="text-[11px] leading-relaxed" style={{ color: 'var(--admin-color-text-secondary)' }}>
+          <div className="text-xs leading-relaxed" style={{ color: 'var(--admin-color-text-secondary)' }}>
             {itemsManager}
           </div>
         </div>
@@ -2233,7 +2234,8 @@ function Field({ label, hint, error, count, countWarn, full, children }) {
 // ── Main screen ────────────────────────────────────────────────────────────────
 
 export function ProductDetailScreen({ productId, isCreate = false, navigate, canUpdate }) {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
+  const contentLang = useContentLang()
   const queryClient = useQueryClient()
   const [form, setForm] = useState(buildEmptyForm)
   // Dirty tracking via boolean flag (set true on any field update, reset on
@@ -2432,7 +2434,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     setIsDirty(true)
   }
 
-  const isEnLang = i18n.language === 'en'
+  const isEnLang = contentLang === 'en'
 
   // Value of a translatable product-level text field for the active language.
   function langValue(field) {
@@ -2918,7 +2920,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     error={validationErrors.shortDescription}
                   >
                     <RichTextEditor
-                      key={`shortDescription-${i18n.language}`}
+                      key={`shortDescription-${contentLang}`}
                       value={langValue('shortDescription')}
                       onChange={(html) => langChange('shortDescription', html)}
                       placeholder={t('products.detail.shortDescriptionPlaceholder')}
@@ -3276,7 +3278,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   onChange={(next) => updateField('specifications', next)}
                   disabled={isReadOnly}
                   validationErrors={validationErrors}
-                  contentLang={i18n.language}
+                  contentLang={contentLang}
                 />
               </SectionCard>
 
@@ -3284,7 +3286,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
               <SectionCard title={t('products.detail.sectionInstallation')} badge={<RoleBadge role="content" />}>
                 <p className="text-xs text-muted-foreground mb-2">{t('products.detail.installationHint')}</p>
                 <RichTextEditor
-                  key={`installationGuide-${i18n.language}`}
+                  key={`installationGuide-${contentLang}`}
                   value={langValue('installationGuide')}
                   onChange={(html) => langChange('installationGuide', html)}
                   placeholder={t('products.detail.installationPlaceholder')}
@@ -3308,7 +3310,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   {t('products.detail.promotionHint', { defaultValue: 'Nội dung khuyến mãi hiển thị trong tab "Khuyến mãi" trên trang sản phẩm.' })}
                 </p>
                 <RichTextEditor
-                  key={`promotionContent-${i18n.language}`}
+                  key={`promotionContent-${contentLang}`}
                   value={langValue('promotionContent')}
                   onChange={(html) => langChange('promotionContent', html)}
                   placeholder={t('products.detail.promotionPlaceholder', { defaultValue: 'Nhập nội dung khuyến mãi, ưu đãi kèm theo...' })}
@@ -3341,7 +3343,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   onChange={(next) => updateField('faqs', next)}
                   disabled={isReadOnly}
                   validationErrors={validationErrors}
-                  contentLang={i18n.language}
+                  contentLang={contentLang}
                 />
               </SectionCard>
             </>

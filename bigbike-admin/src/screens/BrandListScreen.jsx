@@ -12,6 +12,7 @@ import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
 import { fetchBrands } from '../lib/adminApi'
 import { formatDateTime, formatText, stripHtml } from '../lib/formatters'
 import { useAdminList } from '../lib/useAdminList'
+import { useContentLang } from '../lib/contentLang'
 import { useDebounce } from '../lib/useDebounce'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 
@@ -24,7 +25,8 @@ const INITIAL_QUERY = {
 }
 
 export function BrandListScreen({ navigate, canUpdate }) {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
+  const contentLang = useContentLang()
   const [query, setQuery] = useState(() => readQueryFromUrl(INITIAL_QUERY))
   const [searchInput, setSearchInput] = useState(() => {
     const params = new URLSearchParams(window.location.search)
@@ -33,7 +35,7 @@ export function BrandListScreen({ navigate, canUpdate }) {
   const debouncedSearch = useDebounce(searchInput, 250)
   const isFirstSearchRender = useRef(true)
 
-  const state = useAdminList(['brands', query, i18n.language], () => fetchBrands(query))
+  const state = useAdminList(['brands', query, contentLang], () => fetchBrands(query))
 
   useEffect(() => {
     syncQueryToUrl(query, INITIAL_QUERY)

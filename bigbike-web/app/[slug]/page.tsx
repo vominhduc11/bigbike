@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { WpStaticShell } from "@/components/wp/WpStaticShell";
+import { LHtml, LText, LocalizedContentProvider } from "@/components/i18n/LocalizedContent";
 import { getPageBySlug } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { safeText } from "@/lib/utils/format";
@@ -12,6 +13,12 @@ import { isValidSlug } from "@/lib/utils/slug";
 type StaticPageDetailProps = {
   params: Promise<{ slug: string }>;
 };
+
+// ISR on-demand: trang CMS admin quản lý → KHÔNG prebuild lúc build. Sinh khi truy cập
+// lần đầu + revalidate theo tag page:{slug}/pages khi admin sửa.
+export async function generateStaticParams() {
+  return [];
+}
 
 export async function generateMetadata({ params }: StaticPageDetailProps): Promise<Metadata> {
   const [{ slug }, t] = await Promise.all([params, getTranslations("StaticPage")]);
@@ -67,24 +74,28 @@ export default async function StaticPageDetail({ params }: StaticPageDetailProps
   // page.php: .page-title (banner + breadcrumb) + #main-content > .container > .row
   // > .col-md-12 > .static-page.wyswyg.
   return (
-    <WpStaticShell
-      title={page.heroTitle ?? pageTitle}
-      heroBgUrl={page.heroImageUrl}
-      breadcrumb={[
-        { label: tBreadcrumb("home"), href: toHomePath() },
-        { label: pageTitle },
-      ]}
-    >
-      <div className="container">
-        <div className="row">
-          <div className="col-md-12">
-            <div
-              className="static-page wyswyg"
-              dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(page.body) }}
-            />
+    <LocalizedContentProvider kind="page" slug={page.slug}>
+      <WpStaticShell
+        title={page.heroTitle ?? pageTitle}
+        titleNode={<LText field="title">{page.heroTitle ?? pageTitle}</LText>}
+        heroBgUrl={page.heroImageUrl}
+        breadcrumb={[
+          { label: tBreadcrumb("home"), href: toHomePath() },
+          { label: pageTitle, labelNode: <LText field="title">{pageTitle}</LText> },
+        ]}
+      >
+        <div className="container">
+          <div className="row">
+            <div className="col-md-12">
+              <LHtml
+                field="body"
+                viHtml={sanitizeRichHtml(page.body)}
+                className="static-page wyswyg"
+              />
+            </div>
           </div>
         </div>
-      </div>
-    </WpStaticShell>
+      </WpStaticShell>
+    </LocalizedContentProvider>
   );
 }

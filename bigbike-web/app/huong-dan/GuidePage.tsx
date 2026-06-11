@@ -4,8 +4,10 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { WpStaticShell } from "@/components/wp/WpStaticShell";
 import type { WpStaticSidebarItem } from "@/components/wp/WpStaticSidebar";
 import { WpStaticSidebarLayout } from "@/components/wp/WpStaticSidebarLayout";
+import { LHtml, LText, LocalizedContentProvider } from "@/components/i18n/LocalizedContent";
 import { getPageBySlug, getPublicMenu } from "@/lib/api/public-api";
 import { safeText } from "@/lib/utils/format";
+import { sanitizeRichHtml } from "@/lib/utils/html";
 import { normalizeMenuUrl } from "@/lib/utils/nav";
 import { toHomePath } from "@/lib/utils/routes";
 
@@ -170,21 +172,26 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
   // page-guide.php: .page-title + #main-content > .container > .row
   // > [.col-md-3 sidebar] + [.col-md-9 > .static-page.wyswyg].
   return (
-    <WpStaticShell
-      title={page.heroTitle ?? pageTitle}
-      heroBgUrl={page.heroImageUrl ?? GUIDE_HERO_BG}
-      heroIllustrationUrl={GUIDE_HERO_ILLUSTRATION}
-      breadcrumb={[
-        { label: tBreadcrumb("home"), href: toHomePath() },
-        { label: t("breadcrumb"), href: "/huong-dan/" },
-        { label: pageTitle },
-      ]}
-    >
-      <WpStaticSidebarLayout
-        sidebarItems={sidebarItems}
-        sidebarEmptyLabel={t("emptyMenu")}
-        body={page.body}
-      />
-    </WpStaticShell>
+    <LocalizedContentProvider kind="page" slug={route.pageSlug}>
+      <WpStaticShell
+        title={page.heroTitle ?? pageTitle}
+        titleNode={<LText field="title">{page.heroTitle ?? pageTitle}</LText>}
+        heroBgUrl={page.heroImageUrl ?? GUIDE_HERO_BG}
+        heroIllustrationUrl={GUIDE_HERO_ILLUSTRATION}
+        breadcrumb={[
+          { label: tBreadcrumb("home"), href: toHomePath() },
+          { label: t("breadcrumb"), href: "/huong-dan/" },
+          { label: pageTitle, labelNode: <LText field="title">{pageTitle}</LText> },
+        ]}
+      >
+        <WpStaticSidebarLayout
+          sidebarItems={sidebarItems}
+          sidebarEmptyLabel={t("emptyMenu")}
+          bodyNode={
+            <LHtml field="body" viHtml={sanitizeRichHtml(page.body)} className="static-page wyswyg" />
+          }
+        />
+      </WpStaticShell>
+    </LocalizedContentProvider>
   );
 }

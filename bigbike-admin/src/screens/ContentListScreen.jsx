@@ -13,6 +13,7 @@ import { ContentCategoryManagerModal } from '../components/ContentCategoryManage
 import { fetchContent } from '../lib/adminApi'
 import { formatDateTime, formatText } from '../lib/formatters'
 import { useAdminList } from '../lib/useAdminList'
+import { useContentLang } from '../lib/contentLang'
 import { useDebounce } from '../lib/useDebounce'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 
@@ -26,7 +27,8 @@ const INITIAL_QUERY = {
 }
 
 export function ContentListScreen({ navigate, canUpdate }) {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
+  const contentLang = useContentLang()
   const [query, setQuery] = useState(() => readQueryFromUrl(INITIAL_QUERY))
   const [searchInput, setSearchInput] = useState(() => {
     const params = new URLSearchParams(window.location.search)
@@ -36,7 +38,7 @@ export function ContentListScreen({ navigate, canUpdate }) {
   const isFirstSearchRender = useRef(true)
   const [categoryModalOpen, setCategoryModalOpen] = useState(false)
 
-  const state = useAdminList(['content', query, i18n.language], () => fetchContent(query))
+  const state = useAdminList(['content', query, contentLang], () => fetchContent(query))
 
   useEffect(() => {
     syncQueryToUrl(query, INITIAL_QUERY)

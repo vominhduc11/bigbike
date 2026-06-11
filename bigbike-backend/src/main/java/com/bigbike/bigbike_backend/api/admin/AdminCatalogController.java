@@ -202,9 +202,12 @@ public class AdminCatalogController extends AdminControllerSupport {
      * endpoint instead. Sorted by parent_id NULLS FIRST, sortOrder, name.
      */
     @GetMapping("/categories/tree")
-    public ApiDataResponse<List<Category>> listCategoryTree(HttpServletRequest request) {
+    public ApiDataResponse<List<Category>> listCategoryTree(
+            @RequestParam(defaultValue = "vi") @Pattern(regexp = LANG_REGEX, message = "Invalid lang.") String lang,
+            HttpServletRequest request
+    ) {
         devAdminAuthService.requirePermission(request, "catalog.read");
-        return apiResponseFactory.data(adminCatalogReadService.listAllCategoriesForTree(), request);
+        return apiResponseFactory.data(adminCatalogReadService.listAllCategoriesForTree(lang), request);
     }
 
     @GetMapping("/categories/{id}")
@@ -236,9 +239,10 @@ public class AdminCatalogController extends AdminControllerSupport {
     }
 
     /**
-     * Hard-delete: physically removes the category from the database.
-     * Rejected if the category has any children or if any product uses it
-     * as its primary category.
+     * Hard-delete: physically removes the category and its entire sub-tree
+     * (all descendant categories) from the database. Rejected only if any
+     * category in the sub-tree still has products assigned as their primary
+     * category — products are never deleted as a side effect.
      */
     @DeleteMapping("/categories/{id}")
     public org.springframework.http.ResponseEntity<Void> hardDeleteCategory(

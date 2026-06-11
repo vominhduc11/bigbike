@@ -4,6 +4,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import type { Brand, CatalogFacets, Category, ImageAsset } from "@/lib/contracts/public";
 import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { buildQueryString } from "@/lib/utils/query";
@@ -87,6 +88,7 @@ export function WpCategorySidebar({
   resetHref,
   hiddenParams = {},
 }: WpCategorySidebarProps) {
+  const t = useTranslations("Catalog");
   const [active, setActive] = useState(false); // hiện drawer (display)
   const [inView, setInView] = useState(false); // trượt vào (transform/opacity)
   const closeTimer = useRef<number | null>(null);
@@ -167,7 +169,7 @@ export function WpCategorySidebar({
         </div>
         <div className="wrapper">
           {rootCategories.length > 0 && (
-            <Widget title="Danh mục sản phẩm" extraClass="woocommerce widget_product_categories">
+            <Widget title={t("filterCategory")} extraClass="woocommerce widget_product_categories">
               <ul className="product-categories">
                 {rootCategories.map((cat) => {
                   const href = toCategoryPath(cat.slug);
@@ -212,10 +214,10 @@ export function WpCategorySidebar({
             </Widget>
           )}
 
-          <Widget title="Giá" extraClass="devvn_woocommerce_price_filter woocommerce widget_layered_nav">
+          <Widget title={t("filterPrice")} extraClass="devvn_woocommerce_price_filter woocommerce widget_layered_nav">
             <ul className="woocommerce-widget-layered-nav-list">
               <li className={`wc-layered-nav-term${noPrice ? " chosen" : ""}`}>
-                <Link href={queryHref({ min_price: undefined, max_price: undefined })}>Tất cả</Link>
+                <Link href={queryHref({ min_price: undefined, max_price: undefined })}>{t("allColors")}</Link>
               </li>
               {priceRows.map((band) => {
                 const isActive =

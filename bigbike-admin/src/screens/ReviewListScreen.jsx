@@ -29,7 +29,7 @@ function Stars({ n, of = 5 }) {
   return (
     <span className="inline-flex gap-px">
       {Array.from({ length: of }).map((_, i) => (
-        <span key={i} style={{ color: i < n ? '#fbbf24' : 'var(--admin-color-border-default)' }}>★</span>
+        <span key={i} style={{ color: i < n ? 'var(--admin-color-rating-star)' : 'var(--admin-color-border-default)' }}>★</span>
       ))}
     </span>
   )
@@ -158,7 +158,7 @@ export function ReviewListScreen({ navigate, canUpdate }) {
                 {dist.map((d) => (
                   <div className="flex items-center gap-2 text-xs mb-1" key={d.s}>
                     <span>{d.s} ★</span>
-                    <div className="flex-1 h-1.5 bg-surface-muted rounded-none overflow-hidden">
+                    <div className="flex-1 h-1.5 bg-surface-muted rounded-full overflow-hidden">
                       <div className="h-full bg-primary" style={{ width: (total > 0 ? (d.n / total) * 100 : 0) + '%' }} />
                     </div>
                     <span className="w-4 text-right">{d.n}</span>
@@ -323,7 +323,7 @@ export function ReviewListScreen({ navigate, canUpdate }) {
           })}
 
           {state.status === 'success' && state.pagination && (
-            <div className="px-[18px] py-3 border-t border-border">
+            <div className="px-5 py-3 border-t border-border">
               <PaginationControls
                 pagination={state.pagination}
                 onPageChange={(p) => updateQuery({ page: p })}

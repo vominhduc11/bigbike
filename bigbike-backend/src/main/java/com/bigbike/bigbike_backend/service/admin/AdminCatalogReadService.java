@@ -106,8 +106,8 @@ public class AdminCatalogReadService {
      * same parentId comparator key. The actual tree structure is built on
      * the client; the server just ships a deterministic flat list.
      */
-    public List<Category> listAllCategoriesForTree() {
-        return catalogReadRepository.findAllCategories().stream()
+    public List<Category> listAllCategoriesForTree(String lang) {
+        return catalogReadRepository.findAllCategories(normalizeLocale(lang)).stream()
                 .sorted(Comparator
                         .comparing(
                                 Category::parentId,

@@ -14,7 +14,7 @@ import {
   normalizeSetting,
 } from './contracts'
 import { clearTokens, hasAccessToken, readTokens, writeTokens } from './authStorage'
-import i18n from './i18n'
+import { getContentLang } from './contentLang'
 
 const API_BASE = (import.meta.env.VITE_ADMIN_API_BASE || '/api/v1').replace(/\/$/, '')
 
@@ -229,7 +229,7 @@ function buildProductQuery(query) {
     brandId: query?.brandId || undefined,
     categoryId: query?.categoryId || undefined,
     homepageBlock: query?.homepageBlock,
-    lang: i18n.language,
+    lang: getContentLang(),
   }
 }
 
@@ -240,7 +240,7 @@ function buildCategoryQuery(query) {
     sort: query?.sort,
     q: query?.search,
     visibility: query?.visibility,
-    lang: i18n.language,
+    lang: getContentLang(),
   }
 }
 
@@ -251,7 +251,7 @@ function buildBrandQuery(query) {
     sort: query?.sort,
     q: query?.search,
     visibility: query?.visibility,
-    lang: i18n.language,
+    lang: getContentLang(),
   }
 }
 
@@ -263,7 +263,7 @@ function buildContentQuery(query) {
     q: query?.search,
     type: query?.type,
     publishStatus: query?.publishStatus,
-    lang: i18n.language,
+    lang: getContentLang(),
   }
 }
 
@@ -472,7 +472,7 @@ function flattenCategoryTree(nodes) {
 
 export async function fetchCategoryTree() {
   try {
-    const payload = await requestJson('/admin/categories/tree')
+    const payload = await requestJson('/admin/categories/tree', { query: { lang: getContentLang() } })
     const items = Array.isArray(payload?.data) ? flattenCategoryTree(payload.data) : []
     return withLiveData({ items })
   } catch (error) {

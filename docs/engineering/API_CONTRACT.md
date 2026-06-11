@@ -442,8 +442,9 @@ nguyên shape** — không thêm khối `translations`.
   — bản tiếng Anh thô của từng dòng con.
 
 **Đọc admin — danh sách theo `lang`:** các endpoint list admin
-`GET /api/v1/admin/products`, `/admin/categories`, `/admin/brands` và
-`/admin/content` nhận query param `lang` = `vi` (mặc định) hoặc `en`. Khi
+`GET /api/v1/admin/products`, `/admin/categories`, `/admin/categories/tree`,
+`/admin/brands` và `/admin/content` nhận query param `lang` = `vi` (mặc định)
+hoặc `en`. Khi
 `lang=en`, **trường hiển thị** trả bản tiếng Anh (`name` cho product/category/brand,
 `title` cho content), **lùi về tiếng Việt theo từng trường** khi cột `_en` rỗng
 (`COALESCE`, theo `PRODUCT_RULE_002` / `CATEGORY_RULE_002` / `BRAND_RULE_002`).

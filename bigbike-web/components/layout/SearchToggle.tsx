@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Clock, Loader2, Search, X, Zap } from "lucide-react";
 import { useHeaderUi } from "@/components/layout/HeaderUiContext";
 import { Button } from "@/components/ui/button";
@@ -155,6 +155,7 @@ export function SearchToggle({
   renderTrigger = true,
 }: SearchToggleProps) {
   const t = useTranslations("Search");
+  const locale = useLocale();
   const router = useRouter();
   const searchParams = useSearchParams();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -206,7 +207,7 @@ export function SearchToggle({
 
     setSuggestLoading(true);
 
-    fetch(`/api/search-suggest?q=${encodeURIComponent(debouncedQuery)}`, { signal })
+    fetch(`/api/search-suggest?q=${encodeURIComponent(debouncedQuery)}&lang=${encodeURIComponent(locale)}`, { signal })
       .then((res) => res.json())
       .then((data: { products: SearchSuggestion[]; articles: ArticleSuggestion[] }) => {
         setSuggestions(data.products ?? []);
@@ -220,7 +221,7 @@ export function SearchToggle({
       .finally(() => setSuggestLoading(false));
 
     return () => abortRef.current?.abort();
-  }, [debouncedQuery, open]);
+  }, [debouncedQuery, open, locale]);
 
   function handleClose() {
     setQuery("");

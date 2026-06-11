@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -38,7 +38,10 @@ const ARROW_BTN =
 export function ProductSwiper({ products, className }: Props) {
   const t = useTranslations("Common");
   const swiperRef = useRef<SwiperType | null>(null);
-  const paginationRef = useRef<HTMLDivElement | null>(null);
+  // Gắn vùng chấm bằng selector (giống ArticleCarousel — luôn bind được kể cả khi
+  // tải thẳng ở desktop), không dùng ref + onBeforeInit vốn chập chờn lúc init.
+  // useId đảm bảo nhiều ProductSwiper trên cùng trang không tranh nhau một vùng chấm.
+  const paginationId = `bb-pswiper-pag-${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
   const [isLocked, setIsLocked] = useState(false);
 
   if (products.length === 0) return null;
@@ -63,18 +66,13 @@ export function ProductSwiper({ products, className }: Props) {
             swiperRef.current = s;
             setIsLocked(s.isLocked);
           }}
-          onBeforeInit={(s) => {
-            if (s.params.pagination && typeof s.params.pagination !== "boolean") {
-              s.params.pagination.el = paginationRef.current;
-            }
-          }}
           onBreakpoint={(s) => setIsLocked(s.isLocked)}
           speed={700}
           slidesPerView={2}
           slidesPerGroup={2}
           spaceBetween={20}
           watchOverflow
-          pagination={{ clickable: true }}
+          pagination={{ el: `#${paginationId}`, clickable: true }}
           breakpoints={{
             [BB_BREAKPOINTS.md]: { slidesPerView: 4, slidesPerGroup: 4, spaceBetween: 30 },
             [BB_BREAKPOINTS.xxl]: { slidesPerView: 5, slidesPerGroup: 5, spaceBetween: 30 },
@@ -100,11 +98,17 @@ export function ProductSwiper({ products, className }: Props) {
         </button>
       )}
 
-      <div
-        ref={paginationRef}
-        className="flex justify-center gap-[5px] mt-[40px] [&_.swiper-pagination-lock]:hidden"
-        aria-hidden="true"
-      />
+      {/* Chấm phân trang chuẩn design-system (đồng bộ .bb-article-pagination):
+          xám 10px khi thường, đỏ kéo dài 20px khi active. Swiper mặc định cho chấm
+          nhỏ active màu xanh — phải áp lại token brand để khớp các carousel khác.
+          Ẩn cả cụm khi không đủ sản phẩm để lướt (isLocked) — giống mũi tên. */}
+      {!isLocked && (
+        <div
+          id={paginationId}
+          className="flex justify-center mt-[40px] [&_.swiper-pagination-bullet]:my-0 [&_.swiper-pagination-bullet]:mx-[5px] [&_.swiper-pagination-bullet]:h-[10px] [&_.swiper-pagination-bullet]:w-[10px] [&_.swiper-pagination-bullet]:!rounded-full [&_.swiper-pagination-bullet]:bg-border-default [&_.swiper-pagination-bullet]:opacity-100 [&_.swiper-pagination-bullet]:[transition:all_0.3s_ease] [&_.swiper-pagination-bullet-active]:!w-[20px] [&_.swiper-pagination-bullet-active]:!rounded-[20px] [&_.swiper-pagination-bullet-active]:!bg-brand"
+          aria-hidden="true"
+        />
+      )}
     </div>
   );
 }

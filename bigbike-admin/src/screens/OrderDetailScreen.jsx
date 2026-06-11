@@ -8,6 +8,7 @@ import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
 import { addOrderNote, adminCreateReturn, fetchOrderAllowedTransitions, fetchOrderDetail, fetchReturnsByOrder, updateOrderFulfillment, updateOrderPaymentStatus, updateOrderStatus } from '../lib/adminApi'
+import { subscribeAdminWs } from '../lib/adminWebSocket'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
 import { showConfirm } from '../lib/confirm'
 import { Modal } from '../components/layout'
@@ -216,6 +217,18 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
     queryKey: ['order', orderId],
     queryFn: () => fetchOrderDetail(orderId),
   })
+
+  // Live-refresh khi đơn ĐANG XEM có thay đổi (trạng thái/thanh toán/note/refund) đẩy về
+  // qua WebSocket admin. Chỉ refetch khi event đúng orderId này — tránh refetch thừa.
+  useEffect(() => {
+    const unsubscribe = subscribeAdminWs('/topic/admin/orders', (event) => {
+      if (String(event?.orderId) === String(orderId)) {
+        queryClient.invalidateQueries({ queryKey: ['order', orderId] })
+      }
+    })
+    return unsubscribe
+  }, [orderId, queryClient])
+
   const order = orderQuery.data?.item ?? null
   const warning = ''
   const status = orderQuery.isLoading ? 'loading' : orderQuery.isError ? 'error' : 'success'

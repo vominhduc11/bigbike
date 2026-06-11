@@ -7,6 +7,11 @@ type Props = {
   params: Promise<{ sub: string[] }>;
 };
 
+// ISR on-demand: trang hướng dẫn (CMS) → KHÔNG prebuild lúc build.
+export async function generateStaticParams() {
+  return [];
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const [{ sub }, t] = await Promise.all([params, getTranslations("Guide")]);
   const route = resolveGuideRoute(sub);

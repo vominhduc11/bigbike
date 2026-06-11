@@ -12,6 +12,7 @@ import com.bigbike.bigbike_backend.mapper.CouponMapper;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.coupon.CouponEntity;
 import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderAppliedCouponJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.coupon.CouponJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.coupon.CouponSpecification;
 import com.bigbike.bigbike_backend.service.common.PageResult;
@@ -44,6 +45,7 @@ public class AdminCouponService {
     private final CouponJpaRepository couponRepo;
     private final AuditLogJpaRepository auditLogRepo;
     private final CouponMapper couponMapper;
+    private final OrderAppliedCouponJpaRepository appliedCouponRepo;
 
     // ── List ──────────────────────────────────────────────────────────────────
 
@@ -282,6 +284,20 @@ public class AdminCouponService {
     public void deleteCoupon(UUID couponId, UUID adminId) {
         CouponEntity entity = couponRepo.findById(couponId)
                 .orElseThrow(() -> new NotFoundException("Coupon not found."));
+
+        // A coupon already applied to one or more orders is referenced by
+        // order_applied_coupons (FK RESTRICT). Hard-deleting it would otherwise
+        // surface as a raw 500. Block with a friendly conflict and steer the
+        // admin to deactivate (set INACTIVE) instead, preserving order history.
+        long usedInOrders = appliedCouponRepo.countByCouponId(couponId);
+        if (usedInOrders > 0) {
+            throw new ConflictException(
+                    "Cannot delete: coupon \"" + entity.getCode() + "\" has been used in " +
+                    usedInOrders + " order" + (usedInOrders == 1 ? "" : "s") +
+                    ". Deactivate it instead to keep order history."
+            );
+        }
+
         String snapshot = snapshotFull(entity);
         couponRepo.delete(entity);
         auditLogRepo.save(buildAudit(adminId, "COUPON_DELETED", couponId, snapshot, null));

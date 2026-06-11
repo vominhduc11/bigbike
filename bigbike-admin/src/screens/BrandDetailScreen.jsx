@@ -11,6 +11,7 @@ import {
 } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import { formatDateTime } from '../lib/formatters'
+import { useContentLang } from '../lib/contentLang'
 import { createBrandSchema, zodErrors } from '../lib/schemas'
 import { StatePanel } from '../components/StatePanel'
 import { ImageUrlInput } from '../components/ImageUrlInput'
@@ -113,8 +114,9 @@ function toPayload(form) {
 }
 
 export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpdate }) {
-  const { t, i18n } = useTranslation()
-  const isEnLang = i18n.language === 'en'
+  const { t } = useTranslation()
+  const contentLang = useContentLang()
+  const isEnLang = contentLang === 'en'
   const queryClient = useQueryClient()
   const [form, setForm] = useState(buildEmptyForm)
   const [initialSnapshot, setInitialSnapshot] = useState(JSON.stringify(buildEmptyForm()))
@@ -361,7 +363,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
               <div className="form-field" style={{ gridColumn: '1 / -1' }}>
                 <span>{t('brands.detail.description')}</span>
                 <RichTextEditor
-                  key={`description-${i18n.language}`}
+                  key={`description-${contentLang}`}
                   value={isEnLang ? (form.translations?.en?.description ?? '') : form.description}
                   onChange={(html) => isEnLang ? updateTranslation('description', html) : updateField('description', html)}
                   placeholder={t('brands.detail.descriptionPlaceholder', { defaultValue: 'Nhập mô tả thương hiệu...' })}

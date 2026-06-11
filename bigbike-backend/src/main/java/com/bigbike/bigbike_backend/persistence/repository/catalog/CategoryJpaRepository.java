@@ -15,6 +15,5 @@ public interface CategoryJpaRepository
      * visibility patch.
      */
     long countByParent_IdAndIsVisibleTrue(String parentId);
-    long countByParent_Id(String parentId);
     java.util.List<CategoryEntity> findByParent_Id(String parentId);
 }

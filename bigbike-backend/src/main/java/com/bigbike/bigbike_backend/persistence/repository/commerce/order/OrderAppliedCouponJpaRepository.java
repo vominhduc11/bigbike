@@ -10,4 +10,6 @@ public interface OrderAppliedCouponJpaRepository extends JpaRepository<OrderAppl
     List<OrderAppliedCouponEntity> findByOrderId(UUID orderId);
 
     List<OrderAppliedCouponEntity> findByCode(String code);
+
+    long countByCouponId(UUID couponId);
 }

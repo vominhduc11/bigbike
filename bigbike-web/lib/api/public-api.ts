@@ -180,14 +180,10 @@ async function loadDataWithQuery<T>(
   }
 }
 
-export const PRODUCT_SORT_VALUES = [
-  "createdAt:desc",
-  "createdAt:asc",
-  "name:asc",
-  "name:desc",
-  "price:asc",
-  "price:desc",
-] as const;
+// PRODUCT_SORT_VALUES sống ở lib/constants/catalog (client-safe) — re-export để các
+// consumer cũ (import từ public-api) không phải đổi; parseCatalogListParams import
+// thẳng từ constants để KHÔNG kéo module server này vào client bundle.
+export { PRODUCT_SORT_VALUES } from "@/lib/constants/catalog";
 
 export const BRAND_SORT_VALUES = [
   "name:asc",

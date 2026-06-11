@@ -1,0 +1,104 @@
+"use client";
+
+import { NextIntlClientProvider } from "next-intl";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ComponentProps } from "react";
+import { DEFAULT_LOCALE, DEFAULT_TIME_ZONE, LOCALE_COOKIE, resolveLocale, type Locale } from "@/i18n/locale";
+
+/** Kiểu message khớp đúng prop của NextIntlClientProvider (tránh phụ thuộc tên type export). */
+type IntlMessages = ComponentProps<typeof NextIntlClientProvider>["messages"];
+
+/**
+ * i18n phía CLIENT — cho phép server render tĩnh bằng `vi` (xem i18n/request.ts) mà vẫn
+ * đổi sang `en` được mà không cần round-trip server (giữ kiến trúc no-SSR / ISR).
+ *
+ * - Server truyền sẵn message `vi` (initialMessages) → render khớp, không hydration mismatch.
+ * - Sau khi mount, đọc cookie NEXT_LOCALE; nếu `en` thì nạp `messages/en.json` và đổi state.
+ * - LanguageSwitcher gọi `useSetLocale()` để đổi ngôn ngữ: ghi cookie + nạp message ngay ở
+ *   client, không reload, không router.refresh().
+ */
+
+type SetLocale = (locale: Locale) => void;
+
+const SetLocaleContext = createContext<SetLocale>(() => {});
+
+/** Đổi ngôn ngữ ở client (ghi cookie + swap message). Dùng trong LanguageSwitcher. */
+export function useSetLocale(): SetLocale {
+  return useContext(SetLocaleContext);
+}
+
+function readLocaleCookie(): Locale {
+  if (typeof document === "undefined") return DEFAULT_LOCALE;
+  const match = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith(`${LOCALE_COOKIE}=`));
+  return resolveLocale(match?.split("=")[1]);
+}
+
+async function loadMessages(locale: Locale): Promise<IntlMessages> {
+  const mod = await import(`../../messages/${locale}.json`);
+  return mod.default as IntlMessages;
+}
+
+export function ClientIntlProvider({
+  initialMessages,
+  children,
+}: {
+  initialMessages: IntlMessages;
+  children: React.ReactNode;
+}) {
+  // Khởi tạo bằng vi (khớp server) — tránh hydration mismatch.
+  const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE);
+  const [messages, setMessages] = useState<IntlMessages>(initialMessages);
+  const [enCache, setEnCache] = useState<IntlMessages | null>(null);
+
+  const applyLocale = useCallback(
+    async (next: Locale) => {
+      if (next === DEFAULT_LOCALE) {
+        setMessages(initialMessages);
+        setLocaleState(DEFAULT_LOCALE);
+        return;
+      }
+      const loaded = enCache ?? (await loadMessages(next));
+      if (!enCache) setEnCache(loaded);
+      setMessages(loaded);
+      setLocaleState(next);
+    },
+    [enCache, initialMessages],
+  );
+
+  // Sau mount: nếu cookie là en (visitor đã chọn từ trước) thì nạp + swap sang en.
+  // Mọi setState nằm trong callback async (.then) — đồng bộ với hệ ngoài (cookie),
+  // không phải setState đồng bộ trong thân effect.
+  useEffect(() => {
+    const cookieLocale = readLocaleCookie();
+    if (cookieLocale === DEFAULT_LOCALE) return;
+    let cancelled = false;
+    void loadMessages(cookieLocale).then((loaded) => {
+      if (cancelled) return;
+      setEnCache(loaded);
+      setMessages(loaded);
+      setLocaleState(cookieLocale);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const setLocale = useCallback<SetLocale>(
+    (next) => {
+      document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
+      void applyLocale(next);
+    },
+    [applyLocale],
+  );
+
+  const value = useMemo(() => setLocale, [setLocale]);
+
+  return (
+    <SetLocaleContext.Provider value={value}>
+      <NextIntlClientProvider locale={locale} messages={messages} timeZone={DEFAULT_TIME_ZONE}>
+        {children}
+      </NextIntlClientProvider>
+    </SetLocaleContext.Provider>
+  );
+}

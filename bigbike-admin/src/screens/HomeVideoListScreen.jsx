@@ -28,6 +28,7 @@ import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { showConfirm } from '../lib/confirm'
+import { useContentLang } from '../lib/contentLang'
 import { extractAllowedYouTubeId, validateHomeVideoUrl } from '../lib/urlPolicies'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -46,6 +47,8 @@ const EMPTY_FORM = {
 }
 
 function VideoPreviewModal({ video, onClose }) {
+  const contentLang = useContentLang()
+  const displayTitle = contentLang === 'en' ? (video.titleEn || video.title) : video.title
   const embedUrl = video.youtubeId
     ? `https://www.youtube.com/embed/${video.youtubeId}?autoplay=1`
     : null
@@ -82,7 +85,7 @@ function VideoPreviewModal({ video, onClose }) {
           {embedUrl ? (
             <iframe
               src={embedUrl}
-              title={video.title}
+              title={displayTitle}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
               className="absolute inset-0 w-full h-full border-none"
@@ -97,9 +100,9 @@ function VideoPreviewModal({ video, onClose }) {
           ) : null}
         </div>
 
-        {video.title && (
+        {displayTitle && (
           <p className="m-0 px-4 py-2.5 text-xs font-semibold text-white bg-black">
-            {video.title}
+            {displayTitle}
           </p>
         )}
       </div>
@@ -109,6 +112,8 @@ function VideoPreviewModal({ video, onClose }) {
 
 function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPreview, selected, onSelect, selectionMode }) {
   const { t } = useTranslation()
+  const contentLang = useContentLang()
+  const displayTitle = contentLang === 'en' ? (video.titleEn || video.title) : video.title
   const thumbSrc = video.thumbnail?.url
     || (video.youtubeId ? `https://img.youtube.com/vi/${video.youtubeId}/mqdefault.jpg` : null)
 
@@ -166,7 +171,7 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPrevi
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <div className="font-bold text-sm mb-1" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {video.title}
+          {displayTitle}
         </div>
         <div className="text-xs bb-muted" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {video.videoUrl}
@@ -383,7 +388,10 @@ export function HomeVideoListScreen({ canUpdate }) {
 
   const isFiltering = searchText.trim() !== '' || statusFilter !== 'ALL'
   const filteredItems = items.filter((v) => {
-    const matchSearch = searchText.trim() === '' || v.title.toLowerCase().includes(searchText.trim().toLowerCase())
+    const q = searchText.trim().toLowerCase()
+    const matchSearch = q === ''
+      || v.title.toLowerCase().includes(q)
+      || (v.titleEn || '').toLowerCase().includes(q)
     const matchStatus = statusFilter === 'ALL' || (statusFilter === 'active' ? v.isActive : !v.isActive)
     return matchSearch && matchStatus
   })

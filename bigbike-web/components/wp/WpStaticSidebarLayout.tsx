@@ -8,6 +8,8 @@ type WpStaticSidebarLayoutProps = {
   sidebarEmptyLabel?: string;
   /** HTML thân trang (chưa sanitize) — render qua sanitizeRichHtml vào `.static-page.wyswyg`. */
   body?: string | null;
+  /** Node thân trang dịch được (vd `<LHtml>`) — ưu tiên hơn `body`; tự render `.static-page.wyswyg`. */
+  bodyNode?: ReactNode;
   /** Nội dung tuỳ biến thay cho `body` (vd lưới card ở trang gốc /huong-dan). */
   children?: ReactNode;
 };
@@ -22,6 +24,7 @@ export function WpStaticSidebarLayout({
   sidebarItems,
   sidebarEmptyLabel,
   body,
+  bodyNode,
   children,
 }: WpStaticSidebarLayoutProps) {
   return (
@@ -29,7 +32,9 @@ export function WpStaticSidebarLayout({
       <div className="row">
         <WpStaticSidebar items={sidebarItems} emptyLabel={sidebarEmptyLabel} />
         <div className="col-md-9">
-          {body != null ? (
+          {bodyNode != null ? (
+            bodyNode
+          ) : body != null ? (
             <div
               className="static-page wyswyg"
               dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(body) }}

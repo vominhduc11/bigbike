@@ -5,12 +5,19 @@ import { getLocale } from "next-intl/server";
 
 import { WpPurchaseSection } from "@/components/wp/WpPurchaseSection";
 import { WpProductTabs, type WpTab } from "@/components/wp/WpProductTabs";
+import { LText, LocalizedContentProvider } from "@/components/i18n/LocalizedContent";
+import { Tr } from "@/components/i18n/Tr";
+import {
+  ProductDescriptionTab,
+  ProductFaqs,
+  ProductSpecsTable,
+} from "@/components/catalog/ProductLocalizedParts";
 import { ProductSwiper } from "@/components/catalog/ProductSwiper";
 import { ReviewsSection } from "@/components/catalog/ReviewsSection";
 import { RecentlyViewedSection } from "@/components/catalog/RecentlyViewedSection";
 import { ProductContactCta } from "@/components/catalog/ProductContactCta";
 import type { RecentProduct } from "@/lib/recently-viewed";
-import { getProductBySlug, listProducts, listPublicSettings } from "@/lib/api/public-api";
+import { getProductBySlug, listPublicSettings } from "@/lib/api/public-api";
 import { buildProductJsonLd, serializeJsonLd } from "@/lib/seo/json-ld";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { safeArray, safeText } from "@/lib/utils/format";
@@ -19,11 +26,12 @@ import { sanitizeRichHtml } from "@/lib/utils/html";
 import { toBrandPath, toCategoryPath, toProductPath } from "@/lib/utils/routes";
 import { isValidSlug } from "@/lib/utils/slug";
 
-export const dynamic = "force-dynamic";
-
+// ISR on-demand: KHÔNG prebuild lúc build (sản phẩm là dữ liệu admin quản lý — không gọi
+// API lấy list khi build). Trả [] để mỗi trang sinh khi truy cập lần đầu rồi cache; tồn
+// kho/giá tươi qua revalidate theo tag product:{slug} (backend phát khi đổi giá/đặt đơn)
+// + lớp CSR (giỏ hàng, đánh giá). dynamicParams mặc định = true.
 export async function generateStaticParams() {
-  const result = await listProducts({ page: 1, size: 100, sort: "createdAt:desc" });
-  return (result.data ?? []).map((p) => ({ slug: p.slug }));
+  return [];
 }
 
 type ProductDetailPageProps = { params: Promise<{ slug: string }> };
@@ -103,57 +111,31 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
     {
       id: "tab-description",
       label: "Mô tả",
-      content: descriptionHtml ? (
-        <div className="wyswyg" dangerouslySetInnerHTML={{ __html: descriptionHtml }} />
-      ) : (
-        <div className="wyswyg">
-          <p>Chưa có mô tả cho sản phẩm này.</p>
-        </div>
+      labelKey: "description",
+      content: (
+        <ProductDescriptionTab
+          viHtml={descriptionHtml || "<p>Chưa có mô tả cho sản phẩm này.</p>"}
+        />
       ),
     },
     {
       id: "tab-more_infomation",
       label: "Thông số kĩ thuật",
-      content:
-        specs.length > 0 ? (
-          <div className="thong-so-ki-thuat">
-            <table className="shop_attributes">
-              <tbody>
-                {specs.map((s, i) => (
-                  <tr key={i}>
-                    <th>{s.name}</th>
-                    <td>{s.value}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="thong-so-ki-thuat">
-            <p>Chưa có thông số kĩ thuật cho sản phẩm này.</p>
-          </div>
-        ),
+      labelKey: "specs",
+      content: (
+        <ProductSpecsTable
+          viSpecs={specs}
+          emptyLabel="Chưa có thông số kĩ thuật cho sản phẩm này."
+        />
+      ),
     },
     {
       id: "tab-faq",
       label: "Câu hỏi thường gặp",
-      content:
-        faqs.length > 0 ? (
-          <div className="flex flex-col gap-0">
-            {faqs.map((faq, i) => (
-              <details key={i} className="group border-b border-border first:border-t">
-                <summary className="flex justify-between items-start gap-3 py-3.5 font-semibold text-foreground cursor-pointer list-none [&::-webkit-details-marker]:hidden after:content-['+'] after:shrink-0 after:text-xl after:font-normal after:text-muted-foreground after:leading-none group-[[open]]:after:content-['−']">
-                  {faq.question}
-                </summary>
-                <div className="pb-3.5 text-muted-foreground">{faq.answer}</div>
-              </details>
-            ))}
-          </div>
-        ) : (
-          <div className="wyswyg">
-            <p>Chưa có câu hỏi thường gặp cho sản phẩm này.</p>
-          </div>
-        ),
+      labelKey: "faqs",
+      content: (
+        <ProductFaqs viFaqs={faqs} emptyLabel="Chưa có câu hỏi thường gặp cho sản phẩm này." />
+      ),
     },
   ];
 
@@ -166,6 +148,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
       />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: productJsonLd }} />
 
+      <LocalizedContentProvider kind="product" slug={product.slug}>
       <div id="main-content">
         <div className="container">
       <div className="breadcrumb">
@@ -189,7 +172,9 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
             </li>
           ) : null}
           <li>
-            <span className="post post-product current-item">{name}</span>
+            <span className="post post-product current-item">
+              <LText field="name">{name}</LText>
+            </span>
           </li>
         </ul>
       </div>
@@ -206,7 +191,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
       </div>
 
       {tabs.length > 0 && (
-        <WpProductTabs tabs={tabs} anchorExtras={[{ id: "reviews", label: "Đánh giá" }]} />
+        <WpProductTabs tabs={tabs} anchorExtras={[{ id: "reviews", labelKey: "reviews" }]} />
       )}
 
       {/* Đánh giá sản phẩm — danh sách review đã duyệt + form gửi đánh giá (chờ
@@ -217,8 +202,8 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
         <div className="product-list pt-80 pb-40">
           <div className="container">
             <div className="block-title text-center mb-40">
-              <p className="sub-title">SẢN PHẨM LIÊN QUAN</p>
-              <h3>Sản phẩm tương tự</h3>
+              <p className="sub-title"><Tr ns="Home" k="relatedKicker" /></p>
+              <h3><Tr ns="Home" k="relatedTitle" /></h3>
             </div>
             <ProductSwiper products={related} />
           </div>
@@ -228,20 +213,21 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
       {/* Sản phẩm khách đã xem — lịch sử lưu trên trình duyệt, tự bỏ qua sản
           phẩm đang xem; chỉ hiện khi có từ 2 sản phẩm khác trở lên. */}
       <RecentlyViewedSection currentProductId={product.id} currentProduct={recentRecord} />
-        </div>
 
-        {/* Dải liên hệ cửa hàng ở chân trang (local-SEO): "Mua <sản phẩm> chính
-            hãng tại <shop>" + địa chỉ, hotline, Zalo — lấy từ system settings,
-            đồng bộ với footer / trang liên hệ. Đặt ngoài .container vì component tự
-            canh giữa theo max-width riêng. */}
-        <ProductContactCta
-          productName={name}
-          siteName={siteName}
-          address={contactAddress || undefined}
-          hotline={hotline || undefined}
-          zaloUrl={zaloUrl || undefined}
-        />
+      {/* Dải liên hệ cửa hàng ở chân trang (local-SEO): "Mua <sản phẩm> chính
+          hãng tại <shop>" + địa chỉ, hotline, Zalo — lấy từ system settings,
+          đồng bộ với footer / trang liên hệ. Đặt TRONG .container để dùng chung
+          đúng một rail width/lề 2 bên với các section phía trên ở mọi breakpoint. */}
+      <ProductContactCta
+        productName={name}
+        siteName={siteName}
+        address={contactAddress || undefined}
+        hotline={hotline || undefined}
+        zaloUrl={zaloUrl || undefined}
+      />
+        </div>
       </div>
+      </LocalizedContentProvider>
     </>
   );
 }

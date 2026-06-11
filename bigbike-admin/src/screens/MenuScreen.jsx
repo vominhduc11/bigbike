@@ -22,6 +22,7 @@ import {
   updateMenuItem,
 } from '../lib/adminApi'
 import { normalizeMenu } from '../lib/contracts'
+import { useContentLang } from '../lib/contentLang'
 import { showConfirm } from '../lib/confirm'
 import { formatText } from '../lib/formatters'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
@@ -281,7 +282,7 @@ function ItemForm({ value, onChange, parentOptions, t, isNew }) {
   )
 }
 
-function SortableMenuItem({ item, parentLabel, rootLabel, canUpdate, onEdit, onDelete, isDeleting }) {
+function SortableMenuItem({ item, displayLabel, parentLabel, rootLabel, canUpdate, onEdit, onDelete, isDeleting }) {
   const isInactive = item.status === 'INACTIVE'
 
   return (
@@ -309,7 +310,7 @@ function SortableMenuItem({ item, parentLabel, rootLabel, canUpdate, onEdit, onD
           {item.depth > 0 && (
             <span className="menu-item-depth">L{item.depth + 1}</span>
           )}
-          <span className="menu-item-name">{item.label}</span>
+          <span className="menu-item-name">{displayLabel ?? item.label}</span>
           {isInactive && <span className="menu-item-badge-inactive">Ẩn</span>}
         </div>
       </td>
@@ -343,6 +344,10 @@ function SortableMenuItem({ item, parentLabel, rootLabel, canUpdate, onEdit, onD
 
 export function MenuScreen({ canUpdate }) {
   const { t } = useTranslation()
+  // Ngôn ngữ NỘI DUNG (nút VI/EN ở header). Chỉ đổi nhãn hiển thị của mục menu;
+  // giao diện admin vẫn cố định tiếng Việt.
+  const contentLang = useContentLang()
+  const pickLabel = (item) => (contentLang === 'en' ? (item?.labelEn || item?.label || '') : (item?.label || ''))
   const queryClient = useQueryClient()
 
   // Tab selection (always one of SYSTEM_SLOTS.location)
@@ -406,6 +411,7 @@ export function MenuScreen({ canUpdate }) {
     return flatMenuItems.filter(
       (item) =>
         item.label.toLowerCase().includes(q) ||
+        (item.labelEn || '').toLowerCase().includes(q) ||
         item.url.toLowerCase().includes(q),
     )
   }, [flatMenuItems, search])
@@ -483,7 +489,7 @@ export function MenuScreen({ canUpdate }) {
     mutationFn: (itemId) => deleteMenuItem(selectedMenuId, itemId),
     onMutate: (itemId) => setDeletingItemId(itemId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['menu-detail', selectedMenuId] }),
-    onError: (e) => toast.error(e.message || t('common.error')),
+    onError: (e) => toast.error(e?.status === 409 ? t('menus.deleteItemConflict') : (e.message || t('common.error'))),
     onSettled: () => setDeletingItemId(null),
   })
 
@@ -545,6 +551,11 @@ export function MenuScreen({ canUpdate }) {
   }
 
   async function handleDeleteItem(itemId) {
+    const childCount = menuItems.filter((i) => sameParent(i.parentId, itemId)).length
+    if (childCount > 0) {
+      toast.error(t('menus.deleteItemHasChildren', { count: childCount }))
+      return
+    }
     const confirmed = await showConfirm(t('menus.deleteItemConfirm'), t('menus.deleteItemTitle'))
     if (!confirmed) return
     deleteItemMutation.mutate(itemId)
@@ -770,7 +781,8 @@ export function MenuScreen({ canUpdate }) {
                           <SortableMenuItem
                             key={item.id}
                             item={item}
-                            parentLabel={item.parentId ? (itemById.get(item.parentId)?.label || t('menus.parentMissing')) : ''}
+                            displayLabel={pickLabel(item)}
+                            parentLabel={item.parentId ? (pickLabel(itemById.get(item.parentId)) || t('menus.parentMissing')) : ''}
                             rootLabel={t('menus.parentRoot')}
                             canUpdate={canUpdate}
                             onEdit={openEditItem}
@@ -829,7 +841,7 @@ export function MenuScreen({ canUpdate }) {
       {/* ── Modal: Edit Item ── */}
       {editItem && (
         <Modal
-          title={`${t('common.edit')}: ${editItem.label}`}
+          title={`${t('common.edit')}: ${pickLabel(editItem)}`}
           onClose={() => { setEditItem(null); setEditItemError('') }}
           footer={
             <>

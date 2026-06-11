@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 /* eslint-disable @next/next/no-img-element */
 
@@ -7,19 +8,24 @@ import Link from "next/link";
  * tiêu đề danh mục + breadcrumb (yoast) bên trái, ảnh minh hoạ bên phải.
  */
 
-export type WpCategoryCrumb = { label: string; href?: string };
+export type WpCategoryCrumb = { label: string; href?: string; labelNode?: ReactNode };
 
 const DEFAULT_BG = "/wp-content/themes/bigbike/images/page-title-bg.png";
 const DEFAULT_ILLUSTRATION = "/wp-content/themes/bigbike/images/mu-bao-hiem.png";
 
 export function WpCategoryHero({
   title,
+  titleNode,
   breadcrumb,
   bgUrl,
   illustrationUrl,
   illustrationAlt,
 }: {
+  /** Tiêu đề dạng text — dùng cho `<h1>` (khi không có titleNode) và alt ảnh minh hoạ. */
   title: string;
+  /** Tiêu đề dạng node (vd `<LText>` để đổi ngôn ngữ ở client); ưu tiên hơn `title` cho `<h1>`. */
+  titleNode?: ReactNode;
+  /** Phần tử dịch được cho từng crumb (vd crumb cuối là tên danh mục/bài). Index khớp `breadcrumb`. */
   breadcrumb: WpCategoryCrumb[];
   bgUrl?: string | null;
   illustrationUrl?: string | null;
@@ -33,17 +39,17 @@ export function WpCategoryHero({
       <div className="container">
         <div className="row align-items-center">
           <div className="col-md-6">
-            <h1 className="">{title}</h1>
+            <h1 className="">{titleNode ?? title}</h1>
             <div className="breadcrumb">
               <ul>
                 {breadcrumb.map((crumb, i) => (
                   <li key={i}>
                     {crumb.href ? (
                       <Link href={crumb.href} className={i === 0 ? "home" : "taxonomy"}>
-                        <span property="name">{crumb.label}</span>
+                        <span property="name">{crumb.labelNode ?? crumb.label}</span>
                       </Link>
                     ) : (
-                      <span property="name">{crumb.label}</span>
+                      <span property="name">{crumb.labelNode ?? crumb.label}</span>
                     )}
                   </li>
                 ))}

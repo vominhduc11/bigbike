@@ -4,9 +4,11 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { WpStaticShell } from "@/components/wp/WpStaticShell";
 import type { WpStaticSidebarItem } from "@/components/wp/WpStaticSidebar";
 import { WpStaticSidebarLayout } from "@/components/wp/WpStaticSidebarLayout";
+import { LHtml, LText, LocalizedContentProvider } from "@/components/i18n/LocalizedContent";
 import { getPageBySlug } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { safeText } from "@/lib/utils/format";
+import { sanitizeRichHtml } from "@/lib/utils/html";
 import { toHomePath } from "@/lib/utils/routes";
 
 // Map URL slug → backend page slug
@@ -39,6 +41,11 @@ const POLICY_META_KEYS: Record<string, { title: string; description: string }> =
 type Props = {
   params: Promise<{ slug: string }>;
 };
+
+// ISR on-demand: trang chính sách (CMS admin quản lý) → KHÔNG prebuild lúc build.
+export async function generateStaticParams() {
+  return [];
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const [{ slug }, locale, t] = await Promise.all([
@@ -89,16 +96,24 @@ export default async function PolicyPage({ params }: Props) {
   // page-static.php: .page-title + #main-content > .container > .row
   // > [.col-md-3 sidebar] + [.col-md-9 > .static-page.wyswyg].
   return (
-    <WpStaticShell
-      title={page.heroTitle ?? pageTitle}
-      heroBgUrl={page.heroImageUrl}
-      breadcrumb={[
-        { label: tBreadcrumb("home"), href: toHomePath() },
-        { label: t("policy.title") },
-        { label: pageTitle },
-      ]}
-    >
-      <WpStaticSidebarLayout sidebarItems={sidebarItems} body={page.body} />
-    </WpStaticShell>
+    <LocalizedContentProvider kind="page" slug={backendSlug}>
+      <WpStaticShell
+        title={page.heroTitle ?? pageTitle}
+        titleNode={<LText field="title">{page.heroTitle ?? pageTitle}</LText>}
+        heroBgUrl={page.heroImageUrl}
+        breadcrumb={[
+          { label: tBreadcrumb("home"), href: toHomePath() },
+          { label: t("policy.title") },
+          { label: pageTitle, labelNode: <LText field="title">{pageTitle}</LText> },
+        ]}
+      >
+        <WpStaticSidebarLayout
+          sidebarItems={sidebarItems}
+          bodyNode={
+            <LHtml field="body" viHtml={sanitizeRichHtml(page.body)} className="static-page wyswyg" />
+          }
+        />
+      </WpStaticShell>
+    </LocalizedContentProvider>
   );
 }

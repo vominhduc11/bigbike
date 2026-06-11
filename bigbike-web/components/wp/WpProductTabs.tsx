@@ -1,10 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { MobilePdpAnchorNav, type AnchorNavItem } from "@/components/catalog/MobilePdpAnchorNav";
 import { cn } from "@/lib/utils";
 
-export type WpTab = { id: string; label: string; content: React.ReactNode };
+/** `labelKey` (key trong namespace Product.tabs) ưu tiên hơn `label` — cho phép đổi
+ *  ngôn ngữ ở client; `label` là fallback (vd tab động không có key). */
+export type WpTab = { id: string; label: string; labelKey?: string; content: React.ReactNode };
+
+/** Mục neo phụ — `labelKey` (Product.tabs) ưu tiên hơn `label` để đổi ngôn ngữ. */
+export type WpAnchorExtra = { id: string; label?: string; labelKey?: string };
 
 /** Tabs sản phẩm (Mô tả / Thông số / FAQ) — DOM/class WP, toggle bằng React.
  *
@@ -22,10 +28,16 @@ export function WpProductTabs({
   tabs: WpTab[];
   /** Mục neo phụ ngoài hệ tab (vd. section Đánh giá nằm dưới khối tab) — chỉ thêm
    *  vào thanh nav nổi mobile để cuộn nhanh tới, không tạo thêm panel tab. */
-  anchorExtras?: AnchorNavItem[];
+  anchorExtras?: WpAnchorExtra[];
 }) {
+  const tt = useTranslations("Product.tabs");
   const [active, setActive] = useState(tabs[0]?.id ?? "");
   if (tabs.length === 0) return null;
+
+  // Nhãn đổi theo ngôn ngữ ở client: ưu tiên labelKey (Product.tabs), fallback label tĩnh.
+  const labelOf = (item: { label?: string; labelKey?: string }) =>
+    item.labelKey ? tt(item.labelKey) : item.label ?? "";
+  const resolvedTabs = tabs.map((t) => ({ ...t, text: labelOf(t) }));
 
   // mt-[80px]: KHÔNG dùng WP `.mt-80` (margin 80px !important ở mọi breakpoint —
   // để hở khoảng trống lớn xấu trên mobile). Dùng arbitrary để override được:
@@ -36,7 +48,7 @@ export function WpProductTabs({
       {/* Tab nav ngang — chỉ desktop. Mobile ẩn: các panel xếp dọc bên dưới. */}
       <div className="tabs-nav max-md:hidden">
         <ul className="nav nav-tabs" role="tablist">
-          {tabs.map((t) => (
+          {resolvedTabs.map((t) => (
             <li className="nav-item" key={t.id}>
               <a
                 href={`#${t.id}`}
@@ -49,18 +61,18 @@ export function WpProductTabs({
                   setActive(t.id);
                 }}
               >
-                <span data-text={t.label}>{t.label}</span>
+                <span data-text={t.text}>{t.text}</span>
               </a>
             </li>
           ))}
         </ul>
       </div>
       <div className="tabs-content">
-        {tabs.map((t) => (
+        {resolvedTabs.map((t) => (
           <div
             key={t.id}
             id={t.id}
-            data-label={t.label}
+            data-label={t.text}
             className={cn(
               "tab-panel fade wyswyg",
               active === t.id && "show active",
@@ -83,9 +95,9 @@ export function WpProductTabs({
           "Tổng quan" trỏ về khối mua hàng (#pdp-overview) — giống code cũ. */}
       <MobilePdpAnchorNav
         items={[
-          { id: "pdp-overview", label: "Tổng quan" },
-          ...tabs.map((t) => ({ id: t.id, label: t.label })),
-          ...anchorExtras,
+          { id: "pdp-overview", label: tt("overview") },
+          ...resolvedTabs.map((t) => ({ id: t.id, label: t.text })),
+          ...anchorExtras.map((a): AnchorNavItem => ({ id: a.id, label: labelOf(a) })),
         ]}
         triggerSelector=".bb-wp-pdp"
       />

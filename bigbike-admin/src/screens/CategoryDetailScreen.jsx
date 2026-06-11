@@ -14,6 +14,7 @@ import {
 } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import { formatDateTime, formatRelativeTime } from '../lib/formatters'
+import { useContentLang } from '../lib/contentLang'
 import { createCategorySchema, zodErrors } from '../lib/schemas'
 import { StatePanel } from '../components/StatePanel'
 import { PublishStatusBadge, StatusBadge } from '../components/StatusBadge'
@@ -143,8 +144,9 @@ function toPayload(form) {
 }
 
 export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, canUpdate }) {
-  const { t, i18n } = useTranslation()
-  const isEnLang = i18n.language === 'en'
+  const { t } = useTranslation()
+  const contentLang = useContentLang()
+  const isEnLang = contentLang === 'en'
   const queryClient = useQueryClient()
   const [form, setForm] = useState(buildEmptyForm)
   const [initialSnapshot, setInitialSnapshot] = useState(JSON.stringify(buildEmptyForm()))
@@ -164,7 +166,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
   })
 
   const { data: categoriesResult } = useQuery({
-    queryKey: ['categories', 'tree'],
+    queryKey: ['categories', 'tree', contentLang],
     queryFn: () => fetchCategoryTree(),
   })
 
@@ -607,7 +609,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
               <div className="form-field" style={{ gridColumn: '1 / -1' }}>
                 <span>{t('categories.detail.description')}</span>
                 <RichTextEditor
-                  key={`description-${i18n.language}`}
+                  key={`description-${contentLang}`}
                   value={isEnLang ? (form.translations?.en?.description ?? '') : form.description}
                   onChange={(html) => isEnLang ? updateTranslation('description', html) : updateField('description', html)}
                   placeholder={t('categories.descriptionPlaceholder')}

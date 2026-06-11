@@ -2,9 +2,9 @@
 
 import { Globe } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
-import { LOCALES, LOCALE_COOKIE, type Locale } from "@/i18n/locale";
+import { LOCALES, type Locale } from "@/i18n/locale";
+import { useSetLocale } from "@/components/providers/ClientIntlProvider";
 import { iconBtn } from "@/lib/ui-classes";
 import { cn } from "@/lib/utils";
 
@@ -39,18 +39,11 @@ const dropdownPanelOpen =
 export function LanguageSwitcher({ variant = "icon" }: { variant?: "icon" | "inline" }) {
   const t = useTranslations("Language");
   const locale = useLocale() as Locale;
-  const router = useRouter();
+  const setLocale = useSetLocale();
   const [isPending, startTransition] = useTransition();
-  const [queuedLocale, setQueuedLocale] = useState<Locale | null>(null);
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    if (!queuedLocale || queuedLocale === locale) return;
-    document.cookie = `${LOCALE_COOKIE}=${queuedLocale}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
-    startTransition(() => router.refresh());
-  }, [locale, queuedLocale, router]);
 
   useEffect(() => {
     if (!open) return;
@@ -65,8 +58,9 @@ export function LanguageSwitcher({ variant = "icon" }: { variant?: "icon" | "inl
 
   function selectLocale(next: Locale) {
     if (next === locale || isPending) return;
-    setQueuedLocale(next);
     setOpen(false);
+    // Đổi ngôn ngữ ngay ở client (ghi cookie + swap message) — không reload/round-trip server.
+    startTransition(() => setLocale(next));
   }
 
   function handleMouseEnter() {

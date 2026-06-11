@@ -615,5 +615,67 @@ html{font-size:14px}body{font-size:16px;font-family:Barlow,sans-serif}
     padding: 0 20px 0 10px;
 }
 
+/* ===== Stepper số lượng — khung viền rõ cho mọi breakpoint (desktop + mobile) =====
+   WP gốc render +/- trơn không khung, khó nhận ra là nút. Bo viền #cecece, radius 0
+   theo STYLEGUIDE; ẩn spinner mặc định của input[type=number]. Mobile sẽ phóng to
+   touch target 44px ở block @media bên dưới (đặt sau nên đè được lên rule này). */
+.cart-table .table--items-item.quantity .quantity-form{
+  display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;
+  -webkit-box-align:center;-ms-flex-align:center;align-items:center;
+  border:1px solid #cecece}
+.cart-table .table--items-item.quantity button{
+  width:34px;height:34px;line-height:1;font-size:1.286rem}
+.cart-table .table--items-item.quantity input{
+  width:46px;height:34px;font-size:1.143rem;
+  border-left:1px solid #cecece;border-right:1px solid #cecece;
+  -moz-appearance:textfield}
+.cart-table .table--items-item.quantity input::-webkit-outer-spin-button,
+.cart-table .table--items-item.quantity input::-webkit-inner-spin-button{
+  -webkit-appearance:none;margin:0}
+
+/* ===== MOBILE (<768px) — dòng sản phẩm giỏ hàng xuống bố cục dọc =====
+   WP gốc giữ 4 cột nằm ngang ở mọi width nên trên điện thoại tên SP bị bóp sát ô
+   số lượng. Restack thành card dọc: ảnh trái (kéo cao 2 hàng) — thông tin + nút xoá
+   hàng trên — stepper số lượng hàng dưới. Desktop (>=768px) KHÔNG đổi, giữ WP-parity.
+   Theo STYLEGUIDE bigbike-web: breakpoint 767 (legacy WP), touch target >=44px,
+   border #cecece, radius 0. */
+@media (max-width:767px){
+  .cart-table .table--items{
+    display:grid;
+    grid-template-columns:88px minmax(0,1fr) auto;
+    grid-template-areas:
+      "thumb info action"
+      "thumb qty  qty";
+    -webkit-column-gap:16px;column-gap:16px;
+    row-gap:14px;
+    -webkit-box-align:start;-ms-flex-align:start;align-items:start;
+    padding:20px 0;
+  }
+  .cart-table .table--items-item{max-width:none !important;padding:0}
+  .cart-table .table--items-item.thumbnail{grid-area:thumb}
+  .cart-table .table--items-item.thumbnail img{width:100%;height:auto;margin-right:0}
+  .cart-table .table--items-item.cart-information{grid-area:info;padding-left:0}
+  .cart-table .table--items-item.action{grid-area:action;-ms-flex-item-align:start;align-self:start}
+  .cart-table .table--items-item.quantity{grid-area:qty}
+
+  /* Stepper: khung viền rõ + touch target 44px theo STYLEGUIDE */
+  .cart-table .table--items-item.quantity .quantity-form{
+    display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;
+    -webkit-box-align:center;-ms-flex-align:center;align-items:center;
+    border:1px solid #cecece}
+  .cart-table .table--items-item.quantity button{
+    width:44px;height:44px;line-height:1;font-size:1.5rem}
+  .cart-table .table--items-item.quantity input{
+    width:52px;height:44px;font-size:1.143rem;
+    border-left:1px solid #cecece;border-right:1px solid #cecece}
+
+  /* Hai nút cuối giỏ (tiếp tục mua / thanh toán) xếp dọc full-width thay vì chen ngang */
+  .cart-table .check-out .row.align-items-center .col,
+  .cart-table .check-out .row.align-items-center .col.text-right{
+    -webkit-box-flex:0;-ms-flex:0 0 100%;flex:0 0 100%;max-width:100%;text-align:center !important}
+  .cart-table .check-out .btn-continue-shopping{display:block;margin-bottom:12px}
+  .cart-table .check-out .btn-submit{display:block}
+}
+
 /* Giữ lại override quan trọng cuối cùng (cart.css không đụng nhưng tái khẳng định) */
 .bb-main{padding-top:0 !important}

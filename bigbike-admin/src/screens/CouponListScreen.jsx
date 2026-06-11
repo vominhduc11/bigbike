@@ -90,13 +90,17 @@ export function CouponListScreen({ canUpdate }) {
     setQuery((prev) => ({ ...prev, search: debouncedSearch, page: 1 }))
   }, [debouncedSearch])
 
+  // Load active coupons whenever the bulk-send panel opens. The panel unmounts
+  // on close (see `{bulkOpen && ...}` below), so closed-state reset isn't needed
+  // here — the close handlers clear the selection instead.
   useEffect(() => {
-    if (!bulkOpen) { setBulkCoupon(null); setBulkCoupons([]); setBulkConfirm(false); return }
-    setBulkCouponsLoading(true)
+    if (!bulkOpen) return
+    let cancelled = false
     fetchCoupons({ status: 'ACTIVE', page: 1, pageSize: 100, search: '' })
-      .then((r) => setBulkCoupons(r.items ?? []))
-      .catch(() => setBulkCoupons([]))
-      .finally(() => setBulkCouponsLoading(false))
+      .then((r) => { if (!cancelled) setBulkCoupons(r.items ?? []) })
+      .catch(() => { if (!cancelled) setBulkCoupons([]) })
+      .finally(() => { if (!cancelled) setBulkCouponsLoading(false) })
+    return () => { cancelled = true }
   }, [bulkOpen])
 
   const handleToggleStatus = useCallback(async (coupon) => {
@@ -112,7 +116,7 @@ export function CouponListScreen({ canUpdate }) {
 
   const handleDelete = useCallback(async (coupon) => {
     const confirmed = await showConfirm(
-      `Xóa vĩnh viễn mã "${coupon.code}"?\nThao tác không thể hoàn tác.`,
+      `Xóa vĩnh viễn mã "${coupon.code}"?\nThao tác không thể hoàn tác.\nNếu mã đã từng được dùng trong đơn hàng thì không xóa được — hãy dùng nút "Ngưng" thay vì xóa.`,
       'Xóa mã giảm giá',
     )
     if (!confirmed) return
@@ -121,7 +125,10 @@ export function CouponListScreen({ canUpdate }) {
       setState((p) => ({ ...p, items: p.items.filter((c) => c.id !== coupon.id) }))
       toast.success(`Đã xóa mã ${coupon.code}.`)
     } catch (e) {
-      toast.error(e.message || t('common.error'))
+      const msg = e?.status === 409
+        ? `Không thể xóa mã "${coupon.code}" vì đã được dùng trong đơn hàng. Hãy dùng nút "Ngưng" để ngừng áp dụng mã, thay vì xóa (giữ lịch sử đơn hàng).`
+        : (e.message || t('common.error'))
+      toast.error(msg)
     }
   }, [t])
 
@@ -202,10 +209,7 @@ export function CouponListScreen({ canUpdate }) {
     try {
       const result = await sendBulkCouponGift({ couponId: bulkCoupon.id })
       toast.success(`Đã gửi mã cho ${result?.sent ?? '?'} khách hàng. Bỏ qua: ${result?.skipped ?? 0}.`)
-      setBulkOpen(false)
-      setBulkCoupon(null)
-      setBulkCoupons([])
-      setBulkConfirm(false)
+      closeBulkPanel()
       setQuery((p) => ({ ...p }))
     } catch (err) {
       toast.error(err.message || 'Gửi mã thất bại.')
@@ -213,6 +217,15 @@ export function CouponListScreen({ canUpdate }) {
     } finally {
       setBulkSaving(false)
     }
+  }
+
+  // Close the bulk-send panel and clear its selection so the next open starts
+  // fresh. Centralized here so reset lives with the close action, not in an effect.
+  function closeBulkPanel() {
+    setBulkOpen(false)
+    setBulkCoupon(null)
+    setBulkCoupons([])
+    setBulkConfirm(false)
   }
 
   function updateQuery(partial, options = { resetPage: false }) {
@@ -239,21 +252,21 @@ export function CouponListScreen({ canUpdate }) {
             <button
               type="button"
               className="bb-btn bb-btn-secondary"
-              onClick={() => { setPickerOpen(true); setBulkOpen(false); setShowForm(false) }}
+              onClick={() => { setPickerOpen(true); closeBulkPanel(); setShowForm(false) }}
             >
               <Send size={14} />Gửi mã theo nhóm
             </button>
             <button
               type="button"
               className="bb-btn bb-btn-secondary"
-              onClick={() => { setBulkOpen(!bulkOpen); setBulkConfirm(false); setShowForm(false) }}
+              onClick={() => { if (bulkOpen) { closeBulkPanel() } else { setBulkOpen(true); setBulkConfirm(false); setBulkCouponsLoading(true) } setShowForm(false) }}
             >
               <Send size={14} />{bulkOpen ? t('common.cancel') : 'Gửi mã hàng loạt'}
             </button>
             <button
               type="button"
               className="bb-btn bb-btn-primary"
-              onClick={() => { setShowForm(!showForm); setBulkOpen(false) }}
+              onClick={() => { setShowForm(!showForm); closeBulkPanel() }}
             >
               <Plus size={14} />{showForm ? t('common.cancel') : t('coupons.createBtn')}
             </button>
@@ -354,7 +367,7 @@ export function CouponListScreen({ canUpdate }) {
               <button
                 type="button"
                 className="bb-btn bb-btn-secondary"
-                onClick={() => setBulkOpen(false)}
+                onClick={() => closeBulkPanel()}
                 disabled={bulkSaving}
               >
                 Hủy

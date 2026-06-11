@@ -131,26 +131,39 @@ export function DashboardScreen({ navigate }) {
     { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' },
   )
 
+  // Số liệu vận hành (doanh thu, công nợ, tồn thấp, trả hàng chờ) cần tươi mà không cần
+  // instant → polling định kỳ 90s + làm mới khi admin quay lại tab. Refetch chạy nền,
+  // không show loading lại (refetchInterval mặc định không bật loading state).
+  const DASHBOARD_REFRESH_MS = 90_000
+
   const { data: dashResult, isLoading, isError, refetch } = useQuery({
     queryKey: ['dashboard', period],
     queryFn: () => fetchDashboardSummary(period),
     staleTime: 60_000,
+    refetchInterval: DASHBOARD_REFRESH_MS,
+    refetchOnWindowFocus: true,
   })
 
   const { data: arSummary } = useQuery({
     queryKey: ['receivable-summary'],
     queryFn: fetchReceivableSummary,
     staleTime: 60_000,
+    refetchInterval: DASHBOARD_REFRESH_MS,
+    refetchOnWindowFocus: true,
   })
   const { data: invSummary } = useQuery({
     queryKey: ['inventory-summary'],
     queryFn: fetchInventorySummary,
     staleTime: 60_000,
+    refetchInterval: DASHBOARD_REFRESH_MS,
+    refetchOnWindowFocus: true,
   })
   const { data: pendingReturns } = useQuery({
     queryKey: ['returns-pending-count'],
     queryFn: () => fetchReturns({ status: 'PENDING', page: 1, pageSize: 1 }),
     staleTime: 60_000,
+    refetchInterval: DASHBOARD_REFRESH_MS,
+    refetchOnWindowFocus: true,
   })
 
   const state = {

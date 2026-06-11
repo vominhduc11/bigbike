@@ -970,7 +970,10 @@ export function RolesScreen({ canUpdate = false, currentUserRoles = [] }) {
       setDeletingRole(null)
       setToast({ kind: 'success', msg: t('roles.deleteRoleSuccess', { name: deletedName }) })
     } catch (e) {
-      setToast({ kind: 'error', msg: e.message || t('roles.deleteRoleError') })
+      const msg = e?.status === 409
+        ? t('roles.deleteRoleConflict')
+        : (e.message || t('roles.deleteRoleError'))
+      setToast({ kind: 'error', msg })
     } finally {
       setDeleteSaving(false)
     }

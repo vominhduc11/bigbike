@@ -1,9 +1,9 @@
-import { PRODUCT_SORT_VALUES } from "@/lib/api/public-api";
 import type { WpCategoryFilterState } from "@/components/wp/WpCategorySidebar";
 import {
   DEFAULT_PRODUCT_PAGE_SIZE as DEFAULT_PAGE_SIZE,
   DEFAULT_PRODUCT_SORT as DEFAULT_SORT,
   PRICE_PARAM_MAX,
+  PRODUCT_SORT_VALUES,
 } from "@/lib/constants/catalog";
 import {
   DEFAULT_WP_ORDERBY,

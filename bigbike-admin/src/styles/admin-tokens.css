@@ -21,6 +21,9 @@
   /* "Selected" surfaces follow primary (orange), not brand red */
   --admin-color-surface-selected: var(--admin-color-primary-subtle);
 
+  /* ─── Rating stars ───────────────────────────────────────────────────── */
+  --admin-color-rating-star: #fbbf24;
+
   /* ─── Rank badges (top-products) ─────────────────────────────────────── */
   --admin-rank-1-bg:   #fef3c7;
   --admin-rank-1-text: #d97706;
