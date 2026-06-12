@@ -1,4 +1,4 @@
-import type { Article, Brand, Category, Product } from "@/lib/contracts/public";
+import type { Article, Brand, Category, Product, VideoAsset } from "@/lib/contracts/public";
 import {
   toArticleListPath,
   toArticlePath,
@@ -59,6 +59,60 @@ export function buildProductJsonLd(product: Product): JsonLdObject {
     category: product.category?.name || undefined,
     url: canonicalUrl,
     offers,
+    // CHỈ khai aggregateRating khi có review khách thật (ratingCount > 0). Không
+    // bao giờ khai khống — vi phạm guideline Google (checklist #23).
+    aggregateRating: buildAggregateRating(product),
+    // Trọng lượng (V175) cho rich result Product.
+    weight: buildWeight(product.weightGrams),
+    // Ưu/Nhược điểm (V175) — pros & cons rich result.
+    positiveNotes: buildNotesList(product.positiveNotes),
+    negativeNotes: buildNotesList(product.negativeNotes),
+  };
+}
+
+function buildWeight(weightGrams: Product["weightGrams"]): JsonLdObject | undefined {
+  if (typeof weightGrams !== "number" || !Number.isFinite(weightGrams) || weightGrams <= 0) {
+    return undefined;
+  }
+  return {
+    "@type": "QuantitativeValue",
+    value: weightGrams,
+    unitCode: "GRM",
+  };
+}
+
+function buildNotesList(notes: { content: string }[] | undefined): JsonLdObject | undefined {
+  const items = (notes ?? [])
+    .map((note) => note?.content?.trim())
+    .filter((content): content is string => Boolean(content));
+  if (items.length === 0) {
+    return undefined;
+  }
+  return {
+    "@type": "ItemList",
+    itemListElement: items.map((content, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: content,
+    })),
+  };
+}
+
+function buildAggregateRating(product: Product): JsonLdObject | undefined {
+  const rating = product.rating;
+  const count = product.ratingCount;
+  if (typeof rating !== "number" || !Number.isFinite(rating) || rating <= 0) {
+    return undefined;
+  }
+  if (typeof count !== "number" || !Number.isFinite(count) || count <= 0) {
+    return undefined;
+  }
+  return {
+    "@type": "AggregateRating",
+    ratingValue: rating,
+    reviewCount: count,
+    bestRating: 5,
+    worstRating: 1,
   };
 }
 
@@ -94,7 +148,19 @@ export function buildBreadcrumbJsonLd(product: Product): JsonLdObject {
     },
   ];
 
-  if (product.category?.name && product.category.slug) {
+  // Mirror đúng breadcrumb hiển thị trên PDP: ưu tiên thương hiệu, nếu không có
+  // thì dùng danh mục (bỏ qua "chua-phan-loai"). Schema phải khớp UI (yêu cầu Google).
+  if (product.brand?.name && product.brand.slug) {
+    items.push({
+      position: items.length + 1,
+      name: product.brand.name,
+      item: toCanonicalUrl(toBrandPath(product.brand.slug)),
+    });
+  } else if (
+    product.category?.name &&
+    product.category.slug &&
+    product.category.slug !== "chua-phan-loai"
+  ) {
     items.push({
       position: items.length + 1,
       name: product.category.name,
@@ -335,4 +401,46 @@ export function buildFaqPageJsonLd(faqs: { question: string; answer: string }[])
       },
     })),
   };
+}
+
+/**
+ * VideoObject cho các video nhúng trong gallery PDP (checklist #20). Mỗi video
+ * cần thumbnailUrl + uploadDate để Google chấp nhận — thiếu thumbnail thì bỏ qua
+ * video đó thay vì khai schema lỗi. uploadDate dùng ngày tạo sản phẩm làm proxy
+ * (không có ngày upload video riêng). YouTube → embedUrl; nguồn khác → contentUrl.
+ */
+export function buildVideoObjectsJsonLd(videos: VideoAsset[], product: Product): JsonLdObject[] {
+  const fallbackThumb = product.image?.url ?? product.gallery?.[0]?.url;
+  const uploadDate = product.createdAt;
+
+  return (videos ?? [])
+    .map((video): JsonLdObject | null => {
+      const url = video?.url?.trim();
+      if (!url) return null;
+
+      const thumbnailUrl = video.thumbnail?.url ?? fallbackThumb;
+      if (!thumbnailUrl) return null;
+
+      const name = video.title?.trim() || product.name;
+      const embedUrl = toVideoEmbedUrl(url);
+
+      return {
+        "@context": "https://schema.org",
+        "@type": "VideoObject",
+        name,
+        description: video.description?.trim() || video.title?.trim() || product.shortDescription || product.name,
+        thumbnailUrl: [thumbnailUrl],
+        uploadDate,
+        embedUrl,
+        contentUrl: embedUrl ? undefined : url,
+      };
+    })
+    .filter((item): item is JsonLdObject => item !== null);
+}
+
+function toVideoEmbedUrl(url: string): string | undefined {
+  const match = url.match(
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]{11})/,
+  );
+  return match ? `https://www.youtube.com/embed/${match[1]}` : undefined;
 }

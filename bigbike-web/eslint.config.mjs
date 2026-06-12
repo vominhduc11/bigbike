@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored WordPress theme assets (ported markup/bundles) — not our source.
+    "public/**",
   ]),
 ]);
 

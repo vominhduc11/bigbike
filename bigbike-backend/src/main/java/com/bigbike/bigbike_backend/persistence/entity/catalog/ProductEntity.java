@@ -153,6 +153,22 @@ public class ProductEntity {
     @Column(name = "installation_guide", columnDefinition = "text")
     private String installationGuide;
 
+    // Template SEO fields (V175). 1 ngôn ngữ (fallback VI như giá/SKU); detail-only.
+    @Column(name = "warranty_months")
+    private Integer warrantyMonths;
+
+    @Column(name = "warranty_scope", columnDefinition = "text")
+    private String warrantyScope;
+
+    @Column(name = "origin_brand_country", length = 120)
+    private String originBrandCountry;
+
+    @Column(name = "origin_manufacture_country", length = 120)
+    private String originManufactureCountry;
+
+    @Column(name = "size_guide", columnDefinition = "text")
+    private String sizeGuide;
+
     /** Structured description blocks (V139). Null for products authored via legacy RichTextEditor. */
     @Convert(converter = DescriptionBlocksConverter.class)
     @JdbcTypeCode(SqlTypes.JSON)
@@ -221,6 +237,9 @@ public class ProductEntity {
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<ProductFaqEntity> faqs;
+
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<ProductHighlightEntity> highlights;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<ProductVariantEntity> variants;

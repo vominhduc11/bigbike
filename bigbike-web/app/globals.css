@@ -77,7 +77,6 @@
   --color-border-default: var(--bb-border-default);
   --color-border-control: var(--bb-border-control);
   --color-border-control-hover: var(--bb-border-control-hover);
-  --color-social-facebook: var(--bb-color-social-facebook);
   --color-surface-dark: var(--bb-bg-surface-dark);
   --color-footer-top: var(--bb-color-footer-top);
 
@@ -1280,6 +1279,12 @@ body {
   position: relative;
   flex-shrink: 0;
 }
+
+/* wp-theme-home.css còn bộ rule `#main-banner .swiper-container .swiper-slide a`
+   viết cho markup WP gốc (ảnh nền trên <a>, <img> bị ẩn/ép width:auto) làm vỡ
+   banner <img>. HeroSlider KHÔNG còn đặt id="main-banner" nên các rule `#main-banner`
+   đó không khớp — link/img lấp đầy khung qua Tailwind `w-full h-full object-cover`,
+   không cần override !important. */
 
 /* -- Products Section ------------------------------------ */
 .bb-products-section {
@@ -3170,13 +3175,6 @@ body:has(.bb-search-results-page) {
 
 .bb-home .text-center {
   text-align: center;
-}
-
-.bb-home #main-banner .swiper,
-.bb-home #main-banner .swiper-container,
-.bb-home #main-banner .swiper-wrapper,
-.bb-home #main-banner .swiper-slide {
-  height: 100%;
 }
 
 .bb-home .about-bigbike .block-content p {

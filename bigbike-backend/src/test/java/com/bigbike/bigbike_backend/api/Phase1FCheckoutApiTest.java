@@ -14,6 +14,7 @@ import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductSerialEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.StockMovementEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartEntity;
 import com.bigbike.bigbike_backend.persistence.entity.coupon.CouponEntity;
 import com.bigbike.bigbike_backend.persistence.entity.shipping.ShippingMethodEntity;
@@ -23,6 +24,7 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.OrderLineItemS
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductSerialJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.StockMovementJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLineItemJpaRepository;
@@ -79,6 +81,7 @@ class Phase1FCheckoutApiTest {
     @Autowired OrderLineItemSerialJpaRepository olisRepo;
     @Autowired OrderLineItemJpaRepository lineItemRepo;
     @Autowired ProductVariantJpaRepository variantRepo;
+    @Autowired StockMovementJpaRepository stockMovementRepo;
 
     private MockMvc mockMvc;
     private final java.util.List<UUID> testShippingMethodIds = new java.util.ArrayList<>();
@@ -537,6 +540,201 @@ class Phase1FCheckoutApiTest {
 
         UUID lineItemId = lineItemRepo.findByOrderId(orderId).get(0).getId();
         assertThat(olisRepo.findByOrderLineItemId(lineItemId)).hasSize(1);
+    }
+
+    // ── Cart-checkout stock for migrated wp-* catalog — V176 regression guard ─────
+    // Before V176: cart_items had no product_variant_pk and CheckoutService keyed on the UUID
+    // product_id/product_variant_id, which are null for wp-* string-PK catalog. Both the validate
+    // and the apply pass skipped wp-* cart lines → order created with NO stock decrement/reservation
+    // (silent oversell), and two distinct wp-* products collapsed onto one cart line.
+
+    @Test
+    void checkoutFromCart_wpVariantNonSerial_decrementsVariantStock_andWritesOutMovement() throws Exception {
+        ProductEntity product = createWpProduct("WP Variant NonSerial", 6000000);
+        ProductVariantEntity variant = createWpVariant(product, /*qoh*/ 5, /*serial*/ false, 6000000);
+        GuestSession session = newGuestSession();
+        addVariantToGuestCart(session, product.getId(), variant.getId(), 2);
+
+        MvcResult result = mockMvc.perform(post("/api/v1/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isOk())
+                .andReturn();
+        UUID orderId = UUID.fromString(extractJsonValue(result.getResponse().getContentAsString(), "id"));
+
+        assertThat(variantRepo.findById(variant.getId()).orElseThrow().getQuantityOnHand())
+                .as("wp-* variant stock must decrement 5 -> 3 on cart checkout")
+                .isEqualTo(3);
+
+        List<StockMovementEntity> movements =
+                stockMovementRepo.findByReferenceTypeAndReferenceId("ORDER", orderId);
+        assertThat(movements).hasSize(1);
+        assertThat(movements.get(0).getMovementType()).isEqualTo("OUT");
+        assertThat(movements.get(0).getQuantityDelta()).isEqualTo(-2);
+
+        // Order line must snapshot the variant string PK so restore stays symmetric.
+        assertThat(lineItemRepo.findByOrderId(orderId).get(0).getProductVariantPk())
+                .isEqualTo(variant.getId());
+    }
+
+    @Test
+    void checkoutFromCart_wpVariantSerial_reservesSerialAndCreatesBridge() throws Exception {
+        ProductEntity product = createWpProduct("WP Variant Serial", 6500000);
+        ProductVariantEntity variant = createWpVariant(product, /*qoh*/ 0, /*serial*/ true, 6500000);
+        createInStockSerialForWpVariant(product, variant, "WPVAR-SER-A-" + UUID.randomUUID());
+        createInStockSerialForWpVariant(product, variant, "WPVAR-SER-B-" + UUID.randomUUID());
+        GuestSession session = newGuestSession();
+        addVariantToGuestCart(session, product.getId(), variant.getId(), 1);
+
+        MvcResult result = mockMvc.perform(post("/api/v1/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isOk())
+                .andReturn();
+        UUID orderId = UUID.fromString(extractJsonValue(result.getResponse().getContentAsString(), "id"));
+
+        assertThat(serialRepo.countByVariant_IdAndStatus(variant.getId(), ProductSerialStatus.RESERVED))
+                .as("exactly one wp-* variant serial reserved on cart checkout").isEqualTo(1);
+        assertThat(serialRepo.countByVariant_IdAndStatus(variant.getId(), ProductSerialStatus.IN_STOCK))
+                .as("the other serial stays IN_STOCK").isEqualTo(1);
+
+        UUID lineItemId = lineItemRepo.findByOrderId(orderId).get(0).getId();
+        assertThat(olisRepo.findByOrderLineItemId(lineItemId)).hasSize(1);
+    }
+
+    @Test
+    void cartAdd_twoDistinctWpProducts_doNotMerge() throws Exception {
+        ProductEntity a = createWpProduct("WP Merge A", 1000000);
+        ProductEntity b = createWpProduct("WP Merge B", 2000000);
+        GuestSession session = newGuestSession();
+        addProductToGuestCart(session, a.getId(), 1);
+        addProductToGuestCart(session, b.getId(), 1);
+
+        // Two distinct wp-* products (both UUID columns null) must remain two separate cart lines.
+        mockMvc.perform(get("/api/v1/cart").cookie(session.cookies))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.items.length()").value(2));
+    }
+
+    @Test
+    void cartAdd_sameWpVariantTwice_mergesToSingleLine() throws Exception {
+        ProductEntity product = createWpProduct("WP Merge Same", 1200000);
+        ProductVariantEntity variant = createWpVariant(product, /*qoh*/ 10, false, 1200000);
+        GuestSession session = newGuestSession();
+        addVariantToGuestCart(session, product.getId(), variant.getId(), 1);
+        addVariantToGuestCart(session, product.getId(), variant.getId(), 2);
+
+        // Same wp-* product+variant must dedup onto one line (qty 1+2=3), keyed on the varchar PK.
+        mockMvc.perform(get("/api/v1/cart").cookie(session.cookies))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.items.length()").value(1))
+                .andExpect(jsonPath("$.data.items[0].quantity").value(3));
+    }
+
+    @Test
+    void checkoutFromCart_wpVariant_insufficientStock_returns409_andDoesNotDecrement() throws Exception {
+        ProductEntity product = createWpProduct("WP Oversell Guard", 5500000);
+        ProductVariantEntity variant = createWpVariant(product, /*qoh*/ 3, false, 5500000);
+        GuestSession session = newGuestSession();
+        addVariantToGuestCart(session, product.getId(), variant.getId(), 2); // 2 <= 3 → accepted at cart
+
+        // Stock drops below the cart quantity after it was added (concurrent buyer / admin adjustment).
+        variant.setQuantityOnHand(1);
+        variantRepo.save(variant);
+
+        // Before V176 the wp-* line was skipped by stock validation → order created with no decrement.
+        // Now it must be revalidated and rejected, leaving stock untouched.
+        mockMvc.perform(post("/api/v1/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isConflict());
+
+        assertThat(variantRepo.findById(variant.getId()).orElseThrow().getQuantityOnHand())
+                .as("rejected checkout must not decrement wp-* variant stock").isEqualTo(1);
+    }
+
+    @Test
+    void cartUpdateQuantity_wpVariant_beyondStock_returns409() throws Exception {
+        ProductEntity product = createWpProduct("WP Update Qty Guard", 1300000);
+        ProductVariantEntity variant = createWpVariant(product, /*qoh*/ 2, false, 1300000);
+        GuestSession session = newGuestSession();
+        MvcResult add = mockMvc.perform(post("/api/v1/cart/items")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"productId\":\"" + product.getId() + "\",\"productVariantId\":\""
+                                + variant.getId() + "\",\"quantity\":1}")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isOk())
+                .andReturn();
+        String itemId = extractItemId(add.getResponse().getContentAsString(), 0);
+
+        // Before V176 the wp-* line's UUID was null → updateItemQuantity skipped re-validation and
+        // accepted any quantity. Now it resolves by varchar PK and rejects qty above available stock.
+        mockMvc.perform(patch("/api/v1/cart/items/" + itemId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"quantity\":5}")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void cart_wpProductUnpublishedAfterAdd_isMarkedUnavailable() throws Exception {
+        ProductEntity product = createWpProduct("WP Unavailable Flag", 1500000);
+        GuestSession session = newGuestSession();
+        addProductToGuestCart(session, product.getId(), 1);
+
+        // Hidden after it was added. findUnavailableItemIds must flag the wp-* line (resolved by
+        // product_pk); before V176 it keyed on the null UUID column and left the item "available".
+        product.setPublishStatus(PublishStatus.DRAFT);
+        productRepo.save(product);
+
+        mockMvc.perform(get("/api/v1/cart").cookie(session.cookies))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.items.length()").value(1))
+                .andExpect(jsonPath("$.data.items[0].available").value(false));
+    }
+
+    @Test
+    void mergeGuestCart_sameWpVariant_dedupsIntoCustomerLine() throws Exception {
+        ProductEntity product = createWpProduct("WP Merge Login", 1700000);
+        ProductVariantEntity variant = createWpVariant(product, /*qoh*/ 10, false, 1700000);
+
+        // Customer registers, logs in, and adds the wp-* variant to their (customer) cart.
+        String email = "wp-merge-" + UUID.randomUUID() + "@bigbike.vn";
+        mockMvc.perform(post("/api/v1/customer/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"" + email + "\",\"password\":\"pass1234\"}"))
+                .andExpect(status().isOk());
+        MvcResult login = mockMvc.perform(post("/api/v1/customer/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"login\":\"" + email + "\",\"password\":\"pass1234\"}"))
+                .andExpect(status().isOk())
+                .andReturn();
+        Cookie[] authCookies = login.getResponse().getCookies();
+        String authCsrf = getCookieValue(login.getResponse(), "bb_csrf");
+        mockMvc.perform(post("/api/v1/cart/items")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"productId\":\"" + product.getId() + "\",\"productVariantId\":\""
+                                + variant.getId() + "\",\"quantity\":1}")
+                        .cookie(authCookies).header("X-CSRF-Token", authCsrf))
+                .andExpect(status().isOk());
+
+        // A guest session adds the SAME wp-* variant.
+        GuestSession guest = newGuestSession();
+        addVariantToGuestCart(guest, product.getId(), variant.getId(), 2);
+        Cookie guestCookie = findCookie(guest.cookies, "bb_guest_id");
+
+        // Authenticated cart resolve carrying the guest cookie → mergeGuestCart. The same variant must
+        // dedup onto the existing customer line by varchar PK (qty 1+2=3), not appear as a second line.
+        Cookie[] merged = new Cookie[authCookies.length + 1];
+        System.arraycopy(authCookies, 0, merged, 0, authCookies.length);
+        merged[authCookies.length] = guestCookie;
+        mockMvc.perform(get("/api/v1/cart").cookie(merged))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.items.length()").value(1))
+                .andExpect(jsonPath("$.data.items[0].quantity").value(3));
     }
 
     // ── Cart serial-aware quantity validation — Issue 4 regression guard ─────
@@ -1179,6 +1377,65 @@ class Phase1FCheckoutApiTest {
                 .andExpect(status().isOk());
     }
 
+    private void addVariantToGuestCart(GuestSession session, String productId, String variantId, int qty) throws Exception {
+        mockMvc.perform(post("/api/v1/cart/items")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"productId\":\"" + productId + "\",\"productVariantId\":\"" + variantId
+                                + "\",\"quantity\":" + qty + "}")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isOk());
+    }
+
+    /** Migrated WordPress catalog shape: varchar "wp-prod-*" PK, so the UUID column stays null. */
+    private ProductEntity createWpProduct(String name, int retailPrice) {
+        Instant now = Instant.now();
+        ProductEntity product = new ProductEntity();
+        product.setId("wp-prod-" + UUID.randomUUID().toString().replace("-", "").substring(0, 8));
+        product.setSlug("wp-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12));
+        product.setName(name);
+        product.setRetailPrice(java.math.BigDecimal.valueOf(retailPrice));
+        product.setCurrency("VND");
+        product.setPublishStatus(PublishStatus.PUBLISHED);
+        product.setStockState(ProductStockState.IN_STOCK);
+        product.setForceOutOfStock(false);
+        product.setCreatedAt(now);
+        product.setUpdatedAt(now);
+        product.setCategory(categoryRepo.findById(testCategoryId)
+                .orElseThrow(() -> new IllegalStateException("Test category not found")));
+        return productRepo.save(product);
+    }
+
+    /** Migrated variant shape: varchar "wp-var-*" PK, UUID column null. */
+    private ProductVariantEntity createWpVariant(ProductEntity product, int qoh, boolean trackSerials, int retailPrice) {
+        ProductVariantEntity v = new ProductVariantEntity();
+        v.setId("wp-var-" + UUID.randomUUID().toString().replace("-", "").substring(0, 8));
+        v.setProduct(product);
+        v.setName("size: " + (38 + qoh));
+        v.setSku("WP-VAR-" + v.getId().substring(7, 15));
+        v.setRetailPrice(java.math.BigDecimal.valueOf(retailPrice));
+        v.setCurrency("VND");
+        v.setStockState(ProductStockState.IN_STOCK);
+        v.setQuantityOnHand(qoh);
+        v.setAvailable(true);
+        v.setSortOrder(0);
+        v.setTrackSerials(trackSerials);
+        return variantRepo.save(v);
+    }
+
+    private ProductSerialEntity createInStockSerialForWpVariant(
+            ProductEntity product, ProductVariantEntity variant, String serialNumber) {
+        Instant now = Instant.now();
+        ProductSerialEntity serial = new ProductSerialEntity();
+        serial.setProduct(product);
+        serial.setVariant(variant);
+        serial.setSerialNumber(serialNumber);
+        serial.setStatus(ProductSerialStatus.IN_STOCK);
+        serial.setReceivedAt(now);
+        serial.setCreatedAt(now);
+        serial.setUpdatedAt(now);
+        return serialRepo.save(serial);
+    }
+
     private String getCookieValue(MockHttpServletResponse response, String name) {
         Cookie[] cookies = response.getCookies();
         if (cookies == null) return null;
@@ -1186,6 +1443,15 @@ class Phase1FCheckoutApiTest {
             if (name.equals(c.getName())) return c.getValue();
         }
         return null;
+    }
+
+    private Cookie findCookie(Cookie[] cookies, String name) {
+        if (cookies != null) {
+            for (Cookie c : cookies) {
+                if (name.equals(c.getName())) return c;
+            }
+        }
+        throw new IllegalStateException("Cookie not found: " + name);
     }
 
     private String getCookieValue(GuestSession session, String name) {

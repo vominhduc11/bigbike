@@ -5,7 +5,8 @@ import { WpCategoryHero, type WpCategoryCrumb } from "@/components/wp/WpCategory
 import { WpCatalogClient } from "@/components/wp/WpCatalogClient";
 import { LHtml, LText, LocalizedContentProvider } from "@/components/i18n/LocalizedContent";
 import { Tr } from "@/components/i18n/Tr";
-import { getCatalogFacets, getCategoryBySlug, listBrands, listCategories } from "@/lib/api/public-api";
+import { getCatalogFacets, getCategoryBySlug, listBrands, listCategories, listProducts } from "@/lib/api/public-api";
+import { DEFAULT_PRODUCT_PAGE_SIZE, DEFAULT_PRODUCT_SORT } from "@/lib/constants/catalog";
 import { buildCategoryBreadcrumbJsonLd, serializeJsonLd } from "@/lib/seo/json-ld";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { resolveMediaUrl, safeText, toLegacyWpMediaUrl } from "@/lib/utils/format";
@@ -14,9 +15,10 @@ import { toCategoryPath, toHomePath } from "@/lib/utils/routes";
 import { isValidSlug } from "@/lib/utils/slug";
 
 // ISR on-demand: danh mục là dữ liệu admin quản lý → KHÔNG prebuild lúc build. Shell
-// (thông tin danh mục, sidebar) sinh khi truy cập lần đầu + revalidate theo tag
-// category:{slug}/categories/products. Lưới sản phẩm (lọc/phân trang theo searchParams)
-// render ở CLIENT qua WpCatalogClient → trang không phụ thuộc searchParams → tĩnh được.
+// (thông tin danh mục, sidebar) + lưới sản phẩm view MẶC ĐỊNH (page 1, sort mặc định,
+// chưa lọc) đều render ở SERVER + revalidate theo tag category:{slug}/categories/products
+// → nội dung danh mục nằm trong HTML server (SEO). Lọc/sắp xếp/phân trang do client
+// tiếp quản theo searchParams.
 export async function generateStaticParams() {
   return [];
 }
@@ -101,10 +103,11 @@ export default async function CategoryDetailPage({ params }: CategoryDetailPageP
   const category = categoryResult.data;
   // Shell tĩnh theo slug — KHÔNG đọc searchParams (lưới lọc/phân trang nằm ở client).
   // Facets fetch theo category (không kèm q) làm base; lựa chọn "current" tính ở client.
-  const [brandsResult, allCategoriesResult, facetsResult] = await Promise.all([
+  const [brandsResult, allCategoriesResult, facetsResult, productsResult] = await Promise.all([
     listBrands({ page: 1, size: 100, sort: "name:asc", lang: locale }),
     listCategories({ page: 1, size: 100, sort: "sortOrder:asc", lang: locale }),
     getCatalogFacets({ category: category.slug, lang: locale }),
+    listProducts({ page: 1, size: DEFAULT_PRODUCT_PAGE_SIZE, sort: DEFAULT_PRODUCT_SORT, category: category.slug, lang: locale }),
   ]);
 
   const canonicalPath = toCategoryPath(category.slug);
@@ -170,6 +173,8 @@ export default async function CategoryDetailPage({ params }: CategoryDetailPageP
                   ) : undefined
                 }
                 routeCategorySlug={category.slug}
+                initialProducts={productsResult.data}
+                initialPagination={productsResult.pagination}
               />
             </div>
           </div>

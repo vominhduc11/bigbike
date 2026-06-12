@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -130,10 +131,12 @@ public class CartService {
 
         UUID productUuid = tryParseUUID(product.getId());
         UUID variantUuid = (variant != null) ? tryParseUUID(variant.getId()) : null;
+        String variantPk = (variant != null) ? variant.getId() : null;
 
-        // Targeted query — avoids loading all cart items just to find one matching product+variant
+        // Targeted query — avoids loading all cart items just to find one matching product+variant.
+        // Keyed on the varchar PKs (UUID columns are null for migrated wp-* catalog, see V176).
         Optional<CartItemEntity> existing = cartItemRepo
-                .findByCartIdAndProductIdAndProductVariantId(cart.getId(), productUuid, variantUuid);
+                .findByCartIdAndProductPkAndProductVariantPk(cart.getId(), product.getId(), variantPk);
 
         int newQuantity = existing.map(i -> i.getQuantity() + req.quantity()).orElse(req.quantity());
         validateQuantityAgainstStock(product, variant, newQuantity);
@@ -150,6 +153,7 @@ public class CartService {
             item.setProductId(productUuid);
             item.setProductPk(product.getId());
             item.setProductVariantId(variantUuid);
+            item.setProductVariantPk(variantPk);
             item.setSku(variant != null ? variant.getSku() : product.getSku());
             item.setProductName(product.getName());
             item.setVariantName(variant != null ? variant.getName() : null);
@@ -170,11 +174,12 @@ public class CartService {
     @Transactional
     public CartEntity updateItemQuantity(CartEntity cart, UUID itemId, int quantity) {
         CartItemEntity item = findOwnedItem(cart, itemId);
-        if (item.getProductId() != null) {
-            ProductEntity product = productRepo.findById(item.getProductId().toString()).orElse(null);
+        // Resolve by varchar PK so migrated wp-* lines (UUID columns null, see V176) are re-validated too.
+        if (item.getProductPk() != null) {
+            ProductEntity product = productRepo.findById(item.getProductPk()).orElse(null);
             if (product != null) {
-                ProductVariantEntity variant = item.getProductVariantId() != null
-                        ? variantRepo.findById(item.getProductVariantId().toString()).orElse(null)
+                ProductVariantEntity variant = item.getProductVariantPk() != null
+                        ? variantRepo.findById(item.getProductVariantPk()).orElse(null)
                         : null;
                 validateQuantityAgainstStock(product, variant, quantity);
             }
@@ -207,10 +212,10 @@ public class CartService {
 
             List<CartItemEntity> customerItems = cartItemRepo.findByCartId(customerCart.getId());
             for (CartItemEntity guestItem : cartItemRepo.findByCartId(guestCart.getId())) {
-                UUID pId = guestItem.getProductId();
-                UUID vId = guestItem.getProductVariantId();
+                String pPk = guestItem.getProductPk();
+                String vPk = guestItem.getProductVariantPk();
                 Optional<CartItemEntity> existing = customerItems.stream()
-                        .filter(i -> matchesProductVariant(i, pId, vId))
+                        .filter(i -> matchesProductVariant(i, pPk, vPk))
                         .findFirst();
                 if (existing.isPresent()) {
                     CartItemEntity ci = existing.get();
@@ -240,9 +245,10 @@ public class CartService {
     public Set<UUID> findUnavailableItemIds(List<CartItemEntity> items) {
         if (items.isEmpty()) return Set.of();
 
+        // Resolve by varchar PK so migrated wp-* lines (UUID columns null, see V176) are checked too.
         Set<String> productPks = items.stream()
-                .filter(i -> i.getProductId() != null)
-                .map(i -> i.getProductId().toString())
+                .map(CartItemEntity::getProductPk)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
         Map<String, Boolean> productPublished = productRepo.findAllById(productPks).stream()
                 .collect(Collectors.toMap(
@@ -250,8 +256,8 @@ public class CartService {
                         p -> PublishStatus.PUBLISHED == p.getPublishStatus()));
 
         Set<String> variantPks = items.stream()
-                .filter(i -> i.getProductVariantId() != null)
-                .map(i -> i.getProductVariantId().toString())
+                .map(CartItemEntity::getProductVariantPk)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
         Map<String, Boolean> variantEnabled = variantPks.isEmpty() ? Map.of()
                 : variantRepo.findAllById(variantPks).stream()
@@ -261,8 +267,8 @@ public class CartService {
 
         Set<UUID> unavailable = new HashSet<>();
         for (CartItemEntity item : items) {
-            String productPk = item.getProductId() != null ? item.getProductId().toString() : null;
-            String variantPk = item.getProductVariantId() != null ? item.getProductVariantId().toString() : null;
+            String productPk = item.getProductPk();
+            String variantPk = item.getProductVariantPk();
             boolean productOk = productPk == null || Boolean.TRUE.equals(productPublished.get(productPk));
             boolean variantOk = variantPk == null || Boolean.TRUE.equals(variantEnabled.get(variantPk));
             if (!productOk || !variantOk) {
@@ -466,13 +472,13 @@ public class CartService {
         return value != null && !value.isBlank();
     }
 
-    private boolean matchesProductVariant(CartItemEntity item, UUID productUuid, UUID variantUuid) {
-        boolean productMatch = (productUuid == null)
-                ? item.getProductId() == null
-                : productUuid.equals(item.getProductId());
-        boolean variantMatch = (variantUuid == null)
-                ? item.getProductVariantId() == null
-                : variantUuid.equals(item.getProductVariantId());
+    private boolean matchesProductVariant(CartItemEntity item, String productPk, String variantPk) {
+        boolean productMatch = (productPk == null)
+                ? item.getProductPk() == null
+                : productPk.equals(item.getProductPk());
+        boolean variantMatch = (variantPk == null)
+                ? item.getProductVariantPk() == null
+                : variantPk.equals(item.getProductVariantPk());
         return productMatch && variantMatch;
     }
 

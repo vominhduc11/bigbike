@@ -1,5 +1,15 @@
 import { describe, it, expect } from "vitest";
-import { loginSchema, registerSchema, resetPasswordSchema } from "@/lib/schemas/auth";
+import {
+  createLoginSchema,
+  createRegisterSchema,
+  createResetPasswordSchema,
+} from "@/lib/schemas/auth";
+
+// Identity translator — assert on validation logic, not on localized messages.
+const t = (key: string) => key;
+const loginSchema = createLoginSchema(t);
+const registerSchema = createRegisterSchema(t);
+const resetPasswordSchema = createResetPasswordSchema(t);
 
 describe("loginSchema", () => {
   it("validates a correct payload", () => {
@@ -8,20 +18,21 @@ describe("loginSchema", () => {
   });
 
   it("rejects empty login", () => {
-    const result = loginSchema.safeParse({ login: "", password: "secret" });
+    const result = loginSchema.safeParse({ login: "", password: "secret", remember: false });
     expect(result.success).toBe(false);
   });
 
   it("rejects empty password", () => {
-    const result = loginSchema.safeParse({ login: "user@example.com", password: "" });
+    const result = loginSchema.safeParse({ login: "user@example.com", password: "", remember: false });
     expect(result.success).toBe(false);
   });
 });
 
 describe("registerSchema", () => {
   const valid = {
-    firstName: "An",
+    fullName: "An",
     email: "an@example.com",
+    phone: "0912345678",
     password: "12345678",
     confirm: "12345678",
   };

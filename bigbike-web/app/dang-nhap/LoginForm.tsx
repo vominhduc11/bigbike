@@ -12,7 +12,7 @@ import { createLoginSchema, type LoginFormValues } from "@/lib/schemas/auth";
 import { toForgotPasswordPath } from "@/lib/utils/routes";
 import { FormRootError } from "@/components/ui/FormRootError";
 import { WpAuthField } from "@/components/wp/WpAuthField";
-import { SocialLoginButtons } from "./SocialLoginButtons";
+import { SocialLoginButtons } from "@/components/auth/SocialLoginButtons";
 
 /**
  * Form đăng nhập theo theme WP — port `form.login-form` của page-login.php

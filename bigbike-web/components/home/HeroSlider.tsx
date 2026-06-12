@@ -16,9 +16,9 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 const LINK_CLASS =
   "-swiper-lazy bb-main-banner-link relative block w-full h-full text-inherit no-underline";
 const ARROW_BASE =
-  "absolute top-1/2 z-10 inline-flex items-center justify-center p-0 [transform:translateY(-50%)] border-none bg-transparent text-white cursor-pointer [filter:drop-shadow(0_1px_3px_rgba(0,0,0,0.6))] [transition:opacity_0.15s_ease] opacity-100 hover:opacity-75 focus-visible:[outline:2px_solid_rgba(255,255,255,0.7)] focus-visible:[outline-offset:2px] w-[27px] h-[44px]";
+  "absolute top-1/2 z-10 inline-flex items-center justify-center p-0 [transform:translateY(-50%)] border-none bg-transparent text-white cursor-pointer [filter:drop-shadow(0_1px_3px_rgba(0,0,0,0.6))] [transition:opacity_0.15s_ease] opacity-100 hover:opacity-75 focus-visible:[outline:2px_solid_rgba(255,255,255,0.7)] focus-visible:[outline-offset:2px] w-[48px] h-[72px]";
 const ARROW_ICON =
-  "block shrink-0 w-[50px] h-[50px] max-md:w-[40px] max-md:h-[40px]";
+  "block shrink-0 w-[88px] h-[88px] max-md:w-[60px] max-md:h-[60px]";
 
 export type HeroSlide = {
   id: string;
@@ -38,7 +38,8 @@ type HeroSliderProps = {
 /**
  * Swiper v8 can reset the wrapper to display:block after hydration, stacking
  * slides vertically. This enforces the horizontal flex track declaratively.
- * img fills the container via h-full object-cover; container height set on #main-banner.
+ * img fills the container via h-full object-cover; container height set on .bb-main-banner
+ * (Tailwind). KHÔNG đặt id="main-banner" để tránh dính rule WP cũ làm vỡ <img>.
  */
 function enforceHorizontalTrack(swiper: SwiperType | null) {
   if (!swiper?.wrapperEl) return;
@@ -59,13 +60,13 @@ function HeroSlideView({ slide }: { slide: HeroSlide }) {
       .filter(Boolean)
       .join(" - ");
 
+  // Desktop dùng ảnh ngang (desktopSrc), mobile (≤767px) dùng ảnh dọc (mobileSrc)
+  // nếu có. Chuyển bằng <picture><source media> — TỰ CHỨA, không phụ thuộc CSS WP
+  // `#main-banner` (đã gỡ id để tránh rule cũ làm vỡ banner).
   const hasMobileImg = Boolean(slide.mobileSrc && slide.mobileSrc !== slide.desktopSrc);
-
   const picture = (
     <picture className="block w-full h-full">
-      {hasMobileImg && (
-        <source media="(max-width: 767px)" srcSet={slide.mobileSrc} />
-      )}
+      {hasMobileImg && <source media="(max-width: 767px)" srcSet={slide.mobileSrc} />}
       <img
         src={slide.desktopSrc}
         alt={slide.alt}
@@ -94,11 +95,7 @@ function HeroSlideView({ slide }: { slide: HeroSlide }) {
   }
 
   return (
-    <Link
-      href={slide.href}
-      className={LINK_CLASS}
-      aria-label={slideLabel}
-    >
+    <Link href={slide.href} className={LINK_CLASS} aria-label={slideLabel}>
       {picture}
       {copy}
     </Link>
@@ -131,14 +128,13 @@ export function HeroSlider({ slides }: HeroSliderProps) {
 
   return (
     <div
-      id="main-banner"
       className="bb-main-banner relative w-full h-[calc(100vh-200px)] max-md:h-auto max-md:aspect-[411/548] overflow-hidden bg-black"
       aria-roledescription="carousel"
       aria-label="BigBike"
     >
       {mounted ? (
         <Swiper
-          className="swiper-container js-home-banner"
+          className="js-home-banner"
           loop={count > 1}
           onSwiper={(swiper) => {
             swiperRef.current = swiper;
@@ -148,12 +144,12 @@ export function HeroSlider({ slides }: HeroSliderProps) {
             enforceHorizontalTrack(swiper);
             setActiveIndex(swiper.realIndex);
           }}
-          style={{ width: "100%" }}
+          style={{ width: "100%", height: "100%" }}
         >
           {slides.map((slide) => (
             <SwiperSlide
               key={slide.id}
-              style={{ width: "100%" }}
+              style={{ width: "100%", height: "100%" }}
               product-code={slide.productCode || slide.categoryName || "BIGBIKE"}
             >
               <HeroSlideView slide={slide} />

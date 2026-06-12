@@ -38,6 +38,12 @@ public class CartItemEntity {
     @Column(name = "product_variant_id")
     private UUID productVariantId;
 
+    // Varchar PK of the variant (product_variants.id). The variant-side counterpart of productPk:
+    // productVariantId (UUID) is null for migrated wp-* / admin-created variants, so resolution and
+    // stock decrement at checkout key on this instead. See V176.
+    @Column(name = "product_variant_pk", length = 64)
+    private String productVariantPk;
+
     @Column(length = 255)
     private String sku;
 

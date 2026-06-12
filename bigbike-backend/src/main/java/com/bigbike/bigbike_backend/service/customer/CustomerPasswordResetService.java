@@ -159,7 +159,13 @@ public class CustomerPasswordResetService {
         if (login.contains("@")) {
             return customerRepo.findByEmail(login).orElse(null);
         }
-        return customerRepo.findByPhone(login).orElse(null);
+        // Chuẩn hóa SĐT để khớp hồ sơ (nhất quán với đăng ký/đăng nhập); thử thêm biến thể +84 cho hồ sơ cũ.
+        String normalized = com.bigbike.bigbike_backend.util.PhoneNumbers.normalize(login);
+        if (normalized == null) return null;
+        var byNormalized = customerRepo.findByPhone(normalized);
+        if (byNormalized.isPresent()) return byNormalized.get();
+        String intl = com.bigbike.bigbike_backend.util.PhoneNumbers.toInternationalVariant(normalized);
+        return intl != null ? customerRepo.findByPhone(intl).orElse(null) : null;
     }
 
     private static String safeDisplayName(CustomerEntity customer) {

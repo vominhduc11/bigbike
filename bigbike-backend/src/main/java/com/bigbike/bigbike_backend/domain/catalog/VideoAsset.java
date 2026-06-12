@@ -5,7 +5,9 @@ public record VideoAsset(
         String url,
         String title,
         ImageAsset thumbnail,
-        String provider
+        String provider,
+        /** Mô tả 2–3 câu nội dung video (V175) → caption + VideoObject.description. */
+        String description
 ) {
 }
 

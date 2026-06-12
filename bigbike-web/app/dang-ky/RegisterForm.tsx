@@ -11,7 +11,7 @@ import { createRegisterSchema, type RegisterFormValues } from "@/lib/schemas/aut
 import { toAccountPath } from "@/lib/utils/routes";
 import { FormRootError } from "@/components/ui/FormRootError";
 import { WpAuthField } from "@/components/wp/WpAuthField";
-import { SocialLoginButtons } from "@/app/dang-nhap/SocialLoginButtons";
+import { SocialLoginButtons } from "@/components/auth/SocialLoginButtons";
 
 /**
  * Form đăng ký theo theme WP — port `form.form` của page-register.php (lưới

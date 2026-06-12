@@ -8,7 +8,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { WpCategoryPagination } from "@/components/wp/WpCategoryPagination";
 import { LocalDate } from "@/components/i18n/LocalDate";
 import { Skeleton } from "@/components/ui/skeleton";
-import { fetchPublicArticleList } from "@/lib/api/client-api";
+import { fetchPublicArticleList, type PublicArticleListResult } from "@/lib/api/client-api";
 import type { Article, ContentCategoryWithCount } from "@/lib/contracts/public";
 import { safeText } from "@/lib/utils/format";
 import { stripHtmlTags } from "@/lib/utils/text";
@@ -22,14 +22,18 @@ const ROOT_CATEGORY_SLUG = "tin-tuc";
 const WP_EXCERPT_CHARS = 120;
 
 /**
- * Lưới tin tức CSR — trang /tin-tuc render shell tĩnh (ISR: hero + danh mục), còn
- * danh sách bài (lọc danh mục / tìm / phân trang theo searchParams) fetch ở CLIENT.
- * Sidebar + intro + grid + pagination đều ở đây để phản ánh searchParams mà không SSR.
+ * Lưới tin tức — view mặc định (trang 1, chưa lọc danh mục/tìm kiếm) fetch sẵn ở server
+ * và truyền xuống làm initialData → bài viết nằm trong HTML server (SEO). Sidebar + intro
+ * + grid + pagination ở đây để phản ánh searchParams; khi lọc/tìm/sang trang client tiếp quản.
  */
 export function WpArticleListClient({
   categories,
+  initialArticles,
+  initialPagination = null,
 }: {
   categories: ContentCategoryWithCount[];
+  initialArticles?: Article[];
+  initialPagination?: PublicArticleListResult["pagination"];
 }) {
   const searchParams = useSearchParams();
   const locale = useLocale();
@@ -47,11 +51,17 @@ export function WpArticleListClient({
     };
   }, [searchParams]);
 
+  const isDefaultView = page === 1 && size === DEFAULT_PAGE_SIZE && !category && !q;
+  const initialData =
+    isDefaultView && initialArticles ? { data: initialArticles, pagination: initialPagination } : undefined;
+
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["public-articles", { page, size, category, q, lang: locale }],
     queryFn: () => fetchPublicArticleList({ page, size, category, q, lang: locale }),
     staleTime: 60 * 1000,
     placeholderData: (prev) => prev,
+    initialData,
+    initialDataUpdatedAt: initialData ? () => Date.now() : undefined,
   });
 
   const articles = data?.data ?? [];

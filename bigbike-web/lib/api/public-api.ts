@@ -185,22 +185,6 @@ async function loadDataWithQuery<T>(
 // thẳng từ constants để KHÔNG kéo module server này vào client bundle.
 export { PRODUCT_SORT_VALUES } from "@/lib/constants/catalog";
 
-export const BRAND_SORT_VALUES = [
-  "name:asc",
-  "name:desc",
-  "createdAt:desc",
-  "createdAt:asc",
-] as const;
-
-export const ARTICLE_SORT_VALUES = [
-  "publishedAt:desc",
-  "publishedAt:asc",
-  "createdAt:desc",
-  "createdAt:asc",
-  "title:asc",
-  "title:desc",
-] as const;
-
 export type ProductListQuery = {
   page?: number;
   size?: number;

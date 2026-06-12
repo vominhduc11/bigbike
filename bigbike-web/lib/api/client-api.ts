@@ -160,6 +160,11 @@ export type PublicProductListResult = {
   pagination: { page: number; totalPages: number; totalItems?: number | null } | null;
 };
 
+/** Append a query param only when the value is meaningful (skips undefined/null/empty string). */
+function appendParam(qs: URLSearchParams, key: string, value: string | number | undefined) {
+  if (value !== undefined && value !== null && `${value}` !== "") qs.set(key, `${value}`);
+}
+
 /**
  * Client-side catalog list fetch — dùng cho lưới sản phẩm CSR ở các trang archive
  * (danh mục / tất cả sản phẩm / tìm kiếm). Trang chỉ render shell tĩnh (ISR), lưới
@@ -170,9 +175,7 @@ export async function fetchPublicProductList(
   query: PublicProductListQuery,
 ): Promise<PublicProductListResult> {
   const qs = new URLSearchParams();
-  const put = (k: string, v: string | number | undefined) => {
-    if (v !== undefined && v !== null && `${v}` !== "") qs.set(k, `${v}`);
-  };
+  const put = (k: string, v: string | number | undefined) => appendParam(qs, k, v);
   put("page", query.page);
   put("size", query.size);
   put("sort", query.sort ?? "createdAt:desc");
@@ -217,9 +220,7 @@ export async function fetchPublicArticleList(
   query: PublicArticleListQuery,
 ): Promise<PublicArticleListResult> {
   const qs = new URLSearchParams();
-  const put = (k: string, v: string | number | undefined) => {
-    if (v !== undefined && v !== null && `${v}` !== "") qs.set(k, `${v}`);
-  };
+  const put = (k: string, v: string | number | undefined) => appendParam(qs, k, v);
   put("page", query.page);
   put("size", query.size);
   put("sort", "publishedAt:desc");
@@ -251,9 +252,7 @@ export async function fetchPublicBrandList(
   query: { page?: number; size?: number; sort?: string; lang?: string },
 ): Promise<PublicBrandListResult> {
   const qs = new URLSearchParams();
-  const put = (k: string, v: string | number | undefined) => {
-    if (v !== undefined && v !== null && `${v}` !== "") qs.set(k, `${v}`);
-  };
+  const put = (k: string, v: string | number | undefined) => appendParam(qs, k, v);
   put("page", query.page);
   put("size", query.size);
   put("sort", query.sort ?? "name:asc");
@@ -278,9 +277,7 @@ export async function fetchPublicCategoryList(
   query: { size?: number; sort?: string; showOnHomepage?: boolean; lang?: string },
 ): Promise<Category[]> {
   const qs = new URLSearchParams();
-  const put = (k: string, v: string | number | undefined) => {
-    if (v !== undefined && v !== null && `${v}` !== "") qs.set(k, `${v}`);
-  };
+  const put = (k: string, v: string | number | undefined) => appendParam(qs, k, v);
   put("size", query.size);
   put("sort", query.sort ?? "sortOrder:asc");
   if (query.showOnHomepage) qs.set("showOnHomepage", "true");

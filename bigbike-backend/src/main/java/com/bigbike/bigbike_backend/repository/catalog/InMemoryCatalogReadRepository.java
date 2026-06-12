@@ -197,7 +197,8 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                                 "https://www.youtube.com/watch?v=ls2ff800-demo",
                                 "Review LS2 FF800",
                                 null,
-                                "YOUTUBE"
+                                "YOUTUBE",
+                                null
                         )
                 ),
                 new ProductPrice(BigDecimal.valueOf(3250000), BigDecimal.valueOf(3690000), BigDecimal.valueOf(3250000), "VND"),
@@ -250,6 +251,14 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 null,           // promotionContent
                 null,           // installationGuide
                 List.of(),      // faqs
+                List.of(),      // positiveNotes
+                List.of(),      // negativeNotes
+                null,           // warrantyMonths
+                null,           // warrantyScope
+                null,           // originBrandCountry
+                null,           // originManufactureCountry
+                null,           // weightGrams
+                null,           // sizeGuide
                 List.of(),      // relatedProducts
                 null,           // descriptionBlocks
                 new SeoMeta(
@@ -297,6 +306,14 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 null,           // promotionContent
                 null,           // installationGuide
                 List.of(),      // faqs
+                List.of(),      // positiveNotes
+                List.of(),      // negativeNotes
+                null,           // warrantyMonths
+                null,           // warrantyScope
+                null,           // originBrandCountry
+                null,           // originManufactureCountry
+                null,           // weightGrams
+                null,           // sizeGuide
                 List.of(),      // relatedProducts
                 null,           // descriptionBlocks
                 new SeoMeta(
@@ -344,6 +361,14 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 null,           // promotionContent
                 null,           // installationGuide
                 List.of(),      // faqs
+                List.of(),      // positiveNotes
+                List.of(),      // negativeNotes
+                null,           // warrantyMonths
+                null,           // warrantyScope
+                null,           // originBrandCountry
+                null,           // originManufactureCountry
+                null,           // weightGrams
+                null,           // sizeGuide
                 List.of(),      // relatedProducts
                 null,           // descriptionBlocks
                 new SeoMeta(

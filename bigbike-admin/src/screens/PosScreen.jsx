@@ -52,6 +52,8 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
   const [walkInQuery, setWalkInQuery] = useState('')
   const [walkInResults, setWalkInResults] = useState([])
   const [walkInCustomer, setWalkInCustomer] = useState(null)
+  // Gợi ý khách quen theo số điện thoại đang gõ
+  const [phoneMatches, setPhoneMatches] = useState([])
 
   // CREDIT state
   const [customerQuery, setCustomerQuery] = useState('')
@@ -70,7 +72,10 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
   const overLimit = method === 'CREDIT' && availableCredit !== null && total > availableCredit
   const creditBlocked = method === 'CREDIT' && selectedCustomer && customerCredit && (!creditEnabled || !creditActive)
   const creditOverLimitBlocked = overLimit && !canOverrideCreditLimit
+  // SĐT bắt buộc cho mọi đơn POS (POS_CUSTOMER_001) — là khóa nhận diện/tạo hồ sơ khách
+  const phoneMissing = !customerPhone.trim()
   const submitDisabled = submitting || insufficientTendered || creditBlocked || creditOverLimitBlocked
+      || phoneMissing
       || (method === 'CREDIT' && !selectedCustomer)
 
   function handleMethodChange(m) {
@@ -103,10 +108,21 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
     } catch { setWalkInResults([]) }
   }
 
+  // Tự gợi ý khách quen khi gõ SĐT (POS_CUSTOMER_002) — chỉ khi chưa liên kết khách nào
+  async function searchByPhone(raw) {
+    const digits = String(raw).replace(/\D/g, '')
+    if (digits.length < 8 || walkInCustomer || method === 'CREDIT') { setPhoneMatches([]); return }
+    try {
+      const res = await fetchCustomers({ search: digits, page: 1, pageSize: 5 })
+      setPhoneMatches(res.items || [])
+    } catch { setPhoneMatches([]) }
+  }
+
   function handleSelectWalkIn(c) {
     setWalkInCustomer(c)
     setWalkInQuery('')
     setWalkInResults([])
+    setPhoneMatches([])
     if (!customerName) setCustomerName(c.displayName || '')
     if (!customerPhone && c.phone) setCustomerPhone(c.phone)
   }
@@ -127,6 +143,8 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
     setSelectedCustomer(c)
     setCustomerResults([])
     setCustomerQuery(c.displayName || c.email || '')
+    if (!customerName) setCustomerName(c.displayName || '')
+    if (c.phone) setCustomerPhone(c.phone)
     loadCustomerCredit(c.id)
   }
 
@@ -186,12 +204,32 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
                />
             </div>
             <div>
-              <label className="field-label">Số điện thoại (tuỳ chọn)</label>
+              <label className="field-label">Số điện thoại *</label>
               <Input
                 placeholder="0901 234 567"
                 value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value)}
+                onChange={(e) => { setCustomerPhone(e.target.value); searchByPhone(e.target.value) }}
+                aria-invalid={phoneMissing}
                />
+              {phoneMissing && (
+                <p className="field-error mt-1">Cần số điện thoại để lưu hồ sơ khách.</p>
+              )}
+              {method !== 'CREDIT' && !walkInCustomer && phoneMatches.length > 0 && (
+                <div className="mt-1 border border-border rounded-md bg-surface overflow-hidden">
+                  <p className="px-2.5 py-1 text-xs text-muted-foreground">SĐT này là khách quen — bấm để liên kết:</p>
+                  {phoneMatches.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      className="block w-full text-left px-2.5 py-1.5 bg-transparent border-none cursor-pointer text-sm hover:bg-surface-hover"
+                      onClick={() => handleSelectWalkIn(c)}
+                    >
+                      <strong>{c.displayName || c.phone || c.email}</strong>
+                      {c.phone && <span className="ml-2 text-xs text-muted-foreground">{c.phone}</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -204,7 +242,7 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
                   onOpenChange={(next) => { if (!next) setWalkInResults([]) }}
                   anchor={
                     <Input
-                      placeholder="Tìm theo tên hoặc email..."
+                      placeholder="Tìm theo tên, SĐT hoặc email..."
                       value={walkInQuery}
                       onChange={(e) => { setWalkInQuery(e.target.value); searchWalkIn(e.target.value) }}
                       autoComplete="off"
@@ -292,7 +330,7 @@ function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCreditLimit 
                 onOpenChange={(next) => { if (!next) setCustomerResults([]) }}
                 anchor={
                   <Input
-                    placeholder="Nhập tên hoặc email khách hàng..."
+                    placeholder="Nhập tên, SĐT hoặc email khách hàng..."
                     value={customerQuery}
                     onChange={(e) => {
                       setCustomerQuery(e.target.value)

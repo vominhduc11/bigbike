@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
 import { WpCategoryHero, type WpCategoryCrumb } from "@/components/wp/WpCategoryHero";
-import { listContentCategories, listPublicSettings } from "@/lib/api/public-api";
+import { listArticles, listContentCategories, listPublicSettings } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { resolveMediaUrl, toLegacyWpMediaUrl } from "@/lib/utils/format";
 import { readDefaultHeroAssets, readHeroSettings } from "@/lib/utils/page-hero";
@@ -9,9 +9,10 @@ import { toArticleListPath, toHomePath } from "@/lib/utils/routes";
 import { WpArticleListClient } from "./WpArticleListClient";
 import { Tr } from "@/components/i18n/Tr";
 
-// Shell tĩnh (ISR) — hero (settings "hero_news") + danh mục tin tức (admin quản lý,
-// revalidate tag "articles"/"settings"). Danh sách bài (lọc/tìm/phân trang theo
-// searchParams) render ở CLIENT qua WpArticleListClient → trang không SSR.
+// Shell — hero (settings "hero_news") + danh mục tin tức + danh sách bài view MẶC ĐỊNH
+// (trang 1, chưa lọc) đều fetch ở server (revalidate tag "articles"/"settings") và truyền
+// xuống → bài viết nằm trong HTML server (SEO). Lọc/tìm/phân trang do client tiếp quản.
+// size phải khớp default WpArticleListClient (12) để query key trùng → dùng đúng initialData.
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("Blog");
   return buildPublicMetadata({
@@ -25,9 +26,10 @@ export default async function ArticleListPage() {
   const t = await getTranslations("Blog");
   const locale = await getLocale();
 
-  const [settingsResult, categoriesResult] = await Promise.all([
+  const [settingsResult, categoriesResult, articlesResult] = await Promise.all([
     listPublicSettings(locale),
     listContentCategories(),
+    listArticles({ page: 1, size: 12, sort: "publishedAt:desc", lang: locale }),
   ]);
 
   const heroSettings = readHeroSettings(settingsResult.data ?? [], "hero_news");
@@ -66,7 +68,11 @@ export default async function ArticleListPage() {
 
         <div id="main-content">
           <div className="container">
-            <WpArticleListClient categories={sidebarCategories} />
+            <WpArticleListClient
+              categories={sidebarCategories}
+              initialArticles={articlesResult.data}
+              initialPagination={articlesResult.pagination}
+            />
           </div>
         </div>
       </div>

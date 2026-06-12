@@ -544,6 +544,8 @@
     "errorMissingShipping": "Vui lòng hoàn tất thông tin giao hàng.",
     "errorMissingPayment": "Vui lòng chọn phương thức thanh toán.",
     "errorShippingUnavailable": "Phương thức vận chuyển không khả dụng. Vui lòng thử lại.",
+    "optionsLoadFailed": "Không tải được phương thức vận chuyển và thanh toán. Vui lòng kiểm tra kết nối rồi thử lại.",
+    "retry": "Thử lại",
     "validation": {
       "fullNameRequired": "Vui lòng nhập họ và tên",
       "phoneInvalid": "Số điện thoại không hợp lệ (ví dụ: 0901234567 hoặc +84901234567)",
@@ -565,6 +567,7 @@
     "shippingMethodSectionTitle": "Phương thức vận chuyển",
     "shippingMethodFree": "Miễn phí",
     "shippingZoneMismatch": "Không giao đến tỉnh/thành phố đã chọn",
+    "shippingZoneMismatchHint": "Không giao tới khu vực của địa chỉ bạn chọn.",
     "noteLabel": "Ghi chú đơn hàng",
     "noteOptional": "(không bắt buộc)",
     "notePlaceholder": "Yêu cầu đặc biệt về giao hàng (không bắt buộc)",

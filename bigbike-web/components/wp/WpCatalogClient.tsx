@@ -4,12 +4,13 @@ import { useMemo, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
-import { fetchPublicProductList } from "@/lib/api/client-api";
+import { fetchPublicProductList, type PublicProductListResult } from "@/lib/api/client-api";
+import { DEFAULT_PRODUCT_PAGE_SIZE, DEFAULT_PRODUCT_SORT } from "@/lib/constants/catalog";
 import { parseCatalogListParams } from "@/lib/utils/catalog-list-params";
 import { DEFAULT_WP_ORDERBY } from "@/lib/utils/catalog-sort";
 import { WpCategorySidebar } from "./WpCategorySidebar";
 import { WpCatalogResults } from "./WpCatalogResults";
-import type { Brand, CatalogFacets, Category } from "@/lib/contracts/public";
+import type { Brand, CatalogFacets, Category, Product } from "@/lib/contracts/public";
 
 /**
  * Lưới sản phẩm CSR dùng chung cho các trang archive (/danh-muc-san-pham/[slug],
@@ -42,6 +43,13 @@ export type WpCatalogClientProps = {
   requireQuery?: boolean;
   /** Thông báo khi requireQuery nhưng chưa nhập từ khoá. */
   emptyQueryNotice?: string;
+  /**
+   * Lưới sản phẩm trang mặc định (page 1, sort mặc định, chưa lọc) fetch sẵn ở SERVER
+   * và truyền xuống → seed React Query để view mặc định nằm trong HTML server (SEO/ISR).
+   * Khi khách lọc/sắp xếp/sang trang, query key đổi → client tự fetch như cũ.
+   */
+  initialProducts?: Product[];
+  initialPagination?: PublicProductListResult["pagination"];
 };
 
 export function WpCatalogClient({
@@ -58,6 +66,8 @@ export function WpCatalogClient({
   emptyNotice,
   requireQuery = false,
   emptyQueryNotice,
+  initialProducts,
+  initialPagination = null,
 }: WpCatalogClientProps) {
   const searchParams = useSearchParams();
   const tCat = useTranslations("Catalog");
@@ -94,12 +104,32 @@ export function WpCatalogClient({
   const hasQuery = Boolean(catalog.filters.q?.trim());
   const blockedByEmptyQuery = requireQuery && !hasQuery;
 
+  // View mặc định = page 1, sort mặc định, chưa áp filter nào (route category/brand
+  // cố định theo trang nên không tính). Chỉ khi đó mới seed initialProducts từ server
+  // — query key khớp lần render đầu nên HTML server có sẵn lưới, không lệch hydrate.
+  const isDefaultView =
+    !hasValidationErrors &&
+    catalog.page === 1 &&
+    catalog.size === DEFAULT_PRODUCT_PAGE_SIZE &&
+    catalog.productSort === DEFAULT_PRODUCT_SORT &&
+    !catalog.filters.q &&
+    !catalog.filters.category &&
+    !catalog.filters.brand &&
+    !catalog.filters.color &&
+    catalog.filters.minPrice === undefined &&
+    catalog.filters.maxPrice === undefined;
+  const initialData =
+    isDefaultView && initialProducts ? { data: initialProducts, pagination: initialPagination } : undefined;
+
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["catalog-products", productQuery],
     queryFn: () => fetchPublicProductList(productQuery),
     enabled: !hasValidationErrors && !blockedByEmptyQuery,
     staleTime: 60 * 1000,
     placeholderData: (prev) => prev,
+    initialData,
+    // Server vừa fetch xong → coi là tươi, tránh refetch lặp ngay sau khi hydrate.
+    initialDataUpdatedAt: initialData ? () => Date.now() : undefined,
   });
 
   const products = blockedByEmptyQuery ? [] : (data?.data ?? []);

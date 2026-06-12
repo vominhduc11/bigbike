@@ -80,6 +80,23 @@ export function createProductSchema(t, isCreate = false) {
         gallery: z.array(z.object({ url: z.string(), alt: z.string().optional() })).optional(),
       })).optional(),
       relatedProductIds: z.array(z.string()).optional(),
+      // Template SEO fields (V175) — optional, length/integer checked in superRefine.
+      positiveNotes: z.array(z.object({
+        _key: z.string().optional(),
+        content: z.string().max(2000, 'Ưu điểm tối đa 2000 ký tự.'),
+        contentEn: z.string().max(2000).optional(),
+      })).optional(),
+      negativeNotes: z.array(z.object({
+        _key: z.string().optional(),
+        content: z.string().max(2000, 'Nhược điểm tối đa 2000 ký tự.'),
+        contentEn: z.string().max(2000).optional(),
+      })).optional(),
+      warrantyMonths: z.string().optional(),
+      warrantyScope: z.string().max(2000, 'Phạm vi bảo hành tối đa 2000 ký tự.').optional(),
+      originBrandCountry: z.string().max(120).optional(),
+      originManufactureCountry: z.string().max(120).optional(),
+      weightGrams: z.string().optional(),
+      sizeGuide: z.string().max(20000, 'Bảng size tối đa 20000 ký tự.').optional(),
       // Optional English content (V136) — never required, length-checked only.
       translations: z.object({
         en: z.object({
@@ -133,6 +150,15 @@ export function createProductSchema(t, isCreate = false) {
           message: t('products.detail.errContentBottomTooLong'),
           path: ['contentBottom'],
         })
+      }
+      // Template SEO numeric fields (V175): non-negative integers when filled.
+      const warranty = toInt(data.warrantyMonths)
+      if (Number.isNaN(warranty) || (Number.isInteger(warranty) && warranty < 0)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Bảo hành phải là số nguyên không âm.', path: ['warrantyMonths'] })
+      }
+      const weight = toInt(data.weightGrams)
+      if (Number.isNaN(weight) || (Number.isInteger(weight) && weight < 0)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Trọng lượng phải là số nguyên không âm (gram).', path: ['weightGrams'] })
       }
       if ((data.seoTitle ?? '').trim().length > 255) {
         ctx.addIssue({

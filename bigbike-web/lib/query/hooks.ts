@@ -5,7 +5,6 @@ import { useLocale } from "next-intl";
 import {
   addCartItem,
   applyCoupon,
-  clearCart,
   createAddress,
   deleteAddress,
   fetchCart,
@@ -67,14 +66,6 @@ export function useRemoveCartItem() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (itemId: string) => removeCartItem(itemId),
-    onSuccess: (cart) => qc.setQueryData(queryKeys.cart(), cart),
-  });
-}
-
-export function useClearCart() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: clearCart,
     onSuccess: (cart) => qc.setQueryData(queryKeys.cart(), cart),
   });
 }

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { getOrderLookup } from "@/lib/api/public-api";
 import { PurchaseEvent } from "@/components/analytics/PurchaseEvent";
@@ -60,12 +61,14 @@ export default async function OrderConfirmPage({ searchParams }: Props) {
       <OrderShell>
         <ThankYouHero message={t("receivedNotice")} />
 
-        {order && (
+        {order ? (
           <>
             <OrderOverview order={order} t={t} />
             <OrderDetails order={order} t={t} />
             <CustomerDetails order={order} t={t} />
           </>
+        ) : (
+          <OrderLoadFallback orderNumber={orderNumber} t={t} />
         )}
       </OrderShell>
     </>
@@ -113,6 +116,37 @@ function ThankYouHero({ message }: { message: string }) {
       <p className="woocommerce-notice woocommerce-notice--success woocommerce-thankyou-order-received m-0 font-heading text-ui-24 font-semibold uppercase text-foreground">
         {message}
       </p>
+    </div>
+  );
+}
+
+// Đơn đã đặt thành công (URL có mã + key) nhưng tra cứu chi tiết thất bại tạm thời
+// (mạng/độ trễ). Thay vì để khách thấy mỗi lời cảm ơn trống, hiện rõ mã đơn để khách
+// ghi lại + lối thoát (tiếp tục mua / xem đơn của tôi) thay vì ngõ cụt.
+function OrderLoadFallback({
+  orderNumber,
+  t,
+}: {
+  orderNumber: string;
+  t: OrderConfirmTranslations;
+}) {
+  return (
+    <div className="mx-auto max-w-[480px] text-center">
+      <p className="m-0 text-sm uppercase leading-6 text-muted-foreground">
+        {t("orderCode")}{" "}
+        <strong className="block normal-case text-foreground">{orderNumber}</strong>
+      </p>
+      <p className="mx-auto mt-3 max-w-[420px] text-sm leading-6 text-muted-foreground">
+        {t("loadFailed")}
+      </p>
+      <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+        <Link className="button" href="/">
+          {t("continueShopping")}
+        </Link>
+        <Link className="button wc-backward" href="/tai-khoan/don-hang">
+          {t("viewMyOrders")}
+        </Link>
+      </div>
     </div>
   );
 }

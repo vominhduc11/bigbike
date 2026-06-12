@@ -22,7 +22,6 @@
 
   --bb-color-black: #000000;
   --bb-color-dark: #1a1a1a;
-  --bb-color-social-facebook: #1877f2;
   --bb-color-gray-25: #f8f8f8;
   --bb-color-gray-50: #f5f5f5;
   --bb-color-gray-100: #eeeeef;
@@ -145,7 +144,6 @@
   --bb-text-md: 16px;
   --bb-text-lg: 18px;
   --bb-text-xl: 20px;
-  --bb-text-3xl: 30px;
 
   /* WP-parity exact font sizes — token hóa các cỡ chữ lệch scale chuẩn.
      Expose thành Tailwind utility text-9 … text-50 trong globals.css @theme.

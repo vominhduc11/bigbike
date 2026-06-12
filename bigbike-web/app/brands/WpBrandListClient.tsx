@@ -7,7 +7,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import { WpCategoryPagination } from "@/components/wp/WpCategoryPagination";
 import { Skeleton } from "@/components/ui/skeleton";
-import { fetchPublicBrandList } from "@/lib/api/client-api";
+import { fetchPublicBrandList, type PublicBrandListResult } from "@/lib/api/client-api";
+import type { Brand } from "@/lib/contracts/public";
 import { resolveMediaUrl, safeText, toLegacyWpMediaUrl } from "@/lib/utils/format";
 import { buildQueryString } from "@/lib/utils/query";
 import { toBrandListPath, toBrandPath } from "@/lib/utils/routes";
@@ -18,10 +19,17 @@ const DEFAULT_PAGE_SIZE = 12;
 const DEFAULT_SORT = "name:asc";
 
 /**
- * Lưới thương hiệu CSR — trang /brands render shell tĩnh (hero), danh sách hãng
- * (phân trang/sắp xếp theo searchParams) fetch ở CLIENT → trang không SSR.
+ * Lưới thương hiệu — view mặc định (trang 1, sắp xếp mặc định) fetch sẵn ở server và
+ * truyền xuống làm initialData → nằm trong HTML server (SEO). Khi khách sang trang/đổi
+ * sắp xếp (searchParams) hoặc đổi ngôn ngữ, client tiếp quản fetch.
  */
-export function WpBrandListClient() {
+export function WpBrandListClient({
+  initialBrands,
+  initialPagination = null,
+}: {
+  initialBrands?: Brand[];
+  initialPagination?: PublicBrandListResult["pagination"];
+} = {}) {
   const searchParams = useSearchParams();
   const locale = useLocale();
   const t = useTranslations("Catalog");
@@ -37,11 +45,17 @@ export function WpBrandListClient() {
     };
   }, [searchParams]);
 
+  const isDefaultView = page === 1 && size === DEFAULT_PAGE_SIZE && sort === DEFAULT_SORT;
+  const initialData =
+    isDefaultView && initialBrands ? { data: initialBrands, pagination: initialPagination } : undefined;
+
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["public-brands", { page, size, sort, lang: locale }],
     queryFn: () => fetchPublicBrandList({ page, size, sort, lang: locale }),
     staleTime: 5 * 60 * 1000,
     placeholderData: (prev) => prev,
+    initialData,
+    initialDataUpdatedAt: initialData ? () => Date.now() : undefined,
   });
 
   const brands = data?.data ?? [];

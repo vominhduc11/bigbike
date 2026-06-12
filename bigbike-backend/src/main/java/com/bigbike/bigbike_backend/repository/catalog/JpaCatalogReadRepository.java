@@ -7,6 +7,7 @@ import com.bigbike.bigbike_backend.domain.catalog.CategorySummary;
 import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
 import com.bigbike.bigbike_backend.domain.catalog.ProductFaq;
+import com.bigbike.bigbike_backend.domain.catalog.ProductHighlight;
 import com.bigbike.bigbike_backend.domain.catalog.ProductPrice;
 import com.bigbike.bigbike_backend.domain.catalog.ProductSpecification;
 import com.bigbike.bigbike_backend.domain.catalog.ProductTranslations;
@@ -23,6 +24,7 @@ import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductGalleryImag
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantGalleryImageEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductSpecificationEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductFaqEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductHighlightEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantOptionEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVideoEntity;
@@ -69,6 +71,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     private static final Comparator<ProductVideoEntity> VIDEO_ORDER = Comparator.comparingInt(ProductVideoEntity::getSortOrder);
     private static final Comparator<ProductSpecificationEntity> SPEC_ORDER = Comparator.comparingInt(ProductSpecificationEntity::getSortOrder);
     private static final Comparator<ProductFaqEntity> FAQ_ORDER = Comparator.comparingInt(ProductFaqEntity::getSortOrder);
+    private static final Comparator<ProductHighlightEntity> HIGHLIGHT_ORDER = Comparator.comparingInt(ProductHighlightEntity::getSortOrder);
     private static final Comparator<ProductVariantEntity> VARIANT_ORDER = Comparator.comparingInt(ProductVariantEntity::getSortOrder);
     private static final Comparator<ProductVariantOptionEntity> VARIANT_OPTION_ORDER = Comparator.comparingInt(ProductVariantOptionEntity::getSortOrder);
 
@@ -187,6 +190,14 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 null,                       // promotionContent — detail only
                 null,                       // installationGuide — detail only
                 List.of(),                  // faqs — detail only
+                List.of(),                  // positiveNotes — detail only
+                List.of(),                  // negativeNotes — detail only
+                null,                       // warrantyMonths — detail only
+                null,                       // warrantyScope — detail only
+                null,                       // originBrandCountry — detail only
+                null,                       // originManufactureCountry — detail only
+                null,                       // weightGrams — detail only
+                null,                       // sizeGuide — detail only
                 List.of(),                  // relatedProducts — detail only
                 null,                       // descriptionBlocks — detail only
                 null,                       // seo — detail only
@@ -462,6 +473,14 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 pick(entity.getPromotionContent(), entity.getPromotionContentEn(), locale),
                 pick(entity.getInstallationGuide(), entity.getInstallationGuideEn(), locale),
                 toFaqs(entity, publicView, locale),
+                toHighlights(entity, ProductHighlightEntity.KIND_PRO, publicView, locale),
+                toHighlights(entity, ProductHighlightEntity.KIND_CON, publicView, locale),
+                entity.getWarrantyMonths(),
+                entity.getWarrantyScope(),
+                entity.getOriginBrandCountry(),
+                entity.getOriginManufactureCountry(),
+                toWeightGrams(entity.getWeightKg()),
+                entity.getSizeGuide(),
                 toRelatedProducts(entity, publicView, locale),
                 entity.getDescriptionBlocks(),
                 toSeoMeta(
@@ -644,9 +663,36 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                                 item.getThumbnailHeight(),
                                 item.getThumbnailMimeType()
                         ),
-                        item.getProvider()
+                        item.getProvider(),
+                        item.getDescription()
                 ))
                 .toList();
+    }
+
+    /**
+     * Ưu/Nhược điểm (V175) đã resolve theo locale, lọc theo {@code kind}
+     * (PRO/CON). Trả mảng string cho schema.org positiveNotes/negativeNotes.
+     */
+    private List<ProductHighlight> toHighlights(ProductEntity entity, String kind, boolean publicView, String locale) {
+        if (entity.getHighlights() == null) {
+            return List.of();
+        }
+        return entity.getHighlights().stream()
+                .filter(item -> kind.equals(item.getKind()))
+                .sorted(HIGHLIGHT_ORDER)
+                .map(item -> new ProductHighlight(
+                        pick(item.getContent(), item.getContentEn(), locale),
+                        publicView ? null : item.getContentEn()
+                ))
+                .toList();
+    }
+
+    /** weight_kg (NUMERIC) → gram (Integer) cho schema.org Product.weight. */
+    private static Integer toWeightGrams(java.math.BigDecimal weightKg) {
+        if (weightKg == null) {
+            return null;
+        }
+        return weightKg.multiply(java.math.BigDecimal.valueOf(1000)).setScale(0, java.math.RoundingMode.HALF_UP).intValue();
     }
 
     /**

@@ -172,9 +172,6 @@ export function CatalogFilters({
     return `${resetHref}${buildQueryString(params)}`;
   }
 
-  const facetCount = (buckets: { key: string; count: number }[] | undefined, key: string) =>
-    buckets?.find((b) => b.key === key)?.count;
-
   const brandRows: { key: string; label: string; image?: ImageAsset | null; count?: number }[] =
     facets?.brands && facets.brands.length > 0
       ? facets.brands

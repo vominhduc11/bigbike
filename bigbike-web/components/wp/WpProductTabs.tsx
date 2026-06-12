@@ -72,7 +72,6 @@ export function WpProductTabs({
           <div
             key={t.id}
             id={t.id}
-            data-label={t.text}
             className={cn(
               "tab-panel fade wyswyg",
               active === t.id && "show active",
@@ -80,11 +79,18 @@ export function WpProductTabs({
               // chèn heading nhãn + vạch ngăn cách phía trên như code cũ.
               "max-md:!block max-md:pt-6 max-md:pb-1 max-md:scroll-mt-[calc(var(--bb-header-height)_+_52px)]",
               "max-md:border-t-[3px] max-md:border-t-border max-md:first:[border-top:none]",
-              "max-md:before:content-[attr(data-label)] max-md:before:block max-md:before:mb-4 max-md:before:font-body max-md:before:text-lg max-md:before:font-semibold max-md:before:text-[var(--bb-text-primary)] max-md:before:uppercase max-md:before:leading-[1.2]",
             )}
             role="tabpanel"
             aria-labelledby={`${t.id}-tab`}
           >
+            {/* Heading nhãn section = H2 THẬT (thay CSS `::before` cũ — screen
+                reader & bot không đọc được pseudo-content). Chỉ hiện ở mobile
+                (md:hidden): desktop dùng thanh tab ngang làm nhãn. Google index
+                mobile-first nên H2 này luôn được nhìn thấy. `!mb-4` đè
+                `.wyswyg h2{margin-bottom:30px}` để giữ đúng khoảng cách cũ. */}
+            <h2 className="md:hidden !mb-4 font-body text-lg font-semibold text-[var(--bb-text-primary)] uppercase leading-[1.2]">
+              {t.text}
+            </h2>
             {t.content}
           </div>
         ))}

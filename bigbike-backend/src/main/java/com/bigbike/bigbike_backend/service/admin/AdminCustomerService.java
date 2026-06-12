@@ -180,14 +180,17 @@ public class AdminCustomerService {
             customer.setEmail(newEmail);
         }
 
-        // Phone uniqueness check
+        // Phone uniqueness check — chuẩn hóa SĐT (nhất quán với đăng ký/POS) trước khi đối chiếu/lưu
         if (req.phone() != null && !req.phone().isBlank()) {
-            customerRepo.findByPhone(req.phone().trim()).ifPresent(existing -> {
-                if (!existing.getId().equals(customerId)) {
-                    throw new ConflictException("Phone already in use by another customer.");
-                }
-            });
-            customer.setPhone(req.phone().trim());
+            String normalizedPhone = com.bigbike.bigbike_backend.util.PhoneNumbers.normalize(req.phone());
+            if (normalizedPhone != null) {
+                customerRepo.findByPhone(normalizedPhone).ifPresent(existing -> {
+                    if (!existing.getId().equals(customerId)) {
+                        throw new ConflictException("Phone already in use by another customer.");
+                    }
+                });
+                customer.setPhone(normalizedPhone);
+            }
         }
 
         if (req.displayName() != null) customer.setDisplayName(req.displayName());

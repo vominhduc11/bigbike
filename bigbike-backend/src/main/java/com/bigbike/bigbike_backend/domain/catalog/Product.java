@@ -38,6 +38,22 @@ public record Product(
         String installationGuide,
         /** Product FAQ entries rendered in PDP section "05 Câu hỏi thường gặp". Detail-only. */
         List<ProductFaq> faqs,
+        /** Ưu điểm (schema.org positiveNotes). Detail-only; empty in list. {@code contentEn} chỉ có trên admin reads. */
+        List<ProductHighlight> positiveNotes,
+        /** Nhược điểm (schema.org negativeNotes). Detail-only; empty in list. {@code contentEn} chỉ có trên admin reads. */
+        List<ProductHighlight> negativeNotes,
+        /** Số tháng bảo hành. Detail-only; null in list. */
+        Integer warrantyMonths,
+        /** Phạm vi bảo hành (text). Detail-only; null in list. */
+        String warrantyScope,
+        /** "Thương hiệu [nước]". Detail-only; null in list. */
+        String originBrandCountry,
+        /** "Sản xuất tại [nước]". Detail-only; null in list. */
+        String originManufactureCountry,
+        /** Trọng lượng tính bằng gram (= weight_kg × 1000). Detail-only; null in list. */
+        Integer weightGrams,
+        /** Bảng size dạng HTML (rich-text). Detail-only; null in list. */
+        String sizeGuide,
         /**
          * Admin-curated related products shown in the PDP "Sản phẩm liên quan" section.
          * List-view shape (no nested gallery/specs/relatedProducts). Detail-only;

@@ -733,11 +733,10 @@ public class CheckoutService {
         item.setProductId(cartItem.getProductId());
         item.setProductPk(cartItem.getProductPk());
         item.setProductVariantId(cartItem.getProductVariantId());
-        // productVariantPk is intentionally NOT set here. The cart-checkout stock decrement
-        // (applyStockForLineItems) is keyed on the UUID productVariantId, so for a migrated
-        // wp-* variant the decrement is product-level; populating productVariantPk would make
-        // restore variant-level and over-restore. wp-* variant sales go through quick-buy / POS
-        // (which set it), not the cart. See V158 / OrderStockRestoreService.
+        // Snapshot the variant's varchar PK (V176): cart-checkout now decrements/reserves at variant
+        // level by product_variant_pk, so restore must resolve the same variant for symmetry. Carried
+        // through from cart_items.product_variant_pk (set at add-to-cart).
+        item.setProductVariantPk(cartItem.getProductVariantPk());
         item.setSku(cartItem.getSku());
         item.setProductName(cartItem.getProductName());
         item.setVariantName(cartItem.getVariantName());
@@ -876,8 +875,11 @@ public class CheckoutService {
     private void syncPricesAndValidateStock(List<CartItemEntity> items,
             List<OrderSummaryResponse.PriceChange> priceChanges) {
         for (CartItemEntity cartItem : items) {
-            if (cartItem.getProductId() == null) continue;
-            ProductEntity product = productRepo.findByIdForUpdate(cartItem.getProductId().toString())
+            // Resolve by varchar PK (product_pk / product_variant_pk): the UUID columns are null for
+            // migrated wp-* catalog, which previously made this whole pass skip those lines → no stock
+            // validation and (in applyStockForLineItems) no decrement → silent oversell. See V176.
+            if (cartItem.getProductPk() == null) continue;
+            ProductEntity product = productRepo.findByIdForUpdate(cartItem.getProductPk())
                     .orElseThrow(() -> new ConflictException(
                             "Product no longer exists: " + cartItem.getProductName()));
             if (product.getPublishStatus() != PublishStatus.PUBLISHED) {
@@ -886,9 +888,9 @@ public class CheckoutService {
             }
 
             ProductVariantEntity variant = null;
-            if (cartItem.getProductVariantId() != null) {
+            if (cartItem.getProductVariantPk() != null) {
                 variant = variantRepo
-                        .findByIdForUpdate(cartItem.getProductVariantId().toString())
+                        .findByIdForUpdate(cartItem.getProductVariantPk())
                         .orElseThrow(() -> new ConflictException(
                                 "Variant no longer exists for: " + cartItem.getProductName()));
                 if (!variant.isAvailable()) {
@@ -956,16 +958,17 @@ public class CheckoutService {
         for (int i = 0; i < savedLineItems.size(); i++) {
             OrderLineItemEntity lineItem = savedLineItems.get(i);
             CartItemEntity cartItem = cartItems.get(i);
-            if (cartItem.getProductId() == null) continue;
+            // Resolve by varchar PK — UUID columns are null for migrated wp-* catalog (see V176).
+            if (cartItem.getProductPk() == null) continue;
 
-            if (cartItem.getProductVariantId() != null) {
-                variantRepo.findByIdForUpdate(cartItem.getProductVariantId().toString())
+            if (cartItem.getProductVariantPk() != null) {
+                variantRepo.findByIdForUpdate(cartItem.getProductVariantPk())
                         .ifPresent(variant -> {
                             if (variant.isTrackSerials()) {
                                 Instant reservedUntil = serialLifecycleService.computeReservedUntil();
                                 serialLifecycleService.reserveForOrderLine(
                                         lineItem,
-                                        cartItem.getProductId().toString(),
+                                        cartItem.getProductPk(),
                                         variant.getId(),
                                         cartItem.getQuantity(),
                                         reservedUntil);
@@ -974,7 +977,7 @@ public class CheckoutService {
                             }
                         });
             } else {
-                productRepo.findByIdForUpdate(cartItem.getProductId().toString()).ifPresent(product -> {
+                productRepo.findByIdForUpdate(cartItem.getProductPk()).ifPresent(product -> {
                     if (product.isTrackSerials()) {
                         Instant reservedUntil = serialLifecycleService.computeReservedUntil();
                         serialLifecycleService.reserveForOrderLine(

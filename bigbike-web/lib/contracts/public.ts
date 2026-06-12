@@ -87,6 +87,8 @@ export type VideoAsset = {
   title?: string;
   thumbnail?: ImageAsset | null;
   provider?: string | null;
+  /** Mô tả 2–3 câu nội dung video (V175) → caption + VideoObject.description. */
+  description?: string | null;
 };
 
 export type SeoMeta = {
@@ -148,6 +150,12 @@ export type ProductFaq = {
   answer: string;
 };
 
+/** Ưu/Nhược điểm (V175). `content` đã resolve theo ngôn ngữ; `contentEn` chỉ có trên admin. */
+export type ProductHighlight = {
+  content: string;
+  contentEn?: string | null;
+};
+
 export type CategorySummary = {
   id: string;
   slug: string;
@@ -203,6 +211,22 @@ export type Product = {
   descriptionBlocks?: { type: string; [key: string]: unknown }[] | null;
   /** Product FAQ entries rendered in PDP section "Câu hỏi thường gặp". Detail-only. */
   faqs?: ProductFaq[];
+  /** Ưu điểm (schema.org positiveNotes). Detail-only; empty in list. */
+  positiveNotes?: ProductHighlight[];
+  /** Nhược điểm (schema.org negativeNotes). Detail-only; empty in list. */
+  negativeNotes?: ProductHighlight[];
+  /** Số tháng bảo hành. Detail-only. */
+  warrantyMonths?: number | null;
+  /** Phạm vi bảo hành (text). Detail-only. */
+  warrantyScope?: string | null;
+  /** "Thương hiệu [nước]". Detail-only. */
+  originBrandCountry?: string | null;
+  /** "Sản xuất tại [nước]". Detail-only. */
+  originManufactureCountry?: string | null;
+  /** Trọng lượng tính bằng gram. Detail-only. */
+  weightGrams?: number | null;
+  /** Bảng size dạng HTML (rich-text). Detail-only. */
+  sizeGuide?: string | null;
   /**
    * Admin-curated related products shown in the PDP "Sản phẩm liên quan" section.
    * List-view shape. Detail-only; empty hides the section (no category fallback).

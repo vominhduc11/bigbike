@@ -152,40 +152,6 @@ export function normalizeHeading(value: string | null | undefined, fallback: str
   return text.length > 120 ? `${text.slice(0, 117)}...` : text;
 }
 
-export function stockStateLabel(stockState: string | null | undefined): string {
-  switch (stockState) {
-    case "IN_STOCK":
-      return "Còn hàng";
-    case "LOW_STOCK":
-      return "Sắp hết hàng";
-    case "OUT_OF_STOCK":
-      return "Hết hàng";
-    default:
-      return "Đang cập nhật";
-  }
-}
-
-export function orderStatusLabel(status: string | null | undefined): string {
-  switch (status) {
-    case "PENDING":
-      return "Chờ xác nhận";
-    case "ON_HOLD":
-      return "Tạm giữ";
-    case "PROCESSING":
-      return "Đang xử lý";
-    case "COMPLETED":
-      return "Hoàn thành";
-    case "CANCELLED":
-      return "Đã huỷ";
-    case "REFUNDED":
-      return "Đã hoàn tiền";
-    case "FAILED":
-      return "Thất bại";
-    default:
-      return status ?? "Đang cập nhật";
-  }
-}
-
 export function formatAddress(parts: (string | null | undefined)[]): string {
   return parts.filter(Boolean).join(", ");
 }
@@ -211,21 +177,6 @@ export function zaloHref(value: string): string {
   return digits ? `https://zalo.me/${digits}` : value;
 }
 
-export function paymentStatusLabel(status: string | null | undefined): string {
-  switch (status) {
-    case "UNPAID":
-      return "Chưa thanh toán";
-    case "PAID":
-      return "Đã thanh toán";
-    case "REFUNDED":
-      return "Đã hoàn tiền";
-    case "CANCELLED":
-      return "Đã huỷ thanh toán";
-    default:
-      return status ?? "Đang cập nhật";
-  }
-}
-
 export function paymentMethodLabel(method: string | null | undefined): string {
   const code = (method ?? "").trim().toUpperCase();
   switch (code) {
@@ -237,19 +188,6 @@ export function paymentMethodLabel(method: string | null | undefined): string {
       return "—";
     default:
       return code;
-  }
-}
-
-export function customerStatusLabel(status: string | null | undefined): string {
-  switch (status) {
-    case "ACTIVE":
-      return "Đang hoạt động";
-    case "INACTIVE":
-      return "Tạm ngừng";
-    case "BANNED":
-      return "Bị khoá";
-    default:
-      return status ?? "Đang cập nhật";
   }
 }
 

@@ -10,6 +10,7 @@ import com.bigbike.bigbike_backend.api.admin.dto.ProductTranslationRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.SeoMetaRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.SpecificationRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.FaqRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.HighlightRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertBrandRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertCategoryRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertProductRequest;
@@ -36,6 +37,7 @@ import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductGalleryImag
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantGalleryImageEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductSpecificationEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductFaqEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductHighlightEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantOptionEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVideoEntity;
@@ -820,6 +822,30 @@ public class AdminCatalogMutationService {
             entity.setInstallationGuide(AdminMutationValidators.trimToNull(request.getInstallationGuide()));
         }
 
+        // Template SEO fields (V175). Presence-flag scalars (1 ngôn ngữ).
+        if (create || request.isWarrantyMonthsPresent()) {
+            entity.setWarrantyMonths(request.getWarrantyMonths());
+        }
+        if (create || request.isWarrantyScopePresent()) {
+            entity.setWarrantyScope(AdminMutationValidators.trimToNull(request.getWarrantyScope()));
+        }
+        if (create || request.isOriginBrandCountryPresent()) {
+            entity.setOriginBrandCountry(AdminMutationValidators.trimToNull(request.getOriginBrandCountry()));
+        }
+        if (create || request.isOriginManufactureCountryPresent()) {
+            entity.setOriginManufactureCountry(AdminMutationValidators.trimToNull(request.getOriginManufactureCountry()));
+        }
+        // Trọng lượng nhập bằng gram, lưu vào cột weight_kg (= grams / 1000).
+        if (create || request.isWeightGramsPresent()) {
+            Integer grams = request.getWeightGrams();
+            entity.setWeightKg(grams == null
+                    ? null
+                    : BigDecimal.valueOf(grams).divide(BigDecimal.valueOf(1000)));
+        }
+        if (create || request.isSizeGuidePresent()) {
+            entity.setSizeGuide(AdminMutationValidators.trimToNull(request.getSizeGuide()));
+        }
+
         // descriptionBlocks presence flag: sending the key (even []) renders + overwrites both columns.
         // Omitting the key leaves description_blocks and description untouched.
         if (request.isDescriptionBlocksPresent()) {
@@ -871,6 +897,12 @@ public class AdminCatalogMutationService {
             applyFaqs(entity, request.getFaqs());
         } else if (create) {
             entity.setFaqs(new ArrayList<>());
+        }
+
+        // Ưu/Nhược điểm (V175): full-replace như faqs. Hai mảng gộp vào 1 bảng con
+        // (kind PRO/CON). Sửa khi BẤT KỲ mảng nào có mặt trong request.
+        if (request.getPositiveNotes() != null || request.getNegativeNotes() != null || create) {
+            applyHighlights(entity, request.getPositiveNotes(), request.getNegativeNotes());
         }
 
         if (request.getVariants() != null) {
@@ -943,6 +975,7 @@ public class AdminCatalogMutationService {
             video.setVideoUrl(url);
             video.setTitle(AdminMutationValidators.trimToNull(req.getTitle()));
             video.setProvider(AdminMutationValidators.trimToNull(req.getProvider()));
+            video.setDescription(AdminMutationValidators.trimToNull(req.getDescription()));
             video.setThumbnailUrl(AdminMutationValidators.trimToNull(req.getThumbnailUrl()));
             existing.add(video);
         }
@@ -1010,6 +1043,51 @@ public class AdminCatalogMutationService {
             faq.setQuestionEn(AdminMutationValidators.trimToNull(req.getQuestionEn()));
             faq.setAnswerEn(AdminMutationValidators.trimToNull(req.getAnswerEn()));
             existing.add(faq);
+        }
+    }
+
+    /**
+     * Ưu/Nhược điểm (V175) — cùng bảng con phân biệt bằng {@code kind}. Mỗi nhóm
+     * full-replace ĐỘC LẬP: chỉ thay nhóm có mặt trong request, giữ nguyên nhóm
+     * kia (null = không đụng). Mục {@code content} blank bị bỏ qua.
+     */
+    private static void applyHighlights(
+            ProductEntity entity,
+            List<HighlightRequest> positives,
+            List<HighlightRequest> negatives
+    ) {
+        List<ProductHighlightEntity> existing = entity.getHighlights();
+        if (existing == null) {
+            existing = new ArrayList<>();
+            entity.setHighlights(existing);
+        }
+        if (positives != null) {
+            existing.removeIf(h -> ProductHighlightEntity.KIND_PRO.equals(h.getKind()));
+            appendHighlights(entity, existing, positives, ProductHighlightEntity.KIND_PRO);
+        }
+        if (negatives != null) {
+            existing.removeIf(h -> ProductHighlightEntity.KIND_CON.equals(h.getKind()));
+            appendHighlights(entity, existing, negatives, ProductHighlightEntity.KIND_CON);
+        }
+    }
+
+    private static void appendHighlights(
+            ProductEntity entity,
+            List<ProductHighlightEntity> target,
+            List<HighlightRequest> requests,
+            String kind
+    ) {
+        for (int i = 0; i < requests.size(); i++) {
+            HighlightRequest req = requests.get(i);
+            String content = AdminMutationValidators.trimToNull(req.getContent());
+            if (content == null) continue;
+            ProductHighlightEntity highlight = new ProductHighlightEntity();
+            highlight.setProduct(entity);
+            highlight.setKind(kind);
+            highlight.setSortOrder(req.getSortOrder() != null ? req.getSortOrder() : i);
+            highlight.setContent(content);
+            highlight.setContentEn(AdminMutationValidators.trimToNull(req.getContentEn()));
+            target.add(highlight);
         }
     }
 

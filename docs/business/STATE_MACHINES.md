@@ -492,7 +492,7 @@ From `ProductStockState.java`:
 | quantity `> threshold` | `IN_STOCK` | System | Tự động recompute sau mọi thay đổi số lượng. | Variant stockState updated. | `CONFIRMED_BACKEND_ENFORCED` | `InventoryPolicyService.java` |
 | quantity `1..threshold` | `LOW_STOCK` | System | Tự động recompute. | Variant stockState updated. | `CONFIRMED_BACKEND_ENFORCED` | `InventoryPolicyService.java` |
 | quantity `<= 0` | `OUT_OF_STOCK` | System | Tự động recompute. | Variant stockState updated. | `CONFIRMED_BACKEND_ENFORCED` | `InventoryPolicyService.java` |
-| stock quantity | decrement | System | Checkout/quick-buy order created and stock available. | Stock movement `OUT` for variant; stock state recompute. | `CONFIRMED_BACKEND_ENFORCED` | `CheckoutService.java` |
+| stock quantity | decrement | System | Checkout/quick-buy order created and stock available. | Stock movement `OUT` for variant (or serial reservation for serial-tracked); stock state recompute. Product/variant resolved via `product_pk` / `product_variant_pk` (varchar) so migrated wp-* catalog — whose UUID columns are null — decrements correctly on the cart-checkout path too (V176; before V176 cart-checkout silently skipped stock for wp-* lines). | `CONFIRMED_BACKEND_ENFORCED` | `CheckoutService.java` |
 | stock quantity | increment | System | Order cancelled/refunded or return completed. | Stock movement `IN` for variant restore flow; stock state recompute. Variant resolved via `product_variant_id` (UUID) or `product_variant_pk` (varchar, V158) so migrated wp-* variants restock correctly. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java`, `AdminReturnService.java`, `OrderStockRestoreService.java` |
 
 ### Forbidden Transitions / States
@@ -937,7 +937,7 @@ Notification/email/websocket events exist as side effects, but no persisted noti
 | Order | Allowed order transitions map | Needed | Needed for terminal state invalid transitions | `MISSING_TEST_COVERAGE` |
 | Payment | Allowed payment transitions map | Needed | Needed for terminal/invalid transitions and invalid partial amount | `MISSING_TEST_COVERAGE` |
 | Shipping | Enabled/disabled/multiple methods checkout selection | Needed | Needed | `MISSING_TEST_COVERAGE` |
-| Inventory | Stock decrement/restore/recompute | Needed | Needed for oversell/concurrency | `MISSING_TEST_COVERAGE` |
+| Inventory | Stock decrement/restore/recompute | Cart-checkout decrement for wp-* variant (non-serial qoh + serial reservation) and the two-distinct-wp-products no-merge guard covered by `Phase1FCheckoutApiTest` (V176); restore covered by `QaBug2StockRestoreTest` | Still needed for oversell/concurrency under contention | `PARTIAL_TEST_COVERAGE` |
 | Return | `PENDING -> APPROVED/REJECTED`, `APPROVED -> RECEIVED`, `RECEIVED -> COMPLETED/REFUNDED` | Needed | Needed for invalid jumps | `MISSING_TEST_COVERAGE` |
 | Admin User | `ACTIVE -> DISABLED/SUSPENDED`, restore to active | Needed | Needed for self-deactivation/Super Admin demotion | `MISSING_TEST_COVERAGE` |
 | Content | Publish transitions and delete to archive | Needed | Needed for forbidden transitions | `MISSING_TEST_COVERAGE` |
@@ -964,7 +964,7 @@ Notes:
 | Review moderation lifecycle | `NEEDS_VERIFICATION` | Review controllers exist in prior docs, but review status transitions not audited here. |
 | Customer account status lifecycle | `NEEDS_VERIFICATION` | Customer auth exists, but customer status/disable lifecycle not confirmed. |
 | Admin role lifecycle | `STATUS_ONLY` / `NEEDS_VERIFICATION` | Custom role CRUD exists, but role active/inactive lifecycle not confirmed. |
-| POS order lifecycle | `PARTIAL` / `NEEDS_VERIFICATION` | POS auto-complete condition exists in payment update; full POS flow not documented here. |
+| POS order lifecycle | `PARTIAL` / `NEEDS_VERIFICATION` | POS auto-complete condition exists in payment update. Customer linkage at POS is now defined (`POS_CUSTOMER_*` in BUSINESS_RULES — phone required, resolve-or-create by phone). Void/cancel of a completed POS sale still not documented (modelled as refund/return today). |
 
 ## 20. Evidence Summary
 

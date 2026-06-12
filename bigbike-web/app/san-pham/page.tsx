@@ -2,15 +2,17 @@ import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
 import { WpCategoryHero, type WpCategoryCrumb } from "@/components/wp/WpCategoryHero";
 import { WpCatalogClient } from "@/components/wp/WpCatalogClient";
-import { getCatalogFacets, listBrands, listCategories, listPublicSettings } from "@/lib/api/public-api";
+import { getCatalogFacets, listBrands, listCategories, listProducts, listPublicSettings } from "@/lib/api/public-api";
+import { DEFAULT_PRODUCT_PAGE_SIZE, DEFAULT_PRODUCT_SORT } from "@/lib/constants/catalog";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { resolveMediaUrl, toLegacyWpMediaUrl } from "@/lib/utils/format";
 import { readDefaultHeroAssets, readHeroSettings } from "@/lib/utils/page-hero";
 import { toHomePath, toProductListPath } from "@/lib/utils/routes";
 
-// Shell tĩnh (ISR) — hero lấy từ settings (admin quản lý, revalidate theo tag "settings").
-// Lưới sản phẩm (lọc/phân trang/tìm theo searchParams) render ở CLIENT qua WpCatalogClient
-// → trang không phụ thuộc searchParams → tĩnh được, không SSR.
+// Shell + hero lấy từ settings (admin quản lý, revalidate theo tag "settings"). Lưới
+// sản phẩm view MẶC ĐỊNH (page 1, sort mặc định, chưa lọc) fetch sẵn ở server và
+// truyền xuống WpCatalogClient → nằm trong HTML server (SEO). Khi khách lọc/sắp xếp/
+// sang trang, client tiếp quản fetch theo searchParams.
 export async function generateMetadata(): Promise<Metadata> {
   const tCatalog = await getTranslations("Catalog");
   return buildPublicMetadata({
@@ -24,11 +26,12 @@ export default async function ProductListPage() {
   const tCatalog = await getTranslations("Catalog");
   const locale = await getLocale();
 
-  const [settingsResult, brandsResult, categoriesResult, facetsResult] = await Promise.all([
+  const [settingsResult, brandsResult, categoriesResult, facetsResult, productsResult] = await Promise.all([
     listPublicSettings(locale),
     listBrands({ page: 1, size: 100, sort: "name:asc", lang: locale }),
     listCategories({ page: 1, size: 100, sort: "sortOrder:asc", lang: locale }),
     getCatalogFacets({ lang: locale }),
+    listProducts({ page: 1, size: DEFAULT_PRODUCT_PAGE_SIZE, sort: DEFAULT_PRODUCT_SORT, lang: locale }),
   ]);
 
   const heroSettings = readHeroSettings(settingsResult.data ?? [], "hero_products");
@@ -72,6 +75,8 @@ export default async function ProductListPage() {
               brands={brandsResult.data}
               categories={filterCategories}
               facets={facetsResult.data}
+              initialProducts={productsResult.data}
+              initialPagination={productsResult.pagination}
               includeCategoryParam
             />
           </div>

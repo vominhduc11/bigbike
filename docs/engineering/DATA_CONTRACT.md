@@ -89,7 +89,11 @@ Current POS flow persists or emits these notable fields:
 - `customerNote`
 - payment record with provider `POS`
 
-`AdminOrderListItemResponse` (admin order list) exposes `source` so the list can render a POS badge — previously `source` was only on the order detail response. `PosOrderResponse` exposes `customerName`/`customerPhone` so the POS receipt can print buyer info. Evidence: `AdminOrderListItemResponse.java`, `OrderMapper.toAdminListItem`, `PosOrderService.PosOrderResponse`.
+`AdminOrderListItemResponse` (admin order list) exposes `source` so the list can render a POS badge — previously `source` was only on the order detail response. `PosOrderResponse` exposes `customerName`/`customerPhone`/`customerId` so the POS receipt can print buyer info and the UI can navigate to the linked profile. Evidence: `AdminOrderListItemResponse.java`, `OrderMapper.toAdminListItem`, `PosOrderService.PosOrderResponse`.
+
+**POS-created customer profiles (this PR):** since POS now requires a phone and resolves/auto-creates the customer (`POS_CUSTOMER_002`), a brand-new walk-in produces a `customers` row with `phone` (normalized), `display_name` (entered name or `"Khách tại quầy"`), `status = ACTIVE`, `is_synthetic = true`, `credit_enabled = false`, and no `email`/`password_hash`. No schema change is needed — `customers.phone` is already nullable+unique (`customers_phone_unique`, V64) and email/password are nullable. These profiles appear in the admin customer list (the list does not filter out `is_synthetic` by default). The order snapshot columns (`customer_name`/`customer_phone`) are unchanged and still reflect exactly what staff typed for that sale.
+
+**Phone normalization (this PR):** `customers.phone` is now stored in normalized form (`PhoneNumbers.normalize`: strip spaces/dashes, `+84`/`84` → `0`) consistently across **online registration, login, profile update, admin customer edit, and POS**. This makes phone a reliable identity key (the same person typing `+84…` or `0…` resolves to one profile). Lookups also try the `+84…` variant so pre-existing rows stored before this change (no backfill performed) still match. The WordPress importer (`CustomerImporter`) is intentionally excluded — historical import data is left as-is.
 
 Status: `CONFIRMED_FROM_CODE`
 
@@ -268,6 +272,55 @@ omitted from product *list* responses (detail-only, like `specifications`).
 
 Status: `CONFIRMED_FROM_CODE` — `ProductFaqEntity`, `ProductFaq` domain record,
 `FaqRequest`, `AdminCatalogMutationService.applyFaqs`, migration `V133`.
+
+### Product SEO template fields — pros/cons, warranty, origin, weight, size guide (V175)
+
+Nhóm field bổ sung cho template trang sản phẩm chuẩn SEO/AEO (xem
+`SEO_PDP_IMPLEMENTATION_PLAN.md`, Giai đoạn 3). Tất cả **detail-only** (null/empty
+trong product *list* responses, như `specifications`/`faqs`).
+
+**Ưu điểm / Nhược điểm — bảng con `product_highlights`** (schema.org
+`positiveNotes` / `negativeNotes`). Một bảng con duy nhất phân biệt bằng cột
+`kind`, mirror pattern `product_faqs`. Song ngữ inline (`content` / `content_en`).
+
+| Column | Type | Null | Notes |
+|---|---|---|---|
+| `id` | `BIGINT` identity | NO | Primary key. |
+| `product_id` | `VARCHAR(64)` | NO | FK → `products.id`, `ON DELETE CASCADE`. |
+| `kind` | `VARCHAR(8)` | NO | `PRO` (ưu điểm) hoặc `CON` (nhược điểm). |
+| `sort_order` | `INTEGER` | NO | Display order trong từng nhóm. |
+| `content` | `TEXT` | NO | Câu ưu/nhược (tiếng Việt, canonical). |
+| `content_en` | `TEXT` | YES | Bản tiếng Anh tùy chọn; null → fallback VI. |
+
+Upsert DTO nhận tối đa 20 mục mỗi nhóm (`@Size(max = 20)`). Mục `content` blank bị
+drop. Đọc ra domain `Product` thành 2 mảng string `positiveNotes` / `negativeNotes`
+(đã resolve theo locale).
+
+**Cột scalar mới trên `products`:**
+
+| Column | Type | Null | Notes |
+|---|---|---|---|
+| `warranty_months` | `INTEGER` | YES | Số tháng bảo hành. Domain field `warrantyMonths`. |
+| `warranty_scope` | `TEXT` | YES | Phạm vi bảo hành (1 ngôn ngữ — fallback VI). Domain `warrantyScope`. |
+| `origin_brand_country` | `VARCHAR(120)` | YES | "Thương hiệu [nước]". Domain `originBrandCountry`. |
+| `origin_manufacture_country` | `VARCHAR(120)` | YES | "Sản xuất tại [nước]". Domain `originManufactureCountry`. |
+| `size_guide` | `TEXT` | YES | Bảng size dạng HTML (rich-text, sanitize khi render). Domain `sizeGuide`. |
+
+**Trọng lượng:** dùng lại cột `weight_kg` (`NUMERIC(10,4)`, đã có từ schema gốc) —
+không thêm cột. Domain phơi `weightGrams` (Integer) = `weight_kg × 1000`; admin nhập
+gram, mutation lưu `weight_kg = grams / 1000`. Dùng cho schema.org `Product.weight`.
+
+Status: `CONFIRMED_FROM_CODE` — `ProductHighlightEntity`, `ProductEntity`
+(scalar cols), `HighlightRequest`, `UpsertProductRequest`,
+`AdminCatalogMutationService.applyHighlights`, `JpaCatalogReadRepository`,
+migration `V175`.
+
+### Product video description — `product_videos.description` (V175)
+
+Thêm cột `description TEXT NULL` vào bảng con `product_videos`. Mô tả 2–3 câu nội dung
+video, render dưới embed và làm `description` cho schema.org `VideoObject`. 1 ngôn ngữ
+(không song ngữ). Phơi ra `VideoAsset.description` trên domain. `VideoRequest` nhận
+`description` (`@Size(max = 5000)`).
 
 ### Product related products — `product_related_product_map` (V135)
 
@@ -660,13 +713,36 @@ the variant from a line by **`product_variant_id` (UUID) first, then `product_va
 stock-restore paths (`OrderStockRestoreService`, `AdminReturnService`) use this so cancel /
 refund / completed-return correctly restock variants of migrated products.
 
-Snapshotted at line creation only on the paths that decrement the variant by its string id —
-POS (`PosOrderService`) and storefront quick-buy (`CheckoutService.buildLineItemFromProduct`).
-The cart-checkout copy (`buildLineItemFromCart`) intentionally leaves it `null`: that decrement
-is keyed on the UUID `product_variant_id`, so a wp-* variant there is decremented at product
-level and must restore at product level (symmetric). Historical rows keep `product_variant_pk =
-NULL` and fall back to product-level restore. Fixed BUG-2 — see `TEST_REPORT.md` and
-`QaBug2StockRestoreTest`.
+Snapshotted at line creation on every sell path that decrements the variant by its string id —
+POS (`PosOrderService`), storefront quick-buy (`CheckoutService.buildLineItemFromProduct`), and
+storefront cart-checkout (`CheckoutService.buildLineItemFromCart`, since V176). Historical rows
+keep `product_variant_pk = NULL` and fall back to product-level restore. Fixed BUG-2 — see
+`TEST_REPORT.md` and `QaBug2StockRestoreTest`.
+
+> **V176 fix (cart-checkout wp-* stock leak).** Before V176, `buildLineItemFromCart` intentionally
+> left `product_variant_pk` null on the assumption that cart-checkout decrement was product-level —
+> but `CheckoutService` resolved cart lines by the UUID `product_id`/`product_variant_id`, which are
+> null for wp-* catalog, so the stock-validate and stock-apply passes **skipped wp-* cart lines
+> entirely** (no validation, no decrement, no serial reservation) → silent oversell on the main
+> storefront purchase path. V176 adds `cart_items.product_variant_pk`, populates it at add-to-cart,
+> and switches cart + checkout resolution to `product_pk` / `product_variant_pk` (varchar, uniform
+> for UUID and wp-* entities). Cart-checkout now decrements/reserves at variant level and snapshots
+> `product_variant_pk` onto the order line, so restore stays symmetric. See `cart_items —
+> product_variant_pk (V176)` below.
+
+### cart_items — `product_variant_pk` (V176)
+
+| Table | Column | Type | Nullable | Default | Purpose |
+|---|---|---|---|---|---|
+| `cart_items` | `product_variant_pk` | `VARCHAR(64)` | YES | `null` | Varchar snapshot of `product_variants.id` for the line's variant — the cart-side counterpart of `order_line_items.product_variant_pk` (V158) and `cart_items.product_pk` (V74). |
+
+The legacy UUID columns `cart_items.product_id` / `product_variant_id` are `null` for migrated wp-*
+catalog (string PKs), which made cart-checkout skip stock for those lines (see V176 fix box above).
+`product_pk` was already stored; `product_variant_pk` adds the variant side so checkout resolves and
+decrements the exact variant. Populated by `CartService.addItem`; cart item dedup, guest-cart merge,
+availability marking, and quantity re-validation all key on `product_pk` / `product_variant_pk` so
+two distinct wp-* products no longer collapse onto one cart line. V176 backfills existing rows from
+the UUID column (exact) and from `product_pk` + `variant_name` (best-effort, only when unambiguous).
 
 ### customers / customer_sessions — social login + remember-me (V129)
 

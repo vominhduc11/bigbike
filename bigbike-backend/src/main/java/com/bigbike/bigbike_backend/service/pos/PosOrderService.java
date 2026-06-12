@@ -39,8 +39,10 @@ import com.bigbike.bigbike_backend.service.ws.OrderWsEvent;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
+import com.bigbike.bigbike_backend.util.PhoneNumbers;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
@@ -72,7 +74,9 @@ public class PosOrderService {
             List<@Valid PosLineItemRequest> items,
             @Size(max = 255)
             String customerName,
+            @NotBlank
             @Size(max = 30)
+            @Pattern(regexp = "^\\+?[0-9 .-]{8,20}$", message = "Số điện thoại không hợp lệ.")
             String customerPhone,
             @Size(max = 1000)
             String customerNote,
@@ -117,7 +121,8 @@ public class PosOrderService {
             BigDecimal discountAmount,
             String couponCode,
             String customerName,
-            String customerPhone
+            String customerPhone,
+            String customerId
     ) {}
 
     private static final String CHANNEL_IN_STORE = "IN_STORE";
@@ -168,11 +173,17 @@ public class PosOrderService {
             // Amount unknown yet — we validate after totaling; store customer for later
             creditCustomer = customerRepo.findById(custId)
                     .orElseThrow(() -> new NotFoundException("Customer not found: " + req.customerId()));
-        } else if (req.customerId() != null && !req.customerId().isBlank()) {
-            // CASH/CARD: optional link to existing customer profile for order history
-            try {
-                walkInCustomer = customerRepo.findById(UUID.fromString(req.customerId())).orElse(null);
-            } catch (IllegalArgumentException ignored) {}
+        } else {
+            // CASH/CARD: dùng khách đã chọn rõ (customerId) nếu có; nếu không thì
+            // tìm-hoặc-tạo hồ sơ khách theo SĐT (POS_CUSTOMER_002). SĐT là bắt buộc (NotBlank).
+            if (req.customerId() != null && !req.customerId().isBlank()) {
+                try {
+                    walkInCustomer = customerRepo.findById(UUID.fromString(req.customerId())).orElse(null);
+                } catch (IllegalArgumentException ignored) {}
+            }
+            if (walkInCustomer == null) {
+                walkInCustomer = resolveOrCreateCustomerByPhone(req.customerPhone(), req.customerName());
+            }
         }
 
         // Idempotency: return existing order if client retries with same key
@@ -193,7 +204,8 @@ public class PosOrderService {
                         found.getPaymentMethod(), found.getTotalAmount(), req.tenderedAmount(), changeAmt,
                         found.getPaidAmount(), found.getRefundAmount(),
                         loadItemsForOrder(found.getId()), foundDiscount1, foundCouponCode1,
-                        found.getCustomerName(), found.getCustomerPhone());
+                        found.getCustomerName(), found.getCustomerPhone(),
+                        found.getCustomerId() != null ? found.getCustomerId().toString() : null);
             }
         }
 
@@ -436,7 +448,8 @@ public class PosOrderService {
                         found.getPaymentMethod(), found.getTotalAmount(), req.tenderedAmount(), changeAmt,
                         found.getPaidAmount(), found.getRefundAmount(),
                         loadItemsForOrder(found.getId()), foundDiscount2, foundCouponCode2,
-                        found.getCustomerName(), found.getCustomerPhone());
+                        found.getCustomerName(), found.getCustomerPhone(),
+                        found.getCustomerId() != null ? found.getCustomerId().toString() : null);
             }
             throw ex;
         }
@@ -576,7 +589,8 @@ public class PosOrderService {
                 discountAmount,
                 appliedCoupon != null ? appliedCoupon.getCode() : null,
                 savedOrder.getCustomerName(),
-                savedOrder.getCustomerPhone()
+                savedOrder.getCustomerPhone(),
+                savedOrder.getCustomerId() != null ? savedOrder.getCustomerId().toString() : null
         );
     }
 
@@ -688,6 +702,43 @@ public class PosOrderService {
     private void validatePaymentMethod(String method) {
         if (!"CASH".equals(method) && !"CARD_TERMINAL".equals(method) && !"CREDIT".equals(method)) {
             throw new ConflictException("POS payment method must be CASH, CARD_TERMINAL, or CREDIT.");
+        }
+    }
+
+    /**
+     * POS_CUSTOMER_002: tìm khách theo SĐT đã chuẩn hóa; nếu chưa có thì tạo hồ sơ mới
+     * (walk-in: chỉ SĐT, không email/mật khẩu, is_synthetic=true). Trùng SĐT → giữ hồ sơ cũ
+     * (POS_CUSTOMER_003), không sửa tên/profile.
+     */
+    private CustomerEntity resolveOrCreateCustomerByPhone(String rawPhone, String rawName) {
+        String phone = PhoneNumbers.normalize(rawPhone);
+        if (phone == null) {
+            return null; // không có chữ số nào — để đơn không gắn khách (Bean Validation đã chặn rỗng)
+        }
+        var existing = customerRepo.findByPhone(phone);
+        if (existing.isEmpty()) {
+            String intl = PhoneNumbers.toInternationalVariant(phone);
+            if (intl != null) {
+                existing = customerRepo.findByPhone(intl);
+            }
+        }
+        if (existing.isPresent()) {
+            return existing.get();
+        }
+        Instant now = Instant.now();
+        CustomerEntity c = new CustomerEntity();
+        c.setPhone(phone);
+        c.setDisplayName(rawName != null && !rawName.isBlank() ? rawName.trim() : "Khách tại quầy");
+        c.setStatus("ACTIVE");
+        c.setSynthetic(true);
+        c.setCreditEnabled(false);
+        c.setCreatedAt(now);
+        c.setUpdatedAt(now);
+        try {
+            return customerRepo.saveAndFlush(c);
+        } catch (DataIntegrityViolationException ex) {
+            // Đua 2 quầy cùng SĐT: hồ sơ đã được quầy kia tạo — dùng lại nó.
+            return customerRepo.findByPhone(phone).orElse(null);
         }
     }
 

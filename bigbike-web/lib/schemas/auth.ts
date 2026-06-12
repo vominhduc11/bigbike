@@ -43,40 +43,7 @@ export function createResetPasswordSchema(t: AuthValidationT) {
     });
 }
 
-export const loginSchema = z.object({
-  login: z.string().min(1, "Please enter your email or phone number"),
-  password: z.string().min(1, "Please enter your password"),
-  remember: z.boolean(),
-});
-
-export const registerSchema = z
-  .object({
-    fullName: z.string().min(1, "Please enter your name"),
-    email: z.string().email("Invalid email address"),
-    phone: z.string().min(1, "Please enter your phone number").regex(/^\+?[0-9]{8,15}$/, "Invalid phone number"),
-    password: z.string().min(8, "Password must be at least 8 characters"),
-    confirm: z.string().min(1, "Please confirm your password"),
-  })
-  .refine((d) => d.password === d.confirm, {
-    message: "Passwords do not match",
-    path: ["confirm"],
-  });
-
-export const forgotPasswordSchema = z.object({
-  login: z.string().min(1, "Please enter your email or phone number"),
-});
-
-export const resetPasswordSchema = z
-  .object({
-    password: z.string().min(8, "Password must be at least 8 characters"),
-    confirm: z.string().min(1, "Please confirm your password"),
-  })
-  .refine((d) => d.password === d.confirm, {
-    message: "Passwords do not match",
-    path: ["confirm"],
-  });
-
-export type LoginFormValues = z.infer<typeof loginSchema>;
-export type RegisterFormValues = z.infer<typeof registerSchema>;
-export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
-export type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
+export type LoginFormValues = z.infer<ReturnType<typeof createLoginSchema>>;
+export type RegisterFormValues = z.infer<ReturnType<typeof createRegisterSchema>>;
+export type ForgotPasswordFormValues = z.infer<ReturnType<typeof createForgotPasswordSchema>>;
+export type ResetPasswordFormValues = z.infer<ReturnType<typeof createResetPasswordSchema>>;

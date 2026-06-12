@@ -68,6 +68,14 @@ class SliderReadServiceTest {
                         null,       // promotionContent
                         null,       // installationGuide
                         List.of(),  // faqs
+                        List.of(),  // positiveNotes
+                        List.of(),  // negativeNotes
+                        null,       // warrantyMonths
+                        null,       // warrantyScope
+                        null,       // originBrandCountry
+                        null,       // originManufactureCountry
+                        null,       // weightGrams
+                        null,       // sizeGuide
                         List.of(),  // relatedProducts
                         null,       // descriptionBlocks
                         null,       // seo

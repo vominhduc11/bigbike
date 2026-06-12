@@ -23,6 +23,9 @@ public class VideoRequest {
     @Size(max = 50, message = "Video provider is too long.")
     private String provider;
 
+    @Size(max = 5000, message = "Video description is too long.")
+    private String description;
+
     @Size(max = 2048, message = "Thumbnail URL is too long.")
     private String thumbnailUrl;
 

@@ -290,7 +290,9 @@ renders; the heavy detail-only payload is served exclusively by
 | `brand`, `category`, `categories`, `image`, `price` | ✅ present | ✅ present |
 | `stockState`, `stockQuantity`, `forceOutOfStock`, `rating`, `ratingCount`, `homepageBlock`, `homepageOrder` | ✅ present | ✅ present |
 | `description`, `contentBottom`, `promotionContent`, `installationGuide` | ❌ `null` | ✅ present |
-| `gallery`, `videos`, `specifications`, `faqs` | ❌ `[]` | ✅ present |
+| `warrantyMonths`, `warrantyScope`, `originBrandCountry`, `originManufactureCountry`, `weightGrams`, `sizeGuide` | ❌ `null` | ✅ present |
+| `gallery`, `videos`, `specifications`, `faqs`, `positiveNotes`, `negativeNotes` | ❌ `[]` | ✅ present |
+| `videos[].description` | — | ✅ present (detail) |
 | `seo` | ❌ `null` | ✅ present |
 | `variants` | ✅ present as **stubs** | ✅ full |
 | `variants[].id/sku/name/price/stockState/stockQuantity/isAvailable/trackSerials` | ✅ present | ✅ present |
@@ -407,6 +409,44 @@ Status: `CONFIRMED_FROM_CODE`
 
 Evidence: `FaqRequest.java`, `UpsertProductRequest.java` (`faqs`), `AdminCatalogMutationService.applyFaqs`, `ProductFaq` domain record, `ProductFaqEntity`, `JpaCatalogReadRepository.toFaqs` (detail mapper; list mapper passes `[]`), `V133__add_product_installation_guide_and_faq.sql`.
 
+### Product SEO template fields — pros/cons, warranty, origin, weight, size guide (V175)
+
+`POST /api/v1/admin/products` và `PATCH /api/v1/admin/products/{id}` chấp nhận nhóm
+field bổ sung cho template trang sản phẩm chuẩn SEO/AEO:
+
+- **`positiveNotes` / `negativeNotes`** — mảng `{ content, contentEn?, sortOrder? }`,
+  tối đa 20 mục mỗi mảng (`@Size(max = 20)`). `content` ≤ 2 000 ký tự. Full-replace
+  như `faqs`; mục `content` blank bị drop. Lưu vào bảng con `product_highlights`
+  (cột `kind` = `PRO`/`CON`). Đọc ra public/admin detail thành **mảng string**
+  `positiveNotes` / `negativeNotes` (đã resolve locale).
+- **`warrantyMonths`** — `Integer` (presence-flag), số tháng bảo hành.
+- **`warrantyScope`** — `String` ≤ 2 000 ký tự (presence-flag), phạm vi bảo hành, 1 ngôn ngữ.
+- **`originBrandCountry`** / **`originManufactureCountry`** — `String` ≤ 120 ký tự
+  (presence-flag) — "thương hiệu [nước]" vs "sản xuất tại [nước]".
+- **`weightGrams`** — `Integer` (presence-flag), trọng lượng tính bằng gram. Lưu vào
+  cột có sẵn `weight_kg` (= `weightGrams / 1000`); đọc ra `weightGrams` = `weight_kg × 1000`.
+- **`sizeGuide`** — `String` rich-HTML ≤ 20 000 ký tự (presence-flag), bảng size dạng
+  `<table>`; web sanitize trước khi render.
+
+Tất cả trả về trên `GET /api/v1/products/{slug}` và admin product read; **không** có
+trong product *list* responses (detail-only). Web PDP render: khối Ưu/Nhược điểm
+(+ schema `positiveNotes`/`negativeNotes`), trust block bảo hành, dòng xuất xứ trong
+bảng thông số, `weight` trong schema.org `Product`, và khối bảng size.
+
+Evidence: `HighlightRequest.java`, `UpsertProductRequest.java`, `ProductHighlightEntity`,
+`AdminCatalogMutationService.applyHighlights` + scalar patch, `Product.java` domain
+record, `JpaCatalogReadRepository`, `V175__add_product_seo_template_fields.sql`.
+
+### Product video description — `videos[].description` (V175)
+
+`videos[]` trong upsert request nhận thêm `description` (`@Size(max = 5000)`), 1 ngôn
+ngữ. Trả về trên product detail là `videos[].description`. Web render caption dưới
+video embed và đưa vào `description` của schema.org `VideoObject`.
+
+Evidence: `VideoRequest.java` (`description`), `ProductVideoEntity.description`,
+`VideoAsset.description`, `AdminCatalogMutationService.applyVideos`,
+`JpaCatalogReadRepository.toVideos`, `V175__add_product_seo_template_fields.sql`.
+
 ### Product related products — `relatedProducts` / `relatedProductIds`
 
 `POST /api/v1/admin/products` and `PATCH /api/v1/admin/products/{id}` accept `relatedProductIds` (added `V135`): an optional ordered array of product ID strings, max 24 entries (`@Size(max = 24)`). Sending `relatedProductIds` replaces the whole list; **an empty array clears it**, `null`/omitted leaves it untouched. The mutation service de-duplicates, preserves order, and silently drops unknown IDs plus the product's own ID (a product cannot relate to itself).
@@ -509,7 +549,7 @@ Status: `CONFIRMED_FROM_CODE` — `PublicHomeVideoController` (`lang` param),
 | Endpoint | Permission | Current behavior | Status | Evidence |
 |---|---|---|---|---|
 | `GET /api/v1/admin/pos/products/search` | `pos.read` | Product search for POS UI | `CONFIRMED_FROM_CODE` | `AdminPosController.java` |
-| `POST /api/v1/admin/pos/orders` | `pos.write`; `pos.price_override` when overriding unit price | Immediate paid/completed order, payment record, stock movement, audit log, WS event | `CONFIRMED_FROM_CODE` | `AdminPosController.java`, `PosOrderService.java`, `Phase1MPosApiTest.java` |
+| `POST /api/v1/admin/pos/orders` | `pos.write`; `pos.price_override` when overriding unit price | Immediate paid/completed order, payment record, stock movement, audit log, WS event. **`customerPhone` is required** (NotBlank, `^\+?[0-9]{8,15}$`); the order is linked to a customer resolved/auto-created by normalized phone (see POS_CUSTOMER rules). | `CONFIRMED_FROM_CODE` (sale) + `INTENDED` (phone-keyed customer, this PR) | `AdminPosController.java`, `PosOrderService.java`, `Phase1MPosApiTest.java` |
 
 Response fields verified in `PosOrderResponse` usage:
 
@@ -527,12 +567,15 @@ Response fields verified in `PosOrderResponse` usage:
 - `discountAmount` — tổng discount từ coupon (BigDecimal, 0 khi không có coupon)
 - `couponCode` — mã coupon đã áp dụng (String, null khi không có coupon)
 - `customerName` — tên khách nhập lúc bán POS (String, null nếu không nhập) — dùng in lên hoá đơn
-- `customerPhone` — SĐT khách nhập lúc bán POS (String, null nếu không nhập) — dùng in lên hoá đơn
+- `customerPhone` — SĐT khách nhập lúc bán POS (String) — dùng in lên hoá đơn; **bắt buộc** kể từ POS_CUSTOMER_001
+- `customerId` — UUID hồ sơ khách đã được gắn/tạo cho đơn (String) — dùng để điều hướng tới hồ sơ khách sau khi bán `INTENDED` (this PR)
 
 **Ghi chú:**
 - Credit limit được check SAU khi tính coupon discount (`totalAfterDiscount`), không check trên `subtotal` trước coupon.
 - Minimum-order coupon vẫn validate trên `subtotal` (đúng intent của coupon).
 - `customerId` sai UUID format → HTTP 400 với field error `customerId: INVALID_FORMAT`.
+- `customerPhone` rỗng → HTTP 400 với field error `customerPhone` (NotBlank). Phone được chuẩn hóa (`+84`/`84` → `0`, bỏ khoảng trắng) trước khi tra/tạo khách.
+- Khách được tìm theo SĐT đã chuẩn hóa; trùng → gắn vào hồ sơ cũ (không sửa hồ sơ); chưa có → tạo hồ sơ mới (`is_synthetic=true`). Xem `POS_CUSTOMER_002/003`.
 
 Status: `CONFIRMED_FROM_CODE`
 

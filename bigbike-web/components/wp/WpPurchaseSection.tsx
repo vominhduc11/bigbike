@@ -128,7 +128,7 @@ export function WpPurchaseSection({
   );
 
   const priceSource = selectedVariant?.price ?? freshPrice;
-  const { current, compare, isSale } = derivePricing(priceSource);
+  const { current, compare } = derivePricing(priceSource);
   const showOld = compare != null && compare > current;
 
   const requiresSelection = hasVariants && !selectedVariant;

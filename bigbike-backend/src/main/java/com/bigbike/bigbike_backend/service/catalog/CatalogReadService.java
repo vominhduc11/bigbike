@@ -169,6 +169,14 @@ public class CatalogReadService {
                 null,                       // promotionContent — detail only
                 null,                       // installationGuide — detail only
                 List.of(),                  // faqs — detail only
+                List.of(),                  // positiveNotes — detail only
+                List.of(),                  // negativeNotes — detail only
+                null,                       // warrantyMonths — detail only
+                null,                       // warrantyScope — detail only
+                null,                       // originBrandCountry — detail only
+                null,                       // originManufactureCountry — detail only
+                null,                       // weightGrams — detail only
+                null,                       // sizeGuide — detail only
                 List.of(),                  // relatedProducts — detail only
                 null,                       // descriptionBlocks — detail only
                 null,                       // seo — detail only

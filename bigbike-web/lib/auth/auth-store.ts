@@ -61,10 +61,6 @@ export function refreshAuth(): Promise<void> {
   return inflight;
 }
 
-export function setAuthenticated(profile: CustomerProfile): void {
-  setState({ status: "authenticated", profile });
-}
-
 export function setAnonymous(): void {
   setState({ status: "anonymous" });
 }

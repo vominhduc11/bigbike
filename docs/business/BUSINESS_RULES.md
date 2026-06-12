@@ -105,6 +105,13 @@ Evidence:
 - POS decrements stock immediately and writes stock movement + audit log. `CONFIRMED_FROM_CODE`
 - No POS expiry cleanup lifecycle is currently documented because no live cleanup job was confirmed. `NOT_FOUND_IN_REPO`
 
+### POS Customer Identity (`POS_CUSTOMER_*`)
+
+- `POS_CUSTOMER_001`: Every POS order **requires `customerPhone`** (NotBlank, pattern `^\+?[0-9]{8,15}$`). A sale cannot be completed without a phone — the phone is the customer identity key at the counter. `INTENDED` (this PR)
+- `POS_CUSTOMER_002`: On sale, the system **normalizes the phone** (strip spaces/dashes, `+84`/`84` prefix → `0`) and resolves the customer by phone (`CustomerJpaRepository.findByPhone`). If a customer with that phone exists → the order is linked to that existing profile (`order.customer_id` set). If none exists → a **new customer profile is auto-created** (`phone` = normalized, `display_name` = entered name or fallback `"Khách tại quầy"`, `status = ACTIVE`, `is_synthetic = true`, `credit_enabled = false`) and the order is linked to it. `INTENDED` (this PR)
+- `POS_CUSTOMER_003`: When the entered phone matches an existing profile but the entered name differs, the **existing profile is preserved unchanged** — the entered name is only snapshotted onto that order's `customer_name` (printed on the receipt), never written back to the customer record. `INTENDED` (this PR)
+- `POS_CUSTOMER_004`: If the request carries an explicit valid `customerId` (e.g. staff picked an existing customer), that link is used directly without phone lookup. CREDIT sales still require an explicit `customerId` of a credit-enabled customer (auto-created walk-in profiles have `credit_enabled = false`, so a brand-new walk-in cannot buy on credit until credit is enabled on their profile). `INTENDED` (this PR)
+
 Evidence:
 
 - `AdminPosController.java`
@@ -302,7 +309,7 @@ AR module implemented in V75 (Flyway). Rules below are `CONFIRMED_FROM_CODE`.
 - `AR_RULE_006`: Partial payments are supported. Each `POST /admin/receivables/{id}/payments` call records a PaymentEntity and updates `paidAmount`. `paymentStatus` transitions: UNPAID → PARTIALLY_PAID → PAID. `CONFIRMED_FROM_CODE`
 - `AR_RULE_007`: Write-off is supported via `POST /admin/receivables/{id}/write-off` with mandatory reason. Requires `receivables.write_off` permission (ADMIN only). Sets AR status=WRITTEN_OFF and records audit log. The linked `orders.payment_status` is NOT updated — it stays UNPAID (the debt is cancelled at the AR level, not collected; V116 CHECK constraint does not permit WRITTEN_OFF as an order payment status). `CONFIRMED_FROM_CODE`
 - `AR_RULE_008`: Overdue receivables are flagged by scheduler. `ReceivableOverdueScheduler` runs daily at 00:05 (`@Scheduled(cron = "0 5 0 * * ?")`) and calls `ReceivableService.refreshOverdueStatus()`, which transitions OPEN/PARTIALLY_PAID receivables past `dueDate` to OVERDUE. No auto-cancellation — status becomes OVERDUE for staff attention. `CONFIRMED_FROM_CODE`
-- `AR_RULE_009`: Target is registered customers (UUID FK on `accounts_receivable.customer_id`). Walk-in without system account: `customer_id` is nullable; `customer_name` and `customer_phone` are snapshotted at creation. `CONFIRMED_FROM_CODE`
+- `AR_RULE_009`: Target is registered customers (UUID FK on `accounts_receivable.customer_id`). `customer_id` is nullable at the schema level; `customer_name` and `customer_phone` are snapshotted at creation. Note: since `POS_CUSTOMER_001/002`, every POS sale now resolves or auto-creates a customer profile by phone, so POS-originated receivables normally carry a non-null `customer_id`. `CONFIRMED_FROM_CODE` (schema) + `INTENDED` (POS auto-link, this PR)
 - `AR_RULE_010`: No customer-facing SOA in web/mobile portal. Receivables are admin-only. `CONFIRMED_FROM_CODE`
 - `AR_RULE_011`: Aging report implemented: buckets are notDue, 0–30 days, 31–60 days, 61–90 days, 90+ days. Also: total outstanding, overdue outstanding, written-off total, open/overdue count. `CONFIRMED_FROM_CODE`
 

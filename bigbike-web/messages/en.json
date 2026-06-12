@@ -544,6 +544,8 @@
     "errorMissingShipping": "Please complete the shipping information.",
     "errorMissingPayment": "Please pick a payment method.",
     "errorShippingUnavailable": "This shipping method is unavailable. Please try again.",
+    "optionsLoadFailed": "Couldn't load shipping and payment methods. Please check your connection and try again.",
+    "retry": "Try again",
     "validation": {
       "fullNameRequired": "Please enter your full name",
       "phoneInvalid": "Invalid phone number (example: 0901234567 or +84901234567)",
@@ -565,6 +567,7 @@
     "shippingMethodSectionTitle": "Shipping Method",
     "shippingMethodFree": "Free",
     "shippingZoneMismatch": "Not available for the selected province",
+    "shippingZoneMismatchHint": "We don't deliver to the area of the address you selected.",
     "noteLabel": "Order Note",
     "noteOptional": "(optional)",
     "notePlaceholder": "Special delivery instructions (optional)",

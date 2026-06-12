@@ -71,14 +71,23 @@ const mGridCard =
 // global prefers-reduced-motion duration override all stay in globals.css.
 const sLayer =
   "pointer-events-none opacity-0 invisible [transition:opacity_0.3s_ease,visibility_0s_linear_0.3s] " +
-  "max-md:z-[var(--bb-z-modal)] " +
+  // md+ stacking-context anchor: the opacity fade-in (opacity<1 mid-transition) makes
+  // THIS layer a transient stacking context. Without an explicit z on a positioned
+  // layer it forms at z-auto → during the 0.3s fade the whole overlay (dim+panel)
+  // drops below any positive-z page content, which then pokes through; after the fade
+  // (opacity=1) the context dissolves and it pops back. Pinning relative + z-modal makes
+  // the context permanent and high, so transient and settled states are identical.
+  "md:relative md:z-[var(--bb-z-modal)] max-md:z-[var(--bb-z-modal)] " +
   // fixed black bar across the header strip (desktop only; hidden on the mobile full-screen panel)
   "before:content-[''] before:fixed before:inset-x-0 before:top-0 before:h-[var(--bb-header-height)] " +
   "before:bg-black before:opacity-0 before:z-[var(--bb-z-modal)] before:[transition:opacity_0.2s_ease] max-md:before:hidden";
 const sLayerOpen =
   "pointer-events-auto opacity-100 visible [transition:opacity_0.3s_ease,visibility_0s_linear_0s] before:opacity-100";
 const sOverlay =
-  "fixed inset-0 [border:none] bg-[rgba(0,0,0,0.64)] " +
+  // md+ z-index: the dim layer must sit just under the panel (z-modal+1). Without an
+  // explicit z it falls back to auto and any positioned WP-theme PDP element (z>0)
+  // paints above it → background looks un-dimmed. Mobile keeps its own z via sOverlayOpen.
+  "fixed inset-0 [border:none] bg-[rgba(0,0,0,0.64)] md:z-[var(--bb-z-modal)] " +
   "max-md:bg-[color-mix(in_srgb,var(--bb-color-black)_58%,transparent)]";
 // open: the .is-open .overlay rule lifts the overlay just under the mobile panel
 const sOverlayOpen = "max-md:z-[calc(var(--bb-mobile-panel-z)_-_1)]";

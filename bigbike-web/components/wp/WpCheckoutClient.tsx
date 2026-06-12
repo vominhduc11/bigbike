@@ -93,7 +93,12 @@ export function WpCheckoutClient() {
   const hasPrefilledRef = useRef(false);
 
   const { data: cart, isLoading: cartLoading, error: cartError } = useCartQuery();
-  const { data: checkoutOptions, isLoading: optionsLoading } = useCheckoutOptions();
+  const {
+    data: checkoutOptions,
+    isLoading: optionsLoading,
+    isError: optionsError,
+    refetch: refetchOptions,
+  } = useCheckoutOptions();
   const { data: profile } = useProfile();
   const { data: addresses } = useAddresses();
 
@@ -300,6 +305,17 @@ export function WpCheckoutClient() {
 
   const reqMark = <span className="required">*</span>;
 
+  // Lỗi tải phương thức vận chuyển/thanh toán (mạng) — phân biệt với "không có
+  // phương thức được cấu hình"; cho khách thử lại tại chỗ thay vì kẹt.
+  const optionsErrorNotice = (
+    <div className="woocommerce-error" role="alert">
+      <p className="m-0">{t("optionsLoadFailed")}</p>
+      <button type="button" className="button" style={{ marginTop: 8 }} onClick={() => refetchOptions()}>
+        {t("retry")}
+      </button>
+    </div>
+  );
+
   return (
     <form className="checkout woocommerce-checkout" onSubmit={handleSubmit} noValidate>
       <div className="woocommerce-notices-wrapper">
@@ -491,6 +507,8 @@ export function WpCheckoutClient() {
                 <label>{t("shippingMethodSectionTitle")}</label>
                 {optionsLoading ? (
                   <p className="woocommerce-info">{t("paymentLoading")}</p>
+                ) : optionsError ? (
+                  optionsErrorNotice
                 ) : shippingMethods.length > 0 ? (
                   shippingMethods.map((method) => {
                     const disabled = isZoneMismatch(method, userRegion);
@@ -515,6 +533,11 @@ export function WpCheckoutClient() {
                           {method.title}{" "}
                           <b className="text-brand">{cost > 0 ? formatVnd(cost) : t("shippingMethodFree")}</b>
                         </label>
+                        {disabled && (
+                          <p className="m-0 mt-1 text-sm text-[var(--bb-text-secondary)]">
+                            {t("shippingZoneMismatchHint")}
+                          </p>
+                        )}
                       </div>
                     );
                   })
@@ -571,6 +594,8 @@ export function WpCheckoutClient() {
                 <label>{t("step2Title")}</label>
                 {optionsLoading ? (
                   <p className="woocommerce-info">{t("paymentLoading")}</p>
+                ) : optionsError ? (
+                  optionsErrorNotice
                 ) : paymentMethods.length > 0 ? (
                   paymentMethods.map((method) => {
                     const checked = paymentMethod === method.code;

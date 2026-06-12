@@ -12,6 +12,7 @@ import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEntity;
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerSessionEntity;
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
 import com.bigbike.bigbike_backend.service.auth.PasswordService;
+import com.bigbike.bigbike_backend.util.PhoneNumbers;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Locale;
@@ -36,7 +37,9 @@ public class CustomerAuthService {
     @Transactional
     public CustomerAuthResult register(CustomerRegisterRequest req, String ipAddress, String userAgent) {
         String normalizedEmail = req.email() != null ? req.email().toLowerCase(Locale.ROOT).trim() : null;
-        String normalizedPhone = req.phone() != null ? req.phone().trim() : null;
+        // Chuẩn hóa SĐT về dạng 0… (PhoneNumbers.normalize) để nhất quán với POS — cùng một số
+        // dù nhập +84 hay 0 đều lưu/đối chiếu như nhau.
+        String normalizedPhone = PhoneNumbers.normalize(req.phone());
 
         if (normalizedEmail == null && normalizedPhone == null) {
             throw ValidationException.fromField("email", "REQUIRED", "Email or phone is required.");
@@ -48,7 +51,7 @@ public class CustomerAuthService {
         if (normalizedEmail != null && customerRepo.findByEmail(normalizedEmail).isPresent()) {
             throw new ConflictException("Thông tin đăng ký không hợp lệ.");
         }
-        if (normalizedPhone != null && customerRepo.findByPhone(normalizedPhone).isPresent()) {
+        if (normalizedPhone != null && findByPhoneFlexible(normalizedPhone).isPresent()) {
             throw new ConflictException("Thông tin đăng ký không hợp lệ.");
         }
 
@@ -157,7 +160,7 @@ public class CustomerAuthService {
         String newEmail = (req.email() != null && !req.email().isBlank())
                 ? req.email().toLowerCase(Locale.ROOT).trim() : null;
         String newPhone = (req.phone() != null && !req.phone().isBlank())
-                ? req.phone().trim() : null;
+                ? PhoneNumbers.normalize(req.phone()) : null;
 
         boolean isSensitiveChange = (req.newPassword() != null && !req.newPassword().isBlank())
                 || (newEmail != null && !newEmail.equals(customer.getEmail()))
@@ -181,7 +184,7 @@ public class CustomerAuthService {
             customer.setEmail(newEmail);
         }
         if (newPhone != null && !newPhone.equals(customer.getPhone())) {
-            customerRepo.findByPhone(newPhone).ifPresent(c -> {
+            findByPhoneFlexible(newPhone).ifPresent(c -> {
                 throw new ConflictException("Thông tin cập nhật không hợp lệ.");
             });
             customer.setPhone(newPhone);
@@ -222,7 +225,19 @@ public class CustomerAuthService {
         if (login.contains("@")) {
             return customerRepo.findByEmail(login.toLowerCase(Locale.ROOT).trim()).orElse(null);
         }
-        return customerRepo.findByPhone(login.trim()).orElse(null);
+        return findByPhoneFlexible(PhoneNumbers.normalize(login)).orElse(null);
+    }
+
+    /**
+     * Tra khách theo SĐT đã chuẩn hóa, có thử thêm biến thể {@code +84…} để vẫn khớp
+     * những hồ sơ cũ lưu trước khi áp chuẩn hóa (chưa backfill). Trả về Optional rỗng nếu null/không thấy.
+     */
+    private java.util.Optional<CustomerEntity> findByPhoneFlexible(String normalizedPhone) {
+        if (normalizedPhone == null) return java.util.Optional.empty();
+        var byNormalized = customerRepo.findByPhone(normalizedPhone);
+        if (byNormalized.isPresent()) return byNormalized;
+        String intl = PhoneNumbers.toInternationalVariant(normalizedPhone);
+        return intl != null ? customerRepo.findByPhone(intl) : java.util.Optional.empty();
     }
 
     private String deriveDisplayName(CustomerRegisterRequest req) {

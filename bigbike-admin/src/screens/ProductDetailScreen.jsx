@@ -213,6 +213,15 @@ function buildEmptyForm() {
     videos: [],
     specifications: [],
     faqs: [],
+    // Template SEO fields (V175).
+    positiveNotes: [],
+    negativeNotes: [],
+    warrantyMonths: '',
+    warrantyScope: '',
+    originBrandCountry: '',
+    originManufactureCountry: '',
+    weightGrams: '',
+    sizeGuide: '',
     variants: [],
     relatedProductIds: [],
     relatedProductChips: [],
@@ -300,6 +309,7 @@ function buildFormFromItem(item) {
     videos: (item.videos || []).map((v) => ({
       url: v.url || '',
       title: v.title || '',
+      description: v.description || '',
       type: inferVideoType(v.url || '', v.provider),
       thumbnailUrl: v.thumbnail?.url || '',
     })),
@@ -320,6 +330,23 @@ function buildFormFromItem(item) {
       questionEn: f.questionEn || '',
       answerEn: f.answerEn || '',
     })),
+    // Template SEO fields (V175). highlights là object {content, contentEn}.
+    positiveNotes: (item.positiveNotes || []).map((h) => ({
+      _key: generateId(),
+      content: h.content || '',
+      contentEn: h.contentEn || '',
+    })),
+    negativeNotes: (item.negativeNotes || []).map((h) => ({
+      _key: generateId(),
+      content: h.content || '',
+      contentEn: h.contentEn || '',
+    })),
+    warrantyMonths: Number.isInteger(item.warrantyMonths) ? String(item.warrantyMonths) : '',
+    warrantyScope: item.warrantyScope || '',
+    originBrandCountry: item.originBrandCountry || '',
+    originManufactureCountry: item.originManufactureCountry || '',
+    weightGrams: Number.isInteger(item.weightGrams) ? String(item.weightGrams) : '',
+    sizeGuide: item.sizeGuide || '',
     variants,
     relatedProductIds: (item.relatedProducts || []).map((p) => p.id).filter(Boolean),
     relatedProductChips: (item.relatedProducts || [])
@@ -382,6 +409,13 @@ function toPayload(form) {
     description: Array.isArray(form.descriptionBlocks) ? undefined : (form.description.trim() || undefined),
     installationGuide: form.installationGuide.trim() ? form.installationGuide.trim() : null,
     promotionContent: form.promotionContent.trim() ? form.promotionContent.trim() : null,
+    // Template SEO scalars (V175). Null khi cleared (presence-flag).
+    warrantyMonths: toIntegerOrNull(form.warrantyMonths),
+    warrantyScope: form.warrantyScope.trim() ? form.warrantyScope.trim() : null,
+    originBrandCountry: form.originBrandCountry.trim() ? form.originBrandCountry.trim() : null,
+    originManufactureCountry: form.originManufactureCountry.trim() ? form.originManufactureCountry.trim() : null,
+    weightGrams: toIntegerOrNull(form.weightGrams),
+    sizeGuide: form.sizeGuide.trim() ? form.sizeGuide.trim() : null,
     brandId: form.brandId.trim() || undefined,
     categoryId: form.categoryId.trim(),
     // Send null when cleared so backend (presence-flag logic) can distinguish
@@ -420,6 +454,7 @@ function toPayload(form) {
     .map((v, i) => ({
       url: v.url.trim(),
       title: v.title.trim() || undefined,
+      description: (v.description || '').trim() || undefined,
       provider: v.type === 'upload' ? 'upload' : 'youtube',
       thumbnailUrl: v.type === 'upload' ? (v.thumbnailUrl?.trim() || undefined) : undefined,
       sortOrder: i,
@@ -442,6 +477,22 @@ function toPayload(form) {
       answer: f.answer.trim(),
       questionEn: (f.questionEn || '').trim() || undefined,
       answerEn: (f.answerEn || '').trim() || undefined,
+      sortOrder: i,
+    }))
+
+  // Ưu/Nhược điểm (V175) — full-replace mỗi nhóm; mục content blank bị bỏ.
+  payload.positiveNotes = form.positiveNotes
+    .filter((h) => (h.content || '').trim())
+    .map((h, i) => ({
+      content: h.content.trim(),
+      contentEn: (h.contentEn || '').trim() || undefined,
+      sortOrder: i,
+    }))
+  payload.negativeNotes = form.negativeNotes
+    .filter((h) => (h.content || '').trim())
+    .map((h, i) => ({
+      content: h.content.trim(),
+      contentEn: (h.contentEn || '').trim() || undefined,
       sortOrder: i,
     }))
 
@@ -781,6 +832,14 @@ function VideoEditor({ items, onChange, disabled, validationErrors = {} }) {
                 onChange={(e) => updateItem(index, { title: e.target.value })}
                 disabled={disabled}
                />
+              <Textarea
+                placeholder={t('products.detail.video.descriptionPlaceholder', { defaultValue: 'Mô tả nội dung video (2–3 câu) — hiển thị dưới video & dùng cho dữ liệu có cấu trúc.' })}
+                value={item.description || ''}
+                onChange={(e) => updateItem(index, { description: e.target.value })}
+                disabled={disabled}
+                rows={2}
+                maxLength={5000}
+              />
             </div>
             <Button
               variant="ghost"
@@ -888,6 +947,65 @@ function SpecificationsEditor({ items, onChange, disabled, validationErrors, con
       })}
       <Button variant="outline" size="sm" onClick={addItem} disabled={disabled}>
         + {t('products.detail.specs.addSpec')}
+      </Button>
+    </div>
+  )
+}
+
+/** Ưu/Nhược điểm (V175) — danh sách câu ngắn, song ngữ inline. Dùng chung cho cả
+ *  hai nhóm; nhãn/placeholder truyền qua props. */
+function HighlightsEditor({ items, onChange, disabled, contentLang = 'vi', placeholder, addLabel }) {
+  const { t } = useTranslation()
+  const isEn = contentLang === 'en'
+  const fContent = isEn ? 'contentEn' : 'content'
+  function updateItem(index, value) {
+    onChange(items.map((item, i) => (i === index ? { ...item, [fContent]: value } : item)))
+  }
+  function addItem() {
+    onChange([...items, { _key: generateId(), content: '', contentEn: '' }])
+  }
+  function removeItem(index) {
+    onChange(items.filter((_, i) => i !== index))
+  }
+  function moveItem(index, dir) {
+    const next = [...items]
+    const target = index + dir
+    if (target < 0 || target >= next.length) return
+    ;[next[index], next[target]] = [next[target], next[index]]
+    onChange(next)
+  }
+
+  return (
+    <div className="list-editor">
+      {items.map((item, index) => (
+        <div key={item._key} className="list-editor-row">
+          <div className="list-editor-reorder">
+            <Button variant="outline" size="icon" onClick={() => moveItem(index, -1)} disabled={disabled || index === 0} aria-label={t('products.detail.moveUp')}>▲</Button>
+            <Button variant="outline" size="icon" onClick={() => moveItem(index, 1)} disabled={disabled || index === items.length - 1} aria-label={t('products.detail.moveDown')}>▼</Button>
+          </div>
+          <div className="flex-1">
+            <Input
+              placeholder={placeholder}
+              value={item[fContent] || ''}
+              onChange={(e) => updateItem(index, e.target.value)}
+              disabled={disabled}
+              maxLength={2000}
+            />
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-destructive hover:text-destructive"
+            onClick={() => removeItem(index)}
+            disabled={disabled}
+            aria-label={t('products.detail.highlights.remove', { defaultValue: 'Xóa mục' })}
+          >
+            ✕
+          </Button>
+        </div>
+      ))}
+      <Button variant="outline" size="sm" onClick={addItem} disabled={disabled}>
+        + {addLabel}
       </Button>
     </div>
   )
@@ -3128,8 +3246,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   <Field
                     full
                     label={t('products.detail.seoTitle')}
-                    count={`${langValue('seoTitle').length} / 255`}
-                    countWarn={langValue('seoTitle').length > 230}
+                    count={`${langValue('seoTitle').length} / 60`}
+                    countWarn={langValue('seoTitle').length > 60}
                     error={validationErrors.seoTitle}
                   >
                     <Input
@@ -3144,8 +3262,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   <Field
                     full
                     label={t('products.detail.seoDescription')}
-                    count={`${langValue('seoDescription').length} / 5000`}
-                    countWarn={langValue('seoDescription').length > 4500}
+                    count={`${langValue('seoDescription').length} / 155`}
+                    countWarn={langValue('seoDescription').length > 155}
                     error={validationErrors.seoDescription}
                   >
                     <Textarea
@@ -3345,6 +3463,122 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   validationErrors={validationErrors}
                   contentLang={contentLang}
                 />
+              </SectionCard>
+
+              {/* ── Card: Ưu điểm & Nhược điểm (V175) ── */}
+              <SectionCard
+                title={t('products.detail.highlights.sectionTitle', { defaultValue: 'Ưu điểm & Nhược điểm' })}
+                badge={<RoleBadge role="content" />}
+              >
+                <p className="text-xs text-muted-foreground mb-3">
+                  {t('products.detail.highlights.hint', { defaultValue: 'Các gạch đầu dòng ưu/nhược điểm thật của sản phẩm — hiển thị trên trang và đưa vào dữ liệu có cấu trúc (positiveNotes/negativeNotes).' })}
+                </p>
+                <div className="grid gap-5 md:grid-cols-2">
+                  <div>
+                    <div className="text-sm font-medium mb-2">{t('products.detail.highlights.prosTitle', { defaultValue: 'Ưu điểm' })}</div>
+                    <HighlightsEditor
+                      items={form.positiveNotes}
+                      onChange={(next) => updateField('positiveNotes', next)}
+                      disabled={isReadOnly}
+                      contentLang={contentLang}
+                      placeholder={t('products.detail.highlights.prosPlaceholder', { defaultValue: 'vd: Nhẹ hơn LS2 Storm II 29g' })}
+                      addLabel={t('products.detail.highlights.addPro', { defaultValue: 'Thêm ưu điểm' })}
+                    />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium mb-2">{t('products.detail.highlights.consTitle', { defaultValue: 'Nhược điểm' })}</div>
+                    <HighlightsEditor
+                      items={form.negativeNotes}
+                      onChange={(next) => updateField('negativeNotes', next)}
+                      disabled={isReadOnly}
+                      contentLang={contentLang}
+                      placeholder={t('products.detail.highlights.consPlaceholder', { defaultValue: 'vd: Không kèm Pinlock' })}
+                      addLabel={t('products.detail.highlights.addCon', { defaultValue: 'Thêm nhược điểm' })}
+                    />
+                  </div>
+                </div>
+              </SectionCard>
+
+              {/* ── Card: Bảo hành, xuất xứ, trọng lượng (V175) ── */}
+              <SectionCard
+                title={t('products.detail.trust.sectionTitle', { defaultValue: 'Bảo hành · Xuất xứ · Trọng lượng' })}
+                badge={<RoleBadge role="content" />}
+              >
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field label={t('products.detail.trust.warrantyMonths', { defaultValue: 'Bảo hành (tháng)' })} error={validationErrors.warrantyMonths}>
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      placeholder="vd: 24"
+                      value={form.warrantyMonths}
+                      onChange={(e) => updateField('warrantyMonths', e.target.value.replace(/\D/g, ''))}
+                      disabled={isReadOnly}
+                    />
+                  </Field>
+                  <Field label={t('products.detail.trust.weightGrams', { defaultValue: 'Trọng lượng (gram)' })} hint={t('products.detail.trust.weightHint', { defaultValue: 'Cân thực tế tại shop nếu có.' })} error={validationErrors.weightGrams}>
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      placeholder="vd: 1536"
+                      value={form.weightGrams}
+                      onChange={(e) => updateField('weightGrams', e.target.value.replace(/\D/g, ''))}
+                      disabled={isReadOnly}
+                    />
+                  </Field>
+                  <Field label={t('products.detail.trust.originBrand', { defaultValue: 'Thương hiệu (nước)' })}>
+                    <Input
+                      placeholder="vd: Ý"
+                      value={form.originBrandCountry}
+                      onChange={(e) => updateField('originBrandCountry', e.target.value)}
+                      disabled={isReadOnly}
+                      maxLength={120}
+                    />
+                  </Field>
+                  <Field label={t('products.detail.trust.originManufacture', { defaultValue: 'Sản xuất tại (nước)' })}>
+                    <Input
+                      placeholder="vd: Trung Quốc"
+                      value={form.originManufactureCountry}
+                      onChange={(e) => updateField('originManufactureCountry', e.target.value)}
+                      disabled={isReadOnly}
+                      maxLength={120}
+                    />
+                  </Field>
+                  <Field full label={t('products.detail.trust.warrantyScope', { defaultValue: 'Phạm vi bảo hành' })} error={validationErrors.warrantyScope}>
+                    <Textarea
+                      placeholder={t('products.detail.trust.warrantyScopePlaceholder', { defaultValue: 'vd: Bảo hành 24 tháng lỗi nhà sản xuất, không bao gồm va đập.' })}
+                      value={form.warrantyScope}
+                      onChange={(e) => updateField('warrantyScope', e.target.value)}
+                      disabled={isReadOnly}
+                      rows={2}
+                      maxLength={2000}
+                    />
+                  </Field>
+                </div>
+              </SectionCard>
+
+              {/* ── Card: Bảng size (V175) ── */}
+              <SectionCard
+                title={t('products.detail.sizeGuide.sectionTitle', { defaultValue: 'Bảng size' })}
+                badge={<RoleBadge role="content" />}
+              >
+                <p className="text-xs text-muted-foreground mb-2">
+                  {t('products.detail.sizeGuide.hint', { defaultValue: 'Bảng size dạng HTML (vòng đầu theo size) + hướng dẫn đo. Dùng bảng để máy đọc được, không dùng ảnh.' })}
+                </p>
+                <RichTextEditor
+                  key="sizeGuide"
+                  value={form.sizeGuide}
+                  onChange={(html) => updateField('sizeGuide', html)}
+                  placeholder={t('products.detail.sizeGuide.placeholder', { defaultValue: 'Chèn bảng: Size | Vòng đầu (cm) | Cỡ vỏ ...' })}
+                  disabled={isReadOnly}
+                  hasError={Boolean(validationErrors.sizeGuide)}
+                />
+                {validationErrors.sizeGuide && (
+                  <span className="text-xs text-[var(--admin-color-status-danger-text)] font-semibold mt-2 block">
+                    {validationErrors.sizeGuide}
+                  </span>
+                )}
               </SectionCard>
             </>
           )}

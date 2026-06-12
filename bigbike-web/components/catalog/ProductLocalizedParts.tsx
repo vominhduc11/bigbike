@@ -84,3 +84,9 @@ export function ProductFaqs({
 export function ProductDescriptionTab({ viHtml }: { viHtml: string }) {
   return <LHtml field="description" viHtml={viHtml} className="wyswyg" />;
 }
+
+/** Nội dung dài SEO cuối trang (contentBottom) — rich HTML, đổi theo ngôn ngữ.
+ *  Fallback về bản VI render sẵn ở server khi payload EN không có field này. */
+export function ProductContentBottom({ viHtml }: { viHtml: string }) {
+  return <LHtml field="contentBottom" viHtml={viHtml} className="wyswyg" />;
+}

@@ -239,6 +239,7 @@ class Phase1MPosApiTest {
                                 {
                                   "paymentMethod": "CASH",
                                   "posIdempotencyKey": "%s",
+                                  "customerPhone": "0900000000",
                                   "tenderedAmount": 9999999,
                                   "customerName": "Nguyen Van A",
                                   "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1}]
@@ -265,6 +266,7 @@ class Phase1MPosApiTest {
                                 {
                                   "paymentMethod": "CASH",
                                   "posIdempotencyKey": "%s",
+                                  "customerPhone": "0900000000",
                                   "tenderedAmount": 9999999,
                                   "items": [{"productId": "%s", "quantity": 1}]
                                 }
@@ -285,6 +287,7 @@ class Phase1MPosApiTest {
                                 {
                                   "paymentMethod": "BITCOIN",
                                   "posIdempotencyKey": "%s",
+                                  "customerPhone": "0900000000",
                                   "tenderedAmount": 9999999,
                                   "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1}]
                                 }
@@ -305,6 +308,7 @@ class Phase1MPosApiTest {
                                 {
                                   "paymentMethod": "CASH",
                                   "posIdempotencyKey": "%s",
+                                  "customerPhone": "0900000000",
                                   "tenderedAmount": 1,
                                   "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1}]
                                 }
@@ -326,6 +330,7 @@ class Phase1MPosApiTest {
                                 {
                                   "paymentMethod": "CASH",
                                   "posIdempotencyKey": "%s",
+                                  "customerPhone": "0900000000",
                                   "tenderedAmount": 9999999,
                                   "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1,
                                              "unitPriceOverride": 50000}]
@@ -347,6 +352,7 @@ class Phase1MPosApiTest {
                                 {
                                   "paymentMethod": "CASH",
                                   "posIdempotencyKey": "%s",
+                                  "customerPhone": "0900000000",
                                   "tenderedAmount": 9999999,
                                   "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1,
                                              "unitPriceOverride": 50000}]
@@ -432,6 +438,7 @@ class Phase1MPosApiTest {
                                 {
                                   "paymentMethod": "CREDIT",
                                   "posIdempotencyKey": "%s",
+                                  "customerPhone": "0900000000",
                                   "customerId": "%s",
                                   "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1}]
                                 }
@@ -462,6 +469,7 @@ class Phase1MPosApiTest {
                                 {
                                   "paymentMethod": "CREDIT",
                                   "posIdempotencyKey": "%s",
+                                  "customerPhone": "0900000000",
                                   "customerId": "%s",
                                   "downPayment": 300000,
                                   "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1}]
@@ -493,6 +501,7 @@ class Phase1MPosApiTest {
                                 {
                                   "paymentMethod": "CREDIT",
                                   "posIdempotencyKey": "%s",
+                                  "customerPhone": "0900000000",
                                   "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1}]
                                 }
                                 """.formatted(UUID.randomUUID(), tv.productId, tv.variantId)))
@@ -513,6 +522,7 @@ class Phase1MPosApiTest {
                                 {
                                   "paymentMethod": "CREDIT",
                                   "posIdempotencyKey": "%s",
+                                  "customerPhone": "0900000000",
                                   "customerId": "%s",
                                   "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1}]
                                 }
@@ -535,6 +545,7 @@ class Phase1MPosApiTest {
                                 {
                                   "paymentMethod": "CREDIT",
                                   "posIdempotencyKey": "%s",
+                                  "customerPhone": "0900000000",
                                   "customerId": "%s",
                                   "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1}]
                                 }
@@ -557,6 +568,7 @@ class Phase1MPosApiTest {
                                 {
                                   "paymentMethod": "CREDIT",
                                   "posIdempotencyKey": "%s",
+                                  "customerPhone": "0900000000",
                                   "customerId": "%s",
                                   "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1}]
                                 }
@@ -577,6 +589,7 @@ class Phase1MPosApiTest {
                                 {
                                   "paymentMethod": "CREDIT",
                                   "posIdempotencyKey": "%s",
+                                  "customerPhone": "0900000000",
                                   "customerId": "%s",
                                   "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1}]
                                 }
@@ -597,6 +610,7 @@ class Phase1MPosApiTest {
                                 {
                                   "paymentMethod": "CREDIT",
                                   "posIdempotencyKey": "%s",
+                                  "customerPhone": "0900000000",
                                   "customerId": "%s",
                                   "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 3}]
                                 }
@@ -621,6 +635,7 @@ class Phase1MPosApiTest {
                 {
                   "paymentMethod": "CREDIT",
                   "posIdempotencyKey": "%s",
+                  "customerPhone": "0900000000",
                   "customerId": "%s",
                   "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1}]
                 }
@@ -680,6 +695,7 @@ class Phase1MPosApiTest {
                                 {
                                   "paymentMethod": "CREDIT",
                                   "posIdempotencyKey": "%s",
+                                  "customerPhone": "0900000000",
                                   "customerId": "%s",
                                   "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1}]
                                 }
@@ -795,6 +811,7 @@ class Phase1MPosApiTest {
                                 {
                                   "paymentMethod": "CREDIT",
                                   "posIdempotencyKey": "%s",
+                                  "customerPhone": "0900000000",
                                   "customerId": "%s",
                                   "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1}]
                                 }
@@ -861,6 +878,7 @@ class Phase1MPosApiTest {
                                 {
                                   "paymentMethod": "CASH",
                                   "posIdempotencyKey": "%s",
+                                  "customerPhone": "0900000000",
                                   "tenderedAmount": 9999999,
                                   "couponCode": "%s",
                                   "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1}]
@@ -886,6 +904,7 @@ class Phase1MPosApiTest {
                                 {
                                   "paymentMethod": "CREDIT",
                                   "posIdempotencyKey": "%s",
+                                  "customerPhone": "0900000000",
                                   "customerId": "%s",
                                   "couponCode": "%s",
                                   "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1}]
@@ -908,6 +927,7 @@ class Phase1MPosApiTest {
                                 {
                                   "paymentMethod": "CREDIT",
                                   "posIdempotencyKey": "%s",
+                                  "customerPhone": "0900000000",
                                   "customerId": "not-a-uuid",
                                   "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1}]
                                 }
@@ -931,6 +951,7 @@ class Phase1MPosApiTest {
                                 {
                                   "paymentMethod": "CASH",
                                   "posIdempotencyKey": "%s",
+                                  "customerPhone": "0900000000",
                                   "tenderedAmount": 9999999,
                                   "couponCode": "%s",
                                   "items": [
@@ -958,13 +979,141 @@ class Phase1MPosApiTest {
                 assertThat(li.getLineDiscount()).isGreaterThan(java.math.BigDecimal.ZERO));
     }
 
+    // ── POS_CUSTOMER — phone-keyed resolve/auto-create ───────────────────────
+
+    @Test
+    void createPosCashOrder_newPhone_createsCustomerAndLinksOrder() throws Exception {
+        TestVariant tv = createProductWithVariant(5, 100000);
+        String phone = "0931000111";
+        assertThat(customerRepo.findByPhone(phone)).isEmpty();
+
+        MvcResult result = mockMvc.perform(post("/api/v1/admin/pos/orders")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "paymentMethod": "CASH",
+                                  "posIdempotencyKey": "%s",
+                                  "tenderedAmount": 9999999,
+                                  "customerName": "Anh Tuan",
+                                  "customerPhone": "%s",
+                                  "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1}]
+                                }
+                                """.formatted(UUID.randomUUID(), phone, tv.productId, tv.variantId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.customerId").isNotEmpty())
+                .andReturn();
+
+        var created = customerRepo.findByPhone(phone);
+        assertThat(created).isPresent();
+        assertThat(created.get().isSynthetic()).isTrue();
+        assertThat(created.get().getDisplayName()).isEqualTo("Anh Tuan");
+
+        String orderId = extractJsonString(result.getResponse().getContentAsString(), "orderId");
+        var order = orderRepo.findById(UUID.fromString(orderId)).orElseThrow();
+        assertThat(order.getCustomerId()).isEqualTo(created.get().getId());
+    }
+
+    @Test
+    void createPosCashOrder_existingPhone_linksExisting_andKeepsProfileName() throws Exception {
+        TestVariant tv = createProductWithVariant(5, 100000);
+        String phone = "0931000222";
+        // Hồ sơ khách quen đã có sẵn
+        CustomerEntity existing = new CustomerEntity();
+        existing.setPhone(phone);
+        existing.setDisplayName("Khach Quen");
+        existing.setStatus("ACTIVE");
+        existing.setSynthetic(false);
+        existing.setCreatedAt(Instant.now());
+        existing.setUpdatedAt(Instant.now());
+        existing = customerRepo.save(existing);
+        UUID existingId = existing.getId();
+
+        MvcResult result = mockMvc.perform(post("/api/v1/admin/pos/orders")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "paymentMethod": "CASH",
+                                  "posIdempotencyKey": "%s",
+                                  "tenderedAmount": 9999999,
+                                  "customerName": "Ten Khac",
+                                  "customerPhone": "%s",
+                                  "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1}]
+                                }
+                                """.formatted(UUID.randomUUID(), phone, tv.productId, tv.variantId)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String orderId = extractJsonString(result.getResponse().getContentAsString(), "orderId");
+        var order = orderRepo.findById(UUID.fromString(orderId)).orElseThrow();
+        // Gắn vào hồ sơ cũ
+        assertThat(order.getCustomerId()).isEqualTo(existingId);
+        // Tên hồ sơ KHÔNG bị ghi đè; tên mới chỉ nằm trên snapshot đơn
+        assertThat(customerRepo.findById(existingId).orElseThrow().getDisplayName()).isEqualTo("Khach Quen");
+        assertThat(order.getCustomerName()).isEqualTo("Ten Khac");
+        // Không tạo hồ sơ trùng
+        assertThat(customerRepo.findAll().stream().filter(c -> phone.equals(c.getPhone())).count()).isEqualTo(1);
+    }
+
+    @Test
+    void createPosCashOrder_internationalPhone_matchesExistingZeroForm() throws Exception {
+        TestVariant tv = createProductWithVariant(5, 100000);
+        String zeroForm = "0931000333";
+        CustomerEntity existing = new CustomerEntity();
+        existing.setPhone(zeroForm);
+        existing.setDisplayName("Khach 84");
+        existing.setStatus("ACTIVE");
+        existing.setSynthetic(false);
+        existing.setCreatedAt(Instant.now());
+        existing.setUpdatedAt(Instant.now());
+        existing = customerRepo.save(existing);
+        UUID existingId = existing.getId();
+
+        // Nhập dạng +84 → phải khớp hồ sơ dạng 0, không tạo mới
+        mockMvc.perform(post("/api/v1/admin/pos/orders")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "paymentMethod": "CASH",
+                                  "posIdempotencyKey": "%s",
+                                  "tenderedAmount": 9999999,
+                                  "customerPhone": "+84931000333",
+                                  "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1}]
+                                }
+                                """.formatted(UUID.randomUUID(), tv.productId, tv.variantId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.customerId").value(existingId.toString()));
+    }
+
+    @Test
+    void createPosOrder_missingPhone_returns400() throws Exception {
+        TestVariant tv = createProductWithVariant(5, 100000);
+
+        mockMvc.perform(post("/api/v1/admin/pos/orders")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "paymentMethod": "CASH",
+                                  "posIdempotencyKey": "%s",
+                                  "tenderedAmount": 9999999,
+                                  "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1}]
+                                }
+                                """.formatted(UUID.randomUUID(), tv.productId, tv.variantId)))
+                .andExpect(status().isBadRequest());
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private record TestVariant(String productId, String variantId) {}
 
     private CouponEntity createPosCoupon(String code, String discountType, BigDecimal amount) {
         CouponEntity c = new CouponEntity();
-        c.setCode(code + "-" + UUID.randomUUID().toString().replace("-", "").substring(0, 6));
+        // Coupon codes are stored/looked-up in upper-case (CouponPolicyService.normalizeCode);
+        // generate an upper-case code so findByCodeForUpdate matches (lookup is case-sensitive).
+        c.setCode((code + "-" + UUID.randomUUID().toString().replace("-", "").substring(0, 6)).toUpperCase());
         c.setName("Test coupon " + code);
         c.setDiscountType(discountType);
         c.setAmount(amount);
@@ -1045,6 +1194,7 @@ class Phase1MPosApiTest {
                   "paymentMethod": "%s",
                   "posIdempotencyKey": "%s",
                   "tenderedAmount": %d,
+                  "customerPhone": "0900000000",
                   "items": [
                     {
                       "productId": "%s",

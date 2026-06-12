@@ -35,11 +35,12 @@
 | Step | Actor | Current flow | Status | Evidence |
 |---|---|---|---|---|
 | 1 | Admin / Shop manager | Search POS products | `CONFIRMED_FROM_CODE` | `AdminPosController.java` |
-| 2 | Admin / Shop manager | Submit POS order with payment method and idempotency key | `CONFIRMED_FROM_CODE` | `AdminPosController.java`, `PosOrderService.java` |
+| 2 | Admin / Shop manager | Submit POS order with payment method, **required customer phone**, and idempotency key | `CONFIRMED_FROM_CODE` + `INTENDED` (phone required, this PR) | `AdminPosController.java`, `PosOrderService.java` |
 | 3 | System | Validate stock, publish status, tendered amount, and override permission | `CONFIRMED_FROM_CODE` | `PosOrderService.java` |
-| 4 | System | Create order as completed/paid | `CONFIRMED_FROM_CODE` | `PosOrderService.java` |
-| 5 | System | Persist payment, audit log, system note, customer/staff snapshot, stock movement | `CONFIRMED_FROM_CODE` | `PosOrderService.java`, `Phase1MPosApiTest.java` |
-| 6 | System | Push `NEW_ORDER` WebSocket event | `CONFIRMED_FROM_CODE` | `PosOrderService.java`, `AdminOrderWsService.java` |
+| 4 | System | **Resolve customer by normalized phone — link existing profile or auto-create a new one** | `INTENDED` (this PR) | `PosOrderService.java`, `PhoneNumbers.java` |
+| 5 | System | Create order as completed/paid, linked to the resolved customer | `CONFIRMED_FROM_CODE` | `PosOrderService.java` |
+| 6 | System | Persist payment, audit log, system note, customer/staff snapshot, stock movement | `CONFIRMED_FROM_CODE` | `PosOrderService.java`, `Phase1MPosApiTest.java` |
+| 7 | System | Push `NEW_ORDER` WebSocket event | `CONFIRMED_FROM_CODE` | `PosOrderService.java`, `AdminOrderWsService.java` |
 
 ## Media Workflow
 

@@ -70,6 +70,31 @@ public class UpsertProductRequest {
     private String installationGuide;
     private boolean installationGuidePresent = false;
 
+    // Template SEO fields (V175). Presence-flag pattern: omitting the key on PATCH
+    // leaves the column untouched; sending null/blank clears it. 1 ngôn ngữ.
+    private Integer warrantyMonths;
+    private boolean warrantyMonthsPresent = false;
+
+    @Size(max = 2000, message = "Warranty scope is too long.")
+    private String warrantyScope;
+    private boolean warrantyScopePresent = false;
+
+    @Size(max = 120, message = "Origin brand country is too long.")
+    private String originBrandCountry;
+    private boolean originBrandCountryPresent = false;
+
+    @Size(max = 120, message = "Origin manufacture country is too long.")
+    private String originManufactureCountry;
+    private boolean originManufactureCountryPresent = false;
+
+    /** Trọng lượng tính bằng gram. Lưu vào cột weight_kg (= grams / 1000). */
+    private Integer weightGrams;
+    private boolean weightGramsPresent = false;
+
+    @Size(max = 20000, message = "Size guide is too long.")
+    private String sizeGuide;
+    private boolean sizeGuidePresent = false;
+
     @Valid
     private SeoMetaRequest seo;
     private boolean seoPresent = false;
@@ -97,6 +122,14 @@ public class UpsertProductRequest {
     @Valid
     @Size(max = 50, message = "FAQs may not have more than 50 items.")
     private List<FaqRequest> faqs;
+
+    @Valid
+    @Size(max = 20, message = "Pros may not have more than 20 items.")
+    private List<HighlightRequest> positiveNotes;
+
+    @Valid
+    @Size(max = 20, message = "Cons may not have more than 20 items.")
+    private List<HighlightRequest> negativeNotes;
 
     @Valid
     @Size(max = 200, message = "Variants may not have more than 200 items.")
@@ -304,6 +337,84 @@ public class UpsertProductRequest {
         return installationGuidePresent;
     }
 
+    public Integer getWarrantyMonths() {
+        return warrantyMonths;
+    }
+
+    public void setWarrantyMonths(Integer warrantyMonths) {
+        this.warrantyMonths = warrantyMonths;
+        this.warrantyMonthsPresent = true;
+    }
+
+    public boolean isWarrantyMonthsPresent() {
+        return warrantyMonthsPresent;
+    }
+
+    public String getWarrantyScope() {
+        return warrantyScope;
+    }
+
+    public void setWarrantyScope(String warrantyScope) {
+        this.warrantyScope = warrantyScope;
+        this.warrantyScopePresent = true;
+    }
+
+    public boolean isWarrantyScopePresent() {
+        return warrantyScopePresent;
+    }
+
+    public String getOriginBrandCountry() {
+        return originBrandCountry;
+    }
+
+    public void setOriginBrandCountry(String originBrandCountry) {
+        this.originBrandCountry = originBrandCountry;
+        this.originBrandCountryPresent = true;
+    }
+
+    public boolean isOriginBrandCountryPresent() {
+        return originBrandCountryPresent;
+    }
+
+    public String getOriginManufactureCountry() {
+        return originManufactureCountry;
+    }
+
+    public void setOriginManufactureCountry(String originManufactureCountry) {
+        this.originManufactureCountry = originManufactureCountry;
+        this.originManufactureCountryPresent = true;
+    }
+
+    public boolean isOriginManufactureCountryPresent() {
+        return originManufactureCountryPresent;
+    }
+
+    public Integer getWeightGrams() {
+        return weightGrams;
+    }
+
+    public void setWeightGrams(Integer weightGrams) {
+        this.weightGrams = weightGrams;
+        this.weightGramsPresent = true;
+    }
+
+    public boolean isWeightGramsPresent() {
+        return weightGramsPresent;
+    }
+
+    public String getSizeGuide() {
+        return sizeGuide;
+    }
+
+    public void setSizeGuide(String sizeGuide) {
+        this.sizeGuide = sizeGuide;
+        this.sizeGuidePresent = true;
+    }
+
+    public boolean isSizeGuidePresent() {
+        return sizeGuidePresent;
+    }
+
     public SeoMetaRequest getSeo() {
         return seo;
     }
@@ -341,6 +452,12 @@ public class UpsertProductRequest {
 
     public List<FaqRequest> getFaqs() { return faqs; }
     public void setFaqs(List<FaqRequest> faqs) { this.faqs = faqs; }
+
+    public List<HighlightRequest> getPositiveNotes() { return positiveNotes; }
+    public void setPositiveNotes(List<HighlightRequest> positiveNotes) { this.positiveNotes = positiveNotes; }
+
+    public List<HighlightRequest> getNegativeNotes() { return negativeNotes; }
+    public void setNegativeNotes(List<HighlightRequest> negativeNotes) { this.negativeNotes = negativeNotes; }
 
     public List<VariantRequest> getVariants() { return variants; }
     public void setVariants(List<VariantRequest> variants) { this.variants = variants; }
