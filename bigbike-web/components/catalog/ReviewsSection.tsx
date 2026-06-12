@@ -8,6 +8,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import { LocalDate } from "@/components/i18n/LocalDate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -271,7 +272,7 @@ function ReviewCard({ review }: { review: Review }) {
             {review.authorName}
           </strong>
           <time dateTime={review.createdAt} className="shrink-0 text-caption text-muted-foreground">
-            {new Date(review.createdAt).toLocaleDateString("vi-VN")}
+            <LocalDate value={review.createdAt} dateStyle="slashPad" />
           </time>
         </div>
         <StarRow rating={review.rating} />

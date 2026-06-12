@@ -5,10 +5,12 @@ import { PurchaseEvent } from "@/components/analytics/PurchaseEvent";
 import type { OrderAddress, OrderDetail } from "@/lib/contracts/commerce";
 import { WpStaticShell } from "@/components/wp/WpStaticShell";
 import { WpCheckoutPageHeading } from "@/components/wp/WpCheckoutPageHeading";
+import { Tr } from "@/components/i18n/Tr";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { sectionHeading } from "@/lib/ui-classes";
 import { cn } from "@/lib/utils";
-import { formatAddress, formatDate, formatVnd } from "@/lib/utils/format";
+import { formatAddress, formatVnd } from "@/lib/utils/format";
+import { LocalDate } from "@/components/i18n/LocalDate";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("OrderConfirm");
@@ -88,7 +90,7 @@ async function OrderShell({ children }: { children: React.ReactNode }) {
     >
       <div className="bb-order-confirm-page woocommerce">
         <div className="container">
-          <WpCheckoutPageHeading title={title} />
+          <WpCheckoutPageHeading title={<Tr ns="Checkout" k="title" />} />
           <div className="woocommerce-order mt-10 grid gap-8 pb-24">
             {children}
           </div>
@@ -125,7 +127,7 @@ function OrderOverview({
   const paymentMethod = order.payments[0]?.paymentMethod ?? "";
   const overviewItems = [
     { className: "woocommerce-order-overview__order order", label: t("orderNumberLabel"), value: order.orderNumber },
-    { className: "woocommerce-order-overview__date date", label: t("dateLabel"), value: formatDate(order.placedAt) },
+    { className: "woocommerce-order-overview__date date", label: t("dateLabel"), value: <LocalDate value={order.placedAt} dateStyle="slashPad" fallback="—" /> },
     ...(order.customerEmail ? [{ className: "woocommerce-order-overview__email email", label: t("emailLabel"), value: order.customerEmail }] : []),
     { className: "woocommerce-order-overview__total total", label: t("totalLabel"), value: formatVnd(order.totalAmount) },
     ...(paymentMethod

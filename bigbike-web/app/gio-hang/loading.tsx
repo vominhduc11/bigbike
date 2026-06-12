@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Container } from "@/components/layout/Container";
+import { Tr } from "@/components/i18n/Tr";
 
 export default function CartLoading() {
   return (
@@ -7,14 +8,14 @@ export default function CartLoading() {
       <Container>
         <div className="bb-cart-heading-row">
           <div className="bb-cart-heading-col">
-            <h1>Giỏ hàng</h1>
+            <h1><Tr ns="Cart" k="title" /></h1>
             <nav className="bb-cart-breadcrumb" aria-label="Breadcrumb">
               <ul>
                 <li>
                   <Link href="/">Bigbike.vn</Link>
                 </li>
                 <li aria-current="page">
-                  <span>Giỏ hàng</span>
+                  <span><Tr ns="Cart" k="title" /></span>
                 </li>
               </ul>
             </nav>

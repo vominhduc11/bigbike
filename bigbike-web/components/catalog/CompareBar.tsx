@@ -23,40 +23,45 @@ export function CompareBar() {
   const canCompare = items.length >= 2;
 
   return (
-    <div className="fixed inset-x-0 z-40 border-t border-border bg-white shadow-[0_-4px_14px_rgba(0,0,0,0.1)] bottom-[calc(var(--bb-mobile-nav-height)+env(safe-area-inset-bottom))] md:bottom-0 md:pb-[env(safe-area-inset-bottom)]">
-      <div className="mx-auto flex max-w-[var(--bb-container-xl)] items-center gap-3 px-4 py-2.5 pr-[84px]">
-        <span className="hidden shrink-0 font-body text-xs font-semibold uppercase tracking-display text-muted-foreground sm:block">
-          {t("barLabel")}
-        </span>
+    <div className="fixed inset-x-0 z-40 border-t-2 border-brand bg-white shadow-[0_-6px_18px_rgba(0,0,0,0.12)] bottom-[calc(var(--bb-mobile-nav-height)+env(safe-area-inset-bottom))] md:bottom-0 md:pb-[env(safe-area-inset-bottom)]">
+      <div className="mx-auto flex max-w-[var(--bb-container-xl)] items-center gap-4 px-4 py-3 pr-[84px] md:px-8">
+        <div className="hidden shrink-0 flex-col justify-center sm:flex">
+          <span className="font-cta text-lg font-semibold uppercase leading-none tracking-display text-foreground">
+            {t("barLabel")}
+          </span>
+          <span className="mt-1 font-body text-xs text-muted-foreground">
+            {items.length}/{max}
+          </span>
+        </div>
 
-        <div className="flex flex-1 items-center gap-2 overflow-x-auto">
+        <div className="flex flex-1 items-center gap-2.5 overflow-x-auto">
           {items.map((item) => {
             const src = resolveMediaUrl(item.imageUrl ?? undefined);
             const name = safeText(item.name, t("tableProductCol"));
             return (
               <div
                 key={item.id}
-                className="relative flex shrink-0 items-center gap-2 border border-border bg-card py-1.5 pl-1.5 pr-7"
+                className="relative flex shrink-0 items-center gap-2.5 border border-border bg-card py-2 pl-2 pr-8"
               >
-                <div className="relative h-10 w-10 shrink-0 overflow-hidden bg-secondary">
+                <div className="relative h-14 w-14 shrink-0 overflow-hidden bg-secondary">
                   {src && (
                     <Image
                       src={src}
                       alt={name}
                       fill
-                      sizes="40px"
+                      sizes="56px"
                       className="object-cover"
                     />
                   )}
                 </div>
-                <span className="hidden max-w-[140px] truncate text-sm text-foreground md:block">
+                <span className="hidden max-w-[160px] truncate text-sm text-foreground md:block">
                   {name}
                 </span>
                 <button
                   type="button"
                   onClick={() => remove(item.id)}
                   aria-label={t("barRemoveAriaLabel", { name })}
-                  className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center text-muted-foreground transition-colors hover:text-brand pointer-coarse:after:absolute pointer-coarse:after:-inset-[10px] pointer-coarse:after:content-['']"
+                  className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center text-muted-foreground transition-colors hover:text-brand pointer-coarse:after:absolute pointer-coarse:after:-inset-[10px] pointer-coarse:after:content-['']"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
                     <path d="M18 6 6 18M6 6l12 12" />
@@ -68,7 +73,7 @@ export function CompareBar() {
           {Array.from({ length: emptySlots }, (_, i) => (
             <div
               key={`empty-${i}`}
-              className="flex h-[52px] shrink-0 items-center justify-center border border-dashed border-border px-3 text-xs text-muted-foreground"
+              className="flex h-[72px] shrink-0 items-center justify-center border border-dashed border-border px-4 text-xs text-muted-foreground"
             >
               <span className="hidden md:inline">{t("barAddSlot")}</span>
               <span aria-hidden="true" className="md:hidden">+</span>
@@ -76,25 +81,27 @@ export function CompareBar() {
           ))}
         </div>
 
-        <button
-          type="button"
-          onClick={clear}
-          className="shrink-0 whitespace-nowrap text-sm text-muted-foreground transition-colors hover:text-brand"
-        >
-          {t("barClearAll")}
-        </button>
+        <div className="flex shrink-0 items-center gap-3">
+          <button
+            type="button"
+            onClick={clear}
+            className="whitespace-nowrap font-body text-sm font-medium text-muted-foreground underline-offset-4 transition-colors hover:text-brand hover:underline"
+          >
+            {t("barClearAll")}
+          </button>
 
-        <Link
-          href={toComparePath()}
-          aria-disabled={!canCompare}
-          tabIndex={canCompare ? undefined : -1}
-          className={cn(
-            "shrink-0 whitespace-nowrap bg-brand px-4 py-2.5 font-body text-sm font-semibold uppercase tracking-wide text-white transition-colors hover:bg-brand-hover",
-            !canCompare && "pointer-events-none opacity-50",
-          )}
-        >
-          {t("barCompare", { count: items.length })}
-        </Link>
+          <Link
+            href={toComparePath()}
+            aria-disabled={!canCompare}
+            tabIndex={canCompare ? undefined : -1}
+            className={cn(
+              "inline-flex min-w-[132px] items-center justify-center whitespace-nowrap bg-brand px-5 py-3 font-cta text-base font-semibold uppercase tracking-display text-white transition-colors hover:bg-brand-hover",
+              !canCompare && "pointer-events-none opacity-50",
+            )}
+          >
+            {t("barCompare", { count: items.length })}
+          </Link>
+        </div>
       </div>
     </div>
   );

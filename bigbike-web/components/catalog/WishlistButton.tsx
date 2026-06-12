@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useWishlist } from "@/lib/wishlist-context";
 import { useAuth } from "@/lib/auth/auth-store";
 import { toLoginPath } from "@/lib/utils/routes";
@@ -36,6 +37,7 @@ function HeartIcon({ active }: { active: boolean }) {
 }
 
 export function WishlistButton({ productId, variant = "overlay" }: WishlistButtonProps) {
+  const t = useTranslations("Wishlist");
   const auth = useAuth();
   const { toggle, isWishlisted } = useWishlist();
   const router = useRouter();
@@ -57,7 +59,7 @@ export function WishlistButton({ productId, variant = "overlay" }: WishlistButto
     return (
       <button
         type="button"
-        aria-label={active ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
+        aria-label={active ? t("removeAria") : t("addAria")}
         aria-pressed={active}
         disabled={auth.status === "loading"}
         onClick={handleClick}
@@ -69,7 +71,7 @@ export function WishlistButton({ productId, variant = "overlay" }: WishlistButto
         )}
       >
         <HeartIcon active={active} />
-        <span>{active ? "Đã yêu thích" : "Yêu thích"}</span>
+        <span>{active ? t("added") : t("add")}</span>
       </button>
     );
   }
@@ -77,7 +79,7 @@ export function WishlistButton({ productId, variant = "overlay" }: WishlistButto
   return (
     <CardIconButton
       active={active}
-      ariaLabel={active ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
+      ariaLabel={active ? t("removeAria") : t("addAria")}
       top="top-[10px]"
       disabled={auth.status === "loading"}
       className="cursor-pointer"

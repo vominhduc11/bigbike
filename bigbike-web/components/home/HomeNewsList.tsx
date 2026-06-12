@@ -8,6 +8,7 @@ import { fetchPublicArticleList } from "@/lib/api/client-api";
 import { resolveMediaUrl, safeText, toLegacyWpMediaUrl } from "@/lib/utils/format";
 import { stripHtmlToText } from "@/lib/utils/text";
 import { toArticlePath } from "@/lib/utils/routes";
+import { LocalDate } from "@/components/i18n/LocalDate";
 import type { Article } from "@/lib/contracts/public";
 
 /* eslint-disable @next/next/no-img-element */
@@ -48,7 +49,7 @@ export function HomeNewsList({ initialArticles }: { initialArticles: Article[] }
                 </div>
                 <div className="news--item-desc">
                   <div className="news-date">
-                    <p>{formatWpDate(a.publishedAt ?? a.createdAt)}</p>
+                    <p><LocalDate value={a.publishedAt ?? a.createdAt} dateStyle="slash" /></p>
                   </div>
                   <div className="news--item-inside">
                     <p className="title-post">
@@ -79,11 +80,4 @@ function resolveWpNewsExcerpt(article: Article): string {
   if (manualExcerpt) return truncateWpExcerpt(manualExcerpt);
   const bodyText = article.body ? stripHtmlToText(article.body) : "";
   return bodyText ? truncateWpExcerpt(bodyText) : "";
-}
-
-/** get_the_date('j/n/Y') — ngày/tháng/năm không số 0 đầu. */
-function formatWpDate(value: string | null | undefined): string {
-  const date = new Date(value ?? "");
-  if (Number.isNaN(date.valueOf())) return "";
-  return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
 }

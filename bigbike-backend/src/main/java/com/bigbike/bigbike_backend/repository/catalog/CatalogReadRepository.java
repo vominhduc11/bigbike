@@ -47,6 +47,14 @@ public interface CatalogReadRepository {
     /** Public locale-aware category list (localized name/description/seo, no translations object). */
     List<Category> findAllCategories(String locale);
 
+    /**
+     * Admin language-toggle category list. When {@code strictEnglish} is true,
+     * only categories with a non-blank {@code name_en} are returned (NO Vietnamese
+     * fallback) — used by the admin VI/EN switch so untranslated rows are hidden.
+     * Public/web reads keep using {@link #findAllCategories(String)} (fallback).
+     */
+    List<Category> findAllCategories(String locale, boolean strictEnglish);
+
     List<Category> findAllCategories();
 
     /**
@@ -84,6 +92,13 @@ public interface CatalogReadRepository {
 
     /** Public locale-aware brand list (localized name/description/seo, no translations object). */
     List<Brand> findAllBrands(String locale);
+
+    /**
+     * Admin language-toggle brand list. When {@code strictEnglish} is true, only
+     * brands with a non-blank {@code name_en} are returned (NO Vietnamese fallback)
+     * — used by the admin VI/EN switch. Public/web keeps {@link #findAllBrands(String)}.
+     */
+    List<Brand> findAllBrands(String locale, boolean strictEnglish);
 
     List<Brand> findAllBrands();
 

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
 import { WpStaticShell } from "@/components/wp/WpStaticShell";
+import { LHtml, LText, LocalizedContentProvider } from "@/components/i18n/LocalizedContent";
+import { Tr } from "@/components/i18n/Tr";
 import { getPageBySlug, listPublicSettings } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { safeText, telHref } from "@/lib/utils/format";
@@ -55,6 +57,7 @@ export default async function ContactPage() {
   // (map full-width) > .container > .static-page.wyswyg > .row [.information +
   // .contact-form]. Số điện thoại / địa chỉ / kênh online lấy từ settings.
   return (
+    <LocalizedContentProvider kind="page" slug="lien-he">
     <WpStaticShell title={pageTitle} breadcrumb={[]} showHero={false} mainClassName="pb-40 contact-page">
       {mapEmbedSrc ? (
         <div className="iframe">
@@ -79,9 +82,9 @@ export default async function ContactPage() {
                 <div className="col-md-6">
                   <div className="information">
                     <div className="title">
-                      <h1 style={{ fontSize: "24px" }}>{pageTitle}</h1>
+                      <h1 style={{ fontSize: "24px" }}><LText field="title">{pageTitle}</LText></h1>
                       {sanitizedBody ? (
-                        <div dangerouslySetInnerHTML={{ __html: sanitizedBody }} />
+                        <LHtml field="body" viHtml={sanitizedBody} />
                       ) : null}
                     </div>
                     <div className="desc">
@@ -92,7 +95,7 @@ export default async function ContactPage() {
                               <img src={`${T}/images/contact-call-icon.png`} alt="Liên hệ" />
                             </div>
                             <div className="text col">
-                              <p>Liên hệ với chúng tôi</p>
+                              <p><Tr ns="Contact" k="contactUs" /></p>
                               {hotline ? (
                                 <p>
                                   <b>
@@ -116,7 +119,7 @@ export default async function ContactPage() {
                               <img src={`${T}/images/contact-marker-icon.png`} alt="Địa chỉ" />
                             </div>
                             <div className="text col">
-                              <p>Cửa hàng Bigbike</p>
+                              <p><Tr ns="Header" k="wpContactStore" /></p>
                               <p><b>{address}</b></p>
                             </div>
                           </li>
@@ -126,10 +129,10 @@ export default async function ContactPage() {
                             <img src={`${T}/images/contact-calendar-icon.png`} alt="Giờ làm việc" />
                           </div>
                           <div className="text col">
-                            <p>Giờ làm việc</p>
-                            <p><b>T2 - T6: 09h00 - 21h00</b></p>
-                            <p><b>T7 / CN: 09h00 - 18h00</b></p>
-                            <p><b>Lễ / Tết: nghỉ</b></p>
+                            <p><Tr ns="Contact" k="hoursLabel" /></p>
+                            <p><b><Tr ns="Header" k="wpHoursWeekday" /></b></p>
+                            <p><b><Tr ns="Header" k="wpHoursWeekend" /></b></p>
+                            <p><b><Tr ns="Header" k="wpHoursHoliday" /></b></p>
                           </div>
                         </li>
                       </ul>
@@ -139,8 +142,8 @@ export default async function ContactPage() {
                 <div className="col-md-6">
                   <div className="contact-form">
                     <div className="title">
-                      <h3>Liên hệ trực tuyến</h3>
-                      <p>Để được tư vấn nhanh nhất, vui lòng liên hệ với Bigbike qua các kênh dưới đây.</p>
+                      <h3><Tr ns="Contact" k="onlineHeading" /></h3>
+                      <p><Tr ns="Contact" k="onlineDesc" /></p>
                     </div>
                     <div className="webform">
                       <ul>
@@ -151,7 +154,7 @@ export default async function ContactPage() {
                               <p>
                                 <b>
                                   <a href={zaloUrl} target="_blank" rel="noopener noreferrer">
-                                    Chat qua Zalo
+                                    <Tr ns="Contact" k="chatZalo" />
                                   </a>
                                 </b>
                               </p>
@@ -194,5 +197,6 @@ export default async function ContactPage() {
         </div>
       </div>
     </WpStaticShell>
+    </LocalizedContentProvider>
   );
 }

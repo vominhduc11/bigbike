@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import * as SheetPrimitive from "@radix-ui/react-dialog";
+import { useTranslations } from "next-intl";
 import { X } from "lucide-react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
@@ -53,6 +54,7 @@ const SheetContent = React.forwardRef<
   SheetContentProps
 >(({ side = "right", className, children, ...props }, ref) => {
   const resolvedSide = side ?? "right";
+  const t = useTranslations("Common");
 
   return (
     <SheetPortal>
@@ -66,7 +68,7 @@ const SheetContent = React.forwardRef<
       >
         <SheetPrimitive.Close className="absolute right-4 top-4 rounded-none opacity-90 transition-opacity hover:opacity-100 focus:outline-none focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2 disabled:pointer-events-none">
           <X className="h-5 w-5" aria-hidden />
-          <span className="sr-only">Đóng</span>
+          <span className="sr-only">{t("close")}</span>
         </SheetPrimitive.Close>
         {children}
       </SheetPrimitive.Content>

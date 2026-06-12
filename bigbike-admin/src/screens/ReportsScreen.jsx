@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Calendar, Download } from 'lucide-react'
+import { toast } from 'sonner'
 import {
   Area, AreaChart, Bar, BarChart,
   CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
-import { fetchAnalytics, exportOrdersCsv } from '../lib/adminApi'
+import { fetchAnalytics, exportOrdersCsv, exportProductsCsv, exportCustomersCsv } from '../lib/adminApi'
 import { formatCurrencyVnd } from '../lib/formatters'
 
 const PRESET_VALUES = [
@@ -127,6 +128,16 @@ export function ReportsScreen() {
     { key: 'custom', label: t('reports.presetCustom') },
   ]
 
+  // Tải file CSV xuống máy + báo lỗi/cảnh báo cắt dòng qua toast.
+  const runExport = async (exportFn) => {
+    try {
+      const r = await exportFn()
+      if (r?.truncated) toast.warning(t('export.truncated', { max: r.maxRows }))
+    } catch {
+      toast.error(t('export.error'))
+    }
+  }
+
   return (
     <div>
       <div className="bb-screen-header">
@@ -170,9 +181,25 @@ export function ReportsScreen() {
           <button
             type="button"
             className="bb-btn bb-btn-primary"
-            onClick={() => exportOrdersCsv({ from: exportFrom, to: exportTo })}
+            onClick={() => runExport(() => exportOrdersCsv({ from: exportFrom, to: exportTo }))}
           >
             <Download size={14} />{t('reports.exportOrders')}
+          </button>
+          <button
+            type="button"
+            className="bb-btn bb-btn-secondary"
+            title={t('reports.exportAllHint')}
+            onClick={() => runExport(() => exportProductsCsv())}
+          >
+            <Download size={14} />{t('reports.exportProducts')}
+          </button>
+          <button
+            type="button"
+            className="bb-btn bb-btn-secondary"
+            title={t('reports.exportAllHint')}
+            onClick={() => runExport(() => exportCustomersCsv())}
+          >
+            <Download size={14} />{t('reports.exportCustomers')}
           </button>
           {preset !== 'custom' && (
             <button type="button" className="bb-btn bb-btn-secondary" onClick={() => setPreset('custom')}>

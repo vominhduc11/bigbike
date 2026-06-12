@@ -1,8 +1,13 @@
 "use client";
 
 import { useEffect } from "react";
+import { useTranslations } from "next-intl";
 
 export function ArticleTableOfContents() {
+  const t = useTranslations("Blog");
+  const tocHeading = t("tocHeading");
+  const tocShow = t("tocShow");
+  const tocHide = t("tocHide");
   useEffect(() => {
     const toc = document.getElementById("table-of-content");
     // The legacy ".blog" wrapper was migrated to inline Tailwind (commit a7e6bf21),
@@ -25,12 +30,12 @@ export function ArticleTableOfContents() {
 
     const title = document.createElement("div");
     title.className = "toc-title";
-    title.append(document.createTextNode("Mục lục "));
+    title.append(document.createTextNode(`${tocHeading} `));
 
     const toggleButton = document.createElement("button");
     toggleButton.type = "button";
     toggleButton.className = "btn-toggle";
-    toggleButton.textContent = "[hiện]";
+    toggleButton.textContent = tocShow;
     title.appendChild(toggleButton);
 
     const list = document.createElement("ul");
@@ -73,7 +78,7 @@ export function ArticleTableOfContents() {
 
     const handleToggle = () => {
       const expanded = toc.classList.toggle("expanded");
-      toggleButton.textContent = expanded ? "[ẩn]" : "[hiện]";
+      toggleButton.textContent = expanded ? tocHide : tocShow;
     };
 
     const handleListClick = (event: MouseEvent) => {
@@ -108,7 +113,7 @@ export function ArticleTableOfContents() {
       toc.classList.remove("expanded");
       toc.style.display = "";
     };
-  }, []);
+  }, [tocHeading, tocShow, tocHide]);
 
   return <div id="table-of-content" />;
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { isWpOrderbyValue, productSortToWpOrderby } from "@/lib/utils/catalog-sort";
 
 /**
@@ -9,14 +10,15 @@ import { isWpOrderbyValue, productSortToWpOrderby } from "@/lib/utils/catalog-so
  * Đổi giá trị → điều hướng giữ nguyên các filter khác, reset trang.
  */
 const SORT_OPTIONS = [
-  { value: "menu_order", label: "Sắp xếp mặc định" },
-  { value: "popularity", label: "Sắp xếp theo mức độ phổ biến" },
-  { value: "date", label: "Sắp xếp theo mới nhất" },
-  { value: "price", label: "Sắp xếp theo giá: thấp đến cao" },
-  { value: "price-desc", label: "Sắp xếp theo giá: cao đến thấp" },
+  { value: "menu_order", labelKey: "default" },
+  { value: "popularity", labelKey: "popularity" },
+  { value: "date", labelKey: "date" },
+  { value: "price", labelKey: "priceAsc" },
+  { value: "price-desc", labelKey: "priceDesc" },
 ] as const;
 
 export function WpCategorySort({ current }: { current: string }) {
+  const t = useTranslations("Catalog");
   const router = useRouter();
   const searchParams = useSearchParams();
   const selectedValue = isWpOrderbyValue(current) ? current : productSortToWpOrderby(current);
@@ -41,13 +43,13 @@ export function WpCategorySort({ current }: { current: string }) {
         <select
           name="orderby"
           className="form-control text-left"
-          aria-label="Đơn hàng của cửa hàng"
+          aria-label={t("sortLabel")}
           value={selectedValue}
           onChange={(e) => handleChange(e.target.value)}
         >
-          {SORT_OPTIONS.map(({ value, label }) => (
+          {SORT_OPTIONS.map(({ value, labelKey }) => (
             <option key={value} value={value}>
-              {label}
+              {t(`sort.${labelKey}`)}
             </option>
           ))}
         </select>

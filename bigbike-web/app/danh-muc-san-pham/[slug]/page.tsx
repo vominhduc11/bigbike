@@ -4,6 +4,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { WpCategoryHero, type WpCategoryCrumb } from "@/components/wp/WpCategoryHero";
 import { WpCatalogClient } from "@/components/wp/WpCatalogClient";
 import { LHtml, LText, LocalizedContentProvider } from "@/components/i18n/LocalizedContent";
+import { Tr } from "@/components/i18n/Tr";
 import { getCatalogFacets, getCategoryBySlug, listBrands, listCategories } from "@/lib/api/public-api";
 import { buildCategoryBreadcrumbJsonLd, serializeJsonLd } from "@/lib/seo/json-ld";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
@@ -91,7 +92,7 @@ export default async function CategoryDetailPage({ params }: CategoryDetailPageP
     return (
       <div id="main-content">
         <div className="container">
-          <p className="woocommerce-info">{categoryResult.error?.message ?? "Không tải được thông tin danh mục."}</p>
+          <p className="woocommerce-info">{categoryResult.error?.message ?? <Tr ns="Catalog" k="categoryLoadFailed" />}</p>
         </div>
       </div>
     );

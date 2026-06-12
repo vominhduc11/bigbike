@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { ShoppingCart, Trash2 } from "lucide-react";
 import { MediaImage } from "@/components/ui/MediaImage";
 import {
@@ -42,6 +43,7 @@ function CartSheetThumb({ item }: { item: CartItem }) {
 }
 
 export function MobileCartSheet() {
+  const t = useTranslations("CartMini");
   const { isPanelOpen, openPanel, closePanel } = useHeaderUi();
   const { refreshCount } = useCart();
   const open = isPanelOpen("cart");
@@ -69,7 +71,7 @@ export function MobileCartSheet() {
       await updateItem.mutateAsync({ itemId: item.id, quantity });
       refreshCount();
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Không thể cập nhật giỏ hàng.");
+      setErrorMessage(error instanceof Error ? error.message : t("updateFailed"));
     }
   }
 
@@ -81,7 +83,7 @@ export function MobileCartSheet() {
       await removeItem.mutateAsync(item.id);
       refreshCount();
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Không thể xóa sản phẩm.");
+      setErrorMessage(error instanceof Error ? error.message : t("removeFailed"));
     }
   }
 
@@ -110,12 +112,12 @@ export function MobileCartSheet() {
         <div className="mx-auto mt-2 h-1 w-9 flex-none bg-[var(--bb-mobile-shell-border-strong)]" aria-hidden="true" />
         <div className="px-[14px] pt-3 pb-2 border-b border-[var(--bb-mobile-shell-border)]">
           <div>
-            <p className={microLabel}>GIỎ HÀNG</p>
+            <p className={microLabel}>{t("heading")}</p>
             <SheetTitle className="text-[var(--bb-text-inverse)]">
-              {itemCount > 0 ? `${itemCount} sản phẩm` : "Giỏ hàng trống"}
+              {itemCount > 0 ? t("itemCount", { count: itemCount }) : t("empty")}
             </SheetTitle>
             <SheetDescription className="sr-only">
-              Xem nhanh và cập nhật sản phẩm trong giỏ hàng.
+              {t("description")}
             </SheetDescription>
           </div>
         </div>
@@ -123,7 +125,7 @@ export function MobileCartSheet() {
         <div className="flex-1 min-h-0 overflow-y-auto px-[18px] py-[14px] [-webkit-overflow-scrolling:touch]">
           {loading ? (
             <div className="py-11 px-[18px] text-center text-[var(--bb-text-inverse-muted)]" role="status">
-              Đang tải giỏ hàng...
+              {t("loading")}
             </div>
           ) : queryError || errorMessage ? (
             <div
@@ -140,9 +142,9 @@ export function MobileCartSheet() {
               >
                 <ShoppingCart size={28} />
               </span>
-              <p className="mt-[6px] mb-4">Thêm sản phẩm để bắt đầu mua sắm.</p>
+              <p className="mt-[6px] mb-4">{t("emptyCta")}</p>
               <Link href={toProductListPath()} onClick={closePanel} className={cn(ctaBtn, ctaBtnFilled, "mt-[2px]")}>
-                Mua sắm ngay
+                {t("shopNow")}
               </Link>
             </div>
           ) : (
@@ -165,16 +167,16 @@ export function MobileCartSheet() {
                         <p className={cn(lineMeta, "capitalize text-[var(--bb-text-inverse-muted)]")}>{item.variantName}</p>
                       ) : null}
                       {!item.available ? (
-                        <p className={cn(lineMeta, "text-brand-on-dark")}>Sản phẩm tạm thời không khả dụng.</p>
+                        <p className={cn(lineMeta, "text-brand-on-dark")}>{t("unavailableLine")}</p>
                       ) : null}
                       <div className="flex items-center justify-between gap-[10px] mt-2">
-                        <div className="inline-flex border border-[var(--bb-mobile-shell-border-strong)]" aria-label={`Số lượng ${item.productName}`}>
+                        <div className="inline-flex border border-[var(--bb-mobile-shell-border-strong)]" aria-label={t("quantityAria", { name: item.productName })}>
                           <button
                             type="button"
                             className={cn(qtyBtn, "text-[var(--bb-text-inverse)]")}
                             onClick={() => setQuantity(item, item.quantity - 1)}
                             disabled={mutating || item.quantity <= 1 || !item.available}
-                            aria-label={`Giảm số lượng ${item.productName}`}
+                            aria-label={t("decreaseAria", { name: item.productName })}
                           >
                             -
                           </button>
@@ -186,7 +188,7 @@ export function MobileCartSheet() {
                             className={cn(qtyBtn, "text-[var(--bb-text-inverse)]")}
                             onClick={() => setQuantity(item, item.quantity + 1)}
                             disabled={mutating || !item.available}
-                            aria-label={`Tăng số lượng ${item.productName}`}
+                            aria-label={t("increaseAria", { name: item.productName })}
                           >
                             +
                           </button>
@@ -199,7 +201,7 @@ export function MobileCartSheet() {
                       className={cn(qtyBtn, "absolute top-[6px] right-[6px] text-[var(--bb-text-inverse-muted)]")}
                       onClick={() => removeLine(item)}
                       disabled={mutating}
-                      aria-label={`Xóa ${item.productName}`}
+                      aria-label={t("removeAria", { name: item.productName })}
                     >
                       <Trash2 size={16} />
                     </button>
@@ -213,7 +215,7 @@ export function MobileCartSheet() {
         {items.length > 0 ? (
           <div className="flex-none pt-3 px-[18px] pb-[max(16px,env(safe-area-inset-bottom))] border-t border-[var(--bb-mobile-shell-border)] bg-[var(--bb-mobile-shell-surface-2)]">
             <div className="flex items-baseline justify-between gap-3 mb-3">
-              <span className={microLabel}>TỔNG TẠM TÍNH</span>
+              <span className={microLabel}>{t("subtotal")}</span>
               <strong className="text-[var(--bb-text-inverse)] font-body text-ui-22">
                 {formatVnd(cart?.totals.totalAmount ?? 0)}
               </strong>
@@ -223,7 +225,7 @@ export function MobileCartSheet() {
                 className="mt-[-2px] mb-3 border border-[var(--bb-state-warning-border)] bg-[var(--bb-state-warning-bg)] px-3 py-[10px] text-[var(--bb-state-warning-text)] text-ui-13 leading-[1.35]"
                 role="alert"
               >
-                Có sản phẩm tạm thời không khả dụng. Vui lòng cập nhật giỏ hàng trước khi thanh toán.
+                {t("unavailableAlert")}
               </p>
             ) : null}
             <div className={cn("grid gap-2", unavailable ? "grid-cols-2" : "grid-cols-[minmax(0,0.85fr)_minmax(0,1fr)]")}>
@@ -232,7 +234,7 @@ export function MobileCartSheet() {
                 className={cn(ctaBtn, "border border-[var(--bb-mobile-shell-border-strong)] text-[var(--bb-text-inverse)]")}
                 onClick={closePanel}
               >
-                Xem giỏ hàng
+                {t("viewCart")}
               </Link>
               {unavailable ? (
                 <span
@@ -242,11 +244,11 @@ export function MobileCartSheet() {
                   )}
                   aria-disabled="true"
                 >
-                  Thanh toán
+                  {t("checkout")}
                 </span>
               ) : (
                 <Link href={toCheckoutPath()} className={cn(ctaBtn, ctaBtnFilled)} onClick={closePanel}>
-                  Thanh toán
+                  {t("checkout")}
                 </Link>
               )}
             </div>

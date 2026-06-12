@@ -360,7 +360,7 @@ export function SearchToggle({
                       <button
                         type="button"
                         className="inline-flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center border-none bg-transparent p-0 text-muted-foreground transition-colors duration-fast hover:text-foreground"
-                        aria-label={`Xoá "${item}"`}
+                        aria-label={t("removeRecentAria", { item })}
                         onClick={() => removeSearch(item)}
                       >
                         <X size={12} aria-hidden />
@@ -519,7 +519,7 @@ export function SearchToggle({
                       <button
                         type="button"
                         className={mRecentRemove}
-                        aria-label={`Xoá "${item}"`}
+                        aria-label={t("removeRecentAria", { item })}
                         onClick={(e) => { e.stopPropagation(); removeSearch(item); }}
                       >
                         <X size={14} aria-hidden />

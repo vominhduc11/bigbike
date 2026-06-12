@@ -5,7 +5,8 @@ import { useTranslations } from "next-intl";
 import { createReturn, fetchMyOrders, fetchMyReturn, fetchMyReturns, fetchReturnEligibility } from "@/lib/api/client-api";
 import type { CustomerReturn, OrderListItem, ReturnEligibility, ReturnEligibilityItem, ReturnEligibilityReason } from "@/lib/contracts/commerce";
 import { WpAccountSectionHeading } from "@/components/wp/WpAccountNav";
-import { formatDate, formatVnd } from "@/lib/utils/format";
+import { formatVnd } from "@/lib/utils/format";
+import { LocalDate } from "@/components/i18n/LocalDate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PaginationNav } from "@/components/ui/PaginationNav";
@@ -98,7 +99,7 @@ function ReturnDetailPanel({ id, onClose }: { id: string; onClose: () => void })
                   value: <StatusBadge tone={returnStatusTone(detail.status)}>{statusLabel(detail.status)}</StatusBadge>,
                 },
                 detail.refundAmount > 0 ? { label: t("metaRefund"), value: <b className="text-foreground font-semibold">{formatVnd(detail.refundAmount)}</b> } : null,
-                { label: t("metaCreatedAt"), value: <b className="text-foreground font-semibold">{formatDate(detail.createdAt)}</b> },
+                { label: t("metaCreatedAt"), value: <b className="text-foreground font-semibold"><LocalDate value={detail.createdAt} dateStyle="slashPad" fallback="—" /></b> },
               ].filter(Boolean).map((row, i) => (
                 <div key={i} className="flex justify-between items-center text-sm">
                   <span className="text-muted-foreground">{row!.label}</span>
@@ -164,7 +165,7 @@ function ReturnDetailPanel({ id, onClose }: { id: string; onClose: () => void })
                           {h.fromStatus ? `${statusLabel(h.fromStatus)} → ` : ""}
                           {statusLabel(h.toStatus)}
                         </p>
-                        <p className="text-sm text-muted-foreground m-0 mb-[3px]">{formatDate(h.createdAt)}</p>
+                        <p className="text-sm text-muted-foreground m-0 mb-[3px]"><LocalDate value={h.createdAt} dateStyle="slashPad" fallback="—" /></p>
                         {h.note && <p className="text-sm text-muted-foreground m-0 italic">{h.note}</p>}
                       </div>
                     </li>
@@ -496,7 +497,7 @@ export function ReturnsContent() {
                     </div>
                     <div className={metaLabel}>
                       {t("metaCreatedAt")}
-                      <b className={cn(detailTableCell, "font-mono")}>{formatDate(ret.createdAt)}</b>
+                      <b className={cn(detailTableCell, "font-mono")}><LocalDate value={ret.createdAt} dateStyle="slashPad" fallback="—" /></b>
                     </div>
                     {ret.refundAmount > 0 && (
                       <div className={metaLabel}>

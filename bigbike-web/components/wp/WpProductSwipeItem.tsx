@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import type { Product } from "@/lib/contracts/public";
 import { derivePricing } from "@/lib/pricing";
 import { formatVndNumber, resolveMediaUrl, safeText, toLegacyWpMediaUrl } from "@/lib/utils/format";
@@ -8,6 +9,7 @@ import { toProductPath } from "@/lib/utils/routes";
 import { WishlistButton } from "@/components/catalog/WishlistButton";
 import { CompareButton } from "@/components/catalog/CompareButton";
 import { hasApprovedReviews } from "@/lib/rating";
+import { RatingStars } from "@/components/ui/RatingStars";
 
 /**
  * content-product-swipe-item — port 1:1 từ theme WP.
@@ -26,6 +28,7 @@ export function WpProductSwipeItem({
   product: Product;
   wrapperClassName?: string;
 }) {
+  const tProduct = useTranslations("Product");
   const { current, compare, isSale, discountPercent } = derivePricing(product.price);
   const href = toProductPath(product.slug);
   const img = toLegacyWpMediaUrl(resolveMediaUrl(product.image?.url?.trim()));
@@ -85,7 +88,7 @@ export function WpProductSwipeItem({
           <div className="product--item-cart">
             <Link href={href}>
               <i className="fal fa-shopping-cart" />
-              THÊM VÀO GIỎ HÀNG
+              {tProduct("cardAddToCart").toUpperCase()}
             </Link>
           </div>
         </div>
@@ -104,7 +107,14 @@ export function WpProductSwipeItem({
             </div>
           </div>
           <div className="rating">
-            {hasReviews ? <div className="rating-star" data-rating={product.rating} /> : null}
+            {/* Sao vẽ bằng React (RatingStars) thay cho plugin home.min.js — plugin chỉ
+                chạy lúc tải nguyên trang nên điều hướng nội bộ sẽ mất sao. Vẫn gate theo
+                REVIEW_RULE_003/004 qua hasReviews. text-ui-18 = 18px khớp starSize cũ. */}
+            {hasReviews ? (
+              <span className="text-ui-18">
+                <RatingStars value={product.rating} />
+              </span>
+            ) : null}
           </div>
         </div>
       </div>

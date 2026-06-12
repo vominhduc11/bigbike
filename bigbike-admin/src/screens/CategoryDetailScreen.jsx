@@ -165,15 +165,17 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
     enabled: !isCreate,
   })
 
+  // Cây danh mục cho breadcrumb + ô chọn danh mục cha: luôn lấy TOÀN BỘ (lang='vi',
+  // không strict) để ở chế độ EN vẫn chọn/giữ được cha là danh mục chưa dịch.
   const { data: categoriesResult } = useQuery({
-    queryKey: ['categories', 'tree', contentLang],
-    queryFn: () => fetchCategoryTree(),
+    queryKey: ['categories', 'tree', 'picker'],
+    queryFn: () => fetchCategoryTree('vi'),
   })
 
   // Top products in this category — surfaced in a sidebar so editors know
   // who depends on the category before they hide / re-parent it.
   const { data: productsInCat } = useQuery({
-    queryKey: ['products', 'by-category', categoryId, 'top5'],
+    queryKey: ['products', 'by-category', categoryId, 'top5', contentLang],
     queryFn: () => fetchProducts({ categoryId, pageSize: 5, page: 1, sort: 'updatedAt:desc' }),
     enabled: !isCreate && Boolean(categoryId),
     staleTime: 30 * 1000,

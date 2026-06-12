@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { MouseEvent } from "react";
+import { useTranslations } from "next-intl";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { A11y, FreeMode, Keyboard, Thumbs } from "swiper/modules";
 import type { Swiper as SwiperType } from "swiper";
@@ -152,6 +153,7 @@ export function ProductGallery({
   variantKey,
   videos,
 }: ProductGalleryProps) {
+  const tA = useTranslations("A11y");
   const hasVariantGallery = Boolean(variantGallery && variantGallery.length > 0);
   const stripBody: ImageAsset[] = hasVariantGallery ? variantGallery! : gallery;
   // Khi đã chọn màu (có variantGallery): ảnh chính = ẢNH ĐẦU của gallery màu đó
@@ -334,7 +336,7 @@ export function ProductGallery({
             <button
               type="button"
               className="absolute left-0 top-1/2 z-[2] [transform:translateY(-50%)] min-[1024px]:static min-[1024px]:[transform:none] min-[1024px]:w-full min-[1024px]:h-11 min-[1024px]:shrink-0 flex items-center justify-center w-9 h-9 max-md:w-10 max-md:h-10 cursor-pointer text-black transition-colors hover:text-[var(--bb-text-brand)] min-[1024px]:hover:bg-[var(--bb-bg-surface-raised)] focus-visible:[outline:var(--bb-focus-outline)] focus-visible:[outline-offset:2px]"
-              aria-label="Cuộn thumbnail lên"
+              aria-label={tA("thumbScrollUp")}
               onClick={() => thumbsSwiper?.slidePrev()}
             >
               <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true" className="max-[1023px]:[transform:rotate(-90deg)]">
@@ -448,7 +450,7 @@ export function ProductGallery({
             <button
               type="button"
               className="absolute right-0 top-1/2 z-[2] [transform:translateY(-50%)] min-[1024px]:static min-[1024px]:[transform:none] min-[1024px]:w-full min-[1024px]:h-11 min-[1024px]:shrink-0 flex items-center justify-center w-9 h-9 max-md:w-10 max-md:h-10 cursor-pointer text-black transition-colors hover:text-[var(--bb-text-brand)] min-[1024px]:hover:bg-[var(--bb-bg-surface-raised)] focus-visible:[outline:var(--bb-focus-outline)] focus-visible:[outline-offset:2px]"
-              aria-label="Cuộn thumbnail xuống"
+              aria-label={tA("thumbScrollDown")}
               onClick={() => thumbsSwiper?.slideNext()}
             >
               <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true" className="max-[1023px]:[transform:rotate(-90deg)]">

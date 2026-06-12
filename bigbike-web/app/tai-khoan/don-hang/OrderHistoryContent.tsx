@@ -7,7 +7,8 @@ import type { OrderListItem } from "@/lib/contracts/commerce";
 import { useOrders } from "@/lib/query/hooks";
 import { WpAccountSectionHeading } from "@/components/wp/WpAccountNav";
 import { PaginationNav } from "@/components/ui/PaginationNav";
-import { formatDate, formatVnd, orderStatusLabelWithT } from "@/lib/utils/format";
+import { formatVnd, orderStatusLabelWithT } from "@/lib/utils/format";
+import { LocalDate } from "@/components/i18n/LocalDate";
 import { toOrderDetailPath } from "@/lib/utils/routes";
 import { cn } from "@/lib/utils";
 import { bbLink, skelBase } from "@/lib/ui-classes";
@@ -89,7 +90,7 @@ export function OrderHistoryContent() {
                         </p>
                       )}
                     </td>
-                    <td className="py-4 pr-4 align-top text-muted-foreground">{formatDate(order.placedAt)}</td>
+                    <td className="py-4 pr-4 align-top text-muted-foreground"><LocalDate value={order.placedAt} dateStyle="slashPad" fallback="—" /></td>
                     <td className="py-4 pr-4 align-top text-muted-foreground">{orderStatusLabelWithT(order.status, t)}</td>
                     <td className="py-4 pr-4 align-top text-muted-foreground">
                       {t("totalCell", {
@@ -128,7 +129,7 @@ export function OrderHistoryContent() {
                 )}
                 <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
                   <dt className="font-semibold text-foreground">{t("colDate")}</dt>
-                  <dd className="m-0 text-muted-foreground">{formatDate(order.placedAt)}</dd>
+                  <dd className="m-0 text-muted-foreground"><LocalDate value={order.placedAt} dateStyle="slashPad" fallback="—" /></dd>
                   <dt className="font-semibold text-foreground">{t("colTotal")}</dt>
                   <dd className="m-0 text-muted-foreground">
                     {t("totalCell", { total: formatVnd(order.totalAmount), count: order.itemCount })}

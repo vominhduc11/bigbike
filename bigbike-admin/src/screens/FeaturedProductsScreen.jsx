@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { GripVertical, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { fetchHomepageBlocks, saveHomepageBlocks, fetchProducts } from '../lib/adminApi'
+import { useContentLang } from '../lib/contentLang'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { SortableList } from '../components/Sortable'
@@ -16,11 +17,12 @@ const FEATURED_GRID_MAX = 12
 
 function ProductPicker({ onAdd, disabledIds, disabled }) {
   const { t } = useTranslation()
+  const contentLang = useContentLang()
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
 
   const { data, isFetching } = useQuery({
-    queryKey: ['featured-products-search', query],
+    queryKey: ['featured-products-search', query, contentLang],
     queryFn: () => fetchProducts({ q: query, page: 1, pageSize: 8, publishStatus: 'PUBLISHED' }),
     enabled: open && query.trim().length > 0,
     staleTime: 30_000,
@@ -99,14 +101,19 @@ function ProductRow({ product, canUpdate, onRemove, sortable }) {
 
 export function FeaturedProductsScreen({ canUpdate }) {
   const { t } = useTranslation()
+  const contentLang = useContentLang()
   const queryClient = useQueryClient()
   const [items, setItems] = useState([])
   const [initialized, setInitialized] = useState(false)
 
   const { isLoading, isError, error, data: blocksData } = useQuery({
-    queryKey: ['homepage-blocks'],
+    queryKey: ['homepage-blocks', contentLang],
     queryFn: fetchHomepageBlocks,
   })
+
+  // Đổi ngôn ngữ nội dung → fetch lại theo lang mới, bỏ chốt để lấy lại tên đã dịch.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { setInitialized(false) }, [contentLang])
 
   useEffect(() => {
     if (blocksData && !initialized) {

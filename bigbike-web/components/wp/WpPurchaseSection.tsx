@@ -18,6 +18,7 @@ import { WishlistButton } from "@/components/catalog/WishlistButton";
 import { CompareButton } from "@/components/catalog/CompareButton";
 import { ProductGallery } from "@/components/catalog/ProductGallery";
 import { hasApprovedReviews } from "@/lib/rating";
+import { RatingStars } from "@/components/ui/RatingStars";
 import { useLocalizedField } from "@/components/i18n/LocalizedContent";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import { MobileStickyPurchaseBar } from "@/components/catalog/MobileStickyPurchaseBar";
@@ -247,10 +248,12 @@ export function WpPurchaseSection({
           </div>
           {hasReviews ? (
             <div className="rating" itemProp="aggregateRating" itemScope itemType="https://schema.org/AggregateRating">
-              {/* Để RỖNG + data-rating: JS theme WP (home.min.js qua WpThemeScripts,
-                  chạy mọi route WP gồm PDP) tự inject 5 sao (có nửa sao). Trước đây nhét
-                  thêm 5 SVG vào trong → "2 lần 5 sao". Giống WpProductSwipeItem. */}
-              <div className="rating-star" data-rating={rating ?? undefined} />
+              {/* Sao vẽ bằng React (RatingStars) — KHÔNG để rỗng chờ plugin home.min.js
+                  vì script đó chỉ chạy lúc tải nguyên trang, điều hướng nội bộ vào PDP sẽ
+                  mất sao. text-ui-18 = 18px khớp starSize cũ. Giống WpProductSwipeItem. */}
+              <span className="text-ui-18">
+                <RatingStars value={rating} />
+              </span>
               <br />
               <p>
                 {tb("ratingLabel")} <span itemProp="ratingValue">{rating}/</span>

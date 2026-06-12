@@ -5,6 +5,7 @@ import { readSingleSearchParam } from "@/lib/utils/query";
 import { isSafeReturnTo } from "@/lib/utils/auth";
 import { toAccountPath } from "@/lib/utils/routes";
 import { WpStaticShell } from "@/components/wp/WpStaticShell";
+import { Tr } from "@/components/i18n/Tr";
 import { RegisterForm } from "./RegisterForm";
 
 const AUTH_CSS = "/wp-content/themes/bigbike/css/wp-theme-auth.css?v=1";
@@ -37,12 +38,12 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
           <div className="register">
             <div className="user-activity-content">
               <div className="user-activity-content-title mb-[30px]">
-                <h1 className="mb-2">Đăng ký</h1>
+                <h1 className="mb-2"><Tr ns="Auth" k="tabRegister" /></h1>
                 <p className="m-0">
-                  Nếu bạn đã có tài khoản, đăng nhập tại{" "}
-                  <Link href="/dang-nhap/">đây</Link>
+                  <Tr ns="Auth" k="haveAccountPrompt" />{" "}
+                  <Link href="/dang-nhap/"><Tr ns="Auth" k="here" /></Link>
                 </p>
-                <p className="m-0 mt-1">Xin vui lòng điền chính xác các thông tin để tạo tài khoản Bigbike.</p>
+                <p className="m-0 mt-1"><Tr ns="Auth" k="fillInfoPrompt" /></p>
               </div>
               <RegisterForm returnTo={returnTo} />
             </div>

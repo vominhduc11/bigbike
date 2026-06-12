@@ -6,6 +6,7 @@ import { GripVertical, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { SortableList } from '../components/Sortable'
 import { createSlider, deleteSlider, fetchSliders, reorderSliders, updateSlider } from '../lib/adminApi'
+import { useContentLang } from '../lib/contentLang'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
@@ -32,6 +33,10 @@ const EMPTY_FORM = {
 
 function SliderCard({ slider, canUpdate, onEdit, onDelete, onToggleActive, sortable }) {
   const { t } = useTranslation()
+  const contentLang = useContentLang()
+  const productLabel = contentLang === 'en'
+    ? (slider.productNameEn || slider.productName || slider.productId)
+    : (slider.productName || slider.productId)
   const dragOpacity = sortable?.isDragging ? 0.4 : 1
 
   return (
@@ -88,7 +93,7 @@ function SliderCard({ slider, canUpdate, onEdit, onDelete, onToggleActive, sorta
           )}
           {slider.productId && (
             <p className="bb-muted" style={{ margin: 0, fontSize: 12 }}>
-              {t('sliders.productLabel')} {slider.productName || slider.productId}
+              {t('sliders.productLabel')} {productLabel}
             </p>
           )}
         </div>
@@ -113,6 +118,7 @@ function SliderCard({ slider, canUpdate, onEdit, onDelete, onToggleActive, sorta
 
 export function SliderListScreen({ canUpdate }) {
   const { t } = useTranslation()
+  const contentLang = useContentLang()
   const queryClient = useQueryClient()
   const [location, setLocation] = useState('home')
   const [showForm, setShowForm] = useState(false)
@@ -126,6 +132,11 @@ export function SliderListScreen({ canUpdate }) {
   })
 
   const items = [...(data?.items ?? [])].sort((a, b) => a.sortOrder - b.sortOrder)
+  // Admin VI/EN switch (strict English): ở EN ẩn banner liên kết tới SP chưa có tên
+  // tiếng Anh. Banner không gắn SP (chỉ ảnh/link ngoài) vẫn hiện vì không có nội dung để dịch.
+  const visibleItems = contentLang === 'en'
+    ? items.filter((s) => !s.productId || (s.productNameEn || '').trim() !== '')
+    : items
   const warning = ''
 
   const reorderMutation = useMutation({
@@ -389,7 +400,7 @@ export function SliderListScreen({ canUpdate }) {
 
       {items.length > 0 && (
         <SortableList
-          items={items}
+          items={visibleItems}
           disabled={!canUpdate || reorderMutation.isPending}
           onReorder={handleReorder}
           className="flex flex-col gap-2"

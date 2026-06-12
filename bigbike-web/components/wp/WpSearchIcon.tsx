@@ -1,9 +1,11 @@
 "use client";
 
 import { Search } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useHeaderUi } from "@/components/layout/HeaderUiContext";
 
 export function WpSearchIcon() {
+  const t = useTranslations("Common");
   const { openPanel } = useHeaderUi();
 
   return (
@@ -19,7 +21,7 @@ export function WpSearchIcon() {
         // → đóng panel xong header vẫn đen, mất nav.
         className="bb-wp-search-trigger inline-flex items-center justify-center text-white bg-transparent border-none cursor-pointer"
         type="button"
-        aria-label="Tìm kiếm"
+        aria-label={t("search")}
       >
         <Search size={22} strokeWidth={1.75} aria-hidden />
       </button>

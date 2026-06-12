@@ -470,9 +470,12 @@ function flattenCategoryTree(nodes) {
   return result
 }
 
-export async function fetchCategoryTree() {
+// lang mặc định = ngôn ngữ nội dung hiện tại (EN ở admin = strict, ẩn mục chưa dịch).
+// Truyền lang='vi' khi cần TOÀN BỘ cây cho ô chọn cha trong form (không được ẩn
+// mục chưa dịch, nếu không sẽ mất lựa chọn cha hợp lệ khi đang ở chế độ EN).
+export async function fetchCategoryTree(lang) {
   try {
-    const payload = await requestJson('/admin/categories/tree', { query: { lang: getContentLang() } })
+    const payload = await requestJson('/admin/categories/tree', { query: { lang: lang ?? getContentLang() } })
     const items = Array.isArray(payload?.data) ? flattenCategoryTree(payload.data) : []
     return withLiveData({ items })
   } catch (error) {
@@ -1184,6 +1187,9 @@ function normalizeSlider(input) {
     externalLink: s.externalLink || null,
     productId: s.productId || null,
     productName: (s.product && typeof s.product === 'object' ? s.product.name : null) || null,
+    // Tên tiếng Anh của SP liên kết (admin VI/EN switch). Lấy từ translations.en.name
+    // có sẵn trong product domain (admin detail). Rỗng nếu SP chưa có tên tiếng Anh.
+    productNameEn: (s.product && typeof s.product === 'object' ? s.product.translations?.en?.name : null) || null,
   }
 }
 
@@ -1224,7 +1230,7 @@ export async function deleteSlider(sliderId) {
 
 export async function fetchHomeHighlights() {
   try {
-    const payload = await requestJson('/admin/home/category-highlights')
+    const payload = await requestJson('/admin/home/category-highlights', { query: { lang: getContentLang() } })
     return withLiveData({ items: Array.isArray(payload?.data) ? payload.data : [] })
   } catch (error) {
     const e = normalizeError(error)
@@ -1425,6 +1431,7 @@ function normalizeReview(input) {
     id: s.id,
     productId: String(s.productId || ''),
     productName: String(s.productName || ''),
+    productNameEn: String(s.productNameEn || ''),
     productSlug: String(s.productSlug || ''),
     authorName: String(s.authorName || ''),
     authorEmail: String(s.authorEmail || ''),
@@ -1439,7 +1446,7 @@ function normalizeReview(input) {
 export async function fetchReviews(query) {
   try {
     const payload = await requestJson('/admin/reviews', {
-      query: { page: query?.page, size: query?.pageSize, q: query?.search, status: query?.status },
+      query: { page: query?.page, size: query?.pageSize, q: query?.search, status: query?.status, lang: getContentLang() },
     })
     return withLiveData(parseListPayload(payload, normalizeReview, 20))
   } catch (error) {
@@ -1571,7 +1578,30 @@ function normalizeAnalytics(payload) {
 
 // Reports / Export
 
-async function fetchCsvBlob(path, params = {}) {
+// Trình duyệt lưu blob xuống máy người dùng (tạo link tải tạm rồi click).
+function triggerBlobDownload(blob, filename) {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
+
+// Lấy tên file backend gửi qua header Content-Disposition; fallback nếu thiếu.
+function filenameFromDisposition(headerValue, fallback) {
+  if (!headerValue) return fallback
+  const utf8Match = /filename\*=UTF-8''([^;]+)/i.exec(headerValue)
+  if (utf8Match) {
+    try { return decodeURIComponent(utf8Match[1]) } catch { /* ignore */ }
+  }
+  const match = /filename="?([^";]+)"?/i.exec(headerValue)
+  return match ? match[1].trim() : fallback
+}
+
+async function fetchCsvBlob(path, params = {}, fallbackName = 'export.csv') {
   const qs = Object.entries(params)
     .filter(([, v]) => v != null && v !== '')
     .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
@@ -1601,7 +1631,14 @@ async function fetchCsvBlob(path, params = {}) {
   if (!response.ok) {
     throw new ApiClientError(`Export failed with status ${response.status}`, response.status, 'EXPORT_FAILED')
   }
-  return response.blob()
+  const blob = await response.blob()
+  const filename = filenameFromDisposition(response.headers.get('Content-Disposition'), fallbackName)
+  triggerBlobDownload(blob, filename)
+  return {
+    filename,
+    truncated: response.headers.get('X-Export-Truncated') === 'true',
+    maxRows: Number(response.headers.get('X-Export-Max-Rows')) || null,
+  }
 }
 
 export async function exportOrdersCsv(filters = {}) {
@@ -1610,15 +1647,15 @@ export async function exportOrdersCsv(filters = {}) {
     paymentStatus: filters.paymentStatus,
     from: filters.from,
     to: filters.to,
-  })
+  }, 'orders.csv')
 }
 
 export async function exportCustomersCsv(filters = {}) {
-  return fetchCsvBlob('/admin/reports/customers/export', { status: filters.status })
+  return fetchCsvBlob('/admin/reports/customers/export', { status: filters.status }, 'customers.csv')
 }
 
 export async function exportProductsCsv(filters = {}) {
-  return fetchCsvBlob('/admin/reports/products/export', { publishStatus: filters.publishStatus })
+  return fetchCsvBlob('/admin/reports/products/export', { publishStatus: filters.publishStatus }, 'products.csv')
 }
 
 // Inventory
@@ -1673,6 +1710,7 @@ function normalizeStockGroup(g) {
   return {
     productId: input.productId || '',
     productName: input.productName || '',
+    productNameEn: input.productNameEn || '',
     productSku: input.productSku || undefined,
     productImage: normalizeImageAsset(input.productImage),
     aggregateStockState: input.aggregateStockState || 'UNKNOWN',
@@ -2243,7 +2281,7 @@ export async function getWarrantyBySerial(serialId) {
 
 export async function fetchHomepageBlocks() {
   const payload = await requestJson('/admin/products', {
-    query: { homepageBlock: 'FEATURED_GRID', size: 20, sort: 'homepageOrder:asc' },
+    query: { homepageBlock: 'FEATURED_GRID', size: 20, sort: 'homepageOrder:asc', lang: getContentLang() },
   })
   return {
     featuredGrid: (Array.isArray(payload?.data) ? payload.data : (payload?.items ?? [])).map(normalizeProduct),

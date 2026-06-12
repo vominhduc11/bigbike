@@ -107,7 +107,9 @@ public class AdminCatalogReadService {
      * the client; the server just ships a deterministic flat list.
      */
     public List<Category> listAllCategoriesForTree(String lang) {
-        return catalogReadRepository.findAllCategories(normalizeLocale(lang)).stream()
+        String locale = normalizeLocale(lang);
+        // Admin VI/EN switch: ở EN chỉ hiện danh mục đã có tên tiếng Anh (ẩn mục chưa dịch).
+        return catalogReadRepository.findAllCategories(locale, "en".equals(locale)).stream()
                 .sorted(Comparator
                         .comparing(
                                 Category::parentId,
@@ -132,7 +134,9 @@ public class AdminCatalogReadService {
         SortSpec sortSpec = sortParser.parse(sort, "updatedAt", SortDirection.DESC, BRAND_SORT_FIELDS);
         String query = coalesceSearch(q, search);
 
-        List<Brand> result = catalogReadRepository.findAllBrands(normalizeLocale(lang)).stream()
+        String locale = normalizeLocale(lang);
+        // Admin VI/EN switch: ở EN chỉ hiện thương hiệu đã có tên tiếng Anh.
+        List<Brand> result = catalogReadRepository.findAllBrands(locale, "en".equals(locale)).stream()
                 .filter(brand -> matchesVisibility(brand.isVisible(), visibility))
                 .filter(brand -> matchesBrandQuery(brand, query))
                 .sorted(brandComparator(sortSpec))

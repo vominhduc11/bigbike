@@ -22,8 +22,20 @@ public class HomeHighlightsService {
 
     @Transactional(readOnly = true)
     public List<HomeHighlightItemDto> listHighlights(String lang) {
+        return listHighlights(lang, false);
+    }
+
+    /**
+     * @param strictEnglish admin VI/EN switch: khi true (chế độ EN ở admin), ẩn hẳn
+     *                      slot có sản phẩm chưa đặt tên tiếng Anh (không fallback).
+     *                      Public/web luôn truyền false (giữ fallback tiếng Việt).
+     */
+    @Transactional(readOnly = true)
+    public List<HomeHighlightItemDto> listHighlights(String lang, boolean strictEnglish) {
         return highlightRepo.findAllWithProductAndCategoryOrderBySlot()
                 .stream()
+                .filter(e -> !strictEnglish
+                        || (e.getProduct().getNameEn() != null && !e.getProduct().getNameEn().isBlank()))
                 .map(e -> HomeHighlightItemDto.from(e, lang))
                 .toList();
     }

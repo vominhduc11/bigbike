@@ -441,6 +441,12 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
     }
 
     @Override
+    public List<Category> findAllCategories(String locale, boolean strictEnglish) {
+        if (!strictEnglish) return categories;
+        return categories.stream().filter(c -> c.translations() != null).toList();
+    }
+
+    @Override
     public CategoryPage findCategoriesPaged(
             String query,
             String visibility,
@@ -499,6 +505,12 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
     @Override
     public List<Brand> findAllBrands(String locale) {
         return brands;
+    }
+
+    @Override
+    public List<Brand> findAllBrands(String locale, boolean strictEnglish) {
+        if (!strictEnglish) return brands;
+        return brands.stream().filter(b -> b.translations() != null).toList();
     }
 
     @Override

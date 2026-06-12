@@ -136,7 +136,11 @@ export function ShippingScreen({ canUpdate }) {
   }
 
   const selectedZone = zones.find((z) => z.id === selectedZoneId)
-  const sortedMethods = [...methods].sort((a, b) => a.sortOrder - b.sortOrder)
+  // Admin VI/EN switch (strict English): ở EN chỉ hiện phương thức đã có tên tiếng Anh.
+  const visibleMethods = contentLang === 'en'
+    ? methods.filter((m) => (m.titleEn || '').trim() !== '')
+    : methods
+  const sortedMethods = [...visibleMethods].sort((a, b) => a.sortOrder - b.sortOrder)
 
   // Persist a drag-reorder. No batch endpoint and no UNIQUE(zone, sort_order)
   // constraint, so we PATCH each moved method sequentially (recoverable on a
@@ -265,10 +269,10 @@ export function ShippingScreen({ canUpdate }) {
                     {methodsStatus === 'error' && (
                       <StatePanel tone="danger" title={t('shipping.methodsLoadError')} actionLabel={t('common.retry')} onAction={() => loadMethods(selectedZoneId)} />
                     )}
-                    {methodsStatus === 'success' && methods.length === 0 && (
+                    {methodsStatus === 'success' && sortedMethods.length === 0 && (
                       <StatePanel tone="neutral" title={t('shipping.methodsTitle')} description={t('shipping.noMethods')} />
                     )}
-                    {methodsStatus === 'success' && methods.length > 0 && (
+                    {methodsStatus === 'success' && sortedMethods.length > 0 && (
                       <>
                       <div className="hide-on-mobile">
                       <div className="bb-table-wrap">

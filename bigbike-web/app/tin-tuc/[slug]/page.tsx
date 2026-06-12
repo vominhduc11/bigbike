@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 
 import { WpCategoryHero, type WpCategoryCrumb } from "@/components/wp/WpCategoryHero";
 import { LHtml, LText, LocalizedContentProvider } from "@/components/i18n/LocalizedContent";
+import { Tr } from "@/components/i18n/Tr";
+import { LocalDate } from "@/components/i18n/LocalDate";
 import {
   getArticleBySlug,
   listArticles,
@@ -33,7 +36,6 @@ import { isValidSlug } from "@/lib/utils/slug";
 import { WpArticleImage } from "../WpArticleImage";
 import { ArticleTableOfContents } from "./ArticleTableOfContents";
 
-const WP_TIME_ZONE = "Asia/Ho_Chi_Minh";
 // Ảnh trang trí cố định của blog-thumbnail — port 1:1 từ single.php.
 const BLOG_THUMBNAIL =
   "/wp-content/themes/bigbike/images/85f3273578840b12abf6a48a6e8c5bd1.png";
@@ -157,7 +159,7 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
   const articleTitle = safeText(article.title, t("articleTitleFallback"));
   const categoryLabel = getArticleCategoryLabel(article);
   const categoryHref = getArticleCategoryHref(article);
-  const articleDate = formatWpLongDate(getArticleDate(article));
+  const articleDate = getArticleDate(article);
 
   const latestArticles = excludeArticle(latestResult.data ?? [], article.slug);
   const featuredArticles = excludeArticle(featuredResult.data ?? [], article.slug);
@@ -214,7 +216,7 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
                     <p className="category">
                       <Link href={categoryHref}>{categoryLabel}</Link>
                     </p>
-                    {articleDate ? <p className="date">{articleDate}</p> : null}
+                    {articleDate ? <p className="date"><LocalDate value={articleDate} dateStyle="long" /></p> : null}
                   </div>
 
                   <ArticleTableOfContents />
@@ -228,7 +230,7 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
                   />
 
                   <div className="social-sharing">
-                    <p>Chia sẻ</p>
+                    <p><Tr ns="Blog" k="shareWord" /></p>
                     <a className="fb-share" href={facebookShareHref} aria-label="Facebook">
                       <svg width="20" height="20" viewBox="0 0 320 512" fill="currentColor" aria-hidden="true">
                         <path d="M279.14 288l14.22-92.66h-88.91v-60.13c0-25.35 12.42-50.06 52.24-50.06h40.42V6.26S260.43 0 225.36 0c-73.22 0-121.08 44.38-121.08 124.72v70.62H22.89V288h81.39v224h100.17V288z" />
@@ -244,8 +246,8 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
               </div>
 
               <div className="col-md-4">
-                <WpSidebarWidget title="Tin nổi bật" articles={highlightedArticles} />
-                <WpSidebarWidget title="Tin mới nhất" articles={newestArticles} />
+                <WpSidebarWidget title={<Tr ns="Blog" k="featuredNews" />} articles={highlightedArticles} />
+                <WpSidebarWidget title={<Tr ns="Blog" k="latestNews" />} articles={newestArticles} />
               </div>
             </div>
           </div>
@@ -255,7 +257,7 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
           <div id="related" className="news-fix-height bb-blog-listing-parity">
             <div className="container">
               <div className="related--title">
-                <h3 className="big">CÓ THỂ BẠN QUAN TÂM</h3>
+                <h3 className="big"><Tr ns="Blog" k="relatedSectionHeading" /></h3>
               </div>
               <div className="row">
                 {relatedArticles.map((related) => (
@@ -280,7 +282,7 @@ function WpSidebarWidget({
   title,
   articles,
 }: Readonly<{
-  title: string;
+  title: ReactNode;
   articles: Article[];
 }>) {
   if (articles.length === 0) {
@@ -313,7 +315,7 @@ function WpSidebarNewsItem({ article }: Readonly<{ article: Article }>) {
   const imageUrl = resolveArticleImageUrl(article);
   const fallbackUrl = makeSlugThumbnailFallback(imageUrl, article.slug);
   const categoryLabel = getArticleCategoryLabel(article);
-  const date = formatWpLongDate(getArticleDate(article));
+  const date = getArticleDate(article);
 
   return (
     <div className="news--item">
@@ -327,7 +329,7 @@ function WpSidebarNewsItem({ article }: Readonly<{ article: Article }>) {
           <p className="category">
             <b>{categoryLabel}</b>
           </p>
-          {date ? <p>{date}</p> : null}
+          {date ? <p><LocalDate value={date} dateStyle="long" /></p> : null}
         </div>
         <div className="news--item-inside">
           <h3>
@@ -348,7 +350,7 @@ function WpBlogGridItem({ article }: Readonly<{ article: Article }>) {
   const href = toArticlePath(article.slug);
   const imageUrl = resolveArticleImageUrl(article);
   const fallbackUrl = makeSlugThumbnailFallback(imageUrl, article.slug);
-  const date = formatWpShortDate(getArticleDate(article));
+  const date = getArticleDate(article);
 
   return (
     <div className="news--item">
@@ -360,7 +362,7 @@ function WpBlogGridItem({ article }: Readonly<{ article: Article }>) {
       <div className="news--item-desc">
         {date ? (
           <div className="news-date">
-            <p>{date}</p>
+            <p><LocalDate value={date} dateStyle="slash" /></p>
           </div>
         ) : null}
         <div className="news--item-inside">
@@ -405,48 +407,6 @@ function makeExcerpt(article: Article, maxLength: number): string {
   }
 
   return plain.length > maxLength ? `${plain.slice(0, Math.max(0, maxLength - 1)).trimEnd()}…` : plain;
-}
-
-function formatWpLongDate(value: string | null | undefined): string {
-  const parts = getWpDateParts(value);
-  if (!parts) {
-    return "";
-  }
-
-  return `${parts.day} Tháng ${parts.month}, ${parts.year}`;
-}
-
-function formatWpShortDate(value: string | null | undefined): string {
-  const parts = getWpDateParts(value);
-  if (!parts) {
-    return "";
-  }
-
-  return `${parts.day}/${parts.month}/${parts.year}`;
-}
-
-function getWpDateParts(value: string | null | undefined): { day: string; month: string; year: string } | null {
-  if (!value) {
-    return null;
-  }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.valueOf())) {
-    return null;
-  }
-
-  const parts = new Intl.DateTimeFormat("vi-VN", {
-    timeZone: WP_TIME_ZONE,
-    day: "numeric",
-    month: "numeric",
-    year: "numeric",
-  }).formatToParts(date);
-
-  const day = parts.find((part) => part.type === "day")?.value;
-  const month = parts.find((part) => part.type === "month")?.value;
-  const year = parts.find((part) => part.type === "year")?.value;
-
-  return day && month && year ? { day, month, year } : null;
 }
 
 function resolveArticleImageUrl(article: Article): string | null {

@@ -298,7 +298,7 @@ export function QuickBuyModal({
                       <FormItem>
                         <FormLabel>{tQb("line1")} <span className="text-destructive">*</span></FormLabel>
                         <FormControl>
-                          <Input {...field} disabled={isSubmitting} autoComplete="address-line1" placeholder="Số nhà, tên đường..." />
+                          <Input {...field} disabled={isSubmitting} autoComplete="address-line1" placeholder={tQb("line1Placeholder")} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -323,7 +323,7 @@ export function QuickBuyModal({
                             className="px-3 h-10 text-lg font-medium hover:bg-muted disabled:opacity-40"
                             onClick={() => field.onChange(Math.max(1, (field.value ?? 1) - 1))}
                             disabled={isSubmitting || (field.value ?? 1) <= 1}
-                            aria-label="Giảm số lượng"
+                            aria-label={tQb("qtyDecrease")}
                           >
                             −
                           </button>
@@ -335,7 +335,7 @@ export function QuickBuyModal({
                             className="px-3 h-10 text-lg font-medium hover:bg-muted disabled:opacity-40"
                             onClick={() => field.onChange((field.value ?? 1) + 1)}
                             disabled={isSubmitting}
-                            aria-label="Tăng số lượng"
+                            aria-label={tQb("qtyIncrease")}
                           >
                             +
                           </button>

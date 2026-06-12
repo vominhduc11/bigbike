@@ -5,6 +5,7 @@ import { readSingleSearchParam } from "@/lib/utils/query";
 import { isSafeReturnTo } from "@/lib/utils/auth";
 import { toAccountPath } from "@/lib/utils/routes";
 import { WpStaticShell } from "@/components/wp/WpStaticShell";
+import { Tr } from "@/components/i18n/Tr";
 import { LoginForm } from "./LoginForm";
 
 const AUTH_CSS = "/wp-content/themes/bigbike/css/wp-theme-auth.css?v=1";
@@ -37,10 +38,10 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           <div className="login">
             <div className="user-activity-content">
               <div className="user-activity-content-title mb-[30px]">
-                <h1 className="mb-2">Đăng nhập</h1>
+                <h1 className="mb-2"><Tr ns="Auth" k="tabLogin" /></h1>
                 <p className="m-0">
-                  Đăng ký thành viên mới tại{" "}
-                  <Link href="/dang-ky/">đây</Link>
+                  <Tr ns="Auth" k="newMemberPrompt" />{" "}
+                  <Link href="/dang-ky/"><Tr ns="Auth" k="here" /></Link>
                 </p>
               </div>
               <LoginForm returnTo={returnTo} />

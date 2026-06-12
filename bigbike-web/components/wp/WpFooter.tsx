@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getLocale } from "next-intl/server";
+import { Tr } from "@/components/i18n/Tr";
 import type { HeaderNavNode } from "@/components/layout/HeaderNavItem";
 import { listPublicSettings } from "@/lib/api/public-api";
 import { normalizeMenuUrl } from "@/lib/utils/nav";
@@ -55,8 +56,8 @@ export async function WpFooter({ footerNodes }: { footerNodes: HeaderNavNode[] }
               <div className="newletters">
                 <form action="">
                   <h2 className="slogan-bigbike">
-                    Bigbike mong được lắng nghe <br />
-                    và thấu hiểu bạn hơn
+                    <Tr ns="Footer" k="wpSloganLine1" /> <br />
+                    <Tr ns="Footer" k="wpSloganLine2" />
                   </h2>
                 </form>
                 <div className="contact-infor">
@@ -81,16 +82,14 @@ export async function WpFooter({ footerNodes }: { footerNodes: HeaderNavNode[] }
               <div className="information">
                 <div className="information--item">
                   <p>
-                    Shop Bigbike.vn chuyên cung cấp đồ bảo hộ moto, xe máy, phượt, mũ bảo hộ Full Face,
-                    Mũ lật cằm, mũ 3/4, mũ cào cào, áo giáp quần bảo hộ, găng tay, balo, túi đeo moto, xe
-                    máy và các phụ kiện thời trang....
+                    <Tr ns="Footer" k="wpShopDescription" />
                   </p>
                 </div>
                 <div className="row">
                   <div className="col-md-7">
                     <div className="information--item toggle--item">
                       <p style={titleStyle} className="toggle--item-title">
-                        Thông tin <i className="fal fa-plus" />
+                        <Tr ns="Footer" k="infoHeading" /> <i className="fal fa-plus" />
                       </p>
                       <div className="toggle--item-body">
                         <FooterMenu nodes={footerNodes} />
@@ -100,7 +99,7 @@ export async function WpFooter({ footerNodes }: { footerNodes: HeaderNavNode[] }
                   <div className="col-md-5">
                     <div className="information--item toggle--item">
                       <p style={titleStyle} className="toggle--item-title">
-                        mạng xã hội <i className="fal fa-plus" />
+                        <Tr ns="Footer" k="socialHeading" /> <i className="fal fa-plus" />
                       </p>
                       <div className="toggle--item-body">
                         <div className="social-list">
@@ -149,8 +148,7 @@ export async function WpFooter({ footerNodes }: { footerNodes: HeaderNavNode[] }
                   <img src={`${T}/images/license.png`} alt="logo-bigbike" />
                 </a>
                 <p>
-                  Giấy chứng nhận đăng ký kinh doanh số: 41K8017383 | Ngày cấp 8 tháng 3 năm 2016 | Nơi
-                  cấp: Ủy Ban Nhân Dân Quận 11
+                  <Tr ns="Footer" k="businessReg" />
                 </p>
               </div>
             </div>

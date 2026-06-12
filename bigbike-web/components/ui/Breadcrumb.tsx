@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
 export type BreadcrumbItem = {
@@ -23,6 +26,7 @@ export type BreadcrumbProps = {
  * `bb-cat-hero-breadcrumb` (onHero) — không thêm CSS mới.
  */
 export function Breadcrumb({ items, variant = "onLight", className }: BreadcrumbProps) {
+  const t = useTranslations("A11y");
   if (items.length === 0) {
     return null;
   }
@@ -31,7 +35,7 @@ export function Breadcrumb({ items, variant = "onLight", className }: Breadcrumb
   return (
     <nav
       className={cn(isHero ? "bb-cat-hero-breadcrumb" : "bb-breadcrumb", className)}
-      aria-label="Điều hướng"
+      aria-label={t("breadcrumbNav")}
     >
       {items.map((item, index) => {
         const isLast = index === items.length - 1;

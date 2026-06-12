@@ -7,6 +7,7 @@ import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { showConfirm } from '../lib/confirm'
 import { deleteReview, fetchReviews, updateReviewStatus } from '../lib/adminApi'
+import { useContentLang } from '../lib/contentLang'
 import { formatDateTime, formatText } from '../lib/formatters'
 import { useDebounce } from '../lib/useDebounce'
 import { Alert } from '@/components/ui/alert'
@@ -41,6 +42,8 @@ function statusLabel(status, t) {
 
 export function ReviewListScreen({ navigate, canUpdate }) {
   const { t } = useTranslation()
+  // Admin VI/EN switch: ở EN backend ẩn review của SP chưa dịch + trả productNameEn.
+  const contentLang = useContentLang()
   const [query, setQuery] = useState(INITIAL_QUERY)
   const [searchInput, setSearchInput] = useState(INITIAL_QUERY.search)
   const debouncedSearch = useDebounce(searchInput, 250)
@@ -65,7 +68,7 @@ export function ReviewListScreen({ navigate, canUpdate }) {
         setState({ status: 'error', items: [], pagination: null, warning: '', error: error.message })
       })
     return () => { active = false }
-  }, [query])
+  }, [query, contentLang])
 
   useEffect(() => {
     if (isFirstSearchRender.current) {
@@ -279,11 +282,11 @@ export function ReviewListScreen({ navigate, canUpdate }) {
                             style={{ fontWeight: 600, color: 'var(--admin-color-text-primary)', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
                             onClick={() => navigate(`/admin/products/${r.productId}`)}
                           >
-                            {formatText(r.productName, r.productId)}
+                            {formatText(contentLang === 'en' ? (r.productNameEn || r.productName) : r.productName, r.productId)}
                           </button>
                         ) : (
                           <span style={{ fontWeight: 600, color: 'var(--admin-color-text-primary)' }}>
-                            {formatText(r.productName, t('reviews.unknownProduct'))}
+                            {formatText(contentLang === 'en' ? (r.productNameEn || r.productName) : r.productName, t('reviews.unknownProduct'))}
                           </span>
                         )}
                         {' · '}{formatDateTime(r.createdAt)}

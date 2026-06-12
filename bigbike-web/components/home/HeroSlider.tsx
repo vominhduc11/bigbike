@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Swiper, SwiperSlide } from "swiper/react";
 import type { Swiper as SwiperType } from "swiper";
 import "swiper/css";
@@ -105,6 +106,7 @@ function HeroSlideView({ slide }: { slide: HeroSlide }) {
 }
 
 export function HeroSlider({ slides }: HeroSliderProps) {
+  const tA = useTranslations("A11y");
   const [mounted, setMounted] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const swiperRef = useRef<SwiperType | null>(null);
@@ -168,7 +170,7 @@ export function HeroSlider({ slides }: HeroSliderProps) {
             type="button"
             className={`${ARROW_BASE} left-[10px]`}
             onClick={() => swiperRef.current?.slidePrev()}
-            aria-label="Slide trước"
+            aria-label={tA("slidePrev")}
           >
             <ChevronLeft aria-hidden="true" className={ARROW_ICON} strokeWidth={2} />
           </button>
@@ -176,7 +178,7 @@ export function HeroSlider({ slides }: HeroSliderProps) {
             type="button"
             className={`${ARROW_BASE} right-[10px]`}
             onClick={() => swiperRef.current?.slideNext()}
-            aria-label="Slide tiếp"
+            aria-label={tA("slideNext")}
           >
             <ChevronRight aria-hidden="true" className={ARROW_ICON} strokeWidth={2} />
           </button>

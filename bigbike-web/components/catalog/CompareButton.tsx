@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { useTranslations } from "next-intl";
 import { useCart } from "@/lib/cart-context";
 import { useCompare } from "@/lib/compare-context";
 import type { CompareProduct } from "@/lib/compare-storage";
@@ -35,6 +36,7 @@ function CompareIcon({ size = 18 }: { size?: number }) {
 }
 
 export function CompareButton({ product, variant = "icon" }: CompareButtonProps) {
+  const t = useTranslations("CompareBtn");
   const { toggle, isComparing } = useCompare();
   const { showToast } = useCart();
   const active = isComparing(product.id);
@@ -45,9 +47,9 @@ export function CompareButton({ product, variant = "icon" }: CompareButtonProps)
     const result = toggle(product);
     if (result.ok) return;
     if (result.reason === "full") {
-      showToast("KHÔNG THỂ SO SÁNH", "Chỉ so sánh tối đa 3 sản phẩm cùng lúc.");
+      showToast(t("limitTitle"), t("limitMax"));
     } else {
-      showToast("KHÔNG THỂ SO SÁNH", "Chỉ so sánh được các sản phẩm cùng loại.");
+      showToast(t("limitTitle"), t("limitType"));
     }
   }
 
@@ -65,7 +67,7 @@ export function CompareButton({ product, variant = "icon" }: CompareButtonProps)
         )}
       >
         <CompareIcon size={16} />
-        {active ? "Đang so sánh" : "So sánh"}
+        {active ? t("active") : t("inactive")}
       </button>
     );
   }
@@ -73,7 +75,7 @@ export function CompareButton({ product, variant = "icon" }: CompareButtonProps)
   return (
     <CardIconButton
       active={active}
-      ariaLabel={active ? "Bỏ khỏi so sánh" : "Thêm vào so sánh"}
+      ariaLabel={active ? t("removeAria") : t("addAria")}
       top="top-[52px]"
       ariaPressed={active}
       onClick={handleClick}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, type ReactElement } from "react";
 import { createPortal } from "react-dom";
+import { useTranslations } from "next-intl";
 import { telHref } from "@/lib/utils/format";
 
 // b24-widget FAB structure, inlined. KEEP (in globals.css): @keyframes socialRotate /
@@ -155,6 +156,7 @@ function ChatOverlay({
   onClose: () => void;
   onToggle: () => void;
 }) {
+  const t = useTranslations("Support");
   // Scroll lock
   useEffect(() => {
     const prevBody = document.body.style.overflow;
@@ -191,7 +193,7 @@ function ChatOverlay({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Liên hệ hỗ trợ"
+        aria-label={t("ariaPanel")}
         className="fixed z-[2147483645] w-[min(86vw,320px)] min-w-[300px] bottom-[calc(var(--bb-mobile-nav-height)+env(safe-area-inset-bottom)+136px)] md:bottom-[max(124px,calc(env(safe-area-inset-bottom)+124px))] right-[max(16px,env(safe-area-inset-right))] md:right-[max(24px,env(safe-area-inset-right))] !rounded-[8px] bg-[var(--bb-color-white)] py-2 text-[var(--bb-chat-text)] shadow-[0_6px_24px_rgba(0,0,0,0.18)] before:content-[''] before:absolute before:-bottom-[7px] before:right-[25px] before:border-x-[8px] before:border-x-transparent before:border-t-[8px] before:border-t-[var(--bb-color-white)]"
       >
         {items.map((item) => (
@@ -213,7 +215,7 @@ function ChatOverlay({
       {/* FAB — cùng kích thước & vị trí với lúc đóng (không nhảy), chỉ đổi icon */}
       <div className="fixed z-[2147483647] bottom-[calc(var(--bb-mobile-nav-height)+env(safe-area-inset-bottom)+80px)] md:bottom-[max(24px,env(safe-area-inset-bottom))] right-[max(16px,env(safe-area-inset-right))] md:right-[max(24px,env(safe-area-inset-right))]">
         <div dir="ltr" className="relative flex flex-col-reverse items-end">
-          <div className={chatTitlePill}>Bạn cần hỗ trợ?</div>
+          <div className={chatTitlePill}>{t("needHelp")}</div>
           <div className={fabContainer}>
           <div className={`${fabMaskOpen}${fabMaskMobile}`} aria-hidden="true" />
           <div className={`${fabBlock}${fabBlockMobile}`}>
@@ -221,7 +223,7 @@ function ChatOverlay({
               type="button"
               className={`${fabInnerBlockOpen}${fabBlockMobile}`}
               onClick={onToggle}
-              aria-label="Đóng hỗ trợ"
+              aria-label={t("close")}
               aria-expanded={true}
               aria-haspopup="dialog"
             >
@@ -248,6 +250,7 @@ export function FloatingChat({
   zaloDisplay,
   messengerDisplay,
 }: Readonly<FloatingChatProps>) {
+  const t = useTranslations("Support");
   const [isOpen, setIsOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
@@ -309,7 +312,7 @@ export function FloatingChat({
           className="relative font-[Arial,sans-serif] flex flex-col-reverse items-end [animation:b24-widget-button-visible_1s_ease-out_forwards_1]"
         >
           <div id="sudovn-btn-title" className={chatTitlePill}>
-            Bạn cần hỗ trợ?
+            {t("needHelp")}
           </div>
           <div className={fabContainer} id="sudovn-btn-inner-container">
             <div className={`${fabHaloRing} [animation:bb-chat-halo_2.4s_ease-out_infinite]`} aria-hidden="true" />
@@ -321,7 +324,7 @@ export function FloatingChat({
                 type="button"
                 className={`${fabInnerBlock}${fabBlockMobile}`}
                 onClick={handleOpen}
-                aria-label="Mở hỗ trợ"
+                aria-label={t("open")}
                 aria-expanded={false}
                 aria-haspopup="dialog"
               >

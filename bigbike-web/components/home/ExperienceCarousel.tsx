@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import type { Article } from "@/lib/contracts/public";
@@ -60,6 +61,7 @@ function ExperienceSlide({
   article: Article;
   isActive: boolean;
 }) {
+  const tCommon = useTranslations("Common");
   const media = resolveArticleMedia(article);
 
   return (
@@ -106,7 +108,7 @@ function ExperienceSlide({
               className="bb-exp-slide-link inline-block w-[170px] max-md:w-[150px] p-0 border border-[var(--bb-border-default)] text-black font-[family-name:var(--bb-font-cta)] text-ui-16 font-semibold leading-[52px] max-md:leading-[44px] no-underline uppercase [transition:border-color_var(--bb-duration-fast)_var(--bb-ease-standard),color_var(--bb-duration-fast)_var(--bb-ease-standard)] focus-visible:[outline:var(--bb-focus-outline)] focus-visible:outline-offset-4"
               tabIndex={isActive ? 0 : -1}
             >
-              XEM CHI TIẾT
+              {tCommon("viewDetails")}
             </Link>
           </div>
         </div>
@@ -116,6 +118,7 @@ function ExperienceSlide({
 }
 
 export function ExperienceCarousel({ articles }: Props) {
+  const tHome = useTranslations("Home");
   if (articles.length === 0) return null;
 
   const hasSideSlides = articles.length > 1;
@@ -161,7 +164,7 @@ export function ExperienceCarousel({ articles }: Props) {
         },
       }}
       aria-roledescription="carousel"
-      aria-label="Góc trải nghiệm BigBike"
+      aria-label={tHome("experienceAria")}
     >
       {carouselArticles.map((article, index) => (
         <SwiperSlide key={`${article.id}-${index}`}>

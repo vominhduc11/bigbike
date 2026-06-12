@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { WpCategoryPagination } from "@/components/wp/WpCategoryPagination";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchPublicBrandList } from "@/lib/api/client-api";
@@ -24,6 +24,7 @@ const DEFAULT_SORT = "name:asc";
 export function WpBrandListClient() {
   const searchParams = useSearchParams();
   const locale = useLocale();
+  const t = useTranslations("Catalog");
 
   const { page, size, sort } = useMemo(() => {
     const pageNum = Number(searchParams.get("paged") ?? searchParams.get("page") ?? "1");
@@ -67,8 +68,8 @@ export function WpBrandListClient() {
 
   if (brands.length === 0) {
     const notice = isError
-      ? (error instanceof Error ? error.message : "Không tải được danh sách thương hiệu.")
-      : "Danh sách thương hiệu hiện đang rỗng.";
+      ? (error instanceof Error ? error.message : t("brandListLoadFailed"))
+      : t("brandListEmpty");
     return <p className="woocommerce-info">{notice}</p>;
   }
 

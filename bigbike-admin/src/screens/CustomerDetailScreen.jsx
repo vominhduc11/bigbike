@@ -14,6 +14,24 @@ import { Button } from '@/components/ui/button'
 
 const CUSTOMER_STATUSES = ['ACTIVE', 'DISABLED', 'BLOCKED']
 
+// Kiểm tra tại form, cùng quy tắc backend (chỉ báo trước, backend vẫn là chốt chặn cuối).
+// Các ô đều tùy chọn: để trống là hợp lệ, chỉ chặn khi nhập giá trị sai.
+const PHONE_PATTERN = /^\+?[0-9]{8,15}$/
+function isPhoneInvalid(phone) {
+  const v = (phone || '').trim()
+  return v !== '' && !PHONE_PATTERN.test(v)
+}
+function isCreditLimitInvalid(value) {
+  if (value === '' || value == null) return false
+  const n = Number(value)
+  return Number.isNaN(n) || n < 0
+}
+function isPaymentTermsInvalid(value) {
+  if (value === '' || value == null) return false
+  const n = Number(value)
+  return Number.isNaN(n) || n < 1 || n > 365
+}
+
 const SEGMENT_BADGE_CLASSES = {
   VIP:      'text-primary bg-surface-selected',
   LOYAL:    'text-info bg-info-bg',
@@ -138,6 +156,10 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
 
   async function handleEditSave(e) {
     e.preventDefault()
+    if (isPhoneInvalid(editForm.phone)) {
+      toast.error('Số điện thoại không hợp lệ.')
+      return
+    }
     setEditSaving(true)
     try {
       const r = await updateCustomer(customerId, { displayName: editForm.displayName, phone: editForm.phone })
@@ -153,6 +175,14 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
 
   async function handleCreditSave(e) {
     e.preventDefault()
+    if (isCreditLimitInvalid(creditForm.creditLimit)) {
+      toast.error('Hạn mức tín dụng không được âm.')
+      return
+    }
+    if (isPaymentTermsInvalid(creditForm.paymentTermsDays)) {
+      toast.error('Thời hạn thanh toán phải từ 1 đến 365 ngày.')
+      return
+    }
     setCreditSaving(true)
     try {
       const payload = {
@@ -179,6 +209,10 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
   if (!state.customer) return <StatePanel tone="neutral" title={t('customers.detail.notFound')} description={`ID: ${customerId}`} actionLabel={t('common.back')} onAction={() => navigate('/admin/customers')} />
 
   const { customer } = state
+
+  const phoneError = isPhoneInvalid(editForm.phone)
+  const creditLimitError = isCreditLimitInvalid(creditForm.creditLimit)
+  const paymentTermsError = isPaymentTermsInvalid(creditForm.paymentTermsDays)
 
   return (
     <div>
@@ -256,13 +290,24 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
                 Số điện thoại
                 <Input
                   type="text"
+                  inputMode="tel"
                   value={editForm.phone}
                   onChange={(e) => setEditForm((p) => ({ ...p, phone: e.target.value }))}
                   disabled={editSaving}
+                  aria-invalid={phoneError || undefined}
                  />
+                {phoneError ? (
+                  <span className="mt-1 block text-xs text-danger">
+                    Số điện thoại phải gồm 8–15 chữ số (có thể bắt đầu bằng dấu +).
+                  </span>
+                ) : (
+                  <span className="mt-1 block text-xs text-muted-foreground">
+                    Để trống nếu chưa có. VD: 0901234567
+                  </span>
+                )}
               </label>
               <div className="flex gap-2">
-                <Button type="submit" disabled={editSaving}>
+                <Button type="submit" disabled={editSaving || phoneError}>
                   {editSaving ? 'Đang lưu...' : 'Lưu'}
                 </Button>
                 <Button type="button" variant="outline" onClick={handleEditCancel} disabled={editSaving}>
@@ -438,7 +483,13 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
                     onChange={(e) => setCreditForm((p) => ({ ...p, creditLimit: e.target.value }))}
                     placeholder="Không giới hạn nếu để trống"
                     disabled={creditSaving}
+                    aria-invalid={creditLimitError || undefined}
                    />
+                  {creditLimitError ? (
+                    <span className="mt-1 block text-xs text-danger">Hạn mức không được là số âm.</span>
+                  ) : (
+                    <span className="mt-1 block text-xs text-muted-foreground">Để trống nếu không giới hạn. Không nhập số âm.</span>
+                  )}
                 </label>
                 <label>
                   Thời hạn thanh toán (ngày)
@@ -450,7 +501,13 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
                     onChange={(e) => setCreditForm((p) => ({ ...p, paymentTermsDays: e.target.value }))}
                     placeholder="VD: 30"
                     disabled={creditSaving}
+                    aria-invalid={paymentTermsError || undefined}
                    />
+                  {paymentTermsError ? (
+                    <span className="mt-1 block text-xs text-danger">Thời hạn phải từ 1 đến 365 ngày.</span>
+                  ) : (
+                    <span className="mt-1 block text-xs text-muted-foreground">Từ 1 đến 365 ngày. Để trống nếu không áp dụng.</span>
+                  )}
                 </label>
                 <label>
                   Ghi chú tín dụng
@@ -462,7 +519,7 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
                    />
                 </label>
                 <div className="flex gap-2">
-                  <Button type="submit" disabled={creditSaving}>
+                  <Button type="submit" disabled={creditSaving || creditLimitError || paymentTermsError}>
                     {creditSaving ? 'Đang lưu...' : 'Lưu'}
                   </Button>
                   <Button type="button" variant="outline" onClick={() => setCreditEditOpen(false)} disabled={creditSaving}>

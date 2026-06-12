@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
+import { useTranslations } from "next-intl";
 import { Swiper, SwiperSlide } from "swiper/react";
 import type { Swiper as SwiperType } from "swiper";
 import "swiper/css";
@@ -31,6 +32,7 @@ function PlayIcon() {
 }
 
 function VideoCard({ video, onPlay }: { video: HomeVideo; onPlay: () => void }) {
+  const tA = useTranslations("A11y");
   const title = safeText(video.title, "Video");
 
   const thumbUrls: string[] = [];
@@ -51,7 +53,7 @@ function VideoCard({ video, onPlay }: { video: HomeVideo; onPlay: () => void }) 
       type="button"
       className="group block w-full cursor-pointer appearance-none bg-transparent p-0 text-left"
       onClick={onPlay}
-      aria-label={`Xem video: ${title}`}
+      aria-label={tA("watchVideo", { title })}
     >
       {/* Thumbnail — 9:16 aspect ratio, max-height cap ở tablet để tránh card quá cao */}
       <div className="relative w-full overflow-hidden bg-brand [aspect-ratio:9/16] max-[479px]:[max-height:72vw] min-[480px]:max-[1199px]:[max-height:260px]">
@@ -146,6 +148,7 @@ function VideoModal({
   onPrev: () => void;
   onNext: () => void;
 }) {
+  const tA = useTranslations("A11y");
   const video = videos[activeIndex];
   const title = safeText(video.title, "Video");
   const embedSrc = video.embedUrl ??
@@ -249,7 +252,7 @@ function VideoModal({
         ref={closeRef}
         type="button"
         onClick={onClose}
-        aria-label="Đóng video"
+        aria-label={tA("videoClose")}
         style={{
           position: "fixed",
           top: 12,
@@ -279,7 +282,7 @@ function VideoModal({
           <button
             type="button"
             onClick={onPrev}
-            aria-label="Video trước"
+            aria-label={tA("videoPrev")}
             style={{
               position: "fixed",
               left: isMobile ? "calc(50% - 56px)" : 12,
@@ -307,7 +310,7 @@ function VideoModal({
           <button
             type="button"
             onClick={onNext}
-            aria-label="Video tiếp theo"
+            aria-label={tA("videoNext")}
             style={{
               position: "fixed",
               right: isMobile ? "calc(50% - 56px)" : 12,
@@ -364,6 +367,7 @@ function VideoModal({
 }
 
 export function HomeVideoCarousel({ videos }: Props) {
+  const tA = useTranslations("A11y");
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [canScroll, setCanScroll] = useState(videos.length > 1);
   // Chỉ hiện mũi tên từ 1024px (desktop) trở lên — tablet (768–1023) và mobile không có.
@@ -441,7 +445,7 @@ export function HomeVideoCarousel({ videos }: Props) {
             <ArrowButton
               direction="prev"
               onClick={() => swiperRef.current?.slidePrev()}
-              label="Video trước"
+              label={tA("videoPrev")}
               disabled={!canScroll}
             />
           </div>
@@ -490,7 +494,7 @@ export function HomeVideoCarousel({ videos }: Props) {
             <ArrowButton
               direction="next"
               onClick={() => swiperRef.current?.slideNext()}
-              label="Video tiếp"
+              label={tA("videoNext")}
               disabled={!canScroll}
             />
           </div>
@@ -501,7 +505,7 @@ export function HomeVideoCarousel({ videos }: Props) {
       {canScroll && dotCount > 1 && (
         <div
           className="mt-4 flex items-center justify-center gap-[6px] min-[600px]:mt-5 min-[900px]:mt-6"
-          aria-label="Chuyển slide video"
+          aria-label={tA("videoSlide")}
         >
           {paginationDots.map((idx) => {
             const isSelected = idx === activeDotIndex;
@@ -513,7 +517,7 @@ export function HomeVideoCarousel({ videos }: Props) {
                 onClick={() => {
                   swiperRef.current?.slideTo(idx);
                 }}
-                aria-label={`Đến nhóm video ${idx + 1}`}
+                aria-label={tA("videoGroup", { index: idx + 1 })}
                 aria-current={isSelected ? "true" : undefined}
               >
                 <span

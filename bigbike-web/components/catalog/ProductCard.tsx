@@ -143,7 +143,7 @@ export function ProductCard({ product, variant = "compact", surface = "article" 
           )}
           <div className={cartClass}>
             <Link href={href} className={cartLinkClass}>
-              XEM CHI TIẾT
+              {tCommon("viewDetails")}
             </Link>
           </div>
         </div>
@@ -221,10 +221,10 @@ export function ProductCard({ product, variant = "compact", surface = "article" 
           : null;
     const archiveCta =
       product.stockState === "OUT_OF_STOCK"
-        ? "Hết hàng"
+        ? tProduct("stockState.OUT_OF_STOCK")
         : product.variants?.length
-          ? "Chọn"
-          : "Thêm vào giỏ hàng";
+          ? tProduct("cardSelect")
+          : tProduct("cardAddToCart");
 
     return (
       <article className="group mt-[30px] text-foreground max-[767px]:m-0 max-[767px]:h-full">

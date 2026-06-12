@@ -32,17 +32,24 @@ public interface ReviewJpaRepository extends JpaRepository<ReviewEntity, Long> {
     // Postgres cannot infer the type of a JDBC null param inside lower(?)/upper(?), so it
     // throws "function lower(bytea) does not exist". The service layer normalises status/q to
     // empty strings and the WHERE clause short-circuits on '' instead of NULL.
+    // strictEnglish = true (admin VI/EN switch ở chế độ EN): chỉ giữ review của sản phẩm
+    // đã có name_en — ẩn review của SP chưa dịch. Lọc ở tầng query để phân trang đúng.
     @Query("""
             SELECT r FROM ReviewEntity r
             WHERE (:status = '' OR UPPER(r.status) = UPPER(:status))
               AND (:q = ''
                    OR LOWER(r.authorName) LIKE LOWER(CONCAT('%', :q, '%'))
                    OR LOWER(r.body)       LIKE LOWER(CONCAT('%', :q, '%')))
+              AND (:strictEnglish = FALSE
+                   OR EXISTS (SELECT 1 FROM ProductEntity p
+                              WHERE p.id = r.productId
+                                AND p.nameEn IS NOT NULL AND TRIM(p.nameEn) <> ''))
             ORDER BY r.createdAt DESC
             """)
     Page<ReviewEntity> findByFilters(
             @Param("status") String status,
             @Param("q") String q,
+            @Param("strictEnglish") boolean strictEnglish,
             Pageable pageable);
 
     @Query("""

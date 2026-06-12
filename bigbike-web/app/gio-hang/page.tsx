@@ -1,6 +1,7 @@
 import { WpStaticShell } from "@/components/wp/WpStaticShell";
 import { WpCheckoutPageHeading } from "@/components/wp/WpCheckoutPageHeading";
 import { WpCartClient } from "@/components/wp/WpCartClient";
+import { Tr } from "@/components/i18n/Tr";
 
 /**
  * Giỏ hàng — port 1:1 từ themes/bigbike/page-templates/page-cart.php:
@@ -26,7 +27,7 @@ export default function CartPage() {
         {/* mt-20 theo page-cart.php; trên desktop đẩy thêm để h1 vượt qua đáy
             logo nghiêng của header WP (logo kéo xuống ~130px, trang này không có
             hero che như các route khác). Mobile logo nhỏ/căn giữa nên giữ mt-20. */}
-        <WpCheckoutPageHeading title={TITLE} />
+        <WpCheckoutPageHeading title={<Tr ns="Cart" k="title" />} />
 
         <div className="cart-table">
           <WpCartClient />

@@ -41,13 +41,30 @@ public class AdminContentReadService {
         PublishStatus statusFilter = parsePublishStatus(publishStatus);
         String normalizedType = normalizeType(type);
         String locale = normalizeLocale(lang);
+        // Admin VI/EN switch (strict English): ở EN, repo đã lọc bỏ mục chưa có title_en
+        // qua findArticlesByFilter/findPagesByFilter. DB pagination (listArticlesAdmin)
+        // không lọc theo title_en nên ở EN ta đi qua nhánh filter + phân trang trong Java
+        // (số lượng content nhỏ) để đếm trang đúng sau khi ẩn mục chưa dịch.
+        boolean strictEnglish = "en".equals(locale);
 
         if ("ARTICLE".equals(normalizedType)) {
+            if (strictEnglish) {
+                List<AdminContentItem> items = contentReadRepository.findArticlesByFilter(statusFilter, query, locale)
+                        .stream().map(AdminContentReadService::fromArticle)
+                        .sorted(contentComparator(sortSpec)).toList();
+                return paginationService.paginate(items, page, size);
+            }
             org.springframework.data.domain.Page<Article> ap = contentReadRepository
                     .listArticlesAdmin(statusFilter, query, toPageable(sortSpec, page, size), locale);
             return mapToPageResult(ap, AdminContentReadService::fromArticle);
         }
         if ("PAGE".equals(normalizedType)) {
+            if (strictEnglish) {
+                List<AdminContentItem> items = contentReadRepository.findPagesByFilter(statusFilter, query, locale)
+                        .stream().map(AdminContentReadService::fromPage)
+                        .sorted(contentComparator(sortSpec)).toList();
+                return paginationService.paginate(items, page, size);
+            }
             org.springframework.data.domain.Page<Page> pp = contentReadRepository
                     .listPagesAdmin(statusFilter, query, toPageable(sortSpec, page, size), locale);
             return mapToPageResult(pp, AdminContentReadService::fromPage);

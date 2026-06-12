@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useTranslations } from "next-intl";
 import type { Product } from "@/lib/contracts/public";
 import type { WpOrderbyValue } from "@/lib/utils/catalog-sort";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -52,6 +53,7 @@ export function WpCatalogResults({
   paginationBaseHref,
   isLoading = false,
 }: WpCatalogResultsProps) {
+  const t = useTranslations("Catalog");
   return (
     <div className="col-md-9">
       <div className="product-list pb-40">
@@ -61,7 +63,7 @@ export function WpCatalogResults({
               <div className="woocommerce-notices-wrapper" />
               <div className="col-sm-6">
                 <div className="result woocommerce-result-count">
-                  {pagination?.totalItems != null ? `${pagination.totalItems} Sản phẩm` : null}
+                  {pagination?.totalItems != null ? t("productCountLabel", { count: pagination.totalItems }) : null}
                 </div>
               </div>
               <div className="col-sm-6 text-right">

@@ -6,6 +6,8 @@ import { HomeAnalytics } from "@/components/home/HomeAnalytics";
 import { Tr } from "@/components/i18n/Tr";
 import { ExperienceCarousel } from "@/components/home/ExperienceCarousel";
 import { HomeVideoCarousel } from "@/components/home/HomeVideoCarousel";
+import { BrandCarousel } from "@/components/home/BrandCarousel";
+import { HeroSlider, type HeroSlide } from "@/components/home/HeroSlider";
 import { HomeFeaturedProducts } from "@/components/home/HomeFeaturedProducts";
 import { HomeCategoryGrid } from "@/components/home/HomeCategoryGrid";
 import { HomeNewsList } from "@/components/home/HomeNewsList";
@@ -79,22 +81,27 @@ function sliderProductSlug(slider: HomeSlider): string | null {
   return match ? match[1] : null;
 }
 
-function toHeroSlide(slider: HomeSlider, product: Product | null) {
+function toHeroSlide(slider: HomeSlider, product: Product | null): HeroSlide | null {
   const desktopSrc = toLegacyWpMediaUrl(resolveMediaUrl(slider.desktopImage?.url?.trim()));
   if (!desktopSrc) return null;
 
-  // Banner WP: desktop dùng background của <a>, mobile (≤767px) dùng <span>.
-  // Khi slider có ảnh mobile riêng thì <span> dùng ảnh đó, fallback về ảnh desktop.
+  // Banner WP: desktop dùng ảnh nền, mobile (≤767px) dùng ảnh riêng nếu có,
+  // fallback về ảnh desktop.
   const mobileSrc = toLegacyWpMediaUrl(resolveMediaUrl(slider.mobileImage?.url?.trim())) || desktopSrc;
+  const productName = product?.name?.trim() ?? "";
+  const categoryName = product?.category?.name?.trim() ?? "";
 
   return {
     id: slider.id,
-    src: desktopSrc,
+    desktopSrc,
     mobileSrc,
+    alt: productName || categoryName || "BigBike",
     href: toSafePublicHref(
       slider.link || slider.productLink || slider.externalLink,
       toProductListPath(),
     ),
+    productName,
+    categoryName,
     productCode: product?.sku?.trim() || "BIGBIKE",
   };
 }
@@ -203,26 +210,7 @@ export default async function HomePage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdLocalBusiness }} />
 
       {/* ===== 1. Main banner ===== */}
-      <div id="main-banner">
-        <div className="swiper-container js-home-banner">
-          <div className="swiper-wrapper">
-            {slides.map((s) => (
-              <div className="swiper-slide" key={s.id} {...{ "product-code": s.productCode }}>
-                <a
-                  href={s.href}
-                  style={{ background: `url('${s.src}')`, backgroundSize: "cover" }}
-                  className="-swiper-lazy"
-                >
-                  <span style={{ backgroundImage: `url('${s.mobileSrc}')` }} />
-                </a>
-              </div>
-            ))}
-          </div>
-          <div className="swiper-pagination" />
-          <div className="swiper-button-next" />
-          <div className="swiper-button-prev" />
-        </div>
-      </div>
+      <HeroSlider slides={slides} />
 
       {/* ===== 2. Category list (3 sản phẩm nổi bật) ===== */}
       {homeHighlights.length > 0 && (
@@ -362,32 +350,7 @@ export default async function HomePage() {
       )}
 
       {/* ===== 9. Partner slide (thương hiệu) ===== */}
-      {brands.length > 0 && (
-        <div className="partner-slide pt-120 pb-120">
-          <div className="container">
-            {/* suppressHydrationWarning: home.min.js (Swiper + jQuery) mutates these
-                elements after load — navigation overlays and lazy-load markers cause
-                intentional DOM divergence from server HTML. */}
-            <div className="swiper-container" suppressHydrationWarning>
-              <div className="swiper-wrapper" suppressHydrationWarning>
-                {brands.map((b) => {
-                  const logo = toLegacyWpMediaUrl(resolveMediaUrl(b.logo?.url?.trim()));
-                  return (
-                    <div className="swiper-slide" key={b.id} suppressHydrationWarning>
-                      <Link href={`/brands/${b.slug}`}>
-                        {/* Logo tải trực tiếp — thiếu logo thì dùng placeholder dùng chung,
-                            KHÔNG để vòng xoay swiper-lazy-preloader treo. */}
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={logo ?? "/wp/logo-1.png"} className="swiper-lazy" alt={b.name} width={1} height={1} />
-                      </Link>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <BrandCarousel brands={brands} />
 
       {/* ===== 10. Content bottom (SEO wyswyg) ===== */}
       {homeContentBottomMarkup ? (

@@ -11,6 +11,7 @@ import { Modal } from '../components/layout'
 import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
+import { useContentLang } from '../lib/contentLang'
 import {
   SERIAL_STATUS_LABELS,
   SERIAL_STATUS_CLASSES,
@@ -1773,6 +1774,17 @@ export function InventoryScreen({ canUpdate = false }) {
   const [serialOnlyMode, setSerialOnlyMode] = useState(false)
 
   const state = useAdminList(['inventory', query], () => fetchInventoryGrouped(query))
+  // Admin VI/EN switch (strict English): ở EN ẩn nhóm SP chưa có tên tiếng Anh và
+  // hiển thị tên tiếng Anh. Lọc phía client (response luôn kèm productNameEn) — số
+  // trang theo tổng chưa lọc nên ở EN trang có thể ít dòng hơn (chấp nhận, chế độ rà soát).
+  const contentLang = useContentLang()
+  const visibleGroups = useMemo(() => {
+    const groups = state.items || []
+    if (contentLang !== 'en') return groups
+    return groups
+      .filter((g) => (g.productNameEn || '').trim() !== '')
+      .map((g) => ({ ...g, productName: g.productNameEn }))
+  }, [state.items, contentLang])
 
   useEffect(() => {
     fetchInventorySummary()
@@ -1894,14 +1906,14 @@ export function InventoryScreen({ canUpdate = false }) {
         <StatePanel tone="danger" title={t('inventory.loadError')} description={state.error}
           actionLabel={t('common.retry')} onAction={() => setQuery((q) => ({ ...q }))} />
       )}
-      {state.status === 'success' && state.items.length === 0 && (
+      {state.status === 'success' && visibleGroups.length === 0 && (
         <StatePanel tone="neutral" title={t('inventory.empty')} description={t('inventory.emptyDesc')} />
       )}
-      {(state.status === 'loading' || (state.status === 'success' && state.items.length > 0)) && (
+      {(state.status === 'loading' || (state.status === 'success' && visibleGroups.length > 0)) && (
         <div className="bb-card">
           <div className="bb-card-body bb-card-body--flush">
             <InventoryGroupedTable
-              groups={state.items}
+              groups={visibleGroups}
               loading={state.status === 'loading'}
               pageSize={query.pageSize}
               canUpdate={canUpdate}

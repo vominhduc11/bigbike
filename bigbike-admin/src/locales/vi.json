@@ -771,7 +771,7 @@
     "detail": {
       "eyebrow": "Thương mại / Đơn hàng",
       "orderDate": "Ngày đặt:",
-      "backToList": "← Danh sách",
+      "backToList": "Danh sách",
       "loading": "Đang tải đơn hàng",
       "loadError": "Lỗi tải đơn hàng",
       "notFound": "Không tìm thấy đơn hàng",
@@ -980,7 +980,7 @@
       "editTitle": "Chỉnh sửa danh mục",
       "createDesc": "Tạo một nhóm sản phẩm mới để hiển thị trên website.",
       "editDesc": "Cập nhật tên, ảnh, mô tả và trạng thái hiển thị của danh mục.",
-      "backToList": "← Quay lại danh sách",
+      "backToList": "Quay lại danh sách",
       "notFound": "Không tìm thấy danh mục",
       "notFoundDesc": "Danh mục bạn đang xem không còn tồn tại — có thể đã bị xoá.",
       "loading": "Đang tải danh mục",
@@ -1102,7 +1102,7 @@
       "editTitle": "Sửa thương hiệu",
       "createDesc": "Tạo thương hiệu mới.",
       "editDesc": "Cập nhật thông tin thương hiệu.",
-      "backToList": "← Danh sách thương hiệu",
+      "backToList": "Danh sách thương hiệu",
       "notFound": "Không tìm thấy thương hiệu",
       "notFoundDesc": "Thương hiệu được chọn không tồn tại.",
       "loading": "Đang tải thương hiệu",
@@ -2421,6 +2421,9 @@
     "presetCustom": "Tuỳ chọn",
     "dateRangeError": "'Từ ngày' không được sau 'Đến ngày'.",
     "exportOrders": "Xuất đơn hàng (CSV)",
+    "exportProducts": "Xuất sản phẩm (CSV)",
+    "exportCustomers": "Xuất khách hàng (CSV)",
+    "exportAllHint": "Sản phẩm và khách hàng xuất toàn bộ, không theo khoảng ngày đang chọn.",
     "kpiGmv": "Doanh số (GMV)",
     "kpiPaidRevenue": "Tiền thực thu",
     "kpiRefund": "Hoàn tiền",
@@ -2573,7 +2576,8 @@
     "exportCsv": "Xuất CSV",
     "exporting": "Đang xuất...",
     "success": "Xuất file thành công",
-    "error": "Xuất file thất bại"
+    "error": "Xuất file thất bại. Vui lòng thử lại.",
+    "truncated": "Đã xuất file nhưng dữ liệu bị giới hạn ở {{max}} dòng."
   },
   "pos": {
     "eyebrow": "Bán hàng",

@@ -2270,12 +2270,12 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   })
 
   const { data: categoriesResult } = useQuery({
-    queryKey: ['categories', 'tree'],
+    queryKey: ['categories', 'tree', contentLang],
     queryFn: () => fetchCategoryTree(),
     staleTime: 5 * 60 * 1000,
   })
   const { data: brandsResult } = useQuery({
-    queryKey: ['brands-all'],
+    queryKey: ['brands-all', contentLang],
     queryFn: () => fetchBrands({ pageSize: 100 }),
     staleTime: 5 * 60 * 1000,
   })
@@ -2316,7 +2316,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   }, [relatedSearch])
 
   const { data: relatedSearchResult, isFetching: isSearchingRelated } = useQuery({
-    queryKey: ['product-related-search', relatedSearchDebounced],
+    queryKey: ['product-related-search', relatedSearchDebounced, contentLang],
     queryFn: () => fetchProducts({ q: relatedSearchDebounced, pageSize: 8 }),
     enabled: relatedSearchDebounced.length >= 1,
     staleTime: 60 * 1000,

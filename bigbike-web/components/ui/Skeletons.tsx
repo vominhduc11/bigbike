@@ -18,7 +18,10 @@
  * catalog grid rail (formerly bb-cat-layout, see bbCatLayout below) are inline.
  */
 
+"use client";
+
 import type { CSSProperties, ReactNode } from "react";
+import { useTranslations } from "next-intl";
 import { Card } from "@/components/ui/card";
 import { Container } from "@/components/layout/Container";
 import { cn } from "@/lib/utils";
@@ -55,16 +58,21 @@ const sr: CSSProperties = {
 
 function SkeletonRoot({
   label,
+  labelKey,
   children,
   className,
 }: {
-  label: string;
+  label?: string;
+  /** Key trong namespace Loading — ưu tiên hơn `label` để đổi ngôn ngữ ở client. */
+  labelKey?: string;
   children: ReactNode;
   className?: string;
 }) {
+  const t = useTranslations("Loading");
+  const text = labelKey ? t(labelKey) : label ?? "";
   return (
     <div role="status" aria-busy="true" aria-live="polite" className={className}>
-      <span style={sr}>{label}</span>
+      <span style={sr}>{text}</span>
       <div aria-hidden="true">{children}</div>
     </div>
   );
@@ -162,7 +170,7 @@ function CategoryTileSkel() {
 /** Homepage — hero + trust rail + 3-tile + 5 carousel + cat-grid + about + experience + news + brands. */
 export function HomeSkeleton() {
   return (
-    <SkeletonRoot label="Đang tải trang chủ" className="bb-home">
+    <SkeletonRoot labelKey="home" className="bb-home">
       {/* Hero slider */}
       <div className="relative w-full select-none bg-black [aspect-ratio:16/6] max-[600px]:aspect-[4/5]">
         <SkelBlock w="100%" h="100%" rounded={false} style={{ position: "absolute", inset: 0 }} />
@@ -255,7 +263,7 @@ export function HomeSkeleton() {
 /** Product Detail — breadcrumb + 2-col gallery+info + tabs + related */
 export function PdpSkeleton() {
   return (
-    <SkeletonRoot label="Đang tải chi tiết sản phẩm">
+    <SkeletonRoot labelKey="product">
       {/* Breadcrumb */}
       <div className="bb-breadcrumb">
         <SkelText w={220} />
@@ -343,7 +351,7 @@ export function PdpSkeleton() {
 /** Catalog (san-pham, danh-muc-san-pham) — page-head + sidebar + product-grid */
 export function CatalogSkeleton({ withHero = false }: { withHero?: boolean }) {
   return (
-    <SkeletonRoot label="Đang tải danh mục sản phẩm">
+    <SkeletonRoot labelKey="category">
       {withHero && (
         <div className="relative h-[300px] md:h-[430px]">
           <SkelBlock w="100%" h="100%" rounded={false} style={{ position: "absolute", inset: 0 }} />
@@ -393,7 +401,7 @@ export function CatalogSkeleton({ withHero = false }: { withHero?: boolean }) {
 /** Category list — breadcrumb + page-head + grid of category cards */
 export function CategoryListSkeleton() {
   return (
-    <SkeletonRoot label="Đang tải danh sách danh mục">
+    <SkeletonRoot labelKey="categoryList">
       <div className="bb-breadcrumb"><SkelText w={160} /></div>
       <div className="bb-page-head">
         <SkelText w="15%" />
@@ -419,7 +427,7 @@ export function CategoryListSkeleton() {
 /** Brand list — page-head + grid of brand tiles */
 export function BrandListSkeleton() {
   return (
-    <SkeletonRoot label="Đang tải danh sách thương hiệu">
+    <SkeletonRoot labelKey="brandList">
       <div className="bb-breadcrumb"><SkelText w={150} /></div>
       <div className="bb-page-head">
         <SkelText w="15%" />
@@ -445,7 +453,7 @@ export function BrandListSkeleton() {
 /** Brand detail — breadcrumb + page-head + brand-logo + sidebar + grid */
 export function BrandDetailSkeleton() {
   return (
-    <SkeletonRoot label="Đang tải trang thương hiệu">
+    <SkeletonRoot labelKey="brandPage">
       <div className="bb-breadcrumb"><SkelText w={220} /></div>
       <div className="bb-page-head">
         <SkelText w="12%" />
@@ -527,7 +535,7 @@ export function ArticleDetailSkeleton({ label = "Loading article" }: { label?: s
 /** Checkout — breadcrumb + page-head + stepper + 2-col form+summary */
 export function CheckoutSkeleton() {
   return (
-    <SkeletonRoot label="Đang tải trang thanh toán">
+    <SkeletonRoot labelKey="checkout">
       <div className="bb-breadcrumb"><SkelText w={180} /></div>
       <div className="bb-page-head">
         <SkelText w="10%" />
@@ -598,7 +606,7 @@ export function CheckoutSkeleton() {
 /** Account inner content — fits inside AccountShell main column */
 export function AccountInnerSkeleton({ rows = 3 }: { rows?: number }) {
   return (
-    <SkeletonRoot label="Đang tải nội dung tài khoản">
+    <SkeletonRoot labelKey="account">
       <div className={accountHeaderShell}>
         <div className={skelCol} style={{ flex: 1 }}>
           <SkelTitle w="30%" h="1.6em" />
@@ -617,7 +625,7 @@ export function AccountInnerSkeleton({ rows = 3 }: { rows?: number }) {
 /** Full Account layout (sidebar + main) — used when AccountShell hasn't loaded yet */
 export function AccountLayoutSkeleton({ rows = 3 }: { rows?: number }) {
   return (
-    <SkeletonRoot label="Đang tải trang tài khoản" className="bb-account-layout">
+    <SkeletonRoot labelKey="accountPage" className="bb-account-layout">
       <aside className={accountSidebar}>
         <div style={{ padding: "24px 22px", borderBottom: "1px solid var(--bb-border-subtle)" }}>
           <SkelCircle size={56} />
@@ -652,7 +660,7 @@ export function AccountLayoutSkeleton({ rows = 3 }: { rows?: number }) {
 /** Order list — header + tabs + N order cards */
 export function OrderListSkeleton({ count = 3 }: { count?: number }) {
   return (
-    <SkeletonRoot label="Đang tải danh sách đơn hàng">
+    <SkeletonRoot labelKey="orders">
       <div className={accountHeaderShell}>
         <div className={skelCol} style={{ flex: 1 }}>
           <SkelTitle w="30%" h="1.6em" />
@@ -698,7 +706,7 @@ export function OrderListSkeleton({ count = 3 }: { count?: number }) {
 /** Order detail — header + summary card + items + totals + addresses */
 export function OrderDetailSkeleton() {
   return (
-    <SkeletonRoot label="Đang tải chi tiết đơn hàng">
+    <SkeletonRoot labelKey="orderDetail">
       <div className={accountHeaderShell}>
         <div className={skelCol} style={{ flex: 1 }}>
           <SkelTitle w="30%" h="1.6em" />
@@ -720,7 +728,7 @@ export function FormSkeleton({
   twoCol = true,
 }: { fields?: number; twoCol?: boolean }) {
   return (
-    <SkeletonRoot label="Đang tải biểu mẫu">
+    <SkeletonRoot labelKey="form">
       <div className={accountHeaderShell}>
         <div className={skelCol} style={{ flex: 1 }}>
           <SkelTitle w="25%" h="1.6em" />
@@ -760,7 +768,7 @@ export function FormSkeleton({
 /** Auth (login/register/forgot-password) — small centered card */
 export function AuthSkeleton() {
   return (
-    <SkeletonRoot label="Đang tải biểu mẫu xác thực">
+    <SkeletonRoot labelKey="auth">
       <section className="bb-page bb-page--auth">
         <Container>
           <div className="bb-auth-wrap">
@@ -838,7 +846,7 @@ export function SearchSkeleton({ label = "Loading search results" }: { label?: s
 /** Order confirmation / success screen */
 export function OrderConfirmSkeleton() {
   return (
-    <SkeletonRoot label="Đang xác nhận đơn hàng">
+    <SkeletonRoot labelKey="orderConfirm">
       <div className="bb-success">
         <SkelCircle size={88} />
         <div className={skelStack} style={{ marginTop: 22, alignItems: "center" }}>
@@ -866,7 +874,7 @@ export function OrderConfirmSkeleton() {
 /** Contact page — hero + 2-col (info blocks / map) */
 export function ContactSkeleton() {
   return (
-    <SkeletonRoot label="Đang tải trang liên hệ">
+    <SkeletonRoot labelKey="contact">
       <section className="bb-page">
         <SkelBlock w="100%" h={300} />
         <Container>

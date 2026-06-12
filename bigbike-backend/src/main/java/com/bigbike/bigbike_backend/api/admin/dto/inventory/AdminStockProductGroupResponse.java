@@ -7,6 +7,7 @@ import java.util.List;
 public record AdminStockProductGroupResponse(
         String productId,
         String productName,
+        String productNameEn,
         String productSku,
         ImageRef productImage,
         String aggregateStockState,

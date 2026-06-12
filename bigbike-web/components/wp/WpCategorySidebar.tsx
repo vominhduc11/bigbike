@@ -38,27 +38,20 @@ export type WpCategorySidebarProps = {
   hiddenParams?: Record<string, string | undefined>;
 };
 
-const COLOR_FALLBACK: { key: string; label: string }[] = [
-  { key: "bac", label: "Bạc" },
-  { key: "cam", label: "Cam" },
-  { key: "hong", label: "Hồng" },
-  { key: "trang", label: "Trắng" },
-  { key: "xam", label: "Xám" },
-  { key: "xanh-da-troi", label: "Xanh da trời" },
-  { key: "xanh-la-cay", label: "Xanh lá cây" },
-  { key: "vang", label: "Vàng" },
-  { key: "den", label: "Đen" },
-  { key: "do", label: "Đỏ" },
-];
+// Nhãn fallback (khi backend chưa trả facet màu/giá) — text lấy qua i18n
+// `Catalog.colorFallback.*` / `Catalog.priceFallback.*` để đổi ngôn ngữ ở client.
+const COLOR_FALLBACK_KEYS = [
+  "bac", "cam", "hong", "trang", "xam", "xanh-da-troi", "xanh-la-cay", "vang", "den", "do",
+] as const;
 
-const PRICE_FALLBACK: { key: string; label: string; min?: number; max?: number }[] = [
-  { key: "0-500k", label: "0 - 500.000 VND", min: 0, max: 500_000 },
-  { key: "500k-1tr", label: "500.000 - 1.000.000 VND", min: 500_000, max: 1_000_000 },
-  { key: "1-2tr", label: "1.000.000 - 2.000.000 VND", min: 1_000_000, max: 2_000_000 },
-  { key: "2-3tr", label: "2.000.000 - 3.000.000 VND", min: 2_000_000, max: 3_000_000 },
-  { key: "3-5tr", label: "3.000.000 - 5.000.000 VND", min: 3_000_000, max: 5_000_000 },
-  { key: "5-10tr", label: "5.000.000 - 10.000.000 VND", min: 5_000_000, max: 10_000_000 },
-  { key: "tren-10tr", label: "Trên 10.000.000 VND", min: 10_000_000, max: undefined },
+const PRICE_FALLBACK: { key: string; min?: number; max?: number }[] = [
+  { key: "0-500k", min: 0, max: 500_000 },
+  { key: "500k-1tr", min: 500_000, max: 1_000_000 },
+  { key: "1-2tr", min: 1_000_000, max: 2_000_000 },
+  { key: "2-3tr", min: 2_000_000, max: 3_000_000 },
+  { key: "3-5tr", min: 3_000_000, max: 5_000_000 },
+  { key: "5-10tr", min: 5_000_000, max: 10_000_000 },
+  { key: "tren-10tr", min: 10_000_000, max: undefined },
 ];
 
 function Widget({
@@ -138,7 +131,9 @@ export function WpCategorySidebar({
       : brands.map((b) => ({ key: b.slug, label: b.name, image: b.logo ?? null }));
 
   const colorRows: { key: string; label: string; count?: number }[] =
-    facets?.colors && facets.colors.length > 0 ? facets.colors : COLOR_FALLBACK;
+    facets?.colors && facets.colors.length > 0
+      ? facets.colors
+      : COLOR_FALLBACK_KEYS.map((key) => ({ key, label: t(`colorFallback.${key}`) }));
 
   const priceRows =
     facets?.priceBands && facets.priceBands.length > 0
@@ -149,7 +144,11 @@ export function WpCategorySidebar({
           max: b.maxPrice ?? undefined,
           count: b.count as number | undefined,
         }))
-      : PRICE_FALLBACK.map((b) => ({ ...b, count: undefined as number | undefined }));
+      : PRICE_FALLBACK.map((b) => ({
+          ...b,
+          label: t(`priceFallback.${b.key}`),
+          count: undefined as number | undefined,
+        }));
 
   const noPrice = current.minPrice == null && current.maxPrice == null;
 
@@ -157,12 +156,12 @@ export function WpCategorySidebar({
     <div className={`sidebar-wrap-product${active ? " active" : ""}${inView ? " in" : ""}`}>
       <div className="wrapper-product">
         <div className="mobile-sidebar-title">
-          <p>BỘ LỌC</p>
+          <p>{t("filterMobileHeading")}</p>
           <i
             className="fal fa-times close-btn"
             role="button"
             tabIndex={0}
-            aria-label="Đóng bộ lọc"
+            aria-label={t("closeFilter")}
             onClick={close}
             onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && close()}
           />
@@ -238,7 +237,7 @@ export function WpCategorySidebar({
 
           {brandRows.length > 0 && (
             <Widget
-              title="Thương Hiệu"
+              title={t("filterBrand")}
               extraClass="woocommerce widget_layered_nav woocommerce-widget-layered-nav"
             >
               <ul className="woocommerce-widget-layered-nav-list">
@@ -276,7 +275,7 @@ export function WpCategorySidebar({
           )}
 
           <Widget
-            title="Màu sắc"
+            title={t("filterColor")}
             extraClass="woocommerce widget_layered_nav woocommerce-widget-layered-nav"
           >
             <ul className="woocommerce-widget-layered-nav-list">

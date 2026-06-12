@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { submenuIcon } from "@/lib/ui-classes";
@@ -141,9 +142,10 @@ function MegaSidebar({
   onItemClick: () => void;
   pathname: string | null;
 }) {
+  const t = useTranslations("Catalog");
   return (
     <nav
-      aria-label="Danh mục sản phẩm"
+      aria-label={t("filterCategory")}
       className="w-64 shrink-0 border-r border-border bg-[#f9f9f9] py-2 xl:w-72 3xl:w-80 4xl:w-80"
     >
       <ul className="m-0 list-none p-0">

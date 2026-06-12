@@ -406,15 +406,19 @@ export function MenuScreen({ canUpdate }) {
 
   // Filtered items from search
   const filteredFlatItems = useMemo(() => {
+    // Admin VI/EN switch (strict English): ở EN chỉ hiện mục đã có nhãn tiếng Anh.
+    const base = contentLang === 'en'
+      ? flatMenuItems.filter((item) => (item.labelEn || '').trim() !== '')
+      : flatMenuItems
     const q = search.trim().toLowerCase()
-    if (!q) return flatMenuItems
-    return flatMenuItems.filter(
+    if (!q) return base
+    return base.filter(
       (item) =>
         item.label.toLowerCase().includes(q) ||
         (item.labelEn || '').toLowerCase().includes(q) ||
         item.url.toLowerCase().includes(q),
     )
-  }, [flatMenuItems, search])
+  }, [flatMenuItems, search, contentLang])
 
   // Parent options for "add item" form
   const parentOptions = flatMenuItems

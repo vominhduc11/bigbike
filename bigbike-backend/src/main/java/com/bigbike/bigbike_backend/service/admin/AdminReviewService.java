@@ -68,20 +68,22 @@ public class AdminReviewService {
         this.siteBaseUrl = siteBaseUrl;
     }
 
-    public PageResult<Map<String, Object>> listReviews(int page, int size, String q, String status) {
+    public PageResult<Map<String, Object>> listReviews(int page, int size, String q, String status, String lang) {
         int normalizedPage = Math.max(1, page);
         int normalizedSize = (size <= 0) ? DEFAULT_SIZE : Math.min(size, MAX_SIZE);
 
         // Empty string (not null) keeps repository filter logic predictable for blank status values.
         String statusFilter = (status != null && !status.isBlank()) ? status.toUpperCase(Locale.ROOT) : "";
         String qFilter = (q != null && !q.isBlank()) ? q : "";
+        // Admin VI/EN switch: ở EN ẩn review của sản phẩm chưa có name_en (strict, không fallback).
+        boolean strictEnglish = "en".equalsIgnoreCase(lang);
 
         PageRequest pageRequest = PageRequest.of(
                 normalizedPage - 1,
                 normalizedSize,
                 Sort.by(Sort.Direction.DESC, "createdAt")
         );
-        Page<ReviewEntity> dbPage = reviewRepo.findByFilters(statusFilter, qFilter, pageRequest);
+        Page<ReviewEntity> dbPage = reviewRepo.findByFilters(statusFilter, qFilter, strictEnglish, pageRequest);
 
         Map<String, ProductReviewMetadata> productMetadata = loadProductMetadata(dbPage.getContent());
         List<Map<String, Object>> mapped = dbPage.getContent().stream()
@@ -241,7 +243,7 @@ public class AdminReviewService {
 
         Map<String, ProductReviewMetadata> result = new HashMap<>();
         for (ProductEntity product : productRepo.findAllById(productIds)) {
-            result.put(product.getId(), new ProductReviewMetadata(product.getName(), product.getSlug()));
+            result.put(product.getId(), new ProductReviewMetadata(product.getName(), product.getNameEn(), product.getSlug()));
         }
         return result;
     }
@@ -251,6 +253,7 @@ public class AdminReviewService {
         payload.put("id", review.getId());
         payload.put("productId", review.getProductId());
         payload.put("productName", productMetadata != null ? productMetadata.name() : null);
+        payload.put("productNameEn", productMetadata != null ? productMetadata.nameEn() : null);
         payload.put("productSlug", productMetadata != null ? productMetadata.slug() : null);
         payload.put("authorName", review.getAuthorName() != null ? review.getAuthorName() : "");
         payload.put("authorEmail", review.getAuthorEmail() != null ? review.getAuthorEmail() : "");
@@ -316,5 +319,5 @@ public class AdminReviewService {
         return value;
     }
 
-    private record ProductReviewMetadata(String name, String slug) {}
+    private record ProductReviewMetadata(String name, String nameEn, String slug) {}
 }

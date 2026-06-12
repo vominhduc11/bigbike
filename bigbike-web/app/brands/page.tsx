@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { WpCategoryHero, type WpCategoryCrumb } from "@/components/wp/WpCategoryHero";
+import { Tr } from "@/components/i18n/Tr";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { toBrandListPath, toHomePath } from "@/lib/utils/routes";
 import { WpBrandListClient } from "./WpBrandListClient";
@@ -18,7 +19,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function BrandListPage() {
   const heroBreadcrumb: WpCategoryCrumb[] = [
     { label: "Bigbike.vn", href: toHomePath() },
-    { label: "Thương hiệu" },
+    { label: "Thương hiệu", labelNode: <Tr ns="Catalog" k="brandsTitle" /> },
   ];
 
   return (
@@ -30,7 +31,7 @@ export default function BrandListPage() {
       />
 
       <div className="archive tax-pwb-brand post-type-archive-product">
-        <WpCategoryHero title="Thương hiệu" breadcrumb={heroBreadcrumb} />
+        <WpCategoryHero title="Thương hiệu" titleNode={<Tr ns="Catalog" k="brandsTitle" />} breadcrumb={heroBreadcrumb} />
 
         <div id="main-content">
           <div className="container">

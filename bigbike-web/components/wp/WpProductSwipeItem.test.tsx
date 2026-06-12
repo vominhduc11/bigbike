@@ -28,31 +28,31 @@ function makeProduct(overrides: Partial<Product> = {}): Product {
 }
 
 describe("WpProductSwipeItem — gate sao theo REVIEW_RULE_003", () => {
-  it("ratingCount >= 1 → render .rating-star với data-rating = trung bình cộng", () => {
+  it("ratingCount >= 1 → render sao (RatingStars) đúng trung bình cộng", () => {
     const { container } = render(
       <WpProductSwipeItem product={makeProduct({ rating: 3.5, ratingCount: 2 })} />,
     );
-    const star = container.querySelector(".rating-star");
+    const star = container.querySelector('[aria-label$="sao"]');
     expect(star).not.toBeNull();
-    expect(star!.getAttribute("data-rating")).toBe("3.5");
+    expect(star!.getAttribute("aria-label")).toBe("3.5 sao");
   });
 
-  it("0 review → KHÔNG render .rating-star (plugin theme sẽ không vẽ sao), không còn default 4.5", () => {
+  it("0 review → KHÔNG render sao, không còn default 4.5", () => {
     const { container } = render(
       <WpProductSwipeItem product={makeProduct({ rating: null, ratingCount: 0 })} />,
     );
-    expect(container.querySelector(".rating-star")).toBeNull();
+    expect(container.querySelector('[aria-label$="sao"]')).toBeNull();
   });
 
   it("rating ảo 4.5 nhưng ratingCount null (hàng WP-import) → ẩn sao (REVIEW_RULE_004)", () => {
     const { container } = render(
       <WpProductSwipeItem product={makeProduct({ rating: 4.5, ratingCount: null })} />,
     );
-    expect(container.querySelector(".rating-star")).toBeNull();
+    expect(container.querySelector('[aria-label$="sao"]')).toBeNull();
   });
 
   it("thiếu cả rating lẫn ratingCount (entry localStorage cũ) → ẩn sao", () => {
     const { container } = render(<WpProductSwipeItem product={makeProduct()} />);
-    expect(container.querySelector(".rating-star")).toBeNull();
+    expect(container.querySelector('[aria-label$="sao"]')).toBeNull();
   });
 });

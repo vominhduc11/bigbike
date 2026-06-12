@@ -204,6 +204,7 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPrevi
 
 export function HomeVideoListScreen({ canUpdate }) {
   const { t } = useTranslation()
+  const contentLang = useContentLang()
   const queryClient = useQueryClient()
   const [showForm, setShowForm] = useState(false)
   const [editingVideo, setEditingVideo] = useState(null)
@@ -388,6 +389,8 @@ export function HomeVideoListScreen({ canUpdate }) {
 
   const isFiltering = searchText.trim() !== '' || statusFilter !== 'ALL'
   const filteredItems = items.filter((v) => {
+    // Admin VI/EN switch (strict English): ở EN chỉ hiện video đã có tiêu đề tiếng Anh.
+    if (contentLang === 'en' && !(v.titleEn || '').trim()) return false
     const q = searchText.trim().toLowerCase()
     const matchSearch = q === ''
       || v.title.toLowerCase().includes(q)

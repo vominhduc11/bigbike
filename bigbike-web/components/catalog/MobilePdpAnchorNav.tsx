@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
 export type AnchorNavItem = {
@@ -33,6 +34,7 @@ export function MobilePdpAnchorNav({
   scrollTargetSelector,
   headerSelector = "header.headroom",
 }: Props) {
+  const t = useTranslations("A11y");
   const controlled = typeof onSelect === "function";
   const [internalActive, setInternalActive] = useState(items[0]?.id ?? "");
   const activeId = controlled ? (controlledActiveId ?? items[0]?.id ?? "") : internalActive;
@@ -191,7 +193,7 @@ export function MobilePdpAnchorNav({
           : "opacity-0 -translate-y-full pointer-events-none",
       )}
       style={topPx != null ? { top: topPx } : undefined}
-      aria-label="Điều hướng nội dung sản phẩm"
+      aria-label={t("productContentNav")}
       aria-hidden={!visible}
     >
       {items.map((item) => (

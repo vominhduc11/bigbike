@@ -4,6 +4,7 @@ import { getLocale } from "next-intl/server";
 import type { HeaderNavNode } from "@/components/layout/HeaderNavItem";
 import { listPublicSettings } from "@/lib/api/public-api";
 import { normalizeMenuUrl } from "@/lib/utils/nav";
+import { Tr } from "@/components/i18n/Tr";
 import { WpSearchIcon } from "./WpSearchIcon";
 import { pickSetting } from "@/lib/utils/settings";
 import { toCartPath } from "@/lib/utils/routes";
@@ -22,7 +23,7 @@ const T = "/wp-content/themes/bigbike";
 function WpContactMe({ address, phones }: { address: string; phones: string[] }) {
   return (
     <div className="contact-me">
-      <p className="title-contact-me">Thông tin liên hệ</p>
+      <p className="title-contact-me"><Tr ns="Header" k="shopInfoContactHeading" /></p>
       <ul>
         <li>
           <div className="row">
@@ -30,9 +31,9 @@ function WpContactMe({ address, phones }: { address: string; phones: string[] })
               <i className="fal fa-clock" />
             </div>
             <div className="col">
-              <p>T2 - T6: 09h00 - 21h00</p>
-              <p>T7 / CN: 09h00 - 18h00</p>
-              <p>Lễ / Tết: nghỉ</p>
+              <p><Tr ns="Header" k="wpHoursWeekday" /></p>
+              <p><Tr ns="Header" k="wpHoursWeekend" /></p>
+              <p><Tr ns="Header" k="wpHoursHoliday" /></p>
             </div>
           </div>
         </li>
@@ -43,7 +44,7 @@ function WpContactMe({ address, phones }: { address: string; phones: string[] })
                 <i className="fal fa-map-marker-alt" />
               </div>
               <div className="col">
-                <p>Cửa hàng Bigbike</p>
+                <p><Tr ns="Header" k="wpContactStore" /></p>
                 <p>{address}</p>
               </div>
             </div>
@@ -115,9 +116,7 @@ export async function WpHeader({ menuNodes }: { menuNodes: HeaderNavNode[] }) {
     pickSetting(settings, ["hotline_2"]),
     pickSetting(settings, ["hotline_3"]),
   ].filter(Boolean);
-  const shopDescription =
-    pickSetting(settings, ["footer_description"]) ||
-    "Shop Bigbike.vn chuyên cung cấp đồ bảo hộ moto, xe máy, phượt, mũ bảo hộ Full Face, Mũ lật cằm, mũ 3/4, mũ cào cào, áo giáp quần bảo hộ, găng tay, balo, túi đeo moto, xe máy và các phụ kiện thời trang....";
+  const shopDescription = pickSetting(settings, ["footer_description"]);
 
   return (
     <>
@@ -211,7 +210,7 @@ export async function WpHeader({ menuNodes }: { menuNodes: HeaderNavNode[] }) {
             <img src={`${T}/images/logo-1.png`} alt="logo bigbike" />
           </div>
           <div className="desc">
-            <p>{shopDescription}</p>
+            <p>{shopDescription || <Tr ns="Header" k="shopInfoDefaultDescription" />}</p>
           </div>
           <WpContactMe address={address} phones={phones} />
         </div>

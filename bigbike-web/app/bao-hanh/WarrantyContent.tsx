@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Container } from "@/components/layout/Container";
 import { lookupWarranty, type WarrantyLookupResult } from "@/lib/api/client-api";
-import { formatDate } from "@/lib/utils/format";
+import { LocalDate } from "@/components/i18n/LocalDate";
 import { fieldLabel } from "@/lib/ui-classes";
 
 function StatusBadge({ status, daysLeft, t }: { status: WarrantyLookupResult["status"]; daysLeft: number; t: ReturnType<typeof useTranslations<"Warranty">> }) {
@@ -110,11 +110,11 @@ export function WarrantyContent() {
               </tr>
               <tr>
                 <td className="text-muted-foreground text-sm py-1.5">{t("fieldStart")}</td>
-                <td className="py-1.5">{formatDate(result.startDate)}</td>
+                <td className="py-1.5"><LocalDate value={result.startDate} dateStyle="slashPad" fallback="—" /></td>
               </tr>
               <tr>
                 <td className="text-muted-foreground text-sm py-1.5">{t("fieldEnd")}</td>
-                <td className="py-1.5">{formatDate(result.endDate)}</td>
+                <td className="py-1.5"><LocalDate value={result.endDate} dateStyle="slashPad" fallback="—" /></td>
               </tr>
             </tbody>
           </table>

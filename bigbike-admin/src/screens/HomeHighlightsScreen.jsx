@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { fetchHomeHighlights, saveHomeHighlights, fetchProducts } from '../lib/adminApi'
+import { useContentLang } from '../lib/contentLang'
 import { normalizeImageAsset } from '../lib/contracts'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
@@ -15,11 +16,12 @@ const SLOT_LABELS = { 1: 'Slot 1', 2: 'Slot 2', 3: 'Slot 3' }
 
 function ProductPicker({ value, onChange, disabled }) {
   const { t } = useTranslation()
+  const contentLang = useContentLang()
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
 
   const { data, isFetching } = useQuery({
-    queryKey: ['home-highlights-product-search', query],
+    queryKey: ['home-highlights-product-search', query, contentLang],
     queryFn: () => fetchProducts({ q: query, page: 1, pageSize: 8 }),
     enabled: open && query.trim().length > 0,
     staleTime: 30_000,
@@ -102,6 +104,7 @@ function SlotCard({ slotNumber, product, onProductChange, disabled }) {
 
 export function HomeHighlightsScreen({ canUpdate }) {
   const { t } = useTranslation()
+  const contentLang = useContentLang()
   const queryClient = useQueryClient()
 
   const [slots, setSlots] = useState([
@@ -112,9 +115,14 @@ export function HomeHighlightsScreen({ canUpdate }) {
   const [initialized, setInitialized] = useState(false)
 
   const { isLoading, isError, error, data: highlightsData } = useQuery({
-    queryKey: ['home-highlights'],
+    queryKey: ['home-highlights', contentLang],
     queryFn: fetchHomeHighlights,
   })
+
+  // Khi đổi ngôn ngữ nội dung (VI/EN), dữ liệu được fetch lại theo lang mới và
+  // các thẻ slot cần lấy lại tên đã dịch — bỏ chốt initialized để re-sync.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { setInitialized(false) }, [contentLang])
 
   useEffect(() => {
     if (!highlightsData || initialized) return
@@ -131,6 +139,7 @@ export function HomeHighlightsScreen({ canUpdate }) {
         },
       }
     })
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSlots(loaded)
     setInitialized(true)
   }, [highlightsData, initialized])

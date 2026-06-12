@@ -5,6 +5,7 @@ import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { useQuery } from '@tanstack/react-query'
 import { Crown, Download, UserCheck, UserPlus, Users } from 'lucide-react'
+import { toast } from 'sonner'
 import { PaginationControls } from '../components/PaginationControls'
 import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
@@ -87,7 +88,14 @@ export function CustomerListScreen({ navigate }) {
           <button
             type="button"
             className="bb-btn bb-btn-secondary"
-            onClick={() => exportCustomersCsv({ status: query.status !== 'ALL' ? query.status : undefined })}
+            onClick={async () => {
+              try {
+                const r = await exportCustomersCsv({ status: query.status !== 'ALL' ? query.status : undefined })
+                if (r?.truncated) toast.warning(t('export.truncated', { max: r.maxRows }))
+              } catch {
+                toast.error(t('export.error'))
+              }
+            }}
           >
             <Download size={14} />{t('common.exportCsv', { defaultValue: 'Xuất CSV' })}
           </button>

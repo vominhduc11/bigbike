@@ -1,6 +1,7 @@
 import { WpStaticShell } from "@/components/wp/WpStaticShell";
 import { WpCheckoutPageHeading } from "@/components/wp/WpCheckoutPageHeading";
 import { WpCheckoutClient } from "@/components/wp/WpCheckoutClient";
+import { Tr } from "@/components/i18n/Tr";
 
 /**
  * Thanh toán — port 1:1 từ themes/bigbike/page-templates/page-checkout.php (cùng
@@ -22,7 +23,7 @@ export default function CheckoutPage() {
       cssHref="/wp-content/themes/bigbike/css/wp-theme-checkout.css?v=2"
     >
       <div className="container">
-        <WpCheckoutPageHeading title={TITLE} />
+        <WpCheckoutPageHeading title={<Tr ns="Checkout" k="title" />} />
 
         <div className="cart-table">
           <WpCheckoutClient />

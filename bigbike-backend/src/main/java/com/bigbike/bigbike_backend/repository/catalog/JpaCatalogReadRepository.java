@@ -35,6 +35,7 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRep
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
+import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import java.text.Normalizer;
@@ -136,7 +137,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
 
     @Override
     public List<Product> findProductsFiltered(String query, String publishStatus, String stockState, String brandId, String categoryId, String locale) {
-        Specification<ProductEntity> spec = buildProductSpec(query, publishStatus, stockState, brandId, categoryId);
+        Specification<ProductEntity> spec = buildProductSpec(query, publishStatus, stockState, brandId, categoryId, locale);
         return productJpaRepository.findAll(spec).stream()
                 .map(entity -> toDomainListItem(entity, locale))
                 .toList();
@@ -195,9 +196,15 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         );
     }
 
-    private static Specification<ProductEntity> buildProductSpec(String query, String publishStatus, String stockState, String brandId, String categoryId) {
+    private static Specification<ProductEntity> buildProductSpec(String query, String publishStatus, String stockState, String brandId, String categoryId, String locale) {
         return (root, criteriaQuery, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
+            // Admin VI/EN switch (strict English): khi locale = en, chỉ trả về SP
+            // có name_en — ẩn hẳn SP chưa dịch (không fallback). Public dùng view khác.
+            if (LOCALE_EN.equals(locale)) {
+                Expression<String> nameEn = cb.trim(cb.coalesce(root.<String>get("nameEn"), ""));
+                predicates.add(cb.notEqual(nameEn, ""));
+            }
             if (publishStatus == null || publishStatus.isBlank() || "ALL".equalsIgnoreCase(publishStatus)) {
                 predicates.add(cb.notEqual(root.get("publishStatus"), PublishStatus.TRASH));
             } else {
@@ -261,6 +268,14 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     }
 
     @Override
+    public List<Category> findAllCategories(String locale, boolean strictEnglish) {
+        return categoryJpaRepository.findAll().stream()
+                .filter(entity -> !strictEnglish || isPresent(entity.getNameEn()))
+                .map(entity -> toDomain(entity, locale))
+                .toList();
+    }
+
+    @Override
     public CategoryPage findCategoriesPaged(
             String query,
             String visibility,
@@ -272,6 +287,12 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     ) {
         Specification<CategoryEntity> spec = (root, cq, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
+            // Admin VI/EN switch (strict English): khi locale = en, chỉ trả về danh
+            // mục có name_en — ẩn mục chưa dịch. Method này admin-only.
+            if (LOCALE_EN.equals(locale)) {
+                Expression<String> nameEn = cb.trim(cb.coalesce(root.<String>get("nameEn"), ""));
+                predicates.add(cb.notEqual(nameEn, ""));
+            }
             if (visibility != null && !visibility.isBlank()) {
                 if ("VISIBLE".equals(visibility)) {
                     predicates.add(cb.isTrue(root.get("isVisible")));
@@ -340,6 +361,14 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     @Override
     public List<Brand> findAllBrands(String locale) {
         return brandJpaRepository.findAll().stream()
+                .map(entity -> toDomain(entity, locale))
+                .toList();
+    }
+
+    @Override
+    public List<Brand> findAllBrands(String locale, boolean strictEnglish) {
+        return brandJpaRepository.findAll().stream()
+                .filter(entity -> !strictEnglish || isPresent(entity.getNameEn()))
                 .map(entity -> toDomain(entity, locale))
                 .toList();
     }

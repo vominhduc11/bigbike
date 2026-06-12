@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { Article } from "@/lib/contracts/public";
-import { formatDate } from "@/lib/utils/format";
+import { useLocalDate } from "@/components/i18n/LocalDate";
 import { stripHtmlToText } from "@/lib/utils/text";
 import { toArticlePath } from "@/lib/utils/routes";
 import { MediaImage } from "@/components/ui/MediaImage";
@@ -37,7 +37,8 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
   const excerpt = resolveArticleExcerpt(article);
   const categoryRaw = (article.category?.name ?? article.categories?.[0]?.name)?.trim();
   const category = categoryRaw && categoryRaw.length > 0 ? categoryRaw : t("articleCategoryFallback");
-  const publishedDate = formatDate(article.publishedAt ?? article.createdAt);
+  const fmtDate = useLocalDate();
+  const publishedDate = fmtDate(article.publishedAt ?? article.createdAt, "slashPad");
   const isFeatured = variant === "featured";
 
   if (!isFeatured) {

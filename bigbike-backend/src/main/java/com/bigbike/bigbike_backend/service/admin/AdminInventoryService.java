@@ -495,7 +495,7 @@ public class AdminInventoryService {
 
         if (variants.isEmpty()) {
             return new AdminStockProductGroupResponse(
-                    p.getId(), p.getName(), p.getSku(), img,
+                    p.getId(), p.getName(), p.getNameEn(), p.getSku(), img,
                     p.getStockState() != null ? p.getStockState().name() : "UNKNOWN",
                     p.getStockQuantity() != null ? p.getStockQuantity() : 0,
                     p.getRetailPrice(),
@@ -525,7 +525,7 @@ public class AdminInventoryService {
                 .orElse(p.getRetailPrice());
 
         return new AdminStockProductGroupResponse(
-                p.getId(), p.getName(), p.getSku(), img,
+                p.getId(), p.getName(), p.getNameEn(), p.getSku(), img,
                 aggregateState, totalQty, minPrice,
                 Boolean.TRUE.equals(p.getForceOutOfStock()),
                 false,

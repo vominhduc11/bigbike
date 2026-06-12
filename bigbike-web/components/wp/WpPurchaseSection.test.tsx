@@ -62,11 +62,11 @@ function renderSection(rating: number | null, ratingCount: number | null) {
 }
 
 describe("WpPurchaseSection — buy-box PDP, gate sao theo REVIEW_RULE_003", () => {
-  it("ratingCount >= 1 → hiện .rating-star đúng trung bình + microdata aggregateRating", () => {
+  it("ratingCount >= 1 → hiện sao (RatingStars) đúng trung bình + microdata aggregateRating", () => {
     const { container } = renderSection(4.0, 3);
-    const star = container.querySelector(".rating-star");
+    const star = container.querySelector('[aria-label$="sao"]');
     expect(star).not.toBeNull();
-    expect(star!.getAttribute("data-rating")).toBe("4");
+    expect(star!.getAttribute("aria-label")).toBe("4.0 sao");
     const aggregate = container.querySelector('[itemtype="https://schema.org/AggregateRating"]');
     expect(aggregate).not.toBeNull();
     expect(aggregate!.querySelector('[itemprop="reviewCount"]')!.textContent).toBe("3");
@@ -75,7 +75,7 @@ describe("WpPurchaseSection — buy-box PDP, gate sao theo REVIEW_RULE_003", () 
 
   it("0 review → ẩn sao hoàn toàn, hiện 'Chưa có đánh giá', KHÔNG xuất microdata", () => {
     const { container } = renderSection(null, null);
-    expect(container.querySelector(".rating-star")).toBeNull();
+    expect(container.querySelector('[aria-label$="sao"]')).toBeNull();
     expect(
       container.querySelector('[itemtype="https://schema.org/AggregateRating"]'),
     ).toBeNull();
@@ -84,7 +84,7 @@ describe("WpPurchaseSection — buy-box PDP, gate sao theo REVIEW_RULE_003", () 
 
   it("rating ảo 4.5 + ratingCount 0 (hàng WP-import) → vẫn ẩn sao (REVIEW_RULE_004)", () => {
     const { container } = renderSection(4.5, 0);
-    expect(container.querySelector(".rating-star")).toBeNull();
+    expect(container.querySelector('[aria-label$="sao"]')).toBeNull();
     expect(screen.getByText(/Chưa có đánh giá/)).toBeInTheDocument();
   });
 });

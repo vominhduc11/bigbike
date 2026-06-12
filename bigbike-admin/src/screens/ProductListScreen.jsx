@@ -87,8 +87,8 @@ export function ProductListScreen({ navigate, canUpdate }) {
 
   const state = useAdminList(['products', query, contentLang], () => fetchProducts(query))
 
-  const { data: brandsData } = useQuery({ queryKey: ['brands-all'], queryFn: () => fetchBrands({ pageSize: 100, sort: 'name:asc' }), staleTime: 5 * 60_000 })
-  const { data: categoriesData } = useQuery({ queryKey: ['categories', 'tree'], queryFn: () => fetchCategoryTree(), staleTime: 5 * 60_000 })
+  const { data: brandsData } = useQuery({ queryKey: ['brands-all', contentLang], queryFn: () => fetchBrands({ pageSize: 100, sort: 'name:asc' }), staleTime: 5 * 60_000 })
+  const { data: categoriesData } = useQuery({ queryKey: ['categories', 'tree', contentLang], queryFn: () => fetchCategoryTree(), staleTime: 5 * 60_000 })
   const brands = brandsData?.items ?? []
   const categories = categoriesData?.items ?? []
 
@@ -278,7 +278,14 @@ export function ProductListScreen({ navigate, canUpdate }) {
           <button
             type="button"
             className="bb-btn bb-btn-secondary"
-            onClick={() => exportProductsCsv({ publishStatus: query.publishStatus !== 'ALL' ? query.publishStatus : undefined })}
+            onClick={async () => {
+              try {
+                const r = await exportProductsCsv({ publishStatus: query.publishStatus !== 'ALL' ? query.publishStatus : undefined })
+                if (r?.truncated) toast.warning(t('export.truncated', { max: r.maxRows }))
+              } catch {
+                toast.error(t('export.error'))
+              }
+            }}
           >
             <Download size={14} />{t('common.exportCsv', { defaultValue: 'Xuất CSV' })}
           </button>

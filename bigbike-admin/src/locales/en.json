@@ -772,7 +772,7 @@
     "detail": {
       "eyebrow": "Commerce / Orders",
       "orderDate": "Order date:",
-      "backToList": "← Back",
+      "backToList": "Back",
       "loading": "Loading order",
       "loadError": "Error loading order",
       "notFound": "Order not found",
@@ -981,7 +981,7 @@
       "editTitle": "Edit category",
       "createDesc": "Create a new product group to display on the website.",
       "editDesc": "Update the category's name, image, description and display status.",
-      "backToList": "← Back to list",
+      "backToList": "Back to list",
       "notFound": "Category not found",
       "notFoundDesc": "The category you are viewing no longer exists — it may have been deleted.",
       "loading": "Loading category",
@@ -1103,7 +1103,7 @@
       "editTitle": "Edit brand",
       "createDesc": "Create a new brand.",
       "editDesc": "Update brand information.",
-      "backToList": "← Brand list",
+      "backToList": "Brand list",
       "notFound": "Brand not found",
       "notFoundDesc": "The selected brand does not exist.",
       "loading": "Loading brand",
@@ -2422,6 +2422,9 @@
     "presetCustom": "Custom",
     "dateRangeError": "'From date' cannot be after 'To date'.",
     "exportOrders": "Export orders (CSV)",
+    "exportProducts": "Export products (CSV)",
+    "exportCustomers": "Export customers (CSV)",
+    "exportAllHint": "Products and customers export everything, not limited to the selected date range.",
     "kpiGmv": "Gross Sales (GMV)",
     "kpiPaidRevenue": "Collected revenue",
     "kpiRefund": "Refunds",
@@ -2574,7 +2577,8 @@
     "exportCsv": "Export CSV",
     "exporting": "Exporting...",
     "success": "File exported successfully",
-    "error": "Export failed"
+    "error": "Export failed. Please try again.",
+    "truncated": "File exported, but data was capped at {{max}} rows."
   },
   "pos": {
     "eyebrow": "Sales",

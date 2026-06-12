@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Home, ShoppingCart, User } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { cn } from "@/lib/utils";
@@ -35,6 +36,7 @@ function ActiveBar() {
 }
 
 export function MobileBottomNav() {
+  const t = useTranslations("Header");
   const pathname = usePathname();
   const { cartCount } = useCart();
 
@@ -52,7 +54,7 @@ export function MobileBottomNav() {
         "[transition:opacity_var(--bb-duration-normal)_var(--bb-ease-standard),transform_var(--bb-duration-normal)_var(--bb-ease-standard),visibility_var(--bb-duration-normal)_var(--bb-ease-standard)]",
       )}
       style={{ paddingBottom: "max(8px, env(safe-area-inset-bottom))" }}
-      aria-label="Điều hướng chính"
+      aria-label={t("primaryNavigation")}
     >
       <div className="flex justify-between gap-0.5 px-1.5 pt-1.5 pb-1">
         <Link
@@ -63,7 +65,7 @@ export function MobileBottomNav() {
           {homeActive && <ActiveBar />}
           <Home size={22} aria-hidden />
           <span className={cn(labelCls,homeActive ? "font-semibold" : "font-medium")}>
-            Trang chủ
+            {t("fallbackNav.home")}
           </span>
         </Link>
 
@@ -82,7 +84,7 @@ export function MobileBottomNav() {
             )}
           </div>
           <span className={cn(labelCls,cartRouteActive ? "font-semibold" : "font-medium")}>
-            Giỏ hàng
+            {t("mobileCartLink")}
           </span>
         </Link>
 
@@ -94,7 +96,7 @@ export function MobileBottomNav() {
           {accountActive && <ActiveBar />}
           <User size={22} aria-hidden />
           <span className={cn(labelCls,accountActive ? "font-semibold" : "font-medium")}>
-            Tài khoản
+            {t("mobileAccountLink")}
           </span>
         </Link>
       </div>

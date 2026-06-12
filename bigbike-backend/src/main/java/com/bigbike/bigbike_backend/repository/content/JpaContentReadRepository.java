@@ -150,14 +150,24 @@ public class JpaContentReadRepository implements ContentReadRepository {
 
     @Override
     public List<Article> findArticlesByFilter(PublishStatus publishStatus, String q, String locale) {
+        // Admin VI/EN switch (strict English): ở EN chỉ giữ bài có title_en — ẩn bài chưa dịch.
         return articleJpaRepository.findByFilter(publishStatus, normalizeQuery(q))
-                .stream().map(e -> toDomain(e, locale, false)).toList();
+                .stream()
+                .filter(e -> !"en".equals(locale) || isPresent(e.getTitleEn()))
+                .map(e -> toDomain(e, locale, false)).toList();
     }
 
     @Override
     public List<Page> findPagesByFilter(PublishStatus publishStatus, String q, String locale) {
+        // Admin VI/EN switch (strict English): ở EN chỉ giữ trang có title_en.
         return pageJpaRepository.findByFilter(publishStatus, normalizeQuery(q))
-                .stream().map(e -> toDomain(e, locale, false)).toList();
+                .stream()
+                .filter(e -> !"en".equals(locale) || isPresent(e.getTitleEn()))
+                .map(e -> toDomain(e, locale, false)).toList();
+    }
+
+    private static boolean isPresent(String value) {
+        return value != null && !value.isBlank();
     }
 
     // --- Content categories with published-article counts ---

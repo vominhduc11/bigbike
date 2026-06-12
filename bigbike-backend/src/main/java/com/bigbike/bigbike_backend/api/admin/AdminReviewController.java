@@ -38,10 +38,11 @@ public class AdminReviewController extends AdminControllerSupport {
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "vi") String lang,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "reviews.read");
-        return apiResponseFactory.list(adminReviewService.listReviews(page, size, q, status), request);
+        return apiResponseFactory.list(adminReviewService.listReviews(page, size, q, status, lang), request);
     }
 
     @GetMapping("/{id}")

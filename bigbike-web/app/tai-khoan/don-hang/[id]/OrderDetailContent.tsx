@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { WpAccountSectionHeading } from "@/components/wp/WpAccountNav";
 import { useOrder } from "@/lib/query/hooks";
-import { formatAddress, formatDate, formatVnd, fulfillmentStatusLabelWithT, orderStatusLabelWithT, paymentMethodLabelWithT, safeText } from "@/lib/utils/format";
+import { formatAddress, formatVnd, fulfillmentStatusLabelWithT, orderStatusLabelWithT, paymentMethodLabelWithT, safeText } from "@/lib/utils/format";
+import { useLocalDate } from "@/components/i18n/LocalDate";
 import { toOrderHistoryPath } from "@/lib/utils/routes";
 import { cn } from "@/lib/utils";
 import { bbLink, sectionSubheading } from "@/lib/ui-classes";
@@ -12,6 +13,7 @@ import { bbLink, sectionSubheading } from "@/lib/ui-classes";
 export function OrderDetailContent({ orderId }: { orderId: string }) {
   const t = useTranslations("Account.orders");
   const tCheckout = useTranslations("Checkout");
+  const fmtDate = useLocalDate();
   const tCatalog = useTranslations("Catalog");
   const { data: order, isLoading, error: queryError } = useOrder(orderId);
   const error = queryError ? (queryError as Error).message ?? t("loadFailedShort") : "";
@@ -48,7 +50,7 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
       <p className="mb-2 text-sm leading-relaxed text-foreground">
         {t("orderSummary", {
           orderNumber: order.orderNumber,
-          date: formatDate(order.placedAt),
+          date: fmtDate(order.placedAt, "slashPad", "—"),
           status: orderStatusLabelWithT(order.status, t),
         })}
       </p>

@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import { WpCategoryPagination } from "@/components/wp/WpCategoryPagination";
+import { LocalDate } from "@/components/i18n/LocalDate";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchPublicArticleList } from "@/lib/api/client-api";
 import type { Article, ContentCategoryWithCount } from "@/lib/contracts/public";
@@ -27,15 +28,12 @@ const WP_EXCERPT_CHARS = 120;
  */
 export function WpArticleListClient({
   categories,
-  contentTop,
-  contentBottom,
 }: {
   categories: ContentCategoryWithCount[];
-  contentTop: string;
-  contentBottom: string;
 }) {
   const searchParams = useSearchParams();
   const locale = useLocale();
+  const t = useTranslations("Blog");
 
   const { page, size, category, q } = useMemo(() => {
     const rawCategory = searchParams.get("category") ?? undefined;
@@ -67,17 +65,17 @@ export function WpArticleListClient({
   };
 
   const emptyNotice = isError
-    ? (error instanceof Error ? error.message : "Không tải được danh sách bài viết.")
+    ? (error instanceof Error ? error.message : t("listLoadFailed"))
     : isLoading
-      ? "Đang tải bài viết…"
-      : "Chưa có bài viết nào.";
+      ? t("listLoading")
+      : t("listEmpty");
 
   return (
     <>
       {showCategoryIntro ? (
         <div className="block-text pb-60">
           <div>
-            <p style={{ textAlign: "justify" }}>{contentTop}</p>
+            <p style={{ textAlign: "justify" }}>{t("contentTop")}</p>
           </div>
           <div>&nbsp;</div>
         </div>
@@ -135,7 +133,7 @@ export function WpArticleListClient({
       {showCategoryIntro ? (
         <div className="block-text pt-100 pb-60">
           <p>&nbsp;</p>
-          <p style={{ textAlign: "justify" }}>{contentBottom}</p>
+          <p style={{ textAlign: "justify" }}>{t("contentBottom")}</p>
         </div>
       ) : null}
     </>
@@ -192,7 +190,7 @@ function WpNewsCategoryWidget({
 function WpBlogGridItem({ article }: { article: Article }) {
   const title = safeText(article.title, "Bài viết");
   const excerpt = makeExcerpt(article);
-  const publishedAt = formatWpDate(article.publishedAt ?? article.createdAt);
+  const publishedAt = article.publishedAt ?? article.createdAt;
   const imageUrl = article.coverImage?.url;
   const imageSrc = resolveWpUploadUrl(imageUrl);
   const fallbackImageSrc = makeSlugThumbnailFallback(imageUrl, article.slug);
@@ -208,7 +206,7 @@ function WpBlogGridItem({ article }: { article: Article }) {
       <div className="news--item-desc">
         {publishedAt ? (
           <div className="news-date">
-            <p>{publishedAt}</p>
+            <p><LocalDate value={publishedAt} dateStyle="slash" /></p>
           </div>
         ) : null}
         <div className="news--item-inside">
@@ -234,13 +232,3 @@ function makeExcerpt(article: Article): string {
   return `${plain.slice(0, WP_EXCERPT_CHARS).trimEnd()}…`;
 }
 
-function formatWpDate(value: string | null | undefined): string {
-  if (!value) {
-    return "";
-  }
-  const date = new Date(value);
-  if (Number.isNaN(date.valueOf())) {
-    return "";
-  }
-  return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
-}

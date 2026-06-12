@@ -6,6 +6,7 @@ import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { showConfirm } from '../lib/confirm'
 import { deleteReview, fetchReviewDetail, updateReviewStatus } from '../lib/adminApi'
+import { useContentLang } from '../lib/contentLang'
 import { formatDateTime, formatText } from '../lib/formatters'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -24,6 +25,7 @@ function ReviewStatusBadge({ review, t }) {
 
 export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
   const { t } = useTranslation()
+  const contentLang = useContentLang()
   const [state, setState] = useState({ status: 'loading', item: null, warning: '' })
   const [busy, setBusy] = useState(false)
 
@@ -105,6 +107,10 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
   }
 
   const review = state.item
+  // Admin VI/EN switch: ở EN hiện tên SP tiếng Anh (backend trả kèm productNameEn).
+  const reviewProductName = contentLang === 'en'
+    ? (review.productNameEn || review.productName)
+    : review.productName
 
   return (
     <div>
@@ -112,7 +118,7 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
         <div className="bb-screen-title">
           <p className="bb-screen-eyebrow">{t('reviews.eyebrow')}</p>
           <h1>{t('reviews.detail.title')}</h1>
-          <p className="bb-muted">{formatText(review.productName, review.productId || t('reviews.unknownProduct'))}</p>
+          <p className="bb-muted">{formatText(reviewProductName, review.productId || t('reviews.unknownProduct'))}</p>
         </div>
         <div className="bb-screen-actions">
           <Button variant="secondary" type="button" onClick={() => navigate('/admin/reviews')}>
@@ -137,7 +143,7 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
 
         <DetailSection title={t('reviews.detail.sectionProduct')}>
           <div className="grid gap-3">
-            <p><strong>{t('reviews.detail.productName')}</strong> {formatText(review.productName, t('reviews.unknownProduct'))}</p>
+            <p><strong>{t('reviews.detail.productName')}</strong> {formatText(reviewProductName, t('reviews.unknownProduct'))}</p>
             <p><strong>{t('reviews.detail.productSlug')}</strong> {formatText(review.productSlug, '(---)')}</p>
             <p><strong>{t('reviews.detail.productId')}</strong> {formatText(review.productId, '(---)')}</p>
             {review.productId ? (
