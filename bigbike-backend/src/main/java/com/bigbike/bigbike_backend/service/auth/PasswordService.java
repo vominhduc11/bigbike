@@ -1,8 +1,14 @@
 package com.bigbike.bigbike_backend.service.auth;
 
+import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -20,6 +26,15 @@ public class PasswordService {
     private static final String PHPASS_ITOA64 =
             "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
+    // WordPress 6.8+ user-password format (see docs/audits/wp-migration-audit.md §4.3).
+    // Stored as "$wp" + bcrypt( base64( HMAC-SHA384(key="wp-sha384", trim(password)) ) ),
+    // so a full hash looks like "$wp$2y$10$...". The SHA-384 pre-hash sidesteps bcrypt's
+    // 72-byte limit (base64 of 48 bytes = 64 chars) and "wp-sha384" gives domain separation.
+    private static final String WP_HASH_PREFIX = "$wp";
+    private static final String WP_HMAC_ALGORITHM = "HmacSHA384";
+    private static final String WP_HMAC_KEY = "wp-sha384";
+    private static final BCryptPasswordEncoder BCRYPT = new BCryptPasswordEncoder();
+
     public String hash(String rawPassword) {
         return ENCODER.encode(rawPassword);
     }
@@ -28,12 +43,18 @@ public class PasswordService {
         if (isPhpassHash(encodedPassword)) {
             return verifyPhpass(rawPassword, encodedPassword);
         }
+        if (isWpBcryptHash(encodedPassword)) {
+            return verifyWpBcrypt(rawPassword, encodedPassword);
+        }
         return ENCODER.matches(rawPassword, encodedPassword);
     }
 
-    /** Returns true if the stored hash is a legacy WordPress phpass hash that needs rehashing. */
+    /**
+     * Returns true if the stored hash is a legacy WordPress hash (phpass or WP 6.8 bcrypt)
+     * that should be rehashed to Argon2id on the next successful login.
+     */
     public boolean isLegacyHash(String encodedPassword) {
-        return isPhpassHash(encodedPassword);
+        return isPhpassHash(encodedPassword) || isWpBcryptHash(encodedPassword);
     }
 
     /**
@@ -106,5 +127,42 @@ public class PasswordService {
             sb.append(PHPASS_ITOA64.charAt((value >> 18) & 0x3f));
         } while (i < count);
         return sb.toString();
+    }
+
+    // ── WordPress 6.8 bcrypt support ────────────────────────────────────────────
+
+    private static boolean isWpBcryptHash(String hash) {
+        return hash != null && hash.startsWith(WP_HASH_PREFIX + "$");
+    }
+
+    /**
+     * Verifies a password against a WordPress 6.8 "$wp$2y$…" hash by re-deriving the
+     * SHA-384 pre-hash and bcrypt-matching it against the embedded bcrypt hash.
+     */
+    private static boolean verifyWpBcrypt(String password, String hash) {
+        try {
+            // Strip the "$wp" prefix → the plain bcrypt hash "$2y$…".
+            String bcryptHash = hash.substring(WP_HASH_PREFIX.length());
+            Mac mac = Mac.getInstance(WP_HMAC_ALGORITHM);
+            mac.init(new SecretKeySpec(WP_HMAC_KEY.getBytes(StandardCharsets.UTF_8), WP_HMAC_ALGORITHM));
+            byte[] digest = mac.doFinal(phpTrim(password).getBytes(StandardCharsets.UTF_8));
+            String preHash = Base64.getEncoder().encodeToString(digest);
+            return BCRYPT.matches(preHash, bcryptHash);
+        } catch (GeneralSecurityException | IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    /** Mirrors PHP's default trim() (WordPress trims the password before hashing). */
+    private static String phpTrim(String s) {
+        int start = 0;
+        int end = s.length();
+        while (start < end && isPhpTrimChar(s.charAt(start))) start++;
+        while (end > start && isPhpTrimChar(s.charAt(end - 1))) end--;
+        return s.substring(start, end);
+    }
+
+    private static boolean isPhpTrimChar(char c) {
+        return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\0' || c == 0x0B;
     }
 }
