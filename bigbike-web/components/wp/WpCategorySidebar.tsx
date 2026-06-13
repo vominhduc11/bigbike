@@ -2,13 +2,15 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { useEffect, useRef, useState } from "react";
+import { Children, useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { Minus, Plus } from "lucide-react";
 import type { Brand, CatalogFacets, Category, ImageAsset } from "@/lib/contracts/public";
 import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { buildQueryString } from "@/lib/utils/query";
 import { toCategoryPath } from "@/lib/utils/routes";
+import { useDetachWpHandlers } from "@/lib/hooks/useDetachWpHandlers";
 
 /**
  * Sidebar bộ lọc danh mục — port DOM 1:1 từ woocommerce/archive-product.php
@@ -25,6 +27,7 @@ export type WpCategoryFilterState = {
   category?: string;
   brand?: string;
   color?: string;
+  gender?: string;
   minPrice?: number;
   maxPrice?: number;
 };
@@ -73,6 +76,120 @@ function Widget({
   );
 }
 
+/**
+ * Danh sách lọc có "Xem thêm" — port React của theme JS `sideBarToggle`
+ * (home.min.js chỉ chạy 1 lần lúc full-load, KHÔNG chạy lại khi điều hướng nội bộ
+ * SPA → tự dựng lại bằng React cho ổn định mọi lúc).
+ *
+ * Khi thu gọn chỉ render đúng 10 mục: theme JS chỉ tác động khi ul có > 10 <li>,
+ * nên nó sẽ bỏ qua ul này và KHÔNG chèn nút trùng. Clamp + nút dùng đúng class
+ * `visible`/`show-more` đã có trong wp-theme-category.css/wp-theme-product.css.
+ */
+function ToggleList({
+  className,
+  children,
+  collapseAt = 10,
+}: {
+  className?: string;
+  children: React.ReactNode;
+  collapseAt?: number;
+}) {
+  const t = useTranslations("Catalog");
+  const [expanded, setExpanded] = useState(false);
+  // Khi thu gọn vẫn giữ đủ <li> trong lúc chạy hiệu ứng (mới co lại được); cắt bớt
+  // sau khi animation xong. `collapsing=true` = đang co nhưng chưa cắt.
+  const [collapsing, setCollapsing] = useState(false);
+  const ulRef = useRef<HTMLUListElement>(null);
+  // Chiều cao đo được NGAY TRƯỚC khi đổi expanded, để useLayoutEffect animate từ đó.
+  const fromHeight = useRef<number | null>(null);
+  const items = Children.toArray(children);
+  // collapseAt ≤ 10 để theme JS (chỉ tác động khi ul > 10 <li>) bỏ qua, tránh nút trùng.
+  const hasMore = items.length > collapseAt;
+  // Cắt bớt chỉ khi đã thu gọn HẲN (không mở, không đang co). `.visible` (clamp+fade)
+  // cũng chỉ áp ở trạng thái nghỉ này.
+  const collapsedRest = hasMore && !expanded && !collapsing;
+  const visibleItems = collapsedRest ? items.slice(0, collapseAt) : items;
+
+  // Slide mượt max-height. Mở: từ chiều cao cũ → scrollHeight đầy đủ. Thu gọn: giữ đủ
+  // <li> (collapsing), animate về chiều cao của `collapseAt` mục đầu, xong mới cắt.
+  useLayoutEffect(() => {
+    const el = ulRef.current;
+    if (!el || fromHeight.current == null) return;
+    const from = fromHeight.current;
+    fromHeight.current = null;
+    let to: number;
+    if (expanded) {
+      to = el.scrollHeight;
+    } else {
+      // Đang giữ đủ <li>: mốc thu gọn = đỉnh của <li> thứ collapseAt so với ul.
+      const cut = el.children[collapseAt] as HTMLElement | undefined;
+      to = cut ? cut.getBoundingClientRect().top - el.getBoundingClientRect().top : el.scrollHeight;
+    }
+    el.style.overflow = "hidden";
+    el.style.maxHeight = `${from}px`;
+    el.getBoundingClientRect(); // ép reflow để trình duyệt ghi nhận mốc đầu
+    el.style.transition = "max-height 0.3s ease";
+    el.style.maxHeight = `${to}px`;
+    const cleanup = () => {
+      el.removeEventListener("transitionend", cleanup);
+      el.style.transition = "";
+      if (expanded) {
+        el.style.maxHeight = "";
+        el.style.overflow = "";
+      } else {
+        // Cắt <li> trước (giữ inline maxHeight để không giật về chiều cao đầy đủ).
+        setCollapsing(false);
+      }
+    };
+    el.addEventListener("transitionend", cleanup);
+    return () => el.removeEventListener("transitionend", cleanup);
+  }, [expanded, collapseAt]);
+
+  // Sau khi đã cắt bớt <li> (collapsing → false), xoá inline style để trả về CSS gốc
+  // (`.visible` clamp 400 + fade). Lúc này nội dung đã đúng chiều cao nên không giật.
+  useLayoutEffect(() => {
+    if (collapsing) return;
+    const el = ulRef.current;
+    if (!el) return;
+    el.style.maxHeight = "";
+    el.style.overflow = "";
+    el.style.transition = "";
+  }, [collapsing]);
+
+  function toggle() {
+    fromHeight.current = ulRef.current?.getBoundingClientRect().height ?? null;
+    if (expanded) setCollapsing(true); // giữ đủ <li> để animate co lại
+    setExpanded((v) => !v);
+  }
+
+  return (
+    <>
+      <ul ref={ulRef} className={`${className ?? ""}${collapsedRest ? " visible" : ""}`}>
+        {visibleItems}
+      </ul>
+      {hasMore && (
+        // KHÔNG dùng class `show-more`: home.min.js bind $('.show-more').on('click')
+        // (ẩn nút + bỏ visible) vào mọi .show-more khi full-load, phá nút React. Dùng
+        // Tailwind cùng kiểu dáng (.widget--body .show-more gốc) để theme JS không bắt được.
+        <div
+          className="h-[52px] cursor-pointer border border-black bg-black px-2.5 text-center font-semibold uppercase leading-[52px] text-white"
+          role="button"
+          tabIndex={0}
+          onClick={toggle}
+          onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && toggle()}
+        >
+          {expanded ? t("showLess") : t("showMore")}
+          {expanded ? (
+            <Minus className="ml-2.5 inline-block align-middle" size={16} aria-hidden />
+          ) : (
+            <Plus className="ml-2.5 inline-block align-middle" size={16} aria-hidden />
+          )}
+        </div>
+      )}
+    </>
+  );
+}
+
 export function WpCategorySidebar({
   brands,
   categories,
@@ -85,6 +202,25 @@ export function WpCategorySidebar({
   const [active, setActive] = useState(false); // hiện drawer (display)
   const [inView, setInView] = useState(false); // trượt vào (transform/opacity)
   const closeTimer = useRef<number | null>(null);
+
+  // home.min.js `toggleCategories()` bind click vào `.filter-mobile-wrapper` (mở),
+  // `.sidebar-wrap-product .close-btn` / `.overlay` (đóng) + tự toggle `html.overlay`
+  // (khóa cuộn). Trùng với React (mở qua sự kiện wp:catfilter-open, đóng qua onClick)
+  // → trên reload hai bên giành lớp active/in. Gỡ handler WP, React tự quản đóng/mở.
+  useDetachWpHandlers([
+    { selector: ".filter-mobile-wrapper", events: "click" },
+    { selector: ".sidebar-wrap-product .close-btn", events: "click" },
+    { selector: ".sidebar-wrap-product .overlay", events: "click" },
+  ]);
+
+  // Khóa cuộn nền khi drawer mở — thay cho `$("html").toggleClass("overlay")` của WP
+  // (CSS theme: `html.overlay{overflow:hidden}`). React tự quản nên hoạt động cả khi
+  // điều hướng SPA (lúc script WP không chạy lại).
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.toggle("overlay", active);
+    return () => root.classList.remove("overlay");
+  }, [active]);
 
   useEffect(() => {
     function open() {
@@ -110,6 +246,7 @@ export function WpCategorySidebar({
       ...hiddenParams,
       "pwb-brand": current.brand,
       filter_color: current.color,
+      filter_gender: current.gender,
       min_price: current.minPrice,
       max_price: current.maxPrice,
       q: current.q,
@@ -125,6 +262,8 @@ export function WpCategorySidebar({
   const activeCategoryParentId = activeCategory?.parentId ?? activeCategory?.id ?? null;
   const rootCategories = visibleCategories.filter((cat) => !cat.parentId);
 
+  // WP hiển thị toàn bộ thương hiệu; danh sách dài (>10) được ToggleList (React)
+  // tự clamp + nút "Xem thêm". Không cắt cứng ở FE để khớp bigbike.vn gốc.
   const brandRows: { key: string; label: string; image?: ImageAsset | null; count?: number }[] =
     facets?.brands && facets.brands.length > 0
       ? facets.brands
@@ -228,11 +367,60 @@ export function WpCategorySidebar({
                 return (
                   <li key={band.key} className={`wc-layered-nav-term${isActive ? " chosen" : ""}`}>
                     <Link href={href}>{band.label}</Link>
-                    {band.count != null ? <span className="count">({band.count})</span> : null}
                   </li>
                 );
               })}
             </ul>
+          </Widget>
+
+          {facets?.genders && facets.genders.length > 0 && (
+            <Widget
+              title={t("filterGender")}
+              extraClass="woocommerce widget_layered_nav woocommerce-widget-layered-nav"
+            >
+              <ul className="woocommerce-widget-layered-nav-list">
+                {facets.genders.map((g) => {
+                  const isActive = current.gender === g.key;
+                  const href = isActive
+                    ? queryHref({ filter_gender: undefined })
+                    : queryHref({ filter_gender: g.key });
+                  return (
+                    <li
+                      key={g.key}
+                      className={`woocommerce-widget-layered-nav-list__item wc-layered-nav-term${isActive ? " chosen" : ""}`}
+                    >
+                      <Link rel="nofollow" href={href}>{g.label}</Link>
+                      {g.count != null ? <span className="count">({g.count})</span> : null}
+                    </li>
+                  );
+                })}
+              </ul>
+            </Widget>
+          )}
+
+          <Widget
+            title={t("filterColor")}
+            extraClass="woocommerce widget_layered_nav woocommerce-widget-layered-nav"
+          >
+            <ToggleList className="woocommerce-widget-layered-nav-list" collapseAt={7}>
+              {colorRows.map((color) => {
+                const isActive = current.color === color.key;
+                const href = isActive
+                  ? queryHref({ filter_color: undefined })
+                  : queryHref({ filter_color: color.key });
+                return (
+                  <li
+                    key={color.key}
+                    className={`woocommerce-widget-layered-nav-list__item wc-layered-nav-term${isActive ? " chosen" : ""}`}
+                  >
+                    <Link rel="nofollow" href={href}>
+                      {color.label}
+                    </Link>
+                    {color.count != null ? <span className="count">({color.count})</span> : null}
+                  </li>
+                );
+              })}
+            </ToggleList>
           </Widget>
 
           {brandRows.length > 0 && (
@@ -240,7 +428,7 @@ export function WpCategorySidebar({
               title={t("filterBrand")}
               extraClass="woocommerce widget_layered_nav woocommerce-widget-layered-nav"
             >
-              <ul className="woocommerce-widget-layered-nav-list">
+              <ToggleList className="woocommerce-widget-layered-nav-list">
                 {brandRows.map((brand) => {
                   const isActive = current.brand === brand.key;
                   const href = isActive
@@ -261,43 +449,17 @@ export function WpCategorySidebar({
                             alt={safeText(brand.image?.alt, brand.label)}
                             width={92}
                             loading="lazy"
+                            className="inline-block align-middle"
                           />
-                        ) : (
-                          brand.label
-                        )}
+                        ) : null}{" "}
+                        {brand.label}
                       </Link>
-                      {brand.count != null ? <span className="count">({brand.count})</span> : null}
                     </li>
                   );
                 })}
-              </ul>
+              </ToggleList>
             </Widget>
           )}
-
-          <Widget
-            title={t("filterColor")}
-            extraClass="woocommerce widget_layered_nav woocommerce-widget-layered-nav"
-          >
-            <ul className="woocommerce-widget-layered-nav-list">
-              {colorRows.map((color) => {
-                const isActive = current.color === color.key;
-                const href = isActive
-                  ? queryHref({ filter_color: undefined })
-                  : queryHref({ filter_color: color.key });
-                return (
-                  <li
-                    key={color.key}
-                    className={`woocommerce-widget-layered-nav-list__item wc-layered-nav-term${isActive ? " chosen" : ""}`}
-                  >
-                    <Link rel="nofollow" href={href}>
-                      {color.label}
-                    </Link>
-                    {color.count != null ? <span className="count">({color.count})</span> : null}
-                  </li>
-                );
-              })}
-            </ul>
-          </Widget>
         </div>
       </div>
       <div className="overlay" onClick={close} />

@@ -222,6 +222,7 @@ function buildEmptyForm() {
     originManufactureCountry: '',
     weightGrams: '',
     sizeGuide: '',
+    gender: '',
     variants: [],
     relatedProductIds: [],
     relatedProductChips: [],
@@ -347,6 +348,7 @@ function buildFormFromItem(item) {
     originManufactureCountry: item.originManufactureCountry || '',
     weightGrams: Number.isInteger(item.weightGrams) ? String(item.weightGrams) : '',
     sizeGuide: item.sizeGuide || '',
+    gender: item.gender || '',
     variants,
     relatedProductIds: (item.relatedProducts || []).map((p) => p.id).filter(Boolean),
     relatedProductChips: (item.relatedProducts || [])
@@ -416,6 +418,7 @@ function toPayload(form) {
     originManufactureCountry: form.originManufactureCountry.trim() ? form.originManufactureCountry.trim() : null,
     weightGrams: toIntegerOrNull(form.weightGrams),
     sizeGuide: form.sizeGuide.trim() ? form.sizeGuide.trim() : null,
+    gender: form.gender.trim() ? form.gender.trim() : null,
     brandId: form.brandId.trim() || undefined,
     categoryId: form.categoryId.trim(),
     // Send null when cleared so backend (presence-flag logic) can distinguish
@@ -3027,6 +3030,20 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                           <SelectItem value={form.brandId} disabled>{t('products.detail.optionNotFound', { id: form.brandId })}</SelectItem>
                         )}
                         {brandOptions.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+
+                  <Field label={t('products.detail.gender', { defaultValue: 'Giới tính' })}>
+                    <Select value={form.gender} onValueChange={(val) => updateField('gender', val)} disabled={isReadOnly}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={t('products.detail.genderPlaceholder', { defaultValue: 'Không chọn' })} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">{t('products.detail.genderPlaceholder', { defaultValue: 'Không chọn' })}</SelectItem>
+                        <SelectItem value="Nam">Nam</SelectItem>
+                        <SelectItem value="Nữ">Nữ</SelectItem>
+                        <SelectItem value="Unisex">Unisex</SelectItem>
                       </SelectContent>
                     </Select>
                   </Field>

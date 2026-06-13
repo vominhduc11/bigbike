@@ -36,11 +36,9 @@
     "login": "Sign in",
     "register": "Sign up",
     "logout": "Sign out",
-    "wishlist": "Wishlist",
     "cart": "Cart",
     "cartItemCount": "{count, plural, =0 {Cart is empty} one {# item} other {# items}}",
     "menu": "Menu",
-    "compare": "Compare",
     "accountAriaLabel": "Account",
     "accountAriaLabelUser": "{name}'s account",
     "guestGreeting": "Hello!",
@@ -315,6 +313,7 @@
     "filtersHeading": "Filters",
     "filterCategory": "Category",
     "filterBrand": "Brand",
+    "filterGender": "Gender",
     "filterColor": "Color",
     "filterPrice": "Price",
     "filterToggleExpand": "Expand filters",
@@ -370,6 +369,8 @@
     "enterKeywordToSearch": "Enter a keyword to search for products.",
     "filterMobileHeading": "FILTERS",
     "closeFilter": "Close filters",
+    "showMore": "Show more",
+    "showLess": "Show less",
     "productCountLabel": "{count} Products",
     "brandsTitle": "Brands",
     "brandListLoadFailed": "Could not load the brand list.",
@@ -632,8 +633,7 @@
       "info": "Account info",
       "addresses": "Address book",
       "orders": "Order history",
-      "returns": "Returns",
-      "wishlist": "Wishlist"
+      "returns": "Returns"
     },
     "breadcrumbHome": "Home",
     "breadcrumbAccount": "Account",
@@ -655,12 +655,6 @@
     "sectionSwitcherAria": "Switch account section",
     "sectionSwitcherPlaceholder": "Pick a section",
     "idPrefix": "ID:",
-    "wishlist": {
-      "heading": "Wishlist",
-      "emptyTitle": "No wishlist items yet",
-      "emptyDescription": "Tap the heart icon on any product to save it here.",
-      "emptyAction": "Browse products"
-    },
     "orders": {
       "loading": "Loading…",
       "loadFailed": "Couldn't load your orders.",
@@ -1096,39 +1090,6 @@
     "trendingSearches": ["Shoei", "Alpinestars", "Dainese", "AGV", "waterproof touring"],
     "popularCategories": ["Helmets", "Jackets", "Gloves", "Accessories"]
   },
-  "Compare": {
-    "title": "Compare products",
-    "metaDescription": "Compare specifications, prices and ratings between BigBike biker protective gear products.",
-    "kicker": "BigBike",
-    "heading": "Compare products",
-    "subheading": "Place products side by side to compare specs, price and ratings before you buy.",
-    "loading": "Loading comparison list…",
-    "loadingProducts": "Loading product details…",
-    "emptyTitle": "Nothing to compare yet",
-    "emptyDescription": "Hit the compare button on similar products to add them here.",
-    "loadFailed": "Couldn't load product details for comparison.",
-    "browseProducts": "Browse products",
-    "tableProductCol": "Product",
-    "removeAriaLabel": "Remove {name} from comparison",
-    "brandRow": "Brand",
-    "priceRow": "Price",
-    "ratingRow": "Rating",
-    "stockRow": "Stock status",
-    "optionsRow": "Options",
-    "ratingCount": "({count} reviews)",
-    "noRating": "No reviews yet",
-    "contactPrice": "Contact us",
-    "noOptions": "—",
-    "addToCart": "Add to cart",
-    "viewProduct": "View product",
-    "addToCartErrorTitle": "Couldn't add to cart",
-    "addToCartError": "Please try again.",
-    "barLabel": "Compare",
-    "barAddSlot": "Add product",
-    "barRemoveAriaLabel": "Remove {name} from comparison",
-    "barClearAll": "Clear all",
-    "barCompare": "Compare ({count})"
-  },
   "NotFound": {
     "pageTitle": "Page not found",
     "description": "You can search for products or browse the articles below.",
@@ -1340,21 +1301,6 @@
     "register": "REGISTER",
     "login": "SIGN IN",
     "logout": "SIGN OUT"
-  },
-  "Wishlist": {
-    "add": "Wishlist",
-    "added": "Wishlisted",
-    "addAria": "Add to wishlist",
-    "removeAria": "Remove from wishlist"
-  },
-  "CompareBtn": {
-    "inactive": "Compare",
-    "active": "Comparing",
-    "limitTitle": "CANNOT COMPARE",
-    "limitMax": "You can compare up to 3 products at a time.",
-    "limitType": "You can only compare products of the same type.",
-    "addAria": "Add to compare",
-    "removeAria": "Remove from compare"
   },
   "CartMini": {
     "heading": "CART",

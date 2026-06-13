@@ -54,6 +54,8 @@ public record Product(
         Integer weightGrams,
         /** Bảng size dạng HTML (rich-text). Detail-only; null in list. */
         String sizeGuide,
+        /** Giới tính mục tiêu: "Nam" | "Nữ" | "Unisex". Null = chưa gắn. */
+        String gender,
         /**
          * Admin-curated related products shown in the PDP "Sản phẩm liên quan" section.
          * List-view shape (no nested gallery/specs/relatedProducts). Detail-only;

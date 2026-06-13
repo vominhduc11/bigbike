@@ -22,8 +22,6 @@ export default function robots(): MetadataRoute.Robots {
         "/tim-kiem",
         "/xac-nhan-email",
         "/xac-nhan-email/",
-        "/so-sanh",
-        "/so-sanh/",
       ],
     },
     sitemap: `${origin}/sitemap.xml`,

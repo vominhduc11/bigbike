@@ -845,6 +845,9 @@ public class AdminCatalogMutationService {
         if (create || request.isSizeGuidePresent()) {
             entity.setSizeGuide(AdminMutationValidators.trimToNull(request.getSizeGuide()));
         }
+        if (create || request.isGenderPresent()) {
+            entity.setGender(AdminMutationValidators.trimToNull(request.getGender()));
+        }
 
         // descriptionBlocks presence flag: sending the key (even []) renders + overwrites both columns.
         // Omitting the key leaves description_blocks and description untouched.
@@ -1736,11 +1739,14 @@ public class AdminCatalogMutationService {
     }
 
     private void revalidateProduct(ProductEntity entity, String previousSlug) {
-        revalidateEntityTags("products", "product:", previousSlug, entity.getSlug());
+        // "home-highlights": khối nổi bật đầu trang chủ render tên/ảnh sản phẩm → đổi sản phẩm
+        // (có thể đang nằm trong slot) phải làm tươi cả khối đó. TTL nền khối chỉ 300s nên churn rẻ.
+        revalidateEntityTags("products", "product:", previousSlug, entity.getSlug(), "home-highlights");
     }
 
     private void revalidateCategory(CategoryEntity entity, String previousSlug) {
-        revalidateEntityTags("categories", "category:", previousSlug, entity.getSlug(), "products", "menus");
+        // "home-highlights": khối nổi bật cũng render tên/slug danh mục của sản phẩm trong slot.
+        revalidateEntityTags("categories", "category:", previousSlug, entity.getSlug(), "products", "menus", "home-highlights");
     }
 
     private void revalidateBrand(BrandEntity entity, String previousSlug) {

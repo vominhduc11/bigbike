@@ -76,6 +76,7 @@ class SliderReadServiceTest {
                         null,       // originManufactureCountry
                         null,       // weightGrams
                         null,       // sizeGuide
+                        null,       // gender
                         List.of(),  // relatedProducts
                         null,       // descriptionBlocks
                         null,       // seo

@@ -95,6 +95,10 @@ public class UpsertProductRequest {
     private String sizeGuide;
     private boolean sizeGuidePresent = false;
 
+    @Size(max = 20, message = "Gender is too long.")
+    private String gender;
+    private boolean genderPresent = false;
+
     @Valid
     private SeoMetaRequest seo;
     private boolean seoPresent = false;
@@ -413,6 +417,19 @@ public class UpsertProductRequest {
 
     public boolean isSizeGuidePresent() {
         return sizeGuidePresent;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+        this.genderPresent = true;
+    }
+
+    public boolean isGenderPresent() {
+        return genderPresent;
     }
 
     public SeoMetaRequest getSeo() {

@@ -704,6 +704,26 @@ body {
   overflow: visible; /* logo stripe overflows below header line */
 }
 
+/* Header LIVE trên site là `<header class="headroom">` (WpHeader) — KHÔNG phải
+   `.bb-site-header` (SiteHeader/StickyHeaderShell không còn render). Theme WP nạp
+   `header{z-index:12}` (wp-theme-*.css, unlayered) nên header chỉ ở z-12, thấp hơn
+   thanh sort/lọc dính (.product-list-filter z-index:30 ở mobile) và nhiều khối nội
+   dung khác → khi cuộn, chúng đè lên header. Ghim header về đúng token tầng z
+   (--bb-z-header = 200). Specificity (0,1,1) > `header{}` (0,0,1) nên thắng theme css.
+   Overlay thật sự (modal 800, off-canvas/cart 650+) vẫn cao hơn nên không bị ảnh hưởng. */
+header.headroom {
+  z-index: var(--bb-z-header);
+}
+
+/* Drawer "Thông tin liên hệ" (.information-slide-bigbike) ở WP gốc là z-index:99 —
+   cao hơn header (z-12) nên khi mở nó phủ kín cả header. Sau khi ghim header lên
+   --bb-z-header (200), header lại cao hơn 99 → header thò lên đè drawer (sai). Nâng
+   drawer về tầng modal để nó phủ lên header như bản WP gốc. Phải dùng `body .…`
+   (0,1,1) để thắng `.information-slide-bigbike` (0,1,0) của theme WP nạp sau. */
+body .information-slide-bigbike {
+  z-index: var(--bb-z-modal); /* phủ lên header (z-200) */
+}
+
 /* ─────────────────────────────────────────────────────────────
    WP header (.headroom / .navigation) — menu ngang ở desktop.
    Bản port theme WP chỉ mang theo trạng thái off-canvas của .navigation

@@ -14,6 +14,8 @@ import { showConfirm } from '../lib/confirm'
 import { CustomerPickerModal } from '../components/CustomerPickerModal'
 import { formatCurrencyVnd, formatDateTime } from '../lib/formatters'
 import { useDebounce } from '../lib/useDebounce'
+import { useAdminList } from '../lib/useAdminList'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Alert } from '@/components/ui/alert'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
@@ -57,7 +59,9 @@ export function CouponListScreen({ canUpdate }) {
   const [searchInput, setSearchInput] = useState(INITIAL_QUERY.search)
   const debouncedSearch = useDebounce(searchInput, 250)
   const isFirstSearchRender = useRef(true)
-  const [state, setState] = useState({ status: 'loading', items: [], pagination: null, warning: '' })
+  const queryClient = useQueryClient()
+  // Danh sách mã giảm giá qua react-query (cache + dedupe + giữ trang cũ khi đổi filter).
+  const state = useAdminList(['coupons', query], () => fetchCoupons(query))
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
   const [formError, setFormError] = useState('')
@@ -71,48 +75,33 @@ export function CouponListScreen({ canUpdate }) {
 
   const [bulkOpen, setBulkOpen] = useState(false)
   const [bulkCoupon, setBulkCoupon] = useState(null)
-  const [bulkCoupons, setBulkCoupons] = useState([])
-  const [bulkCouponsLoading, setBulkCouponsLoading] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [bulkSaving, setBulkSaving] = useState(false)
   const [bulkConfirm, setBulkConfirm] = useState(false)
 
-  useEffect(() => {
-    let active = true
-    fetchCoupons(query)
-      .then((r) => { if (!active) return; setState({ status: 'success', items: r.items, pagination: r.pagination, warning: '' }) })
-      .catch((e) => { if (!active) return; setState({ status: 'error', items: [], pagination: null, warning: '', error: e.message }) })
-    return () => { active = false }
-  }, [query])
+  // Danh sách mã ACTIVE cho panel gửi hàng loạt — chỉ tải khi panel mở.
+  const { data: bulkData, isLoading: bulkCouponsLoading } = useQuery({
+    queryKey: ['coupons', 'active-for-bulk'],
+    queryFn: () => fetchCoupons({ status: 'ACTIVE', page: 1, pageSize: 100, search: '' }),
+    enabled: bulkOpen,
+  })
+  const bulkCoupons = bulkData?.items ?? []
 
   useEffect(() => {
     if (isFirstSearchRender.current) { isFirstSearchRender.current = false; return }
     setQuery((prev) => ({ ...prev, search: debouncedSearch, page: 1 }))
   }, [debouncedSearch])
 
-  // Load active coupons whenever the bulk-send panel opens. The panel unmounts
-  // on close (see `{bulkOpen && ...}` below), so closed-state reset isn't needed
-  // here — the close handlers clear the selection instead.
-  useEffect(() => {
-    if (!bulkOpen) return
-    let cancelled = false
-    fetchCoupons({ status: 'ACTIVE', page: 1, pageSize: 100, search: '' })
-      .then((r) => { if (!cancelled) setBulkCoupons(r.items ?? []) })
-      .catch(() => { if (!cancelled) setBulkCoupons([]) })
-      .finally(() => { if (!cancelled) setBulkCouponsLoading(false) })
-    return () => { cancelled = true }
-  }, [bulkOpen])
-
   const handleToggleStatus = useCallback(async (coupon) => {
     const newStatus = coupon.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
     setActionError('')
     try {
-      const r = await updateCouponStatus(coupon.id, newStatus)
-      setState((p) => ({ ...p, items: p.items.map((c) => c.id === coupon.id ? r.item : c) }))
+      await updateCouponStatus(coupon.id, newStatus)
+      queryClient.invalidateQueries({ queryKey: ['coupons'] })
     } catch (e) {
       setActionError(e.message || t('common.error'))
     }
-  }, [t])
+  }, [t, queryClient])
 
   const handleDelete = useCallback(async (coupon) => {
     const confirmed = await showConfirm(
@@ -122,7 +111,7 @@ export function CouponListScreen({ canUpdate }) {
     if (!confirmed) return
     try {
       await deleteCoupon(coupon.id)
-      setState((p) => ({ ...p, items: p.items.filter((c) => c.id !== coupon.id) }))
+      queryClient.invalidateQueries({ queryKey: ['coupons'] })
       toast.success(`Đã xóa mã ${coupon.code}.`)
     } catch (e) {
       const msg = e?.status === 409
@@ -130,7 +119,7 @@ export function CouponListScreen({ canUpdate }) {
         : (e.message || t('common.error'))
       toast.error(msg)
     }
-  }, [t])
+  }, [t, queryClient])
 
   async function handleCreate(e) {
     e.preventDefault()
@@ -153,7 +142,7 @@ export function CouponListScreen({ canUpdate }) {
       await createCoupon(payload)
       setShowForm(false)
       setForm(EMPTY_FORM)
-      setQuery((p) => ({ ...p }))
+      queryClient.invalidateQueries({ queryKey: ['coupons'] })
     } catch (e) {
       const fieldErrs = mapValidationErrors(e)
       if (Object.keys(fieldErrs).length > 0) {
@@ -192,8 +181,8 @@ export function CouponListScreen({ canUpdate }) {
       }
       if (editForm.maxUsage) payload.usageLimit = Number(editForm.maxUsage)
       if (editForm.expiresAt) payload.expiresAt = toEndOfDayInstant(editForm.expiresAt)
-      const r = await updateCoupon(editCoupon.id, payload)
-      setState((p) => ({ ...p, items: p.items.map((c) => c.id === editCoupon.id ? r.item : c) }))
+      await updateCoupon(editCoupon.id, payload)
+      queryClient.invalidateQueries({ queryKey: ['coupons'] })
       setEditCoupon(null)
     } catch (e) {
       setEditError(e.message || t('common.error'))
@@ -210,7 +199,7 @@ export function CouponListScreen({ canUpdate }) {
       const result = await sendBulkCouponGift({ couponId: bulkCoupon.id })
       toast.success(`Đã gửi mã cho ${result?.sent ?? '?'} khách hàng. Bỏ qua: ${result?.skipped ?? 0}.`)
       closeBulkPanel()
-      setQuery((p) => ({ ...p }))
+      queryClient.invalidateQueries({ queryKey: ['coupons'] })
     } catch (err) {
       toast.error(err.message || 'Gửi mã thất bại.')
       setBulkConfirm(false)
@@ -224,7 +213,6 @@ export function CouponListScreen({ canUpdate }) {
   function closeBulkPanel() {
     setBulkOpen(false)
     setBulkCoupon(null)
-    setBulkCoupons([])
     setBulkConfirm(false)
   }
 
@@ -259,7 +247,7 @@ export function CouponListScreen({ canUpdate }) {
             <button
               type="button"
               className="bb-btn bb-btn-secondary"
-              onClick={() => { if (bulkOpen) { closeBulkPanel() } else { setBulkOpen(true); setBulkConfirm(false); setBulkCouponsLoading(true) } setShowForm(false) }}
+              onClick={() => { if (bulkOpen) { closeBulkPanel() } else { setBulkOpen(true); setBulkConfirm(false) } setShowForm(false) }}
             >
               <Send size={14} />{bulkOpen ? t('common.cancel') : 'Gửi mã hàng loạt'}
             </button>
@@ -522,7 +510,7 @@ export function CouponListScreen({ canUpdate }) {
 
       {state.status === 'error' && (
         <StatePanel tone="danger" title={t('coupons.error')} description={state.error}
-          actionLabel={t('common.retry')} onAction={() => setQuery((p) => ({ ...p }))} />
+          actionLabel={t('common.retry')} onAction={() => queryClient.invalidateQueries({ queryKey: ['coupons'] })} />
       )}
       {state.status === 'success' && items.length === 0 && (
         <StatePanel tone="neutral" title={t('coupons.empty')} description={t('coupons.emptyDesc')}

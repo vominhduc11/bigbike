@@ -150,6 +150,7 @@ export type PublicProductListQuery = {
   brand?: string;
   q?: string;
   filterColor?: string;
+  filterGender?: string;
   minPrice?: number;
   maxPrice?: number;
   homepageBlock?: "NONE" | "FEATURED_GRID";
@@ -184,6 +185,7 @@ export async function fetchPublicProductList(
   put("pwb-brand", query.brand);
   put("q", query.q);
   put("filter_color", query.filterColor);
+  put("filter_gender", query.filterGender);
   put("min_price", query.minPrice);
   put("max_price", query.maxPrice);
   put("homepage_block", query.homepageBlock);
@@ -410,41 +412,6 @@ export function createReturn(orderId: string, payload: CreateReturnPayload): Pro
 
 export function fetchReturnEligibility(orderId: string): Promise<ReturnEligibility> {
   return clientRequest("GET", `/api/v1/customer/orders/${encodeURIComponent(orderId)}/return-eligibility`);
-}
-
-// ── Wishlist ──────────────────────────────────────────────────────────────────
-
-export function fetchWishlist(): Promise<string[]> {
-  return clientRequest("GET", "/api/v1/customer/wishlist");
-}
-
-export async function fetchWishlistProducts(
-  page = 1,
-  size = 12,
-): Promise<{ data: Product[]; pagination: { page: number; pageSize: number; totalItems: number; totalPages: number } }> {
-  const qs = new URLSearchParams({ page: String(page), size: String(size) });
-  const res = await fetch(`${API_BASE_URL}/api/v1/customer/wishlist/products?${qs.toString()}`, {
-    credentials: "include",
-    headers: { Accept: "application/json" },
-  });
-  const payload = await res.json().catch(() => null) as Record<string, unknown> | null;
-  if (!res.ok) {
-    const msg = (payload?.error as { message?: string } | undefined)?.message ?? `HTTP ${res.status}`;
-    throw new Error(msg);
-  }
-  return {
-    data: (payload?.data as Product[] | undefined) ?? [],
-    pagination: (payload?.pagination as { page: number; pageSize: number; totalItems: number; totalPages: number } | undefined)
-      ?? { page: 1, pageSize: size, totalItems: 0, totalPages: 1 },
-  };
-}
-
-export function addToWishlist(productId: string): Promise<{ productId: string; added: boolean }> {
-  return clientRequest("POST", "/api/v1/customer/wishlist", { productId });
-}
-
-export function removeFromWishlist(productId: string): Promise<void> {
-  return clientRequest("DELETE", `/api/v1/customer/wishlist/${encodeURIComponent(productId)}`);
 }
 
 export function cancelMyOrder(orderId: string): Promise<OrderDetail> {

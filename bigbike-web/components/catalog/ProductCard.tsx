@@ -18,8 +18,6 @@ import { toProductPath } from "@/lib/utils/routes";
 import { MediaImage } from "@/components/ui/MediaImage";
 import { ProductCardAddBar } from "@/components/catalog/ProductCardAddBar";
 import { SaleBadge } from "@/components/catalog/SaleBadge";
-import { WishlistButton } from "@/components/catalog/WishlistButton";
-import { CompareButton } from "@/components/catalog/CompareButton";
 import { RatingStars } from "@/components/ui/RatingStars";
 import { hasApprovedReviews } from "@/lib/rating";
 import { cardChrome } from "@/lib/ui-classes";
@@ -313,19 +311,6 @@ export function ProductCard({ product, variant = "compact", surface = "article" 
             {discountPercent != null && discountPercent > 0 ? `-${discountPercent}%` : tCommon("sale")}
           </span>
         )}
-        <WishlistButton productId={product.id} />
-        <CompareButton
-          product={{
-            id: product.id,
-            slug: product.slug,
-            name,
-            imageUrl: product.image?.url ?? null,
-            price: current,
-            categoryId: product.category.id,
-            categoryName: product.category.name,
-          }}
-          variant="icon"
-        />
         <MediaImage
           image={product.image}
           altFallback={name}

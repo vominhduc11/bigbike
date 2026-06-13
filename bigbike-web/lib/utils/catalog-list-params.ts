@@ -44,6 +44,7 @@ export type CatalogListFilters = {
   category: string | undefined;
   brand: string | undefined;
   color: string | undefined;
+  gender: string | undefined;
   minPrice: number | undefined;
   maxPrice: number | undefined;
 };
@@ -90,6 +91,7 @@ export function parseCatalogListParams(
   const categoryParsed = parseSlugParam(params.category, "category");
   const brandParsed = parseSlugParam(readSearchParamAlias(params, "pwb-brand", "brand"), "pwb-brand");
   const colorParsed = parseSlugParam(params.filter_color, "filter_color");
+  const genderParsed = parseTextParam(params.filter_gender, 20);
   const minPriceParsed = parseOptionalPositiveIntParam(params.min_price, {
     min: 0,
     max: PRICE_PARAM_MAX,
@@ -119,6 +121,7 @@ export function parseCatalogListParams(
     includeCategory ? categoryParsed.error : null,
     brandParsed.error,
     colorParsed.error,
+    genderParsed.error,
     minPriceParsed.error,
     maxPriceParsed.error,
     orderbyError,
@@ -130,6 +133,7 @@ export function parseCatalogListParams(
     category,
     brand: brandParsed.value,
     color: colorParsed.value,
+    gender: genderParsed.value,
     minPrice: minPriceParsed.value,
     maxPrice: maxPriceParsed.value,
   };
@@ -139,6 +143,7 @@ export function parseCatalogListParams(
     category: filters.category,
     brand: filters.brand,
     color: filters.color,
+    gender: filters.gender,
     minPrice: filters.minPrice,
     maxPrice: filters.maxPrice,
   };
@@ -151,6 +156,7 @@ export function parseCatalogListParams(
       "pwb-brand": filters.brand,
       q: filters.q,
       filter_color: filters.color,
+      filter_gender: filters.gender,
       min_price: filters.minPrice,
       max_price: filters.maxPrice,
     })}`;

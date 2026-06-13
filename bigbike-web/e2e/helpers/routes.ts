@@ -22,7 +22,6 @@ export const PUBLIC_ROUTES: RouteDef[] = [
   { path: "/huong-dan/", name: "Hướng dẫn", group: "content", kind: "static" },
   { path: "/huong-dan-mua-hang/", name: "Hướng dẫn mua hàng", group: "content", kind: "static" },
   { path: "/bao-hanh/", name: "Bảo hành", group: "content", kind: "static" },
-  { path: "/so-sanh/", name: "So sánh sản phẩm", group: "catalog", kind: "static" },
   { path: "/gio-hang/", name: "Giỏ hàng", group: "commerce", kind: "data" },
   { path: "/tim-kiem/", name: "Tìm kiếm", group: "search", kind: "data" },
   { path: "/dang-nhap/", name: "Đăng nhập", group: "auth", kind: "static", hasForm: true },
@@ -51,7 +50,6 @@ export const DYNAMIC_ROUTES: RouteDef[] = [
 export const ACCOUNT_ROUTES: RouteDef[] = [
   { path: "/tai-khoan/", name: "Tài khoản", group: "account", kind: "data" },
   { path: "/tai-khoan/don-hang/", name: "Đơn hàng của tôi", group: "account", kind: "data" },
-  { path: "/tai-khoan/yeu-thich/", name: "Sản phẩm yêu thích", group: "account", kind: "data" },
 ];
 
 export const ALL_PUBLIC: RouteDef[] = [...PUBLIC_ROUTES, ...DYNAMIC_ROUTES];

@@ -315,6 +315,28 @@ Status: `CONFIRMED_FROM_CODE` — `ProductHighlightEntity`, `ProductEntity`
 `AdminCatalogMutationService.applyHighlights`, `JpaCatalogReadRepository`,
 migration `V175`.
 
+### Product gender field — `products.gender` (V184)
+
+`products.gender` `VARCHAR(20)` nullable. Giới tính mục tiêu của sản phẩm.
+
+| Value | Meaning |
+|---|---|
+| `Nam` | Dành cho nam |
+| `Nữ` | Dành cho nữ |
+| `Unisex` | Unisex — phù hợp cả hai |
+| `NULL` | Chưa gắn giới tính (mặc định) |
+
+Field-level attributes:
+- **DB column:** `products.gender VARCHAR(20)`, nullable, no default, no enum constraint.
+- **Domain:** `Product.gender()` — exposed on **both list and detail** responses.
+- **Admin mutation:** `UpsertProductRequest.gender` (`@Size(max=20)`, presence-flag pattern — omitting the key on PATCH leaves the column untouched).
+- **Filter param:** `filter_gender` on `GET /api/v1/products` — case-insensitive exact match on `product.gender`; blank/absent = no filter.
+- **Facet:** `CatalogFacets.genders[]` — fixed set `[Nam, Nữ, Unisex]` with live counts; buckets with `count = 0` are omitted.
+
+Status: `CONFIRMED_FROM_CODE`
+
+Evidence: `ProductEntity.java`, `Product.java`, `CatalogReadService.java` (`matchesGender`, `buildGenderBuckets`), `UpsertProductRequest.java`, `AdminCatalogMutationService.java`, `V184__add_product_gender.sql`.
+
 ### Product video description — `product_videos.description` (V175)
 
 Thêm cột `description TEXT NULL` vào bảng con `product_videos`. Mô tả 2–3 câu nội dung
@@ -659,6 +681,7 @@ Read-only aggregation served by `GET /api/v1/catalog/facets` (see [API_CONTRACT.
 | `categories` | `FacetBucket[]` | One bucket per visible category. |
 | `brands` | `FacetBucket[]` | One bucket per visible brand; `image` carries the brand logo. |
 | `colors` | `FacetBucket[]` | The 10 fixed named colors. |
+| `genders` | `FacetBucket[]` | Gender buckets (V184). Only genders with `count > 0` are included. |
 | `priceBands` | `PriceBucket[]` | The 9 fixed price bands. |
 
 `FacetBucket`: `{ key: string, label: string, image: ImageAsset | null, count: long }` — `image` is non-null only for brand buckets.

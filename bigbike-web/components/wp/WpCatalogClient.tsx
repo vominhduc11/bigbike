@@ -93,6 +93,7 @@ export function WpCatalogClient({
       brand: routeBrandSlug ?? catalog.filters.brand,
       q: catalog.filters.q,
       filterColor: catalog.filters.color,
+      filterGender: catalog.filters.gender,
       minPrice: catalog.filters.minPrice,
       maxPrice: catalog.filters.maxPrice,
       lang: locale,

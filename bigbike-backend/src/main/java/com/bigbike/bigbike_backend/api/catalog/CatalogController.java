@@ -63,6 +63,7 @@ public class CatalogController {
             @RequestParam(name = "pwb-brand", required = false) @Pattern(regexp = SLUG_REGEX, message = "Invalid brand slug.") String brand,
             @RequestParam(required = false) @Size(max = 100) String q,
             @RequestParam(name = "filter_color", required = false) @Pattern(regexp = SLUG_REGEX, message = "Invalid color slug.") String filterColor,
+            @RequestParam(name = "filter_gender", required = false) @Size(max = 20) String filterGender,
             @RequestParam(name = "min_price", required = false) @Min(0) Long minPrice,
             @RequestParam(name = "max_price", required = false) @Min(0) Long maxPrice,
             @RequestParam(name = "homepage_block", required = false)
@@ -81,7 +82,7 @@ public class CatalogController {
         HomepageBlock block = homepageBlock == null ? null : HomepageBlock.valueOf(homepageBlock);
         return apiResponseFactory.list(
                 catalogReadService.listProducts(
-                        page, size, sort, category, brand, q, filterColor,
+                        page, size, sort, category, brand, q, filterColor, filterGender,
                         minPrice, maxPrice, block, lang),
                 request
         );

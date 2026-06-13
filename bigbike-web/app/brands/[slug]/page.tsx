@@ -5,7 +5,8 @@ import { WpCategoryHero, type WpCategoryCrumb } from "@/components/wp/WpCategory
 import { WpCatalogClient } from "@/components/wp/WpCatalogClient";
 import { WpThemeStylesheet } from "@/components/wp/WpThemeStylesheet";
 import { LText, LocalizedContentProvider } from "@/components/i18n/LocalizedContent";
-import { getBrandBySlug, getCatalogFacets, listBrands, listCategories } from "@/lib/api/public-api";
+import { getBrandBySlug, getCatalogFacets, listBrands, listCategories, listProducts } from "@/lib/api/public-api";
+import { DEFAULT_PRODUCT_PAGE_SIZE, DEFAULT_PRODUCT_SORT } from "@/lib/constants/catalog";
 import { buildBrandBreadcrumbJsonLd, serializeJsonLd } from "@/lib/seo/json-ld";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { resolveMediaUrl, safeText, toLegacyWpMediaUrl } from "@/lib/utils/format";
@@ -62,11 +63,14 @@ export default async function BrandDetailPage({ params }: BrandDetailPageProps) 
 
   const locale = await getLocale();
   // Shell tĩnh theo slug — KHÔNG đọc searchParams (lưới lọc/phân trang nằm ở client).
-  const [brandResult, brandsResult, categoriesResult, facetsResult] = await Promise.all([
+  // Lưới sản phẩm view MẶC ĐỊNH (page 1, sort mặc định) của thương hiệu fetch sẵn ở
+  // server → nằm trong HTML server cho SEO, đồng bộ cách trang danh mục seed lưới.
+  const [brandResult, brandsResult, categoriesResult, facetsResult, productsResult] = await Promise.all([
     getBrandBySlug(slug, locale),
     listBrands({ page: 1, size: 100, sort: "name:asc", lang: locale }),
     listCategories({ page: 1, size: 100, sort: "sortOrder:asc", lang: locale }),
     getCatalogFacets({ lang: locale }),
+    listProducts({ page: 1, size: DEFAULT_PRODUCT_PAGE_SIZE, sort: DEFAULT_PRODUCT_SORT, brand: slug, lang: locale }),
   ]);
 
   if (!brandResult.data && brandResult.error?.status === 404) {
@@ -121,6 +125,8 @@ export default async function BrandDetailPage({ params }: BrandDetailPageProps) 
                 categories={filterCategories}
                 facets={facetsResult.data}
                 routeBrandSlug={brand.slug}
+                initialProducts={productsResult.data}
+                initialPagination={productsResult.pagination}
               />
             </div>
           </div>

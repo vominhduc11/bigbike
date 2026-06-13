@@ -36,11 +36,9 @@
     "login": "Đăng nhập",
     "register": "Đăng ký",
     "logout": "Đăng xuất",
-    "wishlist": "Yêu thích",
     "cart": "Giỏ hàng",
     "cartItemCount": "{count, plural, =0 {Giỏ trống} one {# sản phẩm} other {# sản phẩm}}",
     "menu": "Menu",
-    "compare": "So sánh",
     "accountAriaLabel": "Tài khoản",
     "accountAriaLabelUser": "Tài khoản của {name}",
     "guestGreeting": "Chào bạn!",
@@ -315,6 +313,7 @@
     "filtersHeading": "Bộ lọc",
     "filterCategory": "Danh mục sản phẩm",
     "filterBrand": "Thương Hiệu",
+    "filterGender": "Giới tính",
     "filterColor": "Màu sắc",
     "filterPrice": "Giá",
     "filterToggleExpand": "Mở rộng bộ lọc",
@@ -370,6 +369,8 @@
     "enterKeywordToSearch": "Nhập từ khoá để tìm kiếm sản phẩm.",
     "filterMobileHeading": "BỘ LỌC",
     "closeFilter": "Đóng bộ lọc",
+    "showMore": "Xem thêm",
+    "showLess": "Thu gọn",
     "productCountLabel": "{count} Sản phẩm",
     "brandsTitle": "Thương hiệu",
     "brandListLoadFailed": "Không tải được danh sách thương hiệu.",
@@ -632,8 +633,7 @@
       "info": "Thông tin tài khoản",
       "addresses": "Sổ địa chỉ",
       "orders": "Lịch sử mua hàng",
-      "returns": "Đổi trả",
-      "wishlist": "Yêu thích"
+      "returns": "Đổi trả"
     },
     "breadcrumbHome": "Trang chủ",
     "breadcrumbAccount": "Tài khoản",
@@ -655,12 +655,6 @@
     "sectionSwitcherAria": "Chuyển mục tài khoản",
     "sectionSwitcherPlaceholder": "Chọn mục tài khoản",
     "idPrefix": "ID:",
-    "wishlist": {
-      "heading": "Sản phẩm yêu thích",
-      "emptyTitle": "Chưa có sản phẩm yêu thích",
-      "emptyDescription": "Nhấn vào biểu tượng trái tim trên sản phẩm bất kỳ để lưu vào đây.",
-      "emptyAction": "Khám phá sản phẩm"
-    },
     "orders": {
       "loading": "Đang tải...",
       "loadFailed": "Không tải được đơn hàng.",
@@ -1096,39 +1090,6 @@
     "trendingSearches": ["Shoei", "Alpinestars", "Dainese", "AGV", "touring chống nước"],
     "popularCategories": ["Mũ bảo hiểm", "Áo giáp", "Găng tay", "Phụ kiện"]
   },
-  "Compare": {
-    "title": "So sánh sản phẩm",
-    "metaDescription": "So sánh thông số kỹ thuật, giá và đánh giá giữa các sản phẩm bảo hộ biker BigBike.",
-    "kicker": "BigBike",
-    "heading": "So sánh sản phẩm",
-    "subheading": "Đặt các sản phẩm cạnh nhau để so thông số, giá và đánh giá trước khi chọn mua.",
-    "loading": "Đang tải danh sách so sánh…",
-    "loadingProducts": "Đang tải thông tin sản phẩm…",
-    "emptyTitle": "Chưa có sản phẩm để so sánh",
-    "emptyDescription": "Bấm nút so sánh trên các sản phẩm cùng loại để thêm vào đây.",
-    "loadFailed": "Không tải được thông tin sản phẩm để so sánh.",
-    "browseProducts": "Xem sản phẩm",
-    "tableProductCol": "Sản phẩm",
-    "removeAriaLabel": "Bỏ {name} khỏi so sánh",
-    "brandRow": "Thương hiệu",
-    "priceRow": "Giá",
-    "ratingRow": "Đánh giá",
-    "stockRow": "Tình trạng kho",
-    "optionsRow": "Tùy chọn",
-    "ratingCount": "({count} đánh giá)",
-    "noRating": "Chưa có đánh giá",
-    "contactPrice": "Liên hệ",
-    "noOptions": "—",
-    "addToCart": "Thêm vào giỏ",
-    "viewProduct": "Xem sản phẩm",
-    "addToCartErrorTitle": "Không thể thêm vào giỏ",
-    "addToCartError": "Vui lòng thử lại.",
-    "barLabel": "So sánh",
-    "barAddSlot": "Thêm sản phẩm",
-    "barRemoveAriaLabel": "Bỏ {name} khỏi so sánh",
-    "barClearAll": "Xóa tất cả",
-    "barCompare": "So sánh ({count})"
-  },
   "NotFound": {
     "pageTitle": "Không tìm thấy trang",
     "description": "Bạn có thể tìm kiếm sản phẩm hoặc tham khảo các bài viết bên dưới.",
@@ -1340,21 +1301,6 @@
     "register": "ĐĂNG KÝ",
     "login": "ĐĂNG NHẬP",
     "logout": "ĐĂNG XUẤT"
-  },
-  "Wishlist": {
-    "add": "Yêu thích",
-    "added": "Đã yêu thích",
-    "addAria": "Thêm vào yêu thích",
-    "removeAria": "Bỏ yêu thích"
-  },
-  "CompareBtn": {
-    "inactive": "So sánh",
-    "active": "Đang so sánh",
-    "limitTitle": "KHÔNG THỂ SO SÁNH",
-    "limitMax": "Chỉ so sánh tối đa 3 sản phẩm cùng lúc.",
-    "limitType": "Chỉ so sánh được các sản phẩm cùng loại.",
-    "addAria": "Thêm vào so sánh",
-    "removeAria": "Bỏ khỏi so sánh"
   },
   "CartMini": {
     "heading": "GIỎ HÀNG",

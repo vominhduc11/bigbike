@@ -283,7 +283,17 @@ function AdminApp() {
   useEffect(() => {
     if (authState.status !== 'authenticated') return
     connectAdminWs(() => readTokens().accessToken)
-    setWsReconnectCallback(() => queryClient.invalidateQueries())
+    // Sau mỗi lần (re)connect ta có thể đã bỏ lỡ event đơn khi offline → chỉ làm mới
+    // các cache do luồng đơn chi phối, thay vì invalidate TẤT CẢ. Tránh việc mạng chập
+    // chờn (reconnect 4s/lần) làm refetch toàn bộ màn hình.
+    setWsReconnectCallback(() => {
+      for (const queryKey of [
+        ['orders'], ['order'], ['nav-badge'], ['dashboard'],
+        ['receivable-summary'], ['inventory-summary'], ['returns-pending-count'],
+      ]) {
+        queryClient.invalidateQueries({ queryKey })
+      }
+    })
     return () => disconnectAdminWs()
   }, [authState.status])
 

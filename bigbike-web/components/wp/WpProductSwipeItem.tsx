@@ -6,10 +6,9 @@ import type { Product } from "@/lib/contracts/public";
 import { derivePricing } from "@/lib/pricing";
 import { formatVndNumber, resolveMediaUrl, safeText, toLegacyWpMediaUrl } from "@/lib/utils/format";
 import { toProductPath } from "@/lib/utils/routes";
-import { WishlistButton } from "@/components/catalog/WishlistButton";
-import { CompareButton } from "@/components/catalog/CompareButton";
 import { hasApprovedReviews } from "@/lib/rating";
 import { RatingStars } from "@/components/ui/RatingStars";
+import { cn } from "@/lib/utils";
 
 /**
  * content-product-swipe-item — port 1:1 từ theme WP.
@@ -39,20 +38,39 @@ export function WpProductSwipeItem({
   const hasReviews = hasApprovedReviews(product.rating, product.ratingCount);
   const showOld = compare != null && compare > current;
 
+  // Lưới danh mục (`col-*`) cần MỌI thẻ cao bằng nhau, bất kể tên dài/ngắn hay
+  // tỉ lệ ảnh khác nhau. Carousel (swiper-slide) giữ nguyên look WP gốc.
+  // Cách đều: thẻ là flex-col cao 100% cột → ảnh khung vuông cố định → tên kẹp 2
+  // dòng chiều cao cố định → giá luôn nằm cùng một mốc.
+  const isGrid = wrapperClassName.includes("col-");
+
   return (
     <div className={wrapperClassName}>
-      <div className="product--item">
+      <div className={cn("product--item", isGrid && "flex h-full flex-col")}>
         <div className="product--item-thumbnail">
           <Link
             href={href}
+            // Lưới: khung ảnh vuông cố định, căn giữa ảnh để mọi thẻ cùng chiều cao
+            // ảnh (mũ cao / găng tay / áo khoác / tai nghe rộng đều fit như nhau).
             // Thiếu ảnh: biến khung (min-height 200) thành flex để căn logo placeholder
-            // vào đúng chính giữa. Ảnh thật giữ nguyên layout WP gốc.
-            style={img ? undefined : { display: "flex", alignItems: "center", justifyContent: "center" }}
+            // vào đúng chính giữa. Ảnh thật giữ nguyên layout WP gốc trên carousel.
+            className={cn(isGrid && "flex aspect-square items-center justify-center")}
+            style={
+              !isGrid && !img
+                ? { display: "flex", alignItems: "center", justifyContent: "center" }
+                : undefined
+            }
           >
             {img ? (
               // Ảnh tải trực tiếp (không qua Swiper lazy) — KHÔNG để vòng xoay treo.
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={img} alt={name} className="swiper-lazy -lazy" width={1} height={1} />
+              <img
+                src={img}
+                alt={name}
+                className={cn("swiper-lazy -lazy", isGrid && "h-full w-full object-contain p-2")}
+                width={1}
+                height={1}
+              />
             ) : (
               // Logo placeholder: căn giữa, giữ tỉ lệ, không kéo giãn / không zoom hover.
               // eslint-disable-next-line @next/next/no-img-element
@@ -70,32 +88,27 @@ export function WpProductSwipeItem({
               <p>{discountPercent}%</p>
             </div>
           ) : null}
-          <div className="wp-card-actions">
-            <WishlistButton productId={product.id} />
-            <CompareButton
-              product={{
-                id: product.id,
-                slug: product.slug,
-                name,
-                imageUrl: product.image?.url ?? null,
-                price: current,
-                categoryId: product.category.id,
-                categoryName: product.category.name,
-              }}
-              variant="icon"
-            />
-          </div>
           <div className="product--item-cart">
-            <Link href={href}>
-              <i className="fal fa-shopping-cart" />
-              {tProduct("cardAddToCart").toUpperCase()}
+            {/* Theme WP nhúng sẵn font literal "Barlow Condensed" (cinline-*.woff) và
+                gán cứng cho nút này → nét hẹp, khác tên sản phẩm. Ép font body Arial
+                (inline thắng CSS WP). */}
+            <Link href={href} style={{ fontFamily: "var(--bb-font-body)" }}>
+              {tProduct("cardSelect").toUpperCase()}
             </Link>
           </div>
         </div>
-        <div className="product--item-desc">
+        <div className={cn("product--item-desc", isGrid && "flex flex-1 flex-col")}>
           <div className="product--item-inside row">
             <div className="col-md-12">
-              <p className="product--item-title">
+              <p
+                className={cn(
+                  "product--item-title uppercase",
+                  // Kẹp tên về 2 dòng, leading + min-height khớp nhau (2 × 1.25em) →
+                  // tên 1 dòng vẫn chiếm đúng 2 dòng → giá luôn cùng một mốc.
+                  isGrid && "line-clamp-2 min-h-[2.5em] leading-tight",
+                )}
+                style={{ fontFamily: "var(--bb-font-body)" }}
+              >
                 <Link href={href}>{name}</Link>
               </p>
             </div>

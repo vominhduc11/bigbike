@@ -8,6 +8,8 @@ import com.bigbike.bigbike_backend.persistence.repository.settings.SiteSettingJp
 import com.bigbike.bigbike_backend.service.inventory.OrderStockRestoreService;
 import com.bigbike.bigbike_backend.service.inventory.SerialLifecycleService;
 import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
+import com.bigbike.bigbike_backend.service.ws.AdminOrderWsService;
+import com.bigbike.bigbike_backend.service.ws.OrderWsEvent;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -43,6 +45,7 @@ public class OrderAutoCancelService {
     private final SerialLifecycleService serialLifecycleService;
     private final OrderStockRestoreService orderStockRestoreService;
     private final WebRevalidationService webRevalidationService;
+    private final AdminOrderWsService adminOrderWsService;
     private final TransactionTemplate txTemplate;
 
     public OrderAutoCancelService(
@@ -52,6 +55,7 @@ public class OrderAutoCancelService {
             SerialLifecycleService serialLifecycleService,
             OrderStockRestoreService orderStockRestoreService,
             WebRevalidationService webRevalidationService,
+            AdminOrderWsService adminOrderWsService,
             PlatformTransactionManager txManager
     ) {
         this.orderRepo = orderRepo;
@@ -60,6 +64,7 @@ public class OrderAutoCancelService {
         this.serialLifecycleService = serialLifecycleService;
         this.orderStockRestoreService = orderStockRestoreService;
         this.webRevalidationService = webRevalidationService;
+        this.adminOrderWsService = adminOrderWsService;
         this.txTemplate = new TransactionTemplate(txManager);
     }
 
@@ -124,6 +129,15 @@ public class OrderAutoCancelService {
         note.setCustomerVisible(false);
         note.setCreatedAt(now);
         noteRepo.save(note);
+
+        // Báo admin realtime rằng đơn vừa bị job tự huỷ (cùng kênh WS với thao tác tay).
+        // Đang ở trong transaction của txTemplate → pushEvent tự hoãn tới sau khi commit.
+        String customerName = (order.getCustomerName() != null && !order.getCustomerName().isBlank())
+                ? order.getCustomerName() : "Khách hàng";
+        adminOrderWsService.pushEvent(new OrderWsEvent(
+                "ORDER_STATUS_CHANGED", order.getId(), order.getOrderNumber(),
+                customerName, order.getTotalAmount(), "CANCELLED",
+                order.getPaymentStatus(), now));
         return true;
     }
 

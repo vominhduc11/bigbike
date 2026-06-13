@@ -11,6 +11,39 @@
 | WebSocket/STOMP | Admin order push channel is live | `CONFIRMED_FROM_CODE` | `WebSocketConfig.java`, `AdminOrderWsService.java` |
 | VN address data | Public backend address API and client-side address helpers are present | `CONFIRMED_FROM_CODE` | `VnAddressController.java`, `vn-address-data.ts`, mobile endpoints |
 
+## Web Revalidation (ISR on-demand)
+
+`WebRevalidationService` POSTs cache tags to the Next.js web app's `POST /api/revalidate`
+endpoint (header `x-revalidate-secret`) so admin content edits invalidate the matching ISR
+cache entries immediately, instead of waiting for the page's time-based `revalidate` window.
+`CONFIRMED_FROM_CODE`
+
+- Config: `bigbike.web.revalidate-url`, `bigbike.web.revalidate-secret` (Docker env
+  `WEB_REVALIDATE_URL`, `WEB_REVALIDATE_SECRET`). Disabled when either is blank.
+- Fires **after transaction commit** (`afterCommit`), async, retry at 1s/3s.
+- The web side reads these same tags on its server `fetch` calls in
+  `bigbike-web/lib/api/public-api.ts`.
+- **Contract rule:** every cache tag the web reads MUST have a backend emitter below —
+  otherwise that content only refreshes on its time-based TTL, never on edit.
+
+Tag map — catalog / commerce / home cluster (entity mutation → tags emitted):
+
+| Admin mutation | Tags emitted | Evidence |
+|---|---|---|
+| Product create/update/delete | `products`, `product:<slug>`, `home-highlights` | `AdminCatalogMutationService.revalidateProduct` |
+| Category create/update/delete | `categories`, `category:<slug>`, `products`, `menus`, `home-highlights` | `AdminCatalogMutationService.revalidateCategory` |
+| Brand create/update/delete | `brands`, `brand:<slug>`, `products` | `AdminCatalogMutationService.revalidateBrand` |
+| Order stock change | `products`, `product:<slug>` | `WebRevalidationService.revalidateProductsForOrder` |
+| Home category-highlights save | `home-highlights` | `HomeHighlightsService.saveHighlights` |
+
+> The home highlight block renders product **and** category name/slug/image, so
+> `home-highlights` is emitted both when the block is saved and when any product/category
+> it may display is edited. Brand edits do not touch the block.
+>
+> Content / settings / slider / menu / home-video mutations emit their own entity tags
+> (`articles`, `pages`, `settings`, `sliders`, `menus`, `home-videos`) from their
+> respective admin services, read by the matching `public-api.ts` functions.
+
 ## Media Integration Policy
 
 - Public media URLs are validated against configured public base URL rules. `CONFIRMED_FROM_CODE`

@@ -18,9 +18,6 @@ import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { SearchToggle } from "@/components/layout/SearchToggle";
 import { MobileCartSheet } from "@/components/layout/MobileCartSheet";
 import { CartProvider } from "@/lib/cart-context";
-import { WishlistProvider } from "@/lib/wishlist-context";
-import { CompareProvider } from "@/lib/compare-context";
-import { CompareBar } from "@/components/catalog/CompareBar";
 import { QueryProvider } from "@/components/providers/QueryProvider";
 import { HeaderUiProvider } from "@/components/layout/HeaderUiContext";
 import { env } from "@/env";
@@ -95,33 +92,28 @@ export default async function RootLayout({
           <QueryProvider>
             <HeaderUiProvider>
               <CartProvider>
-                <WishlistProvider>
-                  <CompareProvider>
-                    <WpHeader menuNodes={wpPrimaryNodes} />
-                    <main className="bb-main pb-[calc(var(--bb-mobile-nav-height)+env(safe-area-inset-bottom))] md:pb-0">{children}</main>
-                    <div className="block md:hidden">
-                      <MobileBottomNav />
-                    </div>
-                    {/* SiteHeader (chứa SearchToggle) không còn render — gắn panel tìm kiếm
-                        React như "panel host" ở MỌI breakpoint, để cả WpSearchIcon (header
-                        desktop/tablet) lẫn nút Tìm kiếm ở bottom nav (mobile) mở được panel.
-                        renderTrigger={false} để không render nút trigger trùng WpSearchIcon.
-                        Bọc Suspense vì SearchToggle dùng useSearchParams — bắt buộc khi trang
-                        render tĩnh (ISR/SSG), nếu không build sẽ bail CSR toàn trang. */}
-                    <Suspense fallback={null}>
-                      <SearchToggle renderTrigger={false} />
-                    </Suspense>
-                    <MobileCartSheet />
-                    <WpFooter footerNodes={wpFooterNodes} />
-                    {/* JS theme WP (header hamburger/drawer/headroom/search/scrollToTop). */}
-                    <WpThemeScripts />
-                    <WpMobileMenuController />
-                    <CompareBar />
-                    <div className="bb-floating-chat-anchor fixed z-[660] bottom-[calc(var(--bb-mobile-nav-height)+env(safe-area-inset-bottom)+80px)] md:bottom-[max(24px,env(safe-area-inset-bottom))] right-[max(16px,env(safe-area-inset-right))] md:right-[max(24px,env(safe-area-inset-right))] pointer-events-none [&>*]:pointer-events-auto [[data-scroll-locked]_&]:hidden">
-                      <FloatingChatLoader />
-                    </div>
-                  </CompareProvider>
-                </WishlistProvider>
+                  <WpHeader menuNodes={wpPrimaryNodes} />
+                  <main className="bb-main pb-[calc(var(--bb-mobile-nav-height)+env(safe-area-inset-bottom))] md:pb-0">{children}</main>
+                  <div className="block md:hidden">
+                    <MobileBottomNav />
+                  </div>
+                  {/* SiteHeader (chứa SearchToggle) không còn render — gắn panel tìm kiếm
+                      React như "panel host" ở MỌI breakpoint, để cả WpSearchIcon (header
+                      desktop/tablet) lẫn nút Tìm kiếm ở bottom nav (mobile) mở được panel.
+                      renderTrigger={false} để không render nút trigger trùng WpSearchIcon.
+                      Bọc Suspense vì SearchToggle dùng useSearchParams — bắt buộc khi trang
+                      render tĩnh (ISR/SSG), nếu không build sẽ bail CSR toàn trang. */}
+                  <Suspense fallback={null}>
+                    <SearchToggle renderTrigger={false} />
+                  </Suspense>
+                  <MobileCartSheet />
+                  <WpFooter footerNodes={wpFooterNodes} />
+                  {/* JS theme WP (header hamburger/drawer/headroom/search/scrollToTop). */}
+                  <WpThemeScripts />
+                  <WpMobileMenuController />
+                  <div className="bb-floating-chat-anchor fixed z-[660] bottom-[calc(var(--bb-mobile-nav-height)+env(safe-area-inset-bottom)+80px)] md:bottom-[max(24px,env(safe-area-inset-bottom))] right-[max(16px,env(safe-area-inset-right))] md:right-[max(24px,env(safe-area-inset-right))] pointer-events-none [&>*]:pointer-events-auto [[data-scroll-locked]_&]:hidden">
+                    <FloatingChatLoader />
+                  </div>
               </CartProvider>
             </HeaderUiProvider>
           </QueryProvider>

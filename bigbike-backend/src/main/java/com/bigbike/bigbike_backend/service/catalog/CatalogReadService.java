@@ -72,7 +72,16 @@ public class CatalogReadService {
             new PriceBand("tren-9tr", "Trên 9.000.000đ", "Over 9.000.000đ", 9_000_000L, null)
     );
 
+    private static final List<GenderFacet> GENDER_FACETS = List.of(
+            new GenderFacet("Nam",    "Nam",    "Male"),
+            new GenderFacet("Nữ",    "Nữ",    "Female"),
+            new GenderFacet("Unisex","Unisex", "Unisex")
+    );
+
     private record ColorFacet(String slug, String label, String labelEn) {
+    }
+
+    private record GenderFacet(String slug, String labelVi, String labelEn) {
     }
 
     private record PriceBand(String key, String label, String labelEn, Long min, Long max) {
@@ -91,6 +100,7 @@ public class CatalogReadService {
             String brand,
             String q,
             String filterColor,
+            String filterGender,
             Long minPrice,
             Long maxPrice,
             HomepageBlock homepageBlock,
@@ -108,6 +118,7 @@ public class CatalogReadService {
                 .filter(product -> matchesBrand(product, brand))
                 .filter(product -> matchesQuery(product, q))
                 .filter(product -> matchesColor(product, filterColor))
+                .filter(product -> matchesGender(product, filterGender))
                 .filter(product -> matchesPrice(product, minPrice, maxPrice))
                 .filter(product -> homepageBlock == null || product.homepageBlock() == homepageBlock)
                 .sorted(productComparator(sortSpec))
@@ -177,6 +188,7 @@ public class CatalogReadService {
                 null,                       // originManufactureCountry — detail only
                 null,                       // weightGrams — detail only
                 null,                       // sizeGuide — detail only
+                p.gender(),
                 List.of(),                  // relatedProducts — detail only
                 null,                       // descriptionBlocks — detail only
                 null,                       // seo — detail only
@@ -322,6 +334,7 @@ public class CatalogReadService {
                 buildCategoryBuckets(publishedMatchingQuery, locale),
                 buildBrandBuckets(inCategory, locale),
                 buildColorBuckets(inCategory, locale),
+                buildGenderBuckets(inCategory, locale),
                 buildPriceBuckets(inCategory, locale)
         );
     }
@@ -367,6 +380,23 @@ public class CatalogReadService {
                         products.stream().filter(p -> matchesColor(p, color.slug())).count()
                 ))
                 .toList();
+    }
+
+    private static List<CatalogFacets.FacetBucket> buildGenderBuckets(List<Product> products, String locale) {
+        return GENDER_FACETS.stream()
+                .map(g -> new CatalogFacets.FacetBucket(
+                        g.slug(),
+                        pick(g.labelVi(), g.labelEn(), locale),
+                        null,
+                        products.stream().filter(p -> matchesGender(p, g.slug())).count()
+                ))
+                .filter(b -> b.count() > 0)
+                .toList();
+    }
+
+    private static boolean matchesGender(Product product, String filterGender) {
+        if (filterGender == null || filterGender.isBlank()) return true;
+        return filterGender.equalsIgnoreCase(product.gender());
     }
 
     private static List<CatalogFacets.PriceBucket> buildPriceBuckets(List<Product> products, String locale) {

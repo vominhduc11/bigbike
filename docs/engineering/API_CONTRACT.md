@@ -119,6 +119,7 @@ Response shape: `ApiDataResponse<CatalogFacets>`:
 - `categories`: `[{ key, label, image: null, count }]` — one bucket per visible category, ordered by `sortOrder`.
 - `brands`: `[{ key, label, image, count }]` — one bucket per visible brand; `image` is the brand logo `ImageAsset`.
 - `colors`: `[{ key, label, image: null, count }]` — the 10 fixed named colors (`bac`, `cam`, `hong`, `trang`, `xam`, `xanh-da-troi`, `xanh-la-cay`, `vang`, `den`, `do`).
+- `genders`: `[{ key, label, image: null, count }]` — fixed set `[Nam, Nữ, Unisex]`; buckets with `count = 0` are omitted (V184).
 - `priceBands`: `[{ key, label, minPrice, maxPrice, count }]` — the 9 fixed price bands; `maxPrice` is `null` for the open-ended top band (`tren-9tr`).
 
 **v1 counting semantics:** counts use a base context of `PUBLISHED + q`. Brand/color/price buckets additionally honor `category`; the `categories` bucket intentionally ignores the `category` param so every category keeps a navigable count. Counts are not cross-excluded per dimension — this matches the legacy WordPress filter widget. Status: `CONFIRMED_FROM_CODE` — `CatalogController.getCatalogFacets`, `CatalogReadService.computeFacets`.
@@ -276,6 +277,20 @@ Evidence:
 - `AdminCatalogReadService.listProducts()` / `CatalogReadService.listProducts()` — single-slot filter
 - `bigbike-openapi.json` — `homepage_block` param + `homepageBlock` enum field on Product schema
 - `V111__refactor_product_homepage_block.sql` — schema change + backfill
+
+### Product list — gender filter (V184)
+
+`GET /api/v1/products` and `GET /api/v1/admin/products` accept:
+
+| Param | Type | Validation | Purpose |
+|---|---|---|---|
+| `filter_gender` | `string` (optional) | `@Size(max=20)` | Filter products by gender field. Case-insensitive exact match. Values: `Nam` \| `Nữ` \| `Unisex`. Omit or blank = no filter. |
+
+- Filtering is product-level (not variant-level).
+- The same `filter_gender` value is accepted by `GET /api/v1/catalog/facets` so facet counts can be scoped accordingly (future — currently facets do not re-scope on gender param).
+- `@Pattern(SLUG_REGEX)` is intentionally **not** used because `Nữ` contains Vietnamese characters incompatible with the slug regex; `@Size(max=20)` is used instead.
+
+Status: `CONFIRMED_FROM_CODE` — `CatalogController.java`, `CatalogReadService.matchesGender`.
 
 ### Product list — list-view payload vs detail payload
 

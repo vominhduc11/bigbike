@@ -259,6 +259,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 null,           // originManufactureCountry
                 null,           // weightGrams
                 null,           // sizeGuide
+                null,           // gender
                 List.of(),      // relatedProducts
                 null,           // descriptionBlocks
                 new SeoMeta(
@@ -314,6 +315,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 null,           // originManufactureCountry
                 null,           // weightGrams
                 null,           // sizeGuide
+                null,           // gender
                 List.of(),      // relatedProducts
                 null,           // descriptionBlocks
                 new SeoMeta(
@@ -369,6 +371,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 null,           // originManufactureCountry
                 null,           // weightGrams
                 null,           // sizeGuide
+                null,           // gender
                 List.of(),      // relatedProducts
                 null,           // descriptionBlocks
                 new SeoMeta(

@@ -14,8 +14,6 @@ import {
   getOptionValue,
   isColorAttribute,
 } from "@/lib/utils/variant-match";
-import { WishlistButton } from "@/components/catalog/WishlistButton";
-import { CompareButton } from "@/components/catalog/CompareButton";
 import { ProductGallery } from "@/components/catalog/ProductGallery";
 import { hasApprovedReviews } from "@/lib/rating";
 import { RatingStars } from "@/components/ui/RatingStars";
@@ -457,23 +455,6 @@ export function WpPurchaseSection({
             </div>
           </div>
 
-          {/* Hành động phụ: Yêu thích + So sánh — hàng nút đồng bộ, tự xuống dòng
-              trên màn hình hẹp. So sánh lưu cục bộ trình duyệt (tối đa 3, cùng loại). */}
-          <div className="social mt-6 flex flex-wrap items-stretch gap-3">
-            <WishlistButton productId={product.id} variant="inline" />
-            <CompareButton
-              variant="full"
-              product={{
-                id: product.id,
-                slug: product.slug,
-                name,
-                imageUrl: product.image?.url ?? null,
-                price: current > 0 ? current : null,
-                categoryId: product.category.id,
-                categoryName: product.category.name,
-              }}
-            />
-          </div>
         </div>
       </div>
     </div>

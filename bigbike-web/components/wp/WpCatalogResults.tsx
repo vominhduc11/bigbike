@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import type { Product } from "@/lib/contracts/public";
 import type { WpOrderbyValue } from "@/lib/utils/catalog-sort";
@@ -74,7 +74,12 @@ export function WpCatalogResults({
           </div>
           <div className="product-count" />
           <div className="product">
-            {beforeGrid}
+            {/* beforeGrid là element được TẠO ở trang cha (vd LHtml mô tả danh mục) rồi
+                truyền xuống qua prop. Khi nằm cạnh khối lưới/notice trong cùng parent, React
+                coi nó là phần tử trong "list" nhưng tối ưu static-children chỉ phủ element tạo
+                tại chỗ → cảnh báo thiếu key. Bọc trong Fragment có key để nó là CON DUY NHẤT
+                của wrapper (không còn là thành viên mảng nhiều con) — không đổi DOM/giao diện. */}
+            {beforeGrid != null ? <Fragment key="before-grid">{beforeGrid}</Fragment> : null}
             {isLoading ? (
               <div className="row">
                 {Array.from({ length: 8 }).map((_, i) => (

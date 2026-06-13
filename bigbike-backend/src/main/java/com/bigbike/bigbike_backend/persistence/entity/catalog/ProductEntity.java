@@ -169,6 +169,9 @@ public class ProductEntity {
     @Column(name = "size_guide", columnDefinition = "text")
     private String sizeGuide;
 
+    @Column(name = "gender", length = 20)
+    private String gender;
+
     /** Structured description blocks (V139). Null for products authored via legacy RichTextEditor. */
     @Convert(converter = DescriptionBlocksConverter.class)
     @JdbcTypeCode(SqlTypes.JSON)

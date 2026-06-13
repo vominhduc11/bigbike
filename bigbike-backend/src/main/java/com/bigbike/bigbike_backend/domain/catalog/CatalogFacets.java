@@ -11,6 +11,7 @@ public record CatalogFacets(
         List<FacetBucket> categories,
         List<FacetBucket> brands,
         List<FacetBucket> colors,
+        List<FacetBucket> genders,
         List<PriceBucket> priceBands
 ) {
 

@@ -23,14 +23,6 @@ vi.mock("@/components/catalog/QuickBuySuccessModal", () => ({
   QuickBuySuccessModal: () => null,
 }));
 
-vi.mock("@/components/catalog/WishlistButton", () => ({
-  WishlistButton: () => <div data-testid="wishlist" />,
-}));
-
-vi.mock("@/components/catalog/CompareButton", () => ({
-  CompareButton: () => <div data-testid="compare" />,
-}));
-
 function makeProduct(overrides: Partial<Product> = {}): Product {
   return {
     id: "p1",

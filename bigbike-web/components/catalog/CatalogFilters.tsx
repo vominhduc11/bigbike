@@ -17,6 +17,7 @@ type FilterState = {
   category?: string;
   brand?: string;
   color?: string;
+  gender?: string;
   minPrice?: number;
   maxPrice?: number;
   sort?: string;
@@ -163,6 +164,7 @@ export function CatalogFilters({
       category: current.category,
       "pwb-brand": current.brand,
       filter_color: current.color,
+      filter_gender: current.gender,
       min_price: current.minPrice,
       max_price: current.maxPrice,
       q: current.q,
@@ -172,10 +174,22 @@ export function CatalogFilters({
     return `${resetHref}${buildQueryString(params)}`;
   }
 
-  const brandRows: { key: string; label: string; image?: ImageAsset | null; count?: number }[] =
+  const allBrandRows: { key: string; label: string; image?: ImageAsset | null; count?: number }[] =
     facets?.brands && facets.brands.length > 0
       ? facets.brands
       : brands.map((b) => ({ key: b.slug, label: b.name, image: b.logo ?? null }));
+  const BRAND_LIMIT = 14;
+  const brandRows =
+    allBrandRows.length <= BRAND_LIMIT
+      ? allBrandRows
+      : (() => {
+          const sliced = allBrandRows.slice(0, BRAND_LIMIT);
+          if (current.brand && !sliced.some((b) => b.key === current.brand)) {
+            const active = allBrandRows.find((b) => b.key === current.brand);
+            if (active) sliced[BRAND_LIMIT - 1] = active;
+          }
+          return sliced;
+        })();
 
   const colorRows: { key: string; label: string; count?: number }[] =
     facets?.colors && facets.colors.length > 0 ? facets.colors : COLOR_FALLBACK;
@@ -318,7 +332,26 @@ export function CatalogFilters({
                           <span className="inline-block">{brand.label}</span>
                         ) : null}
                       </Link>
-                      <Count value={brand.count} />
+                    </li>
+                  );
+                })}
+              </FilterList>
+            </FilterSection>
+          )}
+
+          {facets?.genders && facets.genders.length > 0 && (
+            <FilterSection title={t("filterGender")}>
+              <FilterList className={LIST} count={facets.genders.length}>
+                {facets.genders.map((g) => {
+                  const active = current.gender === g.key;
+                  const href = active
+                    ? queryHref({ filter_gender: undefined })
+                    : queryHref({ filter_gender: g.key });
+                  return (
+                    <li key={g.key} className="relative py-[15px]">
+                      <Link href={href} className={cn(LIST_LINK, active && "text-brand")}>
+                        {g.label}
+                      </Link>
                     </li>
                   );
                 })}
@@ -338,7 +371,6 @@ export function CatalogFilters({
                     <Link href={href} className={cn(LIST_LINK, active && "text-brand")}>
                       {color.label}
                     </Link>
-                    <Count value={color.count} />
                   </li>
                 );
               })}

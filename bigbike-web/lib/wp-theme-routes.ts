@@ -15,8 +15,6 @@ export const WP_THEME_ROUTES = new Set<string>([
   "/thanh-toan",
   // Trang xác nhận đơn (endpoint order-received của checkout) — dùng khung checkout.
   "/don-hang/xac-nhan",
-  // Trang so sánh sản phẩm — đã port sang khung WP (WpStaticShell + hero).
-  "/so-sanh",
   // Cụm tài khoản — toàn bộ route con đã port theme WP (xem WpAccountShell);
   // route con động khớp qua prefix "/tai-khoan/" bên dưới.
   "/tai-khoan",
@@ -48,8 +46,8 @@ export const WP_THEME_PREFIXES: string[] = [
  * Route single-segment cấp cao GIỮ shell mặc định của bigbike-web (không port WP).
  * Mọi single-segment khác chưa khớp route riêng nào sẽ rơi vào catch-all
  * `app/[slug]` — trang CMS chung đã port theme WP — nên mặc định coi là route WP
- * để ẩn shell mặc định. Hiện không còn route nào dùng shell mặc định (so-sanh đã
- * được port — xem WP_THEME_ROUTES); set giữ lại làm cơ chế loại trừ cho tương lai.
+ * để ẩn shell mặc định. Hiện không còn route nào dùng shell mặc định;
+ * set giữ lại làm cơ chế loại trừ cho tương lai.
  */
 const NON_WP_TOP_LEVEL = new Set<string>([]);
 

@@ -19,14 +19,6 @@ vi.mock("@/components/catalog/ProductCardAddBar", () => ({
   ProductCardAddBar: () => <div data-testid="add-bar" />,
 }));
 
-vi.mock("@/components/catalog/WishlistButton", () => ({
-  WishlistButton: () => <div data-testid="wishlist" />,
-}));
-
-vi.mock("@/components/catalog/CompareButton", () => ({
-  CompareButton: () => <div data-testid="compare" />,
-}));
-
 vi.mock("@/components/ui/MediaImage", () => ({
   MediaImage: () => <div data-testid="media-image" />,
 }));

@@ -5,6 +5,7 @@ import com.bigbike.bigbike_backend.api.public_.dto.HomeHighlightItemDto;
 import com.bigbike.bigbike_backend.persistence.entity.home.HomeHighlightEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.home.HomeHighlightJpaRepository;
+import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ public class HomeHighlightsService {
 
     private final HomeHighlightJpaRepository highlightRepo;
     private final ProductJpaRepository productRepo;
+    private final WebRevalidationService webRevalidationService;
 
     @Transactional(readOnly = true)
     public List<HomeHighlightItemDto> listHighlights(String lang) {
@@ -63,6 +65,13 @@ public class HomeHighlightsService {
                 .toList();
 
         highlightRepo.saveAllAndFlush(entities);
+
+        // ISR on-demand: khối "sản phẩm nổi bật" đầu trang chủ (web đọc tag "home-highlights",
+        // revalidate nền 300s). Phát tag sau commit để admin lưu xong là web cập nhật ngay,
+        // không phải chờ hết TTL. WebRevalidationService tự hoãn tới afterCommit khi đang trong
+        // transaction (@Transactional ở method này).
+        webRevalidationService.revalidate("home-highlights");
+
         return listHighlights("vi");
     }
 }

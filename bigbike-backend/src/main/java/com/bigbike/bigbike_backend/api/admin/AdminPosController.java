@@ -92,7 +92,7 @@ public class AdminPosController extends AdminControllerSupport {
                             detail.faqs(), detail.positiveNotes(), detail.negativeNotes(),
                             detail.warrantyMonths(), detail.warrantyScope(),
                             detail.originBrandCountry(), detail.originManufactureCountry(),
-                            detail.weightGrams(), detail.sizeGuide(),
+                            detail.weightGrams(), detail.sizeGuide(), detail.gender(),
                             detail.relatedProducts(), detail.descriptionBlocks(),
                             detail.seo(), detail.translations(), detail.createdAt(), detail.updatedAt());
                 })

@@ -10,6 +10,8 @@ import { deleteReview, fetchReviews, updateReviewStatus } from '../lib/adminApi'
 import { useContentLang } from '../lib/contentLang'
 import { formatDateTime, formatText } from '../lib/formatters'
 import { useDebounce } from '../lib/useDebounce'
+import { useAdminList } from '../lib/useAdminList'
+import { useQueryClient } from '@tanstack/react-query'
 import { Alert } from '@/components/ui/alert'
 import { PaginationControls } from '../components/PaginationControls'
 
@@ -48,27 +50,11 @@ export function ReviewListScreen({ navigate, canUpdate }) {
   const [searchInput, setSearchInput] = useState(INITIAL_QUERY.search)
   const debouncedSearch = useDebounce(searchInput, 250)
   const isFirstSearchRender = useRef(true)
-  const [state, setState] = useState({ status: 'loading', items: [], pagination: null, warning: '' })
+  const queryClient = useQueryClient()
+  // Danh sách đánh giá qua react-query: cache + dedupe + giữ trang cũ khi đổi filter.
+  // Shape trả về { status, items, pagination, warning, error } khớp đúng JSX bên dưới.
+  const state = useAdminList(['reviews', query, contentLang], () => fetchReviews(query))
   const [actionError, setActionError] = useState('')
-
-  useEffect(() => {
-    let active = true
-    fetchReviews(query)
-      .then((result) => {
-        if (!active) return
-        setState({
-          status: 'success',
-          items: result.items,
-          pagination: result.pagination,
-          warning: '',
-        })
-      })
-      .catch((error) => {
-        if (!active) return
-        setState({ status: 'error', items: [], pagination: null, warning: '', error: error.message })
-      })
-    return () => { active = false }
-  }, [query, contentLang])
 
   useEffect(() => {
     if (isFirstSearchRender.current) {
@@ -81,26 +67,23 @@ export function ReviewListScreen({ navigate, canUpdate }) {
   const handleStatusChange = useCallback(async (review, newStatus) => {
     setActionError('')
     try {
-      const result = await updateReviewStatus(review.id, newStatus)
-      setState((prev) => ({
-        ...prev,
-        items: prev.items.map((item) => (item.id === review.id ? result.item : item)),
-      }))
+      await updateReviewStatus(review.id, newStatus)
+      queryClient.invalidateQueries({ queryKey: ['reviews'] })
     } catch (error) {
       setActionError(error.message || t('reviews.approveError'))
     }
-  }, [t])
+  }, [t, queryClient])
 
   const handleDelete = useCallback(async (reviewId) => {
     const confirmed = await showConfirm(t('reviews.deleteConfirm'), t('reviews.deleteConfirmTitle'))
     if (!confirmed) return
     try {
       await deleteReview(reviewId)
-      setState((prev) => ({ ...prev, items: prev.items.filter((item) => item.id !== reviewId) }))
+      queryClient.invalidateQueries({ queryKey: ['reviews'] })
     } catch (error) {
       setActionError(error.message || t('reviews.deleteError'))
     }
-  }, [t])
+  }, [t, queryClient])
 
   function updateQuery(partial, options = { resetPage: false }) {
     setQuery((prev) => {
@@ -238,7 +221,7 @@ export function ReviewListScreen({ navigate, canUpdate }) {
           title={t('reviews.error')}
           description={state.error}
           actionLabel={t('common.retry')}
-          onAction={() => setQuery((prev) => ({ ...prev }))}
+          onAction={() => queryClient.invalidateQueries({ queryKey: ['reviews'] })}
         />
       )}
 

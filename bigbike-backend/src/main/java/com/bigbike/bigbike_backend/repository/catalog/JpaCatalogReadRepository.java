@@ -198,6 +198,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 null,                       // originManufactureCountry — detail only
                 null,                       // weightGrams — detail only
                 null,                       // sizeGuide — detail only
+                entity.getGender(),
                 List.of(),                  // relatedProducts — detail only
                 null,                       // descriptionBlocks — detail only
                 null,                       // seo — detail only
@@ -481,6 +482,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 entity.getOriginManufactureCountry(),
                 toWeightGrams(entity.getWeightKg()),
                 entity.getSizeGuide(),
+                entity.getGender(),
                 toRelatedProducts(entity, publicView, locale),
                 entity.getDescriptionBlocks(),
                 toSeoMeta(

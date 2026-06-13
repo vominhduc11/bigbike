@@ -3,12 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 import type { Product } from "@/lib/contracts/public";
 import { WpProductSwipeItem } from "./WpProductSwipeItem";
 
-vi.mock("@/components/catalog/WishlistButton", () => ({
-  WishlistButton: () => <div data-testid="wishlist" />,
-}));
-
-vi.mock("@/components/catalog/CompareButton", () => ({
-  CompareButton: () => <div data-testid="compare" />,
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key: string) => key,
 }));
 
 function makeProduct(overrides: Partial<Product> = {}): Product {
