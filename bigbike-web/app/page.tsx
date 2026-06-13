@@ -11,6 +11,11 @@ import { HeroSlider, type HeroSlide } from "@/components/home/HeroSlider";
 import { HomeFeaturedProducts } from "@/components/home/HomeFeaturedProducts";
 import { HomeCategoryGrid } from "@/components/home/HomeCategoryGrid";
 import { HomeNewsList } from "@/components/home/HomeNewsList";
+import {
+  HomeAboutSection,
+  HomeContentBottom,
+  HomeExperienceHeading,
+} from "@/components/home/HomeLocalizedSettings";
 import { WpThemeStylesheet } from "@/components/wp/WpThemeStylesheet";
 import type { HomeSlider, Product } from "@/lib/contracts/public";
 import {
@@ -249,23 +254,8 @@ export default async function HomePage() {
         </div>
       )}
 
-      {/* ===== 3. About bigbike ===== */}
-      {(aboutSubtitle || aboutTitle || aboutMarkup) && (
-        <div className="about-bigbike">
-          <div className="container">
-            <div className="block-title text-center mb-40">
-              {aboutSubtitle ? <p className="sub-title">{aboutSubtitle}</p> : null}
-              {aboutTitle ? <h3>{aboutTitle}</h3> : null}
-            </div>
-            {aboutMarkup ? (
-              <div
-                className="block-content text-center"
-                dangerouslySetInnerHTML={{ __html: aboutMarkup }}
-              />
-            ) : null}
-          </div>
-        </div>
-      )}
+      {/* ===== 3. About bigbike (client localizer: swap EN settings sau khi đổi ngôn ngữ) ===== */}
+      <HomeAboutSection subtitle={aboutSubtitle} title={aboutTitle} viHtml={aboutMarkup} />
 
       {/* ===== 4. Product list + category grid ===== */}
       <div className="product-list pt-40 pb-40">
@@ -297,21 +287,7 @@ export default async function HomePage() {
       {/* ===== 6. Content carousel (trải nghiệm/review) ===== */}
       {expArticles.length > 0 && (
         <div className="content-carousel pt-100">
-          {(expSubtitle || expTitle || expDesc) && (
-            <div className="container">
-              <div className="block-title text-center pb-40">
-                {expSubtitle ? <p className="sub-title">{expSubtitle}</p> : null}
-                {expTitle ? <h3>{expTitle}</h3> : null}
-                {expDesc ? (
-                  <div className="row pt-30">
-                    <div className="col-md-8 offset-md-2">
-                      <div className="block-title--content">{expDesc}</div>
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          )}
+          <HomeExperienceHeading subtitle={expSubtitle} title={expTitle} desc={expDesc} />
           <div className="container mw-1920">
             <ExperienceCarousel articles={expArticles} />
           </div>
@@ -350,15 +326,8 @@ export default async function HomePage() {
       {/* ===== 9. Partner slide (thương hiệu) ===== */}
       <BrandCarousel brands={brands} />
 
-      {/* ===== 10. Content bottom (SEO wyswyg) ===== */}
-      {homeContentBottomMarkup ? (
-        <div className="content-bottom wyswyg">
-          <div
-            className="container"
-            dangerouslySetInnerHTML={{ __html: homeContentBottomMarkup }}
-          />
-        </div>
-      ) : null}
+      {/* ===== 10. Content bottom (SEO wyswyg) — client localizer ===== */}
+      <HomeContentBottom viHtml={homeContentBottomMarkup} />
 
       <HomeAnalytics />
     </>

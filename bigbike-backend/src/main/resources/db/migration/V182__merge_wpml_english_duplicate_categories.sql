@@ -45,21 +45,19 @@ UPDATE categories SET name_en = 'Backpacks',           updated_at = now() WHERE 
 --    CLOTHING MOTORCYCLE -> ÁO QUẦN BẢO HỘ MOTO PHƯỢT.
 UPDATE products SET category_id = 'wp-cat-290', updated_at = now() WHERE category_id = 'wp-cat-6485';
 
--- 3) Uncategorized bucket — collapse the three variants into one.
---    Three rows exist: id 'uncategorized' (slug 'uncategorized', "Uncategorized",
---    0 products), wp-cat-359 (slug 'chua-phan-loai', "Chưa phân loại", 6
---    products), wp-cat-6475 (slug 'chua-phan-loai-en', WPML dup, 3 products).
---    The WordPress importer resolves its fallback category by slug
---    'uncategorized' (ProductCategoryResolver.ensureUncategorized,
---    ProductImporter, ProductVariationImporter), so the surviving row MUST keep
---    that slug — otherwise a future re-import recreates an English "Uncategorized"
---    and resurrects the duplicate we are removing here. Keep id 'uncategorized'
---    as canonical, give it the Vietnamese display name, fold the other two in.
-UPDATE categories
-SET name = 'Chưa phân loại',
-    name_en = COALESCE(name_en, 'Uncategorized'),
-    updated_at = now()
-WHERE id = 'uncategorized';
+-- 3) Uncategorized bucket — collapse variants into one canonical row.
+--    Expected rows: id 'uncategorized' (slug 'uncategorized'), wp-cat-359
+--    (slug 'chua-phan-loai'), and optionally wp-cat-6475 (WPML dup).
+--    In some DB states the 'uncategorized' row was never created by the importer
+--    (ProductCategoryResolver.ensureUncategorized only runs during import), so
+--    we INSERT it here if missing. The surviving row MUST keep slug 'uncategorized'
+--    so that future re-imports don't recreate an English duplicate.
+INSERT INTO categories (id, slug, name, name_en, is_visible, created_at, updated_at)
+VALUES ('uncategorized', 'uncategorized', 'Chưa phân loại', 'Uncategorized', false, now(), now())
+ON CONFLICT (id) DO UPDATE
+    SET name    = EXCLUDED.name,
+        name_en = COALESCE(categories.name_en, EXCLUDED.name_en),
+        updated_at = now();
 UPDATE products SET category_id = 'uncategorized', updated_at = now()
 WHERE category_id IN ('wp-cat-359', 'wp-cat-6475');
 

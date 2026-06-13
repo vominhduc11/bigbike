@@ -100,7 +100,7 @@ export function useCheckoutOptions() {
 export function usePublicSettings() {
   return useQuery({
     queryKey: queryKeys.publicSettings(),
-    queryFn: fetchPublicSettings,
+    queryFn: () => fetchPublicSettings(),
     staleTime: 5 * 60 * 1000,
   });
 }

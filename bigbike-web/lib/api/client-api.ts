@@ -103,8 +103,9 @@ export function fetchCheckoutOptions(lang?: string): Promise<CheckoutOptions> {
 
 export type PublicSetting = { settingKey: string; settingValue: string };
 
-export function fetchPublicSettings(): Promise<PublicSetting[]> {
-  return clientRequest("GET", "/api/v1/settings/public");
+export function fetchPublicSettings(lang?: string): Promise<PublicSetting[]> {
+  const qs = lang ? `?lang=${encodeURIComponent(lang)}` : "";
+  return clientRequest("GET", `/api/v1/settings/public${qs}`);
 }
 
 // ── Catalog ───────────────────────────────────────────────────────────────────

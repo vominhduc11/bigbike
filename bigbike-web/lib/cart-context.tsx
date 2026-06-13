@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { addCartItem, fetchCart } from "@/lib/api/client-api";
 import { useAuth } from "@/lib/auth/auth-store";
 import { toCartPath } from "@/lib/utils/routes";
@@ -23,6 +24,7 @@ const CartContext = createContext<CartContextValue | null>(null);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const auth = useAuth();
+  const t = useTranslations("Cart");
   const [cartCount, setCartCount] = useState<number | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const nextId = useRef(0);
@@ -64,9 +66,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     async (productId: string, quantity: number, variantId?: string) => {
       await addCartItem(productId, quantity, variantId);
       refreshCount();
-      showToast("ĐÃ THÊM VÀO GIỎ", "Tiếp tục mua hoặc vào giỏ để thanh toán.");
+      showToast(t("toastAddedTitle"), t("toastAddedBody"));
     },
-    [refreshCount, showToast],
+    [refreshCount, showToast, t],
   );
 
   return (
@@ -84,7 +86,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             <span className="text-sm text-muted-foreground">{toast.message}</span>
           </div>
           <Link href={toCartPath()} className="text-sm font-bold text-brand no-underline whitespace-nowrap tracking-wide shrink-0 hover:text-brand-hover">
-            Xem giỏ
+            {t("toastViewCart")}
           </Link>
         </div>
       ))}

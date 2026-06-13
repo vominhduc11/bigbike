@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useLocalizedField } from "@/components/i18n/LocalizedContent";
 import { LHtml } from "@/components/i18n/LocalizedContent";
 
@@ -13,20 +14,15 @@ type Spec = { name?: string | null; value?: string | null };
 type Faq = { question?: string | null; answer?: string | null };
 
 /** Tab "Thông số kĩ thuật" — bảng spec, đổi theo ngôn ngữ. */
-export function ProductSpecsTable({
-  viSpecs,
-  emptyLabel,
-}: {
-  viSpecs: Spec[];
-  emptyLabel: string;
-}) {
+export function ProductSpecsTable({ viSpecs }: { viSpecs: Spec[] }) {
+  const t = useTranslations("Product");
   const enSpecs = useLocalizedField<Spec[]>("specifications");
   const specs = Array.isArray(enSpecs) && enSpecs.length > 0 ? enSpecs : viSpecs;
 
   if (specs.length === 0) {
     return (
       <div className="thong-so-ki-thuat">
-        <p>{emptyLabel}</p>
+        <p>{t("specsEmpty")}</p>
       </div>
     );
   }
@@ -48,20 +44,15 @@ export function ProductSpecsTable({
 }
 
 /** Tab "Câu hỏi thường gặp" — accordion FAQ, đổi theo ngôn ngữ. */
-export function ProductFaqs({
-  viFaqs,
-  emptyLabel,
-}: {
-  viFaqs: Faq[];
-  emptyLabel: string;
-}) {
+export function ProductFaqs({ viFaqs }: { viFaqs: Faq[] }) {
+  const t = useTranslations("Product");
   const enFaqs = useLocalizedField<Faq[]>("faqs");
   const faqs = Array.isArray(enFaqs) && enFaqs.length > 0 ? enFaqs : viFaqs;
 
   if (faqs.length === 0) {
     return (
       <div className="wyswyg">
-        <p>{emptyLabel}</p>
+        <p>{t("faqsEmpty")}</p>
       </div>
     );
   }
@@ -82,6 +73,16 @@ export function ProductFaqs({
 
 /** Tab "Mô tả" — HTML mô tả sản phẩm, đổi theo ngôn ngữ. */
 export function ProductDescriptionTab({ viHtml }: { viHtml: string }) {
+  const t = useTranslations("Product");
+  const enHtml = useLocalizedField<unknown>("description");
+  const hasEn = typeof enHtml === "string" && enHtml.trim().length > 0;
+  if (!hasEn && viHtml.trim().length === 0) {
+    return (
+      <div className="wyswyg">
+        <p>{t("descriptionEmpty")}</p>
+      </div>
+    );
+  }
   return <LHtml field="description" viHtml={viHtml} className="wyswyg" />;
 }
 

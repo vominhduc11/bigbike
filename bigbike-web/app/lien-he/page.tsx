@@ -116,7 +116,7 @@ export default async function ContactPage() {
                         {address ? (
                           <li className="row">
                             <div className="icon col">
-                              <img src={`${T}/images/contact-marker-icon.png`} alt="Địa chỉ" />
+                              <img src={`${T}/images/contact-marker-icon.png`} alt="" />
                             </div>
                             <div className="text col">
                               <p><Tr ns="Header" k="wpContactStore" /></p>
@@ -126,7 +126,7 @@ export default async function ContactPage() {
                         ) : null}
                         <li className="row">
                           <div className="icon col">
-                            <img src={`${T}/images/contact-calendar-icon.png`} alt="Giờ làm việc" />
+                            <img src={`${T}/images/contact-calendar-icon.png`} alt="" />
                           </div>
                           <div className="text col">
                             <p><Tr ns="Contact" k="hoursLabel" /></p>

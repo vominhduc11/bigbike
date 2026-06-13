@@ -157,9 +157,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
       label: "Mô tả",
       labelKey: "description",
       content: (
-        <ProductDescriptionTab
-          viHtml={descriptionHtml || "<p>Chưa có mô tả cho sản phẩm này.</p>"}
-        />
+        <ProductDescriptionTab viHtml={descriptionHtml} />
       ),
     },
     {
@@ -167,10 +165,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
       label: "Thông số kĩ thuật",
       labelKey: "specs",
       content: (
-        <ProductSpecsTable
-          viSpecs={specs}
-          emptyLabel="Chưa có thông số kĩ thuật cho sản phẩm này."
-        />
+        <ProductSpecsTable viSpecs={specs} />
       ),
     },
     {
@@ -178,7 +173,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
       label: "Câu hỏi thường gặp",
       labelKey: "faqs",
       content: (
-        <ProductFaqs viFaqs={faqs} emptyLabel="Chưa có câu hỏi thường gặp cho sản phẩm này." />
+        <ProductFaqs viFaqs={faqs} />
       ),
     },
   ];
@@ -242,7 +237,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
         <section className="my-10 grid gap-6 md:grid-cols-2">
           {positiveNotes.length > 0 && (
             <div className="border border-border p-5">
-              <h2 className="mb-3 font-heading text-lg font-semibold uppercase">Ưu điểm</h2>
+              <h2 className="mb-3 font-heading text-lg font-semibold uppercase"><Tr ns="Product" k="prosTitle" /></h2>
               <ul className="flex flex-col gap-2">
                 {positiveNotes.map((note, index) => (
                   <li key={index} className="flex gap-2 text-foreground">
@@ -255,7 +250,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
           )}
           {negativeNotes.length > 0 && (
             <div className="border border-border p-5">
-              <h2 className="mb-3 font-heading text-lg font-semibold uppercase">Nhược điểm</h2>
+              <h2 className="mb-3 font-heading text-lg font-semibold uppercase"><Tr ns="Product" k="consTitle" /></h2>
               <ul className="flex flex-col gap-2">
                 {negativeNotes.map((note, index) => (
                   <li key={index} className="flex gap-2 text-foreground">
@@ -272,35 +267,35 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
       {/* Thông tin tin cậy (V175): bảo hành, xuất xứ, trọng lượng — dạng định nghĩa. */}
       {hasTrustInfo && (
         <section className="my-10">
-          <h2 className="mb-3 font-heading text-lg font-semibold uppercase">Thông tin sản phẩm</h2>
+          <h2 className="mb-3 font-heading text-lg font-semibold uppercase"><Tr ns="Product" k="infoTitle" /></h2>
           <dl className="grid gap-x-8 gap-y-2 sm:grid-cols-2">
             {warrantyMonths != null && (
               <div className="flex justify-between gap-4 border-b border-border py-2">
-                <dt className="text-muted-foreground">Bảo hành</dt>
-                <dd className="font-medium text-right">{warrantyMonths} tháng</dd>
+                <dt className="text-muted-foreground"><Tr ns="Product" k="warranty" /></dt>
+                <dd className="font-medium text-right">{warrantyMonths} <Tr ns="Product" k="monthsUnit" /></dd>
               </div>
             )}
             {weightGrams != null && (
               <div className="flex justify-between gap-4 border-b border-border py-2">
-                <dt className="text-muted-foreground">Trọng lượng</dt>
+                <dt className="text-muted-foreground"><Tr ns="Product" k="weight" /></dt>
                 <dd className="font-medium text-right">{weightGrams.toLocaleString("vi-VN")} g</dd>
               </div>
             )}
             {originBrandCountry && (
               <div className="flex justify-between gap-4 border-b border-border py-2">
-                <dt className="text-muted-foreground">Thương hiệu</dt>
+                <dt className="text-muted-foreground"><Tr ns="Product" k="brand" /></dt>
                 <dd className="font-medium text-right">{originBrandCountry}</dd>
               </div>
             )}
             {originManufactureCountry && (
               <div className="flex justify-between gap-4 border-b border-border py-2">
-                <dt className="text-muted-foreground">Sản xuất tại</dt>
+                <dt className="text-muted-foreground"><Tr ns="Product" k="madeIn" /></dt>
                 <dd className="font-medium text-right">{originManufactureCountry}</dd>
               </div>
             )}
             {warrantyScope && (
               <div className="flex justify-between gap-4 border-b border-border py-2 sm:col-span-2">
-                <dt className="text-muted-foreground">Phạm vi bảo hành</dt>
+                <dt className="text-muted-foreground"><Tr ns="Product" k="warrantyScope" /></dt>
                 <dd className="font-medium text-right">{warrantyScope}</dd>
               </div>
             )}
@@ -315,7 +310,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
       {/* Bảng size (V175) — HTML table do admin nhập, sanitize trước khi render. */}
       {sizeGuideHtml ? (
         <section className="my-10">
-          <h2 className="mb-3 font-heading text-lg font-semibold uppercase">Bảng size & hướng dẫn chọn</h2>
+          <h2 className="mb-3 font-heading text-lg font-semibold uppercase"><Tr ns="Product" k="sizeGuideTitle" /></h2>
           <div className="wyswyg" dangerouslySetInnerHTML={{ __html: sizeGuideHtml }} />
         </section>
       ) : null}
