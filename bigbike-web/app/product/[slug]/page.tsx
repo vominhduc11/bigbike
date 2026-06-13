@@ -6,6 +6,7 @@ import { Minus, Plus } from "lucide-react";
 
 import { WpPurchaseSection } from "@/components/wp/WpPurchaseSection";
 import { WpProductTabs, type WpTab } from "@/components/wp/WpProductTabs";
+import { WpThemeStylesheet } from "@/components/wp/WpThemeStylesheet";
 import { LText, LocalizedContentProvider } from "@/components/i18n/LocalizedContent";
 import { Tr } from "@/components/i18n/Tr";
 import {
@@ -184,11 +185,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
 
   return (
     <>
-      <link
-        rel="stylesheet"
-        href="/wp-content/themes/bigbike/css/wp-theme-product.css?v=11"
-        precedence="default"
-      />
+      <WpThemeStylesheet href="/wp-content/themes/bigbike/css/wp-theme-product.css?v=11" />
       {jsonLdBlocks.map((block, index) => (
         <script
           key={index}

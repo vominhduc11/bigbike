@@ -612,9 +612,11 @@ a {
 }
 /* ─── Responsive ─────────────────────────────────────────────────────────────*/
 
-/* ── Tablet + Mobile (≤900px): hide lang switcher ── */
+/* ── Tablet + Mobile (≤1024px): header chật, nên nút đổi ngôn ngữ nội dung được
+   dời từ topbar vào menu người dùng (xem .bb-user-dropdown-lang). Chỉ ẩn bản nằm
+   trực tiếp trên topbar — bản trong menu vẫn hiển thị. ── */
 @media (max-width: 1024px) {
-  .lang-switcher {
+  .bb-topbar > .lang-switcher {
     display: none;
   }
 }

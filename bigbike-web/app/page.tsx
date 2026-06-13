@@ -11,6 +11,7 @@ import { HeroSlider, type HeroSlide } from "@/components/home/HeroSlider";
 import { HomeFeaturedProducts } from "@/components/home/HomeFeaturedProducts";
 import { HomeCategoryGrid } from "@/components/home/HomeCategoryGrid";
 import { HomeNewsList } from "@/components/home/HomeNewsList";
+import { WpThemeStylesheet } from "@/components/wp/WpThemeStylesheet";
 import type { HomeSlider, Product } from "@/lib/contracts/public";
 import {
   getProductBySlug,
@@ -199,12 +200,9 @@ export default async function HomePage() {
   return (
     <>
       {/* CSS theme WP nạp từ public/ (không qua Turbopack — file minified làm bundler nghẽn).
-          precedence để Next hoist vào <head> và tự gỡ khi rời route. */}
-      <link
-        rel="stylesheet"
-        href="/wp-content/themes/bigbike/css/wp-theme-home.css?v=2"
-        precedence="default"
-      />
+          WpThemeStylesheet tự gỡ bundle trang cũ khi điều hướng client → mọi trang hiển thị
+          nhất quán như khi F5 (React Float KHÔNG tự gỡ stylesheet giữa các route). */}
+      <WpThemeStylesheet href="/wp-content/themes/bigbike/css/wp-theme-home.css?v=2" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdOrg }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdWeb }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdLocalBusiness }} />

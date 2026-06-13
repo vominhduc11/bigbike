@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import { WpThemeStylesheet } from "@/components/wp/WpThemeStylesheet";
 
 /**
  * Skeleton bài viết — khớp shell WP single.php (.page-title + .blog +
@@ -9,11 +10,7 @@ export default async function ArticleDetailLoading() {
 
   return (
     <>
-      <link
-        rel="stylesheet"
-        href="/wp-content/themes/bigbike/css/wp-theme-news.css?v=4"
-        precedence="default"
-      />
+      <WpThemeStylesheet href="/wp-content/themes/bigbike/css/wp-theme-news.css?v=4" />
       <div className="single single-post" aria-label={t("loading")}>
         <div
           className="page-title"

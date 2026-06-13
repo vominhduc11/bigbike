@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getLocale } from "next-intl/server";
 import { WpCategoryHero, type WpCategoryCrumb } from "@/components/wp/WpCategoryHero";
 import { WpCatalogClient } from "@/components/wp/WpCatalogClient";
+import { WpThemeStylesheet } from "@/components/wp/WpThemeStylesheet";
 import { LText, LocalizedContentProvider } from "@/components/i18n/LocalizedContent";
 import { getBrandBySlug, getCatalogFacets, listBrands, listCategories } from "@/lib/api/public-api";
 import { buildBrandBreadcrumbJsonLd, serializeJsonLd } from "@/lib/seo/json-ld";
@@ -98,11 +99,7 @@ export default async function BrandDetailPage({ params }: BrandDetailPageProps) 
 
   return (
     <>
-      <link
-        rel="stylesheet"
-        href="/wp-content/themes/bigbike/css/wp-theme-category.css?v=2"
-        precedence="default"
-      />
+      <WpThemeStylesheet href="/wp-content/themes/bigbike/css/wp-theme-category.css?v=2" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }} />
 
       <LocalizedContentProvider kind="brand" slug={brand.slug}>

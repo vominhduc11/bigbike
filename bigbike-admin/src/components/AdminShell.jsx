@@ -305,6 +305,10 @@ export function AdminShell({
                     <span>{user.email || user.roles.join(', ')}</span>
                   </div>
                   <hr />
+                  <div className="bb-user-dropdown-lang">
+                    <span className="bb-user-dropdown-lang-label">Ngôn ngữ nội dung</span>
+                    <LanguageSwitcher />
+                  </div>
                   <button
                     type="button"
                     role="menuitem"

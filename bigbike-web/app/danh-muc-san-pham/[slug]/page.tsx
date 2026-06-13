@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { WpCategoryHero, type WpCategoryCrumb } from "@/components/wp/WpCategoryHero";
 import { WpCatalogClient } from "@/components/wp/WpCatalogClient";
+import { WpThemeStylesheet } from "@/components/wp/WpThemeStylesheet";
 import { LHtml, LText, LocalizedContentProvider } from "@/components/i18n/LocalizedContent";
 import { Tr } from "@/components/i18n/Tr";
 import { getCatalogFacets, getCategoryBySlug, listBrands, listCategories, listProducts } from "@/lib/api/public-api";
@@ -137,11 +138,7 @@ export default async function CategoryDetailPage({ params }: CategoryDetailPageP
 
   return (
     <>
-      <link
-        rel="stylesheet"
-        href="/wp-content/themes/bigbike/css/wp-theme-category.css?v=2"
-        precedence="default"
-      />
+      <WpThemeStylesheet href="/wp-content/themes/bigbike/css/wp-theme-category.css?v=2" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }} />
 
       <LocalizedContentProvider kind="category" slug={category.slug}>

@@ -7,6 +7,7 @@ import { resolveMediaUrl, toLegacyWpMediaUrl } from "@/lib/utils/format";
 import { readDefaultHeroAssets, readHeroSettings } from "@/lib/utils/page-hero";
 import { toArticleListPath, toHomePath } from "@/lib/utils/routes";
 import { WpArticleListClient } from "./WpArticleListClient";
+import { WpThemeStylesheet } from "@/components/wp/WpThemeStylesheet";
 import { Tr } from "@/components/i18n/Tr";
 
 // Shell — hero (settings "hero_news") + danh mục tin tức + danh sách bài view MẶC ĐỊNH
@@ -50,11 +51,7 @@ export default async function ArticleListPage() {
 
   return (
     <>
-      <link
-        rel="stylesheet"
-        href="/wp-content/themes/bigbike/css/wp-theme-news.css?v=4"
-        precedence="default"
-      />
+      <WpThemeStylesheet href="/wp-content/themes/bigbike/css/wp-theme-news.css?v=4" />
 
       <div className="archive category">
         <WpCategoryHero

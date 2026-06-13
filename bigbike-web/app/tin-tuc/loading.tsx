@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import { WpThemeStylesheet } from "@/components/wp/WpThemeStylesheet";
 
 /**
  * Skeleton listing tin tức — khớp shell WP (.page-title + .container .row)
@@ -9,11 +10,7 @@ export default async function ArticleListLoading() {
 
   return (
     <>
-      <link
-        rel="stylesheet"
-        href="/wp-content/themes/bigbike/css/wp-theme-news.css?v=4"
-        precedence="default"
-      />
+      <WpThemeStylesheet href="/wp-content/themes/bigbike/css/wp-theme-news.css?v=4" />
       <div className="archive category" aria-label={t("loading")}>
         <div
           className="page-title"

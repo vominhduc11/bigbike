@@ -1,4 +1,5 @@
 import { WpCategoryHero, type WpCategoryCrumb } from "./WpCategoryHero";
+import { WpThemeStylesheet } from "./WpThemeStylesheet";
 
 /**
  * Khung WP dùng chung cho nhóm trang NỘI DUNG TĨNH — port 1:1 từ
@@ -40,7 +41,7 @@ export function WpStaticShell({
 }) {
   return (
     <>
-      <link rel="stylesheet" href={cssHref} precedence="default" />
+      <WpThemeStylesheet href={cssHref} />
 
       {showHero ? (
         <WpCategoryHero

@@ -1,4 +1,5 @@
 import { WpAccountNav } from "./WpAccountNav";
+import { WpThemeStylesheet } from "./WpThemeStylesheet";
 
 /**
  * Khung WP cho cụm TÀI KHOẢN — port từ page-templates/page-profile.php:
@@ -18,11 +19,7 @@ export function WpAccountShell({
 }) {
   return (
     <>
-      <link
-        rel="stylesheet"
-        href="/wp-content/themes/bigbike/css/wp-theme-static.css?v=1"
-        precedence="default"
-      />
+      <WpThemeStylesheet href="/wp-content/themes/bigbike/css/wp-theme-static.css?v=1" />
 
       <div id="main-content">
         <div className="container">

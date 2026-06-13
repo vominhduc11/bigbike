@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getLocale } from "next-intl/server";
 import { WpCategoryHero, type WpCategoryCrumb } from "@/components/wp/WpCategoryHero";
+import { WpThemeStylesheet } from "@/components/wp/WpThemeStylesheet";
 import { Tr } from "@/components/i18n/Tr";
 import { listBrands } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
@@ -33,11 +34,7 @@ export default async function BrandListPage() {
 
   return (
     <>
-      <link
-        rel="stylesheet"
-        href="/wp-content/themes/bigbike/css/wp-theme-category.css?v=2"
-        precedence="default"
-      />
+      <WpThemeStylesheet href="/wp-content/themes/bigbike/css/wp-theme-category.css?v=2" />
 
       <div className="archive tax-pwb-brand post-type-archive-product">
         <WpCategoryHero title="Thương hiệu" titleNode={<Tr ns="Catalog" k="brandsTitle" />} breadcrumb={heroBreadcrumb} />

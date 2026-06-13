@@ -1303,6 +1303,27 @@ dl.bb-info-grid dd { color: var(--bb-text); }
 .bb-user-dropdown-item.danger { color: var(--bb-danger); }
 .bb-user-dropdown-item.danger:hover { background: var(--bb-danger-bg); }
 
+/* Nút đổi ngôn ngữ nội dung được dời vào menu người dùng ở breakpoint drawer
+   (≤1024px), nơi nó bị ẩn khỏi topbar chật. Desktop ẩn mục này (đã có trên topbar). */
+.bb-user-dropdown-lang {
+  display: none;
+  flex-direction: column;
+  gap: 7px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--bb-border-faint);
+}
+@media (max-width: 1024px) {
+  .bb-user-dropdown-lang { display: flex; }
+}
+.bb-user-dropdown-lang-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--bb-text-muted);
+}
+.bb-user-dropdown-lang .lang-switcher { align-self: flex-start; }
+
 /* ─── Focus mode (form screens) ─────────────────────────────────────────────── */
 .bb-app.focus-mode .bb-sidebar { transform: translateX(-100%); }
 .bb-app.focus-mode .bb-topbar { display: none; }
