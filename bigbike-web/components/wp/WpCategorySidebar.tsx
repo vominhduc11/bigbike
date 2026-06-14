@@ -320,7 +320,10 @@ export function WpCategorySidebar({
                     "cat-item",
                     `cat-item-${cat.id}`,
                     cat.slug,
-                    isActive ? "current-cat" : "",
+                    // `current-cat active`: bản WP thêm `.active` qua toggleCategories
+                    // (chỉ chạy lúc full-load). React tự thêm để style `.current-cat.active`
+                    // nhất quán cả khi điều hướng SPA (lúc script WP không chạy lại).
+                    isActive ? "current-cat active" : "",
                     children.length > 0 ? "cat-parent" : "",
                   ]
                     .filter(Boolean)
@@ -337,7 +340,7 @@ export function WpCategorySidebar({
                             return (
                               <li
                                 key={child.id}
-                                className={`cat-item cat-item-${child.id} ${child.slug}${childActive ? " current-cat" : ""}`}
+                                className={`cat-item cat-item-${child.id} ${child.slug}${childActive ? " current-cat active" : ""}`}
                               >
                                 <Link href={childHref}>{child.name}</Link>
                               </li>

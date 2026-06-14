@@ -7,7 +7,48 @@
 
 ---
 
-## 0. Kết luận nhanh
+## ✅ Resolution (2026-06-13) — đã sửa + verify 4 điểm Trung bình
+
+Đã xử lý trên build mới (`bigbike-web` rebuild + recreate, container healthy), verify Playwright **cả 2 đường (reload + SPA)**:
+
+| Điểm | Cách sửa | Bằng chứng runtime (build mới) |
+|---|---|---|
+| **A-15 sort** | Gỡ handler `change` của WP khỏi `.woocommerce-ordering select` qua `useDetachWpHandlers` (giữ `router.push` SPA của React) | reload: `events:[]` · SPA: `events:[]` |
+| **A-17 show-more** | KHÔNG đổi code — đã fix sẵn ở working tree (`ToggleList` clamp ≤10 + bỏ class `show-more`); finding cũ là artifact build stale | layered-nav li `[8,7]` (≤10), `.show-more` không tồn tại |
+| **A-18 tabs** | Gỡ handler `click` của WP khỏi `.woocommerce-tabs .tabs-nav .nav-item a` | reload: `events:[]` (3 tab/3 panel) |
+| **A-19/20 drawer lọc mobile** | Gỡ `click` khỏi `.filter-mobile-wrapper`/`.close-btn`/`.overlay`; React tự toggle `html.overlay` (scroll-lock) | reload: cả 3 `events:[]`; mở→`html.overlay=true`+active, đóng→cả hai xóa · SPA: `events:[]` |
+
+**Cơ chế fix:** `lib/hooks/useDetachWpHandlers.ts` gọi `jQuery(sel).off(events)` trên đúng phần tử React quản (React 17+ gắn listener ở root nên không bị gỡ; SPA = no-op). **Không đổi class/markup → giữ nguyên 100% CSS theme**, tránh rủi ro visual. TypeScript + ESLint sạch.
+
+### Phase 2 (2026-06-13) — nhóm Low
+
+| Điểm | Cách sửa | Bằng chứng runtime (build mới) |
+|---|---|---|
+| **A-2 `.js-quickby`** | Bỏ class `js-quickby` khỏi nút "Mua ngay" (`WpPurchaseSection`) — class không dùng cho CSS, chỉ là hook WP no-op | `.js-quickby` `exists:false` ✅ |
+| **A-28 variations** | Gỡ `change` của WP khỏi `.variations_form` (`useDetachWpHandlers`) → hết AJAX find_variation_product rỗng; giữ class cho CSS | `.variations_form` `events:[]` ✅ |
+| **A-25 cart qty** | Bỏ `js-quantity-wrap`/`js-plus`/`js-minus` (`WpCartClient`) — CSS dựa `.quantity-form .minus/.plus` nên giữ giao diện | `.js-quantity-wrap` `exists:false` ✅ |
+| **A-22 current-cat** | React tự thêm `active` cạnh `current-cat` (parent + child) cho khớp `.current-cat.active` cả khi SPA | ⏳ code xong, lint/tsc sạch — seed env không có danh mục để tái hiện |
+| **A-35 partner-slide** | Bỏ class `swiper-container` khỏi `<Swiper>` (`BrandCarousel`) — Swiper React tự dùng `.swiper`+`swiper/css` | ⏳ code xong — seed env không có thương hiệu để tái hiện |
+
+**Không sửa (có lý do):**
+- **A-13 sticky filter:** CSS theme có `.product-list-filter{position:relative!important;top:0!important}` (base) **đè** rule `position:sticky` → thanh lọc KHÔNG dính ở cả 2 đường; `.sticky()` của WP thực chất no-op → **không có xung đột thật**, để nguyên (thêm sticky sẽ đổi behavior trái với override cố ý).
+- **A-6b mega arrow:** `.arrow` jQuery chèn vào item mega CŨNG là cơ chế mở submenu off-canvas trên **mobile** → detach/xoá thuần sẽ làm hỏng mobile. Cần rework React (tự render arrow + state mở mobile) — không thuộc diện "gọn", **giữ nguyên + flag** để làm riêng.
+
+### Phase 3 (2026-06-13) — B-4 + chốt A-6b + nhóm B
+
+| Điểm | Kết luận |
+|---|---|
+| **B-4 share** | **Đã sửa** — bỏ class `fb-share`/`twitter-share` (không style), thêm `target="_blank" rel="noopener noreferrer"` → mở tab mới nhất quán cả reload lẫn SPA (trước đây SPA click rời trang). tsc/eslint sạch. |
+| **A-6b mega arrow** | **Không cần sửa (resolved-by-analysis).** Desktop: `.arrow{display:none}` (chỉ `display:block` trong `@media max-width:1260px`) + `.bb-has-mega > .sub-menu{display:none !important}` → arrow vô hình/không click được, submenu không thể bị slideToggle hiện ra. Mobile off-canvas: arrow + slideToggle là hành vi WP đúng (giống mọi `menu-item-has-children`). Probe: 0 console error. Rủi ro reconcile chỉ trên lý thuyết, thực tế bị CSS + vòng đời chặn. |
+| **Nhóm B còn lại** (B-5/6a/7/10/11/14) | **Giữ nguyên** — header hamburger/off-canvas/submenu/`information-slide`/footer accordion/scrollToTop/headroom đều render trong layout (persist qua SPA), script bind 1 lần sống suốt phiên → đúng cả 2 đường. Đây là thiết kế đã ghi trong `WpThemeScripts.tsx`, không phải bug. |
+
+**Trạng thái cuối:** Toàn bộ điểm **A** đã xử lý (sửa hoặc chứng minh vô hại). Nhóm **B** giữ nguyên theo thiết kế. Chỉ còn **A-22** (current-cat active) và **A-35** (partner-slide) đã sửa code + tsc/eslint sạch nhưng **chưa verify runtime** do seed env không có danh mục/thương hiệu — verify khi có dữ liệu.
+
+**File thay đổi tổng cộng:** `lib/hooks/useDetachWpHandlers.ts` (mới); `components/wp/{WpCategorySort,WpProductTabs,WpCategorySidebar,WpPurchaseSection,WpCartClient}.tsx`; `components/home/BrandCarousel.tsx`; `app/tin-tuc/[slug]/page.tsx`.
+
+---
+
+## 0. Kết luận nhanh (bản audit gốc — trước khi sửa)
 
 - **KHÔNG còn "an toàn tuyệt đối".** Có **12 điểm chồng lấn loại A/B cần xử lý hoặc theo dõi**, phần còn lại (≈19 selector) là **C — không chồng lấn**, đã đối chiếu hết bên dưới.
 - **Cơ chế gốc đã được runtime xác nhận:** `home.min.js` chạy `front_app.init()` **đúng 1 lần mỗi lần tải nguyên trang** (gate `body.hasClass("js-loaded")`), và **KHÔNG chạy lại khi điều hướng SPA**.

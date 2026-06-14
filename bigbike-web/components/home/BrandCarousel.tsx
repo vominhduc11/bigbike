@@ -29,7 +29,10 @@ export function BrandCarousel({ brands }: Props) {
     <div className="partner-slide pt-120 pb-120">
       <div className="container">
         <Swiper
-          className="swiper-container"
+          // KHÔNG đặt `swiper-container`: home.min.js `partnerSlide()` gọi
+          // `new Swiper(".partner-slide .swiper-container")` → double-init đè lên Swiper
+          // React trên reload home. Swiper React tự render class `.swiper` + style từ
+          // `swiper/css`, không cần class WP cũ nên giao diện giữ nguyên.
           speed={1000}
           slidesPerView={2}
           spaceBetween={13}

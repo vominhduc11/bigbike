@@ -73,11 +73,15 @@ function CartItemRow({
       </div>
 
       <div className="table--items-item col quantity">
-        {/* Thứ tự chuẩn UX: [-] [ô số] [+] — giảm bên trái, tăng bên phải. */}
-        <div className="quantity-form js-quantity-wrap">
+        {/* Thứ tự chuẩn UX: [-] [ô số] [+] — giảm bên trái, tăng bên phải.
+            KHÔNG dùng `js-quantity-wrap`/`js-plus`/`js-minus`: home.min.js
+            (change_cart_quantity) bind trực tiếp vào các class đó và ghi `.val()`
+            imperative đè input React-controlled. React đã drive +/- qua onClick nên bỏ
+            marker; styling dựa `.quantity-form .minus/.plus` nên giữ nguyên giao diện. */}
+        <div className="quantity-form">
           <button
             type="button"
-            className="minus js-minus"
+            className="minus"
             onClick={() => onStep(item.id, -1)}
             disabled={isMutating || !item.available || draftQuantity <= 1}
             aria-label={t("decreaseQtyAria", { name: item.productName })}
@@ -98,7 +102,7 @@ function CartItemRow({
           />
           <button
             type="button"
-            className="plus js-plus"
+            className="plus"
             onClick={() => onStep(item.id, 1)}
             disabled={isMutating || !item.available}
             aria-label={t("increaseQtyAria", { name: item.productName })}

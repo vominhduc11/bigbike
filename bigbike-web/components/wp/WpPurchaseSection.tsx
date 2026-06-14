@@ -24,6 +24,7 @@ import { QuickBuyModal } from "@/components/catalog/QuickBuyModal";
 import { QuickBuySuccessModal } from "@/components/catalog/QuickBuySuccessModal";
 import { Minus, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useDetachWpHandlers } from "@/lib/hooks/useDetachWpHandlers";
 
 type Props = {
   product: Product;
@@ -66,6 +67,12 @@ export function WpPurchaseSection({
 }: Props) {
   const tb = useTranslations("PdpBuyBox");
   const { addToCart } = useCart();
+
+  // home.min.js `choose_color_and_size()` bind change vào `.variations_form`
+  // (delegated `.variation-radios input`) → khi chọn đủ biến thể bắn AJAX
+  // find_variation_product về URL rỗng (backend WP đã bỏ), fail im lặng. React đã tự
+  // quản chọn biến thể nên gỡ handler WP. Giữ class `.variations_form` cho CSS theme.
+  useDetachWpHandlers([{ selector: ".variations_form", events: "change" }]);
 
   // ISR + CSR hybrid: mô tả/ảnh/thông số render từ props (ISR — phần cần SEO). GIÁ + TỒN
   // KHO fetch lại ở CLIENT sau khi load để luôn tươi (shop bán cả online lẫn walk-in/POS
@@ -425,7 +432,10 @@ export function WpPurchaseSection({
                   <div className="add-to-cart quick-add-to-cart col-md-6">
                     <button
                       type="button"
-                      className={"btn single_add_to_cart_button button btn-quick-buy js-quickby js-buy-now-btn" + (canBuy ? "" : " disabled")}
+                      // KHÔNG dùng `js-quickby`: home.min.js bind click vào class đó
+                      // (preventDefault + toggle `.js-quickbuy-box` không tồn tại). React
+                      // tự mở QuickBuyModal qua onClick nên bỏ marker để theme JS không bắt.
+                      className={"btn single_add_to_cart_button button btn-quick-buy js-buy-now-btn" + (canBuy ? "" : " disabled")}
                       disabled={!canBuy}
                       onClick={() => setQuickBuyOpen(true)}
                     >
