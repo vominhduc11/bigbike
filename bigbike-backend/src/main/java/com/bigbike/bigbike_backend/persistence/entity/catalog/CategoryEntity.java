@@ -53,6 +53,9 @@ public class CategoryEntity {
     private String iconMimeType;
 
     @Column(columnDefinition = "text")
+    private String contentBottom;
+
+    @Column(columnDefinition = "text")
     private String bannerUrl;
 
     private String bannerAlt;
@@ -243,6 +246,14 @@ public class CategoryEntity {
 
     public void setIconMimeType(String iconMimeType) {
         this.iconMimeType = iconMimeType;
+    }
+
+    public String getContentBottom() {
+        return contentBottom;
+    }
+
+    public void setContentBottom(String contentBottom) {
+        this.contentBottom = contentBottom;
     }
 
     public String getBannerUrl() {

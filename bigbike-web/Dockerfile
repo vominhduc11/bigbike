@@ -41,6 +41,7 @@ RUN addgroup -S bigbike && adduser -S bigbike -G bigbike
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=bigbike:bigbike /app/.next/standalone ./
 COPY --from=builder --chown=bigbike:bigbike /app/.next/static ./.next/static
+COPY --chown=bigbike:bigbike docker-entrypoint.mjs ./docker-entrypoint.mjs
 
 USER bigbike
 EXPOSE 3000
@@ -50,4 +51,7 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
 
 ENV HOSTNAME="0.0.0.0"
 ENV PORT=3000
-CMD ["node", "server.js"]
+# Entrypoint starts server.js and self-revalidates the storefront ISR cache once
+# the server is up — see docker-entrypoint.mjs. This replaces the external
+# bigbike-web-init container so a fresh start refreshes data even on partial rebuilds.
+CMD ["node", "docker-entrypoint.mjs"]

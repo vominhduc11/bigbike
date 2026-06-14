@@ -117,10 +117,10 @@ Query params (all optional):
 
 Response shape: `ApiDataResponse<CatalogFacets>`:
 - `categories`: `[{ key, label, image: null, count }]` — one bucket per visible category, ordered by `sortOrder`.
-- `brands`: `[{ key, label, image, count }]` — one bucket per visible brand; `image` is the brand logo `ImageAsset`.
-- `colors`: `[{ key, label, image: null, count }]` — the 10 fixed named colors (`bac`, `cam`, `hong`, `trang`, `xam`, `xanh-da-troi`, `xanh-la-cay`, `vang`, `den`, `do`).
+- `brands`: `[{ key, label, image, count }]` — one bucket per visible brand with `count > 0`; `image` is the brand logo `ImageAsset`. Buckets with `count = 0` are omitted so the sidebar matches the legacy WordPress brand widget.
+- `colors`: `[{ key, label, image: null, count }]` — **dynamic** buckets derived from every product variant color option (grouped by base slug, e.g. `den-2` → `den`). Buckets with `count = 0` are omitted; ordered by `count` descending. Labels resolve known slugs to friendly names (Vietnamese/English), otherwise echo the raw value. The set is open-ended (model-specific colors like `cyborg-blue`, `mythology-gold` appear) — this mirrors the legacy WordPress layered-nav color widget.
 - `genders`: `[{ key, label, image: null, count }]` — fixed set `[Nam, Nữ, Unisex]`; buckets with `count = 0` are omitted (V184).
-- `priceBands`: `[{ key, label, minPrice, maxPrice, count }]` — the 9 fixed price bands; `maxPrice` is `null` for the open-ended top band (`tren-9tr`).
+- `priceBands`: `[{ key, label, minPrice, maxPrice, count }]` — the 7 fixed price bands; `maxPrice` is `null` for the open-ended top band (`tren-10tr`, "Trên 10.000.000 VND").
 
 **v1 counting semantics:** counts use a base context of `PUBLISHED + q`. Brand/color/price buckets additionally honor `category`; the `categories` bucket intentionally ignores the `category` param so every category keeps a navigable count. Counts are not cross-excluded per dimension — this matches the legacy WordPress filter widget. Status: `CONFIRMED_FROM_CODE` — `CatalogController.getCatalogFacets`, `CatalogReadService.computeFacets`.
 

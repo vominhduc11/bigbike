@@ -21,6 +21,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -39,37 +41,122 @@ public class CatalogReadService {
     private static final Set<String> BRAND_SORT_FIELDS = Set.of("name", "createdAt");
 
     /**
-     * Fixed named colors shown in the storefront filter sidebar. Keys are slugs
-     * matched server-side by {@link #matchesColor}; labels are the Vietnamese
-     * display names. Order matches the legacy WordPress color widget.
+     * Display name lookup for color base slugs (output of {@link #colorBaseSlug}).
+     * Covers all 86 distinct color slugs currently in product_variant_options.
+     * Slugs that merge via suffix stripping (e.g. "xam-2" → "xam") share one entry.
      */
-    private static final List<ColorFacet> COLOR_FACETS = List.of(
-            new ColorFacet("bac", "Bạc", "Silver"),
-            new ColorFacet("cam", "Cam", "Orange"),
-            new ColorFacet("hong", "Hồng", "Pink"),
-            new ColorFacet("trang", "Trắng", "White"),
-            new ColorFacet("xam", "Xám", "Gray"),
-            new ColorFacet("xanh-da-troi", "Xanh da trời", "Sky blue"),
-            new ColorFacet("xanh-la-cay", "Xanh lá cây", "Green"),
-            new ColorFacet("vang", "Vàng", "Yellow"),
-            new ColorFacet("den", "Đen", "Black"),
-            new ColorFacet("do", "Đỏ", "Red")
+    private static final Map<String, String> COLOR_SLUG_LABELS_VI = Map.ofEntries(
+            Map.entry("cam",               "Cam"),
+            Map.entry("cam-den-trang",     "Cam đen trắng"),
+            Map.entry("camo",              "Camo"),
+            Map.entry("camo-nhat",         "Camo nhạt"),
+            Map.entry("carbon",            "Carbon"),
+            Map.entry("carbon-3k-bong",    "Carbon 3K bóng"),
+            Map.entry("carbon-3k-nham",    "Carbon 3K nhám"),
+            Map.entry("carbon-9k-bong",    "Carbon 9K bóng"),
+            Map.entry("carbon-forged-bong","Carbon Forged bóng"),
+            Map.entry("carbon-forged-nham","Carbon Forged nhám"),
+            Map.entry("carbon-tem-bac",    "Carbon tem bạc"),
+            Map.entry("carbon-tem-do",     "Carbon tem đỏ"),
+            Map.entry("cyborg-blue",       "CYBORG BLUE"),
+            Map.entry("cyborg-gray",       "CYBORG GRAY"),
+            Map.entry("day1-green",        "DAY1 GREEN"),
+            Map.entry("day1-orange",       "DAY1 ORANGE"),
+            Map.entry("den",               "Đen"),
+            Map.entry("den-bong",          "Đen bóng"),
+            Map.entry("den-cam",           "Đen cam"),
+            Map.entry("den-camo",          "Đen CAMO"),
+            Map.entry("den-camo-do",       "ĐEN CAMO ĐỎ"),
+            Map.entry("den-camo-trang",    "ĐEN CAMO TRẮNG"),
+            Map.entry("den-do",            "Đen đỏ"),
+            Map.entry("den-do-trang",      "Đen đỏ trắng"),
+            Map.entry("den-hong",          "Đen hồng"),
+            Map.entry("den-nau",           "Đen nâu"),
+            Map.entry("den-nham",          "Đen nhám"),
+            Map.entry("den-phan-quang",    "Đen Phản Quang"),
+            Map.entry("den-trang",         "Đen trắng"),
+            Map.entry("den-trang-do",      "Đen trắng đỏ"),
+            Map.entry("den-xam",           "Đen xám"),
+            Map.entry("den-xanh-duong",    "Đen xanh dương"),
+            Map.entry("den-xanh-la",       "Đen xanh lá"),
+            Map.entry("do",                "Đỏ"),
+            Map.entry("do-trang-xanh",     "Đỏ trắng xanh"),
+            Map.entry("forged-cacbon-nham","Forged carbon nhám"),
+            Map.entry("guong",             "Gương"),
+            Map.entry("khaki",             "KHAKI"),
+            Map.entry("mcphee",            "McPhee"),
+            Map.entry("mythology-gold",    "MYTHOLOGY GOLD"),
+            Map.entry("mythology-red",     "MYTHOLOGY RED"),
+            Map.entry("mythology-silver",  "MYTHOLOGY SILVER"),
+            Map.entry("nau",               "Nâu"),
+            Map.entry("nerve",             "Nerve"),
+            Map.entry("ronin-blue",        "RONIN BLUE"),
+            Map.entry("ronin-red",         "RONIN RED"),
+            Map.entry("soc",               "Sọc"),
+            Map.entry("sprinter",          "Sprinter"),
+            Map.entry("super-mecha-gold",  "SUPER MECHA GOLD"),
+            Map.entry("super-mecha-red",   "SUPER MECHA RED"),
+            Map.entry("tem-do",            "Tem đỏ"),
+            Map.entry("tem-trang",         "Tem trắng"),
+            Map.entry("tem-xam",           "Tem xám"),
+            Map.entry("trang",             "Trắng"),
+            Map.entry("trang-bong",        "Trắng bóng"),
+            Map.entry("trang-vang",        "Trắng/Vàng"),
+            Map.entry("trang-xam",         "Trắng xám"),
+            Map.entry("trang-xanh-la",     "Trắng/Xanh lá"),
+            Map.entry("vang",              "Vàng"),
+            Map.entry("vang-neon",         "Vàng NEON"),
+            Map.entry("war-damaged-gray",  "WAR DAMAGED GRAY"),
+            Map.entry("xam",               "Xám"),
+            Map.entry("xam-bong",          "Xám bóng"),
+            Map.entry("xam-do",            "Xám/Đỏ"),
+            Map.entry("xam-vang",          "Xám vàng"),
+            Map.entry("xanh",              "Xanh"),
+            Map.entry("xanh-duong",       "Xanh Dương"),
+            Map.entry("xanh-army",         "Xanh army"),
+            Map.entry("xanh-dam",          "Xanh đậm"),
+            Map.entry("xanh-dam-om",       "Xanh đậm ôm"),
+            Map.entry("xanh-dam-suong",    "Xanh đậm suông"),
+            Map.entry("xanh-duong-cam",    "Xanh dương/Cam"),
+            Map.entry("xanh-la",           "Xanh lá"),
+            Map.entry("xanh-la-xam",       "Xanh lá/Xám"),
+            Map.entry("xanh-mecha",        "Xanh Mecha"),
+            Map.entry("xanh-nhat",         "Xanh nhạt"),
+            Map.entry("xanh-nhat-om",      "Xanh nhạt ôm"),
+            Map.entry("xanh-nhat-suong",   "Xanh nhạt suông"),
+            Map.entry("xanh-om",           "Xanh ôm"),
+            Map.entry("xanh-reu",          "Xanh rêu"),
+            Map.entry("xanh-reu-den",      "Xanh rêu/Đen"),
+            Map.entry("xanh-vang",         "Xanh vàng")
     );
 
-    /**
-     * Fixed price bands shown in the storefront filter sidebar. The 8–9tr gap is
-     * intentional — it replicates the legacy WordPress price widget exactly.
-     */
+    private static final Map<String, String> COLOR_SLUG_LABELS_EN = Map.ofEntries(
+            Map.entry("cam",        "Orange"),
+            Map.entry("den",        "Black"),
+            Map.entry("den-bong",   "Black gloss"),
+            Map.entry("den-nham",   "Black matte"),
+            Map.entry("do",         "Red"),
+            Map.entry("nau",        "Brown"),
+            Map.entry("soc",        "Striped"),
+            Map.entry("trang",      "White"),
+            Map.entry("trang-bong", "White gloss"),
+            Map.entry("vang",       "Yellow"),
+            Map.entry("xam",        "Gray"),
+            Map.entry("xam-bong",   "Gray gloss"),
+            Map.entry("xanh",       "Blue"),
+            Map.entry("xanh-la",    "Green"),
+            Map.entry("xanh-reu",   "Olive")
+    );
+
+    /** Fixed price bands — 7 dải chuẩn WP, đơn vị VND, khớp với legacy widget. */
     private static final List<PriceBand> PRICE_BANDS = List.of(
-            new PriceBand("0-1tr", "0đ - 1.000.000đ", null, 0L, 1_000_000L),
-            new PriceBand("1-2tr", "1.000.000đ - 2.000.000đ", null, 1_000_000L, 2_000_000L),
-            new PriceBand("2-3tr", "2.000.000đ - 3.000.000đ", null, 2_000_000L, 3_000_000L),
-            new PriceBand("3-4tr", "3.000.000đ - 4.000.000đ", null, 3_000_000L, 4_000_000L),
-            new PriceBand("4-5tr", "4.000.000đ - 5.000.000đ", null, 4_000_000L, 5_000_000L),
-            new PriceBand("5-6tr", "5.000.000đ - 6.000.000đ", null, 5_000_000L, 6_000_000L),
-            new PriceBand("6-7tr", "6.000.000đ - 7.000.000đ", null, 6_000_000L, 7_000_000L),
-            new PriceBand("7-8tr", "7.000.000đ - 8.000.000đ", null, 7_000_000L, 8_000_000L),
-            new PriceBand("tren-9tr", "Trên 9.000.000đ", "Over 9.000.000đ", 9_000_000L, null)
+            new PriceBand("0-500k",   "0 - 500.000 VND",           "0 - 500.000 VND",            0L,         500_000L),
+            new PriceBand("500k-1tr", "500.000 - 1.000.000 VND",   "500.000 - 1.000.000 VND",    500_000L,   1_000_000L),
+            new PriceBand("1-2tr",    "1.000.000 - 2.000.000 VND", "1.000.000 - 2.000.000 VND",  1_000_000L, 2_000_000L),
+            new PriceBand("2-3tr",    "2.000.000 - 3.000.000 VND", "2.000.000 - 3.000.000 VND",  2_000_000L, 3_000_000L),
+            new PriceBand("3-5tr",    "3.000.000 - 5.000.000 VND", "3.000.000 - 5.000.000 VND",  3_000_000L, 5_000_000L),
+            new PriceBand("5-10tr",   "5.000.000 - 10.000.000 VND","5.000.000 - 10.000.000 VND", 5_000_000L, 10_000_000L),
+            new PriceBand("tren-10tr","Trên 10.000.000 VND",        "Over 10.000.000 VND",        10_000_000L, null)
     );
 
     private static final List<GenderFacet> GENDER_FACETS = List.of(
@@ -77,9 +164,6 @@ public class CatalogReadService {
             new GenderFacet("Nữ",    "Nữ",    "Female"),
             new GenderFacet("Unisex","Unisex", "Unisex")
     );
-
-    private record ColorFacet(String slug, String label, String labelEn) {
-    }
 
     private record GenderFacet(String slug, String labelVi, String labelEn) {
     }
@@ -368,17 +452,36 @@ public class CatalogReadService {
                         brand.logo(),
                         products.stream().filter(p -> matchesBrand(p, brand.slug())).count()
                 ))
+                .filter(b -> b.count() > 0)
                 .toList();
     }
 
     private static List<CatalogFacets.FacetBucket> buildColorBuckets(List<Product> products, String locale) {
-        return COLOR_FACETS.stream()
-                .map(color -> new CatalogFacets.FacetBucket(
-                        color.slug(),
-                        pick(color.label(), color.labelEn(), locale),
+        // Scan all variant color options; group by base slug (strips -2/-3 suffixes).
+        Map<String, Set<String>> baseToProductIds = new HashMap<>();
+        for (Product product : products) {
+            if (product.variants() == null) continue;
+            product.variants().stream()
+                    .filter(Objects::nonNull)
+                    .filter(v -> v.options() != null)
+                    .flatMap(v -> v.options().stream())
+                    .filter(Objects::nonNull)
+                    .filter(opt -> isColorOption(opt.name())
+                            && opt.value() != null && !opt.value().isBlank())
+                    .map(opt -> colorBaseSlug(opt.value()))
+                    .filter(slug -> !slug.isBlank())
+                    .forEach(slug ->
+                            baseToProductIds.computeIfAbsent(slug, k -> new HashSet<>())
+                                    .add(product.id()));
+        }
+        return baseToProductIds.entrySet().stream()
+                .map(e -> new CatalogFacets.FacetBucket(
+                        e.getKey(),
+                        resolveColorLabel(e.getKey(), locale),
                         null,
-                        products.stream().filter(p -> matchesColor(p, color.slug())).count()
-                ))
+                        e.getValue().size()))
+                .filter(b -> b.count() > 0)
+                .sorted(Comparator.comparingLong(CatalogFacets.FacetBucket::count).reversed())
                 .toList();
     }
 
@@ -436,26 +539,17 @@ public class CatalogReadService {
     }
 
     private static boolean matchesColor(Product product, String filterColor) {
-        if (filterColor == null || filterColor.isBlank()) {
-            return true;
-        }
-
-        String expectedColor = normalize(filterColor);
-        if (expectedColor.isBlank()) {
-            return true;
-        }
-
-        if (product.variants() == null || product.variants().isEmpty()) {
-            return false;
-        }
-
+        if (filterColor == null || filterColor.isBlank()) return true;
+        String expectedBase = colorBaseSlug(filterColor);
+        if (expectedBase.isBlank()) return true;
+        if (product.variants() == null || product.variants().isEmpty()) return false;
         return product.variants().stream()
                 .filter(Objects::nonNull)
-                .filter(variant -> variant.options() != null && !variant.options().isEmpty())
-                .anyMatch(variant -> variant.options().stream()
+                .filter(v -> v.options() != null && !v.options().isEmpty())
+                .anyMatch(v -> v.options().stream()
                         .filter(Objects::nonNull)
-                        .anyMatch(option -> isColorOption(option.name())
-                                && normalize(option.value()).equals(expectedColor)));
+                        .anyMatch(opt -> isColorOption(opt.name())
+                                && colorBaseSlug(opt.value()).equals(expectedBase)));
     }
 
     private static boolean matchesPrice(Product product, Long minPrice, Long maxPrice) {
@@ -513,6 +607,46 @@ public class CatalogReadService {
         return normalized.toLowerCase(Locale.ROOT)
                 .replaceAll("[^a-z0-9]+", " ")
                 .trim();
+    }
+
+    /**
+     * Converts a raw color option value to a normalised base slug for grouping/filtering.
+     * Strips Vietnamese diacritics, lower-cases, replaces non-alphanumeric runs with "-",
+     * and removes a trailing -{number} suffix so "xam-2" and "xam" map to the same bucket.
+     */
+    private static String colorBaseSlug(String value) {
+        if (value == null || value.isBlank()) return "";
+        return Normalizer.normalize(value.trim(), Normalizer.Form.NFD)
+                .replace("\u0110", "D").replace("\u0111", "d")
+                .replaceAll("\\p{M}+", "")
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("[^a-z0-9]+", "-")
+                .replaceAll("-{2,}", "-")
+                .replaceAll("(^-|-$)", "")
+                .replaceFirst("-\\d+$", "");
+    }
+
+    private static String resolveColorLabel(String baseSlug, String locale) {
+        if ("en".equalsIgnoreCase(locale)) {
+            String en = COLOR_SLUG_LABELS_EN.get(baseSlug);
+            if (en != null) return en;
+        }
+        String vi = COLOR_SLUG_LABELS_VI.get(baseSlug);
+        return vi != null ? vi : formatColorSlug(baseSlug);
+    }
+
+    private static String formatColorSlug(String slug) {
+        if (slug == null || slug.isBlank()) return "";
+        String[] parts = slug.split("-");
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < parts.length; i++) {
+            if (i > 0) sb.append(' ');
+            if (!parts[i].isEmpty()) {
+                sb.append(Character.toUpperCase(parts[i].charAt(0)));
+                sb.append(parts[i].substring(1));
+            }
+        }
+        return sb.toString();
     }
 
     private static Comparator<Product> productComparator(SortSpec sortSpec) {

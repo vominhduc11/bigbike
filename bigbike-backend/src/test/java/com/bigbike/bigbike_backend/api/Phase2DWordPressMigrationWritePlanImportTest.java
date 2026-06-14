@@ -243,7 +243,7 @@ class Phase2DWordPressMigrationWritePlanImportTest {
     void fixtureImport_categories_idempotent() {
         MappedCategory cat = new MappedCategory(
                 9001L, 9001L, "test-category-phase2d",
-                "Test Category 2D", "Test desc", null, 0, null, null, null, "/test-category-phase2d.html",
+                "Test Category 2D", "Test desc", null, 0, null, null, null, null, null, "/test-category-phase2d.html",
                 List.of());
 
         MigrationExecutionOptions dryRunOpts = new MigrationExecutionOptions(
@@ -266,7 +266,7 @@ class Phase2DWordPressMigrationWritePlanImportTest {
     void fixtureImport_secondRunDoesNotDuplicateRows() {
         MappedCategory cat = new MappedCategory(
                 9002L, 9002L, "no-dupe-phase2d",
-                "No Dupe 2D", "", null, 0, null, null, null, "/no-dupe-phase2d.html", List.of());
+                "No Dupe 2D", "", null, 0, null, null, null, null, null, "/no-dupe-phase2d.html", List.of());
 
         MigrationExecutionOptions opts = new MigrationExecutionOptions(
                 null, Set.of(), 500, false, false); // dryRun=false, writes to H2
@@ -301,7 +301,7 @@ class Phase2DWordPressMigrationWritePlanImportTest {
     void fixtureImport_missingRequiredFieldsSkippedWithWarning() {
         // Category with blank slug is skipped
         MappedCategory badCat = new MappedCategory(
-                9003L, 9003L, "", "Bad Cat", "", null, 0, null, null, null, "", List.of());
+                9003L, 9003L, "", "Bad Cat", "", null, 0, null, null, null, null, null, "", List.of());
 
         MigrationExecutionOptions opts = new MigrationExecutionOptions(
                 null, Set.of(), 500, false, true);

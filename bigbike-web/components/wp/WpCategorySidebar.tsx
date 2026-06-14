@@ -443,7 +443,7 @@ export function WpCategorySidebar({
                   return (
                     <li
                       key={brand.key}
-                      className={`woocommerce-widget-layered-nav-list__item wc-layered-nav-term${isActive ? " chosen" : ""}`}
+                      className={`woocommerce-widget-layered-nav-list__item wc-layered-nav-term mb-[5px]${isActive ? " chosen" : ""}`}
                     >
                       <Link rel="nofollow" href={href}>
                         {imageSrc ? (
@@ -455,7 +455,7 @@ export function WpCategorySidebar({
                             className="inline-block align-middle"
                           />
                         ) : null}{" "}
-                        {brand.label}
+                        <span className="font-barlow">{brand.label}</span>
                       </Link>
                     </li>
                   );

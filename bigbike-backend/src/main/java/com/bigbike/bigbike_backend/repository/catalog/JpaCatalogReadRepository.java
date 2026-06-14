@@ -551,6 +551,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 entity.isVisible(),
                 entity.getShowOnHomepage(),
                 entity.getSortOrder(),
+                entity.getContentBottom(),
                 includeTranslations ? toCategoryTranslations(entity) : null,
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()

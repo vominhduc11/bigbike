@@ -24,6 +24,10 @@ public class WordPressCategoryMapper {
             Boolean showOnHomepage,
             Integer sortOrder,
             Long thumbnailId,
+            /** WP ACF field "image_left" — hero illustration shown on the right side of the category banner. */
+            Long imageLeftId,
+            /** WP ACF field "content_bottom" — SEO text block shown below the product grid. */
+            String contentBottom,
             String expectedUrl,
             List<String> warnings
     ) {}
@@ -47,6 +51,9 @@ public class WordPressCategoryMapper {
         Boolean showOnHomepage = parseBoolean(readTermMeta(metas, "show_on_homepage"));
         Integer sortOrder = parseInteger(readTermMeta(metas, "ordering"), "ordering", warnings);
         Long thumbnailId = parseLong(readTermMeta(metas, "thumbnail_id"), "thumbnail_id", warnings);
+        Long imageLeftId = parseLong(readTermMeta(metas, "image_left"), "image_left", warnings);
+        String contentBottom = readTermMeta(metas, "content_bottom");
+        if (contentBottom != null && contentBottom.isBlank()) contentBottom = null;
 
         return new MappedCategory(
                 term.termId(),
@@ -59,6 +66,8 @@ public class WordPressCategoryMapper {
                 showOnHomepage,
                 sortOrder,
                 thumbnailId,
+                imageLeftId,
+                contentBottom,
                 expectedUrl,
                 warnings
         );

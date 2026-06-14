@@ -16,6 +16,8 @@ public record Category(
         boolean isVisible,
         Boolean showOnHomepage,
         Integer sortOrder,
+        /** WP ACF "content_bottom" — SEO text block shown below the product grid. */
+        String contentBottom,
         /** Raw English content — non-null only on admin detail reads (V137). */
         CategoryTranslations translations,
         Instant createdAt,

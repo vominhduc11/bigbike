@@ -91,6 +91,31 @@ public class CategoryImporter implements DomainImporter {
                     }
                 }
 
+                // Hero illustration — resolved from WP ACF termmeta "image_left" via mediaByLegacyId map.
+                // Shown on the right side of the .page-title banner (WpCategoryHero illustrationUrl).
+                if (mc.imageLeftId() != null && mediaByLegacyId != null) {
+                    MappedMedia illus = mediaByLegacyId.get(mc.imageLeftId());
+                    if (illus != null && illus.storagePath() != null && !illus.storagePath().isBlank()) {
+                        String base = mediaPublicBaseUrl == null ? "" :
+                                (mediaPublicBaseUrl.endsWith("/")
+                                        ? mediaPublicBaseUrl.substring(0, mediaPublicBaseUrl.length() - 1)
+                                        : mediaPublicBaseUrl);
+                        String storagePath = illus.storagePath().startsWith("/")
+                                ? illus.storagePath().substring(1)
+                                : illus.storagePath();
+                        entity.setIconId(String.valueOf(mc.imageLeftId()));
+                        entity.setIconUrl(base + "/wp-uploads/" + storagePath);
+                        entity.setIconAlt(illus.altText());
+                        entity.setIconWidth(illus.width());
+                        entity.setIconHeight(illus.height());
+                        entity.setIconMimeType(illus.mimeType());
+                    } else {
+                        warnings.add("Category slug=" + mc.slug()
+                                + ": image_left=" + mc.imageLeftId() + " not found in media map");
+                    }
+                }
+
+                entity.setContentBottom(mc.contentBottom());
                 entity.setUpdatedAt(Instant.now());
                 warnings.addAll(mc.warnings());
 

@@ -329,7 +329,7 @@ class Phase2D1StagingImportRehearsalTest {
             if (info == null) continue;
             cats.add(new MappedCategory(
                     termId, termId, info[0], info[1], "", 0L, 0,
-                    null, null, null, "/" + info[0] + "/", List.of()));
+                    null, null, null, null, null, "/" + info[0] + "/", List.of()));
         }
         return cats;
     }

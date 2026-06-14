@@ -123,6 +123,9 @@ export default async function CategoryDetailPage({ params }: CategoryDetailPageP
   const categoryDescriptionHtml = category.description?.trim()
     ? sanitizeRichHtml(category.description, { rewriteMediaUrls: true })
     : null;
+  const categoryContentBottomHtml = category.contentBottom?.trim()
+    ? sanitizeRichHtml(category.contentBottom, { rewriteMediaUrls: true })
+    : null;
 
   const heroBreadcrumb: WpCategoryCrumb[] = [
     { label: "Bigbike.vn", href: toHomePath() },
@@ -133,8 +136,9 @@ export default async function CategoryDetailPage({ params }: CategoryDetailPageP
   ];
 
   const heroBgUrl = toLegacyWpMediaUrl(resolveMediaUrl(category.bannerImage?.url?.trim()));
-  const heroIllustration = category.image ?? category.icon;
-  const heroIllustrationUrl = toLegacyWpMediaUrl(resolveMediaUrl(heroIllustration?.url?.trim()));
+  // WP used ACF "image_left" for the hero illustration (not the WC grid thumbnail).
+  // image_left is migrated to category.icon; category.image is the grid thumbnail and must not be used here.
+  const heroIllustrationUrl = toLegacyWpMediaUrl(resolveMediaUrl(category.icon?.url?.trim()));
 
   return (
     <>
@@ -149,7 +153,7 @@ export default async function CategoryDetailPage({ params }: CategoryDetailPageP
             breadcrumb={heroBreadcrumb}
             bgUrl={heroBgUrl}
             illustrationUrl={heroIllustrationUrl}
-            illustrationAlt={heroIllustration?.alt ?? categoryName}
+            illustrationAlt={category.icon?.alt ?? categoryName}
           />
 
           <div id="main-content">
@@ -175,6 +179,20 @@ export default async function CategoryDetailPage({ params }: CategoryDetailPageP
               />
             </div>
           </div>
+
+          {categoryContentBottomHtml && (
+            <div className="block-text seo-block-content pt-50 pb-50">
+              <div className="container">
+                <div className="content-block">
+                  <LHtml
+                    field="contentBottom"
+                    viHtml={categoryContentBottomHtml}
+                    rewriteMediaUrls
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </LocalizedContentProvider>
     </>

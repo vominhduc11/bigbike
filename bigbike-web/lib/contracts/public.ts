@@ -253,6 +253,8 @@ export type Category = {
   isVisible: boolean;
   showOnHomepage?: boolean | null;
   sortOrder?: number | null;
+  /** WP ACF "content_bottom" — SEO block shown below the product grid. */
+  contentBottom?: string | null;
   createdAt: string;
   updatedAt: string;
 };

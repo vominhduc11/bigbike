@@ -189,27 +189,9 @@ services:
       retries: 3
       start_period: 10s
 
-  bigbike-web-init:
-    image: curlimages/curl:8.11.1
-    container_name: bigbike-web-init
-    restart: "no"
-    depends_on:
-      bigbike-web:
-        condition: service_healthy
-    # Docker Compose splits a folded `>-` string into a list of whitespace-separated args,
-    # which makes `/bin/sh -c <args>` execute only the first token. Pass the script as a
-    # single-item list so it stays one argument when handed to `sh -c`.
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - >-
-        curl -sf -L -X POST http://bigbike-web:3000/api/revalidate/
-        -H "Content-Type: application/json"
-        -H "x-revalidate-secret: ${WEB_REVALIDATE_SECRET:-dev-revalidate-secret}"
-        -d '{"tags":["products","sliders","categories","articles","brands","settings","menus","pages","home-videos"]}'
-    deploy:
-      resources:
-        limits:
-          memory: 32m
+  # NOTE: the former `bigbike-web-init` one-shot revalidate container was removed —
+  # bigbike-web now self-revalidates on startup via docker-entrypoint.mjs, which also
+  # covers partial `--no-deps` rebuilds the external init container was skipped for.
 
 networks:
   default:

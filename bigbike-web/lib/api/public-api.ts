@@ -193,6 +193,7 @@ export type ProductListQuery = {
   brand?: string;
   q?: string;
   filterColor?: string;
+  filterGender?: string;
   minPrice?: number;
   maxPrice?: number;
   /** Filter to a single homepage placement slot. */
@@ -212,6 +213,7 @@ export function listProducts(query: ProductListQuery): Promise<ListResult<Produc
       "pwb-brand": query.brand,
       q: query.q,
       filter_color: query.filterColor,
+      filter_gender: query.filterGender,
       min_price: query.minPrice,
       max_price: query.maxPrice,
       homepage_block: query.homepageBlock,

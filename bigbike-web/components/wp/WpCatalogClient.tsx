@@ -117,6 +117,7 @@ export function WpCatalogClient({
     !catalog.filters.category &&
     !catalog.filters.brand &&
     !catalog.filters.color &&
+    !catalog.filters.gender &&
     catalog.filters.minPrice === undefined &&
     catalog.filters.maxPrice === undefined;
   const initialData =
