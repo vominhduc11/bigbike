@@ -45,11 +45,14 @@ test('media dimension warning — all attach points', async ({ page, collect }) 
 
   // ---- UI login (single) ----
   await page.goto('/admin/dashboard', { waitUntil: 'domcontentloaded' })
-  if (await page.locator('.bb-login-shell, form').count()) {
-    await page.locator('input').first().fill('admin@bigbike.vn')
-    await page.locator('input[type="password"]').fill('admin123')
-    await page.getByRole('button', { name: 'Đăng nhập', exact: true }).click()
-  }
+  await page.locator('input[type="email"]').waitFor({ state: 'visible', timeout: 25000 })
+  await page.locator('input[type="email"]').fill('admin@bigbike.vn')
+  await page.locator('input[type="password"]').fill('admin123')
+  const [loginResp] = await Promise.all([
+    page.waitForResponse((r) => r.url().includes('/auth/login'), { timeout: 20000 }),
+    page.getByRole('button', { name: 'Đăng nhập', exact: true }).click(),
+  ])
+  console.log('LOGIN status =', loginResp.status())
   await page.locator('.bb-app').waitFor({ state: 'attached', timeout: 25000 })
 
   // ============ PRODUCT screen ============
@@ -67,9 +70,11 @@ test('media dimension warning — all attach points', async ({ page, collect }) 
   await check('BlockEditor IMAGE block (new)', async () => {
     await page.getByRole('button', { name: /Thêm khối/ }).first().click()
     await page.getByRole('menuitem', { name: 'Hình ảnh', exact: true }).click()
-    const blk = page.locator('div.border').filter({ hasText: 'Chọn ảnh' }).last()
-    await blk.getByRole('button', { name: 'Chọn ảnh', exact: true }).click()
+    const pickBtn = page.getByRole('button', { name: /Chọn ảnh/ }).last()
+    await pickBtn.scrollIntoViewIfNeeded()
+    await pickBtn.click({ force: true })
     await pickImage(page, SMALL)
+    const blk = page.locator('div.border').filter({ hasText: 'Hình ảnh' }).last()
     await expect(blk.getByRole('status')).toContainText(/nhỏ/, { timeout: 8000 })
     await blk.scrollIntoViewIfNeeded()
     await shot(page, '02-block-image.png')
@@ -110,22 +115,22 @@ test('media dimension warning — all attach points', async ({ page, collect }) 
   })
 
   // ============ Other ImageUrlInput screens: attach small img -> warning ============
+  // 330x283 triggers a warning where the spec floor/ratio is stricter than that.
+  // (Brand LOGO spec is 200x100 free-ratio → 330x283 is fine & shows NO warning,
+  //  which is correct; so we verify Brand via its BANNER field instead.)
   const IMG_SCREENS: Array<{ step: string; url: string; idx: number }> = [
     { step: 'Category banner', url: '/admin/categories/new', idx: 0 },
-    { step: 'Brand logo', url: '/admin/brands/new', idx: 0 },
+    { step: 'Brand banner', url: '/admin/brands/new', idx: 1 },
     { step: 'Slider desktop', url: '/admin/sliders', idx: 0 },
   ]
-  // Settings: many image fields — verify the first one
-  IMG_SCREENS.push({ step: 'Settings image', url: '/admin/settings', idx: 0 })
 
   for (const s of IMG_SCREENS) {
     await check(s.step, async () => {
       await page.goto(s.url, { waitUntil: 'domcontentloaded' })
       await page.waitForLoadState('networkidle', { timeout: 12000 }).catch(() => {})
-      // Sliders need the create/edit form opened
       if (s.url.includes('sliders')) {
         await page.getByRole('button', { name: /Thêm|Tạo|slider/i }).first().click().catch(() => {})
-        await page.waitForTimeout(500)
+        await page.waitForTimeout(600)
       }
       const inp = page.locator('.image-url-input').nth(s.idx)
       await inp.scrollIntoViewIfNeeded()
@@ -135,6 +140,24 @@ test('media dimension warning — all attach points', async ({ page, collect }) 
       await shot(page, `scr-${s.step.replace(/\s+/g, '-')}.png`)
     })
   }
+
+  // Settings: image fields live under group tabs (PROMO has the promo banner img)
+  await check('Settings promo image', async () => {
+    await page.goto('/admin/settings', { waitUntil: 'domcontentloaded' })
+    await page.waitForLoadState('networkidle', { timeout: 12000 }).catch(() => {})
+    const navCount = await page.locator('.settings-nav button').count()
+    console.log('settings nav buttons =', navCount)
+    await page.locator('.settings-nav button').filter({ hasText: 'Khuyến mãi & Banner' }).first().click()
+    await page.waitForTimeout(900)
+    await shot(page, 'dbg-settings.png')
+    const inp = page.locator('.image-url-input').first()
+    await inp.waitFor({ state: 'visible', timeout: 8000 })
+    await inp.scrollIntoViewIfNeeded()
+    await inp.getByRole('button', { name: /Đổi ảnh|Chọn từ thư viện/ }).first().click({ force: true })
+    await pickImage(page, SMALL)
+    await expect(inp.getByRole('status')).toContainText(/nhỏ|tỉ lệ/, { timeout: 8000 })
+    await shot(page, 'scr-settings-promo.png')
+  })
 
   // ============ Home Videos: thumbnail (img) + video file (VideoPickerModal) ============
   await check('HomeVideo thumbnail + video file', async () => {

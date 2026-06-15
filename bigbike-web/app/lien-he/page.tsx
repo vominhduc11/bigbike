@@ -81,7 +81,7 @@ export default async function ContactPage() {
             <div className="static-page wyswyg">
               <div className="row">
                 <div className="col-md-6">
-                  <div className="information">
+                  <div className="information" data-bb-focus="contact_main contact_social">
                     <div className="title">
                       <h1 style={{ fontSize: "24px" }}><LText field="title">{pageTitle}</LText></h1>
                       {sanitizedBody ? (

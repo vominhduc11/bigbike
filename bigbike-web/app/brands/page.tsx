@@ -54,6 +54,7 @@ export default async function BrandListPage() {
 
       <div className="archive tax-pwb-brand post-type-archive-product">
         <WpCategoryHero
+          focusId="hero_brands"
           title={heroTitle}
           titleNode={heroSettings.title ? heroTitle : <Tr ns="Catalog" k="brandsTitle" />}
           breadcrumb={heroBreadcrumb}

@@ -81,7 +81,7 @@ export async function WpFooter({ footerNodes }: { footerNodes: HeaderNavNode[] }
   const businessRegistration = pickSetting(settings, ["business_registration"]);
 
   return (
-    <footer>
+    <footer data-bb-focus="general_brand">
       <div className="top">
         <div className="container">
           <div className="row">

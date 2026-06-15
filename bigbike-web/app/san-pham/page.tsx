@@ -58,6 +58,7 @@ export default async function ProductListPage() {
 
       <div className="archive post-type-archive-product">
         <WpCategoryHero
+          focusId="hero_products hero_default"
           title={heroTitle}
           breadcrumb={heroBreadcrumb}
           bgUrl={heroBgUrl}

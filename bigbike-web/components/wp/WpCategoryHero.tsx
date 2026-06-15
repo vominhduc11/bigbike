@@ -20,6 +20,7 @@ export function WpCategoryHero({
   bgUrl,
   illustrationUrl,
   illustrationAlt,
+  focusId,
 }: {
   /** Tiêu đề dạng text — dùng cho `<h1>` (khi không có titleNode) và alt ảnh minh hoạ. */
   title: string;
@@ -30,12 +31,14 @@ export function WpCategoryHero({
   bgUrl?: string | null;
   illustrationUrl?: string | null;
   illustrationAlt?: string | null;
+  /** Mốc cho nút "Xem trên web" của màn Cài đặt admin (data-bb-focus). */
+  focusId?: string;
 }) {
   const bg = bgUrl?.trim() || DEFAULT_BG;
   const illustration = illustrationUrl?.trim() || DEFAULT_ILLUSTRATION;
 
   return (
-    <div className="page-title" style={{ backgroundImage: `url('${bg}')` }}>
+    <div className="page-title" style={{ backgroundImage: `url('${bg}')` }} data-bb-focus={focusId}>
       <div className="container">
         <div className="row align-items-center">
           <div className="col-md-6">

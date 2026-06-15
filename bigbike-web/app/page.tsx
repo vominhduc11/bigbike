@@ -266,10 +266,12 @@ export default async function HomePage() {
       )}
 
       {/* ===== 3. About bigbike (client localizer: swap EN settings sau khi đổi ngôn ngữ) ===== */}
-      <HomeAboutSection subtitle={aboutSubtitle} title={aboutTitle} viHtml={aboutMarkup} />
+      <div data-bb-focus="home_about">
+        <HomeAboutSection subtitle={aboutSubtitle} title={aboutTitle} viHtml={aboutMarkup} />
+      </div>
 
       {/* ===== 4. Product list + category grid ===== */}
-      <div className="product-list pt-40 pb-40">
+      <div className="product-list pt-40 pb-40" data-bb-focus="home_featured">
         <div className="container">
           <div className="block-title text-center mb-40">
             <p className="sub-title">{featuredKicker || <Tr ns="Home" k="featuredKicker" />}</p>
@@ -282,7 +284,7 @@ export default async function HomePage() {
       </div>
 
       {/* ===== 5. Banner ads ===== */}
-      <div className="banner-ads pt-60">
+      <div className="banner-ads pt-60" data-bb-focus="home_promo">
         <div className="container">
           <div className="row">
             <div className="col-md-12">
@@ -297,7 +299,7 @@ export default async function HomePage() {
 
       {/* ===== 6. Content carousel (trải nghiệm/review) ===== */}
       {expArticles.length > 0 && (
-        <div className="content-carousel pt-100">
+        <div className="content-carousel pt-100" data-bb-focus="home_exp">
           <HomeExperienceHeading subtitle={expSubtitle} title={expTitle} desc={expDesc} />
           <div className="container mw-1920">
             <ExperienceCarousel articles={expArticles} />
@@ -307,7 +309,7 @@ export default async function HomePage() {
 
       {/* ===== 7. News ===== */}
       {newsArticles.length > 0 && (
-        <div className="news bb-home-news-parity pt-60 pb-60">
+        <div className="news bb-home-news-parity pt-60 pb-60" data-bb-focus="home_news">
           <div className="container">
             <div className="block-title text-center pb-40">
               <p className="sub-title">{newsKicker || <Tr ns="Home" k="newsKicker" />}</p>
@@ -320,7 +322,7 @@ export default async function HomePage() {
 
       {/* ===== 8. Videos slide ===== */}
       {homeVideos.length > 0 && (
-        <section className="relative overflow-hidden bg-[#111] py-[90px] max-md:py-[60px]">
+        <section className="relative overflow-hidden bg-[#111] py-[90px] max-md:py-[60px]" data-bb-focus="home_videos">
           <div
             aria-hidden
             className="absolute inset-0 bg-cover bg-center bg-no-repeat [background-image:url('/wp/video-bg.jpg')] [filter:brightness(1.2)]"
@@ -338,7 +340,9 @@ export default async function HomePage() {
       <BrandCarousel brands={brands} />
 
       {/* ===== 10. Content bottom (SEO wyswyg) — client localizer ===== */}
-      <HomeContentBottom viHtml={homeContentBottomMarkup} />
+      <div data-bb-focus="seo_home">
+        <HomeContentBottom viHtml={homeContentBottomMarkup} />
+      </div>
 
       <HomeAnalytics />
     </>

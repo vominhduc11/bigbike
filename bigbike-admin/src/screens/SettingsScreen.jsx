@@ -541,7 +541,7 @@ function SettingTabPanel({ title, items, canUpdate, drafts, draftsEn, errors, on
                 <span style={{ fontWeight: 600, fontSize: 13 }}>{meta?.title || 'Khác'}</span>
                 {url ? (
                   <a
-                    href={url} target="_blank" rel="noreferrer"
+                    href={`${url}#bbf=${sec}`} target="_blank" rel="noreferrer"
                     className="bb-btn bb-btn-secondary bb-btn-sm"
                     style={{ display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}
                   >

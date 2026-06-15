@@ -55,6 +55,7 @@ export default async function ArticleListPage() {
 
       <div className="archive category">
         <WpCategoryHero
+          focusId="hero_news"
           title={heroTitle}
           titleNode={heroSettings.title ? undefined : <Tr ns="Blog" k="title" />}
           breadcrumb={heroBreadcrumb}

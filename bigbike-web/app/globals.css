@@ -725,12 +725,10 @@ body .information-slide-bigbike {
 }
 
 /* Drawer bộ lọc danh mục mobile (.sidebar-wrap-product) ở WP gốc là z-index:99 —
-   cùng hoàn cảnh như .information-slide-bigbike: sau khi ghim header lên z-200 VÀ
-   thêm thanh điều hướng đáy mobile (.bb-bottom-nav z-650), cả hai đều cao hơn 99
-   nên thò lên đè drawer — header đè phần đầu (tiêu đề + nút đóng), bottom-nav che
-   các mục cuối (Xem thêm thương hiệu). Nâng drawer lên tầng modal (800) để nó phủ
-   kín cả header lẫn bottom-nav như một off-canvas thật. Panel tự cuộn hết chiều cao
-   viewport nên không còn mục nào bị khuất. `body .…` (0,1,1) thắng theme WP (0,1,0). */
+   sau khi ghim header lên z-200 và thêm thanh điều hướng đáy mobile (.bb-bottom-nav
+   z-650), cả hai thò lên đè drawer. Nâng drawer lên tầng modal (800) để nó phủ kín
+   cả header lẫn bottom-nav như một off-canvas thật, kéo hết chiều cao viewport (không
+   chừa khoảng trống ở đáy). `body .…` (0,1,1) thắng theme WP (0,1,0). */
 body .sidebar-wrap-product {
   z-index: var(--bb-z-modal);
 }
@@ -4498,6 +4496,17 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
     bottom: calc(84px + env(safe-area-inset-bottom)) !important;
   }
 
+}
+
+/* Nháy viền khi admin "Xem trên web" cuộn tới khối tương ứng (SettingsFocusScroller). */
+@keyframes bbFocusFlash {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(232, 40, 30, 0); }
+  20%      { box-shadow: 0 0 0 4px rgba(232, 40, 30, 0.6); }
+}
+.bb-focus-flash {
+  animation: bbFocusFlash 1.1s ease-in-out 2;
+  border-radius: 4px;
+  scroll-margin-top: 110px;
 }
 
 
