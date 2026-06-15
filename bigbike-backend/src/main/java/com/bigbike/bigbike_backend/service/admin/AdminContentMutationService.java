@@ -25,6 +25,7 @@ import com.bigbike.bigbike_backend.persistence.repository.content.ArticleJpaRepo
 import com.bigbike.bigbike_backend.persistence.repository.content.ContentCategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.content.PageJpaRepository;
 import com.bigbike.bigbike_backend.repository.content.ContentReadRepository;
+import com.bigbike.bigbike_backend.repository.content.JpaContentReadRepository;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -43,6 +44,7 @@ public class AdminContentMutationService {
     private final PageJpaRepository pageJpaRepository;
     private final ContentCategoryJpaRepository contentCategoryJpaRepository;
     private final ContentReadRepository contentReadRepository;
+    private final JpaContentReadRepository jpaContentReadRepository;
     private final MediaUrlProperties mediaUrlProperties;
     private final WebRevalidationService webRevalidationService;
     private final AuditLogJpaRepository auditLogRepo;
@@ -53,6 +55,7 @@ public class AdminContentMutationService {
             ObjectProvider<PageJpaRepository> pageJpaRepositoryProvider,
             ObjectProvider<ContentCategoryJpaRepository> contentCategoryJpaRepositoryProvider,
             ContentReadRepository contentReadRepository,
+            ObjectProvider<JpaContentReadRepository> jpaContentReadRepositoryProvider,
             MediaUrlProperties mediaUrlProperties,
             WebRevalidationService webRevalidationService,
             ObjectProvider<AuditLogJpaRepository> auditLogRepoProvider,
@@ -62,6 +65,7 @@ public class AdminContentMutationService {
         this.pageJpaRepository = pageJpaRepositoryProvider.getIfAvailable();
         this.contentCategoryJpaRepository = contentCategoryJpaRepositoryProvider.getIfAvailable();
         this.contentReadRepository = contentReadRepository;
+        this.jpaContentReadRepository = jpaContentReadRepositoryProvider.getIfAvailable();
         this.mediaUrlProperties = mediaUrlProperties;
         this.webRevalidationService = webRevalidationService;
         this.auditLogRepo = auditLogRepoProvider.getIfAvailable();
@@ -91,6 +95,36 @@ public class AdminContentMutationService {
         Article article = contentReadRepository.findArticleById(entity.getId())
                 .orElseThrow(() -> new NotFoundException("Content not found."));
         return toAdminContentItem(article);
+    }
+
+    /**
+     * Dry-run render for the admin article live preview. Validates the upsert payload and
+     * builds a transient {@link ArticleEntity} exactly as {@link #createArticle} does, then
+     * maps it straight to the public {@link Article} shape WITHOUT persisting. No row is
+     * created: {@code applyArticlePatch} only mutates the in-memory entity graph and its
+     * sole repository touch (category resolve) is read-only. Read-only transaction guards
+     * against an accidental dirty flush.
+     */
+    @Transactional(readOnly = true)
+    public Article previewArticle(UpsertArticleRequest request, String lang) {
+        requireJpaPersistenceEnabled();
+
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        String slug = validateArticleRequest(request, null, true, errors);
+        ContentCategoryEntity category = resolveCategory(request.getCategoryId(), errors);
+        AdminMutationValidators.throwIfErrors(errors);
+
+        Instant now = Instant.now();
+        ArticleEntity entity = new ArticleEntity();
+        entity.setId("article_preview");
+        entity.setCreatedAt(now);
+        entity.setUpdatedAt(now);
+        applyArticlePatch(entity, request, slug, category, true);
+
+        // No save: pure in-memory build, mapped to the same public Article shape the
+        // storefront blog detail renders.
+        String locale = "en".equalsIgnoreCase(lang) ? "en" : "vi";
+        return jpaContentReadRepository.mapPreviewArticle(entity, locale);
     }
 
     @Transactional

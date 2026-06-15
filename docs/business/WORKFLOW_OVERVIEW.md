@@ -51,6 +51,19 @@
 | 3 | System | Reject unsupported/empty/fake MIME uploads, including SVG | `CONFIRMED_FROM_CODE` | `AdminMediaP0Test.java` |
 | 4 | System | Persist media metadata and storage reference | `CONFIRMED_FROM_CODE` | `AdminMediaService.java` |
 
+## Product Authoring & Live Preview Workflow
+
+| Step | Actor | Action | Status | Evidence |
+|---|---|---|---|---|
+| 1 | Admin / Editor (`products.update`) | Mở editor tạo/sửa sản phẩm và nhập nội dung (tên, ảnh, giá, mô tả, biến thể, SEO) | `CONFIRMED_FROM_CODE` | `ProductDetailScreen.jsx` |
+| 2 | System | Debounce form → `POST /api/v1/admin/products/preview` (dry-run, không lưu) → trả public `Product` | `CONFIRMED_FROM_CODE` | `AdminCatalogController.previewProduct`, `AdminCatalogMutationService.previewProduct` |
+| 3 | Admin | Xem preview "sống" trong khung nhúng — đúng template storefront, cập nhật theo từng thay đổi; chuyển vi/en và desktop/mobile | `CONFIRMED_FROM_CODE` | bigbike-web iframe `/preview/product`, `ProductView.tsx` |
+| 4 | Admin | Lưu nháp hoặc Đăng (`DRAFT→PUBLISHED`) khi ưng — preview không đụng luồng publish/cache | `CONFIRMED_FROM_CODE` | `AdminCatalogMutationService.updateProductPublishStatus`, `STATE_MACHINES.md` §4 |
+
+Preview **không** đổi `publishStatus`, không lưu, và không expose draft ra public (đi qua phiên admin, không qua public read path).
+
+**Bài viết tin tức** dùng cùng cơ chế: editor `ContentDetailScreen` → `POST /api/v1/admin/content/articles/preview` (dry-run `content.update`, không lưu) → iframe `/preview/article` render bằng `ArticleView` — đúng template blog detail. Cùng tính chất: không đổi `publishStatus`, không lưu, không expose draft.
+
 ## Header Navigation — Desktop Mega Menu (2026-05-27)
 
 **Quyết định:** Header desktop "Tất cả sản phẩm" chuyển từ flyout dọc nhiều cấp sang **mega menu sidebar + panel** từ phiên bản 2026-05-27.

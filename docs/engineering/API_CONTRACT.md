@@ -175,6 +175,23 @@ No DELETE endpoint exists for content categories. Status: `CONFIRMED_FROM_CODE` 
 `GET /api/v1/articles/{slug}` — public, no auth. Returns `ApiDataResponse<Article>` for one
 `PUBLISHED` article. Served by `ContentController.getArticleBySlug`.
 
+### Article preview — admin dry-run render (`POST /api/v1/admin/content/articles/preview`)
+
+Mirror of the product preview: powers the **live preview** in the article editor — renders exactly what the storefront blog detail (`/tin-tuc/{slug}`) will show for the *current, unsaved* form input, without persisting anything.
+
+| Aspect | Value |
+|---|---|
+| Permission | `content.update` (same as create/edit article) |
+| Request | `UpsertArticleRequest` (identical to `POST /api/v1/admin/content/articles`) + optional `?lang=vi\|en` (default `vi`) |
+| Response | `ApiDataResponse<Article>` — the **public** article shape, identical to `GET /api/v1/articles/{slug}` |
+
+- **No persistence.** Backend validates, builds a transient `ArticleEntity` in memory via `applyArticlePatch` (never `save`d), and maps it through the same detail mapper the storefront uses (`toDomain(entity, locale, includeTranslations=false)`). `@Transactional(readOnly = true)`.
+- A brand-new draft has no `relatedProducts` until saved; the sidebar/related-article rails are storefront context (other articles) and are not part of the preview payload.
+
+Status: `CONFIRMED_FROM_CODE`
+
+Evidence: `AdminContentController.previewArticle`, `AdminContentMutationService.previewArticle` (transient build + no `save`), `JpaContentReadRepository.mapPreviewArticle` (public wrapper over `toDomain`).
+
 The `Article` payload includes **`relatedProducts`** — an ordered `Product[]` of catalog products
 showcased in the "Sản phẩm sử dụng trong bài viết" section of the blog detail page:
 - Each entry is a list-item `Product` (id, sku, slug, name, brand, category, image, price,
@@ -407,6 +424,24 @@ Evidence: `VariantRequest.java` (no `imageUrl`/`imageAlt`), `AdminCatalogMutatio
 Status: `CONFIRMED_BACKEND_ENFORCED`
 
 Evidence: `UpsertProductRequest.java` (no `stockState` setter), `AdminCatalogMutationService.applyProductPatch` (`if (create) entity.setStockState(OUT_OF_STOCK)`), `InventoryPolicyService.java` (sole writer post-create).
+
+### Product preview — admin dry-run render (`POST /api/v1/admin/products/preview`)
+
+Powers the **live preview** in the product editor: render exactly what the storefront PDP will show for the *current, unsaved* form input, without persisting anything.
+
+| Aspect | Value |
+|---|---|
+| Permission | `products.update` (same as create/edit — the body is a full upsert payload and preview is a sub-step of authoring) |
+| Request | `UpsertProductRequest` (byte-for-byte identical to `POST /api/v1/admin/products`) + optional `?lang=vi\|en` (default `vi`) |
+| Response | `ApiDataResponse<Product>` — the **public** product shape (`publicView=true`: `costPrice` hidden, stock quantity masked), identical to `GET /api/v1/products/{slug}` |
+
+- **No persistence.** Backend validates the payload, builds a transient `ProductEntity` in memory via `applyProductPatch` (never `save`d), and maps it through the same detail mapper the storefront uses. No row is created or updated; the method is `@Transactional(readOnly = true)`.
+- **Validation mirrors create** (category required, slug rules, price/variant constraints) so the editor surfaces the same `400 VALIDATION_ERROR` live.
+- **Transient-only fields:** `rating`/`ratingCount` are `null` (a brand-new draft has no reviews); curated `relatedProducts` resolve read-only from their IDs.
+
+Status: `CONFIRMED_FROM_CODE`
+
+Evidence: `AdminCatalogController.previewProduct`, `AdminCatalogMutationService.previewProduct` (transient build + no `save`), `JpaCatalogReadRepository.mapPreviewProduct` (public wrapper over `toDomain(entity, true, locale)`), `AdminCatalogMutationService.applyProductPatch` (pure in-memory entity build; its sole repo touch — `resolveRelatedProducts` — is a read).
 
 ### Product upsert — single category only
 

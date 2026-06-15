@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { AlertCircle, Check, Info, Loader2, Lock, Save, Search, Trash2, Users, X } from 'lucide-react'
+import { AlertCircle, Check, Eye, Info, Loader2, Lock, Save, Search, Trash2, Users, X } from 'lucide-react'
 import {
   createContent,
   deleteContent,
@@ -10,6 +10,7 @@ import {
   fetchContentDetail,
 
   mapValidationErrors,
+  previewArticle,
   updateContent,
 } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
@@ -21,6 +22,7 @@ import { BlockEditor } from '../components/BlockEditor'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { StatePanel } from '../components/StatePanel'
+import { LivePreview } from '../components/LivePreview'
 import { Screen, ScreenHeader, StickyActionBar, Tabs } from '../components/layout'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
@@ -370,6 +372,41 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
   )
   const [validationErrors, setValidationErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // ── Live preview (xem trước storefront — chỉ bài viết) ───────────────────────
+  // Pane nhúng iframe bigbike-web /preview/article; debounce form rồi gọi dry-run
+  // (KHÔNG lưu) lấy public Article và đẩy sang iframe. Reuse VITE_STOREFRONT_BASE_URL.
+  // Docs: API_CONTRACT "Article preview" + WORKFLOW_OVERVIEW.
+  const storefrontOrigin = (import.meta.env.VITE_STOREFRONT_BASE_URL ?? 'https://bigbike.vn').replace(/\/$/, '')
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const [previewLang, setPreviewLang] = useState('vi')
+  const [previewDevice, setPreviewDevice] = useState('desktop')
+  const [previewData, setPreviewData] = useState(null)
+  const [previewError, setPreviewError] = useState(null)
+  const [previewLoading, setPreviewLoading] = useState(false)
+
+  useEffect(() => {
+    if (!previewOpen) return
+    let cancelled = false
+    const handle = setTimeout(async () => {
+      setPreviewLoading(true)
+      try {
+        const article = await previewArticle(toPayload(form, isCreate), previewLang)
+        if (!cancelled) {
+          setPreviewData(article)
+          setPreviewError(null)
+        }
+      } catch (err) {
+        if (!cancelled) setPreviewError(err)
+      } finally {
+        if (!cancelled) setPreviewLoading(false)
+      }
+    }, 400)
+    return () => {
+      cancelled = true
+      clearTimeout(handle)
+    }
+  }, [previewOpen, previewLang, form, isCreate])
 
   const autosaveKey = getAutosaveKey(normalizedType, contentId, isCreate)
   const [draftRecovery, setDraftRecovery] = useState(null)
@@ -1044,6 +1081,17 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
             </span>
           }
         >
+          {isArticle && (
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => setPreviewOpen(true)}
+              title={t('content.detail.preview.title', { defaultValue: 'Xem trước bài viết' })}
+            >
+              <Eye size={14} className="mr-1.5" />
+              {t('content.detail.preview.open', { defaultValue: 'Xem trước' })}
+            </Button>
+          )}
           {!isCreate && canUpdate && (
             <Button
               variant="outline"
@@ -1065,6 +1113,24 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
             {primaryLabel}
           </Button>
         </StickyActionBar>
+
+        {isArticle && (
+          <LivePreview
+            open={previewOpen}
+            onClose={() => setPreviewOpen(false)}
+            data={previewData}
+            error={previewError}
+            loading={previewLoading}
+            lang={previewLang}
+            onLangChange={setPreviewLang}
+            device={previewDevice}
+            onDeviceChange={setPreviewDevice}
+            webOrigin={storefrontOrigin}
+            previewPath="/preview/article/"
+            i18nPrefix="content.detail.preview"
+            t={t}
+          />
+        )}
       </Screen>
     </div>
   )

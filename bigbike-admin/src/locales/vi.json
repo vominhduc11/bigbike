@@ -1232,6 +1232,13 @@
       "archiveConfirm": "Archive nội dung này?",
       "archiveConfirmTitle": "Archive content",
       "archiveBtn": "Archive",
+      "preview": {
+        "open": "Xem trước",
+        "title": "Xem trước bài viết",
+        "invalid": "Chưa xem trước được — kiểm tra lại các thông tin bắt buộc (ví dụ: tiêu đề, đường dẫn).",
+        "desktop": "Máy tính",
+        "mobile": "Điện thoại"
+      },
       "archiveSuccess": "Đã archive nội dung.",
       "contentLanguageAriaLabel": "Ngôn ngữ nội dung",
       "enFieldHint": "(tiếng Anh — tùy chọn)",
@@ -1255,6 +1262,13 @@
       "seoOgImageUrlHint": "Ảnh chia sẻ MXH, 1200×630px.",
       "seoOgImageAlt": "Alt text OG image",
       "serpPreview": "Xem trước trên Google",
+      "preview": {
+        "open": "Xem trước",
+        "title": "Xem trước trang sản phẩm",
+        "invalid": "Chưa xem trước được — kiểm tra lại các thông tin bắt buộc (ví dụ: danh mục, đường dẫn).",
+        "desktop": "Máy tính",
+        "mobile": "Điện thoại"
+      },
       "serpTitleFallback": "Tiêu đề trên Google",
       "serpDescFallback": "Mô tả ngắn sẽ hiển thị ở đây.",
       "seoChecklist": "Checklist SEO",

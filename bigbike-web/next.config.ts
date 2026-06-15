@@ -376,8 +376,31 @@ const nextConfig: NextConfig = {
     };
   },
   async headers() {
+    // CSP dựng theo frame-ancestors truyền vào, để route /preview/* (nhúng iframe
+    // trong app admin khác origin) nới được frame-ancestors trong khi mọi route
+    // khác vẫn 'none'.
+    const buildCsp = (frameAncestors: string) =>
+      [
+        "default-src 'self'",
+        // Next.js inline scripts (nonces are ideal but require middleware; this is a pragmatic baseline)
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://www.googletagmanager.com",
+        "worker-src 'self' blob:",
+        "style-src 'self' 'unsafe-inline'",
+        `img-src 'self' data: blob: https:${MEDIA_ORIGIN ? " " + MEDIA_ORIGIN : ""}`,
+        `media-src 'self' blob: https:${MEDIA_ORIGIN ? " " + MEDIA_ORIGIN : ""}`,
+        "font-src 'self' data:",
+        `connect-src 'self' https: ${API_ORIGIN} https://www.google-analytics.com`,
+        "frame-src https://www.google.com https://maps.google.com https://www.youtube-nocookie.com https://www.youtube.com",
+        `frame-ancestors ${frameAncestors}`,
+        "base-uri 'self'",
+        "form-action 'self'",
+      ].join("; ");
+
+    // Chống clickjacking bằng CSP `frame-ancestors`. Đã bỏ X-Frame-Options vì nó
+    // không cho phép allow theo origin cụ thể (chỉ DENY/SAMEORIGIN) nên không dùng
+    // được cho live preview nhúng từ admin; CSP frame-ancestors là cách hiện đại
+    // và được Next khuyến nghị thay thế X-Frame-Options.
     const securityHeaders = [
-      { key: "X-Frame-Options", value: "DENY" },
       { key: "X-Content-Type-Options", value: "nosniff" },
       { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
       { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
@@ -385,24 +408,20 @@ const nextConfig: NextConfig = {
         key: "Strict-Transport-Security",
         value: "max-age=31536000; includeSubDomains; preload",
       },
+      { key: "Content-Security-Policy", value: buildCsp("'none'") },
+    ];
+
+    // Live preview: route /preview/* được app admin (origin khác) nhúng iframe. Cho
+    // đúng origin admin làm frame-ancestor; route này đặt SAU rule global nên CSP
+    // của nó override cho /preview/* (Next: header key trùng thì giá trị sau thắng).
+    // Kèm noindex để bản nháp không bị index.
+    const adminOrigin = (process.env.NEXT_PUBLIC_ADMIN_ORIGIN ?? "").trim().replace(/\/$/, "");
+    const previewHeaders = [
       {
         key: "Content-Security-Policy",
-        value: [
-          "default-src 'self'",
-          // Next.js inline scripts (nonces are ideal but require middleware; this is a pragmatic baseline)
-          "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://www.googletagmanager.com",
-          "worker-src 'self' blob:",
-          "style-src 'self' 'unsafe-inline'",
-          `img-src 'self' data: blob: https:${MEDIA_ORIGIN ? " " + MEDIA_ORIGIN : ""}`,
-          `media-src 'self' blob: https:${MEDIA_ORIGIN ? " " + MEDIA_ORIGIN : ""}`,
-          "font-src 'self' data:",
-          `connect-src 'self' https: ${API_ORIGIN} https://www.google-analytics.com`,
-          "frame-src https://www.google.com https://maps.google.com https://www.youtube-nocookie.com https://www.youtube.com",
-          "frame-ancestors 'none'",
-          "base-uri 'self'",
-          "form-action 'self'",
-        ].join("; "),
+        value: buildCsp(`'self'${adminOrigin ? " " + adminOrigin : ""}`),
       },
+      { key: "X-Robots-Tag", value: "noindex, nofollow" },
     ];
 
     return [
@@ -410,6 +429,11 @@ const nextConfig: NextConfig = {
       {
         source: "/:path*",
         headers: securityHeaders,
+      },
+      // Live-preview iframe routes — relax frame-ancestors to the admin origin only.
+      {
+        source: "/preview/:path*",
+        headers: previewHeaders,
       },
       // Noindex for specific legacy routes from CSV
       ...csvNoIndexHeaders,

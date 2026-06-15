@@ -101,6 +101,10 @@ Legacy values (còn trong enum cho backward compat với dữ liệu cũ, không
 
 Không khẳng định terminal tuyệt đối vì code cho phép `TRASH -> DRAFT`.
 
+### Live preview (không đổi state)
+
+Admin live preview (`POST /api/v1/admin/products/preview`) render nội dung nháp đang nhập bằng template storefront thật, nhưng **không** đổi `publishStatus`, **không** lưu, và **không** expose sản phẩm ra public. Preview đi qua phiên đăng nhập admin (`products.update`) — không qua public read path; public vẫn chỉ trả `PUBLISHED`. Đây là cách hợp lệ để xem một bản `DRAFT` mà vẫn giữ đúng anti-goal "Product `DRAFT` hiển thị public" ở đầu file.
+
 ### Allowed Transitions
 
 | From | To | Actor / Role | Preconditions | Side Effects | Enforcement | Evidence |
@@ -743,6 +747,10 @@ Content state machine quản lý publish lifecycle của articles/pages và ản
 
 - `ARCHIVED` is delete target for content delete.
 - Not strictly terminal because shared validator allows `ARCHIVED -> DRAFT`.
+
+### Live preview (không đổi state)
+
+Admin live preview bài viết (`POST /api/v1/admin/content/articles/preview`) render nội dung nháp bằng template blog detail thật, nhưng **không** đổi `publishStatus`, **không** lưu, và **không** expose bài viết ra public. Preview đi qua phiên admin (`content.update`) — không qua public read path; public vẫn chỉ trả `PUBLISHED`. Song song với product preview (xem §4).
 
 ### Allowed Transitions
 

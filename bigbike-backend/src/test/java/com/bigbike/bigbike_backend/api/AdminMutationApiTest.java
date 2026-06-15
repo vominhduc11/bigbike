@@ -153,6 +153,75 @@ class AdminMutationApiTest {
     }
 
     @Test
+    void shouldPreviewProductWithoutPersisting() throws Exception {
+        long countBefore = productJpaRepository.count();
+        String slug = "preview-dry-run-" + System.currentTimeMillis();
+
+        String previewPayload = """
+                {
+                  "slug": "%s",
+                  "name": "Preview Dry Run Product",
+                  "categoryId": "cat_helmet",
+                  "brandId": "brand_ls2",
+                  "retailPrice": 1990000,
+                  "salePrice": 1790000,
+                  "costPrice": 1200000,
+                  "currency": "VND",
+                  "publishStatus": "DRAFT"
+                }
+                """.formatted(slug);
+
+        // Returns the public Product shape (publicView=true): retail/sale present,
+        // cost price hidden — exactly what the storefront PDP would render.
+        mockMvc.perform(post("/api/v1/admin/products/preview")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "products.update")
+                        .content(previewPayload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.name").value("Preview Dry Run Product"))
+                .andExpect(jsonPath("$.data.publishStatus").value("DRAFT"))
+                .andExpect(jsonPath("$.data.price.salePrice").value(1790000))
+                .andExpect(jsonPath("$.data.price.currency").value("VND"))
+                .andExpect(jsonPath("$.data.price.costPrice").doesNotExist());
+
+        // Dry-run must NOT persist: no new row, and the slug never lands in the DB.
+        assertThat(productJpaRepository.count()).isEqualTo(countBefore);
+        assertThat(productJpaRepository.findBySlug(slug)).isEmpty();
+    }
+
+    @Test
+    void shouldPreviewArticleWithoutPersisting() throws Exception {
+        long countBefore = articleJpaRepository.count();
+        String slug = "preview-article-dry-run-" + System.currentTimeMillis();
+
+        String previewPayload = """
+                {
+                  "slug": "%s",
+                  "title": "Preview Article Dry Run",
+                  "excerpt": "Đoạn mô tả ngắn xem trước.",
+                  "body": "<p>Nội dung bài viết nháp.</p>",
+                  "categoryId": "cc_blog",
+                  "publishStatus": "DRAFT"
+                }
+                """.formatted(slug);
+
+        // Returns the public Article shape, identical to GET /api/v1/articles/{slug}.
+        mockMvc.perform(post("/api/v1/admin/content/articles/preview")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "content.update")
+                        .content(previewPayload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.title").value("Preview Article Dry Run"))
+                .andExpect(jsonPath("$.data.slug").value(slug));
+
+        // Dry-run must NOT persist: no new article row, slug never lands in the DB.
+        assertThat(articleJpaRepository.count()).isEqualTo(countBefore);
+        assertThat(articleJpaRepository.findBySlug(slug)).isEmpty();
+    }
+
+    @Test
     void shouldValidateProductMutationRules() throws Exception {
         String invalidSalePayload = """
                 {

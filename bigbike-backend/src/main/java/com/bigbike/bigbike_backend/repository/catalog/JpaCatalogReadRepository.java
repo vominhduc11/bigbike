@@ -406,6 +406,17 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     }
 
     /**
+     * Map an in-memory (transient, unsaved) product entity to the public-facing
+     * {@link Product} domain — used by the admin live-preview dry-run so the
+     * storefront template can render draft input without persisting anything.
+     * {@code publicView=true} mirrors exactly what the storefront PDP shows
+     * (cost price hidden, stock quantity masked).
+     */
+    public Product mapPreviewProduct(ProductEntity entity, String locale) {
+        return toDomain(entity, true, locale);
+    }
+
+    /**
      * Admin detail read: main fields stay Vietnamese (canonical); the raw English
      * content is carried separately in {@code translations} / the {@code *En}
      * spec/FAQ fields so the editor can show both languages.

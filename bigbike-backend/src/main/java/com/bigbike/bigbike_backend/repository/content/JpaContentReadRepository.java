@@ -219,6 +219,15 @@ public class JpaContentReadRepository implements ContentReadRepository {
         return toDomain(entity, locale, false);
     }
 
+    /**
+     * Map an in-memory (transient, unsaved) article entity to the public {@link Article}
+     * shape — used by the admin live-preview dry-run. Same mapper as the storefront blog
+     * detail ({@code includeTranslations=false} → public read).
+     */
+    public Article mapPreviewArticle(ArticleEntity entity, String locale) {
+        return toDomain(entity, locale, false);
+    }
+
     private Article toDomain(ArticleEntity entity, String locale, boolean includeTranslations) {
         return new Article(
                 entity.getId(),

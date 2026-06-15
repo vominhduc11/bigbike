@@ -8,6 +8,7 @@ import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiListResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.domain.content.AdminContentItem;
+import com.bigbike.bigbike_backend.domain.content.Article;
 
 import com.bigbike.bigbike_backend.domain.content.ContentCategoryItem;
 import com.bigbike.bigbike_backend.domain.content.ContentPageRefItem;
@@ -116,6 +117,20 @@ public class AdminContentController extends AdminControllerSupport {
     ) {
         devAdminAuthService.requirePermission(request, "content.update");
         return apiResponseFactory.data(adminContentMutationService.createArticle(payload, resolveAdminId()), request);
+    }
+
+    /**
+     * Live-preview dry-run for articles: renders the unsaved upsert payload to the public
+     * {@link Article} shape without persisting. Powers the in-editor blog-detail preview.
+     */
+    @PostMapping("/articles/preview")
+    public ApiDataResponse<Article> previewArticle(
+            @Valid @RequestBody UpsertArticleRequest payload,
+            @RequestParam(name = "lang", required = false) String lang,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "content.update");
+        return apiResponseFactory.data(adminContentMutationService.previewArticle(payload, lang), request);
     }
 
     @PatchMapping("/articles/{id}")

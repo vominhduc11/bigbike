@@ -425,6 +425,19 @@ export async function updateProduct(productId, input) {
   return parseDetailPayload(payload, normalizeProduct)
 }
 
+export async function previewProduct(input, lang) {
+  // Live-preview dry-run (KHÔNG lưu). Backend trả về PUBLIC Product shape — y hệt
+  // storefront GET /products/{slug} — để iframe web render bằng đúng <ProductView>
+  // của PDP. Vì vậy trả thẳng `data` thô, KHÔNG chạy normalizeProduct (cái đó map
+  // sang model sản phẩm của admin, lệch shape so với web).
+  const payload = await requestJson('/admin/products/preview', {
+    method: 'POST',
+    body: input,
+    query: lang ? { lang } : undefined,
+  })
+  return payload?.data ?? null
+}
+
 export async function publishProduct(productId, publishStatus) {
   const payload = await requestJson(`/admin/products/${productId}/publish`, {
     method: 'PATCH',
@@ -647,6 +660,18 @@ export async function deleteContent(contentType, contentId) {
   const pathType = normalizeContentPathType(contentType)
   const payload = await requestJson(`/admin/content/${pathType}/${contentId}`, { method: 'DELETE' })
   return parseDetailPayload(payload, normalizeContentItem)
+}
+
+export async function previewArticle(input, lang) {
+  // Live-preview dry-run cho bài viết (KHÔNG lưu). Trả PUBLIC Article shape (như
+  // GET /api/v1/articles/{slug}) để iframe web render bằng đúng <ArticleView>. Trả
+  // thẳng `data` thô, KHÔNG normalize sang model admin.
+  const payload = await requestJson('/admin/content/articles/preview', {
+    method: 'POST',
+    body: input,
+    query: lang ? { lang } : undefined,
+  })
+  return payload?.data ?? null
 }
 
 export async function fetchContentCategories() {

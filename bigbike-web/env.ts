@@ -26,6 +26,9 @@ export const env = createEnv({
     NEXT_PUBLIC_SENTRY_DSN: z.string().url().optional(),
     // Canonical site origin — used client-side for absolute URL generation
     NEXT_PUBLIC_SITE_URL: z.string().url().optional(),
+    // Admin app origin — the only origin allowed to embed /preview/* in an iframe
+    // and the origin checked on postMessage in the live-preview route.
+    NEXT_PUBLIC_ADMIN_ORIGIN: z.string().url().optional(),
   },
   runtimeEnv: {
     NODE_ENV: process.env.NODE_ENV,
@@ -46,6 +49,7 @@ export const env = createEnv({
     NEXT_PUBLIC_GTM_ID: process.env.NEXT_PUBLIC_GTM_ID || undefined,
     NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN || undefined,
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL || undefined,
+    NEXT_PUBLIC_ADMIN_ORIGIN: process.env.NEXT_PUBLIC_ADMIN_ORIGIN || undefined,
   },
   skipValidation: process.env.SKIP_ENV_VALIDATION === "true",
 });

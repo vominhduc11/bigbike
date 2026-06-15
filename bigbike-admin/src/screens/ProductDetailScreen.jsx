@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
-  AlertCircle, Check, ChevronDown, GripVertical, ImageOff, Info, Loader2, Lock, Pencil, Plus, Save, Search as PfSearch, Users, X,
+  AlertCircle, Check, ChevronDown, Eye, GripVertical, ImageOff, Info, Loader2, Lock, Pencil, Plus, Save, Search as PfSearch, Users, X,
 } from 'lucide-react'
 import {
   createAttributeValue,
@@ -17,6 +17,7 @@ import {
   fetchProducts,
   fetchProductTags,
   mapValidationErrors,
+  previewProduct,
   updateAttribute,
   updateAttributeValueLabel,
   updateProduct,
@@ -38,6 +39,7 @@ import { RichTextEditor } from '../components/RichTextEditor'
 import { BlockEditor } from '../components/BlockEditor'
 import { TagInput } from '../components/TagInput'
 import { SortableList } from '../components/Sortable'
+import { LivePreview } from '../components/LivePreview'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
@@ -2428,6 +2430,42 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   const slugEditedByUser = useRef(false)
   const [originalPublishStatus, setOriginalPublishStatus] = useState(null)
 
+  // ── Live preview (xem trước storefront) ──────────────────────────────────────
+  // Pane nhúng iframe bigbike-web /preview/product; debounce form rồi gọi dry-run
+  // (KHÔNG lưu) lấy public Product và đẩy sang iframe. Reuse VITE_STOREFRONT_BASE_URL
+  // (origin web đã dùng cho link admin→storefront). Docs: API_CONTRACT "Product
+  // preview" + WORKFLOW_OVERVIEW "Product Authoring & Live Preview".
+  const storefrontOrigin = (import.meta.env.VITE_STOREFRONT_BASE_URL ?? 'https://bigbike.vn').replace(/\/$/, '')
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const [previewLang, setPreviewLang] = useState('vi')
+  const [previewDevice, setPreviewDevice] = useState('desktop')
+  const [previewData, setPreviewData] = useState(null)
+  const [previewError, setPreviewError] = useState(null)
+  const [previewLoading, setPreviewLoading] = useState(false)
+
+  useEffect(() => {
+    if (!previewOpen) return
+    let cancelled = false
+    const handle = setTimeout(async () => {
+      setPreviewLoading(true)
+      try {
+        const product = await previewProduct(toPayload(form), previewLang)
+        if (!cancelled) {
+          setPreviewData(product)
+          setPreviewError(null)
+        }
+      } catch (err) {
+        if (!cancelled) setPreviewError(err)
+      } finally {
+        if (!cancelled) setPreviewLoading(false)
+      }
+    }, 400)
+    return () => {
+      cancelled = true
+      clearTimeout(handle)
+    }
+  }, [previewOpen, previewLang, form])
+
   // Autosave / draft recovery
   const autosaveKey = getAutosaveKey(productId, isCreate)
   const [draftRecovery, setDraftRecovery] = useState(null)
@@ -3784,6 +3822,16 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
           <Button
             variant="outline"
             type="button"
+            onClick={() => setPreviewOpen(true)}
+            title={t('products.detail.preview.title', { defaultValue: 'Xem trước trang sản phẩm' })}
+          >
+            <Eye size={14} className="mr-1.5" />
+            {t('products.detail.preview.open', { defaultValue: 'Xem trước' })}
+          </Button>
+
+          <Button
+            variant="outline"
+            type="button"
             disabled={isReadOnly || !isDirty || !allowedPublishStatuses.includes('DRAFT')}
             title={!allowedPublishStatuses.includes('DRAFT') ? t('products.detail.saveDraftDisabledPublished') : undefined}
             onClick={() => handleSave('DRAFT')}
@@ -3865,6 +3913,22 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
             onClose={() => setShowMatrixWizard(false)}
           />
         )}
+
+        <LivePreview
+          open={previewOpen}
+          onClose={() => setPreviewOpen(false)}
+          data={previewData}
+          error={previewError}
+          loading={previewLoading}
+          lang={previewLang}
+          onLangChange={setPreviewLang}
+          device={previewDevice}
+          onDeviceChange={setPreviewDevice}
+          webOrigin={storefrontOrigin}
+          previewPath="/preview/product/"
+          i18nPrefix="products.detail.preview"
+          t={t}
+        />
     </Screen>
     </AssignmentConfigContext.Provider>
   )

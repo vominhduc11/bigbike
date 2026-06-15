@@ -49,6 +49,7 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRep
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.redirect.RedirectJpaRepository;
 import com.bigbike.bigbike_backend.repository.catalog.CatalogReadRepository;
+import com.bigbike.bigbike_backend.repository.catalog.JpaCatalogReadRepository;
 import com.bigbike.bigbike_backend.api.admin.dto.SetHomepageBlocksRequest;
 import com.bigbike.bigbike_backend.domain.catalog.HomepageBlock;
 import java.math.BigDecimal;
@@ -89,6 +90,7 @@ public class AdminCatalogMutationService {
     private final AttributeJpaRepository attributeJpaRepository;
     private final AttributeValueJpaRepository attributeValueJpaRepository;
     private final CatalogReadRepository catalogReadRepository;
+    private final JpaCatalogReadRepository jpaCatalogReadRepository;
     private final MediaUrlProperties mediaUrlProperties;
     private final WebRevalidationService webRevalidationService;
     private final AuditLogJpaRepository auditLogRepo;
@@ -102,6 +104,7 @@ public class AdminCatalogMutationService {
             ObjectProvider<AttributeJpaRepository> attributeJpaRepositoryProvider,
             ObjectProvider<AttributeValueJpaRepository> attributeValueJpaRepositoryProvider,
             CatalogReadRepository catalogReadRepository,
+            ObjectProvider<JpaCatalogReadRepository> jpaCatalogReadRepositoryProvider,
             MediaUrlProperties mediaUrlProperties,
             WebRevalidationService webRevalidationService,
             ObjectProvider<AuditLogJpaRepository> auditLogRepoProvider,
@@ -114,6 +117,7 @@ public class AdminCatalogMutationService {
         this.attributeJpaRepository = attributeJpaRepositoryProvider.getIfAvailable();
         this.attributeValueJpaRepository = attributeValueJpaRepositoryProvider.getIfAvailable();
         this.catalogReadRepository = catalogReadRepository;
+        this.jpaCatalogReadRepository = jpaCatalogReadRepositoryProvider.getIfAvailable();
         this.mediaUrlProperties = mediaUrlProperties;
         this.webRevalidationService = webRevalidationService;
         this.auditLogRepo = auditLogRepoProvider.getIfAvailable();
@@ -144,6 +148,38 @@ public class AdminCatalogMutationService {
 
         return catalogReadRepository.findProductById(entity.getId())
                 .orElseThrow(() -> new NotFoundException("Product not found."));
+    }
+
+    /**
+     * Dry-run render for the admin live preview. Validates the upsert payload and
+     * builds a transient {@link ProductEntity} exactly as {@link #createProduct}
+     * does, then maps it straight to the public {@link Product} shape WITHOUT
+     * persisting. No row is created or updated: {@code applyProductPatch} only
+     * mutates the in-memory entity graph and its sole repository touches
+     * ({@code resolveRelatedProducts} + attribute lookups) are read-only. The
+     * read-only transaction guards against an accidental dirty flush.
+     */
+    @Transactional(readOnly = true)
+    public Product previewProduct(UpsertProductRequest request, String lang) {
+        requireJpaPersistenceEnabled();
+
+        List<ApiErrorDetail> errors = new ArrayList<>();
+        CategoryEntity category = validateAndResolveCategory(request.getCategoryId(), true, errors);
+        BrandEntity brand = validateAndResolveBrand(request.getBrandId(), errors);
+        String slug = validateProductRequest(request, null, true, errors);
+        AdminMutationValidators.throwIfErrors(errors);
+
+        Instant now = Instant.now();
+        ProductEntity entity = new ProductEntity();
+        entity.setId("prod_preview");
+        entity.setCreatedAt(now);
+        entity.setUpdatedAt(now);
+        applyProductPatch(entity, request, slug, category, brand, true);
+
+        // No save: pure in-memory build, mapped to the same public Product shape the
+        // storefront PDP renders (publicView=true → cost price hidden, stock masked).
+        String locale = "en".equalsIgnoreCase(lang) ? "en" : "vi";
+        return jpaCatalogReadRepository.mapPreviewProduct(entity, locale);
     }
 
     @Transactional

@@ -111,6 +111,22 @@ public class AdminCatalogController extends AdminControllerSupport {
         return apiResponseFactory.data(adminCatalogMutationService.createProduct(payload, resolveAdminId()), request);
     }
 
+    /**
+     * Live-preview dry-run: renders the unsaved upsert payload to the public
+     * {@link Product} shape without persisting anything. Powers the in-editor
+     * storefront preview. Same permission as create/edit (it's a sub-step of
+     * authoring and accepts the full upsert body).
+     */
+    @PostMapping("/products/preview")
+    public ApiDataResponse<Product> previewProduct(
+            @Valid @RequestBody UpsertProductRequest payload,
+            @RequestParam(name = "lang", required = false) String lang,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "products.update");
+        return apiResponseFactory.data(adminCatalogMutationService.previewProduct(payload, lang), request);
+    }
+
     @PatchMapping("/products/{id}")
     public ApiDataResponse<Product> updateProduct(
             @PathVariable @Pattern(regexp = ID_REGEX, message = "Invalid id.") String id,

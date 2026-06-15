@@ -1233,6 +1233,13 @@
       "archiveConfirm": "Archive this content?",
       "archiveConfirmTitle": "Archive content",
       "archiveBtn": "Archive",
+      "preview": {
+        "open": "Preview",
+        "title": "Article preview",
+        "invalid": "Can't preview yet — check the required fields (e.g. title, slug).",
+        "desktop": "Desktop",
+        "mobile": "Mobile"
+      },
       "archiveSuccess": "Content archived.",
       "contentLanguageAriaLabel": "Content language",
       "enFieldHint": "(English — optional)",
@@ -1256,6 +1263,13 @@
       "seoOgImageUrlHint": "Social share image, 1200×630px.",
       "seoOgImageAlt": "OG image alt text",
       "serpPreview": "Google search preview",
+      "preview": {
+        "open": "Preview",
+        "title": "Product page preview",
+        "invalid": "Can't preview yet — check the required fields (e.g. category, slug).",
+        "desktop": "Desktop",
+        "mobile": "Mobile"
+      },
       "serpTitleFallback": "Page title on Google",
       "serpDescFallback": "Short description will appear here.",
       "seoChecklist": "SEO checklist",
