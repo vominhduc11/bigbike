@@ -733,6 +733,16 @@ body .sidebar-wrap-product {
   z-index: var(--bb-z-modal);
 }
 
+/* Widget cuối trong drawer (.widget có margin-bottom:30px + padding-bottom:15px +
+   border-bottom của theme WP) cộng padding 25px của panel tạo ~70px khoảng trắng
+   thừa dưới nút "Thu gọn". Bỏ lề/đệm/viền dưới của widget cuối để nội dung kết thúc
+   sát đáy, không chừa khoảng trống lớn ở bottom. */
+body .sidebar-wrap-product .wrapper .widget:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
 /* ─────────────────────────────────────────────────────────────
    WP header (.headroom / .navigation) — menu ngang ở desktop.
    Bản port theme WP chỉ mang theo trạng thái off-canvas của .navigation
