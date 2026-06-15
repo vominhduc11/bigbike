@@ -10,10 +10,17 @@ import { PaginationNav } from "@/components/ui/PaginationNav";
 import { formatVnd, orderStatusLabelWithT } from "@/lib/utils/format";
 import { LocalDate } from "@/components/i18n/LocalDate";
 import { toOrderDetailPath } from "@/lib/utils/routes";
+import { orderFilterHref } from "@/lib/utils/orders";
 import { cn } from "@/lib/utils";
 import { bbLink, skelBase } from "@/lib/ui-classes";
 
 const ORDERS_PATH = "/tai-khoan/don-hang/";
+
+// Trùng tập trạng thái backend (OrderStatus) — lọc theo trạng thái đơn, ?status= được
+// CustomerOrderController hỗ trợ sẵn. Nhãn dùng lại Account.orders.orderStatus.*.
+const STATUS_FILTERS = ["PENDING", "PROCESSING", "ON_HOLD", "COMPLETED", "CANCELLED", "REFUNDED", "FAILED"] as const;
+
+const filterHref = (status?: string) => orderFilterHref(ORDERS_PATH, status);
 
 export function OrderHistoryContent() {
   const t = useTranslations("Account.orders");
@@ -21,15 +28,32 @@ export function OrderHistoryContent() {
   const searchParams = useSearchParams();
   const pageParam = Number(searchParams.get("page"));
   const page = Number.isInteger(pageParam) && pageParam > 0 ? pageParam : 1;
+  const statusFilter = searchParams.get("status") || undefined;
 
-  const { data, isLoading: loading, error: queryError } = useOrders(page);
+  const { data, isLoading: loading, error: queryError } = useOrders(page, statusFilter);
   const orders: OrderListItem[] = data?.data ?? [];
   const totalPages = data?.pagination?.totalPages ?? 1;
   const error = queryError ? (queryError as Error).message ?? t("loadFailed") : "";
 
+  const chipBase =
+    "inline-flex h-9 items-center px-4 text-sm font-semibold uppercase font-cta border border-border transition-colors";
+  const chipCls = (active: boolean) =>
+    cn(chipBase, active ? "bg-brand text-white border-brand" : "bg-card text-foreground hover:border-brand hover:text-brand");
+
   return (
     <>
       <WpAccountSectionHeading title={tNav("orders")} />
+
+      <nav className="mb-5 flex flex-wrap gap-2" aria-label={t("filterAll")}>
+        <Link href={filterHref()} className={chipCls(!statusFilter)}>
+          {t("filterAll")}
+        </Link>
+        {STATUS_FILTERS.map((s) => (
+          <Link key={s} href={filterHref(s)} className={chipCls(statusFilter === s)}>
+            {orderStatusLabelWithT(s, t)}
+          </Link>
+        ))}
+      </nav>
 
       {error && <p className="mb-4 text-sm text-brand">{error}</p>}
 
@@ -145,7 +169,7 @@ export function OrderHistoryContent() {
             ))}
           </ul>
 
-          <PaginationNav page={page} totalPages={totalPages} baseHref={ORDERS_PATH} />
+          <PaginationNav page={page} totalPages={totalPages} baseHref={filterHref(statusFilter)} />
         </>
       )}
     </>

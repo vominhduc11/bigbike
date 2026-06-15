@@ -89,6 +89,7 @@ export function WpCheckoutClient() {
   const [pendingOrderNav, setPendingOrderNav] = useState<{ orderNumber: string; orderKey: string } | null>(null);
   const [gtmFired, setGtmFired] = useState(false);
   const [customerNote, setCustomerNote] = useState("");
+  const [shipToDifferent, setShipToDifferent] = useState(false);
   const idempotencyKey = useRef<string>(generateId());
   const hasPrefilledRef = useRef(false);
 
@@ -124,6 +125,30 @@ export function WpCheckoutClient() {
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const formAddress = watch();
+
+  // Form địa chỉ giao riêng — chỉ dùng khi khách chọn "giao tới địa chỉ khác".
+  // Backend không validate shippingAddress (chỉ billing), nên ràng buộc nằm ở zod đây.
+  const {
+    register: registerShip,
+    trigger: triggerShip,
+    watch: watchShip,
+    setValue: setValueShip,
+    formState: { errors: shipErrors },
+  } = useForm<CheckoutAddressFormValues>({
+    resolver: zodResolver(createCheckoutAddressSchema(tValidation)),
+    defaultValues: {
+      fullName: "",
+      phone: "",
+      email: "",
+      country: "VN",
+      province: "",
+      district: "",
+      ward: "",
+      addressLine1: "",
+    },
+  });
+
+  const formShip = watchShip();
 
   useEffect(() => {
     if (!checkoutOptions) return;
@@ -177,6 +202,20 @@ export function WpCheckoutClient() {
     [formAddress],
   );
 
+  const resolvedShip = useMemo(
+    () => ({
+      fullName: formShip.fullName ?? "",
+      phone: formShip.phone ?? "",
+      email: formShip.email ?? "",
+      country: formShip.country || "VN",
+      province: formShip.province ?? "",
+      district: formShip.district ?? "",
+      ward: formShip.ward ?? "",
+      addressLine1: formShip.addressLine1 ?? "",
+    }),
+    [formShip],
+  );
+
   const cartSubtotal = cart?.totals.subtotalAmount ?? 0;
   const cartTotal = cart?.totals.totalAmount ?? 0;
   const shippingMethods = checkoutOptions?.shippingMethods ?? [];
@@ -186,7 +225,9 @@ export function WpCheckoutClient() {
   const grandTotal = cartTotal + effectiveShippingCost;
   const minOrderAmount = selectedShipping?.minOrderAmount ?? null;
   const belowMinOrder = minOrderAmount !== null && minOrderAmount > 0 ? cartSubtotal < minOrderAmount : false;
-  const userRegion = getVietnamRegion(resolvedAddress.province);
+  // Vùng giao tính theo địa chỉ hàng thực sự được gửi tới (shipping nếu có, không thì billing).
+  const deliveryProvince = shipToDifferent ? resolvedShip.province : resolvedAddress.province;
+  const userRegion = getVietnamRegion(deliveryProvince);
   const selectedShippingZoneMismatch = selectedShipping ? isZoneMismatch(selectedShipping, userRegion) : false;
 
   function paymentLabel(method: PaymentMethodOption | string | null | undefined) {
@@ -213,6 +254,13 @@ export function WpCheckoutClient() {
     if (!validAddress) {
       setSubmitError(t("errorMissingShipping"));
       return;
+    }
+    if (shipToDifferent) {
+      const validShip = await triggerShip();
+      if (!validShip) {
+        setSubmitError(t("errorMissingShipping"));
+        return;
+      }
     }
     if (!paymentMethod) {
       setSubmitError(t("errorMissingPayment"));
@@ -250,6 +298,18 @@ export function WpCheckoutClient() {
             ward: resolvedAddress.ward,
             addressLine1: resolvedAddress.addressLine1,
           },
+          shippingAddress: shipToDifferent
+            ? {
+                fullName: resolvedShip.fullName,
+                phone: resolvedShip.phone,
+                email: resolvedShip.email,
+                country: resolvedShip.country,
+                province: resolvedShip.province,
+                district: resolvedShip.district,
+                ward: resolvedShip.ward,
+                addressLine1: resolvedShip.addressLine1,
+              }
+            : undefined,
           shippingMethodId: shippingMethodId || null,
           paymentMethod,
           customerNote: customerNote.trim() || undefined,
@@ -462,6 +522,97 @@ export function WpCheckoutClient() {
                   </div>
                 </div>
               </div>
+            </div>
+
+            <div className="check-out-step">
+              <div className="form-group" style={{ marginBottom: shipToDifferent ? 16 : 0 }}>
+                <label className="inline-flex cursor-pointer items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={shipToDifferent}
+                    onChange={(e) => setShipToDifferent(e.target.checked)}
+                  />
+                  {t("shipToDifferent")}
+                </label>
+              </div>
+
+              {shipToDifferent && (
+                <>
+                  <h3 className="mb-3 mt-1 font-cta text-base font-semibold uppercase">{t("shippingAddressTitle")}</h3>
+                  <div className="row">
+                    <div className="col-md-6">
+                      <div className="form-group">
+                        <label htmlFor="shipping_full_name">
+                          {t("fullName")} {reqMark}
+                        </label>
+                        <input
+                          id="shipping_full_name"
+                          className="form-control"
+                          placeholder={t("fullNamePlaceholder")}
+                          autoComplete="shipping name"
+                          aria-invalid={!!shipErrors.fullName}
+                          {...registerShip("fullName")}
+                        />
+                        <FieldError message={shipErrors.fullName?.message} />
+                      </div>
+                    </div>
+
+                    <div className="col-md-6">
+                      <div className="form-group">
+                        <label htmlFor="shipping_phone">
+                          {t("phone")} {reqMark}
+                        </label>
+                        <input
+                          id="shipping_phone"
+                          type="tel"
+                          inputMode="tel"
+                          maxLength={12}
+                          className="form-control"
+                          placeholder={t("phonePlaceholder")}
+                          autoComplete="shipping tel"
+                          aria-invalid={!!shipErrors.phone}
+                          {...registerShip("phone")}
+                        />
+                        <FieldError message={shipErrors.phone?.message} />
+                      </div>
+                    </div>
+
+                    <div className="col-md-12">
+                      <div className="form-group">
+                        <label htmlFor="shipping_address_1">
+                          {t("address")} {reqMark}
+                        </label>
+                        <input
+                          id="shipping_address_1"
+                          className="form-control"
+                          placeholder={t("addressPlaceholder")}
+                          autoComplete="shipping address-line1"
+                          aria-invalid={!!shipErrors.addressLine1}
+                          {...registerShip("addressLine1")}
+                        />
+                        <FieldError message={shipErrors.addressLine1?.message} />
+                      </div>
+                    </div>
+
+                    <div className="col-md-12">
+                      <VnAddressFields
+                        value={{
+                          province: formShip.province ?? "",
+                          district: formShip.district ?? "",
+                          ward: formShip.ward ?? "",
+                        }}
+                        onChange={(field, val) =>
+                          setValueShip(field as keyof CheckoutAddressFormValues, val, { shouldValidate: true })
+                        }
+                        required
+                      />
+                      {(shipErrors.province || shipErrors.district) && (
+                        <FieldError message={shipErrors.province?.message ?? shipErrors.district?.message} />
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

@@ -72,6 +72,7 @@ class Phase1MPosApiTest {
     @Autowired CouponJpaRepository couponRepo;
     @Autowired OrderLineItemJpaRepository lineItemRepo;
     @Autowired PasswordService passwordService;
+    @Autowired com.bigbike.bigbike_backend.service.pos.PosOrderService posOrderService;
 
     private MockMvc mockMvc;
     private String adminToken;
@@ -362,6 +363,67 @@ class Phase1MPosApiTest {
                 .andExpect(jsonPath("$.data.totalAmount").value(50000.0));
     }
 
+    // ── 15b. priceOverride records base→override price in the audit trail ──────
+
+    @Test
+    void createPosOrder_priceOverride_recordsBaseAndOverridePriceInAudit() throws Exception {
+        TestVariant tv = createProductWithVariant(5, 100000);
+
+        MvcResult result = mockMvc.perform(post("/api/v1/admin/pos/orders")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "paymentMethod": "CASH",
+                                  "posIdempotencyKey": "%s",
+                                  "customerPhone": "0900000000",
+                                  "tenderedAmount": 9999999,
+                                  "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1,
+                                             "unitPriceOverride": 50000}]
+                                }
+                                """.formatted(UUID.randomUUID(), tv.productId, tv.variantId)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String orderId = extractJsonString(result.getResponse().getContentAsString(), "orderId");
+        var logs = auditLogRepo.findByResourceTypeAndResourceId("ORDER", UUID.fromString(orderId));
+        assertThat(logs).isNotEmpty();
+        String after = logs.get(0).getAfterData();
+        assertThat(after).contains("\"priceOverridden\":true");
+        assertThat(after).contains("\"basePrice\":100000");
+        assertThat(after).contains("\"overridePrice\":50000");
+    }
+
+    // ── 15c. Override below cost is blocked without pos.sell_below_cost ────────
+
+    @Test
+    void posCreateOrder_overrideBelowCost_blockedWithoutPermission_allowedWithIt() {
+        TestVariant tv = createProductWithVariant(5, 100000);
+        // Variant cost = 60.000; override to 50.000 (below cost).
+        var variant = variantRepo.findById(tv.variantId).orElseThrow();
+        variant.setCostPrice(java.math.BigDecimal.valueOf(60000));
+        variantRepo.save(variant);
+        String staffId = adminUserRepo.findByEmail(ADMIN_EMAIL).orElseThrow().getId().toString();
+
+        var item = new com.bigbike.bigbike_backend.service.pos.PosOrderService.PosLineItemRequest(
+                tv.productId, tv.variantId, 1, java.math.BigDecimal.valueOf(50000));
+
+        // canOverridePrice=true but canSellBelowCost=false → blocked.
+        var blockedReq = new com.bigbike.bigbike_backend.service.pos.PosOrderService.PosCreateOrderRequest(
+                java.util.List.of(item), "Cost Guard", "0900000123", null, "CASH",
+                9999999L, null, UUID.randomUUID().toString(), null, null, null);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() ->
+                        posOrderService.createOrder(blockedReq, staffId, true, false, false, null, null))
+                .isInstanceOf(com.bigbike.bigbike_backend.api.error.ConflictException.class);
+
+        // canSellBelowCost=true → allowed.
+        var allowedReq = new com.bigbike.bigbike_backend.service.pos.PosOrderService.PosCreateOrderRequest(
+                java.util.List.of(item), "Cost Guard", "0900000123", null, "CASH",
+                9999999L, null, UUID.randomUUID().toString(), null, null, null);
+        var resp = posOrderService.createOrder(allowedReq, staffId, true, true, false, null, null);
+        assertThat(resp.orderId()).isNotNull();
+    }
+
     // ── 16. Payment record created ────────────────────────────────────────────
 
     @Test
@@ -421,6 +483,37 @@ class Phase1MPosApiTest {
                 "ORDER", UUID.fromString(orderId));
         assertThat(logs).isNotEmpty();
         assertThat(logs.get(0).getAction()).isEqualTo("POS_ORDER_CREATED");
+    }
+
+    // ── 18b. Audit log captures customer name/phone/id for traceability ───────
+
+    @Test
+    void createPosOrder_auditLog_includesCustomerInfo() throws Exception {
+        TestVariant tv = createProductWithVariant(5, 100000);
+
+        MvcResult result = mockMvc.perform(post("/api/v1/admin/pos/orders")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "paymentMethod": "CASH",
+                                  "posIdempotencyKey": "%s",
+                                  "customerPhone": "0911222333",
+                                  "customerName": "Nguyen Van Test",
+                                  "tenderedAmount": 9999999,
+                                  "items": [{"productId": "%s", "productVariantId": "%s", "quantity": 1}]
+                                }
+                                """.formatted(UUID.randomUUID(), tv.productId, tv.variantId)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String orderId = extractJsonString(result.getResponse().getContentAsString(), "orderId");
+        var logs = auditLogRepo.findByResourceTypeAndResourceId("ORDER", UUID.fromString(orderId));
+        assertThat(logs).isNotEmpty();
+        String after = logs.get(0).getAfterData();
+        assertThat(after).contains("\"customerPhone\":\"0911222333\"");
+        assertThat(after).contains("\"customerName\":\"Nguyen Van Test\"");
+        assertThat(after).contains("\"customerId\":\"");
     }
 
     // ── CREDIT tests (POSREC-003) ─────────────────────────────────────────────

@@ -9,6 +9,19 @@ import { pickSetting } from "@/lib/utils/settings";
 
 const T = "/wp-content/themes/bigbike";
 
+const BCT_FALLBACK_URL = "http://online.gov.vn/Home/WebDetails/27044";
+
+/** Rút nhãn hiển thị gọn từ URL Facebook (vd https://facebook.com/bigbike.vn → fb/bigbike.vn). */
+function facebookLabel(url: string): string {
+  try {
+    const u = new URL(url);
+    const path = u.pathname.replace(/^\/+|\/+$/g, "");
+    return path ? `fb/${path}` : u.host.replace(/^www\./, "");
+  } catch {
+    return "fb/bigbike.vn";
+  }
+}
+
 const titleStyle: React.CSSProperties = {
   color: "#ff0c09",
   fontWeight: 500,
@@ -46,6 +59,12 @@ export async function WpFooter({ footerNodes }: { footerNodes: HeaderNavNode[] }
   ].filter(Boolean);
   const email = pickSetting(settings, ["contact_email"]);
   const facebookUrl = pickSetting(settings, ["facebook_url"]);
+  // Slogan / mô tả / link Bộ Công Thương / ĐKKD ưu tiên lấy từ settings (admin sửa được);
+  // fallback về copy theme khi setting còn trống.
+  const tagline = pickSetting(settings, ["footer_tagline"]);
+  const shopDescription = pickSetting(settings, ["footer_description"]);
+  const bctUrl = pickSetting(settings, ["bct_url"]) || BCT_FALLBACK_URL;
+  const businessRegistration = pickSetting(settings, ["business_registration"]);
 
   return (
     <footer>
@@ -56,8 +75,14 @@ export async function WpFooter({ footerNodes }: { footerNodes: HeaderNavNode[] }
               <div className="newletters">
                 <form action="">
                   <h2 className="slogan-bigbike">
-                    <Tr ns="Footer" k="wpSloganLine1" /> <br />
-                    <Tr ns="Footer" k="wpSloganLine2" />
+                    {tagline ? (
+                      tagline
+                    ) : (
+                      <>
+                        <Tr ns="Footer" k="wpSloganLine1" /> <br />
+                        <Tr ns="Footer" k="wpSloganLine2" />
+                      </>
+                    )}
                   </h2>
                 </form>
                 <div className="contact-infor">
@@ -82,7 +107,7 @@ export async function WpFooter({ footerNodes }: { footerNodes: HeaderNavNode[] }
               <div className="information">
                 <div className="information--item">
                   <p>
-                    <Tr ns="Footer" k="wpShopDescription" />
+                    {shopDescription ? shopDescription : <Tr ns="Footer" k="wpShopDescription" />}
                   </p>
                 </div>
                 <div className="row">
@@ -107,7 +132,7 @@ export async function WpFooter({ footerNodes }: { footerNodes: HeaderNavNode[] }
                             {facebookUrl ? (
                               <li>
                                 <a rel="nofollow" href={facebookUrl}>
-                                  <i className="fab fa-facebook-f" /> fb/bigbike.vn
+                                  <i className="fab fa-facebook-f" /> {facebookLabel(facebookUrl)}
                                 </a>
                               </li>
                             ) : null}
@@ -138,17 +163,17 @@ export async function WpFooter({ footerNodes }: { footerNodes: HeaderNavNode[] }
             </div>
             <div className="col-md-4">
               <div className="copyright">
-                <p>Copyright © 2020. All Rights Reserved.</p>
+                <p>Copyright © {new Date().getFullYear()}. All Rights Reserved.</p>
               </div>
             </div>
             <div className="col-md-6">
               <div className="license">
-                <a href="http://online.gov.vn/Home/WebDetails/27044">
+                <a href={bctUrl}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={`${T}/images/license.png`} alt="logo-bigbike" />
                 </a>
                 <p>
-                  <Tr ns="Footer" k="businessReg" />
+                  {businessRegistration ? businessRegistration : <Tr ns="Footer" k="businessReg" />}
                 </p>
               </div>
             </div>

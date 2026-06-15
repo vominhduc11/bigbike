@@ -5,6 +5,7 @@ import com.bigbike.bigbike_backend.api.admin.dto.order.AdminOrderListItemRespons
 import com.bigbike.bigbike_backend.api.admin.dto.order.AdminOrderNoteResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.order.CreateOrderNoteRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.order.CreateRefundRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.order.OrderAuditLogResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.order.UpdateFulfillmentRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.order.UpdateOrderStatusRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.order.UpdatePaymentStatusRequest;
@@ -159,6 +160,15 @@ public class AdminOrderController extends AdminControllerSupport {
     ) {
         devAdminAuthService.requirePermission(request, "orders.read");
         return apiResponseFactory.data(adminOrderService.listNotes(orderId), request);
+    }
+
+    @GetMapping("/{orderId}/audit")
+    public ApiDataResponse<List<OrderAuditLogResponse>> listAuditTrail(
+            @PathVariable UUID orderId,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "orders.read");
+        return apiResponseFactory.data(adminOrderService.listAuditTrail(orderId), request);
     }
 
     private String extractClientIp(HttpServletRequest request) {

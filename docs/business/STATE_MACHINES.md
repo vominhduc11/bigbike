@@ -577,7 +577,7 @@ From `AdminReturnService.TRANSITIONS` and notification logic:
 | `PENDING` | `RECEIVED` / `COMPLETED` / `REFUNDED` | Must approve first. | Backend rejects. | `AdminReturnService.java` |
 | `APPROVED` | `COMPLETED` / `REFUNDED` / `REJECTED` | Must mark received first. | Backend rejects. | `AdminReturnService.java` |
 | `RECEIVED` | `PENDING` / `APPROVED` / `REJECTED` | Not in transition map. | Backend rejects. | `AdminReturnService.java` |
-| `RECEIVED` / `INSPECTING` | `REFUNDED` (partial-coverage) | Refund flow only supports full-order refund (V114 removed partial refund). RMA must cover every line item × full quantity. Otherwise the RMA must close via `COMPLETED` and admins must use `POST /admin/orders/{id}/refund` for any order-level refund. | Backend rejects with `ConflictException` (status code `RETURN_NOT_FULL_COVERAGE`). | `AdminReturnService.java`, `RefundService.java` |
+| `RECEIVED` / `INSPECTING` | `REFUNDED` (partial-coverage) | Allowed. `RefundService.applyReturnPartialRefund` refunds the returned items' value (`refundAmount` ≤ `orderRefundableAmount`); stock for returned PASS items restored at RMA level; order stays `PAID`/`COMPLETED` (refundAmount accumulates) until cumulative refund reaches the paid amount, then flips `REFUNDED`. | `AdminReturnService.java`, `RefundService.applyReturnPartialRefund` | `CONFIRMED_BACKEND_ENFORCED` |
 | `INSPECTING` | `RECEIVED` / `PENDING` / `APPROVED` / `REJECTED` | Not in transition map — no QC-bounce-back path. If admin needs to re-receive, reject this RMA and open a new one. | Backend rejects. | `AdminReturnService.java` |
 | `REJECTED` | any state | No outgoing transitions. | Backend rejects via default empty set. | `AdminReturnService.java` |
 | `COMPLETED` | any state | No outgoing transitions. | Backend rejects via default empty set. | `AdminReturnService.java` |
@@ -588,7 +588,7 @@ From `AdminReturnService.TRANSITIONS` and notification logic:
 | Transition | Side Effect | Evidence | Status |
 |---|---|---|---|
 | `RECEIVED -> COMPLETED` | Restore stock for return items (RMA-level via `restoreStockForReturn`). Non-serial items: increment qty (variant resolved via `product_variant_id` or `product_variant_pk`, V158, so migrated wp-* variants restock). Serial items: stay `RETURNED` (admin promotes to `IN_STOCK` later via serial inspection API). Covered by `QaBug2StockRestoreTest`. | `AdminReturnService.java`, `OrderLineItemEntity.resolveVariantKey()` | `CONFIRMED_BACKEND_ENFORCED` |
-| `INSPECTING -> COMPLETED` | RMA-level restore stock **only for items with `inspection_result = 'PASS'`**; FAIL items skipped (kept out of inventory). FAIL-skip covered by `QaBug2StockRestoreTest` (via the DB-reachable RECEIVED→COMPLETED path, since INSPECTING status is currently DB-unreachable — see flag below). | `AdminReturnService.java` (V104) | `CONFIRMED_BACKEND_ENFORCED` |
+| `INSPECTING -> COMPLETED` | RMA-level restore stock **only for items with `inspection_result = 'PASS'`**; FAIL items skipped (kept out of inventory). FAIL-skip covered by `QaBug2StockRestoreTest` (via the RECEIVED→COMPLETED path). `INSPECTING` is now DB-reachable after V191 extended `chk_returns_status`. | `AdminReturnService.java` (V104) | `CONFIRMED_BACKEND_ENFORCED` |
 | `RECEIVED -> REFUNDED` / `INSPECTING -> REFUNDED` | RMA-level `restoreStockForReturn` is **skipped**. `RefundService.applyRefund` handles stock & serial restore at order level: non-serial via `OrderStockRestoreService.restoreForRefund`, SOLD serials via `SerialLifecycleService.restoreSoldSerialsForRefund` (returned items are already RETURNED so they're skipped — admin promotes via serial inspection API as in COMPLETED path). Sync `orders.refundAmount`/`paymentStatus`/`refundedAt`; update `PaymentEntity`; write off receivable; audit; order note; WS event. Send `RETURN_REFUNDED` notification. | `AdminReturnService.java`, `RefundService.java` | `CONFIRMED_BACKEND_ENFORCED` |
 | any valid transition | Save return history. | `AdminReturnService.java` | `CONFIRMED_BACKEND_ENFORCED` |
 | `PENDING -> APPROVED` | Send approved notification. | `AdminReturnService.java` | `CONFIRMED_BACKEND_ENFORCED` for service call; delivery runtime `NEEDS_VERIFICATION` |
@@ -609,13 +609,14 @@ Per-item inspection rules:
 - `INSPECTING -> COMPLETED/REFUNDED` is blocked until **every** ReturnItem has an inspection result.
 - Items marked `FAIL` are **excluded from stock restore** so customer-damaged goods cannot re-enter inventory.
 
-> **⚠️ NEEDS_VERIFICATION (separate from BUG-2):** The `INSPECTING` status is in the code's
-> transition map but **not** in the `chk_returns_status` CHECK constraint (`PENDING`, `APPROVED`,
-> `REJECTED`, `RECEIVED`, `COMPLETED`, `REFUNDED` only — V66; V104 added inspection columns but
-> did not extend the constraint). Persisting a return as `INSPECTING` therefore fails at the DB
-> level, so the `INSPECTING` sub-workflow is currently unreachable end-to-end (matches the test
-> report's "RECEIVED→INSPECTING BLOCKED"). Discovered while adding `QaBug2StockRestoreTest`;
-> tracked as a follow-up, **not** fixed under BUG-2.
+> **✅ RESOLVED (V191):** The `INSPECTING` status was previously in the code's transition map
+> but **not** in the `chk_returns_status` CHECK constraint (`PENDING`, `APPROVED`, `REJECTED`,
+> `RECEIVED`, `COMPLETED`, `REFUNDED` only — V66; V104 added inspection columns but did not extend
+> the constraint), so persisting a return as `INSPECTING` failed at the DB level and the QC
+> sub-workflow was unreachable end-to-end. `V191__add_inspecting_to_returns_status.sql` adds
+> `INSPECTING` to the CHECK constraint **and** to the `idx_returns_order_active` partial unique
+> index (so `RETURN_RULE_002`'s active set `{PENDING, APPROVED, RECEIVED, INSPECTING}` is enforced
+> at the DB too). The `RECEIVED → INSPECTING` sub-workflow is now reachable.
 
 ### Frontend Behavior
 

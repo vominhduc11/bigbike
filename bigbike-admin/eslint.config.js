@@ -8,7 +8,7 @@ export default defineConfig([
   globalIgnores(['dist', 'e2e', 'playwright.config.ts', 'playwright-report', 'test-results']),
   {
     // Build/tooling configs run in Node — needs Node globals (__dirname, process…).
-    files: ['scripts/**/*.{js,mjs}', 'vite.config.js', 'eslint.config.js'],
+    files: ['scripts/**/*.{js,mjs}', 'vite.config.js', 'vitest.config.js', 'eslint.config.js'],
     extends: [js.configs.recommended],
     languageOptions: {
       ecmaVersion: 2022,

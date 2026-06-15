@@ -428,6 +428,44 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
             </div>
           )}
         </div>
+
+        {/* SEO */}
+        <div className="bb-card">
+          <div className="bb-card-header"><h2>{t('brands.detail.sectionSeo', { defaultValue: 'SEO' })}</h2></div>
+          <div className="bb-card-body">
+            <div className="bb-grid-2">
+              <div className="form-field" style={{ gridColumn: '1 / -1' }}>
+                <span>{t('brands.detail.seoTitle', { defaultValue: 'SEO Title (tiêu đề trên Google)' })}</span>
+                <Input
+                  value={isEnLang ? (form.translations?.en?.seoTitle ?? '') : form.seoTitle}
+                  onChange={(e) => isEnLang ? updateTranslation('seoTitle', e.target.value) : updateField('seoTitle', e.target.value)}
+                  disabled={isReadOnly}
+                  placeholder={t('brands.detail.seoTitlePlaceholder', { defaultValue: 'Để trống sẽ tự dùng tên thương hiệu' })}
+                />
+              </div>
+              <div className="form-field" style={{ gridColumn: '1 / -1' }}>
+                <span>{t('brands.detail.seoDescription', { defaultValue: 'SEO Description (mô tả meta)' })}</span>
+                <Textarea
+                  rows={3}
+                  value={isEnLang ? (form.translations?.en?.seoDescription ?? '') : form.seoDescription}
+                  onChange={(e) => isEnLang ? updateTranslation('seoDescription', e.target.value) : updateField('seoDescription', e.target.value)}
+                  disabled={isReadOnly}
+                  placeholder={t('brands.detail.seoDescriptionPlaceholder', { defaultValue: 'Mô tả ngắn hiển thị dưới tiêu đề trên Google' })}
+                />
+              </div>
+              <div className="form-field" style={{ gridColumn: '1 / -1' }}>
+                <span>{t('brands.detail.seoCanonical', { defaultValue: 'Canonical URL' })}</span>
+                <Input
+                  value={form.seoCanonicalUrl}
+                  onChange={(e) => updateField('seoCanonicalUrl', e.target.value)}
+                  disabled={isReadOnly}
+                  placeholder="https://bigbike.vn/..."
+                />
+                {validationErrors.seoCanonicalUrl && <span className="hint text-danger">{validationErrors.seoCanonicalUrl}</span>}
+              </div>
+            </div>
+          </div>
+        </div>
       </form>
     </div>
   )

@@ -166,6 +166,17 @@ export default async function HomePage() {
   const expDesc = pickSetting(settings, ["home_exp_desc"]);
   const promoHrefValue = pickSetting(settings, ["promo_href"]);
   const promoImageValue = pickSetting(settings, ["promo_image_url"]);
+  // promo_title / promo_off do admin sửa được — dùng làm alt + tooltip ảnh banner
+  // (ảnh banner đã chứa chữ khuyến mãi, nên không overlay để tránh trùng/vỡ thiết kế).
+  const promoTitle = pickSetting(settings, ["promo_title"]);
+  const promoOff = pickSetting(settings, ["promo_off"]);
+  const promoAlt = [promoTitle, promoOff].filter(Boolean).join(" — ") || "banner khuyến mãi";
+  // Tiêu đề các khu trang chủ (admin sửa được), fallback copy theme khi trống.
+  const featuredKicker = pickSetting(settings, ["home_featured_kicker"]);
+  const featuredTitle = pickSetting(settings, ["home_featured_title"]);
+  const newsKicker = pickSetting(settings, ["home_news_kicker"]);
+  const newsTitle = pickSetting(settings, ["home_news_title"]);
+  const videosTitle = pickSetting(settings, ["home_videos_title"]);
 
   const rawSliders = slidersResult.data ?? [];
   const sliderProducts = await Promise.all(
@@ -261,8 +272,8 @@ export default async function HomePage() {
       <div className="product-list pt-40 pb-40">
         <div className="container">
           <div className="block-title text-center mb-40">
-            <p className="sub-title"><Tr ns="Home" k="featuredKicker" /></p>
-            <h3><Tr ns="Home" k="featuredTitle" /></h3>
+            <p className="sub-title">{featuredKicker || <Tr ns="Home" k="featuredKicker" />}</p>
+            <h3>{featuredTitle || <Tr ns="Home" k="featuredTitle" />}</h3>
           </div>
           <HomeFeaturedProducts initialProducts={carouselProducts} />
 
@@ -275,9 +286,9 @@ export default async function HomePage() {
         <div className="container">
           <div className="row">
             <div className="col-md-12">
-              <a href={promoHref ?? "#"}>
+              <a href={promoHref ?? "#"} title={promoTitle || undefined}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img className="lazy" src={promoImageSrc} alt="" />
+                <img className="lazy" src={promoImageSrc} alt={promoAlt} />
               </a>
             </div>
           </div>
@@ -299,8 +310,8 @@ export default async function HomePage() {
         <div className="news bb-home-news-parity pt-60 pb-60">
           <div className="container">
             <div className="block-title text-center pb-40">
-              <p className="sub-title"><Tr ns="Home" k="newsKicker" /></p>
-              <h3><Tr ns="Home" k="newsTitle" /></h3>
+              <p className="sub-title">{newsKicker || <Tr ns="Home" k="newsKicker" />}</p>
+              <h3>{newsTitle || <Tr ns="Home" k="newsTitle" />}</h3>
             </div>
             <HomeNewsList initialArticles={newsArticles} />
           </div>
@@ -316,7 +327,7 @@ export default async function HomePage() {
           />
           <div className="relative z-[1] mx-auto w-full max-w-[var(--bb-container-xl)] px-4 md:px-6">
             <div className="block-title text-center white pb-40">
-              <h3><Tr ns="Home" k="videosTitle" /></h3>
+              <h3>{videosTitle || <Tr ns="Home" k="videosTitle" />}</h3>
             </div>
             <HomeVideoCarousel videos={homeVideos} />
           </div>

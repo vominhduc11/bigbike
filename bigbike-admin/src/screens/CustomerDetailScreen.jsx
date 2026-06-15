@@ -125,7 +125,8 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
   useEffect(() => {
     if (!canReadCoupons) return
     let active = true
-    setCoupons({ status: 'loading', items: [], totalItems: 0 })
+    // queueMicrotask: tránh setState đồng bộ trong effect (cùng cách xử lý như creditLoading ở trên)
+    queueMicrotask(() => { if (active) setCoupons({ status: 'loading', items: [], totalItems: 0 }) })
     fetchCustomerCoupons(customerId, { page: 1, pageSize: 20 })
       .then((r) => { if (active) setCoupons({ status: 'success', items: r.items ?? [], totalItems: r.totalItems ?? 0 }) })
       .catch(() => { if (active) setCoupons({ status: 'error', items: [], totalItems: 0 }) })
@@ -146,7 +147,12 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
   }
 
   function handleEditOpen(customer) {
-    setEditForm({ displayName: customer.displayName || customer.fullName || '', phone: customer.phone || '' })
+    setEditForm({
+      displayName: customer.displayName || customer.fullName || '',
+      firstName: customer.firstName || '',
+      lastName: customer.lastName || '',
+      phone: customer.phone || '',
+    })
     setEditOpen(true)
   }
 
@@ -162,7 +168,12 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
     }
     setEditSaving(true)
     try {
-      const r = await updateCustomer(customerId, { displayName: editForm.displayName, phone: editForm.phone })
+      const r = await updateCustomer(customerId, {
+        displayName: editForm.displayName,
+        firstName: editForm.firstName,
+        lastName: editForm.lastName,
+        phone: editForm.phone,
+      })
       setState((p) => ({ ...p, customer: r.item }))
       setEditOpen(false)
       toast.success('Thông tin đã được cập nhật.')
@@ -260,6 +271,31 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
           </label>
         </DetailSection>
 
+        {customer.addresses && customer.addresses.length > 0 && (
+          <DetailSection title="Địa chỉ đã lưu">
+            <div className="flex flex-col gap-3">
+              {customer.addresses.map((addr, i) => (
+                <div key={i} className="text-sm border border-border rounded-md p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-semibold">{formatText(addr.fullName)}</span>
+                    {addr.type && (
+                      <span className="bb-badge bb-badge-neutral text-xs">
+                        {addr.type === 'BILLING' ? 'Thanh toán' : addr.type === 'SHIPPING' ? 'Giao hàng' : addr.type}
+                      </span>
+                    )}
+                  </div>
+                  {addr.phone && <p className="text-muted-foreground">{addr.phone}</p>}
+                  <p>
+                    {[addr.addressLine1, addr.addressLine2, addr.ward, addr.district, addr.province]
+                      .filter(Boolean)
+                      .join(', ') || '—'}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </DetailSection>
+        )}
+
         <DetailSection title="Chỉnh sửa hồ sơ">
           {!editOpen ? (
             <Button variant="outline" onClick={() => handleEditOpen(customer)} disabled={!canUpdate}>
@@ -276,6 +312,26 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
                   disabled={editSaving}
                  />
               </label>
+              <div className="grid grid-cols-2 gap-3">
+                <label>
+                  Tên
+                  <Input
+                    type="text"
+                    value={editForm.firstName}
+                    onChange={(e) => setEditForm((p) => ({ ...p, firstName: e.target.value }))}
+                    disabled={editSaving}
+                   />
+                </label>
+                <label>
+                  Họ
+                  <Input
+                    type="text"
+                    value={editForm.lastName}
+                    onChange={(e) => setEditForm((p) => ({ ...p, lastName: e.target.value }))}
+                    disabled={editSaving}
+                   />
+                </label>
+              </div>
               <label>
                 Email
                 <Input

@@ -44,6 +44,10 @@ export default async function ContactPage() {
   const zaloUrl = pickSetting(settings, ["zalo_url"]);
   const facebookUrl = pickSetting(settings, ["facebook_url"]);
   const mapUrl = pickSetting(settings, ["google_maps_url"]);
+  // Giờ mở cửa lấy từ settings (admin sửa được), fallback copy theme khi trống.
+  const hoursWeekday = pickSetting(settings, ["opening_hours_weekday"]);
+  const hoursWeekend = pickSetting(settings, ["opening_hours_weekend"]);
+  const hoursHoliday = pickSetting(settings, ["opening_hours_holiday"]);
 
   // Map embed: ưu tiên URL nhúng Google Maps trong settings, fallback theo địa chỉ.
   const canEmbedMap = /^https?:\/\/(www\.)?google\.com\/maps[/?#]/.test(mapUrl);
@@ -130,9 +134,9 @@ export default async function ContactPage() {
                           </div>
                           <div className="text col">
                             <p><Tr ns="Contact" k="hoursLabel" /></p>
-                            <p><b><Tr ns="Header" k="wpHoursWeekday" /></b></p>
-                            <p><b><Tr ns="Header" k="wpHoursWeekend" /></b></p>
-                            <p><b><Tr ns="Header" k="wpHoursHoliday" /></b></p>
+                            <p><b>{hoursWeekday || <Tr ns="Header" k="wpHoursWeekday" />}</b></p>
+                            <p><b>{hoursWeekend || <Tr ns="Header" k="wpHoursWeekend" />}</b></p>
+                            <p><b>{hoursHoliday || <Tr ns="Header" k="wpHoursHoliday" />}</b></p>
                           </div>
                         </li>
                       </ul>

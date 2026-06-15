@@ -54,7 +54,7 @@ class SliderReadServiceTest {
                         null,
                         List.of(),
                         List.of(),
-                        new ProductPrice(BigDecimal.valueOf(3290000), null, null, "VND"),
+                        new ProductPrice(BigDecimal.valueOf(3290000), null, null, "VND", null),
                         List.of(),
                         List.of(),
                         ProductStockState.IN_STOCK,

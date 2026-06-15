@@ -175,7 +175,8 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         entity.getRetailPrice(),
                         entity.getCompareAtPrice(),
                         entity.getSalePrice(),
-                        entity.getCurrency()
+                        entity.getCurrency(),
+                        null // list-card view: cost not needed
                 ),
                 List.of(),
                 List.of(),
@@ -459,7 +460,8 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         entity.getRetailPrice(),
                         entity.getCompareAtPrice(),
                         entity.getSalePrice(),
-                        entity.getCurrency()
+                        entity.getCurrency(),
+                        publicView ? null : entity.getCostPrice() // admin-only
                 ),
                 toVariants(entity, publicView, locale),
                 toSpecifications(entity, publicView, locale),
@@ -881,7 +883,8 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         entity.getRetailPrice(),
                         entity.getCompareAtPrice(),
                         entity.getSalePrice(),
-                        entity.getCurrency() == null ? "VND" : entity.getCurrency()
+                        entity.getCurrency() == null ? "VND" : entity.getCurrency(),
+                        publicView ? null : entity.getCostPrice() // admin-only (variant cost)
                 );
 
         // Prefer the human-readable attribute label over the raw slug so the

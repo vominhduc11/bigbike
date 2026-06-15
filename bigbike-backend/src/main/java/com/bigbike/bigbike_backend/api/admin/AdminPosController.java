@@ -114,13 +114,15 @@ public class AdminPosController extends AdminControllerSupport {
         String staffId = admin.id();
         boolean canOverridePrice = admin.permissions().contains("*")
                 || admin.permissions().contains("pos.price_override");
+        boolean canSellBelowCost = admin.permissions().contains("*")
+                || admin.permissions().contains("pos.sell_below_cost");
         boolean canOverrideCreditLimit = admin.permissions().contains("*")
                 || admin.permissions().contains("receivables.override_limit");
         String clientIp = extractClientIp(request);
         String userAgent = request.getHeader("User-Agent");
         return apiResponseFactory.data(
-                posOrderService.createOrder(req, staffId, canOverridePrice, canOverrideCreditLimit,
-                        clientIp, userAgent),
+                posOrderService.createOrder(req, staffId, canOverridePrice, canSellBelowCost,
+                        canOverrideCreditLimit, clientIp, userAgent),
                 request);
     }
 

@@ -442,6 +442,21 @@ export async function restoreProduct(productId) {
   return parseDetailPayload(payload, normalizeProduct)
 }
 
+// Product tags — managed as a dedicated sub-resource (GET/PUT /admin/products/{id}/tags),
+// independent of the main product upsert. Returns a flat array of tag names.
+export async function fetchProductTags(productId) {
+  const payload = await requestJson(`/admin/products/${productId}/tags`)
+  return Array.isArray(payload?.data) ? payload.data : []
+}
+
+export async function updateProductTags(productId, tags) {
+  const payload = await requestJson(`/admin/products/${productId}/tags`, {
+    method: 'PUT',
+    body: { tags },
+  })
+  return Array.isArray(payload?.data) ? payload.data : []
+}
+
 
 export async function fetchCategories(query) {
   try {
@@ -776,6 +791,15 @@ export async function addOrderNote(orderId, { content, customerVisible = false }
     body: { content, customerVisible },
   })
   return payload?.data ?? null
+}
+
+export async function fetchOrderAuditTrail(orderId) {
+  try {
+    const payload = await requestJson(`/admin/orders/${orderId}/audit`)
+    return Array.isArray(payload?.data) ? payload.data : []
+  } catch (error) {
+    throw normalizeError(error)
+  }
 }
 
 // Customers

@@ -7,7 +7,7 @@ import { RefundModal } from '../components/RefundModal'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
-import { addOrderNote, adminCreateReturn, fetchOrderAllowedTransitions, fetchOrderDetail, fetchReturnsByOrder, updateOrderFulfillment, updateOrderPaymentStatus, updateOrderStatus } from '../lib/adminApi'
+import { addOrderNote, adminCreateReturn, fetchOrderAllowedTransitions, fetchOrderAuditTrail, fetchOrderDetail, fetchReturnsByOrder, updateOrderFulfillment, updateOrderPaymentStatus, updateOrderStatus } from '../lib/adminApi'
 import { subscribeAdminWs } from '../lib/adminWebSocket'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
 import { showConfirm } from '../lib/confirm'
@@ -26,6 +26,20 @@ const PAYMENT_TRANSITIONS = {
 }
 
 const REASON_REQUIRED = new Set(['CANCELLED', 'FAILED'])
+
+// Ghép phần đường/phường/quận/tỉnh của một địa chỉ thành 1 dòng (bỏ phần rỗng).
+function addressLine(addr) {
+  if (!addr) return ''
+  return [addr.addressLine1, addr.addressLine2, addr.ward, addr.district, addr.province]
+    .filter(Boolean)
+    .join(', ')
+}
+
+// So sánh địa chỉ thanh toán vs giao hàng để chỉ hiện địa chỉ thanh toán khi KHÁC nhau.
+function sameAddress(a, b) {
+  if (!a || !b) return false
+  return a.fullName === b.fullName && a.phone === b.phone && addressLine(a) === addressLine(b)
+}
 
 function ReasonConfirmModal({ targetStatus, t, onConfirm, onClose }) {
   const [reason, setReason] = useState('')
@@ -217,6 +231,11 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
     queryKey: ['order', orderId],
     queryFn: () => fetchOrderDetail(orderId),
   })
+  const auditQuery = useQuery({
+    queryKey: ['order-audit', orderId],
+    queryFn: () => fetchOrderAuditTrail(orderId),
+    enabled: Boolean(orderId),
+  })
 
   // Live-refresh khi đơn ĐANG XEM có thay đổi (trạng thái/thanh toán/note/refund) đẩy về
   // qua WebSocket admin. Chỉ refetch khi event đúng orderId này — tránh refetch thừa.
@@ -224,6 +243,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
     const unsubscribe = subscribeAdminWs('/topic/admin/orders', (event) => {
       if (String(event?.orderId) === String(orderId)) {
         queryClient.invalidateQueries({ queryKey: ['order', orderId] })
+        queryClient.invalidateQueries({ queryKey: ['order-audit', orderId] })
       }
     })
     return unsubscribe
@@ -253,6 +273,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
   function applyOrderUpdate(updatedOrder) {
     queryClient.setQueryData(['order', orderId], (old) => ({ ...old, item: updatedOrder }))
     queryClient.invalidateQueries({ queryKey: ['orders'] })
+    queryClient.invalidateQueries({ queryKey: ['order-audit', orderId] })
   }
 
   useEffect(() => {
@@ -747,6 +768,36 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
               )}
             </div>
           </div>
+
+          {/* Audit trail — lịch sử thao tác trên đơn (status/payment/fulfillment/note/refund) */}
+          <div className="bb-card" style={{ marginBottom: 16 }}>
+            <div className="bb-card-header"><h3>{t('orders.audit.title')}</h3></div>
+            <div className="bb-card-body">
+              {auditQuery.isLoading ? (
+                <p className="bb-muted">{t('orders.audit.loading')}</p>
+              ) : auditQuery.isError ? (
+                <p className="bb-muted">{t('orders.audit.error')}</p>
+              ) : (auditQuery.data ?? []).length === 0 ? (
+                <p className="bb-muted">{t('orders.audit.empty')}</p>
+              ) : (
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                  {(auditQuery.data ?? []).map((entry, i) => (
+                    <li key={entry.id ?? i} style={{ borderBottom: '1px solid var(--bb-border-faint)', padding: '8px 0', fontSize: 13 }}>
+                      <div className="flex items-center justify-between gap-2">
+                        <span style={{ fontWeight: 600 }}>
+                          {t(`orders.audit.action.${entry.action}`, { defaultValue: entry.action })}
+                        </span>
+                        <span className="bb-muted">{entry.createdAt ? formatDateTime(entry.createdAt) : ''}</span>
+                      </div>
+                      <div className="bb-muted" style={{ marginTop: 2 }}>
+                        {entry.actorType}{entry.ipAddress ? ` · ${entry.ipAddress}` : ''}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Right column */}
@@ -763,14 +814,23 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                     <dt>{t('orders.detail.phone')}</dt>
                     <dd>{formatText(order.shippingAddress.phone)}</dd>
                     <dt>{t('orders.detail.address')}</dt>
+                    <dd>{addressLine(order.shippingAddress) || '—'}</dd>
+                  </>
+                )}
+                {order.billingAddress && !sameAddress(order.billingAddress, order.shippingAddress) && (
+                  <>
+                    <dt>{t('orders.detail.billingAddress')}</dt>
                     <dd>
-                      {[
-                        order.shippingAddress.addressLine1,
-                        order.shippingAddress.ward,
-                        order.shippingAddress.district,
-                        order.shippingAddress.province,
-                      ].filter(Boolean).join(', ') || '—'}
+                      {[order.billingAddress.fullName, order.billingAddress.phone].filter(Boolean).join(' · ')}
+                      {(order.billingAddress.fullName || order.billingAddress.phone) && <br />}
+                      {addressLine(order.billingAddress) || '—'}
                     </dd>
+                  </>
+                )}
+                {order.customerNote && (
+                  <>
+                    <dt>{t('orders.detail.customerNote')}</dt>
+                    <dd style={{ whiteSpace: 'pre-wrap', fontWeight: 600 }}>{order.customerNote}</dd>
                   </>
                 )}
               </dl>
@@ -813,6 +873,12 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                 <dl className="bb-info-grid">
                   <dt>{t('orders.detail.fulfillmentStatusLabel')}</dt>
                   <dd style={{ fontWeight: 600 }}>{ffStatusLabel}</dd>
+                  {order.shippingItems?.length > 0 && (
+                    <>
+                      <dt>{t('orders.detail.shippingMethod')}</dt>
+                      <dd>{order.shippingItems.map((si) => si.methodTitle).filter(Boolean).join(', ') || '—'}</dd>
+                    </>
+                  )}
                   {order.trackingNumber && (
                     <>
                       <dt>{t('orders.detail.colRma', { defaultValue: 'Mã vận đơn' })}</dt>

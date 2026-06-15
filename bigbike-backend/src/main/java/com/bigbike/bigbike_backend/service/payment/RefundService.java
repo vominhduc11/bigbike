@@ -212,4 +212,150 @@ public class RefundService {
                 customerName, order.getTotalAmount(),
                 order.getStatus(), order.getPaymentStatus(), now));
     }
+
+    /**
+     * Apply a PARTIAL refund driven by a partial-coverage RMA (RETURN_RULE_007 relaxed).
+     *
+     * <p>Differs from {@link #applyRefund} in three ways:
+     * <ul>
+     *   <li>The amount may be any value in {@code (0, remaining refundable]} — it is NOT
+     *       required to equal the full paid amount.</li>
+     *   <li>It does NOT restore order-level stock. The caller (AdminReturnService) restores
+     *       only the returned PASS items via {@code restoreStockForReturn}.</li>
+     *   <li>The order stays {@code PAID}/{@code COMPLETED} until the cumulative refund reaches
+     *       the full paid amount; only then does it flip to {@code REFUNDED}. Revenue reports
+     *       subtract {@code SUM(refundAmount)} (see AdminReportService), so a partial refund
+     *       correctly reduces net revenue without a {@code PARTIALLY_REFUNDED} status.</li>
+     * </ul>
+     * Participates in the caller's transaction.
+     */
+    @Transactional
+    public void applyReturnPartialRefund(
+            UUID orderId,
+            UUID adminId,
+            BigDecimal refundAmount,
+            String refundReason,
+            String noteContent,
+            boolean customerVisible,
+            String clientIp,
+            String userAgent) {
+
+        OrderEntity order = orderRepo.findById(orderId)
+                .orElseThrow(() -> new NotFoundException("Order not found."));
+
+        String paymentStatus = order.getPaymentStatus();
+        if (!"PAID".equals(paymentStatus)) {
+            throw new ConflictException(
+                    "Refund requires payment status PAID. Current: " + paymentStatus);
+        }
+
+        BigDecimal scaled = refundAmount.setScale(2, RoundingMode.HALF_UP);
+        BigDecimal alreadyRefunded = order.getRefundAmount() != null
+                ? order.getRefundAmount() : BigDecimal.ZERO;
+        BigDecimal paidAmount = order.getPaidAmount() != null ? order.getPaidAmount() : BigDecimal.ZERO;
+        BigDecimal maxRefundable = paidAmount.subtract(alreadyRefunded);
+
+        if (scaled.compareTo(BigDecimal.ZERO) <= 0) {
+            throw ValidationException.fromField("refundAmount", "INVALID", "refundAmount must be > 0.");
+        }
+        if (scaled.compareTo(maxRefundable) > 0) {
+            throw ValidationException.fromField("refundAmount", "EXCEEDS_REFUNDABLE",
+                    "refundAmount (" + scaled + ") exceeds the remaining refundable amount ("
+                            + maxRefundable + ").");
+        }
+
+        Instant now = Instant.now();
+        BigDecimal newTotalRefunded = alreadyRefunded.add(scaled);
+        boolean fullyRefunded = newTotalRefunded.compareTo(paidAmount) >= 0;
+
+        order.setRefundAmount(newTotalRefunded);
+        if (refundReason != null && !refundReason.isBlank()) {
+            order.setRefundReason(refundReason);
+        }
+        order.setRefundedAt(now);
+        // Flip to REFUNDED only once the whole paid amount has been returned. A partial
+        // refund leaves the order PAID/COMPLETED — refundAmount tracks the cumulative total.
+        if (fullyRefunded) {
+            order.setPaymentStatus("REFUNDED");
+            Set<String> nonRefundableTerminals = Set.of("CANCELLED", "FAILED", "REFUNDED");
+            if (!nonRefundableTerminals.contains(order.getStatus())) {
+                order.setStatus("REFUNDED");
+            }
+        }
+        order.setUpdatedAt(now);
+        orderRepo.save(order);
+
+        // Cancel outstanding receivable only when the order is fully refunded.
+        if (fullyRefunded) {
+            receivableRepo.findByOrderId(orderId).ifPresent(ar -> {
+                if (!"CLOSED".equals(ar.getStatus()) && !"WRITTEN_OFF".equals(ar.getStatus())) {
+                    ar.setWrittenOffAmount(ar.getOutstandingAmount());
+                    ar.setOutstandingAmount(BigDecimal.ZERO);
+                    ar.setStatus("WRITTEN_OFF");
+                    ar.setWriteOffReason("ORDER_REFUNDED");
+                    ar.setWrittenOffAt(now);
+                    ar.setUpdatedAt(now);
+                    receivableRepo.save(ar);
+                }
+            });
+        }
+
+        UUID resolvedPaymentId = paymentRepo.findByOrderId(orderId).stream().findFirst().map(p -> {
+            p.setRefundAmount(newTotalRefunded);
+            p.setRefundedAt(now);
+            if (fullyRefunded) p.setStatus("REFUNDED");
+            p.setUpdatedAt(now);
+            paymentRepo.save(p);
+            return p.getId();
+        }).orElse(null);
+
+        RefundTransactionEntity tx = new RefundTransactionEntity();
+        tx.setOrder(order);
+        tx.setPaymentId(resolvedPaymentId);
+        tx.setAmount(scaled);
+        tx.setReason(refundReason);
+        tx.setNote((noteContent != null && !noteContent.isBlank()) ? noteContent : null);
+        tx.setAdminId(adminId);
+        tx.setIpAddress(clientIp);
+        tx.setUserAgent(userAgent);
+        tx.setCreatedAt(now);
+        refundTransactionRepo.save(tx);
+
+        String resolvedNote = (noteContent != null && !noteContent.isBlank())
+                ? noteContent
+                : "Hoàn tiền một phần " + scaled + " VND" + (refundReason != null ? " — " + refundReason : "");
+        OrderNoteEntity note = new OrderNoteEntity();
+        note.setOrder(order);
+        note.setAuthorType("ADMIN");
+        note.setAuthorId(adminId);
+        note.setNoteType("REFUND");
+        note.setContent(resolvedNote);
+        note.setCustomerVisible(customerVisible);
+        note.setCreatedAt(now);
+        noteRepo.save(note);
+
+        AuditLogEntity auditLog = new AuditLogEntity();
+        auditLog.setActorType("ADMIN");
+        auditLog.setActorId(adminId);
+        auditLog.setAction("ORDER_REFUND_CREATED");
+        auditLog.setResourceType("ORDER");
+        auditLog.setResourceId(orderId);
+        auditLog.setBeforeData("{\"paymentStatus\":\"" + paymentStatus
+                + "\",\"refundAmount\":\"" + alreadyRefunded + "\"}");
+        auditLog.setAfterData("{\"paymentStatus\":\"" + order.getPaymentStatus()
+                + "\",\"refundAmount\":\"" + newTotalRefunded + "\"}");
+        auditLog.setIpAddress(clientIp);
+        auditLog.setUserAgent(userAgent);
+        auditLog.setCreatedAt(now);
+        auditLogRepo.save(auditLog);
+
+        // No order-status email here — the RMA flow sends the customer "return refunded"
+        // notification (AdminReturnService.dispatchReturnNotification). Push admin WS only.
+        String customerName = order.getCustomerEmail() != null && !order.getCustomerEmail().isBlank()
+                ? order.getCustomerEmail() : order.getCustomerPhone();
+        adminOrderWsService.pushEvent(new OrderWsEvent(
+                "ORDER_REFUND_CREATED", order.getId(), order.getOrderNumber(),
+                customerName, order.getTotalAmount(),
+                order.getStatus(), order.getPaymentStatus(), now));
+    }
 }

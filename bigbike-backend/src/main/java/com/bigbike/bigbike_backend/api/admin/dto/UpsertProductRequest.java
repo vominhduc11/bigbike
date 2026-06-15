@@ -46,6 +46,8 @@ public class UpsertProductRequest {
     private boolean compareAtPricePresent = false;
     private BigDecimal salePrice;
     private boolean salePricePresent = false;
+    private BigDecimal costPrice;
+    private boolean costPricePresent = false;
 
     @Pattern(regexp = "^(VND)$", message = "Currency must be VND.")
     private String currency;
@@ -268,6 +270,19 @@ public class UpsertProductRequest {
 
     public boolean isSalePricePresent() {
         return salePricePresent;
+    }
+
+    public BigDecimal getCostPrice() {
+        return costPrice;
+    }
+
+    public void setCostPrice(BigDecimal costPrice) {
+        this.costPrice = costPrice;
+        this.costPricePresent = true;
+    }
+
+    public boolean isCostPricePresent() {
+        return costPricePresent;
     }
 
     public String getCurrency() {

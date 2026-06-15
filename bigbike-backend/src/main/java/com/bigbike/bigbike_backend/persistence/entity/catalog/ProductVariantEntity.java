@@ -40,6 +40,9 @@ public class ProductVariantEntity {
     @Column(name = "sale_price", precision = 19, scale = 2)
     private BigDecimal salePrice;
 
+    @Column(name = "cost_price", precision = 19, scale = 2)
+    private BigDecimal costPrice;
+
     private String currency;
 
     @Enumerated(EnumType.STRING)
@@ -128,6 +131,14 @@ public class ProductVariantEntity {
 
     public void setSalePrice(BigDecimal salePrice) {
         this.salePrice = salePrice;
+    }
+
+    public BigDecimal getCostPrice() {
+        return costPrice;
+    }
+
+    public void setCostPrice(BigDecimal costPrice) {
+        this.costPrice = costPrice;
     }
 
     public String getCurrency() {

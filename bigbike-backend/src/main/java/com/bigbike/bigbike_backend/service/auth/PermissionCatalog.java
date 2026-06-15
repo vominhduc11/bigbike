@@ -37,6 +37,7 @@ public final class PermissionCatalog {
             new Entry("pos.read",                     false),
             new Entry("pos.write",                    false),
             new Entry("pos.price_override",           true),
+            new Entry("pos.sell_below_cost",          true),
             new Entry("pos.refund",                   true),
             new Entry("receivables.read",             false),
             new Entry("receivables.create",           false),

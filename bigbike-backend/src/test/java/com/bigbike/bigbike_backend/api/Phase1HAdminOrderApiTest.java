@@ -621,6 +621,26 @@ class Phase1HAdminOrderApiTest {
     }
 
     @Test
+    void getOrderAuditTrail_returnsEntries_newestFirst() throws Exception {
+        OrderInfo order = placeGuestOrder(2100000);
+
+        // An audited admin action: add an order note → writes ORDER_NOTE_CREATED to audit_logs.
+        mockMvc.perform(post("/api/v1/admin/orders/" + order.orderId + "/notes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"content\":\"audit-trail test note\",\"customerVisible\":false}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        // The per-order audit endpoint returns the recorded entries, newest first.
+        mockMvc.perform(get("/api/v1/admin/orders/" + order.orderId + "/audit")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data[0].action").value("ORDER_NOTE_CREATED"))
+                .andExpect(jsonPath("$.data[0].actorType").value("ADMIN"));
+    }
+
+    @Test
     void createRefund_full_setsRefundedStatus_andSyncsPaymentRecord() throws Exception {
         OrderInfo order = placeGuestOrder(7300000);
 

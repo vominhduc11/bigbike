@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { WpAccountSectionHeading } from "@/components/wp/WpAccountNav";
-import { useOrder } from "@/lib/query/hooks";
+import { Button } from "@/components/ui/button";
+import { useCancelOrder, useOrder } from "@/lib/query/hooks";
 import { formatAddress, formatVnd, fulfillmentStatusLabelWithT, orderStatusLabelWithT, paymentMethodLabelWithT, safeText } from "@/lib/utils/format";
+import { isCustomerCancellable } from "@/lib/utils/orders";
 import { useLocalDate } from "@/components/i18n/LocalDate";
 import { toOrderHistoryPath } from "@/lib/utils/routes";
 import { cn } from "@/lib/utils";
@@ -16,7 +18,21 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
   const fmtDate = useLocalDate();
   const tCatalog = useTranslations("Catalog");
   const { data: order, isLoading, error: queryError } = useOrder(orderId);
+  const cancelMutation = useCancelOrder(orderId);
   const error = queryError ? (queryError as Error).message ?? t("loadFailedShort") : "";
+
+  // Backend là nguồn chốt cuối; UI chỉ ẩn nút khi chắc chắn không huỷ được.
+  const canCancel = order ? isCustomerCancellable(order) : false;
+
+  async function handleCancel() {
+    if (!order) return;
+    if (!window.confirm(t("cancelConfirm", { orderNumber: order.orderNumber }))) return;
+    try {
+      await cancelMutation.mutateAsync();
+    } catch {
+      // Lỗi hiển thị qua cancelMutation.isError bên dưới.
+    }
+  }
 
   if (isLoading) {
     return (
@@ -152,6 +168,25 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
           {paymentMethod ? paymentMethodLabelWithT(paymentMethod, tCheckout) : "—"}
         </p>
       </div>
+
+      {canCancel && (
+        <div className="mt-8 border-t border-border pt-6">
+          <p className="mb-3 text-sm text-muted-foreground">{t("cancelDescription")}</p>
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={handleCancel}
+            disabled={cancelMutation.isPending}
+          >
+            {cancelMutation.isPending ? t("cancelInProgress") : t("cancelTrigger")}
+          </Button>
+          {cancelMutation.isError && (
+            <p className="mt-2 text-sm text-brand">
+              {(cancelMutation.error as Error)?.message || t("cancelFailed")}
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="mt-6">
         <Link href={toOrderHistoryPath()} className={cn(bbLink, "text-sm")}>

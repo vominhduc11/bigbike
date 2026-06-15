@@ -50,15 +50,27 @@ export function WpProductSwipeItem({
         <div className="product--item-thumbnail">
           <Link
             href={href}
-            // Lưới: khung ảnh vuông cố định, căn giữa ảnh để mọi thẻ cùng chiều cao
-            // ảnh (mũ cao / găng tay / áo khoác / tai nghe rộng đều fit như nhau).
-            // Thiếu ảnh: biến khung (min-height 200) thành flex để căn logo placeholder
-            // vào đúng chính giữa. Ảnh thật giữ nguyên layout WP gốc trên carousel.
-            className={cn(isGrid && "flex aspect-square items-center justify-center")}
+            // Lưới: khung ảnh VUÔNG bằng nhau mọi thẻ, ảnh contain (mũ cao / áo khoác /
+            // găng tay / tai nghe rộng đều fit, KHÔNG cắt). Dùng inline style vì theme WP
+            // (wp-theme-category.css) đặt cứng `.product--item-thumbnail>a{min-height:200px;
+            // display:block}` + `a img{width:auto}` + `img{transform:scale(1.05)}` — đè cả
+            // Tailwind. Trong đó `min-height:200px` gặp `aspect-square` ép luôn CHIỀU RỘNG
+            // = 200px > khung 160px ở mobile → tràn phải 40px bị `overflow:hidden` cắt.
+            // Ép min-height:0 để ô vuông tính theo bề rộng; các rule WP không có !important
+            // nên inline thắng. Nhánh carousel (!isGrid) giữ nguyên min-height 200 của WP.
+            className={cn(isGrid && "overflow-hidden")}
             style={
-              !isGrid && !img
-                ? { display: "flex", alignItems: "center", justifyContent: "center" }
-                : undefined
+              isGrid
+                ? {
+                    display: "flex",
+                    minHeight: 0,
+                    aspectRatio: "1 / 1",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }
+                : !img
+                  ? { display: "flex", alignItems: "center", justifyContent: "center" }
+                  : undefined
             }
           >
             {img ? (
@@ -67,7 +79,19 @@ export function WpProductSwipeItem({
               <img
                 src={img}
                 alt={name}
-                className={cn("swiper-lazy -lazy", isGrid && "h-full w-full object-contain p-2")}
+                className="swiper-lazy -lazy"
+                style={
+                  isGrid
+                    ? {
+                        width: "100%",
+                        height: "100%",
+                        maxWidth: "100%",
+                        objectFit: "contain",
+                        padding: 8,
+                        transform: "none",
+                      }
+                    : undefined
+                }
                 width={1}
                 height={1}
               />

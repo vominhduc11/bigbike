@@ -456,6 +456,8 @@
       "retailPrice": "Retail price (VND) *",
       "compareAtPrice": "Compare-at price (VND)",
       "salePrice": "Sale price (VND)",
+      "costPrice": "Cost price (VND)",
+      "costPriceHint": "Used to block selling below cost at POS. Not shown to customers.",
       "publishStatus": "Publish status *",
       "specialStockNote": "Special state: {{state}} — handle via dedicated API",
       "specialPublishNote": "Special state: {{state}} — restore via dedicated API",
@@ -748,6 +750,19 @@
     }
   },
   "orders": {
+    "audit": {
+      "title": "Activity log",
+      "loading": "Loading…",
+      "error": "Couldn't load the activity log.",
+      "empty": "No activity yet.",
+      "action": {
+        "ORDER_STATUS_UPDATED": "Order status updated",
+        "ORDER_PAYMENT_STATUS_UPDATED": "Payment status updated",
+        "ORDER_FULFILLMENT_STATUS_UPDATED": "Fulfillment status updated",
+        "ORDER_NOTE_CREATED": "Note added",
+        "ORDER_REFUND_CREATED": "Refund created"
+      }
+    },
     "eyebrow": "Commerce",
     "title": "Orders",
     "description": "Manage and process customer orders.",
@@ -781,6 +796,9 @@
       "email": "Email:",
       "phone": "Phone:",
       "address": "Address:",
+      "billingAddress": "Billing address:",
+      "customerNote": "Customer note:",
+      "shippingMethod": "Shipping method:",
       "orderStatus": "Order status",
       "deliveryStatus": "Delivery status",
       "paymentStatus": "Payment status",
@@ -1731,6 +1749,7 @@
     "group_general": "Shop info",
     "group_contact": "Contact",
     "group_payment": "Payment",
+    "group_payment": "Payment",
     "group_shipping": "Shipping",
     "group_seo": "Website SEO",
     "group_social": "Social media",
@@ -2167,7 +2186,10 @@
     "metaOrderPaid": "Paid",
     "metaOrderRefundable": "Refundable",
     "refundPartialBlocked": "This return does not cover the entire order — refunds cannot be processed here. Close the return (Completed), then use the Refund button on the order details page.",
-    "refundFullHint": "Only full refunds are supported. The refund amount has been auto-filled with the remaining refundable amount."
+    "refundFullHint": "Only full refunds are supported. The refund amount has been auto-filled with the remaining refundable amount.",
+    "errorRefundExceeds": "Refund amount cannot exceed {{amount}} (the remaining refundable amount).",
+    "refundPartialInfo": "This return covers only part of the order — the refund is based on the returned items' value. The order stays paid for the remainder.",
+    "refundPartialHint": "Partial return: the amount is pre-filled with the returned (passed) items' value. You can adjust it but it cannot exceed the remaining refundable amount."
   },
   "warranty": {
     "eyebrow": "After-sales · BigBike",
@@ -2595,6 +2617,7 @@
     "method": {
       "CASH": "Cash",
       "CARD_TERMINAL": "Card / Terminal",
+      "CREDIT": "Credit",
       "BANK_TRANSFER": "Bank transfer"
     },
     "note": "Internal note (optional)",
@@ -2736,7 +2759,9 @@
     "confirmMessage": "Are you sure you want to refund {{amount}}? This action cannot be undone.",
     "errorAmountRequired": "Please enter a valid amount",
     "errorAmountExceeds": "Cannot exceed {{max}}",
+    "errorMustBeFullAmount": "Only a full refund of the remaining amount ({{amount}}) is supported.",
     "errorReasonRequired": "Please select a reason",
+    "hintFullRefundOnly": "Only a full refund of the remaining amount is supported.",
     "confirm": "Confirm refund",
     "processing": "Processing...",
     "success": "Refund created successfully",

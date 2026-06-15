@@ -15,10 +15,12 @@ import {
   fetchProductAssignment,
   fetchProductDetail,
   fetchProducts,
+  fetchProductTags,
   mapValidationErrors,
   updateAttribute,
   updateAttributeValueLabel,
   updateProduct,
+  updateProductTags,
 } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import { formatDateTime } from '../lib/formatters'
@@ -34,6 +36,7 @@ import { MediaDimensionWarning } from '../components/MediaDimensionWarning'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { RichTextEditor } from '../components/RichTextEditor'
 import { BlockEditor } from '../components/BlockEditor'
+import { TagInput } from '../components/TagInput'
 import { SortableList } from '../components/Sortable'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -199,6 +202,7 @@ function buildEmptyForm() {
     retailPrice: '',
     compareAtPrice: '',
     salePrice: '',
+    costPrice: '',
     forceOutOfStock: false,
     publishStatus: 'DRAFT',
     imageUrl: '',
@@ -295,6 +299,10 @@ function buildFormFromItem(item) {
     salePrice:
       Number.isInteger(item.price?.salePrice) && item.price.salePrice > 0
         ? String(item.price.salePrice)
+        : '',
+    costPrice:
+      Number.isInteger(item.price?.costPrice) && item.price.costPrice > 0
+        ? String(item.price.costPrice)
         : '',
     forceOutOfStock: Boolean(item.forceOutOfStock),
     publishStatus: item.publishStatus,
@@ -426,6 +434,7 @@ function toPayload(form) {
     retailPrice: toIntegerOrNull(form.retailPrice),
     compareAtPrice: toIntegerOrNull(form.compareAtPrice),
     salePrice: toIntegerOrNull(form.salePrice),
+    costPrice: toIntegerOrNull(form.costPrice),
     currency: 'VND',
     forceOutOfStock: Boolean(form.forceOutOfStock),
     publishStatus: form.publishStatus,
@@ -2115,7 +2124,7 @@ const TAB_SECTIONS = {
 // in-render sectionErrors derivation and the synchronous save-time tab switch.
 const SECTION_FIELD_PREFIXES = {
   basic:         ['name','slug','sku','shortDescription','description','brandId','categoryId','publishStatus'],
-  pricing:       ['retailPrice','compareAtPrice','salePrice'],
+  pricing:       ['retailPrice','compareAtPrice','salePrice','costPrice'],
   media:         ['imageUrl'],
   seo:           ['seoTitle','seoDescription','seoCanonicalUrl','seoOgImageUrl','seoOgImageAlt'],
   gallery:       ['gallery'],
@@ -2353,6 +2362,56 @@ function Field({ label, hint, error, count, countWarn, full, children }) {
 }
 
 // ── Main screen ────────────────────────────────────────────────────────────────
+
+// Tag sản phẩm — sub-resource riêng (GET/PUT /admin/products/{id}/tags), tự load + tự lưu,
+// độc lập với luồng lưu sản phẩm chính. Chỉ render cho sản phẩm đã tồn tại.
+function ProductTagsCard({ productId, canUpdate }) {
+  const { t } = useTranslation()
+  const queryClient = useQueryClient()
+  const { data: serverTags } = useQuery({
+    queryKey: ['product-tags', productId],
+    queryFn: () => fetchProductTags(productId),
+    enabled: !!productId,
+  })
+  const [draft, setDraft] = useState(null)
+  const current = draft ?? serverTags ?? []
+  const baseline = serverTags ?? []
+  const isDirty = JSON.stringify([...current].sort()) !== JSON.stringify([...baseline].sort())
+
+  const saveMut = useMutation({
+    mutationFn: (next) => updateProductTags(productId, next),
+    onSuccess: (saved) => {
+      queryClient.setQueryData(['product-tags', productId], saved)
+      setDraft(null)
+      toast.success(t('products.detail.tagsSaved', { defaultValue: 'Đã lưu tag sản phẩm.' }))
+    },
+    onError: (e) => toast.error(e?.message || t('common.error')),
+  })
+
+  return (
+    <SectionCard title={t('products.detail.sectionTags', { defaultValue: 'Tag sản phẩm' })}>
+      <p className="text-xs text-muted-foreground mb-2">
+        {t('products.detail.tagsHint', { defaultValue: 'Tag giúp gom nhóm sản phẩm cho trang lọc theo thẻ trên website. Gõ rồi nhấn Enter để thêm.' })}
+      </p>
+      <TagInput
+        value={current}
+        onChange={(next) => setDraft(next)}
+        disabled={!canUpdate || saveMut.isPending}
+        placeholder={t('products.detail.tagsPlaceholder', { defaultValue: 'Thêm tag...' })}
+      />
+      {canUpdate && isDirty && (
+        <div className="mt-3 flex gap-2">
+          <Button type="button" size="sm" disabled={saveMut.isPending} onClick={() => saveMut.mutate(current)}>
+            {saveMut.isPending ? t('common.saving', { defaultValue: 'Đang lưu...' }) : t('common.save', { defaultValue: 'Lưu' })}
+          </Button>
+          <Button type="button" size="sm" variant="outline" disabled={saveMut.isPending} onClick={() => setDraft(null)}>
+            {t('common.cancel', { defaultValue: 'Hủy' })}
+          </Button>
+        </div>
+      )}
+    </SectionCard>
+  )
+}
 
 export function ProductDetailScreen({ productId, isCreate = false, navigate, canUpdate }) {
   const { t } = useTranslation()
@@ -3035,12 +3094,13 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   </Field>
 
                   <Field label={t('products.detail.gender', { defaultValue: 'Giới tính' })}>
-                    <Select value={form.gender} onValueChange={(val) => updateField('gender', val)} disabled={isReadOnly}>
+                    <Select value={form.gender || 'NONE'} onValueChange={(val) => updateField('gender', val === 'NONE' ? '' : val)} disabled={isReadOnly}>
                       <SelectTrigger>
                         <SelectValue placeholder={t('products.detail.genderPlaceholder', { defaultValue: 'Không chọn' })} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">{t('products.detail.genderPlaceholder', { defaultValue: 'Không chọn' })}</SelectItem>
+                        {/* Radix Select cấm value="" — dùng sentinel 'NONE', map về '' khi lưu */}
+                        <SelectItem value="NONE">{t('products.detail.genderPlaceholder', { defaultValue: 'Không chọn' })}</SelectItem>
                         <SelectItem value="Nam">Nam</SelectItem>
                         <SelectItem value="Nữ">Nữ</SelectItem>
                         <SelectItem value="Unisex">Unisex</SelectItem>
@@ -3193,6 +3253,19 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     )}
                   </Field>
 
+                  <Field label={t('products.detail.costPrice')} error={validationErrors.costPrice}>
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      placeholder="vd: 3.000.000"
+                      value={formatPrice(form.costPrice)}
+                      onChange={(e) => updateField('costPrice', e.target.value.replace(/\D/g, ''))}
+                      disabled={isReadOnly}
+                    />
+                    <small className="text-xs text-muted-foreground">{t('products.detail.costPriceHint')}</small>
+                  </Field>
+
                   <Field label={t('products.detail.publishStatus')} error={validationErrors.publishStatus}>
                     <Select value={form.publishStatus} onValueChange={(val) => { if (val) updateField('publishStatus', val) }} disabled={isReadOnly}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
@@ -3240,6 +3313,9 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
 
           {activeTab === 'content' && (
             <>
+              {!isCreate && productId && (
+                <ProductTagsCard productId={productId} canUpdate={canUpdate} />
+              )}
               {/* ── Card: SEO ── */}
               <SectionCard title={t('products.detail.sectionSeo')} badge={<RoleBadge role="seo" />}>
                 {/* Live Google SERP preview */}

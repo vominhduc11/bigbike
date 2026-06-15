@@ -2,7 +2,7 @@ import { useMemo, useEffect, useState, useCallback } from 'react'
 import {
   Store, Phone, CreditCard, Tag, Globe, Settings,
   Home, Building2, Image as ImageIcon, Package, Users,
-  CheckCircle2, AlertCircle,
+  CheckCircle2, AlertCircle, Landmark,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
@@ -111,7 +111,7 @@ function isTranslatableSetting(setting) {
 // ── Tab config ────────────────────────────────────────────────────────────────
 
 const TAB_ORDER = [
-  'GENERAL', 'CONTACT', 'PUBLIC_HOME', 'PUBLIC_HERO', 'PROMO', 'SEO', 'STORE', 'TAX', 'INVENTORY',
+  'GENERAL', 'CONTACT', 'PAYMENT', 'PUBLIC_HOME', 'PUBLIC_HERO', 'PROMO', 'SEO', 'STORE', 'TAX', 'INVENTORY',
   'PRODUCT_ASSIGN',
 ]
 
@@ -122,7 +122,9 @@ const SENSITIVE_SETTING_TABS = new Set(['STORE', 'TAX'])
 // Group/key bị ẩn vì không thuộc trách nhiệm của admin shop:
 // - SECURITY: thiết lập kỹ thuật (login attempts, session timeout) — devops set, không phải admin shop
 // - PAYMENT_SEPAY: cổng thanh toán SePay đã gỡ khỏi hệ thống (V59) — chỉ còn dữ liệu rác, ẩn khỏi UI
-const HIDDEN_GROUPS = new Set(['SECURITY', 'PAYMENT_SEPAY'])
+// - COMMERCE: rác import WordPress (key site.currency = VND) trùng với store_currency (nhóm STORE,
+//   đã ẩn vì luôn VND). Hàng rào phòng hờ ở UI; bản ghi gốc đã được xoá ở migration V192.
+const HIDDEN_GROUPS = new Set(['SECURITY', 'PAYMENT_SEPAY', 'COMMERCE'])
 
 // Field cụ thể bị ẩn vì giá trị mặc định luôn đúng cho shop VN, đổi gây rủi ro:
 // - store_currency: luôn VND
@@ -133,6 +135,7 @@ const HIDDEN_KEYS = new Set(['store_currency', 'store_timezone', 'tax_label'])
 const TAB_META = {
   GENERAL:     { icon: Store,      labelKey: 'settings.group_general' },
   CONTACT:     { icon: Phone,      labelKey: 'settings.group_contact' },
+  PAYMENT:     { icon: Landmark,   labelKey: 'settings.group_payment' },
   PUBLIC_HOME: { icon: Home,       labelKey: 'settings.group_public_home' },
   PUBLIC_HERO: { icon: ImageIcon,  labelKey: 'settings.group_public_hero' },
   PROMO:       { icon: Tag,        labelKey: 'settings.group_promo' },
@@ -150,11 +153,20 @@ const KEY_LABELS_VI = {
   footer_tagline: 'Slogan footer',
   footer_description: 'Mô tả ngắn ở footer',
   bct_url: 'URL đăng ký Bộ Công Thương (online.gov.vn)',
+  business_registration: 'Giấy chứng nhận ĐKKD (dòng dưới footer)',
   // contact
   hotline_2: 'Hotline phụ',
   contact_email: 'Email liên hệ công khai',
   contact_address: 'Địa chỉ cửa hàng',
   facebook_url: 'Link trang Facebook',
+  opening_hours_weekday: 'Giờ mở cửa (T2–T6)',
+  opening_hours_weekend: 'Giờ mở cửa (T7/CN)',
+  opening_hours_holiday: 'Lịch nghỉ (lễ/Tết)',
+  // payment (tài khoản nhận chuyển khoản — admin tự nhập, hiển thị cho khách khi đặt đơn chuyển khoản)
+  bank_account_holder: 'Chủ tài khoản nhận chuyển khoản',
+  bank_account_number: 'Số tài khoản nhận chuyển khoản',
+  bank_name: 'Tên ngân hàng (vd: Vietcombank)',
+  bank_branch: 'Chi nhánh ngân hàng (không bắt buộc)',
   messenger_url: 'Link Messenger (popup chat)',
   messenger_display: 'Chữ hiển thị Messenger (popup chat)',
   google_maps_url: 'URL nhúng Google Maps (trang Liên hệ)',
@@ -172,6 +184,11 @@ const KEY_LABELS_VI = {
   about_title: 'Khu giới thiệu — tiêu đề chính',
   about_subtitle: 'Khu giới thiệu — kicker phụ đề',
   about_content_html: 'Khu giới thiệu — nội dung (rich-text)',
+  home_featured_kicker: 'Khu Sản phẩm nổi bật — kicker',
+  home_featured_title: 'Khu Sản phẩm nổi bật — tiêu đề',
+  home_news_kicker: 'Khu Tin tức — kicker',
+  home_news_title: 'Khu Tin tức — tiêu đề',
+  home_videos_title: 'Khu Video — tiêu đề',
   // seo
   seo_home_title: 'SEO Title trang chủ (thẻ <title>)',
   seo_home_description: 'SEO Description trang chủ (meta)',

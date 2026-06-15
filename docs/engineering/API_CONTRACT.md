@@ -101,6 +101,7 @@ Status: `CONFIRMED_FROM_CODE` — `PublicCacheHeaderFilter.java`, `SecurityConfi
 | `GET` | `/api/v1/customer/orders/returns` | List own returns | `ApiDataResponse<List<CustomerReturnResponse>>` | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java` |
 | `GET` | `/api/v1/customer/orders/returns/{returnId}` | Get own return detail | `ApiDataResponse<CustomerReturnResponse>` | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java` |
 | `POST` | `/api/v1/customer/orders/{orderId}/returns` | Create own return request | `ApiDataResponse<CustomerReturnResponse>` with HTTP `201` | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java` |
+| `PATCH` | `/api/v1/customer/orders/{orderId}/cancel` | Customer cancels own order. Allowed only when `paymentStatus = UNPAID` **and** order is `PENDING` / `ON_HOLD` / (`PROCESSING` with fulfillment not yet `SHIPPED`/`DELIVERED`) — see `CustomerOrderCancelService.isCustomerCancellable`. Sets `CANCELLED` (+ fulfillment `CANCELLED` for DELIVERY), releases reserved serials and restores stock, revalidates product pages. Once `PAID`, returns `409` — customer must request a refund via admin. | `ApiDataResponse<OrderDetailResponse>` | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java`, `CustomerOrderCancelService.java` |
 | `GET` | `/api/v1/customer/orders/{orderId}/return-eligibility` | Pre-check whether the customer can open a return on this order and which line items still have returnable quantity. Read-only. Returns stable reason codes (`OK`, `ORDER_NOT_FOUND`, `NOT_OWNER`, `ORDER_NOT_COMPLETED`, `WINDOW_EXPIRED`, `RETURN_IN_PROGRESS`, `NOTHING_TO_RETURN`, `IN_STORE_ORDER`). `IN_STORE_ORDER` — đơn được tạo qua POS (`channel="IN_STORE"`) không hỗ trợ trả hàng online; `eligible=false`. | `ApiDataResponse<ReturnEligibilityResponse>` | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java`, `CustomerReturnService.getReturnEligibility` |
 | `GET` | `/api/v1/customer/wishlist` | List own wishlist product IDs, newest first | `ApiDataResponse<List<String>>` | `CONFIRMED_FROM_CODE` | `CustomerWishlistController.java` |
 | `GET` | `/api/v1/customer/wishlist/products` | List own wishlisted products (paginated, PUBLISHED only). Each `Product` uses the **list-view** shape — see "Product list — list-view payload vs detail payload". | `ApiListResponse<Product>` | `CONFIRMED_FROM_CODE` | `CustomerWishlistController.java` |
@@ -277,6 +278,25 @@ Evidence:
 - `AdminCatalogReadService.listProducts()` / `CatalogReadService.listProducts()` — single-slot filter
 - `bigbike-openapi.json` — `homepage_block` param + `homepageBlock` enum field on Product schema
 - `V111__refactor_product_homepage_block.sql` — schema change + backfill
+
+### Product tags — admin sub-resource (`GET`/`PUT /api/v1/admin/products/{id}/tags`)
+
+Product↔tag associations (tables `product_tags` + join `product_tag_map`) power the storefront tag-filter pages. They are managed as a **dedicated admin sub-resource**, intentionally kept off the shared `Product` domain record / `UpsertProductRequest` (which serve storefront/POS/list and would require touching every `new Product(...)` call site).
+
+| Method | Path | Permission | Request | Response |
+|---|---|---|---|---|
+| `GET` | `/api/v1/admin/products/{id}/tags` | `products.read` | — | `ApiDataResponse<string[]>` — tag display names, case-insensitive sorted |
+| `PUT` | `/api/v1/admin/products/{id}/tags` | `products.update` | `{ "tags": string[] }` (max 50, each ≤ 100 chars) | `ApiDataResponse<string[]>` — resulting tags |
+
+`PUT` **replaces** the full tag set: each name is slugified (`ProductSlugGenerator.toSlug`, diacritic-insensitive kebab-case); an existing `product_tags` row with that slug is reused, otherwise a new tag row is created. Blank/duplicate-slug entries are dropped. `ProductEntity` is the owning side of `product_tag_map`, so mutating `product.getTags()` + save syncs the join table.
+
+Status: `CONFIRMED_FROM_CODE`
+
+Evidence:
+- `AdminCatalogController.java` — `getProductTags` / `setProductTags`
+- `AdminProductTagService.java` — resolve-or-create + full-replace logic
+- `ProductTagsRequest.java` — request DTO
+- `ProductEntity.java` — `@ManyToMany ... @JoinTable(name = "product_tag_map")` `tags`
 
 ### Product list — gender filter (V184)
 
@@ -730,14 +750,13 @@ Concrete keys: `hero_products_*`, `hero_brands_*`, `hero_news_*` (15 total). All
 |---|---|---|---|
 | `orderPaidAmount` | `BigDecimal` | `orders.paid_amount` | Total amount currently paid on the order |
 | `orderRefundedAmount` | `BigDecimal` | `orders.refund_amount` (NULL → 0) | Cumulative refunded so far |
-| `orderRefundableAmount` | `BigDecimal` | `paid − refunded` | Remaining refundable amount — must equal the `refundAmount` sent to `PATCH /returns/{id}/status` when transitioning to REFUNDED |
-| `isFullReturnCoverage` | `boolean` | derived from `order_line_items.quantity` vs `sum(non-rejected return_items.quantity)` | `true` only when every line item is fully covered by non-rejected returns. UI hides the REFUNDED option when `false` |
+| `orderRefundableAmount` | `BigDecimal` | `paid − refunded` | Remaining refundable amount. Full-coverage REFUNDED requires `refundAmount` to equal this exactly; partial-coverage REFUNDED requires `0 < refundAmount ≤ this` |
+| `isFullReturnCoverage` | `boolean` | derived from `order_line_items.quantity` vs `sum(non-rejected return_items.quantity)` | `true` when every line item is fully covered by non-rejected returns. Full coverage → whole-order refund; `false` → partial refund (returned items' value only) |
 
 State machine guards (also see [STATE_MACHINES.md §10](../business/STATE_MACHINES.md)):
 - `INSPECTING → COMPLETED/REFUNDED` is rejected with `items.INSPECTION_INCOMPLETE` if any `ReturnItem` is missing an inspection result.
-- `RECEIVED|INSPECTING → REFUNDED` is rejected with `ConflictException` code `RETURN_NOT_FULL_COVERAGE` when the RMA (together with prior non-rejected RMAs) does not cover every order line item × full quantity. Partial refunds are unsupported (V114); admins must close via `COMPLETED` and use `POST /admin/orders/{id}/refund` for order-level refund.
-- `RECEIVED|INSPECTING → REFUNDED` requires `refundAmount` to **equal** `orderRefundableAmount` exactly (V114 full-refund-only).
-- `restoreStockForReturn` skips items with `inspection_result = 'FAIL'` so customer-damaged goods don't re-enter inventory. On the REFUNDED path it is **not invoked at all** — `RefundService.applyRefund` handles stock & serial restoration at order level to avoid double-restore.
+- `RECEIVED|INSPECTING → REFUNDED` is allowed for both full- and partial-coverage RMAs. Full coverage (`isFullReturnCoverage = true`) → `refundAmount` must **equal** `orderRefundableAmount` and `RefundService.applyRefund` refunds the whole order. Partial coverage → `0 < refundAmount ≤ orderRefundableAmount` and `RefundService.applyReturnPartialRefund` refunds only the returned items' value, leaving the order `PAID`/`COMPLETED` until cumulative refund reaches the paid amount.
+- `restoreStockForReturn` skips items with `inspection_result = 'FAIL'` so customer-damaged goods don't re-enter inventory. On the **full-coverage** REFUNDED path it is not invoked — `RefundService.applyRefund` restores stock & serials at order level. On the **partial-coverage** REFUNDED path it IS invoked (RMA-level) so only the returned PASS items are restored.
 
 ## Admin Warranty Contract
 

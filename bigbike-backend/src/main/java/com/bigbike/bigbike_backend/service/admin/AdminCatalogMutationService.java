@@ -794,6 +794,9 @@ public class AdminCatalogMutationService {
         if (create || request.isSalePricePresent()) {
             entity.setSalePrice(request.getSalePrice());
         }
+        if (create || request.isCostPricePresent()) {
+            entity.setCostPrice(request.getCostPrice());
+        }
         // BigBike is VND-only. DTO validator rejects anything else; persistence is hardcoded.
         entity.setCurrency("VND");
         if (create) {
@@ -1202,6 +1205,9 @@ public class AdminCatalogMutationService {
             }
             if (createVariant || req.isSalePricePresent()) {
                 variant.setSalePrice(req.getSalePrice());
+            }
+            if (createVariant || req.isCostPricePresent()) {
+                variant.setCostPrice(req.getCostPrice());
             }
             variant.setCurrency("VND");
             if (createVariant) {

@@ -3,6 +3,7 @@ package com.bigbike.bigbike_backend.service.admin;
 import com.bigbike.bigbike_backend.api.admin.dto.order.AdminOrderDetailResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.order.AdminOrderListItemResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.order.AdminOrderNoteResponse;
+import com.bigbike.bigbike_backend.api.admin.dto.order.OrderAuditLogResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.order.CreateOrderNoteRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.order.CreateRefundRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.order.OrderAppliedCouponResponse;
@@ -53,6 +54,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -647,6 +649,27 @@ public class AdminOrderService {
         }
         return noteRepo.findByOrderIdOrderByCreatedAtAsc(orderId)
                 .stream().map(this::toAdminNote).toList();
+    }
+
+    // ── Audit trail ───────────────────────────────────────────────────────────
+
+    /**
+     * Read-only audit trail for an order: every status/payment/fulfillment/note
+     * change recorded in {@code audit_logs} (resource_type = ORDER), newest first.
+     */
+    @Transactional(readOnly = true)
+    public List<OrderAuditLogResponse> listAuditTrail(UUID orderId) {
+        if (!orderRepo.existsById(orderId)) {
+            throw new NotFoundException("Order not found.");
+        }
+        return auditLogRepo.findByResourceTypeAndResourceId("ORDER", orderId)
+                .stream()
+                .sorted(Comparator.comparing(AuditLogEntity::getCreatedAt,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
+                .map(a -> new OrderAuditLogResponse(
+                        a.getId(), a.getAction(), a.getActorType(), a.getActorId(),
+                        a.getBeforeData(), a.getAfterData(), a.getIpAddress(), a.getCreatedAt()))
+                .toList();
     }
 
     // ── Business preconditions for status transitions ─────────────────────────

@@ -171,25 +171,10 @@ public class AdminReturnService {
                 throw ValidationException.fromField("refundAmount", "REQUIRED",
                         "refundAmount must be provided and > 0 when transitioning to REFUNDED.");
             }
-            // RETURN_RULE_007: REFUNDED via RMA requires the return (together with any
-            // prior non-rejected returns) to cover every order line item × full quantity.
-            // Partial refunds are unsupported (V114) — RefundService is full-refund-only
-            // and operates on the whole order, so calling it for a partial-coverage RMA
-            // would over-refund and over-restore stock/serials for items the customer kept.
-            if (!isFullReturnCoverage(ret.getOrderId())) {
-                List<OrderLineItemEntity> lineItems = lineItemRepo.findByOrderId(ret.getOrderId());
-                String firstMissing = lineItems.stream()
-                        .filter(li -> itemRepo.sumNonRejectedQuantityByLineItemId(li.getId()) < li.getQuantity())
-                        .findFirst()
-                        .map(li -> "'" + li.getProductName() + "' còn "
-                                + (li.getQuantity() - itemRepo.sumNonRejectedQuantityByLineItemId(li.getId()))
-                                + " món chưa được trả")
-                        .orElse("một số sản phẩm chưa được trả");
-                throw new ConflictException(
-                        "Không thể hoàn tiền: phiếu trả chưa bao phủ toàn bộ đơn hàng (" + firstMissing
-                                + "). Nếu muốn hoàn tiền toàn đơn, dùng nút Hoàn tiền ở trang chi tiết đơn hàng."
-                                + " (RETURN_NOT_FULL_COVERAGE)");
-            }
+            // RETURN_RULE_007 (relaxed): both full- and partial-coverage RMAs may be refunded.
+            // The amount cap (≤ remaining refundable) is enforced in RefundService. Full coverage
+            // delegates to applyRefund (whole-order restore + flip REFUNDED); partial coverage
+            // uses applyReturnPartialRefund (money only) + RMA-level restoreStockForReturn below.
         }
 
         String oldStatus = ret.getStatus();
@@ -210,12 +195,23 @@ public class AdminReturnService {
 
         OrderEntity order = orderRepo.findById(ret.getOrderId()).orElse(null);
 
-        // Full refund sync via unified RefundService — updates paymentStatus, PaymentEntity, note, audit, WS
+        // Refund sync via unified RefundService — updates paymentStatus, PaymentEntity, note, audit, WS.
+        // Full coverage → whole-order refund (restores all stock/serials, flips REFUNDED).
+        // Partial coverage → partial refund (money only); stock for returned PASS items is
+        // restored at RMA level by restoreStockForReturn below.
         if ("REFUNDED".equals(newStatus) && order != null) {
-            refundService.applyRefund(
-                    order.getId(), adminId,
-                    req.refundAmount(), ret.getReason(),
-                    req.adminNote(), false, null, null);
+            if (isFullReturnCoverage(ret.getOrderId())) {
+                refundService.applyRefund(
+                        order.getId(), adminId,
+                        req.refundAmount(), ret.getReason(),
+                        req.adminNote(), false, null, null);
+            } else {
+                refundService.applyReturnPartialRefund(
+                        order.getId(), adminId,
+                        req.refundAmount(), ret.getReason(),
+                        req.adminNote(), false, null, null);
+                restoreStockForReturn(ret.getId());
+            }
         }
 
         // When goods physically arrive: mark serials RETURNED (not IN_STOCK yet — needs INSPECTION).
@@ -230,10 +226,12 @@ public class AdminReturnService {
         }
 
         // COMPLETED path: RMA-level restore for non-serial items (no refund issued).
-        // REFUNDED path: stock & serials are restored at order level by
-        //   RefundService.applyRefund (called above) — calling restoreStockForReturn
-        //   here too would double-restore non-serial quantities. See RETURN_RULE_007.
-        // Serial-tracked items: stay RETURNED in both paths; admin promotes to
+        // REFUNDED path:
+        //   • full coverage  → stock & serials restored at order level by RefundService.applyRefund
+        //     (called above); calling restoreStockForReturn here would double-restore.
+        //   • partial coverage → restoreStockForReturn already called above (in the else branch),
+        //     so it is NOT repeated here.
+        // Serial-tracked items: stay RETURNED in all paths; admin promotes to
         //   IN_STOCK manually via PATCH /admin/inventory/serials/{id}/status.
         if ("COMPLETED".equals(newStatus)) {
             restoreStockForReturn(ret.getId());

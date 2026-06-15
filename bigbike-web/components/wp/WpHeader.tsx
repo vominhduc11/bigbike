@@ -20,7 +20,15 @@ const T = "/wp-content/themes/bigbike";
  * information-slide-bigbike (markup .contact-me giống hệt nhau trong header.php).
  * Giờ làm + nhãn cửa hàng là copy cố định của theme; địa chỉ + SĐT lấy từ settings.
  */
-function WpContactMe({ address, phones }: { address: string; phones: string[] }) {
+function WpContactMe({
+  address,
+  phones,
+  hours,
+}: {
+  address: string;
+  phones: string[];
+  hours: { weekday: string; weekend: string; holiday: string };
+}) {
   return (
     <div className="contact-me">
       <p className="title-contact-me"><Tr ns="Header" k="shopInfoContactHeading" /></p>
@@ -31,9 +39,9 @@ function WpContactMe({ address, phones }: { address: string; phones: string[] })
               <i className="fal fa-clock" />
             </div>
             <div className="col">
-              <p><Tr ns="Header" k="wpHoursWeekday" /></p>
-              <p><Tr ns="Header" k="wpHoursWeekend" /></p>
-              <p><Tr ns="Header" k="wpHoursHoliday" /></p>
+              <p>{hours.weekday || <Tr ns="Header" k="wpHoursWeekday" />}</p>
+              <p>{hours.weekend || <Tr ns="Header" k="wpHoursWeekend" />}</p>
+              <p>{hours.holiday || <Tr ns="Header" k="wpHoursHoliday" />}</p>
             </div>
           </div>
         </li>
@@ -117,6 +125,12 @@ export async function WpHeader({ menuNodes }: { menuNodes: HeaderNavNode[] }) {
     pickSetting(settings, ["hotline_3"]),
   ].filter(Boolean);
   const shopDescription = pickSetting(settings, ["footer_description"]);
+  // Giờ mở cửa lấy từ settings (admin sửa được), fallback copy theme khi trống.
+  const hours = {
+    weekday: pickSetting(settings, ["opening_hours_weekday"]),
+    weekend: pickSetting(settings, ["opening_hours_weekend"]),
+    holiday: pickSetting(settings, ["opening_hours_holiday"]),
+  };
 
   return (
     <>
@@ -148,7 +162,7 @@ export async function WpHeader({ menuNodes }: { menuNodes: HeaderNavNode[] }) {
                 <div className="mobile-item">
                   <div className="information-slide">
                     <div className="content">
-                      <WpContactMe address={address} phones={phones} />
+                      <WpContactMe address={address} phones={phones} hours={hours} />
                     </div>
                   </div>
                 </div>
@@ -212,7 +226,7 @@ export async function WpHeader({ menuNodes }: { menuNodes: HeaderNavNode[] }) {
           <div className="desc">
             <p>{shopDescription || <Tr ns="Header" k="shopInfoDefaultDescription" />}</p>
           </div>
-          <WpContactMe address={address} phones={phones} />
+          <WpContactMe address={address} phones={phones} hours={hours} />
         </div>
       </div>
     </>

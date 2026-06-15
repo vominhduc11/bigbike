@@ -54,6 +54,20 @@ Evidence:
 - `V1__create_catalog_content_tables.sql` (lines 65, 166)
 - `V51__add_serial_tracking.sql` (lines 123, 127)
 
+### Cost price (admin-only)
+
+`products.cost_price` and `product_variants.cost_price` (`numeric(19,2)`, nullable, `>= 0`; added in `V195`) store the purchase/cost price used by the POS below-cost guard (`ORDER_RULE_008`). Resolution mirrors selling price: **variant cost first, then product cost**; `NULL` means cost is unknown and no enforcement applies.
+
+**Cost is admin-only and must never reach the storefront.** The shared `ProductPrice` domain record carries `costPrice`, but it is populated **only on admin (non-public) reads** (`publicView == false`); public reads pass `null`, and the public DTO `ProductSnapshotResponse` maps an explicit price subset (`retailPrice`, `compareAtPrice`, `salePrice`) that excludes cost entirely. Admin sets it via the product create/update API (`UpsertProductRequest.costPrice`, `VariantRequest.costPrice`).
+
+Status: `CONFIRMED_FROM_CODE`
+
+Evidence:
+
+- `ProductPrice.java` (`costPrice` field), `ProductSnapshotResponse.java` (public subset excludes cost)
+- `JpaCatalogReadRepository.java` (admin vs `publicView ? null` cost), `AdminCatalogMutationService.java` (`applyProductPatch` / `applyVariants`)
+- `PosOrderService.resolveCost` / below-cost guard; `V195__add_cost_price.sql`
+
 ### Address fields
 
 `CustomerAddressResponse` currently contains:
@@ -371,6 +385,22 @@ There is **no category fallback** — an empty list hides the PDP section entire
 Status: `CONFIRMED_FROM_CODE` — `ProductEntity.relatedProducts`,
 `UpsertProductRequest.relatedProductIds`, `AdminCatalogMutationService.resolveRelatedProducts`,
 `JpaCatalogReadRepository.toRelatedProducts`, migration `V135`.
+
+### Product tags — `product_tags` + `product_tag_map`
+
+Free-form catalog tags powering the storefront tag-filter pages. Many-to-many on `products` (imported in bulk from WordPress).
+
+| Table / Column | Type | Null | Notes |
+|---|---|---|---|
+| `product_tags.id` | `VARCHAR` | NO | PK. New tags created by admin use id `ptag-<uuid>`. |
+| `product_tags.slug` | `VARCHAR` | NO | Unique; derived from the name via `ProductSlugGenerator.toSlug` (diacritic-insensitive kebab-case). Storefront tag-page key. |
+| `product_tags.tag` | `VARCHAR` | NO | Display name. |
+| `product_tag_map.product_id` | — | NO | FK → `products.id`. |
+| `product_tag_map.tag_id` | — | NO | FK → `product_tags.id`. |
+
+`ProductEntity` is the **owning side** (`@ManyToMany @JoinTable(name = "product_tag_map")`); `ProductTagEntity.products` is the inverse (`mappedBy = "tags"`). Tags are **not** part of the shared `Product` domain record — they are read/written only through the dedicated admin sub-resource `GET`/`PUT /api/v1/admin/products/{id}/tags` (see API_CONTRACT). `PUT` does a full-replace, resolve-or-create by slug.
+
+Status: `CONFIRMED_FROM_CODE` — `ProductTagEntity`, `ProductEntity.tags`, `AdminProductTagService`, `ProductTagJpaRepository`.
 
 ### Product rating denormalization — `products.rating` / `products.rating_count`
 

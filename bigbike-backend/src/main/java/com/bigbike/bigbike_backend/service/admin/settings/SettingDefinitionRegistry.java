@@ -69,6 +69,9 @@ public class SettingDefinitionRegistry {
                 SettingDefinition.builder("bct_url", "general", SettingValueType.URL)
                         .publicAllowed()
                         .description("URL trang đăng ký Bộ Công Thương cho badge BCT.").build(),
+                SettingDefinition.builder("business_registration", "general", SettingValueType.LONG_TEXT)
+                        .publicAllowed()
+                        .description("Dòng giấy chứng nhận đăng ký kinh doanh hiển thị ở footer (số GP, ngày cấp, nơi cấp).").build(),
 
                 // ── CONTACT ──
                 SettingDefinition.builder("contact_email", "contact", SettingValueType.EMAIL)
@@ -113,6 +116,30 @@ public class SettingDefinitionRegistry {
                 SettingDefinition.builder("google_maps_url", "contact", SettingValueType.URL)
                         .publicAllowed()
                         .description("URL nhúng Google Maps cho trang Liên hệ.").build(),
+                SettingDefinition.builder("opening_hours_weekday", "contact", SettingValueType.STRING)
+                        .publicAllowed()
+                        .description("Giờ mở cửa thứ 2–thứ 6 (header + trang Liên hệ).").build(),
+                SettingDefinition.builder("opening_hours_weekend", "contact", SettingValueType.STRING)
+                        .publicAllowed()
+                        .description("Giờ mở cửa thứ 7 / Chủ nhật.").build(),
+                SettingDefinition.builder("opening_hours_holiday", "contact", SettingValueType.STRING)
+                        .publicAllowed()
+                        .description("Lịch nghỉ lễ / Tết.").build(),
+
+                // ── PAYMENT ── (tài khoản nhận chuyển khoản — admin tự nhập & đối soát thủ công,
+                // không có cổng thanh toán tự động; hiển thị cho khách ở trang xác nhận đơn BACS)
+                SettingDefinition.builder("bank_account_holder", "payment", SettingValueType.STRING)
+                        .publicAllowed()
+                        .description("Tên chủ tài khoản ngân hàng nhận chuyển khoản.").build(),
+                SettingDefinition.builder("bank_account_number", "payment", SettingValueType.STRING)
+                        .publicAllowed()
+                        .description("Số tài khoản ngân hàng nhận chuyển khoản.").build(),
+                SettingDefinition.builder("bank_name", "payment", SettingValueType.STRING)
+                        .publicAllowed()
+                        .description("Tên ngân hàng (vd: Vietcombank).").build(),
+                SettingDefinition.builder("bank_branch", "payment", SettingValueType.STRING)
+                        .publicAllowed()
+                        .description("Chi nhánh ngân hàng (không bắt buộc).").build(),
 
                 // ── PUBLIC_HOME ──
                 SettingDefinition.builder("promo_title", "public_home", SettingValueType.STRING)
@@ -145,6 +172,21 @@ public class SettingDefinitionRegistry {
                 SettingDefinition.builder("about_content_html", "public_home", SettingValueType.HTML)
                         .publicAllowed()
                         .description("Nội dung HTML section giới thiệu trên trang chủ.").build(),
+                SettingDefinition.builder("home_featured_kicker", "public_home", SettingValueType.STRING)
+                        .publicAllowed()
+                        .description("Kicker (chữ nhỏ phía trên) khu Sản phẩm nổi bật trên trang chủ.").build(),
+                SettingDefinition.builder("home_featured_title", "public_home", SettingValueType.STRING)
+                        .publicAllowed()
+                        .description("Tiêu đề khu Sản phẩm nổi bật trên trang chủ.").build(),
+                SettingDefinition.builder("home_news_kicker", "public_home", SettingValueType.STRING)
+                        .publicAllowed()
+                        .description("Kicker khu Tin tức trên trang chủ.").build(),
+                SettingDefinition.builder("home_news_title", "public_home", SettingValueType.STRING)
+                        .publicAllowed()
+                        .description("Tiêu đề khu Tin tức trên trang chủ.").build(),
+                SettingDefinition.builder("home_videos_title", "public_home", SettingValueType.STRING)
+                        .publicAllowed()
+                        .description("Tiêu đề khu Video trải nghiệm trên trang chủ.").build(),
 
                 // ── PUBLIC_HERO ── (hero banner cho listing pages không có PageEntity)
                 SettingDefinition.builder("hero_products_image_url", "public_hero", SettingValueType.IMAGE_URL)

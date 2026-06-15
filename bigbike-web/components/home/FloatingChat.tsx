@@ -56,7 +56,7 @@ type FloatingChatProps = {
   hotline?: string;
   zaloUrl?: string;
   messengerUrl?: string;
-  // Optional display text shown in the popup (e.g. "0764640679", "Bigbike.vn").
+  // Optional display text shown in the popup (e.g. a phone number, or "Bigbike.vn").
   // When empty, the value is derived from the URL (last path segment / hostname).
   zaloDisplay?: string;
   messengerDisplay?: string;
@@ -272,7 +272,7 @@ export function FloatingChat({
         key: "hotline",
         href: tel,
         label: "Hotline",
-        // WP popup shows the number with no spaces (e.g. 02862797251)
+        // WP popup shows the hotline number with no spaces
         value: hotline.replace(/\s+/g, ""),
         icon: <IconHotline />,
       });

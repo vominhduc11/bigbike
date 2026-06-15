@@ -694,21 +694,26 @@ class Phase1LReturnsApiTest {
         assertThat(stockMovementRepo.existsByReferenceTypeAndReferenceId("RETURN", returnUuid)).isFalse();
     }
 
-    // ── 28. Partial-coverage RMA cannot transition to REFUNDED ───────────────
+    // ── 28. Partial-coverage RMA → REFUNDED applies a PARTIAL refund (RETURN_RULE_007 relaxed) ─
 
     @Test
-    void adminUpdateReturnStatus_rmaRefunded_partialCoverage_returns409() throws Exception {
+    void adminUpdateReturnStatus_rmaRefunded_partialCoverage_appliesPartialRefund() throws Exception {
         // Order has 2 of a product; the RMA only covers 1 → partial coverage.
         AuthSession session = placeCompletedOrderWithQuantity(
                 "ret-partial-" + UUID.randomUUID() + "@bigbike.vn", 2);
 
-        // Mark order PAID so we don't get blocked by the PAYMENT precondition first.
-        orderRepo.findById(UUID.fromString(session.orderId)).ifPresent(order -> {
+        UUID orderUuid = UUID.fromString(session.orderId);
+        // Mark order PAID so the refund precondition is satisfied.
+        orderRepo.findById(orderUuid).ifPresent(order -> {
             order.setPaymentStatus("PAID");
             order.setPaidAmount(order.getTotalAmount());
             order.setUpdatedAt(Instant.now());
             orderRepo.save(order);
         });
+        java.math.BigDecimal paidAmount = orderRepo.findById(orderUuid).orElseThrow().getPaidAmount();
+        // A partial amount strictly less than the full paid amount.
+        java.math.BigDecimal partialAmount = paidAmount.divide(
+                java.math.BigDecimal.valueOf(2), 2, java.math.RoundingMode.DOWN);
 
         // Create RMA for quantity 1 only.
         String body = "{\"reason\":\"DEFECTIVE\",\"items\":[{\"orderLineItemId\":\""
@@ -733,14 +738,119 @@ class Phase1LReturnsApiTest {
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk());
 
-        // Attempt RECEIVED → REFUNDED on partial-coverage RMA → 409 ConflictException
-        // with RETURN_NOT_FULL_COVERAGE message.
-        java.math.BigDecimal anyAmount = java.math.BigDecimal.valueOf(500_000);
+        // RECEIVED → REFUNDED on a partial-coverage RMA now succeeds as a partial refund.
         mockMvc.perform(patch("/api/v1/admin/returns/" + returnId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"REFUNDED\",\"refundAmount\":" + anyAmount.toPlainString() + "}")
+                        .content("{\"status\":\"REFUNDED\",\"refundAmount\":" + partialAmount.toPlainString() + "}")
                         .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isConflict());
+                .andExpect(status().isOk());
+
+        // The order stays PAID/COMPLETED (not fully refunded); refundAmount records the partial amount.
+        OrderEntity refreshed = orderRepo.findById(orderUuid).orElseThrow();
+        assertThat(refreshed.getPaymentStatus()).isEqualTo("PAID");
+        assertThat(refreshed.getStatus()).isEqualTo("COMPLETED");
+        assertThat(refreshed.getRefundAmount()).isEqualByComparingTo(partialAmount);
+    }
+
+    // ── 28b. Partial-coverage RMA refund cannot exceed the refundable amount ──
+
+    @Test
+    void adminUpdateReturnStatus_rmaRefunded_partialCoverage_exceedsRefundable_returns400() throws Exception {
+        AuthSession session = placeCompletedOrderWithQuantity(
+                "ret-partial-over-" + UUID.randomUUID() + "@bigbike.vn", 2);
+
+        UUID orderUuid = UUID.fromString(session.orderId);
+        orderRepo.findById(orderUuid).ifPresent(order -> {
+            order.setPaymentStatus("PAID");
+            order.setPaidAmount(order.getTotalAmount());
+            order.setUpdatedAt(Instant.now());
+            orderRepo.save(order);
+        });
+        java.math.BigDecimal paidAmount = orderRepo.findById(orderUuid).orElseThrow().getPaidAmount();
+        java.math.BigDecimal tooMuch = paidAmount.add(java.math.BigDecimal.valueOf(1));
+
+        String body = "{\"reason\":\"DEFECTIVE\",\"items\":[{\"orderLineItemId\":\""
+                + session.lineItemId + "\",\"quantity\":1,\"reason\":\"DEFECTIVE\"}]}";
+        MvcResult createResult = mockMvc.perform(post("/api/v1/customer/orders/" + session.orderId + "/returns")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body)
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isCreated())
+                .andReturn();
+        String returnId = extractJsonValue(createResult.getResponse().getContentAsString(), "id");
+
+        mockMvc.perform(patch("/api/v1/admin/returns/" + returnId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"APPROVED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+        mockMvc.perform(patch("/api/v1/admin/returns/" + returnId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"RECEIVED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        // refundAmount > refundable → rejected (ValidationException → 400).
+        mockMvc.perform(patch("/api/v1/admin/returns/" + returnId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"REFUNDED\",\"refundAmount\":" + tooMuch.toPlainString() + "}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
+    }
+
+    // ── 28c. INSPECTING sub-workflow is DB-reachable (V191) and gates COMPLETED on inspection ──
+
+    @Test
+    void adminUpdateReturnStatus_inspectingFlow_passThenComplete_succeeds() throws Exception {
+        AuthSession session = placeCompletedOrder("ret-insp-" + UUID.randomUUID() + "@bigbike.vn");
+
+        MvcResult createResult = mockMvc.perform(post("/api/v1/customer/orders/" + session.orderId + "/returns")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(buildReturnRequest("DEFECTIVE", null, session.lineItemId))
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isCreated())
+                .andReturn();
+        String returnId = extractJsonValue(createResult.getResponse().getContentAsString(), "id");
+
+        mockMvc.perform(patch("/api/v1/admin/returns/" + returnId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"APPROVED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+        mockMvc.perform(patch("/api/v1/admin/returns/" + returnId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"RECEIVED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        // RECEIVED → INSPECTING — previously failed at the chk_returns_status DB constraint; now OK (V191).
+        mockMvc.perform(patch("/api/v1/admin/returns/" + returnId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"INSPECTING\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("INSPECTING"));
+
+        // Closing INSPECTING before every item is inspected is rejected (INSPECTION_INCOMPLETE).
+        mockMvc.perform(patch("/api/v1/admin/returns/" + returnId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"COMPLETED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isBadRequest());
+
+        // Inspect the item PASS, then COMPLETED succeeds.
+        String detailBody = mockMvc.perform(get("/api/v1/admin/returns/" + returnId)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        String itemId = com.jayway.jsonpath.JsonPath.read(detailBody, "$.items[0].id").toString();
+
+        mockMvc.perform(patch("/api/v1/admin/returns/" + returnId + "/items/" + itemId + "/inspect")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"result\":\"PASS\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(patch("/api/v1/admin/returns/" + returnId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"COMPLETED\"}")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("COMPLETED"));
     }
 
     // ── 29. COD/UNPAID order cannot be REFUNDED via RMA ──────────────────────

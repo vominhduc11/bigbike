@@ -438,6 +438,8 @@
       "retailPrice": "Giá niêm yết (VND) *",
       "compareAtPrice": "Giá so sánh (VND)",
       "salePrice": "Giá sale (VND)",
+      "costPrice": "Giá vốn (VND)",
+      "costPriceHint": "Dùng để chặn bán dưới giá vốn tại quầy (POS). Không hiển thị cho khách.",
       "publishStatus": "Trạng thái xuất bản *",
       "specialStockNote": "Trạng thái đặc biệt: {{state}} — cần xử lý qua API riêng",
       "specialPublishNote": "Trạng thái đặc biệt: {{state}} — cần restore qua API riêng",
@@ -747,6 +749,19 @@
     }
   },
   "orders": {
+    "audit": {
+      "title": "Lịch sử thao tác",
+      "loading": "Đang tải...",
+      "error": "Không tải được lịch sử thao tác.",
+      "empty": "Chưa có thao tác nào.",
+      "action": {
+        "ORDER_STATUS_UPDATED": "Cập nhật trạng thái đơn",
+        "ORDER_PAYMENT_STATUS_UPDATED": "Cập nhật trạng thái thanh toán",
+        "ORDER_FULFILLMENT_STATUS_UPDATED": "Cập nhật trạng thái giao hàng",
+        "ORDER_NOTE_CREATED": "Thêm ghi chú",
+        "ORDER_REFUND_CREATED": "Tạo hoàn tiền"
+      }
+    },
     "eyebrow": "Thương mại",
     "title": "Đơn hàng",
     "description": "Quản lý và xử lý đơn hàng từ khách hàng.",
@@ -780,6 +795,9 @@
       "email": "Email:",
       "phone": "ĐT:",
       "address": "Địa chỉ:",
+      "billingAddress": "Địa chỉ thanh toán:",
+      "customerNote": "Ghi chú của khách:",
+      "shippingMethod": "Phương thức giao hàng:",
       "orderStatus": "Trạng thái đơn hàng",
       "deliveryStatus": "Trạng thái giao hàng",
       "paymentStatus": "Trạng thái thanh toán",
@@ -1730,6 +1748,7 @@
     "group_general": "Thông tin shop",
     "group_contact": "Liên hệ",
     "group_payment": "Thanh toán",
+    "group_payment": "Thanh toán",
     "group_shipping": "Vận chuyển",
     "group_seo": "SEO website",
     "group_social": "Mạng xã hội",
@@ -2166,7 +2185,10 @@
     "metaOrderPaid": "Đã thanh toán",
     "metaOrderRefundable": "Còn có thể hoàn",
     "refundPartialBlocked": "Phiếu trả này chưa bao phủ toàn bộ đơn — không thể hoàn tiền qua đường này. Hãy đóng phiếu (Hoàn thành) rồi dùng nút Hoàn tiền ở trang chi tiết đơn hàng.",
-    "refundFullHint": "Hệ thống chỉ hỗ trợ hoàn toàn bộ. Số tiền hoàn đã tự điền bằng số còn lại có thể hoàn."
+    "refundFullHint": "Hệ thống chỉ hỗ trợ hoàn toàn bộ. Số tiền hoàn đã tự điền bằng số còn lại có thể hoàn.",
+    "errorRefundExceeds": "Số tiền hoàn không được vượt quá {{amount}} (số còn lại có thể hoàn).",
+    "refundPartialInfo": "Phiếu trả này chỉ trả một phần đơn — hoàn tiền sẽ tính theo giá trị các món được trả. Đơn vẫn ở trạng thái đã thanh toán cho phần còn lại.",
+    "refundPartialHint": "Trả một phần: số tiền hoàn đã điền theo giá trị các món được trả (đạt kiểm tra), có thể chỉnh nhưng không vượt số còn lại có thể hoàn."
   },
   "warranty": {
     "eyebrow": "Hậu mãi · BigBike",
@@ -2594,6 +2616,7 @@
     "method": {
       "CASH": "Tiền mặt",
       "CARD_TERMINAL": "Quẹt thẻ / POS",
+      "CREDIT": "Bán chịu",
       "BANK_TRANSFER": "Chuyển khoản"
     },
     "note": "Ghi chú nội bộ (tuỳ chọn)",
@@ -2735,7 +2758,9 @@
     "confirmMessage": "Bạn có chắc muốn hoàn {{amount}} không? Hành động này không thể hoàn tác.",
     "errorAmountRequired": "Vui lòng nhập số tiền hợp lệ",
     "errorAmountExceeds": "Không thể vượt quá {{max}}",
+    "errorMustBeFullAmount": "Chỉ hỗ trợ hoàn toàn bộ số tiền còn lại ({{amount}}).",
     "errorReasonRequired": "Vui lòng chọn lý do",
+    "hintFullRefundOnly": "Hệ thống chỉ hỗ trợ hoàn toàn bộ số tiền còn lại.",
     "confirm": "Xác nhận hoàn tiền",
     "processing": "Đang xử lý...",
     "success": "Tạo hoàn tiền thành công",

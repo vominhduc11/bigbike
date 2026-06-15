@@ -5,6 +5,7 @@ import { useLocale } from "next-intl";
 import {
   addCartItem,
   applyCoupon,
+  cancelMyOrder,
   createAddress,
   deleteAddress,
   fetchCart,
@@ -163,10 +164,10 @@ const ORDER_TERMINAL_STATUSES = new Set(["COMPLETED", "CANCELLED", "REFUNDED", "
 // theo nhịp thao tác tay nên 15s là đủ; cần dưới-giây thật thì chuyển sang SSE).
 const ORDER_POLL_INTERVAL_MS = 15_000;
 
-export function useOrders(page = 1) {
+export function useOrders(page = 1, status?: string) {
   return useQuery({
-    queryKey: queryKeys.orders(page),
-    queryFn: () => fetchMyOrders(page),
+    queryKey: queryKeys.orders(page, status),
+    queryFn: () => fetchMyOrders(page, status),
     // Trạng thái đơn có thể đổi do admin trong lúc khách rời tab → làm mới khi quay lại.
     refetchOnWindowFocus: true,
   });
@@ -185,6 +186,19 @@ export function useOrder(id: string) {
       const status = query.state.data?.status;
       if (status && ORDER_TERMINAL_STATUSES.has(status)) return false;
       return ORDER_POLL_INTERVAL_MS;
+    },
+  });
+}
+
+// Khách tự huỷ đơn khi chưa thanh toán và hàng chưa rời kho (backend chốt điều kiện
+// trong CustomerOrderCancelService). Cập nhật lại cache chi tiết + danh sách đơn.
+export function useCancelOrder(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => cancelMyOrder(id),
+    onSuccess: (order) => {
+      qc.setQueryData(queryKeys.order(id), order);
+      qc.invalidateQueries({ queryKey: ["customer", "orders"] });
     },
   });
 }

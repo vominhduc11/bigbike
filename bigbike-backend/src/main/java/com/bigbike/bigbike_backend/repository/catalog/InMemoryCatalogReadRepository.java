@@ -203,7 +203,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                                 null
                         )
                 ),
-                new ProductPrice(BigDecimal.valueOf(3250000), BigDecimal.valueOf(3690000), BigDecimal.valueOf(3250000), "VND"),
+                new ProductPrice(BigDecimal.valueOf(3250000), BigDecimal.valueOf(3690000), BigDecimal.valueOf(3250000), "VND", null),
                 List.of(
                         new ProductVariant(
                                 "var_ls2_ff800_red_m",
@@ -213,7 +213,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                                         new ProductVariantOption("Color", "Đỏ"),
                                         new ProductVariantOption("Size", "M")
                                 ),
-                                new ProductPrice(BigDecimal.valueOf(3250000), BigDecimal.valueOf(3690000), BigDecimal.valueOf(3250000), "VND"),
+                                new ProductPrice(BigDecimal.valueOf(3250000), BigDecimal.valueOf(3690000), BigDecimal.valueOf(3250000), "VND", null),
                                 ProductStockState.IN_STOCK,
                                 12,
                                 null,
@@ -229,7 +229,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                                         new ProductVariantOption("Color", "Đen"),
                                         new ProductVariantOption("Size", "L")
                                 ),
-                                new ProductPrice(BigDecimal.valueOf(3250000), BigDecimal.valueOf(3690000), BigDecimal.valueOf(3250000), "VND"),
+                                new ProductPrice(BigDecimal.valueOf(3250000), BigDecimal.valueOf(3690000), BigDecimal.valueOf(3250000), "VND", null),
                                 ProductStockState.LOW_STOCK,
                                 3,
                                 null,
@@ -295,7 +295,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 ),
                 List.of(),
                 List.of(),
-                new ProductPrice(BigDecimal.valueOf(2890000), null, null, "VND"),
+                new ProductPrice(BigDecimal.valueOf(2890000), null, null, "VND", null),
                 List.of(),
                 List.of(new ProductSpecification("Vỏ mũ", "Composite", "Thông số", null, null, null)),
                 ProductStockState.IN_STOCK,
@@ -351,7 +351,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 ),
                 List.of(),
                 List.of(),
-                new ProductPrice(BigDecimal.valueOf(2450000), BigDecimal.valueOf(2790000), BigDecimal.valueOf(2450000), "VND"),
+                new ProductPrice(BigDecimal.valueOf(2450000), BigDecimal.valueOf(2790000), BigDecimal.valueOf(2450000), "VND", null),
                 List.of(),
                 List.of(new ProductSpecification("Chất liệu", "Lưới + chống mài mòn", "Thông số", null, null, null)),
                 ProductStockState.LOW_STOCK,

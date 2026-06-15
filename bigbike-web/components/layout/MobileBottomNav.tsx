@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { Home, ShoppingCart, User } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { cn } from "@/lib/utils";
-import { toAccountPath, toCartPath, toHomePath } from "@/lib/utils/routes";
+import { isAuthRoute, toAccountPath, toCartPath, toHomePath } from "@/lib/utils/routes";
 
 function isHomePath(pathname: string) {
   return pathname === "/" || pathname === "";
@@ -43,7 +43,9 @@ export function MobileBottomNav() {
   const badge = cartCount != null && cartCount > 0 ? cartCount : null;
   const cartRouteActive = pathname.startsWith("/gio-hang");
   const homeActive = isHomePath(pathname);
-  const accountActive = pathname.startsWith("/tai-khoan");
+  // Khi chưa đăng nhập, bấm Tài khoản sẽ bị đẩy sang /dang-nhap (WpAccountNav). Từ thanh
+  // dưới, chỉ nút Tài khoản dẫn tới các trang auth → giữ tab này sáng để không "mất active".
+  const accountActive = pathname.startsWith("/tai-khoan") || isAuthRoute(pathname);
 
   return (
     <nav

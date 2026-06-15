@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
-import { getOrderLookup } from "@/lib/api/public-api";
+import { getLocale, getTranslations } from "next-intl/server";
+import { getOrderLookup, listPublicSettings } from "@/lib/api/public-api";
 import { PurchaseEvent } from "@/components/analytics/PurchaseEvent";
 import type { OrderAddress, OrderDetail } from "@/lib/contracts/commerce";
 import { WpStaticShell } from "@/components/wp/WpStaticShell";
@@ -11,6 +11,7 @@ import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { sectionHeading } from "@/lib/ui-classes";
 import { cn } from "@/lib/utils";
 import { formatAddress, formatVnd } from "@/lib/utils/format";
+import { resolveBankTransfer } from "@/lib/utils/orders";
 import { LocalDate } from "@/components/i18n/LocalDate";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -27,11 +28,14 @@ type Props = { searchParams: Promise<{ so?: string; key?: string }> };
 
 export default async function OrderConfirmPage({ searchParams }: Props) {
   const { so: orderNumber, key: orderKey } = await searchParams;
-  const [orderLookup, t] = await Promise.all([
+  const locale = await getLocale();
+  const [orderLookup, settingsResult, t] = await Promise.all([
     orderNumber && orderKey ? getOrderLookup(orderNumber, orderKey) : Promise.resolve({ data: null, error: null }),
+    listPublicSettings(locale),
     getTranslations("OrderConfirm"),
   ]);
   const order = orderLookup.data;
+  const settings = new Map((settingsResult.data ?? []).map((s) => [s.settingKey, s.settingValue]));
 
   if (!orderNumber || !orderKey) {
     return (
@@ -64,6 +68,7 @@ export default async function OrderConfirmPage({ searchParams }: Props) {
         {order ? (
           <>
             <OrderOverview order={order} t={t} />
+            <BankTransferInfo order={order} settings={settings} t={t} />
             <OrderDetails order={order} t={t} />
             <CustomerDetails order={order} t={t} />
           </>
@@ -250,6 +255,67 @@ function OrderDetails({
             ))}
           </tfoot>
         </table>
+      </div>
+    </section>
+  );
+}
+
+// Thông tin chuyển khoản cho đơn BACS. BigBike đối soát thủ công — số tài khoản do admin
+// tự nhập ở Cài đặt → Thanh toán (group "payment", public). Chưa cấu hình thì hiện fallback
+// hotline thay vì box trống.
+function BankTransferInfo({
+  order,
+  settings,
+  t,
+}: {
+  order: OrderDetail;
+  settings: Map<string, string>;
+  t: OrderConfirmTranslations;
+}) {
+  const bank = resolveBankTransfer(order.payments[0]?.paymentMethod, settings);
+  if (!bank) return null; // không phải đơn chuyển khoản → không hiển thị
+
+  const { configured, holder, number, bankName, branch } = bank;
+  const hotline = settings.get("hotline")?.trim() ?? "";
+  const transferNote = `BIGBIKE ${order.orderNumber}`;
+
+  return (
+    <section className="woocommerce-bank-details">
+      <h2 className={cn(sectionHeading, "m-0 mb-4")}>{t("bankTitle")}</h2>
+      <div className="border border-border p-4 text-sm leading-7 text-foreground">
+        {configured ? (
+          <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
+            <dt className="text-muted-foreground">{t("bankHolder")}</dt>
+            <dd className="m-0 font-semibold">{holder}</dd>
+            <dt className="text-muted-foreground">{t("bankNumber")}</dt>
+            <dd className="m-0 font-semibold">{number}</dd>
+            {bankName && (
+              <>
+                <dt className="text-muted-foreground">{t("bankName")}</dt>
+                <dd className="m-0">{bankName}</dd>
+              </>
+            )}
+            {branch && (
+              <>
+                <dt className="text-muted-foreground">{t("bankBranch")}</dt>
+                <dd className="m-0">{branch}</dd>
+              </>
+            )}
+            <dt className="text-muted-foreground">{t("bankAmount")}</dt>
+            <dd className="m-0 font-semibold text-brand">{formatVnd(order.totalAmount)}</dd>
+            <dt className="text-muted-foreground">{t("bankTransferNote")}</dt>
+            <dd className="m-0 font-semibold">{transferNote}</dd>
+          </dl>
+        ) : (
+          <p className="m-0 text-muted-foreground">
+            {t.rich("bankHotlineFallback", {
+              hotline,
+              orderNumber: order.orderNumber,
+              b: (chunks) => <strong className="text-foreground">{chunks}</strong>,
+              code: (chunks) => <code className="rounded bg-muted px-1">{chunks}</code>,
+            })}
+          </p>
+        )}
       </div>
     </section>
   );

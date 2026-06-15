@@ -12,6 +12,7 @@ import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
 import { fetchReturnDetail, fetchReturns, inspectReturnItem, updateReturnStatus } from '../lib/adminApi'
+import { computeReturnedItemsValue, suggestedRefundAmount, validateRefundAmount } from '../lib/returns'
 import { showConfirm } from '../lib/confirm'
 import { useAdminList } from '../lib/useAdminList'
 import { formatCurrencyVnd, formatDateTime } from '../lib/formatters'
@@ -48,15 +49,15 @@ function ReturnDetailModal({ ret, onClose, onUpdate, canUpdate, navigate }) {
   const [error, setError] = useState('')
   const [inspectingId, setInspectingId] = useState(null)
 
-  // Hide REFUNDED option when the RMA does not cover the entire order — backend
-  // would reject with RETURN_NOT_FULL_COVERAGE (V114 only supports full refunds).
-  const rawNext = NEXT_STATUSES[detail.status] || []
-  const next = (detail.fullReturnCoverage === false)
-    ? rawNext.filter((s) => s !== 'REFUNDED')
-    : rawNext
+  const next = NEXT_STATUSES[detail.status] || []
   const items = detail.items ?? []
   const allInspected = items.length > 0 && items.every((i) => i.inspectionResult)
   const refundableAmount = Number(detail.orderRefundableAmount || 0)
+  // Partial-coverage RMA → refund only the returned (non-FAIL) items' value, capped at
+  // what's still refundable. Full coverage → refund the whole remaining amount.
+  const isPartialCoverage = detail.fullReturnCoverage === false
+  const returnedItemsValue = computeReturnedItemsValue(items)
+  const suggestedRefund = suggestedRefundAmount({ isPartialCoverage, returnedItemsValue, refundableAmount })
 
   useEffect(() => {
     fetchReturnDetail(ret.id)
@@ -65,27 +66,29 @@ function ReturnDetailModal({ ret, onClose, onUpdate, canUpdate, navigate }) {
       .finally(() => setLoadingDetail(false))
   }, [ret.id, t])
 
-  // When the admin picks REFUNDED, prefill the amount with the remaining refundable
-  // amount (the only value the backend will accept — V114 full-refund-only).
+  // When the admin picks REFUNDED, prefill the amount: full coverage → whole refundable
+  // amount; partial coverage → the returned items' value (capped at refundable).
   function applyStatus(value) {
     setNewStatus(value)
-    if (value === 'REFUNDED' && refundableAmount > 0) {
-      setRefundAmount((current) => current || String(refundableAmount))
+    if (value === 'REFUNDED' && suggestedRefund > 0) {
+      setRefundAmount((current) => current || String(suggestedRefund))
     }
   }
 
   async function handleSubmit(e) {
     e.preventDefault()
     const refundNum = refundAmount ? Number(refundAmount) : 0
-    // REFUNDED records money back to the customer — require a positive amount.
-    if (newStatus === 'REFUNDED' && !(refundNum > 0)) {
-      setError(t('returns.errorRefundRequired'))
-      return
-    }
-    // RefundService requires exact match with orderRefundableAmount.
-    if (newStatus === 'REFUNDED' && refundableAmount > 0 && refundNum !== refundableAmount) {
-      setError(t('returns.errorRefundMustMatch', { amount: formatCurrencyVnd(refundableAmount) }))
-      return
+    if (newStatus === 'REFUNDED') {
+      const refundError = validateRefundAmount({ amount: refundNum, refundableAmount, isPartialCoverage })
+      if (refundError === 'required') {
+        setError(t('returns.errorRefundRequired')); return
+      }
+      if (refundError === 'exceeds') {
+        setError(t('returns.errorRefundExceeds', { amount: formatCurrencyVnd(refundableAmount) })); return
+      }
+      if (refundError === 'mustMatch') {
+        setError(t('returns.errorRefundMustMatch', { amount: formatCurrencyVnd(refundableAmount) })); return
+      }
     }
     if (newStatus === 'REFUNDED') {
       const ok = await showConfirm(
@@ -190,10 +193,10 @@ function ReturnDetailModal({ ret, onClose, onUpdate, canUpdate, navigate }) {
             </div>
           </div>
 
-          {/* Partial-coverage warning — backend rejects REFUNDED in this case. */}
-          {detail.fullReturnCoverage === false && rawNext.includes('REFUNDED') && (
+          {/* Partial-coverage info — refund covers only the returned items' value. */}
+          {isPartialCoverage && next.includes('REFUNDED') && (
             <Alert tone="warning">
-              <p className="m-0">{t('returns.refundPartialBlocked')}</p>
+              <p className="m-0">{t('returns.refundPartialInfo')}</p>
             </Alert>
           )}
 
@@ -320,7 +323,7 @@ function ReturnDetailModal({ ret, onClose, onUpdate, canUpdate, navigate }) {
                   <label className="field-label">{t('returns.detailRefund')} *</label>
                   <Input type="number" value={refundAmount}
                     onChange={(e) => setRefundAmount(e.target.value)} placeholder="0" min="1"  />
-                  <p className="text-xs text-muted-foreground mt-1">{t('returns.refundFullHint')}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t(isPartialCoverage ? 'returns.refundPartialHint' : 'returns.refundFullHint')}</p>
                 </div>
               )}
               <div className="form-field">

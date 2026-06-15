@@ -16,8 +16,9 @@
 | `warranty.read` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER` | `GET /api/v1/admin/warranties/**` | `V121__realign_inventory_warranty_permissions.sql`, `AdminWarrantyController.java` |
 | `warranty.write` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER` | `PATCH /api/v1/admin/warranties/{id}/void` | `V121__realign_inventory_warranty_permissions.sql`, `AdminWarrantyController.java` |
 | `pos.refund` | `SUPER_ADMIN` (wildcard), `ADMIN` | `POST /api/v1/admin/pos/orders/{id}/refund` | `V112__add_pos_refund_permission.sql`, `AdminPosController.java` |
+| `pos.sell_below_cost` | `SUPER_ADMIN` (wildcard), `ADMIN` | `POST /api/v1/admin/pos/orders` — bypass the below-cost guard when overriding a unit price below cost (`ORDER_RULE_008`) | `V196__add_pos_sell_below_cost_permission.sql`, `AdminPosController.java`, `PosOrderService.java` |
 
-All are listed in `PermissionCatalog` (`inventory.*` and `warranty.*` in `roles.groupProducts`, `pos.refund` in `roles.groupSales`) so they are grantable to custom roles via the Roles UI.
+All are listed in `PermissionCatalog` (`inventory.*` and `warranty.*` in `roles.groupProducts`, `pos.refund` and `pos.sell_below_cost` in `roles.groupSales`) so they are grantable to custom roles via the Roles UI.
 
 > **AL-03 realignment (V121).** Before V121, `inventory.*` gated the **Warranty** module while the **Inventory/Serial** module was gated by `products.*` — the permission name did not match the module it controlled. V121 introduced `warranty.*` and re-gated both controllers + the admin UI so each permission matches its module. The migration is a **non-breaking backfill**: every role holding `inventory.*` also received `warranty.*`, and every role holding `products.*` also received `inventory.*`. `EDITOR` therefore keeps `inventory.read` (it held `products.read`) — a deliberate compatibility grant. A post-launch RBAC cleanup may remove `inventory.read` from `EDITOR` if the business confirms EDITOR is content-only.
 
@@ -76,6 +77,7 @@ Status: `CONFIRMED_FROM_CODE` — `SettingDefinitionRegistry.java`, `AdminSettin
 | POS price override | `pos.price_override` | `CONFIRMED_FROM_CODE` | `AdminPosController.java`, `PosOrderService.java` |
 | `/api/v1/admin/coupons/**` | admin/security role; controller permissions `coupons.read` or `coupons.write` | `CONFIRMED_FROM_CODE` | `SecurityConfig.java`, `AdminCouponController.java` |
 | `/api/v1/admin/dashboard` GET | `orders.read`; `ROLE_ADMIN`, `ROLE_SUPER_ADMIN`, or `ROLE_SHOP_MANAGER` | `CONFIRMED_FROM_CODE` | `SecurityConfig.java`, `AdminDashboardController.java` |
+| `/api/v1/admin/orders/{orderId}/audit` GET | `orders.read` | `CONFIRMED_FROM_CODE` | `AdminOrderController.listAuditTrail`, `AdminOrderService.listAuditTrail` |
 | `/api/v1/admin/returns` GET | `orders.read` | `CONFIRMED_FROM_CODE` | `AdminReturnController.java` |
 | `/api/v1/admin/returns/{returnId}/status` PATCH | `orders.write` | `CONFIRMED_FROM_CODE` | `AdminReturnController.java` |
 | `/api/v1/admin/returns/{returnId}/items/{itemId}/inspect` PATCH | `orders.write` (V104) | `CONFIRMED_FROM_CODE` | `AdminReturnController.java`, `AdminReturnService.inspectItem` |

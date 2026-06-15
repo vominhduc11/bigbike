@@ -150,7 +150,8 @@ public class PosOrderService {
 
     @Transactional
     public PosOrderResponse createOrder(PosCreateOrderRequest req, String staffId, boolean canOverridePrice,
-                                        boolean canOverrideCreditLimit, String clientIp, String userAgent) {
+                                        boolean canSellBelowCost, boolean canOverrideCreditLimit,
+                                        String clientIp, String userAgent) {
         if (req.items() == null || req.items().isEmpty()) {
             throw new ConflictException("POS order must have at least one item.");
         }
@@ -211,6 +212,8 @@ public class PosOrderService {
 
         Instant now = Instant.now();
         List<OrderLineItemEntity> lineItems = new ArrayList<>();
+        // Audit chi tiết override giá (giá gốc → giá đã sửa) từng món để truy vết / chống lạm dụng.
+        List<String> priceOverrides = new ArrayList<>();
         BigDecimal subtotal = BigDecimal.ZERO;
 
         for (PosLineItemRequest item : req.items()) {
@@ -291,9 +294,17 @@ public class PosOrderService {
             BigDecimal basePrice = resolvePrice(product, variant);
             BigDecimal unitPrice;
             if (item.unitPriceOverride() != null) {
-                // P0 #5: override must not exceed base price ceiling check is intentionally omitted
-                // (manual overrides can be discounts, not just markups); zero/negative already blocked above
+                // Override can be a discount or markup; zero/negative already blocked above.
                 unitPrice = item.unitPriceOverride().setScale(2, RoundingMode.HALF_UP);
+                // Block selling below cost via override unless the staff has pos.sell_below_cost.
+                // Cost resolves variant-first then product (NULL = unknown → no enforcement).
+                BigDecimal cost = resolveCost(product, variant);
+                if (cost != null && unitPrice.compareTo(cost) < 0 && !canSellBelowCost) {
+                    throw new ConflictException("Giá đã sửa của '" + product.getName() + "' ("
+                            + unitPrice.setScale(0, RoundingMode.HALF_UP).longValue()
+                            + ") thấp hơn giá vốn (" + cost.setScale(0, RoundingMode.HALF_UP).longValue()
+                            + "). Cần quyền pos.sell_below_cost để bán dưới giá vốn.");
+                }
             } else {
                 unitPrice = basePrice;
             }
@@ -324,6 +335,13 @@ public class PosOrderService {
             li.setCreatedAt(now);
             li.setUpdatedAt(now);
             lineItems.add(li);
+
+            if (item.unitPriceOverride() != null) {
+                priceOverrides.add("{\"sku\":\"" + (li.getSku() != null ? li.getSku() : "") + "\""
+                        + ",\"basePrice\":" + basePrice.setScale(0, RoundingMode.HALF_UP).longValue()
+                        + ",\"overridePrice\":" + unitPrice.setScale(0, RoundingMode.HALF_UP).longValue()
+                        + "}");
+            }
         }
 
         // Validate và tính coupon discount trước (nếu có) — phải trước credit check vì
@@ -535,6 +553,12 @@ public class PosOrderService {
                     .append("}");
         }
         itemsSummary.append("]");
+        StringBuilder overridesJson = new StringBuilder("[");
+        for (int i = 0; i < priceOverrides.size(); i++) {
+            if (i > 0) overridesJson.append(",");
+            overridesJson.append(priceOverrides.get(i));
+        }
+        overridesJson.append("]");
         String auditPayload = "{\"orderId\":\"" + savedOrder.getId() + "\""
                 + ",\"orderNumber\":\"" + savedOrder.getOrderNumber() + "\""
                 + ",\"staffId\":\"" + (staffId != null ? staffId : "") + "\""
@@ -543,8 +567,12 @@ public class PosOrderService {
                 + ",\"totalAmount\":" + totalAfterDiscount.setScale(0, RoundingMode.HALF_UP).longValue()
                 + ",\"couponCode\":\"" + (appliedCoupon != null ? appliedCoupon.getCode() : "") + "\""
                 + ",\"paymentMethod\":\"" + req.paymentMethod() + "\""
+                + ",\"customerId\":\"" + (savedOrder.getCustomerId() != null ? savedOrder.getCustomerId() : "") + "\""
+                + ",\"customerName\":\"" + jsonEscape(savedOrder.getCustomerName()) + "\""
+                + ",\"customerPhone\":\"" + jsonEscape(savedOrder.getCustomerPhone()) + "\""
                 + ",\"itemCount\":" + req.items().size()
                 + ",\"priceOverridden\":" + priceOverridden
+                + ",\"priceOverrides\":" + overridesJson
                 + ",\"creditLimitOverridden\":" + creditLimitOverridden
                 + ",\"items\":" + itemsSummary
                 + ",\"source\":\"POS\"}";
@@ -597,14 +625,21 @@ public class PosOrderService {
     // Backward-compatible overload for existing callers without credit params
     @Transactional
     public PosOrderResponse createOrder(PosCreateOrderRequest req, String staffId, boolean canOverridePrice) {
-        return createOrder(req, staffId, canOverridePrice, false, null, null);
+        return createOrder(req, staffId, canOverridePrice, false, false, null, null);
     }
 
     // Backward-compatible overload for callers without IP/UA
     @Transactional
     public PosOrderResponse createOrder(PosCreateOrderRequest req, String staffId, boolean canOverridePrice,
                                         boolean canOverrideCreditLimit) {
-        return createOrder(req, staffId, canOverridePrice, canOverrideCreditLimit, null, null);
+        return createOrder(req, staffId, canOverridePrice, false, canOverrideCreditLimit, null, null);
+    }
+
+    // Backward-compatible overload (pre cost-guard) — defaults canSellBelowCost=false.
+    @Transactional
+    public PosOrderResponse createOrder(PosCreateOrderRequest req, String staffId, boolean canOverridePrice,
+                                        boolean canOverrideCreditLimit, String clientIp, String userAgent) {
+        return createOrder(req, staffId, canOverridePrice, false, canOverrideCreditLimit, clientIp, userAgent);
     }
 
     /**
@@ -697,6 +732,34 @@ public class PosOrderService {
         if (v != null && v.getRetailPrice() != null) return v.getRetailPrice().setScale(2, RoundingMode.HALF_UP);
         if (p.getSalePrice() != null) return p.getSalePrice().setScale(2, RoundingMode.HALF_UP);
         return p.getRetailPrice().setScale(2, RoundingMode.HALF_UP);
+    }
+
+    // Cost resolution mirrors price: variant cost first, then product cost. NULL = unknown.
+    private BigDecimal resolveCost(ProductEntity p, ProductVariantEntity v) {
+        if (v != null && v.getCostPrice() != null) return v.getCostPrice().setScale(2, RoundingMode.HALF_UP);
+        return p.getCostPrice() != null ? p.getCostPrice().setScale(2, RoundingMode.HALF_UP) : null;
+    }
+
+    // Escape free-text (customerName) before embedding in the hand-built audit JSON,
+    // so a name containing quotes/backslashes/control chars can't break after_data.
+    private static String jsonEscape(String s) {
+        if (s == null) return "";
+        StringBuilder sb = new StringBuilder(s.length());
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            switch (c) {
+                case '"' -> sb.append("\\\"");
+                case '\\' -> sb.append("\\\\");
+                case '\n' -> sb.append("\\n");
+                case '\r' -> sb.append("\\r");
+                case '\t' -> sb.append("\\t");
+                default -> {
+                    if (c < 0x20) sb.append(String.format("\\u%04x", (int) c));
+                    else sb.append(c);
+                }
+            }
+        }
+        return sb.toString();
     }
 
     private void validatePaymentMethod(String method) {

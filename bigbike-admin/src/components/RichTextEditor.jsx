@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
@@ -48,6 +48,12 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
   const [linkModal, setLinkModal] = useState({ open: false, value: '' })
   const linkInputRef = useCallback((el) => { if (el) el.focus() }, [])
 
+  // Chỉ coi là "user sửa" sau khi editor thực sự được focus. TipTap (v3) phát onUpdate
+  // ngay khi parse/chuẩn hoá nội dung lúc mount — nếu HTML lưu khác chuỗi serialize chuẩn,
+  // onUpdate này tạo "thay đổi" ma khiến form Cài đặt báo "chưa lưu" giả khi vừa mở tab.
+  // Mọi thao tác qua toolbar đều gọi .focus() trước nên cờ này bật đúng lúc người dùng sửa.
+  const userEditedRef = useRef(false)
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -66,7 +72,9 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
     ],
     content: value || '',
     editable: !disabled,
+    onFocus: () => { userEditedRef.current = true },
     onUpdate: ({ editor }) => {
+      if (!userEditedRef.current) return
       const html = editor.isEmpty ? '' : editor.getHTML()
       onChange?.(html)
     },
@@ -98,7 +106,10 @@ export function RichTextEditor({ value, onChange, placeholder, disabled, hasErro
     if (!editor) return
     const current = editor.isEmpty ? '' : editor.getHTML()
     if (value !== current) {
-      editor.commands.setContent(value || '', false)
+      // TipTap v3: tham số thứ 2 là options object. Phải truyền { emitUpdate: false }
+      // để đồng bộ value từ ngoài (mount / refetch) KHÔNG bị tính là user sửa —
+      // nếu không, mở form rich-text sẽ báo "thay đổi chưa lưu" giả. (v2 nhận false trực tiếp)
+      editor.commands.setContent(value || '', { emitUpdate: false })
     }
   }, [value, editor])
 

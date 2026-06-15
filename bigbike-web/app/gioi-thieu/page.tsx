@@ -3,10 +3,11 @@ import Link from "next/link";
 import { Phone, Share2, Store } from "lucide-react";
 import { getLocale, getTranslations } from "next-intl/server";
 import { WpStaticShell } from "@/components/wp/WpStaticShell";
-import { LText, LocalizedContentProvider } from "@/components/i18n/LocalizedContent";
+import { LHtml, LText, LocalizedContentProvider } from "@/components/i18n/LocalizedContent";
 import { Tr } from "@/components/i18n/Tr";
 import { getPageBySlug, listBrands, listPublicSettings } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
+import { sanitizeRichHtml } from "@/lib/utils/html";
 import { resolveMediaUrl, safeText, telHref, toLegacyWpMediaUrl } from "@/lib/utils/format";
 import { toBrandPath, toHomePath, toPagePath } from "@/lib/utils/routes";
 import { pickSetting } from "@/lib/utils/settings";
@@ -73,6 +74,11 @@ export default async function AboutPage() {
       <div className="container">
         <div className="row">
           <div className="col-md-12">
+            {page?.body ? (
+              /* Nội dung do admin sửa được (bảng pages → gioi-thieu). Ưu tiên dùng body DB;
+                 fallback về layout theme cố định bên dưới khi body trống. */
+              <LHtml field="body" viHtml={sanitizeRichHtml(page.body)} className="static-page wyswyg" />
+            ) : (
             <div className="static-page wyswyg">
               <div className="about-us">
                 <div className="row row-1">
@@ -185,6 +191,7 @@ export default async function AboutPage() {
                 </div>
               </div>
             </div>
+            )}
           </div>
         </div>
       </div>
