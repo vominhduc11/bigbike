@@ -944,11 +944,10 @@ Evidence: `AdminAnalyticsResponse.java`, `AdminReportService.java`, `OrderJpaRep
 | `general` | Site name, footer text, BCT registration URL | Cài đặt chung |
 | `contact` | Public contact email/address, social links | Liên hệ |
 | `public_home` | Homepage hotline, promo banner, experience/about blocks | Trang chủ |
-| `public_hero` | Hero banners for listing pages (`/san-pham`, `/brands`, `/tin-tuc`) — 15 keys | Hero trang |
+| `public_hero` | Hero banners for listing pages (`/san-pham`, `/brands`, `/tin-tuc`) — 11 keys | Hero trang |
 | `promo` | Homepage promotion banner | Khuyến mãi |
-| `seo` | Homepage SEO title/description/H1, OG image | SEO website |
-| `store` | Operational: minimum checkout amount, low-stock threshold | Cửa hàng |
-| `tax` | VAT rate, tax-inclusive flag, tax registration number | Thuế & Phí |
+| `seo` | Homepage SEO title/description, OG image, bottom HTML block | SEO website |
+| `store` | Operational: low-stock threshold | Cửa hàng |
 | `inventory` | Operational: stock reservation TTL, default warranty months, serial-only selling | Tồn kho |
 | `product_assign` | Editable text of the "Phân công" guide shown on the product create/edit screen — role names + task lists (7 keys). **Super-admin-only writable** (see below). | Phân công sản phẩm |
 | `security` | Login attempts, session timeout — devops-managed, hidden from the admin UI | (hidden) |

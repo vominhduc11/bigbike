@@ -195,13 +195,10 @@ function buildEmptyForm(contentType) {
     seoOgImageUrl: '',
     seoOgImageAlt: '',
     heroImageUrl: '',
-    heroImageAlt: '',
     heroTitle: '',
-    heroDescription: '',
-    heroKicker: '',
     type: normalizeContentType(contentType),
     translations: {
-      en: { title: '', excerpt: '', body: '', seoTitle: '', seoDescription: '', heroTitle: '', heroDescription: '', heroKicker: '' },
+      en: { title: '', excerpt: '', body: '', seoTitle: '', seoDescription: '', heroTitle: '' },
     },
   }
 }
@@ -232,10 +229,7 @@ function buildFormFromItem(contentType, item) {
     seoOgImageUrl: item.seo?.ogImage?.url || '',
     seoOgImageAlt: item.seo?.ogImage?.alt || '',
     heroImageUrl: item.heroImage?.url || '',
-    heroImageAlt: item.heroImage?.alt || '',
     heroTitle: item.heroTitle || '',
-    heroDescription: item.heroDescription || '',
-    heroKicker: item.heroKicker || '',
     type: normalizeContentType(item.type || contentType),
     translations: {
       en: {
@@ -245,8 +239,6 @@ function buildFormFromItem(contentType, item) {
         seoTitle: item.translations?.en?.seoTitle || '',
         seoDescription: item.translations?.en?.seoDescription || '',
         heroTitle: item.translations?.en?.heroTitle || '',
-        heroDescription: item.translations?.en?.heroDescription || '',
-        heroKicker: item.translations?.en?.heroKicker || '',
       },
     },
   }
@@ -338,11 +330,9 @@ function toPayload(form, isCreate) {
     // Hero — always send so admin can clear by leaving blank.
     // Empty url is accepted by backend (@Pattern allows empty) and treated as "clear".
     payload.heroImage = form.heroImageUrl.trim()
-      ? { url: form.heroImageUrl.trim(), alt: form.heroImageAlt.trim() || undefined }
+      ? { url: form.heroImageUrl.trim() }
       : { url: '' }
     payload.heroTitle = form.heroTitle.trim() || ''
-    payload.heroDescription = form.heroDescription.trim() || ''
-    payload.heroKicker = form.heroKicker.trim() || ''
   }
 
   // Always send seo as non-null object so backend can clear fields when all are empty
@@ -363,8 +353,6 @@ function toPayload(form, isCreate) {
       seoTitle: form.translations?.en?.seoTitle?.trim() || null,
       seoDescription: form.translations?.en?.seoDescription?.trim() || null,
       heroTitle: form.translations?.en?.heroTitle?.trim() || null,
-      heroDescription: form.translations?.en?.heroDescription?.trim() || null,
-      heroKicker: form.translations?.en?.heroKicker?.trim() || null,
     },
   }
 
@@ -869,20 +857,9 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                         <ImageUrlInput
                           value={form.heroImageUrl}
                           onChange={(url) => updateField('heroImageUrl', url)}
-                          alt={form.heroImageAlt}
-                          onAltChange={(alt) => updateField('heroImageAlt', alt)}
                           disabled={isReadOnly}
                           error={validationErrors['heroImage.url']}
                           recommend={IMAGE_RECO.bannerWide}
-                        />
-                      </Field>
-                      <Field label={t('content.detail.heroKicker', { defaultValue: 'Kicker' })} hint={isEnLang ? t('content.detail.enFieldHint') : undefined}>
-                        <Input
-                          value={isEnLang ? (form.translations?.en?.heroKicker ?? '') : form.heroKicker}
-                          onChange={(e) => isEnLang ? updateTranslation('heroKicker', e.target.value) : updateField('heroKicker', e.target.value)}
-                          disabled={isReadOnly}
-                          placeholder="vd: GIỚI THIỆU"
-                          maxLength={128}
                         />
                       </Field>
                       <Field label={t('content.detail.heroTitle', { defaultValue: 'Tiêu đề hero' })} hint={isEnLang ? t('content.detail.enFieldHint') : undefined}>
@@ -892,15 +869,6 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                           disabled={isReadOnly}
                           placeholder={t('content.detail.heroTitlePlaceholder', { defaultValue: 'Để trống nếu muốn dùng tên trang' })}
                           maxLength={256}
-                        />
-                      </Field>
-                      <Field full label={t('content.detail.heroDescription', { defaultValue: 'Mô tả ngắn dưới tiêu đề' })} hint={isEnLang ? t('content.detail.enFieldHint') : undefined}>
-                        <Textarea
-                          value={isEnLang ? (form.translations?.en?.heroDescription ?? '') : form.heroDescription}
-                          onChange={(e) => isEnLang ? updateTranslation('heroDescription', e.target.value) : updateField('heroDescription', e.target.value)}
-                          disabled={isReadOnly}
-                          maxLength={1024}
-                          rows={2}
                         />
                       </Field>
                     </div>

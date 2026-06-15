@@ -333,6 +333,29 @@ export function normalizeProduct(input) {
     contentBottom: toTrimmedString(source.contentBottom) || undefined,
     promotionContent: toTrimmedString(source.promotionContent) || undefined,
     installationGuide: toTrimmedString(source.installationGuide) || undefined,
+    // Template/trust fields (V175) — render trên PDP web. PHẢI surface ở đây, nếu không
+    // form admin nạp undefined → mở SP hiện trống → bấm Lưu gửi null/[] → xoá mất dữ liệu.
+    gender: toTrimmedString(source.gender) || undefined,
+    weightGrams: Number.isFinite(source.weightGrams) ? Number(source.weightGrams) : null,
+    warrantyMonths: Number.isFinite(source.warrantyMonths) ? Number(source.warrantyMonths) : null,
+    warrantyScope: toTrimmedString(source.warrantyScope) || undefined,
+    originBrandCountry: toTrimmedString(source.originBrandCountry) || undefined,
+    originManufactureCountry: toTrimmedString(source.originManufactureCountry) || undefined,
+    sizeGuide: toTrimmedString(source.sizeGuide) || undefined,
+    positiveNotes: Array.isArray(source.positiveNotes)
+      ? source.positiveNotes
+          .map((h) => (h && typeof h === 'object'
+            ? { content: toTrimmedString(h.content), contentEn: toTrimmedString(h.contentEn) || undefined }
+            : null))
+          .filter((h) => h && h.content)
+      : [],
+    negativeNotes: Array.isArray(source.negativeNotes)
+      ? source.negativeNotes
+          .map((h) => (h && typeof h === 'object'
+            ? { content: toTrimmedString(h.content), contentEn: toTrimmedString(h.contentEn) || undefined }
+            : null))
+          .filter((h) => h && h.content)
+      : [],
     brand: normalizeBrandSummary(brandSource),
     brandId: brandId || undefined,
     category,

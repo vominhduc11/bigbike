@@ -65,7 +65,6 @@ function buildEmptyForm() {
     showOnHomepage: false,
     imageUrl: '',
     bannerImageUrl: '',
-    bannerMobileImageUrl: '',
     seoTitle: '',
     seoDescription: '',
     seoCanonicalUrl: '',
@@ -84,7 +83,6 @@ function buildFormFromItem(item) {
     showOnHomepage: Boolean(item.showOnHomepage),
     imageUrl: item.image?.url || '',
     bannerImageUrl: item.bannerImage?.url || '',
-    bannerMobileImageUrl: item.mobileBannerImage?.url || '',
     seoTitle: item.seo?.title || '',
     seoDescription: item.seo?.description || '',
     seoCanonicalUrl: item.seo?.canonicalUrl || '',
@@ -118,9 +116,6 @@ function toPayload(form) {
 
   const bannerImageUrl = form.bannerImageUrl.trim()
   payload.banner = bannerImageUrl ? { url: bannerImageUrl } : { url: null }
-
-  const bannerMobileImageUrl = form.bannerMobileImageUrl.trim()
-  payload.mobileBanner = bannerMobileImageUrl ? { url: bannerMobileImageUrl } : { url: null }
 
   const seoTitle = form.seoTitle.trim()
   const seoDescription = form.seoDescription.trim()
@@ -642,17 +637,6 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                   recommend={IMAGE_RECO.bannerWide}
                 />
                 <span className="hint">{t('categories.detail.bannerImageUrlHint')}</span>
-              </div>
-              <div className="form-field" data-field="bannerMobileImageUrl" style={{ gridColumn: '1 / -1' }}>
-                <span>{t('categories.detail.bannerMobileImageUrl')}</span>
-                <ImageUrlInput
-                  value={form.bannerMobileImageUrl}
-                  onChange={(url) => updateField('bannerMobileImageUrl', url)}
-                  disabled={isReadOnly}
-                  error={validationErrors.bannerMobileImageUrl}
-                  recommend={IMAGE_RECO.bannerMobile}
-                />
-                <span className="hint">{t('categories.detail.bannerMobileImageUrlHint')}</span>
               </div>
               <label className="flex items-center gap-2.5 p-2.5 border border-border text-sm cursor-pointer hover:bg-muted w-fit">
                 <Checkbox

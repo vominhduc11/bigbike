@@ -22,6 +22,17 @@ function facebookLabel(url: string): string {
   }
 }
 
+/** Rút nhãn hiển thị gọn từ URL mạng xã hội (prefix/handle), fallback về tên mạng. */
+function socialLabel(url: string, prefix: string, fallback: string): string {
+  try {
+    const u = new URL(url);
+    const path = u.pathname.replace(/^\/+|\/+$/g, "");
+    return path ? `${prefix}/${path}` : u.host.replace(/^www\./, "");
+  } catch {
+    return fallback;
+  }
+}
+
 const titleStyle: React.CSSProperties = {
   color: "#ff0c09",
   fontWeight: 500,
@@ -59,6 +70,9 @@ export async function WpFooter({ footerNodes }: { footerNodes: HeaderNavNode[] }
   ].filter(Boolean);
   const email = pickSetting(settings, ["contact_email"]);
   const facebookUrl = pickSetting(settings, ["facebook_url"]);
+  const youtubeUrl = pickSetting(settings, ["youtube_url"]);
+  const tiktokUrl = pickSetting(settings, ["tiktok_url"]);
+  const instagramUrl = pickSetting(settings, ["instagram_url"]);
   // Slogan / mô tả / link Bộ Công Thương / ĐKKD ưu tiên lấy từ settings (admin sửa được);
   // fallback về copy theme khi setting còn trống.
   const tagline = pickSetting(settings, ["footer_tagline"]);
@@ -133,6 +147,27 @@ export async function WpFooter({ footerNodes }: { footerNodes: HeaderNavNode[] }
                               <li>
                                 <a rel="nofollow" href={facebookUrl}>
                                   <i className="fab fa-facebook-f" /> {facebookLabel(facebookUrl)}
+                                </a>
+                              </li>
+                            ) : null}
+                            {youtubeUrl ? (
+                              <li>
+                                <a rel="nofollow" href={youtubeUrl}>
+                                  <i className="fab fa-youtube" /> {socialLabel(youtubeUrl, "yt", "YouTube")}
+                                </a>
+                              </li>
+                            ) : null}
+                            {tiktokUrl ? (
+                              <li>
+                                <a rel="nofollow" href={tiktokUrl}>
+                                  <i className="fab fa-tiktok" /> {socialLabel(tiktokUrl, "tiktok", "TikTok")}
+                                </a>
+                              </li>
+                            ) : null}
+                            {instagramUrl ? (
+                              <li>
+                                <a rel="nofollow" href={instagramUrl}>
+                                  <i className="fab fa-instagram" /> {socialLabel(instagramUrl, "ig", "Instagram")}
                                 </a>
                               </li>
                             ) : null}

@@ -43,18 +43,15 @@ export default async function ContactPage() {
   const address = pickSetting(settings, ["contact_address"]);
   const zaloUrl = pickSetting(settings, ["zalo_url"]);
   const facebookUrl = pickSetting(settings, ["facebook_url"]);
-  const mapUrl = pickSetting(settings, ["google_maps_url"]);
   // Giờ mở cửa lấy từ settings (admin sửa được), fallback copy theme khi trống.
   const hoursWeekday = pickSetting(settings, ["opening_hours_weekday"]);
   const hoursWeekend = pickSetting(settings, ["opening_hours_weekend"]);
   const hoursHoliday = pickSetting(settings, ["opening_hours_holiday"]);
 
-  // Map embed: ưu tiên URL nhúng Google Maps trong settings, fallback theo địa chỉ.
-  const canEmbedMap = /^https?:\/\/(www\.)?google\.com\/maps[/?#]/.test(mapUrl);
-  const fallbackMap = address
+  // Map embed: dựng từ địa chỉ shop — admin sửa ô Địa chỉ là bản đồ đổi theo.
+  const mapEmbedSrc = address
     ? `https://www.google.com/maps?q=${encodeURIComponent(address)}&z=17&output=embed`
     : "";
-  const mapEmbedSrc = canEmbedMap ? mapUrl : fallbackMap;
   const sanitizedBody = page?.body ? sanitizeRichHtml(page.body) : "";
 
   // page-contact.php: #main-content.contact-page (KHÔNG có .page-title) > .iframe

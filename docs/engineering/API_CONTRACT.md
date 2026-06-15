@@ -641,7 +641,6 @@ Status: `CONFIRMED_FROM_CODE`
   - `hotline`, `hotline_2`
   - `facebook_url`, `messenger_url`, `zalo_url`, `youtube_url`, `tiktok_url`, `instagram_url`
   - `messenger_display`, `zalo_display` — display text for the Messenger/Zalo lines in the floating-chat popup (falls back to the URL slug when empty).
-  - `google_maps_url` — contact-page embedded map URL.
 - `public_home`:
   - `promo_title`, `promo_off`, `promo_href`, `promo_image_url` — homepage promo banner block.
   - `home_exp_subtitle`, `home_exp_title`, `home_exp_desc` — homepage experience/news teaser section copy.

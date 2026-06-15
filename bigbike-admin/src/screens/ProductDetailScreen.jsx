@@ -3094,9 +3094,14 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   </Field>
 
                   <Field label={t('products.detail.gender', { defaultValue: 'Giới tính' })}>
-                    <Select value={form.gender || 'NONE'} onValueChange={(val) => updateField('gender', val === 'NONE' ? '' : val)} disabled={isReadOnly}>
+                    {/* Guard `if (val)`: Radix bắn onValueChange('') giả khi value đồng bộ lúc
+                        mount — không guard sẽ xoá gender (hiện trống + lưu mất dữ liệu). Children
+                        rõ ràng cho SelectValue để trigger hiện đúng giá trị. */}
+                    <Select value={form.gender || 'NONE'} onValueChange={(val) => { if (val) updateField('gender', val === 'NONE' ? '' : val) }} disabled={isReadOnly}>
                       <SelectTrigger>
-                        <SelectValue placeholder={t('products.detail.genderPlaceholder', { defaultValue: 'Không chọn' })} />
+                        <SelectValue placeholder={t('products.detail.genderPlaceholder', { defaultValue: 'Không chọn' })}>
+                          {form.gender || undefined}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         {/* Radix Select cấm value="" — dùng sentinel 'NONE', map về '' khi lưu */}
@@ -3268,7 +3273,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
 
                   <Field label={t('products.detail.publishStatus')} error={validationErrors.publishStatus}>
                     <Select value={form.publishStatus} onValueChange={(val) => { if (val) updateField('publishStatus', val) }} disabled={isReadOnly}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectTrigger><SelectValue>{form.publishStatus ? t(`status.publish.${form.publishStatus}`, { defaultValue: form.publishStatus }) : undefined}</SelectValue></SelectTrigger>
                       <SelectContent>
                         {form.publishStatus && !['DRAFT', 'PUBLISHED', 'HIDDEN', 'TRASH'].includes(form.publishStatus) && (
                           <SelectItem value={form.publishStatus} disabled>

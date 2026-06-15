@@ -1764,6 +1764,8 @@
     "unsavedDot": "Chưa lưu",
     "htmlPlaceholder": "Soạn nội dung HTML...",
     "htmlEmpty": "Chưa có nội dung",
+    "boolOn": "Bật",
+    "boolOff": "Tắt",
     "valueEmpty": "Chưa có giá trị",
     "englishLabel": "Tiếng Anh (tùy chọn)",
     "englishPlaceholder": "Để trống sẽ tự dùng bản tiếng Việt khi khách xem bằng tiếng Anh",

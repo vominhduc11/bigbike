@@ -1765,6 +1765,8 @@
     "unsavedDot": "Unsaved",
     "htmlPlaceholder": "Compose HTML content...",
     "htmlEmpty": "No content yet",
+    "boolOn": "On",
+    "boolOff": "Off",
     "valueEmpty": "No value yet",
     "englishLabel": "English (optional)",
     "englishPlaceholder": "Leave blank to fall back to the Vietnamese value when viewing in English",

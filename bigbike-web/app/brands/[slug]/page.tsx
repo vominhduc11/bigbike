@@ -4,12 +4,13 @@ import { getLocale } from "next-intl/server";
 import { WpCategoryHero, type WpCategoryCrumb } from "@/components/wp/WpCategoryHero";
 import { WpCatalogClient } from "@/components/wp/WpCatalogClient";
 import { WpThemeStylesheet } from "@/components/wp/WpThemeStylesheet";
-import { LText, LocalizedContentProvider } from "@/components/i18n/LocalizedContent";
+import { LHtml, LText, LocalizedContentProvider } from "@/components/i18n/LocalizedContent";
 import { getBrandBySlug, getCatalogFacets, listBrands, listCategories, listProducts } from "@/lib/api/public-api";
 import { DEFAULT_PRODUCT_PAGE_SIZE, DEFAULT_PRODUCT_SORT } from "@/lib/constants/catalog";
 import { buildBrandBreadcrumbJsonLd, serializeJsonLd } from "@/lib/seo/json-ld";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { resolveMediaUrl, safeText, toLegacyWpMediaUrl } from "@/lib/utils/format";
+import { sanitizeRichHtml } from "@/lib/utils/html";
 import { toBrandListPath, toBrandPath, toHomePath } from "@/lib/utils/routes";
 import { isValidSlug } from "@/lib/utils/slug";
 
@@ -91,6 +92,11 @@ export default async function BrandDetailPage({ params }: BrandDetailPageProps) 
   const filterCategories = (categoriesResult.data ?? []).filter((c) => c.isVisible);
   const breadcrumbJsonLd = serializeJsonLd(buildBrandBreadcrumbJsonLd(brand));
   const brandName = safeText(brand.name, "Thương hiệu");
+  // Mô tả thương hiệu (admin nhập rich-HTML) — render trên lưới sản phẩm như trang
+  // danh mục; chỉ khi có nội dung. Cùng sanitize + markup .desc để style nhất quán.
+  const brandDescriptionHtml = brand.description?.trim()
+    ? sanitizeRichHtml(brand.description, { rewriteMediaUrls: true })
+    : null;
 
   const heroBreadcrumb: WpCategoryCrumb[] = [
     { label: "Bigbike.vn", href: toHomePath() },
@@ -124,6 +130,16 @@ export default async function BrandDetailPage({ params }: BrandDetailPageProps) 
                 brands={brandsResult.data}
                 categories={filterCategories}
                 facets={facetsResult.data}
+                beforeGridNode={
+                  brandDescriptionHtml ? (
+                    <LHtml
+                      field="description"
+                      viHtml={brandDescriptionHtml}
+                      className="desc"
+                      rewriteMediaUrls
+                    />
+                  ) : undefined
+                }
                 routeBrandSlug={brand.slug}
                 initialProducts={productsResult.data}
                 initialPagination={productsResult.pagination}

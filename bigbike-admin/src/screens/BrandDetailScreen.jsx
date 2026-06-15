@@ -32,8 +32,6 @@ function buildEmptyForm() {
     logoAlt: '',
     bannerUrl: '',
     bannerAlt: '',
-    mobileBannerUrl: '',
-    mobileBannerAlt: '',
     seoTitle: '',
     seoDescription: '',
     seoCanonicalUrl: '',
@@ -52,8 +50,6 @@ function buildFormFromItem(item) {
     logoAlt: item.logo?.alt || '',
     bannerUrl: item.bannerImage?.url || '',
     bannerAlt: item.bannerImage?.alt || '',
-    mobileBannerUrl: item.mobileBannerImage?.url || '',
-    mobileBannerAlt: item.mobileBannerImage?.alt || '',
     seoTitle: item.seo?.title || '',
     seoDescription: item.seo?.description || '',
     seoCanonicalUrl: item.seo?.canonicalUrl || '',
@@ -83,10 +79,6 @@ function toPayload(form) {
 
   payload.banner = form.bannerUrl.trim()
     ? { url: form.bannerUrl.trim(), alt: form.bannerAlt.trim() || undefined }
-    : { url: '' }
-
-  payload.mobileBanner = form.mobileBannerUrl.trim()
-    ? { url: form.mobileBannerUrl.trim(), alt: form.mobileBannerAlt.trim() || undefined }
     : { url: '' }
 
   if (
@@ -406,19 +398,6 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
                   recommend={IMAGE_RECO.bannerWide}
                 />
                 <span className="hint">{t('brands.detail.bannerUrlHint')}</span>
-              </div>
-              <div className="form-field" style={{ gridColumn: '1 / -1' }}>
-                <span>{t('brands.detail.mobileBannerUrl')}</span>
-                <ImageUrlInput
-                  value={form.mobileBannerUrl}
-                  onChange={(url) => updateField('mobileBannerUrl', url)}
-                  alt={form.mobileBannerAlt}
-                  onAltChange={(v) => updateField('mobileBannerAlt', v)}
-                  disabled={isReadOnly}
-                  error={validationErrors.mobileBannerUrl}
-                  recommend={IMAGE_RECO.bannerMobile}
-                />
-                <span className="hint">{t('brands.detail.mobileBannerUrlHint')}</span>
               </div>
             </div>
           </div>

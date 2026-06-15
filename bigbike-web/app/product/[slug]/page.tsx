@@ -110,6 +110,14 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
   const originManufactureCountry = safeText(product.originManufactureCountry, "");
   const weightGrams = product.weightGrams ?? null;
   const sizeGuideHtml = product.sizeGuide ? sanitizeRichHtml(product.sizeGuide) : "";
+  // Khuyến mãi & hướng dẫn lắp đặt (admin nhập rich-HTML) — trước đây fetch nhưng
+  // KHÔNG render; nay sanitize và hiển thị, chỉ khi admin có nhập.
+  const promotionContentHtml = product.promotionContent
+    ? sanitizeRichHtml(product.promotionContent)
+    : "";
+  const installationGuideHtml = product.installationGuide
+    ? sanitizeRichHtml(product.installationGuide)
+    : "";
   const hasTrustInfo =
     warrantyMonths != null ||
     Boolean(warrantyScope) ||
@@ -231,6 +239,17 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
         />
       </div>
 
+      {/* Khuyến mãi (admin nhập) — khối nổi bật ngay dưới khối mua hàng; chỉ render
+          khi có nội dung. Cùng vocabulary section/heading với các khối SEO khác. */}
+      {promotionContentHtml ? (
+        <section className="my-10 border border-brand/40 bg-brand/5 p-5">
+          <h2 className="mb-3 font-heading text-lg font-semibold uppercase text-brand">
+            <Tr ns="Product" k="promotion" />
+          </h2>
+          <div className="wyswyg" dangerouslySetInnerHTML={{ __html: promotionContentHtml }} />
+        </section>
+      ) : null}
+
       {/* Ưu điểm & Nhược điểm (V175) — USP độc quyền của BigBike, đặt nổi bật ngay
           dưới khối mua hàng. Đồng bộ schema positiveNotes/negativeNotes. */}
       {(positiveNotes.length > 0 || negativeNotes.length > 0) && (
@@ -312,6 +331,15 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
         <section className="my-10">
           <h2 className="mb-3 font-heading text-lg font-semibold uppercase"><Tr ns="Product" k="sizeGuideTitle" /></h2>
           <div className="wyswyg" dangerouslySetInnerHTML={{ __html: sizeGuideHtml }} />
+        </section>
+      ) : null}
+
+      {/* Hướng dẫn lắp đặt (admin nhập) — section riêng cạnh bảng size, sanitize
+          trước khi render; chỉ hiện khi admin có nhập. */}
+      {installationGuideHtml ? (
+        <section className="my-10">
+          <h2 className="mb-3 font-heading text-lg font-semibold uppercase"><Tr ns="Product" k="installation" /></h2>
+          <div className="wyswyg" dangerouslySetInnerHTML={{ __html: installationGuideHtml }} />
         </section>
       ) : null}
 

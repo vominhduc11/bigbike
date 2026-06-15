@@ -1,6 +1,5 @@
 package com.bigbike.bigbike_backend.service.admin.settings;
 
-import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -113,9 +112,6 @@ public class SettingDefinitionRegistry {
                 SettingDefinition.builder("instagram_url", "contact", SettingValueType.URL)
                         .publicAllowed()
                         .description("URL profile Instagram.").build(),
-                SettingDefinition.builder("google_maps_url", "contact", SettingValueType.URL)
-                        .publicAllowed()
-                        .description("URL nhúng Google Maps cho trang Liên hệ.").build(),
                 SettingDefinition.builder("opening_hours_weekday", "contact", SettingValueType.STRING)
                         .publicAllowed()
                         .description("Giờ mở cửa thứ 2–thứ 6 (header + trang Liên hệ).").build(),
@@ -192,59 +188,32 @@ public class SettingDefinitionRegistry {
                 SettingDefinition.builder("hero_products_image_url", "public_hero", SettingValueType.IMAGE_URL)
                         .publicAllowed()
                         .description("Ảnh nền hero trang Tất cả sản phẩm (/san-pham).").build(),
-                SettingDefinition.builder("hero_products_mobile_image_url", "public_hero", SettingValueType.IMAGE_URL)
-                        .publicAllowed()
-                        .description("Ảnh mobile hero trang Tất cả sản phẩm — portrait ~768×900px cho viewport ≤767px.").build(),
                 SettingDefinition.builder("hero_products_image_alt", "public_hero", SettingValueType.STRING)
                         .publicAllowed()
                         .description("Alt text ảnh hero trang Tất cả sản phẩm.").build(),
                 SettingDefinition.builder("hero_products_title", "public_hero", SettingValueType.STRING)
                         .publicAllowed()
                         .description("Tiêu đề hero trang Tất cả sản phẩm.").build(),
-                SettingDefinition.builder("hero_products_description", "public_hero", SettingValueType.STRING)
-                        .publicAllowed()
-                        .description("Mô tả ngắn dưới tiêu đề hero trang Tất cả sản phẩm.").build(),
-                SettingDefinition.builder("hero_products_kicker", "public_hero", SettingValueType.STRING)
-                        .publicAllowed()
-                        .description("Kicker (chip nhỏ trên tiêu đề) hero trang Tất cả sản phẩm.").build(),
 
                 SettingDefinition.builder("hero_brands_image_url", "public_hero", SettingValueType.IMAGE_URL)
                         .publicAllowed()
                         .description("Ảnh nền hero trang Thương hiệu (/brands).").build(),
-                SettingDefinition.builder("hero_brands_mobile_image_url", "public_hero", SettingValueType.IMAGE_URL)
-                        .publicAllowed()
-                        .description("Ảnh mobile hero trang Thương hiệu — portrait ~768×900px cho viewport ≤767px.").build(),
                 SettingDefinition.builder("hero_brands_image_alt", "public_hero", SettingValueType.STRING)
                         .publicAllowed()
                         .description("Alt text ảnh hero trang Thương hiệu.").build(),
                 SettingDefinition.builder("hero_brands_title", "public_hero", SettingValueType.STRING)
                         .publicAllowed()
                         .description("Tiêu đề hero trang Thương hiệu.").build(),
-                SettingDefinition.builder("hero_brands_description", "public_hero", SettingValueType.STRING)
-                        .publicAllowed()
-                        .description("Mô tả ngắn dưới tiêu đề hero trang Thương hiệu.").build(),
-                SettingDefinition.builder("hero_brands_kicker", "public_hero", SettingValueType.STRING)
-                        .publicAllowed()
-                        .description("Kicker hero trang Thương hiệu.").build(),
 
                 SettingDefinition.builder("hero_news_image_url", "public_hero", SettingValueType.IMAGE_URL)
                         .publicAllowed()
                         .description("Ảnh nền hero trang Tin tức (/tin-tuc).").build(),
-                SettingDefinition.builder("hero_news_mobile_image_url", "public_hero", SettingValueType.IMAGE_URL)
-                        .publicAllowed()
-                        .description("Ảnh mobile hero trang Tin tức — portrait ~768×900px cho viewport ≤767px.").build(),
                 SettingDefinition.builder("hero_news_image_alt", "public_hero", SettingValueType.STRING)
                         .publicAllowed()
                         .description("Alt text ảnh hero trang Tin tức.").build(),
                 SettingDefinition.builder("hero_news_title", "public_hero", SettingValueType.STRING)
                         .publicAllowed()
                         .description("Tiêu đề hero trang Tin tức.").build(),
-                SettingDefinition.builder("hero_news_description", "public_hero", SettingValueType.STRING)
-                        .publicAllowed()
-                        .description("Mô tả ngắn dưới tiêu đề hero trang Tin tức.").build(),
-                SettingDefinition.builder("hero_news_kicker", "public_hero", SettingValueType.STRING)
-                        .publicAllowed()
-                        .description("Kicker hero trang Tin tức.").build(),
 
                 // ── GLOBAL HERO DEFAULTS ──
                 SettingDefinition.builder("hero_default_bg_url", "public_hero", SettingValueType.IMAGE_URL)
@@ -261,9 +230,6 @@ public class SettingDefinitionRegistry {
                 SettingDefinition.builder("seo_home_description", "seo", SettingValueType.LONG_TEXT)
                         .publicAllowed()
                         .description("SEO meta description của trang chủ.").build(),
-                SettingDefinition.builder("seo_home_h1", "seo", SettingValueType.STRING)
-                        .publicAllowed()
-                        .description("Tiêu đề H1 chính trên trang chủ.").build(),
                 SettingDefinition.builder("og_image_url", "seo", SettingValueType.IMAGE_URL)
                         .publicAllowed()
                         .description("URL ảnh Open Graph mặc định.").build(),
@@ -278,26 +244,19 @@ public class SettingDefinitionRegistry {
                         .description("Mã tiền tệ mặc định.").build(),
                 SettingDefinition.builder("store_timezone", "STORE", SettingValueType.STRING)
                         .description("Múi giờ dùng cho timestamp đơn hàng và scheduled job.").build(),
-                SettingDefinition.builder("order_min_amount", "STORE", SettingValueType.MONEY)
-                        .min(0L).max(1_000_000_000L)
-                        .description("Số tiền tối thiểu để checkout (VND).").build(),
                 SettingDefinition.builder("low_stock_threshold", "STORE", SettingValueType.INTEGER)
                         .min(0L).max(10_000L)
                         .description("Ngưỡng low-stock cho variant.").build(),
 
-                // ── TAX ──
-                SettingDefinition.builder("tax_enabled", "TAX", SettingValueType.BOOLEAN)
-                        .description("Bật tính thuế tự động trên đơn hàng.").build(),
-                SettingDefinition.builder("tax_rate", "TAX", SettingValueType.DECIMAL)
-                        .min(BigDecimal.ZERO).max(BigDecimal.ONE)
-                        .description("Tỷ lệ VAT mặc định (0.10 = 10%).").build(),
-                SettingDefinition.builder("tax_inclusive", "TAX", SettingValueType.BOOLEAN)
-                        .description("Giá sản phẩm đã bao gồm thuế hay chưa.").build(),
-                SettingDefinition.builder("tax_label", "TAX", SettingValueType.STRING)
-                        .publicAllowed()
-                        .description("Nhãn hiển thị thuế trên hoá đơn (VAT, GST,…).").build(),
-                SettingDefinition.builder("tax_registration_number", "TAX", SettingValueType.STRING)
-                        .description("MST của doanh nghiệp.").build(),
+                // ── INVENTORY ── (vận hành kho; admin shop chỉnh, không public)
+                SettingDefinition.builder("reservation_ttl_minutes", "inventory", SettingValueType.INTEGER)
+                        .min(1L).max(1440L)
+                        .description("Số phút giữ hàng trong giỏ trước khi nhả lại kho.").build(),
+                SettingDefinition.builder("default_warranty_months", "inventory", SettingValueType.INTEGER)
+                        .min(0L).max(600L)
+                        .description("Thời hạn bảo hành mặc định khi tạo phiếu (tháng).").build(),
+                SettingDefinition.builder("serial_inventory_only", "inventory", SettingValueType.BOOLEAN)
+                        .description("Chỉ bán sản phẩm có serial đã nhập kho.").build(),
 
                 // ── PRODUCT_ASSIGN ── (text phân công đội ngũ trên màn tạo/sửa sản phẩm; chỉ SUPER_ADMIN sửa)
                 SettingDefinition.builder("product_assign_title", "product_assign", SettingValueType.STRING)

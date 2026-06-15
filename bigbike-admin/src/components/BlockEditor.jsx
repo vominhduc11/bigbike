@@ -9,8 +9,10 @@ import {
 import { GripVertical } from 'lucide-react'
 import { MediaPickerModal } from './MediaPickerModal'
 import { VideoPickerModal } from './VideoPickerModal'
+import { MediaDimensionWarning } from './MediaDimensionWarning'
 import { RichTextEditor } from './RichTextEditor'
 import { SortableList } from './Sortable'
+import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { cn, generateId } from '@/lib/utils'
 
 const BLOCK_TYPES = ['heading', 'paragraph', 'list', 'image', 'video', 'callout', 'divider']
@@ -172,6 +174,7 @@ function ImageBlockEditor({ block, onChange, disabled, onPickImage }) {
           />
         </div>
       </div>
+      {block.url && <MediaDimensionWarning url={block.url} recommend={IMAGE_RECO.general} kind="image" />}
     </div>
   )
 }
@@ -219,6 +222,9 @@ function VideoBlockEditor({ block, onChange, disabled, onPickVideo }) {
         disabled={disabled}
         maxLength={500}
       />
+      {block.provider === 'upload' && block.url && (
+        <MediaDimensionWarning url={block.url} recommend={IMAGE_RECO.video} kind="video" />
+      )}
     </div>
   )
 }

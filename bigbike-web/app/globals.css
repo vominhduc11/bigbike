@@ -724,6 +724,17 @@ body .information-slide-bigbike {
   z-index: var(--bb-z-modal); /* phủ lên header (z-200) */
 }
 
+/* Drawer bộ lọc danh mục mobile (.sidebar-wrap-product) ở WP gốc là z-index:99 —
+   cùng hoàn cảnh như .information-slide-bigbike: sau khi ghim header lên z-200 VÀ
+   thêm thanh điều hướng đáy mobile (.bb-bottom-nav z-650), cả hai đều cao hơn 99
+   nên thò lên đè drawer — header đè phần đầu (tiêu đề + nút đóng), bottom-nav che
+   các mục cuối (Xem thêm thương hiệu). Nâng drawer lên tầng modal (800) để nó phủ
+   kín cả header lẫn bottom-nav như một off-canvas thật. Panel tự cuộn hết chiều cao
+   viewport nên không còn mục nào bị khuất. `body .…` (0,1,1) thắng theme WP (0,1,0). */
+body .sidebar-wrap-product {
+  z-index: var(--bb-z-modal);
+}
+
 /* ─────────────────────────────────────────────────────────────
    WP header (.headroom / .navigation) — menu ngang ở desktop.
    Bản port theme WP chỉ mang theo trạng thái off-canvas của .navigation

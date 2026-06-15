@@ -2,7 +2,7 @@ import { useMemo, useEffect, useState, useCallback } from 'react'
 import {
   Store, Phone, CreditCard, Tag, Globe, Settings,
   Home, Building2, Image as ImageIcon, Package, Users,
-  CheckCircle2, AlertCircle, Landmark,
+  CheckCircle2, AlertCircle, Landmark, ExternalLink, Lock,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
@@ -15,6 +15,7 @@ import { sanitizeHtml } from '../lib/sanitizeHtml'
 import { showConfirm } from '../lib/confirm'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -103,7 +104,9 @@ const TRANSLATABLE_GROUPS = new Set(['GENERAL', 'PUBLIC_HOME', 'PUBLIC_HERO', 'S
 function isTranslatableSetting(setting) {
   const group = (setting.settingGroup || '').toUpperCase()
   if (!TRANSLATABLE_GROUPS.has(group)) return false
-  if (setting.valueType === 'IMAGE_URL') return false
+  if (setting.valueType === 'IMAGE_URL' || setting.valueType === 'BOOLEAN'
+      || setting.valueType === 'INTEGER' || setting.valueType === 'DECIMAL'
+      || setting.valueType === 'MONEY') return false
   if (setting.valueType === 'HTML' || setting.valueType === 'LONG_TEXT') return true
   return inputTypeFor(setting.key) === 'text'
 }
@@ -129,8 +132,7 @@ const HIDDEN_GROUPS = new Set(['SECURITY', 'PAYMENT_SEPAY', 'COMMERCE'])
 // Field cụ thể bị ẩn vì giá trị mặc định luôn đúng cho shop VN, đổi gây rủi ro:
 // - store_currency: luôn VND
 // - store_timezone: luôn Asia/Ho_Chi_Minh
-// - tax_label: mặc định "VAT" là đủ cho hoá đơn VN
-const HIDDEN_KEYS = new Set(['store_currency', 'store_timezone', 'tax_label'])
+const HIDDEN_KEYS = new Set(['store_currency', 'store_timezone'])
 
 const TAB_META = {
   GENERAL:     { icon: Store,      labelKey: 'settings.group_general' },
@@ -169,7 +171,6 @@ const KEY_LABELS_VI = {
   bank_branch: 'Chi nhánh ngân hàng (không bắt buộc)',
   messenger_url: 'Link Messenger (popup chat)',
   messenger_display: 'Chữ hiển thị Messenger (popup chat)',
-  google_maps_url: 'URL nhúng Google Maps (trang Liên hệ)',
   // public_home (homepage)
   hotline: 'Hotline chính (hiển thị nổi bật)',
   zalo_url: 'Link Zalo (popup liên hệ)',
@@ -193,41 +194,25 @@ const KEY_LABELS_VI = {
   seo_home_title: 'SEO Title trang chủ (thẻ <title>)',
   seo_home_description: 'SEO Description trang chủ (meta)',
   og_image_url: 'Ảnh khi share Facebook (Open Graph)',
-  seo_home_h1: 'Tiêu đề H1 trang chủ',
   home_content_bottom_html: 'Nội dung SEO cuối trang chủ (rich-text)',
   // store (operational)
-  order_min_amount: 'Đơn tối thiểu để checkout (VND, 0 = không giới hạn)',
   low_stock_threshold: 'Ngưỡng cảnh báo sắp hết hàng (số lượng)',
-  // tax
-  tax_enabled: 'Bật tính thuế tự động (true/false)',
-  tax_rate: 'Thuế suất VAT (vd: 0.10 = 10%)',
-  tax_inclusive: 'Giá sản phẩm đã bao gồm thuế (true/false)',
-  tax_registration_number: 'Mã số thuế (MST) — in trên hoá đơn',
   // inventory (operational)
   reservation_ttl_minutes: 'Số phút giữ hàng trong giỏ trước khi nhả lại kho',
   default_warranty_months: 'Thời hạn bảo hành mặc định khi tạo phiếu (tháng)',
-  serial_inventory_only: 'Chỉ bán sản phẩm có serial đã nhập kho (true/false)',
+  serial_inventory_only: 'Chỉ bán sản phẩm có serial đã nhập kho',
   // public_hero — Tất cả sản phẩm
   hero_products_image_url: 'Ảnh hero — trang Tất cả sản phẩm (desktop)',
-  hero_products_mobile_image_url: 'Ảnh hero — trang Tất cả sản phẩm (mobile)',
   hero_products_image_alt: 'Alt ảnh hero — Tất cả sản phẩm',
   hero_products_title: 'Tiêu đề hero — Tất cả sản phẩm',
-  hero_products_description: 'Mô tả hero — Tất cả sản phẩm',
-  hero_products_kicker: 'Kicker hero — Tất cả sản phẩm',
   // public_hero — Thương hiệu
   hero_brands_image_url: 'Ảnh hero — trang Thương hiệu (desktop)',
-  hero_brands_mobile_image_url: 'Ảnh hero — trang Thương hiệu (mobile)',
   hero_brands_image_alt: 'Alt ảnh hero — Thương hiệu',
   hero_brands_title: 'Tiêu đề hero — Thương hiệu',
-  hero_brands_description: 'Mô tả hero — Thương hiệu',
-  hero_brands_kicker: 'Kicker hero — Thương hiệu',
   // public_hero — Tin tức
   hero_news_image_url: 'Ảnh hero — trang Tin tức (desktop)',
-  hero_news_mobile_image_url: 'Ảnh hero — trang Tin tức (mobile)',
   hero_news_image_alt: 'Alt ảnh hero — Tin tức',
   hero_news_title: 'Tiêu đề hero — Tin tức',
-  hero_news_description: 'Mô tả hero — Tin tức',
-  hero_news_kicker: 'Kicker hero — Tin tức',
   // global hero defaults
   hero_default_bg_url: 'Ảnh nền mặc định hero (dùng khi trang không có ảnh riêng)',
   hero_default_illustration_url: 'Ảnh gear mặc định hero (dùng khi trang không có ảnh minh hoạ riêng)',
@@ -245,11 +230,8 @@ const KEY_HINTS_VI = {
   promo_image_url:          'Ảnh nằm ngang, ví dụ 1200×400px.',
   og_image_url:             '1200×630px (chuẩn mạng xã hội).',
   hero_products_image_url:         'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
-  hero_products_mobile_image_url:  'Ảnh dọc hoặc vuông, ví dụ 768×900px.',
   hero_brands_image_url:           'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
-  hero_brands_mobile_image_url:    'Ảnh dọc hoặc vuông, ví dụ 768×900px.',
   hero_news_image_url:             'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
-  hero_news_mobile_image_url:      'Ảnh dọc hoặc vuông, ví dụ 768×900px.',
   hero_default_bg_url:             'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
   hero_default_illustration_url:   'PNG nền trong, tỷ lệ gần vuông ~700×600px.',
 }
@@ -260,11 +242,8 @@ const KEY_RECO = {
   promo_image_url:                 IMAGE_RECO.promo,
   og_image_url:                    IMAGE_RECO.cover,
   hero_products_image_url:         IMAGE_RECO.bannerWide,
-  hero_products_mobile_image_url:  IMAGE_RECO.bannerMobile,
   hero_brands_image_url:           IMAGE_RECO.bannerWide,
-  hero_brands_mobile_image_url:    IMAGE_RECO.bannerMobile,
   hero_news_image_url:             IMAGE_RECO.bannerWide,
-  hero_news_mobile_image_url:      IMAGE_RECO.bannerMobile,
   hero_default_bg_url:             IMAGE_RECO.bannerWide,
   hero_default_illustration_url:   IMAGE_RECO.illustration,
 }
@@ -279,9 +258,124 @@ function tabLabel(group, t) {
   return meta.fallbackLabel ?? group ?? t('settings.groupGeneral')
 }
 
+// ── Hướng dẫn vị trí: mỗi ô render ở đâu trên web + link mở đúng trang ───────────
+const STOREFRONT_BASE = (import.meta.env.VITE_STOREFRONT_BASE_URL ?? 'https://bigbike.vn').replace(/\/$/, '')
+
+// Khối hiển thị → tiêu đề + đường dẫn storefront (path = null nghĩa là không hiển thị cho khách).
+const SECTION_GUIDE = {
+  general_brand:   { title: 'Header & Footer — mọi trang', path: '/' },
+  contact_main:    { title: 'Trang Liên hệ + Header/Footer', path: '/lien-he' },
+  contact_social:  { title: 'Mạng xã hội — chat nổi + Footer', path: '/lien-he' },
+  payment_bank:    { title: 'Hiện khi khách đặt đơn & chọn chuyển khoản', path: null },
+  home_promo:      { title: 'Trang chủ › Banner khuyến mãi', path: '/' },
+  home_exp:        { title: 'Trang chủ › Khối trải nghiệm', path: '/' },
+  home_about:      { title: 'Trang chủ › Khối giới thiệu', path: '/' },
+  home_featured:   { title: 'Trang chủ › Khối Sản phẩm nổi bật', path: '/' },
+  home_news:       { title: 'Trang chủ › Khối Tin tức', path: '/' },
+  home_videos:     { title: 'Trang chủ › Khối Video', path: '/' },
+  hero_products:   { title: 'Banner đầu trang Tất cả sản phẩm', path: '/san-pham' },
+  hero_brands:     { title: 'Banner đầu trang Thương hiệu', path: '/brands' },
+  hero_news:       { title: 'Banner đầu trang Tin tức', path: '/tin-tuc' },
+  hero_default:    { title: 'Banner mặc định — trang listing chưa đặt ảnh riêng', path: '/san-pham' },
+  seo_home:        { title: 'SEO trang chủ (thẻ meta / khi chia sẻ)', path: '/' },
+  internal_store:  { title: 'Nội bộ — không hiển thị cho khách', path: null, internal: true },
+  internal_inv:    { title: 'Nội bộ — quy tắc vận hành kho', path: null, internal: true },
+  internal_assign: { title: 'Màn Tạo/Sửa sản phẩm (trong admin)', path: null, internal: true },
+}
+const SECTION_ORDER = Object.keys(SECTION_GUIDE)
+
+// Mỗi ô → [id khối, vị trí cụ thể]. Dòng "📍 vị trí" hiện dưới nhãn để admin biết ô render ở đâu.
+const KEY_GUIDE = {
+  site_name:             ['general_brand', 'tên shop'],
+  footer_tagline:        ['general_brand', 'slogan ở chân trang'],
+  footer_description:    ['general_brand', 'đoạn mô tả chân trang'],
+  bct_url:               ['general_brand', 'badge Bộ Công Thương'],
+  business_registration: ['general_brand', 'dòng giấy phép kinh doanh'],
+
+  contact_email:         ['contact_main', 'email liên hệ'],
+  contact_address:       ['contact_main', 'địa chỉ + bản đồ trang Liên hệ'],
+  hotline:               ['contact_main', 'hotline chính (header + footer)'],
+  hotline_2:             ['contact_main', 'hotline phụ'],
+  hotline_3:             ['contact_main', 'hotline thứ ba'],
+  opening_hours_weekday: ['contact_main', 'giờ mở cửa T2–T6 (header)'],
+  opening_hours_weekend: ['contact_main', 'giờ mở cửa T7/CN'],
+  opening_hours_holiday: ['contact_main', 'lịch nghỉ lễ/Tết'],
+  facebook_url:          ['contact_social', 'link Facebook'],
+  messenger_url:         ['contact_social', 'nút Messenger (chat nổi)'],
+  messenger_display:     ['contact_social', 'chữ hiển thị dòng Messenger'],
+  zalo_url:              ['contact_social', 'nút Zalo (chat nổi)'],
+  zalo_display:          ['contact_social', 'chữ hiển thị dòng Zalo'],
+  youtube_url:           ['contact_social', 'link YouTube (footer)'],
+  tiktok_url:            ['contact_social', 'link TikTok (footer)'],
+  instagram_url:         ['contact_social', 'link Instagram (footer)'],
+
+  bank_account_holder:   ['payment_bank', 'tên chủ tài khoản'],
+  bank_account_number:   ['payment_bank', 'số tài khoản'],
+  bank_name:             ['payment_bank', 'tên ngân hàng'],
+  bank_branch:           ['payment_bank', 'chi nhánh'],
+
+  promo_title:           ['home_promo', 'tiêu đề banner'],
+  promo_off:             ['home_promo', 'nhãn % giảm giá'],
+  promo_href:            ['home_promo', 'link khi bấm banner'],
+  promo_image_url:       ['home_promo', 'ảnh banner'],
+  home_exp_subtitle:     ['home_exp', 'dòng chữ nhỏ phía trên'],
+  home_exp_title:        ['home_exp', 'tiêu đề'],
+  home_exp_desc:         ['home_exp', 'đoạn mô tả'],
+  about_title:           ['home_about', 'tiêu đề'],
+  about_subtitle:        ['home_about', 'dòng phụ'],
+  about_content_html:    ['home_about', 'nội dung'],
+  home_featured_kicker:  ['home_featured', 'dòng chữ nhỏ phía trên'],
+  home_featured_title:   ['home_featured', 'tiêu đề'],
+  home_news_kicker:      ['home_news', 'dòng chữ nhỏ phía trên'],
+  home_news_title:       ['home_news', 'tiêu đề'],
+  home_videos_title:     ['home_videos', 'tiêu đề'],
+
+  hero_products_image_url: ['hero_products', 'ảnh nền banner'],
+  hero_products_image_alt: ['hero_products', 'mô tả ảnh (SEO)'],
+  hero_products_title:     ['hero_products', 'tiêu đề trên banner'],
+  hero_brands_image_url:   ['hero_brands', 'ảnh nền banner'],
+  hero_brands_image_alt:   ['hero_brands', 'mô tả ảnh (SEO)'],
+  hero_brands_title:       ['hero_brands', 'tiêu đề trên banner'],
+  hero_news_image_url:     ['hero_news', 'ảnh nền banner'],
+  hero_news_image_alt:     ['hero_news', 'mô tả ảnh (SEO)'],
+  hero_news_title:         ['hero_news', 'tiêu đề trên banner'],
+  hero_default_bg_url:           ['hero_default', 'ảnh nền mặc định'],
+  hero_default_illustration_url: ['hero_default', 'ảnh minh hoạ mặc định'],
+
+  seo_home_title:           ['seo_home', 'thẻ tiêu đề (tab trình duyệt / Google)'],
+  seo_home_description:     ['seo_home', 'mô tả meta (kết quả Google)'],
+  og_image_url:             ['seo_home', 'ảnh khi chia sẻ mạng xã hội'],
+  home_content_bottom_html: ['seo_home', 'đoạn nội dung cuối trang chủ'],
+
+  low_stock_threshold:      ['internal_store', 'ngưỡng cảnh báo sắp hết hàng'],
+
+  reservation_ttl_minutes:  ['internal_inv', 'thời gian giữ hàng trong giỏ'],
+  default_warranty_months:  ['internal_inv', 'hạn bảo hành mặc định'],
+  serial_inventory_only:    ['internal_inv', 'chỉ bán hàng đã có serial'],
+
+  product_assign_title:         ['internal_assign', 'tiêu đề banner phân công'],
+  product_assign_role_content:  ['internal_assign', 'tên vai trò Content'],
+  product_assign_items_content: ['internal_assign', 'việc của Content'],
+  product_assign_role_seo:      ['internal_assign', 'tên vai trò SEO'],
+  product_assign_items_seo:     ['internal_assign', 'việc của SEO'],
+  product_assign_role_manager:  ['internal_assign', 'tên vai trò Quản lý'],
+  product_assign_items_manager: ['internal_assign', 'việc của Quản lý'],
+}
+
+function groupBySection(items) {
+  const map = new Map()
+  for (const s of items) {
+    const sec = KEY_GUIDE[s.key]?.[0] || '_other'
+    if (!map.has(sec)) map.set(sec, [])
+    map.get(sec).push(s)
+  }
+  const idx = (s) => { const i = SECTION_ORDER.indexOf(s); return i === -1 ? 999 : i }
+  return [...map.keys()].sort((a, b) => idx(a) - idx(b)).map((sec) => ({ sec, fields: map.get(sec) }))
+}
+
 // ── SettingField ──────────────────────────────────────────────────────────────
 
-function SettingField({ setting, canUpdate, draft, draftEn, error, onChange, onChangeEn }) {
+function SettingField({ setting, where, canUpdate, draft, draftEn, error, onChange, onChangeEn }) {
   const { t } = useTranslation()
   const rawValue = displayValue(setting.value)
   const currentValue = draft !== undefined ? draft : rawValue
@@ -289,12 +383,14 @@ function SettingField({ setting, canUpdate, draft, draftEn, error, onChange, onC
   const currentValueEn = draftEn !== undefined ? draftEn : rawValueEn
   const translatable = isTranslatableSetting(setting)
   const isDirty = (draft !== undefined && draft !== rawValue) || (draftEn !== undefined && draftEn !== rawValueEn)
-  const type = inputTypeFor(setting.key)
-  const placeholder = placeholderFor(setting.key)
-  const label = KEY_LABELS_VI[setting.key] || setting.description || setting.key
   const isHtml = setting.valueType === 'HTML'
   const isImage = setting.valueType === 'IMAGE_URL'
   const isLongText = setting.valueType === 'LONG_TEXT'
+  const isBoolean = setting.valueType === 'BOOLEAN'
+  const isNumber = setting.valueType === 'INTEGER' || setting.valueType === 'DECIMAL' || setting.valueType === 'MONEY'
+  const type = isNumber ? 'number' : inputTypeFor(setting.key)
+  const placeholder = placeholderFor(setting.key)
+  const label = KEY_LABELS_VI[setting.key] || setting.description || setting.key
 
   return (
     <div className="form-field">
@@ -307,6 +403,11 @@ function SettingField({ setting, canUpdate, draft, draftEn, error, onChange, onC
           />
         )}
       </label>
+      {where && (
+        <span className="bb-muted" style={{ display: 'block', fontSize: 12, marginTop: -2, marginBottom: 6 }}>
+          📍 {where}
+        </span>
+      )}
 
       {canUpdate ? (
         isHtml ? (
@@ -338,11 +439,22 @@ function SettingField({ setting, canUpdate, draft, draftEn, error, onChange, onC
             onChange={(e) => onChange(setting.key, e.target.value)}
             aria-describedby={error ? `err-${setting.key}` : undefined}
           />
+        ) : isBoolean ? (
+          <Select value={currentValue || 'false'} onValueChange={(v) => onChange(setting.key, v)}>
+            <SelectTrigger className={error ? 'border-danger' : undefined}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="true">{t('settings.boolOn')}</SelectItem>
+              <SelectItem value="false">{t('settings.boolOff')}</SelectItem>
+            </SelectContent>
+          </Select>
         ) : (
           <Input
             className={error ? 'border-danger' : undefined}
             type={type}
             inputMode={type === 'number' ? 'numeric' : undefined}
+            step={setting.valueType === 'DECIMAL' ? 'any' : undefined}
             value={currentValue}
             placeholder={placeholder || (rawValue ? '' : t('settings.empty'))}
             onChange={(e) => onChange(setting.key, e.target.value)}
@@ -414,18 +526,49 @@ function SettingTabPanel({ title, items, canUpdate, drafts, draftsEn, errors, on
     <div className="bb-card">
       <div className="bb-card-header"><h3>{title}</h3></div>
       <div className="bb-card-body">
-        {items.map((setting) => (
-          <SettingField
-            key={setting.key}
-            setting={setting}
-            canUpdate={canUpdate}
-            draft={drafts[setting.key]}
-            draftEn={draftsEn[setting.key]}
-            error={errors[setting.key]}
-            onChange={onDraftChange}
-            onChangeEn={onDraftChangeEn}
-          />
-        ))}
+        {groupBySection(items).map(({ sec, fields }) => {
+          const meta = SECTION_GUIDE[sec]
+          const url = meta?.path ? STOREFRONT_BASE + meta.path : null
+          return (
+            <div key={sec}>
+              <div
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  gap: 8, margin: '18px 0 12px', paddingBottom: 6,
+                  borderBottom: '1px solid var(--bb-border)',
+                }}
+              >
+                <span style={{ fontWeight: 600, fontSize: 13 }}>{meta?.title || 'Khác'}</span>
+                {url ? (
+                  <a
+                    href={url} target="_blank" rel="noreferrer"
+                    className="bb-btn bb-btn-secondary bb-btn-sm"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}
+                  >
+                    <ExternalLink size={13} /> Xem trên web
+                  </a>
+                ) : meta?.internal ? (
+                  <span className="bb-muted" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, whiteSpace: 'nowrap' }}>
+                    <Lock size={12} /> Nội bộ
+                  </span>
+                ) : null}
+              </div>
+              {fields.map((setting) => (
+                <SettingField
+                  key={setting.key}
+                  setting={setting}
+                  where={KEY_GUIDE[setting.key]?.[1]}
+                  canUpdate={canUpdate}
+                  draft={drafts[setting.key]}
+                  draftEn={draftsEn[setting.key]}
+                  error={errors[setting.key]}
+                  onChange={onDraftChange}
+                  onChangeEn={onDraftChangeEn}
+                />
+              ))}
+            </div>
+          )
+        })}
       </div>
 
       {canUpdate && dirtyCount > 0 && (
