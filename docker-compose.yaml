@@ -123,6 +123,7 @@ services:
         # For production set NEXT_PUBLIC_API_BASE_URL=https://api.bigbike.vn in .env.
         NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8080}
         NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+        NEXT_PUBLIC_ADMIN_ORIGIN: ${NEXT_PUBLIC_ADMIN_ORIGIN:-http://localhost:4000}
     container_name: bigbike-web
     restart: unless-stopped
     depends_on:
@@ -141,6 +142,7 @@ services:
       NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8080}
       BIGBIKE_SITE_URL: ${BIGBIKE_SITE_URL:-http://localhost:3000}
       NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+      NEXT_PUBLIC_ADMIN_ORIGIN: ${NEXT_PUBLIC_ADMIN_ORIGIN:-http://localhost:4000}
       BIGBIKE_DISABLE_DEV_FALLBACK: "true"
       REVALIDATE_SECRET: "${WEB_REVALIDATE_SECRET:-dev-revalidate-secret}"
       BIGBIKE_REDIRECT_CACHE_TTL_SECONDS: "${BIGBIKE_REDIRECT_CACHE_TTL_SECONDS:-300}"
@@ -169,6 +171,8 @@ services:
         VITE_ADMIN_API_BASE: /api/v1
         # Docker-internal MinIO origin for rewriting backend URLs to /media-proxy/.
         VITE_MINIO_INTERNAL_ORIGIN: http://minio:9000
+        # Storefront origin for the live preview iframe (browser-accessible URL).
+        VITE_STOREFRONT_BASE_URL: http://localhost:3000
     container_name: bigbike-admin
     restart: unless-stopped
     depends_on:

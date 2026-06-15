@@ -132,7 +132,7 @@ public class AdminCatalogMutationService {
         List<ApiErrorDetail> errors = new ArrayList<>();
         CategoryEntity category = validateAndResolveCategory(request.getCategoryId(), true, errors);
         BrandEntity brand = validateAndResolveBrand(request.getBrandId(), errors);
-        String slug = validateProductRequest(request, null, true, errors);
+        String slug = validateProductRequest(request, null, true, false, errors);
         AdminMutationValidators.throwIfErrors(errors);
 
         Instant now = Instant.now();
@@ -166,7 +166,7 @@ public class AdminCatalogMutationService {
         List<ApiErrorDetail> errors = new ArrayList<>();
         CategoryEntity category = validateAndResolveCategory(request.getCategoryId(), true, errors);
         BrandEntity brand = validateAndResolveBrand(request.getBrandId(), errors);
-        String slug = validateProductRequest(request, null, true, errors);
+        String slug = validateProductRequest(request, null, true, true, errors);
         AdminMutationValidators.throwIfErrors(errors);
 
         Instant now = Instant.now();
@@ -193,7 +193,7 @@ public class AdminCatalogMutationService {
         List<ApiErrorDetail> errors = new ArrayList<>();
         CategoryEntity category = validateAndResolveCategory(request.getCategoryId(), false, errors);
         BrandEntity brand = validateAndResolveBrand(request.getBrandId(), errors);
-        String slug = validateProductRequest(request, entity, false, errors);
+        String slug = validateProductRequest(request, entity, false, false, errors);
         PublishStatus nextPublishStatus = request.getPublishStatus() == null ? entity.getPublishStatus() : request.getPublishStatus();
         AdminMutationValidators.validatePublishTransition(entity.getPublishStatus(), nextPublishStatus, "publishStatus", errors);
         AdminMutationValidators.throwIfErrors(errors);
@@ -509,6 +509,7 @@ public class AdminCatalogMutationService {
             UpsertProductRequest request,
             ProductEntity current,
             boolean create,
+            boolean preview,
             List<ApiErrorDetail> errors
     ) {
         String slug = AdminMutationValidators.trimToNull(request.getSlug());
@@ -605,7 +606,10 @@ public class AdminCatalogMutationService {
             }
         }
 
-        if (slug != null) {
+        // Slug uniqueness is a persistence concern — skip it for the live-preview
+        // dry-run. Otherwise previewing an EXISTING product (current is always null
+        // here) would flag its own saved slug as a duplicate and always 400.
+        if (!preview && slug != null) {
             Optional<ProductEntity> existingBySlug = productJpaRepository.findBySlug(slug);
             if (existingBySlug.isPresent()
                     && (current == null || !existingBySlug.get().getId().equals(current.getId()))) {

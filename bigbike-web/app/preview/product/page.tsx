@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { ProductView } from "@/components/catalog/ProductView";
+import { PreviewGuard } from "@/components/preview/PreviewGuard";
 import type { Product } from "@/lib/contracts/public";
 import { env } from "@/env";
 
@@ -47,5 +48,10 @@ export default function ProductPreviewPage() {
     );
   }
 
-  return <ProductView product={product} settings={[]} previewMode />;
+  return (
+    <>
+      <PreviewGuard />
+      <ProductView product={product} settings={[]} previewMode />
+    </>
+  );
 }

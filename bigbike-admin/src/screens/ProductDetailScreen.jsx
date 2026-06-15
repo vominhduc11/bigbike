@@ -291,7 +291,7 @@ function buildFormFromItem(item) {
     brandId: item.brandId || item.brand?.id || '',
     categoryId: item.categoryId || item.category?.id || item.categories?.[0]?.id || '',
     retailPrice:
-      Number.isInteger(item.price?.retailPrice) && item.price.retailPrice > 0
+      Number.isInteger(item.price?.retailPrice) && item.price.retailPrice >= 0
         ? String(item.price.retailPrice)
         : '',
     compareAtPrice:
@@ -386,7 +386,7 @@ function translationFormFromItem(en) {
 // Like toIntegerOrUndefined but sends null for empty so the backend can
 // distinguish "user cleared this field" from "field not sent at all".
 function toIntegerOrNull(value) {
-  const normalized = String(value || '').trim()
+  const normalized = String(value ?? '').trim()
   if (!normalized) return null
   const parsed = Number(normalized)
   if (!Number.isInteger(parsed)) return Number.NaN

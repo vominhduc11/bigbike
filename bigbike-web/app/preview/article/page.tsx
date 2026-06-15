@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { ArticleView } from "@/app/tin-tuc/[slug]/ArticleView";
+import { PreviewGuard } from "@/components/preview/PreviewGuard";
 import type { Article } from "@/lib/contracts/public";
 import { env } from "@/env";
 
@@ -43,5 +44,10 @@ export default function ArticlePreviewPage() {
     );
   }
 
-  return <ArticleView article={article} previewMode />;
+  return (
+    <>
+      <PreviewGuard />
+      <ArticleView article={article} previewMode />
+    </>
+  );
 }

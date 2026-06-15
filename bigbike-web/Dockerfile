@@ -25,6 +25,11 @@ ARG NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
 ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
 ARG NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ENV NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
+# Admin app origin — baked into the /preview/* CSP `frame-ancestors` at build time
+# (headers() is evaluated by `next build`, not at runtime) so the admin live-preview
+# iframe is allowed to embed the storefront. Empty → only 'self' may frame /preview/*.
+ARG NEXT_PUBLIC_ADMIN_ORIGIN=http://localhost:4000
+ENV NEXT_PUBLIC_ADMIN_ORIGIN=${NEXT_PUBLIC_ADMIN_ORIGIN}
 # Next 16 defaults `next build` to Turbopack, whose native bindings are unavailable
 # on this Alpine/musl (linux-x64) image — fall back to the Webpack builder.
 RUN --mount=type=cache,target=/app/.next/cache \

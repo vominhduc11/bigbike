@@ -167,6 +167,7 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
             shortDescriptionHtml={shortDescriptionHtml}
             rating={rating}
             ratingCount={ratingCount}
+            previewMode={previewMode}
           />
         </div>
 

@@ -77,7 +77,7 @@ public class AdminContentMutationService {
         requireJpaPersistenceEnabled();
 
         List<ApiErrorDetail> errors = new ArrayList<>();
-        String slug = validateArticleRequest(request, null, true, errors);
+        String slug = validateArticleRequest(request, null, true, false, errors);
         ContentCategoryEntity category = resolveCategory(request.getCategoryId(), errors);
         AdminMutationValidators.throwIfErrors(errors);
 
@@ -110,7 +110,7 @@ public class AdminContentMutationService {
         requireJpaPersistenceEnabled();
 
         List<ApiErrorDetail> errors = new ArrayList<>();
-        String slug = validateArticleRequest(request, null, true, errors);
+        String slug = validateArticleRequest(request, null, true, true, errors);
         ContentCategoryEntity category = resolveCategory(request.getCategoryId(), errors);
         AdminMutationValidators.throwIfErrors(errors);
 
@@ -136,7 +136,7 @@ public class AdminContentMutationService {
         String previousSlug = entity.getSlug();
 
         List<ApiErrorDetail> errors = new ArrayList<>();
-        String slug = validateArticleRequest(request, entity, false, errors);
+        String slug = validateArticleRequest(request, entity, false, false, errors);
         ContentCategoryEntity category = resolveCategory(request.getCategoryId(), errors);
         PublishStatus nextStatus = request.getPublishStatus() == null ? entity.getPublishStatus() : request.getPublishStatus();
         AdminMutationValidators.validatePublishTransition(entity.getPublishStatus(), nextStatus, "publishStatus", errors);
@@ -281,6 +281,7 @@ public class AdminContentMutationService {
             UpsertArticleRequest request,
             ArticleEntity current,
             boolean create,
+            boolean preview,
             List<ApiErrorDetail> errors
     ) {
         String slug = AdminMutationValidators.trimToNull(request.getSlug());
@@ -318,7 +319,10 @@ public class AdminContentMutationService {
                 errors
         );
 
-        if (slug != null) {
+        // Slug uniqueness is a persistence concern — skip it for the live-preview
+        // dry-run, else previewing an EXISTING article (current is always null here)
+        // would flag its own saved slug as a duplicate and always 400.
+        if (!preview && slug != null) {
             ArticleEntity existingBySlug = articleJpaRepository.findBySlug(slug).orElse(null);
             if (existingBySlug != null && (current == null || !existingBySlug.getId().equals(current.getId()))) {
                 errors.add(new ApiErrorDetail("slug", "DUPLICATE", "Slug is already in use."));

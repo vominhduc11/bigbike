@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { AlertCircle, Eye, Loader2, Monitor, Smartphone, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -34,6 +34,8 @@ export function LivePreview({
   const iframeRef = useRef(null)
   const readyRef = useRef(false)
   const dataRef = useRef(data)
+  const frameHostRef = useRef(null)
+  const [hostSize, setHostSize] = useState({ width: 0, height: 0 })
 
   // Bắt tay: iframe báo "ready" khi mount → gửi ngay payload hiện tại (đọc qua ref
   // nên không stale, và không setState trong effect).
@@ -70,10 +72,32 @@ export function LivePreview({
     if (!open) readyRef.current = false
   }, [open])
 
+  // Đo vùng hiển thị để scale iframe vừa khung. useLayoutEffect đo trước khi paint
+  // nên không nháy. ResizeObserver bắt cả khi cửa sổ/pane đổi kích thước.
+  useLayoutEffect(() => {
+    if (!open) return undefined
+    const el = frameHostRef.current
+    if (!el) return undefined
+    const measure = () => setHostSize({ width: el.clientWidth, height: el.clientHeight })
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [open])
+
   if (!open) return null
 
-  const frameWidth = device === 'mobile' ? 390 : '100%'
   const previewTitle = t(`${i18nPrefix}.title`, { defaultValue: 'Xem trước' })
+
+  // Bề rộng "logic" để storefront tự quyết layout theo breakpoint: desktop = 1280
+  // (vượt mốc >1024 của PDP → ra layout desktop thật), mobile = 390. Khung preview
+  // hẹp hơn nên thu nhỏ vừa khít (chỉ scale xuống, tối đa 1 — không phóng to gây mờ).
+  // Không làm vậy thì iframe ~860px luôn kẹt ở breakpoint tablet.
+  const FRAME_PAD = 12 // = p-3 của vùng chứa
+  const targetWidth = device === 'mobile' ? 390 : 1280
+  const availWidth = Math.max(0, hostSize.width - FRAME_PAD * 2)
+  const availHeight = Math.max(0, hostSize.height - FRAME_PAD * 2)
+  const scale = availWidth > 0 ? Math.min(1, availWidth / targetWidth) : 1
 
   return (
     <div className="fixed inset-0 z-[60] flex">
@@ -161,15 +185,29 @@ export function LivePreview({
           </div>
         )}
 
-        {/* Iframe storefront thật */}
-        <div className="flex flex-1 justify-center overflow-auto bg-muted p-3">
-          <iframe
-            ref={iframeRef}
-            title={previewTitle}
-            src={`${webOrigin}${previewPath}`}
-            className="h-full border-0 bg-white shadow"
-            style={{ width: frameWidth, maxWidth: '100%' }}
-          />
+        {/* Iframe storefront thật — render ở bề rộng desktop/mobile thật rồi scale
+            vừa khung để thấy đúng layout theo breakpoint, không bị kẹt ở tablet. */}
+        <div
+          ref={frameHostRef}
+          className="flex flex-1 justify-center overflow-hidden bg-muted p-3"
+        >
+          <div
+            className="shadow"
+            style={{ width: Math.round(targetWidth * scale), height: availHeight || '100%' }}
+          >
+            <iframe
+              ref={iframeRef}
+              title={previewTitle}
+              src={`${webOrigin}${previewPath}`}
+              className="border-0 bg-white"
+              style={{
+                width: targetWidth,
+                height: availHeight ? availHeight / scale : '100%',
+                transform: `scale(${scale})`,
+                transformOrigin: 'top left',
+              }}
+            />
+          </div>
         </div>
       </aside>
     </div>

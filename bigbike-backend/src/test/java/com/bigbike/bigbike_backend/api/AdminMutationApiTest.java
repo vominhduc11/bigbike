@@ -191,6 +191,43 @@ class AdminMutationApiTest {
     }
 
     @Test
+    void shouldPreviewExistingProductWithoutFlaggingItsOwnSlugAsDuplicate() throws Exception {
+        // Regression: editing an existing product and opening the live preview sends
+        // the product's already-saved slug. Slug uniqueness is a persistence concern
+        // and must be skipped for the dry-run, otherwise the preview always 400s
+        // ("slug DUPLICATE") and the editor can never preview a saved product.
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String slug = "preview-existing-slug-" + suffix;
+
+        String createPayload = """
+                {
+                  "slug": "%s",
+                  "name": "Preview Existing Slug Product",
+                  "categoryId": "cat_helmet",
+                  "retailPrice": 1990000,
+                  "currency": "VND",
+                  "publishStatus": "PUBLISHED"
+                }
+                """.formatted(slug);
+
+        mockMvc.perform(post("/api/v1/admin/products")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "products.update")
+                        .content(createPayload))
+                .andExpect(status().isOk());
+
+        // Preview with the SAME slug — must succeed, not 400 DUPLICATE.
+        mockMvc.perform(post("/api/v1/admin/products/preview")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .header("X-Admin-Permissions", "products.update")
+                        .content(createPayload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.slug").value(slug));
+    }
+
+    @Test
     void shouldPreviewArticleWithoutPersisting() throws Exception {
         long countBefore = articleJpaRepository.count();
         String slug = "preview-article-dry-run-" + System.currentTimeMillis();

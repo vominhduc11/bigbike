@@ -186,6 +186,7 @@ Mirror of the product preview: powers the **live preview** in the article editor
 | Response | `ApiDataResponse<Article>` — the **public** article shape, identical to `GET /api/v1/articles/{slug}` |
 
 - **No persistence.** Backend validates, builds a transient `ArticleEntity` in memory via `applyArticlePatch` (never `save`d), and maps it through the same detail mapper the storefront uses (`toDomain(entity, locale, includeTranslations=false)`). `@Transactional(readOnly = true)`.
+- **Slug uniqueness is NOT enforced** for the dry-run (it is a persistence concern). Previewing an existing article must not flag its own saved slug as a `DUPLICATE` — every other create-mode field rule still applies.
 - A brand-new draft has no `relatedProducts` until saved; the sidebar/related-article rails are storefront context (other articles) and are not part of the preview payload.
 
 Status: `CONFIRMED_FROM_CODE`
@@ -436,7 +437,7 @@ Powers the **live preview** in the product editor: render exactly what the store
 | Response | `ApiDataResponse<Product>` — the **public** product shape (`publicView=true`: `costPrice` hidden, stock quantity masked), identical to `GET /api/v1/products/{slug}` |
 
 - **No persistence.** Backend validates the payload, builds a transient `ProductEntity` in memory via `applyProductPatch` (never `save`d), and maps it through the same detail mapper the storefront uses. No row is created or updated; the method is `@Transactional(readOnly = true)`.
-- **Validation mirrors create** (category required, slug rules, price/variant constraints) so the editor surfaces the same `400 VALIDATION_ERROR` live.
+- **Validation mirrors create** (category required, slug rules, price/variant constraints) so the editor surfaces the same `400 VALIDATION_ERROR` live — **except slug uniqueness**, which is a persistence concern and is skipped for the dry-run. Without that carve-out, previewing an existing product would flag its own saved slug as a `DUPLICATE` and always `400`.
 - **Transient-only fields:** `rating`/`ratingCount` are `null` (a brand-new draft has no reviews); curated `relatedProducts` resolve read-only from their IDs.
 
 Status: `CONFIRMED_FROM_CODE`

@@ -33,6 +33,8 @@ type Props = {
   shortDescriptionHtml: string;
   rating: number | null;
   ratingCount: number | null;
+  /** Live admin preview: render straight from the postMessage draft, no client snapshot poll. */
+  previewMode?: boolean;
 };
 
 /** Shape trả về của /api/products/[slug]/snapshot — chỉ phần cần freshness (giá/tồn/variants). */
@@ -64,6 +66,7 @@ export function WpPurchaseSection({
   shortDescriptionHtml,
   rating,
   ratingCount,
+  previewMode = false,
 }: Props) {
   const tb = useTranslations("PdpBuyBox");
   const { addToCart } = useCart();
@@ -88,6 +91,9 @@ export function WpPurchaseSection({
     staleTime: 30 * 1000,
     refetchOnWindowFocus: true,
     retry: 2,
+    // Admin live preview renders an unsaved draft (slug may not exist yet) and gets
+    // its price/stock from the postMessage payload — there's nothing to poll.
+    enabled: !previewMode,
   });
 
   // Override giá/tồn/variants bằng snapshot khi đã có; props ISR làm fallback.
@@ -163,7 +169,11 @@ export function WpPurchaseSection({
     (stockUnitKnown ? unitOut : freshStockState === "OUT_OF_STOCK");
   // "Sắp hết" chỉ khi đã xác định đơn vị tồn cụ thể (chưa chọn biến thể → bỏ qua).
   const isLowStock = !isOutOfStock && stockUnitKnown && unitLow;
-  const canBuy = !isOutOfStock && (!hasVariants || (!!selectedVariant && selectedVariant.isAvailable));
+  // Ở chế độ xem trước (admin) luôn KHÔNG cho mua: sản phẩm nháp chưa có trong kho,
+  // mọi thao tác mua sẽ vô nghĩa/đổ lỗi. canBuy=false vô hiệu hoá cả nút thêm giỏ,
+  // mua ngay (disabled) lẫn thanh mua cố định trên mobile (mirror trạng thái nút gốc).
+  const canBuy =
+    !previewMode && !isOutOfStock && (!hasVariants || (!!selectedVariant && selectedVariant.isAvailable));
 
   // Chỉ hiện sao + microdata aggregateRating khi có đánh giá thật; tránh số ảo
   // (REVIEW_RULE_003 — gate theo ratingCount, dùng chung toàn app).
