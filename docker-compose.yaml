@@ -172,7 +172,8 @@ services:
         # Docker-internal MinIO origin for rewriting backend URLs to /media-proxy/.
         VITE_MINIO_INTERNAL_ORIGIN: http://minio:9000
         # Storefront origin for the live preview iframe (browser-accessible URL).
-        VITE_STOREFRONT_BASE_URL: http://localhost:3000
+        # Override per environment via .env (e.g. http://<VPS_IP>:3000 on the VPS).
+        VITE_STOREFRONT_BASE_URL: ${VITE_STOREFRONT_BASE_URL:-http://localhost:3000}
     container_name: bigbike-admin
     restart: unless-stopped
     depends_on:

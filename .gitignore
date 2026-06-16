@@ -29,6 +29,7 @@ bigbike-backend/target/
 .env
 .env.*
 !.env.example
+!.env.vps.example
 
 # Node / Next.js / frontend build output
 node_modules/

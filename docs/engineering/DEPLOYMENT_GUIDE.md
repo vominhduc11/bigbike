@@ -10,6 +10,31 @@
 | Web | bound to `127.0.0.1:3000`, backend API base injected via env/build args | `CONFIRMED_FROM_CONFIG` | `docker-compose.yaml` |
 | Admin | built with real backend API base (`VITE_ADMIN_API_BASE=/api/v1`), bound to `127.0.0.1:4000` | `CONFIRMED_FROM_CONFIG` | `docker-compose.yaml`, `bigbike-admin/Dockerfile` |
 
+## Multi-Environment Run (local vs VPS)
+
+The same compose stack runs in every environment with **no source edits** — only the
+env-file differs. `docker compose` loads exactly one env-file, so each file must be complete.
+
+- **Local:** `docker compose up -d --build` (reads `.env`, see `.env.example`). `CONFIRMED_FROM_CONFIG`
+- **VPS:** `docker compose --env-file .env.vps up -d --build` (see `.env.vps.example`). `CONFIRMED_FROM_CONFIG`
+
+Only `bigbike-web` has links that genuinely change per environment: its client bundle calls
+the backend + MinIO **directly from the customer's browser**, so `NEXT_PUBLIC_API_BASE_URL`
+and `BIGBIKE_LEGACY_UPLOADS_BASE` must be the server's public address (`http://<VPS_IP>:8080`,
+`http://<VPS_IP>:9000`) rather than `localhost`. `CONFIRMED_FROM_CONFIG`
+
+`bigbike-admin` is environment-portable: its browser calls hit relative paths (`/api/v1`,
+`/media/`, `/ws`) that nginx proxies to internal Docker hostnames (`bigbike-backend:8080`,
+`minio:9000`), so its API base never changes. The only per-env admin value is
+`VITE_STOREFRONT_BASE_URL` (live-preview iframe), now read from the env-file. `CONFIRMED_FROM_CONFIG`
+
+> **Build-time bake:** every `NEXT_PUBLIC_*` and `VITE_*` value is compiled into the web/admin
+> bundle at build time. After changing any of them you MUST rebuild (`--build`); a plain
+> restart keeps the old links. `CONFIRMED_FROM_CONFIG`
+
+When migrating from IP:port to a domain, swap the public values in `.env.vps` for the domain
+(e.g. `https://api.bigbike.vn`), update `BIGBIKE_CORS_ALLOWED_ORIGINS`, and rebuild.
+
 ## Deployment Notes
 
 - Backend healthcheck uses `GET /actuator/health`. `CONFIRMED_FROM_CONFIG`
