@@ -22,6 +22,19 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 
+// Slugify cho gợi ý đường dẫn tiếng Anh (bỏ dấu, kebab-case). Khớp toSlug của CategoryDetailScreen.
+function toSlug(text) {
+  return String(text || '')
+    .toLowerCase()
+    .replace(/đ/g, 'd')
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/[^a-z0-9\s]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+}
+
 function buildEmptyForm() {
   return {
     slug: '',
@@ -35,7 +48,7 @@ function buildEmptyForm() {
     seoTitle: '',
     seoDescription: '',
     seoCanonicalUrl: '',
-    translations: { en: { name: '', description: '', seoTitle: '', seoDescription: '' } },
+    translations: { en: { slug: '', name: '', description: '', seoTitle: '', seoDescription: '' } },
   }
 }
 
@@ -55,6 +68,8 @@ function buildFormFromItem(item) {
     seoCanonicalUrl: item.seo?.canonicalUrl || '',
     translations: {
       en: {
+        // slug tiếng Anh nằm ở field top-level `slugEn` của response, không trong translations.en
+        slug: item.slugEn || '',
         name: item.translations?.en?.name || '',
         description: item.translations?.en?.description || '',
         seoTitle: item.translations?.en?.seoTitle || '',
@@ -95,6 +110,7 @@ function toPayload(form) {
 
   payload.translations = {
     en: {
+      slug: form.translations?.en?.slug?.trim() || null,
       name: form.translations?.en?.name?.trim() || null,
       description: form.translations?.en?.description?.trim() || null,
       seoTitle: form.translations?.en?.seoTitle?.trim() || null,
@@ -114,6 +130,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
   const [initialSnapshot, setInitialSnapshot] = useState(JSON.stringify(buildEmptyForm()))
   const [validationErrors, setValidationErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [enSlugManuallyEdited, setEnSlugManuallyEdited] = useState(false)
 
   const { data: fetchResult, isLoading, isError, error: fetchError } = useQuery({
     queryKey: ['brand', brandId],
@@ -127,6 +144,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setForm(nextForm)
     setInitialSnapshot(JSON.stringify(nextForm))
+    setEnSlugManuallyEdited(Boolean(nextForm.translations?.en?.slug))
   }, [fetchResult])
 
   const state = {
@@ -164,6 +182,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
       const nextForm = buildFormFromItem(savedItem)
       setForm(nextForm)
       setInitialSnapshot(JSON.stringify(nextForm))
+      setEnSlugManuallyEdited(Boolean(nextForm.translations?.en?.slug))
       queryClient.invalidateQueries({ queryKey: ['brands'] })
       if (!isCreate) queryClient.setQueryData(['brand', brandId], response)
       toast.success(isCreate ? t('brands.detail.successCreate') : t('brands.detail.successUpdate'))
@@ -196,6 +215,26 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
       if (!previous[field]) return previous
       const next = { ...previous }
       delete next[field]
+      return next
+    })
+  }
+
+  // Chế độ tiếng Anh: gõ tên EN tự gợi ý slug EN (khi chưa sửa tay); xoá để sửa tự do.
+  function handleEnNameChange(value) {
+    setForm((previous) => {
+      const en = { ...(previous.translations?.en || {}), name: value }
+      if (!enSlugManuallyEdited) en.slug = toSlug(value)
+      return { ...previous, translations: { ...previous.translations, en } }
+    })
+  }
+
+  function handleEnSlugChange(value) {
+    setEnSlugManuallyEdited(true)
+    updateTranslation('slug', value)
+    setValidationErrors((previous) => {
+      if (!previous['translations.en.slug']) return previous
+      const next = { ...previous }
+      delete next['translations.en.slug']
       return next
     })
   }
@@ -326,11 +365,23 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
           </div>
           <div className="bb-card-body">
             <div className="bb-grid-2">
-              <label className="form-field">
-                <span>{t('brands.detail.slug')}</span>
-                <Input value={form.slug} onChange={(e) => updateField('slug', e.target.value)} disabled={isReadOnly}
+              <label className="form-field" data-field={isEnLang ? 'translations.en.slug' : 'slug'}>
+                <span>
+                  {t('brands.detail.slug')}
+                  {isEnLang && <span className="hint" style={{ display: 'inline', marginLeft: 6 }}>{t('brands.detail.enFieldHint', { defaultValue: '(tiếng Anh — tùy chọn)' })}</span>}
+                </span>
+                <Input
+                  value={isEnLang ? (form.translations?.en?.slug ?? '') : form.slug}
+                  onChange={(e) => isEnLang ? handleEnSlugChange(e.target.value) : updateField('slug', e.target.value)}
+                  disabled={isReadOnly}
+                  placeholder={isEnLang ? t('brands.detail.slugPlaceholderEn', { defaultValue: 'english-url-slug' }) : undefined}
                   style={{ fontFamily: 'var(--admin-font-mono)' }} />
-                {validationErrors.slug && <span className="hint text-danger">{validationErrors.slug}</span>}
+                {isEnLang
+                  ? <span className="hint">{t('brands.detail.slugHintEn', { defaultValue: 'Để trống sẽ dùng đường dẫn tiếng Việt cho bản tiếng Anh.' })}</span>
+                  : null}
+                {isEnLang
+                  ? validationErrors['translations.en.slug'] && <span className="hint text-danger">{validationErrors['translations.en.slug']}</span>
+                  : validationErrors.slug && <span className="hint text-danger">{validationErrors.slug}</span>}
               </label>
               <label className="form-field">
                 <span>
@@ -339,7 +390,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
                 </span>
                 <Input
                   value={isEnLang ? (form.translations?.en?.name ?? '') : form.name}
-                  onChange={(e) => isEnLang ? updateTranslation('name', e.target.value) : updateField('name', e.target.value)}
+                  onChange={(e) => isEnLang ? handleEnNameChange(e.target.value) : updateField('name', e.target.value)}
                   disabled={isReadOnly}
                   placeholder={isEnLang ? t('brands.detail.namePlaceholderEn', { defaultValue: 'English name (optional)' }) : undefined}
                 />

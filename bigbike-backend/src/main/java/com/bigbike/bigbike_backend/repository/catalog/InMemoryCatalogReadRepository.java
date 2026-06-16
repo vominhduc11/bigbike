@@ -33,6 +33,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
         Category helmets = new Category(
                 "cat_helmet",
                 "mu-bao-hiem",
+                null,                       // slugEn
                 "Mũ bảo hiểm",
                 "Mũ bảo hiểm cho đường phố và touring.",
                 null,
@@ -65,6 +66,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
         Category jackets = new Category(
                 "cat_jacket",
                 "ao-giap-bao-ho",
+                null,                       // slugEn
                 "Áo giáp bảo hộ",
                 "Áo giáp đi phượt và đi phố.",
                 null,
@@ -99,6 +101,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
         Brand ls2 = new Brand(
                 "brand_ls2",
                 "ls2",
+                null,                       // slugEn
                 "LS2",
                 "Thương hiệu mũ bảo hiểm và đồ bảo hộ.",
                 new ImageAsset(
@@ -126,6 +129,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
         Brand kyt = new Brand(
                 "brand_kyt",
                 "kyt",
+                null,                       // slugEn
                 "KYT",
                 "Thương hiệu mũ bảo hiểm KYT.",
                 new ImageAsset(
@@ -161,6 +165,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 "prod_ls2_ff800",
                 "LS2-FF800-RED-M",
                 "mu-bao-hiem-ls2-ff800",
+                null,                       // slugEn
                 "Mũ bảo hiểm LS2 FF800",
                 "Mũ fullface LS2 FF800 cho đường trường.",
                 "Mũ fullface khí động học, lót tháo rời, chuẩn an toàn ECE.",
@@ -279,6 +284,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 "prod_kyt_nxrace",
                 "KYT-NXRACE-WHT-M",
                 "mu-bao-hiem-kyt-nx-race",
+                null,                       // slugEn
                 "Mũ bảo hiểm KYT NX Race",
                 "Mũ fullface KYT cho rider hiệu năng cao.",
                 "Thiết kế thể thao, kính quang học rõ nét, nội thất êm.",
@@ -335,6 +341,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 "prod_ls2_jacket_city",
                 "LS2-JACKET-CITY-BLK-L",
                 "ao-giap-ls2-city-rider",
+                null,                       // slugEn
                 "Áo giáp LS2 City Rider",
                 "Áo giáp touring thoáng khí.",
                 "Áo giáp LS2 City Rider có bảo vệ vai, cùi chỏ, lưng.",

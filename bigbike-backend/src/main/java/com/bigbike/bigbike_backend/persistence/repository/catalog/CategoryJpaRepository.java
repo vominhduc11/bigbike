@@ -9,6 +9,11 @@ public interface CategoryJpaRepository
         extends JpaRepository<CategoryEntity, String>, JpaSpecificationExecutor<CategoryEntity> {
     Optional<CategoryEntity> findBySlug(String slug);
 
+    /** Lookup by the optional English slug. Pairs with {@link #findBySlug} for
+     * vi-first OR-resolution (JpaCatalogReadRepository) and slug uniqueness
+     * checks (AdminCatalogMutationService). */
+    Optional<CategoryEntity> findBySlugEn(String slugEn);
+
     /**
      * Count visible children of a parent. Used by the hide-guard so we don't
      * have to scan the entire categories table on every soft-delete or

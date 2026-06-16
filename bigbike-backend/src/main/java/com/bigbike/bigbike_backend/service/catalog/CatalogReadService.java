@@ -239,6 +239,7 @@ public class CatalogReadService {
                 p.id(),
                 p.sku(),
                 p.slug(),
+                p.slugEn(),
                 p.name(),
                 p.shortDescription(),
                 null,                       // description — detail only

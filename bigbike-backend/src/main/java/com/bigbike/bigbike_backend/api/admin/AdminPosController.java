@@ -80,7 +80,7 @@ public class AdminPosController extends AdminControllerSupport {
                             detail.price(), state, qty,
                             detail.image(), List.of(), true, isSerial);
                     return new Product(
-                            detail.id(), detail.sku(), detail.slug(), detail.name(),
+                            detail.id(), detail.sku(), detail.slug(), detail.slugEn(), detail.name(),
                             detail.shortDescription(), detail.description(),
                             detail.brand(), detail.category(), detail.categories(),
                             detail.image(), detail.gallery(), detail.videos(),

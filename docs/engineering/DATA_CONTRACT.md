@@ -464,8 +464,9 @@ dịch khóa theo id con sẽ bị mồ côi.
 vẫn lùi về tiếng Việt. Bản tiếng Việt không bao giờ bị thiếu (xem
 `BUSINESS_RULES.md` `PRODUCT_RULE_001`, `PRODUCT_RULE_002`).
 
-**Không dịch ở đợt này:** `slug` (URL dùng chung 1 bản), alt ảnh, tên video,
-tên biến thể, `seo_canonical_url`.
+**Slug tiếng Anh (`slug_en`, V214):** xem mục **"English URL slug"** bên dưới — `slug` tiếng Việt là canonical, `slug_en` là URL tiếng Anh tùy chọn.
+
+**Không dịch ở đợt này:** alt ảnh, tên video, tên biến thể, `seo_canonical_url`.
 
 **Admin list reads:** danh sách admin (product/category/brand/content) nay cũng
 resolve **trường hiển thị** (`name` / `title`) theo `lang` qua cùng cơ chế
@@ -492,6 +493,8 @@ Bản tiếng Anh lưu trên các cột `_en` nullable cùng dòng trong bảng 
 
 Fallback: giống `PRODUCT_RULE_002` — mỗi trường lùi về VI khi EN bị null/blank. Xem `CATEGORY_RULE_001/002`.
 
+**Slug tiếng Anh (`slug_en`, V213):** xem mục **"English URL slug"** bên dưới.
+
 Status: `CONFIRMED_FROM_CODE` — `CategoryEntity`, `CategoryTranslations` domain record, migration `V137`.
 
 ### Brand bilingual content — English columns (V137)
@@ -510,7 +513,33 @@ Bản tiếng Anh lưu trên các cột `_en` nullable cùng dòng trong bảng 
 
 Fallback: giống `PRODUCT_RULE_002` — mỗi trường lùi về VI khi EN bị null/blank. Xem `BRAND_RULE_001/002`.
 
+**Slug tiếng Anh (`slug_en`, V215):** xem mục **"English URL slug"** bên dưới.
+
 Status: `CONFIRMED_FROM_CODE` — `BrandEntity`, `BrandTranslations` domain record, migration `V137`.
+
+### English URL slug — `slug_en` (V213 categories / V214 products / V215 brands)
+
+Mỗi danh mục / sản phẩm / thương hiệu có thêm cột `slug_en VARCHAR(100)` **nullable**:
+
+| Bảng | Cột VI (canonical) | Cột EN | Migration |
+|---|---|---|---|
+| `categories` | `slug` | `slug_en` | `V213` |
+| `products` | `slug` | `slug_en` | `V214` |
+| `brands` | `slug` | `slug_en` | `V215` |
+
+**Index:** mỗi bảng có **partial-unique index** `ux_<bảng>_slug_en ON <bảng> (slug_en) WHERE slug_en IS NOT NULL` — cho phép nhiều `NULL`, chặn trùng `slug_en` (en-vs-en) ở tầng DB.
+
+**Uniqueness chéo cột (vi-vs-en):** `slug_en` **không được trùng** bất kỳ `slug` (vi) nào cùng loại, và `slug` vi mới không được trùng `slug_en` đang tồn tại. Ràng buộc này **enforce ở tầng ứng dụng** (`AdminCatalogMutationService.validate*`) — DB chỉ lo en-vs-en. Lý do: tránh `/.../x/` mơ hồ khi `x` vừa là slug vi của entity này vừa là slug en của entity khác.
+
+**Lookup:** public read tra cứu theo **vi HOẶC en** slug (`findBySlugOrSlugEn(slug, slug)` — ưu tiên khớp vi trước cho tất định) nên cả hai URL mở cùng entity.
+
+**Response:** domain record trả cả `slug` (canonical vi, không đổi theo locale) lẫn `slugEn` (nullable). Web dùng `slug` cho canonical + `slugEn` cho URL/hreflang tiếng Anh; `slugEn` trống → URL EN lùi về `slug` vi.
+
+**Redirect:** đổi/xoá `slug_en` tự sinh 301 (`autoCreateSlugRedirect`) — đổi → old-EN→new-EN; xoá → old-EN→URL vi. Honored runtime bởi `bigbike-web/proxy.ts` qua `/api/internal/redirect`.
+
+**Ngoài phạm vi:** `articles` / `pages` KHÔNG có `slug_en` (giữ `ARTICLE_RULE_003` / `PAGE_RULE_003`).
+
+Status: `CONFIRMED_FROM_CODE` — `CategoryEntity`/`ProductEntity`/`BrandEntity` (`slugEn`), `*JpaRepository.findBySlugOrSlugEn`, `JpaCatalogReadRepository` (map `slugEn`), `AdminCatalogMutationService` (validate + redirect), migrations `V213`/`V214`/`V215`.
 
 ### Article bilingual content — English columns (V138)
 

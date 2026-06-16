@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -25,7 +25,7 @@ import {
 } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import { formatDateTime } from '../lib/formatters'
-import { useContentLang } from '../lib/contentLang'
+import { useContentLang, overlayEnNames } from '../lib/contentLang'
 import { createProductSchema, zodErrors, COLOR_ATTRIBUTE_KEYS, normalizeVariantToken, isColorAttributeName } from '../lib/schemas'
 import { Modal, Screen, ScreenHeader, StickyActionBar, Tabs } from '../components/layout'
 import { StatePanel } from '../components/StatePanel'
@@ -240,6 +240,9 @@ function buildEmptyForm() {
 // English product-level content — eight optional translatable text fields.
 function buildEmptyTranslation() {
   return {
+    // Optional English URL slug (V214). Lives at top-level `slugEn` on the API but is
+    // carried inside the form's translations.en block; payload maps it back to slugEn.
+    slug: '',
     name: '',
     shortDescription: '',
     description: '',
@@ -369,7 +372,8 @@ function buildFormFromItem(item) {
         slug: p.slug || '',
         imageUrl: p.image?.url || '',
       })),
-    translations: { en: translationFormFromItem(item.translations?.en) },
+    // slug tiếng Anh nằm ở field top-level `slugEn` của response, không trong translations.en.
+    translations: { en: { ...translationFormFromItem(item.translations?.en), slug: item.slugEn || '' } },
   }
 }
 
@@ -2428,6 +2432,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   const [validationErrors, setValidationErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const slugEditedByUser = useRef(false)
+  const enSlugEditedByUser = useRef(false)
   const [originalPublishStatus, setOriginalPublishStatus] = useState(null)
 
   // ── Live preview (xem trước storefront) ──────────────────────────────────────
@@ -2487,16 +2492,39 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     enabled: !isCreate,
   })
 
-  const { data: categoriesResult } = useQuery({
-    queryKey: ['categories', 'tree', contentLang],
-    queryFn: () => fetchCategoryTree(),
+  // Ô gán Danh mục / Thương hiệu phải liệt kê ĐẦY ĐỦ để gán được cả mục chưa dịch.
+  // Lấy danh sách 'vi' đầy đủ; ở EN nạp thêm danh sách 'en' để phủ tên Anh khi có.
+  const isEn = contentLang === 'en'
+  const { data: categoriesResultVi } = useQuery({
+    queryKey: ['categories', 'tree', 'vi'],
+    queryFn: () => fetchCategoryTree('vi'),
     staleTime: 5 * 60 * 1000,
   })
-  const { data: brandsResult } = useQuery({
-    queryKey: ['brands-all', contentLang],
-    queryFn: () => fetchBrands({ pageSize: 100 }),
+  const { data: categoriesResultEn } = useQuery({
+    queryKey: ['categories', 'tree', 'en'],
+    queryFn: () => fetchCategoryTree('en'),
+    enabled: isEn,
     staleTime: 5 * 60 * 1000,
   })
+  const { data: brandsResultVi } = useQuery({
+    queryKey: ['brands-all', 'vi'],
+    queryFn: () => fetchBrands({ pageSize: 100, lang: 'vi' }),
+    staleTime: 5 * 60 * 1000,
+  })
+  const { data: brandsResultEn } = useQuery({
+    queryKey: ['brands-all', 'en'],
+    queryFn: () => fetchBrands({ pageSize: 100, lang: 'en' }),
+    enabled: isEn,
+    staleTime: 5 * 60 * 1000,
+  })
+  const categoriesResult = useMemo(
+    () => (isEn ? { items: overlayEnNames(categoriesResultVi?.items, categoriesResultEn?.items) } : categoriesResultVi),
+    [isEn, categoriesResultVi, categoriesResultEn],
+  )
+  const brandsResult = useMemo(
+    () => (isEn ? { items: overlayEnNames(brandsResultVi?.items, brandsResultEn?.items) } : brandsResultVi),
+    [isEn, brandsResultVi, brandsResultEn],
+  )
   // Editable "Phân công" banner text (role names + task lists). Read-only here
   // (products.read); SUPER_ADMIN edits it in Cài đặt → Phân công sản phẩm.
   const { data: assignmentConfig } = useQuery({
@@ -2550,6 +2578,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     setForm(nextForm)
     setIsDirty(false)
     slugEditedByUser.current = Boolean(nextForm.slug)
+    enSlugEditedByUser.current = Boolean(nextForm.translations?.en?.slug)
     setOriginalPublishStatus(nextForm.publishStatus)
 
     // Check autosave newer than server updatedAt
@@ -2576,6 +2605,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
           ...base,
           // Clear identity fields — user must set unique values
           slug: '',
+          // English slug is also identity — clear it so the copy doesn't collide.
+          translations: { ...base.translations, en: { ...(base.translations?.en || {}), slug: '' } },
           sku: base.sku ? `${base.sku}-COPY` : '',
           publishStatus: 'DRAFT',
           // Clear variants IDs so they create as new
@@ -2585,6 +2616,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
         setForm(duplicated)
         setIsDirty(true)
         slugEditedByUser.current = false
+        enSlugEditedByUser.current = false
         toast.success(t('products.detail.duplicateSuccess', { name: item.name || t('products.detail.productFallbackName') }))
         return
       }
@@ -2736,6 +2768,32 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     }
   }
 
+  // English URL slug (V214): gõ tên EN tự gợi ý slug EN khi chưa sửa tay; xoá để sửa tự do.
+  function handleEnNameChange(value) {
+    setForm((previous) => {
+      const en = { ...(previous.translations?.en || {}), name: value }
+      if (!enSlugEditedByUser.current) en.slug = slugify(value)
+      return { ...previous, translations: { ...previous.translations, en } }
+    })
+    setIsDirty(true)
+  }
+
+  function handleEnSlugChange(value) {
+    enSlugEditedByUser.current = Boolean(value.trim())
+    updateTranslation('slug', value)
+    setValidationErrors((previous) => {
+      if (!previous['translations.en.slug']) return previous
+      const next = { ...previous }
+      delete next['translations.en.slug']
+      return next
+    })
+  }
+
+  function handleEnSlugBlur(value) {
+    const sanitized = slugify(value)
+    if (sanitized !== value) updateTranslation('slug', sanitized)
+  }
+
   const saveMutation = useMutation({
     mutationFn: (payload) => isCreate ? createProduct(payload) : updateProduct(productId, payload),
     onSuccess: (response) => {
@@ -2743,6 +2801,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
       const nextForm = buildFormFromItem(savedItem)
       setForm(nextForm)
       setOriginalPublishStatus(nextForm.publishStatus)
+      slugEditedByUser.current = Boolean(nextForm.slug)
+      enSlugEditedByUser.current = Boolean(nextForm.translations?.en?.slug)
       setIsDirty(false)
       clearFormFromStorage(autosaveKey)
       setDraftRecovery(null)
@@ -3000,6 +3060,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 setIsDirty(true)
                 setDraftRecovery(null)
                 slugEditedByUser.current = Boolean(draftRecovery.form.slug)
+                enSlugEditedByUser.current = Boolean(draftRecovery.form.translations?.en?.slug)
               }}
             >
               {t('products.detail.draftRestore', { defaultValue: 'Khôi phục' })}
@@ -3063,7 +3124,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   >
                     <Input
                       value={langValue('name')}
-                      onChange={(e) => (isEnLang ? updateTranslation('name', e.target.value) : handleNameChange(e.target.value))}
+                      onChange={(e) => (isEnLang ? handleEnNameChange(e.target.value) : handleNameChange(e.target.value))}
                       disabled={isReadOnly}
                       maxLength={255}
                     />
@@ -3072,18 +3133,18 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   <Field
                     full
                     label={t('products.detail.slug')}
-                    error={validationErrors.slug}
+                    error={isEnLang ? validationErrors['translations.en.slug'] : validationErrors.slug}
                     hint={isEnLang
-                      ? t('products.detail.slugSharedHint', { defaultValue: 'Đường dẫn dùng chung cho cả hai ngôn ngữ — chỉ sửa được ở tab Tiếng Việt.' })
+                      ? t('products.detail.slugHintEn', { defaultValue: 'Đường dẫn tiếng Anh (tùy chọn) — để trống sẽ dùng đường dẫn tiếng Việt.' })
                       : t('products.detail.slugHint')}
                   >
                     <Input
-                      value={form.slug}
-                      placeholder="vd: mu-bao-hiem-fullface-agv-k1s"
-                      onChange={(e) => handleSlugChange(e.target.value)}
-                      onBlur={(e) => handleSlugBlur(e.target.value)}
-                      disabled={isReadOnly || isEnLang}
-                      maxLength={200}
+                      value={isEnLang ? (form.translations?.en?.slug ?? '') : form.slug}
+                      placeholder={isEnLang ? 'vd: fullface-helmet-agv-k1s' : 'vd: mu-bao-hiem-fullface-agv-k1s'}
+                      onChange={(e) => (isEnLang ? handleEnSlugChange(e.target.value) : handleSlugChange(e.target.value))}
+                      onBlur={(e) => (isEnLang ? handleEnSlugBlur(e.target.value) : handleSlugBlur(e.target.value))}
+                      disabled={isReadOnly}
+                      maxLength={isEnLang ? 100 : 200}
                       className="font-mono"
                     />
                   </Field>

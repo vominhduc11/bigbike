@@ -87,6 +87,8 @@ export function ProductListScreen({ navigate, canUpdate }) {
 
   const state = useAdminList(['products', query, contentLang], () => fetchProducts(query))
 
+  // Bộ lọc trên màn duyệt = strict-EN theo PRODUCT_RULE_004 (ẩn mục chưa dịch để
+  // biết cái nào còn thiếu bản tiếng Anh) — khác với selector trong form (full).
   const { data: brandsData } = useQuery({ queryKey: ['brands-all', contentLang], queryFn: () => fetchBrands({ pageSize: 100, sort: 'name:asc' }), staleTime: 5 * 60_000 })
   const { data: categoriesData } = useQuery({ queryKey: ['categories', 'tree', contentLang], queryFn: () => fetchCategoryTree(), staleTime: 5 * 60_000 })
   const brands = brandsData?.items ?? []

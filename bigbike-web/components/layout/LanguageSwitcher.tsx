@@ -2,20 +2,30 @@
 
 import { Globe } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
-import { LOCALES, type Locale } from "@/i18n/locale";
+import { DEFAULT_LOCALE, LOCALES, type Locale } from "@/i18n/locale";
 import { useSetLocale } from "@/components/providers/ClientIntlProvider";
+import { useAltSlug, type AltSlugKind } from "@/components/i18n/AltSlugProvider";
+import { toBrandPath, toCategoryPath, toProductPath } from "@/lib/utils/routes";
 import { iconBtn } from "@/lib/ui-classes";
 import { cn } from "@/lib/utils";
 
 /**
- * Cookie-based locale switcher — URLs stay shared across languages per
- * PRODUCT_RULE_003. Writing the NEXT_LOCALE cookie + router.refresh() causes
- * server components to re-render with the new locale.
+ * Cookie-based locale switcher (writes NEXT_LOCALE + swaps the message bundle
+ * client-side, no reload). On DETAIL pages that supply an `AltSlugProvider`, it
+ * ALSO navigates to the language-appropriate URL slug
+ * (PRODUCT/CATEGORY/BRAND_RULE_003); listings/home keep the in-place swap.
  *
  * variant="icon"   → globe icon + hover/click dropdown (desktop header)
  * variant="inline" → VI|EN bordered button group (mobile drawer)
  */
+
+function pathForKind(kind: AltSlugKind, slug: string): string {
+  if (kind === "category") return toCategoryPath(slug);
+  if (kind === "product") return toProductPath(slug);
+  return toBrandPath(slug);
+}
 
 const LOCALE_LABELS: Record<string, string> = {
   vi: "Tiếng Việt",
@@ -40,6 +50,8 @@ export function LanguageSwitcher({ variant = "icon" }: { variant?: "icon" | "inl
   const t = useTranslations("Language");
   const locale = useLocale() as Locale;
   const setLocale = useSetLocale();
+  const router = useRouter();
+  const altSlug = useAltSlug();
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -61,6 +73,15 @@ export function LanguageSwitcher({ variant = "icon" }: { variant?: "icon" | "inl
     setOpen(false);
     // Đổi ngôn ngữ ngay ở client (ghi cookie + swap message) — không reload/round-trip server.
     startTransition(() => setLocale(next));
+    // Trên trang chi tiết có alt-slug: nhảy sang URL slug của ngôn ngữ đích nếu khác URL hiện tại.
+    if (altSlug) {
+      const slugFor = (lang: Locale) =>
+        lang === DEFAULT_LOCALE ? altSlug.viSlug : altSlug.enSlug ?? altSlug.viSlug;
+      const targetSlug = slugFor(next);
+      if (targetSlug !== slugFor(locale)) {
+        router.push(pathForKind(altSlug.kind, targetSlug));
+      }
+    }
   }
 
   function handleMouseEnter() {

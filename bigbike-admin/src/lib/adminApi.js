@@ -251,7 +251,7 @@ function buildBrandQuery(query) {
     sort: query?.sort,
     q: query?.search,
     visibility: query?.visibility,
-    lang: getContentLang(),
+    lang: query?.lang ?? getContentLang(),
   }
 }
 

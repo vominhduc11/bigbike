@@ -4,6 +4,7 @@ import { getLocale } from "next-intl/server";
 import { WpCategoryHero, type WpCategoryCrumb } from "@/components/wp/WpCategoryHero";
 import { WpCatalogClient } from "@/components/wp/WpCatalogClient";
 import { WpThemeStylesheet } from "@/components/wp/WpThemeStylesheet";
+import { AltSlugRegistrar } from "@/components/i18n/AltSlugProvider";
 import { LHtml, LText, LocalizedContentProvider } from "@/components/i18n/LocalizedContent";
 import { Tr } from "@/components/i18n/Tr";
 import { getBrandBySlug, getCatalogFacets, listBrands, listCategories, listProducts } from "@/lib/api/public-api";
@@ -54,6 +55,10 @@ export async function generateMetadata({ params }: BrandDetailPageProps): Promis
     description: brand.seo?.description ?? brand.description ?? "Chi tiết thương hiệu BigBike.",
     canonicalPath: toBrandPath(brand.slug),
     ogImage: brand.seo?.ogImage?.url ?? brand.logo?.url ?? undefined,
+    // hreflang vi/en khi thương hiệu có slug tiếng Anh riêng (BRAND_RULE_003).
+    languageAlternates: brand.slugEn
+      ? { vi: toBrandPath(brand.slug), en: toBrandPath(brand.slugEn) }
+      : undefined,
   });
 }
 
@@ -114,6 +119,7 @@ export default async function BrandDetailPage({ params }: BrandDetailPageProps) 
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }} />
 
       <LocalizedContentProvider kind="brand" slug={brand.slug}>
+        <AltSlugRegistrar kind="brand" viSlug={brand.slug} enSlug={brand.slugEn ?? null} />
         <div className="archive tax-pwb-brand post-type-archive-product">
           <WpCategoryHero
             title={brandName}

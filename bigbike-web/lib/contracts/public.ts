@@ -172,6 +172,8 @@ export type Product = {
   id: string;
   sku?: string;
   slug: string;
+  /** Optional English URL slug (V214). Canonical `slug` stays vi; null/absent when unset. */
+  slugEn?: string | null;
   name: string;
   shortDescription?: string;
   description?: string;
@@ -242,6 +244,8 @@ export type Product = {
 export type Category = {
   id: string;
   slug: string;
+  /** Optional English URL slug (V213). Canonical `slug` stays vi; null/absent when unset. */
+  slugEn?: string | null;
   name: string;
   description?: string;
   parentId?: string | null;
@@ -262,6 +266,8 @@ export type Category = {
 export type Brand = {
   id: string;
   slug: string;
+  /** Optional English URL slug (V215). Canonical `slug` stays vi; null/absent when unset. */
+  slugEn?: string | null;
   name: string;
   description?: string;
   logo?: ImageAsset;

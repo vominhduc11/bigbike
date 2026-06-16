@@ -5,6 +5,8 @@ import java.time.Instant;
 public record Brand(
         String id,
         String slug,
+        /** Optional English URL slug (V215). Canonical {@code slug} stays vi; null when unset. */
+        String slugEn,
         String name,
         String description,
         ImageAsset logo,

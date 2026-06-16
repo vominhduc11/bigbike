@@ -22,6 +22,9 @@ public class CategoryEntity {
     @Column(nullable = false, unique = true)
     private String slug;
 
+    @Column(name = "slug_en")
+    private String slugEn;
+
     @Column(nullable = false)
     private String name;
 
@@ -122,6 +125,14 @@ public class CategoryEntity {
 
     public void setSlug(String slug) {
         this.slug = slug;
+    }
+
+    public String getSlugEn() {
+        return slugEn;
+    }
+
+    public void setSlugEn(String slugEn) {
+        this.slugEn = slugEn;
     }
 
     public String getName() {

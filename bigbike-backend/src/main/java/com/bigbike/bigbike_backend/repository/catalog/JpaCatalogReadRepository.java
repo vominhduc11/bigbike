@@ -155,6 +155,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 entity.getId(),
                 entity.getSku(),
                 entity.getSlug(),
+                entity.getSlugEn(),
                 pick(entity.getName(), entity.getNameEn(), locale),
                 null,
                 null,
@@ -245,7 +246,11 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
 
     @Override
     public Optional<Product> findProductBySlug(String slug, String locale) {
-        return productJpaRepository.findBySlug(slug).map(entity -> toDomainPublicView(entity, locale));
+        // Resolve by the vi slug first, then the optional English slug — both URLs
+        // open the same product. vi-first keeps it deterministic (PRODUCT_RULE_003).
+        return productJpaRepository.findBySlug(slug)
+                .or(() -> productJpaRepository.findBySlugEn(slug))
+                .map(entity -> toDomainPublicView(entity, locale));
     }
 
     @Override
@@ -358,7 +363,10 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
 
     @Override
     public Optional<Category> findCategoryBySlug(String slug, String locale) {
-        return categoryJpaRepository.findBySlug(slug).map(entity -> toDomain(entity, locale));
+        // vi slug first, then optional English slug (CATEGORY_RULE_003).
+        return categoryJpaRepository.findBySlug(slug)
+                .or(() -> categoryJpaRepository.findBySlugEn(slug))
+                .map(entity -> toDomain(entity, locale));
     }
 
     @Override
@@ -393,7 +401,10 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
 
     @Override
     public Optional<Brand> findBrandBySlug(String slug, String locale) {
-        return brandJpaRepository.findBySlug(slug).map(entity -> toDomain(entity, locale));
+        // vi slug first, then optional English slug (BRAND_RULE_003).
+        return brandJpaRepository.findBySlug(slug)
+                .or(() -> brandJpaRepository.findBySlugEn(slug))
+                .map(entity -> toDomain(entity, locale));
     }
 
     @Override
@@ -451,6 +462,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 entity.getId(),
                 entity.getSku(),
                 entity.getSlug(),
+                entity.getSlugEn(),
                 pick(entity.getName(), entity.getNameEn(), locale),
                 pick(entity.getShortDescription(), entity.getShortDescriptionEn(), locale),
                 pick(entity.getDescription(), entity.getDescriptionEn(), locale),
@@ -529,6 +541,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         return new Category(
                 entity.getId(),
                 entity.getSlug(),
+                entity.getSlugEn(),
                 pick(entity.getName(), entity.getNameEn(), locale),
                 pick(entity.getDescription(), entity.getDescriptionEn(), locale),
                 entity.getParentId(),
@@ -599,6 +612,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         return new Brand(
                 entity.getId(),
                 entity.getSlug(),
+                entity.getSlugEn(),
                 pick(entity.getName(), entity.getNameEn(), locale),
                 pick(entity.getDescription(), entity.getDescriptionEn(), locale),
                 toImageAsset(

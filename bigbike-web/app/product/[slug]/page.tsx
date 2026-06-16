@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getLocale } from "next-intl/server";
 
+import { AltSlugRegistrar } from "@/components/i18n/AltSlugProvider";
 import { ProductView } from "@/components/catalog/ProductView";
 import { getProductBySlug, listPublicSettings } from "@/lib/api/public-api";
 import {
@@ -32,11 +33,16 @@ export async function generateMetadata({ params }: ProductDetailPageProps): Prom
   const result = await getProductBySlug(slug, await getLocale());
   const product = result.data;
   if (!product) return {};
+  const canonicalPath = product.seo?.canonicalUrl ?? toProductPath(product.slug);
   return buildPublicMetadata({
     title: product.seo?.title ?? product.name,
     description: product.seo?.description ?? product.shortDescription ?? product.name,
-    canonicalPath: product.seo?.canonicalUrl ?? toProductPath(product.slug),
+    canonicalPath,
     ogImage: product.seo?.ogImage?.url ?? product.image?.url ?? undefined,
+    // hreflang vi/en khi sản phẩm có slug tiếng Anh riêng (PRODUCT_RULE_003).
+    languageAlternates: product.slugEn
+      ? { vi: canonicalPath, en: toProductPath(product.slugEn) }
+      : undefined,
   });
 }
 
@@ -81,6 +87,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
           dangerouslySetInnerHTML={{ __html: block }}
         />
       ))}
+      <AltSlugRegistrar kind="product" viSlug={product.slug} enSlug={product.slugEn ?? null} />
       <ProductView product={product} settings={settings} />
     </>
   );

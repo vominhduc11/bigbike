@@ -4,6 +4,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { WpCategoryHero, type WpCategoryCrumb } from "@/components/wp/WpCategoryHero";
 import { WpCatalogClient } from "@/components/wp/WpCatalogClient";
 import { WpThemeStylesheet } from "@/components/wp/WpThemeStylesheet";
+import { AltSlugRegistrar } from "@/components/i18n/AltSlugProvider";
 import { LHtml, LText, LocalizedContentProvider } from "@/components/i18n/LocalizedContent";
 import { Tr } from "@/components/i18n/Tr";
 import { getCatalogFacets, getCategoryBySlug, listBrands, listCategories, listProducts } from "@/lib/api/public-api";
@@ -74,6 +75,10 @@ export async function generateMetadata({ params }: CategoryDetailPageProps): Pro
         : defaultDescription),
     canonicalPath: toCategoryPath(category.slug),
     ogImage: category.seo?.ogImage?.url ?? (category.image ?? category.icon)?.url ?? undefined,
+    // hreflang vi/en khi danh mục có slug tiếng Anh riêng (CATEGORY_RULE_003).
+    languageAlternates: category.slugEn
+      ? { vi: toCategoryPath(category.slug), en: toCategoryPath(category.slugEn) }
+      : undefined,
   });
 }
 
@@ -146,6 +151,7 @@ export default async function CategoryDetailPage({ params }: CategoryDetailPageP
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }} />
 
       <LocalizedContentProvider kind="category" slug={category.slug}>
+        <AltSlugRegistrar kind="category" viSlug={category.slug} enSlug={category.slugEn ?? null} />
         <div className="archive tax-product_cat post-type-archive-product">
           <WpCategoryHero
             title={categoryName}

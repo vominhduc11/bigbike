@@ -11,6 +11,12 @@ type PublicMetadataInput = {
   ogImage?: string;
   ogType?: "website" | "article";
   siteName?: string;
+  /**
+   * Per-language URL paths for `hreflang` alternates (PRODUCT/CATEGORY/BRAND_RULE_003).
+   * Canonical stays the vi URL; emit this when an entity has a distinct English slug
+   * so Google links the vi/en URLs instead of treating them as duplicates.
+   */
+  languageAlternates?: { vi: string; en: string };
 };
 
 export function buildPublicMetadata(input: PublicMetadataInput): Metadata {
@@ -22,6 +28,15 @@ export function buildPublicMetadata(input: PublicMetadataInput): Metadata {
     description: input.description,
     alternates: {
       canonical: canonicalUrl,
+      ...(input.languageAlternates
+        ? {
+            languages: {
+              vi: toCanonicalUrl(input.languageAlternates.vi),
+              en: toCanonicalUrl(input.languageAlternates.en),
+              "x-default": toCanonicalUrl(input.languageAlternates.vi),
+            },
+          }
+        : {}),
     },
     openGraph: {
       title: input.title,

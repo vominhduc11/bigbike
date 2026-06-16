@@ -8,6 +8,21 @@ const URL_REGEX = /^https?:\/\//
 const MEDIA_URL_REGEX = /^(?:https?:\/\/|\/)/
 export const COLOR_ATTRIBUTE_KEYS = new Set(['color', 'colour', 'mau', 'mau sac', 'pa color', 'pa mau', 'pa mau sac'])
 
+/**
+ * Optional English URL slug (V213/V214/V215): empty is allowed (falls back to the
+ * vi slug); when filled it must be valid kebab-case ≤ 100 chars. Errors target
+ * `translations.en.slug` so the per-language slug field highlights correctly.
+ */
+function validateEnSlug(t, slug, ctx) {
+  const s = String(slug || '').trim()
+  if (!s) return
+  if (!SLUG_REGEX.test(s)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('common.errEnSlugFormat', { defaultValue: 'Đường dẫn tiếng Anh chỉ gồm chữ thường, số và dấu gạch ngang.' }), path: ['translations', 'en', 'slug'] })
+  } else if (s.length > 100) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('common.errEnSlugTooLong', { defaultValue: 'Đường dẫn tiếng Anh tối đa 100 ký tự.' }), path: ['translations', 'en', 'slug'] })
+  }
+}
+
 export function normalizeVariantToken(value) {
   return String(value || '')
     .normalize('NFD')
@@ -100,6 +115,7 @@ export function createProductSchema(t, isCreate = false) {
       // Optional English content (V136) — never required, length-checked only.
       translations: z.object({
         en: z.object({
+          slug: z.string().optional(),
           name: z.string().optional(),
           shortDescription: z.string().optional(),
           description: z.string().optional(),
@@ -213,6 +229,8 @@ export function createProductSchema(t, isCreate = false) {
           })
         }
       }
+      // English URL slug (V214): optional; when filled must be valid kebab-case ≤ 100.
+      validateEnSlug(t, en.slug, ctx)
 
       // Specifications: rows that have any content must have both name and value.
       data.specifications?.forEach((s, i) => {
@@ -324,8 +342,19 @@ export function createCategorySchema(t) {
       seoCanonicalUrl: z.string().optional(),
       seoOgImageUrl: z.string().optional(),
       seoOgImageAlt: z.string().optional(),
+      // Optional English content (V137 + V213 slug) — never required, validated for format/length only.
+      translations: z.object({
+        en: z.object({
+          slug: z.string().optional(),
+          name: z.string().optional(),
+          description: z.string().optional(),
+          seoTitle: z.string().optional(),
+          seoDescription: z.string().optional(),
+        }).optional(),
+      }).optional(),
     })
     .superRefine((data, ctx) => {
+      validateEnSlug(t, data.translations?.en?.slug, ctx)
       const s = String(data.slug || '').trim()
       if (!s) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errSlugRequired'), path: ['slug'] })
@@ -387,7 +416,18 @@ export function createBrandSchema(t) {
     logoUrl: z.string().optional(),
     seoCanonicalUrl: z.string().optional(),
     seoOgImageUrl: z.string().optional(),
+    // Optional English content (V137 + V215 slug) — validated for format/length only.
+    translations: z.object({
+      en: z.object({
+        slug: z.string().optional(),
+        name: z.string().optional(),
+        description: z.string().optional(),
+        seoTitle: z.string().optional(),
+        seoDescription: z.string().optional(),
+      }).optional(),
+    }).optional(),
   }).superRefine((data, ctx) => {
+    validateEnSlug(t, data.translations?.en?.slug, ctx)
     const s = String(data.slug || '').trim()
     if (!s) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('brands.detail.errSlugRequired'), path: ['slug'] })

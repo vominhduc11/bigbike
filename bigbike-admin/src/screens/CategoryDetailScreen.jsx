@@ -14,7 +14,7 @@ import {
 } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import { formatDateTime, formatRelativeTime } from '../lib/formatters'
-import { useContentLang } from '../lib/contentLang'
+import { useContentLang, overlayEnNames } from '../lib/contentLang'
 import { createCategorySchema, zodErrors } from '../lib/schemas'
 import { StatePanel } from '../components/StatePanel'
 import { PublishStatusBadge, StatusBadge } from '../components/StatusBadge'
@@ -68,7 +68,7 @@ function buildEmptyForm() {
     seoTitle: '',
     seoDescription: '',
     seoCanonicalUrl: '',
-    translations: { en: { name: '', description: '', seoTitle: '', seoDescription: '' } },
+    translations: { en: { slug: '', name: '', description: '', seoTitle: '', seoDescription: '' } },
   }
 }
 
@@ -88,6 +88,8 @@ function buildFormFromItem(item) {
     seoCanonicalUrl: item.seo?.canonicalUrl || '',
     translations: {
       en: {
+        // slug tiếng Anh nằm ở field top-level `slugEn` của response, không trong translations.en
+        slug: item.slugEn || '',
         name: item.translations?.en?.name || '',
         description: item.translations?.en?.description || '',
         seoTitle: item.translations?.en?.seoTitle || '',
@@ -128,6 +130,7 @@ function toPayload(form) {
 
   payload.translations = {
     en: {
+      slug: form.translations?.en?.slug?.trim() || null,
       name: form.translations?.en?.name?.trim() || null,
       description: form.translations?.en?.description?.trim() || null,
       seoTitle: form.translations?.en?.seoTitle?.trim() || null,
@@ -148,6 +151,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
   const [validationErrors, setValidationErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false)
+  const [enSlugManuallyEdited, setEnSlugManuallyEdited] = useState(false)
   const [idCopied, setIdCopied] = useState(false)
   const [menuNoticeDismissed, setMenuNoticeDismissed] = useState(() => {
     try { return localStorage.getItem(MENU_NOTICE_DISMISSED_KEY) === '1' }
@@ -162,10 +166,24 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
 
   // Cây danh mục cho breadcrumb + ô chọn danh mục cha: luôn lấy TOÀN BỘ (lang='vi',
   // không strict) để ở chế độ EN vẫn chọn/giữ được cha là danh mục chưa dịch.
-  const { data: categoriesResult } = useQuery({
+  const { data: categoriesResultVi } = useQuery({
     queryKey: ['categories', 'tree', 'picker'],
     queryFn: () => fetchCategoryTree('vi'),
   })
+
+  // Ở chế độ EN: nạp thêm cây tiếng Anh (backend ẩn mục chưa dịch) để phủ tên Anh
+  // lên danh sách đầy đủ phía trên — mục đã dịch hiện tên Anh, mục chưa dịch giữ tên Việt.
+  const { data: categoriesResultEn } = useQuery({
+    queryKey: ['categories', 'tree', 'picker', 'en'],
+    queryFn: () => fetchCategoryTree('en'),
+    enabled: isEnLang,
+  })
+
+  // Danh sách dùng cho picker + breadcrumb: đầy đủ từ cây VI, overlay tên EN khi có.
+  const categoriesResult = useMemo(() => {
+    if (!isEnLang || !categoriesResultVi) return categoriesResultVi
+    return { ...categoriesResultVi, items: overlayEnNames(categoriesResultVi.items, categoriesResultEn?.items) }
+  }, [categoriesResultVi, categoriesResultEn, isEnLang])
 
   // Top products in this category — surfaced in a sidebar so editors know
   // who depends on the category before they hide / re-parent it.
@@ -239,6 +257,9 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
       setForm(nextForm)
       setInitialSnapshot(JSON.stringify(nextForm))
       setSlugManuallyEdited(true)
+      // Danh mục đã có slug tiếng Anh → coi như đã chỉnh tay, không auto-ghi đè khi sửa tên EN;
+      // chưa có → để auto-gợi ý từ tên tiếng Anh.
+      setEnSlugManuallyEdited(Boolean(nextForm.translations?.en?.slug))
     })
     return () => { cancelled = true }
   }, [fetchResult])
@@ -278,6 +299,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
       const nextForm = buildFormFromItem(savedItem)
       setForm(nextForm)
       setInitialSnapshot(JSON.stringify(nextForm))
+      setEnSlugManuallyEdited(Boolean(nextForm.translations?.en?.slug))
       queryClient.invalidateQueries({ queryKey: ['categories'] })
       if (!isCreate) queryClient.setQueryData(['category', categoryId], response)
       toast.success(isCreate ? t('categories.detail.successCreate') : t('categories.detail.successUpdate'))
@@ -339,6 +361,26 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
   function handleSlugChange(value) {
     setSlugManuallyEdited(true)
     updateField('slug', value)
+  }
+
+  // Chế độ tiếng Anh: gõ tên EN tự gợi ý slug EN (khi chưa sửa tay); xoá để sửa tự do.
+  function handleEnNameChange(value) {
+    setForm((previous) => {
+      const en = { ...(previous.translations?.en || {}), name: value }
+      if (!enSlugManuallyEdited) en.slug = toSlug(value)
+      return { ...previous, translations: { ...previous.translations, en } }
+    })
+  }
+
+  function handleEnSlugChange(value) {
+    setEnSlugManuallyEdited(true)
+    updateTranslation('slug', value)
+    setValidationErrors((previous) => {
+      if (!previous['translations.en.slug']) return previous
+      const next = { ...previous }
+      delete next['translations.en.slug']
+      return next
+    })
   }
 
   function handleSubmit(event) {
@@ -581,7 +623,7 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                 <Input
                   name="name"
                   value={isEnLang ? (form.translations?.en?.name ?? '') : form.name}
-                  onChange={(e) => isEnLang ? updateTranslation('name', e.target.value) : handleNameChange(e.target.value)}
+                  onChange={(e) => isEnLang ? handleEnNameChange(e.target.value) : handleNameChange(e.target.value)}
                   disabled={isReadOnly}
                   placeholder={isEnLang ? t('categories.detail.namePlaceholderEn', { defaultValue: 'English name (optional)' }) : undefined}
                 />
@@ -679,18 +721,23 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
         <div className="bb-card mb-4">
           <div className="bb-card-header"><h2>{t('categories.detail.slug')}</h2></div>
           <div className="bb-card-body">
-            <label className="form-field" data-field="slug">
-              <span>{t('categories.detail.slug')}</span>
+            <label className="form-field" data-field={isEnLang ? 'translations.en.slug' : 'slug'}>
+              <span>
+                {t('categories.detail.slug')}
+                {isEnLang && <span className="hint" style={{ display: 'inline', marginLeft: 6 }}>{t('categories.detail.enFieldHint', { defaultValue: '(tiếng Anh — tùy chọn)' })}</span>}
+              </span>
               <Input
-                name="slug"
-                value={form.slug}
-                onChange={(e) => handleSlugChange(e.target.value)}
+                name={isEnLang ? 'translations.en.slug' : 'slug'}
+                value={isEnLang ? (form.translations?.en?.slug ?? '') : form.slug}
+                onChange={(e) => isEnLang ? handleEnSlugChange(e.target.value) : handleSlugChange(e.target.value)}
                 disabled={isReadOnly}
-                placeholder={t('categories.slugPlaceholder')}
+                placeholder={isEnLang ? t('categories.slugPlaceholderEn', { defaultValue: 'english-url-slug' }) : t('categories.slugPlaceholder')}
                 style={{ fontFamily: 'var(--admin-font-mono)' }}
               />
-              <span className="hint">{t('categories.detail.slugHint')}</span>
-              {validationErrors.slug && <span className="hint text-danger">{validationErrors.slug}</span>}
+              <span className="hint">{isEnLang ? t('categories.detail.slugHintEn', { defaultValue: 'Để trống sẽ dùng đường dẫn tiếng Việt cho bản tiếng Anh.' }) : t('categories.detail.slugHint')}</span>
+              {isEnLang
+                ? validationErrors['translations.en.slug'] && <span className="hint text-danger">{validationErrors['translations.en.slug']}</span>
+                : validationErrors.slug && <span className="hint text-danger">{validationErrors.slug}</span>}
             </label>
           </div>
         </div>

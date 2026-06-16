@@ -7,6 +7,8 @@ public record Product(
         String id,
         String sku,
         String slug,
+        /** Optional English URL slug (V214). Canonical {@code slug} stays vi; null when unset. */
+        String slugEn,
         String name,
         String shortDescription,
         String description,

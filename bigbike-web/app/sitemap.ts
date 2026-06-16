@@ -143,6 +143,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: p.updatedAt ? new Date(p.updatedAt) : STATIC_PAGE_DATES.home,
       changeFrequency: "weekly",
       priority: 0.8,
+      // hreflang en khi sản phẩm có slug tiếng Anh riêng (PRODUCT_RULE_003).
+      ...(p.slugEn ? { alternates: { languages: { en: toCanonicalUrl(toProductPath(p.slugEn)) } } } : {}),
     });
   }
 
@@ -152,6 +154,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: c.updatedAt ? new Date(c.updatedAt) : STATIC_PAGE_DATES.home,
       changeFrequency: "weekly",
       priority: 0.6,
+      ...(c.slugEn ? { alternates: { languages: { en: toCanonicalUrl(toCategoryPath(c.slugEn)) } } } : {}),
     });
   }
 
@@ -161,6 +164,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: b.updatedAt ? new Date(b.updatedAt) : STATIC_PAGE_DATES.home,
       changeFrequency: "monthly",
       priority: 0.5,
+      ...(b.slugEn ? { alternates: { languages: { en: toCanonicalUrl(toBrandPath(b.slugEn)) } } } : {}),
     });
   }
 

@@ -17,6 +17,12 @@ import org.springframework.lang.Nullable;
 
 public interface ProductJpaRepository extends JpaRepository<ProductEntity, String>, JpaSpecificationExecutor<ProductEntity> {
     Optional<ProductEntity> findBySlug(String slug);
+
+    /** Lookup by the optional English slug. Pairs with {@link #findBySlug} for
+     * vi-first OR-resolution (JpaCatalogReadRepository) and slug uniqueness
+     * checks (AdminCatalogMutationService). */
+    Optional<ProductEntity> findBySlugEn(String slugEn);
+
     Optional<ProductEntity> findByLegacyId(String legacyId);
     long countByPublishStatus(PublishStatus publishStatus);
     long countByCategory_Id(String categoryId);

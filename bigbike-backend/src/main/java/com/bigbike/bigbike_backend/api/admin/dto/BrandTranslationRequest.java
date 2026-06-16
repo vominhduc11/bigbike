@@ -1,6 +1,7 @@
 package com.bigbike.bigbike_backend.api.admin.dto;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -27,6 +28,11 @@ public class BrandTranslationRequest {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class BrandContentRequest {
+
+        /** Optional English URL slug (V215). Empty/blank → fall back to the vi slug. */
+        @Pattern(regexp = "^[a-z0-9]+(?:-[a-z0-9]+)*$", message = "English slug must be lowercase alphanumeric with hyphens.")
+        @Size(max = 100, message = "English slug must be at most 100 characters.")
+        private String slug;
 
         @Size(max = 255, message = "English name is too long.")
         private String name;

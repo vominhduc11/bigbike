@@ -21,6 +21,7 @@ import { MobileCartSheet } from "@/components/layout/MobileCartSheet";
 import { CartProvider } from "@/lib/cart-context";
 import { QueryProvider } from "@/components/providers/QueryProvider";
 import { HeaderUiProvider } from "@/components/layout/HeaderUiContext";
+import { AltSlugProvider } from "@/components/i18n/AltSlugProvider";
 import { env } from "@/env";
 
 const FAVICON_BASE = "/wp-content/themes/bigbike/favicon";
@@ -118,6 +119,7 @@ export default async function RootLayout({
           <QueryProvider>
             <HeaderUiProvider>
               <CartProvider>
+                <AltSlugProvider>
                   <WpHeader menuNodes={wpPrimaryNodes} />
                   <main className="bb-main pb-[calc(var(--bb-mobile-nav-height)+env(safe-area-inset-bottom))] md:pb-0">{children}</main>
                   <div className="block md:hidden">
@@ -141,6 +143,7 @@ export default async function RootLayout({
                   <div className="bb-floating-chat-anchor fixed z-[660] bottom-[calc(var(--bb-mobile-nav-height)+env(safe-area-inset-bottom)+80px)] md:bottom-[max(24px,env(safe-area-inset-bottom))] right-[max(16px,env(safe-area-inset-right))] md:right-[max(24px,env(safe-area-inset-right))] pointer-events-none [&>*]:pointer-events-auto [[data-scroll-locked]_&]:hidden">
                     <FloatingChatLoader />
                   </div>
+                </AltSlugProvider>
               </CartProvider>
             </HeaderUiProvider>
           </QueryProvider>

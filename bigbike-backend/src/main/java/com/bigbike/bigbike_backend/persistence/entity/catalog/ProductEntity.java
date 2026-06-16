@@ -49,6 +49,9 @@ public class ProductEntity {
     @Column(nullable = false, unique = true)
     private String slug;
 
+    @Column(name = "slug_en")
+    private String slugEn;
+
     @Column(nullable = false)
     private String name;
 

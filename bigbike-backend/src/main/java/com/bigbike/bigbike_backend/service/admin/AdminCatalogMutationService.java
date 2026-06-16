@@ -189,6 +189,7 @@ public class AdminCatalogMutationService {
         ProductEntity entity = productJpaRepository.findById(productId)
                 .orElseThrow(() -> new NotFoundException("Product not found."));
         String previousSlug = entity.getSlug();
+        String previousSlugEn = entity.getSlugEn();
 
         List<ApiErrorDetail> errors = new ArrayList<>();
         CategoryEntity category = validateAndResolveCategory(request.getCategoryId(), false, errors);
@@ -205,6 +206,7 @@ public class AdminCatalogMutationService {
         if (!previousSlug.equals(entity.getSlug())) {
             autoCreateSlugRedirect("/product/" + previousSlug, "/product/" + entity.getSlug());
         }
+        autoCreateSlugEnRedirect("/product/", previousSlugEn, entity.getSlugEn(), entity.getSlug());
         revalidateProduct(entity, previousSlug);
 
         return catalogReadRepository.findProductById(entity.getId())
@@ -342,6 +344,7 @@ public class AdminCatalogMutationService {
         CategoryEntity entity = categoryJpaRepository.findById(categoryId)
                 .orElseThrow(() -> new NotFoundException("Category not found."));
         String previousSlug = entity.getSlug();
+        String previousSlugEn = entity.getSlugEn();
 
         List<ApiErrorDetail> errors = new ArrayList<>();
         String slug = validateCategoryRequest(request, entity, false, errors);
@@ -359,6 +362,7 @@ public class AdminCatalogMutationService {
         if (!previousSlug.equals(entity.getSlug())) {
             autoCreateSlugRedirect("/danh-muc-san-pham/" + previousSlug, "/danh-muc-san-pham/" + entity.getSlug());
         }
+        autoCreateSlugEnRedirect("/danh-muc-san-pham/", previousSlugEn, entity.getSlugEn(), entity.getSlug());
         revalidateCategory(entity, previousSlug);
 
         return catalogReadRepository.findCategoryById(entity.getId())
@@ -394,6 +398,7 @@ public class AdminCatalogMutationService {
         BrandEntity entity = brandJpaRepository.findById(brandId)
                 .orElseThrow(() -> new NotFoundException("Brand not found."));
         String previousSlug = entity.getSlug();
+        String previousSlugEn = entity.getSlugEn();
 
         List<ApiErrorDetail> errors = new ArrayList<>();
         String slug = validateBrandRequest(request, entity, false, errors);
@@ -403,6 +408,10 @@ public class AdminCatalogMutationService {
         applyBrandPatch(entity, request, slug, false);
         brandJpaRepository.save(entity);
         auditLog("BRAND_UPDATED", "BRAND", adminId, null, brandJson(entity));
+        if (!previousSlug.equals(entity.getSlug())) {
+            autoCreateSlugRedirect("/brands/" + previousSlug, "/brands/" + entity.getSlug());
+        }
+        autoCreateSlugEnRedirect("/brands/", previousSlugEn, entity.getSlugEn(), entity.getSlug());
         revalidateBrand(entity, previousSlug);
 
         return catalogReadRepository.findBrandById(entity.getId())
@@ -446,6 +455,20 @@ public class AdminCatalogMutationService {
         log.setAfterData(after);
         log.setCreatedAt(Instant.now());
         auditLogRepo.save(log);
+    }
+
+    /**
+     * 301-redirect bookkeeping when the optional English slug changes
+     * (PRODUCT/CATEGORY/BRAND_RULE_003). {@code pathPrefix} is e.g. {@code "/product/"}.
+     * Changed → old-EN → new-EN; cleared → old-EN → vi URL. No-op when there was no
+     * previous English slug or it is unchanged.
+     */
+    private void autoCreateSlugEnRedirect(String pathPrefix, String previousSlugEn, String newSlugEn, String viSlug) {
+        if (previousSlugEn == null || previousSlugEn.equals(newSlugEn)) {
+            return;
+        }
+        String target = newSlugEn != null ? pathPrefix + newSlugEn : pathPrefix + viSlug;
+        autoCreateSlugRedirect(pathPrefix + previousSlugEn, target);
     }
 
     private void autoCreateSlugRedirect(String source, String target) {
@@ -615,9 +638,73 @@ public class AdminCatalogMutationService {
                     && (current == null || !existingBySlug.get().getId().equals(current.getId()))) {
                 errors.add(new ApiErrorDetail("slug", "DUPLICATE", "Slug is already in use."));
             }
+            // A new vi slug must not collide with any product's English slug either.
+            Optional<ProductEntity> existingBySlugEn = productJpaRepository.findBySlugEn(slug);
+            if (existingBySlugEn.isPresent()
+                    && (current == null || !existingBySlugEn.get().getId().equals(current.getId()))) {
+                errors.add(new ApiErrorDetail("slug", "DUPLICATE", "Slug is already in use (English slug)."));
+            }
+        }
+
+        if (!preview) {
+            validateEnglishSlug(
+                    extractEnSlug(request.getTranslations() == null ? null : request.getTranslations().getEn()),
+                    slug,
+                    current == null ? null : current.getId(),
+                    s -> productJpaRepository.findBySlug(s).map(ProductEntity::getId),
+                    s -> productJpaRepository.findBySlugEn(s).map(ProductEntity::getId),
+                    errors
+            );
         }
 
         return slug;
+    }
+
+    private static String extractEnSlug(Object enContent) {
+        if (enContent instanceof ProductTranslationRequest.ProductContentRequest p) {
+            return AdminMutationValidators.trimToNull(p.getSlug());
+        }
+        if (enContent instanceof CategoryTranslationRequest.CategoryContentRequest c) {
+            return AdminMutationValidators.trimToNull(c.getSlug());
+        }
+        if (enContent instanceof BrandTranslationRequest.BrandContentRequest b) {
+            return AdminMutationValidators.trimToNull(b.getSlug());
+        }
+        return null;
+    }
+
+    /**
+     * Cross-column uniqueness for the optional English slug (PRODUCT/CATEGORY/BRAND_RULE_003):
+     * the en slug must differ from this entity's own vi slug, and must not collide with any
+     * other entity's vi slug or en slug of the same kind. Errors target {@code translations.en.slug}.
+     */
+    private static void validateEnglishSlug(
+            String slugEn,
+            String viSlug,
+            String currentId,
+            java.util.function.Function<String, Optional<String>> findIdByViSlug,
+            java.util.function.Function<String, Optional<String>> findIdByEnSlug,
+            List<ApiErrorDetail> errors
+    ) {
+        if (slugEn == null) {
+            return;
+        }
+        if (slugEn.equals(viSlug)) {
+            errors.add(new ApiErrorDetail("translations.en.slug", "INVALID_VALUE",
+                    "English slug must differ from the Vietnamese slug."));
+            return;
+        }
+        Optional<String> byViSlug = findIdByViSlug.apply(slugEn);
+        if (byViSlug.isPresent() && (currentId == null || !byViSlug.get().equals(currentId))) {
+            errors.add(new ApiErrorDetail("translations.en.slug", "DUPLICATE",
+                    "English slug is already in use."));
+            return;
+        }
+        Optional<String> byEnSlug = findIdByEnSlug.apply(slugEn);
+        if (byEnSlug.isPresent() && (currentId == null || !byEnSlug.get().equals(currentId))) {
+            errors.add(new ApiErrorDetail("translations.en.slug", "DUPLICATE",
+                    "English slug is already in use."));
+        }
     }
 
     private static void validateVariantSalePriceRule(
@@ -708,7 +795,22 @@ public class AdminCatalogMutationService {
                     && (current == null || !existingBySlug.get().getId().equals(current.getId()))) {
                 errors.add(new ApiErrorDetail("slug", "DUPLICATE", "Slug is already in use."));
             }
+            // A new vi slug must not collide with any category's English slug either.
+            Optional<CategoryEntity> existingBySlugEn = categoryJpaRepository.findBySlugEn(slug);
+            if (existingBySlugEn.isPresent()
+                    && (current == null || !existingBySlugEn.get().getId().equals(current.getId()))) {
+                errors.add(new ApiErrorDetail("slug", "DUPLICATE", "Slug is already in use (English slug)."));
+            }
         }
+
+        validateEnglishSlug(
+                extractEnSlug(request.getTranslations() == null ? null : request.getTranslations().getEn()),
+                slug,
+                current == null ? null : current.getId(),
+                s -> categoryJpaRepository.findBySlug(s).map(CategoryEntity::getId),
+                s -> categoryJpaRepository.findBySlugEn(s).map(CategoryEntity::getId),
+                errors
+        );
 
         return slug;
     }
@@ -790,7 +892,22 @@ public class AdminCatalogMutationService {
                     && (current == null || !existingBySlug.get().getId().equals(current.getId()))) {
                 errors.add(new ApiErrorDetail("slug", "DUPLICATE", "Slug is already in use."));
             }
+            // A new vi slug must not collide with any brand's English slug either.
+            Optional<BrandEntity> existingBySlugEn = brandJpaRepository.findBySlugEn(slug);
+            if (existingBySlugEn.isPresent()
+                    && (current == null || !existingBySlugEn.get().getId().equals(current.getId()))) {
+                errors.add(new ApiErrorDetail("slug", "DUPLICATE", "Slug is already in use (English slug)."));
+            }
         }
+
+        validateEnglishSlug(
+                extractEnSlug(request.getTranslations() == null ? null : request.getTranslations().getEn()),
+                slug,
+                current == null ? null : current.getId(),
+                s -> brandJpaRepository.findBySlug(s).map(BrandEntity::getId),
+                s -> brandJpaRepository.findBySlugEn(s).map(BrandEntity::getId),
+                errors
+        );
 
         return slug;
     }
@@ -1035,6 +1152,7 @@ public class AdminCatalogMutationService {
     private static void applyTranslations(ProductEntity entity, ProductTranslationRequest translations) {
         ProductTranslationRequest.ProductContentRequest en =
                 translations == null ? null : translations.getEn();
+        entity.setSlugEn(en == null ? null : AdminMutationValidators.trimToNull(en.getSlug()));
         entity.setNameEn(en == null ? null : AdminMutationValidators.trimToNull(en.getName()));
         entity.setShortDescriptionEn(en == null ? null : AdminMutationValidators.trimToNull(en.getShortDescription()));
         entity.setDescriptionEn(en == null ? null : AdminMutationValidators.trimToNull(en.getDescription()));
@@ -1482,11 +1600,13 @@ public class AdminCatalogMutationService {
         CategoryTranslationRequest.CategoryContentRequest en =
                 translations != null ? translations.getEn() : null;
         if (en != null) {
+            entity.setSlugEn(AdminMutationValidators.trimToNull(en.getSlug()));
             entity.setNameEn(AdminMutationValidators.trimToNull(en.getName()));
             entity.setDescriptionEn(AdminMutationValidators.trimToNull(en.getDescription()));
             entity.setSeoTitleEn(AdminMutationValidators.trimToNull(en.getSeoTitle()));
             entity.setSeoDescriptionEn(AdminMutationValidators.trimToNull(en.getSeoDescription()));
         } else if (create) {
+            entity.setSlugEn(null);
             entity.setNameEn(null);
             entity.setDescriptionEn(null);
             entity.setSeoTitleEn(null);
@@ -1541,11 +1661,13 @@ public class AdminCatalogMutationService {
         BrandTranslationRequest.BrandContentRequest en =
                 translations != null ? translations.getEn() : null;
         if (en != null) {
+            entity.setSlugEn(AdminMutationValidators.trimToNull(en.getSlug()));
             entity.setNameEn(AdminMutationValidators.trimToNull(en.getName()));
             entity.setDescriptionEn(AdminMutationValidators.trimToNull(en.getDescription()));
             entity.setSeoTitleEn(AdminMutationValidators.trimToNull(en.getSeoTitle()));
             entity.setSeoDescriptionEn(AdminMutationValidators.trimToNull(en.getSeoDescription()));
         } else if (create) {
+            entity.setSlugEn(null);
             entity.setNameEn(null);
             entity.setDescriptionEn(null);
             entity.setSeoTitleEn(null);

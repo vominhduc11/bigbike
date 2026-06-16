@@ -5,6 +5,8 @@ import java.time.Instant;
 public record Category(
         String id,
         String slug,
+        /** Optional English URL slug (V213). Canonical {@code slug} stays vi; null when unset. */
+        String slugEn,
         String name,
         String description,
         String parentId,

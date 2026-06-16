@@ -176,7 +176,7 @@ Evidence:
 
 - `PRODUCT_RULE_001`: Mỗi sản phẩm bắt buộc có **bản nội dung tiếng Việt** (canonical). **Bản tiếng Anh là tùy chọn** — admin có thể tạo/sửa sản phẩm mà không nhập bản tiếng Anh. `CONFIRMED_FROM_CODE`
 - `PRODUCT_RULE_002`: Khi đọc nội dung sản phẩm bằng tiếng Anh (`lang=en`), mỗi trường text thiếu bản tiếng Anh sẽ **tự lùi về bản tiếng Việt theo từng trường** (`COALESCE`). Một sản phẩm có thể có tên tiếng Anh nhưng mô tả vẫn hiển thị tiếng Việt. `CONFIRMED_FROM_CODE`
-- `PRODUCT_RULE_003`: `slug` của sản phẩm dùng chung 1 bản (không dịch theo ngôn ngữ). `CONFIRMED_FROM_CODE`
+- `PRODUCT_RULE_003`: `slug` tiếng Việt là **canonical**; mỗi sản phẩm có thêm `slugEn` (slug tiếng Anh) **tùy chọn**. Khi xem bản tiếng Anh, URL dùng `slugEn`; **trống thì lùi về `slug` tiếng Việt**. Web tra cứu sản phẩm theo **vi HOẶC en** slug (cả hai URL mở cùng sản phẩm). `slugEn` phải **duy nhất** trong phạm vi sản phẩm và **không được trùng** bất kỳ `slug` tiếng Việt nào của sản phẩm khác (cross-column uniqueness — partial-unique index lo en-vs-en, vi-vs-en enforce ở tầng ứng dụng). Đổi/xoá `slugEn` **tự sinh redirect 301**. `CONFIRMED_FROM_CODE`
 - `PRODUCT_RULE_004`: **Phân biệt hành vi `lang=en` giữa WEB và ADMIN.** `PRODUCT_RULE_002` (fallback theo từng trường về tiếng Việt) chỉ áp dụng cho **web/public**. Ở **bigbike-admin**, nút VI/EN là **strict English**: khi chọn EN, các **danh sách** (sản phẩm, danh mục, thương hiệu, bài viết/trang, menu, phương thức vận chuyển, video trang chủ, Highlights, Sản phẩm nổi bật) **ẩn hẳn** bản ghi chưa có trường tên/tiêu đề tiếng Anh (`name_en`/`title_en`/`label_en` rỗng) — KHÔNG lùi về tiếng Việt — để admin biết mục nào chưa dịch. Các màn **vận hành tham chiếu sản phẩm** (Đánh giá, Slider, Tồn kho) cũng strict: ở EN hiện tên SP tiếng Anh và ẩn bản ghi có SP chưa dịch (Đánh giá lọc server-side qua `name_en` để phân trang đúng; Slider/Tồn kho lọc client-side — Tồn kho dùng tổng trang chưa lọc nên ở EN trang có thể ít dòng hơn). Riêng **màn chi tiết/form soạn thảo** và **ô chọn (selector) trong form** vẫn hiện đầy đủ song ngữ/không strict để nhập liệu được. Giao diện admin (menu/nút/nhãn) luôn cố định tiếng Việt. `CONFIRMED_FROM_CODE`
 
 Evidence:
@@ -187,8 +187,9 @@ Evidence:
 - `AdminContentReadService.java` + `JpaContentReadRepository.java` (`findArticlesByFilter`/`findPagesByFilter` lọc `title_en` khi `locale=en`)
 - `HomeHighlightsService.java` (`listHighlights(lang, strictEnglish)` — admin ẩn slot chưa có `name_en`)
 - `CatalogController.java` (`lang` param)
-- `AdminCatalogMutationService.java` (`applyProductPatch` ghi cột `_en`)
-- `V136__add_product_bilingual_content.sql`
+- `AdminCatalogMutationService.java` (`applyProductPatch` ghi cột `_en` + `slug_en`; validate uniqueness `slugEn`; auto-301 khi `slugEn` đổi)
+- `ProductJpaRepository.java` (`findBySlugOrSlugEn`, `findBySlugEn`)
+- `V136__add_product_bilingual_content.sql`, `V214__add_product_slug_en.sql`
 - `DATA_CONTRACT.md` — "Product bilingual content"
 
 ## Review And Rating Display Rules
@@ -212,7 +213,7 @@ Evidence:
 
 - `CATEGORY_RULE_001`: Mỗi danh mục bắt buộc có **bản nội dung tiếng Việt** (canonical). **Bản tiếng Anh là tùy chọn**. `CONFIRMED_FROM_CODE`
 - `CATEGORY_RULE_002`: Khi đọc danh mục bằng tiếng Anh (`lang=en`), mỗi trường thiếu bản tiếng Anh sẽ **tự lùi về bản tiếng Việt theo từng trường**. `CONFIRMED_FROM_CODE`
-- `CATEGORY_RULE_003`: `slug` của danh mục dùng chung 1 bản (không dịch theo ngôn ngữ). `CONFIRMED_FROM_CODE`
+- `CATEGORY_RULE_003`: `slug` tiếng Việt là **canonical**; mỗi danh mục có thêm `slugEn` (slug tiếng Anh) **tùy chọn**. Khi xem bản tiếng Anh, URL dùng `slugEn`; **trống thì lùi về `slug` tiếng Việt**. Web tra cứu danh mục theo **vi HOẶC en** slug (cả hai URL mở cùng danh mục). `slugEn` phải **duy nhất** trong phạm vi danh mục và **không được trùng** bất kỳ `slug` tiếng Việt nào của danh mục khác (cross-column uniqueness — partial-unique index lo en-vs-en, vi-vs-en enforce ở tầng ứng dụng). Đổi/xoá `slugEn` **tự sinh redirect 301**. `CONFIRMED_FROM_CODE`
 - `CATEGORY_RULE_004`: **Xoá vĩnh viễn danh mục** xoá luôn **toàn bộ cây danh mục con** bên dưới nó trong cùng một thao tác. Chỉ cho phép xoá khi **không danh mục nào trong cả cây** (danh mục gốc lẫn mọi danh mục con) còn sản phẩm xếp làm danh mục chính; nếu còn → **chặn** (HTTP 409) kèm yêu cầu admin chuyển sản phẩm sang danh mục khác trước. **Không bao giờ xoá sản phẩm** như tác dụng phụ của việc xoá danh mục (sản phẩm bắt buộc có đúng 1 danh mục — `category_id NOT NULL`, xem `DATA_CONTRACT.md`). `CONFIRMED_FROM_CODE`
 
 Evidence:
@@ -223,23 +224,25 @@ Evidence:
 - `ProductEntity.java` (`category_id` `nullable = false`)
 - `JpaCatalogReadRepository.java` (resolve locale + fallback cho category)
 - `CatalogController.java` (`lang` param trên category endpoints)
-- `AdminCatalogMutationService.java` (`applyCategoryPatch` ghi cột `_en`)
-- `V137__add_category_brand_bilingual_content.sql`
+- `AdminCatalogMutationService.java` (`applyCategoryPatch` ghi cột `_en` + `slug_en`; validate uniqueness `slugEn`; auto-301 khi `slugEn` đổi)
+- `CategoryJpaRepository.java` (`findBySlugOrSlugEn`, `findBySlugEn`)
+- `V137__add_category_brand_bilingual_content.sql`, `V213__add_category_slug_en.sql`
 - `DATA_CONTRACT.md` — "Category bilingual content"
 
 ## Brand Catalog Rules
 
 - `BRAND_RULE_001`: Mỗi thương hiệu bắt buộc có **bản nội dung tiếng Việt** (canonical). **Bản tiếng Anh là tùy chọn**. `CONFIRMED_FROM_CODE`
 - `BRAND_RULE_002`: Khi đọc thương hiệu bằng tiếng Anh (`lang=en`), mỗi trường thiếu bản tiếng Anh sẽ **tự lùi về bản tiếng Việt theo từng trường**. `CONFIRMED_FROM_CODE`
-- `BRAND_RULE_003`: `slug` của thương hiệu dùng chung 1 bản (không dịch theo ngôn ngữ). `CONFIRMED_FROM_CODE`
+- `BRAND_RULE_003`: `slug` tiếng Việt là **canonical**; mỗi thương hiệu có thêm `slugEn` (slug tiếng Anh) **tùy chọn**. Khi xem bản tiếng Anh, URL dùng `slugEn`; **trống thì lùi về `slug` tiếng Việt**. Web tra cứu thương hiệu theo **vi HOẶC en** slug (cả hai URL mở cùng thương hiệu). `slugEn` phải **duy nhất** trong phạm vi thương hiệu và **không được trùng** bất kỳ `slug` tiếng Việt nào của thương hiệu khác (cross-column uniqueness — partial-unique index lo en-vs-en, vi-vs-en enforce ở tầng ứng dụng). Đổi/xoá `slugEn` **tự sinh redirect 301**. `CONFIRMED_FROM_CODE`
 
 Evidence:
 
 - `BrandEntity.java` (các cột `name_en`, `description_en`, `seo_title_en`, `seo_description_en`)
 - `JpaCatalogReadRepository.java` (resolve locale + fallback cho brand)
 - `CatalogController.java` (`lang` param trên brand endpoints)
-- `AdminCatalogMutationService.java` (`applyBrandPatch` ghi cột `_en`)
-- `V137__add_category_brand_bilingual_content.sql`
+- `AdminCatalogMutationService.java` (`applyBrandPatch` ghi cột `_en` + `slug_en`; validate uniqueness `slugEn`; auto-301 khi `slugEn` đổi)
+- `BrandJpaRepository.java` (`findBySlugOrSlugEn`, `findBySlugEn`)
+- `V137__add_category_brand_bilingual_content.sql`, `V215__add_brand_slug_en.sql`
 - `DATA_CONTRACT.md` — "Brand bilingual content"
 
 ## Article (Blog) Rules

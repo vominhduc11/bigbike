@@ -45,6 +45,7 @@ class SliderReadServiceTest {
                         "prod_ls2_ff800",
                         "sku-1",
                         "mu-bao-hiem-ls2-ff800",
+                        null,                       // slugEn
                         "LS2 FF800",
                         null,
                         null,
