@@ -11,6 +11,8 @@ import java.util.List;
 public record Article(
         String id,
         String slug,
+        /** Optional English URL slug (V216). Canonical {@code slug} stays vi; null when unset. */
+        String slugEn,
         String title,
         String excerpt,
         String body,

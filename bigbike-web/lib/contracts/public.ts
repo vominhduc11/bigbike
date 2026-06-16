@@ -159,12 +159,16 @@ export type ProductHighlight = {
 export type CategorySummary = {
   id: string;
   slug: string;
+  /** Optional English URL slug of the category (V213). Null/absent when unset — used for PDP breadcrumb. */
+  slugEn?: string | null;
   name: string;
 };
 
 export type BrandSummary = {
   id: string;
   slug: string;
+  /** Optional English URL slug of the brand (V215). Null/absent when unset — used for PDP breadcrumb. */
+  slugEn?: string | null;
   name: string;
 };
 
@@ -330,6 +334,8 @@ export type ContentCategoryWithCount = {
 export type Article = {
   id: string;
   slug: string;
+  /** Optional English URL slug (V216). Canonical `slug` stays vi; null/absent when unset. */
+  slugEn?: string | null;
   title: string;
   excerpt?: string;
   body: string;

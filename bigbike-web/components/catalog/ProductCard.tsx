@@ -2,7 +2,6 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import Link from "next/link";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import type { Product } from "@/lib/contracts/public";
@@ -14,7 +13,7 @@ import {
   toLegacyWpMediaUrl,
 } from "@/lib/utils/format";
 import { derivePricing } from "@/lib/pricing";
-import { toProductPath } from "@/lib/utils/routes";
+import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import { MediaImage } from "@/components/ui/MediaImage";
 import { ProductCardAddBar } from "@/components/catalog/ProductCardAddBar";
 import { SaleBadge } from "@/components/catalog/SaleBadge";
@@ -57,7 +56,6 @@ export function ProductCard({ product, variant = "compact", surface = "article" 
   const tProduct = useTranslations("Product");
   const tCommon = useTranslations("Common");
   const name = safeText(product.name, tProduct("nameFallback"));
-  const href = toProductPath(product.slug);
   const { retail, sale, current, compare, isSale, discountPercent } = derivePricing(product.price);
   const stockLabel = stockStateLabelWithT(product.stockState, tProduct);
   const stockClass = stockBadgeClassName(product.stockState);
@@ -129,28 +127,28 @@ export function ProductCard({ product, variant = "compact", surface = "article" 
     return (
       <article className={itemClass}>
         <div className={thumbClass}>
-          <Link href={href} className={thumbLinkClass} aria-label={tProduct("viewProductAria", { name })}>
+          <LocalizedLink kind="product" viSlug={product.slug} enSlug={product.slugEn} className={thumbLinkClass} aria-label={tProduct("viewProductAria", { name })}>
             {featuredImageSrc ? (
               <img src={featuredImageSrc} alt={safeText(product.image?.alt, name)} className={imgClass} loading="lazy" />
             ) : (
               <MediaImage image={product.image} altFallback={name} width={480} height={480} className={imgClass} />
             )}
-          </Link>
+          </LocalizedLink>
           {discountPercent != null && discountPercent > 0 && (
             <SaleBadge percent={discountPercent} variant={isHome ? "tilted" : "ribbon"} />
           )}
           <div className={cartClass}>
-            <Link href={href} className={cartLinkClass}>
+            <LocalizedLink kind="product" viSlug={product.slug} enSlug={product.slugEn} className={cartLinkClass}>
               {tCommon("viewDetails")}
-            </Link>
+            </LocalizedLink>
           </div>
         </div>
         <div className={descClass}>
           <div className={insideClass}>
             <h3 className={titleClass}>
-              <Link href={href} className={titleLinkClass}>
+              <LocalizedLink kind="product" viSlug={product.slug} enSlug={product.slugEn} className={titleLinkClass}>
                 {name}
-              </Link>
+              </LocalizedLink>
             </h3>
             <div className={priceClass}>
               {product.price && current > 0 ? (
@@ -181,8 +179,10 @@ export function ProductCard({ product, variant = "compact", surface = "article" 
     const src = resolveMediaUrl(product.image?.url?.trim());
     return (
       <article className={`group relative min-h-[374px] overflow-hidden ${cardChrome}`}>
-        <Link
-          href={href}
+        <LocalizedLink
+          kind="product"
+          viSlug={product.slug}
+          enSlug={product.slugEn}
           aria-label={tProduct("viewProductAria", { name })}
           className="absolute inset-0 z-[2]"
         />
@@ -227,8 +227,10 @@ export function ProductCard({ product, variant = "compact", surface = "article" 
     return (
       <article className="group mt-[30px] text-foreground max-[767px]:m-0 max-[767px]:h-full">
         <div className="relative mb-5 aspect-square overflow-hidden bg-white max-[767px]:m-0">
-          <Link
-            href={href}
+          <LocalizedLink
+            kind="product"
+            viSlug={product.slug}
+            enSlug={product.slugEn}
             aria-label={tProduct("viewProductAria", { name })}
             className="relative flex h-full items-center justify-center text-center max-[767px]:p-2.5"
           >
@@ -239,7 +241,7 @@ export function ProductCard({ product, variant = "compact", surface = "article" 
               height={product.image?.height ?? 480}
               className="!h-auto max-h-full !w-auto max-w-full object-contain transition-transform duration-300 ease-in-out group-hover:scale-105"
             />
-          </Link>
+          </LocalizedLink>
 
           {discountPercent != null && discountPercent > 0 && (
             <SaleBadge percent={discountPercent} variant="ticket" />
@@ -248,12 +250,14 @@ export function ProductCard({ product, variant = "compact", surface = "article" 
           {/* WP-parity: nút mua chỉ trượt lên khi hover (desktop). Mobile WP không có
               nút trên card — chạm ảnh/tên để vào trang sản phẩm. */}
           <div className="absolute -bottom-[51px] left-0 w-full bg-black text-center transition-all duration-300 group-hover:bottom-0">
-            <Link
-              href={href}
+            <LocalizedLink
+              kind="product"
+              viSlug={product.slug}
+              enSlug={product.slugEn}
               className="block py-[15px] font-cta text-13 font-semibold uppercase text-white max-[767px]:flex max-[767px]:min-h-10 max-[767px]:items-center max-[767px]:justify-center max-[767px]:px-2"
             >
               {archiveCta}
-            </Link>
+            </LocalizedLink>
           </div>
         </div>
 
@@ -261,9 +265,9 @@ export function ProductCard({ product, variant = "compact", surface = "article" 
           <div className="mx-[-5px] mt-2.5 max-[767px]:m-0">
             <div className="px-[5px] max-[767px]:px-2.5 max-[767px]:pb-3">
               <h3 className="mb-2.5 font-body text-product-title font-semibold leading-[1.25] text-foreground max-[767px]:mb-2 max-[767px]:uppercase">
-                <Link href={href} className="text-foreground hover:text-brand">
+                <LocalizedLink kind="product" viSlug={product.slug} enSlug={product.slugEn} className="text-foreground hover:text-brand">
                   {name}
-                </Link>
+                </LocalizedLink>
               </h3>
 
               {product.price && current > 0 ? (
@@ -299,8 +303,10 @@ export function ProductCard({ product, variant = "compact", surface = "article" 
         cardChrome,
       )}
     >
-      <Link
-        href={href}
+      <LocalizedLink
+        kind="product"
+        viSlug={product.slug}
+        enSlug={product.slugEn}
         className="absolute inset-0 z-[1] focus-visible:[outline:2px_solid_var(--bb-brand-primary)] focus-visible:[outline-offset:-2px]"
         aria-label={tProduct("viewProductAria", { name })}
         tabIndex={0}
@@ -322,6 +328,7 @@ export function ProductCard({ product, variant = "compact", surface = "article" 
           productId={product.id}
           hasVariants={!!product.variants?.length}
           slug={product.slug}
+          slugEn={product.slugEn}
           stockState={product.stockState}
         />
       </div>

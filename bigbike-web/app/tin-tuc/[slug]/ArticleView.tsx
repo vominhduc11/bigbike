@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import type { ReactNode } from "react";
 
 import { WpCategoryHero, type WpCategoryCrumb } from "@/components/wp/WpCategoryHero";
@@ -13,7 +14,7 @@ import { safeText } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import { stripHtmlTags } from "@/lib/utils/text";
 import { makeSlugThumbnailFallback, resolveWpUploadUrl } from "@/lib/utils/wp-media";
-import { toArticleListPath, toArticlePath, toCanonicalUrl, toHomePath } from "@/lib/utils/routes";
+import { toArticleListPath, toCanonicalUrl, toHomePath } from "@/lib/utils/routes";
 import { WpArticleImage } from "../WpArticleImage";
 import { ArticleTableOfContents } from "./ArticleTableOfContents";
 
@@ -214,7 +215,6 @@ function WpSidebarWidget({
 
 function WpSidebarNewsItem({ article }: Readonly<{ article: Article }>) {
   const title = safeText(article.title, "Tin tức");
-  const href = toArticlePath(article.slug);
   const imageUrl = resolveArticleImageUrl(article);
   const fallbackUrl = makeSlugThumbnailFallback(imageUrl, article.slug);
   const categoryLabel = getArticleCategoryLabel(article);
@@ -223,9 +223,9 @@ function WpSidebarNewsItem({ article }: Readonly<{ article: Article }>) {
   return (
     <div className="news--item">
       <div className="news--item-thumbnail">
-        <Link href={href}>
+        <LocalizedLink kind="article" viSlug={article.slug} enSlug={article.slugEn}>
           <WpArticleImage src={imageUrl} fallbackSrc={fallbackUrl} alt={title} />
-        </Link>
+        </LocalizedLink>
       </div>
       <div className="news--item-desc">
         <div className="news-date">
@@ -236,7 +236,9 @@ function WpSidebarNewsItem({ article }: Readonly<{ article: Article }>) {
         </div>
         <div className="news--item-inside">
           <h3>
-            <Link href={href}>{title}</Link>
+            <LocalizedLink kind="article" viSlug={article.slug} enSlug={article.slugEn}>
+              {title}
+            </LocalizedLink>
           </h3>
           <p>{makeExcerpt(article, 70)}</p>
         </div>
@@ -250,7 +252,6 @@ function WpSidebarNewsItem({ article }: Readonly<{ article: Article }>) {
  */
 function WpBlogGridItem({ article }: Readonly<{ article: Article }>) {
   const title = safeText(article.title, "Bài viết");
-  const href = toArticlePath(article.slug);
   const imageUrl = resolveArticleImageUrl(article);
   const fallbackUrl = makeSlugThumbnailFallback(imageUrl, article.slug);
   const date = getArticleDate(article);
@@ -258,9 +259,9 @@ function WpBlogGridItem({ article }: Readonly<{ article: Article }>) {
   return (
     <div className="news--item">
       <div className="news--item-thumbnail">
-        <Link href={href} className="lazy">
+        <LocalizedLink kind="article" viSlug={article.slug} enSlug={article.slugEn} className="lazy">
           <WpArticleImage src={imageUrl} fallbackSrc={fallbackUrl} alt={title} />
-        </Link>
+        </LocalizedLink>
       </div>
       <div className="news--item-desc">
         {date ? (
@@ -270,7 +271,9 @@ function WpBlogGridItem({ article }: Readonly<{ article: Article }>) {
         ) : null}
         <div className="news--item-inside">
           <p className="title-post">
-            <Link href={href}>{title}</Link>
+            <LocalizedLink kind="article" viSlug={article.slug} enSlug={article.slugEn}>
+              {title}
+            </LocalizedLink>
           </p>
           <p>{makeExcerpt(article, 120)}</p>
         </div>

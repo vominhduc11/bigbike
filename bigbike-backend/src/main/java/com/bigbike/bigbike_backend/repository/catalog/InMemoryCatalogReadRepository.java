@@ -568,10 +568,10 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
     }
 
     private static CategorySummary summaryOf(Category category) {
-        return new CategorySummary(category.id(), category.slug(), category.name());
+        return new CategorySummary(category.id(), category.slug(), category.slugEn(), category.name());
     }
 
     private static BrandSummary summaryOf(Brand brand) {
-        return new BrandSummary(brand.id(), brand.slug(), brand.name());
+        return new BrandSummary(brand.id(), brand.slug(), brand.slugEn(), brand.name());
     }
 }

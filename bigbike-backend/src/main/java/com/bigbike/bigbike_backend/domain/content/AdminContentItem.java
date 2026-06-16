@@ -11,6 +11,8 @@ public record AdminContentItem(
         String id,
         String type,
         String slug,
+        /** Optional English URL slug (V216). Articles only; null for pages. */
+        String slugEn,
         String title,
         String excerpt,
         String body,

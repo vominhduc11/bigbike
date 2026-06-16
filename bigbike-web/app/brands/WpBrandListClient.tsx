@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import Link from "next/link";
+import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
@@ -11,7 +11,7 @@ import { fetchPublicBrandList, type PublicBrandListResult } from "@/lib/api/clie
 import type { Brand } from "@/lib/contracts/public";
 import { resolveMediaUrl, safeText, toLegacyWpMediaUrl } from "@/lib/utils/format";
 import { buildQueryString } from "@/lib/utils/query";
-import { toBrandListPath, toBrandPath } from "@/lib/utils/routes";
+import { toBrandListPath } from "@/lib/utils/routes";
 
 /* eslint-disable @next/next/no-img-element */
 
@@ -95,12 +95,13 @@ export function WpBrandListClient({
         {brands.map((brand) => {
           const name = safeText(brand.name, "Thương hiệu");
           const logoUrl = toLegacyWpMediaUrl(resolveMediaUrl(brand.logo?.url?.trim()));
-          const href = toBrandPath(brand.slug);
           const initials = name.replace(/[^A-Za-zÀ-ỹ]/g, "").slice(0, 2).toUpperCase();
           return (
-            <Link
+            <LocalizedLink
               key={brand.id}
-              href={href}
+              kind="brand"
+              viSlug={brand.slug}
+              enSlug={brand.slugEn}
               title={name}
               className="group flex h-full flex-col items-center justify-between gap-4 border border-neutral-200 bg-white p-5 no-underline transition-colors hover:border-neutral-900"
             >
@@ -118,7 +119,7 @@ export function WpBrandListClient({
               <span className="text-center text-sm font-semibold uppercase tracking-wide text-neutral-800">
                 {name}
               </span>
-            </Link>
+            </LocalizedLink>
           );
         })}
       </div>

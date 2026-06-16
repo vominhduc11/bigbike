@@ -1046,7 +1046,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         if (entity == null) {
             return null;
         }
-        return new CategorySummary(entity.getId(), entity.getSlug(), entity.getName());
+        return new CategorySummary(entity.getId(), entity.getSlug(), entity.getSlugEn(), entity.getName());
     }
 
     private BrandSummary toBrandSummary(BrandEntity entity) {
@@ -1060,7 +1060,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         if (publicView && !entity.isVisible()) {
             return null;
         }
-        return new BrandSummary(entity.getId(), entity.getSlug(), entity.getName());
+        return new BrandSummary(entity.getId(), entity.getSlug(), entity.getSlugEn(), entity.getName());
     }
 
     private static ImageAsset toImageAsset(

@@ -25,7 +25,7 @@ import type { Product, PublicSiteSetting } from "@/lib/contracts/public";
 import { safeArray, safeText } from "@/lib/utils/format";
 import { pickSetting } from "@/lib/utils/settings";
 import { sanitizeRichHtml } from "@/lib/utils/html";
-import { toBrandPath, toCategoryPath } from "@/lib/utils/routes";
+import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 
 type ProductViewProps = {
   product: Product;
@@ -165,15 +165,15 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
             </li>
             {brand ? (
               <li>
-                <Link href={toBrandPath(brand.slug)} className="taxonomy">
+                <LocalizedLink kind="brand" viSlug={brand.slug} enSlug={brand.slugEn} className="taxonomy">
                   <span property="name">{brand.name}</span>
-                </Link>
+                </LocalizedLink>
               </li>
             ) : category ? (
               <li>
-                <Link href={toCategoryPath(category.slug)} className="taxonomy">
+                <LocalizedLink kind="category" viSlug={category.slug} enSlug={category.slugEn} className="taxonomy">
                   <span property="name">{category.name}</span>
-                </Link>
+                </LocalizedLink>
               </li>
             ) : null}
             <li>

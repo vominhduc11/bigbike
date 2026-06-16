@@ -104,6 +104,7 @@ public class AdminContentReadService {
                 article.id(),
                 "ARTICLE",
                 article.slug(),
+                article.slugEn(),
                 article.title(),
                 article.excerpt(),
                 article.body(),
@@ -133,6 +134,7 @@ public class AdminContentReadService {
                 page.id(),
                 "PAGE",
                 page.slug(),
+                null,                       // slugEn — pages keep PAGE_RULE_003 (no English slug)
                 page.title(),
                 null,
                 page.body(),

@@ -1,12 +1,11 @@
 ﻿"use client";
 
-import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import type { Article } from "@/lib/contracts/public";
 import { resolveMediaUrl, safeText } from "@/lib/utils/format";
-import { toArticlePath } from "@/lib/utils/routes";
+import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 
 type Props = { articles: Article[] };
 
@@ -103,13 +102,15 @@ function ExperienceSlide({
             {media.title}
           </h3>
           <div className="pt-[40px] text-center max-[767px]:pt-6">
-            <Link
-              href={toArticlePath(article.slug)}
+            <LocalizedLink
+              kind="article"
+              viSlug={article.slug}
+              enSlug={article.slugEn}
               className="bb-exp-slide-link inline-block w-[170px] max-md:w-[150px] p-0 border border-[var(--bb-border-default)] text-black font-[family-name:var(--bb-font-cta)] text-ui-16 font-semibold leading-[52px] max-md:leading-[44px] no-underline uppercase [transition:border-color_var(--bb-duration-fast)_var(--bb-ease-standard),color_var(--bb-duration-fast)_var(--bb-ease-standard)] focus-visible:[outline:var(--bb-focus-outline)] focus-visible:outline-offset-4"
               tabIndex={isActive ? 0 : -1}
             >
               {tCommon("viewDetails")}
-            </Link>
+            </LocalizedLink>
           </div>
         </div>
       </div>

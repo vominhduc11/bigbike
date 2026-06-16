@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
+import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
@@ -13,7 +14,7 @@ import type { Article, ContentCategoryWithCount } from "@/lib/contracts/public";
 import { safeText } from "@/lib/utils/format";
 import { stripHtmlTags } from "@/lib/utils/text";
 import { buildQueryString } from "@/lib/utils/query";
-import { toArticleListPath, toArticlePath } from "@/lib/utils/routes";
+import { toArticleListPath } from "@/lib/utils/routes";
 import { makeSlugThumbnailFallback, resolveWpUploadUrl } from "@/lib/utils/wp-media";
 import { WpArticleImage } from "./WpArticleImage";
 
@@ -204,14 +205,13 @@ function WpBlogGridItem({ article }: { article: Article }) {
   const imageUrl = article.coverImage?.url;
   const imageSrc = resolveWpUploadUrl(imageUrl);
   const fallbackImageSrc = makeSlugThumbnailFallback(imageUrl, article.slug);
-  const href = toArticlePath(article.slug);
 
   return (
     <div className="news--item">
       <div className="news--item-thumbnail">
-        <Link href={href} className="lazy">
+        <LocalizedLink kind="article" viSlug={article.slug} enSlug={article.slugEn} className="lazy">
           <WpArticleImage src={imageSrc} fallbackSrc={fallbackImageSrc} alt={title} />
-        </Link>
+        </LocalizedLink>
       </div>
       <div className="news--item-desc">
         {publishedAt ? (
@@ -221,7 +221,9 @@ function WpBlogGridItem({ article }: { article: Article }) {
         ) : null}
         <div className="news--item-inside">
           <p className="title-post">
-            <Link href={href}>{title}</Link>
+            <LocalizedLink kind="article" viSlug={article.slug} enSlug={article.slugEn}>
+              {title}
+            </LocalizedLink>
           </p>
           {excerpt ? <p>{excerpt}</p> : null}
         </div>

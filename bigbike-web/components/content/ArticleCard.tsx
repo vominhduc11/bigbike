@@ -1,11 +1,10 @@
 ﻿"use client";
 
-import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { Article } from "@/lib/contracts/public";
 import { useLocalDate } from "@/components/i18n/LocalDate";
 import { stripHtmlToText } from "@/lib/utils/text";
-import { toArticlePath } from "@/lib/utils/routes";
+import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import { MediaImage } from "@/components/ui/MediaImage";
 import { categoryBadge } from "@/lib/ui-classes";
 
@@ -43,8 +42,10 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
 
   if (!isFeatured) {
     return (
-      <Link
-        href={toArticlePath(article.slug)}
+      <LocalizedLink
+        kind="article"
+        viSlug={article.slug}
+        enSlug={article.slugEn}
         className="group flex flex-col no-underline text-inherit bg-card border-none rounded-none [box-shadow:var(--bb-shadow-md)] [transition:box-shadow_0.3s_ease] hover:border-brand hover:[box-shadow:var(--bb-shadow-product)] max-md:border max-md:border-solid max-md:border-border max-md:[box-shadow:none]"
       >
         <div className="relative aspect-[16/9] overflow-hidden shrink-0 bg-white">
@@ -70,13 +71,15 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
             </p>
           </div>
         </div>
-      </Link>
+      </LocalizedLink>
     );
   }
 
   return (
-    <Link
-      href={toArticlePath(article.slug)}
+    <LocalizedLink
+      kind="article"
+      viSlug={article.slug}
+      enSlug={article.slugEn}
       className="group flex flex-col md:grid md:grid-cols-[minmax(0,1.25fr)_minmax(300px,0.75fr)] mb-[22px] md:min-h-[360px] no-underline text-inherit bg-card shadow-md transition-shadow duration-300 hover:shadow-[0_6px_14px_rgba(0,0,0,0.22)]"
     >
       <div
@@ -115,6 +118,6 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
           </span>
         </div>
       </div>
-    </Link>
+    </LocalizedLink>
   );
 }

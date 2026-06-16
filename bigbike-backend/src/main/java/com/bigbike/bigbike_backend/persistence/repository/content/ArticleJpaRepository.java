@@ -15,6 +15,11 @@ public interface ArticleJpaRepository extends JpaRepository<ArticleEntity, Strin
 
     Optional<ArticleEntity> findBySlug(String slug);
 
+    /** Lookup by the optional English slug. Pairs with {@link #findBySlug} for
+     * vi-first OR-resolution (JpaContentReadRepository) and slug uniqueness
+     * checks (AdminContentMutationService). */
+    Optional<ArticleEntity> findBySlugEn(String slugEn);
+
     /** Public search: DB-level filter on title + excerpt to avoid full-table scan. */
     @Query("""
         SELECT a FROM ArticleEntity a

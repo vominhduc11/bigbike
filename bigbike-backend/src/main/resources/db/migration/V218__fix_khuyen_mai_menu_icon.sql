@@ -1,6 +1,6 @@
--- V214: Fix wrong menu_icon_url backfilled by V213 for "san-pham-khuyen-mai" (Khuyến mãi hot).
+-- V218: Fix wrong menu_icon_url backfilled by V217 for "san-pham-khuyen-mai" (Khuyến mãi hot).
 --
--- V213 took the icon from the grouped WP CSS rule (dist/home.css):
+-- V217 took the icon from the grouped WP CSS rule (dist/home.css):
 --   .san-pham-khuyen-mai>a:before,.san-pham-ve-sinh-do-bao-ho-cham-soc-xe>a:before,
 --   .tai-nghe-bluetooth-mu-bao-hiem>a:before,.phu-kien-do-lot>a:before{mask-image:url(icon-10.svg)}
 -- but missed a later, more specific rule in that same file that overrides icon-10 for this one

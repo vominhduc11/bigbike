@@ -583,16 +583,16 @@ Status: `CONFIRMED_FROM_CODE` — `CatalogController` (`lang` param public),
 `AdminCatalogMutationService.applyProductPatch`, `JpaCatalogReadRepository` /
 `JpaContentReadRepository` (resolve locale), migration `V136`.
 
-### English URL slug — `slugEn` (V213/V214/V215)
+### English URL slug — `slugEn` (V213/V214/V215/V216)
 
-Danh mục, sản phẩm, thương hiệu có thêm slug tiếng Anh tùy chọn. Áp dụng cho
-`GET /api/v1/categories/{slug}`, `/products/{slug}`, `/brands/{slug}` và các endpoint
-admin upsert tương ứng. (Bài viết/trang **không** có — giữ `ARTICLE_RULE_003` / `PAGE_RULE_003`.)
+Danh mục, sản phẩm, thương hiệu, **bài viết** có thêm slug tiếng Anh tùy chọn. Áp dụng cho
+`GET /api/v1/categories/{slug}`, `/products/{slug}`, `/brands/{slug}`, `/articles/{slug}` và các endpoint
+admin upsert tương ứng. (**Trang tĩnh** `pages` **không** có — giữ `PAGE_RULE_003`.)
 
 **Lookup public — tra cứu theo vi HOẶC en slug:** path `{slug}` được resolve theo
-`slug` tiếng Việt **hoặc** `slug_en` (`findBySlugOrSlugEn(slug, slug)`, ưu tiên khớp
+`slug` tiếng Việt **hoặc** `slug_en` (`findBySlug(slug).or(() -> findBySlugEn(slug))`, ưu tiên khớp
 vi trước). Cả URL vi lẫn URL en đều mở cùng entity. `lang` param vẫn quyết định ngôn
-ngữ **nội dung** (`PRODUCT_RULE_002`/`CATEGORY_RULE_002`/`BRAND_RULE_002`); nó **không**
+ngữ **nội dung** (`PRODUCT_RULE_002`/`CATEGORY_RULE_002`/`BRAND_RULE_002`/`ARTICLE_RULE_002`); nó **không**
 ảnh hưởng việc resolve slug.
 
 **Response — thêm trường `slugEn`:** public detail (và list) trả thêm
@@ -600,17 +600,24 @@ ngữ **nội dung** (`PRODUCT_RULE_002`/`CATEGORY_RULE_002`/`BRAND_RULE_002`); 
 theo `lang`); `slugEn` là giá trị thô của cột `slug_en` (null nếu chưa nhập). Web dùng
 `slug` cho canonical + `slugEn` cho URL/hreflang tiếng Anh (trống → URL EN lùi về `slug`).
 
-**Ghi — `POST/PATCH` admin categories/products/brands:** `translations.en` nhận thêm
+**Embedded summary cũng mang `slugEn`:** object `category`/`brand` nhúng trong response
+sản phẩm (`CategorySummary`/`BrandSummary` — dùng cho breadcrumb PDP) trả thêm
+`slugEn: string | null` cạnh `slug`, lấy thô từ `slug_en` của danh mục/thương hiệu đó.
+Cho phép breadcrumb PDP điều hướng tới URL tiếng Anh khi khách đang ở chế độ EN (trống →
+lùi về `slug` vi). Embedded `categories[]` (danh mục phụ) giữ shape cũ, **chưa** mang `slugEn`.
+
+**Ghi — `POST/PATCH` admin categories/products/brands/articles:** `translations.en` nhận thêm
 khóa `slug` (optional): pattern `^[a-z0-9]+(?:-[a-z0-9]+)*$`, max 100. Bỏ trống/null →
 xoá `slug_en` (URL EN fallback về vi). Validation uniqueness: `slugEn` trùng `slug` vi
 của entity này, hoặc trùng `slug`/`slug_en` của entity khác cùng loại → lỗi
 `DUPLICATE`/`INVALID_VALUE` tại path `translations.en.slug`; `slug` vi mới trùng
-`slug_en` đang có → lỗi tại path `slug`. Đổi/xoá `slug_en` tự sinh redirect 301.
+`slug_en` đang có → lỗi tại path `slug`. Catalog đổi/xoá `slug_en` tự sinh redirect 301;
+**bài viết KHÔNG sinh redirect** (module nội dung không có cơ chế này).
 
-Status: `CONFIRMED_FROM_CODE` — `CatalogController` (path resolve), `CategoryJpaRepository`/
-`ProductJpaRepository`/`BrandJpaRepository` (`findBySlugOrSlugEn`/`findBySlugEn`),
-`JpaCatalogReadRepository` (map `slugEn`), `*TranslationRequest` (field `slug`),
-`AdminCatalogMutationService` (validate + auto-301), migrations `V213`/`V214`/`V215`.
+Status: `CONFIRMED_FROM_CODE` — `CatalogController`/`ContentController` (path resolve), `CategoryJpaRepository`/
+`ProductJpaRepository`/`BrandJpaRepository`/`ArticleJpaRepository` (`findBySlug`/`findBySlugEn`),
+`JpaCatalogReadRepository`/`JpaContentReadRepository` (map `slugEn` + OR-resolve), `*TranslationRequest`/`ArticleTranslationRequest` (field `slug`),
+`AdminCatalogMutationService`/`AdminContentMutationService` (validate), migrations `V213`/`V214`/`V215`/`V216`.
 Xem [DATA_CONTRACT.md](DATA_CONTRACT.md) §"English URL slug".
 
 ### Menu bilingual label — `lang` param (V160)

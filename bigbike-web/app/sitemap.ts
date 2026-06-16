@@ -175,6 +175,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: a.updatedAt ? new Date(a.updatedAt) : STATIC_PAGE_DATES.home,
       changeFrequency: "monthly",
       priority: 0.4,
+      // hreflang en khi bài viết có slug tiếng Anh riêng (ARTICLE_RULE_003).
+      ...(a.slugEn ? { alternates: { languages: { en: toCanonicalUrl(toArticlePath(a.slugEn)) } } } : {}),
     });
   }
 

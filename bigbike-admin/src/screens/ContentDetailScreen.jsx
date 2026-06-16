@@ -176,6 +176,20 @@ function Field({ label, hint, error, count, countWarn, full, children }) {
   )
 }
 
+// Slugify cho gợi ý đường dẫn tiếng Anh của BÀI VIẾT (bỏ dấu, kebab-case).
+// Khớp toSlug của các màn catalog (Category/Brand DetailScreen).
+function toSlug(text) {
+  return String(text || '')
+    .toLowerCase()
+    .replace(/đ/g, 'd')
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/[^a-z0-9\s]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+}
+
 function buildEmptyForm(contentType) {
   return {
     slug: '',
@@ -200,7 +214,7 @@ function buildEmptyForm(contentType) {
     heroTitle: '',
     type: normalizeContentType(contentType),
     translations: {
-      en: { title: '', excerpt: '', body: '', seoTitle: '', seoDescription: '', heroTitle: '' },
+      en: { slug: '', title: '', excerpt: '', body: '', seoTitle: '', seoDescription: '', heroTitle: '' },
     },
   }
 }
@@ -235,6 +249,8 @@ function buildFormFromItem(contentType, item) {
     type: normalizeContentType(item.type || contentType),
     translations: {
       en: {
+        // slug tiếng Anh nằm ở field top-level `slugEn` của response, không trong translations.en
+        slug: item.slugEn || '',
         title: item.translations?.en?.title || '',
         excerpt: item.translations?.en?.excerpt || '',
         body: item.translations?.en?.body || '',
@@ -360,6 +376,10 @@ function toPayload(form, isCreate) {
 
   payload.translations = {
     en: {
+      // English URL slug chỉ áp dụng cho BÀI VIẾT (ARTICLE_RULE_003); trang tĩnh không gửi.
+      ...(form.type === 'ARTICLE'
+        ? { slug: form.translations?.en?.slug?.trim() || null }
+        : {}),
       title: form.translations?.en?.title?.trim() || null,
       excerpt: form.translations?.en?.excerpt?.trim() || null,
       body: form.translations?.en?.body?.trim() || null,
@@ -383,6 +403,8 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
   )
   const [validationErrors, setValidationErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  // BÀI VIẾT: gõ tiêu đề EN tự gợi ý slug EN khi chưa sửa tay; xoá để sửa tự do.
+  const [enSlugManuallyEdited, setEnSlugManuallyEdited] = useState(false)
 
   // ── Live preview (xem trước storefront — chỉ bài viết) ───────────────────────
   // Pane nhúng iframe bigbike-web /preview/article; debounce form rồi gọi dry-run
@@ -451,6 +473,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setForm(nextForm)
     setInitialSnapshot(JSON.stringify(nextForm))
+    setEnSlugManuallyEdited(Boolean(nextForm.translations?.en?.slug))
     if (!isCreate && fetchResult.item?.updatedAt) {
       const draft = loadFormFromStorage(autosaveKey)
       if (draft?.form && draft.ts > new Date(fetchResult.item.updatedAt).getTime()) {
@@ -498,6 +521,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
       const nextForm = buildFormFromItem(normalizedType, savedItem)
       setForm(nextForm)
       setInitialSnapshot(JSON.stringify(nextForm))
+      setEnSlugManuallyEdited(Boolean(nextForm.translations?.en?.slug))
       clearFormFromStorage(autosaveKey)
       setDraftRecovery(null)
       queryClient.invalidateQueries({ queryKey: ['content'] })
@@ -578,6 +602,26 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
         en: { ...previous.translations?.en, [field]: value },
       },
     }))
+  }
+
+  // BÀI VIẾT, chế độ tiếng Anh: gõ tiêu đề EN tự gợi ý slug EN (khi chưa sửa tay).
+  function handleEnTitleChange(value) {
+    setForm((previous) => {
+      const en = { ...(previous.translations?.en || {}), title: value }
+      if (!enSlugManuallyEdited) en.slug = toSlug(value)
+      return { ...previous, translations: { ...previous.translations, en } }
+    })
+  }
+
+  function handleEnSlugChange(value) {
+    setEnSlugManuallyEdited(true)
+    updateTranslation('slug', value)
+    setValidationErrors((previous) => {
+      if (!previous['translations.en.slug']) return previous
+      const next = { ...previous }
+      delete next['translations.en.slug']
+      return next
+    })
   }
 
   if (state.status === 'loading') {
@@ -736,7 +780,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
             <button
               type="button"
               className="text-xs font-semibold underline hover:no-underline"
-              onClick={() => { setForm(draftRecovery.form); setDraftRecovery(null) }}
+              onClick={() => { setForm(draftRecovery.form); setEnSlugManuallyEdited(Boolean(draftRecovery.form?.translations?.en?.slug)); setDraftRecovery(null) }}
             >
               {t('products.detail.draftRestore', { defaultValue: 'Khôi phục' })}
             </button>
@@ -784,20 +828,39 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                   <Field full label={t('content.detail.title')} error={!isEnLang ? validationErrors.title : undefined} hint={isEnLang ? t('content.detail.enFieldHint') : undefined}>
                     <Input
                       value={isEnLang ? (form.translations?.en?.title ?? '') : form.title}
-                      onChange={(e) => isEnLang ? updateTranslation('title', e.target.value) : updateField('title', e.target.value)}
+                      onChange={(e) => isEnLang ? (isArticle ? handleEnTitleChange(e.target.value) : updateTranslation('title', e.target.value)) : updateField('title', e.target.value)}
                       disabled={isReadOnly}
                       placeholder={isEnLang ? t('content.detail.titlePlaceholderEn') : undefined}
                     />
                   </Field>
 
-                  <Field full label={t('content.detail.slug')} error={validationErrors.slug}>
-                    <Input
-                      value={form.slug}
-                      onChange={(e) => updateField('slug', e.target.value)}
-                      disabled={isReadOnly}
-                      className="font-mono"
-                    />
-                  </Field>
+                  {/* Đường dẫn URL theo ngôn ngữ — slug tiếng Anh CHỈ cho BÀI VIẾT (ARTICLE_RULE_003);
+                      trang tĩnh giữ slug cố định (PAGE_RULE_003) nên luôn hiện slug tiếng Việt. */}
+                  {isEnLang && isArticle ? (
+                    <Field
+                      full
+                      label={t('content.detail.slug')}
+                      error={validationErrors['translations.en.slug']}
+                      hint={t('content.detail.slugHintEn', { defaultValue: 'Đường dẫn tiếng Anh (tùy chọn) — để trống sẽ dùng đường dẫn tiếng Việt.' })}
+                    >
+                      <Input
+                        value={form.translations?.en?.slug ?? ''}
+                        onChange={(e) => handleEnSlugChange(e.target.value)}
+                        disabled={isReadOnly}
+                        placeholder={t('content.detail.slugPlaceholderEn', { defaultValue: 'english-url-slug' })}
+                        className="font-mono"
+                      />
+                    </Field>
+                  ) : (
+                    <Field full label={t('content.detail.slug')} error={validationErrors.slug}>
+                      <Input
+                        value={form.slug}
+                        onChange={(e) => updateField('slug', e.target.value)}
+                        disabled={isReadOnly}
+                        className="font-mono"
+                      />
+                    </Field>
+                  )}
 
                   {!isArticle && (
                     <Field label={t('content.detail.pageType')} error={validationErrors.pageType}>

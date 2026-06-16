@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { DEFAULT_LOCALE } from "@/i18n/locale";
 import { useCart } from "@/lib/cart-context";
 import { toProductPath } from "@/lib/utils/routes";
 
@@ -10,11 +11,14 @@ type Props = {
   productId: string;
   hasVariants: boolean;
   slug: string;
+  /** Optional English URL slug — used for the "pick variant" navigation in EN mode. */
+  slugEn?: string | null;
   stockState?: string | null;
 };
 
-export function ProductCardAddBar({ productId, hasVariants, slug, stockState }: Props) {
+export function ProductCardAddBar({ productId, hasVariants, slug, slugEn, stockState }: Props) {
   const t = useTranslations("Product.cardAddBar");
+  const locale = useLocale();
   const { addToCart, showToast } = useCart();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -28,7 +32,8 @@ export function ProductCardAddBar({ productId, hasVariants, slug, stockState }: 
     if (isOutOfStock) return;
 
     if (hasVariants) {
-      router.push(toProductPath(slug));
+      // Click-time navigation (always post-mount) → safe to localize directly.
+      router.push(toProductPath(locale !== DEFAULT_LOCALE && slugEn ? slugEn : slug));
       return;
     }
 

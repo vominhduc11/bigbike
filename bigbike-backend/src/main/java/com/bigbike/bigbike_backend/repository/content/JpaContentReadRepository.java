@@ -46,12 +46,19 @@ public class JpaContentReadRepository implements ContentReadRepository {
 
     @Override
     public Optional<Article> findArticleBySlug(String slug) {
-        return articleJpaRepository.findBySlug(slug).map(this::toDomain);
+        // Resolve by the vi slug first, then the optional English slug — both URLs
+        // open the same article. vi-first keeps it deterministic (ARTICLE_RULE_003).
+        return articleJpaRepository.findBySlug(slug)
+                .or(() -> articleJpaRepository.findBySlugEn(slug))
+                .map(this::toDomain);
     }
 
     @Override
     public Optional<Article> findArticleBySlug(String slug, String locale) {
-        return articleJpaRepository.findBySlug(slug).map(e -> toDomain(e, locale));
+        // vi slug first, then optional English slug (ARTICLE_RULE_003).
+        return articleJpaRepository.findBySlug(slug)
+                .or(() -> articleJpaRepository.findBySlugEn(slug))
+                .map(e -> toDomain(e, locale));
     }
 
     @Override
@@ -232,6 +239,7 @@ public class JpaContentReadRepository implements ContentReadRepository {
         return new Article(
                 entity.getId(),
                 entity.getSlug(),
+                entity.getSlugEn(),
                 pick(entity.getTitle(), entity.getTitleEn(), locale),
                 pick(entity.getExcerpt(), entity.getExcerptEn(), locale),
                 pick(entity.getBody(), entity.getBodyEn(), locale),

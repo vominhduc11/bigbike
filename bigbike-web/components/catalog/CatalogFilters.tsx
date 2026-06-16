@@ -9,6 +9,7 @@ import type { Brand, CatalogFacets, Category, HomeSlider, ImageAsset } from "@/l
 import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { buildQueryString } from "@/lib/utils/query";
 import { toCategoryPath } from "@/lib/utils/routes";
+import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -242,12 +243,14 @@ export function CatalogFilters({
                     : [];
                   return (
                     <li key={cat.id} className="relative py-2.5">
-                      <Link
-                        href={href}
+                      <LocalizedLink
+                        kind="category"
+                        viSlug={cat.slug}
+                        enSlug={cat.slugEn}
                         className={cn(LIST_LINK, active && `text-brand pl-[25px] ${CAT_DIAMOND}`)}
                       >
                         {cat.name}
-                      </Link>
+                      </LocalizedLink>
                       {children.length > 0 ? (
                         <ul className="relative m-0 block pt-2.5 after:absolute after:left-[9px] after:top-[15px] after:w-px after:[height:calc(100%_-_30px)] after:border after:border-dashed after:border-border-control-hover after:content-['']">
                           {children.map((child) => {
@@ -255,12 +258,14 @@ export function CatalogFilters({
                             const childActive = childHref === resetHref || current.category === child.slug;
                             return (
                               <li key={child.id} className="relative py-2.5 pl-[47px]">
-                                <Link
-                                  href={childHref}
+                                <LocalizedLink
+                                  kind="category"
+                                  viSlug={child.slug}
+                                  enSlug={child.slugEn}
                                   className={cn(LIST_LINK, childActive && `text-brand ${CAT_DIAMOND}`)}
                                 >
                                   {child.name}
-                                </Link>
+                                </LocalizedLink>
                               </li>
                             );
                           })}

@@ -1,4 +1,4 @@
--- V213: Thêm cột riêng cho icon line đơn sắc của danh mục, dùng cho menu header và bộ lọc
+-- V217: Thêm cột riêng cho icon line đơn sắc của danh mục, dùng cho menu header và bộ lọc
 -- "Danh mục sản phẩm" ở trang archive. Trước đây icon này được gắn theo class slug trong CSS
 -- theme WP (.{slug}>a::before) và map slug cứng ở backend (CATEGORY_SLUG_ICON_MAP) — phụ thuộc
 -- tên slug nên khi slug bị đổi lúc import thì icon biến mất. Chuyển sang lưu theo danh mục trong

@@ -1274,6 +1274,8 @@
       "sectionMedia": "Media",
       "sectionSeo": "SEO",
       "slug": "Slug *",
+      "slugHintEn": "English URL slug (optional) — leave empty to use the Vietnamese URL.",
+      "slugPlaceholderEn": "english-url-slug",
       "title": "Title *",
       "publishStatus": "Publish status *",
       "pageType": "Page type *",

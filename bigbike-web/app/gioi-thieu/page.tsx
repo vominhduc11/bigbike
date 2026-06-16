@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Phone, Share2, Store } from "lucide-react";
 import { getLocale, getTranslations } from "next-intl/server";
 import { WpStaticShell } from "@/components/wp/WpStaticShell";
@@ -9,7 +8,8 @@ import { getPageBySlug, listBrands, listPublicSettings } from "@/lib/api/public-
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import { resolveMediaUrl, safeText, telHref, toLegacyWpMediaUrl } from "@/lib/utils/format";
-import { toBrandPath, toHomePath, toPagePath } from "@/lib/utils/routes";
+import { toHomePath, toPagePath } from "@/lib/utils/routes";
+import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import { pickSetting } from "@/lib/utils/settings";
 
 /* eslint-disable @next/next/no-img-element */
@@ -104,9 +104,14 @@ export default async function AboutPage() {
                           if (!logoUrl) return null;
                           return (
                             <div key={brand.id} className="col-6">
-                              <Link href={toBrandPath(brand.slug)} title={brand.name}>
+                              <LocalizedLink
+                                kind="brand"
+                                viSlug={brand.slug}
+                                enSlug={brand.slugEn}
+                                title={brand.name}
+                              >
                                 <img src={logoUrl} alt={brand.logo?.alt ?? brand.name} />
-                              </Link>
+                              </LocalizedLink>
                             </div>
                           );
                         })}

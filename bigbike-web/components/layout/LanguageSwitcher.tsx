@@ -7,7 +7,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { DEFAULT_LOCALE, LOCALES, type Locale } from "@/i18n/locale";
 import { useSetLocale } from "@/components/providers/ClientIntlProvider";
 import { useAltSlug, type AltSlugKind } from "@/components/i18n/AltSlugProvider";
-import { toBrandPath, toCategoryPath, toProductPath } from "@/lib/utils/routes";
+import { toArticlePath, toBrandPath, toCategoryPath, toProductPath } from "@/lib/utils/routes";
 import { iconBtn } from "@/lib/ui-classes";
 import { cn } from "@/lib/utils";
 
@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
  * Cookie-based locale switcher (writes NEXT_LOCALE + swaps the message bundle
  * client-side, no reload). On DETAIL pages that supply an `AltSlugProvider`, it
  * ALSO navigates to the language-appropriate URL slug
- * (PRODUCT/CATEGORY/BRAND_RULE_003); listings/home keep the in-place swap.
+ * (PRODUCT/CATEGORY/BRAND/ARTICLE_RULE_003); listings/home keep the in-place swap.
  *
  * variant="icon"   → globe icon + hover/click dropdown (desktop header)
  * variant="inline" → VI|EN bordered button group (mobile drawer)
@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 function pathForKind(kind: AltSlugKind, slug: string): string {
   if (kind === "category") return toCategoryPath(slug);
   if (kind === "product") return toProductPath(slug);
+  if (kind === "article") return toArticlePath(slug);
   return toBrandPath(slug);
 }
 

@@ -18,6 +18,7 @@ import { pickSetting } from "@/lib/utils/settings";
 import { toArticleListPath, toArticlePath, toHomePath } from "@/lib/utils/routes";
 import { isValidSlug } from "@/lib/utils/slug";
 import { Tr } from "@/components/i18n/Tr";
+import { AltSlugRegistrar } from "@/components/i18n/AltSlugProvider";
 import { ArticleView } from "./ArticleView";
 
 // ISR on-demand: bài viết là dữ liệu admin quản lý → KHÔNG prebuild lúc build. Trả [] để
@@ -53,13 +54,18 @@ export async function generateMetadata({ params }: ArticleDetailPageProps): Prom
   }
 
   const article = result.data;
+  const canonicalPath = article.seo?.canonicalUrl ?? toArticlePath(article.slug);
   return buildPublicMetadata({
     title: article.seo?.title ?? article.title,
     description: article.seo?.description ?? article.excerpt ?? t("articleDefaultDescription"),
-    canonicalPath: article.seo?.canonicalUrl ?? toArticlePath(article.slug),
+    canonicalPath,
     noIndex: article.seo?.noIndex ?? false,
     ogImage: article.seo?.ogImage?.url ?? article.coverImage?.url ?? undefined,
     ogType: "article",
+    // hreflang vi/en khi bài viết có slug tiếng Anh riêng (ARTICLE_RULE_003).
+    languageAlternates: article.slugEn
+      ? { vi: canonicalPath, en: toArticlePath(article.slugEn) }
+      : undefined,
   });
 }
 
@@ -135,6 +141,7 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: articleJsonLd }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }} />
+      <AltSlugRegistrar kind="article" viSlug={article.slug} enSlug={article.slugEn ?? null} />
       <ArticleView
         article={article}
         heroBgUrl={heroBgUrl}

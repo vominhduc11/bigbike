@@ -36,6 +36,7 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
         Article article1 = new Article(
                 "article_chon_mu_fullface",
                 "chon-mu-fullface-phu-hop",
+                null,                       // slugEn
                 "Cách Chọn Mũ Fullface Phù Hợp",
                 "Hướng dẫn chọn mũ fullface theo nhu cầu sử dụng.",
                 "<p>Chọn mũ theo nhu cầu đi phố, touring, track day và form đầu.</p>",
@@ -67,6 +68,7 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
         Article article2 = new Article(
                 "article_xu_huong_gear_2026",
                 "xu-huong-do-bao-ho-2026",
+                null,                       // slugEn
                 "Xu Hướng Đồ Bảo Hộ 2026",
                 "Những xu hướng bảo hộ nổi bật cho biker năm 2026.",
                 "<p>Tổng hợp xu hướng về vật liệu, công nghệ và tiêu chuẩn an toàn.</p>",

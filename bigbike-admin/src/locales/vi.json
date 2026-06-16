@@ -1273,6 +1273,8 @@
       "sectionMedia": "Media",
       "sectionSeo": "SEO",
       "slug": "Slug *",
+      "slugHintEn": "Đường dẫn tiếng Anh (tùy chọn) — để trống sẽ dùng đường dẫn tiếng Việt.",
+      "slugPlaceholderEn": "english-url-slug",
       "title": "Tiêu đề *",
       "publishStatus": "Trạng thái xuất bản *",
       "pageType": "Loại trang *",

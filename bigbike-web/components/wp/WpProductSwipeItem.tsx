@@ -1,11 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { Product } from "@/lib/contracts/public";
 import { derivePricing } from "@/lib/pricing";
 import { formatVndNumber, resolveMediaUrl, safeText, toLegacyWpMediaUrl } from "@/lib/utils/format";
-import { toProductPath } from "@/lib/utils/routes";
+import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import { hasApprovedReviews } from "@/lib/rating";
 import { RatingStars } from "@/components/ui/RatingStars";
 import { cn } from "@/lib/utils";
@@ -29,7 +28,6 @@ export function WpProductSwipeItem({
 }) {
   const tProduct = useTranslations("Product");
   const { current, compare, isSale, discountPercent } = derivePricing(product.price);
-  const href = toProductPath(product.slug);
   const img = toLegacyWpMediaUrl(resolveMediaUrl(product.image?.url?.trim()));
   const name = safeText(product.name, "");
   // REVIEW_RULE_003: chỉ hiện sao khi có ≥ 1 review đã duyệt — không còn default
@@ -48,8 +46,10 @@ export function WpProductSwipeItem({
     <div className={wrapperClassName}>
       <div className={cn("product--item", isGrid && "flex h-full flex-col")}>
         <div className="product--item-thumbnail">
-          <Link
-            href={href}
+          <LocalizedLink
+            kind="product"
+            viSlug={product.slug}
+            enSlug={product.slugEn}
             // Lưới: khung ảnh VUÔNG bằng nhau mọi thẻ, ảnh contain (mũ cao / áo khoác /
             // găng tay / tai nghe rộng đều fit, KHÔNG cắt). Dùng inline style vì theme WP
             // (wp-theme-category.css) đặt cứng `.product--item-thumbnail>a{min-height:200px;
@@ -106,7 +106,7 @@ export function WpProductSwipeItem({
                 style={{ width: "55%", maxWidth: 160, height: "auto", opacity: 0.7, transform: "none" }}
               />
             )}
-          </Link>
+          </LocalizedLink>
           {isSale && discountPercent ? (
             <div className="product--item-sale">
               <p>{discountPercent}%</p>
@@ -116,9 +116,9 @@ export function WpProductSwipeItem({
             {/* Theme WP nhúng sẵn font literal "Barlow Condensed" (cinline-*.woff) và
                 gán cứng cho nút này → nét hẹp, khác tên sản phẩm. Ép font body Arial
                 (inline thắng CSS WP). */}
-            <Link href={href} style={{ fontFamily: "var(--bb-font-body)" }}>
+            <LocalizedLink kind="product" viSlug={product.slug} enSlug={product.slugEn} style={{ fontFamily: "var(--bb-font-body)" }}>
               {tProduct("cardSelect").toUpperCase()}
-            </Link>
+            </LocalizedLink>
           </div>
         </div>
         <div className={cn("product--item-desc", isGrid && "flex flex-1 flex-col")}>
@@ -133,7 +133,7 @@ export function WpProductSwipeItem({
                 )}
                 style={{ fontFamily: "var(--bb-font-body)" }}
               >
-                <Link href={href}>{name}</Link>
+                <LocalizedLink kind="product" viSlug={product.slug} enSlug={product.slugEn}>{name}</LocalizedLink>
               </p>
             </div>
             <div className="col-md-12">

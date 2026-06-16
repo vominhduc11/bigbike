@@ -466,7 +466,22 @@ export function createContentSchema(t, isCreate, normalizedType) {
     relatedProductIds: z.array(z.string()).optional(),
     seoCanonicalUrl: z.string().optional(),
     seoOgImageUrl: z.string().optional(),
+    // Optional English content (V138 + V216 slug) — never required; slug chỉ áp dụng cho BÀI VIẾT.
+    translations: z.object({
+      en: z.object({
+        slug: z.string().optional(),
+        title: z.string().optional(),
+        excerpt: z.string().optional(),
+        body: z.string().optional(),
+        seoTitle: z.string().optional(),
+        seoDescription: z.string().optional(),
+      }).optional(),
+    }).optional(),
   }).superRefine((data, ctx) => {
+    // English URL slug chỉ có ở bài viết (ARTICLE_RULE_003); trang tĩnh giữ PAGE_RULE_003.
+    if (normalizedType === 'ARTICLE') {
+      validateEnSlug(t, data.translations?.en?.slug, ctx)
+    }
     const s = String(data.slug || '').trim()
     if (!s) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('content.detail.errSlugRequired'), path: ['slug'] })

@@ -4,6 +4,7 @@
 
 import { Children, useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import { useTranslations } from "next-intl";
 import { Minus, Plus } from "lucide-react";
 import type { Brand, CatalogFacets, Category, ImageAsset } from "@/lib/contracts/public";
@@ -335,8 +336,10 @@ export function WpCategorySidebar({
                           theo currentColor nên tự đổi xám→đỏ như link. `before:!hidden` tắt icon
                           WP cũ gắn theo slug (.{slug}>a::before) để không bị icon đôi; `pl-[47px]`
                           chừa chỗ icon cho mọi danh mục, không phụ thuộc rule slug của theme. */}
-                      <Link
-                        href={href}
+                      <LocalizedLink
+                        kind="category"
+                        viSlug={cat.slug}
+                        enSlug={cat.slugEn}
                         className={cat.menuIconUrl ? "relative block pl-[47px] before:!hidden" : undefined}
                       >
                         {cat.menuIconUrl ? (
@@ -350,7 +353,7 @@ export function WpCategorySidebar({
                           />
                         ) : null}
                         {cat.name}
-                      </Link>
+                      </LocalizedLink>
                       {children.length > 0 ? (
                         <ul className="children">
                           {children.map((child) => {
@@ -362,7 +365,9 @@ export function WpCategorySidebar({
                                 key={child.id}
                                 className={`cat-item cat-item-${child.id} ${child.slug}${childActive ? " current-cat active" : ""}`}
                               >
-                                <Link href={childHref}>{child.name}</Link>
+                                <LocalizedLink kind="category" viSlug={child.slug} enSlug={child.slugEn}>
+                                  {child.name}
+                                </LocalizedLink>
                               </li>
                             );
                           })}

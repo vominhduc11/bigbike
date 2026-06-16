@@ -18,7 +18,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
  * on the vi URL; the page still localizes its CONTENT via `LocalizedContentProvider`.
  */
 
-export type AltSlugKind = "category" | "product" | "brand";
+export type AltSlugKind = "category" | "product" | "brand" | "article";
 
 type AltSlug = { kind: AltSlugKind; viSlug: string; enSlug: string | null };
 

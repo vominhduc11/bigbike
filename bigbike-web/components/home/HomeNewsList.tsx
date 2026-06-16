@@ -1,13 +1,12 @@
 "use client";
 
-import Link from "next/link";
 import { useLocale } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { DEFAULT_LOCALE } from "@/i18n/locale";
 import { fetchPublicArticleList } from "@/lib/api/client-api";
 import { resolveMediaUrl, safeText, toLegacyWpMediaUrl } from "@/lib/utils/format";
 import { stripHtmlToText } from "@/lib/utils/text";
-import { toArticlePath } from "@/lib/utils/routes";
+import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import { LocalDate } from "@/components/i18n/LocalDate";
 import type { Article } from "@/lib/contracts/public";
 
@@ -37,15 +36,14 @@ export function HomeNewsList({ initialArticles }: { initialArticles: Article[] }
       <div className="row">
         {newsArticles.map((a) => {
           const img = toLegacyWpMediaUrl(resolveMediaUrl(a.coverImage?.url?.trim()));
-          const href = toArticlePath(a.slug);
           const title = safeText(a.title, "");
           return (
             <div className="col-md-4 col-sm-6" key={a.id}>
               <div className="news--item">
                 <div className="news--item-thumbnail">
-                  <Link className="lazy" href={href}>
+                  <LocalizedLink kind="article" viSlug={a.slug} enSlug={a.slugEn} className="lazy">
                     {img ? <img src={img} alt={title} className="lazy" /> : null}
-                  </Link>
+                  </LocalizedLink>
                 </div>
                 <div className="news--item-desc">
                   <div className="news-date">
@@ -53,7 +51,9 @@ export function HomeNewsList({ initialArticles }: { initialArticles: Article[] }
                   </div>
                   <div className="news--item-inside">
                     <p className="title-post">
-                      <Link href={href}>{title}</Link>
+                      <LocalizedLink kind="article" viSlug={a.slug} enSlug={a.slugEn}>
+                        {title}
+                      </LocalizedLink>
                     </p>
                     <p>{resolveWpNewsExcerpt(a)}</p>
                   </div>

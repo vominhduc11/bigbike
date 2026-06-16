@@ -1,12 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useLocale } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { DEFAULT_LOCALE } from "@/i18n/locale";
 import { fetchPublicCategoryList } from "@/lib/api/client-api";
 import { resolveMediaUrl } from "@/lib/utils/format";
-import { toCategoryPath } from "@/lib/utils/routes";
+import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import type { Category } from "@/lib/contracts/public";
 
 /* eslint-disable @next/next/no-img-element */
@@ -40,7 +39,12 @@ export function HomeCategoryGrid({ initialCategories }: { initialCategories: Cat
           const img = resolveMediaUrl((c.image ?? c.icon)?.url?.trim()) || `${T}/images/Union-2.png`;
           return (
             <div className="col-6 col-md-3 col-sm-4 item" key={c.id}>
-              <Link href={toCategoryPath(c.slug)} className="row align-items-center">
+              <LocalizedLink
+                kind="category"
+                viSlug={c.slug}
+                enSlug={c.slugEn}
+                className="row align-items-center"
+              >
                 <span className="col-12">
                   <span className="img">
                     <img src={img} className="lazy mx-auto" alt="" width={1} height={1} />
@@ -48,7 +52,7 @@ export function HomeCategoryGrid({ initialCategories }: { initialCategories: Cat
                   <span className="desc">{c.name}</span>
                   <i className="fal fa-chevron-circle-right" />
                 </span>
-              </Link>
+              </LocalizedLink>
             </div>
           );
         })}

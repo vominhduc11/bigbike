@@ -327,9 +327,49 @@ public class AdminContentMutationService {
             if (existingBySlug != null && (current == null || !existingBySlug.getId().equals(current.getId()))) {
                 errors.add(new ApiErrorDetail("slug", "DUPLICATE", "Slug is already in use."));
             }
+            // A new vi slug must not collide with any article's English slug either.
+            ArticleEntity existingBySlugEn = articleJpaRepository.findBySlugEn(slug).orElse(null);
+            if (existingBySlugEn != null && (current == null || !existingBySlugEn.getId().equals(current.getId()))) {
+                errors.add(new ApiErrorDetail("slug", "DUPLICATE", "Slug is already in use (English slug)."));
+            }
+        }
+
+        if (!preview) {
+            validateArticleEnglishSlug(request, slug, current, errors);
         }
 
         return slug;
+    }
+
+    /**
+     * Cross-column uniqueness for the optional English slug (ARTICLE_RULE_003): the en slug
+     * must differ from this article's own vi slug, and must not collide with any other
+     * article's vi slug or en slug. Errors target {@code translations.en.slug}.
+     */
+    private void validateArticleEnglishSlug(
+            UpsertArticleRequest request, String viSlug, ArticleEntity current, List<ApiErrorDetail> errors) {
+        ArticleTranslationRequest translations = request.getTranslations();
+        ArticleTranslationRequest.ArticleContentRequest en =
+                translations != null ? translations.getEn() : null;
+        String slugEn = en == null ? null : AdminMutationValidators.trimToNull(en.getSlug());
+        if (slugEn == null) {
+            return;
+        }
+        String currentId = current == null ? null : current.getId();
+        if (slugEn.equals(viSlug)) {
+            errors.add(new ApiErrorDetail("translations.en.slug", "INVALID_VALUE",
+                    "English slug must differ from the Vietnamese slug."));
+            return;
+        }
+        ArticleEntity byViSlug = articleJpaRepository.findBySlug(slugEn).orElse(null);
+        if (byViSlug != null && (currentId == null || !byViSlug.getId().equals(currentId))) {
+            errors.add(new ApiErrorDetail("translations.en.slug", "DUPLICATE", "English slug is already in use."));
+            return;
+        }
+        ArticleEntity byEnSlug = articleJpaRepository.findBySlugEn(slugEn).orElse(null);
+        if (byEnSlug != null && (currentId == null || !byEnSlug.getId().equals(currentId))) {
+            errors.add(new ApiErrorDetail("translations.en.slug", "DUPLICATE", "English slug is already in use."));
+        }
     }
 
     private String validatePageRequest(
@@ -453,12 +493,14 @@ public class AdminContentMutationService {
         ArticleTranslationRequest.ArticleContentRequest en =
                 translations != null ? translations.getEn() : null;
         if (en != null) {
+            entity.setSlugEn(AdminMutationValidators.trimToNull(en.getSlug()));
             entity.setTitleEn(AdminMutationValidators.trimToNull(en.getTitle()));
             entity.setExcerptEn(AdminMutationValidators.trimToNull(en.getExcerpt()));
             entity.setBodyEn(AdminMutationValidators.trimToNull(en.getBody()));
             entity.setSeoTitleEn(AdminMutationValidators.trimToNull(en.getSeoTitle()));
             entity.setSeoDescriptionEn(AdminMutationValidators.trimToNull(en.getSeoDescription()));
         } else if (create) {
+            entity.setSlugEn(null);
             entity.setTitleEn(null);
             entity.setExcerptEn(null);
             entity.setBodyEn(null);
@@ -691,6 +733,7 @@ public class AdminContentMutationService {
                 article.id(),
                 "ARTICLE",
                 article.slug(),
+                article.slugEn(),
                 article.title(),
                 article.excerpt(),
                 article.body(),
@@ -731,6 +774,7 @@ public class AdminContentMutationService {
                 page.id(),
                 "PAGE",
                 page.slug(),
+                null,                       // slugEn — pages keep PAGE_RULE_003 (no English slug)
                 page.title(),
                 null,
                 page.body(),
