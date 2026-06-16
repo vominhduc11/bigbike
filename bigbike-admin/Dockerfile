@@ -20,8 +20,13 @@ RUN npm run build
 
 # ---- Serve stage ----
 FROM nginx:alpine AS runner
+ARG VITE_STOREFRONT_BASE_URL=https://bigbike.vn
 COPY --from=builder /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/conf.d/default.conf.template
+RUN VITE_STOREFRONT_BASE_URL=${VITE_STOREFRONT_BASE_URL} \
+    envsubst '${VITE_STOREFRONT_BASE_URL}' \
+    < /etc/nginx/conf.d/default.conf.template \
+    > /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 

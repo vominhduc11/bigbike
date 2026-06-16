@@ -87,6 +87,7 @@ services:
       # Must be the browser-accessible URL — NOT the Docker-internal minio:9000 hostname.
       # Defaults to localhost:9000 (port-mapped MinIO). Override in production with a CDN URL.
       BIGBIKE_MEDIA_PUBLIC_BASE_URL: "${BIGBIKE_MEDIA_PUBLIC_BASE_URL:-http://localhost:9000/bigbike-media}"
+      BIGBIKE_COOKIES_SECURE: "${BIGBIKE_COOKIES_SECURE:-true}"
       WEB_REVALIDATE_URL: "${WEB_REVALIDATE_URL:-http://bigbike-web:3000/api/revalidate/}"
       WEB_REVALIDATE_SECRET: "${WEB_REVALIDATE_SECRET:-dev-revalidate-secret}"
       # Transactional email (optional — empty BIGBIKE_MAIL_HOST disables sending).
@@ -123,6 +124,9 @@ services:
         # For production set NEXT_PUBLIC_API_BASE_URL=https://api.bigbike.vn in .env.
         NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8080}
         NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+        # Admin app origin allowed to embed the storefront live-preview iframe (/preview/*)
+        # and checked on postMessage. Local default = localhost:4000; for production set
+        # NEXT_PUBLIC_ADMIN_ORIGIN=https://admin.bigbike.vn in .env.
         NEXT_PUBLIC_ADMIN_ORIGIN: ${NEXT_PUBLIC_ADMIN_ORIGIN:-http://localhost:4000}
     container_name: bigbike-web
     restart: unless-stopped
@@ -171,8 +175,9 @@ services:
         VITE_ADMIN_API_BASE: /api/v1
         # Docker-internal MinIO origin for rewriting backend URLs to /media-proxy/.
         VITE_MINIO_INTERNAL_ORIGIN: http://minio:9000
-        # Storefront origin for the live preview iframe (browser-accessible URL).
-        # Override per environment via .env (e.g. http://<VPS_IP>:3000 on the VPS).
+        # Storefront origin for "view on site" links AND the product/article live-preview
+        # iframe src (browser-accessible URL). Local default = localhost:3000; for production
+        # set VITE_STOREFRONT_BASE_URL=https://bigbike.vn in .env.
         VITE_STOREFRONT_BASE_URL: ${VITE_STOREFRONT_BASE_URL:-http://localhost:3000}
     container_name: bigbike-admin
     restart: unless-stopped

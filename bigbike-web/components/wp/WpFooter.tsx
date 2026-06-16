@@ -79,6 +79,7 @@ export async function WpFooter({ footerNodes }: { footerNodes: HeaderNavNode[] }
   const shopDescription = pickSetting(settings, ["footer_description"]);
   const bctUrl = pickSetting(settings, ["bct_url"]) || BCT_FALLBACK_URL;
   const businessRegistration = pickSetting(settings, ["business_registration"]);
+  const contactAddress = pickSetting(settings, ["contact_address"]);
 
   return (
     <footer data-bb-focus="general_brand">
@@ -111,6 +112,11 @@ export async function WpFooter({ footerNodes }: { footerNodes: HeaderNavNode[] }
                         <a href={`mailto:${email}`}>
                           <i className="fal fa-envelope-open" /> {email}
                         </a>
+                      </p>
+                    ) : null}
+                    {contactAddress ? (
+                      <p>
+                        <i className="fal fa-map-marker-alt" /> {contactAddress}
                       </p>
                     ) : null}
                   </div>
