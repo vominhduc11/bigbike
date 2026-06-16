@@ -73,9 +73,22 @@ public class AdminAdminUsersController extends AdminControllerSupport {
                         userAgent,
                         body.get("email"),
                         body.get("displayName"),
-                        body.get("role"),
-                        body.get("password")
+                        body.get("role")
                 ),
+                request
+        );
+    }
+
+    @PostMapping("/{id}/resend-invite")
+    public ApiDataResponse<Map<String, Object>> resendInvite(
+            @PathVariable UUID id,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "admin-users.write");
+        String clientIp = clientIpResolver.resolve(request);
+        String userAgent = request.getHeader("User-Agent");
+        return apiResponseFactory.data(
+                adminAdminUsersService.resendInvite(resolveAdminId(), clientIp, userAgent, id),
                 request
         );
     }

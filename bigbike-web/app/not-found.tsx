@@ -2,6 +2,7 @@
 import { getTranslations } from "next-intl/server";
 import { PageHero } from "@/components/layout/PageHero";
 import { Container } from "@/components/layout/Container";
+import { WpThemeStylesheet } from "@/components/wp/WpThemeStylesheet";
 import { ArticleCard } from "@/components/content/ArticleCard";
 import { listArticles } from "@/lib/api/public-api";
 import { toArticleListPath, toHomePath, toProductListPath } from "@/lib/utils/routes";
@@ -21,7 +22,10 @@ export default async function NotFoundPage() {
   const recent = recentResult.data ?? [];
 
   return (
-    <section className="min-h-[62vh] bg-background py-20 text-center">
+    <section className="min-h-[62vh] bg-background text-center">
+      {/* Header/Footer port WP cần bundle CSS theme; nếu trang không nạp, khi F5 thẳng
+          vào /404 header+footer mất style. Dùng bundle tĩnh như các trang tĩnh khác. */}
+      <WpThemeStylesheet href="/wp-content/themes/bigbike/css/wp-theme-static.css?v=1" />
       <PageHero
         title={t("pageTitle")}
         breadcrumb={[

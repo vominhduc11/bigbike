@@ -3,8 +3,8 @@
 @import "../styles/brand-tokens.css";
 
 /* Keep Tailwind's automatic content scanner out of the local QA scratch dir.
-   Those .bak/.txt files contain illustrative class strings (e.g. text-[var(...)])
-   that would otherwise be compiled into invalid CSS and break the build. */
+   Those .bak/.txt files contain illustrative arbitrary-value class strings that
+   would otherwise be compiled into invalid CSS and break the build. */
 @source not "../.artifacts";
 
 /* -------------------------------------------------------------------
@@ -83,7 +83,7 @@
   /* Mobile nav inactive tab — gray-450 (#8a8a8a), neutral (R=G=B), ~5.6:1 on #141414 */
   --color-nav-inactive: var(--bb-color-gray-450);
 
-  /* State & semantic text colors — expose token để tránh dùng text-[var(...)] */
+  /* State & semantic text colors — expose token để tránh dùng arbitrary CSS-var utilities */
   --color-state-success-text: var(--bb-state-success-text);
   --color-state-warning-text: var(--bb-state-warning-text);
   --color-rating-star: var(--bb-rating-star);

@@ -14,6 +14,7 @@ import { readTokens } from './lib/authStorage'
 import { connectAdminWs, disconnectAdminWs, setWsReconnectCallback } from './lib/adminWebSocket'
 import { queryClient } from './lib/queryClient'
 import { LoginScreen } from './screens/LoginScreen'
+import { AcceptInviteScreen } from './screens/AcceptInviteScreen'
 
 // Wrap lazy imports with a one-shot reload on chunk load failure.
 // After a new deploy, stale chunk hashes cause dynamic imports to 404.
@@ -335,6 +336,11 @@ function AdminApp() {
     const first = NAV_FLAT.find((item) => hasPermission(item.permission))
     return first ? first.path : '/admin/dashboard'
   }, [hasPermission])
+
+  // Public, token-gated invite acceptance — rendered regardless of auth state.
+  if (pathname === '/accept-invite') {
+    return <AcceptInviteScreen />
+  }
 
   if (authState.status === 'initializing') {
     return (

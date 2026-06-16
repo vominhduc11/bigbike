@@ -12,9 +12,11 @@ import {
   ProductContentBottom,
   ProductDescriptionTab,
   ProductFaqs,
+  ProductInstallationTab,
   ProductSpecsTable,
 } from "@/components/catalog/ProductLocalizedParts";
 import { ProductSwiper } from "@/components/catalog/ProductSwiper";
+import { ReadingProgressBar } from "@/components/catalog/ReadingProgressBar";
 import { ReviewsSection } from "@/components/catalog/ReviewsSection";
 import { RecentlyViewedSection } from "@/components/catalog/RecentlyViewedSection";
 import { ProductContactCta } from "@/components/catalog/ProductContactCta";
@@ -107,6 +109,10 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
     ratingCount: product.ratingCount ?? null,
   };
 
+  // Thứ tự tab: Mô tả → Đánh giá → Thông số → Lắp đặt → FAQ.
+  // Đánh giá = một tab thật (không còn là section riêng cuộn xuống); bỏ qua trong
+  // preview vì bản nháp chưa có id thật để tải. Thứ tự mảng này quyết định cả thứ
+  // tự hiển thị thật (mobile xếp dọc) lẫn thứ tự thanh anchor nav nổi.
   const tabs: WpTab[] = [
     {
       id: "tab-description",
@@ -114,15 +120,31 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
       labelKey: "description",
       content: <ProductDescriptionTab viHtml={descriptionHtml} />,
     },
+    ...(!previewMode
+      ? [
+          {
+            id: "reviews",
+            label: "Đánh giá",
+            labelKey: "reviews",
+            content: <ReviewsSection productId={product.id} embedded />,
+          } satisfies WpTab,
+        ]
+      : []),
     {
       id: "tab-more_infomation",
-      label: "Thông số kĩ thuật",
+      label: "Thông số",
       labelKey: "specs",
       content: <ProductSpecsTable viSpecs={specs} />,
     },
     {
+      id: "tab-installation",
+      label: "Lắp đặt",
+      labelKey: "installation",
+      content: <ProductInstallationTab viHtml={installationGuideHtml} />,
+    },
+    {
       id: "tab-faq",
-      label: "Câu hỏi thường gặp",
+      label: "FAQ",
       labelKey: "faqs",
       content: <ProductFaqs viFaqs={faqs} />,
     },
@@ -130,6 +152,9 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
 
   const inner = (
     <div id="main-content">
+      {/* Vạch tiến độ đọc — chỉ mobile (khớp mockup). Fixed top nên vị trí trong DOM
+          không ảnh hưởng; đặt đầu khối cho dễ thấy. */}
+      <ReadingProgressBar />
       <div className="container">
         <div className="breadcrumb">
           <ul>
@@ -254,24 +279,13 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
           </section>
         )}
 
-        {tabs.length > 0 && (
-          <WpProductTabs tabs={tabs} anchorExtras={[{ id: "reviews", labelKey: "reviews" }]} />
-        )}
+        {tabs.length > 0 && <WpProductTabs tabs={tabs} />}
 
         {/* Bảng size (V175) — HTML table do admin nhập, sanitize trước khi render. */}
         {sizeGuideHtml ? (
           <section className="my-10">
             <h2 className="mb-3 font-heading text-lg font-semibold uppercase"><Tr ns="Product" k="sizeGuideTitle" /></h2>
             <div className="wyswyg" dangerouslySetInnerHTML={{ __html: sizeGuideHtml }} />
-          </section>
-        ) : null}
-
-        {/* Hướng dẫn lắp đặt (admin nhập) — section riêng cạnh bảng size, sanitize
-            trước khi render; chỉ hiện khi admin có nhập. */}
-        {installationGuideHtml ? (
-          <section className="my-10">
-            <h2 className="mb-3 font-heading text-lg font-semibold uppercase"><Tr ns="Product" k="installation" /></h2>
-            <div className="wyswyg" dangerouslySetInnerHTML={{ __html: installationGuideHtml }} />
           </section>
         ) : null}
 
@@ -282,9 +296,6 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
             <ProductContentBottom viHtml={contentBottomHtml} />
           </section>
         ) : null}
-
-        {/* Đánh giá sản phẩm — bỏ qua trong preview vì bản nháp chưa có id thật. */}
-        {!previewMode && <ReviewsSection productId={product.id} />}
 
         {related.length > 0 && (
           <div className="product-list pt-80 pb-40">

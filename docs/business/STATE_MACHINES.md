@@ -59,7 +59,7 @@ File này liên quan trực tiếp đến:
 | Shipping / Fulfillment | `fulfillmentStatus`, shipping method enabled flag | `fulfillmentStatus` field observed in order detail; shipping method enabled/disabled inferred from checkout resolver. | Shipping method selection enforced; fulfillment state transitions not confirmed. | Partial backend | `STATUS_ONLY` / `NEEDS_VERIFICATION` | `AdminOrderService.java`, `CheckoutService.java`, `AdminShippingController.java` |
 | Inventory / Stock | `stockState`, quantity fields | `IN_STOCK`, `LOW_STOCK`, `OUT_OF_STOCK` | `stockState` là **derived field** — luôn tính tự động từ `quantityOnHand`. Admin không được set thủ công qua catalog API. Sản phẩm mới tạo luôn bắt đầu `OUT_OF_STOCK` (qty=0). Mọi thay đổi qty (nhập hàng, bán, huỷ, đổi trả) → recompute ngay. | Backend policy/service | `CONFIRMED_BACKEND_ENFORCED` | `ProductStockState.java`, `InventoryPolicyService.java`, `AdminCatalogMutationService.java`, `CheckoutService.java`, `AdminReturnService.java`, `OrderStockRestoreService.java`, `BUSINESS_RULES.md` STOCK_RULE_001–007 |
 | Return | `status` | `PENDING`, `APPROVED`, `REJECTED`, `RECEIVED`, `COMPLETED`, `REFUNDED` | Explicit transition map. | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `AdminReturnService.java`, `CustomerOrderController.java` |
-| Admin User | `status`, `role` | Status: `ACTIVE`, `DISABLED`, `SUSPENDED`; Roles include `SUPER_ADMIN`, `ADMIN`, `EDITOR`, `SHOP_MANAGER`, `AUTHOR`, `CONTRIBUTOR`, `SEO_EDITOR`, custom roles. | Status/role update validation; self-deactivation and Super Admin demotion guardrails. | Backend service | `CONFIRMED_BACKEND_ENFORCED` for update guards; login-block behavior `NEEDS_VERIFICATION` | `AdminAdminUsersService.java`, `AdminRolePermissions.java`, `SecurityConfig.java` |
+| Admin User | `status`, `role` | Status: `INVITED`, `ACTIVE`, `DISABLED`, `SUSPENDED`; Roles: `SUPER_ADMIN`, `ADMIN`, `EDITOR`, `SHOP_MANAGER` (built-in, V200) + custom roles. New users start `INVITED` (no password) and become `ACTIVE` on accepting an email invite. | Status/role update validation; self-deactivation and Super Admin demotion guardrails; invite token lifecycle. | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `AdminAdminUsersService.java`, `AdminInviteService.java`, `SecurityConfig.java` |
 | Content Article/Page | `publishStatus` | Same `PublishStatus` enum; active values: `DRAFT`, `PUBLISHED`, `HIDDEN`, `TRASH`; legacy `ARCHIVED` migrated sang `HIDDEN`. | Publish transitions enforced on update; delete sets `ARCHIVED` (sẽ migrate sang `HIDDEN`). | Backend service | `CONFIRMED_BACKEND_ENFORCED`; public filtering `NEEDS_VERIFICATION` | `AdminContentController.java`, `AdminContentMutationService.java`, `AdminMutationValidators.java` |
 | Media | `status` | `ACTIVE`, `INACTIVE`, `DELETED` | Upload creates `ACTIVE`; update validates allowed statuses; soft-delete sets `DELETED`; restore sets `ACTIVE`; hard-delete removes row/object. | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `AdminMediaService.java` |
 | Notification | `isRead` (boolean) | Email/websocket events + persistent table. `isRead` toggled by mark-read endpoints. | `false` → `true` via mark-read / mark-all-read. | Backend service | `CONFIRMED_FROM_CODE` | `AdminNotificationController.java`, `V102__create_admin_notifications_table.sql` |
@@ -657,25 +657,23 @@ Admin user state machine kiểm soát internal account lifecycle và role safety
 
 From `AdminAdminUsersService.VALID_STATUSES`:
 
+- `INVITED` — created via email invite, no password set yet, **cannot log in** until the invite is accepted.
 - `ACTIVE`
 - `DISABLED`
 - `SUSPENDED`
 
-Built-in roles:
+Built-in roles (4, after `V200__reduce_default_roles.sql`):
 
 - `SUPER_ADMIN`
 - `ADMIN`
 - `EDITOR`
 - `SHOP_MANAGER`
-- `AUTHOR`
-- `CONTRIBUTOR`
-- `SEO_EDITOR`
 
 Custom role support exists through role repository/controller.
 
 ### Initial State
 
-- New admin user is created with `status = ACTIVE`.
+- New admin user is created with `status = INVITED` and **no password** (an email invite with a set-password link is sent). Accepting the invite (setting a password) transitions the account to `ACTIVE`. Login is blocked for any non-`ACTIVE` account and for any account without a password hash.
 
 ### Terminal States
 
@@ -685,7 +683,8 @@ Custom role support exists through role repository/controller.
 
 | From | To | Actor / Role | Preconditions | Side Effects | Enforcement | Evidence |
 |---|---|---|---|---|---|---|
-| N/A | `ACTIVE` | Admin / `admin-users.write` | Valid email, displayName, role, password >= 8. | Admin user created; audit log. | `CONFIRMED_BACKEND_ENFORCED` | `AdminAdminUsersService.java` |
+| N/A | `INVITED` | Admin / `admin-users.write` | Valid email, displayName, role. No password supplied. | Admin user created without password; invite token generated; invite email sent. | `CONFIRMED_BACKEND_ENFORCED` | `AdminAdminUsersService.java`, `AdminInviteService.java` |
+| `INVITED` | `ACTIVE` | Invitee (public, token-gated) | Valid non-expired, unused invite token; password >= 8. | Password set; status → `ACTIVE`; invite token consumed. | `CONFIRMED_BACKEND_ENFORCED` | `AdminInviteService.acceptInvite` |
 | `ACTIVE` | `DISABLED` | Admin / `admin-users.write` | Target is not actor themself. | Status updated; audit log. | `CONFIRMED_BACKEND_ENFORCED` | `AdminAdminUsersService.java` |
 | `ACTIVE` | `SUSPENDED` | Admin / `admin-users.write` | Target is not actor themself. | Status updated; audit log. | `CONFIRMED_BACKEND_ENFORCED` | `AdminAdminUsersService.java` |
 | `DISABLED` | `ACTIVE` | Admin / `admin-users.write` | Valid target user. | Status updated; audit log. | `CONFIRMED_BACKEND_ENFORCED` | `AdminAdminUsersService.java` |
@@ -699,7 +698,8 @@ Custom role support exists through role repository/controller.
 | actor own account | `DISABLED` / `SUSPENDED` | Prevent self-lockout. | Backend rejects. | `AdminAdminUsersService.java` |
 | `SUPER_ADMIN` self role | not `SUPER_ADMIN` | Prevent self-demotion. | Backend rejects. | `AdminAdminUsersService.java` |
 | last active `SUPER_ADMIN` | not `SUPER_ADMIN` | Prevent losing final Super Admin. | Backend rejects. | `AdminAdminUsersService.java` |
-| any status | unknown status | Must be `ACTIVE`, `DISABLED`, or `SUSPENDED`. | Backend rejects. | `AdminAdminUsersService.java` |
+| any status | unknown status | Must be `INVITED`, `ACTIVE`, `DISABLED`, or `SUSPENDED`. | Backend rejects. | `AdminAdminUsersService.java` |
+| `INVITED` | login | Account has no password until invite accepted. | Login rejected (no password hash). | `AdminAuthService.login` |
 | any role | invalid role | Must be built-in or custom role existing in role repository. | Backend rejects. | `AdminAdminUsersService.java` |
 
 ### Frontend Behavior

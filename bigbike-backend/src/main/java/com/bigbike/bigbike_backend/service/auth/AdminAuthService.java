@@ -38,6 +38,11 @@ public class AdminAuthService {
             passwordService.dummyVerify(rawPassword);
             throw new UnauthorizedException("Invalid email or password.");
         }
+        // An INVITED account has no password yet — block login (and keep timing flat).
+        if (user.getPasswordHash() == null) {
+            passwordService.dummyVerify(rawPassword);
+            throw new UnauthorizedException("Invalid email or password.");
+        }
         // Always verify password before checking status — avoids leaking account existence
         if (!passwordService.verify(rawPassword, user.getPasswordHash()) || !"ACTIVE".equals(user.getStatus())) {
             throw new UnauthorizedException("Invalid email or password.");

@@ -24,17 +24,14 @@ All are listed in `PermissionCatalog` (`inventory.*` and `warranty.*` in `roles.
 
 ## Roles
 
-Seven built-in admin roles are seeded as **system roles** (`is_system = TRUE`) by `V49__create_roles_permissions_tables.sql`. `CUSTOMER` is a **storefront auth role**, not a row in the `admin_roles` table and not shown in the admin Roles screen.
+Four built-in admin roles are seeded as **system roles** (`is_system = TRUE`). `V49__create_roles_permissions_tables.sql` originally seeded seven; `V200__reduce_default_roles.sql` removed the three WordPress-legacy content roles (`AUTHOR`, `CONTRIBUTOR`, `SEO_EDITOR`) and folded SEO redirect permissions into `EDITOR`. `CUSTOMER` is a **storefront auth role**, not a row in the `admin_roles` table and not shown in the admin Roles screen.
 
 | Role | Type | Current scope | Status | Evidence |
 |---|---|---|---|---|
 | `SUPER_ADMIN` | system (built-in) | wildcard `*` — permissions immutable; cannot be edited or deleted | `CONFIRMED_FROM_CODE` | `V49__create_roles_permissions_tables.sql`, `AdminRoleService.java` |
 | `ADMIN` | system (built-in) | full operations including media, settings, redirects, POS override | `CONFIRMED_FROM_CODE` | `V49__create_roles_permissions_tables.sql` |
 | `SHOP_MANAGER` | system (built-in) | catalog/orders/customers/coupons/shipping read/reviews/POS without price override | `CONFIRMED_FROM_CODE` | `V49__create_roles_permissions_tables.sql` |
-| `EDITOR` | system (built-in) | catalog/content/media/menu/slider operations | `CONFIRMED_FROM_CODE` | `V49__create_roles_permissions_tables.sql` |
-| `AUTHOR` | system (built-in) | content/media operations | `CONFIRMED_FROM_CODE` | `V49__create_roles_permissions_tables.sql` |
-| `CONTRIBUTOR` | system (built-in) | content/media read | `CONFIRMED_FROM_CODE` | `V49__create_roles_permissions_tables.sql` |
-| `SEO_EDITOR` | system (built-in) | content and redirects | `CONFIRMED_FROM_CODE` | `V49__create_roles_permissions_tables.sql` |
+| `EDITOR` | system (built-in) | catalog/content/media/menu/slider + SEO redirects operations | `CONFIRMED_FROM_CODE` | `V49__create_roles_permissions_tables.sql`, `V200__reduce_default_roles.sql` |
 | custom roles | non-system | any keys from `PermissionCatalog`; created/edited/deleted via the Roles API | `CONFIRMED_FROM_CODE` | `AdminRoleService.createRole/deleteRole` |
 | `CUSTOMER` | storefront (not an admin role) | own profile/address/order/return APIs; **not** in `admin_roles` | `CONFIRMED_FROM_CONFIG` | `SecurityConfig.java` |
 
@@ -42,8 +39,8 @@ Seven built-in admin roles are seeded as **system roles** (`is_system = TRUE`) b
 
 Enforced in `AdminRoleService` (Admin Roles API, gated by `roles.write`):
 
-- **System roles cannot be deleted.** `deleteRole` rejects any role with `is_system = TRUE` (`Cannot delete built-in system role`). All 7 built-in roles are system roles — there is no "2 fixed roles, rest deletable" model.
-- **`SUPER_ADMIN` permissions are immutable.** `updateRolePermissions` rejects edits to `SUPER_ADMIN` (`Cannot modify SUPER_ADMIN permissions`) — it stays wildcard `*`. The other 6 system roles **can** have their permission set edited (but still cannot be deleted).
+- **System roles cannot be deleted.** `deleteRole` rejects any role with `is_system = TRUE` (`Cannot delete built-in system role`). All 4 built-in roles are system roles — there is no "2 fixed roles, rest deletable" model. (The built-in set itself is changed only through a Flyway migration, e.g. `V200` which reduced it from 7 to 4 — not through the Roles API.)
+- **`SUPER_ADMIN` permissions are immutable.** `updateRolePermissions` rejects edits to `SUPER_ADMIN` (`Cannot modify SUPER_ADMIN permissions`) — it stays wildcard `*`. The other 3 system roles **can** have their permission set edited (but still cannot be deleted).
 - **Custom roles** are created via `createRole` with `is_system = FALSE`; they can be both edited and deleted. `deleteRole` also blocks deletion while any admin user is still assigned to the role (`countByRole > 0`).
 - Role IDs must match `[A-Z][A-Z0-9_]{1,49}`; assigned permission keys are validated against `PermissionCatalog.ALL_KEYS` (unknown keys rejected).
 - **Admin-user guardrails** (`AdminAdminUsersService`): an admin cannot disable/suspend their own account, cannot demote themselves out of `SUPER_ADMIN`, and cannot demote the last active `SUPER_ADMIN`.
@@ -65,7 +62,7 @@ Status: `CONFIRMED_FROM_CODE` — `SettingDefinitionRegistry.java`, `AdminSettin
 |---|---|---|
 | `audit-logs.read` | `SUPER_ADMIN`, `ADMIN` | `GET /api/v1/admin/audit-logs` |
 
-`SHOP_MANAGER`, `EDITOR`, `AUTHOR`, `CONTRIBUTOR`, `SEO_EDITOR` do **not** have `audit-logs.read`.
+`SHOP_MANAGER` and `EDITOR` do **not** have `audit-logs.read`.
 
 ## Critical Endpoint Permissions
 
@@ -85,6 +82,9 @@ Status: `CONFIRMED_FROM_CODE` — `SettingDefinitionRegistry.java`, `AdminSettin
 | `/api/v1/customer/orders/{orderId}/return-eligibility` GET | `ROLE_CUSTOMER` | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java` |
 | `/api/v1/customer/orders/**` | `ROLE_CUSTOMER` | `CONFIRMED_FROM_CONFIG` | `SecurityConfig.java` |
 | `/api/v1/customer/addresses/**` | `ROLE_CUSTOMER` | `CONFIRMED_FROM_CONFIG` | `SecurityConfig.java` |
+| `GET /api/v1/auth/admin/invite` | public (token-gated) — validate an admin invite token | `CONFIRMED_FROM_CODE` | `SecurityConfig.java`, `AdminInviteService.validateToken` |
+| `POST /api/v1/auth/admin/accept-invite` | public (token-gated) — set password for an invited admin, `INVITED → ACTIVE` | `CONFIRMED_FROM_CODE` | `SecurityConfig.java`, `AdminInviteService.acceptInvite` |
+| `POST /api/v1/admin/admin-users/{id}/resend-invite` | `admin-users.write` | `CONFIRMED_FROM_CODE` | `AdminAdminUsersController.java` |
 | `/api/v1/search*` | public | `CONFIRMED_FROM_CONFIG` | `SecurityConfig.java` |
 | `/api/v1/address/**` | public | `CONFIRMED_FROM_CONFIG` | `SecurityConfig.java` |
 

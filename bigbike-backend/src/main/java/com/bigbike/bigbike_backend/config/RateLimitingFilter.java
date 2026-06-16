@@ -123,7 +123,8 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             if ("/api/v1/customer/auth/register".equals(path)) {
                 return LimitTier.REGISTER;
             }
-            if ("/api/v1/customer/auth/password/forgot".equals(path) || "/api/v1/customer/auth/password/reset".equals(path)) {
+            if ("/api/v1/customer/auth/password/forgot".equals(path) || "/api/v1/customer/auth/password/reset".equals(path)
+                    || "/api/v1/auth/admin/accept-invite".equals(path)) {
                 return LimitTier.PASSWORD_RESET;
             }
             if ("/api/v1/customer/auth/resend-verification".equals(path)) {

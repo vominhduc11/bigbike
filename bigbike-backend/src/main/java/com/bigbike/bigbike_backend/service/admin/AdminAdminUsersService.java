@@ -7,10 +7,12 @@ import com.bigbike.bigbike_backend.persistence.entity.auth.AdminUserEntity;
 import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminRoleJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository;
+import com.bigbike.bigbike_backend.service.auth.AdminInviteService;
 import com.bigbike.bigbike_backend.service.auth.PasswordService;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.common.PaginationService;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -28,17 +30,14 @@ public class AdminAdminUsersService {
     private static final int DEFAULT_SIZE = 20;
     private static final int MAX_SIZE = 100;
 
-    private static final Set<String> BUILTIN_ROLES = Set.of(
-            "SUPER_ADMIN", "ADMIN", "EDITOR", "SHOP_MANAGER", "AUTHOR", "CONTRIBUTOR", "SEO_EDITOR"
-    );
-
-    private static final Set<String> VALID_STATUSES = Set.of("ACTIVE", "DISABLED", "SUSPENDED");
+    private static final Set<String> VALID_STATUSES = Set.of("INVITED", "ACTIVE", "DISABLED", "SUSPENDED");
 
     private final AdminUserJpaRepository adminUserRepo;
     private final AdminRoleJpaRepository adminRoleRepo;
     private final AuditLogJpaRepository auditLogRepo;
     private final PaginationService paginationService;
     private final PasswordService passwordService;
+    private final AdminInviteService adminInviteService;
 
     public PageResult<Map<String, Object>> listAdminUsers(int page, int size, String q, String roleFilter, String statusFilter) {
         int normalizedPage = Math.max(1, page);
@@ -70,9 +69,13 @@ public class AdminAdminUsersService {
                 .orElseThrow(() -> new NotFoundException("Admin user not found.")));
     }
 
+    /**
+     * Creates an admin user by email invite — no password is set here. The account starts
+     * {@code INVITED} (cannot log in) and an invite email with a set-password link is sent.
+     */
     @Transactional
     public Map<String, Object> createAdminUser(UUID actorId, String clientIp, String userAgent,
-            String email, String displayName, String role, String password) {
+            String email, String displayName, String role) {
         if (email == null || email.isBlank()) {
             throw new ConflictException("Email is required.");
         }
@@ -93,31 +96,48 @@ public class AdminAdminUsersService {
         if (!isValidRole(normalizedRole)) {
             throw new ConflictException("Invalid role: " + normalizedRole);
         }
-        if (password == null || password.isBlank()) {
-            throw new ConflictException("Password is required.");
-        }
-        if (password.length() < 8) {
-            throw new ConflictException("Password must be at least 8 characters.");
-        }
 
         Instant now = Instant.now();
         AdminUserEntity entity = new AdminUserEntity();
         entity.setEmail(normalizedEmail);
         entity.setDisplayName(displayName.trim());
         entity.setRole(normalizedRole);
-        entity.setStatus("ACTIVE");
-        entity.setPasswordHash(passwordService.hash(password));
+        entity.setStatus("INVITED");
+        // No password yet — set by the invitee when accepting the invite.
         entity.setCreatedAt(now);
         entity.setUpdatedAt(now);
 
         AdminUserEntity saved = adminUserRepo.save(entity);
 
+        AdminInviteService.InviteResult invite = adminInviteService.issueInvite(saved);
+
         String afterData = "{\"email\":\"" + escapeJson(saved.getEmail())
                 + "\",\"role\":\"" + saved.getRole()
-                + "\",\"status\":\"ACTIVE\"}";
-        auditLogRepo.save(buildAudit(actorId, clientIp, userAgent, "ADMIN_USER_CREATED", saved.getId(), null, afterData, now));
+                + "\",\"status\":\"INVITED\"}";
+        auditLogRepo.save(buildAudit(actorId, clientIp, userAgent, "ADMIN_USER_INVITED", saved.getId(), null, afterData, now));
 
-        return toMap(saved);
+        return withInvite(toMap(saved), invite);
+    }
+
+    /** Resends the invite email for an INVITED admin user. */
+    @Transactional
+    public Map<String, Object> resendInvite(UUID actorId, String clientIp, String userAgent, UUID id) {
+        AdminUserEntity user = adminUserRepo.findById(id)
+                .orElseThrow(() -> new NotFoundException("Admin user not found."));
+        AdminInviteService.InviteResult invite = adminInviteService.resendInvite(id);
+        auditLogRepo.save(buildAudit(actorId, clientIp, userAgent, "ADMIN_USER_INVITE_RESENT", id, null,
+                "{\"email\":\"" + escapeJson(user.getEmail()) + "\"}", Instant.now()));
+        return withInvite(toMap(user), invite);
+    }
+
+    private Map<String, Object> withInvite(Map<String, Object> base, AdminInviteService.InviteResult invite) {
+        Map<String, Object> result = new LinkedHashMap<>(base);
+        result.put("inviteEmailSent", invite.emailSent());
+        // Surface the link only when mail isn't configured, so a Super Admin can deliver it manually.
+        if (!invite.emailSent()) {
+            result.put("inviteUrl", invite.inviteUrl());
+        }
+        return result;
     }
 
     @Transactional
@@ -198,7 +218,10 @@ public class AdminAdminUsersService {
     }
 
     private boolean isValidRole(String normalizedRole) {
-        return BUILTIN_ROLES.contains(normalizedRole) || adminRoleRepo.existsById(normalizedRole);
+        // DB-driven: a role is valid iff it exists in admin_roles (system roles seeded by
+        // Flyway + any custom roles). No hardcoded list — so it can never drift when the
+        // built-in role set changes (e.g. V200 reduced it from 7 to 4).
+        return adminRoleRepo.existsById(normalizedRole);
     }
 
     private boolean matches(String field, String q) {

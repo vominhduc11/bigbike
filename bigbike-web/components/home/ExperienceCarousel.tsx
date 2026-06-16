@@ -126,7 +126,11 @@ export function ExperienceCarousel({ articles }: Props) {
 
   return (
     <Swiper
-      className="bb-exp-carousel w-full touch-pan-y !pb-16 max-md:!pb-7 [&_.swiper-slide]:h-auto [&_.swiper-slide]:cursor-pointer"
+      // PRE-INIT GUARD (`:not(.swiper-initialized)`): tới khi Swiper init, mỗi slide
+      // width:100% → 1 thẻ phình full khung rồi nhảy. Khoá bề rộng xấp xỉ slidesPerView
+      // (1.2≈83% / md 2.43≈41% / 3xl 3.43≈29% / 4xl 4.43≈22.5%) để chặn cú phình; phần
+      // căn giữa (centeredSlides) settle nhẹ sau init — không còn cú nhảy lớn.
+      className="bb-exp-carousel w-full touch-pan-y !pb-16 max-md:!pb-7 [&_.swiper-slide]:h-auto [&_.swiper-slide]:cursor-pointer [&:not(.swiper-initialized)_.swiper-slide]:!w-[83%] md:[&:not(.swiper-initialized)_.swiper-slide]:!w-[41%] min-[1920px]:[&:not(.swiper-initialized)_.swiper-slide]:!w-[29%] min-[2560px]:[&:not(.swiper-initialized)_.swiper-slide]:!w-[22.5%]"
       speed={1000}
       slidesPerView={1.2}
       spaceBetween={13}

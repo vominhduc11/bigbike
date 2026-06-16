@@ -33,7 +33,8 @@ public class AdminUserEntity {
     @Column(nullable = false, unique = true, length = 255)
     private String email;
 
-    @Column(nullable = false, name = "password_hash", length = 255)
+    // Nullable: an INVITED admin has no password until they accept the email invite (V201).
+    @Column(name = "password_hash", length = 255)
     private String passwordHash;
 
     @Column(nullable = false, name = "display_name", length = 255)

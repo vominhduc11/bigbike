@@ -1464,12 +1464,38 @@ export async function fetchAdminUsers(query) {
 
 export async function createAdminUser(input) {
   const payload = await requestJson('/admin/admin-users', { method: 'POST', body: input })
-  return { item: normalizeAdminUser(payload?.data || {}) }
+  const data = payload?.data || {}
+  return {
+    item: normalizeAdminUser(data),
+    inviteEmailSent: data.inviteEmailSent !== false,
+    inviteUrl: data.inviteUrl || '',
+  }
+}
+
+export async function resendAdminInvite(userId) {
+  const payload = await requestJson(`/admin/admin-users/${userId}/resend-invite`, { method: 'POST' })
+  const data = payload?.data || {}
+  return {
+    item: normalizeAdminUser(data),
+    inviteEmailSent: data.inviteEmailSent !== false,
+    inviteUrl: data.inviteUrl || '',
+  }
 }
 
 export async function updateAdminUser(userId, input) {
   const payload = await requestJson(`/admin/admin-users/${userId}`, { method: 'PATCH', body: input })
   return { item: normalizeAdminUser(payload?.data || {}) }
+}
+
+// ── Admin invite (public, token-gated — no auth) ─────────────────────────────
+export async function validateAdminInvite(token) {
+  const payload = await requestJson(`/auth/admin/invite?token=${encodeURIComponent(token)}`, { skipAuth: true })
+  const data = payload?.data || {}
+  return { email: String(data.email || ''), expiresAt: data.expiresAt || '' }
+}
+
+export async function acceptAdminInvite(token, password) {
+  await requestJson('/auth/admin/accept-invite', { method: 'POST', body: { token, password }, skipAuth: true })
 }
 
 // Reviews

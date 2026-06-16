@@ -453,6 +453,11 @@ export function HomeVideoCarousel({ videos }: Props) {
 
         <div className="min-w-0 overflow-hidden">
           <Swiper
+            // PRE-INIT GUARD: mobile (<480) là 1 ô full nên đúng sẵn; từ 480px trở lên
+            // slidesPerView>1, mà trước khi `.swiper-initialized` được thêm mỗi slide
+            // width:100% → 1 video phình full rồi nhảy thành lưới. Khoá bề rộng khớp
+            // breakpoint (480:2 / md:3 / lg:4 / xl:5 / 1920:6 / 2560:7) tới khi init.
+            className="min-[480px]:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/2 md:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/3 lg:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/4 xl:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/5 min-[1920px]:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/6 min-[2560px]:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/7"
             onSwiper={(s) => {
               swiperRef.current = s;
               syncViewportState();

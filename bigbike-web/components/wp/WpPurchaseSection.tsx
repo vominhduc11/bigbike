@@ -179,12 +179,14 @@ export function WpPurchaseSection({
   // (REVIEW_RULE_003 — gate theo ratingCount, dùng chung toàn app).
   const hasReviews = hasApprovedReviews(rating, ratingCount);
 
-  // Cuộn mượt xuống khu vực đánh giá thay vì nhảy giật tới #reviews như anchor mặc định.
+  // Đánh giá giờ là một tab. Kích hoạt tab Đánh giá (desktop ẩn panel khi không
+  // active) rồi cuộn mượt tới — chờ một frame để panel hiện ra trước khi cuộn.
   function scrollToReviews(e: React.MouseEvent<HTMLAnchorElement>) {
-    const target = document.getElementById("reviews");
-    if (!target) return;
     e.preventDefault();
-    target.scrollIntoView({ behavior: "smooth", block: "start" });
+    window.dispatchEvent(new CustomEvent("bb:pdp-activate-tab", { detail: "reviews" }));
+    requestAnimationFrame(() => {
+      document.getElementById("reviews")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   }
 
   function pick(attr: string, value: string) {

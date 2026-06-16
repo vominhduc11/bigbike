@@ -36,13 +36,16 @@ public class AdminAttributeController extends AdminControllerSupport {
     private final ApiResponseFactory apiResponseFactory;
 
     @GetMapping("/attributes")
-    public List<AttributeSummaryResponse> listAttributes() {
+    public List<AttributeSummaryResponse> listAttributes(HttpServletRequest request) {
+        devAdminAuthService.requirePermission(request, "products.read");
         return adminAttributeService.listAttributes();
     }
 
     @GetMapping("/attributes/{attributeId}/values")
     public List<AttributeValueResponse> listAttributeValues(
-            @PathVariable @Pattern(regexp = ID_REGEX) String attributeId) {
+            @PathVariable @Pattern(regexp = ID_REGEX) String attributeId,
+            HttpServletRequest request) {
+        devAdminAuthService.requirePermission(request, "products.read");
         return adminAttributeService.listValues(attributeId);
     }
 

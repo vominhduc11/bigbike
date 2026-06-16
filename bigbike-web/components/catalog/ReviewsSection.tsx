@@ -49,6 +49,9 @@ type ReviewsData = {
 
 type ReviewsSectionProps = {
   productId: string;
+  // embedded = đang nằm trong panel tab sản phẩm: bỏ khung section riêng (viền
+  // trên, lề lớn, id #reviews, tiêu đề lặp) vì thanh tab / H2 panel đã là tiêu đề.
+  embedded?: boolean;
 };
 
 const PAGE_SIZE = 10;
@@ -299,6 +302,46 @@ function ReviewsLoading() {
   );
 }
 
+// Trạng thái rỗng dùng chung (chưa có đánh giá / lọc không ra / lỗi tải). Cùng
+// ngôn ngữ thị giác với form bên phải: viền liền + nền card, thay cho viền nét
+// đứt cũ trông như placeholder. Huy hiệu sao tô theo màu thương hiệu để khối
+// đánh giá không bị "trống trải" khi sản phẩm chưa có review. fillHeight cho ô
+// chính cao bằng form để hai cột cân nhau.
+function ReviewsPlaceholder({
+  title,
+  description,
+  action,
+  fillHeight = false,
+}: {
+  title: string;
+  description?: string;
+  action?: React.ReactNode;
+  fillHeight?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex flex-col items-center justify-center gap-4 border border-border bg-card px-6 py-16 text-center",
+        fillHeight && "h-full",
+      )}
+    >
+      <span
+        aria-hidden="true"
+        className="flex h-16 w-16 items-center justify-center bg-[var(--bb-brand-primary-soft)] text-brand"
+      >
+        <StarIcon filled className="h-8 w-8" />
+      </span>
+      <div className="flex flex-col gap-1.5">
+        <p className="m-0 font-cta text-lg font-semibold uppercase tracking-wide text-[var(--bb-text-primary)]">
+          {title}
+        </p>
+        {description && <p className="m-0 text-caption text-muted-foreground">{description}</p>}
+      </div>
+      {action}
+    </div>
+  );
+}
+
 function WriteReviewForm({ productId, onSuccess }: { productId: string; onSuccess: () => void }) {
   const t = useTranslations("Product.reviews");
   const [rating, setRating] = useState(0);
@@ -481,7 +524,7 @@ async function fetchReviewsPage(
   return payload as ReviewsData;
 }
 
-export function ReviewsSection({ productId }: ReviewsSectionProps) {
+export function ReviewsSection({ productId, embedded = false }: ReviewsSectionProps) {
   const t = useTranslations("Product.reviews");
   const queryClient = useQueryClient();
   const sectionRef = useRef<HTMLElement>(null);
@@ -535,28 +578,35 @@ export function ReviewsSection({ productId }: ReviewsSectionProps) {
   return (
     <section
       ref={sectionRef}
-      id="reviews"
-      className="mt-16 mb-10 scroll-mt-[var(--bb-header-height)] border-t border-border pt-14 max-md:mt-9 max-md:pt-10"
+      id={embedded ? undefined : "reviews"}
+      className={cn(
+        "scroll-mt-[var(--bb-header-height)]",
+        !embedded && "mt-16 mb-10 border-t border-border pt-14 max-md:mt-9 max-md:pt-10",
+      )}
     >
-      <div className="mb-10 text-center max-md:mb-8">
-        <h2 className="m-0 font-cta text-ui-35 font-semibold uppercase leading-[4.286rem] tracking-[0] text-black max-md:text-2xl max-md:leading-[1.25]">
-          {total > 0 ? t("titleWithCount", { count: total }) : t("title")}
-        </h2>
-        <p className="m-0 mt-1 text-caption text-muted-foreground">{t("subtitle")}</p>
-      </div>
+      {!embedded && (
+        <div className="mb-10 text-center max-md:mb-8">
+          <h2 className="m-0 font-cta text-ui-35 font-semibold uppercase leading-[4.286rem] tracking-[0] text-black max-md:text-2xl max-md:leading-[1.25]">
+            {total > 0 ? t("titleWithCount", { count: total }) : t("title")}
+          </h2>
+          <p className="m-0 mt-1 text-caption text-muted-foreground">{t("subtitle")}</p>
+        </div>
+      )}
 
       <div className="flex gap-10 max-md:flex-col max-md:gap-8 max-[1024px]:gap-8">
         <div className="min-w-0 flex-1">
           {isLoading ? (
             <ReviewsLoading />
           ) : isError ? (
-            <div className="mt-4 flex flex-col items-center justify-center gap-3 border border-dashed border-border py-16 text-center">
-              <StarIcon filled={false} className="h-10 w-10 text-[var(--bb-text-secondary)]" />
-              <p className="m-0 font-semibold text-[var(--bb-text-primary)]">{t("errorLoad")}</p>
-              <Button type="button" variant="outline" size="sm" onClick={() => refetch()}>
-                {t("retry")}
-              </Button>
-            </div>
+            <ReviewsPlaceholder
+              fillHeight
+              title={t("errorLoad")}
+              action={
+                <Button type="button" variant="outline" size="sm" onClick={() => refetch()}>
+                  {t("retry")}
+                </Button>
+              }
+            />
           ) : total > 0 ? (
             <>
               <RatingSummary
@@ -608,22 +658,17 @@ export function ReviewsSection({ productId }: ReviewsSectionProps) {
                   ))}
                 </ol>
               ) : (
-                <div className="mt-4 flex flex-col items-center justify-center gap-3 border border-dashed border-border py-16 text-center">
-                  <StarIcon filled={false} className="h-10 w-10 text-[var(--bb-text-secondary)]" />
-                  <p className="m-0 font-semibold text-[var(--bb-text-primary)]">
-                    {ratingFilter !== null ? t("noReviewsForFilter", { count: ratingFilter }) : t("noReviews")}
-                  </p>
+                <div className="mt-4">
+                  <ReviewsPlaceholder
+                    title={ratingFilter !== null ? t("noReviewsForFilter", { count: ratingFilter }) : t("noReviews")}
+                  />
                 </div>
               )}
 
               <PaginationNav page={page} totalPages={totalPages} onPageChange={goToPage} />
             </>
           ) : (
-            <div className="flex flex-col items-center justify-center gap-3 border border-dashed border-border py-16 text-center">
-              <StarIcon filled={false} className="h-10 w-10 text-[var(--bb-text-secondary)]" />
-              <p className="m-0 font-semibold text-[var(--bb-text-primary)]">{t("noReviews")}</p>
-              <p className="m-0 text-caption text-muted-foreground">{t("beFirst")}</p>
-            </div>
+            <ReviewsPlaceholder fillHeight title={t("noReviews")} description={t("beFirst")} />
           )}
         </div>
 

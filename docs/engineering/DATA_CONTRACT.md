@@ -111,6 +111,17 @@ Current POS flow persists or emits these notable fields:
 
 Status: `CONFIRMED_FROM_CODE`
 
+### Admin invite (email-based admin user onboarding)
+
+Admin users are onboarded by **email invite**, not by an admin typing a password. Schema impact (`V201__admin_invite_tokens.sql`):
+
+- `admin_users.password_hash` is now **nullable** — an `INVITED` user has no password until they accept. Login (`AdminAuthService.login`) rejects any account whose `password_hash` is null.
+- New table `admin_invite_tokens`: `id` (uuid PK), `admin_user_id` (uuid, FK → `admin_users`, `ON DELETE CASCADE`), `token_hash` (varchar(64), unique — SHA-256 of the raw token, raw token never stored), `expires_at` (timestamptz, default 48h), `used_at` (timestamptz, null until accepted), `created_at` (timestamptz). One active (unused, unexpired) token per user; creating/resending an invite deletes the user's prior tokens first.
+
+Flow: create admin (`admin-users.write`) → row inserted `status = INVITED`, no password, invite token + email sent → invitee opens `{ADMIN_BASE}/accept-invite?token=…` → `POST /api/v1/auth/admin/accept-invite` sets password, flips `status = ACTIVE`, consumes the token.
+
+Status: `CONFIRMED_FROM_CODE`
+
 Evidence:
 
 - `PosOrderService.java`

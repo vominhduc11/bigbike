@@ -159,9 +159,10 @@ class AdminUsersApiTest {
     // 8. Create admin user — success path
     @Test
     void createAdminUser_validInput_returns201AndAudit() throws Exception {
+        // Creation is invite-based: no password is supplied, the account starts INVITED.
         String email = "au-new-" + UUID.randomUUID() + "@bigbike.test";
         String body = """
-                {"email":"%s","displayName":"New Admin","role":"EDITOR","password":"Secure@123"}
+                {"email":"%s","displayName":"New Admin","role":"EDITOR"}
                 """.formatted(email);
 
         MvcResult result = mockMvc.perform(post(BASE_URL)
@@ -171,14 +172,14 @@ class AdminUsersApiTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.email").value(email))
                 .andExpect(jsonPath("$.data.role").value("EDITOR"))
-                .andExpect(jsonPath("$.data.status").value("ACTIVE"))
+                .andExpect(jsonPath("$.data.status").value("INVITED"))
                 .andReturn();
 
         // Verify audit log was written
         String createdId = extractJsonValue(result.getResponse().getContentAsString(), "id");
         List<AuditLogEntity> logs = auditLogRepo.findByResourceTypeAndResourceId(
                 "ADMIN_USER", UUID.fromString(createdId));
-        assertThat(logs).anyMatch(l -> "ADMIN_USER_CREATED".equals(l.getAction()));
+        assertThat(logs).anyMatch(l -> "ADMIN_USER_INVITED".equals(l.getAction()));
     }
 
     // 9. Duplicate email → 409

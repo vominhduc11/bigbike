@@ -61,6 +61,13 @@ export function ProductSwiper({ products, className }: Props) {
 
       <div className="w-full overflow-hidden">
         <Swiper
+          // PRE-INIT GUARD: trước khi Swiper thêm `.swiper-initialized`, mỗi
+          // `.swiper-slide` mặc định width:100% → chỉ hiện 1 thẻ to bằng cả khung rồi
+          // nhảy thành lưới khi JS chạy (FOUC lúc reload). Khoá bề rộng slide khớp
+          // slidesPerView từng breakpoint CHO TỚI khi init; sau init `:not(...)` hết
+          // khớp nên Swiper tự tính lại — không ảnh hưởng runtime. Mirror breakpoints
+          // bên dưới (2 / md:4 / 1536:5 / 2560:6).
+          className="[&:not(.swiper-initialized)_.swiper-slide]:!w-1/2 md:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/4 min-[1536px]:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/5 min-[2560px]:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/6"
           modules={[Pagination]}
           onSwiper={(s) => {
             swiperRef.current = s;

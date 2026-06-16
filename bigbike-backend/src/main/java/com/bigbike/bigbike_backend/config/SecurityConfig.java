@@ -39,6 +39,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/refresh").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/logout").permitAll()
+                        // Admin invite acceptance — public, token-gated (invitee has no session yet)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/auth/admin/invite").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/admin/accept-invite").permitAll()
                         // Customer auth endpoints
                         .requestMatchers(HttpMethod.POST, "/api/v1/customer/auth/register").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/customer/auth/login").permitAll()

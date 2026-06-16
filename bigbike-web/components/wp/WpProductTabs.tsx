@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { MobilePdpAnchorNav, type AnchorNavItem } from "@/components/catalog/MobilePdpAnchorNav";
 import { cn } from "@/lib/utils";
@@ -34,6 +34,18 @@ export function WpProductTabs({
   const tt = useTranslations("Product.tabs");
   const [active, setActive] = useState(tabs[0]?.id ?? "");
 
+  // Cho phép mở một tab từ bên ngoài (vd. link "X đánh giá" ở khối mua hàng mở tab
+  // Đánh giá). Trên desktop panel không active bị ẩn nên chỉ cuộn thôi là không đủ —
+  // phải kích hoạt đúng tab trước. Component phát sự kiện rồi mới cuộn tới panel.
+  useEffect(() => {
+    function onActivate(event: Event) {
+      const id = (event as CustomEvent<string>).detail;
+      if (tabs.some((tab) => tab.id === id)) setActive(id);
+    }
+    window.addEventListener("bb:pdp-activate-tab", onActivate as EventListener);
+    return () => window.removeEventListener("bb:pdp-activate-tab", onActivate as EventListener);
+  }, [tabs]);
+
   // home.min.js `wooTabs()` bind click vào `.woocommerce-tabs .tabs-nav .nav-item a` và
   // sửa class active/show imperative trên đúng panel React điều khiển bằng state → gỡ
   // handler WP, để React tự quản tab (onClick bên dưới).
@@ -54,6 +66,18 @@ export function WpProductTabs({
   // cho gọn/chuyên nghiệp (đúng cách code cũ phân tách section trên mobile).
   return (
     <div className="woocommerce-tabs wc-tabs-wrapper tabs mt-[80px] mb-40 max-md:mt-8 max-md:border-t-[3px] max-md:border-t-border">
+      {/* Thanh nav nổi mobile (khớp mockup): sticky-inline — nằm NGAY ĐẦU khối nội
+          dung, hiện từ đầu, dính dưới header khi cuộn. Vì là con đầu của wrapper nên
+          chỉ dính trong phạm vi khối tab (Mô tả…FAQ) rồi tự nhả sau panel cuối — không
+          dính lì xuống tới "sản phẩm liên quan". Mobile xếp dọc nên bấm 1 mục = cuộn
+          tới section theo id. */}
+      <MobilePdpAnchorNav
+        stickyInline
+        items={[
+          ...tabs.map((t) => ({ id: t.id, label: labelOf(t) })),
+          ...anchorExtras.map((a): AnchorNavItem => ({ id: a.id, label: labelOf(a) })),
+        ]}
+      />
       {/* Tab nav ngang — chỉ desktop. Mobile ẩn: các panel xếp dọc bên dưới. */}
       <div className="tabs-nav max-md:hidden">
         <ul className="nav nav-tabs" role="tablist">
@@ -77,12 +101,12 @@ export function WpProductTabs({
         </ul>
       </div>
       <div className="tabs-content">
-        {resolvedTabs.map((t) => (
+        {resolvedTabs.map((t, i) => (
           <div
             key={t.id}
             id={t.id}
             className={cn(
-              "tab-panel fade wyswyg",
+              "tab-panel fade wyswyg scroll-mt-[var(--bb-header-height)]",
               active === t.id && "show active",
               // Mobile: ép MỌI panel hiển thị (đè WP `.tab-panel{display:none}`),
               // chèn heading nhãn + vạch ngăn cách phía trên như code cũ.
@@ -97,25 +121,18 @@ export function WpProductTabs({
                 (md:hidden): desktop dùng thanh tab ngang làm nhãn. Google index
                 mobile-first nên H2 này luôn được nhìn thấy. `!mb-4` đè
                 `.wyswyg h2{margin-bottom:30px}` để giữ đúng khoảng cách cũ. */}
-            <h2 className="md:hidden !mb-4 font-body text-lg font-semibold text-[var(--bb-text-primary)] uppercase leading-[1.2]">
+            <h2 className="md:hidden !mb-4 flex items-center gap-2.5 font-body text-lg font-semibold text-[var(--bb-text-primary)] uppercase leading-[1.2]">
+              {/* Số thứ tự mục (01–05) — CHỈ mobile, khớp mockup. Ô đỏ brand, chữ
+                  trắng, font heading (Oswald) cho cảm giác số "display". */}
+              <span className="inline-flex shrink-0 items-center justify-center bg-brand px-1.5 py-0.5 font-heading text-xs font-bold leading-none text-white tabular-nums">
+                {String(i + 1).padStart(2, "0")}
+              </span>
               {t.text}
             </h2>
             {t.content}
           </div>
         ))}
       </div>
-
-      {/* Thanh nav nổi mobile: uncontrolled — cuộn tới section theo id (mobile xếp
-          dọc nên không còn "đổi tab", chỉ scroll-to-section như code cũ). Mục đầu
-          "Tổng quan" trỏ về khối mua hàng (#pdp-overview) — giống code cũ. */}
-      <MobilePdpAnchorNav
-        items={[
-          { id: "pdp-overview", label: tt("overview") },
-          ...resolvedTabs.map((t) => ({ id: t.id, label: t.text })),
-          ...anchorExtras.map((a): AnchorNavItem => ({ id: a.id, label: labelOf(a) })),
-        ]}
-        triggerSelector=".bb-wp-pdp"
-      />
     </div>
   );
 }

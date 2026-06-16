@@ -3,13 +3,13 @@ import { useTranslation } from 'react-i18next'
 import { FilterSelect } from '../components/FilterSelect'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
-import { Eye, EyeOff, MoreHorizontal, Pencil, UserPlus } from 'lucide-react'
+import { Eye, EyeOff, Mail, MoreHorizontal, Pencil, UserPlus } from 'lucide-react'
 import { PaginationControls } from '../components/PaginationControls'
 import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
 import { Modal } from '../components/layout'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
-import { createAdminUser, fetchAdminUsers, fetchRoles, updateAdminUser, mapValidationErrors } from '../lib/adminApi'
+import { createAdminUser, fetchAdminUsers, fetchRoles, resendAdminInvite, updateAdminUser, mapValidationErrors } from '../lib/adminApi'
 import { formatDateTime } from '../lib/formatters'
 import { showConfirm } from '../lib/confirm'
 import { useDebounce } from '../lib/useDebounce'
@@ -26,12 +26,10 @@ const ROLE_META = {
   ADMIN:        { labelKey: 'adminUsers.roleAdmin'        },
   SHOP_MANAGER: { labelKey: 'adminUsers.roleShopManager'  },
   EDITOR:       { labelKey: 'adminUsers.roleEditor'       },
-  AUTHOR:       { labelKey: 'adminUsers.roleAuthor'       },
-  CONTRIBUTOR:  { labelKey: 'adminUsers.roleContributor'  },
-  SEO_EDITOR:   { labelKey: 'adminUsers.roleSeoEditor'    },
 }
 
 const STATUS_META = {
+  INVITED:   { labelKey: 'adminUsers.statusInvited'   },
   ACTIVE:    { labelKey: 'adminUsers.statusActive'    },
   DISABLED:  { labelKey: 'adminUsers.statusDisabled'  },
   SUSPENDED: { labelKey: 'adminUsers.statusSuspended' },
@@ -43,11 +41,9 @@ const ROLE_BADGE = {
   ADMIN: 'bb-badge-info',
   SHOP_MANAGER: 'bb-badge-info',
   EDITOR: 'bb-badge-neutral',
-  AUTHOR: 'bb-badge-info',
-  CONTRIBUTOR: 'bb-badge-neutral',
-  SEO_EDITOR: 'bb-badge-success',
 }
 const STATUS_BADGE = {
+  INVITED: 'bb-badge-info',
   ACTIVE: 'bb-badge-success',
   DISABLED: 'bb-badge-danger',
   SUSPENDED: 'bb-badge-warning',
@@ -139,10 +135,12 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
 
   // ── Create modal state ──────────────────────────────────────────────────
   const [createOpen, setCreateOpen] = useState(false)
-  const [createForm, setCreateForm] = useState({ email: '', displayName: '', role: 'ADMIN', password: '' })
+  const [createForm, setCreateForm] = useState({ email: '', displayName: '', role: 'ADMIN' })
   const [createError, setCreateError] = useState('')
   const [createFieldErrors, setCreateFieldErrors] = useState({})
   const [createSaving, setCreateSaving] = useState(false)
+  // After an invite is created/resent: { email, inviteUrl, emailSent } — shown as a banner.
+  const [inviteInfo, setInviteInfo] = useState(null)
 
   // ── Load list ───────────────────────────────────────────────────────────
   useEffect(() => {
@@ -179,7 +177,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
   }
 
   function openCreate() {
-    setCreateForm({ email: '', displayName: '', role: 'ADMIN', password: '' })
+    setCreateForm({ email: '', displayName: '', role: 'ADMIN' })
     setCreateError('')
     setCreateOpen(true)
   }
@@ -251,9 +249,9 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
         email: createForm.email.trim(),
         displayName: createForm.displayName.trim(),
         role: createForm.role,
-        password: createForm.password,
       })
       setListState((p) => ({ ...p, items: [r.item, ...p.items] }))
+      setInviteInfo({ email: r.item.email, emailSent: r.inviteEmailSent, inviteUrl: r.inviteUrl })
       closeCreate()
     } catch (err) {
       const fieldErrs = mapValidationErrors(err)
@@ -264,6 +262,15 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
       }
     } finally {
       setCreateSaving(false)
+    }
+  }
+
+  async function handleResendInvite(user) {
+    try {
+      const r = await resendAdminInvite(user.id)
+      setInviteInfo({ email: user.email, emailSent: r.inviteEmailSent, inviteUrl: r.inviteUrl })
+    } catch (err) {
+      setInviteInfo({ email: user.email, emailSent: false, inviteUrl: '', error: err.message || t('common.error') })
     }
   }
 
@@ -291,6 +298,27 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
       </div>
 
       {listState.warning ? <ReadOnlyBanner warning={listState.warning} /> : null}
+
+      {inviteInfo && (
+        <div className="flex items-start gap-3 rounded-md border border-info bg-info-bg p-3 text-sm">
+          <Mail size={16} className="mt-0.5 shrink-0 text-info" />
+          <div className="flex-1">
+            {inviteInfo.error
+              ? <span className="text-danger">{inviteInfo.error}</span>
+              : inviteInfo.emailSent
+                ? <span>{t('adminUsers.inviteSent', { email: inviteInfo.email })}</span>
+                : (
+                  <div className="flex flex-col gap-1">
+                    <span>{t('adminUsers.inviteNotEmailed', { email: inviteInfo.email })}</span>
+                    {inviteInfo.inviteUrl && (
+                      <code className="break-all rounded bg-muted px-2 py-1 text-xs">{inviteInfo.inviteUrl}</code>
+                    )}
+                  </div>
+                )}
+          </div>
+          <button type="button" className="bb-icon-btn" title={t('common.close')} onClick={() => setInviteInfo(null)}>×</button>
+        </div>
+      )}
 
       <div className="bb-filter-bar">
         <FilterSearchInput
@@ -398,6 +426,11 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
                         </td>
                         {canUpdate && (
                           <td className="col-actions">
+                            {u.status === 'INVITED' && (
+                              <button type="button" className="bb-icon-btn" title={t('adminUsers.resendInvite')} onClick={() => handleResendInvite(u)}>
+                                <Mail size={14} />
+                              </button>
+                            )}
                             <button type="button" className="bb-icon-btn" title={t('common.edit')} onClick={() => openEdit(u)}>
                               <Pencil size={14} />
                             </button>
@@ -584,12 +617,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
               </SelectContent>
             </Select>
           </div>
-          <PasswordField
-            value={createForm.password}
-            onChange={(e) => setCreateForm((p) => ({ ...p, password: e.target.value }))}
-            label={t('adminUsers.formPassword')}
-            hint={createFieldErrors.password || t('adminUsers.formPasswordStrengthHint')}
-          />
+          <p className="text-xs text-muted-foreground">{t('adminUsers.inviteHint')}</p>
         </form>
       </Modal>
     </div>

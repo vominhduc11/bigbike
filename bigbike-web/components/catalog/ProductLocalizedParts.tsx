@@ -86,6 +86,22 @@ export function ProductDescriptionTab({ viHtml }: { viHtml: string }) {
   return <LHtml field="description" viHtml={viHtml} className="wyswyg" />;
 }
 
+/** Tab "Hướng dẫn lắp đặt" — rich HTML, đổi theo ngôn ngữ; có trạng thái rỗng
+ *  giống các tab khác để luôn hiện trong thanh tab dù admin chưa nhập. */
+export function ProductInstallationTab({ viHtml }: { viHtml: string }) {
+  const t = useTranslations("Product");
+  const enHtml = useLocalizedField<unknown>("installationGuide");
+  const hasEn = typeof enHtml === "string" && enHtml.trim().length > 0;
+  if (!hasEn && viHtml.trim().length === 0) {
+    return (
+      <div className="wyswyg">
+        <p>{t("installationEmpty")}</p>
+      </div>
+    );
+  }
+  return <LHtml field="installationGuide" viHtml={viHtml} className="wyswyg" />;
+}
+
 /** Nội dung dài SEO cuối trang (contentBottom) — rich HTML, đổi theo ngôn ngữ.
  *  Fallback về bản VI render sẵn ở server khi payload EN không có field này. */
 export function ProductContentBottom({ viHtml }: { viHtml: string }) {

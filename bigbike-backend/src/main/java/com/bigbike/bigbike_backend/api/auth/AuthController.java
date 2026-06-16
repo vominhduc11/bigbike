@@ -9,12 +9,14 @@ import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.domain.auth.AdminPrincipal;
 import com.bigbike.bigbike_backend.domain.auth.AdminUserProfile;
 import com.bigbike.bigbike_backend.service.auth.AdminAuthService;
+import com.bigbike.bigbike_backend.service.auth.AdminInviteService;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,6 +26,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -38,6 +41,7 @@ public class AuthController {
     private boolean cookiesSecure;
 
     private final AdminAuthService adminAuthService;
+    private final AdminInviteService adminInviteService;
     private final DevAdminAuthService devAdminAuthService;
     private final ApiResponseFactory apiResponseFactory;
 
@@ -95,6 +99,25 @@ public class AuthController {
         }
         // Dev/test fallback — only works in dev/mock profiles
         return apiResponseFactory.data(devAdminAuthService.currentAdminUser(request), request);
+    }
+
+    // ── Admin invite (public, token-gated) ─────────────────────────────────────
+
+    @GetMapping("/admin/invite")
+    public ApiDataResponse<AdminInviteService.InviteInfo> validateInvite(
+            @RequestParam("token") String token,
+            HttpServletRequest request
+    ) {
+        return apiResponseFactory.data(adminInviteService.validateToken(token), request);
+    }
+
+    @PostMapping("/admin/accept-invite")
+    public ApiDataResponse<Void> acceptInvite(
+            @RequestBody Map<String, String> body,
+            HttpServletRequest request
+    ) {
+        adminInviteService.acceptInvite(body.get("token"), body.get("password"));
+        return apiResponseFactory.data(null, request);
     }
 
     // ── Cookie helpers ────────────────────────────────────────────────────────

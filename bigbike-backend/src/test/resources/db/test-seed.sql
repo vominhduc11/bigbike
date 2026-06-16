@@ -219,6 +219,10 @@ INSERT INTO admin_roles (id, name, description, is_system, created_at, updated_a
 SELECT 'EDITOR', 'Editor', 'Content and catalog editor', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM admin_roles WHERE id = 'EDITOR');
 
+-- AUTHOR / CONTRIBUTOR / SEO_EDITOR are no longer production built-in roles
+-- (removed by V200__reduce_default_roles.sql). They are kept here purely as
+-- test fixtures for DB-driven RBAC tests (AdminRedirectApiTest uses SEO_EDITOR;
+-- Phase1KInventoryP0FixApiTest uses CONTRIBUTOR as a minimal-permission principal).
 INSERT INTO admin_roles (id, name, description, is_system, created_at, updated_at)
 SELECT 'AUTHOR', 'Author', 'Content author', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM admin_roles WHERE id = 'AUTHOR');

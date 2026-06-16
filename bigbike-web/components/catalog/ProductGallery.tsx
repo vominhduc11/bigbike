@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { MouseEvent } from "react";
+import type { CSSProperties, MouseEvent } from "react";
 import { useTranslations } from "next-intl";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { A11y, FreeMode, Keyboard, Thumbs } from "swiper/modules";
@@ -21,16 +21,25 @@ import { useResponsiveValue } from "@/lib/hooks/useResponsiveValue";
 const ZOOM_FACTOR = 2.5;
 const LENS_SIZE_PCT = 100 / ZOOM_FACTOR;
 
-// Vertical thumbnail rail (≥1024): fixed-size slides that flow and scroll. The
-// rail gets a DEFINITE height (= content, capped at the live main-image height)
-// so Swiper can detect overflow and scroll — `height:auto` would make it think
-// everything fits and never lock/scroll. Slide height + gap mirror the Swiper
-// config. The cap is the MEASURED image height (not a per-tier constant), so it
-// tracks the fluid range too (e.g. 1024–1140px before the container caps).
-// Vertical thumb slides are SQUARE: their height equals the rail-column width
-// tier (130/150/170px), so each thumbnail reads as a clean uniform tile that
-// matches the square main image. MUST mirror both the SwiperSlide !h-* classes
-// and the grid rail-column widths in the JSX — keep all three in lockstep.
+// Vertical thumbnail rail (≥1024): slides flow and scroll. The rail gets a
+// DEFINITE height (= content, capped at the live main-image height) so Swiper can
+// detect overflow and scroll — `height:auto` would make it think everything fits
+// and never lock/scroll. The cap is the MEASURED image height (not a per-tier
+// constant), so it tracks the fluid range too (e.g. 1024–1140px before the
+// container caps).
+//
+// Sizing the visible tiles when the rail overflows (FILL mode): the column is
+// locked to the main-image height, so the rail (the Swiper element, flex-1) has a
+// fixed height. We MEASURE that height directly (ResizeObserver on the rail el) —
+// NOT estimate it as image − arrow-chrome, because a few px of chrome error leaves
+// a fractional 4th tile peeking at the bottom. We don't show that partial: pick
+// how many WHOLE square-ish tiles best fill the measured rail (`round(railH /
+// tile)`) and size every tile to exactly `railH / fitCount`, so N tiles fill flush
+// with no leftover. The per-tier value below is the SQUARE reference size (=
+// rail-column width 130/150/170px); it picks the fit count and still drives the
+// slide height when the rail does NOT overflow (short rail hugs its content, slides
+// stay square). MUST mirror the grid rail-column widths and the !w-/!h- slide
+// classes in the JSX — keep in lockstep.
 function thumbSlideHeightForWidth(width: number): number {
   if (width >= 1920) return 170;
   if (width >= 1536) return 150;
@@ -202,6 +211,10 @@ export function ProductGallery({
   // Live pixel height of the (square) main image, used to cap the vertical
   // thumbnail rail. Measured so it tracks the fluid range, not assumed per tier.
   const [mainImageH, setMainImageH] = useState(0);
+  // Live pixel height of the vertical thumbnail rail (the Swiper element, flex-1).
+  // Measured directly so FILL-mode tiles divide the EXACT available space — an
+  // estimate (image − arrow chrome) is a few px off and leaves a partial tile.
+  const [railH, setRailH] = useState(0);
   const mainRef = useRef<SwiperType | null>(null);
 
   // Đổi biến thể → cả hai Swiper remount theo `key`. Phải BỎ tham chiếu
@@ -251,6 +264,31 @@ export function ProductGallery({
         ? false
         : count > 4;
 
+  // FILL mode: rail overflows at ≥1024, so the column is locked to the image
+  // height and the rail (flex-1) has a fixed height — which we MEASURE (railH), not
+  // estimate, so the division lands exactly. Pick the whole number of tiles that
+  // best fills it (round → nearest to square) and size each tile to railH/fitCount
+  // so N tiles fill flush with no fractional 4th peeking.
+  //
+  // We DON'T do this via Swiper's `slidesPerView`: Swiper's setBreakpoint()
+  // early-returns when the active breakpoint key is unchanged (still 1024), so a
+  // runtime slidesPerView change inside the same breakpoint never applies. Instead
+  // keep slidesPerView:"auto" and drive the tile HEIGHT from a CSS var (set below) —
+  // "auto" reads it from the DOM and Swiper's resize observer recomputes on change.
+  const verticalFill =
+    viewportWidth >= 1024 && Boolean(verticalRail?.overflow) && railH >= thumbSlideH;
+  // FLOOR (not round): the visible tile stays a fixed SQUARE (= rail-column width),
+  // so we can only show as many WHOLE squares as actually fit — rounding up would
+  // make the square taller than its slide and overflow. The leftover becomes even
+  // spacing (see below), keeping tiles square while still filling the column.
+  const thumbFitCount = verticalFill
+    ? Math.min(count, Math.max(1, Math.floor(railH / thumbSlideH)))
+    : 0;
+  // Each slide is railH/fitCount tall (so N slides fill the measured rail flush);
+  // the square tile is centered in it, so the surplus (slide − square) shows as an
+  // even gap above/below every tile.
+  const thumbFillH = verticalFill ? railH / thumbFitCount : 0;
+
   // Zoom only applies to image slides.
   const activeItem = allItems[activeIndex] ?? allItems[0] ?? null;
   const zoomImageUrl =
@@ -286,6 +324,21 @@ export function ProductGallery({
     ro.observe(node);
     return () => ro.disconnect();
   }, []);
+
+  // Track the rail's own rendered height (the Swiper element). FILL mode divides
+  // THIS exact value, so no chrome estimate is needed and no partial tile is left.
+  // The el comes from the thumbs Swiper instance; re-observe whenever it remounts
+  // (variant switch re-keys the Swiper → new el).
+  useEffect(() => {
+    const el = thumbsSwiper?.el;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver((entries) => {
+      const h = entries[0]?.contentRect.height;
+      if (h) setRailH(Math.round(h));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [thumbsSwiper]);
 
   function updateZoomPos(e: MouseEvent<HTMLDivElement>) {
     const node = mainBoxRef.current;
@@ -360,8 +413,10 @@ export function ProductGallery({
               // balloon — at e.g. 760px "3 per view" would otherwise be 211px each.
               540: { direction: "horizontal", slidesPerView: "auto", spaceBetween: 10 },
               768: { direction: "horizontal", slidesPerView: "auto", spaceBetween: 12 },
-              // Vertical rail: thumbnails stacked flush (no gap). How many show comes
-              // from the column's definite height (flex-1), not slidesPerView.
+              // Vertical rail: thumbnails stacked flush (no gap), count driven by
+              // each slide's own height ("auto"). In FILL mode that height is set
+              // inline to railHeight/fitCount so N whole tiles fill the locked
+              // column; otherwise it's the square per-tier height class.
               1024: { direction: "vertical", slidesPerView: "auto", spaceBetween: 0 },
             }}
             // ≥1024 the rail is `flex-1` and fills whatever the fixed-height column
@@ -370,7 +425,16 @@ export function ProductGallery({
             // overflow and scroll. The max-h tiers are a pre-hydration guard (before
             // the column's measured height lands) so a many-image rail doesn't flash
             // full-content-tall.
-            className="min-[1024px]:flex-1 min-[1024px]:min-h-0 min-[1024px]:max-h-[470px] min-[1536px]:max-h-[598px] min-[1920px]:max-h-[738px]"
+            //
+            // <540 PRE-INIT GUARD: phones use slidesPerView:3, but slide widths are
+            // set by Swiper in JS — before hydration each `.swiper-slide{width:100%}`
+            // so the active thumb balloons to full width and the strip stacks (the
+            // reload flash). Lock each slide to 1/3 width UNTIL Swiper adds
+            // `.swiper-initialized`, so the first server paint already shows the small
+            // 3-up row. Once initialized the `:not(...)` no longer matches and
+            // Swiper's computed inline width takes over — no effect on runtime layout.
+            // ≥540 doesn't need this (slides carry an explicit `!w-[112px]`/rail width).
+            className="max-[539px]:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/3 min-[1024px]:flex-1 min-[1024px]:min-h-0 min-[1024px]:max-h-[470px] min-[1536px]:max-h-[598px] min-[1920px]:max-h-[738px]"
           >
             {allItems.map((item, index) => {
               const active = index === activeIndex;
@@ -393,7 +457,12 @@ export function ProductGallery({
                 // Border stays a constant 2px (only the COLOR toggles) so switching
                 // the active thumb never shifts layout. Inactive = transparent (no
                 // visible frame); active = brand red.
-                "w-full h-full !box-border border-2 p-1 transition-colors",
+                "w-full !box-border border-2 p-1 transition-colors",
+                // FILL mode slides are taller than a square (railH/fitCount), so the
+                // tile must be a fixed SQUARE (aspect-square, centered by the slide)
+                // rather than h-full — otherwise it stretches tall like the slide.
+                // Everywhere else the slide IS square, so h-full = square.
+                verticalFill ? "aspect-square" : "h-full",
                 active ? "border-brand" : "border-transparent",
               );
               // Slide also forced to border-box (same inherited-content-box trap) so
@@ -403,15 +472,38 @@ export function ProductGallery({
               // slidesPerView:3, and aspect-square + !h-auto makes the height follow
               // it (true square). 540–1023: fixed 112×112 squares (auto count) so they
               // stay a sensible size instead of ballooning. ≥1024: square via the
-              // per-tier !h-* (width comes from the rail column).
-              const slideClass =
-                "cursor-pointer !box-border max-[539px]:aspect-square max-[539px]:!h-auto min-[540px]:max-[1023px]:!w-[112px] min-[540px]:max-[1023px]:!h-[112px] min-[1024px]:!px-[2px] min-[1024px]:!h-[130px] min-[1536px]:!h-[150px] min-[1920px]:!h-[170px]";
+              // per-tier !h-* (width comes from the rail column) — but ONLY when the
+              // rail does NOT overflow. In FILL mode the height comes from the
+              // --bb-thumb-h CSS var (railHeight/fitCount) instead.
+              //
+              // Why a CSS var + !important class and NOT an inline height: with
+              // slidesPerView "auto" AND a breakpoints config that sets slidesPerView,
+              // Swiper's updateSlides RESETS each slide's inline main-axis size
+              // (`slide.style.height = ''` in vertical) before measuring — that wipes
+              // any inline height we set. A custom property survives the reset, and
+              // the height class below re-applies it as height:var() with !important,
+              // which Swiper then reads back as the slide size. (The original square
+              // rail worked for the same reason: a height class, not inline.)
+              const slideClass = cn(
+                "cursor-pointer !box-border max-[539px]:aspect-square max-[539px]:!h-auto min-[540px]:max-[1023px]:!w-[112px] min-[540px]:max-[1023px]:!h-[112px] min-[1024px]:!px-[2px]",
+                verticalFill
+                  // FILL: slide is railH/fitCount tall and centers the square tile, so
+                  // the surplus (slide − square) reads as an even gap above/below.
+                  ? "min-[1024px]:!h-[var(--bb-thumb-h)] min-[1024px]:flex min-[1024px]:items-center min-[1024px]:justify-center"
+                  : "min-[1024px]:!h-[130px] min-[1536px]:!h-[150px] min-[1920px]:!h-[170px]",
+              );
+              // FILL mode only: feed the per-tile height to the class above via a
+              // custom property (Swiper won't clear it, unlike inline `height`).
+              const slideStyle = verticalFill
+                ? ({ "--bb-thumb-h": `${thumbFillH}px` } as CSSProperties)
+                : undefined;
 
               if (item.kind === "video") {
                 return (
                   <SwiperSlide
                     key={itemKey(item, index)}
                     className={slideClass}
+                    style={slideStyle}
                     onClick={() => mainRef.current?.slideTo(index)}
                   >
                     <div className={cn(tileClass, "relative bg-black")}>
@@ -430,6 +522,7 @@ export function ProductGallery({
                 <SwiperSlide
                   key={itemKey(item, index)}
                   className={slideClass}
+                  style={slideStyle}
                   onClick={() => mainRef.current?.slideTo(index)}
                 >
                   <div className={cn(tileClass, "bg-white")}>

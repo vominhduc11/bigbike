@@ -24,6 +24,10 @@ type Props = {
   scrollTargetSelector?: string;
   /** Header để bám mép dưới (đo runtime). Mặc định header WP. */
   headerSelector?: string;
+  /** Sticky-inline mode (khớp mockup): thanh nằm TRONG dòng chảy ngay đầu khối nội
+   *  dung, LUÔN hiện từ đầu, dùng `position: sticky` để dính dưới header khi cuộn —
+   *  thay vì kiểu `fixed` ẩn-rồi-trượt-vào. Bỏ qua observer trigger hiện/ẩn. */
+  stickyInline?: boolean;
 };
 
 export function MobilePdpAnchorNav({
@@ -33,12 +37,16 @@ export function MobilePdpAnchorNav({
   onSelect,
   scrollTargetSelector,
   headerSelector = "header.headroom",
+  stickyInline = false,
 }: Props) {
   const t = useTranslations("A11y");
   const controlled = typeof onSelect === "function";
   const [internalActive, setInternalActive] = useState(items[0]?.id ?? "");
   const activeId = controlled ? (controlledActiveId ?? items[0]?.id ?? "") : internalActive;
   const [visible, setVisible] = useState(false);
+  // Sticky-inline luôn hiện; mặc định (fixed) hiện theo observer trigger. Suy ra từ
+  // prop thay vì setState trong effect (tránh cascading render).
+  const shown = stickyInline || visible;
   // Mép trên thanh = mép DƯỚI header thật (đo runtime), null = chưa đo → dùng fallback CSS.
   const [topPx, setTopPx] = useState<number | null>(null);
   const navRef = useRef<HTMLElement>(null);
@@ -52,8 +60,10 @@ export function MobilePdpAnchorNav({
     btn?.scrollIntoView({ inline: "nearest", block: "nearest", behavior: "smooth" });
   }, []);
 
-  // Hiện thanh nav khi element trigger cuộn khỏi tầm nhìn (lên trên).
+  // Sticky-inline: luôn hiện ngay từ đầu (khớp mockup) — bỏ qua observer trigger.
+  // Mặc định (fixed): hiện thanh nav khi element trigger cuộn khỏi tầm nhìn (lên trên).
   useEffect(() => {
+    if (stickyInline) return;
     const trigger = document.querySelector<HTMLElement>(triggerSelector);
     if (!trigger) return;
     const observer = new IntersectionObserver(
@@ -62,7 +72,7 @@ export function MobilePdpAnchorNav({
     );
     observer.observe(trigger);
     return () => observer.disconnect();
-  }, [triggerSelector]);
+  }, [triggerSelector, stickyInline]);
 
   // Bám mép dưới header WP thật (cao ~80px ≠ --bb-header-height 60px, lại co/giãn
   // theo headroom) để thanh nằm SÁT DƯỚI header, không đè lên. CHỈ bám khi thanh
@@ -80,7 +90,7 @@ export function MobilePdpAnchorNav({
       setTopPx(Math.max(0, Math.round(header.getBoundingClientRect().bottom)));
     };
     const onScroll = () => {
-      if (!visible) return; // đang ẩn → đóng băng top, không để header kéo thanh lệch khi biến mất
+      if (!shown) return; // đang ẩn → đóng băng top, không để header kéo thanh lệch khi biến mất
       if (!raf) raf = requestAnimationFrame(measure);
     };
     measure();
@@ -91,7 +101,7 @@ export function MobilePdpAnchorNav({
       window.removeEventListener("resize", onScroll);
       if (raf) cancelAnimationFrame(raf);
     };
-  }, [headerSelector, visible]);
+  }, [headerSelector, shown]);
 
   // Uncontrolled: theo dõi section đang xem để tô đậm. Controlled thì cha lo state.
   useEffect(() => {
@@ -184,17 +194,24 @@ export function MobilePdpAnchorNav({
       // để GPU lo transform. Lúc ẩn dùng pointer-events-none để không chặn tương tác bên
       // dưới. Tôn trọng prefers-reduced-motion (tắt transition → hiện tức thì, không trượt).
       className={cn(
-        "flex flex-nowrap whitespace-nowrap md:!hidden fixed top-[var(--bb-header-height)] left-0 right-0 z-[9]",
+        "flex flex-nowrap whitespace-nowrap md:!hidden top-[var(--bb-header-height)] z-[9]",
         "overflow-x-auto overflow-y-hidden [scroll-snap-type:x_mandatory] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
         "bg-white border-b border-border px-2 gap-0 shadow-[0_4px_12px_-6px_rgba(0,0,0,0.25)]",
-        "transition-[opacity,transform] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform motion-reduce:transition-none",
-        visible
-          ? "opacity-100 translate-y-0 pointer-events-auto"
-          : "opacity-0 -translate-y-full pointer-events-none",
+        stickyInline
+          // Sticky-inline (mockup): dính trong dòng chảy, luôn hiện, không reveal.
+          ? "sticky"
+          // Mặc định (fixed): trượt-vào từ sau header kèm fade, ẩn cho tới khi trigger cuộn qua.
+          : cn(
+              "fixed left-0 right-0",
+              "transition-[opacity,transform] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform motion-reduce:transition-none",
+              visible
+                ? "opacity-100 translate-y-0 pointer-events-auto"
+                : "opacity-0 -translate-y-full pointer-events-none",
+            ),
       )}
       style={topPx != null ? { top: topPx } : undefined}
       aria-label={t("productContentNav")}
-      aria-hidden={!visible}
+      aria-hidden={!shown}
     >
       {items.map((item) => (
         <button
@@ -209,7 +226,7 @@ export function MobilePdpAnchorNav({
               : "text-muted-foreground border-b-transparent",
           )}
           onClick={() => handleClick(item.id)}
-          tabIndex={visible ? 0 : -1}
+          tabIndex={shown ? 0 : -1}
           aria-current={activeId === item.id ? "location" : undefined}
         >
           {item.label}

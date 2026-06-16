@@ -33,6 +33,11 @@ export function BrandCarousel({ brands }: Props) {
           // `new Swiper(".partner-slide .swiper-container")` → double-init đè lên Swiper
           // React trên reload home. Swiper React tự render class `.swiper` + style từ
           // `swiper/css`, không cần class WP cũ nên giao diện giữ nguyên.
+          //
+          // PRE-INIT GUARD: trước khi `.swiper-initialized` được thêm, mỗi slide
+          // width:100% → 1 logo phình bằng cả khung rồi nhảy thành dải khi JS chạy.
+          // Khoá bề rộng slide khớp slidesPerView (2 / 767:5) tới khi init.
+          className="[&:not(.swiper-initialized)_.swiper-slide]:!w-1/2 min-[767px]:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/5"
           speed={1000}
           slidesPerView={2}
           spaceBetween={13}
