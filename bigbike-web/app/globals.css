@@ -881,6 +881,23 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
     align-items: center;
     justify-content: center;
   }
+  /* Khi submenu mở (home.min.js gắn `.active` lên li), lật chevron lên trên để
+     báo trạng thái đã mở. Theme WP gốc chỉ trượt submenu chứ không xoay mũi tên.
+     `.arrow` đã có `transition:.7s` sẵn nên động tác xoay mượt theo. */
+  header .navigation .menu-item-has-children.active > .arrow {
+    transform: rotate(180deg) !important;
+    transform-origin: center !important;
+  }
+  /* Thụt lề tăng dần theo độ sâu submenu. Theme WP để mọi cấp con cùng
+     padding-left:50px (`.sub-menu li>a`) nên cấp 3 trở xuống trông ngang hàng
+     cấp 2 → mất phân cấp. Cộng 20px cho mỗi cấp lồng thêm để lộ rõ quan hệ
+     cha–con; font/cỡ chữ giữ nguyên. */
+  header .navigation .sub-menu .sub-menu li > a {
+    padding-left: 70px !important;
+  }
+  header .navigation .sub-menu .sub-menu .sub-menu li > a {
+    padding-left: 90px !important;
+  }
 }
 
 /* Header chrome (.bb-header-container / .bb-header-row / .bb-right-header / .bb-user-control
@@ -4485,6 +4502,64 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
      with the product overview/tabs/related rails, which cap at 1600px at 4xl
      (the gallery is column-filling, not 2240-wide). See STYLEGUIDE container
      exception for /product/[slug]. */
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   UNIFORM ULTRA-WIDE EXPANSION — phương án B (toàn site), 3xl + 4xl ONLY.
+   Mọi surface từng ghim ở Bootstrap .container 1140px (header, footer, giỏ
+   hàng, thanh toán, tài khoản, tin tức, trang tĩnh, home) nay nới theo content
+   rail = var(--bb-container-xl) (1600px @3xl, 2240px @4xl) — lấy hệ token
+   2xl→3xl→4xl làm chuẩn. Kèm densify lưới + cap cột chữ + cap sidebar/PDP.
+
+   RÀNG BUỘC: KHÔNG có rule nào dưới 1920px trong block này — mọi breakpoint
+   ≤2xl giữ nguyên tuyệt đối. `body .…` để thắng specificity wp-theme-*.css
+   (nạp sau globals, unlayered). Bootstrap .container = (0,1,0) → body cần (0,1,1).
+   ══════════════════════════════════════════════════════════════════════ */
+@media (min-width: 1920px) {
+  /* 1 — Generic WP container nới theo token (=1600). Header/footer/cart/checkout/
+        account/news/static/home hết ghim 1140 → hết dải trống + header canh thẳng
+        content. .container.mw-1920 (0,2,0) và .bb-wp-container (đã có rule riêng)
+        thắng selector này nên giữ width riêng của chúng. */
+  body .container { max-width: var(--bb-container-xl); }
+
+  /* 2 — Account (WP): cap sidebar khỏi giãn 25% (~400px) khi container rộng;
+        content chiếm phần còn lại. Khớp tỉ lệ .bb-account-layout (320px @3xl). */
+  body .account-dashboard > .row > .col-md-3 { flex: 0 0 320px; max-width: 320px; }
+  body .account-dashboard > .row > .col-md-9 { flex: 1 1 0%; max-width: none; }
+
+  /* 3 — Cap cột chữ (line-length) — container rộng nhưng prose không dài quá đọc.
+        Chỉ prose thuần: blog detail + trang tĩnh có sidebar (col-md-9). Trang
+        gioi-thieu/lien-he (static-page full-width col-md-12) KHÔNG bị cap. */
+  body .blog-content.wyswyg,
+  body .col-md-9 > .static-page.wyswyg { max-width: 1000px; }
+
+  /* 4 — Densify lưới để lấp cột, giữ kích thước tile ~constant so với 2xl.
+        Sản phẩm (archive/category/search, đều có sidebar): 4 → 5 cột.
+        Home category (full-width): 4 → 5 cột.  Tin tức (có sidebar): 3 → 4 cột. */
+  body .product-list .col-md-3.col-6 { flex: 0 0 20%; max-width: 20%; }
+  body .product-category-list .col-md-3.col-6 { flex: 0 0 20%; max-width: 20%; }
+  body .bb-blog-listing-parity .col-md-4 { flex: 0 0 25%; max-width: 25%; }
+}
+
+@media (min-width: 2560px) {
+  /* 1 — token = 2240. */
+  body .container { max-width: var(--bb-container-xl); }
+  /* PDP exception: mọi rail (.container) của trang sản phẩm chốt 1600 ở 4xl thay
+     vì 2240 — nếu nới tới 2240 sẽ sinh dải trắng lớn quanh gallery, vỡ tỉ lệ.
+     Ở 3xl token đã = 1600 nên không cần override. Xem STYLEGUIDE /product/[slug]. */
+  body .bb-wp-pdp-page .container { max-width: 1600px; }
+
+  /* 2 — Account sidebar 360px @4xl (khớp .bb-account-layout). */
+  body .account-dashboard > .row > .col-md-3 { flex: 0 0 360px; max-width: 360px; }
+
+  /* 3 — Prose cap nới nhẹ ở màn rất rộng. */
+  body .blog-content.wyswyg,
+  body .col-md-9 > .static-page.wyswyg { max-width: 1100px; }
+
+  /* 4 — Densify: sản phẩm 5 → 6 cột, home category 5 → 6, tin tức 4 → 5. */
+  body .product-list .col-md-3.col-6 { flex: 0 0 16.6667%; max-width: 16.6667%; }
+  body .product-category-list .col-md-3.col-6 { flex: 0 0 16.6667%; max-width: 16.6667%; }
+  body .bb-blog-listing-parity .col-md-4 { flex: 0 0 20%; max-width: 20%; }
 }
 
 /* =====================================================================

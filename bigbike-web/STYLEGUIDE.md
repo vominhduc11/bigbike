@@ -236,6 +236,29 @@ Token cỡ chữ expose thành Tailwind utility trong `app/globals.css` (`@theme
 
 Container max-width: `--bb-container-xl` co giãn theo tier — `75rem` (1200px) mặc định → `85rem` (1360px) tại `2xl` → `100rem` (1600px) tại `3xl` → `140rem` (2240px) tại `4xl`. Override tập trung trong block `LARGE-DESKTOP RESPONSIVE EXPANSION` của `globals.css`.
 
+### Uniform ultra-wide expansion (phương án B — toàn site, chỉ `3xl`/`4xl`)
+
+Mọi trang/component đều **nới đều** theo content rail ở `3xl`/`4xl`, không trang nào để dải trống hai bên hay lệch với phần còn lại. Các surface cũ ghim ở Bootstrap `.container` 1140px (header, footer, giỏ hàng, thanh toán, tài khoản, tin tức, trang tĩnh, home) nay bám `var(--bb-container-xl)` qua rule `body .container { max-width: var(--bb-container-xl) }` đặt trong block `UNIFORM ULTRA-WIDE EXPANSION` của `globals.css`.
+
+**Ràng buộc tuyệt đối:** block này **chỉ chứa media query `min-width:1920px` và `min-width:2560px`** — không tác động bất kỳ breakpoint nào ≤ `2xl`. Lấy hệ token `2xl→3xl→4xl` làm chuẩn cho đích width (1600/2240). Selector dùng `body .…` để thắng specificity của `wp-theme-*.css` (nạp sau `globals.css`, unlayered).
+
+Densify lưới (giữ kích thước tile ~constant, đặt cùng block):
+
+| Lưới | Selector | `3xl` | `4xl` |
+|---|---|---|---|
+| Sản phẩm archive/category/search (có sidebar) | `.product-list .col-md-3.col-6` | 5 cột | 6 cột |
+| Danh mục trang chủ (full-width) | `.product-category-list .col-md-3.col-6` | 5 cột | 6 cột |
+| Tin tức (có sidebar) | `.bb-blog-listing-parity .col-md-4` | 4 cột | 5 cột |
+| Thương hiệu (`/brands`) | Tailwind `lg:grid-cols-5` | `3xl:grid-cols-6` | `4xl:grid-cols-7` |
+| Carousel logo hãng (home) | Swiper `breakpoints` | `1920: 6` | `2560: 7` |
+
+Cap để giữ chất lượng khi container rộng:
+- **Cột chữ (prose):** `.blog-content.wyswyg` (bài viết) và `.col-md-9 > .static-page.wyswyg` (trang tĩnh có sidebar) cap `1000px`/`1100px` để dòng không quá dài. Trang `gioi-thieu`/`lien-he` (`.static-page.wyswyg` full-width `col-md-12`) **không** cap.
+- **Sidebar tài khoản:** `.account-dashboard > .row > .col-md-3` cap `320px`/`360px` (khớp tỉ lệ `.bb-account-layout`), content lấy phần còn lại.
+- **PDP:** trang sản phẩm gắn class `.bb-wp-pdp-page` trên `#main-content`; mọi `.container` của nó **chốt 1600px ở `4xl`** (`body .bb-wp-pdp-page .container`), nối tiếp ngoại lệ rail 1600 bên dưới.
+
+`bb-product-archive` / `bb-search-results-page` trong `globals.css` là **dead CSS** (không gắn vào markup) — giữ lại theo policy migration WP, **không** dùng làm hook cho rule mới; grid thật dùng Bootstrap `.col-md-3.col-6` trong `.product-list`.
+
 > **Ngoại lệ — trang chi tiết sản phẩm (`/product/[slug]`):** toàn bộ các rail của trang **chốt tối đa 1600px ở `4xl`** thay vì 2240px — gồm breadcrumb (`.bb-wp-pdp .bb-breadcrumb` trong `globals.css`), khối tổng quan ảnh+mua hàng, tabs mô tả, và carousel sản phẩm liên quan — để mọi mép trái/phải canh thẳng nhau. Lý do chốt 1600 thay vì 2240: nếu nới tới 2240px sẽ sinh dải trắng rất lớn quanh khu ảnh, vỡ tỉ lệ. Trong khối tổng quan, khu ảnh **lấp đầy cột 7fr** (bỏ giới hạn cứng 640px + bỏ căn-giữa ở `≥1025px`) nên mép trái ảnh thẳng hàng breadcrumb/tabs; cột thumbnail dùng slide cao cố định 100px với `slidesPerView:"auto"`, **co theo số ảnh thật**: chiều cao thanh được tính bằng JS = `min(tổng-chiều-cao-thumbnail, chiều-cao-ảnh)` theo bậc 470/598/738px (đặt inline để Swiper có chiều cao xác định mà cuộn được khi tràn — `height:auto` sẽ khiến Swiper tưởng luôn vừa và không cuộn). `self-start` chặn grid kéo giãn thanh. Nút cuộn lên/xuống chỉ hiện khi thumbnail thực sự tràn (`showThumbArrows = tổng-chiều-cao > chiều-cao-ảnh`), không phải lúc nào cũng hiện. Carousel liên quan giữ tối đa 4 cột (bỏ mức 5 cột ở `4xl`) cho khớp container 1600px. Đây là ngoại lệ có chủ đích của riêng trang sản phẩm, không áp cho các trang khác.
 
 > **Quy tắc:** Rule mới phải dùng Tailwind prefix (`sm:`/`md:`/`lg:`/`xl:`/`2xl:`/`3xl:`/`4xl:`) hoặc các giá trị pixel tương ứng trong media query. Không thêm breakpoint ad-hoc mới ngoài 7 tier trên. Khi thêm class `4xl:`, kiểm tra rằng container/grid cha cũng đã có rule tương ứng để tránh layout lệch ở viewport ≥ 2560px.

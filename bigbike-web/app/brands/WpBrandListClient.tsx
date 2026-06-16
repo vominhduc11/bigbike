@@ -69,7 +69,7 @@ export function WpBrandListClient({
   if (isLoading && brands.length === 0) {
     // Skeleton lần tải đầu — giữ lưới, tránh layout shift.
     return (
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 3xl:grid-cols-6 4xl:grid-cols-7">
         {Array.from({ length: 10 }).map((_, i) => (
           <div key={i} className="flex h-full flex-col items-center justify-between gap-4 border border-neutral-200 bg-white p-5">
             <Skeleton className="h-16 w-4/5" />
@@ -91,7 +91,7 @@ export function WpBrandListClient({
     <>
       {/* Lưới card đồng đều: ô bằng nhau, logo căn giữa trong khung cố định 64px
           (object-contain), tên hãng dưới đáy. */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 3xl:grid-cols-6 4xl:grid-cols-7">
         {brands.map((brand) => {
           const name = safeText(brand.name, "Thương hiệu");
           const logoUrl = toLegacyWpMediaUrl(resolveMediaUrl(brand.logo?.url?.trim()));

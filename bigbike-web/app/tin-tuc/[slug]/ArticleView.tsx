@@ -74,6 +74,12 @@ export function ArticleView({
     rewriteMediaUrls: true,
   });
 
+  // Sidebar chỉ có nội dung khi có rail bài (storefront). Ở live-preview các rail
+  // rỗng → bỏ cột sidebar và cho thân bài tràn đủ chiều rộng để không bị kẹt ở
+  // 66% (col-md-8) với khoảng trống bên phải. Cũng xử lý luôn trang thật khi
+  // chưa có tin nổi bật/tin mới.
+  const hasSidebar = highlighted.length > 0 || newest.length > 0;
+
   const inner = (
     <div className="single single-post single-format-standard">
       <WpCategoryHero
@@ -88,7 +94,7 @@ export function ArticleView({
       <div id="main-content">
         <div className="container">
           <div className="row">
-            <div className="col-md-8">
+            <div className={hasSidebar ? "col-md-8" : "col-md-12"}>
               <div className="blog">
                 <div className="blog-thumbnail">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -128,10 +134,12 @@ export function ArticleView({
               </div>
             </div>
 
-            <div className="col-md-4">
-              <WpSidebarWidget title={<Tr ns="Blog" k="featuredNews" />} articles={highlighted} />
-              <WpSidebarWidget title={<Tr ns="Blog" k="latestNews" />} articles={newest} />
-            </div>
+            {hasSidebar ? (
+              <div className="col-md-4">
+                <WpSidebarWidget title={<Tr ns="Blog" k="featuredNews" />} articles={highlighted} />
+                <WpSidebarWidget title={<Tr ns="Blog" k="latestNews" />} articles={newest} />
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
