@@ -95,7 +95,7 @@ export default async function CategoryDetailPage({ params }: CategoryDetailPageP
     return (
       <div id="main-content">
         <div className="container">
-          <p className="woocommerce-info">{categoryResult.error?.message ?? <Tr ns="Catalog" k="categoryLoadFailed" />}</p>
+          <p className="woocommerce-info"><Tr ns="Catalog" k="categoryLoadFailed" /></p>
         </div>
       </div>
     );

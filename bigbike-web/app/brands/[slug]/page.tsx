@@ -5,6 +5,7 @@ import { WpCategoryHero, type WpCategoryCrumb } from "@/components/wp/WpCategory
 import { WpCatalogClient } from "@/components/wp/WpCatalogClient";
 import { WpThemeStylesheet } from "@/components/wp/WpThemeStylesheet";
 import { LHtml, LText, LocalizedContentProvider } from "@/components/i18n/LocalizedContent";
+import { Tr } from "@/components/i18n/Tr";
 import { getBrandBySlug, getCatalogFacets, listBrands, listCategories, listProducts } from "@/lib/api/public-api";
 import { DEFAULT_PRODUCT_PAGE_SIZE, DEFAULT_PRODUCT_SORT } from "@/lib/constants/catalog";
 import { buildBrandBreadcrumbJsonLd, serializeJsonLd } from "@/lib/seo/json-ld";
@@ -81,7 +82,7 @@ export default async function BrandDetailPage({ params }: BrandDetailPageProps) 
     return (
       <div id="main-content">
         <div className="container">
-          <p className="woocommerce-info">{brandResult.error?.message ?? "Không tải được thông tin thương hiệu."}</p>
+          <p className="woocommerce-info"><Tr ns="Catalog" k="brandDetailLoadFailed" /></p>
         </div>
       </div>
     );

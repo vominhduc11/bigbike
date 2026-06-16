@@ -13,6 +13,7 @@ import { HomeCategoryGrid } from "@/components/home/HomeCategoryGrid";
 import { HomeNewsList } from "@/components/home/HomeNewsList";
 import {
   HomeAboutSection,
+  HomeBlockHeading,
   HomeContentBottom,
   HomeExperienceHeading,
 } from "@/components/home/HomeLocalizedSettings";
@@ -273,10 +274,15 @@ export default async function HomePage() {
       {/* ===== 4. Product list + category grid ===== */}
       <div className="product-list pt-40 pb-40" data-bb-focus="home_featured">
         <div className="container">
-          <div className="block-title text-center mb-40">
-            <p className="sub-title">{featuredKicker || <Tr ns="Home" k="featuredKicker" />}</p>
-            <h3>{featuredTitle || <Tr ns="Home" k="featuredTitle" />}</h3>
-          </div>
+          <HomeBlockHeading
+            className="block-title text-center mb-40"
+            kickerSettingKey="home_featured_kicker"
+            titleSettingKey="home_featured_title"
+            kicker={featuredKicker}
+            title={featuredTitle}
+            fallbackKickerKey="featuredKicker"
+            fallbackTitleKey="featuredTitle"
+          />
           <HomeFeaturedProducts initialProducts={carouselProducts} />
 
           <HomeCategoryGrid initialCategories={categories} />
@@ -311,10 +317,15 @@ export default async function HomePage() {
       {newsArticles.length > 0 && (
         <div className="news bb-home-news-parity pt-60 pb-60" data-bb-focus="home_news">
           <div className="container">
-            <div className="block-title text-center pb-40">
-              <p className="sub-title">{newsKicker || <Tr ns="Home" k="newsKicker" />}</p>
-              <h3>{newsTitle || <Tr ns="Home" k="newsTitle" />}</h3>
-            </div>
+            <HomeBlockHeading
+              className="block-title text-center pb-40"
+              kickerSettingKey="home_news_kicker"
+              titleSettingKey="home_news_title"
+              kicker={newsKicker}
+              title={newsTitle}
+              fallbackKickerKey="newsKicker"
+              fallbackTitleKey="newsTitle"
+            />
             <HomeNewsList initialArticles={newsArticles} />
           </div>
         </div>
@@ -328,9 +339,12 @@ export default async function HomePage() {
             className="absolute inset-0 bg-cover bg-center bg-no-repeat [background-image:url('/wp/video-bg.jpg')] [filter:brightness(1.2)]"
           />
           <div className="relative z-[1] mx-auto w-full max-w-[var(--bb-container-xl)] px-4 md:px-6">
-            <div className="block-title text-center white pb-40">
-              <h3>{videosTitle || <Tr ns="Home" k="videosTitle" />}</h3>
-            </div>
+            <HomeBlockHeading
+              className="block-title text-center white pb-40"
+              titleSettingKey="home_videos_title"
+              title={videosTitle}
+              fallbackTitleKey="videosTitle"
+            />
             <HomeVideoCarousel videos={homeVideos} />
           </div>
         </section>

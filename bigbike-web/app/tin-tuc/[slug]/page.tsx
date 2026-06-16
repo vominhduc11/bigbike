@@ -17,6 +17,7 @@ import { readDefaultHeroAssets, readHeroSettings } from "@/lib/utils/page-hero";
 import { pickSetting } from "@/lib/utils/settings";
 import { toArticleListPath, toArticlePath, toHomePath } from "@/lib/utils/routes";
 import { isValidSlug } from "@/lib/utils/slug";
+import { Tr } from "@/components/i18n/Tr";
 import { ArticleView } from "./ArticleView";
 
 // ISR on-demand: bài viết là dữ liệu admin quản lý → KHÔNG prebuild lúc build. Trả [] để
@@ -104,7 +105,7 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
           />
           <div id="main-content">
             <div className="container">
-              <p className="woocommerce-info">{result.error?.message ?? t("loadFailed")}</p>
+              <p className="woocommerce-info"><Tr ns="Blog" k="loadFailed" /></p>
             </div>
           </div>
         </div>

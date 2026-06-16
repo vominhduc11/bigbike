@@ -396,7 +396,7 @@ export function getOrderLookup(orderNumber: string, orderKey: string): Promise<D
       error: {
         status: 400,
         code: "VALIDATION_ERROR",
-        message: "Tham so don hang khong hop le.",
+        message: "Tham số đơn hàng không hợp lệ.",
         details: [],
       },
     });

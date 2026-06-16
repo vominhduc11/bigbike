@@ -375,6 +375,7 @@
     "productCountLabel": "{count} Products",
     "brandsTitle": "Brands",
     "brandListLoadFailed": "Could not load the brand list.",
+    "brandDetailLoadFailed": "Could not load the brand details.",
     "brandListEmpty": "The brand list is currently empty.",
     "colorFallback": {
       "bac": "Silver",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { DEFAULT_LOCALE } from "@/i18n/locale";
 import { fetchPublicSettings } from "@/lib/api/client-api";
@@ -38,6 +38,46 @@ function useEnSettingLookup(): (key: string) => string | undefined {
 }
 
 const RICH_HTML_OPTS = { allowInlineStyles: true, rewriteMediaUrls: true } as const;
+
+/**
+ * Tiêu đề khối trang chủ ("Sản phẩm nổi bật", "Tin tức", "Videos"…) — kicker + title lấy từ
+ * `site_settings` (admin sửa được). Cùng vấn đề như các khối marketing: server render `vi`,
+ * phải swap EN ở client. Ưu tiên: bản EN admin nhập → bản `vi` server (prop) → nhãn dịch sẵn
+ * (`Home.*`). Khi locale `vi` hoặc admin chưa nhập EN thì giữ nguyên prop server → khớp HTML
+ * server, không hydration mismatch. `kickerSettingKey` bỏ trống cho khối chỉ có title (Videos).
+ */
+export function HomeBlockHeading({
+  className,
+  kickerSettingKey,
+  titleSettingKey,
+  kicker,
+  title,
+  fallbackKickerKey,
+  fallbackTitleKey,
+}: {
+  className: string;
+  kickerSettingKey?: string;
+  titleSettingKey: string;
+  kicker?: string;
+  title?: string;
+  fallbackKickerKey?: string;
+  fallbackTitleKey: string;
+}) {
+  const pick = useEnSettingLookup();
+  const t = useTranslations("Home");
+
+  const sub = kickerSettingKey
+    ? (pick(kickerSettingKey) ?? (kicker || (fallbackKickerKey ? t(fallbackKickerKey) : "")))
+    : "";
+  const heading = pick(titleSettingKey) ?? (title || t(fallbackTitleKey));
+
+  return (
+    <div className={className}>
+      {sub ? <p className="sub-title">{sub}</p> : null}
+      {heading ? <h3>{heading}</h3> : null}
+    </div>
+  );
+}
 
 /** Khối "Giới thiệu BigBike" — tiêu đề phụ + tiêu đề + nội dung HTML. */
 export function HomeAboutSection({

@@ -375,6 +375,7 @@
     "productCountLabel": "{count} Sản phẩm",
     "brandsTitle": "Thương hiệu",
     "brandListLoadFailed": "Không tải được danh sách thương hiệu.",
+    "brandDetailLoadFailed": "Không tải được thông tin thương hiệu.",
     "brandListEmpty": "Danh sách thương hiệu hiện đang rỗng.",
     "colorFallback": {
       "bac": "Bạc",
