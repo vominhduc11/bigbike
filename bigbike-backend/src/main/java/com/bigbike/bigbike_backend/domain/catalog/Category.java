@@ -12,6 +12,8 @@ public record Category(
         String parentId,
         ImageAsset image,
         ImageAsset icon,
+        /** Icon line đơn sắc cho menu/sidebar (mask-image). Khác `icon` (ảnh hero, WP "image_left"). V213. */
+        String menuIconUrl,
         ImageAsset bannerImage,
         ImageAsset mobileBannerImage,
         SeoMeta seo,

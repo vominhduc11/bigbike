@@ -72,13 +72,15 @@ Preview **không** đổi `publishStatus`, không lưu, và không expose draft 
 
 **Layout mới (desktop ≥1261px):**
 - Hover "Tất cả sản phẩm" → mega panel rộng container (75rem) hiện ngay dưới header.
-- **Sidebar trái:** 9 nhóm L2 dạng danh sách dọc. Nhóm có con → hover/focus đổi nội dung panel phải. Nhóm leaf → link điều hướng trực tiếp.
+- **Sidebar trái:** 9 nhóm L2 dạng danh sách dọc. Nhóm có con → hover/focus đổi nội dung panel phải, **và bấm vào tên nhóm cũng điều hướng tới trang category của chính nhóm đó** (cập nhật 2026-06-16 — trước đó nhóm có con render bằng `<button>` không có `href`/`onClick`, bấm vào không có gì xảy ra, user phản ánh nhầm là lỗi). Nhóm leaf → link điều hướng trực tiếp.
 - **Panel phải:** L3 dạng grid nhiều cột. L4 hiện dạng sub-list thụt lề dưới L3 cha (không dùng flyout thêm cấp).
 - Default-active: nhóm L2 đầu tiên có con.
 
 **Mobile (≤1260px):** Giữ nguyên accordion (`MobileHeaderMenu`), không thay đổi.
 
 **Lý do khác WP gốc (WP dùng flyout dọc):** UX > bám WP khi menu sâu 4 cấp. Quyết định này do chủ dự án xác nhận ngày 2026-05-27.
+
+**Giới hạn đã biết (2026-06-16):** Trang category của nhóm L2 cha chỉ hiển thị sản phẩm gắn **trực tiếp** vào category đó — catalog hiện tại mỗi product chỉ thuộc 1 category, chưa có cơ chế "trang cha gồm sản phẩm của category con" (evidence: `CatalogReadService` lọc theo `matchesCategory` đúng slug, không union subcategory). Nếu category cha không có sản phẩm trực tiếp, trang sẽ hiện rỗng — đây là giới hạn dữ liệu/catalog, không phải lỗi link.
 
 ## Address Workflow
 

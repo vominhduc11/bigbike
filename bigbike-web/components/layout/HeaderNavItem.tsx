@@ -127,7 +127,8 @@ function MegaPanel({
 
 // ─── MegaSidebar ─────────────────────────────────────────────────────────────
 // Left column: L2 groups. Hover/focus activates right panel.
-// Leaf groups (no children) are plain navigation links.
+// All groups navigate on click (own category page); groups with children also
+// switch the right panel on hover/focus so it can be previewed before navigating.
 
 function MegaSidebar({
   groups,
@@ -188,16 +189,19 @@ function MegaSidebar({
 
           return (
             <li key={group.id}>
-              <button
-                type="button"
+              <Link
+                href={normalizeMenuUrl(group.url)}
                 className={cn(
                   // Left accent bar uses a before-pseudo (no layout shift on toggle).
-                  "relative flex w-full items-center gap-2.5 px-5 py-2 font-body text-13 font-semibold text-foreground transition-colors duration-150 hover:bg-white hover:text-brand before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:bg-brand before:opacity-0 before:transition-opacity before:content-['']",
+                  "relative flex w-full items-center gap-2.5 px-5 py-2 font-body text-13 font-semibold text-foreground no-underline transition-colors duration-150 hover:bg-white hover:text-brand before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:bg-brand before:opacity-0 before:transition-opacity before:content-['']",
                   isActive && "bg-white text-brand before:opacity-100",
                   groupPathActive && "text-brand",
                 )}
+                target={group.openInNewTab ? "_blank" : undefined}
+                rel={group.openInNewTab ? "noreferrer" : undefined}
                 onMouseEnter={() => onActivate(group.id)}
                 onFocus={() => onActivate(group.id)}
+                onClick={onItemClick}
                 aria-expanded={isActive}
                 title={group.label}
               >
@@ -221,7 +225,7 @@ function MegaSidebar({
                     isActive ? "text-brand" : "text-muted-foreground",
                   )}
                 />
-              </button>
+              </Link>
             </li>
           );
         })}

@@ -48,6 +48,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 null,
                 null,
                 null,
+                null,
                 new SeoMeta(
                         "Mũ bảo hiểm BigBike",
                         "Danh mục mũ bảo hiểm cho biker.",
@@ -78,6 +79,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                         800,
                         "image/jpeg"
                 ),
+                null,
                 null,
                 null,
                 null,

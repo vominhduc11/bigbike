@@ -55,6 +55,13 @@ public class CategoryEntity {
     private Integer iconHeight;
     private String iconMimeType;
 
+    /**
+     * Icon line đơn sắc cho menu header + bộ lọc "Danh mục sản phẩm" (render qua mask-image).
+     * Khác với iconUrl (ảnh hero trang danh mục, WP ACF "image_left"). Xem V213.
+     */
+    @Column(columnDefinition = "text")
+    private String menuIconUrl;
+
     @Column(columnDefinition = "text")
     private String contentBottom;
 
@@ -257,6 +264,14 @@ public class CategoryEntity {
 
     public void setIconMimeType(String iconMimeType) {
         this.iconMimeType = iconMimeType;
+    }
+
+    public String getMenuIconUrl() {
+        return menuIconUrl;
+    }
+
+    public void setMenuIconUrl(String menuIconUrl) {
+        this.menuIconUrl = menuIconUrl;
     }
 
     public String getContentBottom() {

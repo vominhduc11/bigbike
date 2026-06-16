@@ -11,7 +11,6 @@ public record PublicMenuItemResponse(
         boolean openInNewTab,
         String cssClass,
         /** Resolved icon URL for this menu item. Null for non-category items.
-         *  Derived from category slug in URL (legacy WP parity).
-         *  TODO: replace with CategoryEntity.iconUrl lookup when category icons are populated. */
+         *  Resolved from the category in the URL → CategoryEntity.menuIconUrl (DB-driven, V213). */
         String iconUrl
 ) {}

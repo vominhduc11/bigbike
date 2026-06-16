@@ -497,6 +497,28 @@ Fallback: giống `PRODUCT_RULE_002` — mỗi trường lùi về VI khi EN b�
 
 Status: `CONFIRMED_FROM_CODE` — `CategoryEntity`, `CategoryTranslations` domain record, migration `V137`.
 
+### Category menu/sidebar line-icon — `menu_icon_url` (V213)
+
+Cột `menu_icon_url` (`TEXT`, nullable) trên `categories` lưu **icon line đơn sắc** của danh mục, dùng cho:
+menu header (mega-menu) và bộ lọc "Danh mục sản phẩm" ở trang archive (`WpCategorySidebar`). Render qua
+CSS `mask-image` theo `currentColor`.
+
+Phân biệt rõ với các cột ảnh khác trên `categories`:
+
+| Cột | Vai trò |
+|---|---|
+| `menu_icon_url` | Icon line đơn sắc cho menu + sidebar lọc (mask-image). **Field này.** |
+| `icon_url` (`icon`) | Ảnh minh hoạ **hero** trang danh mục (WP ACF `image_left`) — KHÔNG dùng cho menu. |
+| `image_url` (`image`) | Ảnh thumbnail danh mục (lưới trang chủ). |
+| `banner_url` / `mobile_banner_url` | Ảnh nền hero. |
+
+Trước V213, icon menu/sidebar gắn theo **slug** (CSS theme WP `.{slug}>a::before` + map slug cứng
+`CATEGORY_SLUG_ICON_MAP` ở backend) → đổi slug là mất icon. V213 chuyển sang lưu theo danh mục trong DB
+(khoá theo id), backfill `/wp/icon-N.svg` cho các danh mục gốc giữ đúng ánh xạ icon WP gốc. Danh mục mới
+"Giá đỡ điện thoại - phụ kiện camera" (WP chưa có) tạm dùng `/wp/icon-9.svg`.
+
+Status: `CONFIRMED_FROM_CODE` — `CategoryEntity.menuIconUrl`, `Category` domain record, `JpaCatalogReadRepository`, migration `V213`.
+
 ### Brand bilingual content — English columns (V137)
 
 Thương hiệu có 2 bản nội dung: **tiếng Việt** (canonical) và **tiếng Anh** (tùy chọn).

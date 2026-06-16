@@ -11,6 +11,7 @@ import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { buildQueryString } from "@/lib/utils/query";
 import { toCategoryPath } from "@/lib/utils/routes";
 import { useDetachWpHandlers } from "@/lib/hooks/useDetachWpHandlers";
+import { submenuIcon } from "@/lib/ui-classes";
 
 /**
  * Sidebar bộ lọc danh mục — port DOM 1:1 từ woocommerce/archive-product.php
@@ -330,7 +331,26 @@ export function WpCategorySidebar({
                     .join(" ");
                   return (
                     <li key={cat.id} className={liClass}>
-                      <Link href={href}>{cat.name}</Link>
+                      {/* Icon line đơn sắc từ DB (cat.menuIconUrl, V213) — render qua mask-image,
+                          theo currentColor nên tự đổi xám→đỏ như link. `before:!hidden` tắt icon
+                          WP cũ gắn theo slug (.{slug}>a::before) để không bị icon đôi; `pl-[47px]`
+                          chừa chỗ icon cho mọi danh mục, không phụ thuộc rule slug của theme. */}
+                      <Link
+                        href={href}
+                        className={cat.menuIconUrl ? "relative block pl-[47px] before:!hidden" : undefined}
+                      >
+                        {cat.menuIconUrl ? (
+                          <span
+                            aria-hidden
+                            className={`${submenuIcon} absolute left-0 top-[3px]`}
+                            style={{
+                              maskImage: `url(${cat.menuIconUrl})`,
+                              WebkitMaskImage: `url(${cat.menuIconUrl})`,
+                            }}
+                          />
+                        ) : null}
+                        {cat.name}
+                      </Link>
                       {children.length > 0 ? (
                         <ul className="children">
                           {children.map((child) => {

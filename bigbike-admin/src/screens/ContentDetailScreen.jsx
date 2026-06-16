@@ -305,6 +305,17 @@ function toPayload(form, isCreate) {
       : undefined,
   }
 
+  // Legacy content fallback: WordPress-imported articles/pages created before the block
+  // editor have body_blocks = null and carry content only in `body` HTML. When there are no
+  // structured blocks, send that HTML so preview & save still have content — the backend
+  // requires `body` OR `bodyBlocks` (docs/engineering/API_CONTRACT.md §"Article / Page body
+  // blocks", line "Tạo mới: chấp nhận hoặc body hoặc bodyBlocks"). Without this the preview
+  // dry-run returns 400 "Body is required." (field=body) and the iframe stays blank. When
+  // blocks exist the server renders `body` from them, so we omit `body` here.
+  if (form.bodyBlocks === null && form.body && form.body.trim()) {
+    payload.body = form.body
+  }
+
   if (form.type === 'ARTICLE') {
     payload.excerpt = form.excerpt.trim() || undefined
 

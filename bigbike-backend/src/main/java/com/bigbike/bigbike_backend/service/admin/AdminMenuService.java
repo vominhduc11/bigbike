@@ -16,9 +16,11 @@ import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.domain.menu.MenuLocations;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.menu.MenuEntity;
 import com.bigbike.bigbike_backend.persistence.entity.menu.MenuItemEntity;
 import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.menu.MenuItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.menu.MenuJpaRepository;
 import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
@@ -49,29 +51,12 @@ public class AdminMenuService {
     private static final Set<String> ALLOWED_MENU_STATUSES = Set.of("ACTIVE", "INACTIVE");
     private static final Set<String> ALLOWED_ITEM_STATUSES = Set.of("ACTIVE", "INACTIVE");
 
-    // Legacy WP parity: maps category slug → static icon path in Next.js /public/wp/.
-    // WP used CSS ::before mask-image keyed to category-slug CSS classes on menu <li>.
-    // TODO: replace with CategoryEntity.iconUrl DB lookup when category icons are populated.
+    // Icon line đơn sắc của mục menu danh mục: resolve từ DB theo slug trong URL mục menu
+    // (/danh-muc-san-pham/{slug}) → CategoryEntity.menuIconUrl. Thay cho map slug hard-code cũ
+    // (WP-parity) — giờ icon gắn theo danh mục trong DB, không còn phụ thuộc tên slug. Xem V213.
     private static final String CATEGORY_URL_PREFIX = "/danh-muc-san-pham/";
-    private static final Map<String, String> CATEGORY_SLUG_ICON_MAP;
 
-    static {
-        Map<String, String> m = new HashMap<>();
-        m.put("non-bao-hiem-moto",                             "/wp/icon-2.svg");
-        m.put("quan-ao-bao-ho-moto",                           "/wp/icon-3.svg");
-        m.put("gang-tay",                                      "/wp/icon-4.svg");
-        m.put("giay-bao-ho",                                   "/wp/icon-5.svg");
-        m.put("giap-bao-ho-tay-chan-dai-lung-phu-kien-giap",   "/wp/icon-6.svg");
-        m.put("balo-deo-lung-tui-deo-tui-treo-xe",             "/wp/icon-7.svg");
-        m.put("tai-nghe-bluetooth-mu-bao-hiem",                "/wp/icon-8.svg");
-        m.put("tai-nghe-bluetooth-gan-mu-bao-hiem",            "/wp/icon-8.svg");
-        m.put("phu-kien-di-mua",                               "/wp/icon-9.svg");
-        m.put("san-pham-khuyen-mai",                           "/wp/icon-10.svg");
-        m.put("phu-kien-khac",                                 "/wp/icon-10.svg");
-        CATEGORY_SLUG_ICON_MAP = Map.copyOf(m);
-    }
-
-    private static String resolveMenuIconUrl(String url) {
+    private String resolveMenuIconUrl(String url) {
         if (url == null || url.isBlank()) return null;
         String path = url.trim();
         int q = path.indexOf('?');
@@ -79,7 +64,10 @@ public class AdminMenuService {
         if (!path.startsWith(CATEGORY_URL_PREFIX)) return null;
         String slug = path.substring(CATEGORY_URL_PREFIX.length());
         if (slug.endsWith("/")) slug = slug.substring(0, slug.length() - 1);
-        return CATEGORY_SLUG_ICON_MAP.get(slug.toLowerCase(Locale.ROOT));
+        if (slug.isBlank()) return null;
+        return categoryRepo.findBySlug(slug.toLowerCase(Locale.ROOT))
+                .map(CategoryEntity::getMenuIconUrl)
+                .orElse(null);
     }
 
     private final MenuJpaRepository menuRepo;
@@ -87,6 +75,7 @@ public class AdminMenuService {
     private final AuditLogJpaRepository auditLogRepo;
     private final PaginationService paginationService;
     private final WebRevalidationService webRevalidationService;
+    private final CategoryJpaRepository categoryRepo;
 
     // ── List menus ────────────────────────────────────────────────────────────
 

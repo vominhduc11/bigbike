@@ -633,6 +633,19 @@ Status: `CONFIRMED_FROM_CODE` — `PublicMenuController` (`lang` param),
 `CreateMenuItemRequest` / `UpdateMenuItemRequest` / `AdminMenuItemResponse`,
 migration `V160`.
 
+### Menu/category line-icon — DB-driven (V213)
+
+`GET /api/v1/menus/{location}` trả mỗi mục menu kèm `iconUrl` (icon line đơn sắc, null cho mục không phải
+danh mục). Shape **không đổi**; chỉ đổi **nguồn**: trước V213 resolve từ map slug hard-code
+(`CATEGORY_SLUG_ICON_MAP`), từ V213 resolve theo danh mục trong DB — backend tách slug từ URL mục menu
+(`/danh-muc-san-pham/{slug}`) → `CategoryEntity.menuIconUrl`. Đổi tên danh mục/slug không còn làm mất icon.
+
+`GET /api/v1/categories`, `/api/v1/categories/{slug}` cũng trả thêm field `menuIconUrl` trên mỗi Category
+(dùng bởi bộ lọc "Danh mục sản phẩm" ở `bigbike-web`). Xem `DATA_CONTRACT` §"Category menu/sidebar line-icon".
+
+Status: `CONFIRMED_FROM_CODE` — `AdminMenuService.resolveMenuIconUrl` (DB lookup), `Category` domain record
+(`menuIconUrl`), `CatalogController` `/categories`, migration `V213`.
+
 ### Home video bilingual title — `lang` param (V161)
 
 Video trang chủ có tiêu đề 2 ngôn ngữ (`title` VI + `title_en` EN tùy chọn).

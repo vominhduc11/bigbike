@@ -251,6 +251,12 @@ export type Category = {
   parentId?: string | null;
   image?: ImageAsset;
   icon?: ImageAsset;
+  /**
+   * Monochrome line-icon for the header menu + "Danh mục sản phẩm" filter sidebar,
+   * rendered via CSS mask-image (e.g. /wp/icon-N.svg). Distinct from `icon` (the
+   * category hero illustration, WP ACF "image_left"). Null when not set. DB-driven (V213).
+   */
+  menuIconUrl?: string | null;
   bannerImage?: ImageAsset;
   mobileBannerImage?: ImageAsset;
   seo?: SeoMeta;

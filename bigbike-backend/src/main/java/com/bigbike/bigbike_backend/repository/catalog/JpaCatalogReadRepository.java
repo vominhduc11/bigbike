@@ -561,6 +561,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         entity.getIconHeight(),
                         entity.getIconMimeType()
                 ),
+                entity.getMenuIconUrl(),
                 toImageAsset(null, entity.getBannerUrl(), entity.getBannerAlt(), null, null, null),
                 toImageAsset(null, entity.getMobileBannerUrl(), entity.getMobileBannerAlt(), null, null, null),
                 toSeoMeta(
