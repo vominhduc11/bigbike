@@ -835,8 +835,11 @@ From `AdminMediaService.ALLOWED_STATUSES`:
 | From | To | Reason | Enforcement | Evidence |
 |---|---|---|---|---|
 | any | unknown status | Only `ACTIVE`, `INACTIVE`, `DELETED` allowed. | Backend validation error. | `AdminMediaService.java` |
-| upload | unsupported MIME | Only MIME whitelist accepted. | Backend validation error. | `AdminMediaService.java` |
+| upload | unsupported MIME | Only MIME whitelist accepted (incl. `image/svg+xml`). | Backend validation error. | `AdminMediaService.java` |
+| upload | SVG without `<svg>` root | SVG content gate (sanitizer parse). | Backend validation error. | `SvgSanitizer.java` |
 | upload | > 50 MB | Upload limit. | Backend validation error. | `AdminMediaService.java` |
+
+> SVG uploads are accepted but rewritten by `SvgSanitizer` (scripts, `on*` handlers, `javascript:`/external refs, `<foreignObject>`/`<image>`/`<style>` stripped) before storage.
 
 ### Frontend Behavior
 

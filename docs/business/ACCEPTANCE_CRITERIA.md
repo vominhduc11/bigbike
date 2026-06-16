@@ -10,7 +10,7 @@ This file captures measurable acceptance criteria that can be verified from curr
 | Checkout | Checkout validates payload, shipping, stock, coupon redemption, idempotency, and creates orders. | `Phase1FCheckoutApiTest.java`, `CheckoutService.java` | `PASS` |
 | Coupon | Admin coupon CRUD exists; cart apply and checkout redemption are enforced; expiry scheduler exists. | `Phase1JAdminSettingsMenuCouponApiTest.java`, `Phase1ECartApiTest.java`, `Phase1FCheckoutApiTest.java`, `CouponExpiryScheduler.java` | `PASS` |
 | POS | POS search and order creation require auth; completed/paid immediate sale is enforced; stock/payment/audit side effects exist. | `Phase1MPosApiTest.java`, `PosOrderService.java` | `PASS` |
-| Media | Valid PNG upload works; fake MIME, empty files, SVG, and unsupported types fail; delete/restore flows exist. | `AdminMediaP0Test.java` | `PASS` |
+| Media | Valid PNG upload works; fake MIME, empty files, and unsupported types fail; SVG is accepted and sanitized (script-bearing SVG stored clean, non-SVG declared as SVG fails); delete/restore flows exist. | `AdminMediaP0Test.java`, `SvgSanitizerTest.java` | `PASS` |
 | Returns | Customer return create/list/detail and admin return list/detail/status endpoints exist. | `Phase1LReturnsApiTest.java`, return controllers | `PASS` |
 | Vietnam address | Province/district/ward endpoints are public and available to web/mobile clients. | `VnAddressController.java`, client endpoint maps | `PASS` |
 | WebSocket admin feed | Admin clients can connect with JWT and subscribe to admin order topic. | `WebSocketConfig.java`, `adminWebSocket.js` | `PASS` |

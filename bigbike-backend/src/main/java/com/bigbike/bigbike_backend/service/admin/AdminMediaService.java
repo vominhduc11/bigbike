@@ -56,9 +56,10 @@ public class AdminMediaService {
     private static final int MAX_SIZE = 100;
     private static final Set<String> ALLOWED_STATUSES = Set.of("ACTIVE", "INACTIVE", "DELETED");
     private static final Set<String> ALLOWED_MIME_TYPES = Set.of(
-            "image/jpeg", "image/png", "image/webp", "image/gif",
+            "image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml",
             "video/mp4",
             "audio/mpeg", "audio/ogg", "audio/wav", "audio/webm", "audio/aac");
+    private static final String SVG_MIME = "image/svg+xml";
     private static final Set<String> RASTER_IMAGE_TYPES = Set.of(
             "image/jpeg", "image/png", "image/gif");
     private static final long MAX_UPLOAD_BYTES = 50L * 1024 * 1024; // 50 MB
@@ -93,6 +94,10 @@ public class AdminMediaService {
             bytes = file.getBytes();
         } catch (IOException e) {
             throw new IllegalStateException("Failed to read upload bytes: " + e.getMessage(), e);
+        }
+        // SVG: strip scripts/handlers/external refs before storing (also validates it IS an SVG).
+        if (SVG_MIME.equals(mimeType)) {
+            bytes = SvgSanitizer.sanitize(bytes);
         }
 
         String safeFilename = sanitizeFilename(file.getOriginalFilename());
@@ -140,7 +145,8 @@ public class AdminMediaService {
         media.setStorageProvider(MINIO_PROVIDER);
         media.setBucket(bucket);
         media.setMimeType(mimeType);
-        media.setFileSize(file.getSize());
+        // SVG bytes were rewritten by the sanitizer — record the stored length, not the upload's.
+        media.setFileSize(SVG_MIME.equals(mimeType) ? (long) bytes.length : file.getSize());
         media.setWidth(width);
         media.setHeight(height);
         media.setAltText(altText != null ? altText.strip() : null);
@@ -188,6 +194,10 @@ public class AdminMediaService {
         } catch (IOException e) {
             throw new IllegalStateException("Failed to read upload bytes: " + e.getMessage(), e);
         }
+        // SVG: strip scripts/handlers/external refs before storing (also validates it IS an SVG).
+        if (SVG_MIME.equals(newMime)) {
+            bytes = SvgSanitizer.sanitize(bytes);
+        }
 
         String before = snapshot(media);
         String objectKey = media.getFilePath();
@@ -220,7 +230,7 @@ public class AdminMediaService {
         Map<String, String> variants = imageVariantService.generateAndUpload(bytes, objectKey, newMime);
 
         media.setMimeType(newMime);
-        media.setFileSize(file.getSize());
+        media.setFileSize(SVG_MIME.equals(newMime) ? (long) bytes.length : file.getSize());
         if (width != null) media.setWidth(width);
         if (height != null) media.setHeight(height);
         media.setSizes(variants.isEmpty() ? null : toJson(variants));
@@ -696,6 +706,11 @@ public class AdminMediaService {
         }
         if (read <= 0) {
             throw ValidationException.fromField("file", "EMPTY_FILE", "File must not be empty.");
+        }
+        // SVG is XML — Tika magic-byte detection is unreliable for it. Structural validation
+        // (must parse to an <svg> root) + sanitization happen in SvgSanitizer before storage.
+        if (SVG_MIME.equals(declared)) {
+            return;
         }
         String detected = TIKA.detect(Arrays.copyOf(header, read), file.getOriginalFilename());
         if (!ALLOWED_MIME_TYPES.contains(detected)) {

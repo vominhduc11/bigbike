@@ -650,8 +650,15 @@ danh mục). Shape **không đổi**; chỉ đổi **nguồn**: trước V213 re
 `GET /api/v1/categories`, `/api/v1/categories/{slug}` cũng trả thêm field `menuIconUrl` trên mỗi Category
 (dùng bởi bộ lọc "Danh mục sản phẩm" ở `bigbike-web`). Xem `DATA_CONTRACT` §"Category menu/sidebar line-icon".
 
+**Ghi (admin):** `POST/PATCH /api/v1/admin/categories` nhận thêm `menuIcon` (`ImageAssetRequest`, chỉ `url`
+được lưu vào `menu_icon_url`; validate URL whitelist media như `image`/`icon`/`banner`). Presence-flag:
+bỏ khóa `menuIcon` thì PATCH giữ nguyên; gửi `menuIcon: { url: null }` để xoá icon. Admin sửa icon này ở
+form danh mục (`CategoryDetailScreen`, field "Icon menu / bộ lọc danh mục"). Khác với `icon` (ảnh hero
+trang danh mục → `icon_url`).
+
 Status: `CONFIRMED_FROM_CODE` — `AdminMenuService.resolveMenuIconUrl` (DB lookup), `Category` domain record
-(`menuIconUrl`), `CatalogController` `/categories`, migration `V213`.
+(`menuIconUrl`), `CatalogController` `/categories`, `UpsertCategoryRequest.menuIcon` +
+`AdminCatalogMutationService.applyCategoryPatch` (ghi admin), migration `V213`.
 
 ### Home video bilingual title — `lang` param (V161)
 

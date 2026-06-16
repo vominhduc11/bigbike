@@ -416,11 +416,14 @@ export function normalizeCategory(input) {
   return {
     id,
     slug,
+    slugEn: toTrimmedString(source.slugEn) || undefined,
     name: toTrimmedString(source.name) || 'Untitled category',
     description: toTrimmedString(source.description) || undefined,
     parentId: toTrimmedString(source.parentId) || undefined,
     image: normalizeImageAsset(source.image),
     icon: normalizeImageAsset(source.icon),
+    // Icon line đơn sắc cho menu + bộ lọc (mask-image); KHÁC `icon` (ảnh hero). V213.
+    menuIconUrl: toTrimmedString(source.menuIconUrl) || undefined,
     bannerImage: normalizeImageAsset(source.bannerImage),
     mobileBannerImage: normalizeImageAsset(source.mobileBannerImage),
     seo: normalizeSeoMeta(source.seo),

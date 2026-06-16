@@ -782,6 +782,12 @@ public class AdminCatalogMutationService {
                 mediaUrlProperties.getPublicBaseUrl(),
                 errors
         );
+        AdminMutationValidators.validateImageAsset(
+                request.getMenuIcon(),
+                "menuIcon",
+                mediaUrlProperties.getPublicBaseUrl(),
+                errors
+        );
         AdminMutationValidators.validateSeoMeta(
                 request.getSeo(),
                 "seo",
@@ -1568,6 +1574,12 @@ public class AdminCatalogMutationService {
             }
         } else if (create) {
             clearIcon(entity);
+        }
+
+        if (request.getMenuIcon() != null) {
+            entity.setMenuIconUrl(AdminMutationValidators.trimToNull(request.getMenuIcon().getUrl()));
+        } else if (create) {
+            entity.setMenuIconUrl(null);
         }
 
         if (request.getBanner() != null) {

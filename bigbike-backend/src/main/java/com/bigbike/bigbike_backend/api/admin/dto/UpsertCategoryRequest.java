@@ -40,6 +40,14 @@ public class UpsertCategoryRequest {
     @Valid
     private ImageAssetRequest icon;
 
+    /**
+     * Icon line đơn sắc cho menu header + bộ lọc "Danh mục sản phẩm" (render qua mask-image).
+     * Chỉ {@code url} được lưu vào {@code CategoryEntity.menuIconUrl}. Khác với {@code icon}
+     * (ảnh hero trang danh mục). Xem DATA_CONTRACT §"Category menu/sidebar line-icon" (V213).
+     */
+    @Valid
+    private ImageAssetRequest menuIcon;
+
     @Valid
     private ImageAssetRequest banner;
 

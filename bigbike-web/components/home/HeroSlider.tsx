@@ -70,7 +70,7 @@ function HeroSlideView({ slide }: { slide: HeroSlide }) {
       <img
         src={slide.desktopSrc}
         alt={slide.alt}
-        className="bb-main-banner-img block w-full h-full object-cover object-center"
+        className="bb-main-banner-img block w-full h-full min-h-[40vw] object-cover object-center max-md:min-h-0 3xl:min-h-[min(40vw,1080px)] 4xl:min-h-[min(40vw,1200px)]"
         loading="eager"
         draggable={false}
       />
@@ -128,7 +128,7 @@ export function HeroSlider({ slides }: HeroSliderProps) {
 
   return (
     <div
-      className="bb-main-banner relative w-full h-[calc(100vh-200px)] max-md:h-auto max-md:aspect-[411/548] overflow-hidden bg-black"
+      className="bb-main-banner relative w-full h-[max(40vw,300px)] max-md:h-auto max-md:aspect-[411/548] overflow-hidden bg-black 3xl:max-h-[1080px] 4xl:max-h-[1200px]"
       aria-roledescription="carousel"
       aria-label="BigBike"
     >

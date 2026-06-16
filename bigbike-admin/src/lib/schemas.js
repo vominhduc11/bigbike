@@ -333,10 +333,9 @@ export function createCategorySchema(t) {
       name: z.string().min(1, t('categories.detail.errNameRequired')),
       description: z.string().optional(),
       imageUrl: z.string().optional(),
-      imageAlt: z.string().optional(),
-      iconUrl: z.string().optional(),
-      iconAlt: z.string().optional(),
-      sortOrder: z.string().optional(),
+      bannerImageUrl: z.string().optional(),
+      heroImageUrl: z.string().optional(),
+      menuIconUrl: z.string().optional(),
       seoTitle: z.string().optional(),
       seoDescription: z.string().optional(),
       seoCanonicalUrl: z.string().optional(),
@@ -372,21 +371,14 @@ export function createCategorySchema(t) {
       if (data.imageUrl?.trim() && !MEDIA_URL_REGEX.test(data.imageUrl.trim())) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errImageUrl'), path: ['imageUrl'] })
       }
-      if ((data.imageAlt ?? '').trim().length > 255) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errImageAltTooLong'), path: ['imageAlt'] })
+      if (data.bannerImageUrl?.trim() && !MEDIA_URL_REGEX.test(data.bannerImageUrl.trim())) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errBannerImageUrl'), path: ['bannerImageUrl'] })
       }
-      if (data.iconUrl?.trim() && !MEDIA_URL_REGEX.test(data.iconUrl.trim())) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errIconUrl'), path: ['iconUrl'] })
+      if (data.heroImageUrl?.trim() && !MEDIA_URL_REGEX.test(data.heroImageUrl.trim())) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errHeroImageUrl'), path: ['heroImageUrl'] })
       }
-      if ((data.iconAlt ?? '').trim().length > 255) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errIconAltTooLong'), path: ['iconAlt'] })
-      }
-      const sortStr = (data.sortOrder ?? '').trim()
-      if (sortStr !== '') {
-        const n = Number(sortStr)
-        if (!Number.isInteger(n) || n < 0) {
-          ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errSortOrder'), path: ['sortOrder'] })
-        }
+      if (data.menuIconUrl?.trim() && !MEDIA_URL_REGEX.test(data.menuIconUrl.trim())) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errMenuIconUrl'), path: ['menuIconUrl'] })
       }
       if ((data.seoTitle ?? '').trim().length > 255) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('categories.detail.errSeoTitleTooLong'), path: ['seoTitle'] })

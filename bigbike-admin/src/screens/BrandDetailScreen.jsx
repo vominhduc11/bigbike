@@ -22,6 +22,8 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 
+const STOREFRONT_BASE = `${import.meta.env.VITE_STOREFRONT_BASE_URL ?? 'https://bigbike.vn'}/brands`
+
 // Slugify cho gợi ý đường dẫn tiếng Anh (bỏ dấu, kebab-case). Khớp toSlug của CategoryDetailScreen.
 function toSlug(text) {
   return String(text || '')
@@ -48,6 +50,8 @@ function buildEmptyForm() {
     seoTitle: '',
     seoDescription: '',
     seoCanonicalUrl: '',
+    seoOgImageUrl: '',
+    seoOgImageAlt: '',
     translations: { en: { slug: '', name: '', description: '', seoTitle: '', seoDescription: '' } },
   }
 }
@@ -66,6 +70,8 @@ function buildFormFromItem(item) {
     seoTitle: item.seo?.title || '',
     seoDescription: item.seo?.description || '',
     seoCanonicalUrl: item.seo?.canonicalUrl || '',
+    seoOgImageUrl: item.seo?.ogImage?.rawUrl || item.seo?.ogImage?.url || '',
+    seoOgImageAlt: item.seo?.ogImage?.alt || '',
     translations: {
       en: {
         // slug tiếng Anh nằm ở field top-level `slugEn` của response, không trong translations.en
@@ -99,12 +105,16 @@ function toPayload(form) {
   if (
     form.seoTitle.trim() ||
     form.seoDescription.trim() ||
-    form.seoCanonicalUrl.trim()
+    form.seoCanonicalUrl.trim() ||
+    form.seoOgImageUrl.trim()
   ) {
     payload.seo = {
       title: form.seoTitle.trim() || undefined,
       description: form.seoDescription.trim() || undefined,
       canonicalUrl: form.seoCanonicalUrl.trim() || undefined,
+      ogImage: form.seoOgImageUrl.trim()
+        ? { url: form.seoOgImageUrl.trim(), alt: form.seoOgImageAlt.trim() || undefined }
+        : null,
     }
   }
 
@@ -459,32 +469,69 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
           )}
         </div>
 
-        {/* SEO */}
+        {/* SEO — hiển thị trên Google & mạng xã hội */}
+        {(() => {
+          const seoTitleVal = isEnLang ? (form.translations?.en?.seoTitle ?? '') : form.seoTitle
+          const seoDescVal = isEnLang ? (form.translations?.en?.seoDescription ?? '') : form.seoDescription
+          const nameVal = isEnLang ? (form.translations?.en?.name ?? '') : form.name
+          const previewSlug = (isEnLang ? (form.translations?.en?.slug || form.slug) : form.slug) || 'duong-dan-thuong-hieu'
+          const previewUrl = form.seoCanonicalUrl.trim() || `${STOREFRONT_BASE}/${previewSlug}`
+          return (
         <div className="bb-card">
-          <div className="bb-card-header"><h2>{t('brands.detail.sectionSeo', { defaultValue: 'SEO' })}</h2></div>
+          <div className="bb-card-header">
+            <div>
+              <h2>{t('brands.detail.sectionSeo', { defaultValue: 'Hiển thị trên Google & mạng xã hội' })}</h2>
+              <p className="sub">{t('brands.detail.sectionSeoDesc', { defaultValue: 'Tinh chỉnh tiêu đề, mô tả và ảnh khi thương hiệu được tìm kiếm hoặc chia sẻ.' })}</p>
+            </div>
+          </div>
           <div className="bb-card-body">
+            {/* Xem trước trên Google */}
+            <div className="mb-4 p-3 border border-border bg-white">
+              <div className="text-xs text-muted-foreground mb-1">{t('brands.detail.seoPreviewLabel', { defaultValue: 'Xem thử trên Google' })}</div>
+              <div className="text-xs text-[#5f6368] break-all mb-1">{previewUrl}</div>
+              <div className="text-lg leading-snug text-[#1a0dab] break-words mb-1">
+                {(seoTitleVal || nameVal || t('brands.detail.seoPreviewFallbackTitle', { defaultValue: 'Tiêu đề thương hiệu' })).slice(0, 60)}
+              </div>
+              <div className="text-sm leading-relaxed text-[#4d5156] break-words">
+                {seoDescVal || t('brands.detail.seoPreviewFallbackDesc', { defaultValue: 'Mô tả ngắn về thương hiệu sẽ hiển thị ở đây.' })}
+              </div>
+            </div>
+
             <div className="bb-grid-2">
               <div className="form-field" style={{ gridColumn: '1 / -1' }}>
-                <span>{t('brands.detail.seoTitle', { defaultValue: 'SEO Title (tiêu đề trên Google)' })}</span>
+                <span className="flex items-center justify-between">
+                  <span>
+                    {t('brands.detail.seoTitle', { defaultValue: 'Tiêu đề khi xuất hiện trên Google' })}
+                    {isEnLang && <span className="hint" style={{ display: 'inline', marginLeft: 6 }}>{t('brands.detail.enFieldHint', { defaultValue: '(tiếng Anh — tùy chọn)' })}</span>}
+                  </span>
+                  <span className={`hint ${seoTitleVal.length > 60 ? 'text-danger' : ''}`}>{seoTitleVal.length} / 60</span>
+                </span>
                 <Input
-                  value={isEnLang ? (form.translations?.en?.seoTitle ?? '') : form.seoTitle}
+                  value={seoTitleVal}
                   onChange={(e) => isEnLang ? updateTranslation('seoTitle', e.target.value) : updateField('seoTitle', e.target.value)}
                   disabled={isReadOnly}
+                  maxLength={255}
                   placeholder={t('brands.detail.seoTitlePlaceholder', { defaultValue: 'Để trống sẽ tự dùng tên thương hiệu' })}
                 />
               </div>
               <div className="form-field" style={{ gridColumn: '1 / -1' }}>
-                <span>{t('brands.detail.seoDescription', { defaultValue: 'SEO Description (mô tả meta)' })}</span>
+                <span className="flex items-center justify-between">
+                  <span>
+                    {t('brands.detail.seoDescription', { defaultValue: 'Mô tả khi xuất hiện trên Google' })}
+                    {isEnLang && <span className="hint" style={{ display: 'inline', marginLeft: 6 }}>{t('brands.detail.enFieldHint', { defaultValue: '(tiếng Anh — tùy chọn)' })}</span>}
+                  </span>
+                  <span className={`hint ${seoDescVal.length > 160 ? 'text-danger' : ''}`}>{seoDescVal.length} / 160</span>
+                </span>
                 <Textarea
                   rows={3}
-                  value={isEnLang ? (form.translations?.en?.seoDescription ?? '') : form.seoDescription}
+                  value={seoDescVal}
                   onChange={(e) => isEnLang ? updateTranslation('seoDescription', e.target.value) : updateField('seoDescription', e.target.value)}
                   disabled={isReadOnly}
                   placeholder={t('brands.detail.seoDescriptionPlaceholder', { defaultValue: 'Mô tả ngắn hiển thị dưới tiêu đề trên Google' })}
                 />
               </div>
               <div className="form-field" style={{ gridColumn: '1 / -1' }}>
-                <span>{t('brands.detail.seoCanonical', { defaultValue: 'Canonical URL' })}</span>
+                <span>{t('brands.detail.seoCanonicalUrl', { defaultValue: 'Địa chỉ chuẩn (canonical URL)' })}</span>
                 <Input
                   value={form.seoCanonicalUrl}
                   onChange={(e) => updateField('seoCanonicalUrl', e.target.value)}
@@ -493,9 +540,25 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
                 />
                 {validationErrors.seoCanonicalUrl && <span className="hint text-danger">{validationErrors.seoCanonicalUrl}</span>}
               </div>
+              {/* Ảnh chia sẻ mạng xã hội (OG image) — dùng chung cho cả hai ngôn ngữ */}
+              <div className="form-field" data-field="seoOgImageUrl" style={{ gridColumn: '1 / -1' }}>
+                <span>{t('brands.detail.seoOgImageUrl', { defaultValue: 'Ảnh hiển thị khi chia sẻ trên mạng xã hội' })}</span>
+                <ImageUrlInput
+                  value={form.seoOgImageUrl}
+                  onChange={(url) => updateField('seoOgImageUrl', url)}
+                  alt={form.seoOgImageAlt}
+                  onAltChange={(v) => updateField('seoOgImageAlt', v)}
+                  disabled={isReadOnly}
+                  error={validationErrors.seoOgImageUrl}
+                  recommend={IMAGE_RECO.cover}
+                />
+                <span className="hint">{t('brands.detail.seoOgImageUrlHint', { defaultValue: 'Ảnh chia sẻ lên Facebook/Zalo, kích thước 1200×630px.' })}</span>
+              </div>
             </div>
           </div>
         </div>
+          )
+        })()}
       </form>
     </div>
   )

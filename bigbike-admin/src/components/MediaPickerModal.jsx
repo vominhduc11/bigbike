@@ -5,7 +5,7 @@ import { useDebounce } from '../lib/useDebounce'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
-const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml']
 const MAX_FILE_SIZE = 50 * 1024 * 1024
 
 function formatBytes(bytes) {

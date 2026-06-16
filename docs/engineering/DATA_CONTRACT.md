@@ -20,7 +20,7 @@ Evidence:
 
 - Canonical public media shape remains `image`, `gallery[]`, and `videos[]` at the product/content contract level.
 - Admin media persistence stores `publicUrl`, `mimeType`, `fileSize`, dimensions, status, and storage metadata.
-- Current allowlist excludes SVG.
+- Allowlist includes common raster images (`image/jpeg|png|webp|gif`), `image/svg+xml`, MP4 video, and selected audio. SVG is accepted but **sanitized on upload** (`SvgSanitizer`) — scripts, event handlers, `javascript:`/external refs and CSS vectors are stripped before storage. `fileSize` for SVG reflects the sanitized bytes; no raster variants/dimensions are generated.
 
 Status: `CONFIRMED_FROM_CODE`
 
@@ -517,7 +517,12 @@ Trước V213, icon menu/sidebar gắn theo **slug** (CSS theme WP `.{slug}>a::b
 (khoá theo id), backfill `/wp/icon-N.svg` cho các danh mục gốc giữ đúng ánh xạ icon WP gốc. Danh mục mới
 "Giá đỡ điện thoại - phụ kiện camera" (WP chưa có) tạm dùng `/wp/icon-9.svg`.
 
-Status: `CONFIRMED_FROM_CODE` — `CategoryEntity.menuIconUrl`, `Category` domain record, `JpaCatalogReadRepository`, migration `V213`.
+**Admin-writable:** field này admin chỉnh trực tiếp ở form danh mục (`CategoryDetailScreen` → field "Icon
+menu / bộ lọc danh mục"), gửi qua `UpsertCategoryRequest.menuIcon` (chỉ `url` lưu vào `menu_icon_url`). URL
+phải qua whitelist media (chọn từ Thư viện hoặc URL MinIO public). Backfill `/wp/icon-*.svg` của V213 là giá
+trị seed, không đi qua validate API. Xem `API_CONTRACT` §"Menu/category line-icon".
+
+Status: `CONFIRMED_FROM_CODE` — `CategoryEntity.menuIconUrl`, `Category` domain record, `JpaCatalogReadRepository`, `UpsertCategoryRequest.menuIcon` + `AdminCatalogMutationService.applyCategoryPatch`, migration `V213`.
 
 ### Brand bilingual content — English columns (V137)
 

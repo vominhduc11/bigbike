@@ -39,7 +39,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 
 const ALLOWED_MIME = [
-  'image/jpeg', 'image/png', 'image/webp', 'image/gif',
+  'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml',
   'video/mp4',
 ]
 const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50 MB

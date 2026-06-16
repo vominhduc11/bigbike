@@ -48,11 +48,11 @@ Tag map — catalog / commerce / home cluster (entity mutation → tags emitted)
 
 - Public media URLs are validated against configured public base URL rules. `CONFIRMED_FROM_CODE`
 - Server-side content detection uses Apache Tika. `CONFIRMED_FROM_CODE`
-- SVG is rejected by current policy and tests. `CONFIRMED_FROM_CODE`
+- SVG is accepted but sanitized on upload (`SvgSanitizer`, Jsoup XML parser): `<script>`, `on*` handlers, `javascript:`/external `href`/`xlink:href`/`src`, `<foreignObject>`/`<image>`/`<style>` and CSS vectors are stripped; payloads without an `<svg>` root are rejected. Tika magic-byte detection is skipped for SVG (unreliable for XML) — the structural parse is the content gate. `CONFIRMED_FROM_CODE`
 
 Evidence:
 
-- `AdminMediaService.java`
+- `AdminMediaService.java`, `SvgSanitizer.java`, `SvgSanitizerTest.java`
 - `MediaUrlProperties.java`
 - `AdminMediaP0Test.java`
 

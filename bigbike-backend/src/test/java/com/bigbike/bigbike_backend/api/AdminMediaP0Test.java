@@ -94,10 +94,26 @@ class AdminMediaP0Test {
     }
 
     @Test
-    void upload_svgFile_returns400() throws Exception {
-        byte[] svg = "<svg xmlns=\"http://www.w3.org/2000/svg\"><script>alert(1)</script></svg>".getBytes();
+    void upload_svgWithScript_isSanitizedAndReturns201() throws Exception {
+        // SVG upload is now accepted; the sanitizer strips the embedded <script> before storage.
+        // (Per-vector sanitization is asserted at the unit level in SvgSanitizerTest.)
+        byte[] svg = "<svg xmlns=\"http://www.w3.org/2000/svg\"><script>alert(1)</script><path d=\"M0 0h10v10H0z\"/></svg>".getBytes();
         MockMultipartFile file = new MockMultipartFile(
-                "file", "evil.svg", "image/svg+xml", svg);
+                "file", "icon.svg", "image/svg+xml", svg);
+
+        mockMvc.perform(multipart("/api/v1/admin/media")
+                        .file(file)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.mimeType").value("image/svg+xml"));
+    }
+
+    @Test
+    void upload_svgDeclaredButNotSvgContent_returns400() throws Exception {
+        // image/svg+xml declared, but the body has no <svg> root — sanitizer rejects it.
+        byte[] notSvg = "just plain text, not an svg at all".getBytes();
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "fake.svg", "image/svg+xml", notSvg);
 
         mockMvc.perform(multipart("/api/v1/admin/media")
                         .file(file)

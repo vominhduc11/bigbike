@@ -365,7 +365,22 @@ export function WpCategorySidebar({
                                 key={child.id}
                                 className={`cat-item cat-item-${child.id} ${child.slug}${childActive ? " current-cat active" : ""}`}
                               >
-                                <LocalizedLink kind="category" viSlug={child.slug} enSlug={child.slugEn}>
+                                <LocalizedLink
+                                  kind="category"
+                                  viSlug={child.slug}
+                                  enSlug={child.slugEn}
+                                  className={child.menuIconUrl ? "relative block pl-[47px] before:!hidden" : undefined}
+                                >
+                                  {child.menuIconUrl ? (
+                                    <span
+                                      aria-hidden
+                                      className={`${submenuIcon} absolute left-0 top-[3px]`}
+                                      style={{
+                                        maskImage: `url(${child.menuIconUrl})`,
+                                        WebkitMaskImage: `url(${child.menuIconUrl})`,
+                                      }}
+                                    />
+                                  ) : null}
                                   {child.name}
                                 </LocalizedLink>
                               </li>

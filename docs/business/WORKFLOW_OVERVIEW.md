@@ -48,7 +48,7 @@
 |---|---|---|---|---|
 | 1 | Admin | Upload file to admin media endpoint | `CONFIRMED_FROM_CODE` | `AdminMediaController.java` |
 | 2 | System | Detect MIME from content with Apache Tika | `CONFIRMED_FROM_CODE` | `AdminMediaService.java` |
-| 3 | System | Reject unsupported/empty/fake MIME uploads, including SVG | `CONFIRMED_FROM_CODE` | `AdminMediaP0Test.java` |
+| 3 | System | Reject unsupported/empty/fake MIME uploads; accept SVG but sanitize it (strip scripts/handlers/external refs) | `CONFIRMED_FROM_CODE` | `AdminMediaP0Test.java`, `SvgSanitizer.java` |
 | 4 | System | Persist media metadata and storage reference | `CONFIRMED_FROM_CODE` | `AdminMediaService.java` |
 
 ## Product Authoring & Live Preview Workflow
