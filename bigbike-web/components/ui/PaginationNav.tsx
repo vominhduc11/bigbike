@@ -52,7 +52,7 @@ export function PaginationNav({ page, totalPages, baseHref = "", variant = "defa
     // so the effective rhythm is pt-5/pb-10. 1.5rem font + 1.2 line-height per WP parity.
     const itemCls = "inline-block px-2 text-ui-24 font-semibold";
     const linkBase =
-      "inline-flex items-center justify-center px-2.5 py-[5px] text-ui-24 leading-[1.2] no-underline";
+      "inline-flex items-center justify-center px-2.5 py-2.5 text-ui-24 leading-[1.2] no-underline";
     // WP-parity: căn trái trên mobile (WP `.woocommerce-pagination` mobile), phải ở desktop.
     return (
       <nav className="m-0 pb-10 pt-5 text-left md:text-right" aria-label={t("paginationAria")}>
@@ -106,14 +106,14 @@ export function PaginationNav({ page, totalPages, baseHref = "", variant = "defa
     <nav className="mt-6 flex items-center justify-center gap-3 flex-wrap" aria-label={t("paginationAria")}>
       {page > 1 ? (
         onPageChange ? (
-          <Button type="button" variant="secondary" size="icon" onClick={() => onPageChange(page - 1)} aria-label={t("previousPage")}><ChevronLeft className="w-4 h-4" /></Button>
+          <Button type="button" variant="secondary" size="icon" className="max-md:h-11 max-md:w-11" onClick={() => onPageChange(page - 1)} aria-label={t("previousPage")}><ChevronLeft className="w-4 h-4" /></Button>
         ) : (
-          <Button asChild variant="secondary" size="icon">
+          <Button asChild variant="secondary" size="icon" className="max-md:h-11 max-md:w-11">
             <Link href={makeHref(page - 1)} aria-label={t("previousPage")}><ChevronLeft className="w-4 h-4" /></Link>
           </Button>
         )
       ) : (
-        <Button variant="secondary" size="icon" disabled aria-label={t("previousPage")}><ChevronLeft className="w-4 h-4" /></Button>
+        <Button variant="secondary" size="icon" className="max-md:h-11 max-md:w-11" disabled aria-label={t("previousPage")}><ChevronLeft className="w-4 h-4" /></Button>
       )}
 
       <div className="flex items-center gap-1 flex-wrap">
@@ -145,14 +145,14 @@ export function PaginationNav({ page, totalPages, baseHref = "", variant = "defa
 
       {page < totalPages ? (
         onPageChange ? (
-          <Button type="button" variant="secondary" size="icon" onClick={() => onPageChange(page + 1)} aria-label={t("nextPage")}><ChevronRight className="w-4 h-4" /></Button>
+          <Button type="button" variant="secondary" size="icon" className="max-md:h-11 max-md:w-11" onClick={() => onPageChange(page + 1)} aria-label={t("nextPage")}><ChevronRight className="w-4 h-4" /></Button>
         ) : (
-          <Button asChild variant="secondary" size="icon">
+          <Button asChild variant="secondary" size="icon" className="max-md:h-11 max-md:w-11">
             <Link href={makeHref(page + 1)} aria-label={t("nextPage")}><ChevronRight className="w-4 h-4" /></Link>
           </Button>
         )
       ) : (
-        <Button variant="secondary" size="icon" disabled aria-label={t("nextPage")}><ChevronRight className="w-4 h-4" /></Button>
+        <Button variant="secondary" size="icon" className="max-md:h-11 max-md:w-11" disabled aria-label={t("nextPage")}><ChevronRight className="w-4 h-4" /></Button>
       )}
     </nav>
   );

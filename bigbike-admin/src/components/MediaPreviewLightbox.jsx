@@ -96,7 +96,7 @@ export function MediaPreviewLightbox({ media, items, index, onClose, onNavigate 
             className="max-w-[90vw] max-h-[80vh] rounded-xs bg-black" />
         )}
         {isAudio && current.publicUrl && (
-          <div className="bg-surface p-8 rounded-md min-w-[320px] text-foreground">
+          <div className="bg-surface p-4 sm:p-8 rounded-md w-[min(320px,90vw)] text-foreground">
             <div className="flex justify-center mb-3"><Music size={64} /></div>
             <p className="m-0 mb-4 font-semibold text-center break-all">
               {filename}

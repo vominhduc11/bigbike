@@ -1364,6 +1364,7 @@ a {
 
 .image-url-input-row {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--admin-space-2);
   align-items: center;
 }
@@ -1743,7 +1744,9 @@ a {
 
 .cat-tree-wrap { margin-top: var(--admin-space-4); }
 
-.cat-tree-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+/* min-width keeps the fixed-layout columns legible on mobile: instead of
+   crushing 6-7 columns, the parent .table-scroll-wrap (overflow-x:auto) scrolls. */
+.cat-tree-table { width: 100%; min-width: 760px; border-collapse: collapse; table-layout: fixed; }
 .cat-tree-table th,
 .cat-tree-table td {
   padding: var(--admin-space-2) var(--admin-space-3);
@@ -2858,6 +2861,20 @@ a {
   white-space: nowrap;
   min-width: 72px;
   text-align: right;
+}
+
+/* On the narrowest phones the 3-column cart row (info / qty / subtotal) gets
+   cramped — drop the subtotal+delete to a full-width second line, right-aligned. */
+@media (max-width: 400px) {
+  .pos-cart-item { grid-template-columns: 1fr auto; }
+  .pos-cart-item-subtotal {
+    grid-column: 1 / -1;
+    min-width: 0;
+    flex-direction: row !important;
+    justify-content: flex-end;
+    align-items: center !important;
+    gap: var(--admin-space-3) !important;
+  }
 }
 
 .pos-cart-footer {

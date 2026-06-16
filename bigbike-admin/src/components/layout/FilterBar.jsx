@@ -2,10 +2,9 @@ export function FilterBar({ children }) {
   return <div className="bb-filter-bar">{children}</div>
 }
 
-export function FilterField({ label, children, span }) {
-  const style = span ? { gridColumn: `span ${span}` } : undefined
+export function FilterField({ label, children }) {
   return (
-    <label style={style}>
+    <label>
       <span>{label}</span>
       {children}
     </label>

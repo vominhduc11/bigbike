@@ -79,7 +79,7 @@ export function ReceivableDetailScreen({ receivableId, navigate, canRecordPaymen
           </p>
           <h1 style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             {t('receivables.title')}{' '}
-            <span className="mono" style={{ color: 'var(--admin-color-primary)' }}>
+            <span className="mono" style={{ color: 'var(--admin-color-primary)', wordBreak: 'break-word' }}>
               {ar.orderNumber || ar.orderId?.slice(0, 8) || ''}
             </span>
             <StatusBadge status={ar.status} t={t} />

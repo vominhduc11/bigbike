@@ -85,7 +85,7 @@ function SerialWarrantyPanel({ serialId, canRead }) {
         <p className="text-sm text-destructive">{state.error}</p>
       )}
       {state.status === 'success' && (
-        <div className="grid grid-cols-2 gap-2.5 text-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-sm">
           <div>
             <span className="text-muted-foreground">{t('serial.warrantyStatusLabel')}: </span>
             <StatusBadge type="warranty" status={state.warranty.status} />
@@ -169,7 +169,7 @@ function SerialDetailModal({ item, onClose, onUpdated, canUpdate, canReadWarrant
           </div>
 
           {/* Info grid */}
-          <div className="grid grid-cols-2 gap-2.5 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-sm">
             <div>
               <span className="text-muted-foreground">{t('serial.modalProductLabel')}: </span>
               <span className="font-medium">{detail.productName || '—'}</span>

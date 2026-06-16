@@ -51,7 +51,7 @@ function WarrantyDetailModal({ item, onClose, onVoided, canUpdate }) {
   return (
     <Modal open title={t('warranty.modalTitle')} onClose={onClose}>
       <div className="flex flex-col gap-4">
-        <div className="grid grid-cols-2 gap-2.5 text-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-sm">
           <div>
             <span className="text-muted-foreground">{t('warranty.modalStatusLabel')}: </span>
             <StatusBadge type="warranty" status={detail.status} />

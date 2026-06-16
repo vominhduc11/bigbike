@@ -26,7 +26,7 @@ export function PaginationControls({ pagination, onPageChange }) {
         {t('pagination.page', { page, total: totalPages })}
       </span>
 
-      <div className="bb-row">
+      <div className="bb-row flex-wrap">
         {totalPages > 3 && (
           <form onSubmit={handleJump} className="bb-row" style={{ gap: 6 }}>
             <span style={{ fontSize: 12, color: 'var(--bb-text-muted)', whiteSpace: 'nowrap' }}>

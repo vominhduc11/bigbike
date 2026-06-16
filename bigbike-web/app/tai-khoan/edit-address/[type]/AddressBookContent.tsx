@@ -323,7 +323,7 @@ export function AddressBookContent() {
                       <button
                         type="button"
                         onClick={() => handleSetDefault(addr)}
-                        className="text-sm font-bold uppercase tracking-wide text-discount hover:underline"
+                        className="inline-flex min-h-11 items-center text-sm font-bold uppercase tracking-wide text-discount hover:underline"
                       >
                         {t("setDefaultButton")}
                       </button>
@@ -333,7 +333,7 @@ export function AddressBookContent() {
                         type="button"
                         onClick={() => openEdit(addr)}
                         aria-label={t("editAria")}
-                        className="p-1.5 text-muted-foreground hover:text-brand"
+                        className="flex h-11 w-11 items-center justify-center text-muted-foreground hover:text-brand"
                       >
                         <SquarePen className="h-[18px] w-[18px]" aria-hidden />
                       </button>
@@ -341,7 +341,7 @@ export function AddressBookContent() {
                         type="button"
                         onClick={() => handleDelete(addr)}
                         aria-label={t("deleteAria")}
-                        className="p-1.5 text-muted-foreground hover:text-brand"
+                        className="flex h-11 w-11 items-center justify-center text-muted-foreground hover:text-brand"
                       >
                         <Trash2 className="h-[18px] w-[18px]" aria-hidden />
                       </button>
@@ -361,7 +361,7 @@ export function AddressBookContent() {
           <button
             type="button"
             onClick={openAdd}
-            className="mt-5 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-brand hover:underline"
+            className="mt-5 inline-flex min-h-11 items-center gap-2 text-sm font-bold uppercase tracking-wide text-brand hover:underline"
           >
             <Plus className="h-4 w-4" aria-hidden />
             {t("addNew")}

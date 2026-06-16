@@ -283,7 +283,7 @@ export function ReviewListScreen({ navigate, canUpdate }) {
                   <p style={{ margin: 0, color: 'var(--admin-color-text-secondary)', fontSize: 14, lineHeight: 1.55 }}>
                     "{r.body?.slice(0, 400)}{r.body?.length > 400 ? '…' : ''}"
                   </p>
-                  <div className="flex gap-2 mt-3">
+                  <div className="flex flex-wrap gap-2 mt-3">
                     <button type="button" className="bb-btn bb-btn-secondary bb-btn-sm" onClick={() => navigate(`/admin/reviews/${r.id}`)}>
                       <Eye size={13} />{t('reviews.view')}
                     </button>

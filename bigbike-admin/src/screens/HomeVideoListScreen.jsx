@@ -126,7 +126,7 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPrevi
         ...sortable.style,
         opacity: video.isActive === false && !selected ? 0.55 : (sortable.isDragging ? 0.4 : 1),
         ...(selected ? { borderColor: 'var(--admin-color-primary)', background: 'var(--admin-color-surface-selected)' } : {}),
-        display: 'flex', gap: 12, alignItems: 'flex-start', padding: '12px 16px',
+        display: 'flex', gap: 12, alignItems: 'flex-start', padding: '12px 16px', flexWrap: 'wrap',
       }}
       className="bb-card"
     >

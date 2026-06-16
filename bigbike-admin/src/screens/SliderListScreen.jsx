@@ -45,7 +45,7 @@ function SliderCard({ slider, canUpdate, onEdit, onDelete, onToggleActive, sorta
       style={{ ...sortable?.style, opacity: slider.isActive === false ? 0.55 : dragOpacity }}
       className="bb-card"
     >
-      <div className="bb-card-body" style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '12px 16px' }}>
+      <div className="bb-card-body" style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '12px 16px', flexWrap: 'wrap' }}>
         {canUpdate && sortable && (
           <button
             type="button"
