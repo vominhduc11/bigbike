@@ -687,7 +687,15 @@ public class CatalogReadService {
             case "sortOrder" -> Comparator.comparing(category -> category.sortOrder() == null ? Integer.MAX_VALUE : category.sortOrder());
             default -> throw new IllegalStateException("Unsupported sort field.");
         };
-        return sortSpec.direction() == SortDirection.DESC ? comparator.reversed() : comparator;
+        Comparator<Category> directed = sortSpec.direction() == SortDirection.DESC ? comparator.reversed() : comparator;
+        // Tie-break by name (case-insensitive, ascending) when ordering by sortOrder so categories
+        // sharing the same sortOrder render in a stable order matching the admin category tree
+        // (admin tree orders siblings by sortOrder then name). The name tie-break stays ascending
+        // even under sortOrder:desc.
+        if ("sortOrder".equals(sortSpec.field())) {
+            return directed.thenComparing(Category::name, String.CASE_INSENSITIVE_ORDER);
+        }
+        return directed;
     }
 
     private static Comparator<Brand> brandComparator(SortSpec sortSpec) {

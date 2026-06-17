@@ -434,7 +434,17 @@ export function ProductGallery({
             // 3-up row. Once initialized the `:not(...)` no longer matches and
             // Swiper's computed inline width takes over — no effect on runtime layout.
             // ≥540 doesn't need this (slides carry an explicit `!w-[112px]`/rail width).
-            className="max-[539px]:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/3 min-[1024px]:flex-1 min-[1024px]:min-h-0 min-[1024px]:max-h-[470px] min-[1536px]:max-h-[598px] min-[1920px]:max-h-[738px]"
+            //
+            // SAFARI iOS FIX: phones (<540) size each square slide via `aspect-square
+            // !h-auto` — height derived from the Swiper-set width. The wrapper is a
+            // flex row whose default `align-items: stretch` makes WebKit stretch the
+            // slide to the row's content height INSTEAD of honoring aspect-ratio, so
+            // the active (red-bordered) thumbnail balloons into a tall rectangle on
+            // iOS Safari (Chrome resolves it correctly). Force `items-start` on the
+            // wrapper at <540 so slides are not stretched and aspect-ratio governs the
+            // height → true squares cross-browser. Scoped to phones; the ≥540 fixed-px
+            // tiles and the ≥1024 vertical rail are unaffected.
+            className="max-[539px]:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/3 max-[539px]:[&_.swiper-wrapper]:items-start min-[1024px]:flex-1 min-[1024px]:min-h-0 min-[1024px]:max-h-[470px] min-[1536px]:max-h-[598px] min-[1920px]:max-h-[738px]"
           >
             {allItems.map((item, index) => {
               const active = index === activeIndex;

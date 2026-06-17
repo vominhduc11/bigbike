@@ -682,6 +682,16 @@ Status: `CONFIRMED_FROM_CODE` — `AdminMenuService.resolveMenuIconUrl` (DB look
 (`menuIconUrl`), `CatalogController` `/categories`, `UpsertCategoryRequest.menuIcon` +
 `AdminCatalogMutationService.applyCategoryPatch` (ghi admin), migration `V213`.
 
+### Thứ tự danh sách danh mục công khai — `GET /api/v1/categories`
+
+Danh sách trả về sắp theo `sortOrder` tăng dần (mặc định khi không truyền `sort`); danh mục có
+`sortOrder = null` bị đẩy xuống cuối. **Tie-break:** khi nhiều danh mục cùng `sortOrder`, sắp phụ theo
+`name` (không phân biệt hoa/thường, tăng dần) — để thứ tự ổn định và khớp với cây danh mục bên admin
+(admin sắp anh-em theo `sortOrder` rồi `name`). Tie-break theo tên luôn tăng dần kể cả khi `sort=sortOrder:desc`.
+Lưới danh mục trang chủ `bigbike-web` dùng đúng endpoint này với `showOnHomepage=true`.
+
+Status: `CONFIRMED_FROM_CODE` — `CatalogReadService.categoryComparator` / `listCategories`.
+
 ### Home video bilingual title — `lang` param (V161)
 
 Video trang chủ có tiêu đề 2 ngôn ngữ (`title` VI + `title_en` EN tùy chọn).

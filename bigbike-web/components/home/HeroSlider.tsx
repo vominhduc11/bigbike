@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Swiper, SwiperSlide } from "swiper/react";
+import { Autoplay } from "swiper/modules";
 import type { Swiper as SwiperType } from "swiper";
 import "swiper/css";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -135,7 +136,13 @@ export function HeroSlider({ slides }: HeroSliderProps) {
       {mounted ? (
         <Swiper
           className="js-home-banner"
+          modules={[Autoplay]}
           loop={count > 1}
+          autoplay={
+            count > 1
+              ? { delay: 2000, disableOnInteraction: false }
+              : false
+          }
           onSwiper={(swiper) => {
             swiperRef.current = swiper;
             enforceHorizontalTrack(swiper);
