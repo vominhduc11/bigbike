@@ -53,7 +53,8 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                         "Mũ bảo hiểm BigBike",
                         "Danh mục mũ bảo hiểm cho biker.",
                         "https://bigbike.vn/danh-muc-san-pham/mu-bao-hiem/",
-                        null
+                        null,
+                        false
                 ),
                 true,
                 true,
@@ -87,7 +88,8 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                         "Áo giáp bảo hộ BigBike",
                         "Danh mục áo giáp bảo hộ cho rider.",
                         "https://bigbike.vn/danh-muc-san-pham/ao-giap-bao-ho/",
-                        null
+                        null,
+                        false
                 ),
                 true,
                 true,
@@ -120,7 +122,8 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                         "Thương hiệu LS2",
                         "Sản phẩm LS2 tại BigBike.",
                         "https://bigbike.vn/brands/ls2/",
-                        null
+                        null,
+                        false
                 ),
                 true,
                 null,
@@ -148,7 +151,8 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                         "Thương hiệu KYT",
                         "Sản phẩm KYT tại BigBike.",
                         "https://bigbike.vn/brands/kyt/",
-                        null
+                        null,
+                        false
                 ),
                 true,
                 null,
@@ -275,7 +279,8 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                         "Mũ bảo hiểm LS2 FF800",
                         "Mũ fullface LS2 FF800 chính hãng tại BigBike.",
                         "https://bigbike.vn/product/mu-bao-hiem-ls2-ff800/",
-                        null
+                        null,
+                        false
                 ),
                 null,           // translations
                 Instant.parse("2026-04-01T05:00:00Z"),
@@ -332,7 +337,8 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                         "Mũ bảo hiểm KYT NX Race",
                         "KYT NX Race hàng chính hãng.",
                         "https://bigbike.vn/product/mu-bao-hiem-kyt-nx-race/",
-                        null
+                        null,
+                        false
                 ),
                 null,           // translations
                 Instant.parse("2026-04-02T05:00:00Z"),
@@ -389,7 +395,8 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                         "Áo giáp LS2 City Rider",
                         "Áo giáp LS2 cho touring và daily ride.",
                         "https://bigbike.vn/product/ao-giap-ls2-city-rider/",
-                        null
+                        null,
+                        false
                 ),
                 null,           // translations
                 Instant.parse("2026-04-05T05:00:00Z"),

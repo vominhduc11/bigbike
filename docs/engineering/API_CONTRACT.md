@@ -171,13 +171,45 @@ No query params. Response shape: `ApiListResponse<ContentCategoryWithCount>`:
 |---|---|---|---|---|
 | `POST` | `/api/v1/admin/content/content-categories` | `content.update` | `UpsertCategoryRequest` (`slug` lowercase-kebab, `name`, optional `description`/`visible`/`showOnHomepage`/`sortOrder`/`parentId`) | `ApiDataResponse<ContentCategoryItem>` (`{ id, slug, name }`) |
 | `PATCH` | `/api/v1/admin/content/content-categories/{id}` | `content.update` | same `UpsertCategoryRequest` | `ApiDataResponse<ContentCategoryItem>` |
+| `DELETE` | `/api/v1/admin/content/content-categories/{id}` | `content.update` | — | `204 No Content` |
 
-No DELETE endpoint exists for content categories. Status: `CONFIRMED_FROM_CODE` — `AdminContentController.createCategory/updateCategory`, `adminApi.createContentCategory/updateContentCategory`. (Note: `createCategory()` in `adminApi.js` targets `/admin/categories` — **product** categories — a separate resource.)
+**Delete guard:** `DELETE` is blocked with `400 VALIDATION_ERROR` carrying a detail `{ field: "category", code: "CATEGORY_IN_USE" }` when any article (any publish status) still references the category as its primary `category` or in its many-to-many `categories` list. Articles are never modified as a side effect — the editor must reassign/remove them first. Mirrors the product-category delete guard.
+
+Status: `CONFIRMED_FROM_CODE` — `AdminContentController.createCategory/updateCategory/deleteCategory`, `AdminContentReferenceService.deleteCategory`, `ContentCategoryJpaRepository.countArticlesUsingCategory`, `adminApi.createContentCategory/updateContentCategory/deleteContentCategory`. (Note: `createCategory()` in `adminApi.js` targets `/admin/categories` — **product** categories — a separate resource.)
 
 ## Article Content Contract
 
 `GET /api/v1/articles/{slug}` — public, no auth. Returns `ApiDataResponse<Article>` for one
 `PUBLISHED` article. Served by `ContentController.getArticleBySlug`.
+
+### Article list — `GET /api/v1/articles` query param `featured` (V222)
+
+`GET /api/v1/articles` — public, no auth. Accepts an optional boolean query param `featured`:
+
+- `featured=true` → returns **only** featured articles (used by the storefront "Tin nổi bật" widget).
+- `featured=false` or param omitted → no featured filtering (default list behaviour, unchanged).
+
+Other existing list params (e.g. `category`, `q`, paging) are unaffected.
+
+Status: `CONFIRMED_FROM_CODE` — `ContentController.listArticles` (`featured` query param).
+
+### Article payload — `featured` + `seo.noIndex` (V222)
+
+Both the public `Article` shape (`GET /api/v1/articles`, `GET /api/v1/articles/{slug}`) and admin `AdminContentItem` now carry:
+
+- `featured` — top-level boolean. `true` = bài viết được đánh dấu nổi bật.
+- `seo.noIndex` — boolean inside the `seo` object. `true` = trang đặt `noindex` (không cho search engine index bài này). The `seo` object may be `null` when no SEO field is set → treat `noIndex` as `false`.
+
+**Pages** không có `featured` và không bật `noIndex` đợt này — luôn `false`.
+
+**Admin upsert** (`POST` / `PATCH /api/v1/admin/content/articles`) accepts both:
+
+- top-level `featured` (boolean) — via `UpsertArticleRequest.featured`.
+- `seo.noIndex` (boolean) — via `SeoMetaRequest.noIndex`.
+
+On update (`PATCH`), `null` for either field = giữ nguyên giá trị hiện có (presence-flag pattern).
+
+Status: `CONFIRMED_FROM_CODE` — `ContentController.listArticles`, `UpsertArticleRequest.featured`, `SeoMetaRequest.noIndex`, migration `V222__add_article_featured_and_seo_no_index.sql`. Xem [DATA_CONTRACT.md](DATA_CONTRACT.md) §"Article featured + seo_no_index (V222)".
 
 ### Article preview — admin dry-run render (`POST /api/v1/admin/content/articles/preview`)
 
@@ -191,28 +223,17 @@ Mirror of the product preview: powers the **live preview** in the article editor
 
 - **No persistence.** Backend validates, builds a transient `ArticleEntity` in memory via `applyArticlePatch` (never `save`d), and maps it through the same detail mapper the storefront uses (`toDomain(entity, locale, includeTranslations=false)`). `@Transactional(readOnly = true)`.
 - **Slug uniqueness is NOT enforced** for the dry-run (it is a persistence concern). Previewing an existing article must not flag its own saved slug as a `DUPLICATE` — every other create-mode field rule still applies.
-- A brand-new draft has no `relatedProducts` until saved; the sidebar/related-article rails are storefront context (other articles) and are not part of the preview payload.
+- The sidebar/related-article rails are storefront context (other articles) and are not part of the preview payload.
 
 Status: `CONFIRMED_FROM_CODE`
 
 Evidence: `AdminContentController.previewArticle`, `AdminContentMutationService.previewArticle` (transient build + no `save`), `JpaContentReadRepository.mapPreviewArticle` (public wrapper over `toDomain`).
 
-The `Article` payload includes **`relatedProducts`** — an ordered `Product[]` of catalog products
-showcased in the "Sản phẩm sử dụng trong bài viết" section of the blog detail page:
-- Each entry is a list-item `Product` (id, sku, slug, name, brand, category, image, price,
-  stockState, rating, ratingCount) — no variants/specifications/gallery.
-- Only `PUBLISHED` products appear; trashed/draft products are filtered out by the read path.
-- Order follows the admin-defined `sort_order` of `article_product_map`.
-- Empty array when the article links no products.
+### Article ↔ Product relation — REMOVED (V167)
 
-**Admin upsert** (`AdminContentMutationService`, article branch) accepts `productIds: string[]` on
-`UpsertArticleRequest`: it replaces the article's product set with the resolved, de-duplicated,
-order-preserving list. `null` keeps the existing set; `[]` clears it (same presence semantics as
-`tags`). The admin read DTO `AdminContentItem` returns `relatedProducts` as a lightweight
-`RelatedProductRef[]` (`id`, `slug`, `name`, `imageUrl`) for rendering product chips in the editor.
+> **REMOVED (V167).** Tính năng gắn sản phẩm liên quan vào bài viết đã bị gỡ — bảng `article_product_map` drop ở `V167__drop_article_product_map.sql`. Article không còn `relatedProducts` / `productIds`; `UpsertArticleRequest` không nhận `productIds` và `AdminContentItem` không trả `relatedProducts`. (Product `relatedProducts` ở section riêng — V135 — là tính năng khác, vẫn còn sống.)
 
-Status: `CONFIRMED_FROM_CODE` — `ContentController`, `AdminContentMutationService`,
-`UpsertArticleRequest`, `AdminContentItem`. See [DATA_CONTRACT.md](DATA_CONTRACT.md) §"Article ↔ Product relation (V130)".
+Status: `CONFIRMED_FROM_CODE` — `V167__drop_article_product_map.sql`, `Article.java` (no `relatedProducts`), `UpsertArticleRequest.java` (no `productIds`). See [DATA_CONTRACT.md](DATA_CONTRACT.md) §"Article ↔ Product relation — REMOVED (V167)".
 
 ### Article / Page body blocks — `bodyBlocks` (V140)
 
@@ -364,8 +385,9 @@ payload. Filtering still runs on the full domain object server-side (the
 `filter_color` param matches against `variants[].options`); the projection to the
 list view happens only on the returned page.
 
-This same list-view shape is what the article `relatedProducts` array already
-documents (one list-item `Product` per entry — see "Article Content Contract").
+This same list-view shape is what the product `relatedProducts` array
+documents (one list-item `Product` per entry — see "Product related products"
+below).
 
 Status: `CONFIRMED_FROM_CODE`
 
@@ -753,16 +775,17 @@ Status: `CONFIRMED_FROM_CODE` — `SettingDefinitionRegistry.java`, `PublicSetti
 
 **Page hero settings (group `public_hero`, all `publicAllowed`):**
 
-For each listing page that lacks a `PageEntity` backing (`/san-pham`, `/brands`, `/tin-tuc`), the hero block is composed from 4 keys:
+For each listing page that lacks a `PageEntity` backing (`/san-pham`, `/brands`, `/tin-tuc`), the hero block is composed from 5 keys:
 
 | Key prefix | Type | Purpose |
 |---|---|---|
 | `hero_<page>_image_url` | `IMAGE_URL` | Desktop background image URL |
 | `hero_<page>_mobile_image_url` | `IMAGE_URL` | Mobile (≤767px) background image URL; blank → falls back to the desktop image |
+| `hero_<page>_illustration_url` | `IMAGE_URL` | Right-side cut-out gear illustration; blank → falls back to `hero_default_illustration_url` |
 | `hero_<page>_image_alt` | `STRING` | Image alt text |
 | `hero_<page>_title` | `STRING` | Heading text |
 
-Concrete keys: `hero_products_*`, `hero_brands_*`, `hero_news_*` (12 total). All are returned by `GET /api/v1/settings/public`. Two global fallbacks also live in `public_hero`: `hero_default_bg_url` and `hero_default_illustration_url`, used when a page has no own image. The `WpCategoryHero` web component renders `mobile_image_url` via an art-directed `<img>` overlay shown only below the `md` breakpoint. The `_description` and `_kicker` keys that earlier seeds carried were dropped in `V199__drop_unused_hero_settings.sql` (never consumed); `_mobile_image_url` was re-introduced in `V220__reseed_hero_mobile_settings.sql`. CMS pages (about/contact/policy/guides) carry the same hero fields directly on the `Page` entity instead — see [DATA_CONTRACT.md](DATA_CONTRACT.md) "Page hero fields".
+Concrete keys: `hero_products_*`, `hero_brands_*`, `hero_news_*` (15 total). All are returned by `GET /api/v1/settings/public`. Two global fallbacks also live in `public_hero`: `hero_default_bg_url` and `hero_default_illustration_url`, used when a page has no own background / illustration. **Cascade per page:** the page's own key → the matching global default → a hardcoded asset baked into `WpCategoryHero`. The `WpCategoryHero` web component renders `mobile_image_url` via an art-directed `<img>` overlay shown only below the `md` breakpoint. The `_description` and `_kicker` keys that earlier seeds carried were dropped in `V199__drop_unused_hero_settings.sql` (never consumed); `_mobile_image_url` was re-introduced in `V220__reseed_hero_mobile_settings.sql`; per-page `_illustration_url` was added in `V221__add_hero_per_page_illustration.sql` (previously all three pages shared `hero_default_illustration_url`). These keys are managed by the dedicated **Banner trang** admin screen (`BannerScreen.jsx`). CMS pages (about/contact/policy/guides) carry the same hero fields directly on the `Page` entity instead — see [DATA_CONTRACT.md](DATA_CONTRACT.md) "Page hero fields".
 
 **`UpsertPageRequest` admin DTO** (admin can edit hero on any CMS page):
 - `heroImage`: `{ url, alt }` — same nested shape as `coverImage`. Send `{ url: "" }` to clear.

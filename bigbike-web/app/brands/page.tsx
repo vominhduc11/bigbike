@@ -43,7 +43,7 @@ export default async function BrandListPage() {
     ? toLegacyWpMediaUrl(resolveMediaUrl(heroSettings.mobileImageUrl.trim()))
     : null;
   const heroIllustrationUrl = toLegacyWpMediaUrl(
-    resolveMediaUrl(defaultHero.defaultIllustrationUrl?.trim()),
+    resolveMediaUrl(heroSettings.illustrationUrl?.trim()) || defaultHero.defaultIllustrationUrl?.trim(),
   );
 
   const heroBreadcrumb: WpCategoryCrumb[] = [

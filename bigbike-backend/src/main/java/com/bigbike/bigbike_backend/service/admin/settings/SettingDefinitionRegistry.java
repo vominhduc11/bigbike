@@ -197,6 +197,9 @@ public class SettingDefinitionRegistry {
                 SettingDefinition.builder("hero_products_title", "public_hero", SettingValueType.STRING)
                         .publicAllowed()
                         .description("Tiêu đề hero trang Tất cả sản phẩm.").build(),
+                SettingDefinition.builder("hero_products_illustration_url", "public_hero", SettingValueType.IMAGE_URL)
+                        .publicAllowed()
+                        .description("Ảnh minh hoạ (gear) góc phải hero trang Tất cả sản phẩm. PNG nền trong, tỷ lệ ~700×600px. Bỏ trống sẽ dùng ảnh gear mặc định chung.").build(),
 
                 SettingDefinition.builder("hero_brands_image_url", "public_hero", SettingValueType.IMAGE_URL)
                         .publicAllowed()
@@ -210,6 +213,9 @@ public class SettingDefinitionRegistry {
                 SettingDefinition.builder("hero_brands_title", "public_hero", SettingValueType.STRING)
                         .publicAllowed()
                         .description("Tiêu đề hero trang Thương hiệu.").build(),
+                SettingDefinition.builder("hero_brands_illustration_url", "public_hero", SettingValueType.IMAGE_URL)
+                        .publicAllowed()
+                        .description("Ảnh minh hoạ (gear) góc phải hero trang Thương hiệu. PNG nền trong, tỷ lệ ~700×600px. Bỏ trống sẽ dùng ảnh gear mặc định chung.").build(),
 
                 SettingDefinition.builder("hero_news_image_url", "public_hero", SettingValueType.IMAGE_URL)
                         .publicAllowed()
@@ -223,6 +229,9 @@ public class SettingDefinitionRegistry {
                 SettingDefinition.builder("hero_news_title", "public_hero", SettingValueType.STRING)
                         .publicAllowed()
                         .description("Tiêu đề hero trang Tin tức.").build(),
+                SettingDefinition.builder("hero_news_illustration_url", "public_hero", SettingValueType.IMAGE_URL)
+                        .publicAllowed()
+                        .description("Ảnh minh hoạ (gear) góc phải hero trang Tin tức. PNG nền trong, tỷ lệ ~700×600px. Bỏ trống sẽ dùng ảnh gear mặc định chung.").build(),
 
                 // ── GLOBAL HERO DEFAULTS ──
                 SettingDefinition.builder("hero_default_bg_url", "public_hero", SettingValueType.IMAGE_URL)

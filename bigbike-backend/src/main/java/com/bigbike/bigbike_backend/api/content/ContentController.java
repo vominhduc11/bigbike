@@ -40,10 +40,11 @@ public class ContentController {
             @RequestParam(required = false) String sort,
             @RequestParam(required = false) @Pattern(regexp = SLUG_REGEX, message = "Invalid category slug.") String category,
             @RequestParam(required = false) @Size(max = 100) String q,
+            @RequestParam(required = false) Boolean featured,
             @RequestParam(defaultValue = "vi") @Pattern(regexp = "^(vi|en)$", message = "Invalid lang.") String lang,
             HttpServletRequest request
     ) {
-        return apiResponseFactory.list(contentReadService.listArticles(page, size, sort, category, q, lang), request);
+        return apiResponseFactory.list(contentReadService.listArticles(page, size, sort, category, q, featured, lang), request);
     }
 
     @GetMapping("/articles/{slug}")

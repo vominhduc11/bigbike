@@ -83,6 +83,10 @@ public class ArticleEntity {
     @Column(nullable = false)
     private PublishStatus publishStatus;
 
+    /** Featured article flag (V222) — drives the public {@code ?featured=true} filter. */
+    @Column(nullable = false)
+    private boolean featured;
+
     private String seoTitle;
 
     @Column(columnDefinition = "text")
@@ -100,6 +104,10 @@ public class ArticleEntity {
     private Integer seoOgImageWidth;
     private Integer seoOgImageHeight;
     private String seoOgImageMimeType;
+
+    /** Per-article SEO noindex flag (V222) — web emits meta noindex when true. */
+    @Column(name = "seo_no_index", nullable = false)
+    private boolean seoNoIndex;
 
     // English translations (V138) — nullable; storefront falls back to VI per ARTICLE_RULE_002
     private String titleEn;

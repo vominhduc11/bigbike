@@ -45,6 +45,9 @@ public class UpsertArticleRequest {
 
     private PublishStatus publishStatus;
 
+    /** Featured article flag (V222). Null = leave unchanged on update. */
+    private Boolean featured;
+
     @Valid
     private SeoMetaRequest seo;
 

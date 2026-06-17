@@ -701,6 +701,12 @@ export async function updateContentCategory(categoryId, input) {
   return mapContentCategory(payload?.data)
 }
 
+// Hard-delete a content (blog) category. Backend returns 204 and rejects with
+// CATEGORY_IN_USE when articles still reference it.
+export async function deleteContentCategory(categoryId) {
+  await requestJson(`/admin/content/content-categories/${categoryId}`, { method: 'DELETE' })
+}
+
 export async function fetchRedirects(query) {
   try {
     const payload = await requestJson('/admin/redirects', { query: buildRedirectQuery(query) })

@@ -52,11 +52,13 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
                 ridingGuide,
                 List.of(ridingGuide),
                 PublishStatus.PUBLISHED,
+                true,                       // featured
                 new SeoMeta(
                         "Cách Chọn Mũ Fullface Phù Hợp",
                         "Hướng dẫn chọn mũ fullface cho biker.",
                         "https://bigbike.vn/tin-tuc/chon-mu-fullface-phu-hop.html",
-                        null
+                        null,
+                        false
                 ),
                 null,
                 Instant.parse("2026-04-10T03:00:00Z"),
@@ -84,11 +86,13 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
                 news,
                 List.of(news),
                 PublishStatus.DRAFT,
+                false,                      // featured
                 new SeoMeta(
                         "Xu Hướng Đồ Bảo Hộ 2026",
                         "Tin tức và phân tích xu hướng đồ bảo hộ biker 2026.",
                         "https://bigbike.vn/tin-tuc/xu-huong-do-bao-ho-2026.html",
-                        null
+                        null,
+                        false
                 ),
                 null,
                 Instant.parse("2026-04-15T03:00:00Z"),
@@ -111,7 +115,8 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
                         "Giới Thiệu BigBike",
                         "Thông tin về BigBike.",
                         "https://bigbike.vn/gioi-thieu/",
-                        null
+                        null,
+                        false
                 ),
                 null,
                 null,
@@ -137,7 +142,8 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
                         "Chính Sách Bảo Hành",
                         "Chính sách bảo hành tại BigBike.",
                         "https://bigbike.vn/chinh-sach-bao-hanh/",
-                        null
+                        null,
+                        false
                 ),
                 null,
                 null,
@@ -203,10 +209,11 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
 
     @Override
     public org.springframework.data.domain.Page<Article> listPublishedArticles(
-            String categorySlug, String q, Pageable pageable, String locale) {
+            String categorySlug, String q, Boolean featured, Pageable pageable, String locale) {
         List<Article> filtered = articles.stream()
                 .filter(a -> a.publishStatus() == PublishStatus.PUBLISHED)
                 .filter(a -> matchesCategory(a, categorySlug))
+                .filter(a -> featured == null || a.featured() == featured)
                 .filter(a -> matchesArticleQuery(a, q))
                 .toList();
         return toSpringPage(filtered, pageable, InMemoryContentReadRepository::articleComparator);

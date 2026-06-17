@@ -26,15 +26,19 @@ public class ContentReadService {
     private final ContentReadRepository contentReadRepository;
     private final SortParser sortParser;
 
-    public PageResult<Article> listArticles(int page, int size, String sort, String category, String q, String lang) {
+    public PageResult<Article> listArticles(
+            int page, int size, String sort, String category, String q, Boolean featured, String lang) {
         SortSpec sortSpec = sortParser.parse(sort, "publishedAt", SortDirection.DESC, ARTICLE_SORT_FIELDS);
 
         Sort springSort = toSpringSort(sortSpec);
         org.springframework.data.domain.Pageable pageable = PageRequest.of(page - 1, size, springSort);
 
+        // ?featured=true restricts to featured articles; null/false keeps the existing behavior (no filter).
+        Boolean featuredFilter = Boolean.TRUE.equals(featured) ? Boolean.TRUE : null;
+
         org.springframework.data.domain.Page<Article> result =
                 contentReadRepository.listPublishedArticles(
-                        blankToNull(category), blankToNull(q), pageable, resolvedLang(lang));
+                        blankToNull(category), blankToNull(q), featuredFilter, pageable, resolvedLang(lang));
 
         return toPageResult(result);
     }

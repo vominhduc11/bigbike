@@ -345,6 +345,8 @@ export type Article = {
   category?: ContentCategorySummary;
   categories?: ContentCategorySummary[];
   publishStatus: PublishStatus;
+  /** Khi true, bài thuộc nhóm "Tin nổi bật" — lọc qua `GET /api/v1/articles?featured=true`. */
+  featured?: boolean;
   seo?: SeoMeta;
   publishedAt?: string;
   createdAt: string;

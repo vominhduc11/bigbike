@@ -1099,7 +1099,8 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 title,
                 description,
                 canonicalUrl,
-                toImageAsset(ogImageId, ogImageUrl, ogImageAlt, ogImageWidth, ogImageHeight, ogImageMimeType)
+                toImageAsset(ogImageId, ogImageUrl, ogImageAlt, ogImageWidth, ogImageHeight, ogImageMimeType),
+                false   // noIndex — catalog entities (product/brand/category) don't expose per-entity noindex
         );
     }
 }

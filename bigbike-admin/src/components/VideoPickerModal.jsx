@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { fetchMedia, uploadMedia } from '../lib/adminApi'
 import { useDebounce } from '../lib/useDebounce'
+import { useHasPermission } from '../lib/auth'
 import { MediaDimensionWarning } from './MediaDimensionWarning'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { Button } from '@/components/ui/button'
@@ -54,6 +55,8 @@ function IconCheck() {
 
 export function VideoPickerModal({ onSelect, onClose }) {
   const { t } = useTranslation()
+  const hasPermission = useHasPermission()
+  const canWrite = hasPermission('media.write')
   const modalRef = useRef(null)
   const previousFocusRef = useRef(null)
   const [search, setSearch] = useState('')
@@ -142,6 +145,7 @@ export function VideoPickerModal({ onSelect, onClose }) {
   }, [])
 
   async function handleFileChange(event) {
+    if (!canWrite) return
     const file = event.target.files?.[0]
     if (!file) return
 
@@ -191,24 +195,28 @@ export function VideoPickerModal({ onSelect, onClose }) {
         <div className="mpicker-header">
           <h3 className="mpicker-title">{t('homeVideos.picker.title')}</h3>
           <div className="mpicker-header-actions">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept={ALLOWED_MIME.join(',')}
-              className="hidden"
-              onChange={handleFileChange}
-              disabled={uploading}
-            />
-            <Button variant="secondary" size="sm"
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-            >
-              <IconUpload />
-              {uploading
-                ? t('homeVideos.picker.uploading', { progress: uploadProgress || 0 })
-                : t('homeVideos.picker.uploadButton')}
-            </Button>
+            {canWrite && (
+              <>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept={ALLOWED_MIME.join(',')}
+                  className="hidden"
+                  onChange={handleFileChange}
+                  disabled={uploading}
+                />
+                <Button variant="secondary" size="sm"
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                >
+                  <IconUpload />
+                  {uploading
+                    ? t('homeVideos.picker.uploading', { progress: uploadProgress || 0 })
+                    : t('homeVideos.picker.uploadButton')}
+                </Button>
+              </>
+            )}
             <Button variant="secondary" size="icon" type="button" onClick={onClose} aria-label={t('homeVideos.picker.close')}>
               <IconClose />
             </Button>

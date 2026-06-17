@@ -237,6 +237,20 @@ public class AdminContentController extends AdminControllerSupport {
         return apiResponseFactory.data(adminContentReferenceService.updateCategory(id, payload), request);
     }
 
+    /**
+     * Hard-delete a content category. Blocked with {@code CATEGORY_IN_USE} if any article
+     * still references it (primary or many-to-many) — articles are never touched as a side effect.
+     */
+    @DeleteMapping("/content-categories/{id}")
+    public org.springframework.http.ResponseEntity<Void> deleteCategory(
+            @PathVariable @Pattern(regexp = ID_REGEX, message = "Invalid id.") String id,
+            HttpServletRequest request
+    ) {
+        devAdminAuthService.requirePermission(request, "content.update");
+        adminContentReferenceService.deleteCategory(id);
+        return org.springframework.http.ResponseEntity.noContent().build();
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     private static int resolveSize(Integer size, Integer pageSize) {

@@ -108,3 +108,17 @@ export function useAuth() {
   if (!ctx) throw new Error('useAuth must be used inside <AuthProvider>')
   return ctx
 }
+
+// Permission checker usable by any component (mirrors App.jsx's hasPermission):
+// a wildcard '*' grants everything, otherwise the exact permission must be present.
+// eslint-disable-next-line react-refresh/only-export-components
+export function useHasPermission() {
+  const { user } = useAuth()
+  return useCallback(
+    (permission) => {
+      const perms = user?.permissions || []
+      return perms.includes('*') || perms.includes(permission)
+    },
+    [user],
+  )
+}

@@ -98,6 +98,25 @@ public class AdminContentReferenceService {
         return new ContentCategoryItem(entity.getId(), entity.getSlug(), entity.getName());
     }
 
+    @Transactional
+    public void deleteCategory(String categoryId) {
+        requireJpa();
+        ContentCategoryEntity entity = categoryJpaRepository.findById(categoryId)
+                .orElseThrow(() -> new NotFoundException("Category not found."));
+
+        // Block deletion while the category is still assigned to articles — same guard the
+        // product-category delete uses. Forces the editor to reassign/remove articles first.
+        long inUse = categoryJpaRepository.countArticlesUsingCategory(categoryId);
+        if (inUse > 0) {
+            List<ApiErrorDetail> errors = new ArrayList<>();
+            errors.add(new ApiErrorDetail("category", "CATEGORY_IN_USE",
+                    "Cannot delete a category still assigned to " + inUse + " article(s)."));
+            AdminMutationValidators.throwIfErrors(errors);
+        }
+
+        categoryJpaRepository.delete(entity);
+    }
+
     // --- Helpers ---
 
     private void requireJpa() {

@@ -19,6 +19,8 @@ public record AdminContentItem(
         ImageAsset coverImage,
         ImageAsset productImage,
         PublishStatus publishStatus,
+        /** Featured article flag (V222). Articles only; false for pages. */
+        boolean featured,
         SeoMeta seo,
         Instant publishedAt,
         Instant createdAt,

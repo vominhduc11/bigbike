@@ -250,16 +250,18 @@ Evidence:
 - `ARTICLE_RULE_001`: Mỗi bài viết bắt buộc có **bản nội dung tiếng Việt** (canonical). **Bản tiếng Anh là tùy chọn**. `CONFIRMED_FROM_CODE`
 - `ARTICLE_RULE_002`: Khi đọc bài viết bằng tiếng Anh (`lang=en`), mỗi trường thiếu bản tiếng Anh sẽ **tự lùi về bản tiếng Việt theo từng trường** (title, excerpt, body, seoTitle, seoDescription). `CONFIRMED_FROM_CODE`
 - `ARTICLE_RULE_003`: `slug` tiếng Việt là **canonical**; mỗi bài viết có thêm `slugEn` (slug tiếng Anh) **tùy chọn**. Khi xem bản tiếng Anh, URL dùng `slugEn`; **trống thì lùi về `slug` tiếng Việt**. Web tra cứu bài viết theo **vi HOẶC en** slug (cả hai URL mở cùng bài viết). `slugEn` phải **duy nhất** trong phạm vi bài viết và **không được trùng** bất kỳ `slug` tiếng Việt nào của bài viết khác (cross-column uniqueness — partial-unique index lo en-vs-en, vi-vs-en enforce ở tầng ứng dụng). **Chỉ áp dụng cho bài viết — trang tĩnh (pages) giữ nguyên `PAGE_RULE_003`** (slug cố định, không có `slugEn`). `CONFIRMED_FROM_CODE`
+- `ARTICLE_RULE_004`: Admin có thể đánh dấu một bài viết là **nổi bật** (`featured`). Web hiển thị các bài `featured` ở khu **"Tin nổi bật"**; nếu **không có bài nào** được đánh dấu nổi bật, web **fallback sang các bài viết mới nhất**. `featured` chỉ áp dụng cho bài viết — trang tĩnh (pages) không có. `CONFIRMED_FROM_CODE`
 
 Evidence:
 
-- `ArticleEntity.java` (các cột `title_en`, `excerpt_en`, `body_en`, `seo_title_en`, `seo_description_en`)
+- `ArticleEntity.java` (các cột `title_en`, `excerpt_en`, `body_en`, `seo_title_en`, `seo_description_en`; `featured`, `seo_no_index`)
 - `JpaContentReadRepository.java` (resolve locale + fallback cho article)
-- `ContentController.java` (`lang` param trên article endpoints)
-- `AdminContentMutationService.java` (`applyArticlePatch` ghi cột `_en` + `slug_en`; validate uniqueness `slugEn`)
+- `ContentController.java` (`lang` param trên article endpoints; `listArticles` query param `featured`)
+- `AdminContentMutationService.java` (`applyArticlePatch` ghi cột `_en` + `slug_en` + `featured`/`seo_no_index`; validate uniqueness `slugEn`)
 - `ArticleJpaRepository.java` (`findBySlug`, `findBySlugEn`)
-- `V138__add_article_page_bilingual_content.sql`, `V216__add_article_slug_en.sql`
-- `DATA_CONTRACT.md` — "Article bilingual content"
+- `UpsertArticleRequest.java` (`featured`), `SeoMetaRequest.java` (`noIndex`)
+- `V138__add_article_page_bilingual_content.sql`, `V216__add_article_slug_en.sql`, `V222__add_article_featured_and_seo_no_index.sql`
+- `DATA_CONTRACT.md` — "Article bilingual content", "Article featured + seo_no_index (V222)"
 
 ## Static Page Rules
 

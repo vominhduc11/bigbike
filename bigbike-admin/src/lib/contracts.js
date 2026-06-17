@@ -154,9 +154,12 @@ export function normalizeSeoMeta(input) {
     description: toTrimmedString(input.description) || undefined,
     canonicalUrl: toTrimmedString(input.canonicalUrl) || undefined,
     ogImage: normalizeImageAsset(input.ogImage),
+    // noindex toggle (bài viết): backend gửi top-level seo.noIndex; mặc định false.
+    noIndex: Boolean(input.noIndex),
   }
 
-  const hasValues = Object.values(seo).some((value) => value !== undefined)
+  // noIndex=false là giá trị mặc định "rỗng", không tính là có dữ liệu SEO.
+  const hasValues = seo.noIndex || ['title', 'description', 'canonicalUrl', 'ogImage'].some((k) => seo[k] !== undefined)
   return hasValues ? seo : undefined
 }
 
@@ -529,6 +532,8 @@ export function normalizeContentItem(input) {
       : [],
     category: normalizeCategorySummary(source.category),
     publishStatus,
+    // Bài viết nổi bật — backend gửi top-level boolean; mặc định false khi thiếu.
+    featured: Boolean(source.featured),
     seo: normalizeSeoMeta(source.seo),
     publishedAt: toTrimmedString(source.publishedAt) || undefined,
     createdAt: toTrimmedString(source.createdAt) || undefined,

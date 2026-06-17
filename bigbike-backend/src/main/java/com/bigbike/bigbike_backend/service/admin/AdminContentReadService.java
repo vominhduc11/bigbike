@@ -111,6 +111,7 @@ public class AdminContentReadService {
                 article.coverImage(),
                 article.productImage(),
                 article.publishStatus(),
+                article.featured(),
                 article.seo(),
                 article.publishedAt(),
                 article.createdAt(),
@@ -141,6 +142,7 @@ public class AdminContentReadService {
                 null,
                 null,
                 page.publishStatus(),
+                false,                      // featured — pages are never featured
                 page.seo(),
                 page.publishedAt(),
                 page.createdAt(),

@@ -37,7 +37,7 @@ public interface ContentReadRepository {
     // --- DB-paginated listing (replaces in-memory full-scan in ContentReadService) ---
 
     org.springframework.data.domain.Page<Article> listPublishedArticles(
-            String categorySlug, String q, Pageable pageable, String locale);
+            String categorySlug, String q, Boolean featured, Pageable pageable, String locale);
 
     // --- DB-paginated admin listing ---
 

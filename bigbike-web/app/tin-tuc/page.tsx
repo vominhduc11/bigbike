@@ -43,7 +43,7 @@ export default async function ArticleListPage() {
     ? toLegacyWpMediaUrl(resolveMediaUrl(heroSettings.mobileImageUrl.trim()))
     : null;
   const heroIllustrationUrl = toLegacyWpMediaUrl(
-    resolveMediaUrl(defaultHero.defaultIllustrationUrl?.trim()),
+    resolveMediaUrl(heroSettings.illustrationUrl?.trim()) || defaultHero.defaultIllustrationUrl?.trim(),
   );
   const heroBreadcrumb: WpCategoryCrumb[] = [
     { label: "Bigbike.vn", href: toHomePath() },

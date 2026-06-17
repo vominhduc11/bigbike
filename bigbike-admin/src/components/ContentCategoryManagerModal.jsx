@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Pencil, Plus, Loader2 } from 'lucide-react'
+import { Pencil, Plus, Loader2, Trash2 } from 'lucide-react'
 import { Modal } from './layout/Modal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,8 +10,10 @@ import {
   fetchContentCategories,
   createContentCategory,
   updateContentCategory,
+  deleteContentCategory,
   mapValidationErrors,
 } from '../lib/adminApi'
+import { showConfirm } from '../lib/confirm'
 
 const CATEGORIES_QUERY_KEY = ['content-reference', 'categories']
 
@@ -29,8 +31,9 @@ function toSlug(value) {
 
 const EMPTY_FORM = { id: null, name: '', slug: '', slugTouched: false }
 
-// Quản lý danh mục bài viết — list + create/edit. Backend exposes POST/PATCH only
-// (no DELETE) on /admin/content/content-categories, so this modal does not delete.
+// Quản lý danh mục bài viết — list + create/edit/delete on
+// /admin/content/content-categories. Delete is blocked server-side (CATEGORY_IN_USE)
+// when the category is still assigned to articles.
 export function ContentCategoryManagerModal({ open, onClose }) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
@@ -64,6 +67,33 @@ export function ContentCategoryManagerModal({ open, onClose }) {
       toast.error(error?.message || t('content.categoryManager.saveFailed', { defaultValue: 'Lưu danh mục thất bại' }))
     },
   })
+
+  const deleteMutation = useMutation({
+    mutationFn: (categoryId) => deleteContentCategory(categoryId),
+    onSuccess: (_data, categoryId) => {
+      queryClient.invalidateQueries({ queryKey: CATEGORIES_QUERY_KEY })
+      toast.success(t('content.categoryManager.deleted', { defaultValue: 'Đã xoá danh mục' }))
+      // If we were editing the category we just deleted, clear the form.
+      if (form.id === categoryId) resetForm()
+    },
+    onError: (error) => {
+      // CATEGORY_IN_USE arrives as a validation detail (top-level code is VALIDATION_ERROR).
+      const inUse = Array.isArray(error?.details) && error.details.some((d) => d?.code === 'CATEGORY_IN_USE')
+      const message = inUse
+        ? t('content.categoryManager.deleteInUse', { defaultValue: 'Không thể xoá: danh mục vẫn đang gắn với bài viết. Hãy gỡ bài khỏi danh mục trước.' })
+        : (error?.message || t('content.categoryManager.deleteFailed', { defaultValue: 'Xoá danh mục thất bại' }))
+      toast.error(message)
+    },
+  })
+
+  async function handleDelete(category) {
+    const confirmed = await showConfirm(
+      t('content.categoryManager.deleteConfirm', { defaultValue: `Xoá danh mục "${category.name}"?`, name: category.name }),
+      t('content.categoryManager.deleteConfirmTitle', { defaultValue: 'Xoá danh mục' }),
+    )
+    if (!confirmed) return
+    deleteMutation.mutate(category.id)
+  }
 
   const categories = useMemo(
     () => (Array.isArray(categoriesQuery.data) ? categoriesQuery.data : []),
@@ -144,16 +174,30 @@ export function ContentCategoryManagerModal({ open, onClose }) {
                     <span className="block truncate text-sm font-medium text-foreground">{category.name}</span>
                     <span className="block truncate font-mono text-xs text-muted-foreground">{category.slug}</span>
                   </span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="shrink-0"
-                    onClick={() => startEdit(category)}
-                  >
-                    <Pencil size={14} />
-                    {t('common.edit', { defaultValue: 'Sửa' })}
-                  </Button>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => startEdit(category)}
+                    >
+                      <Pencil size={14} />
+                      {t('common.edit', { defaultValue: 'Sửa' })}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:text-destructive"
+                      disabled={deleteMutation.isPending}
+                      onClick={() => handleDelete(category)}
+                    >
+                      {deleteMutation.isPending && deleteMutation.variables === category.id
+                        ? <Loader2 size={14} className="animate-spin" />
+                        : <Trash2 size={14} />}
+                      {t('common.delete', { defaultValue: 'Xoá' })}
+                    </Button>
+                  </div>
                 </li>
               ))}
             </ul>

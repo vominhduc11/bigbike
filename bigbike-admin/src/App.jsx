@@ -55,6 +55,7 @@ const ProductListScreen  = lazyScreen(() => import('./screens/ProductListScreen'
 const ReviewListScreen   = lazyScreen(() => import('./screens/ReviewListScreen'),   'ReviewListScreen')
 const ReviewDetailScreen = lazyScreen(() => import('./screens/ReviewDetailScreen'), 'ReviewDetailScreen')
 const SettingsScreen     = lazyScreen(() => import('./screens/SettingsScreen'),     'SettingsScreen')
+const BannerScreen       = lazyScreen(() => import('./screens/BannerScreen'),       'BannerScreen')
 const ShippingScreen     = lazyScreen(() => import('./screens/ShippingScreen'),     'ShippingScreen')
 const SliderListScreen      = lazyScreen(() => import('./screens/SliderListScreen'),      'SliderListScreen')
 const HomeVideoListScreen   = lazyScreen(() => import('./screens/HomeVideoListScreen'),   'HomeVideoListScreen')
@@ -107,6 +108,7 @@ const NAV_GROUP_DEFS = [
     labelKey: 'nav.group.content',
     items: [
       { path: '/admin/content',    labelKey: 'nav.content',    permission: 'content.read',   icon: FileText },
+      { path: '/admin/banners',      labelKey: 'nav.banners',      permission: 'settings.read',     icon: Image },
       { path: '/admin/sliders',      labelKey: 'nav.sliders',      permission: 'sliders.read',      icon: BarChart2 },
       { path: '/admin/home-videos',     labelKey: 'nav.homeVideos',       permission: 'home_videos.read',    icon: BarChart2 },
       { path: '/admin/home-highlights', labelKey: 'nav.homeHighlights',   permission: 'home_highlights.read', icon: LayoutDashboard },
@@ -191,6 +193,7 @@ function parseRoute(pathname) {
   if (module === 'shipping')    return { kind: 'screen', name: 'shipping' }
   if (module === 'admin-users') return { kind: 'screen', name: 'admin-users' }
   if (module === 'settings')    return { kind: 'screen', name: 'settings' }
+  if (module === 'banners')     return { kind: 'screen', name: 'banners' }
   if (module === 'audit-logs')  return { kind: 'screen', name: 'audit-logs' }
   if (module === 'reports')     return { kind: 'screen', name: 'reports' }
   if (module === 'inventory')   return { kind: 'screen', name: 'inventory' }
@@ -237,6 +240,7 @@ function routePermission(routeName) {
     case 'review-detail':                return 'reviews.read'
     case 'admin-users':                  return 'admin-users.read'
     case 'settings':                     return 'settings.read'
+    case 'banners':                      return 'settings.read'
     case 'audit-logs':                   return 'audit-logs.read'
     case 'reports':                      return 'reports.read'
     case 'inventory':                    return 'inventory.read'
@@ -443,6 +447,8 @@ function AdminApp() {
       screen = <AdminUsersScreen canUpdate={hasPermission('admin-users.write')} currentUserId={authState.user?.id} />; break
     case 'settings':
       screen = <SettingsScreen canUpdate={hasPermission('settings.write')} isSuperAdmin={hasPermission('*')} />; break
+    case 'banners':
+      screen = <BannerScreen navigate={navigate} canUpdate={hasPermission('settings.write')} />; break
     case 'audit-logs':
       screen = <AuditLogListScreen />; break
     case 'reports':

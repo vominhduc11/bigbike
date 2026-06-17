@@ -127,7 +127,9 @@ const SENSITIVE_SETTING_TABS = new Set(['STORE', 'TAX'])
 // - PAYMENT_SEPAY: cổng thanh toán SePay đã gỡ khỏi hệ thống (V59) — chỉ còn dữ liệu rác, ẩn khỏi UI
 // - COMMERCE: rác import WordPress (key site.currency = VND) trùng với store_currency (nhóm STORE,
 //   đã ẩn vì luôn VND). Hàng rào phòng hờ ở UI; bản ghi gốc đã được xoá ở migration V192.
-const HIDDEN_GROUPS = new Set(['SECURITY', 'PAYMENT_SEPAY', 'COMMERCE'])
+// - PUBLIC_HERO: ảnh banner đầu trang giờ quản lý ở màn riêng "Banner trang" (BannerScreen)
+//   với preview ráp sẵn — gỡ khỏi đây để không sửa 2 nơi.
+const HIDDEN_GROUPS = new Set(['SECURITY', 'PAYMENT_SEPAY', 'COMMERCE', 'PUBLIC_HERO'])
 
 // Field cụ thể bị ẩn vì giá trị mặc định luôn đúng cho shop VN, đổi gây rủi ro:
 // - store_currency: luôn VND

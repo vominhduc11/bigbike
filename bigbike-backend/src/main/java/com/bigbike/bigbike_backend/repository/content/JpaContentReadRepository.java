@@ -118,13 +118,13 @@ public class JpaContentReadRepository implements ContentReadRepository {
 
     @Override
     public org.springframework.data.domain.Page<Article> listPublishedArticles(
-            String categorySlug, String q, Pageable pageable, String locale) {
+            String categorySlug, String q, Boolean featured, Pageable pageable, String locale) {
         String normalizedQ = normalizeQuery(q);
         String normalizedCategory = (categorySlug != null && !categorySlug.isBlank()) ? categorySlug : null;
 
         org.springframework.data.domain.Page<String> idPage =
                 articleJpaRepository.findPublishedArticleIds(
-                        PublishStatus.PUBLISHED, normalizedCategory, normalizedQ, pageable);
+                        PublishStatus.PUBLISHED, normalizedCategory, normalizedQ, featured, pageable);
 
         return fetchAndOrderArticles(idPage, pageable, locale);
     }
@@ -255,6 +255,7 @@ public class JpaContentReadRepository implements ContentReadRepository {
                 toCategorySummary(entity),
                 toCategorySummaries(entity),
                 entity.getPublishStatus(),
+                entity.isFeatured(),
                 toSeoMeta(
                         pick(entity.getSeoTitle(), entity.getSeoTitleEn(), locale),
                         pick(entity.getSeoDescription(), entity.getSeoDescriptionEn(), locale),
@@ -264,7 +265,8 @@ public class JpaContentReadRepository implements ContentReadRepository {
                         entity.getSeoOgImageAlt(),
                         entity.getSeoOgImageWidth(),
                         entity.getSeoOgImageHeight(),
-                        entity.getSeoOgImageMimeType()
+                        entity.getSeoOgImageMimeType(),
+                        entity.isSeoNoIndex()
                 ),
                 includeTranslations ? toArticleTranslations(entity) : null,
                 entity.getPublishedAt(),
@@ -300,7 +302,8 @@ public class JpaContentReadRepository implements ContentReadRepository {
                         entity.getSeoOgImageAlt(),
                         entity.getSeoOgImageWidth(),
                         entity.getSeoOgImageHeight(),
-                        entity.getSeoOgImageMimeType()
+                        entity.getSeoOgImageMimeType(),
+                        false
                 ),
                 entity.getHeroImageUrl(),
                 entity.getHeroImageAlt(),
@@ -355,8 +358,12 @@ public class JpaContentReadRepository implements ContentReadRepository {
     private static SeoMeta toSeoMeta(
             String title, String description, String canonicalUrl,
             String ogImageId, String ogImageUrl, String ogImageAlt,
-            Integer ogImageWidth, Integer ogImageHeight, String ogImageMimeType) {
-        if ((title == null || title.isBlank())
+            Integer ogImageWidth, Integer ogImageHeight, String ogImageMimeType,
+            boolean noIndex) {
+        // noIndex is a meaningful SEO directive on its own — keep the seo block so the
+        // public contract (seo.noIndex) survives even when no other SEO field is set.
+        if (!noIndex
+                && (title == null || title.isBlank())
                 && (description == null || description.isBlank())
                 && (canonicalUrl == null || canonicalUrl.isBlank())
                 && (ogImageUrl == null || ogImageUrl.isBlank())) {
@@ -364,7 +371,8 @@ public class JpaContentReadRepository implements ContentReadRepository {
         }
         return new SeoMeta(
                 title, description, canonicalUrl,
-                toImageAsset(ogImageId, ogImageUrl, ogImageAlt, ogImageWidth, ogImageHeight, ogImageMimeType));
+                toImageAsset(ogImageId, ogImageUrl, ogImageAlt, ogImageWidth, ogImageHeight, ogImageMimeType),
+                noIndex);
     }
 
     private static String normalizeQuery(String q) {

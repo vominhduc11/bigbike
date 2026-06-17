@@ -8,6 +8,7 @@ import {
   deleteContent,
   fetchContentCategories,
   fetchContentDetail,
+  fetchContentPageRefs,
 
   mapValidationErrors,
   previewArticle,
@@ -17,6 +18,7 @@ import { showConfirm } from '../lib/confirm'
 import { formatDateTime } from '../lib/formatters'
 import { useContentLang } from '../lib/contentLang'
 import { createContentSchema, zodErrors } from '../lib/schemas'
+import { allowedPublishOptions } from '../lib/contentPublishTransitions'
 import { RichTextEditor } from '../components/RichTextEditor'
 import { BlockEditor } from '../components/BlockEditor'
 import { ImageUrlInput } from '../components/ImageUrlInput'
@@ -197,6 +199,8 @@ function buildEmptyForm(contentType) {
     excerpt: '',
     body: '',
     publishStatus: 'DRAFT',
+    featured: false,
+    seoNoIndex: false,
     pageType: 'CUSTOM',
     categoryId: '',
     parentId: '',
@@ -229,6 +233,8 @@ function buildFormFromItem(contentType, item) {
     excerpt: item.excerpt || '',
     body: item.body || '',
     publishStatus: item.publishStatus === 'UNKNOWN' ? 'DRAFT' : item.publishStatus,
+    featured: Boolean(item.featured),
+    seoNoIndex: Boolean(item.seo?.noIndex),
     pageType: item.pageType || fallback.pageType,
     categoryId: item.categoryId || '',
     parentId: item.parentId || '',
@@ -347,6 +353,9 @@ function toPayload(form, isCreate) {
 
     // Always send categoryId — empty string clears the category
     payload.categoryId = form.categoryId || ''
+
+    // Bài viết nổi bật — chỉ áp dụng cho ARTICLE; gửi boolean để backend áp dụng.
+    payload.featured = Boolean(form.featured)
   }
 
   if (form.type === 'PAGE') {
@@ -372,6 +381,8 @@ function toPayload(form, isCreate) {
     ogImage: form.seoOgImageUrl.trim()
       ? { url: form.seoOgImageUrl.trim(), alt: form.seoOgImageAlt.trim() || undefined }
       : null,
+    // noindex toggle — gửi boolean trong object seo cùng các field SEO khác.
+    noIndex: Boolean(form.seoNoIndex),
   }
 
   payload.translations = {
@@ -457,6 +468,24 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
     staleTime: 5 * 60 * 1000,
   })
 
+  // Parent-page picker — only PAGE content can have a parent. Loaded lazily.
+  const { data: pageRefs = [] } = useQuery({
+    queryKey: ['content-reference', 'pages'],
+    queryFn: fetchContentPageRefs,
+    staleTime: 5 * 60 * 1000,
+    enabled: normalizedType === 'PAGE',
+  })
+
+  // Exclude self to avoid a page being its own parent. Keep the current parent
+  // visible even before refs finish loading so the Select trigger isn't blank.
+  const parentPageOptions = useMemo(() => {
+    const opts = (pageRefs || []).filter((p) => p.id && p.id !== contentId)
+    if (form.parentId && !opts.some((p) => p.id === form.parentId)) {
+      opts.unshift({ id: form.parentId, slug: '', title: form.parentId })
+    }
+    return opts
+  }, [pageRefs, contentId, form.parentId])
+
   const loadedItem = fetchResult?.item ?? null
   const selectedCategoryRef = findOptionById(
     [loadedItem?.category, ...(Array.isArray(loadedItem?.categories) ? loadedItem.categories : [])].filter(Boolean),
@@ -491,6 +520,12 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
 
   const isDirty = useMemo(() => JSON.stringify(form) !== initialSnapshot, [form, initialSnapshot])
   const isReadOnly = !canUpdate || isSubmitting
+  // Publish targets limited to what the backend accepts from the persisted state.
+  // On create there is no persisted state, so all standard targets are offered.
+  const publishOptions = useMemo(
+    () => allowedPublishOptions(isCreate ? null : state.item?.publishStatus),
+    [isCreate, state.item?.publishStatus],
+  )
   const formRef = useRef(null)
 
   useEffect(() => {
@@ -1084,6 +1119,21 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                   </Field>
                 </div>
 
+                {/* noindex toggle — chỉ bài viết */}
+                {isArticle && (
+                  <div className="mt-4 flex flex-col gap-1.5">
+                    <label className="flex items-center gap-2.5 p-2.5 border border-border text-sm cursor-pointer hover:bg-muted w-fit">
+                      <Checkbox
+                        checked={form.seoNoIndex}
+                        onCheckedChange={(checked) => updateField('seoNoIndex', checked === true)}
+                        disabled={isReadOnly}
+                      />
+                      <span>{t('content.detail.seoNoIndex')}</span>
+                    </label>
+                    <span className="text-xs text-muted-foreground">{t('content.detail.seoNoIndexHint')}</span>
+                  </div>
+                )}
+
                 {/* SEO checklist */}
                 <div className="mt-4 p-3 border border-border bg-muted/30">
                   <div className="flex items-center justify-between mb-2">
@@ -1122,25 +1172,45 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
               <SectionCard title={t('content.detail.sectionPublish', { defaultValue: 'Hiển thị' })} required>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {!isArticle && form.parentId !== undefined && (
-                    <Field label={t('content.detail.parentPage', { defaultValue: 'Trang cha (parentId)' })}>
-                      <Input
-                        value={form.parentId}
-                        onChange={(e) => updateField('parentId', e.target.value)}
+                    <Field label={t('content.detail.parentPage')}>
+                      <Select
+                        value={form.parentId ? form.parentId : '__none__'}
+                        onValueChange={(val) => updateField('parentId', val === '__none__' ? '' : val)}
                         disabled={isReadOnly}
-                        placeholder={t('content.detail.parentPagePlaceholder', { defaultValue: 'Để trống nếu là trang gốc' })}
-                      />
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">{t('content.detail.parentPageNone')}</SelectItem>
+                          {parentPageOptions.map((p) => (
+                            <SelectItem key={p.id} value={p.id}>{p.title || `/${p.slug}`}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </Field>
                   )}
                   <Field label={t('content.detail.publishStatus')} error={validationErrors.publishStatus}>
                     <Select value={form.publishStatus} onValueChange={(val) => updateField('publishStatus', val)} disabled={isReadOnly}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="DRAFT">{t('status.publish.DRAFT')}</SelectItem>
-                        <SelectItem value="PUBLISHED">{t('status.publish.PUBLISHED')}</SelectItem>
-                        <SelectItem value="HIDDEN">{t('status.publish.HIDDEN')}</SelectItem>
+                        {publishOptions.map((status) => (
+                          <SelectItem key={status} value={status}>{t(`status.publish.${status}`)}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </Field>
+                  {isArticle && (
+                    <div className="md:col-span-2 flex flex-col gap-1.5">
+                      <label className="flex items-center gap-2.5 p-2.5 border border-border text-sm cursor-pointer hover:bg-muted w-fit">
+                        <Checkbox
+                          checked={form.featured}
+                          onCheckedChange={(checked) => updateField('featured', checked === true)}
+                          disabled={isReadOnly}
+                        />
+                        <span>{t('content.detail.featured')}</span>
+                      </label>
+                      <span className="text-xs text-muted-foreground">{t('content.detail.featuredHint')}</span>
+                    </div>
+                  )}
                 </div>
               </SectionCard>
             </>

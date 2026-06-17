@@ -22,6 +22,8 @@ public record Article(
         ContentCategorySummary category,
         List<ContentCategorySummary> categories,
         PublishStatus publishStatus,
+        /** Featured article flag (V222). */
+        boolean featured,
         SeoMeta seo,
         /** Non-null only on admin detail reads (V138). Null on public/list reads. */
         ArticleTranslations translations,

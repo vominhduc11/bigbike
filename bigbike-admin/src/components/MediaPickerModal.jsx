@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { fetchMedia, uploadMedia } from '../lib/adminApi'
 import { useDebounce } from '../lib/useDebounce'
+import { useHasPermission } from '../lib/auth'
+import { MediaDetailModal } from './MediaDetailModal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
@@ -50,6 +52,15 @@ function IconCheck() {
   )
 }
 
+function IconPencil() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+    </svg>
+  )
+}
+
 /**
  * MediaPickerModal — browse + upload media, call onSelect on pick.
  *
@@ -61,6 +72,9 @@ function IconCheck() {
  */
 export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = false, onClose }) {
   const { t } = useTranslation()
+  const hasPermission = useHasPermission()
+  // media.write gates both uploading new files and editing metadata (alt/title/caption).
+  const canWrite = hasPermission('media.write')
   const modalRef = useRef(null)
   const previousFocusRef = useRef(null)
   const [search, setSearch] = useState('')
@@ -74,6 +88,9 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
   const [uploadError, setUploadError] = useState('')
   const [isDragOver, setIsDragOver] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
+  // Inline metadata editor (alt/title/caption) without leaving the picker.
+  const [detailMedia, setDetailMedia] = useState(null)
+  const detailOpenRef = useRef(false)
   const fileInputRef = useRef(null)
   const PAGE_SIZE = 30
 
@@ -108,6 +125,9 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
     if (initialFocusTarget) initialFocusTarget.focus()
 
     function onKey(e) {
+      // While the detail editor is open it owns the keyboard (Escape/Tab);
+      // let its own handler manage focus so we don't close the whole picker.
+      if (detailOpenRef.current) return
       if (e.key === 'Escape') {
         e.preventDefault()
         onClose()
@@ -147,6 +167,7 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
   // ── Upload helpers ──────────────────────────────────────────────────────────
 
   async function uploadFiles(files) {
+    if (!canWrite) return
     const valid = []
     for (const file of files) {
       if (!ALLOWED_MIME.includes(file.type)) {
@@ -206,6 +227,7 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
   // ── Drag-and-drop ────────────────────────────────────────────────────────────
 
   function handleDragOver(e) {
+    if (!canWrite) return
     e.preventDefault()
     setIsDragOver(true)
   }
@@ -213,10 +235,31 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
     if (!e.currentTarget.contains(e.relatedTarget)) setIsDragOver(false)
   }
   function handleDrop(e) {
+    if (!canWrite) return
     e.preventDefault()
     setIsDragOver(false)
     const files = Array.from(e.dataTransfer.files || [])
     if (files.length) uploadFiles(files)
+  }
+
+  // ── Inline metadata editor ───────────────────────────────────────────────────
+
+  function openDetail(media) {
+    detailOpenRef.current = true
+    setDetailMedia(media)
+  }
+  function closeDetail() {
+    detailOpenRef.current = false
+    setDetailMedia(null)
+  }
+  function handleDetailSaved(updated) {
+    if (updated?.id) {
+      setState((prev) => ({
+        ...prev,
+        items: prev.items.map((it) => (it.id === updated.id ? { ...it, ...updated } : it)),
+      }))
+    }
+    closeDetail()
   }
 
   // ── Selection helpers ────────────────────────────────────────────────────────
@@ -279,24 +322,28 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
             {multiSelect && <span className="mpicker-mode-badge">{t('media.picker.multiMode')}</span>}
           </h3>
           <div className="mpicker-header-actions">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept={ALLOWED_MIME.join(',')}
-              multiple
-              className="hidden"
-              onChange={handleFileChange}
-              disabled={uploading}
-            />
-            <Button variant="secondary" size="sm"
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              title={t('media.picker.uploadTitle')}
-            >
-              <IconUpload />
-              {uploading ? t('media.picker.uploading') : t('media.picker.uploadButton')}
-            </Button>
+            {canWrite && (
+              <>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept={ALLOWED_MIME.join(',')}
+                  multiple
+                  className="hidden"
+                  onChange={handleFileChange}
+                  disabled={uploading}
+                />
+                <Button variant="secondary" size="sm"
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  title={t('media.picker.uploadTitle')}
+                >
+                  <IconUpload />
+                  {uploading ? t('media.picker.uploading') : t('media.picker.uploadButton')}
+                </Button>
+              </>
+            )}
             <Button variant="secondary" size="icon" type="button" onClick={onClose} aria-label={t('common.close')}>
               <IconClose />
             </Button>
@@ -358,39 +405,51 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
                 const url = media.publicUrl
                 const sel = isSelected(url)
                 return (
-                  <button
-                    key={media.id}
-                    type="button"
-                    className={`mpicker-item${sel ? ' is-selected' : ''}`}
-                    onClick={() => toggleUrl(url)}
-                    title={media.filename?.split('/').pop() ?? ''}
-                  >
-                    {url ? (
-                      <img
-                        src={url}
-                        alt={media.altText ?? ''}
-                        className="mpicker-thumb"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="mpicker-thumb mpicker-thumb-placeholder">
-                        <IconImage />
+                  <div key={media.id} className="relative group">
+                    <button
+                      type="button"
+                      className={`mpicker-item w-full${sel ? ' is-selected' : ''}`}
+                      onClick={() => toggleUrl(url)}
+                      title={media.filename?.split('/').pop() ?? ''}
+                    >
+                      {url ? (
+                        <img
+                          src={url}
+                          alt={media.altText ?? ''}
+                          className="mpicker-thumb"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="mpicker-thumb mpicker-thumb-placeholder">
+                          <IconImage />
+                        </div>
+                      )}
+                      {sel && (
+                        <div className="mpicker-item-check" aria-hidden="true">
+                          <IconCheck />
+                        </div>
+                      )}
+                      <div className="mpicker-item-info">
+                        <span className="mpicker-item-name">
+                          {(media.filename?.split('/').pop() ?? t('media.picker.defaultItemName')).replace(/\.[^.]+$/, '')}
+                        </span>
+                        {media.fileSize ? (
+                          <span className="mpicker-item-size">{formatBytes(media.fileSize)}</span>
+                        ) : null}
                       </div>
+                    </button>
+                    {canWrite && (
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); openDetail(media) }}
+                        className="absolute top-1.5 left-1.5 z-10 flex h-[22px] w-[22px] items-center justify-center rounded-full bg-black/55 text-white opacity-0 transition-opacity hover:bg-black/75 focus:opacity-100 group-hover:opacity-100"
+                        title={t('media.picker.editInfo')}
+                        aria-label={t('media.picker.editInfo')}
+                      >
+                        <IconPencil />
+                      </button>
                     )}
-                    {sel && (
-                      <div className="mpicker-item-check" aria-hidden="true">
-                        <IconCheck />
-                      </div>
-                    )}
-                    <div className="mpicker-item-info">
-                      <span className="mpicker-item-name">
-                        {(media.filename?.split('/').pop() ?? t('media.picker.defaultItemName')).replace(/\.[^.]+$/, '')}
-                      </span>
-                      {media.fileSize ? (
-                        <span className="mpicker-item-size">{formatBytes(media.fileSize)}</span>
-                      ) : null}
-                    </div>
-                  </button>
+                  </div>
                 )
               })}
             </div>
@@ -443,6 +502,14 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
           </div>
         </div>
       </div>
+
+      {detailMedia && (
+        <MediaDetailModal
+          media={detailMedia}
+          onSave={handleDetailSaved}
+          onClose={closeDetail}
+        />
+      )}
     </>
   )
 }

@@ -460,6 +460,14 @@ public class AdminContentMutationService {
             entity.setPublishStatus(nextStatus);
         }
 
+        // Featured flag (V222): optional on update — null leaves the current value untouched;
+        // on create a missing flag defaults to false.
+        if (create) {
+            entity.setFeatured(Boolean.TRUE.equals(request.getFeatured()));
+        } else if (request.getFeatured() != null) {
+            entity.setFeatured(request.getFeatured());
+        }
+
         if (request.getCoverImage() != null) {
             applyCoverImage(entity, request.getCoverImage());
         } else if (create) {
@@ -651,6 +659,10 @@ public class AdminContentMutationService {
         entity.setSeoTitle(AdminMutationValidators.trimToNull(request.getTitle()));
         entity.setSeoDescription(AdminMutationValidators.trimToNull(request.getDescription()));
         entity.setSeoCanonicalUrl(AdminMutationValidators.trimToNull(request.getCanonicalUrl()));
+        // Per-article SEO noindex (V222): null in the request leaves the stored flag untouched.
+        if (request.getNoIndex() != null) {
+            entity.setSeoNoIndex(request.getNoIndex());
+        }
 
         if (request.getOgImage() == null) {
             entity.setSeoOgImageId(null);
@@ -739,6 +751,7 @@ public class AdminContentMutationService {
                 article.coverImage(),
                 article.productImage(),
                 article.publishStatus(),
+                article.featured(),
                 article.seo(),
                 article.publishedAt(),
                 article.createdAt(),
@@ -780,6 +793,7 @@ public class AdminContentMutationService {
                 null,
                 null,
                 page.publishStatus(),
+                false,                      // featured — pages are never featured
                 page.seo(),
                 page.publishedAt(),
                 page.createdAt(),

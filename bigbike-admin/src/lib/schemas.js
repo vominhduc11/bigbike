@@ -452,6 +452,9 @@ export function createContentSchema(t, isCreate, normalizedType) {
     title: z.string(),
     body: z.string(),
     publishStatus: z.string(),
+    // Công tắc bài viết — boolean optional, không có validation đặc biệt.
+    featured: z.boolean().optional(),
+    seoNoIndex: z.boolean().optional(),
     pageType: z.string().optional(),
     coverImageUrl: z.string().optional(),
     productImageUrl: z.string().optional(),

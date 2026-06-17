@@ -373,7 +373,8 @@ video, render dưới embed và làm `description` cho schema.org `VideoObject`.
 
 Admin-curated list of catalog products shown in the PDP "Sản phẩm liên quan"
 section band. Self-referential, ordered many-to-many on `products`. Schema
-mirrors `article_product_map` (V130).
+follows the same `(owner_id, ref_id, sort_order @OrderColumn)` join-table pattern
+as the other catalog/content map tables.
 
 | Column | Type | Null | Notes |
 |---|---|---|---|
@@ -599,6 +600,21 @@ Fallback: giống `PRODUCT_RULE_002` — mỗi trường lùi về VI khi EN b�
 
 Status: `CONFIRMED_FROM_CODE` — `ArticleEntity`, `ArticleTranslations` domain record, migration `V138`.
 
+### Article featured + seo_no_index (V222)
+
+Migration `V222__add_article_featured_and_seo_no_index.sql` thêm 2 cột boolean vào bảng `articles`:
+
+| Cột | Kiểu | Default | Map ra payload | Ý nghĩa |
+|---|---|---|---|---|
+| `featured` | `BOOLEAN NOT NULL` | `false` | top-level `featured` | Đánh dấu "Tin nổi bật" — điều khiển widget Tin nổi bật trên web và query param `featured=true` của `GET /api/v1/articles`. |
+| `seo_no_index` | `BOOLEAN NOT NULL` | `false` | `seo.noIndex` | `true` = đặt `noindex` cho bài viết (không cho search engine index trang chi tiết). |
+
+**Lưu ý lịch sử — `articles.seo_no_index`:** cột này từng tồn tại ở `V1` nhưng bị **DROP** ở `V152` (chưa dùng đến). `V222` **tái thêm** để dùng thật trong contract per-article SEO noindex.
+
+**Pages:** không có `featured` và không bật `seo_no_index` đợt này — `featured` không áp dụng; `noIndex` luôn `false`.
+
+Status: `CONFIRMED_FROM_CODE` — `ArticleEntity.featured`, `ArticleEntity.seoNoIndex`, migration `V222__add_article_featured_and_seo_no_index.sql` (ghi chú: cột `seo_no_index` từng bị drop ở `V152`). Xem [API_CONTRACT.md](API_CONTRACT.md) §"Article payload — featured + seo.noIndex (V222)".
+
 ### Page bilingual content — English columns (V138)
 
 Trang tĩnh có 2 bản nội dung: **tiếng Việt** (canonical) và **tiếng Anh** (tùy chọn).
@@ -745,40 +761,13 @@ Evidence:
 - `SettingDefinitionRegistry.java` — registers 15 `hero_(products|brands|news)_*` keys
 - `V98__add_page_hero_fields.sql`
 
-### Article ↔ Product relation (V130)
+### Article ↔ Product relation — REMOVED (V167)
 
-An article may reference a set of catalog products ("Sản phẩm sử dụng trong bài viết" — products
-showcased on the blog detail page). The relation is many-to-many and ordered.
+> **REMOVED (V167).** Tính năng gắn sản phẩm liên quan vào bài viết đã bị gỡ. Bảng join `article_product_map` (thêm ở `V130__add_article_product_map.sql`) đã bị drop ở `V167__drop_article_product_map.sql`. Code hiện tại không còn `Article.relatedProducts`, `AdminContentItem.relatedProducts`, hay `UpsertArticleRequest.productIds`. Legacy `articles.product_image_url` / `product_image_alt` columns (single decorative thumbnail) không liên quan đến tính năng này và vẫn giữ nguyên.
+>
+> Đây là tính năng **khác** với Product `relatedProducts` (`product_related_product_map`, V135) ở section trên — cái đó vẫn còn sống.
 
-**Join table `article_product_map`:**
-
-| Column | Type | Nullable | Purpose |
-|---|---|---|---|
-| `article_id` | `VARCHAR(64)` | NO | FK → `articles.id`, `ON DELETE CASCADE`. |
-| `product_id` | `VARCHAR(64)` | NO | FK → `products.id`. |
-| `sort_order` | `INTEGER` | NO | Display order, ascending. Owned by Hibernate `@OrderColumn`. |
-
-Composite primary key `(article_id, product_id)`; indexes on both FK columns. Schema mirrors
-`article_tag_map` / `article_category_map`.
-
-**Domain exposure:**
-- `Article.relatedProducts` — `List<Product>`. The public read path
-  (`JpaContentReadRepository.toDomain(ArticleEntity)`) maps each linked `ProductEntity` to a
-  list-item `Product` (no variants/specs/gallery) and **filters out products that are not
-  `PUBLISHED`** — trashed/draft products never surface on the storefront.
-- `AdminContentItem.relatedProducts` — `List<RelatedProductRef>` (`id`, `slug`, `name`, `imageUrl`),
-  a lightweight shape so the admin article editor can render product chips without a second fetch.
-- `UpsertArticleRequest.productIds` — `List<String>`; the admin upsert replaces the article's product
-  set with the resolved, de-duplicated, order-preserving list. `null` keeps the existing set; an
-  empty list clears it (same presence semantics as `tags`).
-
-No backfill — the table starts empty. The legacy `articles.product_image_url` / `product_image_alt`
-columns are unrelated (a single decorative thumbnail) and are left untouched.
-
-Migration: `V130__add_article_product_map.sql`.
-
-Status: `CONFIRMED_FROM_CODE` — `ArticleEntity.products`, `Article.relatedProducts`,
-`JpaContentReadRepository`, `AdminContentMutationService.resolveProducts`, `V130`.
+Status: `CONFIRMED_FROM_CODE` — `V167__drop_article_product_map.sql`, `Article.java` (no `relatedProducts`), `UpsertArticleRequest.java` (no `productIds`), `AdminContentItem` (no `relatedProducts`).
 
 ### Catalog facets response shape
 
@@ -1023,7 +1012,7 @@ Evidence: `AdminAnalyticsResponse.java`, `AdminReportService.java`, `OrderJpaRep
 | `general` | Site name, footer text, BCT registration URL | Cài đặt chung |
 | `contact` | Public contact email/address, social links | Liên hệ |
 | `public_home` | Homepage hotline, promo banner, experience/about blocks | Trang chủ |
-| `public_hero` | Hero banners for listing pages (`/san-pham`, `/brands`, `/tin-tuc`) — 11 keys | Hero trang |
+| `public_hero` | Hero banners for listing pages (`/san-pham`, `/brands`, `/tin-tuc`) — 17 keys (5 per page incl. per-page `illustration_url` + 2 global fallbacks). Managed by the dedicated **Banner trang** admin screen (`BannerScreen.jsx`), not the generic settings screen. | Banner trang |
 | `promo` | Homepage promotion banner | Khuyến mãi |
 | `seo` | Homepage SEO title/description, OG image, bottom HTML block | SEO website |
 | `store` | Operational: low-stock threshold | Cửa hàng |

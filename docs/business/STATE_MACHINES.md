@@ -60,7 +60,7 @@ File này liên quan trực tiếp đến:
 | Inventory / Stock | `stockState`, quantity fields | `IN_STOCK`, `LOW_STOCK`, `OUT_OF_STOCK` | `stockState` là **derived field** — luôn tính tự động từ `quantityOnHand`. Admin không được set thủ công qua catalog API. Sản phẩm mới tạo luôn bắt đầu `OUT_OF_STOCK` (qty=0). Mọi thay đổi qty (nhập hàng, bán, huỷ, đổi trả) → recompute ngay. | Backend policy/service | `CONFIRMED_BACKEND_ENFORCED` | `ProductStockState.java`, `InventoryPolicyService.java`, `AdminCatalogMutationService.java`, `CheckoutService.java`, `AdminReturnService.java`, `OrderStockRestoreService.java`, `BUSINESS_RULES.md` STOCK_RULE_001–007 |
 | Return | `status` | `PENDING`, `APPROVED`, `REJECTED`, `RECEIVED`, `COMPLETED`, `REFUNDED` | Explicit transition map. | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `AdminReturnService.java`, `CustomerOrderController.java` |
 | Admin User | `status`, `role` | Status: `INVITED`, `ACTIVE`, `DISABLED`, `SUSPENDED`; Roles: `SUPER_ADMIN`, `ADMIN`, `EDITOR`, `SHOP_MANAGER` (built-in, V200) + custom roles. New users start `INVITED` (no password) and become `ACTIVE` on accepting an email invite. | Status/role update validation; self-deactivation and Super Admin demotion guardrails; invite token lifecycle. | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `AdminAdminUsersService.java`, `AdminInviteService.java`, `SecurityConfig.java` |
-| Content Article/Page | `publishStatus` | Same `PublishStatus` enum; active values: `DRAFT`, `PUBLISHED`, `HIDDEN`, `TRASH`; legacy `ARCHIVED` migrated sang `HIDDEN`. | Publish transitions enforced on update; delete sets `ARCHIVED` (sẽ migrate sang `HIDDEN`). | Backend service | `CONFIRMED_BACKEND_ENFORCED`; public filtering `NEEDS_VERIFICATION` | `AdminContentController.java`, `AdminContentMutationService.java`, `AdminMutationValidators.java` |
+| Content Article/Page | `publishStatus` | Same `PublishStatus` enum; active values: `DRAFT`, `PUBLISHED`, `HIDDEN`, `TRASH`; legacy `ARCHIVED` migrated sang `HIDDEN`. | Publish transitions enforced on update; delete sets `TRASH` (soft-delete, restore `TRASH` → `DRAFT`). | Backend service | `CONFIRMED_BACKEND_ENFORCED`; public filtering `NEEDS_VERIFICATION` | `AdminContentController.java`, `AdminContentMutationService.java`, `AdminMutationValidators.java` |
 | Media | `status` | `ACTIVE`, `INACTIVE`, `DELETED` | Upload creates `ACTIVE`; update validates allowed statuses; soft-delete sets `DELETED`; restore sets `ACTIVE`; hard-delete removes row/object. | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `AdminMediaService.java` |
 | Notification | `isRead` (boolean) | Email/websocket events + persistent table. `isRead` toggled by mark-read endpoints. | `false` → `true` via mark-read / mark-all-read. | Backend service | `CONFIRMED_FROM_CODE` | `AdminNotificationController.java`, `V102__create_admin_notifications_table.sql` |
 | Settings | No lifecycle state confirmed | Public/private behavior exists in docs/controllers; no state machine confirmed. | N/A | `STATUS_ONLY` / `NEEDS_VERIFICATION` | `AdminSettingsController`, `PublicSettingsController`, `PHASE_1J...` |
@@ -745,8 +745,8 @@ Content state machine quản lý publish lifecycle của articles/pages và ản
 
 ### Terminal States
 
-- `ARCHIVED` is delete target for content delete.
-- Not strictly terminal because shared validator allows `ARCHIVED -> DRAFT`.
+- `TRASH` is the delete target for content delete (soft-delete).
+- Not strictly terminal because the validator allows `TRASH -> DRAFT` (restore). Legacy `ARCHIVED -> DRAFT` còn được giữ như escape path cho dữ liệu cũ còn sót.
 
 ### Live preview (không đổi state)
 
@@ -758,13 +758,13 @@ Same as Product publish transition validator for update operations:
 
 | From | To | Actor / Role | Preconditions | Side Effects | Enforcement | Evidence |
 |---|---|---|---|---|---|---|
-| `DRAFT` | `PUBLISHED` / `ARCHIVED` / `TRASH` | Admin / Editor / Author with `content.update` | Content exists. | If `PUBLISHED`, set `publishedAt`; revalidate web tags. | `CONFIRMED_BACKEND_ENFORCED` | `AdminContentMutationService.java`, `AdminMutationValidators.java` |
-| `PUBLISHED` | `HIDDEN` / `ARCHIVED` / `TRASH` | Admin / Editor / Author with `content.update` | Content exists. | If not `PUBLISHED`, clear `publishedAt`; revalidate. | `CONFIRMED_BACKEND_ENFORCED` | `AdminContentMutationService.java`, `AdminMutationValidators.java` |
-| `HIDDEN` | `PUBLISHED` / `ARCHIVED` / `TRASH` | Admin / Editor / Author with `content.update` | Content exists. | Publish/clear publishedAt accordingly; revalidate. | `CONFIRMED_BACKEND_ENFORCED` | `AdminContentMutationService.java`, `AdminMutationValidators.java` |
+| `DRAFT` | `PUBLISHED` / `HIDDEN` / `TRASH` | Admin / Editor / Author with `content.update` | Content exists. | If `PUBLISHED`, set `publishedAt`; revalidate web tags. | `CONFIRMED_BACKEND_ENFORCED` | `AdminContentMutationService.java`, `AdminMutationValidators.java` |
+| `PUBLISHED` | `HIDDEN` / `TRASH` | Admin / Editor / Author with `content.update` | Content exists. | If not `PUBLISHED`, clear `publishedAt`; revalidate. | `CONFIRMED_BACKEND_ENFORCED` | `AdminContentMutationService.java`, `AdminMutationValidators.java` |
+| `HIDDEN` | `PUBLISHED` / `DRAFT` / `TRASH` | Admin / Editor / Author with `content.update` | Content exists. | Publish/clear publishedAt accordingly; revalidate. | `CONFIRMED_BACKEND_ENFORCED` | `AdminContentMutationService.java`, `AdminMutationValidators.java` |
 | `ARCHIVED` | `DRAFT` / `TRASH` | Admin / Editor / Author with `content.update` | Content exists. | Re-open draft or trash. | `CONFIRMED_BACKEND_ENFORCED` | `AdminMutationValidators.java` |
 | `PENDING` | `PUBLISHED` / `DRAFT` / `TRASH` | Admin / Editor / Author with `content.update` | Content exists; status accepted by DTO. | Review/import flow. | `CONFIRMED_BACKEND_ENFORCED` in shared validator; DTO acceptance `NEEDS_VERIFICATION` | `AdminMutationValidators.java` |
 | `PRIVATE` | `PUBLISHED` / `DRAFT` / `HIDDEN` / `TRASH` | Admin / Editor / Author with `content.update` | Content exists; status accepted by DTO. | Private/import flow. | `CONFIRMED_BACKEND_ENFORCED` in shared validator; DTO acceptance `NEEDS_VERIFICATION` | `AdminMutationValidators.java` |
-| `TRASH` | `DRAFT` | Admin / Editor / Author with `content.update` | Content exists. | Restore to draft. | `CONFIRMED_BACKEND_ENFORCED` in shared validator; content delete uses `ARCHIVED`, not `TRASH` | `AdminMutationValidators.java`, `AdminContentMutationService.java` |
+| `TRASH` | `DRAFT` | Admin / Editor / Author with `content.update` | Content exists. | Restore to draft. | `CONFIRMED_BACKEND_ENFORCED` in shared validator; content delete uses `TRASH` (nhất quán với product) | `AdminMutationValidators.java`, `AdminContentMutationService.java` |
 
 ### Forbidden Transitions
 
@@ -778,7 +778,7 @@ Same forbidden publish transition rules as product, enforced by shared validator
 ### Backend Enforcement
 
 - Update article/page calls `validatePublishTransition`.
-- Delete article/page sets `publishStatus = ARCHIVED` directly, not `TRASH`.
+- Delete article/page sets `publishStatus = TRASH` directly (nhất quán với product soft-delete).
 - Public content visibility filtering needs deeper audit.
 
 ### Test Coverage
@@ -1003,7 +1003,7 @@ Notes:
 
 ## 21. Known Ambiguities / Needs Verification
 
-1. Product/content both use shared `PublishStatus`, but content admin controller status regex only exposes `DRAFT`, `PUBLISHED`, `HIDDEN`, `ARCHIVED` for filters. DTO acceptance for `PENDING`, `PRIVATE`, `TRASH` should be verified.
+1. Product/content both use shared `PublishStatus`, but content admin controller status regex only exposes `DRAFT`, `PUBLISHED`, `HIDDEN`, `TRASH` for filters. DTO acceptance for legacy `PENDING`, `PRIVATE` should be verified.
 2. Product public visibility is confirmed in `CatalogReadService`, but cache/revalidation/public UI behavior should be verified.
 3. Content public visibility filtering needs deeper audit of public content read service.
 4. Order and payment transitions are backend-enforced, but direct tests were not found by targeted search.

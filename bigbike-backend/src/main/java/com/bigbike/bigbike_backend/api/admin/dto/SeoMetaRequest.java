@@ -26,4 +26,7 @@ public class SeoMetaRequest {
 
     @Valid
     private ImageAssetRequest ogImage;
+
+    /** Per-article SEO noindex flag (V222). Null = leave unchanged on update. */
+    private Boolean noIndex;
 }
