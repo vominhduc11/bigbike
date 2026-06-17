@@ -42,6 +42,9 @@ export default async function SearchPage() {
   const heroBgUrl = toLegacyWpMediaUrl(
     resolveMediaUrl(heroSettings.imageUrl?.trim()) || defaultHero.defaultBgUrl?.trim(),
   );
+  const heroMobileBgUrl = heroSettings.mobileImageUrl?.trim()
+    ? toLegacyWpMediaUrl(resolveMediaUrl(heroSettings.mobileImageUrl.trim()))
+    : null;
   const heroIllustrationUrl = toLegacyWpMediaUrl(
     resolveMediaUrl(defaultHero.defaultIllustrationUrl?.trim()),
   );
@@ -61,6 +64,7 @@ export default async function SearchPage() {
           title={heroTitle}
           breadcrumb={heroBreadcrumb}
           bgUrl={heroBgUrl}
+          mobileBgUrl={heroMobileBgUrl}
           illustrationUrl={heroIllustrationUrl}
           illustrationAlt={heroSettings.imageAlt ?? heroTitle}
         />

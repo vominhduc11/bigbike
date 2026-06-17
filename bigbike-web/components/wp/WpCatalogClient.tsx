@@ -156,7 +156,11 @@ export function WpCatalogClient({
   const paginationBaseHref = catalog.buildPaginationHref(canonicalPath);
 
   return (
-    <div className="row">
+    // pb-40: chừa khoảng thở trước footer cho CẢ hai cột. Cột kết quả vốn có pb-40 nội
+    // bộ (lưới→phân trang) nhưng sau phân trang/sidebar không có đệm; khi cột bộ lọc cao
+    // hơn lưới (vd trang lọc ít sản phẩm) nó dính sát footer. Đặt ở .row dùng chung nên
+    // áp cho cả 4 trang archive (san-pham/tim-kiem/danh-muc/brands).
+    <div className="row pb-40">
       <div className="col-md-3">
         <WpCategorySidebar
           brands={brands}

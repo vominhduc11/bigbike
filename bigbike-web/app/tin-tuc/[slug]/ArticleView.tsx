@@ -26,6 +26,8 @@ type ArticleViewProps = {
   article: Article;
   /** Resolved hero background/illustration (server page computes from settings). Empty in preview. */
   heroBgUrl?: string | null;
+  /** Ảnh nền hero riêng cho điện thoại (≤767px). Empty in preview. */
+  heroMobileBgUrl?: string | null;
   heroIllustrationUrl?: string | null;
   /** Sidebar + related rails — storefront context, empty in preview. */
   highlighted?: Article[];
@@ -48,6 +50,7 @@ type ArticleViewProps = {
 export function ArticleView({
   article,
   heroBgUrl,
+  heroMobileBgUrl,
   heroIllustrationUrl,
   highlighted = [],
   newest = [],
@@ -88,6 +91,7 @@ export function ArticleView({
         titleNode={<LText field="title">{articleTitle}</LText>}
         breadcrumb={heroBreadcrumb}
         bgUrl={heroBgUrl}
+        mobileBgUrl={heroMobileBgUrl}
         illustrationUrl={heroIllustrationUrl}
         illustrationAlt={articleTitle}
       />

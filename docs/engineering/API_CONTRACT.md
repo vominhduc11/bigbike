@@ -753,17 +753,16 @@ Status: `CONFIRMED_FROM_CODE` — `SettingDefinitionRegistry.java`, `PublicSetti
 
 **Page hero settings (group `public_hero`, all `publicAllowed`):**
 
-For each listing page that lacks a `PageEntity` backing (`/san-pham`, `/brands`, `/tin-tuc`), the hero block is composed from 5 keys:
+For each listing page that lacks a `PageEntity` backing (`/san-pham`, `/brands`, `/tin-tuc`), the hero block is composed from 4 keys:
 
 | Key prefix | Type | Purpose |
 |---|---|---|
-| `hero_<page>_image_url` | `IMAGE_URL` | Background image URL |
+| `hero_<page>_image_url` | `IMAGE_URL` | Desktop background image URL |
+| `hero_<page>_mobile_image_url` | `IMAGE_URL` | Mobile (≤767px) background image URL; blank → falls back to the desktop image |
 | `hero_<page>_image_alt` | `STRING` | Image alt text |
 | `hero_<page>_title` | `STRING` | Heading text |
-| `hero_<page>_description` | `STRING` | Short tagline below heading |
-| `hero_<page>_kicker` | `STRING` | Small uppercase chip above heading |
 
-Concrete keys: `hero_products_*`, `hero_brands_*`, `hero_news_*` (15 total). All are returned by `GET /api/v1/settings/public`. CMS pages (about/contact/policy/guides) carry the same hero fields directly on the `Page` entity instead — see [DATA_CONTRACT.md](DATA_CONTRACT.md) "Page hero fields".
+Concrete keys: `hero_products_*`, `hero_brands_*`, `hero_news_*` (12 total). All are returned by `GET /api/v1/settings/public`. Two global fallbacks also live in `public_hero`: `hero_default_bg_url` and `hero_default_illustration_url`, used when a page has no own image. The `WpCategoryHero` web component renders `mobile_image_url` via an art-directed `<img>` overlay shown only below the `md` breakpoint. The `_description` and `_kicker` keys that earlier seeds carried were dropped in `V199__drop_unused_hero_settings.sql` (never consumed); `_mobile_image_url` was re-introduced in `V220__reseed_hero_mobile_settings.sql`. CMS pages (about/contact/policy/guides) carry the same hero fields directly on the `Page` entity instead — see [DATA_CONTRACT.md](DATA_CONTRACT.md) "Page hero fields".
 
 **`UpsertPageRequest` admin DTO** (admin can edit hero on any CMS page):
 - `heroImage`: `{ url, alt }` — same nested shape as `coverImage`. Send `{ url: "" }` to clear.

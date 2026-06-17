@@ -18,6 +18,7 @@ export function WpCategoryHero({
   titleNode,
   breadcrumb,
   bgUrl,
+  mobileBgUrl,
   illustrationUrl,
   illustrationAlt,
   focusId,
@@ -29,16 +30,28 @@ export function WpCategoryHero({
   /** Phần tử dịch được cho từng crumb (vd crumb cuối là tên danh mục/bài). Index khớp `breadcrumb`. */
   breadcrumb: WpCategoryCrumb[];
   bgUrl?: string | null;
+  /** Ảnh nền riêng cho điện thoại (≤767px). Bỏ trống → dùng `bgUrl`. */
+  mobileBgUrl?: string | null;
   illustrationUrl?: string | null;
   illustrationAlt?: string | null;
   /** Mốc cho nút "Xem trên web" của màn Cài đặt admin (data-bb-focus). */
   focusId?: string;
 }) {
   const bg = bgUrl?.trim() || DEFAULT_BG;
+  const mobileBg = mobileBgUrl?.trim() || null;
   const illustration = illustrationUrl?.trim() || DEFAULT_ILLUSTRATION;
 
   return (
-    <div className="page-title" style={{ backgroundImage: `url('${bg}')` }} data-bb-focus={focusId}>
+    <div className="page-title relative" style={{ backgroundImage: `url('${bg}')` }} data-bb-focus={focusId}>
+      {mobileBg ? (
+        // Art direction: ảnh nền riêng cho điện thoại (≤767px), phủ kín đè lên ảnh desktop.
+        <img
+          src={mobileBg}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 h-full w-full object-cover md:hidden"
+        />
+      ) : null}
       <div className="container">
         <div className="row align-items-center">
           <div className="col-md-6">

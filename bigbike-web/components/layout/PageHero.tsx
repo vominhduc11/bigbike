@@ -84,7 +84,8 @@ function WelcomeHero({ title, watermark, illustration, imageUrl, defaultBgUrl }:
           priority
           sizes="100vw"
           aria-hidden="true"
-          className="object-cover"
+          /* !h/!w: thắng `body img{height:auto!important}` của wp-theme-static.css. */
+          className="object-cover h-full! w-full!"
         />
         {/* Hai lớp overlay: lớp đỏ brand giữ mood racing, lớp tối tạo chiều sâu.
             Cả hai mờ dần xuống đáy để không phủ màu lên lát cắt chéo. */}
@@ -151,7 +152,9 @@ function ContactHero({ imageUrl, mobileImageUrl, imageAlt, title, breadcrumb, br
               src={bgSrc}
               alt={safeText(imageAlt, title)}
               fetchPriority="high"
-              className="absolute inset-0 h-full w-full object-cover"
+              /* !h/!w: thắng `body img{height:auto!important}` của wp-theme-static.css
+                 (nạp ở trang tĩnh/404) — nếu không ảnh nền hero co thành vệt mỏng. */
+              className="absolute inset-0 h-full! w-full! object-cover"
             />
           </picture>
         ) : (
@@ -161,7 +164,8 @@ function ContactHero({ imageUrl, mobileImageUrl, imageAlt, title, breadcrumb, br
             fill
             priority
             sizes="100vw"
-            className="object-cover"
+            /* !h/!w: thắng `body img{height:auto!important}` của wp-theme-static.css. */
+            className="object-cover h-full! w-full!"
           />
         )}
         <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/35 to-transparent" />
