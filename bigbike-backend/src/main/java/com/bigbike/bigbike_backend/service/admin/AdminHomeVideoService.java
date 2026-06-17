@@ -11,7 +11,7 @@ import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
 import com.bigbike.bigbike_backend.domain.video.HomeVideo;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.video.HomeVideoEntity;
-import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
+import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.persistence.repository.video.HomeVideoJpaRepository;
 import com.bigbike.bigbike_backend.service.security.HomeVideoUrlPolicy;
 import com.bigbike.bigbike_backend.service.security.SafeMediaAssetUrlPolicy;
@@ -41,7 +41,7 @@ public class AdminHomeVideoService {
     private final WebRevalidationService webRevalidationService;
     private final HomeVideoUrlPolicy homeVideoUrlPolicy;
     private final SafeMediaAssetUrlPolicy safeMediaAssetUrlPolicy;
-    private final AuditLogJpaRepository auditLogRepo;
+    private final AuditLogWriter auditLogWriter;
 
     @Transactional(readOnly = true)
     public List<HomeVideo> list() {
@@ -207,7 +207,7 @@ public class AdminHomeVideoService {
         log.setBeforeData(before);
         log.setAfterData(after != null ? after : "{\"id\":\"" + esc(videoId) + "\"}");
         log.setCreatedAt(Instant.now());
-        auditLogRepo.save(log);
+        auditLogWriter.save(log);
     }
 
     private static String videoSnapshot(HomeVideoEntity e) {

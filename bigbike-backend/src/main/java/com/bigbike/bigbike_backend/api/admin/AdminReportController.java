@@ -8,7 +8,7 @@ import com.bigbike.bigbike_backend.domain.commerce.OrderStatus;
 import com.bigbike.bigbike_backend.domain.commerce.PaymentStatus;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
-import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
+import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.service.admin.AdminReportService;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -48,7 +48,7 @@ public class AdminReportController {
 
     private final AdminReportService adminReportService;
     private final DevAdminAuthService devAdminAuthService;
-    private final AuditLogJpaRepository auditLogRepo;
+    private final AuditLogWriter auditLogWriter;
     private final ClientIpResolver clientIpResolver;
 
     @GetMapping("/analytics")
@@ -179,7 +179,7 @@ public class AdminReportController {
         log.setIpAddress(clientIpResolver.resolve(request));
         log.setUserAgent(request.getHeader("User-Agent"));
         log.setCreatedAt(Instant.now());
-        auditLogRepo.save(log);
+        auditLogWriter.save(log);
     }
 
     private static UUID parseActorId(String id) {

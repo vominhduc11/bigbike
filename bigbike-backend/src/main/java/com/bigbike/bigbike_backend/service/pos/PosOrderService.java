@@ -14,7 +14,7 @@ import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderLineIt
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderNoteEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.payment.PaymentEntity;
 import com.bigbike.bigbike_backend.persistence.entity.coupon.CouponEntity;
-import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
+import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.StockMovementJpaRepository;
@@ -135,7 +135,7 @@ public class PosOrderService {
     private final OrderLineItemJpaRepository lineItemRepo;
     private final OrderNoteJpaRepository noteRepo;
     private final PaymentJpaRepository paymentRepo;
-    private final AuditLogJpaRepository auditLogRepo;
+    private final AuditLogWriter auditLogWriter;
     private final OrderNumberGenerator orderNumberGenerator;
     private final OrderKeyGenerator orderKeyGenerator;
     private final AdminOrderWsService wsService;
@@ -588,7 +588,7 @@ public class PosOrderService {
         auditLog.setIpAddress(clientIp);
         auditLog.setUserAgent(userAgent);
         auditLog.setCreatedAt(now);
-        auditLogRepo.save(auditLog);
+        auditLogWriter.save(auditLog);
 
         wsService.pushEvent(new OrderWsEvent(
                 "NEW_ORDER", savedOrder.getId(), savedOrder.getOrderNumber(),

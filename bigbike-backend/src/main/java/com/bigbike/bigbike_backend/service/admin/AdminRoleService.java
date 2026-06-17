@@ -6,7 +6,7 @@ import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.auth.AdminRoleEntity;
-import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
+import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminRoleJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository;
 import com.bigbike.bigbike_backend.service.auth.AdminPermissionService;
@@ -33,7 +33,7 @@ public class AdminRoleService {
 
     private final AdminRoleJpaRepository roleRepo;
     private final AdminUserJpaRepository adminUserRepo;
-    private final AuditLogJpaRepository auditLogRepo;
+    private final AuditLogWriter auditLogWriter;
     private final AdminPermissionService adminPermissionService;
 
     public List<Map<String, Object>> getAllRoles() {
@@ -74,7 +74,7 @@ public class AdminRoleService {
 
         adminPermissionService.evict(saved.getId());
 
-        auditLogRepo.save(buildAudit(actorId, clientIp, userAgent, "ROLE_PERMISSIONS_UPDATED",
+        auditLogWriter.save(buildAudit(actorId, clientIp, userAgent, "ROLE_PERMISSIONS_UPDATED",
                 permissionsJson(role.getId(), before), permissionsJson(role.getId(), saved.getPermissions())));
 
         return toMap(saved);
@@ -119,7 +119,7 @@ public class AdminRoleService {
 
         adminPermissionService.evict(saved.getId());
 
-        auditLogRepo.save(buildAudit(actorId, clientIp, userAgent, "ROLE_CREATED",
+        auditLogWriter.save(buildAudit(actorId, clientIp, userAgent, "ROLE_CREATED",
                 null, permissionsJson(saved.getId(), saved.getPermissions())));
 
         return toMap(saved);
@@ -145,7 +145,7 @@ public class AdminRoleService {
 
         adminPermissionService.evict(role.getId());
 
-        auditLogRepo.save(buildAudit(actorId, clientIp, userAgent, "ROLE_DELETED",
+        auditLogWriter.save(buildAudit(actorId, clientIp, userAgent, "ROLE_DELETED",
                 permissionsJson(role.getId(), before), null));
     }
 

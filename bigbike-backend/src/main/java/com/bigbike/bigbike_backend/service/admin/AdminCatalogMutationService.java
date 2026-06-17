@@ -69,7 +69,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
-import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
+import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.service.catalog.DescriptionBlockRenderer;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
@@ -93,7 +93,7 @@ public class AdminCatalogMutationService {
     private final JpaCatalogReadRepository jpaCatalogReadRepository;
     private final MediaUrlProperties mediaUrlProperties;
     private final WebRevalidationService webRevalidationService;
-    private final AuditLogJpaRepository auditLogRepo;
+    private final AuditLogWriter auditLogWriter;
     private final DescriptionBlockRenderer descriptionBlockRenderer;
     private final RedirectJpaRepository redirectRepo;
 
@@ -107,7 +107,7 @@ public class AdminCatalogMutationService {
             ObjectProvider<JpaCatalogReadRepository> jpaCatalogReadRepositoryProvider,
             MediaUrlProperties mediaUrlProperties,
             WebRevalidationService webRevalidationService,
-            ObjectProvider<AuditLogJpaRepository> auditLogRepoProvider,
+            AuditLogWriter auditLogWriter,
             DescriptionBlockRenderer descriptionBlockRenderer,
             ObjectProvider<RedirectJpaRepository> redirectRepoProvider
     ) {
@@ -120,7 +120,7 @@ public class AdminCatalogMutationService {
         this.jpaCatalogReadRepository = jpaCatalogReadRepositoryProvider.getIfAvailable();
         this.mediaUrlProperties = mediaUrlProperties;
         this.webRevalidationService = webRevalidationService;
-        this.auditLogRepo = auditLogRepoProvider.getIfAvailable();
+        this.auditLogWriter = auditLogWriter;
         this.descriptionBlockRenderer = descriptionBlockRenderer;
         this.redirectRepo = redirectRepoProvider.getIfAvailable();
     }
@@ -445,7 +445,6 @@ public class AdminCatalogMutationService {
     }
 
     private void auditLog(String action, String resourceType, UUID adminId, String before, String after) {
-        if (auditLogRepo == null) return;
         AuditLogEntity log = new AuditLogEntity();
         log.setActorType("ADMIN");
         log.setActorId(adminId);
@@ -454,7 +453,7 @@ public class AdminCatalogMutationService {
         log.setBeforeData(before);
         log.setAfterData(after);
         log.setCreatedAt(Instant.now());
-        auditLogRepo.save(log);
+        auditLogWriter.save(log);
     }
 
     /**

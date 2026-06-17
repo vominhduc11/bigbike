@@ -1,10 +1,11 @@
 package com.bigbike.bigbike_backend.service.admin;
 
 import com.bigbike.bigbike_backend.api.error.ConflictException;
+import com.bigbike.bigbike_backend.api.error.ForbiddenException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.auth.AdminUserEntity;
-import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
+import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminRoleJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository;
 import com.bigbike.bigbike_backend.service.auth.AdminInviteService;
@@ -32,9 +33,19 @@ public class AdminAdminUsersService {
 
     private static final Set<String> VALID_STATUSES = Set.of("INVITED", "ACTIVE", "DISABLED", "SUSPENDED");
 
+    private static final String SUPER_ADMIN = "SUPER_ADMIN";
+
+    /**
+     * A {@code null} actorRole means there was no JWT principal (dev/test header-auth path),
+     * which is off in production — treat it as trusted so it bypasses the tier guards.
+     */
+    private static boolean isSuperAdminActor(String actorRole) {
+        return actorRole == null || SUPER_ADMIN.equals(actorRole);
+    }
+
     private final AdminUserJpaRepository adminUserRepo;
     private final AdminRoleJpaRepository adminRoleRepo;
-    private final AuditLogJpaRepository auditLogRepo;
+    private final AuditLogWriter auditLogWriter;
     private final PaginationService paginationService;
     private final PasswordService passwordService;
     private final AdminInviteService adminInviteService;
@@ -74,7 +85,7 @@ public class AdminAdminUsersService {
      * {@code INVITED} (cannot log in) and an invite email with a set-password link is sent.
      */
     @Transactional
-    public Map<String, Object> createAdminUser(UUID actorId, String clientIp, String userAgent,
+    public Map<String, Object> createAdminUser(UUID actorId, String actorRole, String clientIp, String userAgent,
             String email, String displayName, String role) {
         if (email == null || email.isBlank()) {
             throw new ConflictException("Email is required.");
@@ -96,6 +107,10 @@ public class AdminAdminUsersService {
         if (!isValidRole(normalizedRole)) {
             throw new ConflictException("Invalid role: " + normalizedRole);
         }
+        // Privilege-tier guard: only a SUPER_ADMIN may grant the SUPER_ADMIN role.
+        if (SUPER_ADMIN.equals(normalizedRole) && !isSuperAdminActor(actorRole)) {
+            throw new ForbiddenException("Only a SUPER_ADMIN can grant the SUPER_ADMIN role.");
+        }
 
         Instant now = Instant.now();
         AdminUserEntity entity = new AdminUserEntity();
@@ -114,7 +129,7 @@ public class AdminAdminUsersService {
         String afterData = "{\"email\":\"" + escapeJson(saved.getEmail())
                 + "\",\"role\":\"" + saved.getRole()
                 + "\",\"status\":\"INVITED\"}";
-        auditLogRepo.save(buildAudit(actorId, clientIp, userAgent, "ADMIN_USER_INVITED", saved.getId(), null, afterData, now));
+        auditLogWriter.save(buildAudit(actorId, clientIp, userAgent, "ADMIN_USER_INVITED", saved.getId(), null, afterData, now));
 
         return withInvite(toMap(saved), invite);
     }
@@ -125,7 +140,7 @@ public class AdminAdminUsersService {
         AdminUserEntity user = adminUserRepo.findById(id)
                 .orElseThrow(() -> new NotFoundException("Admin user not found."));
         AdminInviteService.InviteResult invite = adminInviteService.resendInvite(id);
-        auditLogRepo.save(buildAudit(actorId, clientIp, userAgent, "ADMIN_USER_INVITE_RESENT", id, null,
+        auditLogWriter.save(buildAudit(actorId, clientIp, userAgent, "ADMIN_USER_INVITE_RESENT", id, null,
                 "{\"email\":\"" + escapeJson(user.getEmail()) + "\"}", Instant.now()));
         return withInvite(toMap(user), invite);
     }
@@ -141,7 +156,7 @@ public class AdminAdminUsersService {
     }
 
     @Transactional
-    public Map<String, Object> updateAdminUser(UUID actorId, String clientIp, String userAgent,
+    public Map<String, Object> updateAdminUser(UUID actorId, String actorRole, String clientIp, String userAgent,
             UUID id, String displayName, String status, String newPassword, String role) {
         AdminUserEntity entity = adminUserRepo.findById(id)
                 .orElseThrow(() -> new NotFoundException("Admin user not found."));
@@ -149,6 +164,14 @@ public class AdminAdminUsersService {
         String beforeRole = entity.getRole();
         String beforeStatus = entity.getStatus();
         String beforeDisplayName = entity.getDisplayName();
+        boolean targetIsSuperAdmin = SUPER_ADMIN.equals(entity.getRole());
+
+        // --- Privilege-tier guard: a non-SUPER_ADMIN must not be able to touch a
+        // SUPER_ADMIN account at all (blocks password-reset takeover, status lockout,
+        // and demotion of the top tier by a lower tier holding admin-users.write). ---
+        if (targetIsSuperAdmin && !isSuperAdminActor(actorRole)) {
+            throw new ForbiddenException("Only a SUPER_ADMIN can modify a SUPER_ADMIN account.");
+        }
 
         // --- Guards: validate BEFORE applying changes ---
         if (status != null && !status.isBlank()) {
@@ -159,18 +182,30 @@ public class AdminAdminUsersService {
             if (id.equals(actorId) && !"ACTIVE".equals(normalizedStatus)) {
                 throw new ConflictException("Admin cannot deactivate their own account.");
             }
+            // Cannot disable/suspend the last active SUPER_ADMIN (extends the demote
+            // guard from role-change to status-change).
+            if (targetIsSuperAdmin && "ACTIVE".equals(beforeStatus) && !"ACTIVE".equals(normalizedStatus)) {
+                long activeSuperAdmins = adminUserRepo.countByRoleAndStatus(SUPER_ADMIN, "ACTIVE");
+                if (activeSuperAdmins <= 1) {
+                    throw new ConflictException("Cannot disable the last active SUPER_ADMIN.");
+                }
+            }
         }
         if (role != null && !role.isBlank()) {
             String normalizedRole = role.trim().toUpperCase(Locale.ROOT);
             if (!isValidRole(normalizedRole)) {
                 throw new ConflictException("Invalid role: " + normalizedRole);
             }
-            if (id.equals(actorId) && "SUPER_ADMIN".equals(entity.getRole()) && !"SUPER_ADMIN".equals(normalizedRole)) {
+            // Only a SUPER_ADMIN may grant the SUPER_ADMIN role (blocks promotion escalation).
+            if (SUPER_ADMIN.equals(normalizedRole) && !targetIsSuperAdmin && !isSuperAdminActor(actorRole)) {
+                throw new ForbiddenException("Only a SUPER_ADMIN can grant the SUPER_ADMIN role.");
+            }
+            if (id.equals(actorId) && targetIsSuperAdmin && !SUPER_ADMIN.equals(normalizedRole)) {
                 throw new ConflictException("SUPER_ADMIN cannot demote themselves.");
             }
-            if ("SUPER_ADMIN".equals(entity.getRole()) && !"SUPER_ADMIN".equals(normalizedRole)) {
+            if (targetIsSuperAdmin && !SUPER_ADMIN.equals(normalizedRole)) {
                 // RBAUD-008: use targeted DB count instead of findAll() full table scan
-                long superAdminCount = adminUserRepo.countByRoleAndStatus("SUPER_ADMIN", "ACTIVE");
+                long superAdminCount = adminUserRepo.countByRoleAndStatus(SUPER_ADMIN, "ACTIVE");
                 if (superAdminCount <= 1) {
                     throw new ConflictException("Cannot demote the last active SUPER_ADMIN.");
                 }
@@ -211,7 +246,7 @@ public class AdminAdminUsersService {
         beforeSb.append("}");
         afterSb.append("}");
 
-        auditLogRepo.save(buildAudit(actorId, clientIp, userAgent, "ADMIN_USER_UPDATED", id,
+        auditLogWriter.save(buildAudit(actorId, clientIp, userAgent, "ADMIN_USER_UPDATED", id,
                 beforeSb.toString(), afterSb.toString(), now));
 
         return toMap(saved);

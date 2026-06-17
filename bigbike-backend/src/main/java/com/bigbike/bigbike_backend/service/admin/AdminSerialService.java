@@ -10,7 +10,7 @@ import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductSerialEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
-import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
+import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductSerialJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
@@ -38,7 +38,7 @@ public class AdminSerialService {
     private final ProductSerialJpaRepository serialRepo;
     private final ProductVariantJpaRepository variantRepo;
     private final ProductJpaRepository productRepo;
-    private final AuditLogJpaRepository auditLogRepo;
+    private final AuditLogWriter auditLogWriter;
 
     // ── List all serials (global search) ─────────────────────────────────────
 
@@ -168,7 +168,7 @@ public class AdminSerialService {
 
         String productId = serial.getProduct() != null ? serial.getProduct().getId() : "?";
         String variantId = serial.getVariant() != null ? serial.getVariant().getId() : null;
-        auditLogRepo.save(buildAudit(adminId, "SERIAL_STATUS_CHANGED", "SERIAL",
+        auditLogWriter.save(buildAudit(adminId, "SERIAL_STATUS_CHANGED", "SERIAL",
                 "{\"serialId\":\"" + serialId + "\"" +
                 ",\"from\":\"" + from + "\",\"to\":\"" + to + "\"" +
                 (variantId != null ? ",\"variantId\":\"" + variantId + "\"" : "") +
@@ -203,7 +203,7 @@ public class AdminSerialService {
             result.add(AdminSerialResponse.from(s));
         }
 
-        auditLogRepo.save(buildAudit(adminId, "SERIALS_ADDED", "SERIAL",
+        auditLogWriter.save(buildAudit(adminId, "SERIALS_ADDED", "SERIAL",
                 "{\"count\":" + entries.size() +
                 ",\"productId\":\"" + product.getId() + "\"" +
                 (variant != null ? ",\"variantId\":\"" + variant.getId() + "\"" : "") + "}"));

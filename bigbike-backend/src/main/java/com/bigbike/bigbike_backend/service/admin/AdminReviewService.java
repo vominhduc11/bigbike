@@ -8,7 +8,7 @@ import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ReviewEntity;
-import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
+import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ReviewJpaRepository;
 import com.bigbike.bigbike_backend.service.common.PageResult;
@@ -47,7 +47,7 @@ public class AdminReviewService {
 
     private final ReviewJpaRepository reviewRepo;
     private final ProductJpaRepository productRepo;
-    private final AuditLogJpaRepository auditLogRepo;
+    private final AuditLogWriter auditLogWriter;
     private final WebRevalidationService webRevalidationService;
     private final EmailDispatchService emailDispatchService;
     private final String siteBaseUrl;
@@ -55,14 +55,14 @@ public class AdminReviewService {
     public AdminReviewService(
             ReviewJpaRepository reviewRepo,
             ProductJpaRepository productRepo,
-            AuditLogJpaRepository auditLogRepo,
+            AuditLogWriter auditLogWriter,
             WebRevalidationService webRevalidationService,
             EmailDispatchService emailDispatchService,
             @Value("${bigbike.site.base-url:https://bigbike.vn}") String siteBaseUrl
     ) {
         this.reviewRepo = reviewRepo;
         this.productRepo = productRepo;
-        this.auditLogRepo = auditLogRepo;
+        this.auditLogWriter = auditLogWriter;
         this.webRevalidationService = webRevalidationService;
         this.emailDispatchService = emailDispatchService;
         this.siteBaseUrl = siteBaseUrl;
@@ -133,7 +133,7 @@ public class AdminReviewService {
         ReviewEntity saved = reviewRepo.save(entity);
         reviewRepo.flush();
         recomputeProductReviewAggregate(entity.getProductId());
-        auditLogRepo.save(buildAudit(
+        auditLogWriter.save(buildAudit(
                 adminId,
                 REVIEW_STATUS_CHANGED_ACTION,
                 before,
@@ -187,7 +187,7 @@ public class AdminReviewService {
         reviewRepo.delete(entity);
         reviewRepo.flush();
         recomputeProductReviewAggregate(productId);
-        auditLogRepo.save(buildAudit(
+        auditLogWriter.save(buildAudit(
                 adminId,
                 REVIEW_DELETED_ACTION,
                 before,

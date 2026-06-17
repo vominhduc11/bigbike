@@ -12,7 +12,7 @@ import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.config.MinioProperties;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.media.MediaEntity;
-import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
+import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.persistence.repository.media.MediaJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.media.MediaSpecifications;
 import com.bigbike.bigbike_backend.persistence.repository.media.MediaTagJdbc;
@@ -67,7 +67,7 @@ public class AdminMediaService {
     static final String MEDIA_PATH_PREFIX = "/media/";
 
     private final MediaJpaRepository mediaRepo;
-    private final AuditLogJpaRepository auditLogRepo;
+    private final AuditLogWriter auditLogWriter;
     private final MinioClient minioClient;
     private final MinioProperties minioProperties;
     private final ObjectMapper objectMapper;
@@ -157,7 +157,7 @@ public class AdminMediaService {
         media.setUpdatedAt(now);
         MediaEntity saved = mediaRepo.save(media);
 
-        auditLogRepo.save(buildAudit(adminId, "MEDIA_UPLOADED", saved.getId(), null,
+        auditLogWriter.save(buildAudit(adminId, "MEDIA_UPLOADED", saved.getId(), null,
                 toJson(Map.of("filePath", objectKey, "mimeType", mimeType,
                         "variants", variants.keySet()))));
 
@@ -237,7 +237,7 @@ public class AdminMediaService {
         media.setUpdatedAt(Instant.now());
         mediaRepo.save(media);
 
-        auditLogRepo.save(buildAudit(adminId, "MEDIA_FILE_REPLACED", mediaId, before, snapshot(media)));
+        auditLogWriter.save(buildAudit(adminId, "MEDIA_FILE_REPLACED", mediaId, before, snapshot(media)));
 
         return toDetail(media);
     }
@@ -476,7 +476,7 @@ public class AdminMediaService {
             tagRepo.replaceTags(mediaId, req.tags());
         }
 
-        auditLogRepo.save(buildAudit(adminId, "MEDIA_UPDATED", mediaId, before, snapshot(media)));
+        auditLogWriter.save(buildAudit(adminId, "MEDIA_UPDATED", mediaId, before, snapshot(media)));
 
         return toDetail(media);
     }
@@ -493,7 +493,7 @@ public class AdminMediaService {
                 m.setFolderId(folderId); // null is allowed → clears folder
                 m.setUpdatedAt(Instant.now());
                 mediaRepo.save(m);
-                auditLogRepo.save(buildAudit(adminId, "MEDIA_MOVED_FOLDER", id, before, snapshot(m)));
+                auditLogWriter.save(buildAudit(adminId, "MEDIA_MOVED_FOLDER", id, before, snapshot(m)));
                 count++;
             } catch (Exception ignored) { /* skip failures */ }
         }
@@ -512,7 +512,7 @@ public class AdminMediaService {
         media.setUpdatedAt(Instant.now());
         mediaRepo.save(media);
 
-        auditLogRepo.save(buildAudit(adminId, "MEDIA_DELETED", mediaId,
+        auditLogWriter.save(buildAudit(adminId, "MEDIA_DELETED", mediaId,
                 before, toJson(Map.of("status", "DELETED"))));
     }
 
@@ -598,7 +598,7 @@ public class AdminMediaService {
         // Variants are best-effort — we already committed to deleting the original
         imageVariantService.deleteVariants(media.getFilePath());
 
-        auditLogRepo.save(buildAudit(adminId, "MEDIA_HARD_DELETED", mediaId, before, null));
+        auditLogWriter.save(buildAudit(adminId, "MEDIA_HARD_DELETED", mediaId, before, null));
         mediaRepo.delete(media);
     }
 
@@ -614,7 +614,7 @@ public class AdminMediaService {
         media.setUpdatedAt(Instant.now());
         mediaRepo.save(media);
 
-        auditLogRepo.save(buildAudit(adminId, "MEDIA_RESTORED", mediaId,
+        auditLogWriter.save(buildAudit(adminId, "MEDIA_RESTORED", mediaId,
                 before, toJson(Map.of("status", "ACTIVE"))));
 
         return toDetail(media);

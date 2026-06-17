@@ -44,6 +44,10 @@ Enforced in `AdminRoleService` (Admin Roles API, gated by `roles.write`):
 - **Custom roles** are created via `createRole` with `is_system = FALSE`; they can be both edited and deleted. `deleteRole` also blocks deletion while any admin user is still assigned to the role (`countByRole > 0`).
 - Role IDs must match `[A-Z][A-Z0-9_]{1,49}`; assigned permission keys are validated against `PermissionCatalog.ALL_KEYS` (unknown keys rejected).
 - **Admin-user guardrails** (`AdminAdminUsersService`): an admin cannot disable/suspend their own account, cannot demote themselves out of `SUPER_ADMIN`, and cannot demote the last active `SUPER_ADMIN`.
+- **Privilege-tier protection on `SUPER_ADMIN` accounts** (`AdminAdminUsersService`): `admin-users.write` is also held by the `ADMIN` role, so the service guards against a lower-tier admin escalating or taking over the top tier. Specifically:
+  - Only a `SUPER_ADMIN` actor may **modify** an existing `SUPER_ADMIN` account (display name, role, status, or password reset). A non-`SUPER_ADMIN` caller is rejected (`Only a SUPER_ADMIN can modify a SUPER_ADMIN account`) — this closes the password-reset account-takeover path.
+  - Only a `SUPER_ADMIN` actor may **grant** the `SUPER_ADMIN` role, whether via `createAdminUser` or by promoting an existing user (`Only a SUPER_ADMIN can grant the SUPER_ADMIN role`) — this closes the self/other-promotion escalation path.
+  - The **last active `SUPER_ADMIN`** cannot be disabled/suspended via a status change (extends the existing demote guard from role-change to status-change): `Cannot disable the last active SUPER_ADMIN`.
 - `CUSTOMER` (`ROLE_CUSTOMER`) is a separate storefront auth realm enforced in `SecurityConfig`; it is never managed through the admin Roles screen.
 
 ## Super-admin-only settings (`product_assign`)

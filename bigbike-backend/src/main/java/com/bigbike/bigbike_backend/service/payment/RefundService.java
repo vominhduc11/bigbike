@@ -6,7 +6,7 @@ import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderNoteEntity;
-import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
+import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderNoteJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.PaymentJpaRepository;
@@ -41,7 +41,7 @@ public class RefundService {
     private final OrderJpaRepository orderRepo;
     private final PaymentJpaRepository paymentRepo;
     private final OrderNoteJpaRepository noteRepo;
-    private final AuditLogJpaRepository auditLogRepo;
+    private final AuditLogWriter auditLogWriter;
     private final OrderNotificationService orderNotificationService;
     private final AdminOrderWsService adminOrderWsService;
     private final OrderStockRestoreService orderStockRestoreService;
@@ -196,7 +196,7 @@ public class RefundService {
         auditLog.setIpAddress(clientIp);
         auditLog.setUserAgent(userAgent);
         auditLog.setCreatedAt(now);
-        auditLogRepo.save(auditLog);
+        auditLogWriter.save(auditLog);
 
         try {
             orderNotificationService.sendOrderStatusUpdate(order, "REFUNDED", null);
@@ -347,7 +347,7 @@ public class RefundService {
         auditLog.setIpAddress(clientIp);
         auditLog.setUserAgent(userAgent);
         auditLog.setCreatedAt(now);
-        auditLogRepo.save(auditLog);
+        auditLogWriter.save(auditLog);
 
         // No order-status email here — the RMA flow sends the customer "return refunded"
         // notification (AdminReturnService.dispatchReturnNotification). Push admin WS only.

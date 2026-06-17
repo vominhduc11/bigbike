@@ -69,6 +69,7 @@ public class AdminAdminUsersController extends AdminControllerSupport {
         return apiResponseFactory.data(
                 adminAdminUsersService.createAdminUser(
                         resolveAdminId(),
+                        resolveAdminRole(),
                         clientIp,
                         userAgent,
                         body.get("email"),
@@ -105,6 +106,7 @@ public class AdminAdminUsersController extends AdminControllerSupport {
         return apiResponseFactory.data(
                 adminAdminUsersService.updateAdminUser(
                         resolveAdminId(),
+                        resolveAdminRole(),
                         clientIp,
                         userAgent,
                         id,

@@ -21,12 +21,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers;
+import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 @SpringBootTest
+@Sql(scripts = "/db/test-seed.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
 class AdminUsersApiTest {
 
     // Actor: SUPER_ADMIN (so all permission checks pass for admin-users.read/write)
@@ -36,6 +38,10 @@ class AdminUsersApiTest {
     // A second SUPER_ADMIN so we can test last-SUPER_ADMIN guard without false positives
     private static final String SECOND_SUPER_EMAIL = "au-super2-" + UUID.randomUUID() + "@bigbike.test";
     private static final String SECOND_SUPER_PASS  = "Super2@AU123456";
+
+    // A lower-tier ADMIN actor (holds admin-users.write) to test privilege-tier guards
+    private static final String ADMIN_ACTOR_EMAIL = "au-admin-" + UUID.randomUUID() + "@bigbike.test";
+    private static final String ADMIN_ACTOR_PASS  = "Admin@AU1234567";
 
     private static final String BASE_URL = "/api/v1/admin/admin-users";
 
@@ -47,6 +53,8 @@ class AdminUsersApiTest {
     private MockMvc mockMvc;
     private String actorToken;
     private UUID actorId;
+    private String adminActorToken;
+    private UUID secondSuperId;
 
     @BeforeEach
     void setup() throws Exception {
@@ -54,8 +62,10 @@ class AdminUsersApiTest {
                 .apply(SecurityMockMvcConfigurers.springSecurity())
                 .build();
         actorId = ensureAdminUser(ACTOR_EMAIL, ACTOR_PASS, "SUPER_ADMIN");
-        ensureAdminUser(SECOND_SUPER_EMAIL, SECOND_SUPER_PASS, "SUPER_ADMIN");
+        secondSuperId = ensureAdminUser(SECOND_SUPER_EMAIL, SECOND_SUPER_PASS, "SUPER_ADMIN");
+        ensureAdminUser(ADMIN_ACTOR_EMAIL, ADMIN_ACTOR_PASS, "ADMIN");
         actorToken = loginAdmin(ACTOR_EMAIL, ACTOR_PASS);
+        adminActorToken = loginAdmin(ADMIN_ACTOR_EMAIL, ADMIN_ACTOR_PASS);
     }
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -339,6 +349,59 @@ class AdminUsersApiTest {
 
         AdminUserEntity entity = adminUserRepo.findById(id).orElseThrow();
         assertThat(entity.getStatus()).isEqualTo("SUSPENDED");
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // PRIVILEGE-TIER GUARD TESTS (lower-tier ADMIN must not touch SUPER_ADMIN)
+    // ══════════════════════════════════════════════════════════════════════════
+
+    // 21. ADMIN cannot reset a SUPER_ADMIN's password (account-takeover guard) → 403
+    @Test
+    void updateAdminUser_adminResetsSuperAdminPassword_returns403() throws Exception {
+        mockMvc.perform(patch(BASE_URL + "/" + secondSuperId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"newPassword\":\"Hijack@99999\"}")
+                        .header("Authorization", "Bearer " + adminActorToken))
+                .andExpect(status().isForbidden());
+
+        // Password must be unchanged — the original SUPER_ADMIN can still log in.
+        assertThat(loginAdmin(SECOND_SUPER_EMAIL, SECOND_SUPER_PASS)).isNotBlank();
+    }
+
+    // 22. ADMIN cannot disable/suspend a SUPER_ADMIN (lockout guard) → 403
+    @Test
+    void updateAdminUser_adminDisablesSuperAdmin_returns403() throws Exception {
+        mockMvc.perform(patch(BASE_URL + "/" + secondSuperId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"DISABLED\"}")
+                        .header("Authorization", "Bearer " + adminActorToken))
+                .andExpect(status().isForbidden());
+    }
+
+    // 23. ADMIN cannot create a SUPER_ADMIN (promotion-escalation guard) → 403
+    @Test
+    void createAdminUser_adminCreatesSuperAdmin_returns403() throws Exception {
+        String body = """
+                {"email":"au-esc-%s@bigbike.test","displayName":"Escalate","role":"SUPER_ADMIN"}
+                """.formatted(UUID.randomUUID().toString().substring(0, 8));
+        mockMvc.perform(post(BASE_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body)
+                        .header("Authorization", "Bearer " + adminActorToken))
+                .andExpect(status().isForbidden());
+    }
+
+    // 24. ADMIN cannot promote an existing user to SUPER_ADMIN → 403
+    @Test
+    void updateAdminUser_adminPromotesToSuperAdmin_returns403() throws Exception {
+        String email = "au-promote-" + UUID.randomUUID() + "@bigbike.test";
+        UUID id = createAdminUserDirectly(email, "EDITOR", "ACTIVE");
+
+        mockMvc.perform(patch(BASE_URL + "/" + id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"role\":\"SUPER_ADMIN\"}")
+                        .header("Authorization", "Bearer " + adminActorToken))
+                .andExpect(status().isForbidden());
     }
 
     // ══════════════════════════════════════════════════════════════════════════

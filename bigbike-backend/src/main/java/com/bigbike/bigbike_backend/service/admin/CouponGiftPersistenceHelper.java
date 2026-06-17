@@ -3,7 +3,7 @@ package com.bigbike.bigbike_backend.service.admin;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.coupon.CouponEntity;
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEntity;
-import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
+import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.persistence.repository.coupon.CouponJpaRepository;
 import com.bigbike.bigbike_backend.service.admin.AdminCouponGiftService.SendCouponGiftRequest;
 import java.time.Instant;
@@ -22,7 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class CouponGiftPersistenceHelper {
 
     private final CouponJpaRepository couponRepo;
-    private final AuditLogJpaRepository auditLogRepo;
+    private final AuditLogWriter auditLogWriter;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public CouponEntity createAndPersist(CustomerEntity customer, UUID adminId,
@@ -54,7 +54,7 @@ public class CouponGiftPersistenceHelper {
         audit.setResourceId(coupon.getId());
         audit.setAfterData("{\"code\":\"" + code + "\",\"customerId\":\"" + customer.getId() + "\",\"bulk\":true}");
         audit.setCreatedAt(now);
-        auditLogRepo.save(audit);
+        auditLogWriter.save(audit);
 
         return coupon;
     }

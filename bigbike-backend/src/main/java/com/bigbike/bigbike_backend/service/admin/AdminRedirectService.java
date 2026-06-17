@@ -7,7 +7,7 @@ import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.redirect.RedirectEntity;
-import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
+import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.persistence.repository.redirect.RedirectJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.redirect.RedirectSpecification;
 import com.bigbike.bigbike_backend.service.common.PageResult;
@@ -44,7 +44,7 @@ public class AdminRedirectService {
     );
 
     private final RedirectJpaRepository redirectRepo;
-    private final AuditLogJpaRepository auditLogRepo;
+    private final AuditLogWriter auditLogWriter;
     private final PaginationService paginationService;
     private final WebRevalidationService webRevalidationService;
 
@@ -141,7 +141,7 @@ public class AdminRedirectService {
         // uq_redirects_source_pattern is the DB-level safety net for concurrent inserts
         // that race past the ensureUniqueSourcePattern application-level check above.
 
-        auditLogRepo.save(buildAudit(adminId, "REDIRECT_CREATED", entity.getId(), null, snapshot(entity)));
+        auditLogWriter.save(buildAudit(adminId, "REDIRECT_CREATED", entity.getId(), null, snapshot(entity)));
         webRevalidationService.revalidate("redirects");
 
         return toResponse(entity);
@@ -195,7 +195,7 @@ public class AdminRedirectService {
         entity.setUpdatedAt(Instant.now());
         entity = redirectRepo.save(entity);
 
-        auditLogRepo.save(buildAudit(adminId, "REDIRECT_UPDATED", entity.getId(), before, snapshot(entity)));
+        auditLogWriter.save(buildAudit(adminId, "REDIRECT_UPDATED", entity.getId(), before, snapshot(entity)));
         webRevalidationService.revalidate("redirects");
 
         return toResponse(entity);
@@ -207,7 +207,7 @@ public class AdminRedirectService {
                 .orElseThrow(() -> new NotFoundException("Redirect not found."));
         String before = snapshot(entity);
         redirectRepo.delete(entity);
-        auditLogRepo.save(buildAudit(adminId, "REDIRECT_DELETED", entity.getId(), before, null));
+        auditLogWriter.save(buildAudit(adminId, "REDIRECT_DELETED", entity.getId(), before, null));
         webRevalidationService.revalidate("redirects");
     }
 

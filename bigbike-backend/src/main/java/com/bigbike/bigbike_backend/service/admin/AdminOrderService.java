@@ -33,6 +33,7 @@ import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderNoteEn
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderShippingItemEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.payment.PaymentEntity;
 import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
+import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderAddressJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderAppliedCouponJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
@@ -148,6 +149,7 @@ public class AdminOrderService {
     private final PaymentJpaRepository paymentRepo;
     private final OrderAppliedCouponJpaRepository appliedCouponRepo;
     private final AuditLogJpaRepository auditLogRepo;
+    private final AuditLogWriter auditLogWriter;
     private final OrderNotificationService orderNotificationService;
     private final AdminOrderWsService adminOrderWsService;
     private final com.bigbike.bigbike_backend.service.payment.RefundService refundService;
@@ -389,7 +391,7 @@ public class AdminOrderService {
         }
 
         // Audit log
-        auditLogRepo.save(buildAudit(adminId, "ORDER_STATUS_UPDATED", "ORDER", order.getId(),
+        auditLogWriter.save(buildAudit(adminId, "ORDER_STATUS_UPDATED", "ORDER", order.getId(),
                 "{\"status\":\"" + beforeStatus + "\"}",
                 "{\"status\":\"" + newStatus + "\"}", now, clientIp, userAgent));
 
@@ -496,7 +498,7 @@ public class AdminOrderService {
         }
 
         // Audit
-        auditLogRepo.save(buildAudit(adminId, "ORDER_PAYMENT_STATUS_UPDATED", "ORDER", order.getId(),
+        auditLogWriter.save(buildAudit(adminId, "ORDER_PAYMENT_STATUS_UPDATED", "ORDER", order.getId(),
                 "{\"paymentStatus\":\"" + beforePaymentStatus + "\"}",
                 "{\"paymentStatus\":\"" + newPaymentStatus + "\"}", now, clientIp, userAgent));
 
@@ -585,7 +587,7 @@ public class AdminOrderService {
             noteRepo.save(buildNote(order, adminId, "ADMIN", req.note(), visible, now));
         }
 
-        auditLogRepo.save(buildAudit(adminId, "ORDER_FULFILLMENT_STATUS_UPDATED", "ORDER",
+        auditLogWriter.save(buildAudit(adminId, "ORDER_FULFILLMENT_STATUS_UPDATED", "ORDER",
                 order.getId(),
                 "{\"fulfillmentStatus\":\"" + current + "\"}",
                 "{\"fulfillmentStatus\":\"" + newStatus + "\""
@@ -626,7 +628,7 @@ public class AdminOrderService {
         OrderNoteEntity note = buildNote(order, adminId, noteType, req.content(), visible, now);
         note = noteRepo.save(note);
 
-        auditLogRepo.save(buildAudit(adminId, "ORDER_NOTE_CREATED", "ORDER", orderId,
+        auditLogWriter.save(buildAudit(adminId, "ORDER_NOTE_CREATED", "ORDER", orderId,
                 null,
                 "{\"noteType\":\"" + noteType + "\",\"customerVisible\":" + visible + "}", now,
                 clientIp, userAgent));

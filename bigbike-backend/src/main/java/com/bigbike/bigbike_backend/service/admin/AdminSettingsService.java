@@ -10,7 +10,7 @@ import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.settings.SiteSettingEntity;
-import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
+import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.persistence.repository.settings.SiteSettingJpaRepository;
 import com.bigbike.bigbike_backend.service.admin.settings.SettingDefinition;
 import com.bigbike.bigbike_backend.service.admin.settings.SettingDefinitionRegistry;
@@ -38,7 +38,7 @@ public class AdminSettingsService {
     private static final String MASKED_VALUE = "********";
 
     private final SiteSettingJpaRepository settingRepo;
-    private final AuditLogJpaRepository auditLogRepo;
+    private final AuditLogWriter auditLogWriter;
     private final PaginationService paginationService;
     private final WebRevalidationService webRevalidationService;
     private final SettingDefinitionRegistry definitionRegistry;
@@ -149,7 +149,7 @@ public class AdminSettingsService {
         settingRepo.save(entity);
 
         webRevalidationService.revalidate("settings");
-        auditLogRepo.save(buildAudit(adminId, "SETTING_UPDATED", entity.getId(), before,
+        auditLogWriter.save(buildAudit(adminId, "SETTING_UPDATED", entity.getId(), before,
                 snapshot(entity, definitionRegistry.isSensitive(settingKey))));
 
         return toAdminResponse(entity);
@@ -212,7 +212,7 @@ public class AdminSettingsService {
             entity.setUpdatedAt(Instant.now());
             settingRepo.save(entity);
 
-            auditLogRepo.save(buildAudit(adminId, "SETTING_UPDATED", entity.getId(),
+            auditLogWriter.save(buildAudit(adminId, "SETTING_UPDATED", entity.getId(),
                     before, snapshot(entity, sensitive)));
             results.add(toAdminResponse(entity));
         }

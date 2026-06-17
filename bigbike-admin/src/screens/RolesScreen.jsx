@@ -756,7 +756,9 @@ function RoleDetail({
 
       {/* Unknown permissions (backend has them but frontend catalog doesn't) */}
       {(() => {
-        const unknown = role.permissions.filter(p => !KNOWN_PERM_KEYS.has(p))
+        // '*' is the super-admin wildcard ("all permissions"), not a real
+        // labelable permission — exclude it so it doesn't trip the warning.
+        const unknown = role.permissions.filter(p => p !== '*' && !KNOWN_PERM_KEYS.has(p))
         if (unknown.length === 0) return null
         return (
           <div className="mb-6">

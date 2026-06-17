@@ -9,7 +9,7 @@ import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductSerialEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
-import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
+import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductSerialJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
@@ -30,7 +30,7 @@ public class AdminSerialImportService {
     private final ProductSerialJpaRepository serialRepo;
     private final ProductJpaRepository productRepo;
     private final ProductVariantJpaRepository variantRepo;
-    private final AuditLogJpaRepository auditLogRepo;
+    private final AuditLogWriter auditLogWriter;
 
     /**
      * Bulk import serials from an admin-provided JSON payload.
@@ -158,7 +158,7 @@ public class AdminSerialImportService {
                 + ",\"skipped\":" + skipped
                 + ",\"partialMode\":" + req.partialMode() + "}");
         audit.setCreatedAt(Instant.now());
-        auditLogRepo.save(audit);
+        auditLogWriter.save(audit);
 
         return new SerialImportResponse(inserted, skipped, errors);
     }

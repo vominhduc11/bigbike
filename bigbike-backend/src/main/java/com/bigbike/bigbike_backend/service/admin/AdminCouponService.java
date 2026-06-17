@@ -11,7 +11,7 @@ import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.mapper.CouponMapper;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.coupon.CouponEntity;
-import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
+import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderAppliedCouponJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.coupon.CouponJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.coupon.CouponSpecification;
@@ -43,7 +43,7 @@ public class AdminCouponService {
     private static final Set<String> ALLOWED_CHANNELS = Set.of("ALL", "ONLINE", "POS");
 
     private final CouponJpaRepository couponRepo;
-    private final AuditLogJpaRepository auditLogRepo;
+    private final AuditLogWriter auditLogWriter;
     private final CouponMapper couponMapper;
     private final OrderAppliedCouponJpaRepository appliedCouponRepo;
 
@@ -156,7 +156,7 @@ public class AdminCouponService {
         entity.setUpdatedAt(now);
         entity = couponRepo.save(entity);
 
-        auditLogRepo.save(buildAudit(adminId, "COUPON_CREATED", entity.getId(), null, snapshotFull(entity)));
+        auditLogWriter.save(buildAudit(adminId, "COUPON_CREATED", entity.getId(), null, snapshotFull(entity)));
         return toDetail(entity);
     }
 
@@ -251,7 +251,7 @@ public class AdminCouponService {
         entity.setUpdatedAt(Instant.now());
         couponRepo.save(entity);
 
-        auditLogRepo.save(buildAudit(adminId, "COUPON_UPDATED", couponId, before, snapshotFull(entity)));
+        auditLogWriter.save(buildAudit(adminId, "COUPON_UPDATED", couponId, before, snapshotFull(entity)));
         return toDetail(entity);
     }
 
@@ -273,7 +273,7 @@ public class AdminCouponService {
         entity.setUpdatedAt(Instant.now());
         couponRepo.save(entity);
 
-        auditLogRepo.save(buildAudit(adminId, "COUPON_STATUS_UPDATED", couponId, before,
+        auditLogWriter.save(buildAudit(adminId, "COUPON_STATUS_UPDATED", couponId, before,
                 "{\"status\":\"" + newStatus + "\"}"));
         return toDetail(entity);
     }
@@ -300,7 +300,7 @@ public class AdminCouponService {
 
         String snapshot = snapshotFull(entity);
         couponRepo.delete(entity);
-        auditLogRepo.save(buildAudit(adminId, "COUPON_DELETED", couponId, snapshot, null));
+        auditLogWriter.save(buildAudit(adminId, "COUPON_DELETED", couponId, snapshot, null));
     }
 
     // ── Mapping ───────────────────────────────────────────────────────────────

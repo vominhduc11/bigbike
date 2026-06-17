@@ -36,4 +36,18 @@ public abstract class AdminControllerSupport {
         }
         return DEV_ADMIN_ID;
     }
+
+    /**
+     * Resolves the role of the current JWT admin principal (e.g. {@code SUPER_ADMIN}).
+     * Returns {@code null} when there is no JWT principal (the dev/test header-auth path),
+     * which callers treat as "skip privilege-tier guards" — that path is off in production
+     * and is already governed by {@code DevAdminAuthService.requirePermission}.
+     */
+    protected String resolveAdminRole() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof AdminPrincipal principal) {
+            return principal.role();
+        }
+        return null;
+    }
 }

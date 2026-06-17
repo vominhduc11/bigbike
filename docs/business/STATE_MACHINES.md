@@ -924,7 +924,8 @@ Notification/email/websocket events exist as side effects, but no persisted noti
 - Frontend chỉ được hide/disable action để UX tốt hơn, không thay thế backend validation.
 - Negative tests nên cover transition bị cấm.
 - API không được update status trực tiếp nếu thiếu service/domain validation.
-- Side effects như stock restore, audit log, notification phải nằm trong transactional service flow nếu ảnh hưởng dữ liệu bền vững.
+- Side effects như stock restore, notification phải nằm trong transactional service flow nếu ảnh hưởng dữ liệu bền vững.
+- **Audit log là best-effort, non-blocking:** ghi qua `AuditLogWriter` trong một giao dịch RIÊNG (`REQUIRES_NEW`) có bọc try/catch. Lỗi ghi nhật ký KHÔNG được rollback hay làm hỏng thao tác nghiệp vụ chính (`AuditLogWriter.java`, `AuditLogPersister.java`).
 
 ## 17. Backend Enforcement Requirements
 

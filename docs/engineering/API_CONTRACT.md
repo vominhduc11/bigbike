@@ -832,6 +832,8 @@ Concrete keys: `hero_products_*`, `hero_brands_*`, `hero_news_*` (15 total). All
 
 **Note:** `resource_id` column is `uuid` type. For entities with String IDs (products, categories, brands, content, roles), `resource_id = null` and the entity identifier is embedded in `afterData`/`beforeData` JSON.
 
+**Write guarantee (non-blocking):** All audit-log writes go through the central `AuditLogWriter`, which persists in a separate transaction (`@Transactional(REQUIRES_NEW)`) wrapped in try/catch. An audit-write failure is logged and swallowed — it never rolls back or breaks the originating business action. `createdAt` is auto-set if a caller leaves it null. In the mock/read-only profile (no JPA repository) the write is a silent no-op. `CONFIRMED_FROM_CODE` — `AuditLogWriter.java`, `AuditLogPersister.java`.
+
 ## Admin Returns Inspection Contract (V104)
 
 | Method | Path | Permission | Purpose | Status | Evidence |

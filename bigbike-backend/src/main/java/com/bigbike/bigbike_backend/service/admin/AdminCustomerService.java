@@ -17,7 +17,7 @@ import com.bigbike.bigbike_backend.mapper.CustomerMapper;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEntity;
-import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
+import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerAddressJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
@@ -60,7 +60,7 @@ public class AdminCustomerService {
     private final CustomerJpaRepository customerRepo;
     private final CustomerAddressJpaRepository addressRepo;
     private final OrderJpaRepository orderRepo;
-    private final AuditLogJpaRepository auditLogRepo;
+    private final AuditLogWriter auditLogWriter;
     private final CustomerSessionService customerSessionService;
     private final CustomerMapper customerMapper;
     private final CustomerAddressMapper customerAddressMapper;
@@ -204,7 +204,7 @@ public class AdminCustomerService {
             throw new ConflictException("Email or phone is already in use by another customer.");
         }
 
-        auditLogRepo.save(buildAudit(adminId, "CUSTOMER_UPDATED", customerId, beforeSnapshot, snapshot(customer)));
+        auditLogWriter.save(buildAudit(adminId, "CUSTOMER_UPDATED", customerId, beforeSnapshot, snapshot(customer)));
 
         return getCustomerDetail(customerId);
     }
@@ -235,7 +235,7 @@ public class AdminCustomerService {
 
         String after = "{\"status\":\"" + newStatus + "\",\"reason\":" +
                 (req.reason() != null ? "\"" + escapeJson(req.reason()) + "\"" : "null") + "}";
-        auditLogRepo.save(buildAudit(adminId, "CUSTOMER_STATUS_UPDATED", customerId, before, after));
+        auditLogWriter.save(buildAudit(adminId, "CUSTOMER_STATUS_UPDATED", customerId, before, after));
 
         return getCustomerDetail(customerId);
     }

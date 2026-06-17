@@ -12,7 +12,7 @@ import com.bigbike.bigbike_backend.domain.slider.Slider;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.slider.SliderEntity;
-import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
+import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.slider.SliderJpaRepository;
 import com.bigbike.bigbike_backend.service.security.SafeMediaAssetUrlPolicy;
@@ -42,7 +42,7 @@ public class AdminSliderService {
     private final SliderReadService sliderReadService;
     private final WebRevalidationService webRevalidationService;
     private final SafeMediaAssetUrlPolicy safeMediaAssetUrlPolicy;
-    private final AuditLogJpaRepository auditLogRepo;
+    private final AuditLogWriter auditLogWriter;
 
     @Transactional(readOnly = true)
     public List<Slider> list(String location) {
@@ -259,7 +259,7 @@ public class AdminSliderService {
         log.setBeforeData(before);
         log.setAfterData(after != null ? after : "{\"id\":\"" + esc(sliderId) + "\"}");
         log.setCreatedAt(Instant.now());
-        auditLogRepo.save(log);
+        auditLogWriter.save(log);
     }
 
     private static String sliderSnapshot(SliderEntity e) {

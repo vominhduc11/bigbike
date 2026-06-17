@@ -11,7 +11,7 @@ import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity
 import com.bigbike.bigbike_backend.persistence.entity.commerce.payment.PaymentEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.receivable.ReceivableEntity;
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEntity;
-import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
+import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.PaymentJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.receivable.ReceivableJpaRepository;
@@ -33,7 +33,7 @@ public class ReceivableService {
     private final ReceivableJpaRepository receivableRepo;
     private final OrderJpaRepository orderRepo;
     private final PaymentJpaRepository paymentRepo;
-    private final AuditLogJpaRepository auditLogRepo;
+    private final AuditLogWriter auditLogWriter;
     private final ReceivableQueryService queryService;
 
     /**
@@ -250,6 +250,6 @@ public class ReceivableService {
         if (clientIp != null) log.setIpAddress(clientIp);
         if (userAgent != null) log.setUserAgent(userAgent);
         log.setCreatedAt(Instant.now());
-        auditLogRepo.save(log);
+        auditLogWriter.save(log);
     }
 }

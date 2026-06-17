@@ -31,7 +31,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
-import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
+import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import java.util.UUID;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
@@ -47,7 +47,7 @@ public class AdminContentMutationService {
     private final JpaContentReadRepository jpaContentReadRepository;
     private final MediaUrlProperties mediaUrlProperties;
     private final WebRevalidationService webRevalidationService;
-    private final AuditLogJpaRepository auditLogRepo;
+    private final AuditLogWriter auditLogWriter;
     private final DescriptionBlockRenderer descriptionBlockRenderer;
 
     public AdminContentMutationService(
@@ -58,7 +58,7 @@ public class AdminContentMutationService {
             ObjectProvider<JpaContentReadRepository> jpaContentReadRepositoryProvider,
             MediaUrlProperties mediaUrlProperties,
             WebRevalidationService webRevalidationService,
-            ObjectProvider<AuditLogJpaRepository> auditLogRepoProvider,
+            AuditLogWriter auditLogWriter,
             DescriptionBlockRenderer descriptionBlockRenderer
     ) {
         this.articleJpaRepository = articleJpaRepositoryProvider.getIfAvailable();
@@ -68,7 +68,7 @@ public class AdminContentMutationService {
         this.jpaContentReadRepository = jpaContentReadRepositoryProvider.getIfAvailable();
         this.mediaUrlProperties = mediaUrlProperties;
         this.webRevalidationService = webRevalidationService;
-        this.auditLogRepo = auditLogRepoProvider.getIfAvailable();
+        this.auditLogWriter = auditLogWriter;
         this.descriptionBlockRenderer = descriptionBlockRenderer;
     }
 
@@ -246,7 +246,6 @@ public class AdminContentMutationService {
     }
 
     private void auditLog(String action, String resourceType, UUID adminId, String before, String after) {
-        if (auditLogRepo == null) return;
         AuditLogEntity log = new AuditLogEntity();
         log.setActorType("ADMIN");
         log.setActorId(adminId);
@@ -255,7 +254,7 @@ public class AdminContentMutationService {
         log.setBeforeData(before);
         log.setAfterData(after);
         log.setCreatedAt(Instant.now());
-        auditLogRepo.save(log);
+        auditLogWriter.save(log);
     }
 
     private static String articleJson(ArticleEntity e) {

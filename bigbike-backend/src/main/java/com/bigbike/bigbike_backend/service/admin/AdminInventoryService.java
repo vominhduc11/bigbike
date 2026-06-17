@@ -9,7 +9,7 @@ import com.bigbike.bigbike_backend.api.admin.dto.inventory.StockMovementResponse
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
-import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
+import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
@@ -62,7 +62,7 @@ public class AdminInventoryService {
     private final ProductSerialJpaRepository productSerialRepo;
     private final InventoryPolicyService inventoryPolicyService;
     private final WebRevalidationService webRevalidationService;
-    private final AuditLogJpaRepository auditLogRepo;
+    private final AuditLogWriter auditLogWriter;
 
     // ── List stock (DB-side filter + sort + pagination) ───────────────────────
 
@@ -304,7 +304,7 @@ public class AdminInventoryService {
         movement.setCreatedAt(Instant.now());
         movementRepo.save(movement);
 
-        auditLogRepo.save(buildAudit(adminId, "INVENTORY_STOCK_ADJUSTED", "INVENTORY",
+        auditLogWriter.save(buildAudit(adminId, "INVENTORY_STOCK_ADJUSTED", "INVENTORY",
                 "{\"variantId\":\"" + variantId + "\",\"type\":\"" + type + "\"" +
                 ",\"delta\":" + req.quantityDelta() + ",\"before\":" + before + ",\"after\":" + after + "}"));
 
@@ -432,7 +432,7 @@ public class AdminInventoryService {
             }
         }
 
-        auditLogRepo.save(buildAudit(adminId, "INVENTORY_PRODUCT_STOCK_ADJUSTED", "INVENTORY",
+        auditLogWriter.save(buildAudit(adminId, "INVENTORY_PRODUCT_STOCK_ADJUSTED", "INVENTORY",
                 "{\"productId\":\"" + productId + "\",\"type\":\"" + type + "\"" +
                 ",\"delta\":" + delta + ",\"before\":" + before + ",\"after\":" + after + "}"));
 
