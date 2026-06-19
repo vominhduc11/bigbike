@@ -184,6 +184,136 @@ public class SettingDefinitionRegistry {
                         .publicAllowed()
                         .description("Tiêu đề khu Video trải nghiệm trên trang chủ.").build(),
 
+                // ── PUBLIC_ABOUT ── (toàn bộ copy trang Giới thiệu /gioi-thieu — admin sửa được,
+                // giữ nguyên bố cục lưới 5 ô; web render settings-first, fallback copy theme khi trống)
+                SettingDefinition.builder("about_page_kicker", "public_about", SettingValueType.STRING)
+                        .publicAllowed()
+                        .description("Trang Giới thiệu — tiêu đề nhỏ (kicker) khối đầu trang.").build(),
+                SettingDefinition.builder("about_page_tagline", "public_about", SettingValueType.LONG_TEXT)
+                        .publicAllowed()
+                        .description("Trang Giới thiệu — câu tagline khối đầu trang.").build(),
+                SettingDefinition.builder("about_page_intro_html", "public_about", SettingValueType.HTML)
+                        .publicAllowed()
+                        .description("Trang Giới thiệu — đoạn giới thiệu mở đầu (rich-text, gồm 4 đoạn).").build(),
+                SettingDefinition.builder("about_page_quality_heading", "public_about", SettingValueType.STRING)
+                        .publicAllowed()
+                        .description("Trang Giới thiệu — tiêu đề khối Chất lượng dịch vụ.").build(),
+                SettingDefinition.builder("about_page_quality_body", "public_about", SettingValueType.LONG_TEXT)
+                        .publicAllowed()
+                        .description("Trang Giới thiệu — mô tả khối Chất lượng dịch vụ.").build(),
+
+                SettingDefinition.builder("about_page_service1_title", "public_about", SettingValueType.STRING)
+                        .publicAllowed().description("Trang Giới thiệu — ô dịch vụ 1: tiêu đề.").build(),
+                SettingDefinition.builder("about_page_service1_body", "public_about", SettingValueType.LONG_TEXT)
+                        .publicAllowed().description("Trang Giới thiệu — ô dịch vụ 1: mô tả.").build(),
+                SettingDefinition.builder("about_page_service1_image", "public_about", SettingValueType.IMAGE_URL)
+                        .publicAllowed().description("Trang Giới thiệu — ô dịch vụ 1: hình minh hoạ.").build(),
+                SettingDefinition.builder("about_page_service1_highlight", "public_about", SettingValueType.BOOLEAN)
+                        .publicAllowed().description("Trang Giới thiệu — ô dịch vụ 1: nền cam nổi bật.").build(),
+
+                SettingDefinition.builder("about_page_service2_title", "public_about", SettingValueType.STRING)
+                        .publicAllowed().description("Trang Giới thiệu — ô dịch vụ 2: tiêu đề.").build(),
+                SettingDefinition.builder("about_page_service2_body", "public_about", SettingValueType.LONG_TEXT)
+                        .publicAllowed().description("Trang Giới thiệu — ô dịch vụ 2: mô tả.").build(),
+                SettingDefinition.builder("about_page_service2_image", "public_about", SettingValueType.IMAGE_URL)
+                        .publicAllowed().description("Trang Giới thiệu — ô dịch vụ 2: hình minh hoạ.").build(),
+                SettingDefinition.builder("about_page_service2_highlight", "public_about", SettingValueType.BOOLEAN)
+                        .publicAllowed().description("Trang Giới thiệu — ô dịch vụ 2: nền cam nổi bật.").build(),
+
+                SettingDefinition.builder("about_page_service3_title", "public_about", SettingValueType.STRING)
+                        .publicAllowed().description("Trang Giới thiệu — ô dịch vụ 3: tiêu đề.").build(),
+                SettingDefinition.builder("about_page_service3_body", "public_about", SettingValueType.LONG_TEXT)
+                        .publicAllowed().description("Trang Giới thiệu — ô dịch vụ 3: mô tả.").build(),
+                SettingDefinition.builder("about_page_service3_image", "public_about", SettingValueType.IMAGE_URL)
+                        .publicAllowed().description("Trang Giới thiệu — ô dịch vụ 3: hình minh hoạ.").build(),
+                SettingDefinition.builder("about_page_service3_highlight", "public_about", SettingValueType.BOOLEAN)
+                        .publicAllowed().description("Trang Giới thiệu — ô dịch vụ 3: nền cam nổi bật.").build(),
+
+                SettingDefinition.builder("about_page_service4_title", "public_about", SettingValueType.STRING)
+                        .publicAllowed().description("Trang Giới thiệu — ô dịch vụ 4: tiêu đề.").build(),
+                SettingDefinition.builder("about_page_service4_body", "public_about", SettingValueType.LONG_TEXT)
+                        .publicAllowed().description("Trang Giới thiệu — ô dịch vụ 4: mô tả.").build(),
+                SettingDefinition.builder("about_page_service4_image", "public_about", SettingValueType.IMAGE_URL)
+                        .publicAllowed().description("Trang Giới thiệu — ô dịch vụ 4: hình minh hoạ.").build(),
+                SettingDefinition.builder("about_page_service4_highlight", "public_about", SettingValueType.BOOLEAN)
+                        .publicAllowed().description("Trang Giới thiệu — ô dịch vụ 4: nền cam nổi bật.").build(),
+
+                SettingDefinition.builder("about_page_service5_title", "public_about", SettingValueType.STRING)
+                        .publicAllowed().description("Trang Giới thiệu — ô dịch vụ 5: tiêu đề.").build(),
+                SettingDefinition.builder("about_page_service5_body", "public_about", SettingValueType.LONG_TEXT)
+                        .publicAllowed().description("Trang Giới thiệu — ô dịch vụ 5: mô tả.").build(),
+                SettingDefinition.builder("about_page_service5_image", "public_about", SettingValueType.IMAGE_URL)
+                        .publicAllowed().description("Trang Giới thiệu — ô dịch vụ 5: hình minh hoạ.").build(),
+                SettingDefinition.builder("about_page_service5_highlight", "public_about", SettingValueType.BOOLEAN)
+                        .publicAllowed().description("Trang Giới thiệu — ô dịch vụ 5: nền cam nổi bật.").build(),
+
+                SettingDefinition.builder("about_page_connect_heading", "public_about", SettingValueType.STRING)
+                        .publicAllowed().description("Trang Giới thiệu — tiêu đề khối Kết nối với chúng tôi.").build(),
+                SettingDefinition.builder("about_page_connect_intro1", "public_about", SettingValueType.LONG_TEXT)
+                        .publicAllowed().description("Trang Giới thiệu — dòng 1 khối Kết nối.").build(),
+                SettingDefinition.builder("about_page_connect_intro2", "public_about", SettingValueType.LONG_TEXT)
+                        .publicAllowed().description("Trang Giới thiệu — dòng 2 khối Kết nối.").build(),
+
+                // ── PUBLIC_WARRANTY ── (toàn bộ copy trang Tra cứu bảo hành /bao-hanh — admin sửa được;
+                // công cụ tra cứu serial giữ nguyên chức năng, chỉ chữ là động. Web render settings-first,
+                // fallback copy theme (i18n Warranty) khi trống nên trang không bao giờ trắng.)
+                SettingDefinition.builder("warranty_page_meta_title", "public_warranty", SettingValueType.STRING)
+                        .publicAllowed().description("Trang Bảo hành — tiêu đề SEO (thẻ <title>).").build(),
+                SettingDefinition.builder("warranty_page_meta_description", "public_warranty", SettingValueType.LONG_TEXT)
+                        .publicAllowed().description("Trang Bảo hành — mô tả SEO (meta description).").build(),
+                SettingDefinition.builder("warranty_page_heading", "public_warranty", SettingValueType.STRING)
+                        .publicAllowed().description("Trang Bảo hành — tiêu đề banner đầu trang.").build(),
+                SettingDefinition.builder("warranty_page_kicker", "public_warranty", SettingValueType.STRING)
+                        .publicAllowed().description("Trang Bảo hành — tiêu đề nhỏ (kicker) trên khối tra cứu.").build(),
+                SettingDefinition.builder("warranty_page_subheading", "public_warranty", SettingValueType.LONG_TEXT)
+                        .publicAllowed().description("Trang Bảo hành — dòng mô tả dưới kicker.").build(),
+                SettingDefinition.builder("warranty_page_intro_html", "public_warranty", SettingValueType.HTML)
+                        .publicAllowed().description("Trang Bảo hành — khối nội dung giới thiệu phía trên ô tra cứu (rich-text, để trống sẽ ẩn).").build(),
+                SettingDefinition.builder("warranty_page_intro_image", "public_warranty", SettingValueType.IMAGE_URL)
+                        .publicAllowed().description("Trang Bảo hành — hình minh hoạ tuỳ chọn cho khối giới thiệu (để trống sẽ ẩn).").build(),
+                SettingDefinition.builder("warranty_page_serial_label", "public_warranty", SettingValueType.STRING)
+                        .publicAllowed().description("Trang Bảo hành — nhãn ô nhập số serial.").build(),
+                SettingDefinition.builder("warranty_page_serial_placeholder", "public_warranty", SettingValueType.STRING)
+                        .publicAllowed().description("Trang Bảo hành — chữ gợi ý trong ô nhập serial (placeholder).").build(),
+                SettingDefinition.builder("warranty_page_serial_hint", "public_warranty", SettingValueType.LONG_TEXT)
+                        .publicAllowed().description("Trang Bảo hành — dòng hướng dẫn dưới ô nhập serial.").build(),
+                SettingDefinition.builder("warranty_page_submit_button", "public_warranty", SettingValueType.STRING)
+                        .publicAllowed().description("Trang Bảo hành — chữ trên nút tra cứu.").build(),
+                SettingDefinition.builder("warranty_page_submitting", "public_warranty", SettingValueType.STRING)
+                        .publicAllowed().description("Trang Bảo hành — chữ nút khi đang tra cứu.").build(),
+                SettingDefinition.builder("warranty_page_not_found", "public_warranty", SettingValueType.STRING)
+                        .publicAllowed().description("Trang Bảo hành — thông báo khi không tìm thấy bảo hành.").build(),
+                SettingDefinition.builder("warranty_page_result_heading", "public_warranty", SettingValueType.STRING)
+                        .publicAllowed().description("Trang Bảo hành — tiêu đề khối kết quả.").build(),
+                SettingDefinition.builder("warranty_page_field_product", "public_warranty", SettingValueType.STRING)
+                        .publicAllowed().description("Trang Bảo hành — nhãn dòng Sản phẩm trong kết quả.").build(),
+                SettingDefinition.builder("warranty_page_field_serial", "public_warranty", SettingValueType.STRING)
+                        .publicAllowed().description("Trang Bảo hành — nhãn dòng Số serial trong kết quả.").build(),
+                SettingDefinition.builder("warranty_page_field_start", "public_warranty", SettingValueType.STRING)
+                        .publicAllowed().description("Trang Bảo hành — nhãn dòng Ngày bắt đầu trong kết quả.").build(),
+                SettingDefinition.builder("warranty_page_field_end", "public_warranty", SettingValueType.STRING)
+                        .publicAllowed().description("Trang Bảo hành — nhãn dòng Ngày kết thúc trong kết quả.").build(),
+                SettingDefinition.builder("warranty_page_status_active", "public_warranty", SettingValueType.STRING)
+                        .publicAllowed().description("Trang Bảo hành — nhãn trạng thái Còn hiệu lực. Giữ {daysLeft} để hiện số ngày còn lại.").build(),
+                SettingDefinition.builder("warranty_page_status_almost_expired", "public_warranty", SettingValueType.STRING)
+                        .publicAllowed().description("Trang Bảo hành — nhãn trạng thái Sắp hết hạn. Giữ {daysLeft} để hiện số ngày còn lại.").build(),
+                SettingDefinition.builder("warranty_page_status_expired", "public_warranty", SettingValueType.STRING)
+                        .publicAllowed().description("Trang Bảo hành — nhãn trạng thái Hết hạn.").build(),
+                SettingDefinition.builder("warranty_page_status_voided", "public_warranty", SettingValueType.STRING)
+                        .publicAllowed().description("Trang Bảo hành — nhãn trạng thái Đã huỷ.").build(),
+                SettingDefinition.builder("warranty_page_footer_active", "public_warranty", SettingValueType.LONG_TEXT)
+                        .publicAllowed().description("Trang Bảo hành — ghi chú dưới kết quả khi bảo hành còn hiệu lực.").build(),
+                SettingDefinition.builder("warranty_page_footer_voided", "public_warranty", SettingValueType.LONG_TEXT)
+                        .publicAllowed().description("Trang Bảo hành — ghi chú dưới kết quả khi bảo hành đã huỷ.").build(),
+                SettingDefinition.builder("warranty_page_policy_html", "public_warranty", SettingValueType.HTML)
+                        .publicAllowed().description("Trang Bảo hành — khối chính sách / câu hỏi thường gặp phía dưới (rich-text, để trống sẽ ẩn).").build(),
+
+                // ── PUBLIC_PRODUCT ── (KHÔNG còn setting chung nào.)
+                // Mọi nội dung trang chi tiết sản phẩm giờ quản theo TỪNG sản phẩm:
+                //  • Khối "cam kết" dưới nút mua → bảng product_commitments (V232).
+                //  • Dải "tin cậy" trên tên sản phẩm → bảng product_trust_badges (V233).
+                // 6 khóa product_commitment_* (V228) gỡ ở V232; 2 khóa product_trust_* gỡ ở V233.
+
                 // ── PUBLIC_HERO ── (hero banner cho listing pages không có PageEntity)
                 SettingDefinition.builder("hero_products_image_url", "public_hero", SettingValueType.IMAGE_URL)
                         .publicAllowed()

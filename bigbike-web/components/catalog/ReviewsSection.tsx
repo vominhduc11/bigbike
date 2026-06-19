@@ -2,11 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import {
-  keepPreviousData,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { LocalDate } from "@/components/i18n/LocalDate";
 import { Button } from "@/components/ui/button";
@@ -21,6 +17,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PaginationNav } from "@/components/ui/PaginationNav";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { openWriteReviewDialog } from "@/components/catalog/writeReviewBus";
 
 type SortKey = "newest" | "highest" | "lowest";
 
@@ -28,9 +30,16 @@ type Review = {
   id: number | string;
   authorName: string;
   rating: number;
+  title?: string;
   comment?: string;
+  photos?: string[];
   createdAt: string;
 };
+
+// Customer review photos: max 10, ≤8MB each, images only — must mirror the backend caps.
+const MAX_PHOTOS = 10;
+const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
+const ALLOWED_PHOTO_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 type ReviewsData = {
   avgRating: number;
@@ -146,7 +155,7 @@ function StarRatingInput({
         })}
       </div>
       {display > 0 && (
-        <span className="font-body text-lg font-semibold text-[var(--bb-text-primary)]">
+        <span className="font-body text-h4 font-semibold text-[var(--bb-text-primary)]">
           {display}/5
         </span>
       )}
@@ -172,7 +181,7 @@ function RatingSummary({
     <div className="flex flex-col gap-6 border border-border p-6 sm:flex-row sm:items-center sm:gap-8">
       <div className="flex shrink-0 flex-col items-center justify-center gap-2 max-sm:border-b max-sm:border-border max-sm:pb-6 sm:w-[160px] sm:border-r sm:border-border">
         <div className="flex items-baseline gap-1">
-          <span className="font-cta text-5xl font-semibold leading-none text-[var(--bb-text-primary)]">
+          <span className="font-cta text-display font-semibold leading-none text-[var(--bb-text-primary)]">
             {avg.toFixed(1)}
           </span>
           <span className="text-caption text-muted-foreground">/5</span>
@@ -259,13 +268,56 @@ function ReviewComment({ text }: { text: string }) {
   );
 }
 
+// Lưới ảnh thực tế của khách: thumbnail vuông, bấm để phóng to trong dialog
+// (REVIEW_RULE_005). Ảnh đã được duyệt cùng review nên chỉ render khi review hiển thị.
+function ReviewPhotos({ photos, authorName }: { photos: string[]; authorName: string }) {
+  const t = useTranslations("Product.reviews");
+  const [active, setActive] = useState<number | null>(null);
+  const open = active !== null;
+  const altFor = (i: number) => t("photoAlt", { name: authorName, index: i + 1 });
+
+  return (
+    <>
+      <ul className="mt-3 flex flex-wrap gap-2 p-0 m-0 list-none" aria-label={t("photosLabel")}>
+        {photos.map((url, i) => (
+          <li key={`${url}-${i}`}>
+            <button
+              type="button"
+              onClick={() => setActive(i)}
+              className="block h-16 w-16 overflow-hidden border border-border bg-muted outline-none transition-opacity duration-[var(--bb-duration-fast)] hover:opacity-90 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={url} alt={altFor(i)} loading="lazy" className="h-full w-full object-cover" />
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      <Dialog open={open} onOpenChange={(next) => !next && setActive(null)}>
+        <DialogContent className="max-w-3xl p-2">
+          <DialogTitle className="sr-only">{t("photosLabel")}</DialogTitle>
+          {open && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={photos[active]}
+              alt={altFor(active)}
+              className="mx-auto max-h-[80vh] w-auto object-contain"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
 function ReviewCard({ review }: { review: Review }) {
   const initial = review.authorName.trim().charAt(0).toUpperCase() || "?";
+  const photos = review.photos ?? [];
   return (
     <li className="flex gap-4 border-b border-border py-5 first:pt-0">
       <span
         aria-hidden="true"
-        className="flex h-10 w-10 shrink-0 items-center justify-center bg-muted font-body text-lg font-semibold text-[var(--bb-text-primary)]"
+        className="flex h-10 w-10 shrink-0 items-center justify-center bg-muted font-body text-ui-18 font-semibold text-[var(--bb-text-primary)]"
       >
         {initial}
       </span>
@@ -279,7 +331,13 @@ function ReviewCard({ review }: { review: Review }) {
           </time>
         </div>
         <StarRow rating={review.rating} />
+        {review.title && (
+          <p className="mt-1.5 mb-0 font-semibold text-[var(--bb-text-primary)] [overflow-wrap:anywhere]">
+            {review.title}
+          </p>
+        )}
         {review.comment && <ReviewComment text={review.comment} />}
+        {photos.length > 0 && <ReviewPhotos photos={photos} authorName={review.authorName} />}
       </div>
     </li>
   );
@@ -332,7 +390,7 @@ function ReviewsPlaceholder({
         <StarIcon filled className="h-8 w-8" />
       </span>
       <div className="flex flex-col gap-1.5">
-        <p className="m-0 font-cta text-lg font-semibold uppercase tracking-wide text-[var(--bb-text-primary)]">
+        <p className="m-0 font-cta text-h4 font-semibold uppercase tracking-wide text-[var(--bb-text-primary)]">
           {title}
         </p>
         {description && <p className="m-0 text-caption text-muted-foreground">{description}</p>}
@@ -342,16 +400,100 @@ function ReviewsPlaceholder({
   );
 }
 
-function WriteReviewForm({ productId, onSuccess }: { productId: string; onSuccess: () => void }) {
+type PhotoItem = {
+  id: string;
+  previewUrl: string;
+  url?: string;
+  status: "uploading" | "done" | "error";
+};
+
+export function WriteReviewForm({
+  productId,
+  onSuccess,
+  variant = "card",
+}: {
+  productId: string;
+  onSuccess: () => void;
+  // "card" = khung viền + tiêu đề riêng (cũ, dùng inline). "dialog" = bỏ khung +
+  // tiêu đề vì DialogTitle của modal đã là tiêu đề. Hiện chỉ modal dùng form này.
+  variant?: "card" | "dialog";
+}) {
   const t = useTranslations("Product.reviews");
+  const isDialog = variant === "dialog";
   const [rating, setRating] = useState(0);
   const [authorName, setAuthorName] = useState("");
   const [authorEmail, setAuthorEmail] = useState("");
+  const [title, setTitle] = useState("");
   const [comment, setComment] = useState("");
+  const [photos, setPhotos] = useState<PhotoItem[]>([]);
+  const [photoError, setPhotoError] = useState("");
   const [website, setWebsite] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const uploading = photos.some((p) => p.status === "uploading");
+
+  async function uploadOne(file: File) {
+    const id =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random()}`;
+    const previewUrl = URL.createObjectURL(file);
+    setPhotos((prev) => [...prev, { id, previewUrl, status: "uploading" }]);
+    try {
+      const form = new FormData();
+      form.set("file", file);
+      const res = await fetch(`/api/products/${productId}/reviews/photos/`, {
+        method: "POST",
+        body: form,
+      });
+      const json = (await res.json().catch(() => null)) as { url?: string; error?: string } | null;
+      if (!res.ok || !json?.url) {
+        setPhotos((prev) => prev.map((p) => (p.id === id ? { ...p, status: "error" } : p)));
+        setPhotoError(json?.error ?? t("errorPhotoUpload"));
+        return;
+      }
+      setPhotos((prev) => prev.map((p) => (p.id === id ? { ...p, status: "done", url: json.url } : p)));
+    } catch {
+      setPhotos((prev) => prev.map((p) => (p.id === id ? { ...p, status: "error" } : p)));
+      setPhotoError(t("errorPhotoUpload"));
+    }
+  }
+
+  function handleFiles(fileList: FileList | null) {
+    if (!fileList || fileList.length === 0) return;
+    setPhotoError("");
+    const remaining = MAX_PHOTOS - photos.length;
+    if (remaining <= 0) {
+      setPhotoError(t("errorPhotoCount", { count: MAX_PHOTOS }));
+      return;
+    }
+    const picked = Array.from(fileList);
+    if (picked.length > remaining) {
+      setPhotoError(t("errorPhotoCount", { count: MAX_PHOTOS }));
+    }
+    for (const file of picked.slice(0, remaining)) {
+      if (!ALLOWED_PHOTO_TYPES.has(file.type)) {
+        setPhotoError(t("errorPhotoType"));
+        continue;
+      }
+      if (file.size > MAX_PHOTO_BYTES) {
+        setPhotoError(t("errorPhotoSize"));
+        continue;
+      }
+      void uploadOne(file);
+    }
+  }
+
+  function removePhoto(id: string) {
+    setPhotos((prev) => {
+      const target = prev.find((p) => p.id === id);
+      if (target) URL.revokeObjectURL(target.previewUrl);
+      return prev.filter((p) => p.id !== id);
+    });
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -366,13 +508,18 @@ function WriteReviewForm({ productId, onSuccess }: { productId: string; onSucces
     setError("");
     setSubmitting(true);
     try {
+      const photoUrls = photos
+        .filter((p) => p.status === "done" && p.url)
+        .map((p) => p.url as string);
       const res = await fetch(`/api/products/${productId}/reviews/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           authorName: authorName.trim(),
           rating,
+          title: title.trim(),
           comment: comment.trim(),
+          photos: photoUrls,
           website,
         }),
       });
@@ -397,10 +544,12 @@ function WriteReviewForm({ productId, onSuccess }: { productId: string; onSucces
   }
 
   return (
-    <div className="border border-border p-6">
-      <h3 className="m-0 mb-5 font-body text-lg font-semibold uppercase tracking-wide text-[var(--bb-text-primary)]">
-        {t("formTitle")}
-      </h3>
+    <div className={cn(isDialog ? "p-5" : "border border-border p-6")}>
+      {!isDialog && (
+        <h3 className="m-0 mb-5 font-body text-h4 font-semibold uppercase tracking-wide text-[var(--bb-text-primary)]">
+          {t("formTitle")}
+        </h3>
+      )}
 
       {done ? (
         <p className="m-0 border border-border bg-muted px-4 py-3 text-caption text-[var(--bb-text-primary)]">
@@ -464,6 +613,24 @@ function WriteReviewForm({ productId, onSuccess }: { productId: string; onSucces
 
           <div className="flex flex-col gap-1.5">
             <Label
+              htmlFor="review-title"
+              className="text-caption font-semibold text-[var(--bb-text-primary)]"
+            >
+              {t("formTitleField")}
+            </Label>
+            <Input
+              id="review-title"
+              name="title"
+              type="text"
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder={t("formTitlePlaceholder")}
+              maxLength={160}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label
               htmlFor="review-comment"
               className="text-caption font-semibold text-[var(--bb-text-primary)]"
             >
@@ -480,9 +647,71 @@ function WriteReviewForm({ productId, onSuccess }: { productId: string; onSucces
             />
           </div>
 
+          <div className="flex flex-col gap-1.5">
+            <Label className="text-caption font-semibold text-[var(--bb-text-primary)]">
+              {t("formPhotos")}
+            </Label>
+            <p className="m-0 text-caption text-muted-foreground">{t("formPhotosHint")}</p>
+
+            {photos.length > 0 && (
+              <ul className="mt-1 flex flex-wrap gap-2 p-0 m-0 list-none">
+                {photos.map((photo) => (
+                  <li key={photo.id} className="relative h-16 w-16">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={photo.url ?? photo.previewUrl}
+                      alt=""
+                      className={cn(
+                        "h-full w-full border border-border object-cover",
+                        photo.status !== "done" && "opacity-50",
+                      )}
+                    />
+                    {photo.status === "uploading" && (
+                      <span className="absolute inset-0 flex items-center justify-center bg-background/50 text-caption text-muted-foreground">
+                        …
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => removePhoto(photo.id)}
+                      aria-label={t("removePhoto")}
+                      className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center bg-[var(--bb-text-primary)] text-ui-11 leading-none text-white outline-none focus-visible:outline-2 focus-visible:outline-ring"
+                    >
+                      ×
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              hidden
+              onChange={(event) => {
+                handleFiles(event.target.files);
+                event.target.value = "";
+              }}
+            />
+            {photos.length < MAX_PHOTOS && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="mt-1 w-fit"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {t("addPhoto")}
+              </Button>
+            )}
+            {photoError && <p className="m-0 text-caption text-brand">{photoError}</p>}
+          </div>
+
           {error && <p className="m-0 text-caption text-brand">{error}</p>}
 
-          <Button type="submit" disabled={submitting} className="w-full">
+          <Button type="submit" disabled={submitting || uploading} className="w-full">
             {submitting ? t("submitting") : t("submit")}
           </Button>
         </form>
@@ -526,7 +755,6 @@ async function fetchReviewsPage(
 
 export function ReviewsSection({ productId, embedded = false }: ReviewsSectionProps) {
   const t = useTranslations("Product.reviews");
-  const queryClient = useQueryClient();
   const sectionRef = useRef<HTMLElement>(null);
   const [ratingFilter, setRatingFilter] = useState<number | null>(null);
   const [sort, setSort] = useState<SortKey>("newest");
@@ -568,13 +796,6 @@ export function ReviewsSection({ productId, embedded = false }: ReviewsSectionPr
     setPage(1);
   };
 
-  const resetToFirstPage = () => {
-    setPage(1);
-    // Refetch every cached page of this product (any filter/sort) so a freshly
-    // approved review shows up wherever the customer browses next.
-    void queryClient.invalidateQueries({ queryKey: ["product-reviews", productId] });
-  };
-
   return (
     <section
       ref={sectionRef}
@@ -586,16 +807,17 @@ export function ReviewsSection({ productId, embedded = false }: ReviewsSectionPr
     >
       {!embedded && (
         <div className="mb-10 text-center max-md:mb-8">
-          <h2 className="m-0 font-cta text-ui-35 font-semibold uppercase leading-[4.286rem] tracking-[0] text-black max-md:text-2xl max-md:leading-[1.25]">
+          <h2 className="m-0 font-body text-ui-35 font-semibold uppercase leading-[4.286rem] tracking-[0] text-black max-md:text-ui-24 max-md:leading-[1.25]">
             {total > 0 ? t("titleWithCount", { count: total }) : t("title")}
           </h2>
           <p className="m-0 mt-1 text-caption text-muted-foreground">{t("subtitle")}</p>
         </div>
       )}
 
-      <div className="flex gap-10 max-md:flex-col max-md:gap-8 max-[1024px]:gap-8">
-        <div className="min-w-0 flex-1">
-          {isLoading ? (
+      {/* Khối đánh giá CHỈ để XEM — form viết đánh giá đã chuyển sang modal
+          (WriteReviewDialog). Các nút "Viết đánh giá" dưới đây chỉ mở modal đó. */}
+      <div className="min-w-0">
+        {isLoading ? (
             <ReviewsLoading />
           ) : isError ? (
             <ReviewsPlaceholder
@@ -619,6 +841,9 @@ export function ReviewsSection({ productId, embedded = false }: ReviewsSectionPr
 
               <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex min-h-[36px] items-center gap-2">
+                  <Button type="button" variant="outline" size="sm" onClick={openWriteReviewDialog}>
+                    {t("writeButton")}
+                  </Button>
                   {ratingFilter !== null && (
                     <>
                       <span className="text-caption text-muted-foreground">
@@ -668,13 +893,17 @@ export function ReviewsSection({ productId, embedded = false }: ReviewsSectionPr
               <PaginationNav page={page} totalPages={totalPages} onPageChange={goToPage} />
             </>
           ) : (
-            <ReviewsPlaceholder fillHeight title={t("noReviews")} description={t("beFirst")} />
+            <ReviewsPlaceholder
+              fillHeight
+              title={t("noReviews")}
+              description={t("beFirst")}
+              action={
+                <Button type="button" variant="outline" size="sm" onClick={openWriteReviewDialog}>
+                  {t("writeButton")}
+                </Button>
+              }
+            />
           )}
-        </div>
-
-        <div className="w-[340px] shrink-0 self-start max-md:w-full md:sticky md:top-[calc(var(--bb-header-height)_+_1.5rem)] max-[1024px]:w-[300px]">
-          <WriteReviewForm productId={productId} onSuccess={resetToFirstPage} />
-        </div>
       </div>
     </section>
   );

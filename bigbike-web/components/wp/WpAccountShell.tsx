@@ -21,7 +21,7 @@ export function WpAccountShell({
     <>
       <WpThemeStylesheet href="/wp-content/themes/bigbike/css/wp-theme-static.css?v=1" />
 
-      <div id="main-content">
+      <div id="main-content" className="bb-wp-account-page">
         <div className="container">
           <WpAccountNav loginRedirect={loginRedirect}>{children}</WpAccountNav>
         </div>

@@ -3,6 +3,7 @@ package com.bigbike.bigbike_backend.persistence.repository.catalog;
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import jakarta.persistence.LockModeType;
@@ -67,4 +68,20 @@ public interface ProductVariantJpaRepository extends JpaRepository<ProductVarian
     long countByStockStateIn(@Param("states") List<ProductStockState> states);
 
     boolean existsByProduct_Id(String productId);
+
+    /**
+     * SKU uniqueness pre-check (PRODUCT_RULE_SKU_001). Returns the lower-cased SKUs from
+     * {@code skusLower} that are already held by a variant of a DIFFERENT product, so the
+     * mutation layer can flag duplicates with a friendly error before hitting the unique
+     * index. Pass {@code productId = null} on create to compare against every product.
+     */
+    @Query("""
+        SELECT LOWER(CAST(v.sku AS string)) FROM ProductVariantEntity v
+        WHERE LOWER(CAST(v.sku AS string)) IN :skusLower
+          AND (:productId IS NULL OR v.product.id <> :productId)
+        """)
+    List<String> findTakenSkusLower(
+            @Param("skusLower") Collection<String> skusLower,
+            @Param("productId") String productId
+    );
 }

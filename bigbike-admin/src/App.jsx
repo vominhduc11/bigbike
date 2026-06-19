@@ -1,8 +1,8 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  Activity, AlignLeft, ArrowRightLeft, Award, BarChart2, FileText, Hash, Image, KeyRound, LayoutDashboard,
-  Package, RotateCcw, Settings, Shield, ShieldCheck, ShoppingCart, Star, Store, Tag, Ticket,
+  Activity, AlignLeft, ArrowRightLeft, Award, BarChart2, BookOpen, FileText, Hash, Image, KeyRound, LayoutDashboard,
+  Package, Phone, RotateCcw, Settings, Shield, ShieldCheck, ShoppingCart, Star, Store, Tag, Ticket,
   Truck, Users, Wallet,
 } from 'lucide-react'
 import { AdminShell } from './components/AdminShell'
@@ -73,6 +73,8 @@ const WarrantyListScreen     = lazyScreen(() => import('./screens/WarrantyListSc
 const SerialListScreen       = lazyScreen(() => import('./screens/SerialListScreen'),       'SerialListScreen')
 const HomeHighlightsScreen       = lazyScreen(() => import('./screens/HomeHighlightsScreen'),       'HomeHighlightsScreen')
 const FeaturedProductsScreen     = lazyScreen(() => import('./screens/FeaturedProductsScreen'),     'FeaturedProductsScreen')
+const ContactPageBuilderScreen   = lazyScreen(() => import('./screens/ContactPageBuilderScreen'),   'ContactPageBuilderScreen')
+const GuidePageBuilderScreen      = lazyScreen(() => import('./screens/GuidePageBuilderScreen'),      'GuidePageBuilderScreen')
 
 // ── Grouped navigation definition ────────────────────────────────────────────
 const NAV_GROUP_DEFS = [
@@ -108,6 +110,8 @@ const NAV_GROUP_DEFS = [
     labelKey: 'nav.group.content',
     items: [
       { path: '/admin/content',    labelKey: 'nav.content',    permission: 'content.read',   icon: FileText },
+      { path: '/admin/contact-page', labelKey: 'nav.contactPage',  permission: 'content.read',      icon: Phone },
+      { path: '/admin/guide-page',   labelKey: 'nav.guidePage',    permission: 'content.read',      icon: BookOpen },
       { path: '/admin/banners',      labelKey: 'nav.banners',      permission: 'settings.read',     icon: Image },
       { path: '/admin/sliders',      labelKey: 'nav.sliders',      permission: 'sliders.read',      icon: BarChart2 },
       { path: '/admin/home-videos',     labelKey: 'nav.homeVideos',       permission: 'home_videos.read',    icon: BarChart2 },
@@ -170,6 +174,9 @@ function parseRoute(pathname) {
 
   if (module === 'featured-products') return { kind: 'screen', name: 'featured-products' }
 
+  if (module === 'contact-page') return { kind: 'screen', name: 'contact-page' }
+  if (module === 'guide-page') return { kind: 'screen', name: 'guide-page' }
+
   if (module === 'content' && !id) return { kind: 'screen', name: 'content-list' }
   if (module === 'content' && id && sub === 'new') return { kind: 'screen', name: 'content-create', contentType: id.toUpperCase() === 'PAGES' || id.toUpperCase() === 'PAGE' ? 'PAGE' : 'ARTICLE' }
   if (module === 'content' && id && sub) return { kind: 'screen', name: 'content-detail', contentType: id.toUpperCase() === 'PAGES' || id.toUpperCase() === 'PAGE' ? 'PAGE' : 'ARTICLE', contentId: sub }
@@ -224,6 +231,8 @@ function routePermission(routeName) {
     case 'content-create':               return 'content.update'
     case 'content-list':
     case 'content-detail':               return 'content.read'
+    case 'contact-page':                 return 'content.read'
+    case 'guide-page':                   return 'content.read'
     case 'orders-list':
     case 'order-detail':                 return 'orders.read'
     case 'customers-list':
@@ -415,6 +424,10 @@ function AdminApp() {
       screen = <ContentDetailScreen key={`content-create:${route.contentType}`} contentType={route.contentType} contentId={null} isCreate navigate={navigate} canUpdate={hasPermission('content.update')} />; break
     case 'content-detail':
       screen = <ContentDetailScreen key={`content:${route.contentType}:${route.contentId}`} contentType={route.contentType} contentId={route.contentId} navigate={navigate} canUpdate={hasPermission('content.update')} />; break
+    case 'contact-page':
+      screen = <ContactPageBuilderScreen canUpdate={hasPermission('content.update')} />; break
+    case 'guide-page':
+      screen = <GuidePageBuilderScreen canUpdate={hasPermission('content.update')} />; break
     case 'orders-list':
       screen = <OrderListScreen navigate={navigate} />; break
     case 'order-detail':

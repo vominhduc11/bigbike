@@ -18,12 +18,12 @@
 
 | Module | Surface | Current implementation | Status | Evidence |
 |---|---|---|---|---|
-| Catalog admin | admin, backend | Product/category/brand CRUD and related reads | `CONFIRMED_FROM_CODE` | `AdminCatalogController.java`, admin routes |
+| Catalog admin | admin, backend | Product/category/brand CRUD and related reads. PDP authoring (V229–V231): mô tả dạng khối song ngữ (Việt + Anh đều dùng trình dựng khối), thông số "đưa lên ô nổi bật" (tối đa 4), và **quản lý tab PDP theo từng sản phẩm** (ẩn/hiện, đổi thứ tự, đổi tên, thêm tab tự do dựng bằng khối) — xem trước bố cục thật qua live preview. | `CONFIRMED_FROM_CODE` | `AdminCatalogController.java`, `ProductDetailScreen.jsx`, `ProductTab`/`ProductTabsConverter`, migrations `V229`–`V231` |
 | Order admin | admin, backend | Order list/detail/status/payment/note workflows | `CONFIRMED_FROM_CODE` | `AdminOrderController.java`, admin app |
 | Customer admin | admin, backend | Customer list/detail/update | `CONFIRMED_FROM_CODE` | `AdminCustomerController.java` |
 | Media admin | admin, backend | Upload/list/detail/update/delete/restore media | `CONFIRMED_FROM_CODE` | `AdminMediaController.java`, `AdminMediaService.java` |
 | Settings admin | admin, backend | Site settings read/update | `CONFIRMED_FROM_CODE` | `AdminSettingsController.java`, tests |
-| Menu admin | admin, backend | Menu-item CRUD and reorder inside the three system slots (`primary`, `footer`, `guide`). Menu containers themselves are system-defined — admins cannot create new locations or delete the system slots. See `MENUS_SYSTEM_SLOT_FIX_REPORT.md`. | `CONFIRMED_FROM_CODE` | `AdminMenuController.java`, `MenuLocations.java`, `V84__seed_system_menu_slots.sql`, tests |
+| Menu admin | admin, backend | Menu-item CRUD and reorder inside the four system slots (`primary`, `footer`, `guide`, `policy`). The `policy` slot (V226) drives the `/chinh-sach` sidebar. Menu containers themselves are system-defined — admins cannot create new locations or delete the system slots. See `MENUS_SYSTEM_SLOT_FIX_REPORT.md`. | `CONFIRMED_FROM_CODE` | `AdminMenuController.java`, `MenuLocations.java`, `V84__seed_system_menu_slots.sql`, `V226__seed_policy_menu_slot.sql`, tests |
 | Coupon admin | admin, backend | Coupon CRUD and lifecycle management; coupon-gift bulk campaign (`POST /api/v1/admin/coupon-gifts/bulk` — creates one unique coupon per active customer with email, emails sent async). | `CONFIRMED_FROM_CODE` | `AdminCouponController.java`, `AdminCouponGiftController.java`, `AdminCouponGiftService.java`, tests |
 | Inventory admin | admin, backend | Inventory list, summary, movement list, manual adjustment, CSV export | `CONFIRMED_FROM_CODE` | `AdminInventoryController.java`, `AdminInventoryService.java` |
 | Returns admin | admin, backend | Return list/detail/status update | `CONFIRMED_FROM_CODE` | `AdminReturnController.java`, `Phase1LReturnsApiTest.java` |

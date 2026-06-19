@@ -263,6 +263,20 @@ function normalizeSpecification(input) {
   }
 }
 
+// "Specs Dashboard" — ô số liệu nổi bật dưới khu vực mua hàng (V235): số liệu + nhãn, song ngữ.
+function normalizeSpecStat(input) {
+  if (!input || typeof input !== 'object') return undefined
+  const value = toTrimmedString(input.value)
+  const label = toTrimmedString(input.label)
+  if (!value || !label) return undefined
+  return {
+    value,
+    label,
+    valueEn: toTrimmedString(input.valueEn) || undefined,
+    labelEn: toTrimmedString(input.labelEn) || undefined,
+  }
+}
+
 function normalizeFaq(input) {
   if (!input || typeof input !== 'object') return undefined
   const question = toTrimmedString(input.question)
@@ -273,6 +287,20 @@ function normalizeFaq(input) {
     answer,
     questionEn: toTrimmedString(input.questionEn) || undefined,
     answerEn: toTrimmedString(input.answerEn) || undefined,
+  }
+}
+
+// Một dòng cam kết theo từng sản phẩm (V232): icon (key) + tiêu đề + mô tả, song ngữ.
+function normalizeCommitment(input) {
+  if (!input || typeof input !== 'object') return undefined
+  const title = toTrimmedString(input.title)
+  if (!title) return undefined
+  return {
+    icon: toTrimmedString(input.icon) || 'shield-check',
+    title,
+    subtitle: toTrimmedString(input.subtitle) || undefined,
+    titleEn: toTrimmedString(input.titleEn) || undefined,
+    subtitleEn: toTrimmedString(input.subtitleEn) || undefined,
   }
 }
 
@@ -290,8 +318,12 @@ function normalizeProductTranslations(input) {
     contentBottom: toTrimmedString(source.contentBottom) || undefined,
     promotionContent: toTrimmedString(source.promotionContent) || undefined,
     installationGuide: toTrimmedString(source.installationGuide) || undefined,
+    quickAnswerSummary: toTrimmedString(source.quickAnswerSummary) || undefined,
+    suitabilityAdvisory: toTrimmedString(source.suitabilityAdvisory) || undefined,
     seoTitle: toTrimmedString(source.seoTitle) || undefined,
     seoDescription: toTrimmedString(source.seoDescription) || undefined,
+    // Khối mô tả tiếng Anh (V229) — giữ nguyên mảng để admin BlockEditor (EN) hydrate.
+    descriptionBlocks: Array.isArray(source.descriptionBlocks) ? source.descriptionBlocks : null,
   }
 }
 
@@ -343,8 +375,9 @@ export function normalizeProduct(input) {
     warrantyMonths: Number.isFinite(source.warrantyMonths) ? Number(source.warrantyMonths) : null,
     warrantyScope: toTrimmedString(source.warrantyScope) || undefined,
     originBrandCountry: toTrimmedString(source.originBrandCountry) || undefined,
-    originManufactureCountry: toTrimmedString(source.originManufactureCountry) || undefined,
     sizeGuide: toTrimmedString(source.sizeGuide) || undefined,
+    quickAnswerSummary: toTrimmedString(source.quickAnswerSummary) || undefined,
+    suitabilityAdvisory: toTrimmedString(source.suitabilityAdvisory) || undefined,
     positiveNotes: Array.isArray(source.positiveNotes)
       ? source.positiveNotes
           .map((h) => (h && typeof h === 'object'
@@ -377,13 +410,43 @@ export function normalizeProduct(input) {
     specifications: Array.isArray(source.specifications)
       ? source.specifications.map(normalizeSpecification).filter(Boolean)
       : [],
+    // "Specs Dashboard" — ô số liệu nổi bật dưới khu vực mua hàng (V235), tối đa 4.
+    specStats: Array.isArray(source.specStats)
+      ? source.specStats.map(normalizeSpecStat).filter(Boolean)
+      : [],
     faqs: Array.isArray(source.faqs)
       ? source.faqs.map(normalizeFaq).filter(Boolean)
+      : [],
+    commitments: Array.isArray(source.commitments)
+      ? source.commitments.map(normalizeCommitment).filter(Boolean)
+      : [],
+    // Dải tin cậy trên tên sản phẩm (V233) — danh sách badge {content, contentEn} per-product.
+    // PHẢI surface ở đây, nếu không form nạp undefined → mở SP trống → Lưu gửi [] → xoá mất dữ liệu.
+    trustBadges: Array.isArray(source.trustBadges)
+      ? source.trustBadges
+          .map((b) => (b && typeof b === 'object'
+            ? { content: toTrimmedString(b.content), contentEn: toTrimmedString(b.contentEn) || undefined }
+            : null))
+          .filter((b) => b && b.content)
       : [],
     // Admin-curated related products — list-view refs used to render product
     // chips in the editor and to power the PDP "Sản phẩm liên quan" section.
     relatedProducts: Array.isArray(source.relatedProducts)
       ? source.relatedProducts
+          .map((p) => (p && typeof p === 'object'
+            ? {
+                id: toTrimmedString(p.id),
+                name: toTrimmedString(p.name),
+                slug: toTrimmedString(p.slug),
+                image: normalizeImageAsset(p.image),
+              }
+            : null))
+          .filter((p) => p && p.id)
+      : [],
+    // Admin-curated accessory products ("Phụ kiện" — sản phẩm bán kèm) — list-view
+    // refs used to render product chips in the editor and the PDP "Phụ kiện" section.
+    accessoryProducts: Array.isArray(source.accessoryProducts)
+      ? source.accessoryProducts
           .map((p) => (p && typeof p === 'object'
             ? {
                 id: toTrimmedString(p.id),
@@ -406,6 +469,8 @@ export function normalizeProduct(input) {
     // the EN language tab; individual fields are undefined when not translated.
     translations: { en: normalizeProductTranslations(source.translations) },
     descriptionBlocks: Array.isArray(source.descriptionBlocks) ? source.descriptionBlocks : null,
+    // Cấu hình tab PDP theo sản phẩm (V231) — giữ nguyên để admin form hydrate; null = tab mặc định.
+    tabs: Array.isArray(source.tabs) ? source.tabs : null,
     createdAt: toTrimmedString(source.createdAt) || undefined,
     updatedAt: toTrimmedString(source.updatedAt) || undefined,
   }

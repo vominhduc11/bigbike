@@ -1,10 +1,9 @@
 "use client";
 
+import type { ReactNode } from "react";
 import Link from "next/link";
-import { Minus, Plus } from "lucide-react";
 
 import { WpPurchaseSection } from "@/components/wp/WpPurchaseSection";
-import { WpProductTabs, type WpTab } from "@/components/wp/WpProductTabs";
 import { WpThemeStylesheet } from "@/components/wp/WpThemeStylesheet";
 import { LText, LocalizedContentProvider } from "@/components/i18n/LocalizedContent";
 import { Tr } from "@/components/i18n/Tr";
@@ -12,19 +11,28 @@ import {
   ProductContentBottom,
   ProductDescriptionTab,
   ProductFaqs,
-  ProductInstallationTab,
+  ProductInstallationGuide,
+  ProductProsCons,
   ProductSpecsTable,
+  ProductSuitability,
 } from "@/components/catalog/ProductLocalizedParts";
+import { ProductDescriptionBlocks } from "@/components/catalog/ProductDescriptionBlocks";
+import { ProductTabsSection, type BuiltinTab } from "@/components/catalog/ProductTabsSection";
+import { FeaturedSpecsBar } from "@/components/catalog/FeaturedSpecsBar";
 import { ProductSwiper } from "@/components/catalog/ProductSwiper";
 import { ReadingProgressBar } from "@/components/catalog/ReadingProgressBar";
 import { ReviewsSection } from "@/components/catalog/ReviewsSection";
+import { WriteReviewDialog } from "@/components/catalog/WriteReviewDialog";
 import { RecentlyViewedSection } from "@/components/catalog/RecentlyViewedSection";
 import { ProductContactCta } from "@/components/catalog/ProductContactCta";
 import type { RecentProduct } from "@/lib/recently-viewed";
-import type { Product, PublicSiteSetting } from "@/lib/contracts/public";
-import { safeArray, safeText } from "@/lib/utils/format";
+import type { DescriptionBlock, Product, PublicSiteSetting } from "@/lib/contracts/public";
+import { safeArray, safeText, formatVnd } from "@/lib/utils/format";
 import { pickSetting } from "@/lib/utils/settings";
 import { sanitizeRichHtml } from "@/lib/utils/html";
+import { hasSuitabilityContent } from "@/lib/utils/suitability";
+import { hasInstallationContent } from "@/lib/utils/installation";
+import { parseSectionVisibility, isSectionVisible } from "@/lib/utils/section-visibility";
 import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 
 type ProductViewProps = {
@@ -47,8 +55,36 @@ type ProductViewProps = {
  * customers see. SEO concerns (metadata, JSON-LD) stay in the server page; this
  * component owns only the visible body.
  */
+
+/**
+ * Tiêu đề khối nội dung PDP (desktop) — eyebrow đỏ nhỏ + H2 in hoa, đậm, lớn.
+ * Thống nhất nhịp tiêu đề mọi section (theo mockup PDP), dùng token/Arial — KHÔNG
+ * hardcode màu/font. `kicker` tùy chọn; `id` để mobile-anchor/scroll trỏ tới.
+ */
+function PdpSectionHeading({
+  kicker,
+  title,
+  id,
+}: {
+  kicker?: ReactNode;
+  title: ReactNode;
+  id?: string;
+}) {
+  return (
+    <div id={id} className="pdp-section-head scroll-mt-[var(--bb-header-height)]">
+      {kicker ? <p className="kicker">{kicker}</p> : null}
+      <h2 className="title">{title}</h2>
+    </div>
+  );
+}
+
 export function ProductView({ product, settings, previewMode = false }: ProductViewProps) {
   const name = safeText(product.name, "Sản phẩm");
+
+  // "Hiển thị trên web" (V245) — admin bật/tắt từng section. `vis(key)` = không bị tắt (map[key] !== false);
+  // section vẫn cần CÓ nội dung mới hiện. Sản phẩm cũ (map rỗng) → vis luôn true → giữ hành vi legacy.
+  const sectionVis = parseSectionVisibility(product.sectionVisibility);
+  const vis = (key: string) => isSectionVisible(sectionVis, key);
 
   // Business NAP — same key set as footer / contact page so the bottom contact
   // band shows site-wide values (consistent local-SEO). Empty array in preview.
@@ -56,19 +92,29 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
   const contactAddress = pickSetting(settings, ["contact_address", "address"]);
   const hotline = pickSetting(settings, ["hotline", "phone"]);
   const zaloUrl = pickSetting(settings, ["zalo_url"]);
+  // Khối cam kết dưới nút mua hàng (V232) + dải tin cậy trên tên sản phẩm (V233) giờ quản theo
+  // TỪNG sản phẩm (product.commitments / product.trustBadges) — WpPurchaseSection tự đọc thẳng từ
+  // product, không còn lấy từ settings.
   const gallery = safeArray(product.gallery);
+  const descriptionBlocks = safeArray(product.descriptionBlocks) as DescriptionBlock[];
   const specs = safeArray(product.specifications);
+  const specStats = safeArray(product.specStats);
   const faqs = safeArray(product.faqs);
   const videos = safeArray(product.videos);
   const related = safeArray(product.relatedProducts).filter((p) => p.id !== product.id);
+  const accessories = safeArray(product.accessoryProducts).filter((p) => p.id !== product.id);
   const rating = product.rating ?? null;
   const ratingCount = product.ratingCount ?? null;
 
   const descriptionHtml = product.description ? sanitizeRichHtml(product.description) : "";
-  const shortDescriptionHtml = product.shortDescription
-    ? sanitizeRichHtml(product.shortDescription)
-    : "";
   const contentBottomHtml = product.contentBottom ? sanitizeRichHtml(product.contentBottom) : "";
+
+  // Quick Answer (V236) — đoạn AIO 40–60 từ, blockquote đặt TRƯỚC H2 đầu tiên.
+  const quickAnswer = safeText(product.quickAnswerSummary, "");
+  // "Phù hợp với ai" (V240) — JSON array các thẻ tư vấn; parse bản vi để gate hiển thị (server).
+  // Mỗi gate gộp thêm vis(key): admin tắt → coi như không có nội dung (ẩn cả desktop lẫn widget tab mobile).
+  const hasSuitability = hasSuitabilityContent(product.suitabilityAdvisory) && vis("suitability");
+  const hasDescription = (descriptionBlocks.length > 0 || Boolean(descriptionHtml)) && vis("description");
 
   const positiveNotes = safeArray(product.positiveNotes)
     .map((n) => safeText(n.content, ""))
@@ -78,22 +124,10 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
     .filter(Boolean);
   const warrantyMonths = product.warrantyMonths ?? null;
   const warrantyScope = safeText(product.warrantyScope, "");
-  const originBrandCountry = safeText(product.originBrandCountry, "");
-  const originManufactureCountry = safeText(product.originManufactureCountry, "");
-  const weightGrams = product.weightGrams ?? null;
   const sizeGuideHtml = product.sizeGuide ? sanitizeRichHtml(product.sizeGuide) : "";
-  const promotionContentHtml = product.promotionContent
-    ? sanitizeRichHtml(product.promotionContent)
-    : "";
-  const installationGuideHtml = product.installationGuide
-    ? sanitizeRichHtml(product.installationGuide)
-    : "";
-  const hasTrustInfo =
-    warrantyMonths != null ||
-    Boolean(warrantyScope) ||
-    Boolean(originBrandCountry) ||
-    Boolean(originManufactureCountry) ||
-    weightGrams != null;
+  // "Hướng dẫn lắp đặt" (V242) — JSON object các bước; chuỗi gốc truyền thẳng cho
+  // ProductInstallationGuide parse + render (gate hiển thị qua hasInstallationContent).
+  const installationJson = product.installationGuide ?? null;
 
   const brand = product.brand ?? null;
   const category = product.category?.slug === "chua-phan-loai" ? null : (product.category ?? null);
@@ -109,46 +143,137 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
     ratingCount: product.ratingCount ?? null,
   };
 
-  // Thứ tự tab: Mô tả → Đánh giá → Thông số → Lắp đặt → FAQ.
-  // Đánh giá = một tab thật (không còn là section riêng cuộn xuống); bỏ qua trong
-  // preview vì bản nháp chưa có id thật để tải. Thứ tự mảng này quyết định cả thứ
-  // tự hiển thị thật (mobile xếp dọc) lẫn thứ tự thanh anchor nav nổi.
-  const tabs: WpTab[] = [
-    {
+  // Nhóm "Thông số" (V236 restructure): Mô tả/Tính năng kéo RA thành khối full-trang (#4); Đánh giá
+  // tách riêng sau FAQ (#10). Bảng size + Thông số + Lắp đặt + FAQ:
+  //   • DESKTOP (md+) → các KHỐI XẾP CHỒNG riêng (đúng mockup desktop).
+  //   • MOBILE (max-md) → gói lại trong widget tab "như ban đầu" (WpProductTabs) cho dễ điều hướng.
+  // Hai bản cùng nội dung, ẩn/hiện theo breakpoint. Tự ẩn từng mục khi rỗng.
+  const hasInstallation = hasInstallationContent(installationJson) && vis("installation");
+
+  // Gate có-nội-dung + đã-bật cho các section còn lại (dùng chung desktop + widget tab mobile).
+  const showSpecs = specs.length > 0 && vis("specifications");
+  const showFaqs = faqs.length > 0 && vis("faqs");
+  const showSize = Boolean(sizeGuideHtml) && vis("sizeGuide");
+  const showRelated = related.length > 0 && vis("related");
+  const showAccessories = accessories.length > 0 && vis("accessories");
+  const showReviews = !previewMode && vis("reviews");
+
+  // Trust block "Mua tại BigBike.vn" (#11) — lưới ô số liệu thương mại. Giá/Kho/BH lấy từ sản phẩm;
+  // Giao/Đổi là chính sách shop (nhãn tĩnh i18n); Hotline/Địa chỉ từ site settings (rỗng trong preview).
+  const retailPrice = product.price?.retailPrice ?? null;
+  const stockStateKey = product.stockState ? `stockState.${product.stockState}` : null;
+  const trustItems: Array<{ key: string; labelKey: string; value: ReactNode }> = [];
+  if (retailPrice != null) {
+    trustItems.push({ key: "price", labelKey: "trustPrice", value: formatVnd(retailPrice) });
+  }
+  if (stockStateKey) {
+    trustItems.push({ key: "stock", labelKey: "trustStock", value: <Tr ns="Product" k={stockStateKey} /> });
+  }
+  if (warrantyMonths != null) {
+    trustItems.push({
+      key: "warranty",
+      labelKey: "warranty",
+      value: (
+        <>
+          {warrantyMonths} <Tr ns="Product" k="monthsUnit" />
+        </>
+      ),
+    });
+  } else if (warrantyScope) {
+    trustItems.push({ key: "warranty", labelKey: "warranty", value: warrantyScope });
+  }
+  trustItems.push({ key: "shipping", labelKey: "trustShipping", value: <Tr ns="Product" k="trustShippingValue" /> });
+  trustItems.push({ key: "exchange", labelKey: "trustExchange", value: <Tr ns="Product" k="trustExchangeValue" /> });
+  if (hotline) {
+    trustItems.push({ key: "hotline", labelKey: "trustHotline", value: hotline });
+  }
+  if (contactAddress) {
+    trustItems.push({ key: "address", labelKey: "trustAddress", value: contactAddress });
+  }
+  // Thẻ trust (chỉ lưới ô số liệu, KHÔNG tiêu đề bên trong). Tiêu đề mục được đặt NGOÀI thẻ:
+  //   • DESKTOP → qua <PdpSectionHeading> (eyebrow + 35px) như mọi mục khác (đồng bộ cỡ chữ).
+  //   • MOBILE → widget tab tự render nhãn "Mua tại BigBike" làm tiêu đề, nên thẻ không lặp lại.
+  // Tự ẩn khi rỗng.
+  const trustCard = trustItems.length > 0 && vis("trust") ? (
+    <div className="bg-secondary p-6 text-foreground">
+      <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {trustItems.map((item) => (
+          <div key={item.key} className="border border-border bg-background p-3">
+            <dd className="m-0 font-heading text-body font-semibold">{item.value}</dd>
+            <dt className="mt-1 text-overline uppercase tracking-wide text-muted-foreground">
+              <Tr ns="Product" k={item.labelKey} />
+            </dt>
+          </div>
+        ))}
+      </dl>
+    </div>
+  ) : null;
+
+  // Nội dung 3 khối Ưu/Nhược · Phù hợp với ai · Thông tin SP tách thành biến dùng chung cho cả
+  // bản DESKTOP (khối xếp chồng riêng) lẫn MOBILE (tab trong widget) — tránh trùng lặp markup.
+  const hasProsCons = (positiveNotes.length > 0 || negativeNotes.length > 0) && vis("prosCons");
+  const prosConsGrid = hasProsCons ? (
+    <ProductProsCons viPositive={positiveNotes} viNegative={negativeNotes} />
+  ) : null;
+
+  const suitabilityBody = hasSuitability ? (
+    <ProductSuitability viJson={product.suitabilityAdvisory ?? null} />
+  ) : null;
+
+  // MOBILE: gói TẤT CẢ nội dung giữa Quick Answer và Trust block vào MỘT widget tab (đủ bộ như user
+  // chốt). Thứ tự tab = đúng mạch desktop. Tự ẩn từng tab khi rỗng; reviews bỏ qua trong preview.
+  const specGroupBuiltins: Record<string, BuiltinTab> = {};
+  if (hasDescription) {
+    specGroupBuiltins.description = {
       id: "tab-description",
-      label: "Mô tả",
       labelKey: "description",
-      content: <ProductDescriptionTab viHtml={descriptionHtml} />,
-    },
-    ...(!previewMode
-      ? [
-          {
-            id: "reviews",
-            label: "Đánh giá",
-            labelKey: "reviews",
-            content: <ReviewsSection productId={product.id} embedded />,
-          } satisfies WpTab,
-        ]
-      : []),
-    {
-      id: "tab-more_infomation",
-      label: "Thông số",
-      labelKey: "specs",
-      content: <ProductSpecsTable viSpecs={specs} />,
-    },
-    {
+      content: (
+        <ProductDescriptionBlocks
+          blocks={descriptionBlocks}
+          fallback={<ProductDescriptionTab viHtml={descriptionHtml} />}
+        />
+      ),
+    };
+  }
+  if (prosConsGrid) {
+    specGroupBuiltins.prosCons = { id: "tab-pros-cons", labelKey: "prosCons", content: prosConsGrid };
+  }
+  if (suitabilityBody) {
+    specGroupBuiltins.suitability = { id: "tab-suitability", labelKey: "suitability", content: suitabilityBody };
+  }
+  if (showSize) {
+    specGroupBuiltins.size = {
+      id: "tab-size",
+      labelKey: "size",
+      content: <div className="wyswyg" dangerouslySetInnerHTML={{ __html: sizeGuideHtml }} />,
+    };
+  }
+  if (showSpecs) {
+    specGroupBuiltins.specs = { id: "tab-more_infomation", labelKey: "specs", content: <ProductSpecsTable viSpecs={specs} /> };
+  }
+  if (hasInstallation) {
+    specGroupBuiltins.installation = {
       id: "tab-installation",
-      label: "Lắp đặt",
       labelKey: "installation",
-      content: <ProductInstallationTab viHtml={installationGuideHtml} />,
-    },
-    {
-      id: "tab-faq",
-      label: "FAQ",
-      labelKey: "faqs",
-      content: <ProductFaqs viFaqs={faqs} />,
-    },
+      content: <ProductInstallationGuide viJson={installationJson} />,
+    };
+  }
+  if (showFaqs) {
+    specGroupBuiltins.faq = { id: "tab-faq", labelKey: "faqs", content: <ProductFaqs viFaqs={faqs} /> };
+  }
+  // Đánh giá là tab cuối (bỏ qua trong preview vì chưa có id sản phẩm). Panel mang id="reviews"
+  // để nút "Viết đánh giá đầu tiên" cuộn/nhảy tới đúng (xem scrollToReviews ở WpPurchaseSection).
+  if (showReviews) {
+    specGroupBuiltins.reviews = { id: "reviews", labelKey: "reviews", content: <ReviewsSection productId={product.id} embedded /> };
+  }
+  // Trust cũng là 1 tab trên mobile (user chốt) — tab cuối; desktop vẫn là khối riêng.
+  if (trustCard) {
+    specGroupBuiltins.trust = { id: "tab-trust", labelKey: "trust", content: trustCard };
+  }
+  const specGroupOrder = [
+    "description", "prosCons", "suitability", "size", "specs", "installation", "faq", "reviews", "trust",
   ];
+  const hasSpecGroup = Object.keys(specGroupBuiltins).length > 0;
 
   const inner = (
     <div id="main-content" className="bb-wp-pdp-page">
@@ -189,125 +314,196 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
             product={product}
             gallery={gallery}
             videos={videos}
-            shortDescriptionHtml={shortDescriptionHtml}
             rating={rating}
             ratingCount={ratingCount}
+            zaloUrl={zaloUrl || undefined}
             previewMode={previewMode}
           />
         </div>
 
-        {/* Khuyến mãi (admin nhập) — khối nổi bật ngay dưới khối mua hàng; chỉ render
-            khi có nội dung. Cùng vocabulary section/heading với các khối SEO khác. */}
-        {promotionContentHtml ? (
-          <section className="my-10 border border-brand/40 bg-brand/5 p-5">
-            <h2 className="mb-3 font-heading text-lg font-semibold uppercase text-brand">
-              <Tr ns="Product" k="promotion" />
-            </h2>
-            <div className="wyswyg" dangerouslySetInnerHTML={{ __html: promotionContentHtml }} />
+        {/* Modal viết đánh giá — mount MỘT lần cho cả PDP. Mọi nút "Viết đánh giá"
+            (khối mua hàng trên + khối đánh giá dưới) đều mở modal này thay vì cuộn
+            xuống form inline. Bỏ qua ở chế độ xem trước (sản phẩm nháp chưa có id). */}
+        {!previewMode && <WriteReviewDialog productId={product.id} />}
+
+        {/* #2 Specs Dashboard (V235) — tối đa 4 ô số liệu nổi bật ngay dưới khu vực mua hàng.
+            "Đòn chốt" bán hàng. Tự ẩn khi không có ô nào. */}
+        {vis("specStats") && <FeaturedSpecsBar stats={specStats} />}
+
+        {/* #3 Quick Answer (V236) — đoạn AIO 40–60 từ, blockquote đặt TRƯỚC mọi H2 để Google/AI
+            trích dẫn. Chỉ render khi admin có nhập và đã bật. */}
+        {quickAnswer && vis("quickAnswer") ? (
+          <section className="my-10">
+            <blockquote className="border-l-4 border-brand bg-brand-soft px-5 py-4 text-15 leading-relaxed text-foreground">
+              <LText field="quickAnswerSummary">{quickAnswer}</LText>
+            </blockquote>
           </section>
         ) : null}
 
-        {/* Ưu điểm & Nhược điểm (V175) — USP độc quyền của BigBike, đặt nổi bật ngay
-            dưới khối mua hàng. Đồng bộ schema positiveNotes/negativeNotes. */}
-        {(positiveNotes.length > 0 || negativeNotes.length > 0) && (
-          <section className="my-10 grid gap-6 md:grid-cols-2">
-            {positiveNotes.length > 0 && (
-              <div className="border border-border p-5">
-                <h2 className="mb-3 font-heading text-lg font-semibold uppercase"><Tr ns="Product" k="prosTitle" /></h2>
-                <ul className="flex flex-col gap-2">
-                  {positiveNotes.map((note, index) => (
-                    <li key={index} className="flex gap-2 text-foreground">
-                      <Plus className="mt-1 h-4 w-4 shrink-0 text-brand" aria-hidden />
-                      <span>{note}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {negativeNotes.length > 0 && (
-              <div className="border border-border p-5">
-                <h2 className="mb-3 font-heading text-lg font-semibold uppercase"><Tr ns="Product" k="consTitle" /></h2>
-                <ul className="flex flex-col gap-2">
-                  {negativeNotes.map((note, index) => (
-                    <li key={index} className="flex gap-2 text-muted-foreground">
-                      <Minus className="mt-1 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-                      <span>{note}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </section>
+        {/* MOBILE — widget tab "như ban đầu" (đủ bộ: Mô tả · Bảng size · Thông số · Lắp đặt · FAQ ·
+            Đánh giá). Đặt TRÊN mô tả. Chỉ hiện ở max-md; desktop dùng khối xếp chồng. */}
+        {hasSpecGroup && (
+          <div className="my-10 md:hidden">
+            <ProductTabsSection tabs={[]} builtins={specGroupBuiltins} defaultOrder={specGroupOrder} />
+          </div>
         )}
 
-        {/* Thông tin tin cậy (V175): bảo hành, xuất xứ, trọng lượng — dạng định nghĩa. */}
-        {hasTrustInfo && (
-          <section className="my-10">
-            <h2 className="mb-3 font-heading text-lg font-semibold uppercase"><Tr ns="Product" k="infoTitle" /></h2>
-            <dl className="grid gap-x-8 gap-y-2 sm:grid-cols-2">
-              {warrantyMonths != null && (
-                <div className="flex justify-between gap-4 border-b border-border py-2">
-                  <dt className="text-muted-foreground"><Tr ns="Product" k="warranty" /></dt>
-                  <dd className="font-medium text-right">{warrantyMonths} <Tr ns="Product" k="monthsUnit" /></dd>
-                </div>
-              )}
-              {weightGrams != null && (
-                <div className="flex justify-between gap-4 border-b border-border py-2">
-                  <dt className="text-muted-foreground"><Tr ns="Product" k="weight" /></dt>
-                  <dd className="font-medium text-right">{weightGrams.toLocaleString("vi-VN")} g</dd>
-                </div>
-              )}
-              {originBrandCountry && (
-                <div className="flex justify-between gap-4 border-b border-border py-2">
-                  <dt className="text-muted-foreground"><Tr ns="Product" k="brand" /></dt>
-                  <dd className="font-medium text-right">{originBrandCountry}</dd>
-                </div>
-              )}
-              {originManufactureCountry && (
-                <div className="flex justify-between gap-4 border-b border-border py-2">
-                  <dt className="text-muted-foreground"><Tr ns="Product" k="madeIn" /></dt>
-                  <dd className="font-medium text-right">{originManufactureCountry}</dd>
-                </div>
-              )}
-              {warrantyScope && (
-                <div className="flex justify-between gap-4 border-b border-border py-2 sm:col-span-2">
-                  <dt className="text-muted-foreground"><Tr ns="Product" k="warrantyScope" /></dt>
-                  <dd className="font-medium text-right">{warrantyScope}</dd>
-                </div>
-              )}
-            </dl>
-          </section>
+        {/* #4 Tính năng chi tiết — descriptionBlocks kéo RA khỏi tab thành khối full-trang (DESKTOP).
+            Các khối tự mang tiêu đề H2/H3 (split-block). Trên mobile nằm trong widget tab ở trên. */}
+        {hasDescription && (
+          <div className="my-10 max-md:hidden">
+            <ProductDescriptionBlocks
+              blocks={descriptionBlocks}
+              fallback={<ProductDescriptionTab viHtml={descriptionHtml} />}
+            />
+          </div>
         )}
 
-        {tabs.length > 0 && <WpProductTabs tabs={tabs} />}
+        {/* DESKTOP — các khối xếp chồng riêng (#5 Ưu/Nhược → #6 Sản phẩm tương tự → #7 Phù hợp với ai →
+            #8-9 Thông số → Thông tin SP). Trên mobile tất cả nằm trong widget tab ở trên.
+            Dùng `max-md:hidden` (KHÔNG dùng class `hidden` vì WP theme có `.hidden{display:none!important}`
+            unlayered sẽ ẩn cả ở desktop). */}
+        <div className="max-md:hidden">
+          {/* #5 Ưu điểm & Nhược điểm (V175) — USP độc quyền của BigBike. */}
+          {prosConsGrid && (
+            <section className="my-10">
+              <PdpSectionHeading
+                kicker={<Tr ns="Product" k="secKicker.prosCons" />}
+                title={<Tr ns="Product" k="tabs.prosCons" />}
+              />
+              {prosConsGrid}
+            </section>
+          )}
 
-        {/* Bảng size (V175) — HTML table do admin nhập, sanitize trước khi render. */}
-        {sizeGuideHtml ? (
-          <section className="my-10">
-            <h2 className="mb-3 font-heading text-lg font-semibold uppercase"><Tr ns="Product" k="sizeGuideTitle" /></h2>
-            <div className="wyswyg" dangerouslySetInnerHTML={{ __html: sizeGuideHtml }} />
-          </section>
-        ) : null}
+          {/* #6 Sản phẩm tương tự — "Xem thêm lựa chọn". Đặt NGAY sau Ưu/Nhược điểm: khách vừa đọc
+              nhược điểm/giá, đang phân vân → thấy ngay lựa chọn cùng loại, giữ khách lại site thay vì
+              thoát ra tìm đối thủ. Mobile render ở cuối trang. */}
+          {showRelated && (
+            <div className="product-list pt-40 pb-20">
+              <div className="block-title text-center mb-40">
+                <p className="sub-title"><Tr ns="Product" k="relatedKicker" /></p>
+                <h3><Tr ns="Product" k="relatedTitle" /></h3>
+              </div>
+              <ProductSwiper products={related} />
+            </div>
+          )}
 
-        {/* Nội dung dài SEO (contentBottom) — đặt ngay dưới khối tab mô tả/thông
-            số/FAQ, nối tiếp mạch nội dung sản phẩm; chỉ render khi admin có nhập. */}
-        {contentBottomHtml ? (
-          <section className="product-content-bottom mb-40">
-            <ProductContentBottom viHtml={contentBottomHtml} />
-          </section>
-        ) : null}
+          {/* #7 Phù hợp với ai — "Nếu… thì…" (V237). */}
+          {suitabilityBody && (
+            <section className="my-10">
+              <PdpSectionHeading
+                kicker={<Tr ns="Product" k="suitabilityKicker" />}
+                title={<Tr ns="Product" k="suitabilityTitle" />}
+              />
+              {suitabilityBody}
+            </section>
+          )}
 
-        {related.length > 0 && (
+          {/* #7 Bảng size (V175) — HTML table do admin nhập, sanitize trước khi render. */}
+          {showSize ? (
+            <section className="my-10">
+              <PdpSectionHeading
+                kicker={<Tr ns="Product" k="secKicker.size" />}
+                title={<Tr ns="Product" k="sizeGuideTitle" />}
+              />
+              <div className="wyswyg" dangerouslySetInnerHTML={{ __html: sizeGuideHtml }} />
+            </section>
+          ) : null}
+
+          {/* #8 Thông số kỹ thuật. */}
+          {showSpecs && (
+            <section className="my-10">
+              <PdpSectionHeading
+                kicker={<Tr ns="Product" k="secKicker.specs" />}
+                title={<Tr ns="Product" k="specifications" />}
+              />
+              <ProductSpecsTable viSpecs={specs} />
+            </section>
+          )}
+
+          {/* Hướng dẫn lắp đặt — chỉ render khi admin có nhập. */}
+          {hasInstallation && (
+            <section className="my-10">
+              <PdpSectionHeading
+                kicker={<Tr ns="Product" k="secKicker.installation" />}
+                title={<Tr ns="Product" k="installation" />}
+              />
+              <ProductInstallationGuide viJson={installationJson} />
+            </section>
+          )}
+
+          {/* #9 FAQ. */}
+          {showFaqs && (
+            <section className="my-10">
+              <PdpSectionHeading
+                kicker={<Tr ns="Product" k="secKicker.faq" />}
+                title={<Tr ns="Product" k="faqs" />}
+              />
+              <ProductFaqs viFaqs={faqs} />
+            </section>
+          )}
+
+        </div>
+
+        {/* #10 Đánh giá — DESKTOP: khối riêng sau FAQ (non-embedded → id="reviews" + H2 riêng).
+            Trên mobile, Đánh giá nằm trong widget tab ở trên. Bỏ qua trong preview (chưa có id). */}
+        {showReviews && (
+          <div className="max-md:hidden">
+            <ReviewsSection productId={product.id} />
+          </div>
+        )}
+
+        {/* #11 "Mua tại BigBike.vn" — DESKTOP: tiêu đề mục (eyebrow + 35px) như các mục khác,
+            rồi tới thẻ lưới số liệu. Trên mobile nằm trong widget tab ở trên (tab cuối). */}
+        {trustCard && (
+          // max-md:hidden phải đặt trên <div>, KHÔNG trên <section>: WP reset unlayered
+          // `section{display:block}` thắng utility Tailwind layered → section không ẩn nổi
+          // trên mobile, khiến "Mua tại BigBike.vn" hiện 2 lần (trùng tab trust ở widget trên).
+          <div className="max-md:hidden">
+            <section className="my-10">
+              <PdpSectionHeading
+                kicker={<Tr ns="Product" k="secKicker.trust" />}
+                title={<Tr ns="Product" k="trustBlockTitle" />}
+              />
+              {trustCard}
+            </section>
+          </div>
+        )}
+
+        {/* #12 Hoàn thiện bộ bảo hộ — cross-sell khác loại (găng + giáp + giày), admin curate
+            (V239), tự ẩn khi trống. Khối cuối của luồng marketing. */}
+        {showAccessories && (
           <div className="product-list pt-80 pb-40">
             <div className="container">
               <div className="block-title text-center mb-40">
-                <p className="sub-title"><Tr ns="Home" k="relatedKicker" /></p>
-                <h3><Tr ns="Home" k="relatedTitle" /></h3>
+                <p className="sub-title"><Tr ns="Product" k="crossSellKicker" /></p>
+                <h3><Tr ns="Product" k="crossSellTitle" /></h3>
+              </div>
+              <ProductSwiper products={accessories} />
+            </div>
+          </div>
+        )}
+
+        {/* Sản phẩm tương tự — MOBILE: hiển thị ở cuối (desktop đã render ở vị trí #6 phía trên). */}
+        {showRelated && (
+          <div className="product-list pt-80 pb-40 md:hidden">
+            <div className="container">
+              <div className="block-title text-center mb-40">
+                <p className="sub-title"><Tr ns="Product" k="relatedKicker" /></p>
+                <h3><Tr ns="Product" k="relatedTitle" /></h3>
               </div>
               <ProductSwiper products={related} />
             </div>
           </div>
         )}
+
+        {/* Nội dung dài SEO (contentBottom) — dưới lưới sản phẩm gợi ý; chỉ render khi admin có nhập.
+            Không thuộc panel "Hiển thị trên web" (admin không soạn ở form sản phẩm) → chỉ gate theo nội dung. */}
+        {contentBottomHtml ? (
+          <section className="product-content-bottom mb-40">
+            <ProductContentBottom viHtml={contentBottomHtml} />
+          </section>
+        ) : null}
 
         {/* Sản phẩm khách đã xem — lưu localStorage; bỏ qua trong preview. */}
         {!previewMode && (

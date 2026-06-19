@@ -34,12 +34,13 @@ import java.util.List;
         @JsonSubTypes.Type(value = DescriptionBlock.VideoBlock.class,     name = "video"),
         @JsonSubTypes.Type(value = DescriptionBlock.CalloutBlock.class,   name = "callout"),
         @JsonSubTypes.Type(value = DescriptionBlock.DividerBlock.class,   name = "divider"),
+        @JsonSubTypes.Type(value = DescriptionBlock.FeatureBlock.class,   name = "feature"),
 })
 public sealed interface DescriptionBlock
         permits DescriptionBlock.HeadingBlock, DescriptionBlock.ParagraphBlock,
                 DescriptionBlock.ListBlock,    DescriptionBlock.ImageBlock,
                 DescriptionBlock.VideoBlock,   DescriptionBlock.CalloutBlock,
-                DescriptionBlock.DividerBlock {
+                DescriptionBlock.DividerBlock, DescriptionBlock.FeatureBlock {
 
     String getType();
 
@@ -134,5 +135,46 @@ public sealed interface DescriptionBlock
     @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
     final class DividerBlock implements DescriptionBlock {
         private String type;
+    }
+
+    /**
+     * { type: "feature", side?: "auto"|"left"|"right", url, alt?, caption?, subheading?, heading?, html?,
+     *   listStyle?: "bulleted"|"numbered", items?: string[] }
+     *
+     * <p>Một "hàng tính năng" gói chung 1 ảnh + tiêu đề phụ (eyebrow) + tiêu đề chính + đoạn mô tả +
+     * danh sách, render thành khối 2 cột ảnh–chữ trên web (xen kẽ trái/phải khi {@code side} = "auto"
+     * hoặc null). Chỉ {@code url} bắt buộc; các phần chữ đều tuỳ chọn.
+     */
+    @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
+    final class FeatureBlock implements DescriptionBlock {
+        private String type;
+
+        @Pattern(regexp = "auto|left|right", message = "feature.side must be 'auto', 'left', or 'right'.")
+        private String side;
+
+        @NotBlank(message = "feature.url is required.")
+        @Size(max = 2000, message = "feature.url must not exceed 2 000 characters.")
+        private String url;
+
+        @Size(max = 500, message = "feature.alt must not exceed 500 characters.")
+        private String alt;
+
+        @Size(max = 500, message = "feature.caption must not exceed 500 characters.")
+        private String caption;
+
+        @Size(max = 500, message = "feature.subheading must not exceed 500 characters.")
+        private String subheading;
+
+        @Size(max = 500, message = "feature.heading must not exceed 500 characters.")
+        private String heading;
+
+        @Size(max = 50000, message = "feature.html must not exceed 50 000 characters.")
+        private String html;
+
+        @Pattern(regexp = "bulleted|numbered", message = "feature.listStyle must be 'bulleted' or 'numbered'.")
+        private String listStyle;
+
+        @Size(max = 200, message = "feature.items must not exceed 200 entries.")
+        private List<@Size(max = 2000, message = "Feature list item must not exceed 2 000 characters.") String> items;
     }
 }

@@ -20,7 +20,7 @@ export const PUBLIC_ROUTES: RouteDef[] = [
   { path: "/gioi-thieu/", name: "Giới thiệu", group: "content", kind: "static" },
   { path: "/lien-he/", name: "Liên hệ", group: "content", kind: "static", hasForm: true },
   { path: "/huong-dan/", name: "Hướng dẫn", group: "content", kind: "static" },
-  { path: "/huong-dan-mua-hang/", name: "Hướng dẫn mua hàng", group: "content", kind: "static" },
+  { path: "/huong-dan/mua-hang/", name: "Hướng dẫn mua hàng", group: "content", kind: "static" },
   { path: "/bao-hanh/", name: "Bảo hành", group: "content", kind: "static" },
   { path: "/gio-hang/", name: "Giỏ hàng", group: "commerce", kind: "data" },
   { path: "/tim-kiem/", name: "Tìm kiếm", group: "search", kind: "data" },

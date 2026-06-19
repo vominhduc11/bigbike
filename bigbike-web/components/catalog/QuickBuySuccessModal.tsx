@@ -53,7 +53,7 @@ export function QuickBuySuccessModal({ order, onClose }: Props) {
           )}
           <p className="text-caption text-muted-foreground">{t("success.willContact")}</p>
           {order?.paymentMethod === "BACS" && (
-            <p className="text-sm text-state-warning-text bg-[var(--bb-state-warning-bg)] px-3 py-2 border border-[var(--bb-state-warning-border)]">
+            <p className="text-caption text-state-warning-text bg-[var(--bb-state-warning-bg)] px-3 py-2 border border-[var(--bb-state-warning-border)]">
               {t("success.bacsHint")}
             </p>
           )}

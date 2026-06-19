@@ -10,6 +10,7 @@ import {
   toProductListPath,
   toProductPath,
 } from "@/lib/utils/routes";
+import { stripHtmlToText } from "@/lib/utils/text";
 
 type JsonLdObject = Record<string, unknown>;
 
@@ -397,7 +398,7 @@ export function buildFaqPageJsonLd(faqs: { question: string; answer: string }[])
       name: faq.question,
       acceptedAnswer: {
         "@type": "Answer",
-        text: faq.answer,
+        text: stripHtmlToText(faq.answer),
       },
     })),
   };

@@ -40,6 +40,12 @@ public record Product(
         String installationGuide,
         /** Product FAQ entries rendered in PDP section "05 Câu hỏi thường gặp". Detail-only. */
         List<ProductFaq> faqs,
+        /** Per-product commitment rows rendered under the buy buttons (V232). Detail-only; empty in list. */
+        List<ProductCommitment> commitments,
+        /** "Specs Dashboard" stat boxes under the buy area (V235), max 4. Detail-only; empty in list. {@code *En} chỉ có trên admin reads. */
+        List<ProductSpecStat> specStats,
+        /** Per-product trust badges rendered on the trust row above the title (V233). Detail-only; empty in list. {@code contentEn} chỉ có trên admin reads. */
+        List<TrustBadge> trustBadges,
         /** Ưu điểm (schema.org positiveNotes). Detail-only; empty in list. {@code contentEn} chỉ có trên admin reads. */
         List<ProductHighlight> positiveNotes,
         /** Nhược điểm (schema.org negativeNotes). Detail-only; empty in list. {@code contentEn} chỉ có trên admin reads. */
@@ -50,12 +56,15 @@ public record Product(
         String warrantyScope,
         /** "Thương hiệu [nước]". Detail-only; null in list. */
         String originBrandCountry,
-        /** "Sản xuất tại [nước]". Detail-only; null in list. */
-        String originManufactureCountry,
         /** Trọng lượng tính bằng gram (= weight_kg × 1000). Detail-only; null in list. */
         Integer weightGrams,
         /** Bảng size dạng HTML (rich-text). Detail-only; null in list. */
         String sizeGuide,
+        /** "Quick Answer" — đoạn AIO 40–60 từ, blockquote trước H2 đầu (V236). Detail-only; null in list. */
+        String quickAnswerSummary,
+        /** "Phù hợp với ai" — JSON array các thẻ {@code [{audience, advice, linkLabel?, linkUrl?}]}
+         *  (V237; format đổi ở V240). Opaque string, web parse JSON. Detail-only; null in list. */
+        String suitabilityAdvisory,
         /** Giới tính mục tiêu: "Nam" | "Nữ" | "Unisex". Null = chưa gắn. */
         String gender,
         /**
@@ -65,10 +74,28 @@ public record Product(
          */
         List<Product> relatedProducts,
         /**
+         * Admin-curated accessory products ("Phụ kiện") — sản phẩm bán kèm chọn từ kho —
+         * shown in the PDP "Phụ kiện" section. List-view shape (no nested gallery/specs/
+         * relatedProducts). Detail-only; empty in list responses. Public reads include
+         * only PUBLISHED entries.
+         */
+        List<Product> accessoryProducts,
+        /**
          * Structured description blocks (V139). Null for products authored via the legacy
          * RichTextEditor. Detail-only; null in list responses.
          */
         List<DescriptionBlock> descriptionBlocks,
+        /**
+         * Per-product PDP tab configuration (V231). Null/empty → web uses the default tab set.
+         * Detail-only; null in list responses. Public reads carry locale-resolved label/blocks;
+         * admin reads carry raw English in {@code labelEn}/{@code blocksEn}.
+         */
+        List<ProductTab> tabs,
+        /**
+         * "Hiển thị trên web" (V245) — opaque JSON string {sectionKey: boolean} cho phép admin bật/tắt
+         * từng section PDP. Null = chưa cấu hình → web hiện theo nội dung (legacy). Detail-only; null in list.
+         */
+        String sectionVisibility,
         SeoMeta seo,
         /**
          * Raw English content (V136). Populated only on admin product detail reads

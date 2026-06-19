@@ -49,12 +49,14 @@ Tag map — catalog / commerce / home cluster (entity mutation → tags emitted)
 - Public media URLs are validated against configured public base URL rules. `CONFIRMED_FROM_CODE`
 - Server-side content detection uses Apache Tika. `CONFIRMED_FROM_CODE`
 - SVG is accepted but sanitized on upload (`SvgSanitizer`, Jsoup XML parser): `<script>`, `on*` handlers, `javascript:`/external `href`/`xlink:href`/`src`, `<foreignObject>`/`<image>`/`<style>` and CSS vectors are stripped; payloads without an `<svg>` root are rejected. Tika magic-byte detection is skipped for SVG (unreliable for XML) — the structural parse is the content gate. `CONFIRMED_FROM_CODE`
+- **Customer review photos** (`REVIEW_RULE_005`) are stored in MinIO under the `reviews/{uuid}/...` prefix (public URL `/media/reviews/...`) via a **public, no-auth** upload endpoint (`POST /api/v1/products/{id}/reviews/photos`). Stricter than the admin path: image only (`image/jpeg|png|webp`, Tika magic-byte enforced — no SVG/GIF/video), ≤ 8 MB, rate-limited per IP (`REVIEW_PHOTO` tier). They are **not** registered in the admin media library (`media` table) — they live purely as MinIO objects referenced by `reviews.photos`. Abuse surface is bounded by the type/size/rate caps plus the moderation gate (photos show publicly only after the review is `APPROVED`). Orphan note: a photo uploaded but never attached to a submitted review remains in MinIO; periodic cleanup is a separate task. `CONFIRMED_FROM_CODE`
 
 Evidence:
 
 - `AdminMediaService.java`, `SvgSanitizer.java`, `SvgSanitizerTest.java`
 - `MediaUrlProperties.java`
 - `AdminMediaP0Test.java`
+- `ReviewPhotoStorageService.java`, `PublicReviewController.java`, `SafeMediaAssetUrlPolicy.java`
 
 ## Search
 

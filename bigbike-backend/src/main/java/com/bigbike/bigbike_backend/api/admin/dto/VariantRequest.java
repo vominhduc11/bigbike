@@ -1,6 +1,7 @@
 package com.bigbike.bigbike_backend.api.admin.dto;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.util.List;
@@ -10,6 +11,9 @@ public class VariantRequest {
     @Size(max = 100, message = "Variant ID is too long.")
     private String id;
 
+    // PRODUCT_RULE_SKU_001 — every variant must carry a selling SKU. Write-time
+    // requirement only; the DB column stays nullable for legacy/WP-import rows.
+    @NotBlank(message = "Variant SKU is required.")
     @Size(max = 100, message = "Variant SKU is too long.")
     private String sku;
 

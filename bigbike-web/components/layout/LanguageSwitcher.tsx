@@ -97,7 +97,7 @@ export function LanguageSwitcher({ variant = "icon" }: { variant?: "icon" | "inl
   if (variant === "inline") {
     return (
       <div
-        className="inline-flex h-11 self-center items-stretch rounded-none border border-white/15 bg-white/5 text-xs font-bold"
+        className="inline-flex h-11 self-center items-stretch rounded-none border border-white/15 bg-white/5 text-overline font-bold"
         role="group"
         aria-label={t("label")}
       >
@@ -168,8 +168,8 @@ export function LanguageSwitcher({ variant = "icon" }: { variant?: "icon" | "inl
                   : "text-foreground hover:text-brand hover:bg-muted",
               )}
             >
-              <span className="font-cta text-xs font-bold uppercase w-5 shrink-0">{code.toUpperCase()}</span>
-              <span className="text-xs font-normal normal-case">{LOCALE_LABELS[code]}</span>
+              <span className="font-cta text-overline font-bold uppercase w-5 shrink-0">{code.toUpperCase()}</span>
+              <span className="text-overline font-normal normal-case">{LOCALE_LABELS[code]}</span>
             </button>
           );
         })}

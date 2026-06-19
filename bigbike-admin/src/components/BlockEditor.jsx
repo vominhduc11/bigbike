@@ -15,20 +15,37 @@ import { SortableList } from './Sortable'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { cn, generateId } from '@/lib/utils'
 
-const BLOCK_TYPES = ['heading', 'paragraph', 'list', 'image', 'video', 'callout', 'divider']
+const BLOCK_TYPES = ['feature', 'heading', 'paragraph', 'list', 'image', 'video', 'callout', 'divider']
 
-function createBlock(type) {
+// Vốn từ khối đầy đủ — dùng cho Content (bài viết/trang). Mỗi mục: nhãn i18n + type (+ preset).
+const CONTENT_MENU = BLOCK_TYPES.map((type) => ({
+  type,
+  labelKey: `products.detail.blocks.blockType${type.charAt(0).toUpperCase()}${type.slice(1)}`,
+}))
+
+// Vốn từ rút gọn cho SẢN PHẨM (V238) — đúng 4 khối: văn bản, ảnh, ảnh phải+chữ, ảnh trái+chữ.
+const PRODUCT_MENU = [
+  { type: 'paragraph', labelKey: 'products.detail.blocks.blockTypeText' },
+  { type: 'image',     labelKey: 'products.detail.blocks.blockTypeImage' },
+  { type: 'feature',   labelKey: 'products.detail.blocks.blockTypeFeatureRight', preset: { side: 'right' } },
+  { type: 'feature',   labelKey: 'products.detail.blocks.blockTypeFeatureLeft',  preset: { side: 'left' } },
+]
+
+function createBlock(type, preset) {
   const base = { _key: generateId(), type }
+  let block
   switch (type) {
-    case 'heading':   return { ...base, level: 2, text: '' }
-    case 'paragraph': return { ...base, html: '' }
-    case 'list':      return { ...base, style: 'bulleted', items: [''] }
-    case 'image':     return { ...base, url: '', alt: '', caption: '' }
-    case 'video':     return { ...base, provider: 'youtube', url: '', caption: '' }
-    case 'callout':   return { ...base, variant: 'info', html: '' }
-    case 'divider':   return base
-    default:          return base
+    case 'heading':   block = { ...base, level: 2, text: '' }; break
+    case 'paragraph': block = { ...base, html: '' }; break
+    case 'list':      block = { ...base, style: 'bulleted', items: [''] }; break
+    case 'image':     block = { ...base, url: '', alt: '', caption: '' }; break
+    case 'video':     block = { ...base, provider: 'youtube', url: '', caption: '' }; break
+    case 'callout':   block = { ...base, variant: 'info', html: '' }; break
+    case 'feature':   block = { ...base, side: 'auto', url: '', alt: '', caption: '', subheading: '', heading: '', html: '', listStyle: 'bulleted', items: [''] }; break
+    case 'divider':   block = base; break
+    default:          block = base; break
   }
+  return preset ? { ...block, ...preset } : block
 }
 
 function BlockControls({ disabled, onDuplicate, onRemove }) {
@@ -254,6 +271,142 @@ function CalloutBlockEditor({ block, onChange, disabled }) {
   )
 }
 
+function FeatureBlockEditor({ block, onChange, disabled, onPickImage, productMode }) {
+  const { t } = useTranslation()
+  const items = block.items || ['']
+
+  function updateItem(i, value) {
+    onChange({ items: items.map((it, idx) => idx === i ? value : it) })
+  }
+  function addItem() {
+    onChange({ items: [...items, ''] })
+  }
+  function removeItem(i) {
+    const next = items.filter((_, idx) => idx !== i)
+    onChange({ items: next.length === 0 ? [''] : next })
+  }
+
+  // Sản phẩm: chỉ trái/phải (không "tự đảo"); Content: giữ cả auto.
+  const sideValue = block.side === 'left' || block.side === 'right'
+    ? block.side
+    : (productMode ? 'right' : 'auto')
+
+  return (
+    <div className="flex-1 flex flex-col gap-3">
+      {/* Vị trí ảnh */}
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-muted-foreground shrink-0">{t('products.detail.blocks.featureSideLabel')}</span>
+        <Select value={sideValue} onValueChange={(v) => onChange({ side: v })} disabled={disabled}>
+          <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {!productMode && <SelectItem value="auto">{t('products.detail.blocks.featureSideAuto')}</SelectItem>}
+            <SelectItem value="left">{t('products.detail.blocks.featureSideLeft')}</SelectItem>
+            <SelectItem value="right">{t('products.detail.blocks.featureSideRight')}</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Ảnh + alt + caption */}
+      <div className="flex gap-2 items-start">
+        {block.url ? (
+          <div className="relative shrink-0">
+            <img src={block.url} alt={block.alt || ''} className="h-24 w-36 object-cover rounded-sm border border-border" />
+            <Button variant="outline" size="sm" className="mt-1 w-36 text-xs"
+              onClick={onPickImage} disabled={disabled}>
+              {t('products.detail.blocks.imageChange')}
+            </Button>
+          </div>
+        ) : (
+          <Button variant="outline" size="sm" onClick={onPickImage} disabled={disabled} className="h-24 w-36 flex flex-col gap-1 text-xs">
+            <span className="text-2xl">🖼</span>
+            {t('products.detail.blocks.imagePick')}
+          </Button>
+        )}
+        <div className="flex-1 flex flex-col gap-2">
+          <Input
+            placeholder={t('products.detail.blocks.imageAltPlaceholder')}
+            value={block.alt || ''}
+            onChange={(e) => onChange({ alt: e.target.value })}
+            disabled={disabled}
+            maxLength={500}
+          />
+          <Input
+            placeholder={t('products.detail.blocks.imageCaptionPlaceholder')}
+            value={block.caption || ''}
+            onChange={(e) => onChange({ caption: e.target.value })}
+            disabled={disabled}
+            maxLength={500}
+          />
+        </div>
+      </div>
+      {block.url && <MediaDimensionWarning url={block.url} recommend={IMAGE_RECO.general} kind="image" />}
+
+      {/* Tiêu đề phụ (eyebrow) */}
+      <Input
+        className="text-xs uppercase tracking-wide text-primary"
+        placeholder={t('products.detail.blocks.featureSubheadingPlaceholder')}
+        value={block.subheading || ''}
+        onChange={(e) => onChange({ subheading: e.target.value })}
+        disabled={disabled}
+        maxLength={500}
+      />
+
+      {/* Tiêu đề chính */}
+      <Input
+        className="font-bold"
+        placeholder={t('products.detail.blocks.featureHeadingPlaceholder')}
+        value={block.heading || ''}
+        onChange={(e) => onChange({ heading: e.target.value })}
+        disabled={disabled}
+        maxLength={500}
+      />
+
+      {/* Đoạn mô tả */}
+      <RichTextEditor
+        key={block._key}
+        value={block.html || ''}
+        onChange={(html) => onChange({ html })}
+        disabled={disabled}
+        enableImagePicker={false}
+      />
+
+      {/* Danh sách điểm nổi bật */}
+      <div className="flex flex-col gap-2">
+        <Select value={block.listStyle || 'bulleted'} onValueChange={(v) => onChange({ listStyle: v })} disabled={disabled}>
+          <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="bulleted">{t('products.detail.blocks.listStyleBulleted')}</SelectItem>
+            <SelectItem value="numbered">{t('products.detail.blocks.listStyleNumbered')}</SelectItem>
+          </SelectContent>
+        </Select>
+        <div className="flex flex-col gap-1">
+          {items.map((item, i) => (
+            <div key={i} className="flex gap-1 items-center">
+              <span className="text-muted-foreground text-sm w-5 text-center shrink-0">
+                {block.listStyle === 'numbered' ? `${i + 1}.` : '•'}
+              </span>
+              <Input
+                className="flex-1"
+                value={item}
+                onChange={(e) => updateItem(i, e.target.value)}
+                disabled={disabled}
+                placeholder={t('products.detail.blocks.listItemPlaceholder')}
+                maxLength={2000}
+              />
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive shrink-0"
+                onClick={() => removeItem(i)} disabled={disabled}
+                aria-label={t('products.detail.blocks.listRemoveItem')}>✕</Button>
+            </div>
+          ))}
+        </div>
+        <Button variant="outline" size="sm" onClick={addItem} disabled={disabled} className="self-start">
+          + {t('products.detail.blocks.listAddItem')}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 function DividerBlockEditor() {
   return (
     <div className="flex-1 flex items-center py-2">
@@ -272,7 +425,7 @@ function BlockTypeLabel({ type }) {
   )
 }
 
-function BlockCard({ block, disabled, sortable, onUpdate, onRemove, onDuplicate, onPickImage, onPickVideo }) {
+function BlockCard({ block, disabled, sortable, onUpdate, onRemove, onDuplicate, onPickImage, onPickVideo, productMode }) {
   const { t } = useTranslation()
   return (
     <div
@@ -299,6 +452,7 @@ function BlockCard({ block, disabled, sortable, onUpdate, onRemove, onDuplicate,
         {block.type === 'image'     && <ImageBlockEditor     block={block} onChange={onUpdate} disabled={disabled} onPickImage={onPickImage} />}
         {block.type === 'video'     && <VideoBlockEditor     block={block} onChange={onUpdate} disabled={disabled} onPickVideo={onPickVideo} />}
         {block.type === 'callout'   && <CalloutBlockEditor   block={block} onChange={onUpdate} disabled={disabled} />}
+        {block.type === 'feature'   && <FeatureBlockEditor   block={block} onChange={onUpdate} disabled={disabled} onPickImage={onPickImage} productMode={productMode} />}
         {block.type === 'divider'   && <DividerBlockEditor />}
       </div>
       <BlockControls
@@ -319,16 +473,18 @@ function BlockCard({ block, disabled, sortable, onUpdate, onRemove, onDuplicate,
  *   disabled     — bool
  *   hasError     — bool
  *   fallbackHtml — string | undefined; legacy HTML shown when value is null/empty
+ *   productMode  — bool; true ⇒ chỉ 4 khối cho mô tả sản phẩm (V238), mặc định đầy đủ (Content)
  */
-export function BlockEditor({ value, onChange, disabled, hasError, fallbackHtml }) {
+export function BlockEditor({ value, onChange, disabled, hasError, fallbackHtml, productMode }) {
   const { t } = useTranslation()
   const blocks = value ?? []
+  const menu = productMode ? PRODUCT_MENU : CONTENT_MENU
 
   const [mediaPickerIndex, setMediaPickerIndex] = useState(null)
   const [videoPickerIndex, setVideoPickerIndex] = useState(null)
 
-  function addBlock(type) {
-    onChange([...blocks, createBlock(type)])
+  function addBlock(type, preset) {
+    onChange([...blocks, createBlock(type, preset)])
   }
 
   function updateBlock(index, patch) {
@@ -378,6 +534,7 @@ export function BlockEditor({ value, onChange, disabled, hasError, fallbackHtml 
             sortable={sortable}
             block={block}
             disabled={disabled}
+            productMode={productMode}
             onUpdate={(patch) => updateBlock(index, patch)}
             onRemove={() => removeBlock(index)}
             onDuplicate={() => duplicateBlock(index)}
@@ -394,14 +551,11 @@ export function BlockEditor({ value, onChange, disabled, hasError, fallbackHtml 
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
-          {BLOCK_TYPES.map((type) => {
-            const key = `products.detail.blocks.blockType${type.charAt(0).toUpperCase()}${type.slice(1)}`
-            return (
-              <DropdownMenuItem key={type} onClick={() => addBlock(type)}>
-                {t(key)}
-              </DropdownMenuItem>
-            )
-          })}
+          {menu.map((entry, i) => (
+            <DropdownMenuItem key={`${entry.type}-${i}`} onClick={() => addBlock(entry.type, entry.preset)}>
+              {t(entry.labelKey)}
+            </DropdownMenuItem>
+          ))}
         </DropdownMenuContent>
       </DropdownMenu>
 

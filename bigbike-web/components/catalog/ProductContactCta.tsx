@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { MapPin, MessageCircle, Phone } from "lucide-react";
 import { telHref, zaloHref } from "@/lib/utils/format";
 
 type ProductContactCtaProps = {
@@ -23,13 +24,14 @@ function zaloDisplayNumber(value: string): string {
 }
 
 /**
- * Local-SEO contact band at the foot of the product detail page: a compact light
- * card showing "Mua <product> chính hãng tại <shop>" + the store address, hotline
- * and Zalo. White surface with a red top accent + red numbers — matches the
- * light-first PDP (same card chrome as the reviews block) per the brand design
- * system. All shop details come from system settings so they stay editable in one
- * place and consistent with the footer / contact page and the LocalBusiness
- * structured data.
+ * Local-SEO contact band at the foot of the product detail page: a light card
+ * laid out in two columns — shop name + address on the left, call / Zalo action
+ * buttons on the right (stacked on mobile). White surface with a red top accent
+ * per the brand design system; the action buttons reuse the exact PDP purchase
+ * tokens (red `bg-brand` for call, Zalo-blue outline for Zalo) so the band reads
+ * as a real store-contact block instead of a cramped centred caption. All shop
+ * details come from system settings so they stay editable in one place and
+ * consistent with the footer / contact page and the LocalBusiness structured data.
  *
  * Width/horizontal gutter are NOT set here — the band must render inside the PDP
  * `.container` so it shares the exact same rail (max-width steps + 15px gutter) as
@@ -50,60 +52,48 @@ export function ProductContactCta({
 
   return (
     <section className="mt-16 mb-12 max-md:mt-9">
-      <div className="border border-border border-t-2 border-t-brand bg-card px-6 py-5 text-center max-md:px-4 max-md:py-4">
-        <h3 className="font-cta text-15 leading-title text-balance text-muted-foreground max-md:text-13">
-          {t.rich("headline", {
-            productName,
-            siteName,
-            brand: (chunks) => <span className="font-bold text-foreground">{chunks}</span>,
-            site: (chunks) => <span className="font-bold text-foreground">{chunks}</span>,
-          })}
-        </h3>
+      <div className="flex flex-col gap-7 border border-border border-t-2 border-t-brand bg-card px-8 py-7 md:flex-row md:items-center md:justify-between md:gap-12 max-md:px-5 max-md:py-6">
+        <div className="min-w-0 max-md:text-center">
+          <h3 className="font-cta text-22 leading-title text-foreground max-md:text-17">
+            {t.rich("headline", {
+              productName,
+              siteName,
+              brand: (chunks) => <span className="font-bold text-foreground">{chunks}</span>,
+              site: (chunks) => <span className="font-bold text-foreground">{chunks}</span>,
+            })}
+          </h3>
 
-        {address && (
-          <p className="mt-2.5 text-13 leading-body text-balance break-words text-muted-foreground">
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="mr-1.5 inline-block align-[-2px] text-brand"
-              aria-hidden="true"
-            >
-              <path d="M12 21s-7-5.33-7-11a7 7 0 1 1 14 0c0 5.67-7 11-7 11Z" />
-              <circle cx="12" cy="10" r="2.5" />
-            </svg>
-            {address}
-          </p>
-        )}
+          {address && (
+            <p className="mt-3.5 flex items-start gap-2 text-15 leading-body break-words text-muted-foreground max-md:justify-center">
+              <MapPin className="mt-0.5 size-4 shrink-0 text-brand" aria-hidden="true" />
+              <span>{address}</span>
+            </p>
+          )}
+        </div>
 
         {(hotline || zaloUrl) && (
-          <p className="mt-2 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-13 text-muted-foreground">
+          <div className="flex shrink-0 flex-wrap items-center gap-4 max-md:w-full max-md:flex-col">
             {hotline && (
               <a
                 href={telHref(hotline)}
-                className="font-cta text-15 font-bold text-brand hover:underline"
+                className="inline-flex items-center justify-center gap-2.5 !bg-brand px-7 py-3.5 font-cta text-17 font-bold !text-white transition-colors hover:!bg-brand-active max-md:w-full"
               >
+                <Phone className="size-5" aria-hidden="true" />
                 {hotline}
               </a>
             )}
-            {hotline && zaloUrl && <span aria-hidden="true">·</span>}
             {zaloUrl && (
-              <span className="flex items-center gap-1.5">
-                <span>{t("zaloLabel")}</span>
-                <a
-                  href={zaloHref(zaloUrl)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-cta text-15 font-bold text-brand hover:underline"
-                >
-                  {zaloNumber || t("zaloLink")}
-                </a>
-              </span>
+              <a
+                href={zaloHref(zaloUrl)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2.5 border-2 !border-zalo !bg-white px-7 py-3.5 font-cta text-17 font-bold !text-zalo transition-colors hover:!bg-zalo-soft max-md:w-full"
+              >
+                <MessageCircle className="size-5" aria-hidden="true" />
+                {zaloNumber || t("zaloLink")}
+              </a>
             )}
-          </p>
+          </div>
         )}
       </div>
     </section>

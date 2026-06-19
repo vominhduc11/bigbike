@@ -86,7 +86,7 @@ export function VerifyEmailContent() {
                 {isLoggedIn ? (
                   <>
                     {resendStatus === "sent" ? (
-                      <p className="m-0 border border-[var(--bb-state-success-border)] bg-[var(--bb-state-success-bg)] p-3 text-sm text-state-success-text">
+                      <p className="m-0 border border-[var(--bb-state-success-border)] bg-[var(--bb-state-success-bg)] p-3 text-caption text-state-success-text">
                         {resendMsg}
                       </p>
                     ) : (
@@ -94,7 +94,7 @@ export function VerifyEmailContent() {
                         <button type="button" onClick={handleResend} disabled={resendStatus === "sending"}>
                           {resendStatus === "sending" ? t("resending") : t("resend")}
                         </button>
-                        {resendStatus === "error" && <p className="mt-2 text-sm text-destructive">{resendMsg}</p>}
+                        {resendStatus === "error" && <p className="mt-2 text-caption text-destructive">{resendMsg}</p>}
                       </div>
                     )}
                     <p className="m-0">
@@ -130,11 +130,11 @@ export function VerifyEmailContent() {
                   </p>
                 )}
                 {resendStatus === "sent" && (
-                  <p className="mt-4 border border-[var(--bb-state-success-border)] bg-[var(--bb-state-success-bg)] p-3 text-sm text-state-success-text">
+                  <p className="mt-4 border border-[var(--bb-state-success-border)] bg-[var(--bb-state-success-bg)] p-3 text-caption text-state-success-text">
                     {resendMsg}
                   </p>
                 )}
-                {resendStatus === "error" && <p className="mt-4 text-sm text-destructive">{resendMsg}</p>}
+                {resendStatus === "error" && <p className="mt-4 text-caption text-destructive">{resendMsg}</p>}
               </>
             )}
           </div>

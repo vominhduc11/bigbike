@@ -35,7 +35,7 @@ export function QuantityStepper({
   };
 
   const btnClass =
-    "flex items-center justify-center w-9 min-h-[44px] text-lg leading-none text-foreground " +
+    "flex items-center justify-center w-9 min-h-[44px] text-ui-18 leading-none text-foreground " +
     "transition-colors hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed " +
     "focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2";
 
@@ -70,7 +70,7 @@ export function QuantityStepper({
         }}
         className={cn(
           "w-10 min-h-[44px] border-x border-border-control bg-transparent text-center",
-          "font-bold text-sm text-foreground outline-none focus-visible:bg-secondary",
+          "font-bold text-caption text-foreground outline-none focus-visible:bg-secondary",
           "disabled:cursor-not-allowed",
           "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
         )}

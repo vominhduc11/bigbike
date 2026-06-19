@@ -8,7 +8,10 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -38,6 +41,18 @@ public class ReviewEntity {
 
     @Column(columnDefinition = "text")
     private String body;
+
+    /** Optional review heading (V234). Null for legacy / WordPress-imported reviews. */
+    @Column(name = "title", length = 160)
+    private String title;
+
+    /**
+     * Customer-uploaded photo URLs in MinIO ({@code /media/reviews/...}), max 10 (V234, REVIEW_RULE_005).
+     * Null/empty when the review has no photos. Stored as a JSON string array.
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "photos", columnDefinition = "jsonb")
+    private List<String> photos;
 
     @Column(nullable = false)
     private String status;

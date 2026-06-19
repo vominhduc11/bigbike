@@ -117,6 +117,8 @@ Quy tắc:
 
 Token cỡ chữ expose thành Tailwind utility trong `app/globals.css` (`@theme inline`). Heading cấp trang phải dùng **utility token** — KHÔNG dùng `text-2xl`/`text-3xl` Tailwind cố định hay arbitrary `text-[26px]`.
 
+> **Quy tắc đồng bộ cỡ chữ (2026-06-19):** Mọi component React/shadcn **không-WP** (`components/ui|catalog|content|layout` không phải `Wp*`, các trang `app/` không port WP) **KHÔNG** dùng scale built-in của Tailwind (`text-xs/sm/base/lg/xl/2xl/3xl…`) hay arbitrary `text-[Npx]`. Mỗi vai trò map về đúng 1 token: meta/eyebrow→`text-overline` (12), caption/phụ→`text-caption` (14), body/input→`text-body` (16), nút/CTA→`text-button` (16), card/dialog/h4→`text-h4` (18), sub-heading→`text-h3` (20), heading→`text-h2`/`text-h1` (24), số hiển thị lớn→`text-display`; control cố định không phải heading (stepper, nút lg, avatar) dùng `text-ui-*`. **Ngoại lệ giữ nguyên (WP-parity):** `components/wp/*`, `ProductCard`, và markup port WP (`wp-`/`wyswyg`/`bb-wp-`/`woocommerce`) giữ cỡ gốc; cỡ trang trí bespoke (`PageHero` watermark, `404`, `SearchToggle`) giữ `clamp()`/`text-ui-*`.
+
 **Canonical scale (dùng cho component mới / refactor)** — map tới `--fs-*` (cố định, WP-parity):
 
 | Utility | Token nguồn | Giá trị |

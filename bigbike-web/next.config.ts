@@ -273,6 +273,19 @@ const nextConfig: NextConfig = {
         destination: "/san-pham/",
         permanent: true,
       },
+      // Legacy standalone buying-guide page merged into the admin-managed guide builder.
+      // /huong-dan-mua-hang now 301s to its canonical guide sub-route /huong-dan/mua-hang/.
+      // Must precede the generic /{slug}.html→category CSV rule.
+      {
+        source: "/huong-dan-mua-hang.html",
+        destination: "/huong-dan/mua-hang/",
+        permanent: true,
+      },
+      {
+        source: "/huong-dan-mua-hang",
+        destination: "/huong-dan/mua-hang/",
+        permanent: true,
+      },
       ...csvRedirectRules,
       // Legacy WP sitemap index → consolidated Next.js sitemap.
       {
@@ -351,10 +364,8 @@ const nextConfig: NextConfig = {
           source: "/huong-dan.html",
           destination: "/huong-dan/",
         },
-        {
-          source: "/huong-dan-mua-hang.html",
-          destination: "/huong-dan-mua-hang/",
-        },
+        // /huong-dan-mua-hang.html is handled by a 301 redirect (see redirects()) to the
+        // canonical guide sub-route — no rewrite needed here.
         {
           source: "/lien-he.html",
           destination: "/lien-he/",

@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { ProductGallery } from "./ProductGallery";
 import { PricingPanel } from "./PricingPanel";
 import { StockStatus } from "./StockStatus";
@@ -124,6 +124,7 @@ export function PurchaseSectionClient({
 }: PurchaseSectionClientProps) {
   const { addToCart } = useCart();
   const t = useTranslations("Product.buyBox");
+  const locale = useLocale();
 
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [quantity, setQuantity] = useState(1);
@@ -153,9 +154,10 @@ export function PurchaseSectionClient({
 
   const { data: snapshot, isLoading: snapshotLoading } =
     useQuery<ProductSnapshot>({
-      queryKey: ["product-snapshot", productId],
+      // locale trong key → đổi ngôn ngữ refetch lại để tên màu/size đổi theo.
+      queryKey: ["product-snapshot", productId, locale],
       queryFn: async () => {
-        const res = await fetch(`/api/products/${productSlug}/snapshot/`);
+        const res = await fetch(`/api/products/${productSlug}/snapshot/?lang=${locale}`);
         if (!res.ok) throw new Error("snapshot");
         return res.json() as Promise<ProductSnapshot>;
       },
@@ -330,7 +332,7 @@ export function PurchaseSectionClient({
                 <line x1="12" y1="8" x2="12" y2="12.5" />
                 <line x1="12" y1="16" x2="12" y2="16" />
               </svg>
-              <p className="m-0 text-sm text-muted-foreground">{t("outOfStockNote")}</p>
+              <p className="m-0 text-caption text-muted-foreground">{t("outOfStockNote")}</p>
             </div>
           ) : (
             <>
@@ -403,7 +405,7 @@ export function PurchaseSectionClient({
           />
 
           {addError && (
-            <p className="mt-2.5 text-sm text-brand" role="alert">
+            <p className="mt-2.5 text-caption text-brand" role="alert">
               {addError}
             </p>
           )}
@@ -465,7 +467,7 @@ export function PurchaseSectionClient({
             </a>
           ) : null}
           {shareCopied && (
-            <span className="ml-2 text-sm font-medium text-brand" role="status">
+            <span className="ml-2 text-caption font-medium text-brand" role="status">
               {t("shareCopied")}
             </span>
           )}

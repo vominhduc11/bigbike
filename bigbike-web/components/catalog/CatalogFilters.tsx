@@ -72,7 +72,7 @@ const WIDGET_TITLE_H3 =
   "m-0 font-body text-ui-24 font-semibold uppercase text-black";
 const LIST = "m-0 list-none p-0"; // widget--body ul
 const LIST_LINK =
-  "relative block pr-5 text-sm font-semibold leading-[1.3] text-muted-foreground no-underline hover:text-brand";
+  "relative block pr-5 text-caption font-semibold leading-[1.3] text-muted-foreground no-underline hover:text-brand";
 const CAT_DIAMOND =
   "after:absolute after:left-[3px] after:top-[10px] after:h-[5px] after:w-[5px] after:rounded-[1px] after:bg-brand after:[transform:rotate(45deg)] after:content-['']";
 // "Xem thêm" facet reveal. Routed through <Button variant="dark">; the trailing
@@ -106,7 +106,7 @@ function Count({ value }: { value?: number }) {
   if (value == null) return null;
   return (
     <span className="absolute right-[3px] top-[10px] h-5 w-5 text-center font-semibold text-white after:absolute after:left-0 after:top-[2px] after:h-full after:w-full after:rounded-[2px] after:bg-[var(--bb-text-muted)] after:[transform:rotate(45deg)] after:content-['']">
-      <span className="relative z-[2] text-sm leading-5">{value}</span>
+      <span className="relative z-[2] text-caption leading-5">{value}</span>
     </span>
   );
 }

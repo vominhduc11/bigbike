@@ -36,7 +36,7 @@ export function OrderHistoryContent() {
   const error = queryError ? (queryError as Error).message ?? t("loadFailed") : "";
 
   const chipBase =
-    "inline-flex h-9 items-center px-4 text-sm font-semibold uppercase font-cta border border-border transition-colors";
+    "inline-flex h-9 items-center px-4 text-caption font-semibold uppercase font-cta border border-border transition-colors";
   const chipCls = (active: boolean) =>
     cn(chipBase, active ? "bg-brand text-white border-brand" : "bg-card text-foreground hover:border-brand hover:text-brand");
 
@@ -55,11 +55,11 @@ export function OrderHistoryContent() {
         ))}
       </nav>
 
-      {error && <p className="mb-4 text-sm text-brand">{error}</p>}
+      {error && <p className="mb-4 text-caption text-brand">{error}</p>}
 
       {loading ? (
         <div className="overflow-x-auto" aria-busy="true">
-          <table className="w-full border-collapse text-left text-sm">
+          <table className="w-full border-collapse text-left text-caption">
             <tbody>
               {[1, 2, 3, 4].map((i) => (
                 <tr key={i} className="border-b border-border">
@@ -85,13 +85,13 @@ export function OrderHistoryContent() {
         </div>
       ) : orders.length === 0 ? (
         <div className="py-[60px] text-center">
-          <p className="m-0 text-sm text-muted-foreground">{t("empty")}</p>
+          <p className="m-0 text-caption text-muted-foreground">{t("empty")}</p>
         </div>
       ) : (
         <>
           {/* Desktop (md+): full 5-column table */}
           <div className="hidden overflow-x-auto md:block">
-            <table className="w-full border-collapse text-left text-sm">
+            <table className="w-full border-collapse text-left text-caption">
               <thead>
                 <tr className="border-b border-border">
                   <th className="py-3 pr-4 font-semibold text-foreground">{t("colOrder")}</th>
@@ -109,7 +109,7 @@ export function OrderHistoryContent() {
                         #{order.orderNumber}
                       </Link>
                       {order.productNames && order.productNames.length > 0 && (
-                        <p className="m-0 mt-1 line-clamp-2 text-xs text-muted-foreground">
+                        <p className="m-0 mt-1 line-clamp-2 text-overline text-muted-foreground">
                           {order.productNames.join(", ")}
                         </p>
                       )}
@@ -125,7 +125,7 @@ export function OrderHistoryContent() {
                     <td className="py-4 align-top">
                       <Link
                         href={toOrderDetailPath(order.id)}
-                        className="inline-flex h-9 items-center justify-center bg-brand px-5 font-cta text-sm font-semibold uppercase text-white hover:bg-brand-hover"
+                        className="inline-flex h-9 items-center justify-center bg-brand px-5 font-cta text-caption font-semibold uppercase text-white hover:bg-brand-hover"
                       >
                         {t("view")}
                       </Link>
@@ -144,14 +144,14 @@ export function OrderHistoryContent() {
                   <Link href={toOrderDetailPath(order.id)} className={`${bbLink} font-semibold`}>
                     #{order.orderNumber}
                   </Link>
-                  <span className="text-sm text-muted-foreground">{orderStatusLabelWithT(order.status, t)}</span>
+                  <span className="text-caption text-muted-foreground">{orderStatusLabelWithT(order.status, t)}</span>
                 </div>
                 {order.productNames && order.productNames.length > 0 && (
-                  <p className="m-0 mt-1 line-clamp-2 text-xs text-muted-foreground">
+                  <p className="m-0 mt-1 line-clamp-2 text-overline text-muted-foreground">
                     {order.productNames.join(", ")}
                   </p>
                 )}
-                <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
+                <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-caption">
                   <dt className="font-semibold text-foreground">{t("colDate")}</dt>
                   <dd className="m-0 text-muted-foreground"><LocalDate value={order.placedAt} dateStyle="slashPad" fallback="—" /></dd>
                   <dt className="font-semibold text-foreground">{t("colTotal")}</dt>
@@ -161,7 +161,7 @@ export function OrderHistoryContent() {
                 </dl>
                 <Link
                   href={toOrderDetailPath(order.id)}
-                  className="mt-3 inline-flex h-11 w-full items-center justify-center bg-brand px-5 font-cta text-sm font-semibold uppercase text-white hover:bg-brand-hover"
+                  className="mt-3 inline-flex h-11 w-full items-center justify-center bg-brand px-5 font-cta text-caption font-semibold uppercase text-white hover:bg-brand-hover"
                 >
                   {t("view")}
                 </Link>

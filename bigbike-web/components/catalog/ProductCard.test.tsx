@@ -8,6 +8,7 @@ vi.mock("next-intl", () => ({
     const t = (key: string) => key;
     return t;
   },
+  useLocale: () => "vi",
 }));
 
 vi.mock("next/image", () => ({

@@ -104,10 +104,13 @@ public class CatalogController {
     @GetMapping("/products/{idOrSlug}/snapshot")
     public ApiDataResponse<ProductSnapshotResponse> getProductSnapshot(
             @PathVariable @Pattern(regexp = ID_OR_SLUG_REGEX, message = "Invalid product key.") String idOrSlug,
+            @RequestParam(defaultValue = "vi") @Pattern(regexp = LANG_REGEX, message = "Invalid lang.") String lang,
             HttpServletRequest request
     ) {
-        // Snapshot carries only pricing/stock (no translatable text), so locale is irrelevant here.
-        Product product = catalogReadService.getProductByIdOrSlug(idOrSlug, "vi");
+        // Pricing/stock have no translatable text, but the variant options carried in the
+        // snapshot DO (attribute name + value, e.g. "Màu sắc"/"Đỏ"), so resolve them by lang
+        // — see API_CONTRACT.md "Product bilingual content — lang param".
+        Product product = catalogReadService.getProductByIdOrSlug(idOrSlug, lang);
         return apiResponseFactory.data(toSnapshot(product), request);
     }
 

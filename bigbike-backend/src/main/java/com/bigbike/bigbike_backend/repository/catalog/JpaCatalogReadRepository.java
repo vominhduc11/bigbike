@@ -4,12 +4,17 @@ import com.bigbike.bigbike_backend.domain.catalog.Brand;
 import com.bigbike.bigbike_backend.domain.catalog.BrandSummary;
 import com.bigbike.bigbike_backend.domain.catalog.Category;
 import com.bigbike.bigbike_backend.domain.catalog.CategorySummary;
+import com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock;
 import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
+import com.bigbike.bigbike_backend.domain.catalog.ProductCommitment;
+import com.bigbike.bigbike_backend.domain.catalog.TrustBadge;
 import com.bigbike.bigbike_backend.domain.catalog.ProductFaq;
 import com.bigbike.bigbike_backend.domain.catalog.ProductHighlight;
 import com.bigbike.bigbike_backend.domain.catalog.ProductPrice;
 import com.bigbike.bigbike_backend.domain.catalog.ProductSpecification;
+import com.bigbike.bigbike_backend.domain.catalog.ProductSpecStat;
+import com.bigbike.bigbike_backend.domain.catalog.ProductTab;
 import com.bigbike.bigbike_backend.domain.catalog.ProductTranslations;
 import com.bigbike.bigbike_backend.domain.catalog.CategoryTranslations;
 import com.bigbike.bigbike_backend.domain.catalog.BrandTranslations;
@@ -23,6 +28,9 @@ import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductGalleryImageEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantGalleryImageEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductSpecificationEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductSpecStatEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductCommitmentEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductTrustBadgeEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductFaqEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductHighlightEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
@@ -71,6 +79,9 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     private static final Comparator<ProductVideoEntity> VIDEO_ORDER = Comparator.comparingInt(ProductVideoEntity::getSortOrder);
     private static final Comparator<ProductSpecificationEntity> SPEC_ORDER = Comparator.comparingInt(ProductSpecificationEntity::getSortOrder);
     private static final Comparator<ProductFaqEntity> FAQ_ORDER = Comparator.comparingInt(ProductFaqEntity::getSortOrder);
+    private static final Comparator<ProductCommitmentEntity> COMMITMENT_ORDER = Comparator.comparingInt(ProductCommitmentEntity::getSortOrder);
+    private static final Comparator<ProductSpecStatEntity> SPEC_STAT_ORDER = Comparator.comparingInt(ProductSpecStatEntity::getSortOrder);
+    private static final Comparator<ProductTrustBadgeEntity> TRUST_BADGE_ORDER = Comparator.comparingInt(ProductTrustBadgeEntity::getSortOrder);
     private static final Comparator<ProductHighlightEntity> HIGHLIGHT_ORDER = Comparator.comparingInt(ProductHighlightEntity::getSortOrder);
     private static final Comparator<ProductVariantEntity> VARIANT_ORDER = Comparator.comparingInt(ProductVariantEntity::getSortOrder);
     private static final Comparator<ProductVariantOptionEntity> VARIANT_OPTION_ORDER = Comparator.comparingInt(ProductVariantOptionEntity::getSortOrder);
@@ -88,6 +99,45 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
             return en;
         }
         return base;
+    }
+
+    /**
+     * Locale variant of {@link #pick} for structured description blocks (V229). English blocks are
+     * used only when present and non-empty; otherwise falls back to the Vietnamese blocks.
+     */
+    private static List<DescriptionBlock> pickBlocks(
+            List<DescriptionBlock> base, List<DescriptionBlock> en, String locale) {
+        if (LOCALE_EN.equals(locale) && en != null && !en.isEmpty()) {
+            return en;
+        }
+        return base;
+    }
+
+    /**
+     * Per-product PDP tabs (V231). Null entity value → null (web falls back to the default tab set).
+     * Public reads resolve each tab's label/blocks for the locale and drop the raw English; admin reads
+     * keep the raw bilingual tabs so the editor can show both languages.
+     */
+    private static List<ProductTab> resolveTabs(ProductEntity entity, boolean publicView, String locale) {
+        List<ProductTab> tabs = entity.getProductTabs();
+        if (tabs == null) {
+            return null;
+        }
+        if (!publicView) {
+            return tabs;
+        }
+        return tabs.stream()
+                .map(t -> new ProductTab(
+                        t.id(),
+                        t.type(),
+                        t.enabled(),
+                        t.sortOrder(),
+                        pick(t.label(), t.labelEn(), locale),
+                        null,
+                        pickBlocks(t.blocks(), t.blocksEn(), locale),
+                        null
+                ))
+                .toList();
     }
 
     private final ProductJpaRepository productJpaRepository;
@@ -192,17 +242,24 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 null,                       // promotionContent — detail only
                 null,                       // installationGuide — detail only
                 List.of(),                  // faqs — detail only
+                List.of(),                  // commitments — detail only
+                List.of(),                  // specStats — detail only
+                List.of(),                  // trustBadges — detail only
                 List.of(),                  // positiveNotes — detail only
                 List.of(),                  // negativeNotes — detail only
                 null,                       // warrantyMonths — detail only
                 null,                       // warrantyScope — detail only
                 null,                       // originBrandCountry — detail only
-                null,                       // originManufactureCountry — detail only
                 null,                       // weightGrams — detail only
                 null,                       // sizeGuide — detail only
+                null,                       // quickAnswerSummary — detail only
+                null,                       // suitabilityAdvisory — detail only
                 entity.getGender(),
                 List.of(),                  // relatedProducts — detail only
+                List.of(),                  // accessoryProducts — detail only
                 null,                       // descriptionBlocks — detail only
+                null,                       // tabs — detail only
+                null,                       // sectionVisibility — detail only
                 null,                       // seo — detail only
                 null,                       // translations — detail only (admin detail read)
                 entity.getCreatedAt(),
@@ -499,17 +556,24 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 pick(entity.getPromotionContent(), entity.getPromotionContentEn(), locale),
                 pick(entity.getInstallationGuide(), entity.getInstallationGuideEn(), locale),
                 toFaqs(entity, publicView, locale),
+                toCommitments(entity, publicView, locale),
+                toSpecStats(entity, publicView, locale),
+                toTrustBadges(entity, publicView, locale),
                 toHighlights(entity, ProductHighlightEntity.KIND_PRO, publicView, locale),
                 toHighlights(entity, ProductHighlightEntity.KIND_CON, publicView, locale),
                 entity.getWarrantyMonths(),
                 entity.getWarrantyScope(),
                 entity.getOriginBrandCountry(),
-                entity.getOriginManufactureCountry(),
                 toWeightGrams(entity.getWeightKg()),
                 entity.getSizeGuide(),
+                pick(entity.getQuickAnswerSummary(), entity.getQuickAnswerSummaryEn(), locale),
+                pick(entity.getSuitabilityAdvisory(), entity.getSuitabilityAdvisoryEn(), locale),
                 entity.getGender(),
                 toRelatedProducts(entity, publicView, locale),
-                entity.getDescriptionBlocks(),
+                toAccessoryProducts(entity, publicView, locale),
+                pickBlocks(entity.getDescriptionBlocks(), entity.getDescriptionBlocksEn(), locale),
+                resolveTabs(entity, publicView, locale),
+                entity.getSectionVisibility(),
                 toSeoMeta(
                         pick(entity.getSeoTitle(), entity.getSeoTitleEn(), locale),
                         pick(entity.getSeoDescription(), entity.getSeoDescriptionEn(), locale),
@@ -748,6 +812,25 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 .toList();
     }
 
+    /**
+     * "Specs Dashboard" stat boxes (V235) resolved for the requested locale. On admin
+     * reads the raw English values ride along in the {@code *En} fields.
+     */
+    private List<ProductSpecStat> toSpecStats(ProductEntity entity, boolean publicView, String locale) {
+        if (entity.getSpecStats() == null) {
+            return List.of();
+        }
+        return entity.getSpecStats().stream()
+                .sorted(SPEC_STAT_ORDER)
+                .map(item -> new ProductSpecStat(
+                        pick(item.getValue(), item.getValueEn(), locale),
+                        pick(item.getLabel(), item.getLabelEn(), locale),
+                        publicView ? null : item.getValueEn(),
+                        publicView ? null : item.getLabelEn()
+                ))
+                .toList();
+    }
+
     private List<ProductFaq> toFaqs(ProductEntity entity, boolean publicView, String locale) {
         if (entity.getFaqs() == null) {
             return List.of();
@@ -764,18 +847,59 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     }
 
     /**
+     * Per-product commitment rows (V232) resolved for the requested locale. On
+     * admin reads the raw English values ride along in the {@code *En} fields.
+     */
+    private List<ProductCommitment> toCommitments(ProductEntity entity, boolean publicView, String locale) {
+        if (entity.getCommitments() == null) {
+            return List.of();
+        }
+        return entity.getCommitments().stream()
+                .sorted(COMMITMENT_ORDER)
+                .map(item -> new ProductCommitment(
+                        item.getIcon(),
+                        pick(item.getTitle(), item.getTitleEn(), locale),
+                        pick(item.getSubtitle(), item.getSubtitleEn(), locale),
+                        publicView ? null : item.getTitleEn(),
+                        publicView ? null : item.getSubtitleEn()
+                ))
+                .toList();
+    }
+
+    /**
+     * Per-product trust badges (V233) resolved for the requested locale. On admin
+     * reads the raw English value rides along in {@code contentEn}; public reads null it.
+     */
+    private List<TrustBadge> toTrustBadges(ProductEntity entity, boolean publicView, String locale) {
+        if (entity.getTrustBadges() == null) {
+            return List.of();
+        }
+        return entity.getTrustBadges().stream()
+                .sorted(TRUST_BADGE_ORDER)
+                .map(item -> new TrustBadge(
+                        pick(item.getContent(), item.getContentEn(), locale),
+                        publicView ? null : item.getContentEn()
+                ))
+                .toList();
+    }
+
+    /**
      * Raw English product-level content for admin detail reads. Returns
      * {@code null} when no English content exists at all, so the public response
      * shape is unchanged and the admin editor can detect "no translation yet".
      */
     private static ProductTranslations toTranslations(ProductEntity entity) {
+        List<DescriptionBlock> descriptionBlocksEn = entity.getDescriptionBlocksEn();
         boolean anyEnglish = isPresent(entity.getNameEn())
                 || isPresent(entity.getShortDescriptionEn())
                 || isPresent(entity.getDescriptionEn())
                 || isPresent(entity.getPromotionContentEn())
                 || isPresent(entity.getInstallationGuideEn())
+                || isPresent(entity.getQuickAnswerSummaryEn())
+                || isPresent(entity.getSuitabilityAdvisoryEn())
                 || isPresent(entity.getSeoTitleEn())
-                || isPresent(entity.getSeoDescriptionEn());
+                || isPresent(entity.getSeoDescriptionEn())
+                || (descriptionBlocksEn != null && !descriptionBlocksEn.isEmpty());
         if (!anyEnglish) {
             return null;
         }
@@ -785,8 +909,11 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 entity.getDescriptionEn(),
                 entity.getPromotionContentEn(),
                 entity.getInstallationGuideEn(),
+                entity.getQuickAnswerSummaryEn(),
+                entity.getSuitabilityAdvisoryEn(),
                 entity.getSeoTitleEn(),
-                entity.getSeoDescriptionEn()
+                entity.getSeoDescriptionEn(),
+                descriptionBlocksEn
         ));
     }
 
@@ -806,6 +933,21 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         return entity.getRelatedProducts().stream()
                 .filter(rp -> !publicView || rp.getPublishStatus() == PublishStatus.PUBLISHED)
                 .map(rp -> toDomainListItem(rp, locale))
+                .toList();
+    }
+
+    /**
+     * Admin-curated accessory products ("Phụ kiện" — sản phẩm bán kèm) as list-view
+     * items. Public reads drop non-PUBLISHED entries so the PDP never links to hidden
+     * products; admin reads keep everything for the editor. Mirrors {@link #toRelatedProducts}.
+     */
+    private List<Product> toAccessoryProducts(ProductEntity entity, boolean publicView, String locale) {
+        if (entity.getAccessoryProducts() == null || entity.getAccessoryProducts().isEmpty()) {
+            return List.of();
+        }
+        return entity.getAccessoryProducts().stream()
+                .filter(ap -> !publicView || ap.getPublishStatus() == PublishStatus.PUBLISHED)
+                .map(ap -> toDomainListItem(ap, locale))
                 .toList();
     }
 

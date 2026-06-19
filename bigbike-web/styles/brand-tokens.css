@@ -30,6 +30,7 @@
   --bb-color-gray-400: #abb8c3;
   --bb-color-gray-450: #8a8a8a;
   --bb-color-gray-500: #6f6f6f;
+  --bb-color-gray-700: #3a3a3a;
   --bb-color-white: #ffffff;
 
   /* Semantic color */
@@ -89,6 +90,8 @@
   --bb-state-success-bg: rgba(119, 136, 102, 0.14);
   --bb-state-success-border: rgba(119, 136, 102, 0.34);
   --bb-state-success-text: #3d5230;
+  --bb-pros-accent: #0A6E2A;
+  --bb-cons-accent: #D4000F;
   --bb-state-warning: var(--bb-color-warning);
   --bb-state-warning-bg: rgba(252, 185, 0, 0.2);
   --bb-state-warning-border: rgba(252, 185, 0, 0.4);
@@ -110,6 +113,11 @@
   --bb-chat-text: #333333;           /* contact-row label + value text (.sudovn-btn-social-item) */
   /* Cart discount/coupon savings — WP parity (.summary--items .discount) */
   --bb-discount: var(--bb-color-purple);
+  /* Zalo brand blue — nút "Tư vấn Zalo" trên PDP. Màu thương hiệu Zalo cố định
+     (#0068ff), giữ thành token riêng để không hardcode hex rải rác. */
+  --bb-color-zalo: #0068ff;
+  --bb-color-zalo-hover: #0056d6;
+  --bb-color-zalo-soft: rgba(0, 104, 255, 0.08);
 
   /* Typography — source of truth: docs/TYPOGRAPHY.md
      Chỉ 2 font thực: Arial (body/UI) và Barlow Condensed (CTA/nav desktop).

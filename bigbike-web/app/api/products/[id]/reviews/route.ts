@@ -110,14 +110,21 @@ export async function GET(req: Request, { params }: ProductRouteParams) {
 export async function POST(req: Request, { params }: ProductRouteParams) {
   const { id } = await params;
 
-  let body: { authorName?: string; rating?: number; comment?: string; website?: string };
+  let body: {
+    authorName?: string;
+    rating?: number;
+    comment?: string;
+    title?: string;
+    photos?: unknown;
+    website?: string;
+  };
   try {
     body = (await req.json()) as typeof body;
   } catch {
     return NextResponse.json({ error: "Dữ liệu không hợp lệ." }, { status: 400 });
   }
 
-  const { authorName, rating, comment, website } = body;
+  const { authorName, rating, comment, title, photos, website } = body;
 
   if (!authorName?.trim()) {
     return NextResponse.json({ error: "Vui lòng nhập tên." }, { status: 400 });
@@ -125,6 +132,13 @@ export async function POST(req: Request, { params }: ProductRouteParams) {
   if (typeof rating !== "number" || rating < 1 || rating > 5) {
     return NextResponse.json({ error: "Đánh giá phải từ 1 đến 5 sao." }, { status: 400 });
   }
+  if (typeof title === "string" && title.trim().length > 160) {
+    return NextResponse.json({ error: "Tiêu đề không được vượt quá 160 ký tự." }, { status: 400 });
+  }
+  // Keep only string photo URLs, cap at 10 — backend re-validates they are MinIO URLs.
+  const photoUrls = Array.isArray(photos)
+    ? photos.filter((p): p is string => typeof p === "string" && p.trim().length > 0).slice(0, 10)
+    : [];
 
   try {
     const res = await fetch(`${BACKEND}/api/v1/products/${id}/reviews`, {
@@ -135,6 +149,8 @@ export async function POST(req: Request, { params }: ProductRouteParams) {
         authorName: authorName.trim(),
         rating,
         comment: comment?.trim() ?? "",
+        title: typeof title === "string" ? title.trim() : "",
+        photos: photoUrls,
         website: website ?? "",
       }),
     });

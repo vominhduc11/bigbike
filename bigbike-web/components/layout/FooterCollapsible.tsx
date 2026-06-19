@@ -12,7 +12,7 @@ export function FooterCollapsible({ title, children }: { title: string; children
 
   return (
     <section className="mb-[2.286rem] max-md:mb-10 max-md:border-b max-md:border-[#4b4b4b] max-md:pb-10">
-      <h3 className="m-0 font-body text-base font-medium uppercase text-brand-on-dark">
+      <h3 className="m-0 font-body text-body font-medium uppercase text-brand-on-dark">
         {/* Desktop/tablet: static heading — content is always visible, so no fake toggle */}
         <span className="block max-md:hidden">{title}</span>
         {/* Mobile: real collapse toggle with state-accurate ARIA */}
@@ -24,7 +24,7 @@ export function FooterCollapsible({ title, children }: { title: string; children
           className="flex min-h-[44px] w-full items-center justify-between gap-2 text-left md:hidden"
         >
           <span>{title}</span>
-          <span className="text-xl leading-none" aria-hidden="true">
+          <span className="text-ui-20 leading-none" aria-hidden="true">
             {open ? "−" : "+"}
           </span>
         </button>

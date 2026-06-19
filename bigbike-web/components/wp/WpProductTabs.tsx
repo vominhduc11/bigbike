@@ -32,6 +32,7 @@ export function WpProductTabs({
   anchorExtras?: WpAnchorExtra[];
 }) {
   const tt = useTranslations("Product.tabs");
+  const ttShort = useTranslations("Product.tabsShort");
   const [active, setActive] = useState(tabs[0]?.id ?? "");
 
   // Cho phép mở một tab từ bên ngoài (vd. link "X đánh giá" ở khối mua hàng mở tab
@@ -60,6 +61,13 @@ export function WpProductTabs({
     item.labelKey ? tt(item.labelKey) : item.label ?? "";
   const resolvedTabs = tabs.map((t) => ({ ...t, text: labelOf(t) }));
 
+  // Nhãn RÚT GỌN (≤2 chữ) CHỈ cho thanh nav cuộn ở mobile — các nhãn builtin dài >2
+  // chữ có bản ngắn riêng (Product.tabsShort); còn lại (đã ≤2 chữ, hoặc tab tự do) giữ
+  // nhãn đầy đủ. Tiêu đề mục (H2) và tab desktop vẫn dùng nhãn đầy đủ ở `labelOf`.
+  const SHORT_KEYS = new Set(["promotion", "prosCons", "suitability", "trust"]);
+  const navLabelOf = (item: { label?: string; labelKey?: string }) =>
+    item.labelKey && SHORT_KEYS.has(item.labelKey) ? ttShort(item.labelKey) : labelOf(item);
+
   // mt-[80px]: KHÔNG dùng WP `.mt-80` (margin 80px !important ở mọi breakpoint —
   // để hở khoảng trống lớn xấu trên mobile). Dùng arbitrary để override được:
   // desktop 80px, mobile rút còn 32px + thêm vạch 3px ngăn cách section mua hàng
@@ -74,8 +82,8 @@ export function WpProductTabs({
       <MobilePdpAnchorNav
         stickyInline
         items={[
-          ...tabs.map((t) => ({ id: t.id, label: labelOf(t) })),
-          ...anchorExtras.map((a): AnchorNavItem => ({ id: a.id, label: labelOf(a) })),
+          ...tabs.map((t) => ({ id: t.id, label: navLabelOf(t) })),
+          ...anchorExtras.map((a): AnchorNavItem => ({ id: a.id, label: navLabelOf(a) })),
         ]}
       />
       {/* Tab nav ngang — chỉ desktop. Mobile ẩn: các panel xếp dọc bên dưới. */}

@@ -17,6 +17,30 @@
 
 ---
 
+## 0b. Thứ tự khối hiển thị trên trang sản phẩm (canonical layout)
+
+Trang chi tiết sản phẩm (`bigbike-web` — `components/catalog/ProductView.tsx`) render các khối theo đúng thứ tự sau (khối tự ẩn khi không có dữ liệu):
+
+| # | Khối | Nguồn dữ liệu | Ghi chú |
+|---|---|---|---|
+| 1 | Gallery + thông tin mua hàng | `WpPurchaseSection` | Hàng sao có link "Viết đánh giá đầu tiên" → cuộn tới khối Đánh giá (`#reviews`) |
+| 2 | Specs Dashboard (4 ô số liệu) | `specStats` | — |
+| 3 | **Quick Answer** | `quickAnswerSummary` | Blockquote AIO 40–60 từ, đặt TRƯỚC H2 đầu tiên |
+| 4 | Tính năng chi tiết | `descriptionBlocks` | Khối full-trang (đã kéo RA khỏi tab). Khối `feature` (ảnh+tiêu đề+đoạn+danh sách) render 2 cột ảnh–chữ so le trên desktop (mobile xếp dọc); `side`=`auto` tự xen kẽ trái/phải. Cơ chế "ghép ngầm" cũ (tự gom `image`+`text` liền nhau) đã GỠ — muốn 2 cột phải dùng khối `feature`. |
+| 5 | Ưu điểm & Nhược điểm | `positiveNotes` / `negativeNotes` | 2 cột |
+| 6 | **Sản phẩm tương tự — "Xem thêm lựa chọn"** | `relatedProducts` | Cùng loại (auto theo tag). Đặt NGAY sau Ưu/Nhược điểm: khách vừa đọc nhược điểm/giá → thấy ngay lựa chọn thay thế, giữ khách lại site. **DESKTOP** render ở vị trí này; **MOBILE** render ở cuối trang. |
+| 7 | **Phù hợp với ai** | `suitabilityAdvisory` | Danh sách thẻ (đối tượng + lời khuyên + link nội bộ tùy chọn) |
+| 8 | Bảng size | `sizeGuide` | Khối xếp chồng riêng (không còn widget tab); có điều kiện |
+| 9 | Thông số kỹ thuật | `specifications` | Khối xếp chồng riêng |
+| 10 | FAQ | `faqs` | Khối xếp chồng riêng (Lắp đặt `installationGuide` — **lưới các bước** số thứ tự + icon + tiêu đề + nội dung + hộp mẹo/cảnh báo + ghi chú bảo dưỡng, V242 — chèn giữa #9–#10 nếu có; Thông tin bổ sung bảo hành/xuất xứ/trọng lượng đặt sau FAQ) |
+| 11 | Đánh giá | `ReviewsSection` | Đã kéo RA khỏi tab, đặt SAU FAQ, `id="reviews"` |
+| 12 | Trust block "Mua tại BigBike.vn" | product + site settings | Lưới 7 ô (Giá · Kho · BH · Giao · Đổi · Hotline · Địa chỉ) |
+| 13 | Hoàn thiện bộ bảo hộ — cross-sell | `accessories` (admin curate) | Khác loại (găng/áo giáp/giày) để tăng AOV; render một lần ở cuối luồng marketing |
+
+Sticky mua-hàng (mobile), "Đã xem gần đây", dải liên hệ giữ nguyên ở cuối.
+
+---
+
 ## 1. Tên sản phẩm
 
 | | |
@@ -60,16 +84,18 @@
 
 ---
 
-## 4. Mô tả ngắn / Trả lời nhanh — **40–60 từ** (#5)
+## 4. Quick Answer / Trả lời nhanh — **40–60 từ** (#5)
 
 | | |
 |---|---|
-| **Ô nhập** | Mô tả ngắn (short description) |
-| **Vị trí hiển thị** | Ngay cạnh nút mua hàng, **trên** mọi tiêu đề → cũng là đoạn Google trích dẫn |
+| **Ô nhập** | **Quick Answer** (ô riêng — `quickAnswerSummary`, KHÁC "Mô tả ngắn") |
+| **Vị trí hiển thị** | Khối blockquote đặt **trước H2 đầu tiên** của phần mô tả → cũng là đoạn Google/AI trích dẫn |
 | **Cách viết** | "Trả lời trước" — câu đầu nói thẳng *sản phẩm này là gì + cho ai + nổi bật điều gì*, rồi mới bổ sung |
 
 - ✅ *"Mũ fullface AGV K6 là mũ bảo hiểm cao cấp cho người đi mô tô phân khối lớn và đi phượt đường dài. Vỏ sợi carbon chỉ nặng 1.250g giúp giảm mỏi cổ, kính chống tia UV và đạt chuẩn an toàn ECE 22.06."* (≈45 từ)
 - ❌ Mở đầu bằng marketing chung chung: *"Sản phẩm được nhiều người tin dùng…"*
+
+> **Lưu ý:** ô **"Mô tả ngắn" (short description)** vẫn giữ riêng — đó là các gạch đầu dòng cạnh nút mua hàng. **Quick Answer** là ô mới, tách bạch, dành cho đoạn AIO 40–60 từ.
 
 ---
 
@@ -77,21 +103,46 @@
 
 | | |
 |---|---|
-| **Ô nhập** | Mô tả sản phẩm (trình soạn thảo khối) |
-| **Cấu trúc** | Chia thành các **mục có tiêu đề** (H2 cho nhóm lớn, H3 cho từng tính năng) — đừng viết một khối chữ dài |
+| **Ô nhập** | Mô tả sản phẩm (trình soạn thảo khối — chỉ **4 loại khối**) |
+| **Cấu trúc** | Chia thành các **mục có tiêu đề** (dùng định dạng H2/H3 ngay trong ô văn bản, hoặc tiêu đề của khối ảnh+chữ) — đừng viết một khối chữ dài |
+
+**4 khối có thể thêm (V238):**
+
+1. **Chỉ văn bản** — ô soạn chữ tự do: in đậm/nghiêng, **tiêu đề (H2/H3)**, gạch đầu dòng, danh sách số, trích dẫn, link. Một mục mô tả (tiêu đề + vài đoạn + danh sách) gói gọn trong một khối này.
+2. **Chỉ hình ảnh** — một ảnh rộng hết khổ + chú thích (alt/caption).
+3. **Ảnh phải + chữ trái** — khối 2 cột: ảnh bên phải, phần chữ bên trái gồm *tiêu đề phụ + tiêu đề chính + đoạn mô tả + danh sách điểm nổi bật*.
+4. **Ảnh trái + chữ phải** — như khối 3 nhưng ảnh đổi sang bên trái.
 
 Gợi ý bố cục:
 
-1. **Tổng quan** (2–3 đoạn) — sản phẩm là gì, giải quyết nhu cầu gì.
-2. **Tính năng nổi bật** — mỗi tính năng một tiêu đề H3 + 2–3 câu giải thích **lợi ích thật**:
+1. **Tổng quan** (khối "chỉ văn bản", 2–3 đoạn) — sản phẩm là gì, giải quyết nhu cầu gì.
+2. **Tính năng nổi bật** — mỗi tính năng một khối **ảnh+chữ** (xen kẽ phải/trái): tiêu đề phụ (nhóm tính năng) + tiêu đề chính + 2–3 câu **lợi ích thật** + danh sách:
    - `Vỏ sợi carbon siêu nhẹ` → giảm trọng lượng, đỡ mỏi cổ khi đi xa.
    - `Hệ thống thông gió 4 cửa` → thoáng mát khi chạy tốc độ cao.
-3. **Khối "Phù hợp với ai"** (#8) — 3–4 câu dạng *nếu… thì…*, kèm liên kết nội bộ:
-   - ✅ *"Nếu bạn thường đi phượt đường dài, K6 nhẹ và êm sẽ phù hợp. Nếu chủ yếu đi phố, có thể cân nhắc [dòng mũ 3/4 nhẹ hơn]. Người mới chơi mô tô nên xem thêm [hướng dẫn chọn size mũ]."*
-   - *Liên kết nội bộ* = trỏ sang sản phẩm/bài viết liên quan khác trên web.
-4. **Hướng dẫn sử dụng / bảo quản** (nếu có).
+3. **Hướng dẫn sử dụng / bảo quản** (khối "chỉ văn bản", nếu có).
+
+> Mô tả sản phẩm nhập từ web cũ đã được hệ thống **tự gộp** về 4 khối này (giữ nguyên nội dung) — bạn chỉ cần chỉnh sửa, không phải dựng lại.
+
+> **Khối "Phù hợp với ai" tách ra ô nhập riêng** — xem mục 6b dưới đây.
 
 > Khi đã viết đủ Ưu/Nhược + Bảng size + FAQ + "Phù hợp với ai", bài thường **tự đạt** 800–1.500 từ — không cần "viết cho dài".
+
+---
+
+## 5b. Khối "Phù hợp với ai — Nếu… thì…" (#7) — **ô nhập riêng**
+
+| | |
+|---|---|
+| **Ô nhập** | **Phù hợp với ai** (ô riêng — `suitabilityAdvisory`, **danh sách thẻ** thêm/bớt/kéo sắp thứ tự — V240) |
+| **Vị trí hiển thị** | Khối riêng trên trang sản phẩm (ngay sau khối "Sản phẩm tương tự") — mỗi thẻ một dòng tư vấn |
+| **Cách viết** | Mỗi thẻ gồm **Đối tượng** (in đậm — nhóm rider/ngân sách/nhu cầu) + **Lời khuyên** (1 câu *nếu… thì…*) + **Link gợi ý** tùy chọn (nhãn + đường dẫn nội bộ tới SP/danh mục thay thế). Nên có 3–4 thẻ. |
+
+- ✅ Thẻ 1 — Đối tượng: *"Touring xa / tốc độ cao"*; Lời khuyên: *"Mẫu này phù hợp, spoiler và trọng lượng nhẹ phát huy tốt trên hành trình dài."*
+- ✅ Thẻ 2 — Đối tượng: *"Ngân sách 5–8 triệu"*; Lời khuyên: *"Cân nhắc mẫu nhẹ ví hơn"*; Link: *"Caberg Avalon X → /san-pham/caberg-avalon-x"*
+
+> Lưu trữ: mỗi thẻ là một phần tử trong **JSON array** ở field `suitabilityAdvisory` (`{ audience, advice, linkLabel?, linkUrl? }`). Song ngữ: bản EN mirror theo index, `linkUrl` dùng chung. Web parse JSON rồi render thẻ — không còn HTML tự do.
+
+> Khối **"Sản phẩm tương tự — Xem thêm lựa chọn"** (#6) dùng danh sách **"Sản phẩm liên quan"** (cùng loại) đã chọn — đặt ngay sau Ưu/Nhược điểm. Khối **"Hoàn thiện bộ bảo hộ"** ở cuối trang là danh sách **phụ kiện khác loại** (găng/áo giáp/giày) admin curate riêng — tăng AOV; hai khối là hai danh sách độc lập.
 
 ---
 
@@ -148,9 +199,9 @@ Tối thiểu các cột: `Size` · `Vòng đầu (cm)` · `Gợi ý` + một c�
 
 | | |
 |---|---|
-| **Ô nhập** | FAQ (cặp Câu hỏi – Trả lời) |
+| **Ô nhập** | FAQ (cặp Câu hỏi – Trả lời). Ô **Trả lời** có trình soạn thảo định dạng: in đậm/nghiêng, gạch đầu dòng, gắn link. |
 | **Số lượng** | 3–6 câu hỏi khách hay hỏi thật |
-| **Lợi ích** | Hiển thị đẹp trên Google (rich result) + tăng độ sâu nội dung |
+| **Lợi ích** | Hiển thị đẹp trên Google (rich result) + tăng độ sâu nội dung. Trên trang web câu hỏi hiển thị dạng accordion (bấm mở/đóng mượt). |
 
 Ví dụ: *"Mũ AGV K6 có đạt chuẩn đi phượt không?"* / *"Size M vòng đầu bao nhiêu?"* / *"Có bảo hành đổi mới không?"* — câu trả lời ngắn gọn, đúng sự thật.
 

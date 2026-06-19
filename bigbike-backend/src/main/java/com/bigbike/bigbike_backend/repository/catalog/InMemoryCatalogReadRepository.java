@@ -264,17 +264,24 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 null,           // promotionContent
                 null,           // installationGuide
                 List.of(),      // faqs
+                List.of(),      // commitments
+                List.of(),      // specStats
+                List.of(),      // trustBadges
                 List.of(),      // positiveNotes
                 List.of(),      // negativeNotes
                 null,           // warrantyMonths
                 null,           // warrantyScope
                 null,           // originBrandCountry
-                null,           // originManufactureCountry
                 null,           // weightGrams
                 null,           // sizeGuide
+                null,           // quickAnswerSummary
+                null,           // suitabilityAdvisory
                 null,           // gender
                 List.of(),      // relatedProducts
+                List.of(),      // accessoryProducts
                 null,           // descriptionBlocks
+                null,           // tabs
+                null,           // sectionVisibility
                 new SeoMeta(
                         "Mũ bảo hiểm LS2 FF800",
                         "Mũ fullface LS2 FF800 chính hãng tại BigBike.",
@@ -322,17 +329,24 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 null,           // promotionContent
                 null,           // installationGuide
                 List.of(),      // faqs
+                List.of(),      // commitments
+                List.of(),      // specStats
+                List.of(),      // trustBadges
                 List.of(),      // positiveNotes
                 List.of(),      // negativeNotes
                 null,           // warrantyMonths
                 null,           // warrantyScope
                 null,           // originBrandCountry
-                null,           // originManufactureCountry
                 null,           // weightGrams
                 null,           // sizeGuide
+                null,           // quickAnswerSummary
+                null,           // suitabilityAdvisory
                 null,           // gender
                 List.of(),      // relatedProducts
+                List.of(),      // accessoryProducts
                 null,           // descriptionBlocks
+                null,           // tabs
+                null,           // sectionVisibility
                 new SeoMeta(
                         "Mũ bảo hiểm KYT NX Race",
                         "KYT NX Race hàng chính hãng.",
@@ -380,17 +394,24 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 null,           // promotionContent
                 null,           // installationGuide
                 List.of(),      // faqs
+                List.of(),      // commitments
+                List.of(),      // specStats
+                List.of(),      // trustBadges
                 List.of(),      // positiveNotes
                 List.of(),      // negativeNotes
                 null,           // warrantyMonths
                 null,           // warrantyScope
                 null,           // originBrandCountry
-                null,           // originManufactureCountry
                 null,           // weightGrams
                 null,           // sizeGuide
+                null,           // quickAnswerSummary
+                null,           // suitabilityAdvisory
                 null,           // gender
                 List.of(),      // relatedProducts
+                List.of(),      // accessoryProducts
                 null,           // descriptionBlocks
+                null,           // tabs
+                null,           // sectionVisibility
                 new SeoMeta(
                         "Áo giáp LS2 City Rider",
                         "Áo giáp LS2 cho touring và daily ride.",

@@ -14,7 +14,6 @@ import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressPageMappe
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressProductMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressRedirectMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressVariationMapper;
-import com.bigbike.bigbike_backend.migration.wordpress.importer.ProductTagImporter.MappedProductTag;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressReviewMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.importer.AttributeImporter.MappedAttribute;
 import com.bigbike.bigbike_backend.migration.wordpress.importer.AttributeImporter.MappedAttributeValue;
@@ -118,7 +117,6 @@ public class WordPressMigrationImportService {
     private final CustomerImporter customerImporter;
     private final CouponImporter couponImporter;
     private final OrderImporter orderImporter;
-    private final ProductTagImporter productTagImporter;
     private final ReviewImporter reviewImporter;
     private final AttributeImporter attributeImporter;
 
@@ -152,7 +150,6 @@ public class WordPressMigrationImportService {
             CouponImporter couponImporter,
             OrderImporter orderImporter,
             WordPressReviewMapper reviewMapper,
-            ProductTagImporter productTagImporter,
             ReviewImporter reviewImporter,
             AttributeImporter attributeImporter) {
         this.mediaUrlProperties = mediaUrlProperties;
@@ -184,7 +181,6 @@ public class WordPressMigrationImportService {
         this.customerImporter = customerImporter;
         this.couponImporter = couponImporter;
         this.orderImporter = orderImporter;
-        this.productTagImporter = productTagImporter;
         this.reviewImporter = reviewImporter;
         this.attributeImporter = attributeImporter;
     }
@@ -299,7 +295,6 @@ public class WordPressMigrationImportService {
             Map<Long, WpTermTaxonomy> productCatByTermId = new HashMap<>();
             Map<Long, WpTermTaxonomy> brandByTermId = new HashMap<>();
             Map<Long, WpTermTaxonomy> navMenuByTermId = new HashMap<>();
-            Map<Long, WpTermTaxonomy> productTagByTermId = new HashMap<>();
             Map<Long, WpTermTaxonomy> productVisibilityByTermId = new HashMap<>();
             Map<Long, WpTermTaxonomy> blogCategoryByTermId = new HashMap<>();
             Map<Long, WpTermTaxonomy> blogTagByTermId = new HashMap<>();
@@ -309,7 +304,6 @@ public class WordPressMigrationImportService {
                     case "product_cat"  -> productCatByTermId.put(tt.termId(), tt);
                     case "pwb-brand"    -> brandByTermId.put(tt.termId(), tt);
                     case "nav_menu"     -> navMenuByTermId.put(tt.termId(), tt);
-                    case "product_tag"  -> productTagByTermId.put(tt.termId(), tt);
                     case "product_visibility" -> productVisibilityByTermId.put(tt.termId(), tt);
                     case "category"     -> blogCategoryByTermId.put(tt.termId(), tt);
                     case "post_tag"     -> blogTagByTermId.put(tt.termId(), tt);
@@ -595,31 +589,7 @@ public class WordPressMigrationImportService {
                 results.put(MigrationDomain.ORDERS, orderImporter.importBatch(orders, options));
             }
 
-            // ── 15. Product Tags ──────────────────────────────────────────────
-            if (options.includesDomain(MigrationDomain.PRODUCT_TAGS)) {
-                List<MappedProductTag> tags = new ArrayList<>();
-                for (WpPost product : productPosts) {
-                    String dbProductId = "wp-prod-" + product.id();
-                    for (long ttId : relsByObject.getOrDefault(product.id(), Set.of())) {
-                        Long termId = ttIdToTermId.get(ttId);
-                        if (termId == null) continue;
-                        if (productTagByTermId.containsKey(termId)) {
-                            WpTerm term = termsById.get(termId);
-                            if (term != null && !term.name().isBlank()) {
-                                tags.add(new MappedProductTag(
-                                        term.termId(),
-                                        term.slug(),
-                                        term.name(),
-                                        dbProductId));
-                            }
-                        }
-                    }
-                }
-                log.info("Product tags collected: {}", tags.size());
-                results.put(MigrationDomain.PRODUCT_TAGS, productTagImporter.importBatch(tags, options));
-            }
-
-            // ── 16. Product Reviews ───────────────────────────────────────────
+            // ── 15. Product Reviews ───────────────────────────────────────────
             if (options.includesDomain(MigrationDomain.PRODUCT_REVIEWS)) {
                 List<WordPressReviewMapper.MappedReview> reviews = new ArrayList<>();
                 for (WpComment comment : reviewComments) {

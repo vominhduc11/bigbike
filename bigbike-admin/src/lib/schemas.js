@@ -83,18 +83,39 @@ export function createProductSchema(t, isCreate = false) {
         value: z.string().max(2000, 'Giá trị thông số tối đa 2000 ký tự.'),
         groupName: z.string().max(100, 'Tên nhóm tối đa 100 ký tự.').optional(),
       })).optional(),
+      // "Specs Dashboard" — ô số liệu nổi bật dưới khu vực mua hàng (V235); tối đa 4, song ngữ.
+      specStats: z.array(z.object({
+        _key: z.string().optional(),
+        value: z.string().max(60, 'Số liệu tối đa 60 ký tự.'),
+        label: z.string().max(80, 'Nhãn tối đa 80 ký tự.'),
+        valueEn: z.string().max(60).optional(),
+        labelEn: z.string().max(80).optional(),
+      })).max(4, 'Tối đa 4 ô số liệu nổi bật.').optional(),
       faqs: z.array(z.object({
         _key: z.string().optional(),
         question: z.string().max(500, 'Câu hỏi tối đa 500 ký tự.'),
         answer: z.string().max(20000, 'Câu trả lời tối đa 20000 ký tự.'),
       })).optional(),
+      // Cam kết theo từng sản phẩm (V232) — tùy chọn; chỉ kiểm tra độ dài.
+      commitments: z.array(z.object({
+        _key: z.string().optional(),
+        icon: z.string().max(40).optional(),
+        title: z.string().max(200, 'Tiêu đề cam kết tối đa 200 ký tự.'),
+        subtitle: z.string().max(300, 'Mô tả cam kết tối đa 300 ký tự.').optional(),
+        titleEn: z.string().max(200).optional(),
+        subtitleEn: z.string().max(300).optional(),
+      })).optional(),
       variants: z.array(z.object({
         name: z.string(),
+        // PRODUCT_RULE_SKU_001 — required per-row when the variant is real (has a
+        // name); enforced in superRefine so blank scratch rows aren't flagged.
+        sku: z.string().optional(),
         imageUrl: z.string().optional(),
         options: z.array(z.object({ name: z.string(), value: z.string() })).optional(),
         gallery: z.array(z.object({ url: z.string(), alt: z.string().optional() })).optional(),
       })).optional(),
       relatedProductIds: z.array(z.string()).optional(),
+      accessoryProductIds: z.array(z.string()).optional(),
       // Template SEO fields (V175) — optional, length/integer checked in superRefine.
       positiveNotes: z.array(z.object({
         _key: z.string().optional(),
@@ -109,9 +130,11 @@ export function createProductSchema(t, isCreate = false) {
       warrantyMonths: z.string().optional(),
       warrantyScope: z.string().max(2000, 'Phạm vi bảo hành tối đa 2000 ký tự.').optional(),
       originBrandCountry: z.string().max(120).optional(),
-      originManufactureCountry: z.string().max(120).optional(),
       weightGrams: z.string().optional(),
       sizeGuide: z.string().max(20000, 'Bảng size tối đa 20000 ký tự.').optional(),
+      // PDP layout fields (V236–V237) — Quick Answer + "Phù hợp với ai".
+      quickAnswerSummary: z.string().max(600, 'Quick Answer tối đa 600 ký tự.').optional(),
+      suitabilityAdvisory: z.string().max(20000, 'Phù hợp với ai tối đa 20000 ký tự.').optional(),
       // Optional English content (V136) — never required, length-checked only.
       translations: z.object({
         en: z.object({
@@ -120,6 +143,8 @@ export function createProductSchema(t, isCreate = false) {
           shortDescription: z.string().optional(),
           description: z.string().optional(),
           installationGuide: z.string().optional(),
+          quickAnswerSummary: z.string().max(600, 'Quick Answer tối đa 600 ký tự.').optional(),
+          suitabilityAdvisory: z.string().max(20000, 'Phù hợp với ai tối đa 20000 ký tự.').optional(),
           seoTitle: z.string().optional(),
           seoDescription: z.string().optional(),
         }).optional(),
@@ -150,6 +175,25 @@ export function createProductSchema(t, isCreate = false) {
       if (data.imageUrl?.trim() && !MEDIA_URL_REGEX.test(data.imageUrl.trim())) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.errImageUrl'), path: ['imageUrl'] })
       }
+      // PRODUCT_RULE_SKU_001 — every real variant (one with a name; blank rows are
+      // dropped at payload time) must carry a SKU, and SKUs must be unique within the
+      // product (case-insensitive). Mirrors @NotBlank + uniqueness on the backend.
+      const seenSku = new Map()
+      ;(data.variants ?? []).forEach((v, i) => {
+        const name = (v?.name ?? '').trim()
+        const sku = (v?.sku ?? '').trim()
+        if (name && !sku) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.errVariantSkuRequired'), path: ['variants', i, 'sku'] })
+          return
+        }
+        if (!sku) return
+        const key = sku.toLowerCase()
+        if (seenSku.has(key)) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.errVariantSkuDuplicate'), path: ['variants', i, 'sku'] })
+        } else {
+          seenSku.set(key, i)
+        }
+      })
       // Short description quality: when filled, require enough text to be
       // useful on the PDP. Empty is allowed (PDP just hides the row).
       const desc = (data.shortDescription ?? '').trim()
@@ -459,6 +503,7 @@ export function createContentSchema(t, isCreate, normalizedType) {
     coverImageUrl: z.string().optional(),
     productImageUrl: z.string().optional(),
     relatedProductIds: z.array(z.string()).optional(),
+    accessoryProductIds: z.array(z.string()).optional(),
     seoCanonicalUrl: z.string().optional(),
     seoOgImageUrl: z.string().optional(),
     // Optional English content (V138 + V216 slug) — never required; slug chỉ áp dụng cho BÀI VIẾT.

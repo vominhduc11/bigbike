@@ -64,7 +64,7 @@ export function ProductTabs({ sections }: { sections: ProductTabSection[] }) {
                   id={tabId}
                   href={`#${section.id}`}
                   className={cn(
-                    "relative block w-full h-[42px] border-none bg-transparent text-[var(--bb-text-secondary)] font-body text-base font-semibold leading-[42px] text-center whitespace-nowrap no-underline normal-case cursor-pointer after:content-[''] after:absolute after:inset-0 after:-z-[1] after:border after:border-border-default after:bg-white after:[transform:skewX(-20deg)] max-[1024px]:text-sm",
+                    "relative block w-full h-[42px] border-none bg-transparent text-[var(--bb-text-secondary)] font-body text-body font-semibold leading-[42px] text-center whitespace-nowrap no-underline normal-case cursor-pointer after:content-[''] after:absolute after:inset-0 after:-z-[1] after:border after:border-border-default after:bg-white after:[transform:skewX(-20deg)] max-[1024px]:text-caption",
                     active && "text-white after:border-black after:bg-black",
                   )}
                   onClick={(event) => {
@@ -97,7 +97,7 @@ export function ProductTabs({ sections }: { sections: ProductTabSection[] }) {
                 "tab-panel text-black text-[length:var(--fs-body)] leading-[1.7] md:leading-[2.3]",
                 active ? "block" : "hidden",
                 "max-md:block max-md:pt-6 max-md:pb-1 max-md:mt-0 max-md:border-t-[3px] max-md:border-t-border max-md:first:[border-top:none] max-md:scroll-mt-[calc(var(--bb-header-height)_+_52px)]",
-                "max-md:before:content-[attr(data-label)] max-md:before:block max-md:before:mb-4 max-md:before:font-body max-md:before:text-lg max-md:before:font-semibold max-md:before:text-[var(--bb-text-primary)] max-md:before:uppercase max-md:before:tracking-normal max-md:before:leading-[1.2]",
+                "max-md:before:content-[attr(data-label)] max-md:before:block max-md:before:mb-4 max-md:before:font-body max-md:before:text-h4 max-md:before:font-semibold max-md:before:text-[var(--bb-text-primary)] max-md:before:uppercase max-md:before:tracking-normal max-md:before:leading-[1.2]",
               )}
               data-label={section.label}
             >

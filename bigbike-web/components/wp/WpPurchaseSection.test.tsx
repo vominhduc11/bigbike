@@ -3,6 +3,11 @@ import { describe, expect, it, vi } from "vitest";
 import type { Product } from "@/lib/contracts/public";
 import { WpPurchaseSection } from "./WpPurchaseSection";
 
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key: string) => key,
+  useLocale: () => "vi",
+}));
+
 vi.mock("@/lib/cart-context", () => ({
   useCart: () => ({ addToCart: vi.fn() }),
 }));
@@ -46,7 +51,6 @@ function renderSection(rating: number | null, ratingCount: number | null) {
       product={makeProduct()}
       gallery={[]}
       videos={[]}
-      shortDescriptionHtml=""
       rating={rating}
       ratingCount={ratingCount}
     />,

@@ -455,21 +455,6 @@ export async function restoreProduct(productId) {
   return parseDetailPayload(payload, normalizeProduct)
 }
 
-// Product tags — managed as a dedicated sub-resource (GET/PUT /admin/products/{id}/tags),
-// independent of the main product upsert. Returns a flat array of tag names.
-export async function fetchProductTags(productId) {
-  const payload = await requestJson(`/admin/products/${productId}/tags`)
-  return Array.isArray(payload?.data) ? payload.data : []
-}
-
-export async function updateProductTags(productId, tags) {
-  const payload = await requestJson(`/admin/products/${productId}/tags`, {
-    method: 'PUT',
-    body: { tags },
-  })
-  return Array.isArray(payload?.data) ? payload.data : []
-}
-
 
 export async function fetchCategories(query) {
   try {
@@ -1301,6 +1286,58 @@ export async function saveHomeHighlights(slots) {
   return { items: Array.isArray(payload?.data) ? payload.data : [] }
 }
 
+// Contact page builder (/lien-he layout). Returns { blocks, values } where values is the live
+// value of every whitelisted contact setting key (single source shared with header/footer).
+export async function fetchContactPage() {
+  const payload = await requestJson('/admin/contact-page')
+  const data = payload?.data ?? {}
+  return {
+    blocks: Array.isArray(data.blocks) ? data.blocks : [],
+    values: Array.isArray(data.values) ? data.values : [],
+  }
+}
+
+// Saves the whole block list plus write-through values for bound contact settings in one PUT.
+export async function saveContactPage({ blocks, values }) {
+  const payload = await requestJson('/admin/contact-page', {
+    method: 'PUT',
+    body: { blocks, values },
+  })
+  const data = payload?.data ?? {}
+  return {
+    blocks: Array.isArray(data.blocks) ? data.blocks : [],
+    values: Array.isArray(data.values) ? data.values : [],
+  }
+}
+
+// Guide page builder (/huong-dan layout). Returns { heroTitleVi, heroTitleEn, heroImageUrl, entries }.
+// Detail bodies live in Content -> Pages (referenced by each entry's pageSlug).
+export async function fetchGuidePage() {
+  const payload = await requestJson('/admin/guide-page')
+  const data = payload?.data ?? {}
+  return {
+    heroTitleVi: data.heroTitleVi ?? '',
+    heroTitleEn: data.heroTitleEn ?? '',
+    heroImageUrl: data.heroImageUrl ?? '',
+    entries: Array.isArray(data.entries) ? data.entries : [],
+  }
+}
+
+// Saves the hero plus the whole guide card list in one PUT.
+export async function saveGuidePage({ heroTitleVi, heroTitleEn, heroImageUrl, entries }) {
+  const payload = await requestJson('/admin/guide-page', {
+    method: 'PUT',
+    body: { heroTitleVi, heroTitleEn, heroImageUrl, entries },
+  })
+  const data = payload?.data ?? {}
+  return {
+    heroTitleVi: data.heroTitleVi ?? '',
+    heroTitleEn: data.heroTitleEn ?? '',
+    heroImageUrl: data.heroImageUrl ?? '',
+    entries: Array.isArray(data.entries) ? data.entries : [],
+  }
+}
+
 // Home Videos
 
 function normalizeHomeVideo(input) {
@@ -1517,7 +1554,9 @@ function normalizeReview(input) {
     authorName: String(s.authorName || ''),
     authorEmail: String(s.authorEmail || ''),
     rating: Number(s.rating ?? 0),
+    title: String(s.title || ''),
     body: String(s.body || ''),
+    photos: Array.isArray(s.photos) ? s.photos.map(String) : [],
     status: String(s.status || ''),
     createdAt: s.createdAt || '',
     updatedAt: s.updatedAt || '',

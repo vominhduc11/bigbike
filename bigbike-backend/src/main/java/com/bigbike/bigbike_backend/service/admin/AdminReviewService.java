@@ -258,7 +258,9 @@ public class AdminReviewService {
         payload.put("authorName", review.getAuthorName() != null ? review.getAuthorName() : "");
         payload.put("authorEmail", review.getAuthorEmail() != null ? review.getAuthorEmail() : "");
         payload.put("rating", review.getRating());
+        payload.put("title", review.getTitle() != null ? review.getTitle() : "");
         payload.put("body", review.getBody() != null ? review.getBody() : "");
+        payload.put("photos", review.getPhotos() != null ? review.getPhotos() : List.of());
         payload.put("status", review.getStatus());
         payload.put("createdAt", review.getCreatedAt() != null ? review.getCreatedAt().toString() : "");
         payload.put("updatedAt", review.getUpdatedAt() != null ? review.getUpdatedAt().toString() : "");

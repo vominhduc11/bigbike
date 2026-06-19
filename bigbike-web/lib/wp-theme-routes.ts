@@ -28,7 +28,6 @@ export const WP_THEME_ROUTES = new Set<string>([
   "/lien-he",
   "/bao-hanh",
   "/huong-dan",
-  "/huong-dan-mua-hang",
 ]);
 
 /** Prefix động (route có [slug]) đã port sang theme WP. */

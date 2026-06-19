@@ -1,0 +1,43 @@
+"use client";
+
+import { useLocalizedField } from "@/components/i18n/LocalizedContent";
+import type { ProductSpecStat } from "@/lib/contracts/public";
+
+/**
+ * "Specs Dashboard" — dải ô số liệu nổi bật hiển thị ngay dưới khối mua hàng (theo mockup PDP). Đây là
+ * "đòn chốt" bán hàng: mỗi ô là một số liệu lớn (value) + nhãn (label) trả lời câu hỏi "có đáng tiền
+ * không", KHÔNG phải lặp lại thông số kỹ thuật. Admin quản theo từng sản phẩm (product.specStats, V235),
+ * tối đa 4 ô. Dùng token màu/font web — KHÔNG hardcode. Đổi ngôn ngữ qua `useLocalizedField("specStats")`
+ * (bản EN client refetch, giữ ISR/SEO). Rỗng → không render gì.
+ */
+const MAX = 4;
+
+export function FeaturedSpecsBar({ stats }: { stats: ProductSpecStat[] }) {
+  const enStats = useLocalizedField<ProductSpecStat[]>("specStats");
+  const source = Array.isArray(enStats) && enStats.length > 0 ? enStats : stats;
+  const boxes = (source ?? []).filter((s) => s?.value?.trim() && s?.label?.trim()).slice(0, MAX);
+
+  if (boxes.length === 0) return null;
+
+  return (
+    <div
+      role="region"
+      className="my-10 grid grid-cols-2 gap-px border border-border bg-border md:grid-cols-4"
+      aria-label="Số liệu nổi bật"
+    >
+      {boxes.map((s, i) => (
+        <div
+          key={i}
+          className="flex flex-col items-center gap-1.5 bg-background px-4 py-6 text-center transition-colors hover:bg-muted/40"
+        >
+          <span className="font-cta text-h1 font-bold uppercase leading-none tracking-tight text-brand">
+            {s.value}
+          </span>
+          <span className="text-ui-11 font-semibold uppercase tracking-wide text-muted-foreground">
+            {s.label}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}

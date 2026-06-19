@@ -86,8 +86,16 @@
   /* State & semantic text colors — expose token để tránh dùng arbitrary CSS-var utilities */
   --color-state-success-text: var(--bb-state-success-text);
   --color-state-warning-text: var(--bb-state-warning-text);
+  --color-state-warning: var(--bb-state-warning);
+  --color-state-warning-bg: var(--bb-state-warning-bg);
+  --color-state-warning-border: var(--bb-state-warning-border);
+  --color-pros-accent: var(--bb-pros-accent);
+  --color-cons-accent: var(--bb-cons-accent);
   --color-rating-star: var(--bb-rating-star);
   --color-discount: var(--bb-discount);
+  --color-zalo: var(--bb-color-zalo);
+  --color-zalo-hover: var(--bb-color-zalo-hover);
+  --color-zalo-soft: var(--bb-color-zalo-soft);
 
   --font-body: var(--bb-font-body);
   --font-cta: var(--bb-font-cta);
@@ -2925,6 +2933,99 @@ body:has(.bb-home) {
    natural left alignment with the rest of the page — no horizontal offset that
    would leave an empty gap on the left. */
 
+/* PDP port mockup (V229-231) render markup WP `.breadcrumb` trong `.bb-wp-pdp-page`,
+   KHÔNG còn dùng `.bb-wp-pdp`/`.bb-breadcrumb` nên cơ chế clearance cũ ở trên không
+   còn khớp → logo bị bỏ clearance. Ở ≥768px logo emblem (ảnh hiển thị ~136px cao:
+   rộng 150px × 190/210) thò ~71px xuống dưới thanh header 80px khi ở đỉnh trang, đè
+   lên breadcrumb. Đẩy TOÀN BỘ nội dung PDP xuống (không lùi ngang) để breadcrumb +
+   sản phẩm nằm hẳn dưới logo. <768px dùng logo nhỏ (không thò) nên không cần.
+   Trang TÀI KHOẢN (.bb-wp-account-page) cũng render breadcrumb WP ngay đầu
+   `.container` (≈110px từ đỉnh) nên dính lỗi y hệt → áp cùng offset. */
+@media (min-width: 768px) {
+  .bb-wp-pdp-page,
+  .bb-wp-account-page {
+    padding-top: 60px;
+  }
+}
+
+/* Khung chờ (loading skeleton) render `.bb-breadcrumb` ngay đầu trang trên nền
+   phẳng (không hero) → cũng bị logo che trong lúc tải, gây "nhảy" khi vào trang
+   thật. `.bb-breadcrumb` HIỆN CHỈ skeleton dùng (trang thật dùng `.breadcrumb` WP
+   hoặc đặt trong hero) nên offset ở đây chỉ chạm trạng thái tải, an toàn. Khung chờ
+   trang chủ không có `.bb-breadcrumb` (mở đầu bằng hero) nên không bị đụng. */
+@media (min-width: 768px) {
+  .bb-breadcrumb {
+    margin-top: 60px;
+  }
+}
+
+/* Tiêu đề khối nội dung PDP — ĐỒNG BỘ chuẩn tiêu đề section của TRANG CHỦ
+   (`.block-title`): eyebrow 16px đỏ + tiêu đề 24px(mobile)/35px(≥768) in hoa.
+   DÙNG GIÁ TRỊ PX THẬT của theme WP (KHÔNG dùng token --bb-text-section-title vì
+   token đó = 2.1875rem tính theo gốc 16px, nhưng site neo gốc 14px → chỉ ra ~31px,
+   lệch 35px của trang chủ). Để top-level (unlayered) + scope `.bb-wp-pdp-page` đủ
+   đặc hiệu nên THẮNG cỡ h2 mặc định của theme WP. */
+.bb-wp-pdp-page .pdp-section-head {
+  margin-bottom: 20px;
+}
+.bb-wp-pdp-page .pdp-section-head > .kicker {
+  margin: 0 0 6px;
+  font-family: var(--bb-font-body);
+  font-size: 16px; /* = .sub-title trang chủ */
+  line-height: var(--bb-line-section-kicker);
+  font-weight: var(--bb-font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--bb-tracking-wide);
+  color: var(--bb-text-brand);
+}
+.bb-wp-pdp-page .pdp-section-head > .title {
+  margin: 0;
+  font-family: var(--bb-font-body);
+  font-size: 24px; /* mobile — = .block-title h3 trang chủ @<768 */
+  line-height: var(--bb-line-section-title);
+  font-weight: var(--bb-font-weight-semibold);
+  text-transform: uppercase;
+  color: var(--bb-text-primary);
+}
+@media (min-width: 768px) {
+  .bb-wp-pdp-page .pdp-section-head > .title {
+    font-size: 35px; /* desktop — = .block-title h3 trang chủ @≥768 */
+  }
+}
+
+/* Bảng trong nội dung rich-text sản phẩm (.wyswyg) — VD "Bảng size" admin nhập dạng HTML table.
+   TRƯỚC ĐÂY KHÔNG style ở PDP → bảng admin chèn hiển thị thô (viền mặc định trình duyệt).
+   Style chuẩn: header đậm, hàng có viền, padding rộng — đồng bộ "Thông số kỹ thuật". */
+.bb-wp-pdp-page .wyswyg table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 1rem;
+  font-size: 14px;
+}
+.bb-wp-pdp-page .wyswyg table th,
+.bb-wp-pdp-page .wyswyg table td {
+  padding: 10px 14px;
+  text-align: left;
+  vertical-align: top;
+  border: 1px solid var(--bb-border-subtle);
+}
+.bb-wp-pdp-page .wyswyg table th {
+  /* Xám than thay vì đen tuyệt đối — giảm tương phản gắt với nền trắng (giữ nhận diện tối). */
+  background: var(--bb-color-gray-700);
+  color: var(--bb-text-inverse);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+.bb-wp-pdp-page .wyswyg table tbody tr:nth-child(even) td {
+  background: var(--bb-bg-surface-raised);
+}
+.bb-wp-pdp-page .wyswyg table td p,
+.bb-wp-pdp-page .wyswyg table th p {
+  margin: 0;
+}
+
 /* .bb-wp-pdp-layout grid + .bb-wp-pdp-gallery-col/.bb-wp-pdp-info-col min-width:0
    (+ their <=1024 / <=767 responsive flex-stack/order) migrated to inline Tailwind.
    The gallery/info col classes are kept as markers — .bb-wp-pdp-info-col is a
@@ -2934,15 +3035,26 @@ body:has(.bb-home) {
   line-height: 1;
 }
 
+/* Giãn khu đánh giá cho thoáng: tách sao khỏi dòng "Đánh giá …" và nới giãn dòng
+   dòng đó (line-height:1 toàn cục làm chữ dính nhau). */
+.bb-wp-pdp .product-information .rating {
+  margin-top: 16px;
+}
+
+.bb-wp-pdp .product-information .rating p {
+  margin-top: 8px;
+  line-height: 1.5;
+}
+
 .bb-wp-pdp .product-information .desc {
-  margin-top: 15px;
+  margin-top: 20px;
   padding: 0;
   background: transparent;
 }
 
 .bb-wp-pdp .product-information .desc .woocommerce-product-details__short-description {
   color: #000;
-  font-size: 0.9625rem; /* WP .product-information .desc = 1.1rem@14 = 15.4px */
+  font-size: 1.125rem; /* 18px */
   line-height: 1.55;
 }
 
@@ -2950,7 +3062,7 @@ body:has(.bb-home) {
 .bb-wp-pdp .product-information .desc li {
   margin: 0 0 0.625rem;
   color: #000;
-  font-size: 0.9625rem; /* WP .product-information .desc = 1.1rem@14 = 15.4px */
+  font-size: 1.125rem; /* 18px */
   line-height: 1.55;
 }
 
@@ -2969,6 +3081,32 @@ body:has(.bb-home) {
 .bb-wp-pdp .product-information .desc a {
   color: #000;
   text-decoration: none;
+}
+
+/* Đường kẻ phân tách Mô tả ngắn với khu chọn biến thể (Màu sắc / Size) — thay
+   cho dòng nhắc "Vui lòng chọn size/màu sắc…". Xám #cecece như divider theme WP. */
+.bb-wp-pdp .product-information .variation-divider {
+  /* Lề trên 16px là chuẩn. Lề dưới chỉ 8px vì tiêu đề "Màu sắc" có line-height
+     52px (canh giữa theo ô màu cao 52px) → chữ dôi sẵn ~8px khoảng trống phía
+     trên; bù lại để khoảng cách NHÌN THẤY trên/dưới đường kẻ bằng nhau. */
+  margin: 16px 0 8px;
+  border: 0;
+  border-top: 1px solid #cecece;
+}
+
+/* Khi có đường kẻ phía trên, bỏ lề trên 30px của khối biến thể (.mt-30 dùng
+   !important nên phải đè bằng !important) — khoảng cách xuống "Màu sắc" do chính
+   đường kẻ quyết định, tránh cộng dồn gây hở quá rộng. */
+.bb-wp-pdp .product-information .variation-divider + .row.mt-30 {
+  margin-top: 0 !important;
+}
+
+/* Khối biến thể đầu tiên (Màu sắc) ngay sau đường kẻ có thêm margin-top 15px của
+   .size — bỏ đi để khoảng cách xuống "Màu sắc" chỉ còn đúng 16px lề dưới đường kẻ.
+   Các khối .size sau (Size) vẫn giữ 15px tách dòng. */
+.bb-wp-pdp .product-information .variation-divider + .row .variations_form > .options:first-child,
+.bb-wp-pdp .product-information .variation-divider + .row .variations_form > .single_variation_wrap:first-child {
+  margin-top: 0 !important;
 }
 
 .bb-wp-tabs .tab-panel * {
@@ -3008,10 +3146,9 @@ body:has(.bb-home) {
    --------------------------------------------------------- */
 
 /* ---- FAQ accordion (shown in tabs on desktop, scroll sections on mobile) ----
-   Migrated to inline Tailwind on the <details>/<summary>/<div> in page.tsx. The
-   faq-q / faq-a line-heights were DEAD (the kept `.bb-wp-tabs .tab-panel *
-   {line-height:inherit}` (0,2,0) overrode them) so they were dropped; the
-   ::after chevron line-height is live (pseudo not matched by `*`) → after:leading-none. */
+   Rendered by the shadcn <Accordion> (Radix) in ProductFaqs — open/close uses the
+   accordion-up/down keyframes above; answers render as sanitized HTML in .wyswyg.
+   No dedicated FAQ classes live here anymore. */
 
 /* ============================================================
  * Product archive/listing parity with WP WooCommerce archive-product.php.

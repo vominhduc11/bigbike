@@ -299,6 +299,20 @@ Khi cần fix lỗi runtime, debug, kiểm tra log, query DB thật, verify migr
 - ❌ Destructive command trong container đang chạy khi user chưa duyệt.
 - ❌ Mock dữ liệu khi container thật đang chạy và có thể query — luôn ưu tiên data thật để chẩn đoán root cause.
 
+### 5.7 Phong cách trả lời — viết cho user business hiểu
+
+User là **chủ shop / quản lý vận hành**, không phải lập trình viên. Mọi câu trả lời gửi cho user phải:
+
+- **Ngắn gọn nhưng đầy đủ ý.** Trả lời thẳng trọng tâm câu hỏi; không lan man, không lặp lại, không giải thích thứ user không hỏi. Mỗi câu phải mang thông tin.
+- **Dùng ngôn ngữ business, hạn chế tối đa từ kỹ thuật / chuyên ngành.** Giải thích theo việc-kinh-doanh (sản phẩm, đơn hàng, tồn kho, khách hàng, trang web…), không dùng tên class / method / endpoint / tên biến / stack trace / thuật ngữ lập trình. Nếu buộc phải nhắc một khái niệm kỹ thuật, giải thích ngắn bằng ngôn ngữ thường.
+- **Dễ đọc.** Nhiều điểm thì dùng danh sách / bảng / tiêu đề ngắn, không dồn thành đoạn văn dài.
+
+**Ngoại lệ:** chỉ dùng thuật ngữ kỹ thuật khi user thể hiện rõ là developer và đang hỏi trực tiếp về code/kiến trúc cụ thể.
+
+**Cấm:**
+- ❌ Trả lời user business bằng tên class / method / endpoint / stack trace / jargon mà không giải thích.
+- ❌ Viết dài dòng, lặp ý, hoặc giải thích ngoài trọng tâm câu hỏi.
+
 ---
 
 ## 6. Frontend Stack — React + Tailwind CSS + Radix UI + shadcn/ui
@@ -350,7 +364,7 @@ Tailwind utility classes in JSX      ← text-primary, bg-brand, border-border, 
 
 **Quy tắc:**
 - **Màu**: chỉ palette `STYLEGUIDE.md` (`#FF0C09` brand red, `#007BFF` blue, `#00BFFF` chat cyan, neutral tokens). Tham chiếu qua CSS variable / Tailwind token. Không hardcode hex.
-- **Font**: `Barlow` (body/UI/content), `Oswald` (heading/CTA/badge/nav), `Barlow Condensed` (display/hero/campaign). Heading/nav/CTA/badge → uppercase; body → sentence case.
+- **Font**: `Barlow` / Arial (body/UI/content), `Barlow Condensed` (heading/display/hero/CTA/badge/nav). **Oswald đã gỡ bỏ — không dùng.** Heading/nav/CTA/badge → uppercase; body → sentence case. Source of truth: `STYLEGUIDE.md` + `docs/TYPOGRAPHY.md`.
 - **Scale**: Tailwind `text-xs`–`text-5xl` hoặc size explicit từ `STYLEGUIDE.md`. Không arbitrary `text-[13px]`.
 - **Spacing**: thang 4px (`p-4`=16px, `gap-6`=24px, `mt-8`=32px). Container `max-w-[1200px]`. Section spacing desktop 72px / tablet 52px / mobile 32px. Touch target ≥ 44px.
 - **Border radius**: `rounded-none` mặc định; `rounded-full` chỉ cho avatar / badge dot / chat button.
@@ -387,33 +401,16 @@ Trước khi ship component/screen mới: so sánh visually với phần đã c�
 
 Mọi styling phải viết **trực tiếp vào `className`** bằng Tailwind utility. Không tạo class CSS mới chỉ để dùng lại trong component.
 
-**Sai — tạo class CSS rồi dùng:**
-
-```css
-/* globals.css */
-.product-row { display: flex; padding: 16px; border-bottom: 1px solid #e5e7eb; }
-.confirm-btn { background-color: #FF0C09; padding: 8px 16px; }
-```
 ```jsx
+// ❌ Sai — tạo class CSS (.product-row { display:flex; padding:16px; }) rồi dùng
 <div className="product-row">...</div>
-<button className="confirm-btn">Xác nhận</button>
-```
 
-**Đúng — viết thẳng Tailwind:**
-
-```jsx
+// ✅ Đúng — viết thẳng Tailwind; dùng shadcn component cho element có sẵn
 <div className="flex items-center p-4 border-b border-border bg-background">...</div>
 <Button variant="default">Xác nhận</Button>
-```
 
-**Đúng — `cn()` cho variant/điều kiện:**
-
-```jsx
-<div className={cn(
-  "flex items-center p-4 border-b border-border",
-  isSelected && "bg-muted",
-  isDisabled && "opacity-50 pointer-events-none"
-)}>...</div>
+// ✅ Đúng — cn() cho variant/điều kiện
+<div className={cn("flex items-center p-4 border-b border-border", isSelected && "bg-muted")}>...</div>
 ```
 
 **Được phép viết vào CSS file:**
@@ -447,7 +444,7 @@ Trước khi tạo bất kỳ component mới nào, **phải check** danh sách 
 
 | Thư mục | Có sẵn |
 |---|---|
-| `bigbike-web/components/ui/` | Primitive shadcn (Button, Input, Select, Dialog, Checkbox, Tabs, Tooltip, Popover, …) + helpers (`EmptyState`, `ErrorState`, `LoadingGrid`, `PriceText`, `MediaImage`, `RatingStars`, `PaginationNav`, `Skeletons`, `VnAddressFields`, `BBTooltip`) |
+| `bigbike-web/components/ui/` | Primitive shadcn (Button, Input, Select, Dialog, Checkbox, Tabs, Tooltip, Popover, …) + helpers (`EmptyState`, `ErrorState`, `MediaImage`, `RatingStars`, `PaginationNav`, `Skeletons`, `VnAddressFields`) — kiểm tra thư mục thực tế trước khi import |
 | `bigbike-web/components/layout/` | `SiteHeader`, `SiteFooter`, `PageHero`, `AccountShell`, `PolicySidebar`, `StickyHeaderShell` |
 | `bigbike-web/components/catalog/` | `ProductCard`, `ProductGallery`, `VariantSelector`, `AddToCartButton`, `CatalogFilters`, `ReviewsSection` |
 
@@ -508,20 +505,10 @@ Mọi text trong source code — JSX content, string literal, comment, error mes
 2. **Không mojibake** — không xuất hiện ký tự bị vỡ.
 3. **Tiếng Việt phải có dấu** — không "tiếng Việt không dấu".
 
-**Sai — mojibake / không dấu:**
-
 ```jsx
-<p>ThÃ nh toÃ¡n thÃ nh cÃ´ng</p>           // ❌ encoding vỡ
-<p>Gi&#7843;m gi&#225;</p>                  // ❌ unicode escape thủ công
-<h1>San pham noi bat</h1>                  // ❌ không dấu
-<Button>Thanh toan</Button>                // ❌ không dấu
-```
-
-**Đúng:**
-
-```jsx
+// ❌ Sai: "ThÃ nh toÃ¡n" (encoding vỡ), "Gi&#7843;m" (escape thủ công), "San pham noi bat" (không dấu)
+// ✅ Đúng:
 <h1>Sản phẩm nổi bật</h1>
-<p>Thêm vào giỏ hàng</p>
 <Button>Thanh toán</Button>
 toast.error("Không thể hủy đơn hàng")
 ```
@@ -660,12 +647,7 @@ public interface ProductMapper {
 
     List<ProductResponse> toResponseList(List<Product> products); // MapStruct tự generate
 }
-
-// ❌ Sai — mapping thủ công
-ProductResponse response = new ProductResponse();
-response.setId(product.getId());
-response.setName(product.getName());
-// ...
+// ❌ Sai: set từng field thủ công (new ProductResponse(); response.setId(...); …) hoặc BeanUtils.copyProperties()
 ```
 
 **Quy tắc:**
@@ -686,44 +668,23 @@ response.setName(product.getName());
 
 Mọi DTO nhận request phải có constraint annotation. Controller phải kích hoạt validation bằng `@Valid`.
 
-**DTO / Request:**
-
 ```java
+// DTO / Request — constraint kèm message tiếng Việt; @Valid cascade vào nested
 public class CreateProductRequest {
-
     @NotBlank(message = "Tên sản phẩm không được để trống")
     @Size(max = 255, message = "Tên không quá 255 ký tự")
     private String name;
 
-    @NotNull(message = "Giá không được để trống")
-    @Positive(message = "Giá phải lớn hơn 0")
+    @NotNull @Positive(message = "Giá phải lớn hơn 0")
     private Long retailPrice;
 
-    @NotNull
-    @Min(value = 0, message = "Số lượng không được âm")
-    private Integer stockQuantity;
-
-    @Email(message = "Email không hợp lệ")
-    private String contactEmail;
-
-    @Valid  // cascade vào nested object
+    @Valid
     private AddressRequest shippingAddress;
 }
-```
 
-**Controller:**
-
-```java
-// ✅ Đúng — @Valid kích hoạt Bean Validation
+// Controller — @Valid kích hoạt constraint (thiếu @Valid = constraint KHÔNG chạy)
 @PostMapping
 public ResponseEntity<?> create(@Valid @RequestBody CreateProductRequest request) { ... }
-
-@GetMapping
-public ResponseEntity<?> list(@Valid ProductFilterRequest filter) { ... }
-
-// ❌ Sai — thiếu @Valid, constraint không được kích hoạt
-@PostMapping
-public ResponseEntity<?> create(@RequestBody CreateProductRequest request) { ... }
 ```
 
 **Constraint annotations hay dùng:**
@@ -818,6 +779,8 @@ public class GlobalExceptionHandler {
 Dùng canonical: `image.url`, `gallery[]`, `videos[]`.
 
 Avoid reintroducing legacy drift: `imageUrl`, `images`, `videoUrl`. Fallback cho legacy data tạm thời OK, nhưng write mới phải canonical.
+
+**Mọi media (ảnh + video) của dữ liệu do admin quản lý phải nằm trong MinIO — không hotlink ra ngoài.** Xem rule đầy đủ tại Section 14.3.
 
 ### 8.2 Money
 
@@ -954,6 +917,21 @@ Live trong `public/brand` hoặc shared asset package theo project structure. Kh
 
 Validate: file type, file size, public URL, alt text (nếu public image), fallback nếu image fail.
 
+### 14.3 Admin-managed media phải lưu trong MinIO — KHÔNG hotlink ra ngoài
+
+**Toàn bộ dữ liệu do admin quản lý (product, category, brand, banner/hero, content/blog/policy page, contact/guide/warranty page builder, settings, media library, …) — nếu có ảnh hoặc video thì media đó BẮT BUỘC được upload và lưu trong MinIO của BigBike.** Mọi `image.url`, `gallery[]`, `videos[]`, banner, icon, menuIcon, thumbnail, og-image… phải trỏ về object trong MinIO (`/media/...`), không được là link gọi tài nguyên từ host bên ngoài.
+
+**Cấm:**
+- ❌ Lưu URL ảnh/video trỏ thẳng ra domain ngoài (CDN bên thứ ba, Google Drive, Imgur, link `/wp/...` legacy, YouTube/Vimeo embed làm nguồn ảnh, hotlink bất kỳ host nào không phải MinIO).
+- ❌ Cho admin nhập URL ngoài làm nguồn media thay vì upload — nếu cần nhập từ URL thì backend phải **fetch về và re-upload vào MinIO**, rồi lưu URL MinIO.
+- ❌ Để write mới giữ nguyên link `/wp/...` hoặc external (chỉ chấp nhận fallback đọc cho legacy data chưa migrate; write mới luôn phải là MinIO).
+
+**Yêu cầu:**
+- ✅ Mọi luồng upload/chọn media trong admin (`MediaPickerModal`, `VideoPickerModal`, `ImageUrlInput`, …) phải kết thúc bằng object nằm trong MinIO trước khi lưu xuống DB.
+- ✅ Media-URL whitelist của backend chỉ chấp nhận URL MinIO/`/media`; reject external host. Khi admin dán URL ngoài → import (fetch + re-upload) chứ không lưu nguyên link.
+
+Liên quan: Section 8.1 (canonical media fields), [INTEGRATION_GUIDE.md](docs/engineering/INTEGRATION_GUIDE.md) (MinIO), [DATA_CONTRACT.md](docs/engineering/DATA_CONTRACT.md) (media fields).
+
 ---
 
 ## 15. Repository Boundaries
@@ -1007,7 +985,7 @@ npm run build
 
 Command khác? Inspect `package.json`, `pom.xml`, project scripts, hoặc CI config.
 
-**Không claim test passed nếu chưa chạy.** Revolutionary honesty, apparently.
+**Không claim test passed nếu chưa chạy.**
 
 ### 16.1 Web smoke checks
 
@@ -1065,7 +1043,7 @@ Notes:
 - ...
 ```
 
-Không claim imaginary test result. CI gods are petty, they keep receipts.
+Không claim imaginary test result.
 
 ---
 
@@ -1102,4 +1080,4 @@ Không claim imaginary test result. CI gods are petty, they keep receipts.
 
 An AI agent must leave the repository **more consistent** than it found it.
 
-Nếu thay đổi làm frontend, backend, và contracts bất đồng với nhau, thay đổi đó **chưa xong** — nó chỉ là bug đang khoác áo pull request.
+Nếu thay đổi làm frontend, backend, và contracts bất đồng với nhau, thay đổi đó **chưa xong**.

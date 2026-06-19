@@ -2,7 +2,7 @@ import { useMemo, useEffect, useState, useCallback } from 'react'
 import {
   Store, Phone, CreditCard, Tag, Globe, Settings,
   Home, Building2, Image as ImageIcon, Package, Users,
-  CheckCircle2, AlertCircle, Landmark, ExternalLink, Lock,
+  CheckCircle2, AlertCircle, Landmark, ExternalLink, Lock, Info, ShieldCheck, ShoppingBag,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
@@ -97,7 +97,7 @@ function validateValue(key, value) {
 
 // Groups whose display text is shown on the storefront and can carry an English
 // translation. Config / contact / store / tax keys stay Vietnamese-only.
-const TRANSLATABLE_GROUPS = new Set(['GENERAL', 'PUBLIC_HOME', 'PUBLIC_HERO', 'SEO'])
+const TRANSLATABLE_GROUPS = new Set(['GENERAL', 'PUBLIC_HOME', 'PUBLIC_ABOUT', 'PUBLIC_WARRANTY', 'PUBLIC_PRODUCT', 'PUBLIC_HERO', 'SEO'])
 
 // A setting is English-translatable when it lives in a translatable group AND renders
 // as text (rich-text, long-text, or a plain text input) — never images/URLs/numbers/phones.
@@ -114,7 +114,7 @@ function isTranslatableSetting(setting) {
 // ── Tab config ────────────────────────────────────────────────────────────────
 
 const TAB_ORDER = [
-  'GENERAL', 'CONTACT', 'PAYMENT', 'PUBLIC_HOME', 'PUBLIC_HERO', 'PROMO', 'SEO', 'STORE', 'TAX', 'INVENTORY',
+  'GENERAL', 'CONTACT', 'PAYMENT', 'PUBLIC_HOME', 'PUBLIC_ABOUT', 'PUBLIC_WARRANTY', 'PUBLIC_PRODUCT', 'PUBLIC_HERO', 'PROMO', 'SEO', 'STORE', 'TAX', 'INVENTORY',
   'PRODUCT_ASSIGN',
 ]
 
@@ -141,6 +141,9 @@ const TAB_META = {
   CONTACT:     { icon: Phone,      labelKey: 'settings.group_contact' },
   PAYMENT:     { icon: Landmark,   labelKey: 'settings.group_payment' },
   PUBLIC_HOME: { icon: Home,       labelKey: 'settings.group_public_home' },
+  PUBLIC_ABOUT:{ icon: Info,       labelKey: 'settings.group_public_about' },
+  PUBLIC_WARRANTY: { icon: ShieldCheck, labelKey: 'settings.group_public_warranty' },
+  PUBLIC_PRODUCT: { icon: ShoppingBag, labelKey: 'settings.group_public_product' },
   PUBLIC_HERO: { icon: ImageIcon,  labelKey: 'settings.group_public_hero' },
   PROMO:       { icon: Tag,        labelKey: 'settings.group_promo' },
   SEO:         { icon: Globe,      labelKey: 'settings.group_seo' },
@@ -192,6 +195,63 @@ const KEY_LABELS_VI = {
   home_news_kicker: 'Khu Tin tức — kicker',
   home_news_title: 'Khu Tin tức — tiêu đề',
   home_videos_title: 'Khu Video — tiêu đề',
+  // public_about (trang Giới thiệu /gioi-thieu)
+  about_page_kicker: 'Đầu trang — tiêu đề nhỏ (kicker)',
+  about_page_tagline: 'Đầu trang — câu tagline',
+  about_page_intro_html: 'Đoạn giới thiệu mở đầu (rich-text)',
+  about_page_quality_heading: 'Khối chất lượng — tiêu đề',
+  about_page_quality_body: 'Khối chất lượng — mô tả',
+  about_page_service1_title: 'Ô dịch vụ 1 — tiêu đề',
+  about_page_service1_body: 'Ô dịch vụ 1 — mô tả',
+  about_page_service1_image: 'Ô dịch vụ 1 — hình',
+  about_page_service1_highlight: 'Ô dịch vụ 1 — nền cam nổi bật',
+  about_page_service2_title: 'Ô dịch vụ 2 — tiêu đề',
+  about_page_service2_body: 'Ô dịch vụ 2 — mô tả',
+  about_page_service2_image: 'Ô dịch vụ 2 — hình',
+  about_page_service2_highlight: 'Ô dịch vụ 2 — nền cam nổi bật',
+  about_page_service3_title: 'Ô dịch vụ 3 — tiêu đề',
+  about_page_service3_body: 'Ô dịch vụ 3 — mô tả',
+  about_page_service3_image: 'Ô dịch vụ 3 — hình',
+  about_page_service3_highlight: 'Ô dịch vụ 3 — nền cam nổi bật',
+  about_page_service4_title: 'Ô dịch vụ 4 — tiêu đề',
+  about_page_service4_body: 'Ô dịch vụ 4 — mô tả',
+  about_page_service4_image: 'Ô dịch vụ 4 — hình',
+  about_page_service4_highlight: 'Ô dịch vụ 4 — nền cam nổi bật',
+  about_page_service5_title: 'Ô dịch vụ 5 — tiêu đề',
+  about_page_service5_body: 'Ô dịch vụ 5 — mô tả',
+  about_page_service5_image: 'Ô dịch vụ 5 — hình',
+  about_page_service5_highlight: 'Ô dịch vụ 5 — nền cam nổi bật',
+  about_page_connect_heading: 'Khối kết nối — tiêu đề',
+  about_page_connect_intro1: 'Khối kết nối — dòng 1',
+  about_page_connect_intro2: 'Khối kết nối — dòng 2',
+  // public_warranty (trang Tra cứu bảo hành /bao-hanh)
+  warranty_page_meta_title: 'SEO — tiêu đề trang (thẻ <title>)',
+  warranty_page_meta_description: 'SEO — mô tả trang (meta)',
+  warranty_page_heading: 'Tiêu đề banner đầu trang',
+  warranty_page_kicker: 'Khối tra cứu — tiêu đề nhỏ (kicker)',
+  warranty_page_subheading: 'Khối tra cứu — dòng mô tả',
+  warranty_page_intro_html: 'Khối giới thiệu trên ô tra cứu (rich-text, để trống sẽ ẩn)',
+  warranty_page_intro_image: 'Khối giới thiệu — hình minh hoạ (để trống sẽ ẩn)',
+  warranty_page_serial_label: 'Ô tra cứu — nhãn ô nhập serial',
+  warranty_page_serial_placeholder: 'Ô tra cứu — chữ gợi ý trong ô (placeholder)',
+  warranty_page_serial_hint: 'Ô tra cứu — dòng hướng dẫn dưới ô nhập',
+  warranty_page_submit_button: 'Ô tra cứu — chữ nút tra cứu',
+  warranty_page_submitting: 'Ô tra cứu — chữ nút khi đang tra',
+  warranty_page_not_found: 'Thông báo khi không tìm thấy bảo hành',
+  warranty_page_result_heading: 'Khối kết quả — tiêu đề',
+  warranty_page_field_product: 'Khối kết quả — nhãn dòng Sản phẩm',
+  warranty_page_field_serial: 'Khối kết quả — nhãn dòng Số serial',
+  warranty_page_field_start: 'Khối kết quả — nhãn dòng Ngày bắt đầu',
+  warranty_page_field_end: 'Khối kết quả — nhãn dòng Ngày kết thúc',
+  warranty_page_status_active: 'Trạng thái — Còn hiệu lực (giữ {daysLeft})',
+  warranty_page_status_almost_expired: 'Trạng thái — Sắp hết hạn (giữ {daysLeft})',
+  warranty_page_status_expired: 'Trạng thái — Hết hạn',
+  warranty_page_status_voided: 'Trạng thái — Đã huỷ',
+  warranty_page_footer_active: 'Ghi chú dưới kết quả khi còn hiệu lực',
+  warranty_page_footer_voided: 'Ghi chú dưới kết quả khi đã huỷ',
+  warranty_page_policy_html: 'Khối chính sách / FAQ dưới kết quả (rich-text, để trống sẽ ẩn)',
+  // public_product — toàn bộ nội dung PDP giờ quản theo TỪNG sản phẩm (trang sửa sản phẩm):
+  // khối "cam kết" dưới nút mua (V232) + dải "tin cậy" trên tên sản phẩm (V233). Không còn setting chung.
   // seo
   seo_home_title: 'SEO Title trang chủ (thẻ <title>)',
   seo_home_description: 'SEO Description trang chủ (meta)',
@@ -232,6 +292,12 @@ const KEY_LABELS_VI = {
 }
 
 const KEY_HINTS_VI = {
+  about_page_service1_image: 'Hình minh hoạ ô dịch vụ, ví dụ 120×120px (PNG nền trong).',
+  about_page_service2_image: 'Hình minh hoạ ô dịch vụ, ví dụ 120×120px (PNG nền trong).',
+  about_page_service3_image: 'Hình minh hoạ ô dịch vụ, ví dụ 120×120px (PNG nền trong).',
+  about_page_service4_image: 'Hình minh hoạ ô dịch vụ, ví dụ 120×120px (PNG nền trong).',
+  about_page_service5_image: 'Hình minh hoạ ô dịch vụ, ví dụ 120×120px (PNG nền trong).',
+  warranty_page_intro_image: 'Ảnh minh hoạ cho khối giới thiệu, ví dụ 1120×560px (tỷ lệ ngang). Tải lên sẽ lưu trên MinIO.',
   promo_image_url:          'Ảnh nằm ngang, ví dụ 1200×400px.',
   og_image_url:             '1200×630px (chuẩn mạng xã hội).',
   hero_products_image_url:         'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
@@ -284,6 +350,10 @@ const SECTION_GUIDE = {
   home_featured:   { title: 'Trang chủ › Khối Sản phẩm nổi bật', path: '/' },
   home_news:       { title: 'Trang chủ › Khối Tin tức', path: '/' },
   home_videos:     { title: 'Trang chủ › Khối Video', path: '/' },
+  about_head:      { title: 'Trang Giới thiệu › Đầu trang + giới thiệu', path: '/gioi-thieu' },
+  about_quality:   { title: 'Trang Giới thiệu › Khối chất lượng dịch vụ', path: '/gioi-thieu' },
+  about_services:  { title: 'Trang Giới thiệu › Lưới 5 ô dịch vụ', path: '/gioi-thieu' },
+  about_connect:   { title: 'Trang Giới thiệu › Khối kết nối', path: '/gioi-thieu' },
   hero_products:   { title: 'Banner đầu trang Tất cả sản phẩm', path: '/san-pham' },
   hero_brands:     { title: 'Banner đầu trang Thương hiệu', path: '/brands' },
   hero_news:       { title: 'Banner đầu trang Tin tức', path: '/tin-tuc' },
@@ -340,6 +410,35 @@ const KEY_GUIDE = {
   home_news_kicker:      ['home_news', 'dòng chữ nhỏ phía trên'],
   home_news_title:       ['home_news', 'tiêu đề'],
   home_videos_title:     ['home_videos', 'tiêu đề'],
+
+  about_page_kicker:            ['about_head', 'tiêu đề nhỏ đầu trang'],
+  about_page_tagline:           ['about_head', 'câu tagline đầu trang'],
+  about_page_intro_html:        ['about_head', 'đoạn giới thiệu mở đầu'],
+  about_page_quality_heading:   ['about_quality', 'tiêu đề khối chất lượng'],
+  about_page_quality_body:      ['about_quality', 'mô tả khối chất lượng'],
+  about_page_service1_title:    ['about_services', 'ô 1: tiêu đề'],
+  about_page_service1_body:     ['about_services', 'ô 1: mô tả'],
+  about_page_service1_image:    ['about_services', 'ô 1: hình'],
+  about_page_service1_highlight:['about_services', 'ô 1: nền cam'],
+  about_page_service2_title:    ['about_services', 'ô 2: tiêu đề'],
+  about_page_service2_body:     ['about_services', 'ô 2: mô tả'],
+  about_page_service2_image:    ['about_services', 'ô 2: hình'],
+  about_page_service2_highlight:['about_services', 'ô 2: nền cam'],
+  about_page_service3_title:    ['about_services', 'ô 3: tiêu đề'],
+  about_page_service3_body:     ['about_services', 'ô 3: mô tả'],
+  about_page_service3_image:    ['about_services', 'ô 3: hình'],
+  about_page_service3_highlight:['about_services', 'ô 3: nền cam'],
+  about_page_service4_title:    ['about_services', 'ô 4: tiêu đề'],
+  about_page_service4_body:     ['about_services', 'ô 4: mô tả'],
+  about_page_service4_image:    ['about_services', 'ô 4: hình'],
+  about_page_service4_highlight:['about_services', 'ô 4: nền cam'],
+  about_page_service5_title:    ['about_services', 'ô 5: tiêu đề'],
+  about_page_service5_body:     ['about_services', 'ô 5: mô tả'],
+  about_page_service5_image:    ['about_services', 'ô 5: hình'],
+  about_page_service5_highlight:['about_services', 'ô 5: nền cam'],
+  about_page_connect_heading:   ['about_connect', 'tiêu đề khối kết nối'],
+  about_page_connect_intro1:    ['about_connect', 'dòng 1'],
+  about_page_connect_intro2:    ['about_connect', 'dòng 2'],
 
   hero_products_image_url:        ['hero_products', 'ảnh nền banner (desktop)'],
   hero_products_mobile_image_url: ['hero_products', 'ảnh nền banner (điện thoại)'],

@@ -9,6 +9,7 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepo
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ReviewJpaRepository;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -20,6 +21,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -32,8 +34,11 @@ public class PublicReviewService {
     private static final int DUPLICATE_WINDOW_HOURS = 24;
     private static final Pattern WHITESPACE = Pattern.compile("\\s+");
 
+    private static final int MAX_PHOTOS = 10;
+
     private final ReviewJpaRepository reviewRepo;
     private final ProductJpaRepository productRepo;
+    private final ReviewPhotoStorageService reviewPhotoStorageService;
 
     public PublicProductReviewsResponse getProductReviews(String productId, int page, int size) {
         return getProductReviews(productId, page, size, null, null);
@@ -95,12 +100,16 @@ public class PublicReviewService {
     }
 
     @Transactional
-    public void submitReview(String productId, String authorName, int rating, String comment) {
+    public void submitReview(
+            String productId, String authorName, int rating, String comment,
+            String title, List<String> photos) {
         productRepo.findById(productId)
                 .orElseThrow(() -> new NotFoundException("S\u1ea3n ph\u1ea9m kh\u00f4ng t\u1ed3n t\u1ea1i."));
 
         String normalizedName = authorName.trim();
         String normalizedComment = comment != null ? comment.trim() : "";
+        String normalizedTitle = (title != null && !title.isBlank()) ? title.trim() : null;
+        List<String> normalizedPhotos = normalizePhotos(photos);
         Instant now = Instant.now();
 
         // Duplicate guard: same productId + normalized(authorName) + normalized(body)
@@ -126,11 +135,37 @@ public class PublicReviewService {
         entity.setAuthorName(normalizedName);
         entity.setRating((short) rating);
         entity.setBody(normalizedComment);
+        entity.setTitle(normalizedTitle);
+        entity.setPhotos(normalizedPhotos.isEmpty() ? null : normalizedPhotos);
         entity.setStatus("PENDING");
         entity.setCreatedAt(now);
         entity.setUpdatedAt(now);
 
         reviewRepo.save(entity);
+    }
+
+    /**
+     * Upload one customer review photo to MinIO and return its public URL ({@code /media/reviews/...}).
+     * Public path — only checks the product exists; type/size validation lives in the storage service.
+     */
+    public String uploadReviewPhoto(String productId, MultipartFile file) {
+        if (!productRepo.existsById(productId)) {
+            throw new NotFoundException("Sản phẩm không tồn tại.");
+        }
+        return reviewPhotoStorageService.store(file);
+    }
+
+    private static List<String> normalizePhotos(List<String> photos) {
+        if (photos == null || photos.isEmpty()) {
+            return List.of();
+        }
+        List<String> cleaned = new ArrayList<>(photos.size());
+        for (String url : photos) {
+            if (url != null && !url.isBlank()) {
+                cleaned.add(url.trim());
+            }
+        }
+        return cleaned.size() > MAX_PHOTOS ? cleaned.subList(0, MAX_PHOTOS) : cleaned;
     }
 
     private static String normalizeForDup(String value) {
@@ -178,7 +213,9 @@ public class PublicReviewService {
                 review.getId(),
                 review.getAuthorName() != null ? review.getAuthorName() : "\u1ea8n danh",
                 review.getRating(),
+                review.getTitle(),
                 review.getBody() != null ? review.getBody() : "",
+                review.getPhotos() != null ? review.getPhotos() : List.of(),
                 review.getCreatedAt() != null ? review.getCreatedAt().toString() : "");
     }
 }

@@ -1,109 +1,80 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
+import {
+  BookOpen, FileText, Hand, HardHat, HelpCircle, Info, Ruler, ShieldCheck, ShoppingCart, Wrench,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { WpStaticShell } from "@/components/wp/WpStaticShell";
 import type { WpStaticSidebarItem } from "@/components/wp/WpStaticSidebar";
 import { WpStaticSidebarLayout } from "@/components/wp/WpStaticSidebarLayout";
 import { LHtml, LText, LocalizedContentProvider } from "@/components/i18n/LocalizedContent";
-import { getPageBySlug, getPublicMenu } from "@/lib/api/public-api";
-import { safeText } from "@/lib/utils/format";
+import { getGuidePageLayout, getPageBySlug } from "@/lib/api/public-api";
+import type { GuideEntry, GuidePageLayout } from "@/lib/contracts/public";
+import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
-import { normalizeMenuUrl } from "@/lib/utils/nav";
 import { toHomePath } from "@/lib/utils/routes";
+
+/* eslint-disable @next/next/no-img-element */
 
 const GUIDE_HERO_BG = "/wp-content/themes/bigbike/images/policy1.png";
 const GUIDE_HERO_ILLUSTRATION = "/wp-content/themes/bigbike/images/policy.png";
+
+// Lucide icons the guide builder offers. `icon` may instead be an image path/URL (rendered as <img>).
+// Keep in sync with ICON_OPTIONS in bigbike-admin/src/screens/GuidePageBuilderScreen.jsx.
+const ICONS: Record<string, LucideIcon> = {
+  BookOpen, ShoppingCart, Ruler, Hand, HardHat, ShieldCheck, Wrench, Info, HelpCircle, FileText,
+};
 
 type GuidePageProps = {
   subSegments?: string[];
 };
 
-type GuideRoute = {
-  pageSlug: string;
-  path: string;
-  titleKey: string;
-  descriptionKey: string;
-};
-
-const GUIDE_ROUTE_MAP: Record<string, GuideRoute> = {
-  "mua-hang": {
-    pageSlug: "huong-dan-mua-hang",
-    path: "/huong-dan/mua-hang/",
-    titleKey: "buyingTitle",
-    descriptionKey: "buyingDescription",
-  },
-  "size-mu": {
-    pageSlug: "cach-do-size-dau",
-    path: "/huong-dan/size-mu/",
-    titleKey: "helmetSizeTitle",
-    descriptionKey: "helmetSizeDescription",
-  },
-  "size-gang-tay": {
-    pageSlug: "cach-do-size-gang-tay",
-    path: "/huong-dan/size-gang-tay/",
-    titleKey: "gloveSizeTitle",
-    descriptionKey: "gloveSizeDescription",
-  },
-};
-
-function buildCurrentPath(subSegments?: string[]): string {
-  if (!subSegments || subSegments.length === 0) {
-    return "/huong-dan/";
-  }
-  return `/huong-dan/${subSegments.map((segment) => encodeURIComponent(segment)).join("/")}/`;
+export function buildEntryPath(segment: string): string {
+  return `/huong-dan/${encodeURIComponent(segment)}/`;
 }
 
-export function resolveGuideRoute(subSegments?: string[]): GuideRoute {
-  if (!subSegments || subSegments.length === 0) {
+/** Admin-managed layout; empty fallback keeps the page rendering before the migration row exists. */
+async function loadGuideLayout(locale: string): Promise<GuidePageLayout> {
+  const result = await getGuidePageLayout(locale);
+  return result.data ?? { heroTitle: null, heroImageUrl: null, entries: [] };
+}
+
+function findEntry(entries: GuideEntry[], subSegments?: string[]): GuideEntry | null {
+  if (!subSegments || subSegments.length === 0) return null;
+  return entries.find((e) => e.pathSegment === subSegments[0]) ?? null;
+}
+
+/** Title/description for {@code generateMetadata}; falls back to the Guide translations. */
+export async function resolveGuideMeta(subSegments: string[] | undefined, locale: string) {
+  const t = await getTranslations("Guide");
+  const layout = await loadGuideLayout(locale);
+  const entry = findEntry(layout.entries, subSegments);
+  if (entry) {
     return {
-      pageSlug: "huong-dan",
-      path: "/huong-dan/",
-      titleKey: "title",
-      descriptionKey: "description",
+      title: entry.title,
+      description: entry.description ?? t("description"),
+      path: buildEntryPath(entry.pathSegment),
     };
   }
-
-  if (subSegments.length === 1) {
-    const mapped = GUIDE_ROUTE_MAP[subSegments[0]];
-    if (mapped) {
-      return mapped;
-    }
-  }
-
-  return {
-    pageSlug: "huong-dan",
-    path: buildCurrentPath(subSegments),
-    titleKey: "title",
-    descriptionKey: "description",
-  };
+  return { title: t("title"), description: t("description"), path: "/huong-dan/" };
 }
 
-/**
- * Sidebar .static-navigation cho nhóm Hướng dẫn — port từ menu theme_location
- * "guide" của page-guide.php. Khi menu chưa cấu hình, fall back về các route
- * hướng dẫn tĩnh đã biết để sidebar không rỗng.
- */
-function buildGuideSidebar(
-  menuItems: { id: string | number; url: string; label: string }[],
-  currentPath: string,
-  fallbackLabel: (route: GuideRoute) => string,
-  menuFallback: string,
-): WpStaticSidebarItem[] {
-  if (menuItems.length > 0) {
-    return menuItems.map((item) => {
-      const href = normalizeMenuUrl(item.url);
-      return {
-        label: safeText(item.label, menuFallback),
-        href,
-        current: href === currentPath || href === `${currentPath}index.html`,
-      };
-    });
+function buildSidebar(entries: GuideEntry[], currentPath: string): WpStaticSidebarItem[] {
+  return entries.map((e) => {
+    const href = buildEntryPath(e.pathSegment);
+    return { label: e.title, href, current: href === currentPath };
+  });
+}
+
+function EntryIcon({ icon, label }: { icon: string | null; label: string }) {
+  if (!icon) return null;
+  if (icon.startsWith("/") || icon.startsWith("http")) {
+    const src = resolveMediaUrl(icon) ?? icon;
+    return <img src={src} alt={label} className="mb-3 h-10 w-10 object-contain" />;
   }
-  return Object.values(GUIDE_ROUTE_MAP).map((route) => ({
-    label: fallbackLabel(route),
-    href: route.path,
-    current: route.path === currentPath,
-  }));
+  const Lucide = ICONS[icon];
+  return Lucide ? <Lucide size={32} className="mb-3 text-neutral-900" aria-hidden /> : null;
 }
 
 export async function GuidePage({ subSegments }: GuidePageProps) {
@@ -112,26 +83,21 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
     getTranslations("Breadcrumb"),
     getLocale(),
   ]);
+
+  const layout = await loadGuideLayout(locale);
+  const entries = layout.entries;
   const isRoot = !subSegments || subSegments.length === 0;
-  const route = resolveGuideRoute(subSegments);
-  const currentPath = route.path;
 
-  const menuResult = await getPublicMenu("guide", locale);
-  const menuItems = menuResult.data?.items ?? [];
-  const sidebarItems = buildGuideSidebar(
-    menuItems,
-    currentPath,
-    (r) => t(r.titleKey),
-    t("menuFallback"),
-  );
+  const heroTitle = safeText(layout.heroTitle, t("heroTitle"));
+  const heroBg = layout.heroImageUrl ? (resolveMediaUrl(layout.heroImageUrl) ?? layout.heroImageUrl) : GUIDE_HERO_BG;
 
-  // Root landing: CMS page "huong-dan" có thể không tồn tại → dựng lưới index các
-  // bài hướng dẫn thay cho the_content, vẫn nằm trong khung WP + sidebar.
+  // ── Root landing: hero + grid of guide cards ────────────────────────────────
   if (isRoot) {
+    const sidebarItems = buildSidebar(entries, "/huong-dan/");
     return (
       <WpStaticShell
-        title={t("heroTitle")}
-        heroBgUrl={GUIDE_HERO_BG}
+        title={heroTitle}
+        heroBgUrl={heroBg}
         heroIllustrationUrl={GUIDE_HERO_ILLUSTRATION}
         breadcrumb={[
           { label: tBreadcrumb("home"), href: toHomePath() },
@@ -139,44 +105,55 @@ export async function GuidePage({ subSegments }: GuidePageProps) {
         ]}
       >
         <WpStaticSidebarLayout sidebarItems={sidebarItems} sidebarEmptyLabel={t("emptyMenu")}>
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:gap-6">
-            {Object.values(GUIDE_ROUTE_MAP).map((guide) => (
-              <Link
-                key={guide.pageSlug}
-                href={guide.path}
-                className="group block border border-neutral-200 bg-white p-6 no-underline transition-colors hover:border-neutral-900"
-              >
-                <h2 className="m-0 mb-2 text-lg font-semibold uppercase tracking-wide text-neutral-900">
-                  {t(guide.titleKey)}
-                </h2>
-                <p className="m-0 text-sm leading-relaxed text-neutral-500">
-                  {t(guide.descriptionKey)}
-                </p>
-              </Link>
-            ))}
-          </div>
+          {entries.length === 0 ? (
+            <p className="text-caption text-neutral-500">{t("emptyMenu")}</p>
+          ) : (
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:gap-6">
+              {entries.map((entry) => (
+                <Link
+                  key={entry.pathSegment}
+                  href={buildEntryPath(entry.pathSegment)}
+                  className="group block border border-neutral-200 bg-white p-6 no-underline transition-colors hover:border-neutral-900"
+                >
+                  <EntryIcon icon={entry.icon} label={entry.title} />
+                  <h2 className="m-0 mb-2 text-h4 font-semibold uppercase tracking-wide text-neutral-900">
+                    {entry.title}
+                  </h2>
+                  {entry.description ? (
+                    <p className="m-0 text-caption leading-relaxed text-neutral-500">{entry.description}</p>
+                  ) : null}
+                </Link>
+              ))}
+            </div>
+          )}
         </WpStaticSidebarLayout>
       </WpStaticShell>
     );
   }
 
-  const pageResult = await getPageBySlug(route.pageSlug, locale);
-  // WP trả 404 khi page hướng dẫn không tồn tại.
+  // ── Sub-page: render the CMS page bound to the matched card ──────────────────
+  const entry = findEntry(entries, subSegments);
+  if (!entry) {
+    notFound();
+  }
+
+  const currentPath = buildEntryPath(entry.pathSegment);
+  const sidebarItems = buildSidebar(entries, currentPath);
+
+  const pageResult = await getPageBySlug(entry.pageSlug, locale);
   if (!pageResult.data) {
     notFound();
   }
 
   const page = pageResult.data;
-  const pageTitle = safeText(page.title, t(route.titleKey));
+  const pageTitle = safeText(page.title, entry.title);
 
-  // page-guide.php: .page-title + #main-content > .container > .row
-  // > [.col-md-3 sidebar] + [.col-md-9 > .static-page.wyswyg].
   return (
-    <LocalizedContentProvider kind="page" slug={route.pageSlug}>
+    <LocalizedContentProvider kind="page" slug={entry.pageSlug}>
       <WpStaticShell
         title={page.heroTitle ?? pageTitle}
         titleNode={<LText field="title">{page.heroTitle ?? pageTitle}</LText>}
-        heroBgUrl={page.heroImageUrl ?? GUIDE_HERO_BG}
+        heroBgUrl={page.heroImageUrl ?? heroBg}
         heroIllustrationUrl={GUIDE_HERO_ILLUSTRATION}
         breadcrumb={[
           { label: tBreadcrumb("home"), href: toHomePath() },

@@ -19,7 +19,9 @@ Evidence:
 
 - `product.sku` is a **model/group code** — an optional descriptive identifier for the product family. It is not the selling code when variants exist. `CONFIRMED_FROM_CODE`
 - `variant.sku` is the **selling SKU** — the code used at POS, cart, checkout, inventory, and returns to identify the actual unit being sold. `CONFIRMED_FROM_CODE`
-- Both fields are nullable in DB (`products.sku varchar(100)`, `product_variants.sku varchar(100)`). No DB-level uniqueness constraint on either. `CONFIRMED_FROM_CODE`
+- **`PRODUCT_RULE_SKU_001` — every variant must have a SKU, and variant SKUs must be unique.** On the admin product upsert API, each variant in the `variants[]` list must carry a non-blank `sku` (`@NotBlank` on `VariantRequest.sku`; admin form blocks save with a per-row error). Variant SKUs are **globally unique, case-insensitive** across all products: the backend rejects a save that reuses a SKU held by another variant (and the admin form flags duplicates within the same product before submit). `product.sku` stays optional and is **not** part of the uniqueness check. `CONFIRMED_FROM_CODE`
+- Uniqueness is enforced at the DB level by a partial unique index `ux_product_variants_sku_lower` on `lower(sku)` (V244), which also backfilled SKUs for legacy/WP-import variants that had none and de-duplicated pre-existing collisions. The application layer pre-validates duplicates to return a friendly error before hitting the constraint. `CONFIRMED_FROM_CODE`
+- The `product_variants.sku varchar(100)` column stays nullable so the index ignores any future null (the requirement is a **write-time validation**, not a `NOT NULL` schema change); `products.sku varchar(100)` remains fully optional with no uniqueness. `CONFIRMED_FROM_CODE`
 - When snapshotting line items into cart/order, the system uses `variant.sku` if present, otherwise falls back to `product.sku`. This fallback covers single-variant or no-variant products where the parent SKU is the selling code. `CONFIRMED_FROM_CODE`
 - Inventory search and serial-tracking views read both `p.sku` and `v.sku` so admin tools can locate units by either code. `CONFIRMED_FROM_CODE`
 
@@ -27,6 +29,8 @@ Evidence:
 
 - `ProductEntity.java` (line 34)
 - `ProductVariantEntity.java` (line 29)
+- `VariantRequest.java` (`@NotBlank` on `sku` — admin upsert write-time requirement)
+- `ProductDetailScreen.jsx` / `schemas.js` (admin form per-row SKU required validation)
 - `PosOrderService.java` (line 233 — fallback `variant.getSku() != null ? variant.getSku() : product.getSku()`)
 - `CartService.java` (line 153 — same fallback)
 - `CheckoutService.java` (line 723 — same fallback)
@@ -178,10 +182,12 @@ Evidence:
 - `PRODUCT_RULE_002`: Khi đọc nội dung sản phẩm bằng tiếng Anh (`lang=en`), mỗi trường text thiếu bản tiếng Anh sẽ **tự lùi về bản tiếng Việt theo từng trường** (`COALESCE`). Một sản phẩm có thể có tên tiếng Anh nhưng mô tả vẫn hiển thị tiếng Việt. `CONFIRMED_FROM_CODE`
 - `PRODUCT_RULE_003`: `slug` tiếng Việt là **canonical**; mỗi sản phẩm có thêm `slugEn` (slug tiếng Anh) **tùy chọn**. Khi xem bản tiếng Anh, URL dùng `slugEn`; **trống thì lùi về `slug` tiếng Việt**. Web tra cứu sản phẩm theo **vi HOẶC en** slug (cả hai URL mở cùng sản phẩm). `slugEn` phải **duy nhất** trong phạm vi sản phẩm và **không được trùng** bất kỳ `slug` tiếng Việt nào của sản phẩm khác (cross-column uniqueness — partial-unique index lo en-vs-en, vi-vs-en enforce ở tầng ứng dụng). Đổi/xoá `slugEn` **tự sinh redirect 301**. `CONFIRMED_FROM_CODE`
 - `PRODUCT_RULE_004`: **Phân biệt hành vi `lang=en` giữa WEB và ADMIN.** `PRODUCT_RULE_002` (fallback theo từng trường về tiếng Việt) chỉ áp dụng cho **web/public**. Ở **bigbike-admin**, nút VI/EN là **strict English**: khi chọn EN, các **danh sách** (sản phẩm, danh mục, thương hiệu, bài viết/trang, menu, phương thức vận chuyển, video trang chủ, Highlights, Sản phẩm nổi bật) **ẩn hẳn** bản ghi chưa có trường tên/tiêu đề tiếng Anh (`name_en`/`title_en`/`label_en` rỗng) — KHÔNG lùi về tiếng Việt — để admin biết mục nào chưa dịch. Các màn **vận hành tham chiếu sản phẩm** (Đánh giá, Slider, Tồn kho) cũng strict: ở EN hiện tên SP tiếng Anh và ẩn bản ghi có SP chưa dịch (Đánh giá lọc server-side qua `name_en` để phân trang đúng; Slider/Tồn kho lọc client-side — Tồn kho dùng tổng trang chưa lọc nên ở EN trang có thể ít dòng hơn). Riêng **màn chi tiết/form soạn thảo** và **ô chọn (selector) trong form** vẫn hiện đầy đủ song ngữ/không strict để nhập liệu được. Giao diện admin (menu/nút/nhãn) luôn cố định tiếng Việt. `CONFIRMED_FROM_CODE`
+- `PRODUCT_RULE_006`: **"Hiển thị trên web" — admin bật/tắt từng section của trang chi tiết sản phẩm (PDP), opt-in.** Mỗi sản phẩm có bảng công tắc cho 16 section: `quickAnswer, description, specStats, prosCons, suitability, sizeGuide, specifications, installation, faqs, reviews, trust, related, accessories, videos, trustBadges, commitments`. Một section **chỉ hiện khi VỪA được bật VỪA có nội dung** — bật mà trống vẫn không hiện. **Không** thuộc bảng này (luôn hiện, không tắt được): khối mua hàng (ảnh/tên/giá/nút mua), breadcrumb, dải liên hệ chân trang; và `contentBottom` (nội dung SEO dưới — admin không soạn ở form sản phẩm) chỉ gate theo nội dung. **Sản phẩm tạo MỚI**: mặc định **tắt hết** (opt-in — admin tự bật). **Sản phẩm cũ chưa cấu hình**: cột `section_visibility` = NULL → web giữ **hành vi legacy = hiện theo nội dung**; lần đầu admin lưu lại, form **seed bật-sẵn theo nội dung hiện có** (reviews/trust seed bật) rồi ghi explicit nên web không đổi. Lưu trữ: opaque JSON string `{sectionKey: boolean}` trên `products.section_visibility` (như `size_guide`); backend chỉ truyền qua, admin serialize / web parse (`lib/utils/section-visibility`). Ẩn/hiện 5 section dạng tab (description/reviews/specs/installation/faq) giờ **cũng do bảng này** quản. Mục **"Tùy chỉnh tab" (V231) đã gỡ khỏi form admin**: cấu hình tab theo từng sản phẩm (thứ tự/đổi tên/tab tự do) **không bao giờ được web áp dụng** kể từ lần dựng lại PDP (V236) — web render theo bố cục cố định + nhãn i18n, và `ProductView` truyền `tabs={[]}` cho `ProductTabsSection`. Cột `products.product_tabs` và DTO vẫn còn (dormant, không có UI sửa). Gate visibility ở **cả web** (server render), không phải chỉ ràng buộc admin. `CONFIRMED_FROM_CODE`
+- `PRODUCT_RULE_005`: **Điều kiện đăng bán (publish gate) — chỉ tab "Tổng quan" là bắt buộc.** Form sản phẩm chia 4 tab (Tổng quan / Nội dung / Chi tiết / Biến thể). Để chuyển sản phẩm sang trạng thái `PUBLISHED`, admin phải điền đủ **7 trường thuộc tab Tổng quan**: **Tên, Thương hiệu, Danh mục, Ảnh đại diện, Giá bán lẻ (> 0), Mô tả ngắn, Mô tả chi tiết**. Các tab còn lại — gồm **SEO (tiêu đề/mô tả/canonical), thư viện ảnh, video, thông số, FAQ, biến thể…** — **được để trống** và vẫn đăng bán được. Modal checklist tách 2 nhóm: nhóm **bắt buộc** (7 trường trên) và nhóm **"Nên bổ sung để trang đầy đủ & đẹp hơn"** — liệt kê các phần làm trang sản phẩm phong phú hơn (SEO, bộ sưu tập ảnh, câu trả lời nhanh, ô số liệu nổi bật, ưu/nhược điểm, phù hợp với ai, thông số kỹ thuật, FAQ, biến thể) với dấu ✓ (đã có) / ⚠ (còn trống) để **thông báo cho admin biết**, nhưng **không chặn đăng**. Cổng kiểm tra này là **UX phía admin** (modal checklist khi bấm "Lưu & đăng"): còn trường bắt buộc thiếu thì ẩn nút "Đăng ngay", buộc về sửa; nhóm nên-bổ-sung không ảnh hưởng nút đăng. Lưu nháp (`DRAFT`) / ẩn (`HIDDEN`) không bị gate. Sản phẩm **đã** ở `PUBLISHED` khi lưu lại không kích hoạt modal. Backend không enforce field-completeness ở tầng API — gate thuần ở frontend. `CONFIRMED_FROM_CODE`
 
 Evidence:
 
-- `ProductEntity.java`, `ProductSpecificationEntity.java`, `ProductFaqEntity.java` (các cột `*_en`)
+- `ProductEntity.java`, `ProductSpecificationEntity.java`, `ProductFaqEntity.java` (các cột `*_en`, gồm `quick_answer_summary_en` + `suitability_advisory_en` thêm ở V236–V237)
 - `JpaCatalogReadRepository.java` (resolve locale + fallback cho web; predicate `name_en` non-blank khi `locale=en` ở `buildProductSpec`/`findCategoriesPaged`; overload `findAllCategories/findAllBrands(locale, strictEnglish)` cho admin)
 - `AdminCatalogReadService.java` (truyền `strictEnglish = "en".equals(locale)` cho tree/brands)
 - `AdminContentReadService.java` + `JpaContentReadRepository.java` (`findArticlesByFilter`/`findPagesByFilter` lọc `title_en` khi `locale=en`)
@@ -191,12 +197,15 @@ Evidence:
 - `ProductJpaRepository.java` (`findBySlugOrSlugEn`, `findBySlugEn`)
 - `V136__add_product_bilingual_content.sql`, `V214__add_product_slug_en.sql`
 - `DATA_CONTRACT.md` — "Product bilingual content"
+- `bigbike-admin/src/screens/ProductDetailScreen.jsx` — `getPublishReadiness` (publish gate: required = tab Tổng quan; SEO = warning), `PublishChecklistModal` (ẩn nút đăng khi còn blocker), `TAB_SECTIONS.general` (PRODUCT_RULE_005)
+- `V245__add_product_section_visibility.sql`; `ProductEntity.sectionVisibility`; `Product.sectionVisibility` (domain record); `UpsertProductRequest.sectionVisibility` + `AdminCatalogMutationService` (ghi); `bigbike-admin/.../ProductDetailScreen.jsx` `SECTION_VISIBILITY_KEYS` / `SectionVisibilityEditor` / `resolveSectionVisibilityForm`; `bigbike-web/lib/utils/section-visibility.ts` + `components/catalog/ProductView.tsx` + `components/wp/WpPurchaseSection.tsx` (gate) — PRODUCT_RULE_006
 
 ## Review And Rating Display Rules
 
 - `REVIEW_RULE_001`: Chỉ review trạng thái **APPROVED** được tính vào điểm trung bình và số lượng đánh giá hiển thị. Review `PENDING` / `SPAM` / `TRASH` không bao giờ xuất hiện trên web và không được tính. `CONFIRMED_FROM_CODE`
 - `REVIEW_RULE_002`: Điểm hiển thị = **trung bình cộng** điểm của tất cả review đã duyệt, làm tròn **1 chữ số thập phân, half-up** (ví dụ `[5, 4, 3]` → `4.0`; `[5, 2]` → `3.5`). Quy ước này thống nhất ở 3 nơi: cache `products.rating` (`AdminReviewService.toCachedRating` — `RoundingMode.HALF_UP`), `avgRating` của API public reviews (`PublicReviewService.roundAverage`), và SQL backfill `V63`. Giá trị hiển thị trên web phải khớp giữa `rating` (denormalized trên Product), `avgRating` (API reviews) và trung bình cộng thực tế. `CONFIRMED_FROM_CODE`
 - `REVIEW_RULE_003`: **Widget 5 sao chỉ hiển thị khi sản phẩm có ≥ 1 review đã duyệt.** Gate hiển thị bắt buộc dựa trên `ratingCount` / `totalReviews` ≥ 1 (kết hợp `rating > 0` để vẽ), **không được** dùng `rating > 0` làm tín hiệu duy nhất. Sản phẩm 0 review → **ẩn hoàn toàn sao** (có thể thay bằng dòng "Chưa có đánh giá"); cấm mọi giá trị sao mặc định khi thiếu dữ liệu (4.5 ở component, 2 sao của plugin `starRating` theme WP khi `.rating-star` thiếu `data-rating`). Microdata/schema.org `aggregateRating` cũng chỉ được xuất khi có ≥ 1 review đã duyệt. `CONFIRMED_FROM_CODE`
+- `REVIEW_RULE_005`: Một review có thể kèm **tiêu đề tuỳ chọn** (`title`, ≤160 ký tự) và **tối đa 10 ảnh thực tế của khách** (`photos`). Ảnh do khách tải lên phải nằm trong **MinIO** (URL nội bộ `/media/reviews/...`); cấm link ngoài (validate qua `SafeMediaAssetUrlPolicy`). Mỗi ảnh chỉ nhận định dạng ảnh `image/jpeg|png|webp`, ≤ 8MB. Tiêu đề + ảnh **chỉ hiển thị công khai khi review ở trạng thái `APPROVED`** — duyệt chung với review theo `REVIEW_RULE_001`, không có moderation riêng cho từng ảnh. Tiêu đề/ảnh **không** ảnh hưởng điểm trung bình, `ratingCount`, hay `aggregateRating` (gate hiển thị sao vẫn theo `REVIEW_RULE_003`). `CONFIRMED_FROM_CODE`
 - `REVIEW_RULE_004`: Gate theo `ratingCount` thay vì `rating` vì `rating > 0` không tự chứng minh sản phẩm có review. **Importer WP đã được sửa để không còn tạo rating ảo**: `WordPressProductMapper` không default `4.5` khi WP meta thiếu (để `null`), `ProductImporter` không seed `rating` từ meta sản phẩm, và `ReviewImporter` recompute `rating` / `rating_count` từ review **APPROVED** sau khi import (0 review duyệt → `rating = NULL`, `rating_count = 0`; trung bình HALF_UP 1 decimal — `REVIEW_RULE_002`). Cache rating do đó chỉ phản ánh review thật. Lưu ý: bản ghi tồn dư từ lần import cũ có thể vẫn mang rating ảo cho tới khi re-import / backfill — web vẫn an toàn vì gate theo `ratingCount`. `CONFIRMED_FROM_CODE`
 
 Evidence:
@@ -277,6 +286,51 @@ Evidence:
 - `AdminContentMutationService.java` (`applyPagePatch` ghi cột `_en`)
 - `V138__add_article_page_bilingual_content.sql`
 - `DATA_CONTRACT.md` — "Page bilingual content"
+
+## Contact Page Builder Rules
+
+Trang `/lien-he` không phải nội dung tĩnh: phần thân do admin dựng qua **trình dựng trang Liên hệ** (một danh sách khối có thứ tự). Tiêu đề/mô tả đầu trang vẫn lấy từ trang CMS slug `lien-he` (theo Static Page Rules).
+
+- `CONTACT_PAGE_RULE_001`: Bố cục là một mảng khối (tối đa 40) lưu trong bảng singleton `contact_page_layout`. Mỗi khối có `type` ∈ {`channel`,`address`,`hours`,`map`,`richtext`}, cờ `enabled`, `sortOrder`, `column` ∈ {`main`,`online`}, `icon`, nhãn song ngữ (`labelVi`/`labelEn`). `CONFIRMED_FROM_CODE`
+- `CONTACT_PAGE_RULE_002`: Giá trị của khối **bound** (kênh dùng chung như hotline/địa chỉ/giờ/URL mạng xã hội) **không** lưu trong khối — nó nằm ở `site_settings` (single source dùng chung header/footer) và được **ghi xuyên** qua endpoint contact-page, giới hạn bởi whitelist nhóm `contact`. Chỉ khối custom (không `bindKey`) mới giữ `value`/`href` riêng; `richtext` giữ `htmlVi`/`htmlEn`. `CONFIRMED_FROM_CODE`
+- `CONTACT_PAGE_RULE_003`: Nhãn/HTML lùi về bản tiếng Việt khi thiếu bản tiếng Anh (giống `PAGE_RULE_002`). Quản lý bằng quyền `content.update`; storefront chỉ nhận khối `enabled`. `CONFIRMED_FROM_CODE`
+
+Evidence:
+
+- `ContactBlock.java`, `ContactPageLayoutEntity.java`, `ContactBlocksConverter.java`
+- `ContactPageService.java` (whitelist `WRITE_THROUGH_KEYS`, write-through qua `AdminSettingsService`)
+- `AdminContactPageController.java` (`content.update`), `PublicContactPageController.java`
+- `V224__add_contact_page_layout.sql`
+- `bigbike-web/app/lien-he/page.tsx` (render động), `bigbike-admin/src/screens/ContactPageBuilderScreen.jsx`
+
+## Guide Page Builder Rules
+
+Trang tổng `/huong-dan` không phải nội dung tĩnh: lưới ô hướng dẫn + hero do admin dựng qua **trình dựng trang Hướng dẫn**. Thân bài chi tiết của từng ô vẫn là một trang CMS (module Trang) trỏ tới qua `pageSlug` — giữ nguyên SEO/bản EN/rich text.
+
+- `GUIDE_PAGE_RULE_001`: Lưới là một mảng ô (tối đa 40) lưu trong bảng singleton `guide_page_layout`. Mỗi ô có `enabled`, `sortOrder`, `pathSegment` (đoạn URL dưới `/huong-dan/`), `pageSlug` (trang CMS chứa nội dung), `icon` (lucide hoặc URL ảnh MinIO), tiêu đề/mô tả song ngữ. `CONFIRMED_FROM_CODE`
+- `GUIDE_PAGE_RULE_002`: Web dựng lưới, sidebar và map `pathSegment→pageSlug` **chỉ** từ entries của builder — không còn đọc menu location `guide` cho sidebar (menu đó giữ lại nhưng không dùng cho trang này). Ô `pathSegment` không khớp entry nào → 404. `CONFIRMED_FROM_CODE`
+- `GUIDE_PAGE_RULE_003`: Tiêu đề/mô tả/hero lùi về bản tiếng Việt khi thiếu bản tiếng Anh (giống `CONTACT_PAGE_RULE_003`). Quản lý bằng quyền `content.update`; storefront chỉ nhận ô `enabled`. Ảnh icon/hero upload qua media library → MinIO, chỉ lưu URL. `CONFIRMED_FROM_CODE`
+
+Evidence:
+
+- `GuideEntry.java`, `GuidePageLayoutEntity.java`, `GuideEntriesConverter.java`
+- `GuidePageService.java`, `AdminGuidePageController.java` (`content.update`), `PublicGuidePageController.java`
+- `V227__add_guide_page_layout.sql`
+- `bigbike-web/app/huong-dan/GuidePage.tsx` (render động), `bigbike-admin/src/screens/GuidePageBuilderScreen.jsx`
+
+## Policy Page Rules
+
+Trang chính sách `/chinh-sach/{slug}` do admin quản lý hoàn toàn: thân bài là một trang CMS (module Trang) bình thường, còn thanh bên (danh sách + thứ tự các trang chính sách) do admin dựng qua **menu vị trí `policy`** — tái dùng trình quản lý Menu sẵn có, không cần builder riêng.
+
+- `POLICY_PAGE_RULE_001`: `slug` trên URL là slug của chính trang CMS — web phân giải trực tiếp `GET /api/v1/pages/{slug}`, không còn bảng map slug hard-code. Slug không khớp trang CMS nào → 404. `CONFIRMED_FROM_CODE`
+- `POLICY_PAGE_RULE_002`: Thanh bên dựng từ menu location `policy` (`GET /api/v1/menus/policy`); mỗi mục trỏ tới `/chinh-sach/{page-slug}`, mục đang xem mang trạng thái `current` khi slug khớp. Admin thêm/bớt/sắp thứ tự mục như menu header/footer. Chỉ mục `ACTIVE` hiển thị. `CONFIRMED_FROM_CODE`
+- `POLICY_PAGE_RULE_003`: `policy` là một system menu slot (cạnh `primary`/`footer`/`guide`) — admin không tạo/xóa container, chỉ quản lý mục bên trong. Nhãn mục song ngữ (`label` VI + `label_en`), lùi về VI khi thiếu EN (giống menu khác). V226 seed sẵn 4 mục chính sách. `CONFIRMED_FROM_CODE`
+
+Evidence:
+
+- `MenuLocations.java` (`POLICY`), `AdminMenuService.java`, `PublicMenuController.java`
+- `V226__seed_policy_menu_slot.sql`
+- `bigbike-web/app/chinh-sach/[slug]/page.tsx` (render động), `bigbike-admin/src/screens/MenuScreen.jsx` (slot `policy`)
 
 ## WebSocket Rules
 
@@ -411,4 +465,4 @@ Evidence:
 
 ## Contact Inbox Rules
 
-> Removed. The public contact form and admin contact inbox were deleted (migration `V128__drop_contact_messages.sql`). Customers reach the shop through the static contact info on `/lien-he` (hotline, Zalo, Facebook, address, map). No `contact_messages` table, no `contact.read`/`contact.write` permissions.
+> Removed. The public contact form and admin contact inbox were deleted (migration `V128__drop_contact_messages.sql`). Customers reach the shop through the contact info on `/lien-he` (hotline, Zalo, Facebook, address, map) — now **admin-managed via the contact page builder** (see "Contact Page Builder Rules"), not a static page. There is still no contact form, no `contact_messages` table, and no `contact.read`/`contact.write` permissions.

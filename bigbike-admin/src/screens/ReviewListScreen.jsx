@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { PageSizeSelect } from '../components/PageSizeSelect'
-import { Check, Eye, EyeOff, MessageSquare, Search } from 'lucide-react'
+import { Check, Eye, EyeOff, Image as ImageIcon, MessageSquare, Search } from 'lucide-react'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { showConfirm } from '../lib/confirm'
@@ -280,9 +280,20 @@ export function ReviewListScreen({ navigate, canUpdate }) {
                       {statusLabel(r.status, t)}
                     </span>
                   </div>
+                  {r.title ? (
+                    <p style={{ margin: '0 0 4px', fontWeight: 600, color: 'var(--admin-color-text-primary)', fontSize: 14 }}>
+                      {r.title}
+                    </p>
+                  ) : null}
                   <p style={{ margin: 0, color: 'var(--admin-color-text-secondary)', fontSize: 14, lineHeight: 1.55 }}>
                     "{r.body?.slice(0, 400)}{r.body?.length > 400 ? '…' : ''}"
                   </p>
+                  {r.photos?.length > 0 ? (
+                    <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
+                      <ImageIcon size={13} />
+                      {t('reviews.photoCount', { count: r.photos.length, defaultValue: `${r.photos.length} ảnh` })}
+                    </div>
+                  ) : null}
                   <div className="flex flex-wrap gap-2 mt-3">
                     <button type="button" className="bb-btn bb-btn-secondary bb-btn-sm" onClick={() => navigate(`/admin/reviews/${r.id}`)}>
                       <Eye size={13} />{t('reviews.view')}

@@ -82,10 +82,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           aria-live="polite"
         >
           <div>
-            <b className="block text-sm font-bold tracking-display uppercase text-brand mb-[2px]">{toast.title}</b>
-            <span className="text-sm text-muted-foreground">{toast.message}</span>
+            <b className="block text-caption font-bold tracking-display uppercase text-brand mb-[2px]">{toast.title}</b>
+            <span className="text-caption text-muted-foreground">{toast.message}</span>
           </div>
-          <Link href={toCartPath()} className="text-sm font-bold text-brand no-underline whitespace-nowrap tracking-wide shrink-0 hover:text-brand-hover">
+          <Link href={toCartPath()} className="text-caption font-bold text-brand no-underline whitespace-nowrap tracking-wide shrink-0 hover:text-brand-hover">
             {t("toastViewCart")}
           </Link>
         </div>

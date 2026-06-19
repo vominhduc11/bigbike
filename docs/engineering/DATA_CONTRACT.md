@@ -36,9 +36,9 @@ Evidence:
 | Field | DB column | Role | Required? |
 |---|---|---|---|
 | `product.sku` | `products.sku varchar(100)` | **Model code / group code** — optional descriptive identifier for the product family. Not used as the selling code when variants exist. | Optional (nullable, no unique constraint) |
-| `variant.sku` | `product_variants.sku varchar(100)` | **Selling SKU** — the code used at POS, cart, checkout, inventory, and returns to identify the actual unit sold. | Optional (nullable, no unique constraint) |
+| `variant.sku` | `product_variants.sku varchar(100)` | **Selling SKU** — the code used at POS, cart, checkout, inventory, and returns to identify the actual unit sold. | **Required + globally unique** on the admin upsert API (`@NotBlank` + case-insensitive uniqueness; see `BUSINESS_RULES.md` → `PRODUCT_RULE_SKU_001`). Enforced by partial unique index `ux_product_variants_sku_lower` on `lower(sku)` (V244). Column stays nullable (index ignores nulls) so the requirement is write-time, not a schema `NOT NULL`. |
 
-When snapshotting line items into cart/order/POS, the system uses `variant.sku` first, falling back to `product.sku`. This fallback supports products that have no variants (where `product.sku` is the selling code) and variants that were created without a SKU.
+When snapshotting line items into cart/order/POS, the system uses `variant.sku` first, falling back to `product.sku`. This fallback supports products that have no variants (where `product.sku` is the selling code) and legacy variants whose `sku` is still null (created before the requirement / WP-import).
 
 Inventory and serial-tracking views surface both fields (`product_sku`, `variant_sku`) so admin tools can locate units by either code.
 
@@ -241,14 +241,34 @@ DTO (`@Size(max = 50000)`).
 | Field | DB column | PDP surface |
 |---|---|---|
 | `description` | `description` | "Mô tả sản phẩm" section band |
-| `promotionContent` | `promotion_content` (added `V124__add_product_promotion_content.sql`) | "Ưu đãi & khuyến mãi" section band — hidden when empty |
-| `installationGuide` | `installation_guide` (added `V133__add_product_installation_guide_and_faq.sql`) | "Hướng dẫn lắp đặt" section band — hidden when empty |
+| `promotionContent` | `promotion_content` (added `V124__add_product_promotion_content.sql`) | **DEPRECATED 2026-06-18** — gỡ khối render trên PDP web + ô nhập trong admin; cột vẫn còn (ngủ, không xóa) nên dữ liệu cũ được giữ. Không còn surface trên trang sản phẩm. |
+| `installationGuide` | `installation_guide` (added `V133__add_product_installation_guide_and_faq.sql`; format đổi ở `V242__convert_installation_guide_to_steps.sql`) | "Hướng dẫn lắp đặt" section band — **JSON object có cấu trúc** `{ steps: [{ icon, title, body, tip?, warning? }], maintenance? }` (trước V242 là rich-HTML tự do). Web parse JSON → lưới các bước (số thứ tự + icon + tiêu đề + nội dung + hộp mẹo/cảnh báo) + ghi chú bảo dưỡng cuối. `icon` dùng chung cả vi/en (ghi vào cả hai cột); `steps[]` bản `_en` mirror theo index. Hidden when empty. Còn lưu opaque như `size_guide` — backend không parse. |
 | `contentBottom` | `content_bottom` (added `V43`) | Long-form SEO copy band below the related-products grid |
 
 `promotionContent` and `installationGuide` are surfaced on both the public
 product detail response and the admin product read response (they are
 components of the domain `Product` record). Empty/blank values are normalized
-to `NULL` on write.
+to `NULL` on write. `installationGuide` lưu **chuỗi JSON opaque** (bilingual qua
+cột `_en`); backend truyền nguyên chuỗi, admin/web parse JSON ở hai đầu — giống
+`suitability_advisory`.
+
+Status: `CONFIRMED_FROM_CODE`
+
+### Product PDP content — `quick_answer_summary`, `suitability_advisory` (V236–V237)
+
+Two bilingual dual-column fields added for the PDP layout restructure (đặt theo
+"Thứ tự đầy đủ" trang sản phẩm). Both follow the `shortDescription`/`sizeGuide`
+dual-text pattern: canonical (vi) column + `_en` column, `pick(vi, en, locale)`
+on read, raw English surfaced in `translations.en` for the admin editor.
+
+| Field | DB columns (added) | Type | PDP surface |
+|---|---|---|---|
+| `quickAnswerSummary` | `quick_answer_summary` + `quick_answer_summary_en` (`V236__add_product_quick_answer_summary.sql`) | `TEXT`, max 600 | "Quick Answer" — đoạn AIO 40–60 từ, blockquote đặt TRƯỚC H2 đầu tiên. Field **riêng**, KHÔNG dùng lại `shortDescription` (bullet ở khối mua hàng). Hidden when empty. |
+| `suitabilityAdvisory` | `suitability_advisory` + `suitability_advisory_en` (`V237`; format đổi ở `V240__convert_suitability_advisory_to_cards.sql`) | `TEXT`, max 20 000 | "Phù hợp với ai" — **JSON array các thẻ tư vấn** `[{ audience, advice, linkLabel?, linkUrl? }]` (trước V240 là rich-HTML). Web parse JSON → mỗi item một thẻ (đối tượng in đậm + lời khuyên + link nội bộ tùy chọn); `linkUrl` dùng chung cả vi/en, mảng `_en` mirror theo index. Hidden when empty. |
+
+Both are detail-only (null in list responses), nullable, presence-flag on PATCH,
+empty/blank normalized to `NULL`. The PDP "Hoàn thiện bộ bảo hộ — Có thể bạn cũng
+cần" block reuses the existing `relatedProducts` (no new cross-sell column).
 
 Status: `CONFIRMED_FROM_CODE`
 
@@ -256,7 +276,7 @@ Status: `CONFIRMED_FROM_CODE`
 
 Admin-curated structured content stored as JSONB in `products.description_blocks` (nullable). The column holds a JSON array of block objects — the **structured** source of truth for the "Mô tả sản phẩm" section. The mutation service renders blocks to HTML and writes the result into the existing `description` (TEXT) column simultaneously, so public consumers see no change.
 
-Seven block types:
+Eight block types:
 
 | `type` | Required fields | Optional fields |
 |---|---|---|
@@ -267,6 +287,11 @@ Seven block types:
 | `video` | `provider` (`youtube`\|`upload`), `url` (≤ 2 000 chars) | `caption` (≤ 500) |
 | `callout` | `variant` (`info`\|`warning`\|`note`), `html` (≤ 10 000 chars) | — |
 | `divider` | — | — |
+| `feature` | `url` (≤ 2 000 chars) | `side` (`auto`\|`left`\|`right`, mặc định `auto`), `alt` (≤ 500), `caption` (≤ 500), `subheading` (≤ 500), `heading` (≤ 500), `html` (≤ 50 000), `listStyle` (`bulleted`\|`numbered`), `items` (≤ 200 strings, each ≤ 2 000 chars) |
+
+**`feature` — hàng ảnh + chữ 2 cột (thêm sau V139, code-only):** Gói chung 1 ảnh + tiêu đề phụ (`subheading`, eyebrow) + tiêu đề chính (`heading`) + đoạn mô tả (`html`) + danh sách vào MỘT khối, render thành khối 2 cột ảnh–chữ trên web (chỉ desktop; mobile xếp dọc). `side`=`auto`/null → các khối `feature` liên tiếp tự xen kẽ trái/phải (so le); `left`/`right` ép vị trí ảnh. Chỉ `url` bắt buộc. **Khối này thay thế cơ chế "ghép ngầm" cũ** (web từng tự gom một khối `image`/`video` + cụm `text` liền sau thành hàng 2 cột) — cơ chế ghép ngầm đã được GỠ BỎ; muốn 2 cột phải dùng khối `feature`.
+
+**Vốn từ khối GIỚI HẠN ở phạm vi SẢN PHẨM (V238):** Trình soạn mô tả sản phẩm (và tab tự do của sản phẩm) chỉ còn cho tạo **4 khối**: `paragraph` (chỉ văn bản — ô rich-text chứa được `h2/h3/ul/ol/bold/link`), `image` (chỉ ảnh), và `feature` với `side="right"` (ảnh phải) / `side="left"` (ảnh trái). Các loại `heading`/`list`/`callout`/`divider`/`video` đứng riêng **không còn được tạo cho sản phẩm**. Sealed interface `DescriptionBlock` vẫn GIỮ đủ các subtype vì **dùng chung với Content** (Article/Page/Contact vẫn cần heading/list/…). Migration `V238__ConsolidateProductDescriptionBlocks.java` gộp dữ liệu sản phẩm cũ (`products.description_blocks` + `description_blocks_en` + `product_tabs` custom blocks/blocksEn) về vốn từ 4 khối: mỗi mục (heading + đoạn/list/callout đi liền sau) gộp thành MỘT khối `paragraph` rich-HTML (giữ nguyên nội dung), `divider` bị bỏ (web tự kẻ vạch giữa khối), `image`/`feature` giữ nguyên. Idempotent (chỉ rewrite hàng có loại khối ngoài 4-vocab hoặc gộp được).
 
 **Presence semantics (PATCH):** Sending `descriptionBlocks` (including `[]`) triggers rendering and overwrites **both** columns (`description_blocks` and `description`). Omitting the key leaves both columns untouched.
 
@@ -274,7 +299,7 @@ Seven block types:
 
 **HTML sanitizer:** Rendered HTML is sanitized (Jsoup `Safelist`) before writing to `description` to block XSS vectors (`<script>`, `on*` handlers, `javascript:` URIs).
 
-Status: `CONFIRMED_FROM_CODE` — `DescriptionBlock.java` (sealed interface), `DescriptionBlocksConverter`, `ProductEntity.descriptionBlocks`, `DescriptionBlockRenderer`, `AdminCatalogMutationService.applyProductPatch`, migration `V139`.
+Status: `CONFIRMED_FROM_CODE` — `DescriptionBlock.java` (sealed interface, `FeatureBlock` có `subheading`), `DescriptionBlocksConverter`, `ProductEntity.descriptionBlocks`, `DescriptionBlockRenderer` (gồm `renderFeature` render eyebrow), `AdminCatalogMutationService.applyProductPatch`, migration `V139` + `V238` (gộp sản phẩm về 4 khối). Admin `BlockEditor` chạy `productMode` chỉ hiện 4 khối; Content giữ đủ khối. Khối `feature` không thêm cột (JSONB sẵn có).
 
 ### Product FAQ entries — `product_faqs` (V133)
 
@@ -288,7 +313,7 @@ thường gặp" section band and emitted as `FAQPage` JSON-LD. Child table of
 | `product_id` | `VARCHAR(64)` | NO | FK → `products.id`, `ON DELETE CASCADE`. |
 | `sort_order` | `INTEGER` | NO | Display order; assigned by the admin editor. |
 | `question` | `VARCHAR(500)` | NO | FAQ question. |
-| `answer` | `TEXT` | NO | FAQ answer (plain text; max 20 000 chars at the DTO). |
+| `answer` | `TEXT` | NO | FAQ answer (sanitized rich-text **HTML** authored via the admin TipTap editor; max 20 000 chars at the DTO). The web PDP renders it through `sanitizeRichHtml` inside a `.wyswyg` block; the `FAQPage` JSON-LD strips it to plain text. Legacy plain-text answers render unchanged (no tags). |
 
 The upsert DTO accepts at most 50 FAQ entries (`@Size(max = 50)`). Rows with a
 blank question or answer are dropped on write. Exposed on the public and admin
@@ -297,6 +322,75 @@ omitted from product *list* responses (detail-only, like `specifications`).
 
 Status: `CONFIRMED_FROM_CODE` — `ProductFaqEntity`, `ProductFaq` domain record,
 `FaqRequest`, `AdminCatalogMutationService.applyFaqs`, migration `V133`.
+
+### Product commitment rows — `product_commitments` (V232)
+
+Per-product list of commitment rows rendered under the add-to-cart / buy-now
+buttons on the PDP (`WpPurchaseSection.tsx`). **Replaces** the former global
+`public_product` commitment settings (V228) — each product now owns its own rows.
+Child table of `products`, mirroring the `product_faqs` pattern with bilingual
+inline columns.
+
+| Column | Type | Null | Notes |
+|---|---|---|---|
+| `id` | `BIGINT` identity | NO | Primary key. |
+| `product_id` | `VARCHAR(64)` | NO | FK → `products.id`, `ON DELETE CASCADE`. |
+| `sort_order` | `INTEGER` | NO | Display order; assigned by the admin editor. |
+| `icon` | `VARCHAR(40)` | NO | Icon key from the fixed web set (e.g. `truck`, `refresh-cw`, `shield-check`); unknown → web falls back to `shield-check`. |
+| `title` | `VARCHAR(200)` | NO | Row title (Vietnamese / canonical). |
+| `subtitle` | `VARCHAR(300)` | YES | Optional row subtitle. |
+| `title_en` | `VARCHAR(200)` | YES | Optional English title; null → falls back to `title`. |
+| `subtitle_en` | `VARCHAR(300)` | YES | Optional English subtitle; null → falls back to `subtitle`. |
+
+The upsert DTO accepts at most 12 rows (`@Size(max = 12)`). Rows with a blank
+title are dropped on write. Exposed on the public and admin product detail
+responses as the `commitments` array on the domain `Product` record (admin reads
+also carry `titleEn`/`subtitleEn`); omitted from product *list* responses
+(detail-only). An empty list hides the whole block on the PDP.
+
+`V232` also **seeds** every existing product with the three former default rows
+(delivery / size-exchange / warranty, icons `truck` / `refresh-cw` /
+`shield-check`) so no product loses the block on migration, and **removes** the
+6 `product_commitment_*` rows from `site_settings`.
+
+Status: `CONFIRMED_FROM_CODE` — `ProductCommitmentEntity`, `ProductCommitment`
+domain record, `CommitmentRequest`, `AdminCatalogMutationService.applyCommitments`,
+migration `V232`.
+
+### Product "Specs Dashboard" stat boxes — `product_spec_stats` (V235)
+
+Per-product list of "Specs Dashboard" stat boxes rendered right under the buy area
+on the PDP (`FeaturedSpecsBar.tsx`). Each box is a big **value** over a short
+**label** — a selling-point figure ("đòn chốt") that answers *"is the price worth
+it?"*, **NOT** a technical specification row. **Replaces** the
+`product_specifications.featured` flag (V230), which is dropped in this migration.
+Child table of `products`, mirroring `product_commitments` with bilingual inline columns.
+
+| Column | Type | Null | Notes |
+|---|---|---|---|
+| `id` | `BIGINT` identity | NO | Primary key. |
+| `product_id` | `VARCHAR(64)` | NO | FK → `products.id`, `ON DELETE CASCADE`. |
+| `sort_order` | `INTEGER` | NO | Display order; assigned by the admin editor. |
+| `stat_value` | `VARCHAR(60)` | NO | The headline figure (Vietnamese / canonical), e.g. `24 tháng`. |
+| `label` | `VARCHAR(80)` | NO | Short label under the figure, e.g. `Bảo hành`. |
+| `stat_value_en` | `VARCHAR(60)` | YES | Optional English value; null → falls back to `stat_value`. |
+| `label_en` | `VARCHAR(80)` | YES | Optional English label; null → falls back to `label`. |
+
+The upsert DTO accepts at most **4** rows (`@Size(max = 4)`). Rows with a blank
+value or label are dropped on write. Exposed on the public and admin product detail
+responses as the `specStats` array on the domain `Product` record (admin reads also
+carry `valueEn`/`labelEn`); omitted from product *list* responses (detail-only). An
+empty list hides the whole block on the PDP.
+
+`V235` also **seeds** each product from its existing `featured=true` specifications
+(up to 4, ordered) so no product loses its dashboard on migration, then **drops**
+`product_specifications.featured`. Admin then refines the boxes into proper
+selling-point figures.
+
+Status: `CONFIRMED_FROM_CODE` — `ProductSpecStatEntity`, `ProductSpecStat` domain
+record, `SpecStatRequest`, `AdminCatalogMutationService.applySpecStats`,
+`JpaCatalogReadRepository.toSpecStats`, migration `V235`. See
+[API_CONTRACT.md](API_CONTRACT.md) §"Product spec-stat boxes — `specStats` (V235)".
 
 ### Product SEO template fields — pros/cons, warranty, origin, weight, size guide (V175)
 
@@ -328,7 +422,6 @@ drop. Đọc ra domain `Product` thành 2 mảng string `positiveNotes` / `negat
 | `warranty_months` | `INTEGER` | YES | Số tháng bảo hành. Domain field `warrantyMonths`. |
 | `warranty_scope` | `TEXT` | YES | Phạm vi bảo hành (1 ngôn ngữ — fallback VI). Domain `warrantyScope`. |
 | `origin_brand_country` | `VARCHAR(120)` | YES | "Thương hiệu [nước]". Domain `originBrandCountry`. |
-| `origin_manufacture_country` | `VARCHAR(120)` | YES | "Sản xuất tại [nước]". Domain `originManufactureCountry`. |
 | `size_guide` | `TEXT` | YES | Bảng size dạng HTML (rich-text, sanitize khi render). Domain `sizeGuide`. |
 
 **Trọng lượng:** dùng lại cột `weight_kg` (`NUMERIC(10,4)`, đã có từ schema gốc) —
@@ -395,24 +488,41 @@ products; admin reads keep every linked product so the editor can show drafts.
 There is **no category fallback** — an empty list hides the PDP section entirely.
 
 Status: `CONFIRMED_FROM_CODE` — `ProductEntity.relatedProducts`,
-`UpsertProductRequest.relatedProductIds`, `AdminCatalogMutationService.resolveRelatedProducts`,
+`UpsertProductRequest.relatedProductIds`, `AdminCatalogMutationService.resolveProductRefs`,
 `JpaCatalogReadRepository.toRelatedProducts`, migration `V135`.
 
-### Product tags — `product_tags` + `product_tag_map`
+### Product accessories — `product_accessory_product_map` (V239)
 
-Free-form catalog tags powering the storefront tag-filter pages. Many-to-many on `products` (imported in bulk from WordPress).
+Admin-curated list of catalog products shown in the PDP "Phụ kiện" (sản phẩm bán
+kèm) section. Self-referential, ordered many-to-many on `products`. Schema mirrors
+`product_related_product_map` (V135) exactly — same `(owner_id, ref_id, sort_order
+@OrderColumn)` join-table pattern — but is an independent list.
 
-| Table / Column | Type | Null | Notes |
+| Column | Type | Null | Notes |
 |---|---|---|---|
-| `product_tags.id` | `VARCHAR` | NO | PK. New tags created by admin use id `ptag-<uuid>`. |
-| `product_tags.slug` | `VARCHAR` | NO | Unique; derived from the name via `ProductSlugGenerator.toSlug` (diacritic-insensitive kebab-case). Storefront tag-page key. |
-| `product_tags.tag` | `VARCHAR` | NO | Display name. |
-| `product_tag_map.product_id` | — | NO | FK → `products.id`. |
-| `product_tag_map.tag_id` | — | NO | FK → `product_tags.id`. |
+| `product_id` | `VARCHAR(64)` | NO | FK → `products.id`, `ON DELETE CASCADE`. The product whose PDP shows the section. |
+| `accessory_product_id` | `VARCHAR(64)` | NO | FK → `products.id`, `ON DELETE CASCADE`. A curated accessory product. |
+| `sort_order` | `INTEGER` | NO | Display order; managed by JPA `@OrderColumn`. |
 
-`ProductEntity` is the **owning side** (`@ManyToMany @JoinTable(name = "product_tag_map")`); `ProductTagEntity.products` is the inverse (`mappedBy = "tags"`). Tags are **not** part of the shared `Product` domain record — they are read/written only through the dedicated admin sub-resource `GET`/`PUT /api/v1/admin/products/{id}/tags` (see API_CONTRACT). `PUT` does a full-replace, resolve-or-create by slug.
+Primary key `(product_id, accessory_product_id)`. The upsert DTO accepts at most
+24 accessory IDs (`@Size(max = 24)`); `AdminCatalogMutationService.resolveProductRefs`
+de-duplicates, preserves order, drops the product's own ID and unknown IDs.
 
-Status: `CONFIRMED_FROM_CODE` — `ProductTagEntity`, `ProductEntity.tags`, `AdminProductTagService`, `ProductTagJpaRepository`.
+Exposed as the `accessoryProducts` array on the domain `Product` record — present
+on the public `GET /api/v1/products/{slug}` and admin product detail responses;
+empty in product *list* responses (detail-only). Each entry uses the **list-view**
+product shape. The public read path includes **only `PUBLISHED`** entries; admin
+reads keep every linked product. An empty list hides the PDP section entirely.
+
+Status: `CONFIRMED_FROM_CODE` — `ProductEntity.accessoryProducts`,
+`UpsertProductRequest.accessoryProductIds`, `AdminCatalogMutationService.resolveProductRefs`,
+`JpaCatalogReadRepository.toAccessoryProducts`, migration `V239`.
+
+### Product tags — REMOVED (V243)
+
+The product tag feature was removed entirely on 2026-06-19. The storefront never consumed these tags (no tag-filter page or tag-aware search was ever wired), and the admin tag editor was removed, so the tables held only dead WordPress-import data. Migration `V243__drop_product_tags.sql` drops `product_tag_map` then `product_tags`; the `ProductTagEntity`, `ProductTagJpaRepository`, `AdminProductTagService`, `ProductTagsRequest`, the admin sub-resource, and `ProductEntity.tags` are all deleted.
+
+Status: `CONFIRMED_FROM_CODE` — removal verified; no remaining `product_tag` references in runtime code.
 
 ### Product rating denormalization — `products.rating` / `products.rating_count`
 
@@ -421,6 +531,8 @@ Cache denormalized của review **APPROVED**, phục vụ list/detail đọc nha
 - `products.rating` — `numeric(3,2)`, nullable, **không có default** (thêm ở `V18`, check constraint `ck_products_rating`: `NULL` hoặc `0..5`). Giá trị = trung bình cộng điểm review đã duyệt, làm tròn **1 decimal HALF_UP** (`AdminReviewService.toCachedRating`).
 - `products.rating_count` — `integer`, nullable, **không có default** (thêm ở `V43`). Giá trị = số review đã duyệt.
 - `reviews.rating` — `smallint NOT NULL`, check `1..5` (`V14`) — nên hễ có ≥ 1 review đã duyệt thì trung bình luôn ≥ 1.
+- `reviews.title` — `varchar(160)`, nullable (`V234`). Tiêu đề tuỳ chọn của review. Review cũ / WP-import = `NULL`.
+- `reviews.photos` — `jsonb`, nullable (`V234`). Mảng URL ảnh khách hàng trong MinIO (`/media/reviews/...`), tối đa 10. `NULL`/`[]` = không có ảnh. Map qua `@JdbcTypeCode(SqlTypes.JSON)` (mirror `products.product_tabs`). Chỉ phục vụ hiển thị khi review `APPROVED` (xem `BUSINESS_RULES.md` `REVIEW_RULE_005`).
 
 **Recompute flow (đường duy nhất được ghi cache):** `AdminReviewService.recomputeProductReviewAggregate` chạy sau **mọi** chuyển trạng thái review (`updateStatus`, kể cả APPROVED → PENDING/SPAM/TRASH) và sau `deleteReview`. Khi 0 review approved: `rating = NULL` (không phải 0) và `rating_count = 0`. `PublicReviewService.submitReview` tạo review PENDING và **không** recompute (đúng — pending không được tính). Admin upsert product **không thể** set tay 2 field này (`UpsertProductRequest` cố ý không khai báo field; xem comment "Phase 2D" trong `AdminCatalogMutationService`).
 
@@ -701,6 +813,52 @@ Status: `CONFIRMED_FROM_CODE` — `ArticleEntity.bodyBlocks`, `Article.bodyBlock
 **Read / mutation semantics:** giống hệt article `body_blocks` — xem §"Article body blocks (V140)".
 
 Status: `CONFIRMED_FROM_CODE` — `PageEntity.bodyBlocks`, `Page.bodyBlocks`, `AdminContentItem.bodyBlocks`, `UpsertPageRequest.bodyBlocksPresent`, `AdminContentMutationService.applyPagePatch`, migration `V140/V141`.
+
+### Contact page layout — `contact_page_layout.blocks` (V224)
+
+Bảng singleton `contact_page_layout(id uuid PK, blocks jsonb, updated_at timestamptz)` — đúng **một dòng** (id cố định `…0000c0`, seed trong `V224`). Cột `blocks` là mảng khối bố cục của trang `/lien-he`; builder thay cả mảng khi lưu (giống pattern save-whole-list của home highlights).
+
+Mỗi phần tử (`ContactBlock`):
+
+| field | kiểu | ghi chú |
+|---|---|---|
+| `id` | string | khóa ổn định cho reorder |
+| `type` | enum | `channel` \| `address` \| `hours` \| `map` \| `richtext` |
+| `enabled` | boolean | khối có render trên web không |
+| `sortOrder` | int | thứ tự trong cột (tăng dần) |
+| `column` | enum | `main` (trái) \| `online` (phải) |
+| `icon` | string | tên lucide (vd `Phone`) **hoặc** đường dẫn/URL ảnh |
+| `labelVi` / `labelEn` | string | nhãn song ngữ; web lùi về VI khi EN trống |
+| `bindKey` | string? | key `site_settings` cấp giá trị (null = khối custom) |
+| `value` / `href` | string? | giá trị/link **chỉ** cho khối custom (bound thì null) |
+| `htmlVi` / `htmlEn` | string? | nội dung HTML cho khối `richtext` |
+
+**Single source of truth:** giá trị khối bound (hotline, địa chỉ, giờ, URL mạng xã hội) **không** lưu trong `blocks` — nằm ở `site_settings`, ghi xuyên qua endpoint contact-page (whitelist nhóm `contact`). Xem `BUSINESS_RULES.md` §"Contact Page Builder Rules".
+
+Status: `CONFIRMED_FROM_CODE` — `ContactBlock.java`, `ContactPageLayoutEntity.java`, `ContactBlocksConverter.java`, `ContactPageService.java`, migration `V224`.
+
+### Guide page layout — `guide_page_layout.entries` (V227)
+
+Bảng singleton `guide_page_layout(id uuid PK, hero_title_vi text, hero_title_en text, hero_image_url text, entries jsonb NOT NULL, updated_at timestamptz)` — đúng **một dòng** (id cố định `…0000d0`, seed trong `V227`). Cột `entries` là mảng ô của trang tổng `/huong-dan`; builder thay cả mảng khi lưu (giống pattern save-whole-list của contact page / home highlights).
+
+Hero (3 cột riêng, không nằm trong JSON): `hero_title_vi` / `hero_title_en` (web lùi về VI khi EN trống) + `hero_image_url` (ảnh banner, URL MinIO).
+
+Mỗi phần tử (`GuideEntry`):
+
+| field | kiểu | ghi chú |
+|---|---|---|
+| `id` | string | khóa ổn định cho reorder |
+| `enabled` | boolean | ô có render trên web không |
+| `sortOrder` | int | thứ tự trong lưới (tăng dần) |
+| `pathSegment` | string | đoạn URL dưới `/huong-dan/` (vd `mua-hang` → `/huong-dan/mua-hang/`) |
+| `pageSlug` | string | slug trang CMS chứa nội dung chi tiết (vd `huong-dan-mua-hang`) |
+| `icon` | string? | tên lucide (vd `BookOpen`) **hoặc** URL ảnh MinIO |
+| `titleVi` / `titleEn` | string | tiêu đề ô song ngữ; web lùi về VI khi EN trống |
+| `descriptionVi` / `descriptionEn` | string? | mô tả ngắn song ngữ |
+
+**Phân chia nguồn nội dung:** layout (lưới ô + hero) ở `guide_page_layout`; **thân bài chi tiết** vẫn ở trang CMS (`pages`) theo `pageSlug` — giữ nguyên SEO, bản EN, rich text của module Trang. Web lấy lưới + sidebar + map `pathSegment→pageSlug` từ entries (một nguồn duy nhất; không còn đọc menu location `guide` cho sidebar). Xem `BUSINESS_RULES.md` §"Guide Page Builder Rules".
+
+Status: `CONFIRMED_FROM_CODE` — `GuideEntry.java`, `GuidePageLayoutEntity.java`, `GuideEntriesConverter.java`, `GuidePageService.java`, migration `V227`.
 
 ### Product homepage placement (V111+)
 
@@ -1012,6 +1170,9 @@ Evidence: `AdminAnalyticsResponse.java`, `AdminReportService.java`, `OrderJpaRep
 | `general` | Site name, footer text, BCT registration URL | Cài đặt chung |
 | `contact` | Public contact email/address, social links | Liên hệ |
 | `public_home` | Homepage hotline, promo banner, experience/about blocks | Trang chủ |
+| `public_about` | Full About page (`/gioi-thieu`) copy: intro block-head, intro paragraphs (HTML), quality block, 5 service tiles (title/body/image/highlight), connect block — 28 keys. Seeded by `V223`. | Trang Giới thiệu |
+| `public_warranty` | Full Warranty-lookup page (`/bao-hanh`) copy: SEO meta, banner heading, lookup-box kicker/sub/labels/button, result-table labels, status badges (incl. `{daysLeft}` templates), result footers, plus two optional admin rich-text blocks (intro + policy/FAQ) and an optional intro image — 25 keys. Seeded by `V225`. The serial-lookup tool itself is unchanged; only the copy is dynamic. | Trang Bảo hành |
+| `public_product` | **No shared settings.** All product-detail content is per-product now: the commitment-rows block under the buy buttons (`product.commitments`, child table `product_commitments`, V232) and the trust-badge row above the title (`product.trustBadges`, child table `product_trust_badges`, V233). The former `product_commitment_*` (V228) and `product_trust_*` keys were removed in V232/V233. | Trang sản phẩm |
 | `public_hero` | Hero banners for listing pages (`/san-pham`, `/brands`, `/tin-tuc`) — 17 keys (5 per page incl. per-page `illustration_url` + 2 global fallbacks). Managed by the dedicated **Banner trang** admin screen (`BannerScreen.jsx`), not the generic settings screen. | Banner trang |
 | `promo` | Homepage promotion banner | Khuyến mãi |
 | `seo` | Homepage SEO title/description, OG image, bottom HTML block | SEO website |
@@ -1021,6 +1182,65 @@ Evidence: `AdminAnalyticsResponse.java`, `AdminReportService.java`, `OrderJpaRep
 | `security` | Login attempts, session timeout — devops-managed, hidden from the admin UI | (hidden) |
 
 **Removed:** `payment_sepay` — the SePay payment gateway was removed in V59; any leftover `payment_sepay` rows are deleted by V132.
+
+### `public_about` keys — full About page content (V223)
+
+The `/gioi-thieu` page was previously rendered from hardcoded theme copy (i18n `About` namespace) whenever the `Page.body` was blank. `V223__seed_about_page_content_settings.sql` lifts that copy into `site_settings` (group `public_about`, all `is_public = true`) so the shop admin can edit every part from **Cài đặt → Trang Giới thiệu** while keeping the original 5-tile layout. Each text key is seeded with both `setting_value` (VI) and `setting_value_en` (EN). The web page reads settings-first and falls back to the i18n `About` defaults only when a key is blank.
+
+| `setting_key` | Type | Content |
+|---|---|---|
+| `about_page_kicker` | STRING | Intro block-head small heading |
+| `about_page_tagline` | LONG_TEXT | Intro block-head tagline |
+| `about_page_intro_html` | HTML | Four opening paragraphs (rich-text) |
+| `about_page_quality_heading` | STRING | "Chất lượng dịch vụ" heading |
+| `about_page_quality_body` | LONG_TEXT | "Chất lượng dịch vụ" body |
+| `about_page_service{1..5}_title` | STRING | Service tile title |
+| `about_page_service{1..5}_body` | LONG_TEXT | Service tile body |
+| `about_page_service{1..5}_image` | IMAGE_URL | Service tile image. V223 seeds the theme path `images/a-{n}.png`; on startup **`AboutServiceMediaSeeder`** uploads the 5 bundled defaults (`resources/seed/about-services/a-{n}.png`) to MinIO, creates `media` rows, and rewrites the setting to the `/media/...` URL. |
+| `about_page_service{1..5}_highlight` | BOOLEAN | Orange tile background (default: tiles 1 & 5 = true) |
+| `about_page_connect_heading` | STRING | "Kết nối với chúng tôi" heading |
+| `about_page_connect_intro1` | LONG_TEXT | Connect block paragraph 1 |
+| `about_page_connect_intro2` | LONG_TEXT | Connect block paragraph 2 |
+
+Tile count is fixed at 5 (the grid layout depends on it); adding/removing tiles is a separate enhancement. The store/hotline/Facebook cards in the connect block still read the shared `contact` keys; brand logos still load from the brand taxonomy.
+
+### `public_warranty` keys — full Warranty-lookup page content (V225)
+
+All copy on `/bao-hanh` lives here. The web page (`app/bao-hanh/page.tsx`) reads settings-first and falls back to the `Warranty` i18n namespace per key, so the page is never blank if a row is empty. The serial-lookup tool's behaviour is unchanged — only its text is dynamic.
+
+| `setting_key` | Type | Content |
+|---|---|---|
+| `warranty_page_meta_title` | STRING | SEO `<title>` |
+| `warranty_page_meta_description` | LONG_TEXT | SEO meta description |
+| `warranty_page_heading` | STRING | Page banner heading (also breadcrumb leaf) |
+| `warranty_page_kicker` | STRING | Lookup-box kicker |
+| `warranty_page_subheading` | LONG_TEXT | Lookup-box sub-line |
+| `warranty_page_intro_html` | HTML | **New** rich-text block above the lookup box (empty → hidden) |
+| `warranty_page_intro_image` | IMAGE_URL | **New** optional illustration for the intro block (empty → hidden). Uploaded to MinIO via the admin media picker |
+| `warranty_page_serial_label` | STRING | Serial input label |
+| `warranty_page_serial_placeholder` | STRING | Serial input placeholder |
+| `warranty_page_serial_hint` | LONG_TEXT | Hint below the serial input |
+| `warranty_page_submit_button` | STRING | Lookup button text |
+| `warranty_page_submitting` | STRING | Button text while looking up |
+| `warranty_page_not_found` | STRING | "No warranty found" message |
+| `warranty_page_result_heading` | STRING | Result block heading |
+| `warranty_page_field_product` / `_serial` / `_start` / `_end` | STRING | Result-table row labels |
+| `warranty_page_status_active` / `_almost_expired` | STRING | Status badge templates — must keep the `{daysLeft}` placeholder |
+| `warranty_page_status_expired` / `_voided` | STRING | Status badge labels |
+| `warranty_page_footer_active` / `_voided` | LONG_TEXT | Note under the result for active / voided cards |
+| `warranty_page_policy_html` | HTML | **New** rich-text policy/FAQ block below the result (empty → hidden) |
+
+Edited from the generic **Settings** screen (`SettingsScreen.jsx`) under the new **Trang Bảo hành** tab — no dedicated screen. The group is in `TRANSLATABLE_GROUPS`, so text keys carry a VI + EN value (images/templates excluded from the EN editor as usual).
+
+### `public_product` keys — product-page trust badges
+
+The `public_product` group has **no shared settings** — all product-detail content is per-product.
+
+> **Commitment rows moved to per-product (V232).** The former `product_commitment_{1..3}_title/subtitle` keys (V228) were **removed**; the block is stored **per product** in `product_commitments` — see *"`product_commitments` — per-product commitment rows (V232)"* below.
+>
+> **Trust badges moved to per-product (V233).** The former `product_trust_genuine` / `product_trust_freeship` keys were **removed in V233**. The trust-badge row above the product title is now stored **per product** in the `product_trust_badges` child table (id, product_id, sort_order, content, content_en) and edited inside the product detail screen (section "Dải tin cậy"). Mirrors `product_commitments`, simplified to a single bilingual label per badge. Resolved by locale on read (`toTrustBadges` in `JpaCatalogReadRepository`); `contentEn` only on admin reads. Empty list → web hides the row. **No default seed** — products start with an empty list; admin curates per product. `WpPurchaseSection.tsx` reads `product.trustBadges` directly. The eyebrow line above the title (`category.name / originBrandCountry`, falls back to brand name) is unchanged and built from existing product data.
+
+`AboutServiceMediaSeeder` is idempotent: it keys MinIO objects deterministically (`uploads/seed/about-service-{n}.png`), looks up the `media` row by `file_path`, and only rewrites the setting while its value is blank or a `/wp-content/themes/` path — so admin-chosen images are never overwritten. MinIO is per-environment and not replicated by DB migrations, so the seed runs at runtime on each env; MinIO failures are logged (not fatal) and the web still falls back to the theme image baked into `bigbike-web/public`.
 
 ### `product_assign` keys + super-admin-only write (V157)
 
@@ -1045,8 +1265,31 @@ Migration `V132__cleanup_sepay_and_normalize_inventory_settings.sql`:
 Status: `CONFIRMED_FROM_CODE`
 
 Evidence:
-- `SettingDefinitionRegistry.java` — registers keys for `general`/`contact`/`public_home`/`public_hero`/`promo`/`seo`/`store`/`tax`/`product_assign`
+- `SettingDefinitionRegistry.java` — registers keys for `general`/`contact`/`public_home`/`public_about`/`public_warranty`/`public_hero`/`promo`/`seo`/`store`/`tax`/`product_assign`
 - `V157__seed_product_assignment_settings.sql` — seeds the 7 `product_assign_*` rows
 - `AdminProductAssignmentController.java` — `GET /api/v1/admin/product-assignment` (read for the banner, `products.read`)
 - `SettingsScreen.jsx` — `TAB_ORDER` / `TAB_META` (tab rendering), `HIDDEN_GROUPS` (`security`, `payment_sepay`), super-admin filter for `superAdminOnly` keys
 - `V59__remove_sepay_payment_artifacts.sql`, `V132__cleanup_sepay_and_normalize_inventory_settings.sql`
+
+### PDP mockup port — bilingual description blocks, featured specs, per-product tabs (V229–V231)
+
+Ba migration bổ sung cho trang chi tiết sản phẩm (bigbike-web), port bố cục mockup nhưng giữ design
+system web. Tất cả nullable / default an toàn → sản phẩm cũ giữ nguyên hành vi (không backfill).
+
+| Migration | Bảng.cột | Kiểu | Default | Ý nghĩa |
+|---|---|---|---|---|
+| `V229` | `products.description_blocks_en` | `JSONB` | `NULL` | Khối mô tả có cấu trúc bản tiếng Anh (song song `description_blocks` của V139). Render → `description_en` HTML lúc lưu (giống VI). NULL = English authored as legacy HTML hoặc chưa dịch → web fallback `description_en`. |
+| `V230` | `product_specifications.featured` | `BOOLEAN NOT NULL` | `false` | ~~"Đưa lên ô nổi bật"~~ **GỠ BỎ ở `V235`** — thay bằng bảng per-product `product_spec_stats` (ô số liệu nhập riêng, tách khỏi thông số kỹ thuật). Xem §"Product 'Specs Dashboard' stat boxes — `product_spec_stats` (V235)". |
+| `V231` | `products.product_tabs` | `JSONB` | `NULL` | Cấu hình tab PDP theo từng sản phẩm. NULL = dùng tab mặc định (Mô tả/Đánh giá/Thông số/Lắp đặt/FAQ). Mỗi tab: `{ id, type, enabled, sortOrder, label, labelEn, blocks, blocksEn }`; `type` ∈ description\|reviews\|specs\|installation\|faq\|custom. Lưu canonical: `label`/`blocks`=vi, `labelEn`/`blocksEn`=en. |
+| `V234` | `reviews.title` + `reviews.photos` | `varchar(160)` + `JSONB` | `NULL` | Tiêu đề tuỳ chọn + mảng URL ảnh khách hàng (MinIO `/media/reviews/...`, ≤10) cho đánh giá sản phẩm. Nullable, không backfill → review cũ giữ `NULL`. Xem `BUSINESS_RULES.md` `REVIEW_RULE_005`. |
+| `V245` | `products.section_visibility` | `TEXT` | `NULL` | "Hiển thị trên web": opaque JSON string `{sectionKey: boolean}` cho 16 section PDP (`quickAnswer, description, specStats, prosCons, suitability, sizeGuide, specifications, installation, faqs, reviews, trust, related, accessories, videos, trustBadges, commitments`). Backend truyền nguyên (như `size_guide`); admin serialize / web parse. **NULL = legacy** → web hiện theo nội dung; key=false → ẩn; key=true → hiện nếu có nội dung. SP mới opt-in (tắt hết). Không backfill. Xem `BUSINESS_RULES.md` `PRODUCT_RULE_006`. |
+
+**Localize đọc (public):** `description_blocks` resolve theo `lang` (en → `description_blocks_en`, fallback vi) qua
+`JpaCatalogReadRepository.pickBlocks`; `product_tabs` resolve `label`/`blocks` theo locale qua `resolveTabs`
+(public bỏ raw `labelEn`/`blocksEn`; admin read giữ raw để soạn song ngữ). (`specifications[].featured` của V230 đã
+**gỡ bỏ ở V235** → thay bằng `specStats`, xem §"product_spec_stats (V235)".) Khối EN của mô tả nằm trong admin read tại `translations.en.descriptionBlocks`.
+
+Status: `CONFIRMED_FROM_CODE` — `ProductEntity.descriptionBlocksEn`/`productTabs`,
+`ProductTab` + `ProductTabsConverter`, `AdminCatalogMutationService` (descriptionBlocksEn / mapTabs / applySpecifications),
+`JpaCatalogReadRepository` (pickBlocks / resolveTabs / toSpecifications), migrations `V229`–`V231`.
+Xem [API_CONTRACT.md](API_CONTRACT.md) §"PDP — descriptionBlocks(En) / specifications.featured / tabs (V229–V231)".

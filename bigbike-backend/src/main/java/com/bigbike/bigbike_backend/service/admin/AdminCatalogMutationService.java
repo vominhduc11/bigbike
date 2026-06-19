@@ -8,7 +8,12 @@ import com.bigbike.bigbike_backend.api.admin.dto.CategoryTranslationRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.BrandTranslationRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.ProductTranslationRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.SeoMetaRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.ProductTabRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.SpecificationRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.SpecStatRequest;
+import com.bigbike.bigbike_backend.domain.catalog.ProductTab;
+import com.bigbike.bigbike_backend.api.admin.dto.CommitmentRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.TrustBadgeRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.FaqRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.HighlightRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertBrandRequest;
@@ -36,6 +41,9 @@ import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductGalleryImageEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantGalleryImageEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductSpecificationEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductSpecStatEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductCommitmentEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductTrustBadgeEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductFaqEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductHighlightEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
@@ -47,6 +55,7 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.AttributeValue
 import com.bigbike.bigbike_backend.persistence.repository.catalog.BrandJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.redirect.RedirectJpaRepository;
 import com.bigbike.bigbike_backend.repository.catalog.CatalogReadRepository;
 import com.bigbike.bigbike_backend.repository.catalog.JpaCatalogReadRepository;
@@ -85,6 +94,7 @@ public class AdminCatalogMutationService {
     private static final ObjectMapper AUDIT_MAPPER = new ObjectMapper();
 
     private final ProductJpaRepository productJpaRepository;
+    private final ProductVariantJpaRepository productVariantJpaRepository;
     private final CategoryJpaRepository categoryJpaRepository;
     private final BrandJpaRepository brandJpaRepository;
     private final AttributeJpaRepository attributeJpaRepository;
@@ -99,6 +109,7 @@ public class AdminCatalogMutationService {
 
     public AdminCatalogMutationService(
             ObjectProvider<ProductJpaRepository> productJpaRepositoryProvider,
+            ObjectProvider<ProductVariantJpaRepository> productVariantJpaRepositoryProvider,
             ObjectProvider<CategoryJpaRepository> categoryJpaRepositoryProvider,
             ObjectProvider<BrandJpaRepository> brandJpaRepositoryProvider,
             ObjectProvider<AttributeJpaRepository> attributeJpaRepositoryProvider,
@@ -112,6 +123,7 @@ public class AdminCatalogMutationService {
             ObjectProvider<RedirectJpaRepository> redirectRepoProvider
     ) {
         this.productJpaRepository = productJpaRepositoryProvider.getIfAvailable();
+        this.productVariantJpaRepository = productVariantJpaRepositoryProvider.getIfAvailable();
         this.categoryJpaRepository = categoryJpaRepositoryProvider.getIfAvailable();
         this.brandJpaRepository = brandJpaRepositoryProvider.getIfAvailable();
         this.attributeJpaRepository = attributeJpaRepositoryProvider.getIfAvailable();
@@ -156,7 +168,7 @@ public class AdminCatalogMutationService {
      * does, then maps it straight to the public {@link Product} shape WITHOUT
      * persisting. No row is created or updated: {@code applyProductPatch} only
      * mutates the in-memory entity graph and its sole repository touches
-     * ({@code resolveRelatedProducts} + attribute lookups) are read-only. The
+     * ({@code resolveProductRefs} + attribute lookups) are read-only. The
      * read-only transaction guards against an accidental dirty flush.
      */
     @Transactional(readOnly = true)
@@ -620,6 +632,10 @@ public class AdminCatalogMutationService {
                     ));
                 }
             }
+            // PRODUCT_RULE_SKU_001 — variant SKUs must be unique (within the request
+            // and across all other products). The DB unique index is the hard guarantee;
+            // this pre-check returns a friendly per-row error first.
+            validateVariantSkuUniqueness(request, current, preview, errors);
         }
 
         if (create) {
@@ -703,6 +719,50 @@ public class AdminCatalogMutationService {
         if (byEnSlug.isPresent() && (currentId == null || !byEnSlug.get().equals(currentId))) {
             errors.add(new ApiErrorDetail("translations.en.slug", "DUPLICATE",
                     "English slug is already in use."));
+        }
+    }
+
+    /**
+     * PRODUCT_RULE_SKU_001 — variant SKUs must be globally unique (case-insensitive).
+     * Flags duplicates within the request and against other products. Cross-product
+     * lookups are a persistence concern, so they are skipped during live preview.
+     */
+    private void validateVariantSkuUniqueness(
+            UpsertProductRequest request,
+            ProductEntity current,
+            boolean preview,
+            List<ApiErrorDetail> errors
+    ) {
+        List<VariantRequest> variants = request.getVariants();
+        if (variants == null || variants.isEmpty()) {
+            return;
+        }
+        // First occurrence of each SKU wins; later ones are in-request duplicates.
+        Map<String, Integer> firstIndexBySku = new HashMap<>();
+        for (int i = 0; i < variants.size(); i++) {
+            String sku = AdminMutationValidators.trimToNull(variants.get(i).getSku());
+            if (sku == null) {
+                continue; // missing SKU is handled by @NotBlank on the request DTO
+            }
+            String key = sku.toLowerCase(Locale.ROOT);
+            if (firstIndexBySku.putIfAbsent(key, i) != null) {
+                errors.add(new ApiErrorDetail(
+                        "variants[" + i + "].sku", "DUPLICATE",
+                        "Variant SKU is duplicated within this product."));
+            }
+        }
+        if (preview || firstIndexBySku.isEmpty() || productVariantJpaRepository == null) {
+            return;
+        }
+        Set<String> taken = new HashSet<>(productVariantJpaRepository.findTakenSkusLower(
+                firstIndexBySku.keySet(),
+                current == null ? null : current.getId()));
+        for (Map.Entry<String, Integer> e : firstIndexBySku.entrySet()) {
+            if (taken.contains(e.getKey())) {
+                errors.add(new ApiErrorDetail(
+                        "variants[" + e.getValue() + "].sku", "DUPLICATE",
+                        "Variant SKU is already used by another product."));
+            }
         }
     }
 
@@ -997,9 +1057,6 @@ public class AdminCatalogMutationService {
         if (create || request.isOriginBrandCountryPresent()) {
             entity.setOriginBrandCountry(AdminMutationValidators.trimToNull(request.getOriginBrandCountry()));
         }
-        if (create || request.isOriginManufactureCountryPresent()) {
-            entity.setOriginManufactureCountry(AdminMutationValidators.trimToNull(request.getOriginManufactureCountry()));
-        }
         // Trọng lượng nhập bằng gram, lưu vào cột weight_kg (= grams / 1000).
         if (create || request.isWeightGramsPresent()) {
             Integer grams = request.getWeightGrams();
@@ -1009,6 +1066,15 @@ public class AdminCatalogMutationService {
         }
         if (create || request.isSizeGuidePresent()) {
             entity.setSizeGuide(AdminMutationValidators.trimToNull(request.getSizeGuide()));
+        }
+        if (create || request.isSectionVisibilityPresent()) {
+            entity.setSectionVisibility(AdminMutationValidators.trimToNull(request.getSectionVisibility()));
+        }
+        if (create || request.isQuickAnswerSummaryPresent()) {
+            entity.setQuickAnswerSummary(AdminMutationValidators.trimToNull(request.getQuickAnswerSummary()));
+        }
+        if (create || request.isSuitabilityAdvisoryPresent()) {
+            entity.setSuitabilityAdvisory(AdminMutationValidators.trimToNull(request.getSuitabilityAdvisory()));
         }
         if (create || request.isGenderPresent()) {
             entity.setGender(AdminMutationValidators.trimToNull(request.getGender()));
@@ -1043,6 +1109,23 @@ public class AdminCatalogMutationService {
             applyTranslations(entity, request.getTranslations());
         }
 
+        // descriptionBlocksEn presence flag (V229): mirror the Vietnamese pipeline. Runs AFTER
+        // applyTranslations so the rendered English HTML overrides description_en (which
+        // applyTranslations set from translations.en.description). Omitting the key leaves the
+        // English columns untouched (legacy HTML-authored English keeps working).
+        if (request.isDescriptionBlocksEnPresent()) {
+            List<com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock> blocksEn = request.getDescriptionBlocksEn();
+            entity.setDescriptionBlocksEn(blocksEn == null || blocksEn.isEmpty() ? null : blocksEn);
+            String renderedEn = descriptionBlockRenderer.renderBlocksToHtml(blocksEn);
+            entity.setDescriptionEn(renderedEn.isBlank() ? null : renderedEn);
+        }
+
+        // Cấu hình tab PDP theo sản phẩm (V231) — presence flag: gửi key (kể cả []/null) thì thay/clear;
+        // bỏ key thì giữ nguyên. Lưu canonical: label/blocks = vi, labelEn/blocksEn = en.
+        if (request.isTabsPresent()) {
+            entity.setProductTabs(mapTabs(request.getTabs()));
+        }
+
         if (request.getGallery() != null) {
             applyGallery(entity, request.getGallery());
         } else if (create) {
@@ -1067,6 +1150,24 @@ public class AdminCatalogMutationService {
             entity.setFaqs(new ArrayList<>());
         }
 
+        if (request.getSpecStats() != null) {
+            applySpecStats(entity, request.getSpecStats());
+        } else if (create) {
+            entity.setSpecStats(new ArrayList<>());
+        }
+
+        if (request.getCommitments() != null) {
+            applyCommitments(entity, request.getCommitments());
+        } else if (create) {
+            entity.setCommitments(new ArrayList<>());
+        }
+
+        if (request.getTrustBadges() != null) {
+            applyTrustBadges(entity, request.getTrustBadges());
+        } else if (create) {
+            entity.setTrustBadges(new ArrayList<>());
+        }
+
         // Ưu/Nhược điểm (V175): full-replace như faqs. Hai mảng gộp vào 1 bảng con
         // (kind PRO/CON). Sửa khi BẤT KỲ mảng nào có mặt trong request.
         if (request.getPositiveNotes() != null || request.getNegativeNotes() != null || create) {
@@ -1080,17 +1181,24 @@ public class AdminCatalogMutationService {
         }
 
         if (request.getRelatedProductIds() != null) {
-            entity.setRelatedProducts(resolveRelatedProducts(request.getRelatedProductIds(), entity.getId()));
+            entity.setRelatedProducts(resolveProductRefs(request.getRelatedProductIds(), entity.getId()));
         } else if (create) {
             entity.setRelatedProducts(new ArrayList<>());
+        }
+
+        if (request.getAccessoryProductIds() != null) {
+            entity.setAccessoryProducts(resolveProductRefs(request.getAccessoryProductIds(), entity.getId()));
+        } else if (create) {
+            entity.setAccessoryProducts(new ArrayList<>());
         }
     }
 
     /**
-     * Resolves curated related-product IDs to entities — de-duplicated, order-preserving,
-     * self-reference dropped, unknown IDs skipped silently (tolerant, like article products).
+     * Resolves curated product-reference IDs (related products, accessories) to entities —
+     * de-duplicated, order-preserving, self-reference dropped, unknown IDs skipped silently
+     * (tolerant, like article products).
      */
-    private List<ProductEntity> resolveRelatedProducts(List<String> ids, String selfId) {
+    private List<ProductEntity> resolveProductRefs(List<String> ids, String selfId) {
         List<ProductEntity> resolved = new ArrayList<>();
         LinkedHashSet<String> seen = new LinkedHashSet<>();
         for (String raw : ids) {
@@ -1163,6 +1271,8 @@ public class AdminCatalogMutationService {
         entity.setDescriptionEn(en == null ? null : AdminMutationValidators.trimToNull(en.getDescription()));
         entity.setPromotionContentEn(en == null ? null : AdminMutationValidators.trimToNull(en.getPromotionContent()));
         entity.setInstallationGuideEn(en == null ? null : AdminMutationValidators.trimToNull(en.getInstallationGuide()));
+        entity.setQuickAnswerSummaryEn(en == null ? null : AdminMutationValidators.trimToNull(en.getQuickAnswerSummary()));
+        entity.setSuitabilityAdvisoryEn(en == null ? null : AdminMutationValidators.trimToNull(en.getSuitabilityAdvisory()));
         entity.setSeoTitleEn(en == null ? null : AdminMutationValidators.trimToNull(en.getSeoTitle()));
         entity.setSeoDescriptionEn(en == null ? null : AdminMutationValidators.trimToNull(en.getSeoDescription()));
     }
@@ -1192,6 +1302,64 @@ public class AdminCatalogMutationService {
         }
     }
 
+    /**
+     * "Specs Dashboard" stat boxes (V235) — full-replace like {@code specifications}.
+     * Rows with a blank value or label are dropped; max 4 enforced at the DTO boundary.
+     */
+    private static void applySpecStats(ProductEntity entity, List<SpecStatRequest> requests) {
+        List<ProductSpecStatEntity> existing = entity.getSpecStats();
+        if (existing == null) {
+            existing = new ArrayList<>();
+            entity.setSpecStats(existing);
+        }
+        existing.clear();
+        for (int i = 0; i < requests.size(); i++) {
+            SpecStatRequest req = requests.get(i);
+            String value = AdminMutationValidators.trimToNull(req.getValue());
+            String label = AdminMutationValidators.trimToNull(req.getLabel());
+            if (value == null || label == null) continue;
+            ProductSpecStatEntity stat = new ProductSpecStatEntity();
+            stat.setProduct(entity);
+            stat.setSortOrder(req.getSortOrder() != null ? req.getSortOrder() : i);
+            stat.setValue(value);
+            stat.setLabel(label);
+            stat.setValueEn(AdminMutationValidators.trimToNull(req.getValueEn()));
+            stat.setLabelEn(AdminMutationValidators.trimToNull(req.getLabelEn()));
+            existing.add(stat);
+        }
+    }
+
+    /**
+     * Chuyển danh sách tab từ request thành cấu hình lưu trữ (V231). Lưu canonical: label/blocks = vi,
+     * labelEn/blocksEn = en. Tab thiếu type bị bỏ. Trả {@code null} khi rỗng (sản phẩm dùng tab mặc định).
+     */
+    private static List<ProductTab> mapTabs(List<ProductTabRequest> requests) {
+        if (requests == null || requests.isEmpty()) return null;
+        List<ProductTab> out = new ArrayList<>();
+        for (int i = 0; i < requests.size(); i++) {
+            ProductTabRequest r = requests.get(i);
+            String type = AdminMutationValidators.trimToNull(r.getType());
+            if (type == null) continue;
+            String id = AdminMutationValidators.trimToNull(r.getId());
+            boolean custom = "custom".equals(type);
+            out.add(new ProductTab(
+                    id != null ? id : type,
+                    type,
+                    r.isEnabled(),
+                    r.getSortOrder() != null ? r.getSortOrder() : i,
+                    AdminMutationValidators.trimToNull(r.getLabel()),
+                    AdminMutationValidators.trimToNull(r.getLabelEn()),
+                    custom ? emptyToNull(r.getBlocks()) : null,
+                    custom ? emptyToNull(r.getBlocksEn()) : null
+            ));
+        }
+        return out.isEmpty() ? null : out;
+    }
+
+    private static <T> List<T> emptyToNull(List<T> list) {
+        return list == null || list.isEmpty() ? null : list;
+    }
+
     private static void applyFaqs(ProductEntity entity, List<FaqRequest> requests) {
         List<ProductFaqEntity> existing = entity.getFaqs();
         if (existing == null) {
@@ -1212,6 +1380,61 @@ public class AdminCatalogMutationService {
             faq.setQuestionEn(AdminMutationValidators.trimToNull(req.getQuestionEn()));
             faq.setAnswerEn(AdminMutationValidators.trimToNull(req.getAnswerEn()));
             existing.add(faq);
+        }
+    }
+
+    /** Fallback icon key when admin leaves it blank — matches the web default. */
+    private static final String COMMITMENT_DEFAULT_ICON = "shield-check";
+
+    /**
+     * Per-product commitment rows (V232) — full-replace like {@code faqs}. Rows
+     * with a blank title are dropped; a blank icon falls back to the web default.
+     */
+    private static void applyCommitments(ProductEntity entity, List<CommitmentRequest> requests) {
+        List<ProductCommitmentEntity> existing = entity.getCommitments();
+        if (existing == null) {
+            existing = new ArrayList<>();
+            entity.setCommitments(existing);
+        }
+        existing.clear();
+        for (int i = 0; i < requests.size(); i++) {
+            CommitmentRequest req = requests.get(i);
+            String title = AdminMutationValidators.trimToNull(req.getTitle());
+            if (title == null) continue;
+            String icon = AdminMutationValidators.trimToNull(req.getIcon());
+            ProductCommitmentEntity commitment = new ProductCommitmentEntity();
+            commitment.setProduct(entity);
+            commitment.setSortOrder(req.getSortOrder() != null ? req.getSortOrder() : i);
+            commitment.setIcon(icon != null ? icon : COMMITMENT_DEFAULT_ICON);
+            commitment.setTitle(title);
+            commitment.setSubtitle(AdminMutationValidators.trimToNull(req.getSubtitle()));
+            commitment.setTitleEn(AdminMutationValidators.trimToNull(req.getTitleEn()));
+            commitment.setSubtitleEn(AdminMutationValidators.trimToNull(req.getSubtitleEn()));
+            existing.add(commitment);
+        }
+    }
+
+    /**
+     * Per-product trust badges (V233) — full-replace like {@code commitments}.
+     * Rows with a blank content are dropped.
+     */
+    private static void applyTrustBadges(ProductEntity entity, List<TrustBadgeRequest> requests) {
+        List<ProductTrustBadgeEntity> existing = entity.getTrustBadges();
+        if (existing == null) {
+            existing = new ArrayList<>();
+            entity.setTrustBadges(existing);
+        }
+        existing.clear();
+        for (int i = 0; i < requests.size(); i++) {
+            TrustBadgeRequest req = requests.get(i);
+            String content = AdminMutationValidators.trimToNull(req.getContent());
+            if (content == null) continue;
+            ProductTrustBadgeEntity badge = new ProductTrustBadgeEntity();
+            badge.setProduct(entity);
+            badge.setSortOrder(req.getSortOrder() != null ? req.getSortOrder() : i);
+            badge.setContent(content);
+            badge.setContentEn(AdminMutationValidators.trimToNull(req.getContentEn()));
+            existing.add(badge);
         }
     }
 

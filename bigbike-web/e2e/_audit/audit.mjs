@@ -50,7 +50,7 @@ const STATIC_ROUTES = [
   "/tin-tuc",
   "/gioi-thieu",
   "/lien-he",
-  "/huong-dan-mua-hang",
+  "/huong-dan/mua-hang",
   "/bao-hanh",
   "/gio-hang",
   "/thanh-toan",

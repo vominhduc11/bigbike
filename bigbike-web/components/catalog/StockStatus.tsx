@@ -71,7 +71,7 @@ export function StockStatus({
             : "var(--bb-text-muted)";
     const isOut = rawState === "OUT_OF_STOCK";
     return (
-      <span className="inline-flex items-center gap-2 text-sm">
+      <span className="inline-flex items-center gap-2 text-caption">
         <span
           className={cn(
             "h-2 w-2 shrink-0 rounded-full",

@@ -1,275 +1,171 @@
 # CLAUDE.md
 
-> **Read this before doing anything in this codebase.**
+> **Đọc file này trước khi làm bất cứ gì trong repo.**
 >
-> Auto-load behavior:
-> - **Claude Code**: tự động đọc file này ở đầu mọi conversation trong repo.
-> - **Codex** (CLI / web agent): KHÔNG đọc file này. Codex tự load [AGENTS.md](AGENTS.md) — nội dung đầy đủ và canonical hơn.
-> - **Tool khác** (Cursor, Continue, …): tuỳ tool. Nếu không chắc, đọc cả 2 file để an toàn.
+> Đây là **bản tóm tắt mirror** của [AGENTS.md](AGENTS.md) — file canonical, đầy đủ hơn. Khi 2 file lệch nhau, **AGENTS.md thắng**. Mỗi rule dưới đây trỏ tới section AGENTS.md để xem chi tiết/ví dụ.
 >
-> File này là **bản tóm tắt mirror** của Docs-First Contract trong [AGENTS.md](AGENTS.md). Khi 2 file khác nhau, AGENTS.md là canonical.
+> Auto-load: Claude Code đọc file này đầu mỗi conversation. Codex đọc [AGENTS.md](AGENTS.md). Tool khác: nếu không chắc, đọc cả 2.
 
 ---
 
-## ⚠️ Docs-First Contract
+## ⚠️ Docs-First Contract — đọc trước MỌI thay đổi code
 
-Tài liệu trong [docs/business/](docs/business/) và [docs/engineering/](docs/engineering/) là **source of truth** của BigBike. Code được dựng từ docs, không phải ngược lại.
+`docs/business/` và `docs/engineering/` là **source of truth**. Code dựng từ docs, không phải ngược lại.
 
-### Trước khi sửa BẤT KỲ file source nào trong [bigbike-backend/](bigbike-backend/), [bigbike-web/](bigbike-web/), [bigbike-admin/](bigbike-admin/), [bigbike_mobile/](bigbike_mobile/):
+Trước khi sửa file source trong [bigbike-backend/](bigbike-backend/), [bigbike-web/](bigbike-web/), [bigbike-admin/](bigbike-admin/), [bigbike_mobile/](bigbike_mobile/):
 
-1. **Đọc đúng docs liên quan** — tra mapping bên dưới, chỉ mở file nào trực tiếp liên quan đến phần bạn đang sửa. Trong mỗi file, chỉ đọc section liên quan — không đọc toàn bộ file vì một câu hỏi hoặc một thay đổi nhỏ.
-2. **Cite evidence path** khi mô tả thay đổi trong response/PR (ví dụ "theo `docs/business/BUSINESS_RULES.md` rule `ORDER_RULE_003`").
-3. Nếu thay đổi ảnh hưởng business rule, API contract, data shape, permission, state machine, workflow hoặc deployment env → **update docs trước**, rồi mới sửa code, trong cùng một PR.
-4. **Không bịa rule.** Nếu docs ghi `NEEDS_VERIFICATION` / `NOT_FOUND_IN_REPO` / `CONFLICTING_EVIDENCE` mà bạn cần biết để code → **dừng và hỏi user** thay vì tự suy diễn.
-5. **Trước khi "fix bug"**, nếu repo có report verification/audit trong `docs/` hoặc `docs/audits/`, đọc phần liên quan để biết những vấn đề đã được flag là code bug có task riêng — không tự ý fix chung trong task khác.
+1. **Đọc đúng docs liên quan** (tra mapping dưới), chỉ section bạn đụng đến — không đọc cả file.
+2. **Cite evidence path** trong response/PR (vd "theo `BUSINESS_RULES.md` rule `ORDER_RULE_003`").
+3. Thay đổi chạm business rule / API contract / data shape / permission / state machine / workflow / deployment env → **update docs trước, rồi sửa code, cùng một PR**.
+4. **Không bịa rule.** Docs ghi `NEEDS_VERIFICATION` / `NOT_FOUND_IN_REPO` / `CONFLICTING_EVIDENCE` mà bạn cần → **dừng, hỏi user**.
+5. **Không tự "fix" cái đã được report/audit trong `docs/` hoặc `docs/audits/` flag là code bug** — đó là task riêng.
 
-**Không cần đọc docs khi:** câu hỏi giải thích đơn thuần, thay đổi thuần style/token, refactor nội tại không ảnh hưởng API/contract/data/permission/state/deployment.
+**Không cần đọc docs khi:** câu hỏi giải thích thuần, thay đổi thuần style/token, refactor nội tại không ảnh hưởng API/contract/data/permission/state/deployment.
 
-### Mapping nhanh — tra cứu theo phần đang sửa, chỉ đọc những gì bạn thật sự đụng đến
+**Mapping nhanh** — chỉ đọc section liên quan:
 
-| Bạn đang sửa | Đọc docs (chỉ section liên quan) |
+| Bạn đang sửa | Đọc |
 |---|---|
-| Backend controller / service — endpoint hoặc business logic | [API_CONTRACT.md](docs/engineering/API_CONTRACT.md) section endpoint đó; [BUSINESS_RULES.md](docs/business/BUSINESS_RULES.md) section rule liên quan; [AGENTS.md](AGENTS.md) Section 7 (Lombok / MapStruct / Bean Validation) |
-| Backend entity / DTO / enum / migration | [DATA_CONTRACT.md](docs/engineering/DATA_CONTRACT.md) section entity đó; [AGENTS.md](AGENTS.md) Section 7.1 (Lombok trên Entity), 7.2 (MapStruct mapper) |
-| Backend state transition | [STATE_MACHINES.md](docs/business/STATE_MACHINES.md) section entity đó |
-| Backend integration (DB, MinIO, Mail, WS) | [INTEGRATION_GUIDE.md](docs/engineering/INTEGRATION_GUIDE.md) section service liên quan |
-| Frontend API call / response shape | [API_CONTRACT.md](docs/engineering/API_CONTRACT.md) section endpoint đó; [DATA_CONTRACT.md](docs/engineering/DATA_CONTRACT.md) section field liên quan |
-| Frontend flow màn hình → API | [API_FLOW_MAP.md](docs/engineering/API_FLOW_MAP.md) section flow đó |
-| Frontend workflow / UX | [WORKFLOW_OVERVIEW.md](docs/business/WORKFLOW_OVERVIEW.md) section liên quan |
-| Frontend module / feature ownership | [MODULE_CATALOG.md](docs/business/MODULE_CATALOG.md) |
-| `bigbike-web` UI / style | [bigbike-web/STYLEGUIDE.md](bigbike-web/STYLEGUIDE.md); [bigbike-web/styles/brand-tokens.css](bigbike-web/styles/brand-tokens.css) |
-| `bigbike-admin` UI / style | [bigbike-admin/src/styles/admin-tokens.css](bigbike-admin/src/styles/admin-tokens.css) |
-| Permission / role / auth | [PERMISSION_MATRIX.md](docs/engineering/PERMISSION_MATRIX.md) section role liên quan; [USER_ROLES.md](docs/business/USER_ROLES.md) |
-| Order / payment / refund / inventory / return logic | [BUSINESS_RULES.md](docs/business/BUSINESS_RULES.md) + [STATE_MACHINES.md](docs/business/STATE_MACHINES.md) — chỉ section liên quan |
-| Deployment / Dockerfile / env / CI | [DEPLOYMENT_GUIDE.md](docs/engineering/DEPLOYMENT_GUIDE.md); [INTEGRATION_GUIDE.md](docs/engineering/INTEGRATION_GUIDE.md) |
-| Test / quality gate | [TESTING_GUIDE.md](docs/engineering/TESTING_GUIDE.md); [ACCEPTANCE_CRITERIA.md](docs/business/ACCEPTANCE_CRITERIA.md) |
-| Architecture / module ownership (cần toàn cảnh) | [ARCHITECTURE.md](docs/engineering/ARCHITECTURE.md); [MODULE_CATALOG.md](docs/business/MODULE_CATALOG.md); [PROJECT_OVERVIEW.md](docs/business/PROJECT_OVERVIEW.md) |
-| Trace requirement → API → test | [TRACEABILITY_MATRIX.md](docs/engineering/TRACEABILITY_MATRIX.md) |
+| Backend controller/service (endpoint, business logic) | `API_CONTRACT.md` + `BUSINESS_RULES.md` + [AGENTS.md](AGENTS.md) §7 |
+| Backend entity/DTO/enum/migration | `DATA_CONTRACT.md` + [AGENTS.md](AGENTS.md) §7.1–7.2 |
+| Backend state transition | `STATE_MACHINES.md` |
+| Backend integration (DB/MinIO/Mail/WS) | `INTEGRATION_GUIDE.md` |
+| Frontend API call / response shape | `API_CONTRACT.md` + `DATA_CONTRACT.md` |
+| Frontend flow màn hình → API | `API_FLOW_MAP.md` |
+| Frontend workflow / UX | `WORKFLOW_OVERVIEW.md` |
+| Module / feature ownership | `MODULE_CATALOG.md` |
+| `bigbike-web` UI/style | `bigbike-web/STYLEGUIDE.md` + `styles/brand-tokens.css` |
+| `bigbike-admin` UI/style | `bigbike-admin/src/styles/admin-tokens.css` |
+| Permission / role / auth | `PERMISSION_MATRIX.md` + `USER_ROLES.md` |
+| Order/payment/refund/inventory/return | `BUSINESS_RULES.md` + `STATE_MACHINES.md` |
+| Deployment / Dockerfile / env / CI | `DEPLOYMENT_GUIDE.md` + `INTEGRATION_GUIDE.md` |
+| Test / quality gate | `TESTING_GUIDE.md` + `ACCEPTANCE_CRITERIA.md` |
+| Toàn cảnh kiến trúc | `ARCHITECTURE.md` + `MODULE_CATALOG.md` + `PROJECT_OVERVIEW.md` |
 
-### Khi docs mâu thuẫn nhau
+Docs mâu thuẫn: `business/` thắng `engineering/`; `engineering/` thắng code (trừ khi audit có verdict khác).
 
-- `docs/business/` mâu thuẫn `docs/engineering/` → **business docs thắng**, engineering cần sửa.
-- `docs/engineering/` mâu thuẫn code → check report/audit liên quan trong `docs/` hoặc `docs/audits/` nếu có; mặc định docs là source of truth nếu chưa có verdict.
-
-### Cấm
-
-- ❌ Sửa code mà không đọc docs liên quan.
-- ❌ Đẩy code mà docs không phản ánh thay đổi (trừ refactor nội tại không ảnh hưởng API/contract/data/permission/state/deployment).
-- ❌ "Code-first, doc-fix-later" trừ khi user explicitly cho phép.
-- ❌ Tự "fix" cái đã được report/audit trong `docs/` hoặc `docs/audits/` flag là code bug — đó là task riêng.
+Chi tiết: [AGENTS.md](AGENTS.md) §2 (contract) + §3 (mapping đầy đủ) + §4 (source of truth map).
 
 ---
 
 ## ⚠️ UI Stack — bigbike-web & bigbike-admin
 
-Khi code bất kỳ giao diện nào trong `bigbike-web` hoặc `bigbike-admin`, **bắt buộc dùng combo**:
+Mọi UI phải dùng combo: **React + Tailwind CSS + Radix UI + shadcn/ui**.
 
-> **React + Tailwind CSS + Radix UI + shadcn/ui**
+- Component (button, input, select, dialog, tabs…) → **shadcn/ui** từ `components/ui/`.
+- Styling/spacing/color/layout → **Tailwind** viết thẳng vào `className` (dùng `cn()` cho điều kiện).
+- Primitive tương tác → **Radix** qua shadcn wrapper.
+- **Tái dùng component có sẵn** trước khi tạo mới — kiểm tra `components/ui|layout|catalog/` (web) và `src/components/` (admin). Danh sách đầy đủ: [AGENTS.md](AGENTS.md) §6.4.
 
-| Việc cần làm | Dùng gì |
-|---|---|
-| Component UI (button, input, select, dialog, checkbox, tabs…) | shadcn/ui từ `components/ui/` |
-| Styling, spacing, color, layout | Tailwind CSS utility classes — viết **trực tiếp vào `className`** trong JSX |
-| Interactive primitive (dropdown, tooltip, popover, radio…) | Radix UI qua shadcn wrapper |
-| Variant/override | `cn()` + `cva()` / `buttonVariants()` |
-| Color/token reference | `@theme inline` trong `globals.css` (`text-primary`, `bg-brand`, `border-border`…) |
+**Cấm:** native `<select>/<dialog>/<input type=checkbox>/<button>` khi shadcn đã có; hardcode hex/spacing px thay token; CSS-in-JS; tạo component trùng cái đã tồn tại.
 
-**Encoding và tiếng Việt — áp dụng cho mọi text trong code:**
-- File phải lưu **UTF-8**. Text tiếng Việt phải **có dấu đầy đủ** — không "viet khong dau".
-- Không để text bị vỡ mã (mojibake): `ThÃ nh toÃ¡n`, `Gi&#7843;m gi&#225;` là sai.
-- Áp dụng cho: JSX content, string literal, placeholder, aria-label, alt text, comment, toast, log.
-
-Chi tiết: [AGENTS.md](AGENTS.md) — Section 6.5.
+Chi tiết: [AGENTS.md](AGENTS.md) §6.1, §6.3, §6.4.
 
 ---
 
-**globals.css chỉ được chứa:** design tokens (`@theme inline`), base/reset styles, shadcn overrides, và những gì Tailwind thật sự không làm được (keyframes, complex pseudo-selectors). **Không thêm class mới** vào `globals.css` khi Tailwind là đủ.
+## ⚠️ CSS Hygiene — không để dead code
 
-**Inline Tailwind — viết thẳng vào JSX, không tạo class CSS mới:**
+**Dead CSS** = class trong `.css` không có JSX/JS nào reference.
 
-```jsx
-// ❌ Sai — tạo class CSS rồi dùng
-// .product-row { display: flex; padding: 16px; border-bottom: 1px solid #e5e7eb; }
-<div className="product-row">...</div>
-
-// ✅ Đúng — viết thẳng Tailwind vào className
-<div className="flex p-4 border-b border-border">...</div>
-
-// ✅ Đúng — dùng cn() khi cần điều kiện
-<div className={cn("flex p-4 border-b border-border", isSelected && "bg-muted")}>...</div>
-```
-
-**Tái sử dụng component dùng chung — bắt buộc kiểm tra trước khi tạo mới:**
-
-| Thư mục | Có sẵn gì |
-|---|---|
-| `bigbike-web/components/ui/` | Button, Input, Select, Dialog, Checkbox, Tabs, Tooltip, Popover, … + EmptyState, ErrorState, LoadingGrid, PriceText, MediaImage, RatingStars, PaginationNav, Skeletons, VnAddressFields, BBTooltip |
-| `bigbike-web/components/layout/` | SiteHeader, SiteFooter, PageHero, AccountShell, PolicySidebar, StickyHeaderShell |
-| `bigbike-web/components/catalog/` | ProductCard, ProductGallery, VariantSelector, AddToCartButton, CatalogFilters, ReviewsSection |
-| `bigbike-admin/src/components/` | AdminTable, AdminShell, ConfirmDialog, StatusBadge, PaginationControls, FilterChips, BulkActionBar, RichTextEditor, StatePanel, DetailSection, DateRangePicker, ExportButton, ReadOnlyBanner, TagInput, MediaPickerModal, VideoPickerModal, ImageUrlInput, MediaCard, MediaCardSkeleton, MediaPreviewLightbox, MediaListRow, MediaDetailModal, MediaDetailPanel, MediaFolderSidebar, NotificationBell, OrderNotificationToast, ErrorBoundary |
-| `bigbike-admin/src/components/layout/` | Screen, ScreenHeader, FilterBar, SummaryCard, Tabs, Modal, StickyActionBar, MobileCardList, FormField (import từ `index.js`) |
-
-**Cấm:**
-- ❌ Viết class mới vào `globals.css` (hoặc file `.css` nào) khi Tailwind utility là đủ — phải viết thẳng vào `className` trong JSX.
-- ❌ Dùng native `<select>`, `<dialog>`, `<input type="checkbox">`, `<button>` khi shadcn đã có component tương ứng.
-- ❌ Xóa/bypass shadcn component để thay bằng raw HTML + class CSS legacy.
-- ❌ Hardcode hex màu / spacing px thay vì dùng Tailwind token.
-- ❌ Tạo component mới khi component tương đương đã tồn tại trong các thư mục `components/` trên.
-
-Chi tiết đầy đủ: [AGENTS.md](AGENTS.md) — Section 6.1 (stack), Section 6.3 (inline Tailwind), Section 6.4 (component reuse), Section 6.5 (encoding/tiếng Việt), Section 6.6 (CSS hygiene / dead code).
-
----
-
-## ⚠️ CSS Hygiene — không để dead code, xóa ngay khi phát hiện
-
-**Dead CSS** = class định nghĩa trong `.css` nhưng không có JSX/JS nào reference.
-
-**Quy tắc bắt buộc:**
-1. Mỗi class CSS mới phải được dùng ngay trong cùng commit — không "placeholder".
-2. Phát hiện class nghi ngờ dead → **grep xác nhận trước**, không xóa chỉ dựa trên tên/cảm giác.
-3. Grep ra 0 kết quả → dead → **xóa ngay**, không ghi TODO.
+- Class mới phải được dùng ngay cùng commit — không "placeholder".
+- Nghi dead → **grep xác nhận trước**, 0 kết quả → **xóa ngay**, không ghi TODO.
+- `bigbike-admin` có 3 file CSS song song — `index.css` + `admin-layout.css` (production), `admin-prototype.css` (**hệ `bb-*` canonical đang sống**, chassis chính). Không nhét class ngoài `bb-*` vào `admin-prototype.css`; không giả định dead mà không grep.
 
 ```bash
-# Verify trước khi xóa
-grep -rn "ten-class" bigbike-admin/src --include="*.jsx" --include="*.tsx" --include="*.js"
+grep -rn "ten-class" bigbike-admin/src bigbike-web --include="*.jsx" --include="*.tsx" --include="*.js" --include="*.ts"
 ```
 
-**`bigbike-admin` có ba file CSS song song — không nhầm:**
-- `index.css` + `admin-layout.css` → token mapping + layout primitives + screen-cluster classes, production, active.
-- `admin-prototype.css` → **hệ `bb-*` canonical đang sống** (đã re-skin theo Direction B cam) — chassis chính: shell/header/button/card/table/badge/KPI/form, dùng bởi `AdminShell` + hầu hết screen. Được phép restyle/maintain `bb-*` và thêm sub-class cùng component `bb-*`; KHÔNG nhét class/feature ngoài `bb-*` vào đây. Không giả định dead mà không grep.
-
-**Cấm:**
-- ❌ Viết CSS class mà không có JSX dùng ngay.
-- ❌ Kết luận dead mà không grep xác nhận.
-- ❌ Phát hiện dead CSS → không xóa ngay (TODO "sẽ xóa sau" là không đủ).
-- ❌ Thêm class/feature **không thuộc hệ `bb-*`** vào `admin-prototype.css` (dùng Tailwind inline hoặc `admin-layout.css`).
-
-Chi tiết đầy đủ: [AGENTS.md](AGENTS.md) — Section 6.6.
+Chi tiết: [AGENTS.md](AGENTS.md) §6.6.
 
 ---
 
-## ⚠️ Design System Unity — bigbike-web & bigbike-admin dùng chung 1 hệ thống thiết kế
+## ⚠️ Design System Unity — web & admin chung 1 hệ thống thiết kế
 
-Mọi trang, route, component trong `bigbike-web` — và mọi màn hình, form, table trong `bigbike-admin` — phải có visual appearance bắt nguồn từ **cùng một design system của BigBike**. Không trang nào, không screen nào được tự chọn màu, font, spacing, hay border-radius riêng ngoài hệ thống đã định nghĩa. Hai app dùng chung brand palette nhưng có font system riêng — không trộn lẫn.
+Mọi trang/screen phải lấy màu/font/spacing/radius từ **design system của app đó** — không trang nào tự chọn riêng. Hai app chung brand palette nhưng **font system riêng, không trộn**.
 
-### bigbike-web
+**bigbike-web** (cascade: `STYLEGUIDE.md` → `brand-tokens.css` → `globals.css @theme inline` → Tailwind token):
+- Màu: palette `STYLEGUIDE.md`, qua token — không hardcode hex.
+- Font: Barlow/Arial (body), Barlow Condensed (heading/CTA/nav/display, UPPERCASE). **Oswald đã gỡ bỏ.**
+- Spacing thang 4px. Radius `rounded-none` mặc định (`rounded-full` chỉ cho phần tử thật sự tròn).
 
-**Token cascade — bắt buộc theo đúng thứ tự:**
+**bigbike-admin** (cascade: `admin-tokens.css` → `index.css` → Tailwind/CSS var):
+- Màu: **Primary = cam `#cc4a08`** (dark `#f0791f`) cho CTA/active/selected/focus/link; **đỏ `#e8281e`** **chỉ** cho brand chrome (vạch sidebar active, nav badge, notification pip, logo); danger có token riêng. Qua token, không hardcode hex.
+- Font: Inter (body), Bungee (display/KPI), JetBrains Mono (mã/SKU) — không Exo/Barlow/Oswald.
+- Spacing thang 4px. Radius theo `--admin-radius-*` (xs5/sm8/md12/lg16). Admin **không** `rounded-none` mặc định. Visual data-first, không hero/campaign trong operational screen.
 
-| Lớp | File |
-|---|---|
-| Brand rules (source of truth) | [`bigbike-web/STYLEGUIDE.md`](bigbike-web/STYLEGUIDE.md) — palette, typography, component rules |
-| CSS custom properties | [`bigbike-web/styles/brand-tokens.css`](bigbike-web/styles/brand-tokens.css) |
-| Tailwind exposure | [`bigbike-web/app/globals.css`](bigbike-web/app/globals.css) — `@theme inline { … }` |
-| Dùng trong JSX | Tailwind utility classes (`text-primary`, `bg-brand`, `border-border`, …) |
+**Cấm (cả 2 app):** arbitrary Tailwind value (`bg-[#abc]`, `text-[13px]`) khi đã có token; Tailwind built-in color (`bg-red-500`) thay brand token; import font ngoài danh sách; dùng font/token app này trong app kia; CSS scoped per-page khi Tailwind đủ.
 
-**Quy tắc bắt buộc:**
-- **Màu** → chỉ từ palette trong `STYLEGUIDE.md`; tham chiếu qua CSS variable hoặc Tailwind token — không hardcode hex ngoài danh sách đã duyệt.
-- **Font** → Barlow (body/UI), Oswald (heading/CTA), Barlow Condensed (display/hero) — không import font khác.
-- **Spacing** → thang 4px (`p-4`, `gap-6`, `mt-8`…) — không dùng arbitrary px khi Tailwind step đã đủ.
-- **Border radius** → `0px` (`rounded-none`) cho mọi component thông thường; `rounded-full` chỉ cho phần tử thực sự tròn.
-- **Visual consistency** → trước khi ship, component mới phải trông như phần của cùng một website — màu, font, spacing, radius phải cùng hệ thống.
+**Encoding/tiếng Việt** (mọi text trong code): file UTF-8; tiếng Việt **có dấu đầy đủ**; không mojibake (`ThÃ nh toÃ¡n`, `Gi&#7843;m` là sai). Áp dụng cho JSX, string, placeholder, aria-label, alt, comment, toast, log.
 
-### bigbike-admin
-
-**Token cascade — bắt buộc theo đúng thứ tự:**
-
-| Lớp | File |
-|---|---|
-| Brand token source of truth | [`bigbike-admin/src/styles/admin-tokens.css`](bigbike-admin/src/styles/admin-tokens.css) — admin palette + type scale |
-| CSS exposure | [`bigbike-admin/src/index.css`](bigbike-admin/src/index.css) — import token; Tailwind theme mapping phải derive từ token này |
-| Dùng trong JSX | Tailwind utility classes hoặc CSS variable (`text-primary`, `bg-brand`, `var(--admin-...)`, …) |
-
-**Quy tắc bắt buộc:**
-- **Màu** → **Primary = cam Direction B `#cc4a08`** (dark `#f0791f`) cho CTA / active / selected / focus / link (`--admin-color-primary`, shadcn `--primary`/`--ring`, `--bb-primary*`). **Đỏ `#e8281e`** (`--admin-color-brand-red`/`--bb-brand`) **chỉ** cho brand chrome: vạch active sidebar, nav badge, notification pip, logo. Danger giữ token danger riêng. Tham chiếu qua CSS variable/token, không hardcode hex.
-- **Font** → `Inter` (body/UI), `Bungee` (display — số KPI, wordmark), `JetBrains Mono` (mã/SKU) — đã cài qua `@fontsource`; không dùng Exo/Barlow/Oswald.
-- **Spacing** → thang 4px — không dùng arbitrary px khi Tailwind step đã đủ.
-- **Border radius** → theo token bo `--admin-radius-*` (xs 5 / sm 8 / md 12 / lg 16 px); `rounded-full` chỉ cho phần tử thực sự tròn. Admin **không** dùng `rounded-none` mặc định như web.
-- **Visual style** → operational/data-first: dense, readable, table/form/filter centric — không đưa hero/campaign visuals vào operational screens.
-- **Visual consistency** → trước khi ship screen mới, phải trông như phần của cùng một admin dashboard — không generic SaaS template.
-
-**Cấm (áp dụng cho cả hai app):**
-- ❌ Arbitrary Tailwind value (`bg-[#abc]`, `text-[13px]`, `p-[17px]`) khi token tương đương đã tồn tại.
-- ❌ Tailwind built-in color (`bg-red-500`, `text-blue-600`) thay vì brand token (`bg-brand`, `text-primary`).
-- ❌ Import hoặc khai báo font ngoài danh sách đã duyệt cho từng project.
-- ❌ CSS scoped per-page/screen (CSS module, `<style>` tag, class trong `.css` file riêng) khi Tailwind là đủ.
-- ❌ Mỗi trang / screen / agent tự quyết định visual style riêng — mọi quyết định màu/font/spacing phải traceable về design system của app đó.
-- ❌ Dùng font/token của `bigbike-web` trong `bigbike-admin` hoặc ngược lại.
-
-Chi tiết đầy đủ: [AGENTS.md](AGENTS.md) — Section 6.2 (Design System Unity cho cả web và admin).
+Chi tiết: [AGENTS.md](AGENTS.md) §6.2 (design system), §6.5 (encoding).
 
 ---
 
 ## ⚠️ File `.env` — biến môi trường toàn stack
 
-**`.env` ở root repo là file cấu hình chính của toàn bộ BigBike stack** khi chạy local với Docker Compose. File này được Docker Compose load tự động và truyền vào tất cả service.
+`.env` ở root là cấu hình chính của toàn stack khi chạy Docker Compose (load tự động vào mọi service). Nhóm biến: SMTP/Email, URL email & site/admin, `SPRING_PROFILES_ACTIVE=dev`, CORS, JWT, DB, MinIO, Next.js public URL.
 
-**Các nhóm biến quan trọng:**
-- **SMTP / Email**: `BIGBIKE_MAIL_HOST`, `BIGBIKE_MAIL_USERNAME`, `BIGBIKE_MAIL_PASSWORD`
-- **URL trong email**: `BIGBIKE_MAIL_VERIFY_BASE_URL`, `BIGBIKE_MAIL_RESET_BASE_URL` — phải là `http://localhost:3000/...` khi chạy local
-- **URL site/admin**: `BIGBIKE_SITE_BASE_URL`, `BIGBIKE_ADMIN_BASE_URL`
-- **Spring profile**: `SPRING_PROFILES_ACTIVE=dev` — bắt buộc để backend load đúng `application-dev.properties`
-- **CORS**, **JWT**, **DB**, **MinIO**, **Next.js public URL**
-
-**Quy tắc:**
-- Khi gặp URL sai môi trường (link email trỏ về production khi đang ở localhost) → **kiểm tra `.env` trước**, không sửa code.
-- Khi thêm biến mới vào code → cập nhật `.env.example` đồng thời.
+- URL sai môi trường (vd link email trỏ production khi đang localhost) → **kiểm tra `.env` trước, không sửa code**.
+- Thêm biến mới vào code → cập nhật `.env.example` đồng thời.
 - **KHÔNG commit `.env`** — chỉ commit `.env.example`.
 
-Chi tiết đầy đủ: [AGENTS.md](AGENTS.md) — Section 5.5.
+Chi tiết: [AGENTS.md](AGENTS.md) §5.5.
 
 ---
 
-## ⚠️ Docker server access khi fix bug / vận hành hệ thống
+## ⚠️ Media của dữ liệu admin quản lý — bắt buộc lưu trong MinIO
 
-Khi cần fix lỗi runtime, debug, xem log, query DB thật, verify migration hoặc bất kỳ task vận hành nào:
+**Mọi dữ liệu admin quản lý — nếu có ảnh/video thì media BẮT BUỘC nằm trong MinIO, không trỏ link ra ngoài.** Áp dụng cho product, category, brand, banner/hero, content/blog/policy, page builder (contact/guide/warranty), settings, media library… Mọi `image.url`, `gallery[]`, `videos[]`, banner, icon, menuIcon, thumbnail, og-image phải trỏ về object MinIO (`/media/...`).
 
-- **Được phép vào trực tiếp container Docker đang chạy** (backend, db, redis, web, admin…) qua `docker ps`, `docker logs`, `docker exec`, `docker compose exec` để chẩn đoán/sửa lỗi.
-- **Luôn `docker ps` (hoặc `docker compose ps`) trước** để xác nhận stack đang chạy.
-- Nếu container cần dùng **chưa chạy** → **DỪNG và yêu cầu user khởi động** (ví dụ `docker compose up -d backend`). Không tự ý `up`, `start`, `restart`, `down`, `rm`, `prune` — đó là shared state.
-- Trong container, mặc định chỉ **thao tác đọc** (logs, `SELECT`, `SHOW`, `cat`, `ls`…). Mọi thao tác ghi/destructive (`UPDATE`, `DELETE`, `DROP`, `TRUNCATE`, sửa file config, kill/restart service…) phải hỏi user trước.
-- Khi report kết quả, cite rõ container/service và command đã chạy để user verify được.
+**Cấm:** hotlink host ngoài (CDN bên thứ ba, Drive, Imgur, link `/wp/...` legacy, embed YouTube/Vimeo làm nguồn ảnh); cho admin nhập URL ngoài làm nguồn media (cần nhập từ URL → backend **fetch về + re-upload vào MinIO**, lưu URL MinIO); write mới giữ link external (chỉ chấp nhận fallback đọc cho legacy chưa migrate).
 
-Cấm:
-
-- ❌ Giả định container đang chạy mà không check.
-- ❌ Tự ý `docker compose up/down/restart/rm`, xoá volume/network, prune image.
-- ❌ Chạy lệnh destructive trong container đang chạy khi user chưa duyệt.
-- ❌ Mock dữ liệu khi container thật đang chạy và có thể query được — luôn ưu tiên data thật để tìm đúng root cause.
-
-Chi tiết đầy đủ: [AGENTS.md](AGENTS.md) — Section 5.5.
+Chi tiết: [AGENTS.md](AGENTS.md) §14.3 (+ §8.1 media fields).
 
 ---
 
-## ⚠️ Backend Java — bắt buộc dùng Lombok, MapStruct và Bean Validation
+## ⚠️ Docker server access khi fix bug / vận hành
 
-Khi viết code Java trong `bigbike-backend`, **bắt buộc dùng triệt để** 3 thư viện sau — không viết boilerplate thủ công khi thư viện đã xử lý được.
+- **Được vào trực tiếp container đang chạy** (`docker ps/logs/exec`, `docker compose exec`) để chẩn đoán/sửa lỗi runtime.
+- **Luôn `docker ps` trước** để xác nhận stack chạy. Container cần dùng chưa chạy → **DỪNG, yêu cầu user khởi động**. Không tự `up/start/restart/down/rm/prune` — shared state.
+- Trong container mặc định chỉ **đọc** (logs, `SELECT`, `cat`, `ls`). Thao tác ghi/destructive (`UPDATE/DELETE/DROP/TRUNCATE`, sửa config, kill/restart) phải hỏi user trước.
+- Report kết quả: cite rõ container/service + command đã chạy.
+- **Không mock dữ liệu** khi container thật đang chạy và query được — ưu tiên data thật.
 
-| Thư viện | Dùng cho | Cấm làm thay |
+Chi tiết: [AGENTS.md](AGENTS.md) §5.6.
+
+---
+
+## ⚠️ Backend Java — bắt buộc Lombok + MapStruct + Bean Validation
+
+Không viết boilerplate thủ công khi thư viện xử lý được.
+
+| Thư viện | Dùng cho | Cấm thay thế |
 |---|---|---|
-| **Lombok** | `@Getter/@Setter`, `@Builder`, `@RequiredArgsConstructor`, `@AllArgsConstructor`, `@NoArgsConstructor`, `@Slf4j`, `@Data` (không dùng `@Data` trên JPA Entity có lazy relationship) | Viết getter/setter/constructor/logger thủ công |
-| **MapStruct** | `@Mapper(componentModel = "spring")` interface trong package `mapper/`; `@Mapping` cho field khác tên / nested / ignore | Viết mapping thủ công từng field, dùng `BeanUtils.copyProperties()` |
-| **Bean Validation** | `@NotNull`, `@NotBlank`, `@Size`, `@Positive`, `@Email`, `@Pattern`, `@Valid` (cascade nested), `@Constraint` cho custom validator | `if (x == null)` thủ công trong controller/service, bỏ quên `@Valid` trên `@RequestBody` |
+| **Lombok** | `@Getter/@Setter`, `@Builder`, `@RequiredArgsConstructor`, `@Slf4j`, `@Data` (KHÔNG `@Data` trên JPA Entity có lazy relationship) | getter/setter/constructor/logger thủ công |
+| **MapStruct** | `@Mapper(componentModel="spring")` interface trong package `mapper/`, `@Mapping` cho field khác tên/nested/ignore | mapping thủ công, `BeanUtils.copyProperties()` |
+| **Bean Validation** | `@NotNull/@NotBlank/@Size/@Positive/@Email/@Pattern/@Valid` (cascade nested) | `if (x==null)` thủ công, quên `@Valid` trên `@RequestBody` |
 
-**Quy tắc chính:**
-- JPA Entity: dùng `@Getter` + `@Setter` + `@NoArgsConstructor` riêng — **không dùng `@Data`** (gây vòng lặp lazy-load).
-- Mapper: luôn là `interface`, `componentModel = "spring"`, đặt trong package `mapper/`.
-- Controller: luôn có `@Valid` trên `@RequestBody` / `@ModelAttribute` để kích hoạt constraint.
-- Service: không validate lại những gì Bean Validation đã check ở boundary.
+- JPA Entity: `@Getter` + `@Setter` + `@NoArgsConstructor` riêng — **không `@Data`** (vòng lặp lazy-load).
+- Controller: luôn `@Valid` trên `@RequestBody`/`@ModelAttribute`. Exception xử lý tập trung qua `@ControllerAdvice` — không try/catch format response trong controller.
+- Service: không validate lại cái Bean Validation đã check ở boundary.
 
-Chi tiết đầy đủ: [AGENTS.md](AGENTS.md) — Section 7 (7.1 Lombok, 7.2 MapStruct, 7.3 Bean Validation, 7.4 coding standards).
+Chi tiết: [AGENTS.md](AGENTS.md) §7.
 
 ---
 
 ## Phong cách trả lời
 
-- **Ngôn ngữ business, không dùng thuật ngữ kỹ thuật.** Giải thích bằng ngôn ngữ mà chủ shop / quản lý có thể hiểu ngay — không dùng tên class, method, endpoint, stack trace hay jargon lập trình trừ khi user là developer và đang hỏi về code cụ thể.
-- **Ngắn gọn nhưng đủ ý.** Không viết dài dòng, không lặp lại điều đã nói. Mỗi câu phải có thông tin.
-- **Trình bày dễ đọc.** Dùng danh sách, bảng, hoặc tiêu đề ngắn khi có nhiều điểm cần liệt kê. Không đổ thành đoạn văn dài.
-- **Trả lời đúng trọng tâm câu hỏi.** Không giải thích những thứ user không hỏi.
+User là **chủ shop / quản lý vận hành**, không phải lập trình viên.
+
+- **Ngắn gọn nhưng đầy đủ ý** — trả lời thẳng trọng tâm; không lan man, không lặp ý, không giải thích thứ user không hỏi; mỗi câu mang thông tin.
+- **Ngôn ngữ business, hạn chế tối đa từ kỹ thuật/chuyên ngành** — giải thích theo việc kinh doanh (sản phẩm, đơn hàng, tồn kho, khách hàng, trang web…); không tên class/method/endpoint/stack trace. Buộc phải nhắc khái niệm kỹ thuật → giải thích ngắn bằng ngôn ngữ thường.
+- **Dễ đọc** — nhiều điểm thì dùng list/bảng/tiêu đề ngắn, không dồn đoạn văn dài.
+- **Ngoại lệ:** chỉ dùng thuật ngữ kỹ thuật khi user rõ ràng là dev và hỏi trực tiếp về code/kiến trúc.
+
+Chi tiết: [AGENTS.md](AGENTS.md) §5.7.
 
 ---
 
 ## Đọc thêm
 
-Full agent operating rules: [AGENTS.md](AGENTS.md) — đặc biệt Section 2 (Docs-First Contract), Section 3 (Required Reading Order — lazy), Section 4 (Source of Truth Map), Section 6 (Frontend Stack), Section 7 (Backend Stack).
+Full operating rules: [AGENTS.md](AGENTS.md) — §2 Docs-First, §3 Reading Order, §4 Source of Truth, §5 Global Rules, §6 Frontend Stack, §7 Backend Stack, §14 File/Asset.

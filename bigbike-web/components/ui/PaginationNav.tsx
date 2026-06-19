@@ -119,7 +119,7 @@ export function PaginationNav({ page, totalPages, baseHref = "", variant = "defa
       <div className="flex items-center gap-1 flex-wrap">
         {pages.map((p, i) =>
           p === "..." ? (
-            <span key={`ellipsis-${i}`} className="inline-flex h-9 min-w-7 items-center justify-center text-sm text-muted-foreground">...</span>
+            <span key={`ellipsis-${i}`} className="inline-flex h-9 min-w-7 items-center justify-center text-caption text-muted-foreground">...</span>
           ) : onPageChange ? (
             <button
               key={p}

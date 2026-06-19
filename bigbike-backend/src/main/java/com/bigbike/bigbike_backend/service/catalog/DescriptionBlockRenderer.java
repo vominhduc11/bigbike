@@ -52,6 +52,7 @@ public class DescriptionBlockRenderer {
         if (block instanceof DescriptionBlock.ImageBlock b)     return renderImage(b);
         if (block instanceof DescriptionBlock.VideoBlock b)     return renderVideo(b);
         if (block instanceof DescriptionBlock.CalloutBlock b)   return renderCallout(b);
+        if (block instanceof DescriptionBlock.FeatureBlock b)   return renderFeature(b);
         if (block instanceof DescriptionBlock.DividerBlock)     return "<hr>";
         return "";
     }
@@ -113,6 +114,54 @@ public class DescriptionBlockRenderer {
         return sb.toString();
     }
 
+    /**
+     * Feature = một hàng ảnh + tiêu đề + đoạn + danh sách. Bản HTML này là fallback/SEO
+     * (web đọc thẳng block để dựng 2 cột so le); ở đây render tuần tự trong một &lt;div class="bb-feature"&gt;.
+     */
+    private String renderFeature(DescriptionBlock.FeatureBlock b) {
+        StringBuilder sb = new StringBuilder("<div class=\"bb-feature\">");
+        // Ảnh
+        sb.append("<figure><img src=\"").append(escapeAttr(b.getUrl())).append("\"");
+        if (b.getAlt() != null && !b.getAlt().isBlank()) {
+            sb.append(" alt=\"").append(escapeAttr(b.getAlt())).append("\"");
+        }
+        sb.append(">");
+        if (b.getCaption() != null && !b.getCaption().isBlank()) {
+            sb.append("<figcaption>").append(escapeHtml(b.getCaption())).append("</figcaption>");
+        }
+        sb.append("</figure>");
+        // Tiêu đề phụ (eyebrow)
+        if (b.getSubheading() != null && !b.getSubheading().isBlank()) {
+            sb.append("<p class=\"bb-feature-eyebrow\">").append(escapeHtml(b.getSubheading())).append("</p>");
+        }
+        // Tiêu đề chính
+        if (b.getHeading() != null && !b.getHeading().isBlank()) {
+            sb.append("<h2>").append(escapeHtml(b.getHeading())).append("</h2>");
+        }
+        // Đoạn mô tả
+        if (b.getHtml() != null && !b.getHtml().isBlank()) {
+            String trimmed = b.getHtml().strip();
+            if (trimmed.startsWith("<p") || trimmed.startsWith("<P")) {
+                sb.append(trimmed);
+            } else {
+                sb.append("<p>").append(trimmed).append("</p>");
+            }
+        }
+        // Danh sách
+        if (b.getItems() != null && !b.getItems().isEmpty()) {
+            String tag = "numbered".equals(b.getListStyle()) ? "ol" : "ul";
+            sb.append("<").append(tag).append(">");
+            for (String item : b.getItems()) {
+                if (item != null && !item.isBlank()) {
+                    sb.append("<li>").append(escapeHtml(item)).append("</li>");
+                }
+            }
+            sb.append("</").append(tag).append(">");
+        }
+        sb.append("</div>");
+        return sb.toString();
+    }
+
     private String renderCallout(DescriptionBlock.CalloutBlock b) {
         String variant = b.getVariant() != null ? b.getVariant() : "info";
         StringBuilder sb = new StringBuilder("<div class=\"bb-callout bb-callout-").append(variant).append("\">");
@@ -144,7 +193,7 @@ public class DescriptionBlockRenderer {
     private static Safelist buildSafelist() {
         return new Safelist()
                 .addTags("h2", "h3", "p", "ul", "ol", "li", "hr", "br",
-                         "b", "i", "strong", "em", "a", "img",
+                         "b", "i", "strong", "em", "u", "a", "img", "blockquote",
                          "figure", "figcaption", "div")
                 .addAttributes("a", "href", "rel", "target")
                 .addAttributes("img", "src", "alt", "width", "height")

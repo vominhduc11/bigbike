@@ -69,7 +69,7 @@ export function AuthField({
         <p
           id={describeError ? errorId : undefined}
           role={describeError ? "alert" : undefined}
-          className="text-sm text-destructive"
+          className="text-caption text-destructive"
         >
           {error.message}
         </p>

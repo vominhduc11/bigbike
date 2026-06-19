@@ -85,10 +85,6 @@ public class UpsertProductRequest {
     private String originBrandCountry;
     private boolean originBrandCountryPresent = false;
 
-    @Size(max = 120, message = "Origin manufacture country is too long.")
-    private String originManufactureCountry;
-    private boolean originManufactureCountryPresent = false;
-
     /** Trọng lượng tính bằng gram. Lưu vào cột weight_kg (= grams / 1000). */
     private Integer weightGrams;
     private boolean weightGramsPresent = false;
@@ -96,6 +92,22 @@ public class UpsertProductRequest {
     @Size(max = 20000, message = "Size guide is too long.")
     private String sizeGuide;
     private boolean sizeGuidePresent = false;
+
+    // "Hiển thị trên web" (V245) — opaque JSON string {sectionKey: boolean}. Admin serialize, backend lưu
+    // nguyên (như size_guide). Presence-flag: bỏ key → giữ nguyên; gửi null/blank → xoá cấu hình (về legacy).
+    @Size(max = 4000, message = "Section visibility is too long.")
+    private String sectionVisibility;
+    private boolean sectionVisibilityPresent = false;
+
+    @Size(max = 600, message = "Quick answer is too long.")
+    private String quickAnswerSummary;
+    private boolean quickAnswerSummaryPresent = false;
+
+    // "Phù hợp với ai" — JSON array các thẻ [{audience, advice, linkLabel?, linkUrl?}] (V240).
+    // Admin serialize JSON; backend lưu opaque (như size_guide). Giới hạn độ dài tổng chuỗi JSON.
+    @Size(max = 20000, message = "Suitability advisory is too long.")
+    private String suitabilityAdvisory;
+    private boolean suitabilityAdvisoryPresent = false;
 
     @Size(max = 20, message = "Gender is too long.")
     private String gender;
@@ -125,9 +137,22 @@ public class UpsertProductRequest {
     @Size(max = 100, message = "Specifications may not have more than 100 items.")
     private List<SpecificationRequest> specifications;
 
+    /** "Specs Dashboard" stat boxes under the buy area (V235), max 4. Selling-point figures, not specs. */
+    @Valid
+    @Size(max = 4, message = "Spec stats may not have more than 4 items.")
+    private List<SpecStatRequest> specStats;
+
     @Valid
     @Size(max = 50, message = "FAQs may not have more than 50 items.")
     private List<FaqRequest> faqs;
+
+    @Valid
+    @Size(max = 12, message = "Commitments may not have more than 12 items.")
+    private List<CommitmentRequest> commitments;
+
+    @Valid
+    @Size(max = 12, message = "Trust badges may not have more than 12 items.")
+    private List<TrustBadgeRequest> trustBadges;
 
     @Valid
     @Size(max = 20, message = "Pros may not have more than 20 items.")
@@ -150,6 +175,14 @@ public class UpsertProductRequest {
     private List<String> relatedProductIds;
 
     /**
+     * Admin-curated accessory product IDs ("Phụ kiện" — sản phẩm bán kèm) for the PDP
+     * "Phụ kiện" section. Ordered; null = leave unchanged, empty list = clear all.
+     * Unknown IDs and the product's own ID are dropped silently by the mutation service.
+     */
+    @Size(max = 24, message = "Accessories may not have more than 24 items.")
+    private List<String> accessoryProductIds;
+
+    /**
      * Structured description blocks (V139). Presence-flag pattern:
      * sending this key (including []) triggers rendering and overwrites both
      * description_blocks and description. Omitting the key leaves both untouched.
@@ -158,6 +191,27 @@ public class UpsertProductRequest {
     @Size(max = 200, message = "descriptionBlocks may not have more than 200 items.")
     private List<DescriptionBlock> descriptionBlocks;
     private boolean descriptionBlocksPresent = false;
+
+    /**
+     * English structured description blocks (V229). Same presence-flag pattern as
+     * {@link #descriptionBlocks}: sending this key (including []) renders the blocks and overwrites
+     * both description_blocks_en and description_en. Omitting the key leaves the English columns
+     * (set via {@code translations.en.description}) untouched.
+     */
+    @Valid
+    @Size(max = 200, message = "descriptionBlocksEn may not have more than 200 items.")
+    private List<DescriptionBlock> descriptionBlocksEn;
+    private boolean descriptionBlocksEnPresent = false;
+
+    /**
+     * Per-product PDP tab configuration (V231). Presence-flag pattern: sending the key (including [])
+     * replaces the stored config; omitting it leaves product_tabs untouched. Sending [] / null clears
+     * the override so the product falls back to the default tab set.
+     */
+    @Valid
+    @Size(max = 30, message = "tabs may not have more than 30 items.")
+    private List<ProductTabRequest> tabs;
+    private boolean tabsPresent = false;
 
     public String getSku() {
         return sku;
@@ -395,19 +449,6 @@ public class UpsertProductRequest {
         return originBrandCountryPresent;
     }
 
-    public String getOriginManufactureCountry() {
-        return originManufactureCountry;
-    }
-
-    public void setOriginManufactureCountry(String originManufactureCountry) {
-        this.originManufactureCountry = originManufactureCountry;
-        this.originManufactureCountryPresent = true;
-    }
-
-    public boolean isOriginManufactureCountryPresent() {
-        return originManufactureCountryPresent;
-    }
-
     public Integer getWeightGrams() {
         return weightGrams;
     }
@@ -432,6 +473,45 @@ public class UpsertProductRequest {
 
     public boolean isSizeGuidePresent() {
         return sizeGuidePresent;
+    }
+
+    public String getSectionVisibility() {
+        return sectionVisibility;
+    }
+
+    public void setSectionVisibility(String sectionVisibility) {
+        this.sectionVisibility = sectionVisibility;
+        this.sectionVisibilityPresent = true;
+    }
+
+    public boolean isSectionVisibilityPresent() {
+        return sectionVisibilityPresent;
+    }
+
+    public String getQuickAnswerSummary() {
+        return quickAnswerSummary;
+    }
+
+    public void setQuickAnswerSummary(String quickAnswerSummary) {
+        this.quickAnswerSummary = quickAnswerSummary;
+        this.quickAnswerSummaryPresent = true;
+    }
+
+    public boolean isQuickAnswerSummaryPresent() {
+        return quickAnswerSummaryPresent;
+    }
+
+    public String getSuitabilityAdvisory() {
+        return suitabilityAdvisory;
+    }
+
+    public void setSuitabilityAdvisory(String suitabilityAdvisory) {
+        this.suitabilityAdvisory = suitabilityAdvisory;
+        this.suitabilityAdvisoryPresent = true;
+    }
+
+    public boolean isSuitabilityAdvisoryPresent() {
+        return suitabilityAdvisoryPresent;
     }
 
     public String getGender() {
@@ -482,8 +562,17 @@ public class UpsertProductRequest {
     public List<SpecificationRequest> getSpecifications() { return specifications; }
     public void setSpecifications(List<SpecificationRequest> specifications) { this.specifications = specifications; }
 
+    public List<SpecStatRequest> getSpecStats() { return specStats; }
+    public void setSpecStats(List<SpecStatRequest> specStats) { this.specStats = specStats; }
+
     public List<FaqRequest> getFaqs() { return faqs; }
     public void setFaqs(List<FaqRequest> faqs) { this.faqs = faqs; }
+
+    public List<CommitmentRequest> getCommitments() { return commitments; }
+    public void setCommitments(List<CommitmentRequest> commitments) { this.commitments = commitments; }
+
+    public List<TrustBadgeRequest> getTrustBadges() { return trustBadges; }
+    public void setTrustBadges(List<TrustBadgeRequest> trustBadges) { this.trustBadges = trustBadges; }
 
     public List<HighlightRequest> getPositiveNotes() { return positiveNotes; }
     public void setPositiveNotes(List<HighlightRequest> positiveNotes) { this.positiveNotes = positiveNotes; }
@@ -497,11 +586,28 @@ public class UpsertProductRequest {
     public List<String> getRelatedProductIds() { return relatedProductIds; }
     public void setRelatedProductIds(List<String> relatedProductIds) { this.relatedProductIds = relatedProductIds; }
 
+    public List<String> getAccessoryProductIds() { return accessoryProductIds; }
+    public void setAccessoryProductIds(List<String> accessoryProductIds) { this.accessoryProductIds = accessoryProductIds; }
+
     public List<DescriptionBlock> getDescriptionBlocks() { return descriptionBlocks; }
     public void setDescriptionBlocks(List<DescriptionBlock> descriptionBlocks) {
         this.descriptionBlocks = descriptionBlocks;
         this.descriptionBlocksPresent = true;
     }
     public boolean isDescriptionBlocksPresent() { return descriptionBlocksPresent; }
+
+    public List<DescriptionBlock> getDescriptionBlocksEn() { return descriptionBlocksEn; }
+    public void setDescriptionBlocksEn(List<DescriptionBlock> descriptionBlocksEn) {
+        this.descriptionBlocksEn = descriptionBlocksEn;
+        this.descriptionBlocksEnPresent = true;
+    }
+    public boolean isDescriptionBlocksEnPresent() { return descriptionBlocksEnPresent; }
+
+    public List<ProductTabRequest> getTabs() { return tabs; }
+    public void setTabs(List<ProductTabRequest> tabs) {
+        this.tabs = tabs;
+        this.tabsPresent = true;
+    }
+    public boolean isTabsPresent() { return tabsPresent; }
 }
 

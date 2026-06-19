@@ -197,16 +197,16 @@ export function QuickBuyModal({
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="rounded-none max-w-lg max-h-[90dvh] overflow-y-auto p-0 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb]:rounded-sm [&::-webkit-scrollbar-thumb:hover]:bg-muted-foreground">
         <DialogHeader className="px-6 pt-6 pb-0">
-          <DialogTitle className="text-base font-bold uppercase tracking-wide">
+          <DialogTitle className="text-body font-bold uppercase tracking-wide">
             {tQb("title")}
           </DialogTitle>
-          <div className="mt-1 text-sm text-muted-foreground space-y-0.5">
+          <div className="mt-1 text-caption text-muted-foreground space-y-0.5">
             <p className="font-medium text-foreground line-clamp-2">{productName}</p>
             {variantLabel && (
-              <p className="text-xs">{variantLabel}</p>
+              <p className="text-overline">{variantLabel}</p>
             )}
             {unitPrice != null && unitPrice > 0 && (
-              <p className="text-sm font-semibold text-brand">
+              <p className="text-caption font-semibold text-brand">
                 {formatVnd(unitPrice)}
               </p>
             )}
@@ -219,7 +219,7 @@ export function QuickBuyModal({
 
               {/* Thông tin liên hệ */}
               <section>
-                <p className="text-xs font-semibold uppercase tracking-display text-muted-foreground mb-3">
+                <p className="text-overline font-semibold uppercase tracking-display text-muted-foreground mb-3">
                   {tQb("contactSection")}
                 </p>
                 <div className="flex flex-col gap-3">
@@ -267,7 +267,7 @@ export function QuickBuyModal({
 
               {/* Địa chỉ nhận hàng */}
               <section>
-                <p className="text-xs font-semibold uppercase tracking-display text-muted-foreground mb-3">
+                <p className="text-overline font-semibold uppercase tracking-display text-muted-foreground mb-3">
                   {tQb("addressSection")}
                 </p>
                 <div className="flex flex-col gap-3">
@@ -281,14 +281,14 @@ export function QuickBuyModal({
                       form.setValue(field as "province" | "district" | "ward", value, { shouldValidate: true });
                     }}
                     required
-                    labelClassName="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    labelClassName="text-caption font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                     selectContentClassName="z-[var(--bb-z-modal-dropdown)]"
                   />
                   {form.formState.errors.province && (
-                    <p className="text-sm font-medium text-destructive">{form.formState.errors.province.message}</p>
+                    <p className="text-caption font-medium text-destructive">{form.formState.errors.province.message}</p>
                   )}
                   {form.formState.errors.district && (
-                    <p className="text-sm font-medium text-destructive">{form.formState.errors.district.message}</p>
+                    <p className="text-caption font-medium text-destructive">{form.formState.errors.district.message}</p>
                   )}
 
                   <FormField
@@ -320,19 +320,19 @@ export function QuickBuyModal({
                           <button
                             type="button"
                             id={quantityId}
-                            className="px-3 h-10 text-lg font-medium hover:bg-muted disabled:opacity-40"
+                            className="px-3 h-10 text-ui-18 font-medium hover:bg-muted disabled:opacity-40"
                             onClick={() => field.onChange(Math.max(1, (field.value ?? 1) - 1))}
                             disabled={isSubmitting || (field.value ?? 1) <= 1}
                             aria-label={tQb("qtyDecrease")}
                           >
                             −
                           </button>
-                          <span className="px-4 h-10 flex items-center justify-center min-w-[3rem] text-sm font-semibold tabular-nums select-none">
+                          <span className="px-4 h-10 flex items-center justify-center min-w-[3rem] text-caption font-semibold tabular-nums select-none">
                             {field.value ?? 1}
                           </span>
                           <button
                             type="button"
-                            className="px-3 h-10 text-lg font-medium hover:bg-muted disabled:opacity-40"
+                            className="px-3 h-10 text-ui-18 font-medium hover:bg-muted disabled:opacity-40"
                             onClick={() => field.onChange((field.value ?? 1) + 1)}
                             disabled={isSubmitting}
                             aria-label={tQb("qtyIncrease")}
@@ -350,13 +350,13 @@ export function QuickBuyModal({
               {/* Phương thức vận chuyển */}
               {province && (
                 <section>
-                  <p className="text-xs font-semibold uppercase tracking-display text-muted-foreground mb-3">
+                  <p className="text-overline font-semibold uppercase tracking-display text-muted-foreground mb-3">
                     {tQb("shippingSection")}
                   </p>
                   {availableMethodsForRegion.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">{tQb("summaryShippingUnknown")}</p>
+                    <p className="text-caption text-muted-foreground">{tQb("summaryShippingUnknown")}</p>
                   ) : availableMethodsForRegion.length === 1 ? (
-                    <div className="flex items-center justify-between px-3 py-2.5 border border-border text-sm">
+                    <div className="flex items-center justify-between px-3 py-2.5 border border-border text-caption">
                       <span className="font-medium">{availableMethodsForRegion[0].title}</span>
                       <span className={cn("font-medium tabular-nums", shippingEstimate?.isFree && "text-state-success-text")}>
                         {shippingEstimate
@@ -394,15 +394,15 @@ export function QuickBuyModal({
                                 className="accent-foreground"
                               />
                               <div className="flex flex-col gap-0.5">
-                                <span className="text-sm font-medium">{method.title}</span>
+                                <span className="text-caption font-medium">{method.title}</span>
                                 {method.freeShippingThreshold != null && !isFree && (
-                                  <span className="text-xs text-muted-foreground">
+                                  <span className="text-overline text-muted-foreground">
                                     {tQb("shippingFreeFrom", { amount: formatVnd(method.freeShippingThreshold) })}
                                   </span>
                                 )}
                               </div>
                             </div>
-                            <span className={cn("text-sm font-semibold tabular-nums shrink-0", isFree && "text-state-success-text")}>
+                            <span className={cn("text-caption font-semibold tabular-nums shrink-0", isFree && "text-state-success-text")}>
                               {isFree ? tQb("summaryShippingFree") : formatVnd(cost)}
                             </span>
                           </label>
@@ -415,7 +415,7 @@ export function QuickBuyModal({
 
               {/* Phương thức thanh toán */}
               <section>
-                <p className="text-xs font-semibold uppercase tracking-display text-muted-foreground mb-3">
+                <p className="text-overline font-semibold uppercase tracking-display text-muted-foreground mb-3">
                   {tQb("paymentSection")}
                 </p>
                 <div className="flex flex-col gap-2">
@@ -440,11 +440,11 @@ export function QuickBuyModal({
                         className="mt-0.5 accent-foreground"
                       />
                       <span className="flex flex-col gap-0.5">
-                        <span className="text-sm font-medium">
+                        <span className="text-caption font-medium">
                           {t(`paymentMethod.${method}`)}
                         </span>
                         {method === "BACS" && (
-                          <span className="text-xs text-muted-foreground">{tQb("paymentBacsHint")}</span>
+                          <span className="text-overline text-muted-foreground">{tQb("paymentBacsHint")}</span>
                         )}
                       </span>
                     </label>
@@ -475,7 +475,7 @@ export function QuickBuyModal({
 
               {/* Submit error */}
               {submitError && (
-                <p className="text-sm font-medium text-destructive" role="alert">
+                <p className="text-caption font-medium text-destructive" role="alert">
                   {submitError}
                 </p>
               )}
@@ -483,7 +483,7 @@ export function QuickBuyModal({
 
             {/* Order summary */}
             {unitPrice != null && unitPrice > 0 && (
-              <div className="mx-6 mb-4 border border-border text-sm">
+              <div className="mx-6 mb-4 border border-border text-caption">
                 <div className="flex justify-between px-3 py-2 border-b border-border">
                   <span className="text-muted-foreground">{tQb("summarySubtotal")}</span>
                   <span className="font-medium tabular-nums">
@@ -494,9 +494,9 @@ export function QuickBuyModal({
                   <span className="text-muted-foreground">{tQb("summaryShipping")}</span>
                   <span className={cn("font-medium tabular-nums", shippingEstimate?.isFree && "text-state-success-text")}>
                     {!province
-                      ? <span className="text-muted-foreground text-xs">{tQb("summaryShippingSelectProvince")}</span>
+                      ? <span className="text-muted-foreground text-overline">{tQb("summaryShippingSelectProvince")}</span>
                       : shippingEstimate == null
-                        ? <span className="text-muted-foreground text-xs">{tQb("summaryShippingUnknown")}</span>
+                        ? <span className="text-muted-foreground text-overline">{tQb("summaryShippingUnknown")}</span>
                         : shippingEstimate.isFree
                           ? tQb("summaryShippingFree")
                           : formatVnd(shippingEstimate.cost)
@@ -511,7 +511,7 @@ export function QuickBuyModal({
                       : formatVnd(unitPrice * quantity)
                     }
                     {shippingEstimate == null && province && (
-                      <span className="text-xs font-normal text-muted-foreground ml-1">+ {tQb("summaryShippingUnknown")}</span>
+                      <span className="text-overline font-normal text-muted-foreground ml-1">+ {tQb("summaryShippingUnknown")}</span>
                     )}
                   </span>
                 </div>
@@ -519,7 +519,7 @@ export function QuickBuyModal({
             )}
 
             {/* Coupon hint */}
-            <p className="px-6 pb-2 text-xs text-muted-foreground">
+            <p className="px-6 pb-2 text-overline text-muted-foreground">
               {tQb("couponHintText")}{" "}
               <a
                 href="/gio-hang"

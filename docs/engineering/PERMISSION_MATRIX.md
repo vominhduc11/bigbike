@@ -74,6 +74,10 @@ Status: `CONFIRMED_FROM_CODE` — `SettingDefinitionRegistry.java`, `AdminSettin
 |---|---|---|---|
 | `/api/v1/admin/**` | Spring Security URL gate requires `isAuthenticated() and !hasRole('CUSTOMER')` — any admin role (built-in or custom) passes, a logged-in customer is rejected (403). Fine-grained permission is then enforced at controller level by `requirePermission()`. See `PERMISSION_RBAC_AUDIT.md` findings F1/F2. | `CONFIRMED_FROM_CODE` | `SecurityConfig.java`, `DevAdminAuthService.requirePermission`, admin controllers |
 | `POST /api/v1/admin/products/preview` | `products.update` (live preview dry-run; no persistence) | `CONFIRMED_FROM_CODE` | `AdminCatalogController.previewProduct`, `AdminCatalogMutationService.previewProduct` |
+| `GET /api/v1/admin/contact-page` | `content.read` (trình dựng trang Liên hệ) | `CONFIRMED_FROM_CODE` | `AdminContactPageController.java` |
+| `PUT /api/v1/admin/contact-page` | `content.update`. **Ghi xuyên `site_settings`** chỉ giới hạn whitelist nhóm `contact` (`ContactPageService.WRITE_THROUGH_KEYS`) nên EDITOR sửa được giá trị kênh **không cần** `settings.write`. | `CONFIRMED_FROM_CODE` | `AdminContactPageController.java`, `ContactPageService.save` |
+| `GET /api/v1/admin/guide-page` | `content.read` (trình dựng trang Hướng dẫn) | `CONFIRMED_FROM_CODE` | `AdminGuidePageController.java` |
+| `PUT /api/v1/admin/guide-page` | `content.update` (lưới ô + hero trang `/huong-dan`; không ghi xuyên `site_settings`) | `CONFIRMED_FROM_CODE` | `AdminGuidePageController.java`, `GuidePageService.save` |
 | `/api/v1/admin/pos/products/search` | admin role + `pos.read` | `CONFIRMED_FROM_CODE` | `SecurityConfig.java`, `AdminPosController.java` |
 | `/api/v1/admin/pos/orders` | admin role + `pos.write` | `CONFIRMED_FROM_CODE` | `SecurityConfig.java`, `AdminPosController.java` |
 | POS price override | `pos.price_override` | `CONFIRMED_FROM_CODE` | `AdminPosController.java`, `PosOrderService.java` |

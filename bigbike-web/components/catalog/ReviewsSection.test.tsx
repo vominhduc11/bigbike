@@ -4,13 +4,14 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { ReviewsSection } from "./ReviewsSection";
 
 vi.mock("next-intl", () => ({
+  useLocale: () => "vi",
   useTranslations: () => (key: string) => {
     const messages: Record<string, string> = {
       errorLoad: "Không thể tải đánh giá.",
-      formTitle: "Đánh giá của bạn",
       formStars: "Số sao",
       formName: "Tên của bạn",
       formComment: "Nhận xét",
+      writeButton: "Viết đánh giá",
       submit: "Gửi đánh giá",
       submitting: "Đang gửi...",
     };
@@ -94,7 +95,10 @@ describe("ReviewsSection", () => {
 
     expect(await screen.findByText("Reviewer One")).toBeInTheDocument();
     expect(screen.getByText("Reviewer Two")).toBeInTheDocument();
-    expect(screen.getByText("Đánh giá của bạn")).toBeInTheDocument();
+    // Khối đánh giá CHỈ để XEM: không còn form viết inline (đã chuyển sang modal),
+    // chỉ còn nút "Viết đánh giá" mở modal đó.
+    expect(screen.queryByText("Đánh giá của bạn")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Viết đánh giá" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /xem thêm/i })).not.toBeInTheDocument();
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));

@@ -265,17 +265,24 @@ public class CatalogReadService {
                 null,                       // promotionContent — detail only
                 null,                       // installationGuide — detail only
                 List.of(),                  // faqs — detail only
+                List.of(),                  // commitments — detail only
+                List.of(),                  // specStats — detail only
+                List.of(),                  // trustBadges — detail only
                 List.of(),                  // positiveNotes — detail only
                 List.of(),                  // negativeNotes — detail only
                 null,                       // warrantyMonths — detail only
                 null,                       // warrantyScope — detail only
                 null,                       // originBrandCountry — detail only
-                null,                       // originManufactureCountry — detail only
                 null,                       // weightGrams — detail only
                 null,                       // sizeGuide — detail only
+                null,                       // quickAnswerSummary — detail only
+                null,                       // suitabilityAdvisory — detail only
                 p.gender(),
                 List.of(),                  // relatedProducts — detail only
+                List.of(),                  // accessoryProducts — detail only
                 null,                       // descriptionBlocks — detail only
+                null,                       // tabs — detail only
+                null,                       // sectionVisibility — detail only
                 null,                       // seo — detail only
                 null,                       // translations — admin detail read only
                 p.createdAt(),

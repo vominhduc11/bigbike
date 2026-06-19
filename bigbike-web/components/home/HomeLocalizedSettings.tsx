@@ -19,7 +19,7 @@ import { sanitizeRichHtml } from "@/lib/utils/html";
  *
  * Cả ba component dùng chung queryKey ["home-settings", locale] nên React Query gộp thành 1 request.
  */
-function useEnSettingLookup(): (key: string) => string | undefined {
+export function useEnSettingLookup(): (key: string) => string | undefined {
   const locale = useLocale();
   const isAlt = locale !== DEFAULT_LOCALE;
 

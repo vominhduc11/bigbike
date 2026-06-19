@@ -123,12 +123,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "yearly",
       priority: 0.5,
     },
-    {
-      url: toCanonicalUrl(toPagePath("huong-dan-mua-hang")),
-      lastModified: STATIC_PAGE_DATES.howToBuy,
-      changeFrequency: "yearly",
-      priority: 0.5,
-    },
+    // /huong-dan-mua-hang merged into the guide builder; it now 301s to /huong-dan/mua-hang/,
+    // so it is no longer listed here (redirected URLs must not appear in the sitemap).
     {
       url: toCanonicalUrl(toPagePath("lien-he")),
       lastModified: STATIC_PAGE_DATES.contact,

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
-import { GuidePage, resolveGuideRoute } from "../GuidePage";
+import { getLocale } from "next-intl/server";
+import { GuidePage, resolveGuideMeta } from "../GuidePage";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 
 type Props = {
@@ -13,13 +13,13 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const [{ sub }, t] = await Promise.all([params, getTranslations("Guide")]);
-  const route = resolveGuideRoute(sub);
+  const [{ sub }, locale] = await Promise.all([params, getLocale()]);
+  const meta = await resolveGuideMeta(sub, locale);
 
   return buildPublicMetadata({
-    title: t(route.titleKey),
-    description: t(route.descriptionKey),
-    canonicalPath: route.path,
+    title: meta.title,
+    description: meta.description,
+    canonicalPath: meta.path,
     noIndex: false,
   });
 }

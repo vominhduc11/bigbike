@@ -140,7 +140,7 @@ export function HeroSlider({ slides }: HeroSliderProps) {
           loop={count > 1}
           autoplay={
             count > 1
-              ? { delay: 2000, disableOnInteraction: false }
+              ? { delay: 3000, disableOnInteraction: false }
               : false
           }
           onSwiper={(swiper) => {

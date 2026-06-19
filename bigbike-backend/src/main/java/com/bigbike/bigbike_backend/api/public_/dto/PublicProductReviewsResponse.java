@@ -16,7 +16,9 @@ public record PublicProductReviewsResponse(
             Long id,
             String authorName,
             int rating,
+            String title,
             String comment,
+            List<String> photos,
             String createdAt
     ) {
     }

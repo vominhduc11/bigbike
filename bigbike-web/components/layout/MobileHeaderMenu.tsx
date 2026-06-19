@@ -48,7 +48,7 @@ const NAV_LINK_BASE =
   "focus-visible:text-brand-on-dark focus-visible:outline-none pointer-coarse:min-h-11 " +
   "max-md:min-h-11 max-md:py-0 max-md:px-[14px] max-md:border-b " +
   "max-md:border-[color:var(--bb-mobile-shell-border)] max-md:text-ui-14 max-md:tracking-normal " +
-  "md:px-[25px] md:py-5 md:text-base " +
+  "md:px-[25px] md:py-5 md:text-body " +
   OUTLINE_MOBILE;
 
 const NAV_LINK_ACTIVE = "text-brand-on-dark md:text-brand-on-dark";
@@ -288,10 +288,10 @@ export function MobileHeaderMenu({
           {auth.status === "authenticated" ? (
             <div className={cn(ACCOUNT_BASE, "relative items-start")}>
               <div>
-                <p className="m-0 text-base font-semibold uppercase">{t("loggedInGreeting")}</p>
+                <p className="m-0 text-body font-semibold uppercase">{t("loggedInGreeting")}</p>
                 <span
                   title={auth.profile.email}
-                  className="block text-base font-semibold normal-case"
+                  className="block text-body font-semibold normal-case"
                 >
                   {auth.profile.displayName?.trim() || auth.profile.email}
                 </span>
@@ -319,7 +319,7 @@ export function MobileHeaderMenu({
           ) : (
             <div className={ACCOUNT_BASE}>
               <UserCircle2 size={40} aria-hidden className="shrink-0" />
-              <div className="text-base text-white md:text-foreground">
+              <div className="text-body text-white md:text-foreground">
                 <Link href={toRegisterPath()} onClick={close} className={AUTH_LINK}>
                   {t("register")}
                 </Link>
@@ -348,7 +348,7 @@ export function MobileHeaderMenu({
           </div>
 
           <div className="border-t text-left text-[#cecece] md:text-muted-foreground max-md:px-[14px] max-md:pt-[18px] max-md:pb-[calc(16px_+_env(safe-area-inset-bottom))] max-md:border-[color:var(--bb-mobile-shell-border)] max-md:bg-[var(--bb-mobile-shell-surface-2)] md:px-[25px] md:py-[30px] md:border-[#e8e8e8]">
-            <h2 className="m-0 font-body text-base font-semibold uppercase text-white md:text-foreground">
+            <h2 className="m-0 font-body text-body font-semibold uppercase text-white md:text-foreground">
               {t("shopInfoContactHeading")}
             </h2>
 

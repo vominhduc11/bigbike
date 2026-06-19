@@ -89,11 +89,13 @@ public class AdminPosController extends AdminControllerSupport {
                             detail.forceOutOfStock(), detail.publishStatus(),
                             detail.homepageBlock(), detail.homepageOrder(),
                             detail.rating(), detail.ratingCount(), detail.promotionContent(), detail.installationGuide(),
-                            detail.faqs(), detail.positiveNotes(), detail.negativeNotes(),
+                            detail.faqs(), detail.commitments(), detail.specStats(), detail.trustBadges(), detail.positiveNotes(), detail.negativeNotes(),
                             detail.warrantyMonths(), detail.warrantyScope(),
-                            detail.originBrandCountry(), detail.originManufactureCountry(),
-                            detail.weightGrams(), detail.sizeGuide(), detail.gender(),
-                            detail.relatedProducts(), detail.descriptionBlocks(),
+                            detail.originBrandCountry(),
+                            detail.weightGrams(), detail.sizeGuide(),
+                            detail.quickAnswerSummary(), detail.suitabilityAdvisory(), detail.gender(),
+                            detail.relatedProducts(), detail.accessoryProducts(), detail.descriptionBlocks(), detail.tabs(),
+                            detail.sectionVisibility(),
                             detail.seo(), detail.translations(), detail.createdAt(), detail.updatedAt());
                 })
                 .filter(java.util.Objects::nonNull)

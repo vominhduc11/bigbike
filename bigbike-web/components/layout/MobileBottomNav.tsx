@@ -18,7 +18,7 @@ function isHomePath(pathname: string) {
 // else is inlined. Colors resolve the dark→light reskin to the last-effective layer:
 // bg-surface-dark, mobile-shell-border, text-inverse-muted, brand-on-dark (active).
 const labelCls =
-  "text-xs leading-none max-w-full overflow-hidden text-ellipsis whitespace-nowrap max-[375px]:text-ui-10";
+  "text-overline leading-none max-w-full overflow-hidden text-ellipsis whitespace-nowrap max-[375px]:text-ui-10";
 
 function tabClass(active: boolean) {
   return cn(

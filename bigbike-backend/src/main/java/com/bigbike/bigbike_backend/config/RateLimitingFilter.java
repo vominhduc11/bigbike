@@ -40,7 +40,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Component
 public class RateLimitingFilter extends OncePerRequestFilter {
 
-    private enum LimitTier { LOGIN, REGISTER, PASSWORD_RESET, RESEND_VERIFICATION, REFRESH, CART, CHECKOUT, ORDER_LOOKUP, SEARCH, REVIEW }
+    private enum LimitTier { LOGIN, REGISTER, PASSWORD_RESET, RESEND_VERIFICATION, REFRESH, CART, CHECKOUT, ORDER_LOOKUP, SEARCH, REVIEW, REVIEW_PHOTO }
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final Logger log = LoggerFactory.getLogger(RateLimitingFilter.class);
@@ -79,6 +79,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     private final Map<String, Bucket> orderLookupBuckets         = boundedMap();
     private final Map<String, Bucket> searchBuckets              = boundedMap();
     private final Map<String, Bucket> reviewBuckets              = boundedMap();
+    private final Map<String, Bucket> reviewPhotoBuckets         = boundedMap();
 
     private static Map<String, Bucket> boundedMap() {
         return Collections.synchronizedMap(new LinkedHashMap<>(256, 0.75f, true) {
@@ -136,6 +137,10 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             if ("/api/v1/checkout".equals(path) || "/api/v1/orders/quick-buy".equals(path)) {
                 return LimitTier.CHECKOUT;
             }
+            // Public review photo upload: POST /api/v1/products/{productId}/reviews/photos
+            if (path.startsWith("/api/v1/products/") && path.endsWith("/reviews/photos")) {
+                return LimitTier.REVIEW_PHOTO;
+            }
             // Public review submit: POST /api/v1/products/{productId}/reviews
             if (path.startsWith("/api/v1/products/") && path.endsWith("/reviews")) {
                 return LimitTier.REVIEW;
@@ -177,6 +182,9 @@ public class RateLimitingFilter extends OncePerRequestFilter {
                     ip -> newBucket(60, Duration.ofMinutes(1)));
             case REVIEW        -> reviewBuckets.computeIfAbsent(clientIp,
                     ip -> newBucket(5, Duration.ofMinutes(1)));
+            // A single review can attach up to 10 photos (one request each) — allow a generous burst.
+            case REVIEW_PHOTO  -> reviewPhotoBuckets.computeIfAbsent(clientIp,
+                    ip -> newBucket(30, Duration.ofMinutes(1)));
         };
     }
 

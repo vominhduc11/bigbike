@@ -102,7 +102,7 @@ function MegaPanel({
                           <Link
                             href={normalizeMenuUrl(item.url)}
                             className={cn(
-                              "block py-1 font-body text-sm leading-snug text-foreground/75 no-underline transition-colors duration-150 hover:text-brand",
+                              "block py-1 font-body text-caption leading-snug text-foreground/75 no-underline transition-colors duration-150 hover:text-brand",
                               itemActive && "text-brand",
                             )}
                             target={item.openInNewTab ? "_blank" : undefined}

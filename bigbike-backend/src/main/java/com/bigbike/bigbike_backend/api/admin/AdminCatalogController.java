@@ -1,7 +1,6 @@
 package com.bigbike.bigbike_backend.api.admin;
 
 import com.bigbike.bigbike_backend.api.admin.dto.ProductPublishRequest;
-import com.bigbike.bigbike_backend.api.admin.dto.ProductTagsRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.SetHomepageBlocksRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertBrandRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertCategoryRequest;
@@ -15,7 +14,6 @@ import com.bigbike.bigbike_backend.domain.catalog.Product;
 import java.util.List;
 import com.bigbike.bigbike_backend.service.admin.AdminCatalogMutationService;
 import com.bigbike.bigbike_backend.service.admin.AdminCatalogReadService;
-import com.bigbike.bigbike_backend.service.admin.AdminProductTagService;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -53,7 +51,6 @@ public class AdminCatalogController extends AdminControllerSupport {
 
     private final AdminCatalogReadService adminCatalogReadService;
     private final AdminCatalogMutationService adminCatalogMutationService;
-    private final AdminProductTagService adminProductTagService;
     private final DevAdminAuthService devAdminAuthService;
     private final ApiResponseFactory apiResponseFactory;
 
@@ -135,25 +132,6 @@ public class AdminCatalogController extends AdminControllerSupport {
     ) {
         devAdminAuthService.requirePermission(request, "products.update");
         return apiResponseFactory.data(adminCatalogMutationService.updateProduct(id, payload, resolveAdminId()), request);
-    }
-
-    @GetMapping("/products/{id}/tags")
-    public ApiDataResponse<List<String>> getProductTags(
-            @PathVariable @Pattern(regexp = ID_REGEX, message = "Invalid id.") String id,
-            HttpServletRequest request
-    ) {
-        devAdminAuthService.requirePermission(request, "products.read");
-        return apiResponseFactory.data(adminProductTagService.getProductTags(id), request);
-    }
-
-    @PutMapping("/products/{id}/tags")
-    public ApiDataResponse<List<String>> setProductTags(
-            @PathVariable @Pattern(regexp = ID_REGEX, message = "Invalid id.") String id,
-            @Valid @RequestBody ProductTagsRequest payload,
-            HttpServletRequest request
-    ) {
-        devAdminAuthService.requirePermission(request, "products.update");
-        return apiResponseFactory.data(adminProductTagService.setProductTags(id, payload.tags()), request);
     }
 
     @PatchMapping("/products/{id}/publish")

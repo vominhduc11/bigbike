@@ -3,9 +3,11 @@ package com.bigbike.bigbike_backend.persistence.entity.catalog;
 import lombok.Getter;
 import lombok.Setter;
 import com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock;
+import com.bigbike.bigbike_backend.domain.catalog.ProductTab;
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.persistence.converter.DescriptionBlocksConverter;
+import com.bigbike.bigbike_backend.persistence.converter.ProductTabsConverter;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
@@ -68,14 +70,6 @@ public class ProductEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
     private CategoryEntity category;
-
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "product_tag_map",
-            joinColumns = @JoinColumn(name = "product_id"),
-            inverseJoinColumns = @JoinColumn(name = "tag_id")
-    )
-    private Set<ProductTagEntity> tags = new LinkedHashSet<>();
 
     private String imageId;
 
@@ -169,11 +163,22 @@ public class ProductEntity {
     @Column(name = "origin_brand_country", length = 120)
     private String originBrandCountry;
 
-    @Column(name = "origin_manufacture_country", length = 120)
-    private String originManufactureCountry;
-
     @Column(name = "size_guide", columnDefinition = "text")
     private String sizeGuide;
+
+    // "Hiển thị trên web" (V245) — admin bật/tắt từng section PDP. Opaque JSON string {sectionKey: boolean};
+    // backend chỉ truyền qua, admin serialize / web parse. Null = chưa quyết → web hiện theo nội dung (legacy).
+    @Column(name = "section_visibility", columnDefinition = "text")
+    private String sectionVisibility;
+
+    // PDP layout fields (V236–V237). Bilingual dual-text (vi canonical + _en); detail-only.
+    @Column(name = "quick_answer_summary", columnDefinition = "text")
+    private String quickAnswerSummary;
+
+    // "Phù hợp với ai" — JSON array các thẻ [{audience, advice, linkLabel?, linkUrl?}] (V237; format V240).
+    // Opaque string giống size_guide; web parse JSON khi render.
+    @Column(name = "suitability_advisory", columnDefinition = "text")
+    private String suitabilityAdvisory;
 
     @Column(name = "gender", length = 20)
     private String gender;
@@ -183,6 +188,25 @@ public class ProductEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "description_blocks", columnDefinition = "jsonb")
     private List<DescriptionBlock> descriptionBlocks;
+
+    /**
+     * English structured description blocks (V229). Null when English is authored as legacy HTML
+     * (description_en) or not translated. Rendered to description_en HTML on save, mirroring the
+     * Vietnamese description_blocks pipeline.
+     */
+    @Convert(converter = DescriptionBlocksConverter.class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "description_blocks_en", columnDefinition = "jsonb")
+    private List<DescriptionBlock> descriptionBlocksEn;
+
+    /**
+     * Per-product PDP tab configuration (V231). Null = product uses the default tab set. Stored canonical:
+     * each tab's {@code label}/{@code blocks} = Vietnamese, {@code labelEn}/{@code blocksEn} = English.
+     */
+    @Convert(converter = ProductTabsConverter.class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "product_tabs", columnDefinition = "jsonb")
+    private List<ProductTab> productTabs;
 
     private String seoTitle;
 
@@ -225,6 +249,12 @@ public class ProductEntity {
     @Column(name = "seo_description_en", columnDefinition = "text")
     private String seoDescriptionEn;
 
+    @Column(name = "quick_answer_summary_en", columnDefinition = "text")
+    private String quickAnswerSummaryEn;
+
+    @Column(name = "suitability_advisory_en", columnDefinition = "text")
+    private String suitabilityAdvisoryEn;
+
     @Column(nullable = false)
     private Instant createdAt;
 
@@ -245,7 +275,16 @@ public class ProductEntity {
     private List<ProductSpecificationEntity> specifications;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<ProductSpecStatEntity> specStats;
+
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<ProductFaqEntity> faqs;
+
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<ProductCommitmentEntity> commitments;
+
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<ProductTrustBadgeEntity> trustBadges;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<ProductHighlightEntity> highlights;
@@ -266,6 +305,20 @@ public class ProductEntity {
     @OrderColumn(name = "sort_order")
     @BatchSize(size = 50)
     private List<ProductEntity> relatedProducts = new ArrayList<>();
+
+    /**
+     * Admin-curated accessory products ("Phụ kiện") shown on the PDP. Sản phẩm bán kèm
+     * chọn từ kho. Self-referential, ordered. No fallback — empty list hides the section.
+     */
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "product_accessory_product_map",
+            joinColumns = @JoinColumn(name = "product_id"),
+            inverseJoinColumns = @JoinColumn(name = "accessory_product_id")
+    )
+    @OrderColumn(name = "sort_order")
+    @BatchSize(size = 50)
+    private List<ProductEntity> accessoryProducts = new ArrayList<>();
 
     public void setHomepageBlock(com.bigbike.bigbike_backend.domain.catalog.HomepageBlock homepageBlock) {
         this.homepageBlock = homepageBlock == null

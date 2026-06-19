@@ -145,13 +145,85 @@ export type ProductSpecification = {
   group?: string;
 };
 
+/**
+ * "Specs Dashboard" — một ô số liệu nổi bật ngay dưới khu vực mua hàng trên PDP (V235).
+ * `value` là số liệu lớn (vd "24 tháng"), `label` là nhãn (vd "Bảo hành"). Admin quản theo
+ * từng sản phẩm, tối đa 4 ô. Là "đòn chốt" bán hàng, KHÔNG phải thông số kỹ thuật.
+ */
+export type ProductSpecStat = {
+  value: string;
+  label: string;
+};
+
+/**
+ * Structured description block (V139 + V229). Authored in the admin BlockEditor and rendered on the
+ * PDP. Shapes mirror the admin editor / backend `DescriptionBlock` polymorphic JSON.
+ */
+export type DescriptionBlock =
+  | { type: "heading"; level?: number; text?: string }
+  | { type: "paragraph"; html?: string }
+  | { type: "list"; style?: "bulleted" | "numbered"; items?: string[] }
+  | { type: "image"; url?: string; alt?: string; caption?: string }
+  | { type: "video"; provider?: "youtube" | "upload"; url?: string; caption?: string }
+  | { type: "callout"; variant?: "info" | "warning" | "note"; html?: string }
+  | { type: "divider" }
+  | {
+      type: "feature";
+      side?: "auto" | "left" | "right";
+      url?: string;
+      alt?: string;
+      caption?: string;
+      subheading?: string;
+      heading?: string;
+      html?: string;
+      listStyle?: "bulleted" | "numbered";
+      items?: string[];
+    };
+
+/**
+ * Cấu hình một tab PDP quản lý theo từng sản phẩm (V231). Public read trả `label`/`blocks` đã resolve
+ * theo ngôn ngữ. `type` builtin (description/reviews/specs/installation/faq) lấy nội dung từ field sẵn
+ * có; `custom` dùng `blocks`.
+ */
+export type ProductTabType =
+  | "description"
+  | "reviews"
+  | "specs"
+  | "installation"
+  | "faq"
+  | "custom";
+
+export type ProductTab = {
+  id: string;
+  type: ProductTabType;
+  enabled?: boolean;
+  sortOrder?: number | null;
+  /** Nhãn đã resolve theo ngôn ngữ; trống = dùng nhãn mặc định của tab builtin. */
+  label?: string | null;
+  /** Nội dung khối (tab tự do), đã resolve theo ngôn ngữ. */
+  blocks?: DescriptionBlock[] | null;
+};
+
 export type ProductFaq = {
   question: string;
   answer: string;
 };
 
+/** Một dòng cam kết dưới nút mua hàng (V232) — admin quản theo từng sản phẩm. `icon` là key trong bộ icon dựng sẵn ở web. */
+export type ProductCommitment = {
+  icon: string;
+  title: string;
+  subtitle?: string | null;
+};
+
 /** Ưu/Nhược điểm (V175). `content` đã resolve theo ngôn ngữ; `contentEn` chỉ có trên admin. */
 export type ProductHighlight = {
+  content: string;
+  contentEn?: string | null;
+};
+
+/** Một nhãn trên dải tin cậy TRÊN tên sản phẩm (V233) — admin quản theo từng sản phẩm. `content` đã resolve theo ngôn ngữ. */
+export type TrustBadge = {
   content: string;
   contentEn?: string | null;
 };
@@ -211,12 +283,22 @@ export type Product = {
   contentBottom?: string | null;
   /** Rich-HTML promotion copy rendered in the PDP "Khuyến mãi" tab. */
   promotionContent?: string | null;
-  /** Rich-HTML installation guide rendered in PDP section "Hướng dẫn lắp đặt". Detail-only. */
+  /** "Hướng dẫn lắp đặt" — JSON object `{ steps: [{icon, title, body, tip?, warning?}], maintenance? }`
+   *  (V242; trước đó là rich-HTML). Parse qua `parseInstallationGuide`. Detail-only. */
   installationGuide?: string | null;
-  /** Structured content blocks for the product description. Detail-only; null in list responses. */
-  descriptionBlocks?: { type: string; [key: string]: unknown }[] | null;
+  /** Structured content blocks for the product description. Detail-only; null in list responses.
+   *  Locale-resolved server-side (V229): EN blocks for `?lang=en`, falling back to VI. */
+  descriptionBlocks?: DescriptionBlock[] | null;
+  /** Per-product PDP tab configuration (V231). Null/empty → mặc định. Locale-resolved. Detail-only. */
+  tabs?: ProductTab[] | null;
   /** Product FAQ entries rendered in PDP section "Câu hỏi thường gặp". Detail-only. */
   faqs?: ProductFaq[];
+  /** Dòng cam kết dưới nút mua hàng (V232) — admin quản theo từng sản phẩm. Detail-only; rỗng → web ẩn khối. */
+  commitments?: ProductCommitment[];
+  /** "Specs Dashboard" — ô số liệu nổi bật dưới khu vực mua hàng (V235), tối đa 4. Detail-only; rỗng → web ẩn khối. */
+  specStats?: ProductSpecStat[];
+  /** Dải tin cậy trên tên sản phẩm (V233) — admin quản theo từng sản phẩm. Detail-only; rỗng → web ẩn dải. */
+  trustBadges?: TrustBadge[];
   /** Ưu điểm (schema.org positiveNotes). Detail-only; empty in list. */
   positiveNotes?: ProductHighlight[];
   /** Nhược điểm (schema.org negativeNotes). Detail-only; empty in list. */
@@ -227,12 +309,19 @@ export type Product = {
   warrantyScope?: string | null;
   /** "Thương hiệu [nước]". Detail-only. */
   originBrandCountry?: string | null;
-  /** "Sản xuất tại [nước]". Detail-only. */
-  originManufactureCountry?: string | null;
   /** Trọng lượng tính bằng gram. Detail-only. */
   weightGrams?: number | null;
   /** Bảng size dạng HTML (rich-text). Detail-only. */
   sizeGuide?: string | null;
+  /** "Hiển thị trên web" (V245) — opaque JSON string `{sectionKey: boolean}`; admin bật/tắt từng
+   *  section PDP. Null/thiếu = chưa cấu hình → hiện theo nội dung (legacy). Parse qua
+   *  `parseSectionVisibility`. Detail-only. */
+  sectionVisibility?: string | null;
+  /** "Quick Answer" — đoạn AIO 40–60 từ, blockquote trước H2 đầu (V236). Detail-only. */
+  quickAnswerSummary?: string | null;
+  /** "Phù hợp với ai" — JSON array các thẻ `[{audience, advice, linkLabel?, linkUrl?}]`
+   *  (V237; format đổi ở V240). Parse qua `parseSuitabilityCards`. Detail-only. */
+  suitabilityAdvisory?: string | null;
   /** Giới tính mục tiêu: "Nam" | "Nữ" | "Unisex". Null = chưa gắn. */
   gender?: string | null;
   /**
@@ -240,6 +329,11 @@ export type Product = {
    * List-view shape. Detail-only; empty hides the section (no category fallback).
    */
   relatedProducts?: Product[];
+  /**
+   * Admin-curated accessory products ("Phụ kiện" — sản phẩm bán kèm) shown in the PDP
+   * "Phụ kiện" section. List-view shape. Detail-only; empty hides the section.
+   */
+  accessoryProducts?: Product[];
   seo?: SeoMeta;
   createdAt: string;
   updatedAt: string;
@@ -422,6 +516,36 @@ export type PublicSiteSetting = {
   settingKey: string;
   settingValue: string;
   settingGroup: string | null;
+};
+
+/** One enabled card of the admin-managed guide landing page (/huong-dan). Title/desc resolved by lang. */
+export type GuideEntry = {
+  pathSegment: string;
+  pageSlug: string;
+  icon: string | null;
+  title: string;
+  description: string | null;
+  sortOrder: number;
+};
+
+/** The admin-managed guide landing page (/huong-dan): hero + grid of cards. Resolved by lang. */
+export type GuidePageLayout = {
+  heroTitle: string | null;
+  heroImageUrl: string | null;
+  entries: GuideEntry[];
+};
+
+/** One enabled block of the admin-managed contact page (/lien-he). Labels/HTML already resolved by lang. */
+export type ContactBlock = {
+  type: "channel" | "address" | "hours" | "map" | "richtext";
+  column: "main" | "online";
+  sortOrder: number;
+  icon: string | null;
+  label: string | null;
+  bindKey: string | null;
+  value: string | null;
+  href: string | null;
+  html: string | null;
 };
 
 export type ClientError = {

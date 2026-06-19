@@ -38,7 +38,7 @@ export function SocialLoginButtons({ returnTo }: { returnTo: string }) {
   // `!` (Tailwind v4 important) để thắng reset toàn cục của theme WP
   // (`a{color:#007bff;background-color:transparent}` nạp sau Tailwind).
   const baseClass =
-    "flex h-[52px] w-full items-center justify-center gap-3 text-sm font-semibold transition-colors no-underline!";
+    "flex h-[52px] w-full items-center justify-center gap-3 text-caption font-semibold transition-colors no-underline!";
 
   return (
     <div className="mt-6 flex flex-col gap-3">

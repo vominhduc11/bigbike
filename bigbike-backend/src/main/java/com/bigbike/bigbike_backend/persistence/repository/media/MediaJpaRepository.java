@@ -12,5 +12,7 @@ public interface MediaJpaRepository extends JpaRepository<MediaEntity, UUID>,
 
     Optional<MediaEntity> findByLegacyId(Long legacyId);
 
+    Optional<MediaEntity> findFirstByFilePath(String filePath);
+
     List<MediaEntity> findByStorageProvider(String storageProvider);
 }

@@ -84,7 +84,7 @@ function ReturnDetailPanel({ id, onClose }: { id: string; onClose: () => void })
           </div>
         )}
 
-        {error && <p className="text-brand text-sm m-0 p-6">{error}</p>}
+        {error && <p className="text-brand text-caption m-0 p-6">{error}</p>}
 
         {detail && !loading && (
           <div className="flex-1 overflow-y-auto py-5 px-[22px] flex flex-col gap-[18px]">
@@ -101,7 +101,7 @@ function ReturnDetailPanel({ id, onClose }: { id: string; onClose: () => void })
                 detail.refundAmount > 0 ? { label: t("metaRefund"), value: <b className="text-foreground font-semibold">{formatVnd(detail.refundAmount)}</b> } : null,
                 { label: t("metaCreatedAt"), value: <b className="text-foreground font-semibold"><LocalDate value={detail.createdAt} dateStyle="slashPad" fallback="—" /></b> },
               ].filter(Boolean).map((row, i) => (
-                <div key={i} className="flex justify-between items-center text-sm">
+                <div key={i} className="flex justify-between items-center text-caption">
                   <span className="text-muted-foreground">{row!.label}</span>
                   {row!.value}
                 </div>
@@ -110,16 +110,16 @@ function ReturnDetailPanel({ id, onClose }: { id: string; onClose: () => void })
 
             {/* Customer note */}
             {detail.customerNote && (
-              <div className="py-3 px-[14px] text-sm leading-body bg-[var(--bb-bg-surface-raised)] text-muted-foreground [&_p]:m-0">
-                <p className="text-sm font-bold tracking-display uppercase mb-[6px]">{t("customerNoteHeading")}</p>
+              <div className="py-3 px-[14px] text-caption leading-body bg-[var(--bb-bg-surface-raised)] text-muted-foreground [&_p]:m-0">
+                <p className="text-caption font-bold tracking-display uppercase mb-[6px]">{t("customerNoteHeading")}</p>
                 <p>{detail.customerNote}</p>
               </div>
             )}
 
             {/* Admin note */}
             {detail.adminNote && (
-              <div className="py-3 px-[14px] text-sm leading-body bg-[var(--bb-state-warning-bg)] text-state-warning-text border border-[var(--bb-state-warning-border)] [&_p]:m-0">
-                <p className="text-sm font-bold tracking-display uppercase mb-[6px]">{t("adminNoteHeading")}</p>
+              <div className="py-3 px-[14px] text-caption leading-body bg-[var(--bb-state-warning-bg)] text-state-warning-text border border-[var(--bb-state-warning-border)] [&_p]:m-0">
+                <p className="text-caption font-bold tracking-display uppercase mb-[6px]">{t("adminNoteHeading")}</p>
                 <p>{detail.adminNote}</p>
               </div>
             )}
@@ -128,7 +128,7 @@ function ReturnDetailPanel({ id, onClose }: { id: string; onClose: () => void })
             {detail.items && detail.items.length > 0 && (
               <div>
                 <p className={cn(fieldLabel, "mb-[10px]")}>{t("itemsHeading")}</p>
-                <table className="w-full border-collapse text-sm text-foreground">
+                <table className="w-full border-collapse text-caption text-foreground">
                   <thead>
                     <tr>
                       <th className={cn(metaLabel, "text-left py-1.5 border-b border-border")}>{t("colProduct")}</th>
@@ -141,7 +141,7 @@ function ReturnDetailPanel({ id, onClose }: { id: string; onClose: () => void })
                       <tr key={item.id}>
                         <td className="py-2 border-b border-border align-middle">
                           <span>{item.productName}</span>
-                          {item.variantName && <span className="text-muted-foreground text-sm block">{item.variantName}</span>}
+                          {item.variantName && <span className="text-muted-foreground text-caption block">{item.variantName}</span>}
                         </td>
                         <td className="text-center py-2 border-b border-border align-middle">{item.quantity}</td>
                         <td className="text-right py-2 border-b border-border align-middle">{formatVnd(item.unitPrice)}</td>
@@ -161,12 +161,12 @@ function ReturnDetailPanel({ id, onClose }: { id: string; onClose: () => void })
                     <li key={i} className="flex gap-3 pb-4 relative last:pb-0 [&:not(:last-child)]:before:content-[''] [&:not(:last-child)]:before:absolute [&:not(:last-child)]:before:left-[5px] [&:not(:last-child)]:before:top-[14px] [&:not(:last-child)]:before:bottom-0 [&:not(:last-child)]:before:w-px [&:not(:last-child)]:before:bg-border">
                       <span className="bb-round w-[11px] h-[11px] rounded-full bg-brand flex-shrink-0 mt-[2px]" />
                       <div className="flex-1">
-                        <p className="text-sm font-semibold text-foreground m-0 mb-[3px]">
+                        <p className="text-caption font-semibold text-foreground m-0 mb-[3px]">
                           {h.fromStatus ? `${statusLabel(h.fromStatus)} → ` : ""}
                           {statusLabel(h.toStatus)}
                         </p>
-                        <p className="text-sm text-muted-foreground m-0 mb-[3px]"><LocalDate value={h.createdAt} dateStyle="slashPad" fallback="—" /></p>
-                        {h.note && <p className="text-sm text-muted-foreground m-0 italic">{h.note}</p>}
+                        <p className="text-caption text-muted-foreground m-0 mb-[3px]"><LocalDate value={h.createdAt} dateStyle="slashPad" fallback="—" /></p>
+                        {h.note && <p className="text-caption text-muted-foreground m-0 italic">{h.note}</p>}
                       </div>
                     </li>
                   ))}
@@ -323,7 +323,7 @@ export function ReturnsContent() {
       <WpAccountSectionHeading title={t("heading")} />
 
       <div className="flex justify-between items-start mb-5 gap-4 flex-wrap">
-        <p className="text-sm text-muted-foreground m-0">{t("subtitle")}</p>
+        <p className="text-caption text-muted-foreground m-0">{t("subtitle")}</p>
         {!showForm && (
           <Button type="button" variant="primary" size="sm" onClick={openForm}>
             {t("createButton")}
@@ -335,7 +335,7 @@ export function ReturnsContent() {
         <FormNotice tone="success" className="p-[14px_18px] mb-5"><p className="m-0">{formSuccess}</p></FormNotice>
       )}
 
-      {error && <p className="text-brand text-sm mb-4 m-0">{error}</p>}
+      {error && <p className="text-brand text-caption mb-4 m-0">{error}</p>}
 
       {/* Create return form */}
       {showForm && (
@@ -351,7 +351,7 @@ export function ReturnsContent() {
                 {ordersLoading ? (
                   <span className={cn(skelBase, "h-[0.85em]")} style={{ width: "100%", display: "block", height: 38 }} />
                 ) : returnableOrders.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-caption text-muted-foreground">
                     {t("noEligibleOrders")}
                   </p>
                 ) : (
@@ -375,7 +375,7 @@ export function ReturnsContent() {
                   {eligibilityLoading ? (
                     <span className={cn(skelBase, "h-[0.85em]")} style={{ width: "100%", display: "block", height: 32 }} />
                   ) : !eligibility ? (
-                    <p className="text-sm text-muted-foreground">{t("noItemsInOrder")}</p>
+                    <p className="text-caption text-muted-foreground">{t("noItemsInOrder")}</p>
                   ) : !eligibility.eligible ? (
                     <FormNotice tone="warning" className="p-[14px_18px]"><p className="m-0">{t(`eligibility.${eligibility.reason as ReturnEligibilityReason}`)}</p></FormNotice>
                   ) : (
@@ -388,7 +388,7 @@ export function ReturnsContent() {
                           checked={itemSelections[it.orderLineItemId]?.selected ?? false}
                           onCheckedChange={() => toggleLineItem(it.orderLineItemId)}
                         />
-                        <label htmlFor={`dt-item-${it.orderLineItemId}`} className="flex-1 cursor-pointer text-sm">
+                        <label htmlFor={`dt-item-${it.orderLineItemId}`} className="flex-1 cursor-pointer text-caption">
                           {it.productName}
                           {it.variantName ? <span className="text-muted-foreground"> ({it.variantName})</span> : null}
                           <span className="ml-1.5 text-muted-foreground">×{it.returnableQuantity}</span>
@@ -467,7 +467,7 @@ export function ReturnsContent() {
         </div>
       ) : returns.length === 0 ? (
         <div className="text-center py-[60px] text-muted-foreground">
-          <p className="text-muted-foreground text-sm m-0">{t("empty")}</p>
+          <p className="text-muted-foreground text-caption m-0">{t("empty")}</p>
         </div>
       ) : (
         <>

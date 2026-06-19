@@ -2,11 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
-import type { ImageAsset, Product, ProductPrice, ProductStockState, ProductVariant, VideoAsset } from "@/lib/contracts/public";
+import { useLocale, useTranslations } from "next-intl";
+import type { ImageAsset, Product, ProductCommitment, ProductPrice, ProductStockState, ProductVariant, VideoAsset } from "@/lib/contracts/public";
 import { useCart } from "@/lib/cart-context";
 import { derivePricing } from "@/lib/pricing";
-import { formatVndNumber, resolveMediaUrl, safeText, toLegacyWpMediaUrl } from "@/lib/utils/format";
+import { formatVndNumber, resolveMediaUrl, safeText, toLegacyWpMediaUrl, zaloHref } from "@/lib/utils/format";
 import {
   collectAttributeNames,
   findColorPreviewVariant,
@@ -17,22 +17,58 @@ import {
 import { ProductGallery } from "@/components/catalog/ProductGallery";
 import { hasApprovedReviews } from "@/lib/rating";
 import { RatingStars } from "@/components/ui/RatingStars";
-import { useLocalizedField } from "@/components/i18n/LocalizedContent";
+import { ZaloIcon } from "@/components/ui/ZaloIcon";
+import { useLocalizedField, LHtml } from "@/components/i18n/LocalizedContent";
 import { sanitizeRichHtml } from "@/lib/utils/html";
+import { parseSectionVisibility, isSectionVisible } from "@/lib/utils/section-visibility";
 import { MobileStickyPurchaseBar } from "@/components/catalog/MobileStickyPurchaseBar";
-import { QuickBuyModal } from "@/components/catalog/QuickBuyModal";
-import { QuickBuySuccessModal } from "@/components/catalog/QuickBuySuccessModal";
-import { Minus, Plus } from "lucide-react";
+import {
+  Award,
+  BadgeCheck,
+  Clock,
+  CreditCard,
+  Gift,
+  Headphones,
+  MapPin,
+  Minus,
+  Package,
+  Plus,
+  RefreshCw,
+  ShieldCheck,
+  ShoppingCart,
+  Truck,
+  Wrench,
+  type LucideIcon,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDetachWpHandlers } from "@/lib/hooks/useDetachWpHandlers";
+import { openWriteReviewDialog } from "@/components/catalog/writeReviewBus";
+
+// Bộ icon dựng sẵn cho khối cam kết (V232) — admin chọn theo key, web map ra lucide.
+// Web KHÔNG nạp Font Awesome (fa-* vô hình) nên phải dùng lucide. Key lạ → ShieldCheck.
+const COMMITMENT_ICON_MAP: Record<string, LucideIcon> = {
+  truck: Truck,
+  "refresh-cw": RefreshCw,
+  "shield-check": ShieldCheck,
+  "badge-check": BadgeCheck,
+  "credit-card": CreditCard,
+  headphones: Headphones,
+  package: Package,
+  gift: Gift,
+  clock: Clock,
+  "map-pin": MapPin,
+  wrench: Wrench,
+  award: Award,
+};
 
 type Props = {
   product: Product;
   gallery: ImageAsset[];
   videos: VideoAsset[];
-  shortDescriptionHtml: string;
   rating: number | null;
   ratingCount: number | null;
+  /** Zalo URL từ settings (zalo_url) — dùng cho nút tư vấn thay thế "Mua ngay". */
+  zaloUrl?: string;
   /** Live admin preview: render straight from the postMessage draft, no client snapshot poll. */
   previewMode?: boolean;
 };
@@ -63,13 +99,18 @@ export function WpPurchaseSection({
   product,
   gallery,
   videos,
-  shortDescriptionHtml,
   rating,
   ratingCount,
+  zaloUrl,
   previewMode = false,
 }: Props) {
   const tb = useTranslations("PdpBuyBox");
+  const locale = useLocale();
   const { addToCart } = useCart();
+
+  // "Hiển thị trên web" (V245) — admin bật/tắt video / dải tin cậy / khối cam kết của khu mua hàng.
+  const sectionVis = parseSectionVisibility(product.sectionVisibility);
+  const vis = (key: string) => isSectionVisible(sectionVis, key);
 
   // home.min.js `choose_color_and_size()` bind change vào `.variations_form`
   // (delegated `.variation-radios input`) → khi chọn đủ biến thể bắn AJAX
@@ -82,9 +123,10 @@ export function WpPurchaseSection({
   // → tồn đổi liên tục, không cần SEO). Props ISR là giá trị ban đầu hợp lệ nên cập nhật
   // liền mạch, KHÔNG layout-shift/skeleton; refetch khi quay lại tab.
   const { data: snapshot } = useQuery<ProductSnapshot>({
-    queryKey: ["product-snapshot", product.slug],
+    // locale trong key → đổi ngôn ngữ refetch lại để tên màu/size đổi theo.
+    queryKey: ["product-snapshot", product.slug, locale],
     queryFn: async () => {
-      const res = await fetch(`/api/products/${product.slug}/snapshot/`);
+      const res = await fetch(`/api/products/${product.slug}/snapshot/?lang=${locale}`);
       if (!res.ok) throw new Error("snapshot");
       return res.json() as Promise<ProductSnapshot>;
     },
@@ -120,12 +162,6 @@ export function WpPurchaseSection({
   const [quantity, setQuantity] = useState(1);
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState("");
-  const [quickBuyOpen, setQuickBuyOpen] = useState(false);
-  const [successOrder, setSuccessOrder] = useState<{
-    orderNumber: string;
-    orderKey: string;
-    paymentMethod: string;
-  } | null>(null);
 
   const selectedVariant = useMemo(
     () => (hasVariants ? findMatchingVariant(variants, selectedOptions, { requireAll: true }) : null),
@@ -141,8 +177,6 @@ export function WpPurchaseSection({
   const priceSource = selectedVariant?.price ?? freshPrice;
   const { current, compare } = derivePricing(priceSource);
   const showOld = compare != null && compare > current;
-
-  const requiresSelection = hasVariants && !selectedVariant;
 
   // STOCK_RULE_009 — hiển thị buy-box PDP (display-only, KHÔNG đổi điều kiện mua
   // ở STOCK_RULE_005/006):
@@ -185,8 +219,19 @@ export function WpPurchaseSection({
     e.preventDefault();
     window.dispatchEvent(new CustomEvent("bb:pdp-activate-tab", { detail: "reviews" }));
     requestAnimationFrame(() => {
-      document.getElementById("reviews")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      // Đánh giá hiện 2 bản theo breakpoint (desktop = khối riêng, mobile = trong tab) — cùng
+      // id="reviews". Cuộn tới bản đang HIỂN THỊ (offsetParent != null = không bị display:none).
+      const targets = Array.from(document.querySelectorAll<HTMLElement>('[id="reviews"]'));
+      const visible = targets.find((el) => el.offsetParent !== null) ?? targets[0];
+      visible?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
+  }
+
+  // Viết đánh giá: mở modal (WriteReviewDialog) thay vì cuộn xuống khối đánh giá.
+  // Khối đánh giá dưới chỉ để XEM; mọi thao tác viết đều qua modal này.
+  function openWriteReview(e: React.MouseEvent<HTMLAnchorElement>) {
+    e.preventDefault();
+    openWriteReviewDialog();
   }
 
   function pick(attr: string, value: string) {
@@ -211,18 +256,36 @@ export function WpPurchaseSection({
     }
   }
 
-  // Đổi ngôn ngữ ở CLIENT: tên + mô tả ngắn lấy bản EN từ LocalizedContentProvider nếu có,
-  // fallback về bản `vi` (prop) — render đầu khớp server (giữ ISR/SEO).
+  // Đổi ngôn ngữ ở CLIENT: tên lấy bản EN từ LocalizedContentProvider nếu có, fallback bản `vi`
+  // (render đầu khớp server, giữ ISR/SEO).
   const enName = useLocalizedField<string>("name");
-  const enShortDesc = useLocalizedField<string>("shortDescription");
   const name = safeText(
     typeof enName === "string" && enName.trim() ? enName : product.name,
     "",
   );
-  const localizedShortDescriptionHtml =
-    typeof enShortDesc === "string" && enShortDesc.trim()
-      ? sanitizeRichHtml(enShortDesc)
-      : shortDescriptionHtml;
+
+  // Mô tả ngắn nằm trong khối mua hàng (dưới đánh giá, trên phần chọn biến thể) — vị trí gốc.
+  // Đổi ngôn ngữ qua LHtml (field "shortDescription"); trống → không render.
+  const shortDescriptionHtml = product.shortDescription
+    ? sanitizeRichHtml(product.shortDescription)
+    : "";
+
+  // Eyebrow (danh mục / thương hiệu·xuất xứ) ngay trên tiêu đề — port mockup PDP. GIỮ design
+  // system web (text-brand + font-heading uppercase), KHÔNG dùng đỏ/Barlow của mockup.
+  // Eyebrow lấy từ dữ liệu sản phẩm sẵn có.
+  const eyebrowCategory =
+    product.category?.slug === "chua-phan-loai" ? "" : safeText(product.category?.name, "");
+  const eyebrowBrand = safeText(product.originBrandCountry, "") || safeText(product.brand?.name, "");
+  const eyebrow = [eyebrowCategory, eyebrowBrand].filter(Boolean).join(" / ");
+
+  // Khối "cam kết" dưới nút mua (V232) — giờ quản theo TỪNG sản phẩm; rỗng/đã tắt → ẩn cả khối.
+  const commitments: ProductCommitment[] = vis("commitments") ? (product.commitments ?? []) : [];
+
+  // Dải tín hiệu tin cậy trên tên sản phẩm (V233) — admin quản theo TỪNG sản phẩm; nội dung đã
+  // resolve theo ngôn ngữ ở backend. Rỗng/đã tắt → ẩn dải.
+  const trustItems = (vis("trustBadges") ? (product.trustBadges ?? []) : [])
+    .map((b) => safeText(b.content, ""))
+    .filter(Boolean);
 
   return (
     <>
@@ -232,11 +295,11 @@ export function WpPurchaseSection({
           (cover-đầu + khử trùng + theo màu) do ProductGallery tự xử lý. Video được
           ghép thẳng vào dải gallery (sau ảnh) — đúng như code cũ, KHÔNG tách tab
           "Videos" riêng. ProductGallery chỉ hiện video khi chưa chọn biến thể. */}
-      <div className="col-md-7 min-w-0 max-[1023px]:!flex-[0_0_100%] max-[1023px]:!max-w-full">
+      <div className="col-md-7 min-w-0 max-[1023px]:!flex-[0_0_100%] max-[1023px]:!max-w-full lg:!sticky lg:z-20 lg:self-start lg:top-[calc(var(--bb-header-height)+1rem)]">
         <ProductGallery
           mainImage={product.image}
           gallery={gallery}
-          videos={videos}
+          videos={vis("videos") ? videos : []}
           altFallback={name}
           variantImage={colorVariant?.image ?? null}
           variantGallery={colorVariant?.gallery ?? undefined}
@@ -245,16 +308,33 @@ export function WpPurchaseSection({
       </div>
 
       {/* Info col */}
-      <div className="col-md-5 bb-wp-pdp-info-col max-[1023px]:!flex-[0_0_100%] max-[1023px]:!max-w-full">
+      <div className="col-md-5 bb-wp-pdp-info-col max-[1023px]:!flex-[0_0_100%] max-[1023px]:!max-w-full max-[1023px]:mt-6">
         <div className="product-information">
+          {/* Eyebrow + dải tin cậy: 2 dòng nhỏ trên tiêu đề. KHÔNG dùng <ul>/<li> để né
+              dấu đầu dòng của theme WP; chấm phân cách tự vẽ, chỉ chen GIỮA các mục. */}
+          {trustItems.length > 0 ? (
+            <div className="mb-11 flex flex-wrap items-center gap-x-4 gap-y-2 text-ui-14 text-muted-foreground">
+              {trustItems.map((item, i) => (
+                <span key={`${item}-${i}`} className="flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 shrink-0 bg-brand" aria-hidden />
+                  <span>{item}</span>
+                </span>
+              ))}
+            </div>
+          ) : null}
+          {eyebrow ? (
+            <p className="mb-0 font-heading text-ui-14 font-medium uppercase tracking-wider text-brand">
+              {eyebrow}
+            </p>
+          ) : null}
           <div className="title" itemProp="name">
             <h1 className="product_title entry-title">{name}</h1>
           </div>
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div className="price">
-              <p className="price js-single-price">
-                {formatVndNumber(current)} ₫
-                {showOld ? <del> {formatVndNumber(compare!)} ₫</del> : null}
+              <p className="price js-single-price flex flex-wrap items-baseline gap-x-3">
+                <span>{formatVndNumber(current)} ₫</span>
+                {showOld ? <del>{formatVndNumber(compare!)} ₫</del> : null}
               </p>
             </div>
             <div className="status">
@@ -279,43 +359,51 @@ export function WpPurchaseSection({
                 <a href="#reviews" onClick={scrollToReviews} className="text-brand underline-offset-2 hover:underline">
                   {tb("viewAllReviews")}
                 </a>
+                {" · "}
+                <a href="#reviews" onClick={openWriteReview} className="text-brand underline-offset-2 hover:underline">
+                  {tb("writeReview")}
+                </a>
               </p>
             </div>
           ) : (
             <div className="rating">
               <p>
                 {tb("noReviews")} —{" "}
-                <a href="#reviews" onClick={scrollToReviews} className="text-brand underline-offset-2 hover:underline">
+                <a href="#reviews" onClick={openWriteReview} className="text-brand underline-offset-2 hover:underline">
                   {tb("writeFirst")}
                 </a>
               </p>
             </div>
           )}
 
-          {localizedShortDescriptionHtml ? (
+          {shortDescriptionHtml ? (
             <div className="desc wyswyg">
-              <div
+              <LHtml
+                field="shortDescription"
+                viHtml={shortDescriptionHtml}
                 className="woocommerce-product-details__short-description"
-                dangerouslySetInnerHTML={{ __html: localizedShortDescriptionHtml }}
               />
             </div>
           ) : null}
 
+          {/* Đường kẻ phân tách Mô tả ngắn với khu chọn biến thể (Màu sắc / Size),
+              thay cho dòng nhắc "Vui lòng chọn size/màu sắc…" trước đây. */}
+          {hasVariants ? <hr className="variation-divider" /> : null}
+
           <div className="row mt-30">
             <div className="variations_form cart">
-              {requiresSelection ? (
-                <div className="alert alert-danger note-buy-product">
-                  <p>{tb("pickVariant")}</p>
-                </div>
-              ) : null}
-
               {hasVariants
                 ? attributeNames.map((attr) => {
                     const color = isColorAttribute(attr);
                     const opts = distinctOptions(variants, attr);
                     const slug = attr.toLowerCase().replace(/\s+/g, "-");
+                    // CSS hook ổn định: theme dựa `.pa_color` để hiện ô màu dạng ẢNH-ONLY
+                    // (ẩn chữ tên màu qua `.pa_color … label span{display:none}`). Slug lấy từ
+                    // tên hiển thị giờ là "màu-sắc"/"color" tùy ngôn ngữ → không còn cố định
+                    // "pa_color", nên gắn thêm class theo LOẠI thuộc tính (isColorAttribute).
+                    const colorHook = color ? "pa_color" : "";
                     return (
-                      <div key={attr} className={`options pa_${slug} ${slug} size`}>
+                      <div key={attr} className={`options pa_${slug} ${colorHook} ${slug} size`}>
                         <div className="group">
                           <div className="group-label">
                             <label htmlFor={`pa_${slug}`}>{attr}</label>
@@ -421,58 +509,75 @@ export function WpPurchaseSection({
                   </div>
                 </div>
 
-                <div className="row bb-wp-buttons-row" style={{ marginTop: "20px", padding: "0px" }}>
-                  <div className="add-to-cart col-md-6" style={{ padding: "0px" }}>
+                {/* Hàng nút mua: tỉ lệ 60/40 ở MỌI breakpoint (giỏ hàng flex-[3], Zalo
+                    flex-[2] = 3:2). Bỏ lưới Bootstrap `col-md-6` vì nó xếp chồng dọc khi
+                    <768px; flex-nowrap giữ 2 nút cạnh nhau cả trên mobile. Khớp thanh dính
+                    đáy mobile (MobileStickyPurchaseBar). */}
+                <div className="bb-wp-buttons-row flex flex-nowrap gap-2.5" style={{ marginTop: "20px" }}>
+                  <div className="add-to-cart flex-[3] min-w-0" style={{ padding: "0px" }}>
                     {/* Hook class React riêng (js-bb-add-to-cart), KHÔNG dùng
                         `js-add-to-cart-btn`: JS theme WP cũ (home.min.js) bám vào
                         class đó, khi chọn đủ biến thể sẽ ghi đè chữ nút thành "Đang
                         kiểm tra hàng..." rồi gọi AJAX find_variation_product về backend
                         WordPress (đã không còn) → nút kẹt vĩnh viễn. React tự quản nhãn
                         + add-to-cart nên cắt móc đó đi; nhãn luôn là "THÊM VÀO GIỎ HÀNG". */}
-                    {/* Nút phụ: viền đỏ nền trắng (secondary). Override !important để
-                        thắng `.add-to-cart .btn{background:#ff0c09;color:#fff;border:none}`
-                        của theme; vẫn giữ shape/size 52px từ chính rule đó. */}
+                    {/* Nút chính: nền đỏ brand. Theme `.add-to-cart .btn` đã đỏ #ff0c09;
+                        ép `!bg-brand !text-white` để khớp đúng tông đỏ AA của thanh dính đáy. */}
                     <button
                       type="button"
-                      className={"single_add_to_cart_button button alt btn js-bb-add-to-cart !border-2 !border-brand !bg-white !text-brand transition-colors hover:!bg-brand-soft" + (canBuy ? "" : " disabled")}
+                      className={"single_add_to_cart_button button alt btn js-bb-add-to-cart !bg-brand !text-white transition-colors hover:!bg-brand-active disabled:!opacity-60 disabled:!cursor-not-allowed !flex !items-center !justify-center gap-2.5" + (canBuy ? "" : " disabled")}
                       disabled={!canBuy || adding}
                       onClick={handleAdd}
                     >
-                      <i className="fal fa-shopping-cart" /> {adding ? tb("adding") : tb("addToCart")}
+                      {/* lucide ShoppingCart: bigbike-web KHÔNG nạp Font Awesome (fa-* vô hình),
+                          nên thay `<i fal fa-shopping-cart>` cũ. !flex + justify-center + gap-2.5
+                          căn icon/chữ giống hệt nút Zalo để 2 nút thẳng hàng. */}
+                      <ShoppingCart className="size-5 shrink-0" />
+                      {adding ? tb("adding") : tb("addToCart")}
                     </button>
                   </div>
-                  <div className="add-to-cart quick-add-to-cart col-md-6">
-                    <button
-                      type="button"
-                      // KHÔNG dùng `js-quickby`: home.min.js bind click vào class đó
-                      // (preventDefault + toggle `.js-quickbuy-box` không tồn tại). React
-                      // tự mở QuickBuyModal qua onClick nên bỏ marker để theme JS không bắt.
-                      className={"btn single_add_to_cart_button button btn-quick-buy js-buy-now-btn" + (canBuy ? "" : " disabled")}
-                      disabled={!canBuy}
-                      onClick={() => setQuickBuyOpen(true)}
+                  <div className="add-to-cart quick-add-to-cart flex-[2] min-w-0 !mt-0">
+                    {/* <a> kế thừa `display:inline-block` của theme `.btn` → chữ dạt
+                        góc; ép flex căn giữa cho khớp nút THÊM VÀO GIỎ (vốn là <button>
+                        tự căn). gap-2.5 = 10px khớp khoảng cách icon nút trái.
+                        Kiểu Zalo phụ: nền trắng + viền/chữ/LOGO xanh Zalo (text-zalo →
+                        logo lấy currentColor). !border-2 !border-zalo thắng `border:none`
+                        của theme `.add-to-cart .btn`. */}
+                    <a
+                      href={zaloUrl ? zaloHref(zaloUrl) : "#"}
+                      target={zaloUrl ? "_blank" : undefined}
+                      rel={zaloUrl ? "noopener noreferrer" : undefined}
+                      className="btn single_add_to_cart_button button btn-quick-buy !bg-white !text-zalo !border-2 !border-zalo transition-colors hover:!bg-zalo-soft !flex !items-center !justify-center gap-2.5"
                     >
-                      <i className="fal fa-bolt" /> {tb("buyNow")}
-                    </button>
+                      <ZaloIcon className="size-5 shrink-0" />
+                      {tb("zaloConsult")}
+                    </a>
                   </div>
                 </div>
                 {addError ? <p className="stock out-of-stock" style={{ color: "red" }}>{addError}</p> : null}
 
-                {/* "Mua ngay" = mua nhanh: mở form nhập địa chỉ/giao hàng rồi tạo đơn
-                    trực tiếp qua /orders/quick-buy (không qua giỏ). Khôi phục luồng cũ. */}
-                <QuickBuyModal
-                  open={quickBuyOpen}
-                  onClose={() => setQuickBuyOpen(false)}
-                  productId={product.id}
-                  productName={name}
-                  selectedVariantId={selectedVariant?.id ?? null}
-                  variantLabel={selectedVariant?.name ?? null}
-                  unitPrice={current}
-                  onSuccess={(order) => {
-                    setQuickBuyOpen(false);
-                    setSuccessOrder(order);
-                  }}
-                />
-                <QuickBuySuccessModal order={successOrder} onClose={() => setSuccessOrder(null)} />
+                {/* Khối "cam kết" dưới nút mua (V232) — admin quản theo TỪNG sản phẩm: thêm/bớt
+                    dòng tùy ý, mỗi dòng tự chọn icon (key → lucide qua COMMITMENT_ICON_MAP).
+                    Dòng không có tiêu đề thì bỏ qua; không dòng nào → ẩn cả khối. */}
+                {commitments.some((c) => c.title) && (
+                  <ul className="mt-5 divide-y divide-border border border-border">
+                    {commitments.map((c, i) =>
+                      c.title ? (
+                        <li key={i} className="flex items-center gap-3.5 px-5 py-4">
+                          {(() => {
+                            const Icon = COMMITMENT_ICON_MAP[c.icon] ?? ShieldCheck;
+                            return <Icon className="size-7 shrink-0 text-brand" strokeWidth={1.75} aria-hidden="true" />;
+                          })()}
+                          <div className="min-w-0">
+                            <strong className="block font-body text-base font-semibold leading-snug text-foreground">{c.title}</strong>
+                            {c.subtitle ? <span className="mt-1 block text-sm leading-snug text-muted-foreground">{c.subtitle}</span> : null}
+                          </div>
+                        </li>
+                      ) : null,
+                    )}
+                  </ul>
+                )}
+
               </div>
             </div>
           </div>
@@ -481,13 +586,16 @@ export function WpPurchaseSection({
       </div>
     </div>
 
-    {/* Thanh mua dính đáy trên mobile: hiện khi hàng nút mua (.bb-wp-buttons-row)
-        cuộn khỏi viewport. Bám DOM qua .js-bb-add-to-cart / .js-buy-now-btn —
-        mirror trạng thái disabled và click lại nút gốc. Hết hàng thì không render
-        (không có gì để mua). */}
-    {!isOutOfStock ? (
-      <MobileStickyPurchaseBar addToCartLabel={tb("mobileAddToCart")} buyNowLabel={tb("mobileBuyNow")} />
-    ) : null}
+    {/* Thanh dính đáy trên mobile: hiện khi hàng nút (.bb-wp-buttons-row) cuộn khỏi
+        viewport. Nút "Thêm vào giỏ" bám .js-bb-add-to-cart (mirror disabled + click
+        lại nút gốc); nút "Tư vấn Zalo" mở link Zalo trực tiếp. Hết hàng vẫn render
+        thanh — chỉ ẩn nút thêm giỏ, giữ nút Tư vấn Zalo để khách hỏi mua. */}
+    <MobileStickyPurchaseBar
+      addToCartLabel={tb("mobileAddToCart")}
+      zaloLabel={tb("mobileZaloConsult")}
+      zaloUrl={zaloUrl}
+      outOfStock={isOutOfStock}
+    />
     </>
   );
 }

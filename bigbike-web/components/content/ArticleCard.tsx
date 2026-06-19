@@ -96,7 +96,7 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
       <div
         className="relative pt-[41px] px-[34px] pb-[30px] flex flex-col gap-2 flex-1 bg-card justify-center"
       >
-        <span className="absolute -top-[21px] left-0 z-[2] inline-flex items-center h-[42px] min-w-[168px] pl-[22px] pr-[28px] bg-brand text-white font-body text-sm font-bold tracking-wide uppercase whitespace-nowrap [clip-path:polygon(0_0,100%_0,calc(100%-18px)_100%,0_100%)]">
+        <span className="absolute -top-[21px] left-0 z-[2] inline-flex items-center h-[42px] min-w-[168px] pl-[22px] pr-[28px] bg-brand text-white font-body text-caption font-bold tracking-wide uppercase whitespace-nowrap [clip-path:polygon(0_0,100%_0,calc(100%-18px)_100%,0_100%)]">
           {publishedDate}
         </span>
         <div className="flex flex-col gap-2 flex-1">
@@ -113,7 +113,7 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
           >
             {excerpt}
           </p>
-          <span className="mt-auto pt-[6px] text-muted-foreground text-sm font-bold tracking-display uppercase transition-colors duration-300 group-hover:text-brand">
+          <span className="mt-auto pt-[6px] text-muted-foreground text-caption font-bold tracking-display uppercase transition-colors duration-300 group-hover:text-brand">
             {t("articleReadMore")}
           </span>
         </div>

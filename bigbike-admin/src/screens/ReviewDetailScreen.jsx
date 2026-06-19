@@ -4,8 +4,10 @@ import { toast } from 'sonner'
 import { DetailSection } from '../components/DetailSection'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
+import { MediaPreviewLightbox } from '../components/MediaPreviewLightbox'
 import { showConfirm } from '../lib/confirm'
 import { deleteReview, fetchReviewDetail, updateReviewStatus } from '../lib/adminApi'
+import { resolveDisplayUrl } from '../lib/contracts'
 import { useContentLang } from '../lib/contentLang'
 import { formatDateTime, formatText } from '../lib/formatters'
 import { Button } from '@/components/ui/button'
@@ -28,6 +30,7 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
   const contentLang = useContentLang()
   const [state, setState] = useState({ status: 'loading', item: null, warning: '' })
   const [busy, setBusy] = useState(false)
+  const [photoIndex, setPhotoIndex] = useState(null)
 
   const loadReview = useCallback(() => {
     let active = true
@@ -155,10 +158,30 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
         </DetailSection>
 
         <DetailSection title={t('reviews.detail.sectionContent')}>
+          {review.title ? (
+            <p className="m-0 mb-2 font-semibold">{review.title}</p>
+          ) : null}
           <p className="m-0 whitespace-pre-wrap leading-relaxed">
             {formatText(review.body, '(---)')}
           </p>
         </DetailSection>
+
+        {review.photos?.length > 0 ? (
+          <DetailSection title={t('reviews.detail.sectionPhotos')}>
+            <div className="flex flex-wrap gap-2">
+              {review.photos.map((url, i) => (
+                <button
+                  key={`${url}-${i}`}
+                  type="button"
+                  onClick={() => setPhotoIndex(i)}
+                  className="block size-20 overflow-hidden rounded-sm border border-border bg-surface-muted p-0 cursor-pointer"
+                >
+                  <img src={resolveDisplayUrl(url)} alt="" loading="lazy" className="size-full object-cover" />
+                </button>
+              ))}
+            </div>
+          </DetailSection>
+        ) : null}
 
         <DetailSection title={t('reviews.detail.sectionActions')}>
           <div className="flex gap-2 flex-wrap">
@@ -180,6 +203,19 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
           </div>
         </DetailSection>
       </div>
+
+      {photoIndex !== null && review.photos?.length > 0 ? (
+        <MediaPreviewLightbox
+          items={review.photos.map((url) => ({
+            publicUrl: resolveDisplayUrl(url),
+            mimeType: 'image/jpeg',
+            filename: url.split('/').pop(),
+          }))}
+          index={photoIndex}
+          onClose={() => setPhotoIndex(null)}
+          onNavigate={setPhotoIndex}
+        />
+      ) : null}
     </div>
   )
 }

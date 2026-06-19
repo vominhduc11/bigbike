@@ -43,7 +43,7 @@ export const accountSidebar =
  * `text-brand` == --bb-text-brand, `tracking-display/wide` == the --bb-tracking-*. */
 
 /** Form field label (was `.bb-field-label`). */
-export const fieldLabel = "text-sm font-bold uppercase tracking-display text-muted-foreground";
+export const fieldLabel = "text-caption font-bold uppercase tracking-display text-muted-foreground";
 /** Section eyebrow / kicker — the small uppercase label above a section title.
  * Compose with spacing, e.g. `cn(sectionEyebrow, "mb-3")`. */
 export const sectionEyebrow =
@@ -54,23 +54,23 @@ export const sectionEyebrow =
 export const sectionHeading =
   "m-0 font-body text-[length:var(--bb-text-section-title)] font-semibold leading-[1.2] tracking-normal uppercase text-foreground";
 /** Smaller section subheading (was `.bb-section-subheading`). */
-export const sectionSubheading = "font-body text-base font-semibold uppercase text-foreground";
+export const sectionSubheading = "font-body text-body font-semibold uppercase text-foreground";
 /** Empty/error state title (was `.bb-state-title`). */
-export const stateTitle = "m-0 font-body text-base font-semibold uppercase text-foreground";
+export const stateTitle = "m-0 font-body text-body font-semibold uppercase text-foreground";
 /** Inline meta label (was `.bb-meta-label`). */
-export const metaLabel = "text-sm uppercase tracking-display text-muted-foreground";
+export const metaLabel = "text-caption uppercase tracking-display text-muted-foreground";
 /** Table column header (was `.bb-table-header`). */
-export const tableHeader = "font-body text-xs font-semibold uppercase tracking-wide";
+export const tableHeader = "font-body text-overline font-semibold uppercase tracking-wide";
 /** Detail value cell (was `.bb-detail-table-cell`). */
-export const detailTableCell = "mt-[3px] block text-sm font-bold normal-case tracking-wide text-foreground";
+export const detailTableCell = "mt-[3px] block text-caption font-bold normal-case tracking-wide text-foreground";
 /** Category badge text (was `.bb-category-badge`). */
-export const categoryBadge = "m-0 text-sm font-bold uppercase tracking-display text-brand";
+export const categoryBadge = "m-0 text-caption font-bold uppercase tracking-display text-brand";
 
 /** Auth card heading (was `.bb-auth-heading`). On auth-wrap h1s the kept marker
  * rule `.bb-page--auth .bb-auth-wrap h1` overrides this (text-32/uppercase). */
 export const authHeading = "font-body text-[length:var(--fs-h3)] font-semibold normal-case";
 /** Auth form input sizing (was `.bb-auth-input`). */
-export const authInput = "h-[52px] min-h-[52px] px-5 py-0 text-sm";
+export const authInput = "h-[52px] min-h-[52px] px-5 py-0 text-caption";
 
 /** Header action icon button (was `.bb-user-control .bb-icon-btn` /
  * `.bb-site-header .bb-cart-icon-link`): full-height transparent square button,

@@ -36,7 +36,7 @@ export function SaleBadge({ percent, variant = "ribbon" }: SaleBadgeProps) {
 
   return (
     <div className="absolute left-0 top-5 z-[2]">
-      <p className="relative m-0 w-[70px] bg-brand text-center font-body text-base font-semibold leading-[42px] text-white after:absolute after:right-[-33px] after:top-0 after:h-0 after:w-0 after:border-b-0 after:border-l-[42px] after:border-r-[33px] after:border-t-[42px] after:border-l-transparent after:border-r-transparent after:border-t-brand after:content-['']">
+      <p className="relative m-0 w-[70px] bg-brand text-center font-body text-body font-semibold leading-[42px] text-white after:absolute after:right-[-33px] after:top-0 after:h-0 after:w-0 after:border-b-0 after:border-l-[42px] after:border-r-[33px] after:border-t-[42px] after:border-l-transparent after:border-r-transparent after:border-t-brand after:content-['']">
         {percent}%
       </p>
     </div>

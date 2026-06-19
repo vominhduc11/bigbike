@@ -9,7 +9,7 @@ type FormRootErrorProps = {
 export function FormRootError({ message }: FormRootErrorProps) {
   if (!message) return null;
   return (
-    <p role="alert" aria-live="assertive" className="mb-5 text-sm font-medium text-destructive">
+    <p role="alert" aria-live="assertive" className="mb-5 text-caption font-medium text-destructive">
       {message}
     </p>
   );
