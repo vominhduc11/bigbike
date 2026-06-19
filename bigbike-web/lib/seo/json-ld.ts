@@ -63,24 +63,12 @@ export function buildProductJsonLd(product: Product): JsonLdObject {
     // CHỈ khai aggregateRating khi có review khách thật (ratingCount > 0). Không
     // bao giờ khai khống — vi phạm guideline Google (checklist #23).
     aggregateRating: buildAggregateRating(product),
-    // Trọng lượng (V175) cho rich result Product.
-    weight: buildWeight(product.weightGrams),
     // Ưu/Nhược điểm (V175) — pros & cons rich result.
     positiveNotes: buildNotesList(product.positiveNotes),
     negativeNotes: buildNotesList(product.negativeNotes),
   };
 }
 
-function buildWeight(weightGrams: Product["weightGrams"]): JsonLdObject | undefined {
-  if (typeof weightGrams !== "number" || !Number.isFinite(weightGrams) || weightGrams <= 0) {
-    return undefined;
-  }
-  return {
-    "@type": "QuantitativeValue",
-    value: weightGrams,
-    unitCode: "GRM",
-  };
-}
 
 function buildNotesList(notes: { content: string }[] | undefined): JsonLdObject | undefined {
   const items = (notes ?? [])

@@ -394,7 +394,6 @@ export function normalizeProduct(input) {
     // Template/trust fields (V175) — render trên PDP web. PHẢI surface ở đây, nếu không
     // form admin nạp undefined → mở SP hiện trống → bấm Lưu gửi null/[] → xoá mất dữ liệu.
     gender: toTrimmedString(source.gender) || undefined,
-    weightGrams: Number.isFinite(source.weightGrams) ? Number(source.weightGrams) : null,
     warrantyMonths: Number.isFinite(source.warrantyMonths) ? Number(source.warrantyMonths) : null,
     warrantyScope: toTrimmedString(source.warrantyScope) || undefined,
     originBrandCountry: toTrimmedString(source.originBrandCountry) || undefined,

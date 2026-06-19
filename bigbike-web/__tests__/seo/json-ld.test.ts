@@ -38,7 +38,7 @@ function makeProduct(overrides: Partial<Product> = {}): Product {
 }
 
 describe("buildProductJsonLd", () => {
-  it("sinh Product hợp lệ với offer, ảnh khử trùng, weight, ưu/nhược", () => {
+  it("sinh Product hợp lệ với offer, ảnh khử trùng, ưu/nhược", () => {
     const product = makeProduct({
       variants: [
         {
@@ -52,7 +52,6 @@ describe("buildProductJsonLd", () => {
       ],
       rating: 4.5,
       ratingCount: 12,
-      weightGrams: 1500,
       positiveNotes: [{ content: "Nhẹ" }, { content: "Thoáng khí" }],
       negativeNotes: [{ content: "Giá cao" }],
     });
@@ -89,9 +88,6 @@ describe("buildProductJsonLd", () => {
       reviewCount: 12,
     });
 
-    // weight → QuantitativeValue gram.
-    expect(ld.weight).toEqual({ "@type": "QuantitativeValue", value: 1500, unitCode: "GRM" });
-
     // positiveNotes / negativeNotes → ItemList có position tăng dần.
     expect(ld.positiveNotes["@type"]).toBe("ItemList");
     expect(ld.positiveNotes.itemListElement).toEqual([
@@ -119,11 +115,10 @@ describe("buildProductJsonLd", () => {
     expect((buildProductJsonLd(makeProduct({ ratingCount: null })) as any).aggregateRating).toBeUndefined();
   });
 
-  it("bỏ field rỗng khi thiếu dữ liệu GĐ3 (weight/ưu/nhược)", () => {
+  it("bỏ field rỗng khi thiếu dữ liệu GĐ3 (ưu/nhược)", () => {
     const ld = buildProductJsonLd(
-      makeProduct({ weightGrams: null, positiveNotes: [], negativeNotes: [] }),
+      makeProduct({ positiveNotes: [], negativeNotes: [] }),
     ) as Record<string, any>;
-    expect(ld.weight).toBeUndefined();
     expect(ld.positiveNotes).toBeUndefined();
     expect(ld.negativeNotes).toBeUndefined();
   });

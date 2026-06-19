@@ -251,7 +251,6 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 null,                       // pdpShippingLine — detail only
                 null,                       // pdpReturnLine — detail only
                 null,                       // originBrandCountry — detail only
-                null,                       // weightGrams — detail only
                 null,                       // sizeGuide — detail only
                 null,                       // quickAnswerSummary — detail only
                 null,                       // suitabilityAdvisory — detail only
@@ -567,7 +566,6 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 entity.getPdpShippingLine(),
                 entity.getPdpReturnLine(),
                 entity.getOriginBrandCountry(),
-                toWeightGrams(entity.getWeightKg()),
                 entity.getSizeGuide(),
                 pick(entity.getQuickAnswerSummary(), entity.getQuickAnswerSummaryEn(), locale),
                 pick(entity.getSuitabilityAdvisory(), entity.getSuitabilityAdvisoryEn(), locale),
@@ -816,14 +814,6 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
             }
         }
         return List.of();
-    }
-
-    /** weight_kg (NUMERIC) → gram (Integer) cho schema.org Product.weight. */
-    private static Integer toWeightGrams(java.math.BigDecimal weightKg) {
-        if (weightKg == null) {
-            return null;
-        }
-        return weightKg.multiply(java.math.BigDecimal.valueOf(1000)).setScale(0, java.math.RoundingMode.HALF_UP).intValue();
     }
 
     /**

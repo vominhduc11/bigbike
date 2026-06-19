@@ -666,16 +666,21 @@ Phân biệt rõ với các cột ảnh khác trên `categories`:
 
 Trước đây icon menu/sidebar gắn theo **slug** (CSS theme WP `.{slug}>a::before`) → đổi slug là mất icon, và
 icon không quản được trong admin. Đã chuyển hẳn sang DATA-DRIVEN, một nguồn duy nhất là `menu_icon_url`:
-- **File icon là tĩnh trong repo web** (`bigbike-web/public/wp/icon-N.svg`, `/wp/abdominals.png`); web phục vụ
-  trực tiếp, admin proxy `/wp/ → bigbike-web` (`bigbike-admin/nginx.conf`) để xem được preview.
+- **File icon gốc nằm trong repo web** (`bigbike-web/public/wp/icon-N.svg`, `abdominals.png`). **`V223`** đã upload
+  11 file icon menu này lên MinIO (`bigbike-media/uploads/wp-icons/*`) và migrate `menu_icon_url` từ seed cũ
+  `/wp/<file>` → `/media/uploads/wp-icons/<file>` (phục vụ qua rewrite `/media/*`, cùng origin nên mask-image render
+  đúng). Các asset `/wp/*` khác (vd banner `/wp/page-title-bg.png`) vẫn do web phục vụ tĩnh + admin proxy
+  `/wp/ → bigbike-web` (`bigbike-admin/nginx.conf`).
 - **`V217`** thêm cột + backfill theo slug; **`V219`** hoàn thiện: khoá theo **ID danh mục** (`wp-cat-NNN`, ổn
   định từ WP import — không drift như slug) cho 13 danh mục, idempotent + guard (chỉ đè NULL hoặc giá-trị-mặc-
   định `/wp/*`,`/media/uploads/wp-icons/*`). `WpCategorySidebar` render mask-image cho **cả danh mục con** (không
   chỉ gốc) và đã **xóa toàn bộ rule icon-theo-slug** trong 8 file `wp-theme-*.css`.
 
 **Admin-writable:** admin chỉnh ở form danh mục (`CategoryDetailScreen` → "Icon menu / bộ lọc danh mục"), gửi
-qua `UpsertCategoryRequest.menuIcon` → `menu_icon_url`. URL qua whitelist (`/media/`, `/media-proxy/`, hoặc
-MinIO public; `/wp/*` là seed tĩnh không qua validate API). Xem `API_CONTRACT` §"Menu/category line-icon".
+qua `UpsertCategoryRequest.menuIcon` → `menu_icon_url`. URL phải qua whitelist
+`AdminMutationValidators.validateWhitelistedMediaUrl` (`/media/`, `/media-proxy/`, hoặc MinIO public base). Seed
+hiện tại `/media/uploads/wp-icons/*` (sau `V223`) hợp lệ với whitelist → lưu lại trong admin không còn HTTP 400;
+seed cũ `/wp/*` (file tĩnh, KHÔNG qua được whitelist) đã được migrate. Xem `API_CONTRACT` §"Menu/category line-icon".
 
 **Banner hero + hero illustration (V219):** `banner_url` (ảnh nền hero) trước là hardcode `DEFAULT_BG`
 (`WpCategoryHero.tsx` → `/wp/page-title-bg.png`); V219 đưa vào DB cho mọi danh mục để ô "Ảnh banner hero" trong
@@ -683,7 +688,7 @@ admin quản được (web y nguyên, fallback `DEFAULT_BG` giữ trong code cho
 minh hoạ hero, ACF `image_left`) V219 đổi URL ngoài `bigbike.vn/wp-content/uploads/` → `/media-proxy/wp-uploads/`
 (ảnh sẵn trong MinIO từ WP import). Cả hai admin sửa qua `UpsertCategoryRequest.banner` / `.icon`.
 
-Status: `CONFIRMED_FROM_CODE` — `CategoryEntity.menuIconUrl`, `Category` domain record, `JpaCatalogReadRepository`, `UpsertCategoryRequest.menuIcon` + `AdminCatalogMutationService.applyCategoryPatch`, migration `V213`.
+Status: `CONFIRMED_FROM_CODE` — `CategoryEntity.menuIconUrl`, `Category` domain record, `JpaCatalogReadRepository`, `UpsertCategoryRequest.menuIcon` + `AdminCatalogMutationService.applyCategoryPatch`, migrations `V213`/`V217`/`V219`/`V223`.
 
 ### Brand bilingual content — English columns (V137)
 

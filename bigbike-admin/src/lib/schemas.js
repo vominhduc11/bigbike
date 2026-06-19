@@ -130,7 +130,6 @@ export function createProductSchema(t, isCreate = false) {
       warrantyMonths: z.string().optional(),
       warrantyScope: z.string().max(2000, 'Phạm vi bảo hành tối đa 2000 ký tự.').optional(),
       originBrandCountry: z.string().max(120).optional(),
-      weightGrams: z.string().optional(),
       sizeGuide: z.string().max(20000, 'Bảng size tối đa 20000 ký tự.').optional(),
       // PDP layout fields (V236–V237) — Quick Answer + "Phù hợp với ai".
       quickAnswerSummary: z.string().max(600, 'Quick Answer tối đa 600 ký tự.').optional(),
@@ -214,10 +213,6 @@ export function createProductSchema(t, isCreate = false) {
       const warranty = toInt(data.warrantyMonths)
       if (Number.isNaN(warranty) || (Number.isInteger(warranty) && warranty < 0)) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Bảo hành phải là số nguyên không âm.', path: ['warrantyMonths'] })
-      }
-      const weight = toInt(data.weightGrams)
-      if (Number.isNaN(weight) || (Number.isInteger(weight) && weight < 0)) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Trọng lượng phải là số nguyên không âm (gram).', path: ['weightGrams'] })
       }
       if ((data.seoTitle ?? '').trim().length > 255) {
         ctx.addIssue({

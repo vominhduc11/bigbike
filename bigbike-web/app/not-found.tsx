@@ -1,8 +1,7 @@
 ﻿import Link from "next/link";
 import { getTranslations } from "next-intl/server";
-import { PageHero } from "@/components/layout/PageHero";
+import { WpStaticShell } from "@/components/wp/WpStaticShell";
 import { Container } from "@/components/layout/Container";
-import { WpThemeStylesheet } from "@/components/wp/WpThemeStylesheet";
 import { ArticleCard } from "@/components/content/ArticleCard";
 import { listArticles } from "@/lib/api/public-api";
 import { toArticleListPath, toHomePath, toProductListPath } from "@/lib/utils/routes";
@@ -21,20 +20,21 @@ export default async function NotFoundPage() {
   ]);
   const recent = recentResult.data ?? [];
 
+  // Dùng đúng hero chung của site (.page-title qua WpStaticShell) như mọi trang tĩnh
+  // khác — tiêu đề căn trái + breadcrumb dưới + ảnh minh hoạ mặc định bên phải. Shell
+  // tự nạp bundle CSS theme (cùng href) để F5 thẳng vào /404 không mất style header/footer.
+  // text-center chỉ đặt trên thân 404 bên dưới, KHÔNG để rớt vào hero.
   return (
-    <section className="min-h-[62vh] bg-background text-center">
-      {/* Header/Footer port WP cần bundle CSS theme; nếu trang không nạp, khi F5 thẳng
-          vào /404 header+footer mất style. Dùng bundle tĩnh như các trang tĩnh khác. */}
-      <WpThemeStylesheet href="/wp-content/themes/bigbike/css/wp-theme-static.css?v=1" />
-      <PageHero
-        title={t("pageTitle")}
-        breadcrumb={[
-          { label: tBreadcrumb("home"), href: toHomePath() },
-          { label: "404" },
-        ]}
-      />
+    <WpStaticShell
+      title={t("pageTitle")}
+      breadcrumb={[
+        { label: tBreadcrumb("home"), href: toHomePath() },
+        { label: "404" },
+      ]}
+      mainClassName="bg-background min-h-[50vh]"
+    >
       <Container>
-        <div className="max-w-[720px] mx-auto pt-10 pb-20 flex flex-col gap-7">
+        <div className="max-w-[720px] mx-auto pt-10 pb-20 flex flex-col gap-7 text-center">
           <div className="flex justify-center select-none" aria-hidden="true">
             <div className="relative">
               {/* bespoke: display-only ghost text, no token at this scale */}
@@ -91,6 +91,6 @@ export default async function NotFoundPage() {
           )}
         </div>
       </Container>
-    </section>
+    </WpStaticShell>
   );
 }

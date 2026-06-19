@@ -60,8 +60,6 @@ public record Product(
         String pdpReturnLine,
         /** "Thương hiệu [nước]". Detail-only; null in list. */
         String originBrandCountry,
-        /** Trọng lượng tính bằng gram (= weight_kg × 1000). Detail-only; null in list. */
-        Integer weightGrams,
         /** Bảng size dạng HTML (rich-text). Detail-only; null in list. */
         String sizeGuide,
         /** "Quick Answer" — đoạn AIO 40–60 từ, blockquote trước H2 đầu (V236). Detail-only; null in list. */

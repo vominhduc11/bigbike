@@ -79,7 +79,6 @@ class SliderReadServiceTest {
                         null,       // pdpShippingLine
                         null,       // pdpReturnLine
                         null,       // originBrandCountry
-                        null,       // weightGrams
                         null,       // sizeGuide
                         null,       // quickAnswerSummary
                         null,       // suitabilityAdvisory

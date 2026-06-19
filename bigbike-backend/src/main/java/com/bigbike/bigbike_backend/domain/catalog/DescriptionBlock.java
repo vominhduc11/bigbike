@@ -1,5 +1,6 @@
 package com.bigbike.bigbike_backend.domain.catalog;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import jakarta.validation.constraints.Max;
@@ -20,6 +21,7 @@ import java.util.List;
  * Jackson uses the "type" discriminator for polymorphic JSON deserialization.
  * Bean Validation constraints on each subtype enforce required fields.
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 @JsonTypeInfo(
         use = JsonTypeInfo.Id.NAME,
         property = "type",
@@ -50,6 +52,7 @@ public sealed interface DescriptionBlock
     String getType();
 
     /** { type: "heading", level: 2|3, text: string } */
+    @JsonIgnoreProperties(ignoreUnknown = true)
     @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
     final class HeadingBlock implements DescriptionBlock {
         private String type;
@@ -65,6 +68,7 @@ public sealed interface DescriptionBlock
     }
 
     /** { type: "paragraph", html: string } — inline HTML only: &lt;b&gt;&lt;i&gt;&lt;a&gt;&lt;br&gt; */
+    @JsonIgnoreProperties(ignoreUnknown = true)
     @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
     final class ParagraphBlock implements DescriptionBlock {
         private String type;
@@ -75,6 +79,7 @@ public sealed interface DescriptionBlock
     }
 
     /** { type: "list", style: "bulleted"|"numbered", items: string[] } */
+    @JsonIgnoreProperties(ignoreUnknown = true)
     @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
     final class ListBlock implements DescriptionBlock {
         private String type;
@@ -90,6 +95,7 @@ public sealed interface DescriptionBlock
     }
 
     /** { type: "image", url: string, alt?: string, caption?: string } */
+    @JsonIgnoreProperties(ignoreUnknown = true)
     @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
     final class ImageBlock implements DescriptionBlock {
         private String type;
@@ -106,6 +112,7 @@ public sealed interface DescriptionBlock
     }
 
     /** { type: "video", provider: "youtube"|"upload", url: string, caption?: string } */
+    @JsonIgnoreProperties(ignoreUnknown = true)
     @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
     final class VideoBlock implements DescriptionBlock {
         private String type;
@@ -123,6 +130,7 @@ public sealed interface DescriptionBlock
     }
 
     /** { type: "callout", variant: "info"|"warning"|"note", html: string } */
+    @JsonIgnoreProperties(ignoreUnknown = true)
     @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
     final class CalloutBlock implements DescriptionBlock {
         private String type;
@@ -137,6 +145,7 @@ public sealed interface DescriptionBlock
     }
 
     /** { type: "divider" } */
+    @JsonIgnoreProperties(ignoreUnknown = true)
     @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
     final class DividerBlock implements DescriptionBlock {
         private String type;
@@ -150,6 +159,7 @@ public sealed interface DescriptionBlock
      * danh sách, render thành khối 2 cột ảnh–chữ trên web (xen kẽ trái/phải khi {@code side} = "auto"
      * hoặc null). Chỉ {@code url} bắt buộc; các phần chữ đều tuỳ chọn.
      */
+    @JsonIgnoreProperties(ignoreUnknown = true)
     @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
     final class FeatureBlock implements DescriptionBlock {
         private String type;
@@ -190,6 +200,7 @@ public sealed interface DescriptionBlock
      * schema.org positiveNotes/negativeNotes (V175) — backend suy ra khi trả API. Bản EN nằm ở khối
      * tương ứng trong {@code descriptionBlocksEn} (theo vị trí), như list/feature.
      */
+    @JsonIgnoreProperties(ignoreUnknown = true)
     @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
     final class ProsConsBlock implements DescriptionBlock {
         private String type;
@@ -212,6 +223,7 @@ public sealed interface DescriptionBlock
      * <p>Khối "Phù hợp với ai" (V240) nhúng trong mô tả — danh sách thẻ tư vấn. Bản EN nằm ở khối
      * tương ứng trong {@code descriptionBlocksEn}.
      */
+    @JsonIgnoreProperties(ignoreUnknown = true)
     @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
     final class SuitabilityBlock implements DescriptionBlock {
         private String type;
@@ -245,6 +257,7 @@ public sealed interface DescriptionBlock
      * <p>Khối "Bảng size" nhúng trong mô tả — HTML tự do (thường là bảng). Bản EN nằm ở khối tương ứng
      * trong {@code descriptionBlocksEn}.
      */
+    @JsonIgnoreProperties(ignoreUnknown = true)
     @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
     final class SizeGuideBlock implements DescriptionBlock {
         private String type;

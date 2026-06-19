@@ -1063,13 +1063,6 @@ public class AdminCatalogMutationService {
         if (create || request.isOriginBrandCountryPresent()) {
             entity.setOriginBrandCountry(AdminMutationValidators.trimToNull(request.getOriginBrandCountry()));
         }
-        // Trọng lượng nhập bằng gram, lưu vào cột weight_kg (= grams / 1000).
-        if (create || request.isWeightGramsPresent()) {
-            Integer grams = request.getWeightGrams();
-            entity.setWeightKg(grams == null
-                    ? null
-                    : BigDecimal.valueOf(grams).divide(BigDecimal.valueOf(1000)));
-        }
         if (create || request.isSizeGuidePresent()) {
             entity.setSizeGuide(AdminMutationValidators.trimToNull(request.getSizeGuide()));
         }

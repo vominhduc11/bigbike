@@ -94,10 +94,6 @@ public class UpsertProductRequest {
     private String originBrandCountry;
     private boolean originBrandCountryPresent = false;
 
-    /** Trọng lượng tính bằng gram. Lưu vào cột weight_kg (= grams / 1000). */
-    private Integer weightGrams;
-    private boolean weightGramsPresent = false;
-
     @Size(max = 20000, message = "Size guide is too long.")
     private String sizeGuide;
     private boolean sizeGuidePresent = false;
@@ -482,19 +478,6 @@ public class UpsertProductRequest {
 
     public boolean isOriginBrandCountryPresent() {
         return originBrandCountryPresent;
-    }
-
-    public Integer getWeightGrams() {
-        return weightGrams;
-    }
-
-    public void setWeightGrams(Integer weightGrams) {
-        this.weightGrams = weightGrams;
-        this.weightGramsPresent = true;
-    }
-
-    public boolean isWeightGramsPresent() {
-        return weightGramsPresent;
     }
 
     public String getSizeGuide() {

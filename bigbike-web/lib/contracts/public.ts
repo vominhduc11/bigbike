@@ -335,8 +335,6 @@ export type Product = {
   pdpReturnLine?: string | null;
   /** "Thương hiệu [nước]". Detail-only. */
   originBrandCountry?: string | null;
-  /** Trọng lượng tính bằng gram. Detail-only. */
-  weightGrams?: number | null;
   /** Bảng size dạng HTML (rich-text). Detail-only. */
   sizeGuide?: string | null;
   /** "Hiển thị trên web" (V245) — opaque JSON string `{sectionKey: boolean}`; admin bật/tắt từng

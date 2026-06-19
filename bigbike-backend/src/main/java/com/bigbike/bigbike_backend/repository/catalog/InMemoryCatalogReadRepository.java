@@ -275,7 +275,6 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 null,           // pdpShippingLine
                 null,           // pdpReturnLine
                 null,           // originBrandCountry
-                null,           // weightGrams
                 null,           // sizeGuide
                 null,           // quickAnswerSummary
                 null,           // suitabilityAdvisory
@@ -342,7 +341,6 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 null,           // pdpShippingLine
                 null,           // pdpReturnLine
                 null,           // originBrandCountry
-                null,           // weightGrams
                 null,           // sizeGuide
                 null,           // quickAnswerSummary
                 null,           // suitabilityAdvisory
@@ -409,7 +407,6 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 null,           // pdpShippingLine
                 null,           // pdpReturnLine
                 null,           // originBrandCountry
-                null,           // weightGrams
                 null,           // sizeGuide
                 null,           // quickAnswerSummary
                 null,           // suitabilityAdvisory

@@ -245,7 +245,6 @@ function buildEmptyForm() {
     pdpShippingLine: '',
     pdpReturnLine: '',
     originBrandCountry: '',
-    weightGrams: '',
     sizeChart: { col2: 'Vòng đầu (cm)', rows: [], note: '' },
     quickAnswerSummary: '',
     // "Phù hợp với ai" (V240) — danh sách thẻ {audience, advice, linkLabel, linkUrl + *En}.
@@ -410,7 +409,6 @@ function buildFormFromItem(item) {
     pdpShippingLine: item.pdpShippingLine || '',
     pdpReturnLine: item.pdpReturnLine || '',
     originBrandCountry: item.originBrandCountry || '',
-    weightGrams: Number.isInteger(item.weightGrams) ? String(item.weightGrams) : '',
     sizeChart: parseSizeGuide(item.sizeGuide),
     quickAnswerSummary: item.quickAnswerSummary || '',
     suitabilityCards: parseSuitabilityCards(item.suitabilityAdvisory, item.translations?.en?.suitabilityAdvisory),
@@ -639,7 +637,6 @@ function toPayload(form) {
     pdpShippingLine: form.pdpShippingLine.trim() ? form.pdpShippingLine.trim() : null,
     pdpReturnLine: form.pdpReturnLine.trim() ? form.pdpReturnLine.trim() : null,
     originBrandCountry: form.originBrandCountry.trim() ? form.originBrandCountry.trim() : null,
-    weightGrams: toIntegerOrNull(form.weightGrams),
     // "Hiển thị trên web" (V245) — luôn gửi map đầy đủ (presence-flag): "đóng băng" trạng thái hiện tại
     // thành cờ explicit nên web không đổi với sản phẩm cũ, và áp opt-in cho sản phẩm mới.
     sectionVisibility: JSON.stringify(form.sectionVisibility || resolveSectionVisibilityForm(null, form)),
@@ -4395,17 +4392,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                       placeholder="vd: 24"
                       value={form.warrantyMonths}
                       onChange={(e) => updateField('warrantyMonths', e.target.value.replace(/\D/g, ''))}
-                      disabled={isReadOnly}
-                    />
-                  </Field>
-                  <Field label={t('products.detail.trust.weightGrams', { defaultValue: 'Trọng lượng (gram)' })} hint={t('products.detail.trust.weightHint', { defaultValue: 'Cân thực tế tại shop nếu có.' })} error={validationErrors.weightGrams}>
-                    <Input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      placeholder="vd: 1536"
-                      value={form.weightGrams}
-                      onChange={(e) => updateField('weightGrams', e.target.value.replace(/\D/g, ''))}
                       disabled={isReadOnly}
                     />
                   </Field>

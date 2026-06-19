@@ -112,9 +112,6 @@ public class ProductEntity {
     @Column(name = "backorders", length = 16)
     private String backorders;
 
-    @Column(name = "weight_kg", precision = 10, scale = 4)
-    private java.math.BigDecimal weightKg;
-
     @Column(name = "length_cm", precision = 10, scale = 4)
     private java.math.BigDecimal lengthCm;
 

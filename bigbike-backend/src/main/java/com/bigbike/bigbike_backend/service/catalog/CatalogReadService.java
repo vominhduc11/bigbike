@@ -275,7 +275,6 @@ public class CatalogReadService {
                 null,                       // pdpShippingLine — detail only
                 null,                       // pdpReturnLine — detail only
                 null,                       // originBrandCountry — detail only
-                null,                       // weightGrams — detail only
                 null,                       // sizeGuide — detail only
                 null,                       // quickAnswerSummary — detail only
                 null,                       // suitabilityAdvisory — detail only

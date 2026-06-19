@@ -3,6 +3,7 @@ package com.bigbike.bigbike_backend.persistence.converter;
 import com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
@@ -17,7 +18,8 @@ import java.util.List;
 @Converter
 public class DescriptionBlocksConverter implements AttributeConverter<List<DescriptionBlock>, String> {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final ObjectMapper MAPPER = new ObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     private static final TypeReference<List<DescriptionBlock>> TYPE_REF = new TypeReference<>() {};
 
     @Override
