@@ -160,6 +160,13 @@ public class ProductEntity {
     @Column(name = "warranty_scope", columnDefinition = "text")
     private String warrantyScope;
 
+    // Dòng "Giao hàng" / "Đổi trả" của khối "Mua tại BigBike.vn" (V247). 1 ngôn ngữ; detail-only.
+    @Column(name = "pdp_shipping_line", columnDefinition = "text")
+    private String pdpShippingLine;
+
+    @Column(name = "pdp_return_line", columnDefinition = "text")
+    private String pdpReturnLine;
+
     @Column(name = "origin_brand_country", length = 120)
     private String originBrandCountry;
 

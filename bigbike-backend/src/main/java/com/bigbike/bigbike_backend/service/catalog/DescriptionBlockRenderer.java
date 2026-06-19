@@ -53,6 +53,9 @@ public class DescriptionBlockRenderer {
         if (block instanceof DescriptionBlock.VideoBlock b)     return renderVideo(b);
         if (block instanceof DescriptionBlock.CalloutBlock b)   return renderCallout(b);
         if (block instanceof DescriptionBlock.FeatureBlock b)   return renderFeature(b);
+        if (block instanceof DescriptionBlock.ProsConsBlock b)    return renderProsCons(b);
+        if (block instanceof DescriptionBlock.SuitabilityBlock b) return renderSuitability(b);
+        if (block instanceof DescriptionBlock.SizeGuideBlock b)   return renderSizeGuide(b);
         if (block instanceof DescriptionBlock.DividerBlock)     return "<hr>";
         return "";
     }
@@ -162,6 +165,76 @@ public class DescriptionBlockRenderer {
         return sb.toString();
     }
 
+    /** Ưu/Nhược điểm → 2 danh sách. Bản HTML này là SEO/fallback (web đọc thẳng block để dựng 2 cột). */
+    private String renderProsCons(DescriptionBlock.ProsConsBlock b) {
+        StringBuilder sb = new StringBuilder("<div class=\"bb-proscons\">");
+        if (b.getTitle() != null && !b.getTitle().isBlank()) {
+            sb.append("<h2>").append(escapeHtml(b.getTitle())).append("</h2>");
+        }
+        appendItemList(sb, "ul", "bb-pros", b.getPositive());
+        appendItemList(sb, "ul", "bb-cons", b.getNegative());
+        sb.append("</div>");
+        return sb.toString();
+    }
+
+    /** Phù hợp với ai → mỗi thẻ một &lt;p&gt; (đối tượng đậm → lời khuyên → link). */
+    private String renderSuitability(DescriptionBlock.SuitabilityBlock b) {
+        StringBuilder sb = new StringBuilder("<div class=\"bb-suitability\">");
+        if (b.getTitle() != null && !b.getTitle().isBlank()) {
+            sb.append("<h2>").append(escapeHtml(b.getTitle())).append("</h2>");
+        }
+        if (b.getCards() != null) {
+            for (DescriptionBlock.SuitabilityBlock.SuitabilityCard c : b.getCards()) {
+                if (c == null) continue;
+                String audience = c.getAudience();
+                String advice = c.getAdvice();
+                String linkLabel = c.getLinkLabel();
+                String linkUrl = c.getLinkUrl();
+                boolean hasLink = linkLabel != null && !linkLabel.isBlank() && linkUrl != null && !linkUrl.isBlank();
+                if ((audience == null || audience.isBlank()) && (advice == null || advice.isBlank()) && !hasLink) continue;
+                sb.append("<p class=\"bb-suitability-card\">");
+                if (audience != null && !audience.isBlank()) {
+                    sb.append("<strong>").append(escapeHtml(audience)).append("</strong> ");
+                }
+                if (advice != null && !advice.isBlank()) {
+                    sb.append(escapeHtml(advice)).append(" ");
+                }
+                if (hasLink) {
+                    sb.append("<a href=\"").append(escapeAttr(linkUrl)).append("\">")
+                      .append(escapeHtml(linkLabel)).append("</a>");
+                }
+                sb.append("</p>");
+            }
+        }
+        sb.append("</div>");
+        return sb.toString();
+    }
+
+    /** Bảng size → HTML tự do (sanitize qua Safelist chung). */
+    private String renderSizeGuide(DescriptionBlock.SizeGuideBlock b) {
+        StringBuilder sb = new StringBuilder("<div class=\"bb-size-guide\">");
+        if (b.getTitle() != null && !b.getTitle().isBlank()) {
+            sb.append("<h2>").append(escapeHtml(b.getTitle())).append("</h2>");
+        }
+        if (b.getHtml() != null) {
+            sb.append(b.getHtml());
+        }
+        sb.append("</div>");
+        return sb.toString();
+    }
+
+    /** Helper: render một &lt;ul/ol class&gt; từ danh sách chuỗi (bỏ phần tử rỗng). */
+    private void appendItemList(StringBuilder sb, String tag, String cssClass, List<String> items) {
+        if (items == null || items.isEmpty()) return;
+        sb.append("<").append(tag).append(" class=\"").append(cssClass).append("\">");
+        for (String item : items) {
+            if (item != null && !item.isBlank()) {
+                sb.append("<li>").append(escapeHtml(item)).append("</li>");
+            }
+        }
+        sb.append("</").append(tag).append(">");
+    }
+
     private String renderCallout(DescriptionBlock.CalloutBlock b) {
         String variant = b.getVariant() != null ? b.getVariant() : "info";
         StringBuilder sb = new StringBuilder("<div class=\"bb-callout bb-callout-").append(variant).append("\">");
@@ -194,11 +267,19 @@ public class DescriptionBlockRenderer {
         return new Safelist()
                 .addTags("h2", "h3", "p", "ul", "ol", "li", "hr", "br",
                          "b", "i", "strong", "em", "u", "a", "img", "blockquote",
-                         "figure", "figcaption", "div")
+                         "figure", "figcaption", "div",
+                         // Bảng size (sizeGuide) là HTML tự do — cho phép thẻ bảng.
+                         "table", "thead", "tbody", "tfoot", "tr", "th", "td", "caption", "colgroup", "col")
                 .addAttributes("a", "href", "rel", "target")
                 .addAttributes("img", "src", "alt", "width", "height")
                 .addAttributes("div", "class", "data-provider", "data-src")
                 .addAttributes("p", "class")
+                .addAttributes("ul", "class")
+                .addAttributes("ol", "class")
+                .addAttributes("table", "class", "border", "cellpadding", "cellspacing")
+                .addAttributes("th", "colspan", "rowspan", "scope")
+                .addAttributes("td", "colspan", "rowspan")
+                .addAttributes("col", "span")
                 .addProtocols("a", "href", "http", "https", "mailto")
                 .addProtocols("img", "src", "http", "https");
     }

@@ -1,32 +1,19 @@
 "use client";
 
-import Link from "next/link";
+import { useId, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import {
-  AlertTriangle,
-  Check,
-  Droplets,
-  Glasses,
-  HardHat,
-  Headphones,
-  Lightbulb,
-  Package,
-  Plug,
-  Settings2,
-  ShieldCheck,
-  Sparkles,
-  Wind,
-  Wrench,
-  X,
-  type LucideIcon,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Pagination } from "swiper/modules";
+import type { Swiper as SwiperType } from "swiper";
+import "swiper/css";
+import "swiper/css/pagination";
 import { useLocalizedField } from "@/components/i18n/LocalizedContent";
 import { LHtml } from "@/components/i18n/LocalizedContent";
-import { Tr } from "@/components/i18n/Tr";
 import { sanitizeRichHtml } from "@/lib/utils/html";
-import type { ProductHighlight } from "@/lib/contracts/public";
-import { parseSuitabilityCards } from "@/lib/utils/suitability";
-import { parseInstallationGuide } from "@/lib/utils/installation";
+import { resolveMediaUrl } from "@/lib/utils/format";
+import { cn } from "@/lib/utils";
+import type { VideoAsset } from "@/lib/contracts/public";
 import {
   Accordion,
   AccordionContent,
@@ -65,11 +52,11 @@ export function ProductSpecsTable({ viSpecs }: { viSpecs: Spec[] }) {
             <tr key={i} className="border-b border-border last:border-b-0 even:bg-muted/30">
               <th
                 scope="row"
-                className="w-[38%] px-3.5 py-3.5 text-left align-top text-body font-semibold uppercase tracking-wide text-muted-foreground"
+                className="w-[38%] px-3.5 py-3.5 text-left align-top font-barlow font-semibold uppercase tracking-wide text-muted-foreground"
               >
                 {s.name}
               </th>
-              <td className="px-3.5 py-3.5 align-top text-body text-foreground">{s.value}</td>
+              <td className="px-3.5 py-3.5 align-top text-foreground">{s.value}</td>
             </tr>
           ))}
         </tbody>
@@ -104,7 +91,7 @@ export function ProductFaqs({ viFaqs }: { viFaqs: Faq[] }) {
               >
                 {String(i + 1).padStart(2, "0")}
               </span>
-              <span className="text-15 font-semibold leading-snug">{faq.question}</span>
+              <span className="text-18 font-semibold leading-snug">{faq.question}</span>
             </span>
           </AccordionTrigger>
           <AccordionContent>
@@ -134,119 +121,6 @@ export function ProductDescriptionTab({ viHtml }: { viHtml: string }) {
   return <LHtml field="description" viHtml={viHtml} className="wyswyg" />;
 }
 
-// Bộ icon dựng sẵn cho các bước "Hướng dẫn lắp đặt" (V242) — admin chọn theo key, web map ra
-// lucide. Web KHÔNG nạp Font Awesome nên phải dùng lucide. Key lạ/rỗng → Wrench (mặc định).
-// Đồng bộ với INSTALL_ICON_OPTIONS bên admin (ProductDetailScreen.jsx).
-const INSTALL_ICON_MAP: Record<string, LucideIcon> = {
-  wrench: Wrench,
-  glasses: Glasses,
-  wind: Wind,
-  "hard-hat": HardHat,
-  headphones: Headphones,
-  sparkles: Sparkles,
-  "shield-check": ShieldCheck,
-  settings: Settings2,
-  droplets: Droplets,
-  package: Package,
-  plug: Plug,
-};
-
-/**
- * Khối "Hướng dẫn lắp đặt" (V242) — field `installationGuide` lưu JSON object
- * `{ steps: [{ icon, title, body, tip?, warning? }], maintenance? }`. Đọc bản EN từ
- * `LocalizedContentProvider` (mirror theo index) nếu có nội dung, fallback về JSON `vi` render
- * sẵn ở server. Mỗi bước: số thứ tự + icon + tiêu đề + nội dung + hộp mẹo (💡) / cảnh báo (⚠️);
- * cuối khối có ghi chú bảo dưỡng. Lưới 2 cột trên desktop, 1 cột mobile.
- */
-export function ProductInstallationGuide({ viJson }: { viJson: string | null }) {
-  const t = useTranslations("Product");
-  const enGuide = parseInstallationGuide(useLocalizedField<unknown>("installationGuide"));
-  const viGuide = parseInstallationGuide(viJson);
-  const enHasContent =
-    enGuide.steps.some((s) => (s.title ?? "").trim() || (s.body ?? "").trim()) ||
-    enGuide.maintenance.trim().length > 0;
-  const guide = enHasContent ? enGuide : viGuide;
-
-  // icon dùng chung cả vi/en: khi dùng bản EN mà bước thiếu icon thì lấy từ bản VI cùng index.
-  const steps = guide.steps
-    .map((s, i) => ({ ...s, icon: (s.icon ?? "").trim() || (viGuide.steps[i]?.icon ?? "").trim() }))
-    .filter((s) => (s.title ?? "").trim() || (s.body ?? "").trim());
-  const maintenance = guide.maintenance.trim();
-
-  if (steps.length === 0 && !maintenance) {
-    return (
-      <div className="wyswyg">
-        <p>{t("installationEmpty")}</p>
-      </div>
-    );
-  }
-
-  const stepLabel = t("installationStepLabel");
-
-  return (
-    <div>
-      {steps.length > 0 && (
-        <div className="grid gap-px border border-border bg-border sm:grid-cols-2">
-          {steps.map((step, index) => {
-            const Icon = INSTALL_ICON_MAP[(step.icon ?? "").trim()] ?? Wrench;
-            const title = (step.title ?? "").trim();
-            const body = (step.body ?? "").trim();
-            const tip = (step.tip ?? "").trim();
-            const warning = (step.warning ?? "").trim();
-            return (
-              <div key={index} className="flex flex-col bg-background p-6">
-                <div className="mb-3 flex items-center gap-2 font-cta text-body font-bold uppercase tracking-wide text-brand">
-                  <span>
-                    {stepLabel} {String(index + 1).padStart(2, "0")}
-                  </span>
-                  <span className="h-px flex-1 bg-border" aria-hidden />
-                </div>
-                <Icon className="mb-3 h-7 w-7 text-foreground" aria-hidden />
-                {title && (
-                  <h3 className="mb-2 font-heading text-h3 font-bold uppercase tracking-wide text-foreground">
-                    {title}
-                  </h3>
-                )}
-                {body && <p className="text-body-lg leading-relaxed text-muted-foreground">{body}</p>}
-                {tip && (
-                  <div className="mt-3 flex gap-2 border-l-[3px] border-l-brand bg-secondary px-3 py-2.5 text-15 leading-snug text-muted-foreground">
-                    <Lightbulb className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand" aria-hidden />
-                    <span>
-                      <strong className="font-semibold text-foreground">{t("installationTipLabel")}:</strong> {tip}
-                    </span>
-                  </div>
-                )}
-                {warning && (
-                  <div className="mt-3 flex gap-2 border-l-[3px] border-l-state-warning bg-state-warning-bg px-3 py-2.5 text-15 leading-snug text-state-warning-text">
-                    <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-state-warning" aria-hidden />
-                    <span>
-                      <strong className="font-semibold">{t("installationWarningLabel")}:</strong> {warning}
-                    </span>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-      {maintenance && (
-        <div
-          className={`flex items-start gap-3.5 border border-border bg-secondary p-5 ${
-            steps.length > 0 ? "border-t-0" : ""
-          }`}
-        >
-          <Wrench className="mt-0.5 h-5 w-5 shrink-0 text-brand" aria-hidden />
-          <div>
-            <p className="mb-1 font-heading text-caption font-bold uppercase tracking-wide text-foreground">
-              {t("installationMaintenanceTitle")}
-            </p>
-            <p className="text-body leading-relaxed text-muted-foreground">{maintenance}</p>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 /** Nội dung dài SEO cuối trang (contentBottom) — rich HTML, đổi theo ngôn ngữ.
  *  Fallback về bản VI render sẵn ở server khi payload EN không có field này. */
@@ -254,105 +128,155 @@ export function ProductContentBottom({ viHtml }: { viHtml: string }) {
   return <LHtml field="contentBottom" viHtml={viHtml} className="wyswyg" />;
 }
 
-/**
- * Khối "Ưu điểm / Nhược điểm" — đọc bản EN từ `LocalizedContentProvider`
- * (positiveNotes / negativeNotes) nếu có, fallback về props `vi` render sẵn ở server,
- * giống các khối dịch được khác (PRODUCT_RULE_002 fallback field-by-field).
- */
-export function ProductProsCons({
-  viPositive,
-  viNegative,
-}: {
-  viPositive: string[];
-  viNegative: string[];
-}) {
-  const enPositive = useLocalizedField<ProductHighlight[]>("positiveNotes");
-  const enNegative = useLocalizedField<ProductHighlight[]>("negativeNotes");
-  const toLines = (notes: ProductHighlight[] | undefined, fallback: string[]) =>
-    Array.isArray(notes) && notes.length > 0
-      ? notes.map((n) => (n.content ?? "").trim()).filter(Boolean)
-      : fallback;
-  const positive = toLines(enPositive, viPositive);
-  const negative = toLines(enNegative, viNegative);
+// Ưu/Nhược điểm + Phù hợp với ai (V246): chuyển thành KHỐI trong mô tả — render bởi
+// ProsConsBlockView / SuitabilityBlockView trong ProductDescriptionBlocks. Component cũ đã gỡ.
 
-  if (positive.length === 0 && negative.length === 0) return null;
+function getYouTubeId(url: string): string | null {
+  if (!url) return null;
+  const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|v\/))([A-Za-z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
+/** Một ô video — embed YouTube hoặc HTML5 video + tiêu đề + mô tả. Dùng chung cho lưới lẫn carousel. */
+function VideoCard({ video }: { video: VideoAsset }) {
+  const ytId = getYouTubeId(video.url ?? "");
+  const rawUrl = resolveMediaUrl(video.url?.trim()) ?? video.url ?? "";
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="relative aspect-video bg-black overflow-hidden">
+        {ytId ? (
+          <iframe
+            className="absolute inset-0 h-full w-full border-none"
+            src={`https://www.youtube-nocookie.com/embed/${ytId}`}
+            title={video.title ?? "Video"}
+            loading="lazy"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        ) : (
+          <video
+            className="absolute inset-0 h-full w-full object-contain"
+            controls
+            preload="metadata"
+            src={rawUrl ? `${rawUrl}#t=0.001` : undefined}
+          />
+        )}
+      </div>
+      {video.title && (
+        <h3 className="font-heading text-h3 font-bold uppercase tracking-wide text-foreground">
+          {video.title}
+        </h3>
+      )}
+      {video.description && (
+        <p className="text-body leading-relaxed text-muted-foreground">{video.description}</p>
+      )}
+    </div>
+  );
+}
+
+// Ngưỡng chuyển sang carousel: từ 3 video trở lên (1–2 video giữ lưới cho khách thấy hết ngay).
+const VIDEO_CAROUSEL_THRESHOLD = 3;
+
+const VIDEO_ARROW_BTN =
+  "absolute top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-foreground transition-opacity hover:opacity-60 pointer-coarse:hidden max-md:hidden [&>svg]:h-9 [&>svg]:w-9";
+
+/** Carousel video (≥3) — lướt ngang 1 (mobile) / 2 (desktop) ô; mũi tên + chấm phân trang chuẩn design-system. */
+function VideosCarousel({ videos }: { videos: VideoAsset[] }) {
+  const t = useTranslations("Common");
+  const swiperRef = useRef<SwiperType | null>(null);
+  const paginationId = `bb-vid-pag-${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
+  const [isLocked, setIsLocked] = useState(false);
 
   return (
-    <div className="grid gap-6 md:grid-cols-2">
-      {positive.length > 0 && (
-        <div className="border-t-2 border-t-pros-accent bg-pros-accent/[0.07] p-5">
-          <h2 className="mb-3 font-heading text-h4 font-bold uppercase tracking-wide text-pros-accent"><Tr ns="Product" k="prosTitle" /></h2>
-          <ul className="flex flex-col gap-2">
-            {positive.map((note, index) => (
-              <li key={index} className="flex gap-2 text-foreground">
-                <Check className="mt-1 h-4 w-4 shrink-0 text-pros-accent" aria-hidden />
-                <span>{note}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
+    <div className="relative">
+      {!isLocked && (
+        <button
+          type="button"
+          className={cn(VIDEO_ARROW_BTN, "-left-3 min-[1440px]:-left-12")}
+          onClick={() => swiperRef.current?.slidePrev()}
+          aria-label={t("scrollPrev")}
+        >
+          <ChevronLeft strokeWidth={1.5} />
+        </button>
       )}
-      {negative.length > 0 && (
-        <div className="border-t-2 border-t-cons-accent bg-cons-accent/[0.06] p-5">
-          <h2 className="mb-3 font-heading text-h4 font-bold uppercase tracking-wide text-cons-accent"><Tr ns="Product" k="consTitle" /></h2>
-          <ul className="flex flex-col gap-2">
-            {negative.map((note, index) => (
-              <li key={index} className="flex gap-2 text-muted-foreground">
-                <X className="mt-1 h-4 w-4 shrink-0 text-cons-accent" aria-hidden />
-                <span>{note}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
+
+      <div className="w-full overflow-hidden">
+        <Swiper
+          // FOUC guard trước khi Swiper init: khoá bề rộng slide theo breakpoint (1 → md:2 → xl:3).
+          className="md:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/2 min-[1280px]:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/3"
+          modules={[Pagination]}
+          onSwiper={(s) => {
+            swiperRef.current = s;
+            setIsLocked(s.isLocked);
+          }}
+          onBreakpoint={(s) => setIsLocked(s.isLocked)}
+          speed={600}
+          // Hiện NHIỀU video cùng lúc trên desktop (mobile 1 → md 2 → xl 3); mỗi lần lướt dịch 1 video
+          // (slidesPerGroup=1) theo đúng ý "qua lại 1 video".
+          slidesPerView={1}
+          slidesPerGroup={1}
+          spaceBetween={24}
+          watchOverflow
+          pagination={{ el: `#${paginationId}`, clickable: true }}
+          breakpoints={{
+            768: { slidesPerView: 2, slidesPerGroup: 1, spaceBetween: 28 },
+            1280: { slidesPerView: 3, slidesPerGroup: 1, spaceBetween: 32 },
+          }}
+        >
+          {videos.map((video, i) => (
+            <SwiperSlide key={i} className="h-auto">
+              <VideoCard video={video} />
+            </SwiperSlide>
+          ))}
+        </Swiper>
+      </div>
+
+      {!isLocked && (
+        <button
+          type="button"
+          className={cn(VIDEO_ARROW_BTN, "-right-3 min-[1440px]:-right-12")}
+          onClick={() => swiperRef.current?.slideNext()}
+          aria-label={t("scrollNext")}
+        >
+          <ChevronRight strokeWidth={1.5} />
+        </button>
+      )}
+
+      {!isLocked && (
+        <div
+          id={paginationId}
+          className="flex justify-center mt-[30px] [&_.swiper-pagination-bullet]:my-0 [&_.swiper-pagination-bullet]:mx-[5px] [&_.swiper-pagination-bullet]:h-[10px] [&_.swiper-pagination-bullet]:w-[10px] [&_.swiper-pagination-bullet]:!rounded-full [&_.swiper-pagination-bullet]:bg-border-default [&_.swiper-pagination-bullet]:opacity-100 [&_.swiper-pagination-bullet]:[transition:all_0.3s_ease] [&_.swiper-pagination-bullet-active]:!w-[20px] [&_.swiper-pagination-bullet-active]:!rounded-[20px] [&_.swiper-pagination-bullet-active]:!bg-brand"
+          aria-hidden="true"
+        />
       )}
     </div>
   );
 }
 
 /**
- * Khối "Phù hợp với ai" (V240) — danh sách thẻ tư vấn lưu trong field `suitabilityAdvisory`
- * dưới dạng JSON array `[{ audience, advice, linkLabel?, linkUrl? }]`. Đọc bản EN từ
- * `LocalizedContentProvider` (mirror theo index) nếu có, fallback về JSON `vi` render sẵn ở
- * server. Mỗi thẻ: đối tượng (in đậm) + lời khuyên + link gợi ý nội bộ tùy chọn.
+ * Khối "Video sản phẩm" — tự thích ứng theo số lượng: ≤2 video xếp lưới 1→2 cột (khách thấy hết ngay);
+ * ≥3 video chuyển sang carousel lướt ngang (gọn chiều cao, đồng bộ carousel "sản phẩm tương tự").
  */
-export function ProductSuitability({ viJson }: { viJson: string | null }) {
-  const enCards = parseSuitabilityCards(useLocalizedField<unknown>("suitabilityAdvisory"));
-  const viCards = parseSuitabilityCards(viJson);
-  const cards = enCards.length > 0 ? enCards : viCards;
-  const visible = cards.filter(
-    (card) => (card.audience ?? "").trim() || (card.advice ?? "").trim(),
-  );
-  if (visible.length === 0) return null;
+export function ProductVideosSection({ videos }: { videos: VideoAsset[] }) {
+  const t = useTranslations("Product");
+
+  if (videos.length === 0) {
+    return (
+      <div className="wyswyg">
+        <p>{t("videosEmpty")}</p>
+      </div>
+    );
+  }
+
+  if (videos.length >= VIDEO_CAROUSEL_THRESHOLD) {
+    return <VideosCarousel videos={videos} />;
+  }
 
   return (
-    <div className="flex flex-col gap-2">
-      {visible.map((card, index) => {
-        const audience = (card.audience ?? "").trim();
-        const advice = (card.advice ?? "").trim();
-        const linkLabel = (card.linkLabel ?? "").trim();
-        const linkUrl = (card.linkUrl ?? "").trim();
-        const hasLink = Boolean(linkLabel && linkUrl);
-        return (
-          // Một dòng chảy theo mockup: đối tượng in đậm → lời khuyên (+ link gợi ý) cùng đoạn,
-          // viền trái đỏ, nền xám nhạt. Tự xuống dòng khi dài.
-          <p
-            key={index}
-            className="border-l-4 border-l-brand bg-secondary px-4 py-3 leading-relaxed text-muted-foreground"
-          >
-            {audience && <strong className="font-bold text-foreground">{audience}</strong>}
-            {audience && (advice || hasLink) && <span> → </span>}
-            {advice && <span>{advice}</span>}
-            {hasLink && (
-              <>
-                {advice && " "}
-                <Link href={linkUrl} className="font-medium text-brand hover:underline">
-                  {linkLabel}
-                </Link>
-              </>
-            )}
-          </p>
-        );
-      })}
+    <div className="grid gap-8 sm:grid-cols-2">
+      {videos.map((video, i) => (
+        <VideoCard key={i} video={video} />
+      ))}
     </div>
   );
 }

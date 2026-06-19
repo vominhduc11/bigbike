@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
-import type { ImageAsset, Product, ProductCommitment, ProductPrice, ProductStockState, ProductVariant, VideoAsset } from "@/lib/contracts/public";
+import type { GalleryMedia, ImageAsset, Product, ProductCommitment, ProductPrice, ProductStockState, ProductVariant } from "@/lib/contracts/public";
 import { useCart } from "@/lib/cart-context";
 import { derivePricing } from "@/lib/pricing";
 import { formatVndNumber, resolveMediaUrl, safeText, toLegacyWpMediaUrl, zaloHref } from "@/lib/utils/format";
@@ -63,8 +63,7 @@ const COMMITMENT_ICON_MAP: Record<string, LucideIcon> = {
 
 type Props = {
   product: Product;
-  gallery: ImageAsset[];
-  videos: VideoAsset[];
+  gallery: GalleryMedia[];
   rating: number | null;
   ratingCount: number | null;
   /** Zalo URL từ settings (zalo_url) — dùng cho nút tư vấn thay thế "Mua ngay". */
@@ -98,7 +97,6 @@ function distinctOptions(variants: ProductVariant[], attrName: string) {
 export function WpPurchaseSection({
   product,
   gallery,
-  videos,
   rating,
   ratingCount,
   zaloUrl,
@@ -291,15 +289,14 @@ export function WpPurchaseSection({
     <>
     <div className="row bb-wp-pdp" itemProp="itemReviewed" itemScope itemType="https://schema.org/Product">
       {/* Gallery col — dùng ProductGallery (Swiper) y như PurchaseSectionClient.
-          Ảnh chính + dải thumbnail là 2 Swiper liên kết qua module Thumbs; tập ảnh
-          (cover-đầu + khử trùng + theo màu) do ProductGallery tự xử lý. Video được
-          ghép thẳng vào dải gallery (sau ảnh) — đúng như code cũ, KHÔNG tách tab
-          "Videos" riêng. ProductGallery chỉ hiện video khi chưa chọn biến thể. */}
+          Ảnh chính + dải thumbnail là 2 Swiper liên kết qua module Thumbs; tập media
+          (ảnh + VIDEO, cover-đầu + khử trùng + theo màu) do ProductGallery tự xử lý.
+          V248: video nằm NGAY TRONG dải gallery (admin đăng cùng ảnh, theo từng màu) —
+          tách khỏi mục "Video" riêng phía dưới (product.videos). */}
       <div className="col-md-7 min-w-0 max-[1023px]:!flex-[0_0_100%] max-[1023px]:!max-w-full lg:!sticky lg:z-20 lg:self-start lg:top-[calc(var(--bb-header-height)+1rem)]">
         <ProductGallery
           mainImage={product.image}
           gallery={gallery}
-          videos={vis("videos") ? videos : []}
           altFallback={name}
           variantImage={colorVariant?.image ?? null}
           variantGallery={colorVariant?.gallery ?? undefined}
@@ -333,7 +330,7 @@ export function WpPurchaseSection({
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div className="price">
               <p className="price js-single-price flex flex-wrap items-baseline gap-x-3">
-                <span>{formatVndNumber(current)} ₫</span>
+                <span className="!text-[2rem] !leading-tight !text-brand !font-bold">{formatVndNumber(current)} ₫</span>
                 {showOld ? <del>{formatVndNumber(compare!)} ₫</del> : null}
               </p>
             </div>
@@ -411,7 +408,7 @@ export function WpPurchaseSection({
                           <div className="variation-radios">
                             {opts.map((o) => {
                               const checked = selectedOptions[attr] === o.value;
-                              const swatch = color ? imgUrl(o.rep.image ?? o.rep.gallery?.[0]) : "";
+                              const swatch = color ? imgUrl(o.rep.image ?? o.rep.gallery?.[0]?.image) : "";
                               // STOCK_RULE_005: làm mờ option hết hàng (vẫn click được để
                               // xem ảnh màu), chỉ KHÓA option của biến thể không bán
                               // (isAvailable=false). Probe = lựa chọn hiện tại + option này.
@@ -569,8 +566,8 @@ export function WpPurchaseSection({
                             return <Icon className="size-7 shrink-0 text-brand" strokeWidth={1.75} aria-hidden="true" />;
                           })()}
                           <div className="min-w-0">
-                            <strong className="block font-body text-base font-semibold leading-snug text-foreground">{c.title}</strong>
-                            {c.subtitle ? <span className="mt-1 block text-sm leading-snug text-muted-foreground">{c.subtitle}</span> : null}
+                            <strong className="block font-body text-lg font-semibold leading-snug text-foreground">{c.title}</strong>
+                            {c.subtitle ? <span className="mt-2 block text-base leading-snug text-muted-foreground">{c.subtitle}</span> : null}
                           </div>
                         </li>
                       ) : null,

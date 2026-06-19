@@ -12,7 +12,7 @@ public record ProductVariant(
         /** On-hand count for this specific variant. Null if not tracked. */
         Integer stockQuantity,
         ImageAsset image,
-        List<ImageAsset> gallery,
+        List<GalleryMedia> gallery,
         boolean isAvailable,
         boolean trackSerials
 ) {

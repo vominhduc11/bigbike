@@ -23,7 +23,10 @@ function makeProduct(overrides: Partial<Product> = {}): Product {
     category: { id: "c1", slug: "ao-giap", name: "Áo giáp" },
     brand: { id: "b1", slug: "abc", name: "ABC" },
     image: { url: "https://cdn/main.jpg", alt: "Áo giáp ABC" },
-    gallery: [{ url: "https://cdn/g1.jpg" }, { url: "https://cdn/main.jpg" }],
+    gallery: [
+      { mediaType: "image", image: { url: "https://cdn/g1.jpg" } },
+      { mediaType: "image", image: { url: "https://cdn/main.jpg" } },
+    ],
     price: { retailPrice: 1_000_000, salePrice: 800_000, currency: "VND" },
     stockState: "IN_STOCK",
     publishStatus: "PUBLISHED",

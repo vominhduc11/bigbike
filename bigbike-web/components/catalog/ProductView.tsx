@@ -11,14 +11,13 @@ import {
   ProductContentBottom,
   ProductDescriptionTab,
   ProductFaqs,
-  ProductInstallationGuide,
-  ProductProsCons,
   ProductSpecsTable,
-  ProductSuitability,
+  ProductVideosSection,
 } from "@/components/catalog/ProductLocalizedParts";
 import { ProductDescriptionBlocks } from "@/components/catalog/ProductDescriptionBlocks";
 import { ProductTabsSection, type BuiltinTab } from "@/components/catalog/ProductTabsSection";
 import { FeaturedSpecsBar } from "@/components/catalog/FeaturedSpecsBar";
+import { TrustLivePrice, TrustLiveStock } from "@/components/catalog/ProductTrustLive";
 import { ProductSwiper } from "@/components/catalog/ProductSwiper";
 import { ReadingProgressBar } from "@/components/catalog/ReadingProgressBar";
 import { ReviewsSection } from "@/components/catalog/ReviewsSection";
@@ -27,12 +26,10 @@ import { RecentlyViewedSection } from "@/components/catalog/RecentlyViewedSectio
 import { ProductContactCta } from "@/components/catalog/ProductContactCta";
 import type { RecentProduct } from "@/lib/recently-viewed";
 import type { DescriptionBlock, Product, PublicSiteSetting } from "@/lib/contracts/public";
-import { safeArray, safeText, formatVnd } from "@/lib/utils/format";
+import { safeArray, safeText } from "@/lib/utils/format";
 import { pickSetting } from "@/lib/utils/settings";
 import { sanitizeRichHtml } from "@/lib/utils/html";
-import { hasSuitabilityContent } from "@/lib/utils/suitability";
-import { hasInstallationContent } from "@/lib/utils/installation";
-import { parseSectionVisibility, isSectionVisible } from "@/lib/utils/section-visibility";
+import { parseSectionVisibility, isSectionVisible, parseSectionOrder } from "@/lib/utils/section-visibility";
 import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 
 type ProductViewProps = {
@@ -111,24 +108,12 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
 
   // Quick Answer (V236) — đoạn AIO 40–60 từ, blockquote đặt TRƯỚC H2 đầu tiên.
   const quickAnswer = safeText(product.quickAnswerSummary, "");
-  // "Phù hợp với ai" (V240) — JSON array các thẻ tư vấn; parse bản vi để gate hiển thị (server).
-  // Mỗi gate gộp thêm vis(key): admin tắt → coi như không có nội dung (ẩn cả desktop lẫn widget tab mobile).
-  const hasSuitability = hasSuitabilityContent(product.suitabilityAdvisory) && vis("suitability");
+  // Ưu/Nhược điểm · Phù hợp với ai · Bảng size (V246): giờ là KHỐI nằm trong mô tả (descriptionBlocks),
+  // admin tự đặt vị trí; web render qua ProductDescriptionBlocks. Không còn section/tab cố định ở đây.
   const hasDescription = (descriptionBlocks.length > 0 || Boolean(descriptionHtml)) && vis("description");
 
-  const positiveNotes = safeArray(product.positiveNotes)
-    .map((n) => safeText(n.content, ""))
-    .filter(Boolean);
-  const negativeNotes = safeArray(product.negativeNotes)
-    .map((n) => safeText(n.content, ""))
-    .filter(Boolean);
   const warrantyMonths = product.warrantyMonths ?? null;
   const warrantyScope = safeText(product.warrantyScope, "");
-  const sizeGuideHtml = product.sizeGuide ? sanitizeRichHtml(product.sizeGuide) : "";
-  // "Hướng dẫn lắp đặt" (V242) — JSON object các bước; chuỗi gốc truyền thẳng cho
-  // ProductInstallationGuide parse + render (gate hiển thị qua hasInstallationContent).
-  const installationJson = product.installationGuide ?? null;
-
   const brand = product.brand ?? null;
   const category = product.category?.slug === "chua-phan-loai" ? null : (product.category ?? null);
 
@@ -137,37 +122,31 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
     slug: product.slug,
     name: product.name,
     price: product.price?.retailPrice ?? null,
-    imageUrl: product.image?.url ?? gallery[0]?.url ?? null,
+    imageUrl: product.image?.url ?? gallery[0]?.image?.url ?? null,
     categoryName: product.category?.name ?? null,
     rating: product.rating ?? null,
     ratingCount: product.ratingCount ?? null,
   };
 
-  // Nhóm "Thông số" (V236 restructure): Mô tả/Tính năng kéo RA thành khối full-trang (#4); Đánh giá
-  // tách riêng sau FAQ (#10). Bảng size + Thông số + Lắp đặt + FAQ:
-  //   • DESKTOP (md+) → các KHỐI XẾP CHỒNG riêng (đúng mockup desktop).
-  //   • MOBILE (max-md) → gói lại trong widget tab "như ban đầu" (WpProductTabs) cho dễ điều hướng.
-  // Hai bản cùng nội dung, ẩn/hiện theo breakpoint. Tự ẩn từng mục khi rỗng.
-  const hasInstallation = hasInstallationContent(installationJson) && vis("installation");
-
   // Gate có-nội-dung + đã-bật cho các section còn lại (dùng chung desktop + widget tab mobile).
   const showSpecs = specs.length > 0 && vis("specifications");
   const showFaqs = faqs.length > 0 && vis("faqs");
-  const showSize = Boolean(sizeGuideHtml) && vis("sizeGuide");
+  const showVideos = videos.length > 0 && vis("videos");
   const showRelated = related.length > 0 && vis("related");
   const showAccessories = accessories.length > 0 && vis("accessories");
   const showReviews = !previewMode && vis("reviews");
 
-  // Trust block "Mua tại BigBike.vn" (#11) — lưới ô số liệu thương mại. Giá/Kho/BH lấy từ sản phẩm;
-  // Giao/Đổi là chính sách shop (nhãn tĩnh i18n); Hotline/Địa chỉ từ site settings (rỗng trong preview).
+  // Trust block "Mua tại BigBike.vn" (#11) — lưới ô số liệu thương mại. Giá/Kho lấy THỜI GIAN THỰC
+  // (TrustLivePrice/TrustLiveStock — cùng nguồn với nút mua, có tính giảm giá + tắt-bán thủ công, để
+  // KHÔNG mâu thuẫn); BH lấy từ sản phẩm; Giao/Đổi là chính sách shop (nhãn tĩnh i18n); Hotline/Địa
+  // chỉ từ site settings (rỗng trong preview).
   const retailPrice = product.price?.retailPrice ?? null;
-  const stockStateKey = product.stockState ? `stockState.${product.stockState}` : null;
   const trustItems: Array<{ key: string; labelKey: string; value: ReactNode }> = [];
   if (retailPrice != null) {
-    trustItems.push({ key: "price", labelKey: "trustPrice", value: formatVnd(retailPrice) });
+    trustItems.push({ key: "price", labelKey: "trustPrice", value: <TrustLivePrice product={product} previewMode={previewMode} /> });
   }
-  if (stockStateKey) {
-    trustItems.push({ key: "stock", labelKey: "trustStock", value: <Tr ns="Product" k={stockStateKey} /> });
+  if (product.stockState) {
+    trustItems.push({ key: "stock", labelKey: "trustStock", value: <TrustLiveStock product={product} previewMode={previewMode} /> });
   }
   if (warrantyMonths != null) {
     trustItems.push({
@@ -182,8 +161,19 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
   } else if (warrantyScope) {
     trustItems.push({ key: "warranty", labelKey: "warranty", value: warrantyScope });
   }
-  trustItems.push({ key: "shipping", labelKey: "trustShipping", value: <Tr ns="Product" k="trustShippingValue" /> });
-  trustItems.push({ key: "exchange", labelKey: "trustExchange", value: <Tr ns="Product" k="trustExchangeValue" /> });
+  // Giao hàng / Đổi trả: admin nhập theo TỪNG sản phẩm (V247); để trống → câu mặc định chung (i18n).
+  const pdpShippingLine = safeText(product.pdpShippingLine, "");
+  const pdpReturnLine = safeText(product.pdpReturnLine, "");
+  trustItems.push({
+    key: "shipping",
+    labelKey: "trustShipping",
+    value: pdpShippingLine ? pdpShippingLine : <Tr ns="Product" k="trustShippingValue" />,
+  });
+  trustItems.push({
+    key: "exchange",
+    labelKey: "trustExchange",
+    value: pdpReturnLine ? pdpReturnLine : <Tr ns="Product" k="trustExchangeValue" />,
+  });
   if (hotline) {
     trustItems.push({ key: "hotline", labelKey: "trustHotline", value: hotline });
   }
@@ -199,7 +189,7 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
       <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {trustItems.map((item) => (
           <div key={item.key} className="border border-border bg-background p-3">
-            <dd className="m-0 font-heading text-body font-semibold">{item.value}</dd>
+            <dd className="m-0 font-barlow text-18 font-semibold">{item.value}</dd>
             <dt className="mt-1 text-overline uppercase tracking-wide text-muted-foreground">
               <Tr ns="Product" k={item.labelKey} />
             </dt>
@@ -207,17 +197,6 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
         ))}
       </dl>
     </div>
-  ) : null;
-
-  // Nội dung 3 khối Ưu/Nhược · Phù hợp với ai · Thông tin SP tách thành biến dùng chung cho cả
-  // bản DESKTOP (khối xếp chồng riêng) lẫn MOBILE (tab trong widget) — tránh trùng lặp markup.
-  const hasProsCons = (positiveNotes.length > 0 || negativeNotes.length > 0) && vis("prosCons");
-  const prosConsGrid = hasProsCons ? (
-    <ProductProsCons viPositive={positiveNotes} viNegative={negativeNotes} />
-  ) : null;
-
-  const suitabilityBody = hasSuitability ? (
-    <ProductSuitability viJson={product.suitabilityAdvisory ?? null} />
   ) : null;
 
   // MOBILE: gói TẤT CẢ nội dung giữa Quick Answer và Trust block vào MỘT widget tab (đủ bộ như user
@@ -235,31 +214,18 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
       ),
     };
   }
-  if (prosConsGrid) {
-    specGroupBuiltins.prosCons = { id: "tab-pros-cons", labelKey: "prosCons", content: prosConsGrid };
-  }
-  if (suitabilityBody) {
-    specGroupBuiltins.suitability = { id: "tab-suitability", labelKey: "suitability", content: suitabilityBody };
-  }
-  if (showSize) {
-    specGroupBuiltins.size = {
-      id: "tab-size",
-      labelKey: "size",
-      content: <div className="wyswyg" dangerouslySetInnerHTML={{ __html: sizeGuideHtml }} />,
-    };
-  }
   if (showSpecs) {
     specGroupBuiltins.specs = { id: "tab-more_infomation", labelKey: "specs", content: <ProductSpecsTable viSpecs={specs} /> };
   }
-  if (hasInstallation) {
-    specGroupBuiltins.installation = {
-      id: "tab-installation",
-      labelKey: "installation",
-      content: <ProductInstallationGuide viJson={installationJson} />,
-    };
-  }
   if (showFaqs) {
     specGroupBuiltins.faq = { id: "tab-faq", labelKey: "faqs", content: <ProductFaqs viFaqs={faqs} /> };
+  }
+  if (showVideos) {
+    specGroupBuiltins.videos = {
+      id: "tab-videos",
+      labelKey: "videos",
+      content: <ProductVideosSection videos={videos} />,
+    };
   }
   // Đánh giá là tab cuối (bỏ qua trong preview vì chưa có id sản phẩm). Panel mang id="reviews"
   // để nút "Viết đánh giá đầu tiên" cuộn/nhảy tới đúng (xem scrollToReviews ở WpPurchaseSection).
@@ -270,10 +236,125 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
   if (trustCard) {
     specGroupBuiltins.trust = { id: "tab-trust", labelKey: "trust", content: trustCard };
   }
-  const specGroupOrder = [
-    "description", "prosCons", "suitability", "size", "specs", "installation", "faq", "reviews", "trust",
+  // Thứ tự mặc định các section body (dùng cho cả desktop stacked + mobile tab widget).
+  const BODY_SECTION_DEFAULT_ORDER = [
+    "description", "related", "specifications", "faqs", "videos", "reviews", "trust", "accessories",
   ];
+  const bodyOrder = parseSectionOrder(product.sectionVisibility, BODY_SECTION_DEFAULT_ORDER);
+
+  // Mobile tab widget chỉ gồm các tab có thể nhét vào widget (không phải related/accessories).
+  const TAB_KEYS = new Set(["description", "specifications", "faqs", "videos", "reviews", "trust"]);
+  const specGroupOrder = bodyOrder.filter((k) => TAB_KEYS.has(k));
   const hasSpecGroup = Object.keys(specGroupBuiltins).length > 0;
+
+  // Các section body desktop — render theo thứ tự admin đã cấu hình.
+  const bodyNodes: Record<string, ReactNode> = {};
+
+  if (hasDescription) {
+    bodyNodes.description = (
+      <div key="description" className="my-10 max-md:hidden">
+        <ProductDescriptionBlocks
+          blocks={descriptionBlocks}
+          fallback={<ProductDescriptionTab viHtml={descriptionHtml} />}
+        />
+      </div>
+    );
+  }
+
+  if (showRelated) {
+    bodyNodes.related = (
+      <div key="related">
+        <div className="product-list pt-40 pb-20 max-md:hidden">
+          <div className="block-title text-center mb-40">
+            <p className="sub-title"><Tr ns="Product" k="relatedKicker" /></p>
+            <h3><Tr ns="Product" k="relatedTitle" /></h3>
+          </div>
+          <ProductSwiper products={related} />
+        </div>
+        <div className="product-list pt-80 pb-40 md:hidden">
+          <div className="container">
+            <div className="block-title text-center mb-40">
+              <p className="sub-title"><Tr ns="Product" k="relatedKicker" /></p>
+              <h3><Tr ns="Product" k="relatedTitle" /></h3>
+            </div>
+            <ProductSwiper products={related} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (showSpecs) {
+    bodyNodes.specifications = (
+      <section key="specifications" className="my-10 max-md:hidden">
+        <PdpSectionHeading
+          kicker={<Tr ns="Product" k="secKicker.specs" />}
+          title={<Tr ns="Product" k="specifications" />}
+        />
+        <ProductSpecsTable viSpecs={specs} />
+      </section>
+    );
+  }
+
+  if (showFaqs) {
+    bodyNodes.faqs = (
+      <section key="faqs" className="my-10 max-md:hidden">
+        <PdpSectionHeading
+          kicker={<Tr ns="Product" k="secKicker.faq" />}
+          title={<Tr ns="Product" k="faqs" />}
+        />
+        <ProductFaqs viFaqs={faqs} />
+      </section>
+    );
+  }
+
+  if (showVideos) {
+    bodyNodes.videos = (
+      <section key="videos" className="my-10 max-md:hidden">
+        <PdpSectionHeading
+          kicker={<Tr ns="Product" k="secKicker.videos" />}
+          title={<Tr ns="Product" k="videos" />}
+        />
+        <ProductVideosSection videos={videos} />
+      </section>
+    );
+  }
+
+  if (showReviews) {
+    bodyNodes.reviews = (
+      <div key="reviews" className="max-md:hidden">
+        <ReviewsSection productId={product.id} />
+      </div>
+    );
+  }
+
+  if (trustCard) {
+    bodyNodes.trust = (
+      <div key="trust" className="max-md:hidden">
+        <section className="my-10">
+          <PdpSectionHeading
+            kicker={<Tr ns="Product" k="secKicker.trust" />}
+            title={<Tr ns="Product" k="trustBlockTitle" />}
+          />
+          {trustCard}
+        </section>
+      </div>
+    );
+  }
+
+  if (showAccessories) {
+    bodyNodes.accessories = (
+      <div key="accessories" className="product-list pt-80 pb-40">
+        <div className="container">
+          <div className="block-title text-center mb-40">
+            <p className="sub-title"><Tr ns="Product" k="crossSellKicker" /></p>
+            <h3><Tr ns="Product" k="crossSellTitle" /></h3>
+          </div>
+          <ProductSwiper products={accessories} />
+        </div>
+      </div>
+    );
+  }
 
   const inner = (
     <div id="main-content" className="bb-wp-pdp-page">
@@ -313,7 +394,6 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
           <WpPurchaseSection
             product={product}
             gallery={gallery}
-            videos={videos}
             rating={rating}
             ratingCount={ratingCount}
             zaloUrl={zaloUrl || undefined}
@@ -334,168 +414,26 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
             trích dẫn. Chỉ render khi admin có nhập và đã bật. */}
         {quickAnswer && vis("quickAnswer") ? (
           <section className="my-10">
-            <blockquote className="border-l-4 border-brand bg-brand-soft px-5 py-4 text-15 leading-relaxed text-foreground">
+            <blockquote className="border-l-4 border-brand bg-brand-soft px-5 py-4 text-18 leading-relaxed text-foreground">
               <LText field="quickAnswerSummary">{quickAnswer}</LText>
             </blockquote>
           </section>
         ) : null}
 
-        {/* MOBILE — widget tab "như ban đầu" (đủ bộ: Mô tả · Bảng size · Thông số · Lắp đặt · FAQ ·
-            Đánh giá). Đặt TRÊN mô tả. Chỉ hiện ở max-md; desktop dùng khối xếp chồng. */}
+        {/* MOBILE — widget tab (đủ bộ các section có thể nhét vào tab, theo thứ tự admin cấu hình).
+            Chỉ hiện ở max-md; desktop dùng khối xếp chồng bên dưới. */}
         {hasSpecGroup && (
           <div className="my-10 md:hidden">
             <ProductTabsSection tabs={[]} builtins={specGroupBuiltins} defaultOrder={specGroupOrder} />
           </div>
         )}
 
-        {/* #4 Tính năng chi tiết — descriptionBlocks kéo RA khỏi tab thành khối full-trang (DESKTOP).
-            Các khối tự mang tiêu đề H2/H3 (split-block). Trên mobile nằm trong widget tab ở trên. */}
-        {hasDescription && (
-          <div className="my-10 max-md:hidden">
-            <ProductDescriptionBlocks
-              blocks={descriptionBlocks}
-              fallback={<ProductDescriptionTab viHtml={descriptionHtml} />}
-            />
-          </div>
-        )}
-
-        {/* DESKTOP — các khối xếp chồng riêng (#5 Ưu/Nhược → #6 Sản phẩm tương tự → #7 Phù hợp với ai →
-            #8-9 Thông số → Thông tin SP). Trên mobile tất cả nằm trong widget tab ở trên.
-            Dùng `max-md:hidden` (KHÔNG dùng class `hidden` vì WP theme có `.hidden{display:none!important}`
-            unlayered sẽ ẩn cả ở desktop). */}
-        <div className="max-md:hidden">
-          {/* #5 Ưu điểm & Nhược điểm (V175) — USP độc quyền của BigBike. */}
-          {prosConsGrid && (
-            <section className="my-10">
-              <PdpSectionHeading
-                kicker={<Tr ns="Product" k="secKicker.prosCons" />}
-                title={<Tr ns="Product" k="tabs.prosCons" />}
-              />
-              {prosConsGrid}
-            </section>
-          )}
-
-          {/* #6 Sản phẩm tương tự — "Xem thêm lựa chọn". Đặt NGAY sau Ưu/Nhược điểm: khách vừa đọc
-              nhược điểm/giá, đang phân vân → thấy ngay lựa chọn cùng loại, giữ khách lại site thay vì
-              thoát ra tìm đối thủ. Mobile render ở cuối trang. */}
-          {showRelated && (
-            <div className="product-list pt-40 pb-20">
-              <div className="block-title text-center mb-40">
-                <p className="sub-title"><Tr ns="Product" k="relatedKicker" /></p>
-                <h3><Tr ns="Product" k="relatedTitle" /></h3>
-              </div>
-              <ProductSwiper products={related} />
-            </div>
-          )}
-
-          {/* #7 Phù hợp với ai — "Nếu… thì…" (V237). */}
-          {suitabilityBody && (
-            <section className="my-10">
-              <PdpSectionHeading
-                kicker={<Tr ns="Product" k="suitabilityKicker" />}
-                title={<Tr ns="Product" k="suitabilityTitle" />}
-              />
-              {suitabilityBody}
-            </section>
-          )}
-
-          {/* #7 Bảng size (V175) — HTML table do admin nhập, sanitize trước khi render. */}
-          {showSize ? (
-            <section className="my-10">
-              <PdpSectionHeading
-                kicker={<Tr ns="Product" k="secKicker.size" />}
-                title={<Tr ns="Product" k="sizeGuideTitle" />}
-              />
-              <div className="wyswyg" dangerouslySetInnerHTML={{ __html: sizeGuideHtml }} />
-            </section>
-          ) : null}
-
-          {/* #8 Thông số kỹ thuật. */}
-          {showSpecs && (
-            <section className="my-10">
-              <PdpSectionHeading
-                kicker={<Tr ns="Product" k="secKicker.specs" />}
-                title={<Tr ns="Product" k="specifications" />}
-              />
-              <ProductSpecsTable viSpecs={specs} />
-            </section>
-          )}
-
-          {/* Hướng dẫn lắp đặt — chỉ render khi admin có nhập. */}
-          {hasInstallation && (
-            <section className="my-10">
-              <PdpSectionHeading
-                kicker={<Tr ns="Product" k="secKicker.installation" />}
-                title={<Tr ns="Product" k="installation" />}
-              />
-              <ProductInstallationGuide viJson={installationJson} />
-            </section>
-          )}
-
-          {/* #9 FAQ. */}
-          {showFaqs && (
-            <section className="my-10">
-              <PdpSectionHeading
-                kicker={<Tr ns="Product" k="secKicker.faq" />}
-                title={<Tr ns="Product" k="faqs" />}
-              />
-              <ProductFaqs viFaqs={faqs} />
-            </section>
-          )}
-
-        </div>
-
-        {/* #10 Đánh giá — DESKTOP: khối riêng sau FAQ (non-embedded → id="reviews" + H2 riêng).
-            Trên mobile, Đánh giá nằm trong widget tab ở trên. Bỏ qua trong preview (chưa có id). */}
-        {showReviews && (
-          <div className="max-md:hidden">
-            <ReviewsSection productId={product.id} />
-          </div>
-        )}
-
-        {/* #11 "Mua tại BigBike.vn" — DESKTOP: tiêu đề mục (eyebrow + 35px) như các mục khác,
-            rồi tới thẻ lưới số liệu. Trên mobile nằm trong widget tab ở trên (tab cuối). */}
-        {trustCard && (
-          // max-md:hidden phải đặt trên <div>, KHÔNG trên <section>: WP reset unlayered
-          // `section{display:block}` thắng utility Tailwind layered → section không ẩn nổi
-          // trên mobile, khiến "Mua tại BigBike.vn" hiện 2 lần (trùng tab trust ở widget trên).
-          <div className="max-md:hidden">
-            <section className="my-10">
-              <PdpSectionHeading
-                kicker={<Tr ns="Product" k="secKicker.trust" />}
-                title={<Tr ns="Product" k="trustBlockTitle" />}
-              />
-              {trustCard}
-            </section>
-          </div>
-        )}
-
-        {/* #12 Hoàn thiện bộ bảo hộ — cross-sell khác loại (găng + giáp + giày), admin curate
-            (V239), tự ẩn khi trống. Khối cuối của luồng marketing. */}
-        {showAccessories && (
-          <div className="product-list pt-80 pb-40">
-            <div className="container">
-              <div className="block-title text-center mb-40">
-                <p className="sub-title"><Tr ns="Product" k="crossSellKicker" /></p>
-                <h3><Tr ns="Product" k="crossSellTitle" /></h3>
-              </div>
-              <ProductSwiper products={accessories} />
-            </div>
-          </div>
-        )}
-
-        {/* Sản phẩm tương tự — MOBILE: hiển thị ở cuối (desktop đã render ở vị trí #6 phía trên). */}
-        {showRelated && (
-          <div className="product-list pt-80 pb-40 md:hidden">
-            <div className="container">
-              <div className="block-title text-center mb-40">
-                <p className="sub-title"><Tr ns="Product" k="relatedKicker" /></p>
-                <h3><Tr ns="Product" k="relatedTitle" /></h3>
-              </div>
-              <ProductSwiper products={related} />
-            </div>
-          </div>
-        )}
+        {/* Body sections (desktop) — render theo thứ tự admin kéo-thả trong "Hiển thị trên web".
+            Mỗi node tự mang responsive class (max-md:hidden / md:hidden). */}
+        {bodyOrder.map((key) => {
+          const node = bodyNodes[key];
+          return node ? <div key={key}>{node}</div> : null;
+        })}
 
         {/* Nội dung dài SEO (contentBottom) — dưới lưới sản phẩm gợi ý; chỉ render khi admin có nhập.
             Không thuộc panel "Hiển thị trên web" (admin không soạn ở form sản phẩm) → chỉ gate theo nội dung. */}

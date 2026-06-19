@@ -99,8 +99,8 @@ class VariantGalleryRoundtripTest {
         assertThat(galleryFromRead)
                 .as("gallery survives the roundtrip and is returned by the read repo")
                 .hasSize(3);
-        assertThat(galleryFromRead.get(0).url()).isEqualTo("https://cdn.example.com/red-front.jpg");
-        assertThat(galleryFromRead.get(2).url()).isEqualTo("https://cdn.example.com/red-back.jpg");
+        assertThat(galleryFromRead.get(0).image().url()).isEqualTo("https://cdn.example.com/red-front.jpg");
+        assertThat(galleryFromRead.get(2).image().url()).isEqualTo("https://cdn.example.com/red-back.jpg");
     }
 
     @Test
@@ -154,7 +154,7 @@ class VariantGalleryRoundtripTest {
         assertThat(gallery)
                 .as("update should fully replace the previous gallery")
                 .hasSize(4);
-        assertThat(gallery.stream().map(g -> g.url()).toList())
+        assertThat(gallery.stream().map(g -> g.image().url()).toList())
                 .containsExactly(
                         "https://cdn.example.com/black-A.jpg",
                         "https://cdn.example.com/black-B.jpg",
@@ -185,11 +185,11 @@ class VariantGalleryRoundtripTest {
         Product saved = mutationService.createProduct(create, DEV_ADMIN_ID);
 
         assertThat(saved.variants()).hasSize(3);
-        assertThat(saved.variants().get(0).gallery().stream().map(g -> g.url()).toList())
+        assertThat(saved.variants().get(0).gallery().stream().map(g -> g.image().url()).toList())
                 .containsExactly("https://cdn.example.com/red-1.jpg", "https://cdn.example.com/red-2.jpg");
-        assertThat(saved.variants().get(1).gallery().stream().map(g -> g.url()).toList())
+        assertThat(saved.variants().get(1).gallery().stream().map(g -> g.image().url()).toList())
                 .containsExactly("https://cdn.example.com/red-1.jpg", "https://cdn.example.com/red-2.jpg");
-        assertThat(saved.variants().get(2).gallery().stream().map(g -> g.url()).toList())
+        assertThat(saved.variants().get(2).gallery().stream().map(g -> g.image().url()).toList())
                 .containsExactly("https://cdn.example.com/blue-1.jpg");
     }
 

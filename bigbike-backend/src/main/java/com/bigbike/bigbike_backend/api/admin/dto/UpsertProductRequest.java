@@ -81,6 +81,15 @@ public class UpsertProductRequest {
     private String warrantyScope;
     private boolean warrantyScopePresent = false;
 
+    // Dòng "Giao hàng" / "Đổi trả" khối "Mua tại BigBike.vn" (V247). 1 ngôn ngữ, presence-flag.
+    @Size(max = 200, message = "Shipping line is too long.")
+    private String pdpShippingLine;
+    private boolean pdpShippingLinePresent = false;
+
+    @Size(max = 200, message = "Return line is too long.")
+    private String pdpReturnLine;
+    private boolean pdpReturnLinePresent = false;
+
     @Size(max = 120, message = "Origin brand country is too long.")
     private String originBrandCountry;
     private boolean originBrandCountryPresent = false;
@@ -434,6 +443,32 @@ public class UpsertProductRequest {
 
     public boolean isWarrantyScopePresent() {
         return warrantyScopePresent;
+    }
+
+    public String getPdpShippingLine() {
+        return pdpShippingLine;
+    }
+
+    public void setPdpShippingLine(String pdpShippingLine) {
+        this.pdpShippingLine = pdpShippingLine;
+        this.pdpShippingLinePresent = true;
+    }
+
+    public boolean isPdpShippingLinePresent() {
+        return pdpShippingLinePresent;
+    }
+
+    public String getPdpReturnLine() {
+        return pdpReturnLine;
+    }
+
+    public void setPdpReturnLine(String pdpReturnLine) {
+        this.pdpReturnLine = pdpReturnLine;
+        this.pdpReturnLinePresent = true;
+    }
+
+    public boolean isPdpReturnLinePresent() {
+        return pdpReturnLinePresent;
     }
 
     public String getOriginBrandCountry() {

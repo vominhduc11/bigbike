@@ -91,6 +91,7 @@ public class AdminPosController extends AdminControllerSupport {
                             detail.rating(), detail.ratingCount(), detail.promotionContent(), detail.installationGuide(),
                             detail.faqs(), detail.commitments(), detail.specStats(), detail.trustBadges(), detail.positiveNotes(), detail.negativeNotes(),
                             detail.warrantyMonths(), detail.warrantyScope(),
+                            detail.pdpShippingLine(), detail.pdpReturnLine(),
                             detail.originBrandCountry(),
                             detail.weightGrams(), detail.sizeGuide(),
                             detail.quickAnswerSummary(), detail.suitabilityAdvisory(), detail.gender(),

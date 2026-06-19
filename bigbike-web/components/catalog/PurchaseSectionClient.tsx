@@ -23,7 +23,7 @@ import {
   findMatchingVariant,
   normalizeValue,
 } from "@/lib/utils/variant-match";
-import type { ImageAsset, ProductPrice, ProductVariant, VideoAsset } from "@/lib/contracts/public";
+import type { GalleryMedia, ImageAsset, ProductPrice, ProductVariant, VideoAsset } from "@/lib/contracts/public";
 
 type ProductSnapshot = {
   pricing: PricingData;
@@ -43,7 +43,8 @@ export type PurchaseSectionClientProps = {
   initialRating: number | null;
   initialRatingCount: number | null;
   mainImage: ImageAsset | null | undefined;
-  gallery: ImageAsset[];
+  gallery: GalleryMedia[];
+  /** @deprecated V248 — video giờ nằm trong gallery; prop này không còn được ProductGallery dùng. */
   videos?: VideoAsset[];
   zaloUrl?: string;
   hotline?: string;
@@ -114,7 +115,6 @@ export function PurchaseSectionClient({
   initialRatingCount,
   mainImage,
   gallery,
-  videos,
   fallbackPrice,
   fallbackStockState,
   fallbackVariants,
@@ -253,7 +253,6 @@ export function PurchaseSectionClient({
         <ProductGallery
           mainImage={mainImage}
           gallery={gallery}
-          videos={videos}
           altFallback={productName}
           variantImage={previewVariant?.image ?? null}
           variantGallery={previewVariant?.gallery ?? undefined}

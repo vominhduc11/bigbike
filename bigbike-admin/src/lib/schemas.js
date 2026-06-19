@@ -142,7 +142,6 @@ export function createProductSchema(t, isCreate = false) {
           name: z.string().optional(),
           shortDescription: z.string().optional(),
           description: z.string().optional(),
-          installationGuide: z.string().optional(),
           quickAnswerSummary: z.string().max(600, 'Quick Answer tối đa 600 ký tự.').optional(),
           suitabilityAdvisory: z.string().max(20000, 'Phù hợp với ai tối đa 20000 ký tự.').optional(),
           seoTitle: z.string().optional(),
@@ -262,7 +261,7 @@ export function createProductSchema(t, isCreate = false) {
       const enLimits = [
         ['name', 255], ['shortDescription', 2000], ['description', 20000],
         ['contentBottom', 50000],
-        ['installationGuide', 50000], ['seoTitle', 255], ['seoDescription', 5000],
+        ['seoTitle', 255], ['seoDescription', 5000],
       ]
       for (const [field, max] of enLimits) {
         if (String(en[field] ?? '').length > max) {
@@ -351,7 +350,7 @@ export function createProductSchema(t, isCreate = false) {
           ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.errImageUrl'), path: ['variants', i, 'imageUrl'] })
         }
         const hasColor = Boolean(colorValue)
-        const hasVariantGallery = v.gallery?.some((img) => img.url.trim()) ?? false
+        const hasVariantGallery = v.gallery?.some((img) => img.url.trim() || (img.videoUrl || '').trim()) ?? false
         if (hasVariantGallery && !hasColor) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,

@@ -49,6 +49,19 @@ export type ImageAsset = {
   mimeType?: string | null;
 };
 
+/**
+ * Một mục trong dải media (gallery) của sản phẩm/biến thể (V248): ảnh HOẶC video.
+ * `mediaType="image"` → dùng `image`. `mediaType="video"` → `videoUrl`+`provider` là video,
+ * `image` là thumbnail/poster (có thể null → web tự lấy auto-thumb YouTube / first-frame).
+ * Tách biệt với `videos` (mục "Video" riêng dưới PDP).
+ */
+export type GalleryMedia = {
+  mediaType?: "image" | "video";
+  image?: ImageAsset | null;
+  videoUrl?: string | null;
+  provider?: string | null;
+};
+
 export type SliderImage = {
   url?: string | null;
   alt?: string | null;
@@ -135,7 +148,7 @@ export type ProductVariant = {
    * swaps to this list when Color changes; non-color options fall back to the
    * current color gallery or product-level gallery.
    */
-  gallery?: ImageAsset[];
+  gallery?: GalleryMedia[];
   isAvailable: boolean;
 };
 
@@ -178,7 +191,17 @@ export type DescriptionBlock =
       html?: string;
       listStyle?: "bulleted" | "numbered";
       items?: string[];
-    };
+    }
+  // Ưu/Nhược điểm (V246) — gộp vào mô tả; cũng là nguồn schema.org positiveNotes/negativeNotes (derived BE).
+  | { type: "prosCons"; title?: string; positive?: string[]; negative?: string[] }
+  // Phù hợp với ai (V246, từ V240) — danh sách thẻ tư vấn nhúng trong mô tả.
+  | {
+      type: "suitability";
+      title?: string;
+      cards?: Array<{ audience?: string; advice?: string; linkLabel?: string; linkUrl?: string }>;
+    }
+  // Bảng size (V246) — HTML tự do (thường là bảng) nhúng trong mô tả.
+  | { type: "sizeGuide"; title?: string; html?: string };
 
 /**
  * Cấu hình một tab PDP quản lý theo từng sản phẩm (V231). Public read trả `label`/`blocks` đã resolve
@@ -257,7 +280,7 @@ export type Product = {
   category: CategorySummary;
   categories?: CategorySummary[];
   image?: ImageAsset;
-  gallery?: ImageAsset[];
+  gallery?: GalleryMedia[];
   videos?: VideoAsset[];
   price: ProductPrice;
   variants?: ProductVariant[];
@@ -283,8 +306,7 @@ export type Product = {
   contentBottom?: string | null;
   /** Rich-HTML promotion copy rendered in the PDP "Khuyến mãi" tab. */
   promotionContent?: string | null;
-  /** "Hướng dẫn lắp đặt" — JSON object `{ steps: [{icon, title, body, tip?, warning?}], maintenance? }`
-   *  (V242; trước đó là rich-HTML). Parse qua `parseInstallationGuide`. Detail-only. */
+  /** Không còn hiển thị trên web (đã bỏ). Giữ field để không break API. Detail-only. */
   installationGuide?: string | null;
   /** Structured content blocks for the product description. Detail-only; null in list responses.
    *  Locale-resolved server-side (V229): EN blocks for `?lang=en`, falling back to VI. */
@@ -307,6 +329,10 @@ export type Product = {
   warrantyMonths?: number | null;
   /** Phạm vi bảo hành (text). Detail-only. */
   warrantyScope?: string | null;
+  /** Dòng "Giao hàng" khối "Mua tại BigBike.vn" (V247). Detail-only; trống → dùng mặc định chung. */
+  pdpShippingLine?: string | null;
+  /** Dòng "Đổi trả" khối "Mua tại BigBike.vn" (V247). Detail-only; trống → dùng mặc định chung. */
+  pdpReturnLine?: string | null;
   /** "Thương hiệu [nước]". Detail-only. */
   originBrandCountry?: string | null;
   /** Trọng lượng tính bằng gram. Detail-only. */

@@ -125,6 +125,31 @@ export function normalizeImageAsset(input) {
   }
 }
 
+/**
+ * Một mục gallery (V248) có thể là ẢNH hoặc VIDEO. Backend trả `{ mediaType, image:{...},
+ * videoUrl, provider }`. Phẳng hoá về shape form admin dùng: `{ mediaType, url, rawUrl, alt,
+ * videoUrl, provider }` (url/rawUrl/alt = ảnh hoặc thumbnail của video).
+ */
+export function normalizeGalleryMedia(input) {
+  if (!input || typeof input !== 'object') return undefined
+  const image = normalizeImageAsset(input.image)
+  const videoUrl = toTrimmedString(input.videoUrl)
+  const isVideo = input.mediaType === 'video' || Boolean(videoUrl)
+  if (isVideo) {
+    if (!videoUrl) return undefined
+    return {
+      mediaType: 'video',
+      videoUrl,
+      provider: toTrimmedString(input.provider) || 'youtube',
+      url: image?.url,
+      rawUrl: image?.rawUrl,
+      alt: image?.alt,
+    }
+  }
+  if (!image) return undefined
+  return { mediaType: 'image', url: image.url, rawUrl: image.rawUrl, alt: image.alt }
+}
+
 export function normalizeVideoAsset(input) {
   if (!input || typeof input !== 'object') {
     return undefined
@@ -240,7 +265,7 @@ function normalizeVariant(input) {
     // Color-scoped variant gallery. Without this pass-through the edit
     // form's GalleryEditor opens empty even when the database has rows.
     gallery: Array.isArray(input.gallery)
-      ? input.gallery.map(normalizeImageAsset).filter(Boolean)
+      ? input.gallery.map(normalizeGalleryMedia).filter(Boolean)
       : [],
     isAvailable: input.isAvailable !== false,
     trackSerials: Boolean(input.trackSerials),
@@ -317,7 +342,6 @@ function normalizeProductTranslations(input) {
     description: toTrimmedString(source.description) || undefined,
     contentBottom: toTrimmedString(source.contentBottom) || undefined,
     promotionContent: toTrimmedString(source.promotionContent) || undefined,
-    installationGuide: toTrimmedString(source.installationGuide) || undefined,
     quickAnswerSummary: toTrimmedString(source.quickAnswerSummary) || undefined,
     suitabilityAdvisory: toTrimmedString(source.suitabilityAdvisory) || undefined,
     seoTitle: toTrimmedString(source.seoTitle) || undefined,
@@ -367,7 +391,6 @@ export function normalizeProduct(input) {
     description: toTrimmedString(source.description) || undefined,
     contentBottom: toTrimmedString(source.contentBottom) || undefined,
     promotionContent: toTrimmedString(source.promotionContent) || undefined,
-    installationGuide: toTrimmedString(source.installationGuide) || undefined,
     // Template/trust fields (V175) — render trên PDP web. PHẢI surface ở đây, nếu không
     // form admin nạp undefined → mở SP hiện trống → bấm Lưu gửi null/[] → xoá mất dữ liệu.
     gender: toTrimmedString(source.gender) || undefined,
@@ -399,7 +422,7 @@ export function normalizeProduct(input) {
     categories,
     image: normalizeImageAsset(source.image),
     gallery: Array.isArray(source.gallery)
-      ? source.gallery.map(normalizeImageAsset).filter(Boolean)
+      ? source.gallery.map(normalizeGalleryMedia).filter(Boolean)
       : [],
     videos: Array.isArray(source.videos)
       ? source.videos.map(normalizeVideoAsset).filter(Boolean)

@@ -76,6 +76,8 @@ class SliderReadServiceTest {
                         List.of(),  // negativeNotes
                         null,       // warrantyMonths
                         null,       // warrantyScope
+                        null,       // pdpShippingLine
+                        null,       // pdpReturnLine
                         null,       // originBrandCountry
                         null,       // weightGrams
                         null,       // sizeGuide

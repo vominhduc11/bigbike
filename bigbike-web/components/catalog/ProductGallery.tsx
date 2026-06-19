@@ -10,7 +10,7 @@ import "swiper/css";
 import "swiper/css/free-mode";
 import "swiper/css/thumbs";
 import { MediaImage } from "@/components/ui/MediaImage";
-import type { ImageAsset, VideoAsset } from "@/lib/contracts/public";
+import type { GalleryMedia, ImageAsset, VideoAsset } from "@/lib/contracts/public";
 import { resolveMediaUrl } from "@/lib/utils/format";
 import { cn } from "@/lib/utils";
 import { useResponsiveValue } from "@/lib/hooks/useResponsiveValue";
@@ -79,6 +79,27 @@ function videoThumbUrl(video: VideoAsset): string | null {
   return ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : null;
 }
 
+// V248: dải media (gallery) giờ chứa cả ảnh lẫn video. Tách 1 danh sách GalleryMedia
+// thành { images, videos } để phần render bên dưới (vốn dùng ImageAsset[]/VideoAsset[]) chạy nguyên.
+function splitGalleryMedia(items: GalleryMedia[] | undefined): { images: ImageAsset[]; videos: VideoAsset[] } {
+  const images: ImageAsset[] = [];
+  const videos: VideoAsset[] = [];
+  for (const m of items ?? []) {
+    if (m?.mediaType === "video") {
+      const v: VideoAsset = {
+        url: m.videoUrl ?? undefined,
+        provider: m.provider ?? undefined,
+        thumbnail: m.image ?? null,
+        title: m.image?.alt ?? undefined,
+      };
+      if (isSupportedVideo(v)) videos.push(v);
+    } else if (m?.image) {
+      images.push(m.image);
+    }
+  }
+  return { images, videos };
+}
+
 function VideoSlide({ video }: { video: VideoAsset }) {
   const url = video.url ?? "";
   const ytId = getYouTubeId(url);
@@ -116,12 +137,11 @@ type GalleryItem = ImageItem | VideoItem;
 
 type ProductGalleryProps = {
   mainImage: ImageAsset | null | undefined;
-  gallery: ImageAsset[];
+  gallery: GalleryMedia[];
   altFallback: string;
   variantImage?: ImageAsset | null;
-  variantGallery?: ImageAsset[];
+  variantGallery?: GalleryMedia[];
   variantKey?: string | null;
-  videos?: VideoAsset[];
 };
 
 export function ProductGallery({
@@ -131,17 +151,21 @@ export function ProductGallery({
   variantImage,
   variantGallery,
   variantKey,
-  videos,
 }: ProductGalleryProps) {
   const tA = useTranslations("A11y");
-  const hasVariantGallery = Boolean(variantGallery && variantGallery.length > 0);
-  const stripBody: ImageAsset[] = hasVariantGallery ? variantGallery! : gallery;
+  // V248: tách ảnh/video từ chính dải gallery (sản phẩm hoặc biến thể) — không còn nhận prop `videos`.
+  // Video giờ thuộc về gallery của màu đang xem (chưa chọn màu → gallery sản phẩm).
+  const variantSplit = splitGalleryMedia(variantGallery);
+  const productSplit = splitGalleryMedia(gallery);
+  const hasVariantGallery = variantSplit.images.length > 0;
+  const stripBody: ImageAsset[] = hasVariantGallery ? variantSplit.images : productSplit.images;
+  const galleryVideos: VideoAsset[] = hasVariantGallery ? variantSplit.videos : productSplit.videos;
   // Khi đã chọn màu (có variantGallery): ảnh chính = ẢNH ĐẦU của gallery màu đó
   // (variantGallery[0]), KHÔNG dùng variant.image làm cover. Sau khử trùng bên dưới,
   // dải ảnh chính là gallery của màu theo đúng thứ tự. Khi chưa chọn màu thì giữ
   // nguyên: ảnh đại diện sản phẩm (variantImage null → mainImage) đứng đầu.
   const coverImage: ImageAsset | null = hasVariantGallery
-    ? (variantGallery![0] ?? variantImage ?? mainImage ?? null)
+    ? (variantSplit.images[0] ?? variantImage ?? mainImage ?? null)
     : (variantImage ?? mainImage ?? null);
   // Khử trùng TOÀN BỘ danh sách (cover + dải), không chỉ lọc cover. Ảnh đại diện
   // của biến thể thường cũng nằm trong gallery của nó (import WP gộp vào), và dải
@@ -164,12 +188,10 @@ export function ProductGallery({
     return out;
   })();
 
-  // Videos are product-level (không thuộc màu nào) → LUÔN có trong dải, kể cả sau khi
-  // khách chọn màu. Khi chưa chọn màu: video đứng đầu (như cũ). Khi đã chọn màu: ưu
-  // tiên ảnh của màu đó lên trước (slide 0 = ảnh màu, không nhảy về video) rồi dồn
-  // video xuống cuối — vẫn xem được mà không gây giật trải nghiệm chọn màu.
-  const videoItems: GalleryItem[] = (videos ?? [])
-    .filter(isSupportedVideo)
+  // Video lấy TỪ chính dải gallery đang xem (V248): chưa chọn màu → video của gallery sản phẩm;
+  // chọn màu → video của gallery màu đó. Chưa chọn màu: video đứng đầu (như cũ); đã chọn màu:
+  // ảnh của màu lên trước rồi dồn video xuống cuối.
+  const videoItems: GalleryItem[] = galleryVideos
     .map((asset): GalleryItem => ({ kind: "video", asset }));
   const imageItems: GalleryItem[] = images.map((asset): GalleryItem => ({ kind: "image", asset }));
   const allItems: GalleryItem[] =

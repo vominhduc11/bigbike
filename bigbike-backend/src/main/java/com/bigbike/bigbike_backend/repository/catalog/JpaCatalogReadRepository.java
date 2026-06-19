@@ -5,6 +5,7 @@ import com.bigbike.bigbike_backend.domain.catalog.BrandSummary;
 import com.bigbike.bigbike_backend.domain.catalog.Category;
 import com.bigbike.bigbike_backend.domain.catalog.CategorySummary;
 import com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock;
+import com.bigbike.bigbike_backend.domain.catalog.GalleryMedia;
 import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
 import com.bigbike.bigbike_backend.domain.catalog.ProductCommitment;
@@ -32,7 +33,6 @@ import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductSpecStatEnt
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductCommitmentEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductTrustBadgeEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductFaqEntity;
-import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductHighlightEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantOptionEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVideoEntity;
@@ -82,7 +82,6 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     private static final Comparator<ProductCommitmentEntity> COMMITMENT_ORDER = Comparator.comparingInt(ProductCommitmentEntity::getSortOrder);
     private static final Comparator<ProductSpecStatEntity> SPEC_STAT_ORDER = Comparator.comparingInt(ProductSpecStatEntity::getSortOrder);
     private static final Comparator<ProductTrustBadgeEntity> TRUST_BADGE_ORDER = Comparator.comparingInt(ProductTrustBadgeEntity::getSortOrder);
-    private static final Comparator<ProductHighlightEntity> HIGHLIGHT_ORDER = Comparator.comparingInt(ProductHighlightEntity::getSortOrder);
     private static final Comparator<ProductVariantEntity> VARIANT_ORDER = Comparator.comparingInt(ProductVariantEntity::getSortOrder);
     private static final Comparator<ProductVariantOptionEntity> VARIANT_OPTION_ORDER = Comparator.comparingInt(ProductVariantOptionEntity::getSortOrder);
 
@@ -249,6 +248,8 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 List.of(),                  // negativeNotes — detail only
                 null,                       // warrantyMonths — detail only
                 null,                       // warrantyScope — detail only
+                null,                       // pdpShippingLine — detail only
+                null,                       // pdpReturnLine — detail only
                 null,                       // originBrandCountry — detail only
                 null,                       // weightGrams — detail only
                 null,                       // sizeGuide — detail only
@@ -559,10 +560,12 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 toCommitments(entity, publicView, locale),
                 toSpecStats(entity, publicView, locale),
                 toTrustBadges(entity, publicView, locale),
-                toHighlights(entity, ProductHighlightEntity.KIND_PRO, publicView, locale),
-                toHighlights(entity, ProductHighlightEntity.KIND_CON, publicView, locale),
+                deriveHighlights(entity, true, publicView, locale),
+                deriveHighlights(entity, false, publicView, locale),
                 entity.getWarrantyMonths(),
                 entity.getWarrantyScope(),
+                entity.getPdpShippingLine(),
+                entity.getPdpReturnLine(),
                 entity.getOriginBrandCountry(),
                 toWeightGrams(entity.getWeightKg()),
                 entity.getSizeGuide(),
@@ -722,22 +725,36 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         ));
     }
 
-    private List<ImageAsset> toGallery(ProductEntity entity) {
+    private List<GalleryMedia> toGallery(ProductEntity entity) {
         if (entity.getGallery() == null) {
             return List.of();
         }
         return entity.getGallery().stream()
                 .sorted(GALLERY_ORDER)
-                .map(item -> toImageAsset(
-                        item.getImageId(),
-                        item.getImageUrl(),
-                        item.getImageAlt(),
-                        item.getImageWidth(),
-                        item.getImageHeight(),
-                        item.getImageMimeType()
+                .map(item -> toGalleryMedia(
+                        item.getMediaType(), item.getVideoUrl(), item.getVideoProvider(),
+                        item.getImageId(), item.getImageUrl(), item.getImageAlt(),
+                        item.getImageWidth(), item.getImageHeight(), item.getImageMimeType()
                 ))
-                .filter(image -> image != null)
+                .filter(m -> m != null)
                 .toList();
+    }
+
+    /** Map một dòng gallery (ảnh/video) → {@link GalleryMedia}. Null khi thiếu nội dung (ảnh rỗng / video thiếu url). */
+    private GalleryMedia toGalleryMedia(
+            String mediaType, String videoUrl, String videoProvider,
+            String imageId, String imageUrl, String imageAlt, Integer width, Integer height, String mimeType) {
+        ImageAsset image = toImageAsset(imageId, imageUrl, imageAlt, width, height, mimeType);
+        if ("video".equals(mediaType)) {
+            if (videoUrl == null || videoUrl.isBlank()) {
+                return null;
+            }
+            return GalleryMedia.ofVideo(image, videoUrl, videoProvider);
+        }
+        if (image == null) {
+            return null;
+        }
+        return GalleryMedia.ofImage(image);
     }
 
     private List<VideoAsset> toVideos(ProductEntity entity) {
@@ -765,21 +782,40 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     }
 
     /**
-     * Ưu/Nhược điểm (V175) đã resolve theo locale, lọc theo {@code kind}
-     * (PRO/CON). Trả mảng string cho schema.org positiveNotes/negativeNotes.
+     * Ưu/Nhược điểm (V175) — nguồn dữ liệu giờ là khối {@code prosCons} trong mô tả; backend suy ra
+     * cho schema.org positiveNotes/negativeNotes. {@code positive} = true → ưu điểm, false → nhược điểm.
+     * Lấy {@code content} từ danh sách khối đã resolve theo locale; {@code contentEn} (admin only) từ khối EN.
      */
-    private List<ProductHighlight> toHighlights(ProductEntity entity, String kind, boolean publicView, String locale) {
-        if (entity.getHighlights() == null) {
+    private List<ProductHighlight> deriveHighlights(ProductEntity entity, boolean positive, boolean publicView, String locale) {
+        List<String> content = prosConsItems(
+                pickBlocks(entity.getDescriptionBlocks(), entity.getDescriptionBlocksEn(), locale), positive);
+        if (content.isEmpty()) {
             return List.of();
         }
-        return entity.getHighlights().stream()
-                .filter(item -> kind.equals(item.getKind()))
-                .sorted(HIGHLIGHT_ORDER)
-                .map(item -> new ProductHighlight(
-                        pick(item.getContent(), item.getContentEn(), locale),
-                        publicView ? null : item.getContentEn()
-                ))
-                .toList();
+        List<String> en = publicView ? List.of() : prosConsItems(entity.getDescriptionBlocksEn(), positive);
+        List<ProductHighlight> out = new java.util.ArrayList<>(content.size());
+        for (int i = 0; i < content.size(); i++) {
+            String contentEn = (!publicView && i < en.size()) ? en.get(i) : null;
+            out.add(new ProductHighlight(content.get(i), contentEn));
+        }
+        return out;
+    }
+
+    /** Lấy danh sách ưu điểm (positive=true) / nhược điểm từ khối {@code prosCons} đầu tiên trong {@code blocks}. */
+    private static List<String> prosConsItems(List<DescriptionBlock> blocks, boolean positive) {
+        if (blocks == null) {
+            return List.of();
+        }
+        for (DescriptionBlock block : blocks) {
+            if (block instanceof DescriptionBlock.ProsConsBlock b) {
+                List<String> items = positive ? b.getPositive() : b.getNegative();
+                if (items == null) {
+                    return List.of();
+                }
+                return items.stream().filter(s -> s != null && !s.isBlank()).toList();
+            }
+        }
+        return List.of();
     }
 
     /** weight_kg (NUMERIC) → gram (Integer) cho schema.org Product.weight. */
@@ -978,7 +1014,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
      * read response disagreed with the write response.
      */
     private static List<ProductVariant> withColorScopedVariantMedia(List<ProductVariant> variants) {
-        Map<String, List<ImageAsset>> galleryByColor = new HashMap<>();
+        Map<String, List<GalleryMedia>> galleryByColor = new HashMap<>();
         Map<String, ImageAsset> imageByColor = new HashMap<>();
         for (ProductVariant variant : variants) {
             String colorKey = variantColorKey(variant);
@@ -994,7 +1030,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         return variants.stream()
                 .map(variant -> {
                     String colorKey = variantColorKey(variant);
-                    List<ImageAsset> gallery = colorKey == null
+                    List<GalleryMedia> gallery = colorKey == null
                             ? List.of()
                             : galleryByColor.getOrDefault(colorKey, List.of());
                     ImageAsset image = colorKey == null
@@ -1069,19 +1105,16 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         .map(option -> toVariantOption(option, publicView, locale))
                         .toList();
 
-        List<ImageAsset> gallery = entity.getGallery() == null
+        List<GalleryMedia> gallery = entity.getGallery() == null
                 ? List.of()
                 : entity.getGallery().stream()
                         .sorted(VARIANT_GALLERY_ORDER)
-                        .map(item -> toImageAsset(
-                                item.getImageId(),
-                                item.getImageUrl(),
-                                item.getImageAlt(),
-                                item.getImageWidth(),
-                                item.getImageHeight(),
-                                item.getImageMimeType()
+                        .map(item -> toGalleryMedia(
+                                item.getMediaType(), item.getVideoUrl(), item.getVideoProvider(),
+                                item.getImageId(), item.getImageUrl(), item.getImageAlt(),
+                                item.getImageWidth(), item.getImageHeight(), item.getImageMimeType()
                         ))
-                        .filter(image -> image != null)
+                        .filter(m -> m != null)
                         .toList();
 
         Integer variantStockQty;

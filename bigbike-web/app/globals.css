@@ -109,6 +109,8 @@
   --text-13: var(--bb-text-13);
   --text-15: var(--bb-text-15);
   --text-17: var(--bb-text-17);
+  --text-18: var(--bb-text-18);
+  --text-20: var(--bb-text-20);
   --text-22: var(--bb-text-22);
   --text-26: var(--bb-text-26);
   --text-32: var(--bb-text-32);
@@ -2993,6 +2995,19 @@ body:has(.bb-home) {
   }
 }
 
+/* Mô tả sản phẩm dạng khối (ProductDescriptionBlocks): chữ thường (đoạn văn / danh sách / ghi chú /
+   khối ảnh-chữ) = 18px CỐ ĐỊNH, đồng bộ hộp "trả lời nhanh" (cũng dùng --text-18).
+   Dùng --text-18 (18px tuyệt đối) thay vì --fs-body-lg (1.125rem): trang WP đặt cỡ gốc = 14px nên
+   token rem co lại còn 15.75px, không ra 18px như tên gọi.
+   !important: theme WP nạp `.wyswyg{font-size:.875rem}` + `body .wyswyg{16px}` UNLAYERED, thắng mọi
+   rule layered của Tailwind v4 bất kể specificity → phải !important mới đè (WP rule không !important). */
+.pdp-desc-rich .text-body-lg,
+.pdp-desc-rich .wyswyg,
+.pdp-desc-rich .wyswyg p,
+.pdp-desc-rich .wyswyg li {
+  font-size: var(--text-18) !important;
+}
+
 /* Bảng trong nội dung rich-text sản phẩm (.wyswyg) — VD "Bảng size" admin nhập dạng HTML table.
    TRƯỚC ĐÂY KHÔNG style ở PDP → bảng admin chèn hiển thị thô (viền mặc định trình duyệt).
    Style chuẩn: header đậm, hàng có viền, padding rộng — đồng bộ "Thông số kỹ thuật". */
@@ -3026,6 +3041,15 @@ body:has(.bb-home) {
   margin: 0;
 }
 
+/* Bảng "Thông số kỹ thuật" (.shop_attributes) — cỡ chữ CỐ ĐỊNH: cả cột tên (th) và cột
+   giá trị (td) đều 16px. Dùng --bb-text-base (px tuyệt đối) thay token rem: trang WP đặt cỡ
+   gốc 14px nên token rem co lại, không ra đúng px như tên gọi. Đặt rule scoped ở đây
+   (specificity cao hơn 1 utility class) để chắc thắng cascade, đồng bộ cách .pdp-desc-rich xử lý. */
+.thong-so-ki-thuat .shop_attributes th,
+.thong-so-ki-thuat .shop_attributes td {
+  font-size: var(--bb-text-base);
+}
+
 /* .bb-wp-pdp-layout grid + .bb-wp-pdp-gallery-col/.bb-wp-pdp-info-col min-width:0
    (+ their <=1024 / <=767 responsive flex-stack/order) migrated to inline Tailwind.
    The gallery/info col classes are kept as markers — .bb-wp-pdp-info-col is a
@@ -3054,7 +3078,7 @@ body:has(.bb-home) {
 
 .bb-wp-pdp .product-information .desc .woocommerce-product-details__short-description {
   color: #000;
-  font-size: 1.125rem; /* 18px */
+  font-size: 1.25rem; /* 20px */
   line-height: 1.55;
 }
 
@@ -3062,7 +3086,7 @@ body:has(.bb-home) {
 .bb-wp-pdp .product-information .desc li {
   margin: 0 0 0.625rem;
   color: #000;
-  font-size: 1.125rem; /* 18px */
+  font-size: 1.25rem; /* 20px */
   line-height: 1.55;
 }
 
@@ -3928,7 +3952,7 @@ body:has(.bb-search-results-page) {
   .bb-wp-pdp .product-information .desc p,
   .bb-wp-pdp .product-information .desc li,
   .bb-wp-pdp .product-information .desc .woocommerce-product-details__short-description {
-    font-size: var(--bb-text-15);
+    font-size: var(--bb-text-18);
     line-height: 1.55;
   }
 
@@ -4730,9 +4754,6 @@ body:has(header .navigation.active) .bb-floating-chat-anchor {
   border-radius: 4px;
   scroll-margin-top: 110px;
 }
-
-
-
 
 
 

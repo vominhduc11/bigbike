@@ -4,6 +4,7 @@ import com.bigbike.bigbike_backend.domain.catalog.Brand;
 import com.bigbike.bigbike_backend.domain.catalog.BrandSummary;
 import com.bigbike.bigbike_backend.domain.catalog.Category;
 import com.bigbike.bigbike_backend.domain.catalog.CategorySummary;
+import com.bigbike.bigbike_backend.domain.catalog.GalleryMedia;
 import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
 import com.bigbike.bigbike_backend.domain.catalog.ProductPrice;
@@ -187,22 +188,22 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                         "image/jpeg"
                 ),
                 List.of(
-                        new ImageAsset(
+                        GalleryMedia.ofImage(new ImageAsset(
                                 "img_prod_ls2_ff800_1",
                                 "https://cdn.bigbike.local/products/ls2-ff800/1.jpg",
                                 "LS2 FF800 góc nghiêng",
                                 1200,
                                 1200,
                                 "image/jpeg"
-                        ),
-                        new ImageAsset(
+                        )),
+                        GalleryMedia.ofImage(new ImageAsset(
                                 "img_prod_ls2_ff800_2",
                                 "https://cdn.bigbike.local/products/ls2-ff800/2.jpg",
                                 "LS2 FF800 chi tiết khóa",
                                 1200,
                                 1200,
                                 "image/jpeg"
-                        )
+                        ))
                 ),
                 List.of(
                         new VideoAsset(
@@ -271,6 +272,8 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 List.of(),      // negativeNotes
                 null,           // warrantyMonths
                 null,           // warrantyScope
+                null,           // pdpShippingLine
+                null,           // pdpReturnLine
                 null,           // originBrandCountry
                 null,           // weightGrams
                 null,           // sizeGuide
@@ -336,6 +339,8 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 List.of(),      // negativeNotes
                 null,           // warrantyMonths
                 null,           // warrantyScope
+                null,           // pdpShippingLine
+                null,           // pdpReturnLine
                 null,           // originBrandCountry
                 null,           // weightGrams
                 null,           // sizeGuide
@@ -401,6 +406,8 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 List.of(),      // negativeNotes
                 null,           // warrantyMonths
                 null,           // warrantyScope
+                null,           // pdpShippingLine
+                null,           // pdpReturnLine
                 null,           // originBrandCountry
                 null,           // weightGrams
                 null,           // sizeGuide

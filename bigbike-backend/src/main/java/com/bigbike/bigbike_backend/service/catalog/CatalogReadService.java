@@ -272,6 +272,8 @@ public class CatalogReadService {
                 List.of(),                  // negativeNotes — detail only
                 null,                       // warrantyMonths — detail only
                 null,                       // warrantyScope — detail only
+                null,                       // pdpShippingLine — detail only
+                null,                       // pdpReturnLine — detail only
                 null,                       // originBrandCountry — detail only
                 null,                       // weightGrams — detail only
                 null,                       // sizeGuide — detail only

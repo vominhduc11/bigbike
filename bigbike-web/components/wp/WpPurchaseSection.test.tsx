@@ -50,7 +50,6 @@ function renderSection(rating: number | null, ratingCount: number | null) {
     <WpPurchaseSection
       product={makeProduct()}
       gallery={[]}
-      videos={[]}
       rating={rating}
       ratingCount={ratingCount}
     />,

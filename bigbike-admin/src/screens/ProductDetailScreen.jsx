@@ -5,7 +5,6 @@ import { toast } from 'sonner'
 import {
   AlertCircle, Check, ChevronDown, Eye, GripVertical, ImageOff, Info, Loader2, Lock, Pencil, Plus, Save, Search as PfSearch, Users, X,
   Award, BadgeCheck, Clock, CreditCard, Gift, Headphones, MapPin, Package, RefreshCw, ShieldCheck, Truck, Wrench,
-  Glasses, Wind, HardHat, Sparkles, Settings2, Droplets, Plug,
 } from 'lucide-react'
 import {
   createAttributeValue,
@@ -36,8 +35,7 @@ import { VideoPickerModal } from '../components/VideoPickerModal'
 import { MediaDimensionWarning } from '../components/MediaDimensionWarning'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { RichTextEditor } from '../components/RichTextEditor'
-import { SizeChartEditor } from '../components/SizeChartEditor'
-import { parseSizeGuide, serializeSizeGuide } from '../lib/sizeChart'
+import { parseSizeGuide } from '../lib/sizeChart'
 import { BlockEditor } from '../components/BlockEditor'
 import { SortableList } from '../components/Sortable'
 import { LivePreview } from '../components/LivePreview'
@@ -154,8 +152,8 @@ function getPublishReadiness(form, t) {
     { id: 'gallery',       label: t('products.detail.checklist.gallery'),       ok: (form.gallery || []).some((img) => img.url?.trim()),                                                       required: false },
     { id: 'quickAnswer',   label: t('products.detail.checklist.quickAnswer'),   ok: Boolean(form.quickAnswerSummary?.trim()),                                                                  required: false },
     { id: 'specStats',     label: t('products.detail.checklist.specStats'),     ok: (form.specStats || []).some((s) => s.value?.trim() && s.label?.trim()),                                    required: false },
-    { id: 'prosCons',      label: t('products.detail.checklist.prosCons'),      ok: (form.positiveNotes || []).some((h) => h.content?.trim()) || (form.negativeNotes || []).some((h) => h.content?.trim()), required: false },
-    { id: 'suitability',   label: t('products.detail.checklist.suitability'),   ok: (form.suitabilityCards || []).some((c) => c.audience?.trim() || c.advice?.trim() || c.linkLabel?.trim()),    required: false },
+    { id: 'prosCons',      label: t('products.detail.checklist.prosCons'),      ok: (Array.isArray(form.descriptionBlocks) ? form.descriptionBlocks : []).some((b) => b.type === 'prosCons' && ((b.positive || []).some((it) => (it || '').trim()) || (b.negative || []).some((it) => (it || '').trim()))), required: false },
+    { id: 'suitability',   label: t('products.detail.checklist.suitability'),   ok: (Array.isArray(form.descriptionBlocks) ? form.descriptionBlocks : []).some((b) => b.type === 'suitability' && (b.cards || []).some((c) => c.audience?.trim() || c.advice?.trim() || c.linkLabel?.trim())),    required: false },
     { id: 'specifications',label: t('products.detail.checklist.specifications'),ok: (form.specifications || []).some((s) => s.name?.trim() && s.value?.trim()),                                required: false },
     { id: 'faqs',          label: t('products.detail.checklist.faqs'),          ok: (form.faqs || []).some((f) => f.question?.trim() && f.answer?.trim()),                                     required: false },
     { id: 'variants',      label: t('products.detail.checklist.variants'),      ok: (form.variants || []).some((v) => v.name?.trim()),                                                         required: false },
@@ -180,7 +178,8 @@ function cloneGallery(gallery = []) {
 }
 
 function hasGalleryImages(gallery = []) {
-  return gallery.some((img) => String(img.url || '').trim())
+  // V248: item "có nội dung" khi có ảnh HOẶC video (gallery hỗn hợp).
+  return gallery.some((img) => String(img.url || '').trim() || String(img.videoUrl || '').trim())
 }
 
 function withColorScopedMedia(variants = []) {
@@ -212,11 +211,6 @@ function buildEmptyForm() {
     description: '',
     descriptionBlocks: null,
     descriptionBlocksEn: null,
-    // "Hướng dẫn lắp đặt" (V242) — danh sách bước có cấu trúc + ghi chú bảo dưỡng (song ngữ).
-    // Serialize thành 2 chuỗi JSON object (vi + en) khi lưu; xem parse/serializeInstallationGuide.
-    installationSteps: [],
-    installationMaintenance: '',
-    installationMaintenanceEn: '',
     brandId: '',
     categoryId: '',
     retailPrice: '',
@@ -248,6 +242,8 @@ function buildEmptyForm() {
     negativeNotes: [],
     warrantyMonths: '',
     warrantyScope: '',
+    pdpShippingLine: '',
+    pdpReturnLine: '',
     originBrandCountry: '',
     weightGrams: '',
     sizeChart: { col2: 'Vòng đầu (cm)', rows: [], note: '' },
@@ -310,7 +306,7 @@ function buildFormFromItem(item) {
       value: o.value || '',
       attributeValueId: o.attributeValueId || null,
     })),
-    gallery: (v.gallery || []).map((img) => ({ _key: generateId(), url: img.rawUrl || img.url || '' })),
+    gallery: (v.gallery || []).map((img) => ({ _key: generateId(), mediaType: img.mediaType || 'image', url: img.rawUrl || img.url || '', alt: img.alt || '', videoUrl: img.videoUrl || '', provider: img.provider || 'youtube' })),
   })))
 
   const form = {
@@ -322,8 +318,6 @@ function buildFormFromItem(item) {
     descriptionBlocks: item.descriptionBlocks ?? null,
     // Khối mô tả tiếng Anh (V229) — nằm trong translations.en để admin nạp song ngữ.
     descriptionBlocksEn: item.translations?.en?.descriptionBlocks ?? null,
-    // "Hướng dẫn lắp đặt" (V242) — parse JSON object 2 cột (vi + en) thành các bước song ngữ inline.
-    ...parseInstallationGuide(item.installationGuide, item.translations?.en?.installationGuide),
     brandId: item.brandId || item.brand?.id || '',
     categoryId: item.categoryId || item.category?.id || item.categories?.[0]?.id || '',
     retailPrice:
@@ -352,7 +346,7 @@ function buildFormFromItem(item) {
     seoCanonicalUrl: item.seo?.canonicalUrl || '',
     seoOgImageUrl: item.seo?.ogImage?.rawUrl || item.seo?.ogImage?.url || '',
     seoOgImageAlt: item.seo?.ogImage?.alt || '',
-    gallery: (item.gallery || []).map((img) => ({ _key: generateId(), url: img.rawUrl || img.url || '', alt: img.alt || '' })),
+    gallery: (item.gallery || []).map((img) => ({ _key: generateId(), mediaType: img.mediaType || 'image', url: img.rawUrl || img.url || '', alt: img.alt || '', videoUrl: img.videoUrl || '', provider: img.provider || 'youtube' })),
     videos: (item.videos || []).map((v) => ({
       url: v.url || '',
       title: v.title || '',
@@ -413,6 +407,8 @@ function buildFormFromItem(item) {
     })),
     warrantyMonths: Number.isInteger(item.warrantyMonths) ? String(item.warrantyMonths) : '',
     warrantyScope: item.warrantyScope || '',
+    pdpShippingLine: item.pdpShippingLine || '',
+    pdpReturnLine: item.pdpReturnLine || '',
     originBrandCountry: item.originBrandCountry || '',
     weightGrams: Number.isInteger(item.weightGrams) ? String(item.weightGrams) : '',
     sizeChart: parseSizeGuide(item.sizeGuide),
@@ -483,6 +479,8 @@ function translationToPayload(en) {
 // Lọc + dọn khối mô tả trước khi gửi: bỏ khối rỗng (sẽ fail @NotBlank ở backend) và
 // strip _key (chỉ dùng tracking ở frontend). Dùng chung cho cả khối VI và EN.
 function cleanDescriptionBlocks(blocks) {
+  const cardHasContent = (c) =>
+    (c?.audience ?? '').trim() || (c?.advice ?? '').trim() || ((c?.linkLabel ?? '').trim() && (c?.linkUrl ?? '').trim())
   return blocks
     .filter((b) => {
       switch (b.type) {
@@ -493,6 +491,9 @@ function cleanDescriptionBlocks(blocks) {
         case 'video':     return (b.url ?? '').trim().length > 0
         case 'callout':   return (b.html ?? '').trim().length > 0
         case 'feature':   return (b.url ?? '').trim().length > 0
+        case 'prosCons':  return (b.positive ?? []).some((it) => (it ?? '').trim()) || (b.negative ?? []).some((it) => (it ?? '').trim())
+        case 'suitability': return (b.cards ?? []).some(cardHasContent)
+        case 'sizeGuide': return (b.html ?? '').trim().length > 0
         default:          return true
       }
     })
@@ -500,6 +501,18 @@ function cleanDescriptionBlocks(blocks) {
       // Khối feature: bỏ các dòng danh sách rỗng để không gửi item trắng xuống backend.
       if (rest.type === 'feature' && Array.isArray(rest.items)) {
         return { ...rest, items: rest.items.filter((it) => (it ?? '').trim().length > 0) }
+      }
+      // Ưu/Nhược điểm (V246): bỏ dòng rỗng (backend @NotBlank trên từng phần tử).
+      if (rest.type === 'prosCons') {
+        return {
+          ...rest,
+          positive: (rest.positive ?? []).map((it) => (it ?? '').trim()).filter(Boolean),
+          negative: (rest.negative ?? []).map((it) => (it ?? '').trim()).filter(Boolean),
+        }
+      }
+      // Phù hợp với ai (V246): bỏ thẻ rỗng.
+      if (rest.type === 'suitability') {
+        return { ...rest, cards: (rest.cards ?? []).filter(cardHasContent) }
       }
       return rest
     })
@@ -541,148 +554,16 @@ function parseSuitabilityCards(viRaw, enRaw) {
   return cards
 }
 
-// Mảng thẻ → { vi, en } chuỗi JSON. Bỏ thẻ rỗng (vi). EN mirror theo index (parallel, cùng độ
-// dài mảng vi) — chỉ phát sinh khi có ÍT NHẤT một ô tiếng Anh được nhập, đúng ngữ nghĩa pick()
-// field-level ở backend (en rỗng → trả vi). `linkUrl` dùng chung cả hai ngôn ngữ.
-function serializeSuitabilityCards(cards) {
-  const list = Array.isArray(cards) ? cards : []
-  const trim = (v) => String(v || '').trim()
-  const anyEn = list.some((c) => trim(c.audienceEn) || trim(c.adviceEn) || trim(c.linkLabelEn))
-  const vi = []
-  const en = []
-  for (const c of list) {
-    const audience = trim(c.audience)
-    const advice = trim(c.advice)
-    const linkLabel = trim(c.linkLabel)
-    const linkUrl = trim(c.linkUrl)
-    if (!(audience || advice || linkLabel)) continue
-    const card = { audience, advice }
-    if (linkLabel && linkUrl) {
-      card.linkLabel = linkLabel
-      card.linkUrl = linkUrl
-    }
-    vi.push(card)
-    if (anyEn) {
-      const cardEn = { audience: trim(c.audienceEn), advice: trim(c.adviceEn) }
-      const linkLabelEn = trim(c.linkLabelEn)
-      if (linkLabelEn && linkUrl) {
-        cardEn.linkLabel = linkLabelEn
-        cardEn.linkUrl = linkUrl
-      }
-      en.push(cardEn)
-    }
-  }
-  return {
-    vi: vi.length ? JSON.stringify(vi) : null,
-    en: anyEn && en.length ? JSON.stringify(en) : undefined,
-  }
-}
-
-// "Hướng dẫn lắp đặt" (V242) — field installationGuide lưu JSON object có cấu trúc
-// { steps: [{ icon, title, body, tip?, warning? }], maintenance? }. Parse 2 cột (vi + en) thành
-// { installationSteps song ngữ inline, maintenance, maintenanceEn } cho editor; icon dùng chung.
-// Giá trị legacy không-phải-JSON-object (HTML cũ trước V242) → coi như rỗng, admin nhập lại.
-function safeJsonObject(raw) {
-  if (typeof raw !== 'string' || !raw.trim()) return null
-  try {
-    const parsed = JSON.parse(raw)
-    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null
-  } catch {
-    return null
-  }
-}
-
-function parseInstallationGuide(viRaw, enRaw) {
-  const vi = safeJsonObject(viRaw) || {}
-  const en = safeJsonObject(enRaw) || {}
-  const viSteps = Array.isArray(vi.steps) ? vi.steps : []
-  const enSteps = Array.isArray(en.steps) ? en.steps : []
-  const len = Math.max(viSteps.length, enSteps.length)
-  const str = (v) => (typeof v === 'string' ? v : '')
-  const steps = []
-  for (let i = 0; i < len; i += 1) {
-    const v = viSteps[i] || {}
-    const e = enSteps[i] || {}
-    steps.push({
-      _key: generateId(),
-      icon: str(v.icon) || str(e.icon),
-      title: str(v.title),
-      body: str(v.body),
-      tip: str(v.tip),
-      warning: str(v.warning),
-      titleEn: str(e.title),
-      bodyEn: str(e.body),
-      tipEn: str(e.tip),
-      warningEn: str(e.warning),
-    })
-  }
-  return {
-    installationSteps: steps,
-    installationMaintenance: str(vi.maintenance),
-    installationMaintenanceEn: str(en.maintenance),
-  }
-}
-
-// { installationSteps, maintenance, maintenanceEn } → { vi, en } chuỗi JSON object. Bỏ bước rỗng
-// (vi: không title & body). EN mirror theo index (parallel cùng độ dài mảng vi) — chỉ phát sinh
-// khi có ÍT NHẤT một ô tiếng Anh, đúng ngữ nghĩa pick() field-level ở backend (en rỗng → trả vi).
-// icon dùng chung: ghi vào CẢ vi lẫn en để web không cần merge.
-function serializeInstallationGuide(form) {
-  const steps = Array.isArray(form.installationSteps) ? form.installationSteps : []
-  const trim = (v) => String(v || '').trim()
-  const maint = trim(form.installationMaintenance)
-  const maintEn = trim(form.installationMaintenanceEn)
-  const anyEn =
-    Boolean(maintEn) ||
-    steps.some((s) => trim(s.titleEn) || trim(s.bodyEn) || trim(s.tipEn) || trim(s.warningEn))
-  const vi = []
-  const en = []
-  for (const s of steps) {
-    const title = trim(s.title)
-    const body = trim(s.body)
-    if (!(title || body)) continue
-    const icon = trim(s.icon)
-    const tip = trim(s.tip)
-    const warning = trim(s.warning)
-    const step = {}
-    if (icon) step.icon = icon
-    if (title) step.title = title
-    if (body) step.body = body
-    if (tip) step.tip = tip
-    if (warning) step.warning = warning
-    vi.push(step)
-    if (anyEn) {
-      const stepEn = {}
-      if (icon) stepEn.icon = icon
-      const titleEn = trim(s.titleEn)
-      const bodyEn = trim(s.bodyEn)
-      const tipEn = trim(s.tipEn)
-      const warningEn = trim(s.warningEn)
-      if (titleEn) stepEn.title = titleEn
-      if (bodyEn) stepEn.body = bodyEn
-      if (tipEn) stepEn.tip = tipEn
-      if (warningEn) stepEn.warning = warningEn
-      en.push(stepEn)
-    }
-  }
-  const viObj = {}
-  if (vi.length) viObj.steps = vi
-  if (maint) viObj.maintenance = maint
-  const enObj = {}
-  if (en.length) enObj.steps = en
-  if (maintEn) enObj.maintenance = maintEn
-  return {
-    vi: viObj.steps || viObj.maintenance ? JSON.stringify(viObj) : null,
-    en: anyEn && (enObj.steps || enObj.maintenance) ? JSON.stringify(enObj) : undefined,
-  }
-}
+// (V246) serializeSuitabilityCards đã gỡ — "Phù hợp với ai" giờ nhập qua KHỐI suitability trong mô tả.
 
 // "Hiển thị trên web" (V245) — danh sách section PDP admin bật/tắt. Key PHẢI khớp web
 // (lib/utils/section-visibility + ProductView/WpPurchaseSection). contentBottom không nằm đây
 // (admin không soạn ở form sản phẩm). Thứ tự = thứ tự hiển thị trong panel.
+// Ưu/Nhược điểm · Phù hợp với ai · Bảng size (V246) KHÔNG còn key riêng ở đây — chúng là KHỐI trong
+// mô tả, hiển thị theo visibility của 'description' + sự tồn tại của khối.
 const SECTION_VISIBILITY_KEYS = [
-  'quickAnswer', 'description', 'specStats', 'prosCons', 'suitability', 'sizeGuide',
-  'specifications', 'installation', 'faqs', 'reviews', 'trust', 'related',
+  'quickAnswer', 'description', 'specStats',
+  'specifications', 'faqs', 'reviews', 'trust', 'related',
   'accessories', 'videos', 'trustBadges', 'commitments',
 ]
 
@@ -695,11 +576,7 @@ function sectionHasContent(form, key) {
     case 'quickAnswer':    return Boolean(t(form.quickAnswerSummary))
     case 'description':    return Array.isArray(form.descriptionBlocks) ? form.descriptionBlocks.length > 0 : Boolean(t(form.description))
     case 'specStats':      return arr(form.specStats).some((s) => t(s.value) && t(s.label))
-    case 'prosCons':       return arr(form.positiveNotes).some((h) => t(h.content)) || arr(form.negativeNotes).some((h) => t(h.content))
-    case 'suitability':    return arr(form.suitabilityCards).some((c) => t(c.audience) || t(c.advice) || t(c.linkLabel))
-    case 'sizeGuide':      return arr(form.sizeChart?.rows).some((r) => (Array.isArray(r) ? r.some((c) => t(c)) : t(r)))
     case 'specifications': return arr(form.specifications).some((s) => t(s.name) && t(s.value))
-    case 'installation':   return arr(form.installationSteps).some((s) => t(s.title) || t(s.body)) || Boolean(t(form.installationMaintenance))
     case 'faqs':           return arr(form.faqs).some((f) => t(f.question) && t(f.answer))
     case 'reviews':        return true
     case 'trust':          return true
@@ -712,7 +589,7 @@ function sectionHasContent(form, key) {
   }
 }
 
-// Parse chuỗi JSON visibility từ backend → map bool (chỉ giữ key hợp lệ). null nếu rỗng/hỏng.
+// Parse chuỗi JSON visibility từ backend → map bool + _order (chỉ giữ key hợp lệ). null nếu rỗng/hỏng.
 function parseSectionVisibilityForm(raw) {
   if (typeof raw !== 'string' || !raw.trim()) return null
   try {
@@ -720,6 +597,9 @@ function parseSectionVisibilityForm(raw) {
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null
     const map = {}
     for (const k of SECTION_VISIBILITY_KEYS) if (typeof parsed[k] === 'boolean') map[k] = parsed[k]
+    if (Array.isArray(parsed._order)) {
+      map._order = parsed._order.filter((k) => SECTION_VISIBILITY_KEYS.includes(k))
+    }
     return map
   } catch { return null }
 }
@@ -732,6 +612,7 @@ function resolveSectionVisibilityForm(saved, seedFromForm) {
     if (saved && typeof saved[k] === 'boolean') map[k] = saved[k]
     else map[k] = seedFromForm ? sectionHasContent(seedFromForm, k) : false
   }
+  if (saved?._order) map._order = saved._order
   return map
 }
 
@@ -743,10 +624,8 @@ function toPayload(form) {
     form.seoOgImageUrl.trim() ||
     form.seoOgImageAlt.trim()
 
-  // "Phù hợp với ai" (V240) → 2 chuỗi JSON: vi vào field gốc, en vào translations.en (mirror index).
-  const suit = serializeSuitabilityCards(form.suitabilityCards)
-  // "Hướng dẫn lắp đặt" (V242) → 2 chuỗi JSON object: vi vào field gốc, en vào translations.en.
-  const inst = serializeInstallationGuide(form)
+  // Ưu/Nhược điểm · Phù hợp với ai · Bảng size (V246): không còn gửi từ ô nhập riêng — admin nhập qua
+  // KHỐI trong mô tả (descriptionBlocks). Backend present-flag bỏ qua khi vắng → cột cũ không bị đụng.
 
   const payload = {
     sku: form.sku.trim() || null,
@@ -754,18 +633,17 @@ function toPayload(form) {
     name: form.name.trim(),
     shortDescription: form.shortDescription.trim() || undefined,
     description: Array.isArray(form.descriptionBlocks) ? undefined : (form.description.trim() || undefined),
-    installationGuide: inst.vi,
     // Template SEO scalars (V175). Null khi cleared (presence-flag).
     warrantyMonths: toIntegerOrNull(form.warrantyMonths),
     warrantyScope: form.warrantyScope.trim() ? form.warrantyScope.trim() : null,
+    pdpShippingLine: form.pdpShippingLine.trim() ? form.pdpShippingLine.trim() : null,
+    pdpReturnLine: form.pdpReturnLine.trim() ? form.pdpReturnLine.trim() : null,
     originBrandCountry: form.originBrandCountry.trim() ? form.originBrandCountry.trim() : null,
     weightGrams: toIntegerOrNull(form.weightGrams),
-    sizeGuide: serializeSizeGuide(form.sizeChart) || null,
     // "Hiển thị trên web" (V245) — luôn gửi map đầy đủ (presence-flag): "đóng băng" trạng thái hiện tại
     // thành cờ explicit nên web không đổi với sản phẩm cũ, và áp opt-in cho sản phẩm mới.
     sectionVisibility: JSON.stringify(form.sectionVisibility || resolveSectionVisibilityForm(null, form)),
     quickAnswerSummary: form.quickAnswerSummary.trim() ? form.quickAnswerSummary.trim() : null,
-    suitabilityAdvisory: suit.vi,
     gender: form.gender.trim() ? form.gender.trim() : null,
     brandId: form.brandId.trim() || undefined,
     categoryId: form.categoryId.trim(),
@@ -794,12 +672,24 @@ function toPayload(form) {
       : null,
     // Optional English content (V136). Always sent so the backend full-replaces
     // the English columns; empty fields clear them. English is never required.
-    translations: { en: { ...translationToPayload(form.translations?.en), suitabilityAdvisory: suit.en, installationGuide: inst.en } },
+    translations: { en: { ...translationToPayload(form.translations?.en) } },
   }
 
   payload.gallery = form.gallery
-    .filter((img) => img.url.trim())
-    .map((img, i) => ({ url: img.url.trim(), alt: img.alt?.trim() || undefined, sortOrder: i }))
+    // V248: giữ item có ảnh HOẶC video (gallery hỗn hợp).
+    .filter((img) => (img.url || '').trim() || (img.mediaType === 'video' && (img.videoUrl || '').trim()))
+    .map((img, i) => (
+      img.mediaType === 'video'
+        ? {
+            mediaType: 'video',
+            videoUrl: (img.videoUrl || '').trim(),
+            videoProvider: img.provider || 'youtube',
+            url: (img.url || '').trim() || undefined,
+            alt: img.alt?.trim() || undefined,
+            sortOrder: i,
+          }
+        : { mediaType: 'image', url: img.url.trim(), alt: img.alt?.trim() || undefined, sortOrder: i }
+    ))
 
   payload.videos = form.videos
     .filter((v) => v.url.trim())
@@ -865,21 +755,7 @@ function toPayload(form) {
       sortOrder: i,
     }))
 
-  // Ưu/Nhược điểm (V175) — full-replace mỗi nhóm; mục content blank bị bỏ.
-  payload.positiveNotes = form.positiveNotes
-    .filter((h) => (h.content || '').trim())
-    .map((h, i) => ({
-      content: h.content.trim(),
-      contentEn: (h.contentEn || '').trim() || undefined,
-      sortOrder: i,
-    }))
-  payload.negativeNotes = form.negativeNotes
-    .filter((h) => (h.content || '').trim())
-    .map((h, i) => ({
-      content: h.content.trim(),
-      contentEn: (h.contentEn || '').trim() || undefined,
-      sortOrder: i,
-    }))
+  // Ưu/Nhược điểm (V246): nhập qua KHỐI prosCons trong mô tả — không gửi positiveNotes/negativeNotes nữa.
 
   // Always send relatedProductIds — empty array explicitly clears the section.
   payload.relatedProductIds = Array.isArray(form.relatedProductIds) ? form.relatedProductIds : []
@@ -905,8 +781,20 @@ function toPayload(form) {
   payload.variants = scopedVariants.map((v, i) => {
     const colorKey = getVariantColorKey(v)
     const gallery = (v.gallery ?? [])
-      .filter((img) => img.url.trim())
-      .map((img, j) => ({ url: img.url.trim(), sortOrder: j }))
+      // V248: gallery biến thể cũng chứa cả ảnh lẫn video.
+      .filter((img) => (img.url || '').trim() || (img.mediaType === 'video' && (img.videoUrl || '').trim()))
+      .map((img, j) => (
+        img.mediaType === 'video'
+          ? {
+              mediaType: 'video',
+              videoUrl: (img.videoUrl || '').trim(),
+              videoProvider: img.provider || 'youtube',
+              url: (img.url || '').trim() || undefined,
+              alt: img.alt?.trim() || undefined,
+              sortOrder: j,
+            }
+          : { mediaType: 'image', url: img.url.trim(), alt: img.alt?.trim() || undefined, sortOrder: j }
+      ))
 
     const shouldSendGallery = Boolean(colorKey && gallery.length > 0 && !emittedGalleryColors.has(colorKey))
     if (shouldSendGallery) emittedGalleryColors.add(colorKey)
@@ -956,10 +844,107 @@ function IconChevronUp() {
 function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sortable }) {
   const { t } = useTranslation()
   const [pickerOpen, setPickerOpen] = useState(false)
-  const trimmed = item.url.trim()
+  const [videoPickerOpen, setVideoPickerOpen] = useState(false)
+  const isVideo = item.mediaType === 'video'
+  const trimmed = (item.url || '').trim()
   const displayUrl = resolveDisplayUrl(trimmed)
-  const thumbState = trimmed ? 'ok' : 'empty'
   const dragLabel = t('products.detail.gallery.dragToReorder', { defaultValue: 'Kéo để sắp xếp' })
+
+  // ── KHỐI VIDEO trong gallery (V248): YouTube/Upload + thumbnail tuỳ chọn ──
+  if (isVideo) {
+    const provider = item.provider || 'youtube'
+    const ytId = provider === 'youtube' ? extractYouTubeId(item.videoUrl || '') : null
+    const posterUrl = trimmed
+      ? displayUrl
+      : (ytId ? `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` : '')
+    return (
+      <div
+        ref={sortable?.setNodeRef}
+        style={{ ...sortable?.style, opacity: sortable?.isDragging ? 0.4 : undefined }}
+        className={`gallery-card${urlError ? ' gallery-card--error' : ''}`}
+      >
+        <div className="gallery-card-thumb relative bg-black">
+          {posterUrl
+            ? <img src={posterUrl} alt="" loading="eager" />
+            : <span className="gallery-thumb-status">🎬</span>}
+          <span className="absolute inset-0 flex items-center justify-center text-white text-2xl pointer-events-none">▶</span>
+          {!disabled && sortable && (
+            <button
+              type="button"
+              {...sortable.handleProps}
+              className="absolute top-1 left-1 z-10 inline-flex items-center justify-center w-6 h-6 bg-black/55 text-white cursor-grab touch-none rounded-sm"
+              onClick={(e) => e.stopPropagation()}
+              title={dragLabel}
+              aria-label={dragLabel}
+            >
+              <GripVertical size={14} />
+            </button>
+          )}
+          {!disabled && (
+            <button
+              type="button"
+              className="gallery-card-remove"
+              onClick={(e) => { e.stopPropagation(); onRemove() }}
+              aria-label={t('products.detail.gallery.removeImage')}
+            >
+              ✕
+            </button>
+          )}
+        </div>
+        <div className="gallery-card-body flex flex-col gap-2">
+          <div className="flex gap-1 p-1 bg-muted w-fit">
+            <Button type="button" variant={provider === 'youtube' ? 'default' : 'ghost'} size="sm"
+              onClick={() => onUpdate('provider', 'youtube')} disabled={disabled}>YouTube</Button>
+            <Button type="button" variant={provider === 'upload' ? 'default' : 'ghost'} size="sm"
+              onClick={() => { onUpdate('provider', 'upload'); }} disabled={disabled}>
+              {t('products.detail.gallery.videoUpload', { defaultValue: 'Tải lên' })}
+            </Button>
+          </div>
+          {provider === 'youtube' ? (
+            <input
+              type="text"
+              className="gallery-card-alt-input"
+              placeholder={t('products.detail.gallery.videoUrlPlaceholder', { defaultValue: 'Dán link YouTube' })}
+              value={item.videoUrl || ''}
+              onChange={(e) => onUpdate('videoUrl', e.target.value)}
+              disabled={disabled}
+            />
+          ) : (
+            <Button variant="outline" size="sm" onClick={() => setVideoPickerOpen(true)} disabled={disabled} className="self-start">
+              {item.videoUrl ? t('products.detail.gallery.videoChange', { defaultValue: 'Đổi video' }) : t('products.detail.gallery.videoPick', { defaultValue: 'Chọn video' })}
+            </Button>
+          )}
+          <Button variant="outline" size="sm" onClick={() => setPickerOpen(true)} disabled={disabled} className="self-start">
+            {trimmed ? t('products.detail.gallery.thumbChange', { defaultValue: 'Đổi ảnh đại diện' }) : t('products.detail.gallery.thumbPick', { defaultValue: 'Ảnh đại diện (tuỳ chọn)' })}
+          </Button>
+          <input
+            type="text"
+            className="gallery-card-alt-input"
+            placeholder={t('products.detail.gallery.altPlaceholder')}
+            value={item.alt || ''}
+            onChange={(e) => onUpdate('alt', e.target.value)}
+            disabled={disabled}
+            aria-label={t('products.detail.gallery.altAriaLabel')}
+          />
+          {urlError && <small className="field-error">{urlError}</small>}
+        </div>
+        {pickerOpen && (
+          <MediaPickerModal
+            onSelect={(url) => { onUpdate('url', url); setPickerOpen(false) }}
+            onClose={() => setPickerOpen(false)}
+          />
+        )}
+        {videoPickerOpen && (
+          <VideoPickerModal
+            onSelect={(url) => { onUpdate('videoUrl', url); onUpdate('provider', 'upload'); setVideoPickerOpen(false) }}
+            onClose={() => setVideoPickerOpen(false)}
+          />
+        )}
+      </div>
+    )
+  }
+
+  const thumbState = trimmed ? 'ok' : 'empty'
 
   return (
     <div
@@ -1047,6 +1032,9 @@ function GalleryEditor({ items, onChange, disabled, validationErrors = {} }) {
   function addItem() {
     onChange([...items, { _key: generateId(), url: '', alt: '' }])
   }
+  function addVideoItem() {
+    onChange([...items, { _key: generateId(), mediaType: 'video', provider: 'youtube', videoUrl: '', url: '', alt: '' }])
+  }
 
   return (
     <div className="gallery-editor">
@@ -1076,15 +1064,25 @@ function GalleryEditor({ items, onChange, disabled, validationErrors = {} }) {
         )}
       />
       {!disabled && (
-        <Button
-          variant="outline"
-          size="sm"
-          className="gallery-multi-pick-btn"
-          onClick={() => setMultiPickerOpen(true)}
-          title={t('products.detail.gallery.multiSelectTitle')}
-        >
-          + {t('products.detail.gallery.multiSelect')}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gallery-multi-pick-btn"
+            onClick={() => setMultiPickerOpen(true)}
+            title={t('products.detail.gallery.multiSelectTitle')}
+          >
+            + {t('products.detail.gallery.multiSelect')}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={addVideoItem}
+            title={t('products.detail.gallery.addVideoTitle', { defaultValue: 'Thêm video vào dải ảnh sản phẩm' })}
+          >
+            + {t('products.detail.gallery.addVideo', { defaultValue: 'Thêm video' })}
+          </Button>
+        </div>
       )}
       {multiPickerOpen && (
         <MediaPickerModal
@@ -1111,7 +1109,7 @@ function VideoEditor({ items, onChange, disabled, validationErrors = {} }) {
     onChange(items.map((item, i) => i === index ? { ...item, ...patch } : item))
   }
   function addItem() {
-    onChange([...items, { url: '', title: '', type: 'youtube', thumbnailUrl: '' }])
+    onChange([...items, { url: '', title: '', description: '', type: 'youtube', thumbnailUrl: '' }])
   }
   function removeItem(index) {
     onChange(items.filter((_, i) => i !== index))
@@ -1205,6 +1203,18 @@ function VideoEditor({ items, onChange, disabled, validationErrors = {} }) {
                   )}
                 </div>
               )}
+              <Input
+                placeholder={t('products.detail.video.titlePlaceholder')}
+                value={item.title || ''}
+                onChange={(e) => updateItem(index, { title: e.target.value })}
+                disabled={disabled}
+              />
+              <Input
+                placeholder={t('products.detail.video.descriptionPlaceholder')}
+                value={item.description || ''}
+                onChange={(e) => updateItem(index, { description: e.target.value })}
+                disabled={disabled}
+              />
             </div>
             <Button
               variant="ghost"
@@ -1318,20 +1328,33 @@ function SpecificationsEditor({ items, onChange, disabled, validationErrors, con
 }
 
 /**
- * "Hiển thị trên web" (V245) — bảng công tắc bật/tắt từng section PDP cho riêng sản phẩm này.
- * Nơi quản ẩn/hiện trang sản phẩm. Sản phẩm mới mặc định tắt; dòng "chưa có nội dung" nhắc admin
- * section đó hiện không có gì để hiện (bật cũng chưa thấy).
+ * "Hiển thị trên web" (V245) — bảng công tắc bật/tắt + kéo-thả đổi thứ tự từng section PDP.
+ * Thứ tự kéo = thứ tự hiện trên trang web (body sections). Sản phẩm mới mặc định tắt hết.
  */
 function SectionVisibilityEditor({ value, onChange, form, disabled }) {
   const { t } = useTranslation()
   const map = value || {}
 
+  // Thứ tự hiện tại: lấy từ _order đã lưu, bổ sung key còn thiếu vào cuối.
+  const order = useMemo(() => {
+    const saved = Array.isArray(map._order) ? map._order : []
+    const missing = SECTION_VISIBILITY_KEYS.filter((k) => !saved.includes(k))
+    return [...saved, ...missing]
+  }, [map._order])
+
   function toggle(key, on) {
     onChange({ ...map, [key]: on })
   }
   function setAll(on) {
-    onChange(Object.fromEntries(SECTION_VISIBILITY_KEYS.map((k) => [k, on])))
+    const next = Object.fromEntries(SECTION_VISIBILITY_KEYS.map((k) => [k, on]))
+    if (map._order) next._order = map._order
+    onChange(next)
   }
+  function handleReorder(nextItems) {
+    onChange({ ...map, _order: nextItems.map((it) => it.id) })
+  }
+
+  const items = order.map((k) => ({ id: k }))
 
   return (
     <div className="flex flex-col gap-3">
@@ -1343,26 +1366,45 @@ function SectionVisibilityEditor({ value, onChange, form, disabled }) {
           {t('products.detail.sectionVisibility.hideAll', { defaultValue: 'Tắt tất cả' })}
         </Button>
       </div>
-      <div className="flex flex-col gap-1.5">
-        {SECTION_VISIBILITY_KEYS.map((key) => {
+      <SortableList
+        items={items}
+        onReorder={handleReorder}
+        disabled={disabled}
+        className="flex flex-col gap-1.5"
+        renderItem={(item, sortable) => {
+          const key = item.id
           const on = map[key] === true
           const empty = !sectionHasContent(form, key)
           return (
-            <label
-              key={key}
-              className="flex cursor-pointer select-none items-center gap-3 rounded-sm border border-border px-3 py-2 text-sm"
+            <div
+              ref={sortable.setNodeRef}
+              style={sortable.style}
+              className={`flex select-none items-center gap-3 rounded-sm border border-border px-3 py-2 text-sm${sortable.isDragging ? ' opacity-50' : ''}`}
             >
-              <Checkbox checked={on} onCheckedChange={(v) => toggle(key, v === true)} disabled={disabled} />
-              <span className="flex-1">{t(`products.detail.sectionVisibility.items.${key}`)}</span>
+              <span
+                {...sortable.handleProps}
+                className={`cursor-grab text-muted-foreground active:cursor-grabbing${disabled ? ' pointer-events-none opacity-30' : ''}`}
+              >
+                <GripVertical className="h-4 w-4" />
+              </span>
+              <Checkbox
+                checked={on}
+                onCheckedChange={(v) => toggle(key, v === true)}
+                disabled={disabled}
+                id={`sv-${key}`}
+              />
+              <label htmlFor={`sv-${key}`} className="flex-1 cursor-pointer">
+                {t(`products.detail.sectionVisibility.items.${key}`)}
+              </label>
               {on && empty && (
                 <span className="text-xs text-muted-foreground">
                   {t('products.detail.sectionVisibility.noContent', { defaultValue: 'chưa có nội dung' })}
                 </span>
               )}
-            </label>
+            </div>
           )
-        })}
-      </div>
+        }}
+      />
     </div>
   )
 }
@@ -1509,99 +1551,7 @@ function FaqEditor({ items, onChange, disabled, validationErrors, contentLang = 
 // Trình soạn khối "Phù hợp với ai" (V240): danh sách thẻ tư vấn, thêm/bớt/đảo thứ tự. Mỗi thẻ
 // gồm Đối tượng (in đậm) + Lời khuyên + Link gợi ý tùy chọn. Đối tượng/lời khuyên/nhãn-link song
 // ngữ theo contentLang; ĐƯỜNG DẪN link (linkUrl) dùng chung cả VI/EN (không dịch). Mirror FaqEditor.
-function SuitabilityEditor({ items, onChange, disabled, contentLang = 'vi' }) {
-  const { t } = useTranslation()
-  const isEn = contentLang === 'en'
-  const fAudience = isEn ? 'audienceEn' : 'audience'
-  const fAdvice = isEn ? 'adviceEn' : 'advice'
-  const fLinkLabel = isEn ? 'linkLabelEn' : 'linkLabel'
-  function updateItem(index, field, value) {
-    onChange(items.map((item, i) => (i === index ? { ...item, [field]: value } : item)))
-  }
-  function addItem() {
-    onChange([
-      ...items,
-      { _key: generateId(), audience: '', advice: '', linkLabel: '', linkUrl: '', audienceEn: '', adviceEn: '', linkLabelEn: '' },
-    ])
-  }
-  function removeItem(index) {
-    onChange(items.filter((_, i) => i !== index))
-  }
-  function moveItem(index, dir) {
-    const next = [...items]
-    const target = index + dir
-    if (target < 0 || target >= next.length) return
-    ;[next[index], next[target]] = [next[target], next[index]]
-    onChange(next)
-  }
-
-  return (
-    <div className="list-editor">
-      {items.length === 0 && (
-        <p className="list-editor-empty">
-          {t('products.detail.suitability.empty', { defaultValue: 'Chưa có thẻ tư vấn nào.' })}
-        </p>
-      )}
-      {items.map((item, index) => (
-        <div key={item._key} className="list-editor-row list-editor-row--stack">
-          <div className="list-editor-reorder">
-            <Button variant="outline" size="icon" onClick={() => moveItem(index, -1)} disabled={disabled || index === 0} aria-label={t('products.detail.moveUp')}>▲</Button>
-            <Button variant="outline" size="icon" onClick={() => moveItem(index, 1)} disabled={disabled || index === items.length - 1} aria-label={t('products.detail.moveDown')}>▼</Button>
-          </div>
-          <div className="flex flex-1 flex-col gap-2">
-            <Input
-              placeholder={t('products.detail.suitability.audiencePlaceholder', { defaultValue: 'Đối tượng (vd: Touring đường dài, Ngân sách 5–8 triệu…)' })}
-              value={item[fAudience] || ''}
-              onChange={(e) => updateItem(index, fAudience, e.target.value)}
-              disabled={disabled}
-              maxLength={200}
-            />
-            <Textarea
-              placeholder={t('products.detail.suitability.advicePlaceholder', { defaultValue: 'Lời khuyên (1 câu: nếu… thì…)' })}
-              value={item[fAdvice] || ''}
-              onChange={(e) => updateItem(index, fAdvice, e.target.value)}
-              disabled={disabled}
-              maxLength={600}
-              rows={2}
-            />
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <Input
-                placeholder={t('products.detail.suitability.linkLabelPlaceholder', { defaultValue: 'Nhãn link gợi ý (tùy chọn)' })}
-                value={item[fLinkLabel] || ''}
-                onChange={(e) => updateItem(index, fLinkLabel, e.target.value)}
-                disabled={disabled}
-                maxLength={200}
-              />
-              <Input
-                placeholder={t('products.detail.suitability.linkUrlPlaceholder', { defaultValue: 'Đường dẫn nội bộ (vd: /san-pham/abc)' })}
-                value={item.linkUrl || ''}
-                onChange={(e) => updateItem(index, 'linkUrl', e.target.value)}
-                disabled={disabled}
-                maxLength={500}
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {t('products.detail.suitability.linkUrlShared', { defaultValue: 'Đường dẫn dùng chung cho cả tiếng Việt và tiếng Anh.' })}
-            </p>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-destructive hover:text-destructive"
-            onClick={() => removeItem(index)}
-            disabled={disabled}
-            aria-label={t('products.detail.suitability.remove', { defaultValue: 'Xóa thẻ' })}
-          >
-            ✕
-          </Button>
-        </div>
-      ))}
-      <Button variant="outline" size="sm" onClick={addItem} disabled={disabled}>
-        + {t('products.detail.suitability.addCard', { defaultValue: 'Thêm thẻ' })}
-      </Button>
-    </div>
-  )
-}
+// (V246) SuitabilityEditor đã gỡ — "Phù hợp với ai" giờ nhập qua KHỐI suitability trong trình dựng mô tả.
 
 // Bộ icon dựng sẵn cho khối cam kết (V232) — key khớp COMMITMENT_ICON_MAP bên web.
 // labelKey trỏ tới i18n products.detail.commitments.icons.*; mặc định 'shield-check'.
@@ -1702,137 +1652,6 @@ function CommitmentEditor({ items, onChange, disabled, contentLang = 'vi' }) {
       ))}
       <Button variant="outline" size="sm" onClick={addItem} disabled={disabled}>
         + {t('products.detail.commitments.addRow')}
-      </Button>
-    </div>
-  )
-}
-
-// Bộ icon dựng sẵn cho các bước "Hướng dẫn lắp đặt" (V242) — key khớp INSTALL_ICON_MAP bên web.
-// labelKey trỏ tới i18n products.detail.installation.icons.*; mặc định 'wrench'.
-const INSTALL_ICON_OPTIONS = [
-  { value: 'wrench', Icon: Wrench, labelKey: 'wrench', fallback: 'Lắp ráp / dụng cụ' },
-  { value: 'glasses', Icon: Glasses, labelKey: 'glasses', fallback: 'Kính' },
-  { value: 'wind', Icon: Wind, labelKey: 'wind', fallback: 'Thông gió' },
-  { value: 'hard-hat', Icon: HardHat, labelKey: 'hardHat', fallback: 'Đội mũ / an toàn' },
-  { value: 'headphones', Icon: Headphones, labelKey: 'headphones', fallback: 'Tai nghe / intercom' },
-  { value: 'sparkles', Icon: Sparkles, labelKey: 'sparkles', fallback: 'Vệ sinh' },
-  { value: 'shield-check', Icon: ShieldCheck, labelKey: 'shieldCheck', fallback: 'Bảo vệ' },
-  { value: 'settings', Icon: Settings2, labelKey: 'settings', fallback: 'Điều chỉnh' },
-  { value: 'droplets', Icon: Droplets, labelKey: 'droplets', fallback: 'Nước / chống ẩm' },
-  { value: 'package', Icon: Package, labelKey: 'package', fallback: 'Phụ kiện / hộp' },
-  { value: 'plug', Icon: Plug, labelKey: 'plug', fallback: 'Kết nối / điện' },
-]
-
-// Trình soạn khối "Hướng dẫn lắp đặt" theo từng sản phẩm (V242): danh sách bước thêm/bớt/đảo
-// thứ tự, mỗi bước gồm icon + tiêu đề + nội dung + mẹo (tùy chọn) + cảnh báo (tùy chọn). Tiêu đề/
-// nội dung/mẹo/cảnh báo song ngữ (theo contentLang); icon dùng chung (không dịch). Ghi chú bảo
-// dưỡng nằm RIÊNG ngoài danh sách (xử lý ở SectionCard). Mirror SuitabilityEditor + CommitmentEditor.
-function InstallationGuideEditor({ items, onChange, disabled, contentLang = 'vi' }) {
-  const { t } = useTranslation()
-  const isEn = contentLang === 'en'
-  const fTitle = isEn ? 'titleEn' : 'title'
-  const fBody = isEn ? 'bodyEn' : 'body'
-  const fTip = isEn ? 'tipEn' : 'tip'
-  const fWarning = isEn ? 'warningEn' : 'warning'
-  function updateItem(index, field, value) {
-    onChange(items.map((item, i) => (i === index ? { ...item, [field]: value } : item)))
-  }
-  function addItem() {
-    onChange([
-      ...items,
-      { _key: generateId(), icon: 'wrench', title: '', body: '', tip: '', warning: '', titleEn: '', bodyEn: '', tipEn: '', warningEn: '' },
-    ])
-  }
-  function removeItem(index) {
-    onChange(items.filter((_, i) => i !== index))
-  }
-  function moveItem(index, dir) {
-    const next = [...items]
-    const target = index + dir
-    if (target < 0 || target >= next.length) return
-    ;[next[index], next[target]] = [next[target], next[index]]
-    onChange(next)
-  }
-
-  return (
-    <div className="list-editor">
-      {items.length === 0 && (
-        <p className="list-editor-empty">
-          {t('products.detail.installation.empty', { defaultValue: 'Chưa có bước nào.' })}
-        </p>
-      )}
-      {items.map((item, index) => (
-        <div key={item._key} className="list-editor-row list-editor-row--stack">
-          <div className="list-editor-reorder">
-            <Button variant="outline" size="icon" onClick={() => moveItem(index, -1)} disabled={disabled || index === 0} aria-label={t('products.detail.moveUp')}>▲</Button>
-            <Button variant="outline" size="icon" onClick={() => moveItem(index, 1)} disabled={disabled || index === items.length - 1} aria-label={t('products.detail.moveDown')}>▼</Button>
-          </div>
-          <div className="flex flex-1 flex-col gap-2">
-            <div className="flex items-center gap-2">
-              <span className="w-16 shrink-0 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                {t('products.detail.installation.stepLabel', { defaultValue: 'Bước' })} {String(index + 1).padStart(2, '0')}
-              </span>
-              {/* Icon dùng chung mọi ngôn ngữ — chỉ cho sửa ở chế độ nội dung tiếng Việt để tránh nhầm. */}
-              <Select value={item.icon || 'wrench'} onValueChange={(v) => updateItem(index, 'icon', v)} disabled={disabled || isEn}>
-                <SelectTrigger className="w-full sm:w-56" aria-label={t('products.detail.installation.iconLabel', { defaultValue: 'Icon bước' })}>
-                  <SelectValue placeholder={t('products.detail.installation.iconLabel', { defaultValue: 'Icon bước' })} />
-                </SelectTrigger>
-                <SelectContent>
-                  {INSTALL_ICON_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      <span className="flex items-center gap-2">
-                        <opt.Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-                        {t(`products.detail.installation.icons.${opt.labelKey}`, { defaultValue: opt.fallback })}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <Input
-              placeholder={t('products.detail.installation.titlePlaceholder', { defaultValue: 'Tiêu đề bước (vd: Lắp Pinlock vào kính chính)' })}
-              value={item[fTitle] || ''}
-              onChange={(e) => updateItem(index, fTitle, e.target.value)}
-              disabled={disabled}
-              maxLength={200}
-            />
-            <Textarea
-              placeholder={t('products.detail.installation.bodyPlaceholder', { defaultValue: 'Nội dung hướng dẫn cho bước này' })}
-              value={item[fBody] || ''}
-              onChange={(e) => updateItem(index, fBody, e.target.value)}
-              disabled={disabled}
-              maxLength={2000}
-              rows={3}
-            />
-            <Input
-              placeholder={t('products.detail.installation.tipPlaceholder', { defaultValue: 'Mẹo (tùy chọn) — hiện trong hộp 💡' })}
-              value={item[fTip] || ''}
-              onChange={(e) => updateItem(index, fTip, e.target.value)}
-              disabled={disabled}
-              maxLength={500}
-            />
-            <Input
-              placeholder={t('products.detail.installation.warningPlaceholder', { defaultValue: 'Cảnh báo (tùy chọn) — hiện trong hộp ⚠️' })}
-              value={item[fWarning] || ''}
-              onChange={(e) => updateItem(index, fWarning, e.target.value)}
-              disabled={disabled}
-              maxLength={500}
-            />
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-destructive hover:text-destructive"
-            onClick={() => removeItem(index)}
-            disabled={disabled}
-            aria-label={t('products.detail.installation.removeStep', { defaultValue: 'Xóa bước' })}
-          >
-            ✕
-          </Button>
-        </div>
-      ))}
-      <Button variant="outline" size="sm" onClick={addItem} disabled={disabled}>
-        + {t('products.detail.installation.addStep', { defaultValue: 'Thêm bước' })}
       </Button>
     </div>
   )
@@ -2931,7 +2750,6 @@ const SECTION_DEFS = [
   { id: 'section-videos',         key: 'videos',        icon: 'Video',      labelKey: 'products.detail.videoSectionTitle',    required: false },
   { id: 'section-specs',          key: 'specs',         icon: 'ListChecks', labelKey: 'products.detail.specsSectionTitle',     required: false },
   { id: 'section-spec-stats',     key: 'specStats',     icon: 'Gauge',      labelKey: 'products.detail.sectionSpecStats',      required: false },
-  { id: 'section-installation',   key: 'installation',  icon: 'Wrench',     labelKey: 'products.detail.sectionInstallation',   required: false },
   { id: 'section-faqs',           key: 'faqs',          icon: 'HelpCircle', labelKey: 'products.detail.sectionFaqs',           required: false },
   { id: 'section-commitments',    key: 'commitments',   icon: 'ShieldCheck',labelKey: 'products.detail.sectionCommitments',    required: false },
   { id: 'section-trust-badges',   key: 'trustBadges',   icon: 'BadgeCheck', labelKey: 'products.detail.sectionTrustBadges',    required: false },
@@ -2945,7 +2763,7 @@ const SECTION_DEFS = [
 const TAB_SECTIONS = {
   general:  ['basic', 'pricing', 'media'],
   content:  ['seo', 'gallery', 'videos'],
-  details:  ['specs', 'specStats', 'installation', 'faqs', 'commitments', 'trustBadges'],
+  details:  ['specs', 'specStats', 'faqs', 'commitments', 'trustBadges'],
   variants: ['variants', 'related', 'accessories'],
 }
 
@@ -2960,7 +2778,6 @@ const SECTION_FIELD_PREFIXES = {
   videos:        ['videos'],
   specs:         ['specifications'],
   specStats:     ['specStats'],
-  installation:  ['installationGuide'],
   faqs:          ['faqs'],
   commitments:   ['commitments'],
   trustBadges:   ['trustBadges'],
@@ -4469,35 +4286,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 />
               </SectionCard>
 
-              {/* ── Card: Hướng dẫn lắp đặt (V242) — danh sách bước có cấu trúc + ghi chú bảo dưỡng ── */}
-              <SectionCard title={t('products.detail.sectionInstallation')} badge={<RoleBadge role="content" />}>
-                <p className="text-xs text-muted-foreground mb-2">{t('products.detail.installationHint')}</p>
-                <InstallationGuideEditor
-                  items={form.installationSteps}
-                  onChange={(next) => updateField('installationSteps', next)}
-                  disabled={isReadOnly}
-                  contentLang={contentLang}
-                />
-                <div className="mt-4">
-                  <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
-                    {t('products.detail.installation.maintenanceLabel', { defaultValue: 'Ghi chú bảo dưỡng định kỳ (tùy chọn)' })}
-                  </label>
-                  <Textarea
-                    value={contentLang === 'en' ? (form.installationMaintenanceEn || '') : (form.installationMaintenance || '')}
-                    onChange={(e) => updateField(contentLang === 'en' ? 'installationMaintenanceEn' : 'installationMaintenance', e.target.value)}
-                    disabled={isReadOnly}
-                    maxLength={2000}
-                    rows={3}
-                    placeholder={t('products.detail.installation.maintenancePlaceholder', { defaultValue: 'Vd: Tháo lót trong giặt máy mỗi 30–60 ngày; vệ sinh kính bằng nước ấm + xà phòng trung tính, không dùng cồn...' })}
-                  />
-                </div>
-                {validationErrors.installationGuide && (
-                  <span className="text-xs text-[var(--admin-color-status-danger-text)] font-semibold mt-2 block">
-                    {validationErrors.installationGuide}
-                  </span>
-                )}
-              </SectionCard>
-
               {/* ── Card: Quick Answer (V236) — đoạn AIO 40–60 từ, blockquote trước H2 đầu ── */}
               <SectionCard
                 title={t('products.detail.quickAnswer.sectionTitle', { defaultValue: 'Quick Answer (trả lời nhanh)' })}
@@ -4522,26 +4310,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 )}
               </SectionCard>
 
-              {/* ── Card: Phù hợp với ai (V240) — danh sách thẻ (đối tượng + lời khuyên + link gợi ý) ── */}
-              <SectionCard
-                title={t('products.detail.suitability.sectionTitle', { defaultValue: 'Phù hợp với ai' })}
-                badge={<RoleBadge role="content" />}
-              >
-                <p className="text-xs text-muted-foreground mb-2">
-                  {t('products.detail.suitability.hint', { defaultValue: 'Thêm 3–4 thẻ. Mỗi thẻ: nhóm đối tượng (in đậm) + 1 câu lời khuyên + link gợi ý tùy chọn tới sản phẩm/danh mục thay thế. Hiển thị thành khối riêng trên trang sản phẩm.' })}
-                </p>
-                <SuitabilityEditor
-                  items={form.suitabilityCards}
-                  onChange={(next) => updateField('suitabilityCards', next)}
-                  disabled={isReadOnly}
-                  contentLang={contentLang}
-                />
-                {validationErrors.suitabilityAdvisory && (
-                  <span className="text-xs text-[var(--admin-color-status-danger-text)] font-semibold mt-2 block">
-                    {validationErrors.suitabilityAdvisory}
-                  </span>
-                )}
-              </SectionCard>
+              {/* Phù hợp với ai · Ưu/Nhược điểm · Bảng size (V246): nhập qua KHỐI trong "Mô tả sản phẩm"
+                  (trình dựng khối), không còn ô nhập riêng tại đây. */}
 
               {/* ── Card: FAQ ── */}
               <SectionCard
@@ -4611,40 +4381,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 />
               </SectionCard>
 
-              {/* ── Card: Ưu điểm & Nhược điểm (V175) ── */}
-              <SectionCard
-                title={t('products.detail.highlights.sectionTitle', { defaultValue: 'Ưu điểm & Nhược điểm' })}
-                badge={<RoleBadge role="content" />}
-              >
-                <p className="text-xs text-muted-foreground mb-3">
-                  {t('products.detail.highlights.hint', { defaultValue: 'Các gạch đầu dòng ưu/nhược điểm thật của sản phẩm — hiển thị trên trang và đưa vào dữ liệu có cấu trúc (positiveNotes/negativeNotes).' })}
-                </p>
-                <div className="grid gap-5 md:grid-cols-2">
-                  <div>
-                    <div className="text-sm font-medium mb-2">{t('products.detail.highlights.prosTitle', { defaultValue: 'Ưu điểm' })}</div>
-                    <HighlightsEditor
-                      items={form.positiveNotes}
-                      onChange={(next) => updateField('positiveNotes', next)}
-                      disabled={isReadOnly}
-                      contentLang={contentLang}
-                      placeholder={t('products.detail.highlights.prosPlaceholder', { defaultValue: 'vd: Nhẹ hơn LS2 Storm II 29g' })}
-                      addLabel={t('products.detail.highlights.addPro', { defaultValue: 'Thêm ưu điểm' })}
-                    />
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium mb-2">{t('products.detail.highlights.consTitle', { defaultValue: 'Nhược điểm' })}</div>
-                    <HighlightsEditor
-                      items={form.negativeNotes}
-                      onChange={(next) => updateField('negativeNotes', next)}
-                      disabled={isReadOnly}
-                      contentLang={contentLang}
-                      placeholder={t('products.detail.highlights.consPlaceholder', { defaultValue: 'vd: Không kèm Pinlock' })}
-                      addLabel={t('products.detail.highlights.addCon', { defaultValue: 'Thêm nhược điểm' })}
-                    />
-                  </div>
-                </div>
-              </SectionCard>
-
               {/* ── Card: Bảo hành, xuất xứ, trọng lượng (V175) ── */}
               <SectionCard
                 title={t('products.detail.trust.sectionTitle', { defaultValue: 'Bảo hành · Xuất xứ · Trọng lượng' })}
@@ -4692,29 +4428,27 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                       maxLength={2000}
                     />
                   </Field>
+                  <Field label={t('products.detail.trust.pdpShippingLine', { defaultValue: 'Giao hàng (khối "Mua tại BigBike.vn")' })} hint={t('products.detail.trust.pdpLineHint', { defaultValue: 'Để trống → dùng câu mặc định chung của web.' })}>
+                    <Input
+                      placeholder="vd: Toàn quốc 2–3 ngày"
+                      value={form.pdpShippingLine}
+                      onChange={(e) => updateField('pdpShippingLine', e.target.value)}
+                      disabled={isReadOnly}
+                      maxLength={200}
+                    />
+                  </Field>
+                  <Field label={t('products.detail.trust.pdpReturnLine', { defaultValue: 'Đổi trả (khối "Mua tại BigBike.vn")' })} hint={t('products.detail.trust.pdpLineHint', { defaultValue: 'Để trống → dùng câu mặc định chung của web.' })}>
+                    <Input
+                      placeholder="vd: 30 ngày miễn phí"
+                      value={form.pdpReturnLine}
+                      onChange={(e) => updateField('pdpReturnLine', e.target.value)}
+                      disabled={isReadOnly}
+                      maxLength={200}
+                    />
+                  </Field>
                 </div>
               </SectionCard>
 
-              {/* ── Card: Bảng size (V175) ── */}
-              <SectionCard
-                title={t('products.detail.sizeGuide.sectionTitle', { defaultValue: 'Bảng size' })}
-                badge={<RoleBadge role="content" />}
-              >
-                <p className="text-xs text-muted-foreground mb-2">
-                  {t('products.detail.sizeGuide.hint', { defaultValue: 'Nhập bảng size theo dòng (Size + số đo) như Thông số kỹ thuật. Web hiển thị thành bảng để máy đọc được, không dùng ảnh.' })}
-                </p>
-                <SizeChartEditor
-                  value={form.sizeChart}
-                  onChange={(next) => updateField('sizeChart', next)}
-                  disabled={isReadOnly}
-                  hasError={Boolean(validationErrors.sizeGuide)}
-                />
-                {validationErrors.sizeGuide && (
-                  <span className="text-xs text-[var(--admin-color-status-danger-text)] font-semibold mt-2 block">
-                    {validationErrors.sizeGuide}
-                  </span>
-                )}
-              </SectionCard>
             </>
           )}
 

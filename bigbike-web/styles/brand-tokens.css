@@ -162,6 +162,8 @@
   --bb-text-13: 14px;
   --bb-text-15: 15px;
   --bb-text-17: 17px;
+  --bb-text-18: 18px;
+  --bb-text-20: 20px;
   /* Header primary nav (system font, uppercase) — WP header .navigation = 16px, cố định. */
   --bb-text-nav: 1rem;       /* 16px (WP) */
   --bb-text-22: 1.125rem;    /* 18px */

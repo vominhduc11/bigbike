@@ -16,7 +16,7 @@ public record Product(
         CategorySummary category,
         List<CategorySummary> categories,
         ImageAsset image,
-        List<ImageAsset> gallery,
+        List<GalleryMedia> gallery,
         List<VideoAsset> videos,
         ProductPrice price,
         List<ProductVariant> variants,
@@ -54,6 +54,10 @@ public record Product(
         Integer warrantyMonths,
         /** Phạm vi bảo hành (text). Detail-only; null in list. */
         String warrantyScope,
+        /** Dòng "Giao hàng" khối "Mua tại BigBike.vn" (V247). Detail-only; null in list. Trống → web dùng mặc định chung. */
+        String pdpShippingLine,
+        /** Dòng "Đổi trả" khối "Mua tại BigBike.vn" (V247). Detail-only; null in list. Trống → web dùng mặc định chung. */
+        String pdpReturnLine,
         /** "Thương hiệu [nước]". Detail-only; null in list. */
         String originBrandCountry,
         /** Trọng lượng tính bằng gram (= weight_kg × 1000). Detail-only; null in list. */

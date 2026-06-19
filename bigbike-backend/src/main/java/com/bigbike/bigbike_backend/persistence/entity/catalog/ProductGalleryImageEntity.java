@@ -29,9 +29,20 @@ public class ProductGalleryImageEntity {
     @Column(nullable = false)
     private int sortOrder;
 
+    // Loại media của dòng gallery (V248): 'image' (mặc định) hoặc 'video'.
+    @Column(name = "media_type", nullable = false, length = 8)
+    private String mediaType = "image";
+
+    // Video item (V248): URL + provider; cột image_* phía dưới dùng làm thumbnail/poster.
+    @Column(name = "video_url", columnDefinition = "text")
+    private String videoUrl;
+
+    @Column(name = "video_provider", length = 16)
+    private String videoProvider;
+
     private String imageId;
 
-    @Column(nullable = false, columnDefinition = "text")
+    @Column(columnDefinition = "text")
     private String imageUrl;
 
     private String imageAlt;

@@ -14,6 +14,17 @@ import lombok.Setter;
 @AllArgsConstructor
 public class GalleryImageRequest {
 
+    // Loại media của dòng gallery (V248): "image" (mặc định khi null) hoặc "video".
+    @Size(max = 8, message = "Gallery mediaType is too long.")
+    private String mediaType;
+
+    // Video item (V248): URL video + provider; `url`/`alt`/... phía dưới là thumbnail/poster (tuỳ chọn).
+    @Size(max = 2048, message = "Gallery video URL is too long.")
+    private String videoUrl;
+
+    @Size(max = 16, message = "Gallery video provider is too long.")
+    private String videoProvider;
+
     @Size(max = 2048, message = "Gallery image URL is too long.")
     private String url;
 

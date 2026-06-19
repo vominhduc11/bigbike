@@ -89,7 +89,7 @@ function hasSwatch(info: SwatchInfo): boolean {
 function buildOptionGroups(variants: ProductVariant[], attributeFallback: string) {
   const groups = new Map<string, Map<string, SwatchInfo>>();
   for (const variant of variants) {
-    const variantImg = variant.gallery?.[0]?.url ?? variant.image?.url ?? null;
+    const variantImg = variant.gallery?.[0]?.image?.url ?? variant.image?.url ?? null;
     for (const opt of variant.options ?? []) {
       const name = safeText(opt.name, attributeFallback).trim();
       const value = safeText(opt.value, "").trim();

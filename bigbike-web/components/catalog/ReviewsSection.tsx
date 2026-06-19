@@ -248,7 +248,7 @@ function ReviewComment({ text }: { text: string }) {
       <p
         ref={ref}
         className={cn(
-          "text-[length:var(--fs-body)] leading-relaxed text-[var(--bb-text-primary)] [overflow-wrap:anywhere]",
+          "text-[length:var(--bb-text-base)] leading-relaxed text-[var(--bb-text-primary)] [overflow-wrap:anywhere]",
           !expanded && "line-clamp-5",
         )}
       >
@@ -323,7 +323,7 @@ function ReviewCard({ review }: { review: Review }) {
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-          <strong className="min-w-0 font-semibold text-[var(--bb-text-primary)] [overflow-wrap:anywhere]">
+          <strong className="min-w-0 text-18 font-semibold text-[var(--bb-text-primary)] [overflow-wrap:anywhere]">
             {review.authorName}
           </strong>
           <time dateTime={review.createdAt} className="shrink-0 text-caption text-muted-foreground">
@@ -332,7 +332,7 @@ function ReviewCard({ review }: { review: Review }) {
         </div>
         <StarRow rating={review.rating} />
         {review.title && (
-          <p className="mt-1.5 mb-0 font-semibold text-[var(--bb-text-primary)] [overflow-wrap:anywhere]">
+          <p className="mt-1.5 mb-0 text-18 font-semibold text-[var(--bb-text-primary)] [overflow-wrap:anywhere]">
             {review.title}
           </p>
         )}
@@ -390,10 +390,10 @@ function ReviewsPlaceholder({
         <StarIcon filled className="h-8 w-8" />
       </span>
       <div className="flex flex-col gap-1.5">
-        <p className="m-0 font-cta text-h4 font-semibold uppercase tracking-wide text-[var(--bb-text-primary)]">
+        <p className="m-0 font-cta text-20 font-semibold uppercase tracking-wide text-[var(--bb-text-primary)]">
           {title}
         </p>
-        {description && <p className="m-0 text-caption text-muted-foreground">{description}</p>}
+        {description && <p className="m-0 text-18 text-muted-foreground">{description}</p>}
       </div>
       {action}
     </div>
@@ -810,7 +810,7 @@ export function ReviewsSection({ productId, embedded = false }: ReviewsSectionPr
           <h2 className="m-0 font-body text-ui-35 font-semibold uppercase leading-[4.286rem] tracking-[0] text-black max-md:text-ui-24 max-md:leading-[1.25]">
             {total > 0 ? t("titleWithCount", { count: total }) : t("title")}
           </h2>
-          <p className="m-0 mt-1 text-caption text-muted-foreground">{t("subtitle")}</p>
+          <p className="m-0 mt-1 text-18 text-muted-foreground">{t("subtitle")}</p>
         </div>
       )}
 

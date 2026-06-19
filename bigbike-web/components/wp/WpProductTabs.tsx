@@ -64,7 +64,7 @@ export function WpProductTabs({
   // Nhãn RÚT GỌN (≤2 chữ) CHỈ cho thanh nav cuộn ở mobile — các nhãn builtin dài >2
   // chữ có bản ngắn riêng (Product.tabsShort); còn lại (đã ≤2 chữ, hoặc tab tự do) giữ
   // nhãn đầy đủ. Tiêu đề mục (H2) và tab desktop vẫn dùng nhãn đầy đủ ở `labelOf`.
-  const SHORT_KEYS = new Set(["promotion", "prosCons", "suitability", "trust"]);
+  const SHORT_KEYS = new Set(["promotion", "trust"]);
   const navLabelOf = (item: { label?: string; labelKey?: string }) =>
     item.labelKey && SHORT_KEYS.has(item.labelKey) ? ttShort(item.labelKey) : labelOf(item);
 

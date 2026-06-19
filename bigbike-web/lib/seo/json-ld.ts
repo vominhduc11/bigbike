@@ -335,9 +335,10 @@ function collectProductImages(product: Product): string[] {
     images.add(product.image.url);
   }
 
-  for (const image of product.gallery ?? []) {
-    if (image?.url) {
-      images.add(image.url);
+  for (const media of product.gallery ?? []) {
+    // V248: gallery hỗn hợp (ảnh + video) → chỉ lấy URL ảnh cho schema.org image[].
+    if (media?.image?.url) {
+      images.add(media.image.url);
     }
   }
 
@@ -411,7 +412,7 @@ export function buildFaqPageJsonLd(faqs: { question: string; answer: string }[])
  * (không có ngày upload video riêng). YouTube → embedUrl; nguồn khác → contentUrl.
  */
 export function buildVideoObjectsJsonLd(videos: VideoAsset[], product: Product): JsonLdObject[] {
-  const fallbackThumb = product.image?.url ?? product.gallery?.[0]?.url;
+  const fallbackThumb = product.image?.url ?? product.gallery?.[0]?.image?.url;
   const uploadDate = product.createdAt;
 
   return (videos ?? [])

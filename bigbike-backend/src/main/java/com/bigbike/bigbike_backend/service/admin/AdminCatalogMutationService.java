@@ -1054,6 +1054,12 @@ public class AdminCatalogMutationService {
         if (create || request.isWarrantyScopePresent()) {
             entity.setWarrantyScope(AdminMutationValidators.trimToNull(request.getWarrantyScope()));
         }
+        if (create || request.isPdpShippingLinePresent()) {
+            entity.setPdpShippingLine(AdminMutationValidators.trimToNull(request.getPdpShippingLine()));
+        }
+        if (create || request.isPdpReturnLinePresent()) {
+            entity.setPdpReturnLine(AdminMutationValidators.trimToNull(request.getPdpReturnLine()));
+        }
         if (create || request.isOriginBrandCountryPresent()) {
             entity.setOriginBrandCountry(AdminMutationValidators.trimToNull(request.getOriginBrandCountry()));
         }
@@ -1220,11 +1226,17 @@ public class AdminCatalogMutationService {
         existing.clear();
         for (int i = 0; i < requests.size(); i++) {
             GalleryImageRequest req = requests.get(i);
+            boolean isVideo = isVideoGalleryItem(req);
             String url = AdminMutationValidators.trimToNull(req.getUrl());
-            if (url == null) continue;
+            String videoUrl = AdminMutationValidators.trimToNull(req.getVideoUrl());
+            // Bỏ qua item rỗng: ảnh thiếu url, hoặc video thiếu videoUrl.
+            if (isVideo ? videoUrl == null : url == null) continue;
             ProductGalleryImageEntity img = new ProductGalleryImageEntity();
             img.setProduct(entity);
             img.setSortOrder(req.getSortOrder() != null ? req.getSortOrder() : i);
+            img.setMediaType(isVideo ? "video" : "image");
+            img.setVideoUrl(isVideo ? videoUrl : null);
+            img.setVideoProvider(isVideo ? AdminMutationValidators.trimToNull(req.getVideoProvider()) : null);
             img.setImageUrl(url);
             img.setImageAlt(AdminMutationValidators.trimToNull(req.getAlt()));
             img.setImageWidth(req.getWidth());
@@ -1232,6 +1244,13 @@ public class AdminCatalogMutationService {
             img.setImageMimeType(AdminMutationValidators.trimToNull(req.getMimeType()));
             existing.add(img);
         }
+    }
+
+    /** Một dòng gallery là VIDEO khi mediaType="video" hoặc có videoUrl. */
+    private static boolean isVideoGalleryItem(GalleryImageRequest req) {
+        if (req == null) return false;
+        if ("video".equals(AdminMutationValidators.trimToNull(req.getMediaType()))) return true;
+        return AdminMutationValidators.trimToNull(req.getVideoUrl()) != null;
     }
 
     private static void applyVideos(ProductEntity entity, List<VideoRequest> requests) {
@@ -1485,7 +1504,10 @@ public class AdminCatalogMutationService {
 
     private static boolean hasGalleryRequests(List<GalleryImageRequest> requests) {
         if (requests == null) return false;
-        return requests.stream().anyMatch(req -> req != null && AdminMutationValidators.trimToNull(req.getUrl()) != null);
+        // Item "có mặt" khi có url ảnh HOẶC videoUrl (V248: gallery chứa cả ảnh lẫn video).
+        return requests.stream().anyMatch(req -> req != null
+                && (AdminMutationValidators.trimToNull(req.getUrl()) != null
+                    || AdminMutationValidators.trimToNull(req.getVideoUrl()) != null));
     }
 
     private static String variantColorKey(VariantRequest variant) {
@@ -1539,7 +1561,8 @@ public class AdminCatalogMutationService {
         Map<String, GalleryImageRequest> coverByColor = new HashMap<>();
         for (Map.Entry<String, List<GalleryImageRequest>> entry : galleryByColor.entrySet()) {
             for (GalleryImageRequest img : entry.getValue()) {
-                if (AdminMutationValidators.trimToNull(img.getUrl()) != null) {
+                // Ảnh bìa = ảnh ĐẦU TIÊN (bỏ qua item video) có url — V248.
+                if (!isVideoGalleryItem(img) && AdminMutationValidators.trimToNull(img.getUrl()) != null) {
                     coverByColor.put(entry.getKey(), img);
                     break;
                 }
@@ -1735,11 +1758,16 @@ public class AdminCatalogMutationService {
         if (requests == null) return;
         for (int i = 0; i < requests.size(); i++) {
             GalleryImageRequest req = requests.get(i);
+            boolean isVideo = isVideoGalleryItem(req);
             String url = AdminMutationValidators.trimToNull(req.getUrl());
-            if (url == null) continue;
+            String videoUrl = AdminMutationValidators.trimToNull(req.getVideoUrl());
+            if (isVideo ? videoUrl == null : url == null) continue;
             ProductVariantGalleryImageEntity img = new ProductVariantGalleryImageEntity();
             img.setVariant(variant);
             img.setSortOrder(req.getSortOrder() != null ? req.getSortOrder() : i);
+            img.setMediaType(isVideo ? "video" : "image");
+            img.setVideoUrl(isVideo ? videoUrl : null);
+            img.setVideoProvider(isVideo ? AdminMutationValidators.trimToNull(req.getVideoProvider()) : null);
             img.setImageUrl(url);
             img.setImageAlt(AdminMutationValidators.trimToNull(req.getAlt()));
             img.setImageWidth(req.getWidth());

@@ -363,7 +363,7 @@ renders; the heavy detail-only payload is served exclusively by
 | `brand`, `category`, `categories`, `image`, `price` | ✅ present | ✅ present |
 | `stockState`, `stockQuantity`, `forceOutOfStock`, `rating`, `ratingCount`, `homepageBlock`, `homepageOrder` | ✅ present | ✅ present |
 | `description`, `contentBottom`, `promotionContent`, `installationGuide`, `quickAnswerSummary`, `suitabilityAdvisory` | ❌ `null` | ✅ present |
-| `warrantyMonths`, `warrantyScope`, `originBrandCountry`, `weightGrams`, `sizeGuide` | ❌ `null` | ✅ present |
+| `warrantyMonths`, `warrantyScope`, `pdpShippingLine`, `pdpReturnLine`, `originBrandCountry`, `weightGrams`, `sizeGuide` | ❌ `null` | ✅ present |
 | `gallery`, `videos`, `specifications`, `specStats`, `faqs`, `commitments`, `positiveNotes`, `negativeNotes` | ❌ `[]` | ✅ present |
 | `videos[].description` | — | ✅ present (detail) |
 | `seo` | ❌ `null` | ✅ present |
@@ -551,28 +551,42 @@ Evidence: `SpecStatRequest.java`, `UpsertProductRequest.java` (`specStats`), `Ad
 `POST /api/v1/admin/products` và `PATCH /api/v1/admin/products/{id}` chấp nhận nhóm
 field bổ sung cho template trang sản phẩm chuẩn SEO/AEO:
 
-- **`positiveNotes` / `negativeNotes`** — mảng `{ content, contentEn?, sortOrder? }`,
-  tối đa 20 mục mỗi mảng (`@Size(max = 20)`). `content` ≤ 2 000 ký tự. Full-replace
-  như `faqs`; mục `content` blank bị drop. Lưu vào bảng con `product_highlights`
-  (cột `kind` = `PRO`/`CON`). Đọc ra public/admin detail thành **mảng string**
-  `positiveNotes` / `negativeNotes` (đã resolve locale).
+- **`positiveNotes` / `negativeNotes`** — **(V246) READ-ONLY, derived.** Không còn nhận
+  qua request: Ưu/Nhược điểm giờ admin nhập như **khối `prosCons`** trong `descriptionBlocks`
+  (xem §Product description blocks). Trên product detail response (public/admin) 2 field này
+  vẫn còn dạng **mảng `{ content, contentEn? }`** nhưng được **backend SUY RA** từ khối `prosCons`
+  (`JpaCatalogReadRepository.deriveHighlights`) để giữ rich result schema.org. Bảng con
+  `product_highlights` = legacy/dormant (migration `V246` copy sang khối, không drop).
 - **`warrantyMonths`** — `Integer` (presence-flag), số tháng bảo hành.
 - **`warrantyScope`** — `String` ≤ 2 000 ký tự (presence-flag), phạm vi bảo hành, 1 ngôn ngữ.
+- **`pdpShippingLine`** / **`pdpReturnLine`** — `String` ≤ 200 ký tự (presence-flag), 1 ngôn ngữ (V247).
+  Dòng "Giao hàng" / "Đổi trả" của khối "Mua tại BigBike.vn" theo từng sản phẩm; detail-only (null trong list).
+  Trống → bigbike-web tự dùng câu mặc định chung (i18n `Product.trustShippingValue` / `trustExchangeValue`).
 - **`originBrandCountry`** — `String` ≤ 120 ký tự (presence-flag) — "thương hiệu [nước]".
   (Trường `originManufactureCountry` / cột `origin_manufacture_country` đã gỡ ở V241 — không còn hiển thị trên web.)
 - **`weightGrams`** — `Integer` (presence-flag), trọng lượng tính bằng gram. Lưu vào
   cột có sẵn `weight_kg` (= `weightGrams / 1000`); đọc ra `weightGrams` = `weight_kg × 1000`.
-- **`sizeGuide`** — `String` rich-HTML ≤ 20 000 ký tự (presence-flag), bảng size dạng
-  `<table>`; web sanitize trước khi render.
+- **`sizeGuide`** — **(V246) không còn nhận qua request** (bảng size giờ là khối `sizeGuide`
+  trong `descriptionBlocks`). Cột `size_guide` = legacy/dormant. Field vẫn còn trên response
+  (đọc từ cột cũ) nhưng web không render riêng nữa.
+- **`suitabilityAdvisory`** (V237/V240) — tương tự, **(V246) không còn nhận qua request**
+  (Phù hợp với ai giờ là khối `suitability` trong `descriptionBlocks`). Cột legacy/dormant.
 
-Tất cả trả về trên `GET /api/v1/products/{slug}` và admin product read; **không** có
-trong product *list* responses (detail-only). Web PDP render: khối Ưu/Nhược điểm
-(+ schema `positiveNotes`/`negativeNotes`), trust block bảo hành, dòng xuất xứ trong
-bảng thông số, `weight` trong schema.org `Product`, và khối bảng size.
+> **V246:** request DTO `UpsertProductRequest` vẫn còn các setter cũ (`positiveNotes`/
+> `negativeNotes`/`sizeGuide`/`suitabilityAdvisory`) nhưng admin **không gửi nữa** —
+> backend present-flag/null-guard bỏ qua → cột/bảng cũ không bị đụng. Migration `V246`
+> đã copy dữ liệu cũ vào khối; có thể gỡ setter + drop cột/bảng ở dọn dẹp sau.
 
-Evidence: `HighlightRequest.java`, `UpsertProductRequest.java`, `ProductHighlightEntity`,
-`AdminCatalogMutationService.applyHighlights` + scalar patch, `Product.java` domain
-record, `JpaCatalogReadRepository`, `V175__add_product_seo_template_fields.sql`.
+`warrantyMonths`/`warrantyScope`/`originBrandCountry`/`weightGrams` trả về trên
+`GET /api/v1/products/{slug}` và admin product read; **không** có trong product *list*
+responses (detail-only). Web PDP render: khối Ưu/Nhược điểm · Phù hợp với ai · Bảng size
+là **khối trong mô tả** (V246); trust block bảo hành, dòng xuất xứ trong bảng thông số,
+`weight` trong schema.org `Product`; schema `positiveNotes`/`negativeNotes` suy ra từ khối `prosCons`.
+
+Evidence: `UpsertProductRequest.java`, `Product.java` domain record,
+`JpaCatalogReadRepository.deriveHighlights`, `DescriptionBlock.java` (`ProsConsBlock`/
+`SuitabilityBlock`/`SizeGuideBlock`), `DescriptionBlockRenderer`, `V175__add_product_seo_template_fields.sql`,
+`V246__MigrateProductSectionsToBlocks.java`.
 
 ### Product video description — `videos[].description` (V175)
 
@@ -593,6 +607,22 @@ Evidence: `VideoRequest.java` (`description`), `ProductVideoEntity.description`,
 Status: `CONFIRMED_FROM_CODE`
 
 Evidence: `UpsertProductRequest.java` (`relatedProductIds`), `AdminCatalogMutationService.resolveProductRefs`, `Product.java` domain record (`relatedProducts`), `ProductEntity.relatedProducts`, `JpaCatalogReadRepository.toRelatedProducts` (detail mapper; list mapper passes `[]`), `V135__add_product_related_product_map.sql`.
+
+### Gallery media — ảnh + video trong gallery (V248)
+
+`gallery` (sản phẩm) và `variants[].gallery` (biến thể) giờ là **media hỗn hợp**. Mỗi phần tử
+`GalleryImageRequest` nhận thêm: `mediaType` (`image`|`video`, mặc định `image`), `videoUrl`
+(link YouTube / URL MinIO khi là video), `videoProvider` (`youtube`|`upload`). Item ảnh dùng `url`/`alt`
+như cũ; item video dùng `videoUrl`+`videoProvider`, còn `url`/`alt` (nếu có) là **thumbnail/poster**.
+Full-replace như trước; item rỗng (ảnh thiếu `url` HOẶC video thiếu `videoUrl`) bị bỏ. Ảnh bìa biến thể
+vẫn lấy ảnh ĐẦU TIÊN là **ảnh** (bỏ qua item video).
+
+Read: `GET /api/v1/products/{slug}` + admin read trả `gallery`/`variants[].gallery` dạng
+`GalleryMedia[]` = `{ mediaType, image: ImageAsset|null, videoUrl, provider }`. **Tách biệt với `videos`**
+(mục "Video" riêng dưới PDP — `product_videos`, không đổi): gallery video do admin đăng chung khu vực ảnh
+thumbnail, hiển thị trong dải media trên cùng.
+
+Status: `CONFIRMED_FROM_CODE` — `GalleryImageRequest` (3 field mới), `AdminCatalogMutationService.applyGallery`/`applyVariantGallery`, `GalleryMedia`, `JpaCatalogReadRepository.toGalleryMedia`, `V248__add_gallery_media_video.sql`.
 
 ### Product accessories — `accessoryProducts` / `accessoryProductIds` (V239)
 

@@ -23,12 +23,16 @@ const CONTENT_MENU = BLOCK_TYPES.map((type) => ({
   labelKey: `products.detail.blocks.blockType${type.charAt(0).toUpperCase()}${type.slice(1)}`,
 }))
 
-// Vốn từ rút gọn cho SẢN PHẨM (V238) — đúng 4 khối: văn bản, ảnh, ảnh phải+chữ, ảnh trái+chữ.
+// Vốn từ cho SẢN PHẨM (V238 + V246): 4 khối mô tả cơ bản + 3 khối chuyên biệt PDP
+// (Ưu/Nhược điểm, Phù hợp với ai, Bảng size) — gộp các mục trước đây nhập tách rời vào mô tả.
 const PRODUCT_MENU = [
-  { type: 'paragraph', labelKey: 'products.detail.blocks.blockTypeText' },
-  { type: 'image',     labelKey: 'products.detail.blocks.blockTypeImage' },
-  { type: 'feature',   labelKey: 'products.detail.blocks.blockTypeFeatureRight', preset: { side: 'right' } },
-  { type: 'feature',   labelKey: 'products.detail.blocks.blockTypeFeatureLeft',  preset: { side: 'left' } },
+  { type: 'paragraph',   labelKey: 'products.detail.blocks.blockTypeText' },
+  { type: 'image',       labelKey: 'products.detail.blocks.blockTypeImage' },
+  { type: 'feature',     labelKey: 'products.detail.blocks.blockTypeFeatureRight', preset: { side: 'right' } },
+  { type: 'feature',     labelKey: 'products.detail.blocks.blockTypeFeatureLeft',  preset: { side: 'left' } },
+  { type: 'prosCons',    labelKey: 'products.detail.blocks.blockTypeProsCons' },
+  { type: 'suitability', labelKey: 'products.detail.blocks.blockTypeSuitability' },
+  { type: 'sizeGuide',   labelKey: 'products.detail.blocks.blockTypeSizeGuide' },
 ]
 
 function createBlock(type, preset) {
@@ -42,6 +46,9 @@ function createBlock(type, preset) {
     case 'video':     block = { ...base, provider: 'youtube', url: '', caption: '' }; break
     case 'callout':   block = { ...base, variant: 'info', html: '' }; break
     case 'feature':   block = { ...base, side: 'auto', url: '', alt: '', caption: '', subheading: '', heading: '', html: '', listStyle: 'bulleted', items: [''] }; break
+    case 'prosCons':    block = { ...base, title: '', positive: [''], negative: [''] }; break
+    case 'suitability': block = { ...base, title: '', cards: [{ audience: '', advice: '', linkLabel: '', linkUrl: '' }] }; break
+    case 'sizeGuide':   block = { ...base, title: '', html: '' }; break
     case 'divider':   block = base; break
     default:          block = base; break
   }
@@ -415,6 +422,174 @@ function DividerBlockEditor() {
   )
 }
 
+/** Trình sửa danh sách chuỗi đơn giản (mỗi dòng một Input) — dùng cho ưu điểm / nhược điểm. */
+function StringListEditor({ items, onChange, disabled, placeholder, addLabel }) {
+  const list = items && items.length ? items : ['']
+  function updateItem(i, value) { onChange(list.map((it, idx) => (idx === i ? value : it))) }
+  function addItem() { onChange([...list, '']) }
+  function removeItem(i) {
+    const next = list.filter((_, idx) => idx !== i)
+    onChange(next.length === 0 ? [''] : next)
+  }
+  const { t } = useTranslation()
+  return (
+    <div className="flex flex-col gap-1">
+      {list.map((item, i) => (
+        <div key={i} className="flex gap-1 items-center">
+          <Input
+            className="flex-1"
+            value={item}
+            onChange={(e) => updateItem(i, e.target.value)}
+            disabled={disabled}
+            placeholder={placeholder}
+            maxLength={2000}
+          />
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive shrink-0"
+            onClick={() => removeItem(i)} disabled={disabled}
+            aria-label={t('products.detail.blocks.listRemoveItem')}>✕</Button>
+        </div>
+      ))}
+      <Button variant="outline" size="sm" onClick={addItem} disabled={disabled} className="self-start">
+        + {addLabel}
+      </Button>
+    </div>
+  )
+}
+
+/** Khối "Ưu điểm & Nhược điểm" (V246) — tiêu đề tuỳ chọn + 2 danh sách. */
+function ProsConsBlockEditor({ block, onChange, disabled }) {
+  const { t } = useTranslation()
+  return (
+    <div className="flex-1 flex flex-col gap-3">
+      <Input
+        className="font-bold"
+        placeholder={t('products.detail.blocks.sectionTitlePlaceholder')}
+        value={block.title || ''}
+        onChange={(e) => onChange({ title: e.target.value })}
+        disabled={disabled}
+        maxLength={500}
+      />
+      <div className="flex flex-col gap-1">
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+          {t('products.detail.blocks.prosConsPositive')}
+        </span>
+        <StringListEditor
+          items={block.positive}
+          onChange={(positive) => onChange({ positive })}
+          disabled={disabled}
+          placeholder={t('products.detail.blocks.prosConsPositivePlaceholder')}
+          addLabel={t('products.detail.blocks.prosConsAddPositive')}
+        />
+      </div>
+      <div className="flex flex-col gap-1">
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+          {t('products.detail.blocks.prosConsNegative')}
+        </span>
+        <StringListEditor
+          items={block.negative}
+          onChange={(negative) => onChange({ negative })}
+          disabled={disabled}
+          placeholder={t('products.detail.blocks.prosConsNegativePlaceholder')}
+          addLabel={t('products.detail.blocks.prosConsAddNegative')}
+        />
+      </div>
+    </div>
+  )
+}
+
+/** Khối "Phù hợp với ai" (V246) — tiêu đề tuỳ chọn + danh sách thẻ tư vấn. */
+function SuitabilityBlockEditor({ block, onChange, disabled }) {
+  const { t } = useTranslation()
+  const cards = block.cards && block.cards.length ? block.cards : [{ audience: '', advice: '', linkLabel: '', linkUrl: '' }]
+  function updateCard(i, patch) { onChange({ cards: cards.map((c, idx) => (idx === i ? { ...c, ...patch } : c)) }) }
+  function addCard() { onChange({ cards: [...cards, { audience: '', advice: '', linkLabel: '', linkUrl: '' }] }) }
+  function removeCard(i) {
+    const next = cards.filter((_, idx) => idx !== i)
+    onChange({ cards: next.length === 0 ? [{ audience: '', advice: '', linkLabel: '', linkUrl: '' }] : next })
+  }
+  return (
+    <div className="flex-1 flex flex-col gap-3">
+      <Input
+        className="font-bold"
+        placeholder={t('products.detail.blocks.sectionTitlePlaceholder')}
+        value={block.title || ''}
+        onChange={(e) => onChange({ title: e.target.value })}
+        disabled={disabled}
+        maxLength={500}
+      />
+      {cards.map((card, i) => (
+        <div key={i} className="flex flex-col gap-2 p-2 border border-border rounded-sm bg-muted/20">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">#{i + 1}</span>
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
+              onClick={() => removeCard(i)} disabled={disabled}
+              aria-label={t('products.detail.blocks.listRemoveItem')}>✕</Button>
+          </div>
+          <Input
+            placeholder={t('products.detail.blocks.suitabilityAudiencePlaceholder')}
+            value={card.audience || ''}
+            onChange={(e) => updateCard(i, { audience: e.target.value })}
+            disabled={disabled}
+            maxLength={500}
+          />
+          <Input
+            placeholder={t('products.detail.blocks.suitabilityAdvicePlaceholder')}
+            value={card.advice || ''}
+            onChange={(e) => updateCard(i, { advice: e.target.value })}
+            disabled={disabled}
+            maxLength={2000}
+          />
+          <div className="flex gap-2">
+            <Input
+              className="flex-1"
+              placeholder={t('products.detail.blocks.suitabilityLinkLabelPlaceholder')}
+              value={card.linkLabel || ''}
+              onChange={(e) => updateCard(i, { linkLabel: e.target.value })}
+              disabled={disabled}
+              maxLength={500}
+            />
+            <Input
+              className="flex-1"
+              placeholder={t('products.detail.blocks.suitabilityLinkUrlPlaceholder')}
+              value={card.linkUrl || ''}
+              onChange={(e) => updateCard(i, { linkUrl: e.target.value })}
+              disabled={disabled}
+              maxLength={2000}
+            />
+          </div>
+        </div>
+      ))}
+      <Button variant="outline" size="sm" onClick={addCard} disabled={disabled} className="self-start">
+        + {t('products.detail.blocks.suitabilityAddCard')}
+      </Button>
+    </div>
+  )
+}
+
+/** Khối "Bảng size" (V246) — tiêu đề tuỳ chọn + HTML tự do (thường là bảng). */
+function SizeGuideBlockEditor({ block, onChange, disabled }) {
+  const { t } = useTranslation()
+  return (
+    <div className="flex-1 flex flex-col gap-2">
+      <Input
+        className="font-bold"
+        placeholder={t('products.detail.blocks.sectionTitlePlaceholder')}
+        value={block.title || ''}
+        onChange={(e) => onChange({ title: e.target.value })}
+        disabled={disabled}
+        maxLength={500}
+      />
+      <RichTextEditor
+        key={block._key}
+        value={block.html || ''}
+        onChange={(html) => onChange({ html })}
+        disabled={disabled}
+        enableImagePicker={false}
+      />
+    </div>
+  )
+}
+
 function BlockTypeLabel({ type }) {
   const { t } = useTranslation()
   const key = `products.detail.blocks.blockType${type.charAt(0).toUpperCase()}${type.slice(1)}`
@@ -453,6 +628,9 @@ function BlockCard({ block, disabled, sortable, onUpdate, onRemove, onDuplicate,
         {block.type === 'video'     && <VideoBlockEditor     block={block} onChange={onUpdate} disabled={disabled} onPickVideo={onPickVideo} />}
         {block.type === 'callout'   && <CalloutBlockEditor   block={block} onChange={onUpdate} disabled={disabled} />}
         {block.type === 'feature'   && <FeatureBlockEditor   block={block} onChange={onUpdate} disabled={disabled} onPickImage={onPickImage} productMode={productMode} />}
+        {block.type === 'prosCons'    && <ProsConsBlockEditor    block={block} onChange={onUpdate} disabled={disabled} />}
+        {block.type === 'suitability' && <SuitabilityBlockEditor block={block} onChange={onUpdate} disabled={disabled} />}
+        {block.type === 'sizeGuide'   && <SizeGuideBlockEditor   block={block} onChange={onUpdate} disabled={disabled} />}
         {block.type === 'divider'   && <DividerBlockEditor />}
       </div>
       <BlockControls

@@ -35,12 +35,17 @@ import java.util.List;
         @JsonSubTypes.Type(value = DescriptionBlock.CalloutBlock.class,   name = "callout"),
         @JsonSubTypes.Type(value = DescriptionBlock.DividerBlock.class,   name = "divider"),
         @JsonSubTypes.Type(value = DescriptionBlock.FeatureBlock.class,   name = "feature"),
+        @JsonSubTypes.Type(value = DescriptionBlock.ProsConsBlock.class,    name = "prosCons"),
+        @JsonSubTypes.Type(value = DescriptionBlock.SuitabilityBlock.class, name = "suitability"),
+        @JsonSubTypes.Type(value = DescriptionBlock.SizeGuideBlock.class,   name = "sizeGuide"),
 })
 public sealed interface DescriptionBlock
         permits DescriptionBlock.HeadingBlock, DescriptionBlock.ParagraphBlock,
                 DescriptionBlock.ListBlock,    DescriptionBlock.ImageBlock,
                 DescriptionBlock.VideoBlock,   DescriptionBlock.CalloutBlock,
-                DescriptionBlock.DividerBlock, DescriptionBlock.FeatureBlock {
+                DescriptionBlock.DividerBlock, DescriptionBlock.FeatureBlock,
+                DescriptionBlock.ProsConsBlock, DescriptionBlock.SuitabilityBlock,
+                DescriptionBlock.SizeGuideBlock {
 
     String getType();
 
@@ -176,5 +181,78 @@ public sealed interface DescriptionBlock
 
         @Size(max = 200, message = "feature.items must not exceed 200 entries.")
         private List<@Size(max = 2000, message = "Feature list item must not exceed 2 000 characters.") String> items;
+    }
+
+    /**
+     * { type: "prosCons", title?: string, positive: string[], negative: string[] }
+     *
+     * <p>Khối "Ưu điểm & Nhược điểm" nhúng trong mô tả. Là nguồn dữ liệu duy nhất cho rich result
+     * schema.org positiveNotes/negativeNotes (V175) — backend suy ra khi trả API. Bản EN nằm ở khối
+     * tương ứng trong {@code descriptionBlocksEn} (theo vị trí), như list/feature.
+     */
+    @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
+    final class ProsConsBlock implements DescriptionBlock {
+        private String type;
+
+        @Size(max = 500, message = "prosCons.title must not exceed 500 characters.")
+        private String title;
+
+        @Size(max = 200, message = "prosCons.positive must not exceed 200 entries.")
+        private List<@NotBlank(message = "prosCons.positive item must not be blank.")
+                     @Size(max = 2000, message = "prosCons.positive item must not exceed 2 000 characters.") String> positive;
+
+        @Size(max = 200, message = "prosCons.negative must not exceed 200 entries.")
+        private List<@NotBlank(message = "prosCons.negative item must not be blank.")
+                     @Size(max = 2000, message = "prosCons.negative item must not exceed 2 000 characters.") String> negative;
+    }
+
+    /**
+     * { type: "suitability", title?: string, cards: [{ audience, advice, linkLabel?, linkUrl? }] }
+     *
+     * <p>Khối "Phù hợp với ai" (V240) nhúng trong mô tả — danh sách thẻ tư vấn. Bản EN nằm ở khối
+     * tương ứng trong {@code descriptionBlocksEn}.
+     */
+    @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
+    final class SuitabilityBlock implements DescriptionBlock {
+        private String type;
+
+        @Size(max = 500, message = "suitability.title must not exceed 500 characters.")
+        private String title;
+
+        @Size(max = 100, message = "suitability.cards must not exceed 100 entries.")
+        private List<@jakarta.validation.Valid SuitabilityCard> cards;
+
+        /** Một thẻ tư vấn: đối tượng + lời khuyên + link gợi ý nội bộ tuỳ chọn. */
+        @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
+        public static final class SuitabilityCard {
+            @Size(max = 500, message = "suitability.card.audience must not exceed 500 characters.")
+            private String audience;
+
+            @Size(max = 2000, message = "suitability.card.advice must not exceed 2 000 characters.")
+            private String advice;
+
+            @Size(max = 500, message = "suitability.card.linkLabel must not exceed 500 characters.")
+            private String linkLabel;
+
+            @Size(max = 2000, message = "suitability.card.linkUrl must not exceed 2 000 characters.")
+            private String linkUrl;
+        }
+    }
+
+    /**
+     * { type: "sizeGuide", title?: string, html: string }
+     *
+     * <p>Khối "Bảng size" nhúng trong mô tả — HTML tự do (thường là bảng). Bản EN nằm ở khối tương ứng
+     * trong {@code descriptionBlocksEn}.
+     */
+    @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
+    final class SizeGuideBlock implements DescriptionBlock {
+        private String type;
+
+        @Size(max = 500, message = "sizeGuide.title must not exceed 500 characters.")
+        private String title;
+
+        @Size(max = 20000, message = "sizeGuide.html must not exceed 20 000 characters.")
+        private String html;
     }
 }
