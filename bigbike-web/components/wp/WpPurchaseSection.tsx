@@ -3,61 +3,22 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
-import type { GalleryMedia, ImageAsset, Product, ProductCommitment, ProductPrice, ProductStockState, ProductVariant } from "@/lib/contracts/public";
+import type { GalleryMedia, Product, ProductCommitment, ProductPrice, ProductStockState, ProductVariant } from "@/lib/contracts/public";
 import { useCart } from "@/lib/cart-context";
 import { derivePricing } from "@/lib/pricing";
-import { formatVndNumber, resolveMediaUrl, safeText, toLegacyWpMediaUrl, zaloHref } from "@/lib/utils/format";
-import {
-  collectAttributeNames,
-  findColorPreviewVariant,
-  findMatchingVariant,
-  getOptionValue,
-  isColorAttribute,
-} from "@/lib/utils/variant-match";
+import { formatVndNumber, safeText } from "@/lib/utils/format";
+import { collectAttributeNames, findColorPreviewVariant, findMatchingVariant } from "@/lib/utils/variant-match";
 import { ProductGallery } from "@/components/catalog/ProductGallery";
 import { hasApprovedReviews } from "@/lib/rating";
-import { RatingStars } from "@/components/ui/RatingStars";
-import { ZaloIcon } from "@/components/ui/ZaloIcon";
 import { useLocalizedField, LHtml } from "@/components/i18n/LocalizedContent";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import { MobileStickyPurchaseBar } from "@/components/catalog/MobileStickyPurchaseBar";
-import {
-  Award,
-  BadgeCheck,
-  Clock,
-  CreditCard,
-  Gift,
-  Headphones,
-  MapPin,
-  Minus,
-  Package,
-  Plus,
-  RefreshCw,
-  ShieldCheck,
-  ShoppingCart,
-  Truck,
-  Wrench,
-  type LucideIcon,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
 import { openWriteReviewDialog } from "@/components/catalog/writeReviewBus";
-
-// Bộ icon dựng sẵn cho khối cam kết (V232) — admin chọn theo key, web map ra lucide.
-// Web KHÔNG nạp Font Awesome (fa-* vô hình) nên phải dùng lucide. Key lạ → ShieldCheck.
-const COMMITMENT_ICON_MAP: Record<string, LucideIcon> = {
-  truck: Truck,
-  "refresh-cw": RefreshCw,
-  "shield-check": ShieldCheck,
-  "badge-check": BadgeCheck,
-  "credit-card": CreditCard,
-  headphones: Headphones,
-  package: Package,
-  gift: Gift,
-  clock: Clock,
-  "map-pin": MapPin,
-  wrench: Wrench,
-  award: Award,
-};
+import { VariantPicker } from "./purchase/VariantPicker";
+import { QuantityStepper } from "./purchase/QuantityStepper";
+import { CommitmentsList } from "./purchase/CommitmentsList";
+import { RatingBlock } from "./purchase/RatingBlock";
+import { BuyButtons } from "./purchase/BuyButtons";
 
 type Props = {
   product: Product;
@@ -76,21 +37,6 @@ type ProductSnapshot = {
   stock: { stockState: string; label: string; forceOutOfStock: boolean; quantity?: number | null };
   variants: ProductVariant[];
 };
-
-function imgUrl(a: ImageAsset | null | undefined): string {
-  return toLegacyWpMediaUrl(resolveMediaUrl(a?.url?.trim())) || "";
-}
-
-/** Giá trị options duy nhất cho 1 attribute, kèm variant đại diện (để lấy ảnh swatch). */
-function distinctOptions(variants: ProductVariant[], attrName: string) {
-  const seen = new Map<string, { value: string; label: string; rep: ProductVariant }>();
-  for (const v of variants) {
-    const val = getOptionValue(v, attrName);
-    if (!val) continue;
-    if (!seen.has(val)) seen.set(val, { value: val, label: val, rep: v });
-  }
-  return Array.from(seen.values());
-}
 
 export function WpPurchaseSection({
   product,
@@ -328,38 +274,13 @@ export function WpPurchaseSection({
               </p>
             </div>
           </div>
-          {hasReviews ? (
-            <div className="rating" itemProp="aggregateRating" itemScope itemType="https://schema.org/AggregateRating">
-              {/* Sao vẽ bằng React (RatingStars) — KHÔNG để rỗng chờ plugin home.min.js
-                  vì script đó chỉ chạy lúc tải nguyên trang, điều hướng nội bộ vào PDP sẽ
-                  mất sao. text-ui-18 = 18px khớp starSize cũ. Giống WpProductSwipeItem. */}
-              <span className="text-ui-18">
-                <RatingStars value={rating} />
-              </span>
-              <br />
-              <p>
-                {tb("ratingLabel")} <span itemProp="ratingValue">{rating}/</span>
-                <span itemProp="reviewCount">{ratingCount}</span>
-                {" — "}
-                <a href="#reviews" onClick={scrollToReviews} className="text-brand underline-offset-2 hover:underline">
-                  {tb("viewAllReviews")}
-                </a>
-                {" · "}
-                <a href="#reviews" onClick={openWriteReview} className="text-brand underline-offset-2 hover:underline">
-                  {tb("writeReview")}
-                </a>
-              </p>
-            </div>
-          ) : (
-            <div className="rating">
-              <p>
-                {tb("noReviews")} —{" "}
-                <a href="#reviews" onClick={openWriteReview} className="text-brand underline-offset-2 hover:underline">
-                  {tb("writeFirst")}
-                </a>
-              </p>
-            </div>
-          )}
+          <RatingBlock
+            hasReviews={hasReviews}
+            rating={rating}
+            ratingCount={ratingCount}
+            onScrollToReviews={scrollToReviews}
+            onOpenWriteReview={openWriteReview}
+          />
 
           {shortDescriptionHtml ? (
             <div className="desc wyswyg">
@@ -377,191 +298,22 @@ export function WpPurchaseSection({
 
           <div className="row mt-30">
             <div className="variations_form cart">
-              {hasVariants
-                ? attributeNames.map((attr) => {
-                    const color = isColorAttribute(attr);
-                    const opts = distinctOptions(variants, attr);
-                    const slug = attr.toLowerCase().replace(/\s+/g, "-");
-                    // CSS hook ổn định: theme dựa `.pa_color` để hiện ô màu dạng ẢNH-ONLY
-                    // (ẩn chữ tên màu qua `.pa_color … label span{display:none}`). Slug lấy từ
-                    // tên hiển thị giờ là "màu-sắc"/"color" tùy ngôn ngữ → không còn cố định
-                    // "pa_color", nên gắn thêm class theo LOẠI thuộc tính (isColorAttribute).
-                    const colorHook = color ? "pa_color" : "";
-                    return (
-                      <div key={attr} className={`options pa_${slug} ${colorHook} ${slug} size`}>
-                        <div className="group">
-                          <div className="group-label">
-                            <label htmlFor={`pa_${slug}`}>{attr}</label>
-                          </div>
-                          <div className="variation-radios">
-                            {opts.map((o) => {
-                              const checked = selectedOptions[attr] === o.value;
-                              const swatch = color ? imgUrl(o.rep.image ?? o.rep.gallery?.[0]?.image) : "";
-                              // STOCK_RULE_005: làm mờ option hết hàng (vẫn click được để
-                              // xem ảnh màu), chỉ KHÓA option của biến thể không bán
-                              // (isAvailable=false). Probe = lựa chọn hiện tại + option này.
-                              const probe = { ...selectedOptions, [attr]: o.value };
-                              const optInStock = Boolean(
-                                findMatchingVariant(variants, probe, {
-                                  onlyAvailable: true,
-                                  inStockOnly: true,
-                                }),
-                              );
-                              const optSelectable = Boolean(
-                                (findMatchingVariant(variants, probe, { onlyAvailable: true }) ??
-                                  findMatchingVariant(variants, probe))?.isAvailable,
-                              );
-                              return (
-                                <div
-                                  className={cn(
-                                    "form-group",
-                                    !optInStock && !checked && "opacity-45",
-                                    !optSelectable && !checked && "cursor-not-allowed",
-                                  )}
-                                  key={o.value}
-                                >
-                                  <input
-                                    type="radio"
-                                    id={`${slug}-${o.value}`}
-                                    className={(color ? " form-control js-change-color" : "form-control ")}
-                                    name={`attribute_pa_${slug}`}
-                                    value={o.value}
-                                    checked={checked}
-                                    disabled={!optSelectable && !checked}
-                                    // Radio đã chọn thì bấm lại KHÔNG bắn onChange,
-                                    // nên dùng onClick để bỏ chọn (toggle off) — giống
-                                    // VariantSelector của code cũ. onChange vẫn lo việc
-                                    // chọn option mới.
-                                    onClick={() => {
-                                      if (checked) pick(attr, o.value);
-                                    }}
-                                    onChange={() => pick(attr, o.value)}
-                                  />
-                                  <label
-                                    htmlFor={`${slug}-${o.value}`}
-                                    style={color && swatch ? { background: `url(${swatch})` } : undefined}
-                                  >
-                                    {color ? <span className="text">{o.label}</span> : o.label}
-                                  </label>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
-                : null}
+              {hasVariants ? (
+                <VariantPicker
+                  variants={variants}
+                  attributeNames={attributeNames}
+                  selectedOptions={selectedOptions}
+                  onPick={pick}
+                />
+              ) : null}
 
               <div className="single_variation_wrap mt-6">
-                {/* Chọn số lượng — wrapper .options.size để nhãn .group-label ăn đúng
-                    rule `.product-information .size .group .group-label` của theme WP →
-                    chữ "Số lượng" hiển thị y hệt nhãn SIZE/COLOR (Oswald 24px/600) và có
-                    padding-right:25px tách khỏi stepper. Stepper cao 52px khớp ô biến thể. */}
-                <div className="options size">
-                  <div className="group flex items-center">
-                    <div className="group-label">
-                      <label htmlFor="bb-qty">{tb("quantity")}</label>
-                    </div>
-                    <div className="inline-flex items-stretch border border-border-control">
-                      <button
-                        type="button"
-                        aria-label={tb("decreaseQty")}
-                        onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                        disabled={quantity <= 1}
-                        className="flex h-[52px] w-11 items-center justify-center text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        <Minus className="h-4 w-4" />
-                      </button>
-                      <input
-                        id="bb-qty"
-                        type="number"
-                        min={1}
-                        value={quantity}
-                        onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
-                        aria-label={tb("quantity")}
-                        className="h-[52px] w-16 border-x border-border-control bg-white text-center font-body text-2xl font-semibold text-foreground [appearance:textfield] focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                      />
-                      <button
-                        type="button"
-                        aria-label={tb("increaseQty")}
-                        onClick={() => setQuantity((q) => q + 1)}
-                        className="flex h-[52px] w-11 items-center justify-center text-foreground transition-colors hover:bg-muted"
-                      >
-                        <Plus className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                <QuantityStepper quantity={quantity} setQuantity={setQuantity} />
 
-                {/* Hàng nút mua: tỉ lệ 60/40 ở MỌI breakpoint (giỏ hàng flex-[3], Zalo
-                    flex-[2] = 3:2). Bỏ lưới Bootstrap `col-md-6` vì nó xếp chồng dọc khi
-                    <768px; flex-nowrap giữ 2 nút cạnh nhau cả trên mobile. Khớp thanh dính
-                    đáy mobile (MobileStickyPurchaseBar). */}
-                <div className="bb-wp-buttons-row flex flex-nowrap gap-2.5" style={{ marginTop: "20px" }}>
-                  <div className="add-to-cart flex-[3] min-w-0" style={{ padding: "0px" }}>
-                    {/* Hook class React riêng (js-bb-add-to-cart), KHÔNG dùng
-                        `js-add-to-cart-btn`: JS theme WP cũ (home.min.js) bám vào
-                        class đó, khi chọn đủ biến thể sẽ ghi đè chữ nút thành "Đang
-                        kiểm tra hàng..." rồi gọi AJAX find_variation_product về backend
-                        WordPress (đã không còn) → nút kẹt vĩnh viễn. React tự quản nhãn
-                        + add-to-cart nên cắt móc đó đi; nhãn luôn là "THÊM VÀO GIỎ HÀNG". */}
-                    {/* Nút chính: nền đỏ brand. Theme `.add-to-cart .btn` đã đỏ #ff0c09;
-                        ép `!bg-brand !text-white` để khớp đúng tông đỏ AA của thanh dính đáy. */}
-                    <button
-                      type="button"
-                      className={"single_add_to_cart_button button alt btn js-bb-add-to-cart !bg-brand !text-white transition-colors hover:!bg-brand-active disabled:!opacity-60 disabled:!cursor-not-allowed !flex !items-center !justify-center gap-2.5" + (canBuy ? "" : " disabled")}
-                      disabled={!canBuy || adding}
-                      onClick={handleAdd}
-                    >
-                      {/* lucide ShoppingCart: bigbike-web KHÔNG nạp Font Awesome (fa-* vô hình),
-                          nên thay `<i fal fa-shopping-cart>` cũ. !flex + justify-center + gap-2.5
-                          căn icon/chữ giống hệt nút Zalo để 2 nút thẳng hàng. */}
-                      <ShoppingCart className="size-5 shrink-0" />
-                      {adding ? tb("adding") : tb("addToCart")}
-                    </button>
-                  </div>
-                  <div className="add-to-cart quick-add-to-cart flex-[2] min-w-0 !mt-0">
-                    {/* <a> kế thừa `display:inline-block` của theme `.btn` → chữ dạt
-                        góc; ép flex căn giữa cho khớp nút THÊM VÀO GIỎ (vốn là <button>
-                        tự căn). gap-2.5 = 10px khớp khoảng cách icon nút trái.
-                        Kiểu Zalo phụ: nền trắng + viền/chữ/LOGO xanh Zalo (text-zalo →
-                        logo lấy currentColor). !border-2 !border-zalo thắng `border:none`
-                        của theme `.add-to-cart .btn`. */}
-                    <a
-                      href={zaloUrl ? zaloHref(zaloUrl) : "#"}
-                      target={zaloUrl ? "_blank" : undefined}
-                      rel={zaloUrl ? "noopener noreferrer" : undefined}
-                      className="btn single_add_to_cart_button button btn-quick-buy !bg-white !text-zalo !border-2 !border-zalo transition-colors hover:!bg-zalo-soft !flex !items-center !justify-center gap-2.5"
-                    >
-                      <ZaloIcon className="size-5 shrink-0" />
-                      {tb("zaloConsult")}
-                    </a>
-                  </div>
-                </div>
+                <BuyButtons canBuy={canBuy} adding={adding} onAdd={handleAdd} zaloUrl={zaloUrl} />
                 {addError ? <p className="stock out-of-stock" style={{ color: "red" }}>{addError}</p> : null}
 
-                {/* Khối "cam kết" dưới nút mua (V232) — admin quản theo TỪNG sản phẩm: thêm/bớt
-                    dòng tùy ý, mỗi dòng tự chọn icon (key → lucide qua COMMITMENT_ICON_MAP).
-                    Dòng không có tiêu đề thì bỏ qua; không dòng nào → ẩn cả khối. */}
-                {commitments.some((c) => c.title) && (
-                  <ul className="mt-4 divide-y divide-border border border-border">
-                    {commitments.map((c, i) =>
-                      c.title ? (
-                        <li key={i} className="flex items-center gap-3.5 px-5 py-3.5">
-                          {(() => {
-                            const Icon = COMMITMENT_ICON_MAP[c.icon] ?? ShieldCheck;
-                            return <Icon className="size-6 shrink-0 text-brand" strokeWidth={1.75} aria-hidden="true" />;
-                          })()}
-                          <div className="min-w-0">
-                            <strong className="block font-body text-base font-semibold leading-snug text-foreground">{c.title}</strong>
-                            {c.subtitle ? <span className="mt-1 block text-sm leading-snug text-muted-foreground">{c.subtitle}</span> : null}
-                          </div>
-                        </li>
-                      ) : null,
-                    )}
-                  </ul>
-                )}
+                <CommitmentsList commitments={commitments} />
 
               </div>
             </div>
