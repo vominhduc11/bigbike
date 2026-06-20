@@ -6,8 +6,8 @@ import { useEffect, useRef } from "react";
 /**
  * Đóng off-canvas menu mobile của WP header.
  *
- * Theme WP gốc mở menu bằng cách thêm class `.active` vào `header .navigation`
- * (home.min.js, qua nút hamburger) và dựa vào việc TẢI LẠI TRANG khi bấm vào một
+ * Menu mở bằng cách thêm class `.active` vào `header .navigation` qua nút hamburger
+ * (WpThemeInteractions). Markup WP gốc dựa vào việc TẢI LẠI TRANG khi bấm vào một
  * mục để reset trạng thái. Với điều hướng SPA của Next, trang đổi nhưng class
  * `.active` vẫn còn → menu kẹt mở sau khi bấm. Component này:
  *  1. Bắt click lên link trong menu → đóng ngay (kể cả khi điều hướng tới chính
