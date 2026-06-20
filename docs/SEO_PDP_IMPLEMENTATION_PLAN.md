@@ -166,7 +166,7 @@ Code chỉ cung cấp chỗ điền; nội dung do Brand team viết theo templa
 | 3.1 | Ưu/Nhược + schema | 🟩 | ☑ Xong (2026-06-12) | | Bảng `product_highlights` (kind PRO/CON, song ngữ); render 2 cột + ItemList schema |
 | 3.2 | Bảo hành | 🟩 | ☑ Xong (2026-06-12) | | `warranty_months` + `warranty_scope`; trust block |
 | 3.3 | Xuất xứ tách bạch | 🟩 | ☑ Xong (2026-06-12) | | `origin_brand_country` + `origin_manufacture_country` |
-| 3.4 | Trọng lượng + schema | 🟩 | ☑ Xong (2026-06-12) | | Dùng lại `weight_kg`, phơi `weightGrams`; schema QuantitativeValue (GRM) |
+| 3.4 | ~~Trọng lượng + schema~~ | ⬜ | ☒ Đã gỡ (2026-06-19) | | Field `weightGrams` + schema `Product.weight` (QuantitativeValue) đã gỡ theo quyết định chủ shop. Cột `weight_kg` giữ trong DB nhưng không phơi/khai nữa. |
 | 3.5 | Bảng size HTML | 🟩 | ☑ Xong (2026-06-12) | | `size_guide` rich-HTML; render sanitize |
 | 3.6 | Mô tả video + schema | 🟩 | 🟡 Schema xong | | `product_videos.description` → VideoObject.description; caption hiển thị trong gallery còn lại (xem ghi chú) |
 | 4.1 | Alt mô tả | 🟦/📝 | ☑ Xong (2026-06-12) | Brand team viết alt | Field nhập alt (ảnh chính + từng ảnh gallery) đã có sẵn trong admin; `MediaImage` nay lọc alt rác máy sinh (tên file / hash / số) → fallback tên SP |
@@ -183,7 +183,7 @@ Code chỉ cung cấp chỗ điền; nội dung do Brand team viết theo templa
 **Quyết định data shape:**
 - Ưu/Nhược điểm: 1 bảng con `product_highlights` (cột `kind` PRO/CON), song ngữ inline `content`/`content_en` — admin sửa được EN qua nút VI/EN.
 - Bảo hành (`warranty_months`, `warranty_scope`), xuất xứ (`origin_brand_country`, `origin_manufacture_country`), bảng size (`size_guide`) = **1 ngôn ngữ** (fallback VI như giá/SKU) để giảm điểm chạm cơ chế `translations`. Có thể nâng song ngữ sau nếu cần.
-- Trọng lượng: **dùng lại cột `weight_kg` có sẵn**, không thêm cột; phơi `weightGrams` (gram) cho UI/schema.
+- Trọng lượng: **đã gỡ (2026-06-19)** — field `weightGrams` và schema `Product.weight` không còn. Cột `weight_kg` vẫn còn trong DB (kích thước WooCommerce-import) nhưng không phơi ra UI/schema.
 
 **⚠️ Cần làm khi deploy:** migration **V175** sẽ tự chạy khi backend khởi động (Flyway). Cần restart backend để áp schema mới — KHÔNG tự ý restart container (shared state), yêu cầu user.
 

@@ -42,6 +42,8 @@ public record Product(
         List<ProductFaq> faqs,
         /** Per-product commitment rows rendered under the buy buttons (V232). Detail-only; empty in list. */
         List<ProductCommitment> commitments,
+        /** Per-product "Mua tại BigBike.vn" lines (V249). Detail-only; empty in list. {@code *En} chỉ có trên admin reads. */
+        List<ProductPurchaseLine> purchaseLines,
         /** "Specs Dashboard" stat boxes under the buy area (V235), max 4. Detail-only; empty in list. {@code *En} chỉ có trên admin reads. */
         List<ProductSpecStat> specStats,
         /** Per-product trust badges rendered on the trust row above the title (V233). Detail-only; empty in list. {@code contentEn} chỉ có trên admin reads. */
@@ -50,20 +52,10 @@ public record Product(
         List<ProductHighlight> positiveNotes,
         /** Nhược điểm (schema.org negativeNotes). Detail-only; empty in list. {@code contentEn} chỉ có trên admin reads. */
         List<ProductHighlight> negativeNotes,
-        /** Số tháng bảo hành. Detail-only; null in list. */
-        Integer warrantyMonths,
-        /** Phạm vi bảo hành (text). Detail-only; null in list. */
-        String warrantyScope,
-        /** Dòng "Giao hàng" khối "Mua tại BigBike.vn" (V247). Detail-only; null in list. Trống → web dùng mặc định chung. */
-        String pdpShippingLine,
-        /** Dòng "Đổi trả" khối "Mua tại BigBike.vn" (V247). Detail-only; null in list. Trống → web dùng mặc định chung. */
-        String pdpReturnLine,
         /** "Thương hiệu [nước]". Detail-only; null in list. */
         String originBrandCountry,
         /** Bảng size dạng HTML (rich-text). Detail-only; null in list. */
         String sizeGuide,
-        /** "Quick Answer" — đoạn AIO 40–60 từ, blockquote trước H2 đầu (V236). Detail-only; null in list. */
-        String quickAnswerSummary,
         /** "Phù hợp với ai" — JSON array các thẻ {@code [{audience, advice, linkLabel?, linkUrl?}]}
          *  (V237; format đổi ở V240). Opaque string, web parse JSON. Detail-only; null in list. */
         String suitabilityAdvisory,

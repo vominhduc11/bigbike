@@ -72,23 +72,9 @@ public class UpsertProductRequest {
     private String installationGuide;
     private boolean installationGuidePresent = false;
 
-    // Template SEO fields (V175). Presence-flag pattern: omitting the key on PATCH
-    // leaves the column untouched; sending null/blank clears it. 1 ngôn ngữ.
-    private Integer warrantyMonths;
-    private boolean warrantyMonthsPresent = false;
-
-    @Size(max = 2000, message = "Warranty scope is too long.")
-    private String warrantyScope;
-    private boolean warrantyScopePresent = false;
-
-    // Dòng "Giao hàng" / "Đổi trả" khối "Mua tại BigBike.vn" (V247). 1 ngôn ngữ, presence-flag.
-    @Size(max = 200, message = "Shipping line is too long.")
-    private String pdpShippingLine;
-    private boolean pdpShippingLinePresent = false;
-
-    @Size(max = 200, message = "Return line is too long.")
-    private String pdpReturnLine;
-    private boolean pdpReturnLinePresent = false;
+    // warranty_months / warranty_scope / pdp_shipping_line / pdp_return_line (V175/V247)
+    // gỡ khỏi DTO ở V249 — nội dung này giờ là các dòng per-product trong khối
+    // "Mua tại BigBike.vn" (purchaseLines).
 
     @Size(max = 120, message = "Origin brand country is too long.")
     private String originBrandCountry;
@@ -103,10 +89,6 @@ public class UpsertProductRequest {
     @Size(max = 4000, message = "Section visibility is too long.")
     private String sectionVisibility;
     private boolean sectionVisibilityPresent = false;
-
-    @Size(max = 600, message = "Quick answer is too long.")
-    private String quickAnswerSummary;
-    private boolean quickAnswerSummaryPresent = false;
 
     // "Phù hợp với ai" — JSON array các thẻ [{audience, advice, linkLabel?, linkUrl?}] (V240).
     // Admin serialize JSON; backend lưu opaque (như size_guide). Giới hạn độ dài tổng chuỗi JSON.
@@ -154,6 +136,10 @@ public class UpsertProductRequest {
     @Valid
     @Size(max = 12, message = "Commitments may not have more than 12 items.")
     private List<CommitmentRequest> commitments;
+
+    @Valid
+    @Size(max = 12, message = "Purchase lines may not have more than 12 items.")
+    private List<PurchaseLineRequest> purchaseLines;
 
     @Valid
     @Size(max = 12, message = "Trust badges may not have more than 12 items.")
@@ -415,57 +401,6 @@ public class UpsertProductRequest {
         return installationGuidePresent;
     }
 
-    public Integer getWarrantyMonths() {
-        return warrantyMonths;
-    }
-
-    public void setWarrantyMonths(Integer warrantyMonths) {
-        this.warrantyMonths = warrantyMonths;
-        this.warrantyMonthsPresent = true;
-    }
-
-    public boolean isWarrantyMonthsPresent() {
-        return warrantyMonthsPresent;
-    }
-
-    public String getWarrantyScope() {
-        return warrantyScope;
-    }
-
-    public void setWarrantyScope(String warrantyScope) {
-        this.warrantyScope = warrantyScope;
-        this.warrantyScopePresent = true;
-    }
-
-    public boolean isWarrantyScopePresent() {
-        return warrantyScopePresent;
-    }
-
-    public String getPdpShippingLine() {
-        return pdpShippingLine;
-    }
-
-    public void setPdpShippingLine(String pdpShippingLine) {
-        this.pdpShippingLine = pdpShippingLine;
-        this.pdpShippingLinePresent = true;
-    }
-
-    public boolean isPdpShippingLinePresent() {
-        return pdpShippingLinePresent;
-    }
-
-    public String getPdpReturnLine() {
-        return pdpReturnLine;
-    }
-
-    public void setPdpReturnLine(String pdpReturnLine) {
-        this.pdpReturnLine = pdpReturnLine;
-        this.pdpReturnLinePresent = true;
-    }
-
-    public boolean isPdpReturnLinePresent() {
-        return pdpReturnLinePresent;
-    }
 
     public String getOriginBrandCountry() {
         return originBrandCountry;
@@ -504,19 +439,6 @@ public class UpsertProductRequest {
 
     public boolean isSectionVisibilityPresent() {
         return sectionVisibilityPresent;
-    }
-
-    public String getQuickAnswerSummary() {
-        return quickAnswerSummary;
-    }
-
-    public void setQuickAnswerSummary(String quickAnswerSummary) {
-        this.quickAnswerSummary = quickAnswerSummary;
-        this.quickAnswerSummaryPresent = true;
-    }
-
-    public boolean isQuickAnswerSummaryPresent() {
-        return quickAnswerSummaryPresent;
     }
 
     public String getSuitabilityAdvisory() {
@@ -588,6 +510,9 @@ public class UpsertProductRequest {
 
     public List<CommitmentRequest> getCommitments() { return commitments; }
     public void setCommitments(List<CommitmentRequest> commitments) { this.commitments = commitments; }
+
+    public List<PurchaseLineRequest> getPurchaseLines() { return purchaseLines; }
+    public void setPurchaseLines(List<PurchaseLineRequest> purchaseLines) { this.purchaseLines = purchaseLines; }
 
     public List<TrustBadgeRequest> getTrustBadges() { return trustBadges; }
     public void setTrustBadges(List<TrustBadgeRequest> trustBadges) { this.trustBadges = trustBadges; }

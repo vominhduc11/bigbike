@@ -10,7 +10,7 @@ import {
 
 // Kiểm thử bản dựng JSON-LD của PDP (checklist SEO #22 — phiên bản lặp lại được
 // của Rich Results Test, không phụ thuộc URL công khai). Bảo đảm Product / Offer /
-// AggregateRating / weight / positiveNotes / BreadcrumbList / FAQPage / VideoObject
+// AggregateRating / positiveNotes / BreadcrumbList / FAQPage / VideoObject
 // đúng cấu trúc schema.org VÀ các field nhạy cảm chỉ phát sinh khi có dữ liệu thật.
 
 function makeProduct(overrides: Partial<Product> = {}): Product {

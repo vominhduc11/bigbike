@@ -60,6 +60,12 @@ export function createProductSchema(t, isCreate = false) {
       slug: isCreate ? slugField(t) : z.string().regex(SLUG_REGEX, t('products.detail.errSlugFormat')).optional().or(z.literal('')),
       name: isCreate ? z.string().min(1, t('products.detail.errNameRequired')) : z.string().optional(),
       categoryId: isCreate ? z.string().min(1, t('products.detail.errCategoryRequired')) : z.string().optional(),
+      // Khai báo để superRefine "bắt buộc khi tạo mới" nhìn thấy (z.object strip key lạ).
+      sku: z.string().optional(),
+      brandId: z.string().optional(),
+      gender: z.string().optional(),
+      description: z.string().optional(),
+      descriptionBlocks: z.array(z.any()).nullable().optional(),
       shortDescription: z.string().optional(),
       retailPrice: z.string().optional(),
       compareAtPrice: z.string().optional(),
@@ -105,6 +111,21 @@ export function createProductSchema(t, isCreate = false) {
         titleEn: z.string().max(200).optional(),
         subtitleEn: z.string().max(300).optional(),
       })).optional(),
+      // Dải tin cậy trên tên sản phẩm (V233) — badge {content}; bắt buộc ≥1 khi tạo mới (superRefine).
+      trustBadges: z.array(z.object({
+        _key: z.string().optional(),
+        content: z.string().max(120, 'Nhãn tin cậy tối đa 120 ký tự.').optional(),
+        contentEn: z.string().max(120).optional(),
+      })).optional(),
+      // Bảng "Mua tại BigBike.vn" — dòng {icon, label, value} song ngữ; chỉ kiểm tra độ dài.
+      purchaseLines: z.array(z.object({
+        _key: z.string().optional(),
+        icon: z.string().max(40).optional(),
+        label: z.string().max(120, 'Nhãn tối đa 120 ký tự.').optional(),
+        value: z.string().max(200, 'Giá trị tối đa 200 ký tự.').optional(),
+        labelEn: z.string().max(120).optional(),
+        valueEn: z.string().max(200).optional(),
+      })).max(12, 'Tối đa 12 dòng.').optional(),
       variants: z.array(z.object({
         name: z.string(),
         // PRODUCT_RULE_SKU_001 — required per-row when the variant is real (has a
@@ -127,12 +148,9 @@ export function createProductSchema(t, isCreate = false) {
         content: z.string().max(2000, 'Nhược điểm tối đa 2000 ký tự.'),
         contentEn: z.string().max(2000).optional(),
       })).optional(),
-      warrantyMonths: z.string().optional(),
-      warrantyScope: z.string().max(2000, 'Phạm vi bảo hành tối đa 2000 ký tự.').optional(),
       originBrandCountry: z.string().max(120).optional(),
       sizeGuide: z.string().max(20000, 'Bảng size tối đa 20000 ký tự.').optional(),
-      // PDP layout fields (V236–V237) — Quick Answer + "Phù hợp với ai".
-      quickAnswerSummary: z.string().max(600, 'Quick Answer tối đa 600 ký tự.').optional(),
+      // PDP layout field (V237) — "Phù hợp với ai".
       suitabilityAdvisory: z.string().max(20000, 'Phù hợp với ai tối đa 20000 ký tự.').optional(),
       // Optional English content (V136) — never required, length-checked only.
       translations: z.object({
@@ -141,7 +159,6 @@ export function createProductSchema(t, isCreate = false) {
           name: z.string().optional(),
           shortDescription: z.string().optional(),
           description: z.string().optional(),
-          quickAnswerSummary: z.string().max(600, 'Quick Answer tối đa 600 ký tự.').optional(),
           suitabilityAdvisory: z.string().max(20000, 'Phù hợp với ai tối đa 20000 ký tự.').optional(),
           seoTitle: z.string().optional(),
           seoDescription: z.string().optional(),
@@ -149,6 +166,39 @@ export function createProductSchema(t, isCreate = false) {
       }).optional(),
     })
     .superRefine((data, ctx) => {
+      // Bắt buộc CHỈ KHI TẠO MỚI (không áp dụng khi sửa sản phẩm cũ). slug/name/categoryId
+      // đã bắt buộc ở khai báo field phía trên; ở đây thêm các trường còn lại.
+      if (isCreate) {
+        const req = (val, message, path) => {
+          if (!String(val ?? '').trim()) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message, path })
+          }
+        }
+        req(data.sku, t('products.detail.errSkuRequired', { defaultValue: 'Vui lòng nhập mã SKU sản phẩm.' }), ['sku'])
+        req(data.brandId, t('products.detail.errBrandRequired', { defaultValue: 'Vui lòng chọn thương hiệu.' }), ['brandId'])
+        req(data.gender, t('products.detail.errGenderRequired', { defaultValue: 'Vui lòng chọn đối tượng (giới tính).' }), ['gender'])
+        req(data.imageUrl, t('products.detail.errImageRequired', { defaultValue: 'Vui lòng chọn ảnh đại diện.' }), ['imageUrl'])
+        req(data.shortDescription, t('products.detail.errShortDescRequired', { defaultValue: 'Vui lòng nhập mô tả ngắn.' }), ['shortDescription'])
+
+        // Mô tả chi tiết: hợp lệ khi có ≥1 khối (descriptionBlocks) hoặc có chữ (description).
+        const hasBlocks = Array.isArray(data.descriptionBlocks) && data.descriptionBlocks.length > 0
+        if (!hasBlocks && !String(data.description ?? '').trim()) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.errDescRequired', { defaultValue: 'Vui lòng nhập mô tả chi tiết.' }), path: ['description'] })
+        }
+        // FAQ ≥1 cặp hỏi-đáp hoàn chỉnh.
+        if (!(data.faqs ?? []).some((f) => (f?.question ?? '').trim() && (f?.answer ?? '').trim())) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.errFaqsRequired', { defaultValue: 'Vui lòng thêm ít nhất 1 câu hỏi thường gặp (đủ hỏi và đáp).' }), path: ['faqs'] })
+        }
+        // Ô số liệu nổi bật ≥1 ô có cả value + label.
+        if (!(data.specStats ?? []).some((s) => (s?.value ?? '').trim() && (s?.label ?? '').trim())) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.errSpecStatsRequired', { defaultValue: 'Vui lòng thêm ít nhất 1 ô số liệu nổi bật (đủ số liệu và nhãn).' }), path: ['specStats'] })
+        }
+        // Dải tin cậy ≥1 nhãn có nội dung.
+        if (!(data.trustBadges ?? []).some((b) => (b?.content ?? '').trim())) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: t('products.detail.errTrustBadgesRequired', { defaultValue: 'Vui lòng thêm ít nhất 1 nhãn tin cậy.' }), path: ['trustBadges'] })
+        }
+      }
+
       const retail = toInt(data.retailPrice)
       const compare = toInt(data.compareAtPrice)
       const sale = toInt(data.salePrice)
@@ -208,11 +258,6 @@ export function createProductSchema(t, isCreate = false) {
           message: t('products.detail.errContentBottomTooLong'),
           path: ['contentBottom'],
         })
-      }
-      // Template SEO numeric fields (V175): non-negative integers when filled.
-      const warranty = toInt(data.warrantyMonths)
-      if (Number.isNaN(warranty) || (Number.isInteger(warranty) && warranty < 0)) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Bảo hành phải là số nguyên không âm.', path: ['warrantyMonths'] })
       }
       if ((data.seoTitle ?? '').trim().length > 255) {
         ctx.addIssue({

@@ -1,11 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { Check, X } from "lucide-react";
+import { Check } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { useLocalizedField } from "@/components/i18n/LocalizedContent";
-import { Tr } from "@/components/i18n/Tr";
 import type { DescriptionBlock } from "@/lib/contracts/public";
 import { resolveMediaUrl } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
@@ -30,18 +29,21 @@ import { cn } from "@/lib/utils";
  */
 
 type FeatureBlockT = Extract<DescriptionBlock, { type: "feature" }>;
-type ProsConsBlockT = Extract<DescriptionBlock, { type: "prosCons" }>;
 type SuitabilityBlockT = Extract<DescriptionBlock, { type: "suitability" }>;
 type SizeGuideBlockT = Extract<DescriptionBlock, { type: "sizeGuide" }>;
 
 /** Chữ KHÔNG phải tiêu đề — phần thân của một mục, gom liền sau tiêu đề cho tới tiêu đề kế tiếp. */
 const NON_HEADING_TEXT = new Set(["paragraph", "list", "callout"]);
 
+/** Các loại khối render được dưới dạng cụm CHỮ (flow): tiêu đề + thân. Loại NGOÀI tập này mà không phải
+ *  feature/image/video/suitability/sizeGuide (vd "prosCons" — vốn render bằng khối RIÊNG ngoài mô tả) bị
+ *  BỎ QUA, không tạo flow rỗng để khỏi sinh section trắng chỉ còn vạch kẻ + khoảng hở. */
+const FLOW_TYPES = new Set(["heading", "paragraph", "list", "callout"]);
+
 type Group =
   | { kind: "feature"; block: FeatureBlockT; reverse: boolean }
   | { kind: "media"; media: DescriptionBlock }
   | { kind: "flow"; blocks: DescriptionBlock[] }
-  | { kind: "prosCons"; block: ProsConsBlockT }
   | { kind: "suitability"; block: SuitabilityBlockT }
   | { kind: "sizeGuide"; block: SizeGuideBlockT }
   | { kind: "divider" };
@@ -72,14 +74,14 @@ function groupBlocks(blocks: DescriptionBlock[]): Group[] {
     } else if (b.type === "image" || b.type === "video") {
       groups.push({ kind: "media", media: b });
       i += 1;
-    } else if (b.type === "prosCons") {
-      groups.push({ kind: "prosCons", block: b });
-      i += 1;
     } else if (b.type === "suitability") {
       groups.push({ kind: "suitability", block: b });
       i += 1;
     } else if (b.type === "sizeGuide") {
       groups.push({ kind: "sizeGuide", block: b });
+      i += 1;
+    } else if (!FLOW_TYPES.has(b.type)) {
+      // Loại không render trong mô tả (vd "prosCons" — đã có khối riêng): bỏ qua, KHÔNG tạo flow rỗng.
       i += 1;
     } else {
       // Một "mục" = (tiêu đề nếu có) + các đoạn/danh sách/ghi chú đi liền sau, dừng TRƯỚC tiêu đề kế.
@@ -175,7 +177,7 @@ function TextBlock({ block }: { block: DescriptionBlock }) {
       if (items.length === 0) return null;
       if (block.style === "numbered") {
         return (
-          <ol className="flex list-none flex-col gap-2.5 text-body-lg">
+          <ol className="flex list-none flex-col gap-2 text-body-lg leading-snug">
             {items.map((it, idx) => (
               <li key={idx} className="flex gap-2.5 text-foreground">
                 <span className="font-heading font-bold text-brand">{idx + 1}.</span>
@@ -186,7 +188,7 @@ function TextBlock({ block }: { block: DescriptionBlock }) {
         );
       }
       return (
-        <ul className="flex list-none flex-col gap-2.5 text-body-lg">
+        <ul className="flex list-none flex-col gap-2 text-body-lg leading-snug">
           {items.map((it, idx) => (
             <li key={idx} className="flex gap-2.5 text-foreground">
               <Check className="mt-1 h-4 w-4 shrink-0 text-brand" aria-hidden />
@@ -212,6 +214,7 @@ function TextBlock({ block }: { block: DescriptionBlock }) {
 
 function TextStack({ blocks }: { blocks: DescriptionBlock[] }) {
   return (
+    // gap-4 = nới khoảng giữa tiêu đề và đoạn/danh sách bên dưới (đồng bộ với khối feature).
     <div className="flex flex-col gap-4">
       {blocks.map((b, i) => (
         <TextBlock key={i} block={b} />
@@ -227,25 +230,31 @@ function FeatureBody({ block }: { block: FeatureBlockT }) {
   const html = block.html?.trim();
   const items = (block.items ?? []).map((it) => (it ?? "").trim()).filter(Boolean);
   return (
+    // gap-4 = khoảng cách lớn hơn giữa cụm TIÊU ĐỀ và phần nội dung/danh sách bên dưới.
     <div className="flex flex-col gap-4">
-      {subheading ? (
-        // Tiêu đề phụ (eyebrow) — nhãn nhỏ in hoa màu brand, phía trên tiêu đề chính.
-        // text-ui-16 = 16px CỐ ĐỊNH (không dùng text-caption rem vì trang WP gốc 14px → co còn 12.25px).
-        <p className="-mb-2 font-heading text-ui-16 font-bold uppercase tracking-[0.2em] text-brand">
-          {subheading}
-        </p>
-      ) : null}
-      {heading ? (
-        // text-ui-24 = 24px CỐ ĐỊNH (text-h2 rem co còn 21px ở gốc 14px). Đồng bộ với mô tả 18px.
-        <h2 className="flex gap-3 font-heading text-ui-24 font-bold uppercase leading-tight text-foreground">
-          <span className="w-1 shrink-0 self-stretch bg-brand" aria-hidden />
-          <span>{heading}</span>
-        </h2>
+      {/* Cụm tiêu đề: eyebrow bám SÁT tiêu đề chính (gap-1.5) — coi như một khối, tách hẳn với body. */}
+      {subheading || heading ? (
+        <div className="flex flex-col gap-1.5">
+          {subheading ? (
+            // Tiêu đề phụ (eyebrow) — nhãn nhỏ in hoa màu brand, phía trên tiêu đề chính.
+            // text-ui-16 = 16px CỐ ĐỊNH (không dùng text-caption rem vì trang WP gốc 14px → co còn 12.25px).
+            <p className="!mb-0 font-heading text-ui-16 font-bold uppercase tracking-[0.2em] text-brand">
+              {subheading}
+            </p>
+          ) : null}
+          {heading ? (
+            // text-ui-24 = 24px CỐ ĐỊNH (text-h2 rem co còn 21px ở gốc 14px). Đồng bộ với mô tả 18px.
+            <h2 className="flex gap-3 font-heading text-ui-24 font-bold uppercase leading-tight text-foreground">
+              <span className="w-1 shrink-0 self-stretch bg-brand" aria-hidden />
+              <span>{heading}</span>
+            </h2>
+          ) : null}
+        </div>
       ) : null}
       {html ? <div className="wyswyg text-body-lg" dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(html) }} /> : null}
       {items.length > 0 ? (
         block.listStyle === "numbered" ? (
-          <ol className="flex list-none flex-col gap-2.5 text-body-lg">
+          <ol className="flex list-none flex-col gap-2 text-body-lg leading-snug">
             {items.map((it, idx) => (
               <li key={idx} className="flex gap-2.5 text-foreground">
                 <span className="font-heading font-bold text-brand">{idx + 1}.</span>
@@ -254,7 +263,7 @@ function FeatureBody({ block }: { block: FeatureBlockT }) {
             ))}
           </ol>
         ) : (
-          <ul className="flex list-none flex-col gap-2.5 text-body-lg">
+          <ul className="flex list-none flex-col gap-2 text-body-lg leading-snug">
             {items.map((it, idx) => (
               <li key={idx} className="flex gap-2.5 text-foreground">
                 <Check className="mt-1 h-4 w-4 shrink-0 text-brand" aria-hidden />
@@ -273,57 +282,10 @@ function BlockTitle({ text }: { text?: string }) {
   const t = (text ?? "").trim();
   if (!t) return null;
   return (
-    <h2 className="mb-5 flex gap-3 font-heading text-h2 font-bold uppercase leading-tight text-foreground">
+    <h2 className="flex gap-3 font-heading text-h2 font-bold uppercase leading-tight text-foreground">
       <span className="w-1 shrink-0 self-stretch bg-brand" aria-hidden />
       <span>{t}</span>
     </h2>
-  );
-}
-
-/**
- * Khối "Ưu điểm / Nhược điểm" (V246) — 2 cột xanh/đỏ. Nội dung đã resolve theo ngôn ngữ qua block list;
- * nhãn cột (Ưu/Nhược) qua i18n. Nguồn schema.org positiveNotes/negativeNotes do backend suy ra từ khối này.
- */
-function ProsConsBlockView({ block }: { block: ProsConsBlockT }) {
-  const positive = (block.positive ?? []).map((s) => (s ?? "").trim()).filter(Boolean);
-  const negative = (block.negative ?? []).map((s) => (s ?? "").trim()).filter(Boolean);
-  if (positive.length === 0 && negative.length === 0) return null;
-  return (
-    <>
-      <BlockTitle text={block.title} />
-      <div className="grid gap-6 md:grid-cols-2">
-        {positive.length > 0 && (
-          <div className="border-t-2 border-t-pros-accent bg-pros-accent/[0.07] p-5">
-            <h3 className="mb-3 font-heading text-h4 font-bold uppercase tracking-wide text-pros-accent">
-              <Tr ns="Product" k="prosTitle" />
-            </h3>
-            <ul className="flex flex-col gap-2">
-              {positive.map((note, index) => (
-                <li key={index} className="flex gap-2 text-foreground">
-                  <Check className="mt-1 h-4 w-4 shrink-0 text-pros-accent" aria-hidden />
-                  <span>{note}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-        {negative.length > 0 && (
-          <div className="border-t-2 border-t-cons-accent bg-cons-accent/[0.06] p-5">
-            <h3 className="mb-3 font-heading text-h4 font-bold uppercase tracking-wide text-cons-accent">
-              <Tr ns="Product" k="consTitle" />
-            </h3>
-            <ul className="flex flex-col gap-2">
-              {negative.map((note, index) => (
-                <li key={index} className="flex gap-2 text-muted-foreground">
-                  <X className="mt-1 h-4 w-4 shrink-0 text-cons-accent" aria-hidden />
-                  <span>{note}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
-    </>
   );
 }
 
@@ -334,9 +296,9 @@ function SuitabilityBlockView({ block }: { block: SuitabilityBlockT }) {
   );
   if (cards.length === 0) return null;
   return (
-    <>
+    <div className="flex flex-col gap-5">
       <BlockTitle text={block.title} />
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3">
         {cards.map((card, index) => {
           const audience = (card.audience ?? "").trim();
           const advice = (card.advice ?? "").trim();
@@ -344,9 +306,9 @@ function SuitabilityBlockView({ block }: { block: SuitabilityBlockT }) {
           const linkUrl = (card.linkUrl ?? "").trim();
           const hasLink = Boolean(linkLabel && linkUrl);
           return (
-            <p
+            <div
               key={index}
-              className="border-l-4 border-l-brand bg-secondary px-4 py-3 leading-relaxed text-muted-foreground"
+              className="border-l-4 border-l-brand bg-secondary px-4 py-3 text-18 leading-relaxed text-muted-foreground"
             >
               {audience && <strong className="font-bold text-foreground">{audience}</strong>}
               {audience && (advice || hasLink) && <span> → </span>}
@@ -359,11 +321,11 @@ function SuitabilityBlockView({ block }: { block: SuitabilityBlockT }) {
                   </Link>
                 </>
               )}
-            </p>
+            </div>
           );
         })}
       </div>
-    </>
+    </div>
   );
 }
 
@@ -372,10 +334,10 @@ function SizeGuideBlockView({ block }: { block: SizeGuideBlockT }) {
   const html = block.html ? sanitizeRichHtml(block.html) : "";
   if (!html) return null;
   return (
-    <>
+    <div className="flex flex-col gap-5">
       <BlockTitle text={block.title} />
       <div className="wyswyg text-body-lg" dangerouslySetInnerHTML={{ __html: html }} />
-    </>
+    </div>
   );
 }
 
@@ -396,14 +358,15 @@ export function DescriptionBlocksView({ blocks }: { blocks: DescriptionBlock[] }
       {groups.map((g, idx) => (
         <section
           key={idx}
-          className={cn(idx > 0 && "mt-10 border-t border-t-border-default pt-10 md:mt-14 md:pt-14")}
+          // Khoảng cách giữa các khối: MỘT giá trị cố định cho MỌI breakpoint (không còn nhảy
+          // 40px→56px ở desktop) và đối xứng đều hai bên đường kẻ chia → nhịp dọc bằng nhau,
+          // không bị "khối thì sát khối thì hở" như khi mỗi breakpoint một con số.
+          className={cn(idx === 0 && "mb-8", idx > 0 && "border-t border-t-border-default pt-8 pb-8")}
         >
           {g.kind === "flow" ? (
             <TextStack blocks={g.blocks} />
           ) : g.kind === "media" ? (
             <MediaBlock block={g.media} />
-          ) : g.kind === "prosCons" ? (
-            <ProsConsBlockView block={g.block} />
           ) : g.kind === "suitability" ? (
             <SuitabilityBlockView block={g.block} />
           ) : g.kind === "sizeGuide" ? (

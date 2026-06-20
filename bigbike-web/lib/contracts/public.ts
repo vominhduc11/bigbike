@@ -192,8 +192,6 @@ export type DescriptionBlock =
       listStyle?: "bulleted" | "numbered";
       items?: string[];
     }
-  // Ưu/Nhược điểm (V246) — gộp vào mô tả; cũng là nguồn schema.org positiveNotes/negativeNotes (derived BE).
-  | { type: "prosCons"; title?: string; positive?: string[]; negative?: string[] }
   // Phù hợp với ai (V246, từ V240) — danh sách thẻ tư vấn nhúng trong mô tả.
   | {
       type: "suitability";
@@ -325,14 +323,9 @@ export type Product = {
   positiveNotes?: ProductHighlight[];
   /** Nhược điểm (schema.org negativeNotes). Detail-only; empty in list. */
   negativeNotes?: ProductHighlight[];
-  /** Số tháng bảo hành. Detail-only. */
-  warrantyMonths?: number | null;
-  /** Phạm vi bảo hành (text). Detail-only. */
-  warrantyScope?: string | null;
-  /** Dòng "Giao hàng" khối "Mua tại BigBike.vn" (V247). Detail-only; trống → dùng mặc định chung. */
-  pdpShippingLine?: string | null;
-  /** Dòng "Đổi trả" khối "Mua tại BigBike.vn" (V247). Detail-only; trống → dùng mặc định chung. */
-  pdpReturnLine?: string | null;
+  /** Dòng tự thêm cho khối "Mua tại BigBike.vn" — admin nhập tự do, không giới hạn số dòng.
+   *  Đã resolve theo ngôn ngữ; rỗng → không render dòng nào. Detail-only. */
+  purchaseLines?: Array<{ icon: string; label: string; value: string }> | null;
   /** "Thương hiệu [nước]". Detail-only. */
   originBrandCountry?: string | null;
   /** Bảng size dạng HTML (rich-text). Detail-only. */
@@ -341,8 +334,6 @@ export type Product = {
    *  section PDP. Null/thiếu = chưa cấu hình → hiện theo nội dung (legacy). Parse qua
    *  `parseSectionVisibility`. Detail-only. */
   sectionVisibility?: string | null;
-  /** "Quick Answer" — đoạn AIO 40–60 từ, blockquote trước H2 đầu (V236). Detail-only. */
-  quickAnswerSummary?: string | null;
   /** "Phù hợp với ai" — JSON array các thẻ `[{audience, advice, linkLabel?, linkUrl?}]`
    *  (V237; format đổi ở V240). Parse qua `parseSuitabilityCards`. Detail-only. */
   suitabilityAdvisory?: string | null;

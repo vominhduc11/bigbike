@@ -121,7 +121,7 @@ export default async function RootLayout({
               <CartProvider>
                 <AltSlugProvider>
                   <WpHeader menuNodes={wpPrimaryNodes} />
-                  <main className="bb-main pb-[calc(var(--bb-mobile-nav-height)+env(safe-area-inset-bottom))] md:pb-0">{children}</main>
+                  <main className="bb-main">{children}</main>
                   <div className="block md:hidden">
                     <MobileBottomNav />
                   </div>

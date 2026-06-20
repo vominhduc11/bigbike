@@ -11,7 +11,37 @@ import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import type { HomeVideo } from "@/lib/contracts/public";
 import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 
-type Props = { videos: HomeVideo[] };
+// surface: nền nơi đặt carousel. "dark" (mặc định, trang chủ) → mũi tên/chấm trắng;
+// "light" (trang chi tiết sản phẩm nền trắng) → mũi tên/chấm tối để không bị tàng hình.
+// compact: khung hẹp (rail PDP max-w 1140) → tối đa 5 cột thay vì 7, để khi số video vượt
+// số cột thì mũi tên bật đúng (carousel tính cột theo bề rộng màn hình, không theo khung chứa).
+type Props = { videos: HomeVideo[]; surface?: "dark" | "light"; compact?: boolean };
+
+// Cấu hình số cột + khoá bề rộng pre-init khớp nhau. "home" trải full-width (2→7 cột);
+// "compact" cho khung hẹp PDP (1→2→3→4→5 cột). Class pre-init phải là chuỗi tĩnh để Tailwind sinh ra.
+const COLUMN_PRESET = {
+  home: {
+    preInit:
+      "min-[480px]:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/2 md:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/3 lg:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/4 xl:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/5 min-[1920px]:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/6 min-[2560px]:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/7",
+    breakpoints: {
+      480: { slidesPerView: 2, spaceBetween: 12 },
+      768: { slidesPerView: 3, spaceBetween: 14 },
+      1024: { slidesPerView: 4, spaceBetween: 16 },
+      1280: { slidesPerView: 5, spaceBetween: 16 },
+      1920: { slidesPerView: 6, spaceBetween: 20 },
+      2560: { slidesPerView: 7, spaceBetween: 24 },
+    },
+  },
+  compact: {
+    preInit:
+      "min-[480px]:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/2 md:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/4 lg:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/5",
+    breakpoints: {
+      480: { slidesPerView: 2, spaceBetween: 10 },
+      768: { slidesPerView: 4, spaceBetween: 12 },
+      1024: { slidesPerView: 5, spaceBetween: 14 },
+    },
+  },
+};
 
 function PlayIcon() {
   return (
@@ -31,9 +61,13 @@ function PlayIcon() {
   );
 }
 
-function VideoCard({ video, onPlay }: { video: HomeVideo; onPlay: () => void }) {
+function VideoCard({ video, onPlay, compact = false }: { video: HomeVideo; onPlay: () => void; compact?: boolean }) {
   const tA = useTranslations("A11y");
-  const title = safeText(video.title, "Video");
+  // title = tiêu đề THẬT (rỗng nếu video chưa nhập tiêu đề) → footer để trống nhưng
+  // vẫn giữ chiều cao, không in chữ "Video" placeholder gây mất chuyên nghiệp.
+  // ariaTitle = giá trị dùng cho alt/aria-label, luôn có nội dung để đọc màn hình hiểu.
+  const title = safeText(video.title, "");
+  const ariaTitle = title || tA("watchVideoFallback");
 
   const thumbUrls: string[] = [];
   const custom = resolveMediaUrl(video.thumbnail?.url?.trim());
@@ -53,15 +87,22 @@ function VideoCard({ video, onPlay }: { video: HomeVideo; onPlay: () => void }) 
       type="button"
       className="group block w-full cursor-pointer appearance-none bg-transparent p-0 text-left"
       onClick={onPlay}
-      aria-label={tA("watchVideo", { title })}
+      aria-label={tA("watchVideo", { title: ariaTitle })}
     >
-      {/* Thumbnail — 9:16 aspect ratio, max-height cap ở tablet để tránh card quá cao */}
-      <div className="relative w-full overflow-hidden bg-brand [aspect-ratio:9/16] max-[479px]:[max-height:72vw] min-[480px]:max-[1199px]:[max-height:260px]">
+      {/* Thumbnail — luôn 9:16. Trang chủ (full) để card lớn, có cap ở tablet;
+          trang sản phẩm (compact) cap thấp hơn để khối video gọn, cân với tổng thể PDP. */}
+      <div
+        className={
+          compact
+            ? "relative w-full overflow-hidden bg-brand [aspect-ratio:9/16] max-[479px]:[max-height:240px] min-[480px]:[max-height:360px] min-[768px]:[max-height:300px] min-[1024px]:[max-height:340px]"
+            : "relative w-full overflow-hidden bg-brand [aspect-ratio:9/16] max-[479px]:[max-height:72vw] min-[480px]:max-[1199px]:[max-height:260px]"
+        }
+      >
         {thumbSrc ? (
           <Image
             key={thumbSrc}
             src={thumbSrc}
-            alt={safeText(video.thumbnail?.alt, title)}
+            alt={safeText(video.thumbnail?.alt, ariaTitle)}
             fill
             // !h-full thắng rule WP của trang chủ `body img{height:auto!important}`
             // (wp-theme-home.css) — nếu không ảnh fill bị ép height:auto và sụp xuống.
@@ -77,13 +118,16 @@ function VideoCard({ video, onPlay }: { video: HomeVideo; onPlay: () => void }) 
           </div>
         )}
         <PlayIcon />
-      </div>
-      {/* Footer title — compact ở mobile; từ tablet trở lên reserve 2 dòng (min-h)
-          để mọi card cao bằng nhau, và to/đậm hơn trên desktop lớn cho dễ đọc */}
-      <div className="bg-black px-3 py-3 min-[600px]:px-4 min-[600px]:py-4">
-        <p className="m-0 overflow-hidden normal-case font-body text-caption font-semibold leading-title text-white line-clamp-2 min-[600px]:min-h-[2.9em]">
-          {title}
-        </p>
+        {/* Tên video đè lên góc dưới ảnh kèm lớp tối mờ (kiểu video grid chuẩn).
+            Chỉ hiện khi có tiêu đề → video chưa đặt tên là ảnh sạch, không ô trống;
+            mọi card vẫn cao bằng nhau vì khung ảnh cố định 9:16. */}
+        {title && (
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] bg-gradient-to-t from-black/90 via-black/45 to-transparent px-3 pb-3 pt-10 min-[600px]:px-4 min-[600px]:pb-4">
+            <p className="m-0 overflow-hidden normal-case font-body text-caption font-semibold leading-title text-white line-clamp-2">
+              {title}
+            </p>
+          </div>
+        )}
       </div>
     </button>
   );
@@ -94,12 +138,16 @@ function ArrowButton({
   onClick,
   label,
   disabled = false,
+  tone = "dark",
 }: {
   direction: "prev" | "next";
   onClick: () => void;
   label: string;
   disabled?: boolean;
+  /** "dark" = nền tối → mũi tên trắng; "light" = nền sáng → mũi tên tối. */
+  tone?: "dark" | "light";
 }) {
+  const isLight = tone === "light";
   return (
     <button
       type="button"
@@ -107,8 +155,8 @@ function ArrowButton({
       aria-label={label}
       disabled={disabled}
       // Inline style để thắng CSS WP/Bootstrap cũ ghi đè <button> trên trang chủ.
-      // Không khung nền: chỉ mũi tên trắng to, dùng drop-shadow để nổi trên mọi nền
-      // (giống nút Play trên thumbnail video).
+      // Không khung nền: chỉ mũi tên to, dùng drop-shadow để nổi trên mọi nền
+      // (giống nút Play trên thumbnail video). Màu đổi theo nền đặt carousel.
       style={{
         display: "flex",
         alignItems: "center",
@@ -119,11 +167,13 @@ function ArrowButton({
         padding: 0,
         background: "transparent",
         border: "none",
-        color: "#fff",
+        color: isLight ? "#111111" : "#fff",
         cursor: disabled ? "default" : "pointer",
         opacity: disabled ? 0.4 : 1,
         outline: "none",
-        filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.6))",
+        filter: isLight
+          ? "drop-shadow(0 1px 3px rgba(0,0,0,0.2))"
+          : "drop-shadow(0 2px 8px rgba(0,0,0,0.6))",
       }}
       className="transition-transform duration-150 hover:!scale-110 focus-visible:outline-[var(--bb-focus-outline)] focus-visible:outline-offset-2"
     >
@@ -150,11 +200,14 @@ function VideoModal({
 }) {
   const tA = useTranslations("A11y");
   const video = videos[activeIndex];
-  const title = safeText(video.title, "Video");
+  const title = safeText(video.title, "");
+  const ariaTitle = title || tA("watchVideoFallback");
   const embedSrc = video.embedUrl ??
     (video.youtubeId
       ? `https://www.youtube-nocookie.com/embed/${video.youtubeId}?autoplay=1&rel=0`
       : null);
+  // Không phải YouTube/embed → phát file video tự lưu (MinIO) bằng thẻ <video>.
+  const rawVideoSrc = embedSrc ? null : (resolveMediaUrl(video.videoUrl?.trim()) ?? video.videoUrl ?? null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -244,7 +297,7 @@ function VideoModal({
       }}
       role="dialog"
       aria-modal="true"
-      aria-label={title}
+      aria-label={ariaTitle}
       data-bb-video-modal="true"
     >
       {/* Close — top-right, luôn dễ bấm */}
@@ -350,7 +403,15 @@ function VideoModal({
               className="absolute inset-0 h-full w-full border-0"
               allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
               allowFullScreen
-              title={title}
+              title={ariaTitle}
+            />
+          ) : rawVideoSrc ? (
+            <video
+              src={`${rawVideoSrc}#t=0.001`}
+              className="absolute inset-0 h-full w-full bg-black object-contain"
+              controls
+              autoPlay
+              playsInline
             />
           ) : null}
         </div>
@@ -366,8 +427,10 @@ function VideoModal({
   return createPortal(modal, document.body);
 }
 
-export function HomeVideoCarousel({ videos }: Props) {
+export function HomeVideoCarousel({ videos, surface = "dark", compact = false }: Props) {
   const tA = useTranslations("A11y");
+  const arrowTone = surface === "light" ? "light" : "dark";
+  const cols = compact ? COLUMN_PRESET.compact : COLUMN_PRESET.home;
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [canScroll, setCanScroll] = useState(videos.length > 1);
   // Chỉ hiện mũi tên từ 1024px (desktop) trở lên — tablet (768–1023) và mobile không có.
@@ -433,20 +496,23 @@ export function HomeVideoCarousel({ videos }: Props) {
   const paginationDots = Array.from({ length: dotCount }, (_, idx) => idx);
 
   // Mũi tên chỉ hiện trên desktop (>=1024px) qua `isDesktop`; tablet/mobile ẩn, ưu tiên swipe.
-  // Khi không đủ video để cuộn (canScroll=false) thì nút hiện mờ (disabled) thay vì biến mất.
+  // Khung gọn (PDP): video vừa đủ chỗ (canScroll=false) → ẩn hẳn mũi tên.
+  // Khung full (trang chủ): giữ mũi tên hiện mờ (disabled) thay vì biến mất.
+  const showArrows = isDesktop && (canScroll || !compact);
 
   return (
     <>
       {/* Layout: arrows đặt tuyệt đối ngoài hai mép carousel (đẩy ra lề bằng inline style) */}
       <div style={{ position: "relative" }}>
-        {/* Prev arrow — render từ 768px (qua isDesktop); disabled khi không đủ video để cuộn */}
-        {isDesktop && (
+        {/* Prev arrow — desktop; khung gọn ẩn khi không cuộn được, khung full hiện mờ */}
+        {showArrows && (
           <div style={{ position: "absolute", top: "50%", left: -72, transform: "translateY(-50%)", zIndex: 2 }}>
             <ArrowButton
               direction="prev"
               onClick={() => swiperRef.current?.slidePrev()}
               label={tA("videoPrev")}
               disabled={!canScroll}
+              tone={arrowTone}
             />
           </div>
         )}
@@ -456,8 +522,8 @@ export function HomeVideoCarousel({ videos }: Props) {
             // PRE-INIT GUARD: mobile (<480) là 1 ô full nên đúng sẵn; từ 480px trở lên
             // slidesPerView>1, mà trước khi `.swiper-initialized` được thêm mỗi slide
             // width:100% → 1 video phình full rồi nhảy thành lưới. Khoá bề rộng khớp
-            // breakpoint (480:2 / md:3 / lg:4 / xl:5 / 1920:6 / 2560:7) tới khi init.
-            className="min-[480px]:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/2 md:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/3 lg:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/4 xl:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/5 min-[1920px]:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/6 min-[2560px]:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/7"
+            // breakpoint của preset (home: 2→7 cột / compact: 2→4 cột) tới khi init.
+            className={cols.preInit}
             onSwiper={(s) => {
               swiperRef.current = s;
               syncViewportState();
@@ -476,31 +542,25 @@ export function HomeVideoCarousel({ videos }: Props) {
             speed={1000}
             slidesPerView={1}
             spaceBetween={12}
-            breakpoints={{
-              480:  { slidesPerView: 2, spaceBetween: 12 },
-              768:  { slidesPerView: 3, spaceBetween: 14 },
-              1024: { slidesPerView: 4, spaceBetween: 16 },
-              1280: { slidesPerView: 5, spaceBetween: 16 },
-              1920: { slidesPerView: 6, spaceBetween: 20 },
-              2560: { slidesPerView: 7, spaceBetween: 24 },
-            }}
+            breakpoints={cols.breakpoints}
           >
             {videos.map((video, idx) => (
               <SwiperSlide key={video.id} className="h-auto" suppressHydrationWarning>
-                <VideoCard video={video} onPlay={() => handleOpen(idx)} />
+                <VideoCard video={video} onPlay={() => handleOpen(idx)} compact={compact} />
               </SwiperSlide>
             ))}
           </Swiper>
         </div>
 
-        {/* Next arrow — render từ 768px (qua isDesktop); disabled khi không đủ video để cuộn */}
-        {isDesktop && (
+        {/* Next arrow — desktop; khung gọn ẩn khi không cuộn được, khung full hiện mờ */}
+        {showArrows && (
           <div style={{ position: "absolute", top: "50%", right: -72, transform: "translateY(-50%)", zIndex: 2 }}>
             <ArrowButton
               direction="next"
               onClick={() => swiperRef.current?.slideNext()}
               label={tA("videoNext")}
               disabled={!canScroll}
+              tone={arrowTone}
             />
           </div>
         )}
@@ -533,7 +593,11 @@ export function HomeVideoCarousel({ videos }: Props) {
                     height: 10,
                     borderRadius: 9999,
                     flexShrink: 0,
-                    backgroundColor: isSelected ? "var(--bb-action-primary)" : "rgba(255,255,255,0.85)",
+                    backgroundColor: isSelected
+                      ? "var(--bb-action-primary)"
+                      : surface === "light"
+                        ? "rgba(0,0,0,0.2)"
+                        : "rgba(255,255,255,0.85)",
                     transition: "width 280ms ease, background-color 280ms ease",
                   }}
                 />

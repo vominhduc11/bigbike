@@ -122,6 +122,7 @@
     "sku": "SKU",
     "brand": "Brand",
     "category": "Category",
+    "prosConsTitle": "Pros & Cons",
     "prosTitle": "Pros",
     "consTitle": "Cons",
     "trustBlockTitle": "Buy at BigBike.vn",
@@ -133,15 +134,11 @@
     "trustExchangeValue": "30 days free",
     "trustHotline": "Hotline",
     "trustAddress": "Address",
-    "relatedKicker": "More options",
     "relatedTitle": "Related products",
-    "suitabilityKicker": "Buying advice",
-    "suitabilityTitle": "Who is this product for?",
-    "crossSellKicker": "Complete your gear",
+    "relatedBridge": "Not quite the right fit? Explore these similar options:",
     "crossSellTitle": "Frequently bought together",
     "warranty": "Warranty",
     "monthsUnit": "months",
-    "sizeGuideTitle": "Size chart & fitting guide",
     "descriptionEmpty": "No description available for this product yet.",
     "specsEmpty": "No specifications available for this product yet.",
     "faqsEmpty": "No FAQs for this product yet.",
@@ -168,14 +165,6 @@
     "viewProductAria": "View {name}",
     "fallbackShortName": "Product",
     "loadFailed": "Failed to load product details.",
-    "secKicker": {
-      "prosCons": "Overall verdict",
-      "size": "Pick the right size",
-      "specs": "Technical details",
-      "videos": "See it in action",
-      "faq": "Answers before you buy",
-      "trust": "Shop with confidence"
-    },
     "tabs": {
       "description": "Description",
       "promotion": "Offers & promotions",
@@ -212,7 +201,6 @@
       "heading": "Explore more products"
     },
     "recentlyViewed": {
-      "kicker": "RECENTLY VIEWED",
       "heading": "Products you viewed recently"
     },
     "delivery": {
@@ -255,7 +243,6 @@
       "ratingCount": "({count} reviews)",
       "title": "Product reviews",
       "titleWithCount": "Product reviews ({count})",
-      "subtitle": "Share your experience with this product",
       "noReviews": "There are no reviews yet.",
       "beFirst": "Be the first to review this product.",
       "formEmail": "Email",
@@ -1380,6 +1367,7 @@
     "videoSlide": "Change video slide",
     "videoGroup": "Go to video group {index}",
     "watchVideo": "Watch video: {title}",
+    "watchVideoFallback": "Video",
     "productContentNav": "Product content navigation",
     "breadcrumbNav": "Breadcrumb"
   },

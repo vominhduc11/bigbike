@@ -51,10 +51,10 @@ export function ProductContactCta({
   const zaloNumber = zaloUrl ? zaloDisplayNumber(zaloUrl) : "";
 
   return (
-    <section className="mt-16 mb-12 max-md:mt-9">
+    <section className="mt-16 mb-12 max-md:mt-6 max-md:mb-0">
       <div className="flex flex-col gap-7 border border-border border-t-2 border-t-brand bg-card px-8 py-7 md:flex-row md:items-center md:justify-between md:gap-12 max-md:px-5 max-md:py-6">
         <div className="min-w-0 max-md:text-center">
-          <h3 className="font-cta text-22 leading-title text-foreground max-md:text-17">
+          <h3 className="!m-0 font-cta text-22 leading-title text-foreground max-md:text-17">
             {t.rich("headline", {
               productName,
               siteName,
@@ -64,7 +64,7 @@ export function ProductContactCta({
           </h3>
 
           {address && (
-            <p className="mt-3.5 flex items-start gap-2 text-15 leading-body break-words text-muted-foreground max-md:justify-center">
+            <p className="mt-2 !mb-0 flex items-start gap-2 text-18 leading-body break-words text-muted-foreground max-md:justify-center">
               <MapPin className="mt-0.5 size-4 shrink-0 text-brand" aria-hidden="true" />
               <span>{address}</span>
             </p>
@@ -76,7 +76,7 @@ export function ProductContactCta({
             {hotline && (
               <a
                 href={telHref(hotline)}
-                className="inline-flex items-center justify-center gap-2.5 !bg-brand px-7 py-3.5 font-cta text-17 font-bold !text-white transition-colors hover:!bg-brand-active max-md:w-full"
+                className="inline-flex items-center justify-center gap-2.5 !bg-brand px-7 py-3.5 font-cta text-18 font-bold !text-white transition-colors hover:!bg-brand-active max-md:w-full"
               >
                 <Phone className="size-5" aria-hidden="true" />
                 {hotline}
@@ -87,7 +87,7 @@ export function ProductContactCta({
                 href={zaloHref(zaloUrl)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2.5 border-2 !border-zalo !bg-white px-7 py-3.5 font-cta text-17 font-bold !text-zalo transition-colors hover:!bg-zalo-soft max-md:w-full"
+                className="inline-flex items-center justify-center gap-2.5 border-2 !border-zalo !bg-white px-7 py-3.5 font-cta text-18 font-bold !text-zalo transition-colors hover:!bg-zalo-soft max-md:w-full"
               >
                 <MessageCircle className="size-5" aria-hidden="true" />
                 {zaloNumber || t("zaloLink")}

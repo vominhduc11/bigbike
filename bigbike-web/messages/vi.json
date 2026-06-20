@@ -122,6 +122,7 @@
     "sku": "Mã sản phẩm",
     "brand": "Thương hiệu",
     "category": "Danh mục",
+    "prosConsTitle": "Ưu điểm & Nhược điểm",
     "prosTitle": "Ưu điểm",
     "consTitle": "Nhược điểm",
     "trustBlockTitle": "Mua tại BigBike.vn",
@@ -133,15 +134,11 @@
     "trustExchangeValue": "30 ngày miễn phí",
     "trustHotline": "Hotline",
     "trustAddress": "Địa chỉ",
-    "relatedKicker": "Xem thêm lựa chọn",
     "relatedTitle": "Sản phẩm tương tự",
-    "suitabilityKicker": "Tư vấn chọn mua",
-    "suitabilityTitle": "Sản phẩm này phù hợp với ai?",
-    "crossSellKicker": "Hoàn thiện bộ đồ",
+    "relatedBridge": "Một vài điểm trên chưa hợp ý bạn? Tham khảo thêm các lựa chọn tương tự:",
     "crossSellTitle": "Phụ kiện bán kèm",
     "warranty": "Bảo hành",
     "monthsUnit": "tháng",
-    "sizeGuideTitle": "Bảng size & hướng dẫn chọn",
     "descriptionEmpty": "Chưa có mô tả cho sản phẩm này.",
     "specsEmpty": "Chưa có thông số kĩ thuật cho sản phẩm này.",
     "faqsEmpty": "Chưa có câu hỏi thường gặp cho sản phẩm này.",
@@ -168,14 +165,6 @@
     "viewProductAria": "Xem {name}",
     "fallbackShortName": "Sản phẩm",
     "loadFailed": "Không tải được chi tiết sản phẩm.",
-    "secKicker": {
-      "prosCons": "Đánh giá tổng quan",
-      "size": "Chọn đúng size",
-      "specs": "Chi tiết kỹ thuật",
-      "videos": "Xem sản phẩm thực tế",
-      "faq": "Giải đáp trước khi mua",
-      "trust": "Yên tâm mua sắm"
-    },
     "tabs": {
       "description": "Mô tả",
       "promotion": "Ưu đãi & khuyến mãi",
@@ -212,7 +201,6 @@
       "heading": "Khám phá thêm sản phẩm khác"
     },
     "recentlyViewed": {
-      "kicker": "VỪA XEM",
       "heading": "Sản phẩm đã xem gần đây"
     },
     "delivery": {
@@ -255,7 +243,6 @@
       "ratingCount": "({count} đánh giá)",
       "title": "Đánh giá sản phẩm",
       "titleWithCount": "Đánh giá sản phẩm ({count})",
-      "subtitle": "Chia sẻ trải nghiệm của bạn về sản phẩm này",
       "noReviews": "Chưa có đánh giá nào.",
       "beFirst": "Hãy là người đầu tiên đánh giá sản phẩm này.",
       "formEmail": "Email",
@@ -1380,6 +1367,7 @@
     "videoSlide": "Chuyển slide video",
     "videoGroup": "Đến nhóm video {index}",
     "watchVideo": "Xem video: {title}",
+    "watchVideoFallback": "Video",
     "productContentNav": "Điều hướng nội dung sản phẩm",
     "breadcrumbNav": "Điều hướng"
   },

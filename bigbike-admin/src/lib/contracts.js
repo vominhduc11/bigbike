@@ -329,6 +329,21 @@ function normalizeCommitment(input) {
   }
 }
 
+// Bảng "Mua tại BigBike.vn" — dòng {icon, label, value} song ngữ per-product. PHẢI surface
+// ở đây, nếu không form nạp undefined → mở SP trống → Lưu gửi [] → xoá mất dữ liệu.
+function normalizePurchaseLine(input) {
+  if (!input || typeof input !== 'object') return undefined
+  const label = toTrimmedString(input.label)
+  if (!label) return undefined
+  return {
+    icon: toTrimmedString(input.icon) || 'shield-check',
+    label,
+    value: toTrimmedString(input.value) || undefined,
+    labelEn: toTrimmedString(input.labelEn) || undefined,
+    valueEn: toTrimmedString(input.valueEn) || undefined,
+  }
+}
+
 /**
  * Optional English product-level content (V136). The admin product read returns
  * `translations.en`; null/absent means no English version exists yet.
@@ -342,7 +357,6 @@ function normalizeProductTranslations(input) {
     description: toTrimmedString(source.description) || undefined,
     contentBottom: toTrimmedString(source.contentBottom) || undefined,
     promotionContent: toTrimmedString(source.promotionContent) || undefined,
-    quickAnswerSummary: toTrimmedString(source.quickAnswerSummary) || undefined,
     suitabilityAdvisory: toTrimmedString(source.suitabilityAdvisory) || undefined,
     seoTitle: toTrimmedString(source.seoTitle) || undefined,
     seoDescription: toTrimmedString(source.seoDescription) || undefined,
@@ -394,11 +408,8 @@ export function normalizeProduct(input) {
     // Template/trust fields (V175) — render trên PDP web. PHẢI surface ở đây, nếu không
     // form admin nạp undefined → mở SP hiện trống → bấm Lưu gửi null/[] → xoá mất dữ liệu.
     gender: toTrimmedString(source.gender) || undefined,
-    warrantyMonths: Number.isFinite(source.warrantyMonths) ? Number(source.warrantyMonths) : null,
-    warrantyScope: toTrimmedString(source.warrantyScope) || undefined,
     originBrandCountry: toTrimmedString(source.originBrandCountry) || undefined,
     sizeGuide: toTrimmedString(source.sizeGuide) || undefined,
-    quickAnswerSummary: toTrimmedString(source.quickAnswerSummary) || undefined,
     suitabilityAdvisory: toTrimmedString(source.suitabilityAdvisory) || undefined,
     positiveNotes: Array.isArray(source.positiveNotes)
       ? source.positiveNotes
@@ -441,6 +452,10 @@ export function normalizeProduct(input) {
       : [],
     commitments: Array.isArray(source.commitments)
       ? source.commitments.map(normalizeCommitment).filter(Boolean)
+      : [],
+    // Bảng "Mua tại BigBike.vn" — dòng {icon, label, value} per-product (full-replace).
+    purchaseLines: Array.isArray(source.purchaseLines)
+      ? source.purchaseLines.map(normalizePurchaseLine).filter(Boolean)
       : [],
     // Dải tin cậy trên tên sản phẩm (V233) — danh sách badge {content, contentEn} per-product.
     // PHẢI surface ở đây, nếu không form nạp undefined → mở SP trống → Lưu gửi [] → xoá mất dữ liệu.

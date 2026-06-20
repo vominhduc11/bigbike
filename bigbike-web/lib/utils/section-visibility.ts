@@ -28,22 +28,3 @@ export function parseSectionVisibility(raw?: string | null): SectionVisibility {
 export function isSectionVisible(map: SectionVisibility, key: string): boolean {
   return map[key] !== false;
 }
-
-/**
- * Đọc thứ tự section từ `_order` trong sectionVisibility JSON.
- * Trả về mảng key đã lưu (lọc chỉ key hợp lệ), bổ sung key còn thiếu vào cuối.
- * Nếu không có `_order` → trả defaultOrder nguyên vẹn.
- */
-export function parseSectionOrder(raw: string | null | undefined, defaultOrder: string[]): string[] {
-  if (typeof raw !== "string" || !raw.trim()) return defaultOrder;
-  try {
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return defaultOrder;
-    if (!Array.isArray(parsed._order)) return defaultOrder;
-    const saved: string[] = parsed._order.filter((k: unknown) => typeof k === "string" && defaultOrder.includes(k));
-    const missing = defaultOrder.filter((k) => !saved.includes(k));
-    return [...saved, ...missing];
-  } catch {
-    return defaultOrder;
-  }
-}

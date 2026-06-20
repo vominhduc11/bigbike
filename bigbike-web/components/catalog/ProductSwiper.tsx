@@ -17,6 +17,12 @@ type Props = {
   products: Product[];
   /** Số sản phẩm tối đa trên 1 hàng ở desktop lớn (mặc định theo chuẩn trang chủ). */
   className?: string;
+  /**
+   * Cho khung trượt tự co theo chiều cao thẻ ĐANG HIỂN THỊ thay vì cao bằng thẻ cao
+   * nhất của cả dải (mặc định Swiper). Bật ở các carousel trong PDP để chấm phân trang
+   * không bị đẩy xuống xa khi một thẻ ngoài màn hình cao hơn. Trang chủ giữ mặc định.
+   */
+  autoHeight?: boolean;
 };
 
 // Mũi tên carousel — chevron đen lớn trong rãnh hai bên (chuẩn .product-slide của
@@ -35,7 +41,7 @@ const ARROW_BTN =
  *
  * Caller tự cung cấp tiêu đề (block-title) bên ngoài — component này chỉ là dải trượt.
  */
-export function ProductSwiper({ products, className }: Props) {
+export function ProductSwiper({ products, className, autoHeight = false }: Props) {
   const t = useTranslations("Common");
   const swiperRef = useRef<SwiperType | null>(null);
   // Gắn vùng chấm bằng selector (giống ArticleCarousel — luôn bind được kể cả khi
@@ -69,6 +75,7 @@ export function ProductSwiper({ products, className }: Props) {
           // bên dưới (2 / md:4 / 1536:5 / 2560:6).
           className="[&:not(.swiper-initialized)_.swiper-slide]:!w-1/2 md:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/4 min-[1536px]:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/5 min-[2560px]:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/6"
           modules={[Pagination]}
+          autoHeight={autoHeight}
           onSwiper={(s) => {
             swiperRef.current = s;
             setIsLocked(s.isLocked);

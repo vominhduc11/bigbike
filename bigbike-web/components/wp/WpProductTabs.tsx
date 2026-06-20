@@ -72,8 +72,12 @@ export function WpProductTabs({
   // để hở khoảng trống lớn xấu trên mobile). Dùng arbitrary để override được:
   // desktop 80px, mobile rút còn 32px + thêm vạch 3px ngăn cách section mua hàng
   // cho gọn/chuyên nghiệp (đúng cách code cũ phân tách section trên mobile).
+  // mb-[40px] max-md:mb-0: KHÔNG dùng WP `.mb-40` (40px !important) — trên mobile khối tab
+  // chỉ render ở đây, margin 40px của nó THẮNG margin-collapse với khoảng cách 35px (mt-10)
+  // của section ngay dưới (Ưu/Nhược điểm), khiến khe trên vạch ngăn = 40px lệch nhịp 35px của
+  // mọi section khác. Bỏ margin dưới trên mobile → để section dưới tự định khoảng 35px đồng đều.
   return (
-    <div className="woocommerce-tabs wc-tabs-wrapper tabs mt-[80px] mb-40 max-md:mt-8 max-md:border-t-[3px] max-md:border-t-border">
+    <div className="woocommerce-tabs wc-tabs-wrapper tabs mt-[80px] mb-[40px] max-md:mb-0 max-md:mt-8 max-md:border-t-[3px] max-md:border-t-border">
       {/* Thanh nav nổi mobile (khớp mockup): sticky-inline — nằm NGAY ĐẦU khối nội
           dung, hiện từ đầu, dính dưới header khi cuộn. Vì là con đầu của wrapper nên
           chỉ dính trong phạm vi khối tab (Mô tả…FAQ) rồi tự nhả sau panel cuối — không
@@ -118,7 +122,9 @@ export function WpProductTabs({
               active === t.id && "show active",
               // Mobile: ép MỌI panel hiển thị (đè WP `.tab-panel{display:none}`),
               // chèn heading nhãn + vạch ngăn cách phía trên như code cũ.
-              "max-md:!block max-md:pt-6 max-md:pb-1 max-md:scroll-mt-[calc(var(--bb-header-height)_+_52px)]",
+              // pt-6 (KHÔNG py-6): chỉ chừa khoảng TRÊN tách nhãn khỏi vạch ngăn; BỎ khoảng dưới
+              // để panel cuối (vd Đánh giá) không đẩy khe xuống dài hơn vạch ngăn của section kế.
+              "max-md:!block max-md:pt-6 max-md:scroll-mt-[calc(var(--bb-header-height)_+_52px)]",
               "max-md:border-t-[3px] max-md:border-t-border max-md:first:[border-top:none]",
             )}
             role="tabpanel"

@@ -20,7 +20,6 @@ import { RatingStars } from "@/components/ui/RatingStars";
 import { ZaloIcon } from "@/components/ui/ZaloIcon";
 import { useLocalizedField, LHtml } from "@/components/i18n/LocalizedContent";
 import { sanitizeRichHtml } from "@/lib/utils/html";
-import { parseSectionVisibility, isSectionVisible } from "@/lib/utils/section-visibility";
 import { MobileStickyPurchaseBar } from "@/components/catalog/MobileStickyPurchaseBar";
 import {
   Award,
@@ -105,10 +104,6 @@ export function WpPurchaseSection({
   const tb = useTranslations("PdpBuyBox");
   const locale = useLocale();
   const { addToCart } = useCart();
-
-  // "Hiển thị trên web" (V245) — admin bật/tắt video / dải tin cậy / khối cam kết của khu mua hàng.
-  const sectionVis = parseSectionVisibility(product.sectionVisibility);
-  const vis = (key: string) => isSectionVisible(sectionVis, key);
 
   // home.min.js `choose_color_and_size()` bind change vào `.variations_form`
   // (delegated `.variation-radios input`) → khi chọn đủ biến thể bắn AJAX
@@ -276,12 +271,12 @@ export function WpPurchaseSection({
   const eyebrowBrand = safeText(product.originBrandCountry, "") || safeText(product.brand?.name, "");
   const eyebrow = [eyebrowCategory, eyebrowBrand].filter(Boolean).join(" / ");
 
-  // Khối "cam kết" dưới nút mua (V232) — giờ quản theo TỪNG sản phẩm; rỗng/đã tắt → ẩn cả khối.
-  const commitments: ProductCommitment[] = vis("commitments") ? (product.commitments ?? []) : [];
+  // Khối "cam kết" dưới nút mua (V232) — quản theo TỪNG sản phẩm; khối ngoài tab → rỗng thì ẩn cả khối.
+  const commitments: ProductCommitment[] = product.commitments ?? [];
 
   // Dải tín hiệu tin cậy trên tên sản phẩm (V233) — admin quản theo TỪNG sản phẩm; nội dung đã
-  // resolve theo ngôn ngữ ở backend. Rỗng/đã tắt → ẩn dải.
-  const trustItems = (vis("trustBadges") ? (product.trustBadges ?? []) : [])
+  // resolve theo ngôn ngữ ở backend. Khối ngoài tab → rỗng thì ẩn dải.
+  const trustItems = (product.trustBadges ?? [])
     .map((b) => safeText(b.content, ""))
     .filter(Boolean);
 
@@ -557,17 +552,17 @@ export function WpPurchaseSection({
                     dòng tùy ý, mỗi dòng tự chọn icon (key → lucide qua COMMITMENT_ICON_MAP).
                     Dòng không có tiêu đề thì bỏ qua; không dòng nào → ẩn cả khối. */}
                 {commitments.some((c) => c.title) && (
-                  <ul className="mt-5 divide-y divide-border border border-border">
+                  <ul className="mt-4 divide-y divide-border border border-border">
                     {commitments.map((c, i) =>
                       c.title ? (
-                        <li key={i} className="flex items-center gap-3.5 px-5 py-4">
+                        <li key={i} className="flex items-center gap-3.5 px-5 py-3.5">
                           {(() => {
                             const Icon = COMMITMENT_ICON_MAP[c.icon] ?? ShieldCheck;
-                            return <Icon className="size-7 shrink-0 text-brand" strokeWidth={1.75} aria-hidden="true" />;
+                            return <Icon className="size-6 shrink-0 text-brand" strokeWidth={1.75} aria-hidden="true" />;
                           })()}
                           <div className="min-w-0">
-                            <strong className="block font-body text-lg font-semibold leading-snug text-foreground">{c.title}</strong>
-                            {c.subtitle ? <span className="mt-2 block text-base leading-snug text-muted-foreground">{c.subtitle}</span> : null}
+                            <strong className="block font-body text-base font-semibold leading-snug text-foreground">{c.title}</strong>
+                            {c.subtitle ? <span className="mt-1 block text-sm leading-snug text-muted-foreground">{c.subtitle}</span> : null}
                           </div>
                         </li>
                       ) : null,

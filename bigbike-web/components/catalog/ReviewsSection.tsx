@@ -360,34 +360,25 @@ function ReviewsLoading() {
   );
 }
 
-// Trạng thái rỗng dùng chung (chưa có đánh giá / lọc không ra / lỗi tải). Cùng
-// ngôn ngữ thị giác với form bên phải: viền liền + nền card, thay cho viền nét
-// đứt cũ trông như placeholder. Huy hiệu sao tô theo màu thương hiệu để khối
-// đánh giá không bị "trống trải" khi sản phẩm chưa có review. fillHeight cho ô
-// chính cao bằng form để hai cột cân nhau.
+// Trạng thái rỗng dùng chung (chưa có đánh giá / lọc không ra / lỗi tải): viền liền + nền card, huy
+// hiệu sao tô màu thương hiệu. Padding dọc vừa phải (không kéo cao gây "trống trải") — form viết đánh
+// giá đã chuyển sang modal nên khối này đứng một cột, không cần cao bằng form như trước.
 function ReviewsPlaceholder({
   title,
   description,
   action,
-  fillHeight = false,
 }: {
   title: string;
   description?: string;
   action?: React.ReactNode;
-  fillHeight?: boolean;
 }) {
   return (
-    <div
-      className={cn(
-        "flex flex-col items-center justify-center gap-4 border border-border bg-card px-6 py-16 text-center",
-        fillHeight && "h-full",
-      )}
-    >
+    <div className="flex flex-col items-center justify-center gap-3 border border-border bg-card px-6 py-10 text-center max-md:py-8">
       <span
         aria-hidden="true"
-        className="flex h-16 w-16 items-center justify-center bg-[var(--bb-brand-primary-soft)] text-brand"
+        className="flex h-14 w-14 items-center justify-center bg-[var(--bb-brand-primary-soft)] text-brand"
       >
-        <StarIcon filled className="h-8 w-8" />
+        <StarIcon filled className="h-7 w-7" />
       </span>
       <div className="flex flex-col gap-1.5">
         <p className="m-0 font-cta text-20 font-semibold uppercase tracking-wide text-[var(--bb-text-primary)]">
@@ -802,15 +793,16 @@ export function ReviewsSection({ productId, embedded = false }: ReviewsSectionPr
       id={embedded ? undefined : "reviews"}
       className={cn(
         "scroll-mt-[var(--bb-header-height)]",
-        !embedded && "mt-16 mb-10 border-t border-border pt-14 max-md:mt-9 max-md:pt-10",
+        !embedded && "mt-12 border-t border-border pt-12 max-md:mt-10 max-md:pt-10",
       )}
     >
+      {/* Tiêu đề DÙNG CHUNG kiểu `.pdp-section-head` với mọi section PDP khác (căn trái, 24/35px,
+          margin-bottom 20px) — thay tiêu đề căn-giữa line-height lớn cũ vốn lệch nhịp với khối trên/dưới. */}
       {!embedded && (
-        <div className="mb-10 text-center max-md:mb-8">
-          <h2 className="m-0 font-body text-ui-35 font-semibold uppercase leading-[4.286rem] tracking-[0] text-black max-md:text-ui-24 max-md:leading-[1.25]">
+        <div className="pdp-section-head">
+          <h2 className="title">
             {total > 0 ? t("titleWithCount", { count: total }) : t("title")}
           </h2>
-          <p className="m-0 mt-1 text-18 text-muted-foreground">{t("subtitle")}</p>
         </div>
       )}
 
@@ -821,7 +813,6 @@ export function ReviewsSection({ productId, embedded = false }: ReviewsSectionPr
             <ReviewsLoading />
           ) : isError ? (
             <ReviewsPlaceholder
-              fillHeight
               title={t("errorLoad")}
               action={
                 <Button type="button" variant="outline" size="sm" onClick={() => refetch()}>
@@ -894,7 +885,6 @@ export function ReviewsSection({ productId, embedded = false }: ReviewsSectionPr
             </>
           ) : (
             <ReviewsPlaceholder
-              fillHeight
               title={t("noReviews")}
               description={t("beFirst")}
               action={

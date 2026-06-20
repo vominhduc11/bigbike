@@ -266,17 +266,13 @@ public class CatalogReadService {
                 null,                       // installationGuide — detail only
                 List.of(),                  // faqs — detail only
                 List.of(),                  // commitments — detail only
+                List.of(),                  // purchaseLines — detail only
                 List.of(),                  // specStats — detail only
                 List.of(),                  // trustBadges — detail only
                 List.of(),                  // positiveNotes — detail only
                 List.of(),                  // negativeNotes — detail only
-                null,                       // warrantyMonths — detail only
-                null,                       // warrantyScope — detail only
-                null,                       // pdpShippingLine — detail only
-                null,                       // pdpReturnLine — detail only
                 null,                       // originBrandCountry — detail only
                 null,                       // sizeGuide — detail only
-                null,                       // quickAnswerSummary — detail only
                 null,                       // suitabilityAdvisory — detail only
                 p.gender(),
                 List.of(),                  // relatedProducts — detail only

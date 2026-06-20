@@ -1,19 +1,13 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Swiper, SwiperSlide } from "swiper/react";
-import { Pagination } from "swiper/modules";
-import type { Swiper as SwiperType } from "swiper";
-import "swiper/css";
-import "swiper/css/pagination";
+import { Check, X } from "lucide-react";
 import { useLocalizedField } from "@/components/i18n/LocalizedContent";
 import { LHtml } from "@/components/i18n/LocalizedContent";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import { resolveMediaUrl } from "@/lib/utils/format";
-import { cn } from "@/lib/utils";
-import type { VideoAsset } from "@/lib/contracts/public";
+import { HomeVideoCarousel } from "@/components/home/HomeVideoCarousel";
+import type { VideoAsset, HomeVideo, ProductHighlight } from "@/lib/contracts/public";
 import {
   Accordion,
   AccordionContent,
@@ -29,6 +23,65 @@ import {
 
 type Spec = { name?: string | null; value?: string | null };
 type Faq = { question?: string | null; answer?: string | null };
+
+/** Lấy danh sách câu (content) từ mảng ProductHighlight, bỏ rỗng. */
+function highlightLines(notes: ProductHighlight[] | undefined): string[] {
+  return (notes ?? []).map((h) => (h?.content ?? "").trim()).filter(Boolean);
+}
+
+/**
+ * Khối "Ưu điểm & Nhược điểm" — KHỐI RIÊNG cố định dưới mô tả (ngoài tab), 2 cột xanh/đỏ. Nguồn dữ
+ * liệu là bảng con product_highlights (admin nhập ở card riêng), cũng là nguồn schema.org
+ * positiveNotes/negativeNotes. Đổi ngôn ngữ: lấy bản EN qua useLocalizedField, fallback props `vi`.
+ */
+export function ProductProsCons({
+  positiveNotes,
+  negativeNotes,
+}: {
+  positiveNotes: ProductHighlight[];
+  negativeNotes: ProductHighlight[];
+}) {
+  const t = useTranslations("Product");
+  const enPos = useLocalizedField<ProductHighlight[]>("positiveNotes");
+  const enNeg = useLocalizedField<ProductHighlight[]>("negativeNotes");
+  const positive = highlightLines(Array.isArray(enPos) && enPos.length > 0 ? enPos : positiveNotes);
+  const negative = highlightLines(Array.isArray(enNeg) && enNeg.length > 0 ? enNeg : negativeNotes);
+  if (positive.length === 0 && negative.length === 0) return null;
+  return (
+    <div className="grid gap-6 md:grid-cols-2">
+      {positive.length > 0 && (
+        <div className="border-t-2 border-t-pros-accent bg-pros-accent/[0.07] p-5">
+          <h3 className="mb-3 font-heading text-20 font-bold uppercase tracking-wide text-pros-accent">
+            {t("prosTitle")}
+          </h3>
+          <ul className="flex flex-col gap-2">
+            {positive.map((note, index) => (
+              <li key={index} className="flex gap-2 text-18 text-foreground">
+                <Check className="mt-1 h-4 w-4 shrink-0 text-pros-accent" aria-hidden />
+                <span>{note}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {negative.length > 0 && (
+        <div className="border-t-2 border-t-cons-accent bg-cons-accent/[0.06] p-5">
+          <h3 className="mb-3 font-heading text-20 font-bold uppercase tracking-wide text-cons-accent">
+            {t("consTitle")}
+          </h3>
+          <ul className="flex flex-col gap-2">
+            {negative.map((note, index) => (
+              <li key={index} className="flex gap-2 text-18 text-muted-foreground">
+                <X className="mt-1 h-4 w-4 shrink-0 text-cons-accent" aria-hidden />
+                <span>{note}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
 
 /** Tab "Thông số kĩ thuật" — bảng spec, đổi theo ngôn ngữ. */
 export function ProductSpecsTable({ viSpecs }: { viSpecs: Spec[] }) {
@@ -52,7 +105,7 @@ export function ProductSpecsTable({ viSpecs }: { viSpecs: Spec[] }) {
             <tr key={i} className="border-b border-border last:border-b-0 even:bg-muted/30">
               <th
                 scope="row"
-                className="w-[38%] px-3.5 py-3.5 text-left align-top font-barlow font-semibold uppercase tracking-wide text-muted-foreground"
+                className="w-[38%] px-3.5 py-3.5 text-left align-top font-barlow font-semibold uppercase tracking-wide text-muted-foreground md:pl-0"
               >
                 {s.name}
               </th>
@@ -80,13 +133,13 @@ export function ProductFaqs({ viFaqs }: { viFaqs: Faq[] }) {
   }
 
   return (
-    <Accordion type="single" collapsible className="w-full border-t border-border">
+    <Accordion type="single" collapsible className="pdp-faq-accordion w-full border-t border-border">
       {faqs.map((faq, i) => (
         <AccordionItem key={i} value={`faq-${i}`}>
-          <AccordionTrigger className="gap-3 normal-case hover:text-brand data-[state=open]:text-brand">
-            <span className="flex min-w-0 flex-1 items-baseline gap-3">
+          <AccordionTrigger className="group gap-3 normal-case hover:text-brand data-[state=open]:text-brand">
+            <span className="flex min-w-0 flex-1 items-center gap-3">
               <span
-                className="shrink-0 font-cta text-ui-18 font-bold leading-none tabular-nums text-brand"
+                className="shrink-0 font-cta text-ui-18 font-bold leading-snug tabular-nums text-muted-foreground transition-colors group-hover:text-brand group-data-[state=open]:text-brand"
                 aria-hidden
               >
                 {String(i + 1).padStart(2, "0")}
@@ -128,8 +181,9 @@ export function ProductContentBottom({ viHtml }: { viHtml: string }) {
   return <LHtml field="contentBottom" viHtml={viHtml} className="wyswyg" />;
 }
 
-// Ưu/Nhược điểm + Phù hợp với ai (V246): chuyển thành KHỐI trong mô tả — render bởi
-// ProsConsBlockView / SuitabilityBlockView trong ProductDescriptionBlocks. Component cũ đã gỡ.
+// Phù hợp với ai · Bảng size (V246): KHỐI trong mô tả — render bởi SuitabilityBlockView /
+// SizeGuideBlockView trong ProductDescriptionBlocks. Ưu/Nhược điểm (V251) tách RA thành khối riêng
+// ngoài tab — xem ProductProsCons ở trên.
 
 function getYouTubeId(url: string): string | null {
   if (!url) return null;
@@ -137,125 +191,11 @@ function getYouTubeId(url: string): string | null {
   return m ? m[1] : null;
 }
 
-/** Một ô video — embed YouTube hoặc HTML5 video + tiêu đề + mô tả. Dùng chung cho lưới lẫn carousel. */
-function VideoCard({ video }: { video: VideoAsset }) {
-  const ytId = getYouTubeId(video.url ?? "");
-  const rawUrl = resolveMediaUrl(video.url?.trim()) ?? video.url ?? "";
-  return (
-    <div className="flex flex-col gap-3">
-      <div className="relative aspect-video bg-black overflow-hidden">
-        {ytId ? (
-          <iframe
-            className="absolute inset-0 h-full w-full border-none"
-            src={`https://www.youtube-nocookie.com/embed/${ytId}`}
-            title={video.title ?? "Video"}
-            loading="lazy"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
-        ) : (
-          <video
-            className="absolute inset-0 h-full w-full object-contain"
-            controls
-            preload="metadata"
-            src={rawUrl ? `${rawUrl}#t=0.001` : undefined}
-          />
-        )}
-      </div>
-      {video.title && (
-        <h3 className="font-heading text-h3 font-bold uppercase tracking-wide text-foreground">
-          {video.title}
-        </h3>
-      )}
-      {video.description && (
-        <p className="text-body leading-relaxed text-muted-foreground">{video.description}</p>
-      )}
-    </div>
-  );
-}
-
-// Ngưỡng chuyển sang carousel: từ 3 video trở lên (1–2 video giữ lưới cho khách thấy hết ngay).
-const VIDEO_CAROUSEL_THRESHOLD = 3;
-
-const VIDEO_ARROW_BTN =
-  "absolute top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-foreground transition-opacity hover:opacity-60 pointer-coarse:hidden max-md:hidden [&>svg]:h-9 [&>svg]:w-9";
-
-/** Carousel video (≥3) — lướt ngang 1 (mobile) / 2 (desktop) ô; mũi tên + chấm phân trang chuẩn design-system. */
-function VideosCarousel({ videos }: { videos: VideoAsset[] }) {
-  const t = useTranslations("Common");
-  const swiperRef = useRef<SwiperType | null>(null);
-  const paginationId = `bb-vid-pag-${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
-  const [isLocked, setIsLocked] = useState(false);
-
-  return (
-    <div className="relative">
-      {!isLocked && (
-        <button
-          type="button"
-          className={cn(VIDEO_ARROW_BTN, "-left-3 min-[1440px]:-left-12")}
-          onClick={() => swiperRef.current?.slidePrev()}
-          aria-label={t("scrollPrev")}
-        >
-          <ChevronLeft strokeWidth={1.5} />
-        </button>
-      )}
-
-      <div className="w-full overflow-hidden">
-        <Swiper
-          // FOUC guard trước khi Swiper init: khoá bề rộng slide theo breakpoint (1 → md:2 → xl:3).
-          className="md:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/2 min-[1280px]:[&:not(.swiper-initialized)_.swiper-slide]:!w-1/3"
-          modules={[Pagination]}
-          onSwiper={(s) => {
-            swiperRef.current = s;
-            setIsLocked(s.isLocked);
-          }}
-          onBreakpoint={(s) => setIsLocked(s.isLocked)}
-          speed={600}
-          // Hiện NHIỀU video cùng lúc trên desktop (mobile 1 → md 2 → xl 3); mỗi lần lướt dịch 1 video
-          // (slidesPerGroup=1) theo đúng ý "qua lại 1 video".
-          slidesPerView={1}
-          slidesPerGroup={1}
-          spaceBetween={24}
-          watchOverflow
-          pagination={{ el: `#${paginationId}`, clickable: true }}
-          breakpoints={{
-            768: { slidesPerView: 2, slidesPerGroup: 1, spaceBetween: 28 },
-            1280: { slidesPerView: 3, slidesPerGroup: 1, spaceBetween: 32 },
-          }}
-        >
-          {videos.map((video, i) => (
-            <SwiperSlide key={i} className="h-auto">
-              <VideoCard video={video} />
-            </SwiperSlide>
-          ))}
-        </Swiper>
-      </div>
-
-      {!isLocked && (
-        <button
-          type="button"
-          className={cn(VIDEO_ARROW_BTN, "-right-3 min-[1440px]:-right-12")}
-          onClick={() => swiperRef.current?.slideNext()}
-          aria-label={t("scrollNext")}
-        >
-          <ChevronRight strokeWidth={1.5} />
-        </button>
-      )}
-
-      {!isLocked && (
-        <div
-          id={paginationId}
-          className="flex justify-center mt-[30px] [&_.swiper-pagination-bullet]:my-0 [&_.swiper-pagination-bullet]:mx-[5px] [&_.swiper-pagination-bullet]:h-[10px] [&_.swiper-pagination-bullet]:w-[10px] [&_.swiper-pagination-bullet]:!rounded-full [&_.swiper-pagination-bullet]:bg-border-default [&_.swiper-pagination-bullet]:opacity-100 [&_.swiper-pagination-bullet]:[transition:all_0.3s_ease] [&_.swiper-pagination-bullet-active]:!w-[20px] [&_.swiper-pagination-bullet-active]:!rounded-[20px] [&_.swiper-pagination-bullet-active]:!bg-brand"
-          aria-hidden="true"
-        />
-      )}
-    </div>
-  );
-}
-
 /**
- * Khối "Video sản phẩm" — tự thích ứng theo số lượng: ≤2 video xếp lưới 1→2 cột (khách thấy hết ngay);
- * ≥3 video chuyển sang carousel lướt ngang (gọn chiều cao, đồng bộ carousel "sản phẩm tương tự").
+ * Khối "Video sản phẩm" — dùng CHUNG carousel video của trang chủ (HomeVideoCarousel):
+ * thumbnail lướt ngang, bấm vào mở popup phát video, mũi tên trắng đổ bóng rõ trên nền tối.
+ * Chuyển VideoAsset (PDP) → HomeVideo: tách YouTube ID từ url; video file tự lưu (MinIO)
+ * giữ ở videoUrl để popup phát bằng thẻ <video>.
  */
 export function ProductVideosSection({ videos }: { videos: VideoAsset[] }) {
   const t = useTranslations("Product");
@@ -268,15 +208,16 @@ export function ProductVideosSection({ videos }: { videos: VideoAsset[] }) {
     );
   }
 
-  if (videos.length >= VIDEO_CAROUSEL_THRESHOLD) {
-    return <VideosCarousel videos={videos} />;
-  }
+  const homeVideos: HomeVideo[] = videos.map((v, i) => ({
+    id: v.id ?? `pdp-video-${i}`,
+    sortOrder: i,
+    title: v.title ?? "",
+    videoUrl: resolveMediaUrl(v.url?.trim()) ?? v.url ?? "",
+    youtubeId: getYouTubeId(v.url ?? ""),
+    embedUrl: null,
+    autoThumbnailUrl: null,
+    thumbnail: v.thumbnail ?? null,
+  }));
 
-  return (
-    <div className="grid gap-8 sm:grid-cols-2">
-      {videos.map((video, i) => (
-        <VideoCard key={i} video={video} />
-      ))}
-    </div>
-  );
+  return <HomeVideoCarousel videos={homeVideos} surface="light" compact />;
 }

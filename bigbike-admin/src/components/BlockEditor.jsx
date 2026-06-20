@@ -23,14 +23,14 @@ const CONTENT_MENU = BLOCK_TYPES.map((type) => ({
   labelKey: `products.detail.blocks.blockType${type.charAt(0).toUpperCase()}${type.slice(1)}`,
 }))
 
-// Vốn từ cho SẢN PHẨM (V238 + V246): 4 khối mô tả cơ bản + 3 khối chuyên biệt PDP
-// (Ưu/Nhược điểm, Phù hợp với ai, Bảng size) — gộp các mục trước đây nhập tách rời vào mô tả.
+// Vốn từ cho SẢN PHẨM (V238 + V246 + V251): 4 khối mô tả cơ bản + 2 khối chuyên biệt PDP
+// (Phù hợp với ai, Bảng size). Ưu/Nhược điểm KHÔNG còn là khối — tách RA thành khối riêng cố
+// định dưới mô tả (nhập ở card "Ưu điểm & Nhược điểm", lưu vào product_highlights — xem V251).
 const PRODUCT_MENU = [
   { type: 'paragraph',   labelKey: 'products.detail.blocks.blockTypeText' },
   { type: 'image',       labelKey: 'products.detail.blocks.blockTypeImage' },
   { type: 'feature',     labelKey: 'products.detail.blocks.blockTypeFeatureRight', preset: { side: 'right' } },
   { type: 'feature',     labelKey: 'products.detail.blocks.blockTypeFeatureLeft',  preset: { side: 'left' } },
-  { type: 'prosCons',    labelKey: 'products.detail.blocks.blockTypeProsCons' },
   { type: 'suitability', labelKey: 'products.detail.blocks.blockTypeSuitability' },
   { type: 'sizeGuide',   labelKey: 'products.detail.blocks.blockTypeSizeGuide' },
 ]
@@ -46,7 +46,6 @@ function createBlock(type, preset) {
     case 'video':     block = { ...base, provider: 'youtube', url: '', caption: '' }; break
     case 'callout':   block = { ...base, variant: 'info', html: '' }; break
     case 'feature':   block = { ...base, side: 'auto', url: '', alt: '', caption: '', subheading: '', heading: '', html: '', listStyle: 'bulleted', items: [''] }; break
-    case 'prosCons':    block = { ...base, title: '', positive: [''], negative: [''] }; break
     case 'suitability': block = { ...base, title: '', cards: [{ audience: '', advice: '', linkLabel: '', linkUrl: '' }] }; break
     case 'sizeGuide':   block = { ...base, title: '', html: '' }; break
     case 'divider':   block = base; break
@@ -456,47 +455,6 @@ function StringListEditor({ items, onChange, disabled, placeholder, addLabel }) 
   )
 }
 
-/** Khối "Ưu điểm & Nhược điểm" (V246) — tiêu đề tuỳ chọn + 2 danh sách. */
-function ProsConsBlockEditor({ block, onChange, disabled }) {
-  const { t } = useTranslation()
-  return (
-    <div className="flex-1 flex flex-col gap-3">
-      <Input
-        className="font-bold"
-        placeholder={t('products.detail.blocks.sectionTitlePlaceholder')}
-        value={block.title || ''}
-        onChange={(e) => onChange({ title: e.target.value })}
-        disabled={disabled}
-        maxLength={500}
-      />
-      <div className="flex flex-col gap-1">
-        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-          {t('products.detail.blocks.prosConsPositive')}
-        </span>
-        <StringListEditor
-          items={block.positive}
-          onChange={(positive) => onChange({ positive })}
-          disabled={disabled}
-          placeholder={t('products.detail.blocks.prosConsPositivePlaceholder')}
-          addLabel={t('products.detail.blocks.prosConsAddPositive')}
-        />
-      </div>
-      <div className="flex flex-col gap-1">
-        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-          {t('products.detail.blocks.prosConsNegative')}
-        </span>
-        <StringListEditor
-          items={block.negative}
-          onChange={(negative) => onChange({ negative })}
-          disabled={disabled}
-          placeholder={t('products.detail.blocks.prosConsNegativePlaceholder')}
-          addLabel={t('products.detail.blocks.prosConsAddNegative')}
-        />
-      </div>
-    </div>
-  )
-}
-
 /** Khối "Phù hợp với ai" (V246) — tiêu đề tuỳ chọn + danh sách thẻ tư vấn. */
 function SuitabilityBlockEditor({ block, onChange, disabled }) {
   const { t } = useTranslation()
@@ -628,7 +586,6 @@ function BlockCard({ block, disabled, sortable, onUpdate, onRemove, onDuplicate,
         {block.type === 'video'     && <VideoBlockEditor     block={block} onChange={onUpdate} disabled={disabled} onPickVideo={onPickVideo} />}
         {block.type === 'callout'   && <CalloutBlockEditor   block={block} onChange={onUpdate} disabled={disabled} />}
         {block.type === 'feature'   && <FeatureBlockEditor   block={block} onChange={onUpdate} disabled={disabled} onPickImage={onPickImage} productMode={productMode} />}
-        {block.type === 'prosCons'    && <ProsConsBlockEditor    block={block} onChange={onUpdate} disabled={disabled} />}
         {block.type === 'suitability' && <SuitabilityBlockEditor block={block} onChange={onUpdate} disabled={disabled} />}
         {block.type === 'sizeGuide'   && <SizeGuideBlockEditor   block={block} onChange={onUpdate} disabled={disabled} />}
         {block.type === 'divider'   && <DividerBlockEditor />}

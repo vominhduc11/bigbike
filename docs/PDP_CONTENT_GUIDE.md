@@ -25,17 +25,16 @@ Trang chi tiết sản phẩm (`bigbike-web` — `components/catalog/ProductView
 |---|---|---|---|
 | 1 | Gallery + thông tin mua hàng | `WpPurchaseSection` | Hàng sao có link "Viết đánh giá đầu tiên" → cuộn tới khối Đánh giá (`#reviews`) |
 | 2 | Specs Dashboard (4 ô số liệu) | `specStats` | — |
-| 3 | **Quick Answer** | `quickAnswerSummary` | Blockquote AIO 40–60 từ, đặt TRƯỚC H2 đầu tiên |
-| 4 | Tính năng chi tiết | `descriptionBlocks` | Khối full-trang (đã kéo RA khỏi tab). Khối `feature` (ảnh+tiêu đề+đoạn+danh sách) render 2 cột ảnh–chữ so le trên desktop (mobile xếp dọc); `side`=`auto` tự xen kẽ trái/phải. Cơ chế "ghép ngầm" cũ (tự gom `image`+`text` liền nhau) đã GỠ — muốn 2 cột phải dùng khối `feature`. |
-| 5 | Ưu điểm & Nhược điểm | `positiveNotes` / `negativeNotes` | 2 cột |
-| 6 | **Sản phẩm tương tự — "Xem thêm lựa chọn"** | `relatedProducts` | Cùng loại (auto theo tag). Đặt NGAY sau Ưu/Nhược điểm: khách vừa đọc nhược điểm/giá → thấy ngay lựa chọn thay thế, giữ khách lại site. **DESKTOP** render ở vị trí này; **MOBILE** render ở cuối trang. |
-| 7 | **Phù hợp với ai** | `suitabilityAdvisory` | Danh sách thẻ (đối tượng + lời khuyên + link nội bộ tùy chọn) |
-| 8 | Bảng size | `sizeGuide` | Khối xếp chồng riêng (không còn widget tab); có điều kiện |
-| 9 | Thông số kỹ thuật | `specifications` | Khối xếp chồng riêng |
-| 10 | FAQ | `faqs` | Khối xếp chồng riêng (Lắp đặt `installationGuide` — **lưới các bước** số thứ tự + icon + tiêu đề + nội dung + hộp mẹo/cảnh báo + ghi chú bảo dưỡng, V242 — chèn giữa #9–#10 nếu có; Thông tin bổ sung bảo hành/xuất xứ/trọng lượng đặt sau FAQ) |
-| 11 | Đánh giá | `ReviewsSection` | Đã kéo RA khỏi tab, đặt SAU FAQ, `id="reviews"` |
-| 12 | Trust block "Mua tại BigBike.vn" | product + site settings | Lưới 7 ô (Giá · Kho · BH · Giao · Đổi · Hotline · Địa chỉ) |
-| 13 | Hoàn thiện bộ bảo hộ — cross-sell | `accessories` (admin curate) | Khác loại (găng/áo giáp/giày) để tăng AOV; render một lần ở cuối luồng marketing |
+| 3 | Tính năng chi tiết | `descriptionBlocks` | Khối full-trang (đã kéo RA khỏi tab). Khối `feature` (ảnh+tiêu đề+đoạn+danh sách) render 2 cột ảnh–chữ so le trên desktop (mobile xếp dọc); `side`=`auto` tự xen kẽ trái/phải. Cơ chế "ghép ngầm" cũ (tự gom `image`+`text` liền nhau) đã GỠ — muốn 2 cột phải dùng khối `feature`. |
+| 4 | Ưu điểm & Nhược điểm | `positiveNotes` / `negativeNotes` | 2 cột |
+| 5 | **Sản phẩm tương tự — "Xem thêm lựa chọn"** | `relatedProducts` | Cùng loại (auto theo tag). Đặt NGAY sau Ưu/Nhược điểm: khách vừa đọc nhược điểm/giá → thấy ngay lựa chọn thay thế, giữ khách lại site. **DESKTOP** render ở vị trí này; **MOBILE** render ở cuối trang. |
+| 6 | **Phù hợp với ai** | `suitabilityAdvisory` | Danh sách thẻ (đối tượng + lời khuyên + link nội bộ tùy chọn) |
+| 7 | Bảng size | `sizeGuide` | Khối xếp chồng riêng (không còn widget tab); có điều kiện |
+| 8 | Thông số kỹ thuật | `specifications` | Khối xếp chồng riêng |
+| 9 | FAQ | `faqs` | Khối xếp chồng riêng (Lắp đặt `installationGuide` — **lưới các bước** số thứ tự + icon + tiêu đề + nội dung + hộp mẹo/cảnh báo + ghi chú bảo dưỡng, V242 — chèn giữa #8–#9 nếu có; Thông tin bổ sung bảo hành/xuất xứ/trọng lượng đặt sau FAQ) |
+| 10 | Đánh giá | `ReviewsSection` | Đã kéo RA khỏi tab, đặt SAU FAQ, `id="reviews"` |
+| 11 | Trust block "Mua tại BigBike.vn" | product + site settings | Lưới 7 ô (Giá · Kho · BH · Giao · Đổi · Hotline · Địa chỉ) |
+| 12 | Hoàn thiện bộ bảo hộ — cross-sell | `accessories` (admin curate) | Khác loại (găng/áo giáp/giày) để tăng AOV; render một lần ở cuối luồng marketing |
 
 Sticky mua-hàng (mobile), "Đã xem gần đây", dải liên hệ giữ nguyên ở cuối.
 
@@ -84,22 +83,7 @@ Sticky mua-hàng (mobile), "Đã xem gần đây", dải liên hệ giữ nguyê
 
 ---
 
-## 4. Quick Answer / Trả lời nhanh — **40–60 từ** (#5)
-
-| | |
-|---|---|
-| **Ô nhập** | **Quick Answer** (ô riêng — `quickAnswerSummary`, KHÁC "Mô tả ngắn") |
-| **Vị trí hiển thị** | Khối blockquote đặt **trước H2 đầu tiên** của phần mô tả → cũng là đoạn Google/AI trích dẫn |
-| **Cách viết** | "Trả lời trước" — câu đầu nói thẳng *sản phẩm này là gì + cho ai + nổi bật điều gì*, rồi mới bổ sung |
-
-- ✅ *"Mũ fullface AGV K6 là mũ bảo hiểm cao cấp cho người đi mô tô phân khối lớn và đi phượt đường dài. Vỏ sợi carbon chỉ nặng 1.250g giúp giảm mỏi cổ, kính chống tia UV và đạt chuẩn an toàn ECE 22.06."* (≈45 từ)
-- ❌ Mở đầu bằng marketing chung chung: *"Sản phẩm được nhiều người tin dùng…"*
-
-> **Lưu ý:** ô **"Mô tả ngắn" (short description)** vẫn giữ riêng — đó là các gạch đầu dòng cạnh nút mua hàng. **Quick Answer** là ô mới, tách bạch, dành cho đoạn AIO 40–60 từ.
-
----
-
-## 5. Mô tả chi tiết — **800–1.500 từ**, có tiêu đề phụ (#1, #6, #27)
+## 4. Mô tả chi tiết — **800–1.500 từ**, có tiêu đề phụ (#1, #6, #27)
 
 | | |
 |---|---|
@@ -146,7 +130,7 @@ Gợi ý bố cục:
 
 ---
 
-## 6. Ưu điểm & Nhược điểm (#7, #18) — **lợi thế độc quyền của BigBike**
+## 5. Ưu điểm & Nhược điểm (#7, #18) — **lợi thế độc quyền của BigBike**
 
 | | |
 |---|---|
@@ -159,7 +143,7 @@ Gợi ý bố cục:
 
 ---
 
-## 7. Thông số kỹ thuật (#15)
+## 6. Thông số kỹ thuật (#15)
 
 | | |
 |---|---|
@@ -170,7 +154,7 @@ Ví dụ: `Chất liệu vỏ: Sợi carbon` · `Trọng lượng: 1.250g` · `T
 
 ---
 
-## 8. Bảo hành · Xuất xứ · Trọng lượng (#11, #16, #13)
+## 7. Bảo hành · Xuất xứ · Trọng lượng (#11, #16, #13)
 
 | Ô nhập | Cách điền | Ví dụ |
 |---|---|---|
@@ -184,7 +168,7 @@ Ví dụ: `Chất liệu vỏ: Sợi carbon` · `Trọng lượng: 1.250g` · `T
 
 ---
 
-## 9. Bảng size & hướng dẫn chọn (#9)
+## 8. Bảng size & hướng dẫn chọn (#9)
 
 | | |
 |---|---|
@@ -195,7 +179,7 @@ Tối thiểu các cột: `Size` · `Vòng đầu (cm)` · `Gợi ý` + một c�
 
 ---
 
-## 10. Câu hỏi thường gặp — FAQ (#10, #19)
+## 9. Câu hỏi thường gặp — FAQ (#10, #19)
 
 | | |
 |---|---|
@@ -207,7 +191,7 @@ Ví dụ: *"Mũ AGV K6 có đạt chuẩn đi phượt không?"* / *"Size M vòn
 
 ---
 
-## 11. Video & mô tả video (#14)
+## 10. Video & mô tả video (#14)
 
 | | |
 |---|---|
@@ -219,7 +203,7 @@ Ví dụ: *"Mũ AGV K6 có đạt chuẩn đi phượt không?"* / *"Size M vòn
 
 ---
 
-## 12. Ảnh sản phẩm & chú thích ảnh (alt) (#12, #13)
+## 11. Ảnh sản phẩm & chú thích ảnh (alt) (#12, #13)
 
 | | |
 |---|---|
@@ -235,7 +219,7 @@ Ví dụ: *"Mũ AGV K6 có đạt chuẩn đi phượt không?"* / *"Size M vòn
 
 ---
 
-## 13. Checklist trước khi xuất bản
+## 12. Checklist trước khi xuất bản
 
 - [ ] Tên sản phẩm thống nhất ở mọi chỗ (#25)
 - [ ] Tiêu đề SEO ≤ 60 ký tự, có USP + `| BigBike` (#2)
@@ -252,7 +236,7 @@ Ví dụ: *"Mũ AGV K6 có đạt chuẩn đi phượt không?"* / *"Size M vòn
 
 ---
 
-## 14. Ví dụ điền hoàn chỉnh (tham khảo)
+## 13. Ví dụ điền hoàn chỉnh (tham khảo)
 
 > **Sản phẩm:** Mũ bảo hiểm fullface AGV K6
 

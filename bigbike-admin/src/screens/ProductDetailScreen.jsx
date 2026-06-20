@@ -132,10 +132,10 @@ function clearFormFromStorage(key) {
 
 // ── Publish readiness checklist ────────────────────────────────────────────────
 
-function getPublishReadiness(form, t) {
-  // Publish gate = tab "Tổng quan" phải đầy đủ. Các trường bắt buộc (required: true)
-  // đều nằm trong tab đầu tiên: tên, hãng, danh mục, ảnh, giá bán lẻ, mô tả ngắn, mô tả chi tiết.
-  // SEO và các tab còn lại chỉ là nhắc nhở (required: false) — để trống vẫn đăng được.
+function getPublishReadiness(form, t, isCreate = false) {
+  // Publish gate. Khi TẠO MỚI siết hơn: bắt buộc thêm SKU/đường dẫn/đối tượng và các khối
+  // nội dung (FAQ, ô số liệu, dải tin cậy) — khớp createProductSchema.
+  // Khi SỬA sản phẩm cũ, các mục này chỉ là nhắc nhở (required:false) để không chặn lưu.
   const items = [
     { id: 'name',      label: t('products.detail.checklist.name'),      ok: Boolean(form.name?.trim()),                                             required: true  },
     { id: 'brand',     label: t('products.detail.checklist.brand'),     ok: Boolean(form.brandId),                                                  required: true  },
@@ -144,18 +144,22 @@ function getPublishReadiness(form, t) {
     { id: 'price',     label: t('products.detail.checklist.price'),     ok: Boolean(form.retailPrice?.trim()) && Number(form.retailPrice) > 0,      required: true  },
     { id: 'shortDesc', label: t('products.detail.checklist.shortDesc'), ok: Boolean(form.shortDescription?.trim()),                                 required: true  },
     { id: 'desc',      label: t('products.detail.checklist.desc'),      ok: (Array.isArray(form.descriptionBlocks) ? form.descriptionBlocks.length > 0 : (form.description?.trim().length ?? 0) > 0),  required: true  },
+    // Bắt buộc khi tạo mới, nhắc nhở khi sửa.
+    { id: 'sku',           label: t('products.detail.checklist.sku', { defaultValue: 'Mã SKU' }),          ok: Boolean(form.sku?.trim()),                required: isCreate },
+    { id: 'slug',          label: t('products.detail.checklist.slug', { defaultValue: 'Đường dẫn (slug)' }),ok: Boolean(form.slug?.trim()),               required: isCreate },
+    { id: 'gender',        label: t('products.detail.checklist.gender', { defaultValue: 'Đối tượng' }),     ok: Boolean(form.gender?.trim()),             required: isCreate },
+    { id: 'specStats',     label: t('products.detail.checklist.specStats'),     ok: (form.specStats || []).some((s) => s.value?.trim() && s.label?.trim()),                                    required: isCreate },
+    { id: 'faqs',          label: t('products.detail.checklist.faqs'),          ok: (form.faqs || []).some((f) => f.question?.trim() && f.answer?.trim()),                                     required: isCreate },
+    { id: 'trustBadges',   label: t('products.detail.checklist.trustBadges', { defaultValue: 'Dải tin cậy' }), ok: (form.trustBadges || []).some((b) => b.content?.trim()),                            required: isCreate },
     // Nhắc nhở (không chặn đăng): các phần điền vào thì trang sản phẩm đầy đủ & đẹp hơn.
     // Điều kiện `ok` mirror đúng bộ lọc trong toPayload để khớp cái thực sự được lưu.
     { id: 'seoTitle',      label: t('products.detail.checklist.seoTitle'),      ok: Boolean(form.seoTitle?.trim()),           required: false },
     { id: 'seoDesc',       label: t('products.detail.checklist.seoDesc'),       ok: Boolean(form.seoDescription?.trim()),     required: false },
     { id: 'seoCanonical',  label: t('products.detail.checklist.seoCanonical'),  ok: Boolean(form.seoCanonicalUrl?.trim()),    required: false },
     { id: 'gallery',       label: t('products.detail.checklist.gallery'),       ok: (form.gallery || []).some((img) => img.url?.trim()),                                                       required: false },
-    { id: 'quickAnswer',   label: t('products.detail.checklist.quickAnswer'),   ok: Boolean(form.quickAnswerSummary?.trim()),                                                                  required: false },
-    { id: 'specStats',     label: t('products.detail.checklist.specStats'),     ok: (form.specStats || []).some((s) => s.value?.trim() && s.label?.trim()),                                    required: false },
-    { id: 'prosCons',      label: t('products.detail.checklist.prosCons'),      ok: (Array.isArray(form.descriptionBlocks) ? form.descriptionBlocks : []).some((b) => b.type === 'prosCons' && ((b.positive || []).some((it) => (it || '').trim()) || (b.negative || []).some((it) => (it || '').trim()))), required: false },
+    { id: 'prosCons',      label: t('products.detail.checklist.prosCons'),      ok: (form.positiveNotes || []).some((h) => (h.content || '').trim()) || (form.negativeNotes || []).some((h) => (h.content || '').trim()), required: false },
     { id: 'suitability',   label: t('products.detail.checklist.suitability'),   ok: (Array.isArray(form.descriptionBlocks) ? form.descriptionBlocks : []).some((b) => b.type === 'suitability' && (b.cards || []).some((c) => c.audience?.trim() || c.advice?.trim() || c.linkLabel?.trim())),    required: false },
     { id: 'specifications',label: t('products.detail.checklist.specifications'),ok: (form.specifications || []).some((s) => s.name?.trim() && s.value?.trim()),                                required: false },
-    { id: 'faqs',          label: t('products.detail.checklist.faqs'),          ok: (form.faqs || []).some((f) => f.question?.trim() && f.answer?.trim()),                                     required: false },
     { id: 'variants',      label: t('products.detail.checklist.variants'),      ok: (form.variants || []).some((v) => v.name?.trim()),                                                         required: false },
   ]
 
@@ -235,18 +239,15 @@ function buildEmptyForm() {
     faqs: [],
     // Khối cam kết dưới nút mua hàng (V232) — admin quản theo từng sản phẩm.
     commitments: [],
+    // Bảng "Mua tại BigBike.vn" dưới khu mua hàng — admin thêm dòng riêng (vd Bảo hành, Giao hàng, Đổi trả).
+    purchaseLines: [],
     // Dải tin cậy trên tên sản phẩm (V233) — admin quản theo từng sản phẩm.
     trustBadges: [],
     // Template SEO fields (V175).
     positiveNotes: [],
     negativeNotes: [],
-    warrantyMonths: '',
-    warrantyScope: '',
-    pdpShippingLine: '',
-    pdpReturnLine: '',
     originBrandCountry: '',
     sizeChart: { col2: 'Vòng đầu (cm)', rows: [], note: '' },
-    quickAnswerSummary: '',
     // "Phù hợp với ai" (V240) — danh sách thẻ {audience, advice, linkLabel, linkUrl + *En}.
     // Serialize thành 2 chuỗi JSON (vi + en) khi lưu; xem parse/serializeSuitabilityCards.
     suitabilityCards: [],
@@ -272,7 +273,6 @@ function buildEmptyTranslation() {
     name: '',
     shortDescription: '',
     description: '',
-    quickAnswerSummary: '',
     suitabilityAdvisory: '',
     seoTitle: '',
     seoDescription: '',
@@ -387,6 +387,15 @@ function buildFormFromItem(item) {
       titleEn: c.titleEn || '',
       subtitleEn: c.subtitleEn || '',
     })),
+    // Bảng "Mua tại BigBike.vn" — dòng {icon, label, value} song ngữ, full-replace.
+    purchaseLines: (item.purchaseLines || []).map((p) => ({
+      _key: generateId(),
+      icon: p.icon || 'shield-check',
+      label: p.label || '',
+      value: p.value || '',
+      labelEn: p.labelEn || '',
+      valueEn: p.valueEn || '',
+    })),
     // Dải tin cậy trên tên sản phẩm (V233) — badge {content, contentEn}.
     trustBadges: (item.trustBadges || []).map((b) => ({
       _key: generateId(),
@@ -404,13 +413,8 @@ function buildFormFromItem(item) {
       content: h.content || '',
       contentEn: h.contentEn || '',
     })),
-    warrantyMonths: Number.isInteger(item.warrantyMonths) ? String(item.warrantyMonths) : '',
-    warrantyScope: item.warrantyScope || '',
-    pdpShippingLine: item.pdpShippingLine || '',
-    pdpReturnLine: item.pdpReturnLine || '',
     originBrandCountry: item.originBrandCountry || '',
     sizeChart: parseSizeGuide(item.sizeGuide),
-    quickAnswerSummary: item.quickAnswerSummary || '',
     suitabilityCards: parseSuitabilityCards(item.suitabilityAdvisory, item.translations?.en?.suitabilityAdvisory),
     gender: item.gender || '',
     variants,
@@ -489,7 +493,6 @@ function cleanDescriptionBlocks(blocks) {
         case 'video':     return (b.url ?? '').trim().length > 0
         case 'callout':   return (b.html ?? '').trim().length > 0
         case 'feature':   return (b.url ?? '').trim().length > 0
-        case 'prosCons':  return (b.positive ?? []).some((it) => (it ?? '').trim()) || (b.negative ?? []).some((it) => (it ?? '').trim())
         case 'suitability': return (b.cards ?? []).some(cardHasContent)
         case 'sizeGuide': return (b.html ?? '').trim().length > 0
         default:          return true
@@ -499,14 +502,6 @@ function cleanDescriptionBlocks(blocks) {
       // Khối feature: bỏ các dòng danh sách rỗng để không gửi item trắng xuống backend.
       if (rest.type === 'feature' && Array.isArray(rest.items)) {
         return { ...rest, items: rest.items.filter((it) => (it ?? '').trim().length > 0) }
-      }
-      // Ưu/Nhược điểm (V246): bỏ dòng rỗng (backend @NotBlank trên từng phần tử).
-      if (rest.type === 'prosCons') {
-        return {
-          ...rest,
-          positive: (rest.positive ?? []).map((it) => (it ?? '').trim()).filter(Boolean),
-          negative: (rest.negative ?? []).map((it) => (it ?? '').trim()).filter(Boolean),
-        }
       }
       // Phù hợp với ai (V246): bỏ thẻ rỗng.
       if (rest.type === 'suitability') {
@@ -555,39 +550,32 @@ function parseSuitabilityCards(viRaw, enRaw) {
 // (V246) serializeSuitabilityCards đã gỡ — "Phù hợp với ai" giờ nhập qua KHỐI suitability trong mô tả.
 
 // "Hiển thị trên web" (V245) — danh sách section PDP admin bật/tắt. Key PHẢI khớp web
-// (lib/utils/section-visibility + ProductView/WpPurchaseSection). contentBottom không nằm đây
-// (admin không soạn ở form sản phẩm). Thứ tự = thứ tự hiển thị trong panel.
-// Ưu/Nhược điểm · Phù hợp với ai · Bảng size (V246) KHÔNG còn key riêng ở đây — chúng là KHỐI trong
-// mô tả, hiển thị theo visibility của 'description' + sự tồn tại của khối.
+// (lib/utils/section-visibility + ProductView). contentBottom không nằm đây (admin không soạn ở form).
+// CHỈ gồm các section nằm TRONG khối Tab của PDP (Mô tả · Thông số · FAQ · Video · Đánh giá). Các khối
+// NGOÀI tab (ô số liệu nổi bật, dải tin cậy, khối cam kết, "Mua tại BigBike.vn",
+// sản phẩm tương tự, phụ kiện bán kèm) KHÔNG quản ở đây — web tự hiện chúng khi có nội dung.
+// Ưu/Nhược điểm · Phù hợp với ai · Bảng size (V246) là KHỐI trong mô tả → theo visibility của 'description'.
 const SECTION_VISIBILITY_KEYS = [
-  'quickAnswer', 'description', 'specStats',
-  'specifications', 'faqs', 'reviews', 'trust', 'related',
-  'accessories', 'videos', 'trustBadges', 'commitments',
+  'description', 'specifications', 'faqs', 'videos', 'reviews',
 ]
 
 // Có nội dung trong form chưa — để seed "bật sẵn" cho sản phẩm cũ chưa cấu hình (giữ web như cũ).
-// reviews/trust là nội dung động / khối tĩnh → seed bật cho hàng cũ.
+// reviews là nội dung động → seed bật cho hàng cũ.
 function sectionHasContent(form, key) {
   const arr = (v) => (Array.isArray(v) ? v : [])
   const t = (v) => String(v ?? '').trim()
   switch (key) {
-    case 'quickAnswer':    return Boolean(t(form.quickAnswerSummary))
     case 'description':    return Array.isArray(form.descriptionBlocks) ? form.descriptionBlocks.length > 0 : Boolean(t(form.description))
-    case 'specStats':      return arr(form.specStats).some((s) => t(s.value) && t(s.label))
     case 'specifications': return arr(form.specifications).some((s) => t(s.name) && t(s.value))
     case 'faqs':           return arr(form.faqs).some((f) => t(f.question) && t(f.answer))
-    case 'reviews':        return true
-    case 'trust':          return true
-    case 'related':        return arr(form.relatedProductIds).some(Boolean)
-    case 'accessories':    return arr(form.accessoryProductIds).some(Boolean)
     case 'videos':         return arr(form.videos).some((v) => t(v.url))
-    case 'trustBadges':    return arr(form.trustBadges).some((b) => t(b.content))
-    case 'commitments':    return arr(form.commitments).some((c) => t(c.title))
+    case 'reviews':        return true
     default:               return false
   }
 }
 
-// Parse chuỗi JSON visibility từ backend → map bool + _order (chỉ giữ key hợp lệ). null nếu rỗng/hỏng.
+// Parse chuỗi JSON visibility từ backend → map bool (chỉ giữ key hợp lệ). null nếu rỗng/hỏng.
+// Map cũ có thể chứa key ngoài-tab + `_order` (trước V246 mở rộng) — bỏ qua an toàn, chỉ giữ 5 key tab.
 function parseSectionVisibilityForm(raw) {
   if (typeof raw !== 'string' || !raw.trim()) return null
   try {
@@ -595,9 +583,6 @@ function parseSectionVisibilityForm(raw) {
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null
     const map = {}
     for (const k of SECTION_VISIBILITY_KEYS) if (typeof parsed[k] === 'boolean') map[k] = parsed[k]
-    if (Array.isArray(parsed._order)) {
-      map._order = parsed._order.filter((k) => SECTION_VISIBILITY_KEYS.includes(k))
-    }
     return map
   } catch { return null }
 }
@@ -610,7 +595,6 @@ function resolveSectionVisibilityForm(saved, seedFromForm) {
     if (saved && typeof saved[k] === 'boolean') map[k] = saved[k]
     else map[k] = seedFromForm ? sectionHasContent(seedFromForm, k) : false
   }
-  if (saved?._order) map._order = saved._order
   return map
 }
 
@@ -632,15 +616,10 @@ function toPayload(form) {
     shortDescription: form.shortDescription.trim() || undefined,
     description: Array.isArray(form.descriptionBlocks) ? undefined : (form.description.trim() || undefined),
     // Template SEO scalars (V175). Null khi cleared (presence-flag).
-    warrantyMonths: toIntegerOrNull(form.warrantyMonths),
-    warrantyScope: form.warrantyScope.trim() ? form.warrantyScope.trim() : null,
-    pdpShippingLine: form.pdpShippingLine.trim() ? form.pdpShippingLine.trim() : null,
-    pdpReturnLine: form.pdpReturnLine.trim() ? form.pdpReturnLine.trim() : null,
     originBrandCountry: form.originBrandCountry.trim() ? form.originBrandCountry.trim() : null,
     // "Hiển thị trên web" (V245) — luôn gửi map đầy đủ (presence-flag): "đóng băng" trạng thái hiện tại
     // thành cờ explicit nên web không đổi với sản phẩm cũ, và áp opt-in cho sản phẩm mới.
     sectionVisibility: JSON.stringify(form.sectionVisibility || resolveSectionVisibilityForm(null, form)),
-    quickAnswerSummary: form.quickAnswerSummary.trim() ? form.quickAnswerSummary.trim() : null,
     gender: form.gender.trim() ? form.gender.trim() : null,
     brandId: form.brandId.trim() || undefined,
     categoryId: form.categoryId.trim(),
@@ -743,6 +722,19 @@ function toPayload(form) {
       sortOrder: i,
     }))
 
+  // Bảng "Mua tại BigBike.vn" — full-replace, tối đa 12 dòng; dòng không có nhãn bị bỏ.
+  payload.purchaseLines = form.purchaseLines
+    .filter((p) => (p.label || '').trim())
+    .slice(0, 12)
+    .map((p, i) => ({
+      icon: (p.icon || '').trim() || 'shield-check',
+      label: p.label.trim(),
+      value: (p.value || '').trim() || undefined,
+      labelEn: (p.labelEn || '').trim() || undefined,
+      valueEn: (p.valueEn || '').trim() || undefined,
+      sortOrder: i,
+    }))
+
   // Dải tin cậy trên tên sản phẩm (V233) — full-replace; badge content blank bị bỏ.
   payload.trustBadges = form.trustBadges
     .filter((b) => (b.content || '').trim())
@@ -752,7 +744,22 @@ function toPayload(form) {
       sortOrder: i,
     }))
 
-  // Ưu/Nhược điểm (V246): nhập qua KHỐI prosCons trong mô tả — không gửi positiveNotes/negativeNotes nữa.
+  // Ưu/Nhược điểm (V251): khối RIÊNG cố định dưới mô tả — nhập ở card riêng, lưu vào bảng con
+  // product_highlights. Full-replace mỗi nhóm; mục content blank bị bỏ (backend @NotBlank).
+  payload.positiveNotes = form.positiveNotes
+    .filter((h) => (h.content || '').trim())
+    .map((h, i) => ({
+      content: h.content.trim(),
+      contentEn: (h.contentEn || '').trim() || undefined,
+      sortOrder: i,
+    }))
+  payload.negativeNotes = form.negativeNotes
+    .filter((h) => (h.content || '').trim())
+    .map((h, i) => ({
+      content: h.content.trim(),
+      contentEn: (h.contentEn || '').trim() || undefined,
+      sortOrder: i,
+    }))
 
   // Always send relatedProductIds — empty array explicitly clears the section.
   payload.relatedProductIds = Array.isArray(form.relatedProductIds) ? form.relatedProductIds : []
@@ -1325,33 +1332,20 @@ function SpecificationsEditor({ items, onChange, disabled, validationErrors, con
 }
 
 /**
- * "Hiển thị trên web" (V245) — bảng công tắc bật/tắt + kéo-thả đổi thứ tự từng section PDP.
- * Thứ tự kéo = thứ tự hiện trên trang web (body sections). Sản phẩm mới mặc định tắt hết.
+ * "Hiển thị trên web" (V245) — bảng công tắc bật/tắt các section nằm TRONG khối Tab của PDP
+ * (Mô tả · Thông số · FAQ · Video · Đánh giá). Sản phẩm mới mặc định tắt hết. Các khối ngoài tab
+ * không quản ở đây (web tự hiện khi có nội dung).
  */
 function SectionVisibilityEditor({ value, onChange, form, disabled }) {
   const { t } = useTranslation()
   const map = value || {}
 
-  // Thứ tự hiện tại: lấy từ _order đã lưu, bổ sung key còn thiếu vào cuối.
-  const order = useMemo(() => {
-    const saved = Array.isArray(map._order) ? map._order : []
-    const missing = SECTION_VISIBILITY_KEYS.filter((k) => !saved.includes(k))
-    return [...saved, ...missing]
-  }, [map._order])
-
   function toggle(key, on) {
     onChange({ ...map, [key]: on })
   }
   function setAll(on) {
-    const next = Object.fromEntries(SECTION_VISIBILITY_KEYS.map((k) => [k, on]))
-    if (map._order) next._order = map._order
-    onChange(next)
+    onChange(Object.fromEntries(SECTION_VISIBILITY_KEYS.map((k) => [k, on])))
   }
-  function handleReorder(nextItems) {
-    onChange({ ...map, _order: nextItems.map((it) => it.id) })
-  }
-
-  const items = order.map((k) => ({ id: k }))
 
   return (
     <div className="flex flex-col gap-3">
@@ -1363,27 +1357,15 @@ function SectionVisibilityEditor({ value, onChange, form, disabled }) {
           {t('products.detail.sectionVisibility.hideAll', { defaultValue: 'Tắt tất cả' })}
         </Button>
       </div>
-      <SortableList
-        items={items}
-        onReorder={handleReorder}
-        disabled={disabled}
-        className="flex flex-col gap-1.5"
-        renderItem={(item, sortable) => {
-          const key = item.id
+      <div className="flex flex-col gap-1.5">
+        {SECTION_VISIBILITY_KEYS.map((key) => {
           const on = map[key] === true
           const empty = !sectionHasContent(form, key)
           return (
             <div
-              ref={sortable.setNodeRef}
-              style={sortable.style}
-              className={`flex select-none items-center gap-3 rounded-sm border border-border px-3 py-2 text-sm${sortable.isDragging ? ' opacity-50' : ''}`}
+              key={key}
+              className="flex select-none items-center gap-3 rounded-sm border border-border px-3 py-2 text-sm"
             >
-              <span
-                {...sortable.handleProps}
-                className={`cursor-grab text-muted-foreground active:cursor-grabbing${disabled ? ' pointer-events-none opacity-30' : ''}`}
-              >
-                <GripVertical className="h-4 w-4" />
-              </span>
               <Checkbox
                 checked={on}
                 onCheckedChange={(v) => toggle(key, v === true)}
@@ -1400,8 +1382,8 @@ function SectionVisibilityEditor({ value, onChange, form, disabled }) {
               )}
             </div>
           )
-        }}
-      />
+        })}
+      </div>
     </div>
   )
 }
@@ -1649,6 +1631,95 @@ function CommitmentEditor({ items, onChange, disabled, contentLang = 'vi' }) {
       ))}
       <Button variant="outline" size="sm" onClick={addItem} disabled={disabled}>
         + {t('products.detail.commitments.addRow')}
+      </Button>
+    </div>
+  )
+}
+
+const PURCHASE_LINE_MAX = 12
+
+// Trình soạn bảng "Mua tại BigBike.vn" dưới khu mua hàng: mỗi dòng = icon + nhãn (label)
+// + giá trị (value), song ngữ (theo contentLang); icon dùng chung. Thêm/bớt/đảo dòng tùy ý,
+// tối đa 12 dòng. Mirror CommitmentEditor — dùng lại COMMITMENT_ICON_OPTIONS.
+function PurchaseLineEditor({ items, onChange, disabled, contentLang = 'vi' }) {
+  const { t } = useTranslation()
+  const isEn = contentLang === 'en'
+  const fLabel = isEn ? 'labelEn' : 'label'
+  const fValue = isEn ? 'valueEn' : 'value'
+  function updateItem(index, field, value) {
+    onChange(items.map((item, i) => (i === index ? { ...item, [field]: value } : item)))
+  }
+  function addItem() {
+    onChange([...items, { _key: generateId(), icon: 'shield-check', label: '', value: '', labelEn: '', valueEn: '' }])
+  }
+  function removeItem(index) {
+    onChange(items.filter((_, i) => i !== index))
+  }
+  function moveItem(index, dir) {
+    const next = [...items]
+    const target = index + dir
+    if (target < 0 || target >= next.length) return
+    ;[next[index], next[target]] = [next[target], next[index]]
+    onChange(next)
+  }
+
+  return (
+    <div className="list-editor">
+      {items.length === 0 && (
+        <p className="list-editor-empty">{t('products.detail.purchaseLines.empty')}</p>
+      )}
+      {items.map((item, index) => (
+        <div key={item._key} className="list-editor-row list-editor-row--stack">
+          <div className="list-editor-reorder">
+            <Button variant="outline" size="icon" onClick={() => moveItem(index, -1)} disabled={disabled || index === 0} aria-label={t('products.detail.moveUp')}>▲</Button>
+            <Button variant="outline" size="icon" onClick={() => moveItem(index, 1)} disabled={disabled || index === items.length - 1} aria-label={t('products.detail.moveDown')}>▼</Button>
+          </div>
+          <div className="flex flex-1 flex-col gap-2">
+            {/* Icon dùng chung mọi ngôn ngữ — chỉ cho sửa ở chế độ nội dung tiếng Việt để tránh nhầm. */}
+            <Select value={item.icon || 'shield-check'} onValueChange={(v) => updateItem(index, 'icon', v)} disabled={disabled || isEn}>
+              <SelectTrigger className="w-full sm:w-56" aria-label={t('products.detail.commitments.iconLabel')}>
+                <SelectValue placeholder={t('products.detail.commitments.iconLabel')} />
+              </SelectTrigger>
+              <SelectContent>
+                {COMMITMENT_ICON_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    <span className="flex items-center gap-2">
+                      <opt.Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                      {t(`products.detail.commitments.icons.${opt.labelKey}`)}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input
+              placeholder={t('products.detail.purchaseLines.labelPlaceholder')}
+              value={item[fLabel] || ''}
+              onChange={(e) => updateItem(index, fLabel, e.target.value)}
+              disabled={disabled}
+              maxLength={120}
+            />
+            <Input
+              placeholder={t('products.detail.purchaseLines.valuePlaceholder')}
+              value={item[fValue] || ''}
+              onChange={(e) => updateItem(index, fValue, e.target.value)}
+              disabled={disabled}
+              maxLength={200}
+            />
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-destructive hover:text-destructive"
+            onClick={() => removeItem(index)}
+            disabled={disabled}
+            aria-label={t('products.detail.purchaseLines.removeRow')}
+          >
+            ✕
+          </Button>
+        </div>
+      ))}
+      <Button variant="outline" size="sm" onClick={addItem} disabled={disabled || items.length >= PURCHASE_LINE_MAX}>
+        + {t('products.detail.purchaseLines.addRow')}
       </Button>
     </div>
   )
@@ -2533,9 +2604,9 @@ function DraftRecoveryBanner({ ts, onRestore, onDiscard }) {
 
 // ── Publish quality checklist modal ───────────────────────────────────────────
 
-function PublishChecklistModal({ form, onConfirm, onCancel }) {
+function PublishChecklistModal({ form, isCreate, onConfirm, onCancel }) {
   const { t } = useTranslation()
-  const items = getPublishReadiness(form, t)
+  const items = getPublishReadiness(form, t, isCreate)
   const requiredItems = items.filter((i) => i.required)
   const optionalItems = items.filter((i) => !i.required)
   const blockers = requiredItems.filter((i) => !i.ok)
@@ -2749,6 +2820,7 @@ const SECTION_DEFS = [
   { id: 'section-spec-stats',     key: 'specStats',     icon: 'Gauge',      labelKey: 'products.detail.sectionSpecStats',      required: false },
   { id: 'section-faqs',           key: 'faqs',          icon: 'HelpCircle', labelKey: 'products.detail.sectionFaqs',           required: false },
   { id: 'section-commitments',    key: 'commitments',   icon: 'ShieldCheck',labelKey: 'products.detail.sectionCommitments',    required: false },
+  { id: 'section-purchase-lines', key: 'purchaseLines', icon: 'Package',    labelKey: 'products.detail.sectionPurchaseLines', required: false },
   { id: 'section-trust-badges',   key: 'trustBadges',   icon: 'BadgeCheck', labelKey: 'products.detail.sectionTrustBadges',    required: false },
   { id: 'section-variants',       key: 'variants',      icon: 'Layers',     labelKey: 'products.detail.variantSectionTitle',   required: false },
   { id: 'section-related',        key: 'related',       icon: 'Link2',      labelKey: 'products.detail.sectionRelated',        required: false },
@@ -2760,14 +2832,14 @@ const SECTION_DEFS = [
 const TAB_SECTIONS = {
   general:  ['basic', 'pricing', 'media'],
   content:  ['seo', 'gallery', 'videos'],
-  details:  ['specs', 'specStats', 'faqs', 'commitments', 'trustBadges'],
+  details:  ['specs', 'specStats', 'faqs', 'commitments', 'purchaseLines', 'trustBadges'],
   variants: ['variants', 'related', 'accessories'],
 }
 
 // Field-prefix groups by section key — single source of truth used by both the
 // in-render sectionErrors derivation and the synchronous save-time tab switch.
 const SECTION_FIELD_PREFIXES = {
-  basic:         ['name','slug','sku','shortDescription','description','brandId','categoryId','publishStatus'],
+  basic:         ['name','slug','sku','gender','shortDescription','description','brandId','categoryId','publishStatus'],
   pricing:       ['retailPrice','compareAtPrice','salePrice','costPrice'],
   media:         ['imageUrl'],
   seo:           ['seoTitle','seoDescription','seoCanonicalUrl','seoOgImageUrl','seoOgImageAlt'],
@@ -2777,6 +2849,7 @@ const SECTION_FIELD_PREFIXES = {
   specStats:     ['specStats'],
   faqs:          ['faqs'],
   commitments:   ['commitments'],
+  purchaseLines: ['purchaseLines'],
   trustBadges:   ['trustBadges'],
   variants:      ['variants'],
   related:       ['relatedProductIds'],
@@ -3908,6 +3981,40 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 </div>
               </SectionCard>
 
+              {/* ── Card: Ưu điểm & Nhược điểm (V251) — khối RIÊNG cố định dưới mô tả, ngoài tab ── */}
+              <SectionCard
+                title={t('products.detail.highlights.sectionTitle', { defaultValue: 'Ưu điểm & Nhược điểm' })}
+                badge={<RoleBadge role="content" />}
+              >
+                <p className="text-xs text-muted-foreground mb-3">
+                  {t('products.detail.highlights.hint', { defaultValue: 'Các gạch đầu dòng ưu/nhược điểm thật của sản phẩm — hiện thành khối riêng ngay dưới mô tả (ngoài tab) và đưa vào dữ liệu có cấu trúc. Không bắt buộc; để trống → web ẩn khối.' })}
+                </p>
+                <div className="grid gap-5 md:grid-cols-2">
+                  <div>
+                    <div className="text-sm font-medium mb-2">{t('products.detail.highlights.prosTitle', { defaultValue: 'Ưu điểm' })}</div>
+                    <HighlightsEditor
+                      items={form.positiveNotes}
+                      onChange={(next) => updateField('positiveNotes', next)}
+                      disabled={isReadOnly}
+                      contentLang={contentLang}
+                      placeholder={t('products.detail.highlights.prosPlaceholder', { defaultValue: 'vd: Nhẹ hơn LS2 Storm II 29g' })}
+                      addLabel={t('products.detail.highlights.addPro', { defaultValue: 'Thêm ưu điểm' })}
+                    />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium mb-2">{t('products.detail.highlights.consTitle', { defaultValue: 'Nhược điểm' })}</div>
+                    <HighlightsEditor
+                      items={form.negativeNotes}
+                      onChange={(next) => updateField('negativeNotes', next)}
+                      disabled={isReadOnly}
+                      contentLang={contentLang}
+                      placeholder={t('products.detail.highlights.consPlaceholder', { defaultValue: 'vd: Không kèm Pinlock' })}
+                      addLabel={t('products.detail.highlights.addCon', { defaultValue: 'Thêm nhược điểm' })}
+                    />
+                  </div>
+                </div>
+              </SectionCard>
+
               {/* ── Card: Hiển thị trên web (V245) ── */}
               <SectionCard title={t('products.detail.sectionVisibility.title', { defaultValue: 'Hiển thị trên web' })} badge={<RoleBadge role="content" />}>
                 <p className="mb-3 text-xs text-muted-foreground">
@@ -4283,30 +4390,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 />
               </SectionCard>
 
-              {/* ── Card: Quick Answer (V236) — đoạn AIO 40–60 từ, blockquote trước H2 đầu ── */}
-              <SectionCard
-                title={t('products.detail.quickAnswer.sectionTitle', { defaultValue: 'Quick Answer (trả lời nhanh)' })}
-                badge={<RoleBadge role="content" />}
-              >
-                <p className="text-xs text-muted-foreground mb-2">
-                  {t('products.detail.quickAnswer.hint', { defaultValue: 'Đoạn tóm tắt 40–60 từ, đặt trước phần mô tả để Google/AI trích dẫn. Câu đầu nói thẳng: sản phẩm là gì + cho ai + nổi bật điều gì. Văn bản thường, không định dạng.' })}
-                </p>
-                <Textarea
-                  value={langValue('quickAnswerSummary')}
-                  onChange={(e) => langChange('quickAnswerSummary', e.target.value)}
-                  disabled={isReadOnly}
-                  maxLength={600}
-                  rows={4}
-                  placeholder={t('products.detail.quickAnswer.placeholder', { defaultValue: 'Ví dụ: Mũ fullface AGV K6 vỏ sợi carbon nặng 1.250g, kính chống tia UV, đạt chuẩn ECE 22.06...' })}
-                  className={validationErrors.quickAnswerSummary ? 'border-danger' : undefined}
-                />
-                {validationErrors.quickAnswerSummary && (
-                  <span className="text-xs text-[var(--admin-color-status-danger-text)] font-semibold mt-2 block">
-                    {validationErrors.quickAnswerSummary}
-                  </span>
-                )}
-              </SectionCard>
-
               {/* Phù hợp với ai · Ưu/Nhược điểm · Bảng size (V246): nhập qua KHỐI trong "Mô tả sản phẩm"
                   (trình dựng khối), không còn ô nhập riêng tại đây. */}
 
@@ -4353,6 +4436,29 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 />
               </SectionCard>
 
+              {/* ── Card: Bảng "Mua tại BigBike.vn" (dưới khu mua hàng) ── */}
+              <SectionCard
+                title={t('products.detail.sectionPurchaseLines', { defaultValue: 'Mua tại BigBike.vn' })}
+                badge={
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5">
+                      {form.purchaseLines.length} {t('products.detail.purchaseLines.unit', { defaultValue: 'dòng' })}
+                    </span>
+                    <RoleBadge role="content" />
+                  </div>
+                }
+              >
+                <p className="text-xs text-muted-foreground mb-2">
+                  {t('products.detail.purchaseLines.hint', { defaultValue: 'Bảng hiển thị dưới khu mua hàng. Giá, Tồn kho, Hotline và Địa chỉ tự động hiện sẵn — ở đây bạn thêm các dòng riêng (vd Bảo hành, Giao hàng, Đổi trả).' })}
+                </p>
+                <PurchaseLineEditor
+                  items={form.purchaseLines}
+                  onChange={(next) => updateField('purchaseLines', next)}
+                  disabled={isReadOnly}
+                  contentLang={contentLang}
+                />
+              </SectionCard>
+
               {/* ── Card: Dải tin cậy (trên tên sản phẩm) (V233) ── */}
               <SectionCard
                 title={t('products.detail.sectionTrustBadges', { defaultValue: 'Dải tin cậy (trên tên sản phẩm)' })}
@@ -4378,61 +4484,20 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 />
               </SectionCard>
 
-              {/* ── Card: Bảo hành, xuất xứ, trọng lượng (V175) ── */}
+              {/* ── Card: Xuất xứ ── */}
               <SectionCard
-                title={t('products.detail.trust.sectionTitle', { defaultValue: 'Bảo hành · Xuất xứ · Trọng lượng' })}
+                title={t('products.detail.trust.sectionTitle', { defaultValue: 'Xuất xứ' })}
                 badge={<RoleBadge role="content" />}
               >
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Field label={t('products.detail.trust.warrantyMonths', { defaultValue: 'Bảo hành (tháng)' })} error={validationErrors.warrantyMonths}>
-                    <Input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      placeholder="vd: 24"
-                      value={form.warrantyMonths}
-                      onChange={(e) => updateField('warrantyMonths', e.target.value.replace(/\D/g, ''))}
-                      disabled={isReadOnly}
-                    />
-                  </Field>
-                  <Field label={t('products.detail.trust.originBrand', { defaultValue: 'Thương hiệu (nước)' })}>
-                    <Input
-                      placeholder="vd: Ý"
-                      value={form.originBrandCountry}
-                      onChange={(e) => updateField('originBrandCountry', e.target.value)}
-                      disabled={isReadOnly}
-                      maxLength={120}
-                    />
-                  </Field>
-                  <Field full label={t('products.detail.trust.warrantyScope', { defaultValue: 'Phạm vi bảo hành' })} error={validationErrors.warrantyScope}>
-                    <Textarea
-                      placeholder={t('products.detail.trust.warrantyScopePlaceholder', { defaultValue: 'vd: Bảo hành 24 tháng lỗi nhà sản xuất, không bao gồm va đập.' })}
-                      value={form.warrantyScope}
-                      onChange={(e) => updateField('warrantyScope', e.target.value)}
-                      disabled={isReadOnly}
-                      rows={2}
-                      maxLength={2000}
-                    />
-                  </Field>
-                  <Field label={t('products.detail.trust.pdpShippingLine', { defaultValue: 'Giao hàng (khối "Mua tại BigBike.vn")' })} hint={t('products.detail.trust.pdpLineHint', { defaultValue: 'Để trống → dùng câu mặc định chung của web.' })}>
-                    <Input
-                      placeholder="vd: Toàn quốc 2–3 ngày"
-                      value={form.pdpShippingLine}
-                      onChange={(e) => updateField('pdpShippingLine', e.target.value)}
-                      disabled={isReadOnly}
-                      maxLength={200}
-                    />
-                  </Field>
-                  <Field label={t('products.detail.trust.pdpReturnLine', { defaultValue: 'Đổi trả (khối "Mua tại BigBike.vn")' })} hint={t('products.detail.trust.pdpLineHint', { defaultValue: 'Để trống → dùng câu mặc định chung của web.' })}>
-                    <Input
-                      placeholder="vd: 30 ngày miễn phí"
-                      value={form.pdpReturnLine}
-                      onChange={(e) => updateField('pdpReturnLine', e.target.value)}
-                      disabled={isReadOnly}
-                      maxLength={200}
-                    />
-                  </Field>
-                </div>
+                <Field label={t('products.detail.trust.originBrand', { defaultValue: 'Thương hiệu (nước)' })}>
+                  <Input
+                    placeholder="vd: Ý"
+                    value={form.originBrandCountry}
+                    onChange={(e) => updateField('originBrandCountry', e.target.value)}
+                    disabled={isReadOnly}
+                    maxLength={120}
+                  />
+                </Field>
               </SectionCard>
 
             </>
@@ -4665,6 +4730,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
         {showPublishChecklist && pendingPublish && (
           <PublishChecklistModal
             form={pendingPublish.formToSave}
+            isCreate={isCreate}
             onConfirm={confirmPublish}
             onCancel={() => { setShowPublishChecklist(false); setPendingPublish(null) }}
           />

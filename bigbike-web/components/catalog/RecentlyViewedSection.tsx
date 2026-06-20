@@ -53,10 +53,9 @@ export function RecentlyViewedSection({ currentProductId, currentProduct }: Prop
     <div className="product-list pt-40 pb-40">
       <div className="container">
         <div className="block-title text-center mb-40">
-          <p className="sub-title">{tRecent("kicker")}</p>
           <h3 id="recently-viewed-heading">{tRecent("heading")}</h3>
         </div>
-        <ProductSwiper products={items.map(toCardProduct)} />
+        <ProductSwiper products={items.map(toCardProduct)} autoHeight />
       </div>
     </div>
   );

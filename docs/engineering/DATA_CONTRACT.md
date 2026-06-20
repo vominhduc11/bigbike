@@ -254,19 +254,23 @@ cột `_en`); backend truyền nguyên chuỗi, admin/web parse JSON ở hai đ�
 
 Status: `CONFIRMED_FROM_CODE`
 
-### Product PDP content — `quick_answer_summary`, `suitability_advisory` (V236–V237)
+### Product PDP content — `suitability_advisory` (V237)
 
-Two bilingual dual-column fields added for the PDP layout restructure (đặt theo
-"Thứ tự đầy đủ" trang sản phẩm). Both follow the `shortDescription`/`sizeGuide`
-dual-text pattern: canonical (vi) column + `_en` column, `pick(vi, en, locale)`
-on read, raw English surfaced in `translations.en` for the admin editor.
+> **Đã gỡ (V250):** cặp cột `quick_answer_summary` / `quick_answer_summary_en`
+> ("Quick Answer" — blockquote AIO 40–60 từ, thêm ở V236) đã bị **drop hoàn toàn**.
+> Trường gỡ khỏi entity/DTO/domain, web PDP không còn render, ô nhập admin đã bỏ.
+> Dữ liệu cũ xoá vĩnh viễn qua `V253__drop_product_quick_answer_summary.sql`.
+
+Bilingual dual-column field cho khối "Phù hợp với ai" trên PDP. Follows the
+`shortDescription`/`sizeGuide` dual-text pattern: canonical (vi) column + `_en`
+column, `pick(vi, en, locale)` on read, raw English surfaced in `translations.en`
+for the admin editor.
 
 | Field | DB columns (added) | Type | PDP surface |
 |---|---|---|---|
-| `quickAnswerSummary` | `quick_answer_summary` + `quick_answer_summary_en` (`V236__add_product_quick_answer_summary.sql`) | `TEXT`, max 600 | "Quick Answer" — đoạn AIO 40–60 từ, blockquote đặt TRƯỚC H2 đầu tiên. Field **riêng**, KHÔNG dùng lại `shortDescription` (bullet ở khối mua hàng). Hidden when empty. |
 | `suitabilityAdvisory` | `suitability_advisory` + `suitability_advisory_en` (`V237`; format đổi ở `V240__convert_suitability_advisory_to_cards.sql`) | `TEXT`, max 20 000 | "Phù hợp với ai" — **JSON array các thẻ tư vấn** `[{ audience, advice, linkLabel?, linkUrl? }]` (trước V240 là rich-HTML). Web parse JSON → mỗi item một thẻ (đối tượng in đậm + lời khuyên + link nội bộ tùy chọn); `linkUrl` dùng chung cả vi/en, mảng `_en` mirror theo index. Hidden when empty. |
 
-Both are detail-only (null in list responses), nullable, presence-flag on PATCH,
+It is detail-only (null in list responses), nullable, presence-flag on PATCH,
 empty/blank normalized to `NULL`. The PDP "Hoàn thiện bộ bảo hộ — Có thể bạn cũng
 cần" block reuses the existing `relatedProducts` (no new cross-sell column).
 
@@ -288,15 +292,14 @@ Eleven block types (8 gốc + 3 khối PDP chuyên biệt V246):
 | `callout` | `variant` (`info`\|`warning`\|`note`), `html` (≤ 10 000 chars) | — |
 | `divider` | — | — |
 | `feature` | `url` (≤ 2 000 chars) | `side` (`auto`\|`left`\|`right`, mặc định `auto`), `alt` (≤ 500), `caption` (≤ 500), `subheading` (≤ 500), `heading` (≤ 500), `html` (≤ 50 000), `listStyle` (`bulleted`\|`numbered`), `items` (≤ 200 strings, each ≤ 2 000 chars) |
-| `prosCons` (V246) | — | `title` (≤ 500), `positive` (≤ 200 strings, each `@NotBlank` ≤ 2 000), `negative` (≤ 200 strings, each `@NotBlank` ≤ 2 000) |
 | `suitability` (V246) | — | `title` (≤ 500), `cards` (≤ 100 thẻ `{audience ≤500, advice ≤2000, linkLabel ≤500, linkUrl ≤2000}`) |
 | `sizeGuide` (V246) | — | `title` (≤ 500), `html` (≤ 20 000; cho phép thẻ `<table>`) |
 
-**3 khối PDP chuyên biệt (V246) — chỉ dùng cho SẢN PHẨM:** `prosCons` (Ưu/Nhược điểm), `suitability` (Phù hợp với ai), `sizeGuide` (Bảng size). Gộp các mục trước đây nhập tách rời (`product_highlights` / `suitability_advisory` / `size_guide`) vào trình dựng mô tả. `prosCons` là nguồn duy nhất cho schema.org `positiveNotes`/`negativeNotes` — backend suy ra từ khối (xem §Ưu điểm/Nhược điểm). Bản EN nằm ở khối tương ứng trong `description_blocks_en` (theo vị trí).
+**2 khối PDP chuyên biệt (V246) — chỉ dùng cho SẢN PHẨM:** `suitability` (Phù hợp với ai), `sizeGuide` (Bảng size). Bản EN nằm ở khối tương ứng trong `description_blocks_en` (theo vị trí). **Ưu/Nhược điểm (`prosCons`) ĐÃ TÁCH RA khỏi mô tả (V251)** — quay lại là khối RIÊNG cố định ngay dưới mô tả, ngoài tab; nguồn dữ liệu là bảng con `product_highlights` (xem §Ưu điểm/Nhược điểm), KHÔNG còn là khối trong `description_blocks`. Subtype `ProsConsBlock` vẫn còn trong sealed interface (dormant, để deserialize an toàn dữ liệu cũ); migration `V251` gỡ mọi khối `prosCons` còn sót trong `description_blocks`/`_en`.
 
 **`feature` — hàng ảnh + chữ 2 cột (thêm sau V139, code-only):** Gói chung 1 ảnh + tiêu đề phụ (`subheading`, eyebrow) + tiêu đề chính (`heading`) + đoạn mô tả (`html`) + danh sách vào MỘT khối, render thành khối 2 cột ảnh–chữ trên web (chỉ desktop; mobile xếp dọc). `side`=`auto`/null → các khối `feature` liên tiếp tự xen kẽ trái/phải (so le); `left`/`right` ép vị trí ảnh. Chỉ `url` bắt buộc. **Khối này thay thế cơ chế "ghép ngầm" cũ** (web từng tự gom một khối `image`/`video` + cụm `text` liền sau thành hàng 2 cột) — cơ chế ghép ngầm đã được GỠ BỎ; muốn 2 cột phải dùng khối `feature`.
 
-**Vốn từ khối GIỚI HẠN ở phạm vi SẢN PHẨM (V238 + V246):** Trình soạn mô tả sản phẩm (và tab tự do của sản phẩm) cho tạo **7 khối**: `paragraph` (chỉ văn bản — ô rich-text chứa được `h2/h3/ul/ol/bold/link`), `image` (chỉ ảnh), `feature` với `side="right"` (ảnh phải) / `side="left"` (ảnh trái), và 3 khối PDP V246 `prosCons` / `suitability` / `sizeGuide`. Các loại `heading`/`list`/`callout`/`divider`/`video` đứng riêng **không còn được tạo cho sản phẩm**. Sealed interface `DescriptionBlock` vẫn GIỮ đủ các subtype vì **dùng chung với Content** (Article/Page/Contact vẫn cần heading/list/…). Migration `V238__ConsolidateProductDescriptionBlocks.java` gộp dữ liệu sản phẩm cũ (`products.description_blocks` + `description_blocks_en` + `product_tabs` custom blocks/blocksEn) về vốn từ 4 khối: mỗi mục (heading + đoạn/list/callout đi liền sau) gộp thành MỘT khối `paragraph` rich-HTML (giữ nguyên nội dung), `divider` bị bỏ (web tự kẻ vạch giữa khối), `image`/`feature` giữ nguyên. Idempotent (chỉ rewrite hàng có loại khối ngoài 4-vocab hoặc gộp được).
+**Vốn từ khối GIỚI HẠN ở phạm vi SẢN PHẨM (V238 + V246 + V251):** Trình soạn mô tả sản phẩm (và tab tự do của sản phẩm) cho tạo **6 khối**: `paragraph` (chỉ văn bản — ô rich-text chứa được `h2/h3/ul/ol/bold/link`), `image` (chỉ ảnh), `feature` với `side="right"` (ảnh phải) / `side="left"` (ảnh trái), và 2 khối PDP `suitability` / `sizeGuide`. **`prosCons` đã gỡ khỏi vốn từ khối (V251)** — Ưu/Nhược điểm nhập ở card riêng, là khối cố định ngoài mô tả. Các loại `heading`/`list`/`callout`/`divider`/`video` đứng riêng **không còn được tạo cho sản phẩm**. Sealed interface `DescriptionBlock` vẫn GIỮ đủ các subtype vì **dùng chung với Content** (Article/Page/Contact vẫn cần heading/list/…). Migration `V238__ConsolidateProductDescriptionBlocks.java` gộp dữ liệu sản phẩm cũ (`products.description_blocks` + `description_blocks_en` + `product_tabs` custom blocks/blocksEn) về vốn từ 4 khối: mỗi mục (heading + đoạn/list/callout đi liền sau) gộp thành MỘT khối `paragraph` rich-HTML (giữ nguyên nội dung), `divider` bị bỏ (web tự kẻ vạch giữa khối), `image`/`feature` giữ nguyên. Idempotent (chỉ rewrite hàng có loại khối ngoài 4-vocab hoặc gộp được).
 
 **Presence semantics (PATCH):** Sending `descriptionBlocks` (including `[]`) triggers rendering and overwrites **both** columns (`description_blocks` and `description`). Omitting the key leaves both columns untouched.
 
@@ -304,7 +307,7 @@ Eleven block types (8 gốc + 3 khối PDP chuyên biệt V246):
 
 **HTML sanitizer:** Rendered HTML is sanitized (Jsoup `Safelist`) before writing to `description` to block XSS vectors (`<script>`, `on*` handlers, `javascript:` URIs).
 
-Status: `CONFIRMED_FROM_CODE` — `DescriptionBlock.java` (sealed interface, `FeatureBlock` có `subheading`), `DescriptionBlocksConverter`, `ProductEntity.descriptionBlocks`, `DescriptionBlockRenderer` (gồm `renderFeature` render eyebrow), `AdminCatalogMutationService.applyProductPatch`, migration `V139` + `V238` (gộp sản phẩm về 4 khối). Admin `BlockEditor` chạy `productMode` hiện 7 khối (4 + 3 khối PDP V246 `prosCons`/`suitability`/`sizeGuide`); Content giữ đủ khối. Các khối mới không thêm cột (JSONB sẵn có). `DescriptionBlockRenderer` render 3 khối mới ra HTML SEO; `JpaCatalogReadRepository.deriveHighlights` suy ra `positiveNotes`/`negativeNotes` từ khối `prosCons`.
+Status: `CONFIRMED_FROM_CODE` — `DescriptionBlock.java` (sealed interface, `FeatureBlock` có `subheading`), `DescriptionBlocksConverter`, `ProductEntity.descriptionBlocks`, `DescriptionBlockRenderer` (gồm `renderFeature` render eyebrow), `AdminCatalogMutationService.applyProductPatch`, migration `V139` + `V238` (gộp sản phẩm về 4 khối) + `V251` (gỡ khối `prosCons`). Admin `BlockEditor` chạy `productMode` hiện 6 khối (4 + 2 khối PDP `suitability`/`sizeGuide`); Content giữ đủ khối. `DescriptionBlockRenderer` render các khối ra HTML SEO; `JpaCatalogReadRepository.toHighlights` đọc `positiveNotes`/`negativeNotes` từ bảng con `product_highlights` (V251 — không còn suy ra từ khối). Subtype `ProsConsBlock` giữ lại dormant trong sealed interface để deserialize an toàn dữ liệu cũ.
 
 ### Product FAQ entries — `product_faqs` (V133)
 
@@ -362,6 +365,43 @@ Status: `CONFIRMED_FROM_CODE` — `ProductCommitmentEntity`, `ProductCommitment`
 domain record, `CommitmentRequest`, `AdminCatalogMutationService.applyCommitments`,
 migration `V232`.
 
+### Product "Mua tại BigBike.vn" rows — `product_purchase_lines` (V249)
+
+Per-product list of free-form rows rendered inside the **"Mua tại BigBike.vn"**
+trust block on the PDP. Each product owns its own rows (admin tự thêm/bớt dòng),
+mirroring `product_commitments` (V232) với cột song ngữ inline. **Thay thế** 4 field
+scalar cũ `warranty_months` / `warranty_scope` / `pdp_shipping_line` /
+`pdp_return_line` (giờ dormant — xem bảng "Cột scalar trên `products`"): domain field
+tương ứng đã gỡ khỏi API/admin/web, dữ liệu cũ được V249 backfill sang bảng này.
+Child table của `products`.
+
+| Column | Type | Null | Notes |
+|---|---|---|---|
+| `id` | `BIGINT` identity | NO | Primary key. |
+| `product_id` | `VARCHAR(64)` | NO | FK → `products.id`, `ON DELETE CASCADE`. |
+| `sort_order` | `INTEGER` | NO | Display order; assigned by the admin editor. |
+| `icon` | `VARCHAR(40)` | NO | Icon key từ bộ web cố định; trống khi ghi → `shield-check`. |
+| `label` | `VARCHAR(200)` | NO | Nhãn dòng (tiếng Việt / canonical). Dòng có `label` trống bị bỏ khi ghi. |
+| `value` | `VARCHAR(300)` | YES | Giá trị/diễn giải dòng (tuỳ chọn). |
+| `label_en` | `VARCHAR(200)` | YES | Nhãn tiếng Anh tuỳ chọn; null → fallback `label`. |
+| `value_en` | `VARCHAR(300)` | YES | Giá trị tiếng Anh tuỳ chọn; null → fallback `value`. |
+
+DTO upsert nhận tối đa **12** dòng (`@Size(max = 12)`), **full-replace** (presence-flag).
+Dòng có `label` trống bị loại khi ghi; `icon` trống → `shield-check`. Trả về trên
+product detail (public + admin) dưới dạng mảng `purchaseLines` của domain `Product`;
+**public read chỉ `{ icon, label, value }`**, admin read thêm `{ labelEn, valueEn }`.
+**Detail-only** — omitted (`[]`) trên product *list* responses.
+
+`V249` còn **backfill**: với mọi sản phẩm có dữ liệu cũ, tạo các dòng từ Bảo hành
+(`warranty_months` → "N tháng" / "N months", fallback `warranty_scope`), Giao hàng
+(`pdp_shipping_line`) và Đổi trả (`pdp_return_line`), giữ nguyên thứ tự. Cột scalar
+gốc được giữ dormant (không drop).
+
+Status: `CONFIRMED_FROM_CODE` — `ProductPurchaseLineEntity`, `ProductPurchaseLine`
+domain record, `PurchaseLineRequest`, `UpsertProductRequest` (`purchaseLines`),
+`AdminCatalogMutationService.applyPurchaseLines`, `JpaCatalogReadRepository.toPurchaseLines`,
+migration `V252__create_product_purchase_lines.sql`.
+
 ### Product "Specs Dashboard" stat boxes — `product_spec_stats` (V235)
 
 Per-product list of "Specs Dashboard" stat boxes rendered right under the buy area
@@ -417,34 +457,35 @@ trong product *list* responses, như `specifications`/`faqs`).
 | `content_en` | `TEXT` | YES | Bản tiếng Anh tùy chọn; null → fallback VI. |
 
 Upsert DTO nhận tối đa 20 mục mỗi nhóm (`@Size(max = 20)`). Mục `content` blank bị
-drop. Đọc ra domain `Product` thành 2 mảng string `positiveNotes` / `negativeNotes`
-(đã resolve theo locale).
+drop. Đọc ra domain `Product` thành 2 mảng `positiveNotes` / `negativeNotes`
+(đã resolve theo locale) qua `JpaCatalogReadRepository.toHighlights`.
 
-> **V246 — Ưu/Nhược điểm + Phù hợp với ai + Bảng size gộp vào mô tả.** Cả 3 mục giờ
-> được admin nhập như **khối** trong `description_blocks` / `description_blocks_en`
-> (block type `prosCons` / `suitability` / `sizeGuide` — xem §"Product description
-> blocks"). Nguồn dữ liệu duy nhất = khối. `positiveNotes` / `negativeNotes` trên API
-> response giờ **được SUY RA (derived, read-only)** từ khối `prosCons` (giữ rich result
-> schema.org V175); admin không còn gửi `positiveNotes`/`negativeNotes`/`suitability_advisory`/`size_guide`.
-> Migration `V246` copy dữ liệu cũ (`product_highlights` + `suitability_advisory` +
-> `size_guide`) vào khối (append-only, idempotent); **bảng/cột cũ được GIỮ ở dạng dư
-> (dormant)** làm lưới an toàn — code thôi đọc/ghi, có thể drop ở migration sau khi đã
-> kiểm chứng. `product_highlights` / `size_guide` / `suitability_advisory` = legacy.
+> **V251 — Ưu/Nhược điểm TÁCH RA khỏi mô tả lại (đảo phần `prosCons` của V246).** Ưu/Nhược
+> điểm trở lại là **khối RIÊNG cố định ngay dưới mô tả, ngoài tab** — admin nhập ở card riêng
+> ("Ưu điểm & Nhược điểm"), **không bắt buộc** (đăng sản phẩm được khi để trống). **Nguồn dữ
+> liệu duy nhất quay về bảng con `product_highlights` này** (V175); admin gửi lại
+> `positiveNotes`/`negativeNotes` (DTO `UpsertProductRequest`, `AdminCatalogMutationService.applyHighlights`),
+> backend đọc ra response + schema.org `positiveNotes`/`negativeNotes` (json-ld). Migration `V251`
+> gỡ mọi khối `prosCons` còn sót trong `description_blocks`/`_en` (no-op ở production vì V246 chưa
+> chạy). **Suitability ("Phù hợp với ai") + sizeGuide ("Bảng size") GIỮ NGUYÊN là khối trong mô tả**
+> (chỉ `prosCons` bị đảo). `size_guide` / `suitability_advisory` cột scalar = legacy/dormant như trước.
 
 **Cột scalar mới trên `products`:**
 
 | Column | Type | Null | Notes |
 |---|---|---|---|
-| `warranty_months` | `INTEGER` | YES | Số tháng bảo hành. Domain field `warrantyMonths`. |
-| `warranty_scope` | `TEXT` | YES | Phạm vi bảo hành (1 ngôn ngữ — fallback VI). Domain `warrantyScope`. |
-| `pdp_shipping_line` | `TEXT` | YES | (V247) Dòng "Giao hàng" khối "Mua tại BigBike.vn" theo từng sản phẩm (1 ngôn ngữ). Domain `pdpShippingLine`; trống → web dùng mặc định chung (i18n `Product.trustShippingValue`). |
-| `pdp_return_line` | `TEXT` | YES | (V247) Dòng "Đổi trả" khối "Mua tại BigBike.vn" theo từng sản phẩm (1 ngôn ngữ). Domain `pdpReturnLine`; trống → web dùng mặc định chung (i18n `Product.trustExchangeValue`). |
+| `warranty_months` | `INTEGER` | YES | **(dormant từ V249)** Domain field `warrantyMonths` đã gỡ; cột giữ làm lưới an toàn, dữ liệu đã backfill sang `product_purchase_lines`. Không còn admin đọc/ghi. |
+| `warranty_scope` | `TEXT` | YES | **(dormant từ V249)** Domain field `warrantyScope` đã gỡ; cột giữ làm lưới an toàn, dữ liệu đã backfill (fallback) sang `product_purchase_lines`. Không còn admin đọc/ghi. |
+| `pdp_shipping_line` | `TEXT` | YES | **(dormant từ V249)** Domain field `pdpShippingLine` đã gỡ; cột giữ làm lưới an toàn, dữ liệu đã backfill sang `product_purchase_lines`. Không còn admin đọc/ghi. |
+| `pdp_return_line` | `TEXT` | YES | **(dormant từ V249)** Domain field `pdpReturnLine` đã gỡ; cột giữ làm lưới an toàn, dữ liệu đã backfill sang `product_purchase_lines`. Không còn admin đọc/ghi. |
 | `origin_brand_country` | `VARCHAR(120)` | YES | "Thương hiệu [nước]". Domain `originBrandCountry`. |
 | `size_guide` | `TEXT` | YES | Bảng size dạng HTML (rich-text, sanitize khi render). Domain `sizeGuide`. |
 
-**Trọng lượng:** dùng lại cột `weight_kg` (`NUMERIC(10,4)`, đã có từ schema gốc) —
-không thêm cột. Domain phơi `weightGrams` (Integer) = `weight_kg × 1000`; admin nhập
-gram, mutation lưu `weight_kg = grams / 1000`. Dùng cho schema.org `Product.weight`.
+**Trọng lượng (đã gỡ):** field dẫn xuất `weightGrams` đã được **gỡ khỏi domain/API/admin/web**
+(quyết định chủ shop — ô "Trọng lượng (gram)" trong form đăng sản phẩm biến mất, web ngừng khai
+`Product.weight` cho schema.org). Cột vật lý `weight_kg` (`NUMERIC(10,4)`) **vẫn tồn tại** trong
+DB (kích thước vật lý do trình nhập WooCommerce ghi — `length_cm`/`width_cm`/`height_cm` cùng nhóm),
+KHÔNG drop; chỉ không còn admin ghi/đọc qua field `weightGrams` nữa.
 
 Status: `CONFIRMED_FROM_CODE` — `ProductHighlightEntity`, `ProductEntity`
 (scalar cols), `HighlightRequest`, `UpsertProductRequest`,
@@ -1326,7 +1367,7 @@ system web. Tất cả nullable / default an toàn → sản phẩm cũ giữ ng
 | `V230` | `product_specifications.featured` | `BOOLEAN NOT NULL` | `false` | ~~"Đưa lên ô nổi bật"~~ **GỠ BỎ ở `V235`** — thay bằng bảng per-product `product_spec_stats` (ô số liệu nhập riêng, tách khỏi thông số kỹ thuật). Xem §"Product 'Specs Dashboard' stat boxes — `product_spec_stats` (V235)". |
 | `V231` | `products.product_tabs` | `JSONB` | `NULL` | Cấu hình tab PDP theo từng sản phẩm. NULL = dùng tab mặc định (Mô tả/Đánh giá/Thông số/Lắp đặt/FAQ). Mỗi tab: `{ id, type, enabled, sortOrder, label, labelEn, blocks, blocksEn }`; `type` ∈ description\|reviews\|specs\|installation\|faq\|custom. Lưu canonical: `label`/`blocks`=vi, `labelEn`/`blocksEn`=en. |
 | `V234` | `reviews.title` + `reviews.photos` | `varchar(160)` + `JSONB` | `NULL` | Tiêu đề tuỳ chọn + mảng URL ảnh khách hàng (MinIO `/media/reviews/...`, ≤10) cho đánh giá sản phẩm. Nullable, không backfill → review cũ giữ `NULL`. Xem `BUSINESS_RULES.md` `REVIEW_RULE_005`. |
-| `V245` | `products.section_visibility` | `TEXT` | `NULL` | "Hiển thị trên web": opaque JSON string `{sectionKey: boolean}` cho 16 section PDP (`quickAnswer, description, specStats, prosCons, suitability, sizeGuide, specifications, installation, faqs, reviews, trust, related, accessories, videos, trustBadges, commitments`). Backend truyền nguyên (như `size_guide`); admin serialize / web parse. **NULL = legacy** → web hiện theo nội dung; key=false → ẩn; key=true → hiện nếu có nội dung. SP mới opt-in (tắt hết). Không backfill. Xem `BUSINESS_RULES.md` `PRODUCT_RULE_006`. |
+| `V245` | `products.section_visibility` | `TEXT` | `NULL` | "Hiển thị trên web": opaque JSON string `{sectionKey: boolean}` cho **5 section dạng tab** (`description, specifications, faqs, videos, reviews`). Backend truyền nguyên (như `size_guide`); admin serialize / web parse. **NULL = legacy** → web hiện theo nội dung; key=false → ẩn; key=true → hiện nếu có nội dung. SP mới opt-in (tắt hết). Không backfill. Khối ngoài tab không nằm trong map (web tự hiện khi có nội dung); map cũ chứa khoá ngoài-tab hoặc `_order` được bỏ qua an toàn. Xem `BUSINESS_RULES.md` `PRODUCT_RULE_006`. |
 
 **Localize đọc (public):** `description_blocks` resolve theo `lang` (en → `description_blocks_en`, fallback vi) qua
 `JpaCatalogReadRepository.pickBlocks`; `product_tabs` resolve `label`/`blocks` theo locale qua `resolveTabs`

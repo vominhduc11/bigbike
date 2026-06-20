@@ -175,11 +175,8 @@ public class ProductEntity {
     @Column(name = "section_visibility", columnDefinition = "text")
     private String sectionVisibility;
 
-    // PDP layout fields (V236–V237). Bilingual dual-text (vi canonical + _en); detail-only.
-    @Column(name = "quick_answer_summary", columnDefinition = "text")
-    private String quickAnswerSummary;
-
     // "Phù hợp với ai" — JSON array các thẻ [{audience, advice, linkLabel?, linkUrl?}] (V237; format V240).
+    // Bilingual dual-text (vi canonical + _en); detail-only.
     // Opaque string giống size_guide; web parse JSON khi render.
     @Column(name = "suitability_advisory", columnDefinition = "text")
     private String suitabilityAdvisory;
@@ -253,9 +250,6 @@ public class ProductEntity {
     @Column(name = "seo_description_en", columnDefinition = "text")
     private String seoDescriptionEn;
 
-    @Column(name = "quick_answer_summary_en", columnDefinition = "text")
-    private String quickAnswerSummaryEn;
-
     @Column(name = "suitability_advisory_en", columnDefinition = "text")
     private String suitabilityAdvisoryEn;
 
@@ -286,6 +280,9 @@ public class ProductEntity {
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<ProductCommitmentEntity> commitments;
+
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<ProductPurchaseLineEntity> purchaseLines;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<ProductTrustBadgeEntity> trustBadges;

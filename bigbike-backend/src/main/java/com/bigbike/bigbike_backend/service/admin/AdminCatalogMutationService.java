@@ -13,6 +13,7 @@ import com.bigbike.bigbike_backend.api.admin.dto.SpecificationRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.SpecStatRequest;
 import com.bigbike.bigbike_backend.domain.catalog.ProductTab;
 import com.bigbike.bigbike_backend.api.admin.dto.CommitmentRequest;
+import com.bigbike.bigbike_backend.api.admin.dto.PurchaseLineRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.TrustBadgeRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.FaqRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.HighlightRequest;
@@ -43,6 +44,7 @@ import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantGall
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductSpecificationEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductSpecStatEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductCommitmentEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductPurchaseLineEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductTrustBadgeEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductFaqEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductHighlightEntity;
@@ -1047,19 +1049,9 @@ public class AdminCatalogMutationService {
             entity.setInstallationGuide(AdminMutationValidators.trimToNull(request.getInstallationGuide()));
         }
 
-        // Template SEO fields (V175). Presence-flag scalars (1 ngôn ngữ).
-        if (create || request.isWarrantyMonthsPresent()) {
-            entity.setWarrantyMonths(request.getWarrantyMonths());
-        }
-        if (create || request.isWarrantyScopePresent()) {
-            entity.setWarrantyScope(AdminMutationValidators.trimToNull(request.getWarrantyScope()));
-        }
-        if (create || request.isPdpShippingLinePresent()) {
-            entity.setPdpShippingLine(AdminMutationValidators.trimToNull(request.getPdpShippingLine()));
-        }
-        if (create || request.isPdpReturnLinePresent()) {
-            entity.setPdpReturnLine(AdminMutationValidators.trimToNull(request.getPdpReturnLine()));
-        }
+        // Warranty / shipping / return (warranty_months, warranty_scope, pdp_shipping_line,
+        // pdp_return_line) gỡ khỏi tầng ứng dụng ở V249 — nội dung này giờ là các dòng
+        // per-product trong khối "Mua tại BigBike.vn" (purchaseLines). Cột DB giữ dormant.
         if (create || request.isOriginBrandCountryPresent()) {
             entity.setOriginBrandCountry(AdminMutationValidators.trimToNull(request.getOriginBrandCountry()));
         }
@@ -1068,9 +1060,6 @@ public class AdminCatalogMutationService {
         }
         if (create || request.isSectionVisibilityPresent()) {
             entity.setSectionVisibility(AdminMutationValidators.trimToNull(request.getSectionVisibility()));
-        }
-        if (create || request.isQuickAnswerSummaryPresent()) {
-            entity.setQuickAnswerSummary(AdminMutationValidators.trimToNull(request.getQuickAnswerSummary()));
         }
         if (create || request.isSuitabilityAdvisoryPresent()) {
             entity.setSuitabilityAdvisory(AdminMutationValidators.trimToNull(request.getSuitabilityAdvisory()));
@@ -1159,6 +1148,12 @@ public class AdminCatalogMutationService {
             applyCommitments(entity, request.getCommitments());
         } else if (create) {
             entity.setCommitments(new ArrayList<>());
+        }
+
+        if (request.getPurchaseLines() != null) {
+            applyPurchaseLines(entity, request.getPurchaseLines());
+        } else if (create) {
+            entity.setPurchaseLines(new ArrayList<>());
         }
 
         if (request.getTrustBadges() != null) {
@@ -1283,7 +1278,6 @@ public class AdminCatalogMutationService {
         entity.setDescriptionEn(en == null ? null : AdminMutationValidators.trimToNull(en.getDescription()));
         entity.setPromotionContentEn(en == null ? null : AdminMutationValidators.trimToNull(en.getPromotionContent()));
         entity.setInstallationGuideEn(en == null ? null : AdminMutationValidators.trimToNull(en.getInstallationGuide()));
-        entity.setQuickAnswerSummaryEn(en == null ? null : AdminMutationValidators.trimToNull(en.getQuickAnswerSummary()));
         entity.setSuitabilityAdvisoryEn(en == null ? null : AdminMutationValidators.trimToNull(en.getSuitabilityAdvisory()));
         entity.setSeoTitleEn(en == null ? null : AdminMutationValidators.trimToNull(en.getSeoTitle()));
         entity.setSeoDescriptionEn(en == null ? null : AdminMutationValidators.trimToNull(en.getSeoDescription()));
@@ -1423,6 +1417,36 @@ public class AdminCatalogMutationService {
             commitment.setTitleEn(AdminMutationValidators.trimToNull(req.getTitleEn()));
             commitment.setSubtitleEn(AdminMutationValidators.trimToNull(req.getSubtitleEn()));
             existing.add(commitment);
+        }
+    }
+
+    private static final String PURCHASE_LINE_DEFAULT_ICON = "shield-check";
+
+    /**
+     * Per-product "Mua tại BigBike.vn" lines (V249) — full-replace like {@code commitments}.
+     * Rows with a blank label are dropped; a blank icon falls back to the default.
+     */
+    private static void applyPurchaseLines(ProductEntity entity, List<PurchaseLineRequest> requests) {
+        List<ProductPurchaseLineEntity> existing = entity.getPurchaseLines();
+        if (existing == null) {
+            existing = new ArrayList<>();
+            entity.setPurchaseLines(existing);
+        }
+        existing.clear();
+        for (int i = 0; i < requests.size(); i++) {
+            PurchaseLineRequest req = requests.get(i);
+            String label = AdminMutationValidators.trimToNull(req.getLabel());
+            if (label == null) continue;
+            String icon = AdminMutationValidators.trimToNull(req.getIcon());
+            ProductPurchaseLineEntity line = new ProductPurchaseLineEntity();
+            line.setProduct(entity);
+            line.setSortOrder(req.getSortOrder() != null ? req.getSortOrder() : i);
+            line.setIcon(icon != null ? icon : PURCHASE_LINE_DEFAULT_ICON);
+            line.setLabel(label);
+            line.setValue(AdminMutationValidators.trimToNull(req.getValue()));
+            line.setLabelEn(AdminMutationValidators.trimToNull(req.getLabelEn()));
+            line.setValueEn(AdminMutationValidators.trimToNull(req.getValueEn()));
+            existing.add(line);
         }
     }
 

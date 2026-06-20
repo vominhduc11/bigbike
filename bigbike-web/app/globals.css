@@ -355,7 +355,7 @@ body {
      Re-uses --bb-header-stack so the gap below the header collapses
      in lockstep when the promo strip hides on scroll. */
   padding-top: var(--bb-header-stack);
-  padding-bottom: 0;
+  padding-bottom: 30px;
   transition: padding-top var(--bb-duration-normal) var(--bb-ease-standard);
 }
 
@@ -2970,15 +2970,38 @@ body:has(.bb-home) {
 .bb-wp-pdp-page .pdp-section-head {
   margin-bottom: 20px;
 }
-.bb-wp-pdp-page .pdp-section-head > .kicker {
-  margin: 0 0 6px;
-  font-family: var(--bb-font-body);
-  font-size: 16px; /* = .sub-title trang chủ */
-  line-height: var(--bb-line-section-kicker);
-  font-weight: var(--bb-font-weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: var(--bb-tracking-wide);
-  color: var(--bb-text-brand);
+@media (max-width: 767px) {
+  /* Mobile: thu hẹp khoảng hở dưới tiêu đề section (PHỤ KIỆN BÁN KÈM / Sản phẩm
+     tương tự…) — 20px trên mobile nhìn quá thưa so với khung hẹp, nhưng 0 lại dính
+     sát nội dung bên dưới (vd lưới "Mua tại BigBike.vn"). Chừa khoảng hở nhỏ 12px. */
+  .bb-wp-pdp-page .pdp-section-head {
+    margin-bottom: 12px;
+  }
+  /* Khối "Sản phẩm đã xem gần đây" dùng `.block-title` (mb-40 = 40px) thay vì
+     .pdp-section-head — thu cùng nhịp: bỏ khoảng hở dưới tiêu đề trên mobile.
+     Scope `.bb-wp-pdp-page` nên KHÔNG ảnh hưởng các dải `.block-title` trang chủ. */
+  .bb-wp-pdp-page .block-title.mb-40 {
+    margin-bottom: 0 !important; /* `.mb-40` của theme WP là !important nên buộc phải đè bằng !important */
+  }
+}
+/* Cụm chấm phân trang của carousel sản phẩm (ProductSwiper) mặc định cách trên 40px —
+   trong PDP nhìn quá xa carousel. Thu lại 16px, scope `.bb-wp-pdp-page` nên carousel
+   trang chủ giữ nguyên. Áp cho cả Phụ kiện bán kèm / Sản phẩm tương tự / Đã xem gần đây. */
+.bb-wp-pdp-page [id^="bb-pswiper-pag"] {
+  margin-top: 16px;
+}
+/* Tên sản phẩm trong carousel PDP cố định ĐÚNG 2 dòng: dài hơn thì cắt bằng "…",
+   ngắn hơn vẫn chừa đủ 2 dòng (min-height) → mọi thẻ cao bằng nhau, giá thẳng hàng.
+   `font-size:16px` khớp với `.product--item-title a` để tính dòng nhất quán. Scope
+   `.bb-wp-pdp-page` nên carousel trang chủ giữ nguyên. */
+.bb-wp-pdp-page .product .product--item-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 16px;
+  line-height: 1.3;
+  min-height: 2.6em;
 }
 .bb-wp-pdp-page .pdp-section-head > .title {
   margin: 0;
@@ -2995,8 +3018,29 @@ body:has(.bb-home) {
   }
 }
 
+/* FAQ accordion nằm trong panel tab `.wyswyg` (mobile xếp dọc các panel). Theme WP
+   (UNLAYERED) gán `.wyswyg h3{margin-bottom:30px}` + `.wyswyg p{margin-bottom:30px}` →
+   chèn 30px hở thừa, làm nhịp dọc FAQ lệch/không đều.
+   Các rule dưới để TOP-LEVEL (unlayered) + `!important`: WP nạp unlayered nhưng KHÔNG
+   !important nên override này luôn THẮNG (xem cùng cách .pdp-desc-rich phía dưới). */
+/* 1) Header mỗi câu hỏi là <h3> Radix (con trực tiếp của AccordionItem) → bỏ 30px hở dưới,
+      để khoảng cách câu hỏi do `py-3` của trigger kiểm soát (đều trên–dưới).
+      Dùng `> div > h3` để KHÔNG đụng h3 admin có thể nhập trong nội dung trả lời. */
+.pdp-faq-accordion > div > h3 {
+  margin: 0 !important;
+}
+/* 2) Nội dung trả lời (.wyswyg): bỏ lề thừa của phần tử đầu/cuối để khối trả lời ôm sát
+      `pt-0`/`pb-4` của AccordionContent → mở ra cân đối, không hở 30px dưới đáy. Lề GIỮA
+      các đoạn/danh sách vẫn giữ (chỉ chạm first/last-child). */
+.pdp-faq-accordion .wyswyg > :first-child {
+  margin-top: 0 !important;
+}
+.pdp-faq-accordion .wyswyg > :last-child {
+  margin-bottom: 0 !important;
+}
+
 /* Mô tả sản phẩm dạng khối (ProductDescriptionBlocks): chữ thường (đoạn văn / danh sách / ghi chú /
-   khối ảnh-chữ) = 18px CỐ ĐỊNH, đồng bộ hộp "trả lời nhanh" (cũng dùng --text-18).
+   khối ảnh-chữ) = 18px CỐ ĐỊNH.
    Dùng --text-18 (18px tuyệt đối) thay vì --fs-body-lg (1.125rem): trang WP đặt cỡ gốc = 14px nên
    token rem co lại còn 15.75px, không ra 18px như tên gọi.
    !important: theme WP nạp `.wyswyg{font-size:.875rem}` + `body .wyswyg{16px}` UNLAYERED, thắng mọi
@@ -3008,36 +3052,64 @@ body:has(.bb-home) {
   font-size: var(--text-18) !important;
 }
 
+/* Khối mô tả tự giãn cách bằng flex `gap` (gap-2 giữa các khối chữ, gap-1.5 trong danh sách).
+   Theme WP (UNLAYERED) lại gán margin cho h1-h6 (.5rem), ul/ol (1rem) → cộng dồn lên `gap`
+   làm hở dư, rõ nhất ở tiêu đề→danh sách. Reset margin về 0 để CHỈ còn `gap` điều khiển.
+   Loại trừ phải là `.pdp-desc-rich .wyswyg *` (khối rich-text admin nhập BÊN TRONG mô tả) —
+   KHÔNG dùng `.wyswyg *` trần: trên mobile cả khối mô tả bị bọc trong panel tab `.wyswyg`
+   (WpProductTabs), nên `.wyswyg *` sẽ vô hiệu reset cho toàn bộ → lề WP quay lại, hở dư. */
+.pdp-desc-rich :is(h1, h2, h3, h4, h5, h6, ul, ol, li):not(.pdp-desc-rich .wyswyg *) {
+  margin: 0 !important;
+}
+
+/* Lề CUỐI của khối rich-text PDP: theme WP đặt `.wyswyg p{margin-bottom:30px}` nên phần tử CUỐI của
+   mỗi khối (vd đoạn "Đo chu vi…" cuối Bảng size) treo thêm 30px khoảng trống. Trên mobile các mục
+   xếp dọc ngăn nhau bằng vạch + padding đối xứng (WpProductTabs `py-6`); 30px dư này làm khoảng cách
+   TRÊN vạch lớn hơn DƯỚI → lệch. Bỏ lề cuối để nhịp trên/dưới vạch bằng nhau. */
+.bb-wp-pdp-page .wyswyg > :last-child {
+  margin-bottom: 0;
+}
+
 /* Bảng trong nội dung rich-text sản phẩm (.wyswyg) — VD "Bảng size" admin nhập dạng HTML table.
    TRƯỚC ĐÂY KHÔNG style ở PDP → bảng admin chèn hiển thị thô (viền mặc định trình duyệt).
    Style chuẩn: header đậm, hàng có viền, padding rộng — đồng bộ "Thông số kỹ thuật". */
-.bb-wp-pdp-page .wyswyg table {
+/* :not(.shop_attributes): bảng "Thông số kỹ thuật" có style RIÊNG (component
+   ProductSpecsTable) — KHÔNG để nó mượn kiểu nền tối/viền của bảng rich-text này.
+   Trên mobile bảng thông số nằm trong .wyswyg (tab-panel) nên nếu không loại trừ
+   sẽ bị tô nền xám + ô tên kéo rộng cố định → hở mảng tối trống bên phải nhãn ngắn. */
+.bb-wp-pdp-page .wyswyg table:not(.shop_attributes) {
   width: 100%;
   border-collapse: collapse;
   margin: 0 0 1rem;
-  font-size: 14px;
+  font-size: 18px;
 }
-.bb-wp-pdp-page .wyswyg table th,
-.bb-wp-pdp-page .wyswyg table td {
+.bb-wp-pdp-page .wyswyg table:not(.shop_attributes) th,
+.bb-wp-pdp-page .wyswyg table:not(.shop_attributes) td {
   padding: 10px 14px;
   text-align: left;
   vertical-align: top;
   border: 1px solid var(--bb-border-subtle);
 }
-.bb-wp-pdp-page .wyswyg table th {
+.bb-wp-pdp-page .wyswyg table:not(.shop_attributes) th {
   /* Xám than thay vì đen tuyệt đối — giảm tương phản gắt với nền trắng (giữ nhận diện tối). */
   background: var(--bb-color-gray-700);
   color: var(--bb-text-inverse);
   font-weight: 700;
   text-transform: uppercase;
-  font-size: 12px;
+  font-size: 18px !important;
   letter-spacing: 0.04em;
 }
-.bb-wp-pdp-page .wyswyg table tbody tr:nth-child(even) td {
+/* Nếu admin nhập tiêu đề bọc trong <p>/<span>, ép cỡ chữ con theo th (18px) — tránh bị
+   luật .wyswyg p{16px} (theme WP, unlayered) kéo nhỏ lại. */
+.bb-wp-pdp-page .wyswyg table:not(.shop_attributes) th,
+.bb-wp-pdp-page .wyswyg table:not(.shop_attributes) th * {
+  font-size: 18px !important;
+}
+.bb-wp-pdp-page .wyswyg table:not(.shop_attributes) tbody tr:nth-child(even) td {
   background: var(--bb-bg-surface-raised);
 }
-.bb-wp-pdp-page .wyswyg table td p,
-.bb-wp-pdp-page .wyswyg table th p {
+.bb-wp-pdp-page .wyswyg table:not(.shop_attributes) td p,
+.bb-wp-pdp-page .wyswyg table:not(.shop_attributes) th p {
   margin: 0;
 }
 
@@ -3048,6 +3120,12 @@ body:has(.bb-home) {
 .thong-so-ki-thuat .shop_attributes th,
 .thong-so-ki-thuat .shop_attributes td {
   font-size: var(--bb-text-base);
+}
+/* Bảng thông số là khối tự đủ — bỏ lề cuối 1rem mà theme WP gán cho mọi <table>. Khung cuộn ngang
+   `.thong-so-ki-thuat` (overflow) "nhốt" lề này lại nên nó không tự triệt tiêu, làm khoảng trống DƯỚI
+   bảng (trước vạch ngăn mục) lớn hơn phía trên trên mobile. Bỏ đi để nhịp trên/dưới vạch bằng nhau. */
+.thong-so-ki-thuat .shop_attributes {
+  margin-bottom: 0;
 }
 
 /* .bb-wp-pdp-layout grid + .bb-wp-pdp-gallery-col/.bb-wp-pdp-info-col min-width:0
@@ -3432,7 +3510,7 @@ body:has(.bb-search-results-page) {
 }
 
 .bb-home .content-bottom {
-  padding: 60px 0;
+  padding: 30px 0;
   background-color: #f8f8f8;
 }
 
@@ -3497,8 +3575,8 @@ body:has(.bb-search-results-page) {
 }
 
 .bb-home .content-bottom {
-  padding-top: 60px;
-  padding-bottom: 60px;
+  padding-top: 30px;
+  padding-bottom: 30px;
 }
 
 /* -- Experience carousel: desktop/tablet vertical breathing room ----------
@@ -3550,8 +3628,8 @@ body:has(.bb-search-results-page) {
   }
 
   .bb-home .content-bottom {
-    padding-top: 40px;
-    padding-bottom: 40px;
+    padding-top: 30px;
+    padding-bottom: 30px;
   }
 }
 
@@ -3601,11 +3679,7 @@ body:has(.bb-search-results-page) {
   }
 
   .bb-main {
-    padding-bottom: calc(var(--bb-mobile-nav-height) + env(safe-area-inset-bottom));
-  }
-
-  .bb-main:has(.bb-home) {
-    padding-bottom: 0;
+    padding-bottom: 30px;
   }
 
   body > footer {
@@ -3812,7 +3886,7 @@ body:has(.bb-search-results-page) {
 
   .bb-main,
   .bb-main:has(.bb-home) {
-    padding-bottom: calc(var(--bb-mobile-nav-height) + env(safe-area-inset-bottom));
+    padding-bottom: 30px;
     overflow-x: clip;
   }
 

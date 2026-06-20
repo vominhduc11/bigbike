@@ -9,6 +9,7 @@ import com.bigbike.bigbike_backend.domain.catalog.GalleryMedia;
 import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
 import com.bigbike.bigbike_backend.domain.catalog.ProductCommitment;
+import com.bigbike.bigbike_backend.domain.catalog.ProductPurchaseLine;
 import com.bigbike.bigbike_backend.domain.catalog.TrustBadge;
 import com.bigbike.bigbike_backend.domain.catalog.ProductFaq;
 import com.bigbike.bigbike_backend.domain.catalog.ProductHighlight;
@@ -27,10 +28,12 @@ import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductGalleryImageEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductHighlightEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantGalleryImageEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductSpecificationEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductSpecStatEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductCommitmentEntity;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductPurchaseLineEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductTrustBadgeEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductFaqEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
@@ -74,12 +77,14 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     private static final Set<String> COLOR_ATTRIBUTE_KEYS = Set.of(
             "color", "colour", "mau", "mau sac", "pa color", "pa mau", "pa mau sac"
     );
+    private static final Comparator<ProductHighlightEntity> HIGHLIGHT_ORDER = Comparator.comparingInt(ProductHighlightEntity::getSortOrder);
     private static final Comparator<ProductGalleryImageEntity> GALLERY_ORDER = Comparator.comparingInt(ProductGalleryImageEntity::getSortOrder);
     private static final Comparator<ProductVariantGalleryImageEntity> VARIANT_GALLERY_ORDER = Comparator.comparingInt(ProductVariantGalleryImageEntity::getSortOrder);
     private static final Comparator<ProductVideoEntity> VIDEO_ORDER = Comparator.comparingInt(ProductVideoEntity::getSortOrder);
     private static final Comparator<ProductSpecificationEntity> SPEC_ORDER = Comparator.comparingInt(ProductSpecificationEntity::getSortOrder);
     private static final Comparator<ProductFaqEntity> FAQ_ORDER = Comparator.comparingInt(ProductFaqEntity::getSortOrder);
     private static final Comparator<ProductCommitmentEntity> COMMITMENT_ORDER = Comparator.comparingInt(ProductCommitmentEntity::getSortOrder);
+    private static final Comparator<ProductPurchaseLineEntity> PURCHASE_LINE_ORDER = Comparator.comparingInt(ProductPurchaseLineEntity::getSortOrder);
     private static final Comparator<ProductSpecStatEntity> SPEC_STAT_ORDER = Comparator.comparingInt(ProductSpecStatEntity::getSortOrder);
     private static final Comparator<ProductTrustBadgeEntity> TRUST_BADGE_ORDER = Comparator.comparingInt(ProductTrustBadgeEntity::getSortOrder);
     private static final Comparator<ProductVariantEntity> VARIANT_ORDER = Comparator.comparingInt(ProductVariantEntity::getSortOrder);
@@ -242,17 +247,13 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 null,                       // installationGuide — detail only
                 List.of(),                  // faqs — detail only
                 List.of(),                  // commitments — detail only
+                List.of(),                  // purchaseLines — detail only
                 List.of(),                  // specStats — detail only
                 List.of(),                  // trustBadges — detail only
                 List.of(),                  // positiveNotes — detail only
                 List.of(),                  // negativeNotes — detail only
-                null,                       // warrantyMonths — detail only
-                null,                       // warrantyScope — detail only
-                null,                       // pdpShippingLine — detail only
-                null,                       // pdpReturnLine — detail only
                 null,                       // originBrandCountry — detail only
                 null,                       // sizeGuide — detail only
-                null,                       // quickAnswerSummary — detail only
                 null,                       // suitabilityAdvisory — detail only
                 entity.getGender(),
                 List.of(),                  // relatedProducts — detail only
@@ -557,17 +558,13 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 pick(entity.getInstallationGuide(), entity.getInstallationGuideEn(), locale),
                 toFaqs(entity, publicView, locale),
                 toCommitments(entity, publicView, locale),
+                toPurchaseLines(entity, publicView, locale),
                 toSpecStats(entity, publicView, locale),
                 toTrustBadges(entity, publicView, locale),
-                deriveHighlights(entity, true, publicView, locale),
-                deriveHighlights(entity, false, publicView, locale),
-                entity.getWarrantyMonths(),
-                entity.getWarrantyScope(),
-                entity.getPdpShippingLine(),
-                entity.getPdpReturnLine(),
+                toHighlights(entity, ProductHighlightEntity.KIND_PRO, publicView, locale),
+                toHighlights(entity, ProductHighlightEntity.KIND_CON, publicView, locale),
                 entity.getOriginBrandCountry(),
                 entity.getSizeGuide(),
-                pick(entity.getQuickAnswerSummary(), entity.getQuickAnswerSummaryEn(), locale),
                 pick(entity.getSuitabilityAdvisory(), entity.getSuitabilityAdvisoryEn(), locale),
                 entity.getGender(),
                 toRelatedProducts(entity, publicView, locale),
@@ -780,40 +777,22 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     }
 
     /**
-     * Ưu/Nhược điểm (V175) — nguồn dữ liệu giờ là khối {@code prosCons} trong mô tả; backend suy ra
-     * cho schema.org positiveNotes/negativeNotes. {@code positive} = true → ưu điểm, false → nhược điểm.
-     * Lấy {@code content} từ danh sách khối đã resolve theo locale; {@code contentEn} (admin only) từ khối EN.
+     * Ưu/Nhược điểm (V175) đã resolve theo locale, lọc theo {@code kind} (PRO/CON). Nguồn dữ liệu là
+     * bảng con {@code product_highlights} — khối đứng RIÊNG dưới mô tả, ngoài tab (ưu/nhược điểm tách
+     * khỏi mô tả). Trả mảng cho schema.org positiveNotes/negativeNotes; {@code contentEn} (admin only).
      */
-    private List<ProductHighlight> deriveHighlights(ProductEntity entity, boolean positive, boolean publicView, String locale) {
-        List<String> content = prosConsItems(
-                pickBlocks(entity.getDescriptionBlocks(), entity.getDescriptionBlocksEn(), locale), positive);
-        if (content.isEmpty()) {
+    private List<ProductHighlight> toHighlights(ProductEntity entity, String kind, boolean publicView, String locale) {
+        if (entity.getHighlights() == null) {
             return List.of();
         }
-        List<String> en = publicView ? List.of() : prosConsItems(entity.getDescriptionBlocksEn(), positive);
-        List<ProductHighlight> out = new java.util.ArrayList<>(content.size());
-        for (int i = 0; i < content.size(); i++) {
-            String contentEn = (!publicView && i < en.size()) ? en.get(i) : null;
-            out.add(new ProductHighlight(content.get(i), contentEn));
-        }
-        return out;
-    }
-
-    /** Lấy danh sách ưu điểm (positive=true) / nhược điểm từ khối {@code prosCons} đầu tiên trong {@code blocks}. */
-    private static List<String> prosConsItems(List<DescriptionBlock> blocks, boolean positive) {
-        if (blocks == null) {
-            return List.of();
-        }
-        for (DescriptionBlock block : blocks) {
-            if (block instanceof DescriptionBlock.ProsConsBlock b) {
-                List<String> items = positive ? b.getPositive() : b.getNegative();
-                if (items == null) {
-                    return List.of();
-                }
-                return items.stream().filter(s -> s != null && !s.isBlank()).toList();
-            }
-        }
-        return List.of();
+        return entity.getHighlights().stream()
+                .filter(item -> kind.equals(item.getKind()))
+                .sorted(HIGHLIGHT_ORDER)
+                .map(item -> new ProductHighlight(
+                        pick(item.getContent(), item.getContentEn(), locale),
+                        publicView ? null : item.getContentEn()
+                ))
+                .toList();
     }
 
     /**
@@ -893,6 +872,26 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     }
 
     /**
+     * Per-product "Mua tại BigBike.vn" lines (V249) resolved for the requested locale.
+     * On admin reads the raw English values ride along in the {@code *En} fields.
+     */
+    private List<ProductPurchaseLine> toPurchaseLines(ProductEntity entity, boolean publicView, String locale) {
+        if (entity.getPurchaseLines() == null) {
+            return List.of();
+        }
+        return entity.getPurchaseLines().stream()
+                .sorted(PURCHASE_LINE_ORDER)
+                .map(item -> new ProductPurchaseLine(
+                        item.getIcon(),
+                        pick(item.getLabel(), item.getLabelEn(), locale),
+                        pick(item.getValue(), item.getValueEn(), locale),
+                        publicView ? null : item.getLabelEn(),
+                        publicView ? null : item.getValueEn()
+                ))
+                .toList();
+    }
+
+    /**
      * Per-product trust badges (V233) resolved for the requested locale. On admin
      * reads the raw English value rides along in {@code contentEn}; public reads null it.
      */
@@ -921,7 +920,6 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 || isPresent(entity.getDescriptionEn())
                 || isPresent(entity.getPromotionContentEn())
                 || isPresent(entity.getInstallationGuideEn())
-                || isPresent(entity.getQuickAnswerSummaryEn())
                 || isPresent(entity.getSuitabilityAdvisoryEn())
                 || isPresent(entity.getSeoTitleEn())
                 || isPresent(entity.getSeoDescriptionEn())
@@ -935,7 +933,6 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 entity.getDescriptionEn(),
                 entity.getPromotionContentEn(),
                 entity.getInstallationGuideEn(),
-                entity.getQuickAnswerSummaryEn(),
                 entity.getSuitabilityAdvisoryEn(),
                 entity.getSeoTitleEn(),
                 entity.getSeoDescriptionEn(),

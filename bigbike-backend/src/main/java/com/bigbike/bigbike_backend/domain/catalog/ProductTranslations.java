@@ -18,8 +18,6 @@ public record ProductTranslations(ProductContent en) {
             String description,
             String promotionContent,
             String installationGuide,
-            /** English "Quick Answer" (V236). */
-            String quickAnswerSummary,
             /** English "Phù hợp với ai" advisory HTML (V237). */
             String suitabilityAdvisory,
             String seoTitle,

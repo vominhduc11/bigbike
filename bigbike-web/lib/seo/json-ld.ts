@@ -69,7 +69,6 @@ export function buildProductJsonLd(product: Product): JsonLdObject {
   };
 }
 
-
 function buildNotesList(notes: { content: string }[] | undefined): JsonLdObject | undefined {
   const items = (notes ?? [])
     .map((note) => note?.content?.trim())
