@@ -1,0 +1,117 @@
+"use client";
+
+import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { formatVnd, resolveMediaUrl } from "@/lib/utils/format";
+import { toArticlePath, toProductPath } from "@/lib/utils/routes";
+import type { ArticleSuggestion, SearchSuggestion } from "./types";
+import { SEARCH_PATH, resultItem, resultsLabel, sResults } from "./styles";
+
+// Desktop live results listbox (query ≥1 char, settled): product + article hits,
+// with a sticky "view all" footer. Mounted into the same overlay panel.
+export function SuggestionResults({
+  suggestions,
+  articleSuggestions,
+  trimmedQuery,
+  addSearch,
+  handleClose,
+}: {
+  suggestions: SearchSuggestion[];
+  articleSuggestions: ArticleSuggestion[];
+  trimmedQuery: string;
+  addSearch: (item: string) => void;
+  handleClose: () => void;
+}) {
+  const t = useTranslations("Search");
+  return (
+    <div
+      id="bb-search-suggestions"
+      className={sResults}
+      role="listbox"
+      aria-label={t("suggestionsLabel")}
+    >
+      {suggestions.length > 0 || articleSuggestions.length > 0 ? (
+        <>
+          {/* Scrollable results list — always shows at most max-height of outer container */}
+          <div className="md:min-h-0 md:flex-1 md:overflow-y-auto md:[-webkit-overflow-scrolling:touch]">
+            {suggestions.length > 0 && (
+              <p className={resultsLabel}>{t("sectionProducts")}</p>
+            )}
+            {suggestions.slice(0, 5).map((product) => (
+              <Link
+                key={product.id}
+                href={toProductPath(product.slug)}
+                className={resultItem}
+                role="option"
+                aria-selected={false}
+                onClick={() => { addSearch(trimmedQuery); handleClose(); }}
+              >
+                {resolveMediaUrl(product.image?.url) ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={resolveMediaUrl(product.image?.url)!}
+                    alt={product.name}
+                    className="h-12 w-12 shrink-0 object-contain 3xl:h-14 3xl:w-14 4xl:h-16 4xl:w-16"
+                    width={48}
+                    height={48}
+                  />
+                ) : (
+                  <div className="h-12 w-12 shrink-0 object-contain 3xl:h-14 3xl:w-14 4xl:h-16 4xl:w-16" aria-hidden />
+                )}
+                <div className="flex min-w-0 flex-1 flex-col gap-1">
+                  <span className="truncate text-caption font-medium text-foreground">{product.name}</span>
+                  <span className="text-ui-13 font-bold text-brand-on-dark 3xl:text-ui-14 4xl:text-ui-16">
+                    {formatVnd(product.price?.salePrice ?? product.price?.retailPrice)}
+                  </span>
+                </div>
+              </Link>
+            ))}
+            {articleSuggestions.length > 0 && (
+              <>
+                <p className={resultsLabel}>{t("sectionArticles")}</p>
+                {articleSuggestions.slice(0, 3).map((article) => (
+                  <Link
+                    key={article.id}
+                    href={toArticlePath(article.slug)}
+                    className={resultItem}
+                    role="option"
+                    aria-selected={false}
+                    onClick={handleClose}
+                  >
+                    <div className="flex min-w-0 flex-1 flex-col gap-1">
+                      <span className="text-ui-13 font-normal text-foreground line-clamp-2 3xl:text-ui-14 4xl:text-ui-16">{article.title}</span>
+                      {article.category?.name && (
+                        <span className="text-ui-11 font-semibold uppercase tracking-normal text-brand-on-dark 3xl:text-ui-12 4xl:text-ui-13">
+                          {article.category.name}
+                        </span>
+                      )}
+                    </div>
+                  </Link>
+                ))}
+              </>
+            )}
+          </div>
+          {/* "View all" always visible at bottom, never scrolls away */}
+          <Link
+            href={`${SEARCH_PATH}?s=${encodeURIComponent(trimmedQuery)}`}
+            className="md:flex-none flex items-center justify-center px-4 py-[13px] font-cta text-ui-13 font-semibold uppercase tracking-normal text-brand-on-dark no-underline transition-colors duration-fast hover:bg-card focus-visible:bg-card focus-visible:outline-none [border-top:1px_solid_var(--bb-color-border)] 3xl:text-ui-14 4xl:py-4 4xl:text-ui-16"
+            onClick={handleClose}
+          >
+            {t("viewAllResultsBtn", { query: trimmedQuery })}
+          </Link>
+        </>
+      ) : (
+        <div className="px-4 py-5 text-center text-caption text-muted-foreground">
+          <p className="m-0 mb-2">{t("noMatchText", { query: trimmedQuery })}</p>
+          <Link
+            href={`${SEARCH_PATH}?s=${encodeURIComponent(trimmedQuery)}`}
+            className="font-semibold text-brand-on-dark no-underline"
+            onClick={handleClose}
+          >
+            {t("noMatchBrowse")}
+          </Link>
+        </div>
+      )}
+    </div>
+  );
+}
