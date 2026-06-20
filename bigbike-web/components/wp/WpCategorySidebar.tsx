@@ -2,16 +2,21 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { Children, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import { useTranslations } from "next-intl";
-import { Minus, Plus } from "lucide-react";
-import type { Brand, CatalogFacets, Category, ImageAsset } from "@/lib/contracts/public";
+import type { ImageAsset } from "@/lib/contracts/public";
 import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { buildQueryString } from "@/lib/utils/query";
 import { toCategoryPath } from "@/lib/utils/routes";
 import { submenuIcon } from "@/lib/ui-classes";
+import { Widget } from "./category-sidebar/Widget";
+import { ToggleList } from "./category-sidebar/ToggleList";
+import { COLOR_FALLBACK_KEYS, PRICE_FALLBACK } from "./category-sidebar/constants";
+import type { WpCategorySidebarProps } from "./category-sidebar/types";
+
+export type { WpCategoryFilterState, WpCategorySidebarProps } from "./category-sidebar/types";
 
 /**
  * Sidebar bộ lọc danh mục — port DOM 1:1 từ woocommerce/archive-product.php
@@ -22,175 +27,6 @@ import { submenuIcon } from "@/lib/ui-classes";
  * Mobile: drawer trượt phải, mở bằng nút BỘ LỌC (WpMobileFilterTrigger phát
  * sự kiện "wp:catfilter-open"), đóng bằng close-btn / overlay.
  */
-
-export type WpCategoryFilterState = {
-  q?: string;
-  category?: string;
-  brand?: string;
-  color?: string;
-  gender?: string;
-  minPrice?: number;
-  maxPrice?: number;
-};
-
-export type WpCategorySidebarProps = {
-  brands: Brand[];
-  categories: Category[];
-  facets?: CatalogFacets | null;
-  current: WpCategoryFilterState;
-  resetHref: string;
-  hiddenParams?: Record<string, string | undefined>;
-};
-
-// Nhãn fallback (khi backend chưa trả facet màu/giá) — text lấy qua i18n
-// `Catalog.colorFallback.*` / `Catalog.priceFallback.*` để đổi ngôn ngữ ở client.
-const COLOR_FALLBACK_KEYS = [
-  "bac", "cam", "hong", "trang", "xam", "xanh-da-troi", "xanh-la-cay", "vang", "den", "do",
-] as const;
-
-const PRICE_FALLBACK: { key: string; min?: number; max?: number }[] = [
-  { key: "0-500k", min: 0, max: 500_000 },
-  { key: "500k-1tr", min: 500_000, max: 1_000_000 },
-  { key: "1-2tr", min: 1_000_000, max: 2_000_000 },
-  { key: "2-3tr", min: 2_000_000, max: 3_000_000 },
-  { key: "3-5tr", min: 3_000_000, max: 5_000_000 },
-  { key: "5-10tr", min: 5_000_000, max: 10_000_000 },
-  { key: "tren-10tr", min: 10_000_000, max: undefined },
-];
-
-function Widget({
-  title,
-  extraClass,
-  children,
-}: {
-  title: string;
-  extraClass: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className={`sidebar widget toggle ${extraClass}`}>
-      <div className="widget--title toggle-title">
-        <h3>{title}</h3>
-      </div>
-      <div className="widget--body toggle-body">{children}</div>
-    </div>
-  );
-}
-
-/**
- * Danh sách lọc có "Xem thêm" — port React của theme JS `sideBarToggle`
- * (home.min.js chỉ chạy 1 lần lúc full-load, KHÔNG chạy lại khi điều hướng nội bộ
- * SPA → tự dựng lại bằng React cho ổn định mọi lúc).
- *
- * Khi thu gọn chỉ render đúng 10 mục: theme JS chỉ tác động khi ul có > 10 <li>,
- * nên nó sẽ bỏ qua ul này và KHÔNG chèn nút trùng. Clamp + nút dùng đúng class
- * `visible`/`show-more` đã có trong wp-theme-category.css/wp-theme-product.css.
- */
-function ToggleList({
-  className,
-  children,
-  collapseAt = 10,
-}: {
-  className?: string;
-  children: React.ReactNode;
-  collapseAt?: number;
-}) {
-  const t = useTranslations("Catalog");
-  const [expanded, setExpanded] = useState(false);
-  // Khi thu gọn vẫn giữ đủ <li> trong lúc chạy hiệu ứng (mới co lại được); cắt bớt
-  // sau khi animation xong. `collapsing=true` = đang co nhưng chưa cắt.
-  const [collapsing, setCollapsing] = useState(false);
-  const ulRef = useRef<HTMLUListElement>(null);
-  // Chiều cao đo được NGAY TRƯỚC khi đổi expanded, để useLayoutEffect animate từ đó.
-  const fromHeight = useRef<number | null>(null);
-  const items = Children.toArray(children);
-  // collapseAt ≤ 10 để theme JS (chỉ tác động khi ul > 10 <li>) bỏ qua, tránh nút trùng.
-  const hasMore = items.length > collapseAt;
-  // Cắt bớt chỉ khi đã thu gọn HẲN (không mở, không đang co). `.visible` (clamp+fade)
-  // cũng chỉ áp ở trạng thái nghỉ này.
-  const collapsedRest = hasMore && !expanded && !collapsing;
-  const visibleItems = collapsedRest ? items.slice(0, collapseAt) : items;
-
-  // Slide mượt max-height. Mở: từ chiều cao cũ → scrollHeight đầy đủ. Thu gọn: giữ đủ
-  // <li> (collapsing), animate về chiều cao của `collapseAt` mục đầu, xong mới cắt.
-  useLayoutEffect(() => {
-    const el = ulRef.current;
-    if (!el || fromHeight.current == null) return;
-    const from = fromHeight.current;
-    fromHeight.current = null;
-    let to: number;
-    if (expanded) {
-      to = el.scrollHeight;
-    } else {
-      // Đang giữ đủ <li>: mốc thu gọn = đỉnh của <li> thứ collapseAt so với ul.
-      const cut = el.children[collapseAt] as HTMLElement | undefined;
-      to = cut ? cut.getBoundingClientRect().top - el.getBoundingClientRect().top : el.scrollHeight;
-    }
-    el.style.overflow = "hidden";
-    el.style.maxHeight = `${from}px`;
-    el.getBoundingClientRect(); // ép reflow để trình duyệt ghi nhận mốc đầu
-    el.style.transition = "max-height 0.3s ease";
-    el.style.maxHeight = `${to}px`;
-    const cleanup = () => {
-      el.removeEventListener("transitionend", cleanup);
-      el.style.transition = "";
-      if (expanded) {
-        el.style.maxHeight = "";
-        el.style.overflow = "";
-      } else {
-        // Cắt <li> trước (giữ inline maxHeight để không giật về chiều cao đầy đủ).
-        setCollapsing(false);
-      }
-    };
-    el.addEventListener("transitionend", cleanup);
-    return () => el.removeEventListener("transitionend", cleanup);
-  }, [expanded, collapseAt]);
-
-  // Sau khi đã cắt bớt <li> (collapsing → false), xoá inline style để trả về CSS gốc
-  // (`.visible` clamp 400 + fade). Lúc này nội dung đã đúng chiều cao nên không giật.
-  useLayoutEffect(() => {
-    if (collapsing) return;
-    const el = ulRef.current;
-    if (!el) return;
-    el.style.maxHeight = "";
-    el.style.overflow = "";
-    el.style.transition = "";
-  }, [collapsing]);
-
-  function toggle() {
-    fromHeight.current = ulRef.current?.getBoundingClientRect().height ?? null;
-    if (expanded) setCollapsing(true); // giữ đủ <li> để animate co lại
-    setExpanded((v) => !v);
-  }
-
-  return (
-    <>
-      <ul ref={ulRef} className={`${className ?? ""}${collapsedRest ? " visible" : ""}`}>
-        {visibleItems}
-      </ul>
-      {hasMore && (
-        // KHÔNG dùng class `show-more`: home.min.js bind $('.show-more').on('click')
-        // (ẩn nút + bỏ visible) vào mọi .show-more khi full-load, phá nút React. Dùng
-        // Tailwind cùng kiểu dáng (.widget--body .show-more gốc) để theme JS không bắt được.
-        <div
-          className="h-[52px] cursor-pointer border border-black bg-black px-2.5 text-center font-semibold uppercase leading-[52px] text-white"
-          role="button"
-          tabIndex={0}
-          onClick={toggle}
-          onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && toggle()}
-        >
-          {expanded ? t("showLess") : t("showMore")}
-          {expanded ? (
-            <Minus className="ml-2.5 inline-block align-middle" size={16} aria-hidden />
-          ) : (
-            <Plus className="ml-2.5 inline-block align-middle" size={16} aria-hidden />
-          )}
-        </div>
-      )}
-    </>
-  );
-}
-
 export function WpCategorySidebar({
   brands,
   categories,
