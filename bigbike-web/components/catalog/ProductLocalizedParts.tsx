@@ -51,12 +51,12 @@ export function ProductProsCons({
     <div className="grid gap-6 md:grid-cols-2">
       {positive.length > 0 && (
         <div className="border-t-2 border-t-pros-accent bg-pros-accent/[0.07] p-5">
-          <h3 className="mb-3 font-heading text-20 font-bold uppercase tracking-wide text-pros-accent">
+          <h3 className="mb-3 font-heading text-20 max-md:text-ui-18 font-bold uppercase tracking-wide text-pros-accent">
             {t("prosTitle")}
           </h3>
           <ul className="flex flex-col gap-2">
             {positive.map((note, index) => (
-              <li key={index} className="flex gap-2 text-18 text-foreground">
+              <li key={index} className="flex gap-2 text-18 max-md:text-ui-16 text-foreground">
                 <Check className="mt-1 h-4 w-4 shrink-0 text-pros-accent" aria-hidden />
                 <span>{note}</span>
               </li>
@@ -66,12 +66,12 @@ export function ProductProsCons({
       )}
       {negative.length > 0 && (
         <div className="border-t-2 border-t-cons-accent bg-cons-accent/[0.06] p-5">
-          <h3 className="mb-3 font-heading text-20 font-bold uppercase tracking-wide text-cons-accent">
+          <h3 className="mb-3 font-heading text-20 max-md:text-ui-18 font-bold uppercase tracking-wide text-cons-accent">
             {t("consTitle")}
           </h3>
           <ul className="flex flex-col gap-2">
             {negative.map((note, index) => (
-              <li key={index} className="flex gap-2 text-18 text-muted-foreground">
+              <li key={index} className="flex gap-2 text-18 max-md:text-ui-16 text-muted-foreground">
                 <X className="mt-1 h-4 w-4 shrink-0 text-cons-accent" aria-hidden />
                 <span>{note}</span>
               </li>
@@ -99,7 +99,7 @@ export function ProductSpecsTable({ viSpecs }: { viSpecs: Spec[] }) {
 
   return (
     <div className="thong-so-ki-thuat overflow-x-auto">
-      <table className="shop_attributes w-full border-collapse text-body">
+      <table className="shop_attributes w-full border-collapse text-ui-18 max-md:text-ui-16">
         <tbody>
           {specs.map((s, i) => (
             <tr key={i} className="border-b border-border last:border-b-0 even:bg-muted/30">
@@ -139,12 +139,12 @@ export function ProductFaqs({ viFaqs }: { viFaqs: Faq[] }) {
           <AccordionTrigger className="group gap-3 normal-case hover:text-brand data-[state=open]:text-brand">
             <span className="flex min-w-0 flex-1 items-center gap-3">
               <span
-                className="shrink-0 font-cta text-ui-18 font-bold leading-snug tabular-nums text-muted-foreground transition-colors group-hover:text-brand group-data-[state=open]:text-brand"
+                className="shrink-0 font-cta text-ui-18 max-md:text-ui-16 font-bold leading-snug tabular-nums text-muted-foreground transition-colors group-hover:text-brand group-data-[state=open]:text-brand"
                 aria-hidden
               >
                 {String(i + 1).padStart(2, "0")}
               </span>
-              <span className="text-18 font-semibold leading-snug">{faq.question}</span>
+              <span className="text-ui-20 max-md:text-ui-18 font-semibold leading-snug">{faq.question}</span>
             </span>
           </AccordionTrigger>
           <AccordionContent>

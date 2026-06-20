@@ -137,6 +137,7 @@
   --text-ui-24: 24px;
   --text-ui-26: 26px;
   --text-ui-30: 30px;
+  --text-ui-32: 32px; /* PDP scale §display: tên SP + giá + điểm đánh giá */
   --text-ui-35: 35px;
 
   /* Responsive heading tokens — scale theo breakpoint qua brand-tokens.css.
@@ -2069,6 +2070,75 @@ img, picture, video, svg, canvas { max-width: 100%; }
   padding-bottom: 60px;
 }
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   THANG CHỮ TIN TỨC — News type scale (2026-06-20)
+   Áp cùng tinh thần PDP: 5 bậc, desktop + mobile (−2px @<768). Scope `.bb-wp-news-page`
+   (gắn ở wrapper trang danh sách `app/tin-tuc/page.tsx` + bài viết `ArticleView.tsx`)
+   nên KHÔNG đụng trang chủ (`.bb-home-news-parity`) hay danh mục/brands (chung hero).
+   News bundle neo root 14px → dùng px tuyệt đối. Bậc: tiêu đề khối 24, tiêu đề phụ 20,
+   nội dung 18, chữ nhỏ 14 (mobile −2: 22/18/16/12). Tiêu đề hero (.bb-cat-hero-title)
+   GIỮ NGUYÊN (dùng chung mọi archive). */
+.bb-wp-news-page .title-post,
+.bb-wp-news-page .title-post a {
+  font-size: 20px; /* §tiêu đề phụ — tên bài trong thẻ (trước 17.5px) */
+  line-height: 1.3;
+}
+.bb-wp-news-page .widget--title h3 {
+  font-size: 20px; /* §tiêu đề phụ — tiêu đề widget sidebar (trước 21px) */
+}
+.bb-wp-news-page .news-date,
+.bb-wp-news-page .news-date p,
+.bb-wp-news-page .blog-meta,
+.bb-wp-news-page .blog-meta p {
+  font-size: 14px; /* §chữ nhỏ — ngày/chuyên mục (trước 12px) */
+}
+.bb-wp-news-page .blog-content.wyswyg,
+.bb-wp-news-page .blog-content.wyswyg p,
+.bb-wp-news-page .blog-content.wyswyg li {
+  font-size: 18px; /* §nội dung — thân bài đọc thoải mái hơn (trước 16px) */
+}
+.bb-wp-news-page .blog-content.wyswyg h2 {
+  font-size: 24px; /* §tiêu đề khối trong bài */
+}
+.bb-wp-news-page .blog-content.wyswyg h3 {
+  font-size: 20px; /* §tiêu đề phụ trong bài */
+}
+@media (max-width: 767px) {
+  .bb-wp-news-page .title-post,
+  .bb-wp-news-page .title-post a,
+  .bb-wp-news-page .widget--title h3,
+  .bb-wp-news-page .blog-content.wyswyg h3 {
+    font-size: 18px;
+  }
+  .bb-wp-news-page .news-date,
+  .bb-wp-news-page .news-date p,
+  .bb-wp-news-page .blog-meta,
+  .bb-wp-news-page .blog-meta p {
+    font-size: 12px;
+  }
+  .bb-wp-news-page .blog-content.wyswyg,
+  .bb-wp-news-page .blog-content.wyswyg p,
+  .bb-wp-news-page .blog-content.wyswyg li {
+    font-size: 16px;
+  }
+  .bb-wp-news-page .blog-content.wyswyg h2 {
+    font-size: 22px;
+  }
+}
+
+/* Tiêu đề mục trong Tài khoản (.account-title h3) — theme đặt ~14px (quá nhỏ cho vai
+   trò tiêu đề). Nâng về §tiêu đề khối 24px (mobile 22px). Scope `.account-dashboard`
+   đủ đặc hiệu để thắng rule theme. */
+.account-dashboard .account-title h3 {
+  font-size: 24px;
+  line-height: 1.2;
+}
+@media (max-width: 767px) {
+  .account-dashboard .account-title h3 {
+    font-size: 22px;
+  }
+}
+
 .bb-blog-listing-parity .no-results .page-title {
   margin: 0 0 16px;
   color: var(--bb-text-primary);
@@ -3003,18 +3073,45 @@ body:has(.bb-home) {
   line-height: 1.3;
   min-height: 2.6em;
 }
+/* PDP type scale §điểm nhấn — tên sản phẩm (h1) = 32px, đồng bậc Display với giá.
+   Theme WP gốc đặt `.title h1` = Oswald 30px / line-height 3.75rem (Oswald đã gỡ →
+   fallback Arial, line-height ~52px quá lỏng). Override scoped đặc hiệu hơn → THẮNG. */
+.bb-wp-pdp-page .product-information .title h1 {
+  font-size: 32px; /* desktop — thang PDP §điểm nhấn */
+  line-height: 1.2;
+}
 .bb-wp-pdp-page .pdp-section-head > .title {
   margin: 0;
   font-family: var(--bb-font-body);
-  font-size: 24px; /* mobile — = .block-title h3 trang chủ @<768 */
+  font-size: 22px; /* mobile — thang PDP §tiêu đề khối (desktop 24, mobile −2) */
   line-height: var(--bb-line-section-title);
   font-weight: var(--bb-font-weight-semibold);
   text-transform: uppercase;
   color: var(--bb-text-primary);
 }
+/* "Sản phẩm đã xem gần đây" (.block-title) — mobile 22px khớp .pdp-section-head. */
+.bb-wp-pdp-page .block-title > .title,
+.bb-wp-pdp-page .block-title h3 {
+  font-size: 22px;
+}
+@media (max-width: 767px) {
+  /* Tên sản phẩm (h1) mobile = 30px (desktop 32, −2). */
+  .bb-wp-pdp-page .product-information .title h1 {
+    font-size: 30px;
+  }
+}
+/* PDP type scale (desktop) §tiêu đề khối = 24px ở MỌI breakpoint — gỡ bậc 35px của
+   desktop để đồng bộ thang chữ PDP (32/24/20/18/14). KHÁC trang chủ (vẫn 35px) là
+   có chủ đích; scope `.bb-wp-pdp-page` nên trang chủ không ảnh hưởng. */
 @media (min-width: 768px) {
   .bb-wp-pdp-page .pdp-section-head > .title {
-    font-size: 35px; /* desktop — = .block-title h3 trang chủ @≥768 */
+    font-size: 24px; /* desktop — thang PDP §tiêu đề khối */
+  }
+  /* "Sản phẩm đã xem gần đây" dùng `.block-title` (không qua .pdp-section-head) —
+     kéo về cùng 24px để hai kiểu tiêu đề khối không đá nhau trên cùng trang. */
+  .bb-wp-pdp-page .block-title > .title,
+  .bb-wp-pdp-page .block-title h3 {
+    font-size: 24px;
   }
 }
 

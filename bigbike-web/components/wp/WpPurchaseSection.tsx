@@ -244,7 +244,7 @@ export function WpPurchaseSection({
           {/* Eyebrow + dải tin cậy: 2 dòng nhỏ trên tiêu đề. KHÔNG dùng <ul>/<li> để né
               dấu đầu dòng của theme WP; chấm phân cách tự vẽ, chỉ chen GIỮA các mục. */}
           {trustItems.length > 0 ? (
-            <div className="mb-11 flex flex-wrap items-center gap-x-4 gap-y-2 text-ui-14 text-muted-foreground">
+            <div className="mb-11 flex flex-wrap items-center gap-x-4 gap-y-2 text-ui-14 max-md:text-ui-12 text-muted-foreground">
               {trustItems.map((item, i) => (
                 <span key={`${item}-${i}`} className="flex items-center gap-2">
                   <span className="h-1.5 w-1.5 shrink-0 bg-brand" aria-hidden />
@@ -254,7 +254,7 @@ export function WpPurchaseSection({
             </div>
           ) : null}
           {eyebrow ? (
-            <p className="mb-0 font-heading text-ui-14 font-medium uppercase tracking-wider text-brand">
+            <p className="mb-0 font-heading text-ui-14 max-md:text-ui-12 font-medium uppercase tracking-wider text-brand">
               {eyebrow}
             </p>
           ) : null}
@@ -264,7 +264,7 @@ export function WpPurchaseSection({
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div className="price">
               <p className="price js-single-price flex flex-wrap items-baseline gap-x-3">
-                <span className="!text-[2rem] !leading-tight !text-brand !font-bold">{formatVndNumber(current)} ₫</span>
+                <span className="!text-ui-32 max-md:!text-ui-30 !leading-tight !text-brand !font-bold">{formatVndNumber(current)} ₫</span>
                 {showOld ? <del>{formatVndNumber(compare!)} ₫</del> : null}
               </p>
             </div>

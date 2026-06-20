@@ -154,13 +154,13 @@ export function WriteReviewForm({
   return (
     <div className={cn(isDialog ? "p-5" : "border border-border p-6")}>
       {!isDialog && (
-        <h3 className="m-0 mb-5 font-body text-h4 font-semibold uppercase tracking-wide text-[var(--bb-text-primary)]">
+        <h3 className="m-0 mb-5 font-body text-ui-20 max-md:text-ui-18 font-semibold uppercase tracking-wide text-[var(--bb-text-primary)]">
           {t("formTitle")}
         </h3>
       )}
 
       {done ? (
-        <p className="m-0 border border-border bg-muted px-4 py-3 text-caption text-[var(--bb-text-primary)]">
+        <p className="m-0 border border-border bg-muted px-4 py-3 text-ui-14 max-md:text-ui-12 text-[var(--bb-text-primary)]">
           {t("thanks")}
         </p>
       ) : (
@@ -178,7 +178,7 @@ export function WriteReviewForm({
           />
 
           <div className="flex flex-col gap-1.5">
-            <Label className="text-caption font-semibold text-[var(--bb-text-primary)]">
+            <Label className="text-ui-14 max-md:text-ui-12 font-semibold text-[var(--bb-text-primary)]">
               {t("formStars")} <span className="text-brand">*</span>
             </Label>
             <StarRatingInput value={rating} onChange={setRating} />
@@ -187,7 +187,7 @@ export function WriteReviewForm({
           <div className="flex flex-col gap-1.5">
             <Label
               htmlFor="review-author"
-              className="text-caption font-semibold text-[var(--bb-text-primary)]"
+              className="text-ui-14 max-md:text-ui-12 font-semibold text-[var(--bb-text-primary)]"
             >
               {t("formName")} <span className="text-brand">*</span>
             </Label>
@@ -206,7 +206,7 @@ export function WriteReviewForm({
           <div className="flex flex-col gap-1.5">
             <Label
               htmlFor="review-email"
-              className="text-caption font-semibold text-[var(--bb-text-primary)]"
+              className="text-ui-14 max-md:text-ui-12 font-semibold text-[var(--bb-text-primary)]"
             >
               {t("formEmail")}
             </Label>
@@ -222,7 +222,7 @@ export function WriteReviewForm({
           <div className="flex flex-col gap-1.5">
             <Label
               htmlFor="review-title"
-              className="text-caption font-semibold text-[var(--bb-text-primary)]"
+              className="text-ui-14 max-md:text-ui-12 font-semibold text-[var(--bb-text-primary)]"
             >
               {t("formTitleField")}
             </Label>
@@ -240,7 +240,7 @@ export function WriteReviewForm({
           <div className="flex flex-col gap-1.5">
             <Label
               htmlFor="review-comment"
-              className="text-caption font-semibold text-[var(--bb-text-primary)]"
+              className="text-ui-14 max-md:text-ui-12 font-semibold text-[var(--bb-text-primary)]"
             >
               {t("formComment")}
             </Label>
@@ -256,10 +256,10 @@ export function WriteReviewForm({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label className="text-caption font-semibold text-[var(--bb-text-primary)]">
+            <Label className="text-ui-14 max-md:text-ui-12 font-semibold text-[var(--bb-text-primary)]">
               {t("formPhotos")}
             </Label>
-            <p className="m-0 text-caption text-muted-foreground">{t("formPhotosHint")}</p>
+            <p className="m-0 text-ui-14 max-md:text-ui-12 text-muted-foreground">{t("formPhotosHint")}</p>
 
             {photos.length > 0 && (
               <ul className="mt-1 flex flex-wrap gap-2 p-0 m-0 list-none">
@@ -275,7 +275,7 @@ export function WriteReviewForm({
                       )}
                     />
                     {photo.status === "uploading" && (
-                      <span className="absolute inset-0 flex items-center justify-center bg-background/50 text-caption text-muted-foreground">
+                      <span className="absolute inset-0 flex items-center justify-center bg-background/50 text-ui-14 max-md:text-ui-12 text-muted-foreground">
                         …
                       </span>
                     )}
@@ -314,10 +314,10 @@ export function WriteReviewForm({
                 {t("addPhoto")}
               </Button>
             )}
-            {photoError && <p className="m-0 text-caption text-brand">{photoError}</p>}
+            {photoError && <p className="m-0 text-ui-14 max-md:text-ui-12 text-brand">{photoError}</p>}
           </div>
 
-          {error && <p className="m-0 text-caption text-brand">{error}</p>}
+          {error && <p className="m-0 text-ui-14 max-md:text-ui-12 text-brand">{error}</p>}
 
           <Button type="submit" disabled={submitting || uploading} className="w-full">
             {submitting ? t("submitting") : t("submit")}

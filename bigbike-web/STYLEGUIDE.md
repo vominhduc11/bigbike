@@ -133,7 +133,7 @@ Token cỡ chữ expose thành Tailwind utility trong `app/globals.css` (`@theme
 | Utility | Giá trị |
 |---|---|
 | `text-ui-9` … `text-ui-17` | 9–17px (mỗi bước) |
-| `text-ui-18` / `text-ui-20` / `text-ui-22` / `text-ui-24` / `text-ui-26` / `text-ui-30` / `text-ui-35` | 18–35px |
+| `text-ui-18` / `text-ui-20` / `text-ui-22` / `text-ui-24` / `text-ui-26` / `text-ui-30` / `text-ui-32` / `text-ui-35` | 18–35px |
 
 **WP-parity heading + section:**
 
@@ -150,6 +150,24 @@ Token cỡ chữ expose thành Tailwind utility trong `app/globals.css` (`@theme
 |---|---|---|
 | `text-22` / `text-26` / `text-32` / `text-40` / `text-50` | `--bb-text-22…50` | 18 / 20 / 24 / 26 / 30px |
 | `text-9` / `text-10` / `text-11` / `text-13` / `text-15` / `text-17` | `--bb-text-9…17` | 12 / 12 / 12 / 14 / 15 / 17px |
+
+### Thang chữ trang chi tiết sản phẩm — PDP type scale (2026-06-20)
+
+PDP (`app/product/[slug]`, scope `.bb-wp-pdp-page`) gom về **5 bậc cố định** trên desktop (modular ~1,25), thay cho mớ 9 cỡ rời rạc trước đó. Vì PDP nạp `wp-theme-product.css` neo **root 14px** → token `rem` co nhỏ (vd `text-body-lg`→15,75px, `text-caption`→12,25px), nên thang này dùng **token cố định px** `text-ui-*` để đạt đúng px desktop:
+
+| Bậc | Utility | px | Dùng cho |
+|---|---|---:|---|
+| Điểm nhấn (Display) | `text-ui-32` | 32 | Tên sản phẩm (`.product_title`), giá bán, điểm đánh giá trung bình |
+| Tiêu đề khối | `text-ui-24` / `.pdp-section-head .title` | 24 | Tên các khối (Mô tả/Thông số/Đánh giá/Tương tự/Đã xem), số thông số nổi bật |
+| Tiêu đề phụ | `text-ui-20` | 20 | Heading trong mô tả, tên thuộc tính + ô chọn, câu hỏi FAQ, tên/tiêu đề review, nút Gọi/Zalo |
+| Nội dung | `text-ui-18` | 18 | Đoạn văn mô tả, bảng thông số, dòng ưu/nhược, cam kết, nội dung review |
+| Chữ nhỏ | `text-ui-14` | 14 | Eyebrow, figcaption, nhãn số liệu, ngày/meta review, nhãn form |
+
+- **Mobile (`max-md:`, <768px) = mỗi bậc −2px:** 30 / 22 / 18 / 16 / 12. Áp qua biến thể `max-md:text-ui-*` trên từng phần tử (giá giữ `!`, checkmark giữ `after:`); phần CSS-driven (`.product_title` 32→30, `.pdp-section-head .title` + `.block-title` 24→22) xử lý trong `app/globals.css`.
+- Tiêu đề khối 24/22px là **deviation có chủ đích** khỏi WP-parity (trang chủ vẫn 35px); override scoped `.bb-wp-pdp-page` trong `app/globals.css` nên trang chủ không ảnh hưởng.
+- Phần tử chỉ-mobile (sticky bar, anchor nav, heading tab `md:hidden`) KHÔNG nằm trong thang desktop này.
+
+**Trang Tin tức** (scope `.bb-wp-news-page` — gắn ở `app/tin-tuc/page.tsx` + `ArticleView.tsx`) áp cùng tinh thần, qua CSS scoped trong `app/globals.css` (vì markup dùng class WP `.title-post`/`.wyswyg`…): tên bài (`.title-post`) + widget title 20→18px, ngày/chuyên mục (`.news-date`/`.blog-meta`) 14→12px, thân bài (`.blog-content.wyswyg`) 18→16px, h2/h3 trong bài 24/20→22/18px. Tiêu đề hero dùng chung mọi archive nên GIỮ NGUYÊN. **Tài khoản:** `.account-title h3` nâng 14→24px (mobile 22px). Các trang khác (giỏ hàng/thanh toán/đăng nhập/tĩnh) GIỮ WP-parity.
 
 ---
 

@@ -193,8 +193,8 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
       >
         {trustItems.map((item) => (
           <div key={item.key} className="border border-border bg-background p-3">
-            <dd className="m-0 font-barlow text-18 font-semibold">{item.value}</dd>
-            <dt className="mt-1 text-overline uppercase tracking-wide text-muted-foreground">
+            <dd className="m-0 font-barlow text-18 max-md:text-ui-16 font-semibold">{item.value}</dd>
+            <dt className="mt-1 text-ui-14 max-md:text-ui-12 uppercase tracking-wide text-muted-foreground">
               {item.labelKey ? <Tr ns="Product" k={item.labelKey} /> : item.label}
             </dt>
           </div>
@@ -287,7 +287,7 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
                 // Câu dẫn nối — biến 2 phần thành MỘT mạch: khách vừa đọc nhược điểm/giá → mời xem lựa
                 // chọn khác NGAY trong cùng khối (giữ ở lại site). Thay tiêu đề lớn "Sản phẩm tương tự"
                 // (vốn đọc thành chủ đề tách biệt). Khi KHÔNG có ưu/nhược điểm thì dùng tiêu đề thường.
-                <p className="!mb-0 flex items-start gap-2 text-18 font-medium text-foreground">
+                <p className="!mb-0 flex items-start gap-2 text-18 max-md:text-ui-16 font-medium text-foreground">
                   <span aria-hidden className="font-bold text-brand">→</span>
                   <Tr ns="Product" k="relatedBridge" />
                 </p>

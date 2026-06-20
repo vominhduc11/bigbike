@@ -85,7 +85,7 @@ export function ArticleView({
   const hasSidebar = highlighted.length > 0 || newest.length > 0;
 
   const inner = (
-    <div className="single single-post single-format-standard">
+    <div className="single single-post single-format-standard bb-wp-news-page">
       <WpCategoryHero
         title={articleTitle}
         titleNode={<LText field="title">{articleTitle}</LText>}

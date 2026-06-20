@@ -56,7 +56,7 @@ export default async function ArticleListPage() {
     <>
       <WpThemeStylesheet href="/wp-content/themes/bigbike/css/wp-theme-news.css?v=4" />
 
-      <div className="archive category">
+      <div className="archive category bb-wp-news-page">
         <WpCategoryHero
           focusId="hero_news"
           title={heroTitle}

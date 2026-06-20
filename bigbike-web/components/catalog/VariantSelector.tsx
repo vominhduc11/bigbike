@@ -140,7 +140,7 @@ export function VariantSelector({
           <div key={group.name} className="mb-[15px]">
             <div>
               <div className="inline-block max-md:flex max-md:items-baseline max-md:gap-2 align-top pr-[25px] max-md:pr-0 max-md:mb-2.5">
-                <label className="block m-0 font-body text-ui-21 font-semibold !leading-[52px] max-md:!leading-[1.2] text-black">
+                <label className="block m-0 font-body text-ui-20 max-md:text-ui-18 font-semibold !leading-[52px] max-md:!leading-[1.2] text-black">
                   {group.name}
                 </label>
               </div>
@@ -204,12 +204,12 @@ export function VariantSelector({
                       />
                       <label
                         className={cn(
-                          "block w-[52px] h-[52px] border border-black bg-[#f5f5f5] bg-center bg-no-repeat bg-contain text-center text-ui-21 font-semibold uppercase text-black !leading-[50px] max-md:w-11 max-md:h-11 max-md:!leading-[42px]",
+                          "block w-[52px] h-[52px] border border-black bg-[#f5f5f5] bg-center bg-no-repeat bg-contain text-center text-ui-20 max-md:text-ui-18 font-semibold uppercase text-black !leading-[50px] max-md:w-11 max-md:h-11 max-md:!leading-[42px]",
                           active && "bg-black text-white",
                           isColorGroup && !active && "text-transparent",
                           isColorGroup &&
                             active &&
-                            "relative after:absolute after:inset-0 after:text-center after:text-ui-20 after:leading-[52px] after:text-white after:content-['✓'] after:[text-shadow:0_1px_2px_rgba(0,0,0,0.45)]",
+                            "relative after:absolute after:inset-0 after:text-center after:text-ui-20 max-md:after:text-ui-18 after:leading-[52px] after:text-white after:content-['✓'] after:[text-shadow:0_1px_2px_rgba(0,0,0,0.45)]",
                         )}
                         style={swatchStyle}
                         htmlFor={inputId}

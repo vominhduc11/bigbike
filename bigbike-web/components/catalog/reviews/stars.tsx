@@ -94,7 +94,7 @@ export function StarRatingInput({
         })}
       </div>
       {display > 0 && (
-        <span className="font-body text-h4 font-semibold text-[var(--bb-text-primary)]">
+        <span className="font-body text-ui-18 max-md:text-ui-16 font-semibold text-[var(--bb-text-primary)]">
           {display}/5
         </span>
       )}

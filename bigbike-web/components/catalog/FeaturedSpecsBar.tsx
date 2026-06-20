@@ -30,10 +30,10 @@ export function FeaturedSpecsBar({ stats }: { stats: ProductSpecStat[] }) {
           key={i}
           className="flex flex-col items-center gap-1.5 bg-background px-4 py-6 text-center transition-colors hover:bg-muted/40"
         >
-          <span className="font-body text-h1 font-bold uppercase leading-none tracking-tight text-brand">
+          <span className="font-body text-ui-24 max-md:text-ui-22 font-bold uppercase leading-none tracking-tight text-brand">
             {s.value}
           </span>
-          <span className="text-base font-semibold uppercase tracking-wide text-muted-foreground">
+          <span className="text-ui-14 max-md:text-ui-12 font-semibold uppercase tracking-wide text-muted-foreground">
             {s.label}
           </span>
         </div>
