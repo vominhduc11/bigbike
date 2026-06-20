@@ -6,22 +6,25 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { cn, generateId } from "@/lib/utils";
+import { generateId } from "@/lib/utils";
 import { submitCheckout } from "@/lib/api/client-api";
 import { useCart } from "@/lib/cart-context";
 import { useAddresses, useCartQuery, useCheckoutOptions, useProfile } from "@/lib/query/hooks";
-import type {
-  CustomerAddress,
-  PaymentMethodOption,
-  PriceChange,
-  ShippingMethodOption,
-} from "@/lib/contracts/commerce";
+import type { PriceChange } from "@/lib/contracts/commerce";
 import { createCheckoutAddressSchema, type CheckoutAddressFormValues } from "@/lib/schemas/checkout";
 import { pushDataLayer, toGtmCartItems } from "@/lib/analytics";
 import { formatVnd } from "@/lib/utils/format";
 import { toCartPath, toOrderConfirmPath } from "@/lib/utils/routes";
-import { VnAddressFields } from "@/components/ui/VnAddressFields";
 import { getVietnamRegion } from "@/lib/utils/vn-region";
+import { CheckoutStepTitle } from "./checkout/atoms";
+import { CheckoutAddressFields } from "./checkout/CheckoutAddressFields";
+import { CheckoutSummary } from "./checkout/CheckoutSummary";
+import {
+  effectiveMethodCost,
+  isZoneMismatch,
+  normalizeMethodCode,
+  pickDefaultAddress,
+} from "./checkout/helpers";
 
 /**
  * Nội dung trang Thanh toán — port markup từ woocommerce/checkout/form-checkout.php
@@ -29,54 +32,12 @@ import { getVietnamRegion } from "@/lib/utils/vn-region";
  * .check-out-step / .checkout-summary / .summary--items / .form-group / .form-submit).
  * GIỮ NGUYÊN 100% logic/data thật của bigbike-web: react-hook-form + zod validation,
  * shipping/payment options, zone matching, min-order, price-change, GTM begin_checkout,
- * prefill từ profile/address. Cột phải dùng vocabulary summary của theme (đúng phần
- * thiết kế tác giả theme để sẵn trong form-checkout.php) vì bảng .shop_table mặc định
- * của WooCommerce không nằm trong bundle CSS theme.
+ * prefill từ profile/address. Cột phải (CheckoutSummary) dùng vocabulary summary của
+ * theme vì bảng .shop_table mặc định của WooCommerce không nằm trong bundle CSS theme.
  */
-
-function pickDefaultAddress(addresses: CustomerAddress[] | undefined): CustomerAddress | null {
-  if (!addresses?.length) return null;
-  return addresses.find((a) => a.isDefault) ?? addresses[0];
-}
-
-function normalizeMethodCode(code: string | null | undefined) {
-  return (code ?? "").trim().toUpperCase();
-}
-
-function effectiveMethodCost(method: ShippingMethodOption | undefined, cartSubtotal: number) {
-  if (!method) return 0;
-  const threshold = method.freeShippingThreshold ?? null;
-  return threshold !== null && threshold > 0 && cartSubtotal >= threshold ? 0 : method.cost;
-}
-
-function isZoneMismatch(method: ShippingMethodOption, userRegion: "MB" | "MT" | "MN" | null) {
-  return !!method.zoneRegionCode && !!userRegion && method.zoneRegionCode !== userRegion;
-}
-
-/* .check-out-step-title h3 <span><b>n</b></span> — huy hiệu số bước hình thoi đỏ WP. */
-function CheckoutStepTitle({ step, children }: { step: number; children: React.ReactNode }) {
-  return (
-    <div className="check-out-step-title">
-      <h3>
-        <span>
-          <b>{step}</b>
-        </span>{" "}
-        {children}
-      </h3>
-    </div>
-  );
-}
-
-function FieldError({ message }: { message?: string }) {
-  if (!message) return null;
-  return <p className="m-0 mt-1 text-sm text-brand">{message}</p>;
-}
-
 export function WpCheckoutClient() {
   const t = useTranslations("Checkout");
   const tValidation = useTranslations("Checkout.validation");
-  const tPayment = useTranslations("Checkout.paymentMethod");
-  const tPaymentDescription = useTranslations("Checkout.paymentDescription");
   const tCart = useTranslations("Cart");
   const router = useRouter();
   const { refreshCount } = useCart();
@@ -230,20 +191,6 @@ export function WpCheckoutClient() {
   const userRegion = getVietnamRegion(deliveryProvince);
   const selectedShippingZoneMismatch = selectedShipping ? isZoneMismatch(selectedShipping, userRegion) : false;
 
-  function paymentLabel(method: PaymentMethodOption | string | null | undefined) {
-    const code = typeof method === "string" ? method : method?.code;
-    const upper = normalizeMethodCode(code);
-    if (upper === "") return tPayment("EMPTY");
-    if (upper === "COD" || upper === "BACS") return tPayment(upper);
-    return typeof method === "string" ? tPayment("UNKNOWN", { method }) : (method?.title ?? "");
-  }
-
-  function paymentDescription(code: string) {
-    const upper = normalizeMethodCode(code);
-    if (upper === "COD" || upper === "BACS") return tPaymentDescription(upper);
-    return "";
-  }
-
   async function placeOrder() {
     if (!cart?.items.length) {
       setSubmitError(t("errorEmptyCart"));
@@ -363,19 +310,6 @@ export function WpCheckoutClient() {
     );
   }
 
-  const reqMark = <span className="required">*</span>;
-
-  // Lỗi tải phương thức vận chuyển/thanh toán (mạng) — phân biệt với "không có
-  // phương thức được cấu hình"; cho khách thử lại tại chỗ thay vì kẹt.
-  const optionsErrorNotice = (
-    <div className="woocommerce-error" role="alert">
-      <p className="m-0">{t("optionsLoadFailed")}</p>
-      <button type="button" className="button" style={{ marginTop: 8 }} onClick={() => refetchOptions()}>
-        {t("retry")}
-      </button>
-    </div>
-  );
-
   return (
     <form className="checkout woocommerce-checkout" onSubmit={handleSubmit} noValidate>
       <div className="woocommerce-notices-wrapper">
@@ -417,92 +351,19 @@ export function WpCheckoutClient() {
               <CheckoutStepTitle step={1}>{t("step1Title")}</CheckoutStepTitle>
 
               <div className="row">
-                <div className="col-md-6">
-                  <div className="form-group">
-                    <label htmlFor="billing_full_name">
-                      {t("fullName")} {reqMark}
-                    </label>
-                    <input
-                      id="billing_full_name"
-                      className="form-control"
-                      placeholder={t("fullNamePlaceholder")}
-                      autoComplete="name"
-                      aria-invalid={!!addressErrors.fullName}
-                      {...register("fullName")}
-                    />
-                    <FieldError message={addressErrors.fullName?.message} />
-                  </div>
-                </div>
-
-                <div className="col-md-6">
-                  <div className="form-group">
-                    <label htmlFor="billing_phone">
-                      {t("phone")} {reqMark}
-                    </label>
-                    <input
-                      id="billing_phone"
-                      type="tel"
-                      inputMode="tel"
-                      maxLength={12}
-                      className="form-control"
-                      placeholder={t("phonePlaceholder")}
-                      autoComplete="tel"
-                      aria-invalid={!!addressErrors.phone}
-                      {...register("phone")}
-                    />
-                    <FieldError message={addressErrors.phone?.message} />
-                  </div>
-                </div>
-
-                <div className="col-md-12">
-                  <div className="form-group">
-                    <label htmlFor="billing_email">{t("email")}</label>
-                    <input
-                      id="billing_email"
-                      type="email"
-                      className="form-control"
-                      placeholder={t("emailPlaceholder")}
-                      autoComplete="email"
-                      aria-invalid={!!addressErrors.email}
-                      {...register("email")}
-                    />
-                    <FieldError message={addressErrors.email?.message} />
-                  </div>
-                </div>
-
-                <div className="col-md-12">
-                  <div className="form-group">
-                    <label htmlFor="billing_address_1">
-                      {t("address")} {reqMark}
-                    </label>
-                    <input
-                      id="billing_address_1"
-                      className="form-control"
-                      placeholder={t("addressPlaceholder")}
-                      autoComplete="address-line1"
-                      aria-invalid={!!addressErrors.addressLine1}
-                      {...register("addressLine1")}
-                    />
-                    <FieldError message={addressErrors.addressLine1?.message} />
-                  </div>
-                </div>
-
-                <div className="col-md-12">
-                  <VnAddressFields
-                    value={{
-                      province: formAddress.province ?? "",
-                      district: formAddress.district ?? "",
-                      ward: formAddress.ward ?? "",
-                    }}
-                    onChange={(field, val) =>
-                      setValue(field as keyof CheckoutAddressFormValues, val, { shouldValidate: true })
-                    }
-                    required
-                  />
-                  {(addressErrors.province || addressErrors.district) && (
-                    <FieldError message={addressErrors.province?.message ?? addressErrors.district?.message} />
-                  )}
-                </div>
+                <CheckoutAddressFields
+                  idPrefix="billing"
+                  autoCompletePrefix=""
+                  register={register}
+                  errors={addressErrors}
+                  includeEmail
+                  vnValue={{
+                    province: formAddress.province ?? "",
+                    district: formAddress.district ?? "",
+                    ward: formAddress.ward ?? "",
+                  }}
+                  onVnChange={(field, val) => setValue(field, val, { shouldValidate: true })}
+                />
 
                 <div className="col-md-12">
                   <div className="form-group">
@@ -540,76 +401,19 @@ export function WpCheckoutClient() {
                 <>
                   <h3 className="mb-3 mt-1 font-cta text-base font-semibold uppercase">{t("shippingAddressTitle")}</h3>
                   <div className="row">
-                    <div className="col-md-6">
-                      <div className="form-group">
-                        <label htmlFor="shipping_full_name">
-                          {t("fullName")} {reqMark}
-                        </label>
-                        <input
-                          id="shipping_full_name"
-                          className="form-control"
-                          placeholder={t("fullNamePlaceholder")}
-                          autoComplete="shipping name"
-                          aria-invalid={!!shipErrors.fullName}
-                          {...registerShip("fullName")}
-                        />
-                        <FieldError message={shipErrors.fullName?.message} />
-                      </div>
-                    </div>
-
-                    <div className="col-md-6">
-                      <div className="form-group">
-                        <label htmlFor="shipping_phone">
-                          {t("phone")} {reqMark}
-                        </label>
-                        <input
-                          id="shipping_phone"
-                          type="tel"
-                          inputMode="tel"
-                          maxLength={12}
-                          className="form-control"
-                          placeholder={t("phonePlaceholder")}
-                          autoComplete="shipping tel"
-                          aria-invalid={!!shipErrors.phone}
-                          {...registerShip("phone")}
-                        />
-                        <FieldError message={shipErrors.phone?.message} />
-                      </div>
-                    </div>
-
-                    <div className="col-md-12">
-                      <div className="form-group">
-                        <label htmlFor="shipping_address_1">
-                          {t("address")} {reqMark}
-                        </label>
-                        <input
-                          id="shipping_address_1"
-                          className="form-control"
-                          placeholder={t("addressPlaceholder")}
-                          autoComplete="shipping address-line1"
-                          aria-invalid={!!shipErrors.addressLine1}
-                          {...registerShip("addressLine1")}
-                        />
-                        <FieldError message={shipErrors.addressLine1?.message} />
-                      </div>
-                    </div>
-
-                    <div className="col-md-12">
-                      <VnAddressFields
-                        value={{
-                          province: formShip.province ?? "",
-                          district: formShip.district ?? "",
-                          ward: formShip.ward ?? "",
-                        }}
-                        onChange={(field, val) =>
-                          setValueShip(field as keyof CheckoutAddressFormValues, val, { shouldValidate: true })
-                        }
-                        required
-                      />
-                      {(shipErrors.province || shipErrors.district) && (
-                        <FieldError message={shipErrors.province?.message ?? shipErrors.district?.message} />
-                      )}
-                    </div>
+                    <CheckoutAddressFields
+                      idPrefix="shipping"
+                      autoCompletePrefix="shipping "
+                      register={registerShip}
+                      errors={shipErrors}
+                      includeEmail={false}
+                      vnValue={{
+                        province: formShip.province ?? "",
+                        district: formShip.district ?? "",
+                        ward: formShip.ward ?? "",
+                      }}
+                      onVnChange={(field, val) => setValueShip(field, val, { shouldValidate: true })}
+                    />
                   </div>
                 </>
               )}
@@ -619,180 +423,27 @@ export function WpCheckoutClient() {
 
         {/* ===== Cột phải: thông tin đơn đặt hàng ===== */}
         <div className="col-md-4">
-          <div className="checkout-summary">
-            <div className="checkout-summary-title">
-              <h3>{t("summaryTitle")}</h3>
-            </div>
-
-            <div id="order_review">
-              <div className="table mb-20">
-                {cart.items.map((item) => (
-                  <div key={item.id} className="summary--items row">
-                    <div className="summary--items-item col">
-                      <p>
-                        {item.productName}
-                        {item.variantName ? ` - ${item.variantName}` : ""}{" "}
-                        <strong className="product-quantity">× {item.quantity}</strong>
-                      </p>
-                    </div>
-                    <div className="summary--items-item col text-right">
-                      <p>{formatVnd(item.lineTotal)}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="summary--items row">
-                <div className="summary--items-item col">
-                  <p>{t("summarySubtotal")}</p>
-                </div>
-                <div className="summary--items-item col text-right">
-                  <p>
-                    <b>{formatVnd(cartSubtotal)}</b>
-                  </p>
-                </div>
-              </div>
-
-              {/* Phương thức vận chuyển */}
-              <div className="form-group mb-20">
-                <label>{t("shippingMethodSectionTitle")}</label>
-                {optionsLoading ? (
-                  <p className="woocommerce-info">{t("paymentLoading")}</p>
-                ) : optionsError ? (
-                  optionsErrorNotice
-                ) : shippingMethods.length > 0 ? (
-                  shippingMethods.map((method) => {
-                    const disabled = isZoneMismatch(method, userRegion);
-                    const cost = effectiveMethodCost(method, cartSubtotal);
-                    const checked = shippingMethodId === method.id;
-                    return (
-                      <div
-                        key={method.id}
-                        className={cn("form-group form-radio", disabled && "opacity-50")}
-                        style={{ marginBottom: 12 }}
-                      >
-                        <input
-                          type="radio"
-                          name="shipping_method_select"
-                          id={`shipping_method_${method.id}`}
-                          value={method.id}
-                          checked={checked}
-                          disabled={disabled}
-                          onChange={() => setShippingMethodId(method.id)}
-                        />
-                        <label htmlFor={`shipping_method_${method.id}`}>
-                          {method.title}{" "}
-                          <b className="text-brand">{cost > 0 ? formatVnd(cost) : t("shippingMethodFree")}</b>
-                        </label>
-                        {disabled && (
-                          <p className="m-0 mt-1 text-sm text-[var(--bb-text-secondary)]">
-                            {t("shippingZoneMismatchHint")}
-                          </p>
-                        )}
-                      </div>
-                    );
-                  })
-                ) : (
-                  <p className="woocommerce-info">{t("errorShippingUnavailable")}</p>
-                )}
-              </div>
-
-              <div className="summary--items row">
-                <div className="summary--items-item col">
-                  <p>{t("summaryShipping")}</p>
-                </div>
-                <div className="summary--items-item col text-right">
-                  <p>
-                    <b>
-                      {selectedShipping
-                        ? effectiveShippingCost > 0
-                          ? formatVnd(effectiveShippingCost)
-                          : t("summaryShippingFree")
-                        : "—"}
-                    </b>
-                  </p>
-                </div>
-              </div>
-
-              {cart.totals.discountAmount > 0 && (
-                <div className="summary--items row">
-                  <div className="summary--items-item col">
-                    <p>{t("summaryDiscount")}</p>
-                  </div>
-                  <div className="summary--items-item col text-right">
-                    <p className="discount">
-                      <b>-{formatVnd(cart.totals.discountAmount)}</b>
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              <div className="total-summary summary">
-                <div className="summary--items row">
-                  <div className="summary--items-item col">
-                    <p>{t("summaryTotal")}</p>
-                  </div>
-                  <div className="summary--items-item col text-right">
-                    <p className="total-price">
-                      <b>{formatVnd(grandTotal)}</b>
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Phương thức thanh toán */}
-              <div id="payment" className="form-group" style={{ marginTop: 20 }}>
-                <label>{t("step2Title")}</label>
-                {optionsLoading ? (
-                  <p className="woocommerce-info">{t("paymentLoading")}</p>
-                ) : optionsError ? (
-                  optionsErrorNotice
-                ) : paymentMethods.length > 0 ? (
-                  paymentMethods.map((method) => {
-                    const checked = paymentMethod === method.code;
-                    const description = paymentDescription(method.code);
-                    return (
-                      <div key={method.code} style={{ marginBottom: 12 }}>
-                        <div className="form-group form-radio" style={{ margin: 0 }}>
-                          <input
-                            type="radio"
-                            name="payment_method_select"
-                            id={`payment_method_${method.code}`}
-                            value={method.code}
-                            checked={checked}
-                            onChange={() => setPaymentMethod(method.code)}
-                          />
-                          <label htmlFor={`payment_method_${method.code}`}>{paymentLabel(method)}</label>
-                        </div>
-                        {checked && description && (
-                          <p className="m-0 mt-2 text-ui-14 leading-[1.5] text-[var(--bb-text-secondary)]">
-                            {description}
-                          </p>
-                        )}
-                      </div>
-                    );
-                  })
-                ) : (
-                  <p className="woocommerce-error">{t("paymentNone")}</p>
-                )}
-              </div>
-
-              <div className="form-submit" style={{ marginTop: 20 }}>
-                <button
-                  type="submit"
-                  disabled={
-                    submitting ||
-                    cartLoading ||
-                    !cart.items.length ||
-                    belowMinOrder ||
-                    selectedShippingZoneMismatch
-                  }
-                >
-                  {submitting ? t("placingOrder") : t("placeOrder")}
-                </button>
-              </div>
-            </div>
-          </div>
+          <CheckoutSummary
+            cart={cart}
+            cartSubtotal={cartSubtotal}
+            effectiveShippingCost={effectiveShippingCost}
+            grandTotal={grandTotal}
+            selectedShipping={selectedShipping}
+            shippingMethods={shippingMethods}
+            shippingMethodId={shippingMethodId}
+            setShippingMethodId={setShippingMethodId}
+            paymentMethods={paymentMethods}
+            paymentMethod={paymentMethod}
+            setPaymentMethod={setPaymentMethod}
+            optionsLoading={optionsLoading}
+            optionsError={optionsError}
+            onRetryOptions={() => refetchOptions()}
+            userRegion={userRegion}
+            submitting={submitting}
+            cartLoading={cartLoading}
+            belowMinOrder={belowMinOrder}
+            selectedShippingZoneMismatch={selectedShippingZoneMismatch}
+          />
         </div>
       </div>
     </form>
