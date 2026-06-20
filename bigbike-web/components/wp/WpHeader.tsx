@@ -106,6 +106,13 @@ function WpMenu({ nodes, top = false }: { nodes: HeaderNavNode[]; top?: boolean 
               {node.label}
             </Link>
             {hasChildren && <WpMenu nodes={node.children} />}
+            {/* Nút mở/đóng submenu off-canvas mobile — WpThemeInteractions xử lý click
+                qua delegation (trước đây home.min.js append; nay render thẳng markup). */}
+            {hasChildren && (
+              <div className="arrow">
+                <i className="fal fa-chevron-down" />
+              </div>
+            )}
           </li>
         );
       })}

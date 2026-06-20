@@ -58,7 +58,12 @@ export function WpCatalogResults({
     <div className="col-md-9">
       <div className="product-list pb-40">
         <div className="container">
-          <div className="product-list-filter headroom">
+          {/* Sticky topSpacing 80 — render thẳng inline (trước đây jquery.sticky của
+              home.min.js gán; nay ở markup để khớp hydration, không mutate DOM). */}
+          <div
+            className="product-list-filter headroom"
+            style={{ position: "sticky", top: "80px", zIndex: 20 }}
+          >
             <div className="row align-items-center">
               <div className="woocommerce-notices-wrapper" />
               <div className="col-sm-6">

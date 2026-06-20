@@ -3,7 +3,6 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { isWpOrderbyValue, productSortToWpOrderby } from "@/lib/utils/catalog-sort";
-import { useDetachWpHandlers } from "@/lib/hooks/useDetachWpHandlers";
 
 /**
  * woocommerce_catalog_ordering — port 1:1 từ theme WP (form.woocommerce-ordering
@@ -23,11 +22,6 @@ export function WpCategorySort({ current }: { current: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const selectedValue = isWpOrderbyValue(current) ? current : productSortToWpOrderby(current);
-
-  // home.min.js bind `$(".woocommerce-ordering select").change(() => this.form.submit())`
-  // (submit native, bỏ qua onSubmit preventDefault của React) → reload nguyên trang đè
-  // lên router.push của onChange dưới đây. Gỡ handler WP, giữ điều hướng SPA của React.
-  useDetachWpHandlers([{ selector: ".woocommerce-ordering select", events: "change" }]);
 
   function handleChange(value: string) {
     const params = new URLSearchParams(searchParams.toString());

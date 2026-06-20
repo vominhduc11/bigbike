@@ -11,7 +11,6 @@ import type { Brand, CatalogFacets, Category, ImageAsset } from "@/lib/contracts
 import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { buildQueryString } from "@/lib/utils/query";
 import { toCategoryPath } from "@/lib/utils/routes";
-import { useDetachWpHandlers } from "@/lib/hooks/useDetachWpHandlers";
 import { submenuIcon } from "@/lib/ui-classes";
 
 /**
@@ -204,16 +203,6 @@ export function WpCategorySidebar({
   const [active, setActive] = useState(false); // hiện drawer (display)
   const [inView, setInView] = useState(false); // trượt vào (transform/opacity)
   const closeTimer = useRef<number | null>(null);
-
-  // home.min.js `toggleCategories()` bind click vào `.filter-mobile-wrapper` (mở),
-  // `.sidebar-wrap-product .close-btn` / `.overlay` (đóng) + tự toggle `html.overlay`
-  // (khóa cuộn). Trùng với React (mở qua sự kiện wp:catfilter-open, đóng qua onClick)
-  // → trên reload hai bên giành lớp active/in. Gỡ handler WP, React tự quản đóng/mở.
-  useDetachWpHandlers([
-    { selector: ".filter-mobile-wrapper", events: "click" },
-    { selector: ".sidebar-wrap-product .close-btn", events: "click" },
-    { selector: ".sidebar-wrap-product .overlay", events: "click" },
-  ]);
 
   // Khóa cuộn nền khi drawer mở — thay cho `$("html").toggleClass("overlay")` của WP
   // (CSS theme: `html.overlay{overflow:hidden}`). React tự quản nên hoạt động cả khi

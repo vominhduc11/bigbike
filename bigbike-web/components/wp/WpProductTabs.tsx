@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { MobilePdpAnchorNav, type AnchorNavItem } from "@/components/catalog/MobilePdpAnchorNav";
 import { cn } from "@/lib/utils";
-import { useDetachWpHandlers } from "@/lib/hooks/useDetachWpHandlers";
 
 /** `labelKey` (key trong namespace Product.tabs) ưu tiên hơn `label` — cho phép đổi
  *  ngôn ngữ ở client; `label` là fallback (vd tab động không có key). */
@@ -46,13 +45,6 @@ export function WpProductTabs({
     window.addEventListener("bb:pdp-activate-tab", onActivate as EventListener);
     return () => window.removeEventListener("bb:pdp-activate-tab", onActivate as EventListener);
   }, [tabs]);
-
-  // home.min.js `wooTabs()` bind click vào `.woocommerce-tabs .tabs-nav .nav-item a` và
-  // sửa class active/show imperative trên đúng panel React điều khiển bằng state → gỡ
-  // handler WP, để React tự quản tab (onClick bên dưới).
-  useDetachWpHandlers([
-    { selector: ".woocommerce-tabs .tabs-nav .nav-item a", events: "click" },
-  ]);
 
   if (tabs.length === 0) return null;
 

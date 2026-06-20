@@ -5,7 +5,7 @@ import { fontBarlow, fontBarlowCondensed } from "./fonts";
 import "./globals.css";
 import { WpHeader } from "@/components/wp/WpHeader";
 import { WpFooter } from "@/components/wp/WpFooter";
-import { WpThemeScripts } from "@/components/wp/WpThemeScripts";
+import { WpThemeInteractions } from "@/components/wp/WpThemeInteractions";
 import { WpMobileMenuController } from "@/components/wp/WpMobileMenuController";
 import type { HeaderNavNode } from "@/components/layout/HeaderNavItem";
 import { getPublicMenu } from "@/lib/api/public-api";
@@ -136,8 +136,8 @@ export default async function RootLayout({
                   </Suspense>
                   <MobileCartSheet />
                   <WpFooter footerNodes={wpFooterNodes} />
-                  {/* JS theme WP (header hamburger/drawer/headroom/search/scrollToTop). */}
-                  <WpThemeScripts />
+                  {/* React thay jQuery/home.min.js: hamburger/drawer/headroom/scrollToTop/accordion. */}
+                  <WpThemeInteractions />
                   <WpMobileMenuController />
                   <SettingsFocusScroller />
                   <div className="bb-floating-chat-anchor fixed z-[660] bottom-[calc(var(--bb-mobile-nav-height)+env(safe-area-inset-bottom)+80px)] md:bottom-[max(24px,env(safe-area-inset-bottom))] right-[max(16px,env(safe-area-inset-right))] md:right-[max(24px,env(safe-area-inset-right))] pointer-events-none [&>*]:pointer-events-auto [[data-scroll-locked]_&]:hidden">

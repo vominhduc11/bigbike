@@ -40,7 +40,6 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useDetachWpHandlers } from "@/lib/hooks/useDetachWpHandlers";
 import { openWriteReviewDialog } from "@/components/catalog/writeReviewBus";
 
 // Bộ icon dựng sẵn cho khối cam kết (V232) — admin chọn theo key, web map ra lucide.
@@ -104,12 +103,6 @@ export function WpPurchaseSection({
   const tb = useTranslations("PdpBuyBox");
   const locale = useLocale();
   const { addToCart } = useCart();
-
-  // home.min.js `choose_color_and_size()` bind change vào `.variations_form`
-  // (delegated `.variation-radios input`) → khi chọn đủ biến thể bắn AJAX
-  // find_variation_product về URL rỗng (backend WP đã bỏ), fail im lặng. React đã tự
-  // quản chọn biến thể nên gỡ handler WP. Giữ class `.variations_form` cho CSS theme.
-  useDetachWpHandlers([{ selector: ".variations_form", events: "change" }]);
 
   // ISR + CSR hybrid: mô tả/ảnh/thông số render từ props (ISR — phần cần SEO). GIÁ + TỒN
   // KHO fetch lại ở CLIENT sau khi load để luôn tươi (shop bán cả online lẫn walk-in/POS

@@ -94,6 +94,12 @@ export function WpMegaNavItem({
       {/* ≤1260px: .sub-menu lồng của WP cho drawer off-canvas (desktop ẩn qua CSS). */}
       {children}
 
+      {/* Nút mở/đóng submenu off-canvas mobile (WpThemeInteractions xử lý click qua
+          delegation) — desktop dùng mega menu hover nên CSS ẩn nút này. */}
+      <div className="arrow">
+        <i className="fal fa-chevron-down" />
+      </div>
+
       {/* ≥1261px: mega menu. max-[1260px]:hidden để không lộ panel trên mobile. */}
       {mounted && (
         <div className="max-[1260px]:hidden">
