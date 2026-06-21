@@ -137,7 +137,15 @@ export function ReviewDetailScreen({ reviewId, navigate, canUpdate }) {
           <div className="grid gap-3">
             <p><strong>{t('reviews.colAuthor')}</strong> {formatText(review.authorName, '(---)')}</p>
             <p><strong>{t('reviews.detail.authorEmail')}</strong> {formatText(review.authorEmail, '(---)')}</p>
-            <p><strong>{t('reviews.colRating')}</strong> {review.rating}</p>
+            <p className="flex items-center gap-2">
+              <strong>{t('reviews.colRating')}</strong>
+              <span className="inline-flex gap-px" role="img" aria-label={`${t('reviews.colRating')}: ${review.rating}/5`}>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <span key={i} aria-hidden="true" style={{ color: i < Math.round(review.rating) ? 'var(--admin-color-rating-star)' : 'var(--admin-color-border-default)' }}>★</span>
+                ))}
+              </span>
+              <span>{review.rating}/5</span>
+            </p>
             <p><strong>{t('reviews.colStatus')}</strong> <ReviewStatusBadge review={review} t={t} /></p>
             <p><strong>{t('reviews.colDate')}</strong> {formatDateTime(review.createdAt)}</p>
             <p><strong>{t('reviews.detail.updatedAt')}</strong> {formatDateTime(review.updatedAt)}</p>

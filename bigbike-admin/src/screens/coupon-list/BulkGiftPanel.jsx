@@ -1,5 +1,4 @@
 import { BadgeCheck } from 'lucide-react'
-import { Alert } from '@/components/ui/alert'
 import { formatCurrencyVnd, formatDateTime } from '../../lib/formatters'
 import { CHANNEL_LABELS } from './constants'
 
@@ -11,9 +10,7 @@ export function BulkGiftPanel({
   bulkCoupons,
   bulkCoupon,
   bulkSaving,
-  bulkConfirm,
   setBulkCoupon,
-  setBulkConfirm,
   onSend,
   onClose,
 }) {
@@ -43,7 +40,7 @@ export function BulkGiftPanel({
                   key={c.id}
                   type="button"
                   disabled={bulkSaving}
-                  onClick={() => { setBulkCoupon(c); setBulkConfirm(false) }}
+                  onClick={() => setBulkCoupon(c)}
                   className={`w-full text-left rounded-lg border p-3 transition-colors ${
                     isSelected
                       ? 'border-[var(--admin-color-primary)] bg-[var(--admin-color-primary)]/5'
@@ -66,7 +63,9 @@ export function BulkGiftPanel({
                       </div>
                       {pct !== null && (
                         <div className="flex items-center gap-2 mt-2">
-                          <div className="stock-bar" style={{ flex: '0 0 80px' }}><div style={{ width: pct + '%' }} /></div>
+                          <div className="h-1.5 rounded-full bg-surface-muted overflow-hidden" style={{ flex: '0 0 80px' }}>
+                            <div className="h-full bg-primary" style={{ width: pct + '%' }} />
+                          </div>
                           <span className="text-xs bb-muted">{c.usageCount}/{c.maxUsage} đã dùng</span>
                         </div>
                       )}
@@ -85,12 +84,6 @@ export function BulkGiftPanel({
           </div>
         )}
 
-        {bulkConfirm && (
-          <Alert tone="warning" className="mt-3">
-            Xác nhận gửi? Thao tác sẽ tạo hàng loạt mã và email — <strong>không thể hoàn tác</strong>.
-          </Alert>
-        )}
-
         <div className="mt-4 flex gap-2">
           <button
             type="button"
@@ -98,7 +91,7 @@ export function BulkGiftPanel({
             disabled={!bulkCoupon || bulkSaving}
             onClick={onSend}
           >
-            {bulkSaving ? 'Đang gửi...' : bulkConfirm ? 'Xác nhận gửi' : 'Tiếp tục'}
+            {bulkSaving ? 'Đang gửi...' : 'Gửi mã hàng loạt'}
           </button>
           <button
             type="button"

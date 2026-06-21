@@ -70,10 +70,13 @@ export function AdminTable({
                 key={column.key}
                 className={cn(
                   ALIGN_CLASS[column.align],
-                  canSort && 'cursor-pointer select-none',
+                  canSort && 'cursor-pointer select-none focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-[-2px]',
                   isSorted && 'text-foreground',
                 )}
                 onClick={canSort ? () => handleSort(column) : undefined}
+                onKeyDown={canSort ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort(column) } } : undefined}
+                tabIndex={canSort ? 0 : undefined}
+                role={canSort ? 'button' : undefined}
                 aria-sort={isSorted ? (sortDir === 'asc' ? 'ascending' : 'descending') : undefined}
               >
                 <span className="inline-flex items-center gap-1">

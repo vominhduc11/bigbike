@@ -2,10 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Check, Download, Plus } from 'lucide-react'
+import { Check, ChevronDown, ChevronsUpDown, ChevronUp, Download, Plus } from 'lucide-react'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { BulkActionBar } from '../components/BulkActionBar'
+import { FilterChips } from '../components/FilterChips'
 import { FilterSelect } from '../components/FilterSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { PageSizeSelect } from '../components/PageSizeSelect'
@@ -45,8 +46,8 @@ export function ProductListScreen({ navigate, canUpdate }) {
   // biết cái nào còn thiếu bản tiếng Anh) — khác với selector trong form (full).
   const { data: brandsData } = useQuery({ queryKey: ['brands-all', contentLang], queryFn: () => fetchBrands({ pageSize: 100, sort: 'name:asc' }), staleTime: 5 * 60_000 })
   const { data: categoriesData } = useQuery({ queryKey: ['categories', 'tree', contentLang], queryFn: () => fetchCategoryTree(), staleTime: 5 * 60_000 })
-  const brands = brandsData?.items ?? []
-  const categories = categoriesData?.items ?? []
+  const brands = useMemo(() => brandsData?.items ?? [], [brandsData])
+  const categories = useMemo(() => categoriesData?.items ?? [], [categoriesData])
 
   useEffect(() => {
     syncQueryToUrl(query, INITIAL_QUERY)
@@ -175,6 +176,16 @@ export function ProductListScreen({ navigate, canUpdate }) {
   }, [items])
   const allChecked = items.length > 0 && selected.size === items.length
 
+  // In-header sort: maps a column to query.sort (định dạng "field:dir" như endpoint
+  // sản phẩm đang dùng). Click đảo chiều; cột đang sort hiện chevron + aria-sort.
+  const [sortField, sortDir] = (query.sort || '').split(':')
+  const handleHeaderSort = useCallback((field) => {
+    const nextDir = sortField === field && sortDir === 'asc' ? 'desc' : 'asc'
+    updateQuery({ sort: `${field}:${nextDir}` }, { resetPage: true })
+  }, [sortField, sortDir])
+
+  const totalItems = pagination?.totalItems ?? items.length
+
   const runBulk = useCallback(async ({ confirmKey, titleKey, confirmLabel, variant, action, successKey }) => {
     const ids = [...selected]
     if (ids.length === 0) return
@@ -221,6 +232,73 @@ export function ProductListScreen({ navigate, canUpdate }) {
         ? [{ label: t('products.bulkRestore'), onClick: handleBulkRestore, disabled: bulkBusy }]
         : [{ label: t('products.bulkDelete'), onClick: handleBulkDelete, tone: 'danger', disabled: bulkBusy }])
     : []
+
+  // Chip bộ lọc đang bật (ngoài mặc định) — mỗi chip có nút X để gỡ riêng.
+  const filterChips = useMemo(() => {
+    const chips = []
+    if (query.search) {
+      chips.push({
+        key: 'search',
+        label: `${t('common.search', { defaultValue: 'Tìm kiếm' })}: ${query.search}`,
+        onRemove: () => { setSearchInput(INITIAL_QUERY.search) },
+      })
+    }
+    if (query.categoryId) {
+      const cat = categories.find((c) => c.id === query.categoryId)
+      chips.push({
+        key: 'category',
+        label: `${t('products.filterCategory')}: ${cat?.name || query.categoryId}`,
+        onRemove: () => updateQuery({ categoryId: '' }, { resetPage: true }),
+      })
+    }
+    if (query.brandId) {
+      const br = brands.find((b) => b.id === query.brandId)
+      chips.push({
+        key: 'brand',
+        label: `${t('products.filterBrand')}: ${br?.name || query.brandId}`,
+        onRemove: () => updateQuery({ brandId: '' }, { resetPage: true }),
+      })
+    }
+    if (query.publishStatus !== 'ALL') {
+      chips.push({
+        key: 'publish',
+        label: `${t('products.filterPublish')}: ${t(`status.publish.${query.publishStatus}`, { defaultValue: query.publishStatus })}`,
+        onRemove: () => updateQuery({ publishStatus: 'ALL' }, { resetPage: true }),
+      })
+    }
+    if (query.stockState !== 'ALL') {
+      chips.push({
+        key: 'stock',
+        label: `${t('products.filterStock')}: ${t(`status.stock.${query.stockState}`, { defaultValue: query.stockState })}`,
+        onRemove: () => updateQuery({ stockState: 'ALL' }, { resetPage: true }),
+      })
+    }
+    return chips
+  }, [query.search, query.categoryId, query.brandId, query.publishStatus, query.stockState, categories, brands, t])
+
+  // Mô tả cột có thể sort trong header để dựng <th> đồng nhất (label + chevron + aria-sort).
+  const sortableHeader = (field, label, extraClass = '') => {
+    const active = sortField === field
+    const ariaSort = active ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'
+    return (
+      <th
+        scope="col"
+        className={`sortable${active ? ' sorted' : ''}${extraClass ? ` ${extraClass}` : ''}`}
+        aria-sort={ariaSort}
+        tabIndex={0}
+        role="button"
+        onClick={() => handleHeaderSort(field)}
+        onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); handleHeaderSort(field) } }}
+      >
+        {label}
+        <span className="sort-ind" aria-hidden="true">
+          {active
+            ? (sortDir === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)
+            : <ChevronsUpDown size={12} />}
+        </span>
+      </th>
+    )
+  }
 
   return (
     <div>
@@ -325,6 +403,21 @@ export function ProductListScreen({ navigate, canUpdate }) {
         />
       </div>
 
+      <FilterChips
+        chips={filterChips}
+        onClearAll={filterChips.length > 1 ? resetFilters : undefined}
+        clearAllLabel={t('common.resetFilters')}
+        removeChipLabel={t('common.resetFilters')}
+        ariaLabel={t('products.activeFilters', { defaultValue: 'Bộ lọc đang áp dụng' })}
+      />
+
+      {/* Vùng thông báo cho trình đọc màn hình: báo số kết quả sau khi lọc/sắp xếp. */}
+      <span className="sr-only" role="status" aria-live="polite">
+        {state.status === 'success'
+          ? t('products.resultsAnnounce', { count: totalItems, defaultValue: `Đã lọc: ${totalItems} sản phẩm` })
+          : ''}
+      </span>
+
       <BulkActionBar
         selectedCount={selected.size}
         onClear={() => setSelected(new Set())}
@@ -370,14 +463,15 @@ export function ProductListScreen({ navigate, canUpdate }) {
         <div className="bb-card">
           <div className="hide-on-mobile">
           <div className="bb-table-wrap">
-            <table className="bb-table">
+            <table className="bb-table" aria-label={t('products.title')}>
               <thead>
                 <tr>
-                  <th className="col-check">
+                  <th scope="col" className="col-check">
                     <span
                       className={`bb-cb${allChecked ? ' checked' : ''}`}
                       role="checkbox"
                       aria-checked={allChecked}
+                      aria-label={t('common.selectAll', { defaultValue: 'Chọn tất cả' })}
                       tabIndex={0}
                       onClick={toggleAll}
                       onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleAll() } }}
@@ -385,16 +479,16 @@ export function ProductListScreen({ navigate, canUpdate }) {
                       {allChecked && <Check size={11} />}
                     </span>
                   </th>
-                  <th>{t('products.colProduct')}</th>
-                  <th className="hidden lg:table-cell">SKU</th>
-                  <th className="num">{t('products.colPrice')}</th>
-                  <th>{t('products.colStock')}</th>
-                  <th className="hidden xl:table-cell">{t('products.colCategory')}</th>
-                  <th className="hidden 2xl:table-cell">{t('products.colBrand')}</th>
-                  <th className="hidden xl:table-cell">{t('products.colHomepage')}</th>
-                  <th>{t('products.colPublish')}</th>
-                  <th className="hidden lg:table-cell">{t('products.colUpdated')}</th>
-                  <th className="col-actions" />
+                  {sortableHeader('name', t('products.colProduct'))}
+                  <th scope="col" className="hidden lg:table-cell">SKU</th>
+                  {sortableHeader('price', t('products.colPrice'), 'num')}
+                  <th scope="col">{t('products.colStock')}</th>
+                  <th scope="col" className="hidden xl:table-cell">{t('products.colCategory')}</th>
+                  <th scope="col" className="hidden 2xl:table-cell">{t('products.colBrand')}</th>
+                  <th scope="col" className="hidden xl:table-cell">{t('products.colHomepage')}</th>
+                  <th scope="col">{t('products.colPublish')}</th>
+                  {sortableHeader('updatedAt', t('products.colUpdated'), 'hidden lg:table-cell')}
+                  <th scope="col" className="col-actions" />
                 </tr>
               </thead>
               <tbody>

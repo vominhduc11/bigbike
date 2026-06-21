@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { PageSizeSelect } from '../components/PageSizeSelect'
-import { Check, Eye, EyeOff, Image as ImageIcon, MessageSquare, Search } from 'lucide-react'
+import { Check, Eye, EyeOff, Image as ImageIcon, Loader2, MessageSquare } from 'lucide-react'
+import { BulkActionBar } from '../components/BulkActionBar'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { showConfirm } from '../lib/confirm'
@@ -28,11 +30,13 @@ const AVATAR_COLORS = [
 
 const INITIAL_QUERY = { search: '', status: 'ALL', page: 1, pageSize: 20 }
 
-function Stars({ n, of = 5 }) {
+function Stars({ n, of = 5, label }) {
+  const { t } = useTranslation()
+  const ariaLabel = label || `${t('reviews.colRating')}: ${n}/${of}`
   return (
-    <span className="inline-flex gap-px">
+    <span className="inline-flex gap-px" role="img" aria-label={ariaLabel}>
       {Array.from({ length: of }).map((_, i) => (
-        <span key={i} style={{ color: i < n ? 'var(--admin-color-rating-star)' : 'var(--admin-color-border-default)' }}>★</span>
+        <span key={i} aria-hidden="true" style={{ color: i < n ? 'var(--admin-color-rating-star)' : 'var(--admin-color-border-default)' }}>★</span>
       ))}
     </span>
   )
@@ -55,30 +59,42 @@ export function ReviewListScreen({ navigate, canUpdate }) {
   // Shape trả về { status, items, pagination, warning, error } khớp đúng JSX bên dưới.
   const state = useAdminList(['reviews', query, contentLang], () => fetchReviews(query))
   const [actionError, setActionError] = useState('')
+  // id của review đang đổi trạng thái — chặn double-click + hiện spinner trên đúng nút.
+  const [pendingId, setPendingId] = useState(null)
+  // Chọn nhiều để duyệt/spam/xoá hàng loạt cho hàng chờ kiểm duyệt.
+  const [selected, setSelected] = useState(() => new Set())
+  const [bulkBusy, setBulkBusy] = useState(false)
 
   useEffect(() => {
     if (isFirstSearchRender.current) {
       isFirstSearchRender.current = false
       return
     }
+    setSelected(new Set())
     setQuery((prev) => ({ ...prev, search: debouncedSearch, page: 1 }))
   }, [debouncedSearch])
 
   const handleStatusChange = useCallback(async (review, newStatus) => {
+    if (pendingId) return
     setActionError('')
+    setPendingId(review.id)
     try {
       await updateReviewStatus(review.id, newStatus)
+      toast.success(t('reviews.detail.statusUpdated'))
       queryClient.invalidateQueries({ queryKey: ['reviews'] })
     } catch (error) {
       setActionError(error.message || t('reviews.approveError'))
+    } finally {
+      setPendingId(null)
     }
-  }, [t, queryClient])
+  }, [t, queryClient, pendingId])
 
   const handleDelete = useCallback(async (reviewId) => {
     const confirmed = await showConfirm(t('reviews.deleteConfirm'), t('reviews.deleteConfirmTitle'))
     if (!confirmed) return
     try {
       await deleteReview(reviewId)
+      toast.success(t('reviews.detail.deleteSuccess'))
       queryClient.invalidateQueries({ queryKey: ['reviews'] })
     } catch (error) {
       setActionError(error.message || t('reviews.deleteError'))
@@ -86,6 +102,7 @@ export function ReviewListScreen({ navigate, canUpdate }) {
   }, [t, queryClient])
 
   function updateQuery(partial, options = { resetPage: false }) {
+    setSelected(new Set())
     setQuery((prev) => {
       const next = { ...prev, ...partial }
       if (options.resetPage) next.page = 1
@@ -107,7 +124,51 @@ export function ReviewListScreen({ navigate, canUpdate }) {
   const pendingCount = state.items.filter((r) => r.status === 'PENDING').length
   const lowRatingPending = state.items.filter((r) => r.status === 'PENDING' && Math.round(r.rating) <= 1).length
 
-  const items = state.items || []
+  const items = useMemo(() => state.items || [], [state.items])
+  const isFiltered = !!query.search || query.status !== 'ALL'
+
+  const toggleSelect = useCallback((id) => {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }, [])
+  const allChecked = items.length > 0 && selected.size === items.length
+  const toggleSelectAll = useCallback(() => {
+    setSelected((prev) => (prev.size === items.length ? new Set() : new Set(items.map((r) => r.id))))
+  }, [items])
+
+  // Áp dụng một hành động cho mọi review đang chọn (duyệt / spam / xoá hàng loạt).
+  const runBulk = useCallback(async (kind) => {
+    if (bulkBusy) return
+    const ids = Array.from(selected)
+    if (ids.length === 0) return
+    if (kind === 'DELETE') {
+      const confirmed = await showConfirm(
+        t('reviews.bulkDeleteConfirm', { count: ids.length, defaultValue: `Xoá ${ids.length} đánh giá đã chọn?` }),
+        t('reviews.deleteConfirmTitle'),
+      )
+      if (!confirmed) return
+    }
+    setActionError('')
+    setBulkBusy(true)
+    let done = 0
+    try {
+      for (const id of ids) {
+        if (kind === 'DELETE') await deleteReview(id)
+        else await updateReviewStatus(id, kind)
+        done += 1
+      }
+      toast.success(t('reviews.bulkDone', { count: done, defaultValue: `Đã xử lý ${done} đánh giá.` }))
+      setSelected(new Set())
+    } catch (error) {
+      setActionError(error.message || t('reviews.bulkError', { defaultValue: 'Một số đánh giá xử lý không thành công.' }))
+    } finally {
+      setBulkBusy(false)
+      queryClient.invalidateQueries({ queryKey: ['reviews'] })
+    }
+  }, [bulkBusy, selected, t, queryClient])
 
   return (
     <div>
@@ -186,14 +247,13 @@ export function ReviewListScreen({ navigate, canUpdate }) {
         </div>
       </div>
 
-      {/* Status tabs */}
-      <div className="bb-seg" style={{ marginBottom: 16 }} role="tablist" aria-label={t('reviews.filterStatus')}>
+      {/* Bộ lọc trạng thái — nhóm nút bật/tắt (aria-pressed), không phải tab pattern. */}
+      <div className="bb-seg" style={{ marginBottom: 16 }} role="group" aria-label={t('reviews.filterStatus')}>
         {STATUS_OPTIONS.map((status) => (
           <button
             key={status}
             type="button"
-            role="tab"
-            aria-selected={query.status === status}
+            aria-pressed={query.status === status}
             className={query.status === status ? 'active' : ''}
             onClick={() => updateQuery({ status }, { resetPage: true })}
           >
@@ -211,9 +271,34 @@ export function ReviewListScreen({ navigate, canUpdate }) {
         />
         <PageSizeSelect
           value={query.pageSize}
-          onChange={(n) => setQuery((prev) => ({ ...prev, pageSize: n, page: 1 }))}
+          onChange={(n) => updateQuery({ pageSize: n }, { resetPage: true })}
         />
       </div>
+
+      {canUpdate && (
+        <BulkActionBar
+          selectedCount={selected.size}
+          onClear={() => setSelected(new Set())}
+          actions={[
+            {
+              label: t('reviews.approve'),
+              onClick: () => runBulk('APPROVED'),
+              disabled: bulkBusy,
+            },
+            {
+              label: t('reviews.spam'),
+              onClick: () => runBulk('SPAM'),
+              disabled: bulkBusy,
+            },
+            {
+              label: t('common.delete'),
+              tone: 'danger',
+              onClick: () => runBulk('DELETE'),
+              disabled: bulkBusy,
+            },
+          ]}
+        />
+      )}
 
       {state.status === 'error' && (
         <StatePanel
@@ -226,17 +311,40 @@ export function ReviewListScreen({ navigate, canUpdate }) {
       )}
 
       {state.status === 'success' && items.length === 0 && (
-        <StatePanel
-          tone="neutral"
-          title={t('reviews.empty')}
-          description={t('reviews.emptyDesc')}
-          actionLabel={t('common.resetFilters')}
-          onAction={() => { setSearchInput(''); setQuery(INITIAL_QUERY) }}
-        />
+        isFiltered ? (
+          <StatePanel
+            tone="neutral"
+            title={t('reviews.empty')}
+            description={t('reviews.emptyDesc')}
+            actionLabel={t('common.resetFilters')}
+            onAction={() => { setSearchInput(''); setQuery(INITIAL_QUERY) }}
+          />
+        ) : (
+          <StatePanel
+            tone="neutral"
+            title={t('reviews.emptyAll', { defaultValue: 'Chưa có đánh giá nào' })}
+            description={t('reviews.emptyAllDesc', { defaultValue: 'Đánh giá sẽ xuất hiện ở đây khi khách hàng để lại nhận xét cho sản phẩm trên website.' })}
+          />
+        )
       )}
 
       {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) && (
         <div className="flex flex-col gap-3">
+          {canUpdate && state.status === 'success' && items.length > 0 && (
+            <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
+              <span
+                className={`bb-cb${allChecked ? ' checked' : ''}`}
+                role="checkbox"
+                aria-checked={allChecked}
+                tabIndex={0}
+                onClick={toggleSelectAll}
+                onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleSelectAll() } }}
+              >
+                {allChecked && <Check size={11} />}
+              </span>
+              <span onClick={toggleSelectAll}>{t('reviews.selectAllOnPage', { defaultValue: 'Chọn tất cả trên trang này' })}</span>
+            </label>
+          )}
           {state.status === 'loading' && items.length === 0 && (
             [...Array(3)].map((_, i) => (
               <div className="bb-card" key={`sk-${i}`}>
@@ -248,10 +356,28 @@ export function ReviewListScreen({ navigate, canUpdate }) {
           )}
           {items.map((r, i) => {
             const author = formatText(r.authorName) || t('reviews.unknownAuthor', { defaultValue: 'Khách hàng' })
+            const isSelected = selected.has(r.id)
             return (
-              <div className="bb-card" key={r.id}>
+              <div
+                className="bb-card"
+                key={r.id}
+                style={isSelected ? { borderColor: 'var(--bb-primary)', boxShadow: '0 0 0 1px var(--bb-primary)' } : undefined}
+              >
                 <div className="bb-card-body">
                   <div className="flex items-center gap-3 mb-3">
+                    {canUpdate && (
+                      <span
+                        className={`bb-cb${isSelected ? ' checked' : ''}`}
+                        role="checkbox"
+                        aria-checked={isSelected}
+                        aria-label={t('reviews.selectOne', { defaultValue: 'Chọn đánh giá này' })}
+                        tabIndex={0}
+                        onClick={() => toggleSelect(r.id)}
+                        onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleSelect(r.id) } }}
+                      >
+                        {isSelected && <Check size={11} />}
+                      </span>
+                    )}
                     <span className={`inline-flex items-center justify-center size-8 rounded-full text-xs font-bold flex-shrink-0 ${AVATAR_COLORS[i % AVATAR_COLORS.length]}`}>
                       {author.charAt(0).toUpperCase()}
                     </span>
@@ -299,17 +425,17 @@ export function ReviewListScreen({ navigate, canUpdate }) {
                       <Eye size={13} />{t('reviews.view')}
                     </button>
                     {canUpdate && r.status !== 'APPROVED' && (
-                      <button type="button" className="bb-btn bb-btn-primary bb-btn-sm" onClick={() => handleStatusChange(r, 'APPROVED')}>
-                        <Check size={13} />{t('reviews.approve')}
+                      <button type="button" className="bb-btn bb-btn-primary bb-btn-sm" disabled={pendingId === r.id} onClick={() => handleStatusChange(r, 'APPROVED')}>
+                        {pendingId === r.id ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}{t('reviews.approve')}
                       </button>
                     )}
                     {canUpdate && r.status !== 'SPAM' && (
-                      <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" style={{ color: 'var(--bb-danger)' }} onClick={() => handleStatusChange(r, 'SPAM')}>
-                        <EyeOff size={13} />{t('reviews.spam')}
+                      <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" style={{ color: 'var(--bb-danger)' }} disabled={pendingId === r.id} onClick={() => handleStatusChange(r, 'SPAM')}>
+                        {pendingId === r.id ? <Loader2 size={13} className="animate-spin" /> : <EyeOff size={13} />}{t('reviews.spam')}
                       </button>
                     )}
                     {canUpdate && (
-                      <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" style={{ color: 'var(--bb-danger)' }} onClick={() => handleDelete(r.id)}>
+                      <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" style={{ color: 'var(--bb-danger)' }} disabled={pendingId === r.id} onClick={() => handleDelete(r.id)}>
                         {t('common.delete')}
                       </button>
                     )}

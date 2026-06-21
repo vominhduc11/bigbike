@@ -31,7 +31,20 @@ export function ProductRow({
   return (
     <tr className={checked ? 'selected' : ''} onClick={() => navigate(`/admin/products/${product.id}`)}>
       <td className="col-check" onClick={(e) => { e.stopPropagation(); onToggleSelect(product.id) }}>
-        <span className={`bb-cb${checked ? ' checked' : ''}`} role="checkbox" aria-checked={checked}>
+        <span
+          className={`bb-cb${checked ? ' checked' : ''}`}
+          role="checkbox"
+          aria-checked={checked}
+          aria-label={t('products.selectRow', { name: product.name, defaultValue: `Chọn ${product.name}` })}
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === ' ' || e.key === 'Enter') {
+              e.preventDefault()
+              e.stopPropagation()
+              onToggleSelect(product.id)
+            }
+          }}
+        >
           {checked && <Check size={11} />}
         </span>
       </td>

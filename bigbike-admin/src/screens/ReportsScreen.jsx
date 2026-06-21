@@ -1,6 +1,10 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Calendar, Download } from 'lucide-react'
+import {
+  Calendar, Download, Info, TrendingUp, TrendingDown, Minus,
+  ChevronUp, ChevronDown, ChevronsUpDown,
+  CircleDollarSign, Wallet, RotateCcw, PiggyBank, ShoppingBag, Receipt,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import {
   Area, AreaChart, Bar, BarChart,
@@ -31,8 +35,52 @@ function RevenueTooltip({ active, payload, label, locale }) {
   )
 }
 
-// Ranked table card — bb-* classes.
-function RankTable({ title, rows, cols, noDataLabel }) {
+// Mũi tên + % thay đổi so với kỳ trước cùng độ dài (.bb-kpi-trend up/down).
+function TrendPill({ direction, label }) {
+  const cls = direction === 'up' ? 'up' : direction === 'down' ? 'down' : 'flat'
+  const icon =
+    direction === 'up' ? <TrendingUp size={10} /> :
+    direction === 'down' ? <TrendingDown size={10} /> :
+    <Minus size={10} />
+  return (
+    <span className={`bb-kpi-trend ${cls}`}>
+      {icon}{label}
+    </span>
+  )
+}
+
+// Khối giữ chỗ khớp layout khi đang tải (thay panel chữ → không nhảy layout).
+function SkeletonBlock({ height = 120 }) {
+  return <div className="bb-skeleton-block" style={{ height }} />
+}
+
+// Ranked table card — bb-* classes; sort client-side trên cột số (top-N ≤ 1000 dòng).
+function RankTable({ title, rows, cols, noDataLabel, sortLabel }) {
+  const [sortKey, setSortKey] = useState(null)
+  const [sortDir, setSortDir] = useState('desc')
+
+  const sortedRows = useMemo(() => {
+    if (!sortKey) return rows
+    const col = cols.find((c) => c.key === sortKey)
+    if (!col?.sortable) return rows
+    const dir = sortDir === 'asc' ? 1 : -1
+    return [...rows].sort((a, b) => {
+      const av = a[sortKey]
+      const bv = b[sortKey]
+      if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * dir
+      return String(av ?? '').localeCompare(String(bv ?? '')) * dir
+    })
+  }, [rows, cols, sortKey, sortDir])
+
+  const onSort = (key) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortKey(key)
+      setSortDir('desc')
+    }
+  }
+
   return (
     <div className="bb-card">
       <div className="bb-card-header"><h2>{title}</h2></div>
@@ -41,17 +89,45 @@ function RankTable({ title, rows, cols, noDataLabel }) {
           <table className="bb-table">
             <thead>
               <tr>
-                <th style={{ width: 36 }}>#</th>
-                {cols.map((c) => <th key={c.key} className={c.right ? 'num' : undefined}>{c.label}</th>)}
+                <th scope="col" style={{ width: 36 }}>#</th>
+                {cols.map((c) => {
+                  if (!c.sortable) {
+                    return (
+                      <th key={c.key} scope="col" className={c.right ? 'num' : undefined}>{c.label}</th>
+                    )
+                  }
+                  const active = sortKey === c.key
+                  const ariaSort = active ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'
+                  return (
+                    <th
+                      key={c.key}
+                      scope="col"
+                      className={`sortable${active ? ' sorted' : ''}${c.right ? ' num' : ''}`}
+                      aria-sort={ariaSort}
+                      tabIndex={0}
+                      role="button"
+                      aria-label={sortLabel ? `${sortLabel}: ${c.label}` : c.label}
+                      onClick={() => onSort(c.key)}
+                      onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); onSort(c.key) } }}
+                    >
+                      {c.label}
+                      <span className="sort-ind" aria-hidden="true">
+                        {active
+                          ? (sortDir === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)
+                          : <ChevronsUpDown size={12} />}
+                      </span>
+                    </th>
+                  )
+                })}
               </tr>
             </thead>
             <tbody>
-              {rows.length === 0 ? (
+              {sortedRows.length === 0 ? (
                 <tr>
                   <td colSpan={cols.length + 1} className="text-center bb-muted" style={{ fontSize: 14 }}>{noDataLabel}</td>
                 </tr>
-              ) : rows.map((row, idx) => (
-                <tr key={idx}>
+              ) : sortedRows.map((row, idx) => (
+                <tr key={row.id ?? idx}>
                   <td className="bb-muted">{idx + 1}</td>
                   {cols.map((c) => (
                     <td key={c.key} className={c.right ? 'num' : undefined}>
@@ -74,6 +150,40 @@ function toLocalDateString(daysAgo) {
   return d.toISOString().slice(0, 10)
 }
 
+// Dịch khoảng ngày lùi về kỳ liền trước cùng độ dài (để so sánh kỳ-trên-kỳ).
+function shiftRangeBack(from, to) {
+  if (!from || !to) return { from: '', to: '' }
+  const fromD = new Date(`${from}T00:00:00`)
+  const toD = new Date(`${to}T00:00:00`)
+  if (Number.isNaN(fromD.getTime()) || Number.isNaN(toD.getTime())) return { from: '', to: '' }
+  const spanDays = Math.round((toD - fromD) / 86400000) + 1
+  const prevTo = new Date(fromD)
+  prevTo.setDate(prevTo.getDate() - 1)
+  const prevFrom = new Date(prevTo)
+  prevFrom.setDate(prevFrom.getDate() - (spanDays - 1))
+  return {
+    from: prevFrom.toISOString().slice(0, 10),
+    to: prevTo.toISOString().slice(0, 10),
+  }
+}
+
+// % thay đổi giữa kỳ hiện tại và kỳ trước → {direction, label} cho TrendPill.
+function makeTrend(current, previous, t) {
+  if (previous == null) return { direction: 'neutral', label: t('reports.trendNoData', { defaultValue: 'Chưa có kỳ trước' }) }
+  if (previous === 0) {
+    if (current === 0) return { direction: 'neutral', label: t('reports.trendNoChange', { defaultValue: 'Không đổi' }) }
+    return { direction: 'up', label: t('reports.trendNew', { defaultValue: 'Mới' }) }
+  }
+  const pct = ((current - previous) / Math.abs(previous)) * 100
+  const rounded = Math.round(pct * 10) / 10
+  if (rounded === 0) return { direction: 'neutral', label: t('reports.trendNoChange', { defaultValue: 'Không đổi' }) }
+  const sign = rounded > 0 ? '+' : ''
+  return {
+    direction: rounded > 0 ? 'up' : 'down',
+    label: `${sign}${rounded.toLocaleString(undefined, { maximumFractionDigits: 1 })}%`,
+  }
+}
+
 export function ReportsScreen() {
   const { t, i18n } = useTranslation()
   const locale = i18n.language === 'en' ? 'en-US' : 'vi-VN'
@@ -81,7 +191,7 @@ export function ReportsScreen() {
   const [preset, setPreset] = useState('30d')
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')
-  const [state, setState] = useState({ status: 'loading', data: null, warning: '' })
+  const [state, setState] = useState({ status: 'loading', data: null, prev: null, warning: '' })
 
   const resolvedDates = useCallback(() => {
     if (preset === 'custom') {
@@ -100,7 +210,7 @@ export function ReportsScreen() {
 
     if (preset === 'custom' && from && to && from > to) {
       queueMicrotask(() => {
-        if (active) setState({ status: 'error', data: null, warning: '', error: t('reports.dateRangeError') })
+        if (active) setState({ status: 'error', data: null, prev: null, warning: '', error: t('reports.dateRangeError') })
       })
       return () => { active = false }
     }
@@ -108,20 +218,31 @@ export function ReportsScreen() {
     queueMicrotask(() => {
       if (active) setState((s) => ({ ...s, status: 'loading' }))
     })
-    fetchAnalytics(from, to)
-      .then((r) => {
+    const prevRange = shiftRangeBack(from, to)
+    // Lấy thêm kỳ liền trước để tính so sánh; lỗi kỳ trước không chặn hiển thị kỳ hiện tại.
+    Promise.all([
+      fetchAnalytics(from, to),
+      prevRange.from && prevRange.to
+        ? fetchAnalytics(prevRange.from, prevRange.to).catch(() => null)
+        : Promise.resolve(null),
+    ])
+      .then(([r, prevR]) => {
         if (!active) return
-        setState({ status: 'success', data: r.data, warning: '' })
+        setState({ status: 'success', data: r.data, prev: prevR?.data ?? null, warning: '' })
       })
       .catch((e) => {
         if (!active) return
-        setState({ status: 'error', data: null, warning: '', error: e.message })
+        setState({ status: 'error', data: null, prev: null, warning: '', error: e.message })
       })
     return () => { active = false }
   }, [resolvedDates, preset, t])
 
   const { from: exportFrom, to: exportTo } = resolvedDates()
   const tickFmt = (v) => `${(v / 1000000).toFixed(0)}M`
+
+  const rangeLabel = exportFrom && exportTo
+    ? t('reports.rangeFromTo', { from: exportFrom, to: exportTo, defaultValue: 'Từ {{from}} đến {{to}}' })
+    : ''
 
   const presetTabs = [
     ...PRESET_VALUES.map((p) => ({ key: p.value, label: t(`reports.${p.key}`) })),
@@ -137,6 +258,64 @@ export function ReportsScreen() {
       toast.error(t('export.error'))
     }
   }
+
+  // Mỗi KPI: nhãn + giá trị + icon màu semantic + gợi ý cách tính + delta kỳ-trên-kỳ.
+  const kpiCards = state.data ? [
+    {
+      key: 'gmv',
+      label: t('reports.kpiGmv'),
+      value: formatCurrencyVnd(state.data.summary.grossOrderValue, locale),
+      raw: state.data.summary.grossOrderValue,
+      prev: state.prev?.summary.grossOrderValue,
+      color: 'danger', money: true, icon: <CircleDollarSign size={15} />,
+      hint: t('reports.kpiGmvHint', { defaultValue: 'Tổng giá trị các đơn đã đặt trong kỳ (chưa trừ hoàn tiền).' }),
+    },
+    {
+      key: 'paid',
+      label: t('reports.kpiPaidRevenue'),
+      value: formatCurrencyVnd(state.data.summary.paidRevenue, locale),
+      raw: state.data.summary.paidRevenue,
+      prev: state.prev?.summary.paidRevenue,
+      color: 'success', money: true, icon: <Wallet size={15} />,
+      hint: t('reports.kpiPaidRevenueHint', { defaultValue: 'Số tiền thực sự đã thu được từ các đơn trong kỳ.' }),
+    },
+    {
+      key: 'refund',
+      label: t('reports.kpiRefund'),
+      value: formatCurrencyVnd(state.data.summary.refundAmount, locale),
+      raw: state.data.summary.refundAmount,
+      prev: state.prev?.summary.refundAmount,
+      color: 'warning', money: true, icon: <RotateCcw size={15} />,
+      hint: t('reports.kpiRefundHint', { defaultValue: 'Tổng số tiền đã hoàn trả cho khách trong kỳ.' }),
+    },
+    {
+      key: 'net',
+      label: t('reports.kpiNetRevenue'),
+      value: formatCurrencyVnd(state.data.summary.netRevenue, locale),
+      raw: state.data.summary.netRevenue,
+      prev: state.prev?.summary.netRevenue,
+      color: 'info', money: true, icon: <PiggyBank size={15} />,
+      hint: t('reports.kpiNetRevenueHint', { defaultValue: 'Doanh thu thuần = tiền thực thu trừ đi tiền hoàn.' }),
+    },
+    {
+      key: 'orders',
+      label: t('reports.kpiOrderCount'),
+      value: state.data.summary.orderCount.toLocaleString(locale),
+      raw: state.data.summary.orderCount,
+      prev: state.prev?.summary.orderCount,
+      color: 'info', icon: <ShoppingBag size={15} />,
+      hint: t('reports.kpiOrderCountHint', { defaultValue: 'Số đơn hàng phát sinh trong kỳ.' }),
+    },
+    {
+      key: 'aov',
+      label: t('reports.kpiAov'),
+      value: formatCurrencyVnd(state.data.summary.avgOrderValue, locale),
+      raw: state.data.summary.avgOrderValue,
+      prev: state.prev?.summary.avgOrderValue,
+      color: 'brand', money: true, icon: <Receipt size={15} />,
+      hint: t('reports.kpiAovHint', { defaultValue: 'Giá trị trung bình mỗi đơn = doanh số chia số đơn.' }),
+    },
+  ] : []
 
   return (
     <div>
@@ -166,13 +345,15 @@ export function ReportsScreen() {
               <input
                 type="date"
                 className="bb-input"
+                aria-label={t('reports.customFrom', { defaultValue: 'Từ ngày' })}
                 value={customFrom}
                 onChange={(e) => setCustomFrom(e.target.value)}
               />
-              <span className="bb-muted" style={{ alignSelf: 'center', fontSize: 14 }}>→</span>
+              <span className="bb-muted" aria-hidden="true" style={{ alignSelf: 'center', fontSize: 14 }}>→</span>
               <input
                 type="date"
                 className="bb-input"
+                aria-label={t('reports.customTo', { defaultValue: 'Đến ngày' })}
                 value={customTo}
                 onChange={(e) => setCustomTo(e.target.value)}
               />
@@ -212,7 +393,19 @@ export function ReportsScreen() {
       {state.warning && <ReadOnlyBanner warning={state.warning} />}
 
       {state.status === 'loading' && (
-        <StatePanel tone="info" title={t('reports.loading')} description={t('common.pleaseWait')} />
+        <>
+          <div className="bb-kpi-grid">
+            {[...Array(6)].map((_, i) => (
+              <SkeletonBlock key={i} height={120} />
+            ))}
+          </div>
+          <SkeletonBlock height={240} />
+          <div style={{ height: 16 }} />
+          <div className="bb-grid-2">
+            <SkeletonBlock height={280} />
+            <SkeletonBlock height={280} />
+          </div>
+        </>
       )}
 
       {state.status === 'error' && (
@@ -223,19 +416,33 @@ export function ReportsScreen() {
         <>
           {/* KPI row */}
           <div className="bb-kpi-grid">
-            {[
-              { label: t('reports.kpiGmv'), value: formatCurrencyVnd(state.data.summary.grossOrderValue, locale), color: 'danger', money: true },
-              { label: t('reports.kpiPaidRevenue'), value: formatCurrencyVnd(state.data.summary.paidRevenue, locale), color: 'success', money: true },
-              { label: t('reports.kpiRefund'), value: formatCurrencyVnd(state.data.summary.refundAmount, locale), color: 'warning', money: true },
-              { label: t('reports.kpiNetRevenue'), value: formatCurrencyVnd(state.data.summary.netRevenue, locale), color: 'info', money: true },
-              { label: t('reports.kpiOrderCount'), value: state.data.summary.orderCount.toLocaleString(locale), color: 'info' },
-              { label: t('reports.kpiAov'), value: formatCurrencyVnd(state.data.summary.avgOrderValue, locale), color: '', money: true },
-            ].map((k) => (
-              <div className="bb-kpi" key={k.label}>
-                <div className="bb-kpi-head"><span>{k.label}</span></div>
-                <div className={k.money ? 'bb-kpi-value bb-kpi-value--money' : 'bb-kpi-value'}>{k.value}</div>
-              </div>
-            ))}
+            {kpiCards.map((k) => {
+              const trend = makeTrend(k.raw, k.prev, t)
+              return (
+                <div className="bb-kpi" key={k.key}>
+                  <div className="bb-kpi-head">
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      {k.label}
+                      <span
+                        title={k.hint}
+                        aria-label={k.hint}
+                        role="img"
+                        tabIndex={0}
+                        style={{ display: 'inline-flex', cursor: 'help', opacity: 0.65 }}
+                      >
+                        <Info size={13} aria-hidden="true" />
+                      </span>
+                    </span>
+                    <span className={`bb-kpi-icon ${k.color || 'info'}`}>{k.icon}</span>
+                  </div>
+                  <div className={k.money ? 'bb-kpi-value bb-kpi-value--money' : 'bb-kpi-value'}>{k.value}</div>
+                  <div className="bb-kpi-foot">
+                    <TrendPill {...trend} />
+                    {rangeLabel && <span className="bb-kpi-foot-label">{rangeLabel}</span>}
+                  </div>
+                </div>
+              )
+            })}
           </div>
 
           {/* Revenue trend chart */}
@@ -328,20 +535,22 @@ export function ReportsScreen() {
               title={t('reports.chartTopProducts')}
               rows={state.data.topProducts}
               noDataLabel={t('reports.noData')}
+              sortLabel={t('reports.sortBy', { defaultValue: 'Sắp xếp theo' })}
               cols={[
                 { key: 'productName', label: t('reports.colProduct') },
-                { key: 'unitsSold', label: t('reports.colUnitsSold'), right: true },
-                { key: 'revenue', label: t('reports.colRevenue'), right: true, render: (r) => formatCurrencyVnd(r.revenue, locale) },
+                { key: 'unitsSold', label: t('reports.colUnitsSold'), right: true, sortable: true },
+                { key: 'revenue', label: t('reports.colRevenue'), right: true, sortable: true, render: (r) => formatCurrencyVnd(r.revenue, locale) },
               ]}
             />
             <RankTable
               title={t('reports.chartTopCustomers')}
               rows={state.data.topCustomers}
               noDataLabel={t('reports.noData')}
+              sortLabel={t('reports.sortBy', { defaultValue: 'Sắp xếp theo' })}
               cols={[
                 { key: 'customerEmail', label: t('reports.colEmail') },
-                { key: 'orderCount', label: t('reports.colOrders'), right: true },
-                { key: 'revenue', label: t('reports.colSpend'), right: true, render: (r) => formatCurrencyVnd(r.revenue, locale) },
+                { key: 'orderCount', label: t('reports.colOrders'), right: true, sortable: true },
+                { key: 'revenue', label: t('reports.colSpend'), right: true, sortable: true, render: (r) => formatCurrencyVnd(r.revenue, locale) },
               ]}
             />
           </div>

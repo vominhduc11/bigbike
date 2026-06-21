@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="vi">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -10,7 +10,15 @@
     <script src="/theme-init.js"></script>
   </head>
   <body>
-    <div id="root"></div>
+    <!-- Placeholder tải ban đầu — React thay thế toàn bộ nội dung #root khi render,
+         tránh màn hình trắng giữa lúc tải bundle của Vite SPA. -->
+    <div id="root">
+      <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:Inter,system-ui,sans-serif;color:#6b7280;font-size:14px;gap:10px">
+        <span style="width:16px;height:16px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;display:inline-block;animation:bb-spin .7s linear infinite"></span>
+        Đang tải BigBike Admin…
+      </div>
+    </div>
+    <style>@keyframes bb-spin{to{transform:rotate(360deg)}}</style>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

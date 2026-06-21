@@ -1,9 +1,11 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FilterSearchInput } from '../components/FilterSearchInput'
+import { FilterChips } from '../components/FilterChips'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { AlertTriangle, Clock, FileX, Wallet } from 'lucide-react'
+import { toast } from 'sonner'
 import {
   fetchReceivables,
   fetchReceivableSummary,
@@ -12,9 +14,9 @@ import {
 } from '../lib/adminApi'
 import { useUrlQuery } from '../lib/useUrlQuery'
 import { PaginationControls } from '../components/PaginationControls'
+import { AdminTable } from '../components/AdminTable'
 import { StatePanel } from '../components/StatePanel'
 import { Modal, FormField } from '../components/layout'
-import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -82,6 +84,140 @@ export function ReceivablesListScreen({ navigate, canRecordPayment, canWriteOff 
   const handlePage = useCallback((p) => setUrlQuery({ page: p }), [setUrlQuery])
 
   const activeTab = tabKeyFromStatus(urlQuery.status)
+  const hasSearch = !!(urlQuery.search || '').trim()
+  const isFiltered = hasSearch || activeTab !== 'ALL'
+
+  const searchChips = hasSearch
+    ? [{
+        key: 'search',
+        label: t('receivables.chip.search', {
+          defaultValue: 'Tìm kiếm: {{value}}',
+          value: urlQuery.search,
+        }),
+        onRemove: () => handleSearch(''),
+        removeLabel: t('common.resetFilters', { defaultValue: 'Xóa bộ lọc' }),
+      }]
+    : []
+
+  const renderRowActions = (item) => {
+    const closed = ['CLOSED', 'WRITTEN_OFF'].includes(item.status)
+    if (closed || (!canRecordPayment && !canWriteOff)) return null
+    return (
+      <div className="flex gap-1 justify-end" style={{ flexWrap: 'wrap' }} onClick={(e) => e.stopPropagation()}>
+        {canRecordPayment && (
+          <button type="button" className="bb-btn bb-btn-primary bb-btn-sm" onClick={() => setPaymentTarget(item)}>
+            {t('receivables.btn.recordPayment')}
+          </button>
+        )}
+        {canWriteOff && (
+          <button
+            type="button"
+            className="bb-btn bb-btn-ghost bb-btn-sm"
+            style={{ color: 'var(--bb-danger)' }}
+            onClick={() => setWriteOffTarget(item)}
+            title={t('receivables.btn.writeOffTooltip')}
+          >
+            {t('receivables.btn.writeOff')}
+          </button>
+        )}
+      </div>
+    )
+  }
+
+  const columns = [
+    {
+      key: 'orderNumber',
+      label: t('receivables.col.orderNumber'),
+      render: (item) => (
+        <span className="mono">{item.orderNumber || (item.orderId ? item.orderId.slice(0, 8) : '—')}</span>
+      ),
+    },
+    { key: 'customer', label: t('receivables.col.customer'), render: (item) => item.customerName || '—' },
+    {
+      key: 'phone',
+      label: t('receivables.col.phone'),
+      render: (item) => <span style={{ fontSize: 12 }}>{item.customerPhone || '—'}</span>,
+    },
+    {
+      key: 'originalAmount',
+      label: t('receivables.col.originalAmount'),
+      align: 'right',
+      render: (item) => formatCurrency(item.originalAmount, locale),
+    },
+    {
+      key: 'paidAmount',
+      label: t('receivables.col.paidAmount'),
+      align: 'right',
+      render: (item) => formatCurrency(item.paidAmount, locale),
+    },
+    {
+      key: 'outstandingAmount',
+      label: t('receivables.col.outstandingAmount'),
+      align: 'right',
+      render: (item) => (
+        <span className={item.outstandingAmount > 0 ? 'text-danger' : ''} style={{ fontWeight: 700 }}>
+          {formatCurrency(item.outstandingAmount, locale)}
+        </span>
+      ),
+    },
+    {
+      key: 'dueDate',
+      label: t('receivables.col.dueDate'),
+      render: (item) => (
+        <span style={{ fontSize: 12 }}>
+          <div>{item.dueDate || '—'}</div>
+          {item.overdueDays != null && (
+            <div className="text-danger" style={{ fontWeight: 600 }}>
+              {t('receivables.overdueDays', { days: item.overdueDays })}
+            </div>
+          )}
+        </span>
+      ),
+    },
+    { key: 'status', label: t('receivables.col.status'), render: (item) => <StatusBadge status={item.status} t={t} /> },
+    {
+      key: 'actions',
+      label: '',
+      align: 'right',
+      render: renderRowActions,
+    },
+  ]
+
+  const mobileCard = (item) => {
+    const closed = ['CLOSED', 'WRITTEN_OFF'].includes(item.status)
+    const showActions = (canRecordPayment || canWriteOff) && !closed
+    return {
+      title: <span className="mono">{item.orderNumber || (item.orderId ? item.orderId.slice(0, 8) : '—')}</span>,
+      subtitle: item.customerName || '—',
+      status: <StatusBadge status={item.status} t={t} />,
+      meta: [
+        { label: t('receivables.col.phone'), value: item.customerPhone || '—' },
+        { label: t('receivables.col.originalAmount'), value: formatCurrency(item.originalAmount, locale) },
+        { label: t('receivables.col.paidAmount'), value: formatCurrency(item.paidAmount, locale) },
+        {
+          label: t('receivables.col.outstandingAmount'),
+          value: formatCurrency(item.outstandingAmount, locale),
+          tone: item.outstandingAmount > 0 ? 'danger' : 'strong',
+        },
+        {
+          label: t('receivables.col.dueDate'),
+          value: (
+            <span>
+              <span>{item.dueDate || '—'}</span>
+              {item.overdueDays != null && (
+                <span className="text-danger" style={{ fontWeight: 600 }}>
+                  {' '}{t('receivables.overdueDays', { days: item.overdueDays })}
+                </span>
+              )}
+            </span>
+          ),
+          tone: item.overdueDays != null ? 'danger' : undefined,
+        },
+      ],
+      actions: showActions ? renderRowActions(item) : undefined,
+      onClick: () => navigate(`/admin/receivables/${item.id}`),
+    }
+  }
 
   return (
     <div>
@@ -158,144 +294,44 @@ export function ReceivablesListScreen({ navigate, canRecordPayment, canWriteOff 
         />
       </div>
 
-      {isLoading && <StatePanel tone="info" title={t('receivables.loading')} />}
+      <FilterChips
+        chips={searchChips}
+        ariaLabel={t('receivables.filterChipsLabel', { defaultValue: 'Bộ lọc đang áp dụng' })}
+      />
+
       {isError && <StatePanel tone="danger" title={t('receivables.loadError')} description={error?.message} />}
 
       {!isLoading && !isError && items.length === 0 && (
-        <StatePanel tone="neutral" title={t('receivables.empty')} description={t('receivables.emptyDesc')} />
+        <StatePanel
+          tone="neutral"
+          title={isFiltered
+            ? t('receivables.emptyFiltered', { defaultValue: t('receivables.empty') })
+            : t('receivables.empty')}
+          description={isFiltered
+            ? t('receivables.emptyFilteredDesc', { defaultValue: t('receivables.emptyDesc') })
+            : t('receivables.emptyDesc')}
+          actionLabel={isFiltered
+            ? t('common.resetFilters', { defaultValue: 'Xóa bộ lọc' })
+            : t('receivables.emptyCreateAction', { defaultValue: 'Tạo đơn bán chịu từ POS' })}
+          onAction={isFiltered
+            ? () => setUrlQuery({ status: 'ALL', search: '', page: 1 })
+            : () => navigate('/admin/pos')}
+        />
       )}
 
-      {!isLoading && !isError && items.length > 0 && (
+      {!isError && (isLoading || items.length > 0) && (
         <div className="bb-card">
           <div className="bb-card-body bb-card-body--flush">
-            <div className="hide-on-mobile">
-            <div className="bb-table-wrap">
-              <table className="bb-table">
-                <thead>
-                  <tr>
-                    <th>{t('receivables.col.orderNumber')}</th>
-                    <th>{t('receivables.col.customer')}</th>
-                    <th>{t('receivables.col.phone')}</th>
-                    <th className="num">{t('receivables.col.originalAmount')}</th>
-                    <th className="num">{t('receivables.col.paidAmount')}</th>
-                    <th className="num">{t('receivables.col.outstandingAmount')}</th>
-                    <th>{t('receivables.col.dueDate')}</th>
-                    <th>{t('receivables.col.status')}</th>
-                    <th />
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item) => {
-                    const closed = ['CLOSED', 'WRITTEN_OFF'].includes(item.status)
-                    return (
-                      <tr key={item.id} onClick={() => navigate(`/admin/receivables/${item.id}`)}>
-                        <td className="mono">{item.orderNumber || (item.orderId ? item.orderId.slice(0, 8) : '—')}</td>
-                        <td>{item.customerName || '—'}</td>
-                        <td style={{ fontSize: 12 }}>{item.customerPhone || '—'}</td>
-                        <td className="num">{formatCurrency(item.originalAmount, locale)}</td>
-                        <td className="num">{formatCurrency(item.paidAmount, locale)}</td>
-                        <td className="num" style={{ fontWeight: 700 }}>
-                          <span className={item.outstandingAmount > 0 ? 'text-danger' : ''}>
-                            {formatCurrency(item.outstandingAmount, locale)}
-                          </span>
-                        </td>
-                        <td style={{ fontSize: 12 }}>
-                          <div>{item.dueDate || '—'}</div>
-                          {item.overdueDays != null && (
-                            <div className="text-danger" style={{ fontWeight: 600 }}>
-                              {t('receivables.overdueDays', { days: item.overdueDays })}
-                            </div>
-                          )}
-                        </td>
-                        <td><StatusBadge status={item.status} t={t} /></td>
-                        <td className="col-actions" onClick={(e) => e.stopPropagation()}>
-                          <div className="flex gap-1 justify-end" style={{ flexWrap: 'wrap' }}>
-                            {canRecordPayment && !closed && (
-                              <button type="button" className="bb-btn bb-btn-primary bb-btn-sm" onClick={() => setPaymentTarget(item)}>
-                                {t('receivables.btn.recordPayment')}
-                              </button>
-                            )}
-                            {canWriteOff && !closed && (
-                              <button
-                                type="button"
-                                className="bb-btn bb-btn-ghost bb-btn-sm"
-                                style={{ color: 'var(--bb-danger)' }}
-                                onClick={() => setWriteOffTarget(item)}
-                                title={t('receivables.btn.writeOffTooltip')}
-                              >
-                                {t('receivables.btn.writeOff')}
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-            </div>
-            <MobileCardList>
-              {items.map((item) => {
-                const closed = ['CLOSED', 'WRITTEN_OFF'].includes(item.status)
-                const showActions = (canRecordPayment || canWriteOff) && !closed
-                return (
-                  <MobileCard
-                    key={item.id}
-                    title={<span className="mono">{item.orderNumber || (item.orderId ? item.orderId.slice(0, 8) : '—')}</span>}
-                    subtitle={item.customerName || '—'}
-                    status={<StatusBadge status={item.status} t={t} />}
-                    meta={[
-                      { label: t('receivables.col.phone'), value: item.customerPhone || '—' },
-                      { label: t('receivables.col.originalAmount'), value: formatCurrency(item.originalAmount, locale) },
-                      { label: t('receivables.col.paidAmount'), value: formatCurrency(item.paidAmount, locale) },
-                      {
-                        label: t('receivables.col.outstandingAmount'),
-                        value: formatCurrency(item.outstandingAmount, locale),
-                        tone: item.outstandingAmount > 0 ? 'danger' : 'strong',
-                      },
-                      {
-                        label: t('receivables.col.dueDate'),
-                        value: (
-                          <span>
-                            <span>{item.dueDate || '—'}</span>
-                            {item.overdueDays != null && (
-                              <span className="text-danger" style={{ fontWeight: 600 }}>
-                                {' '}{t('receivables.overdueDays', { days: item.overdueDays })}
-                              </span>
-                            )}
-                          </span>
-                        ),
-                        tone: item.overdueDays != null ? 'danger' : undefined,
-                      },
-                    ]}
-                    actions={showActions ? (
-                      <div className="flex gap-1" style={{ flexWrap: 'wrap' }} onClick={(e) => e.stopPropagation()}>
-                        {canRecordPayment && !closed && (
-                          <button type="button" className="bb-btn bb-btn-primary bb-btn-sm" onClick={() => setPaymentTarget(item)}>
-                            {t('receivables.btn.recordPayment')}
-                          </button>
-                        )}
-                        {canWriteOff && !closed && (
-                          <button
-                            type="button"
-                            className="bb-btn bb-btn-ghost bb-btn-sm"
-                            style={{ color: 'var(--bb-danger)' }}
-                            onClick={() => setWriteOffTarget(item)}
-                            title={t('receivables.btn.writeOffTooltip')}
-                          >
-                            {t('receivables.btn.writeOff')}
-                          </button>
-                        )}
-                      </div>
-                    ) : undefined}
-                    onClick={() => navigate(`/admin/receivables/${item.id}`)}
-                  />
-                )
-              })}
-            </MobileCardList>
+            <AdminTable
+              columns={columns}
+              rows={items}
+              loading={isLoading}
+              pageSize={urlQuery.pageSize}
+              onRowClick={(item) => navigate(`/admin/receivables/${item.id}`)}
+              mobileCard={mobileCard}
+            />
           </div>
-          {pagination && (
+          {!isLoading && pagination && (
             <PaginationControls
               pagination={pagination}
               onPageChange={handlePage}
@@ -320,7 +356,9 @@ export function ReceivablesListScreen({ navigate, canRecordPayment, canWriteOff 
 export function RecordPaymentModal({ receivable, onClose }) {
   const { t, i18n } = useTranslation()
   const locale = i18n.language === 'en' ? 'en-US' : 'vi-VN'
+  const fieldId = useId()
   const [amount, setAmount] = useState('')
+  const [amountTouched, setAmountTouched] = useState(false)
   const [method, setMethod] = useState('CASH')
   const [ref, setRef] = useState('')
   const [note, setNote] = useState('')
@@ -340,6 +378,10 @@ export function RecordPaymentModal({ receivable, onClose }) {
       queryClient.invalidateQueries({ queryKey: ['receivable', receivable.id] })
       queryClient.invalidateQueries({ queryKey: ['receivables'] })
       queryClient.invalidateQueries({ queryKey: ['receivable-summary'] })
+      toast.success(t('receivables.recordPayment.success', {
+        defaultValue: 'Đã ghi nhận thanh toán {{amount}}',
+        amount: formatCurrency(Number(amount), locale),
+      }))
       handleClose()
     },
     onError: (e) => setError(e.message),
@@ -347,6 +389,7 @@ export function RecordPaymentModal({ receivable, onClose }) {
 
   function handleClose() {
     setAmount('')
+    setAmountTouched(false)
     setMethod('CASH')
     setRef('')
     setNote('')
@@ -359,6 +402,12 @@ export function RecordPaymentModal({ receivable, onClose }) {
 
   const numericAmount = Number(amount)
   const validAmount = numericAmount > 0 && numericAmount <= outstanding
+  const amountError = amountTouched && !validAmount
+    ? t('receivables.recordPayment.amountError', {
+        defaultValue: 'Số tiền phải lớn hơn 0 và không vượt quá công nợ {{max}}',
+        max: formatCurrency(outstanding, locale),
+      })
+    : undefined
 
   return (
     <Modal
@@ -393,37 +442,46 @@ export function RecordPaymentModal({ receivable, onClose }) {
         <strong className="text-danger">{formatCurrency(outstanding, locale)}</strong>
       </p>
 
-      {error && <div className="modal-note modal-note--error">{error}</div>}
+      {error && <div className="modal-note modal-note--error" role="alert">{error}</div>}
 
-      <FormField label={t('receivables.recordPayment.amountLabel')} required>
+      <FormField
+        label={t('receivables.recordPayment.amountLabel')}
+        required
+        htmlFor={`${fieldId}-amount`}
+        error={amountError}
+      >
         <Input
+          id={`${fieldId}-amount`}
           type="number"
           value={amount}
-          onChange={(e) => setAmount(e.target.value)}
+          onChange={(e) => { setAmount(e.target.value); setAmountTouched(true) }}
+          onBlur={() => setAmountTouched(true)}
           placeholder={t('receivables.recordPayment.amountPlaceholder', { max: Number(outstanding).toLocaleString(locale) })}
           min="1"
           max={outstanding}
          />
       </FormField>
 
-      <FormField label={t('receivables.recordPayment.methodLabel')} required>
-        <Select value={method} onValueChange={setMethod}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+      <FormField label={t('receivables.recordPayment.methodLabel')} required htmlFor={`${fieldId}-method`}>
+        <Select value={method} onValueChange={setMethod}><SelectTrigger id={`${fieldId}-method`}><SelectValue /></SelectTrigger><SelectContent>
           {PAYMENT_METHODS.map((m) => (
             <SelectItem key={m} value={m}>{t(`receivables.paymentMethod.${m}`)}</SelectItem>
           ))}
         </SelectContent></Select>
       </FormField>
 
-      <FormField label={t('receivables.recordPayment.refLabel')} helper={t('receivables.recordPayment.refHelper')}>
+      <FormField label={t('receivables.recordPayment.refLabel')} helper={t('receivables.recordPayment.refHelper')} htmlFor={`${fieldId}-ref`}>
         <Input
+          id={`${fieldId}-ref`}
           type="text"
           value={ref}
           onChange={(e) => setRef(e.target.value)}
          />
       </FormField>
 
-      <FormField label={t('receivables.recordPayment.noteLabel')}>
+      <FormField label={t('receivables.recordPayment.noteLabel')} htmlFor={`${fieldId}-note`}>
         <Textarea
+          id={`${fieldId}-note`}
           value={note}
           onChange={(e) => setNote(e.target.value)}
          />
@@ -443,6 +501,7 @@ export function RecordPaymentModal({ receivable, onClose }) {
 export function WriteOffModal({ receivable, onClose }) {
   const { t, i18n } = useTranslation()
   const locale = i18n.language === 'en' ? 'en-US' : 'vi-VN'
+  const fieldId = useId()
   const [reason, setReason] = useState('')
   const [error, setError] = useState(null)
   const queryClient = useQueryClient()
@@ -455,6 +514,7 @@ export function WriteOffModal({ receivable, onClose }) {
       queryClient.invalidateQueries({ queryKey: ['receivable', receivable.id] })
       queryClient.invalidateQueries({ queryKey: ['receivables'] })
       queryClient.invalidateQueries({ queryKey: ['receivable-summary'] })
+      toast.success(t('receivables.writeOff.success', { defaultValue: 'Đã xóa nợ khoản công nợ' }))
       handleClose()
     },
     onError: (e) => setError(e.message),
@@ -505,10 +565,11 @@ export function WriteOffModal({ receivable, onClose }) {
 
       <div className="modal-note modal-note--warn">{t('receivables.writeOff.irreversible')}</div>
 
-      {error && <div className="modal-note modal-note--error">{error}</div>}
+      {error && <div className="modal-note modal-note--error" role="alert">{error}</div>}
 
-      <FormField label={t('receivables.writeOff.reasonLabel')} required>
+      <FormField label={t('receivables.writeOff.reasonLabel')} required htmlFor={`${fieldId}-reason`}>
         <Textarea
+          id={`${fieldId}-reason`}
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           placeholder={t('receivables.writeOff.reasonPlaceholder')}

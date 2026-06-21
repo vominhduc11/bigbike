@@ -1,15 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { GripVertical, Trash2, Eye, EyeOff, Plus } from 'lucide-react'
+import { GripVertical, Trash2, Eye, EyeOff, Plus, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { fetchContactPage, saveContactPage } from '../lib/adminApi'
+import { showConfirm } from '../lib/confirm'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { SortableList } from '../components/Sortable'
 import { Screen } from '../components/layout/Screen'
 import { ScreenHeader } from '../components/layout/ScreenHeader'
 import { FormField } from '../components/layout/FormField'
+import { StickyActionBar } from '../components/layout/StickyActionBar'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -90,7 +92,14 @@ export function ContactPageBuilderScreen({ canUpdate }) {
   function patchBlock(id, patch) {
     setBlocks((prev) => prev.map((b) => (b.id === id ? { ...b, ...patch } : b)))
   }
-  function removeBlock(id) {
+  async function removeBlock(id) {
+    // Xoá khối là hành động phá hủy nội dung đã nhập → xác nhận trước (tiêu chí 7.5).
+    const ok = await showConfirm(
+      t('contactBuilder.removeBlockConfirm', { defaultValue: 'Xoá khối này? Nội dung đã nhập trong khối sẽ mất khi bạn lưu.' }),
+      t('contactBuilder.removeBlockTitle', { defaultValue: 'Xoá khối' }),
+      { confirmLabel: t('common.delete', { defaultValue: 'Xoá' }) },
+    )
+    if (!ok) return
     setBlocks((prev) => prev.filter((b) => b.id !== id))
   }
   function addBlock(type, column) {

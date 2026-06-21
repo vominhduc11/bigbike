@@ -22,12 +22,19 @@ export class ErrorBoundary extends Component {
 
   render() {
     if (this.state.hasError) {
+      // Chỉ lộ chi tiết kỹ thuật ở môi trường dev; production hiển thị thông báo thân thiện.
+      const isDev = import.meta.env?.DEV
       return (
-        <div className="flex flex-col items-center justify-center min-h-screen p-8 text-center gap-4">
+        <div role="alert" className="flex flex-col items-center justify-center min-h-screen p-8 text-center gap-4">
           <h1 className="text-2xl font-bold">Đã xảy ra lỗi không mong đợi</h1>
           <p className="text-muted-foreground max-w-[480px]">
-            {this.state.error?.message || 'Vui lòng tải lại trang hoặc liên hệ kỹ thuật viên.'}
+            Vui lòng tải lại trang. Nếu lỗi tiếp diễn, hãy liên hệ kỹ thuật viên.
           </p>
+          {isDev && this.state.error?.message ? (
+            <pre className="text-xs text-danger max-w-[480px] overflow-auto whitespace-pre-wrap text-left">
+              {this.state.error.message}
+            </pre>
+          ) : null}
           <div className="flex gap-3">
             <Button
               type="button"

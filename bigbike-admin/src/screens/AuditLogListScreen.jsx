@@ -8,6 +8,7 @@ import { StatePanel } from '../components/StatePanel'
 import { fetchAuditLogs } from '../lib/adminApi'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 import { formatDateTimeWithSeconds } from '../lib/formatters'
+import { FilterChips } from '../components/FilterChips'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -36,6 +37,9 @@ export function AuditLogListScreen() {
   const [state, setState]             = useState({ status: 'loading', items: [], pagination: null, warning: '' })
   const [activePreset, setActivePreset] = useState(null)
   const [showMobileFilter, setShowMobileFilter] = useState(false)
+  // Client-side sort of the current page. The audit-log endpoint returns a fixed
+  // server order and accepts no sort param, so we re-order the loaded rows only.
+  const [sort, setSort] = useState({ key: null, dir: 'asc' })
 
   // deep-link: read detail id from URL once on mount (does not trigger fetch)
   const [initialDetailId] = useState(
@@ -76,11 +80,13 @@ export function AuditLogListScreen() {
     {
       key: 'createdAt',
       label: t('auditLog.colTime'),
+      sortable: true,
       render: (r) => <time className="audit-col-time" title={r.createdAt}>{formatDateTimeWithSeconds(r.createdAt)}</time>,
     },
     {
       key: 'actor',
       label: t('auditLog.colActor'),
+      sortable: true,
       render: (r) => <ActorCell log={r} />,
     },
     {
@@ -91,6 +97,7 @@ export function AuditLogListScreen() {
     {
       key: 'module',
       label: t('auditLog.colModule'),
+      sortable: true,
       render: (r) => <ModuleBadge resourceType={r.resourceType} />,
     },
     {
@@ -108,6 +115,29 @@ export function AuditLogListScreen() {
       return next
     })
   }, [])
+
+  const handleSortChange = useCallback((key, dir) => {
+    setSort({ key, dir })
+  }, [])
+
+  // Sort the current page client-side (the endpoint returns a fixed server order).
+  const sortedItems = useMemo(() => {
+    if (!sort.key) return state.items
+    const sortValue = (log) => {
+      if (sort.key === 'createdAt') return log.createdAt || ''
+      if (sort.key === 'actor') return (log.actorDisplayName || log.actorEmail || log.actorType || '').toLowerCase()
+      if (sort.key === 'module') return (log.resourceType || '').toLowerCase()
+      return ''
+    }
+    const factor = sort.dir === 'asc' ? 1 : -1
+    return [...state.items].sort((a, b) => {
+      const av = sortValue(a)
+      const bv = sortValue(b)
+      if (av < bv) return -1 * factor
+      if (av > bv) return 1 * factor
+      return 0
+    })
+  }, [state.items, sort])
 
   function handleSearch() {
     setState((p) => ({ ...p, status: 'loading' }))
@@ -143,6 +173,50 @@ export function AuditLogListScreen() {
   }
 
   const totalItems = state.pagination?.totalItems
+
+  // ── Active-filter chips (desktop) — one dismissible chip per non-default filter ──
+  const filterChips = []
+  if (query.resourceType !== 'ALL') {
+    filterChips.push({
+      key: 'module',
+      label: t('auditLog.chipModule', {
+        value: t(`auditLog.module.${query.resourceType}`, { defaultValue: query.resourceType }),
+        defaultValue: `Mục: ${t(`auditLog.module.${query.resourceType}`, { defaultValue: query.resourceType })}`,
+      }),
+      removeLabel: t('auditLog.resetFilters'),
+      onRemove: () => updateQuery({ resourceType: 'ALL' }, { resetPage: true }),
+    })
+  }
+  if (query.actorType !== 'ALL') {
+    filterChips.push({
+      key: 'actorType',
+      label: t('auditLog.chipActorType', {
+        value: t(`auditLog.actorType.${query.actorType}`, { defaultValue: query.actorType }),
+        defaultValue: `Người thực hiện: ${t(`auditLog.actorType.${query.actorType}`, { defaultValue: query.actorType })}`,
+      }),
+      removeLabel: t('auditLog.resetFilters'),
+      onRemove: () => updateQuery({ actorType: 'ALL' }, { resetPage: true }),
+    })
+  }
+  if (query.q) {
+    filterChips.push({
+      key: 'q',
+      label: t('auditLog.chipSearch', { term: query.q, defaultValue: `Tìm: "${query.q}"` }),
+      removeLabel: t('auditLog.resetFilters'),
+      onRemove: () => { setSearchInput(''); updateQuery({ q: '' }, { resetPage: true }) },
+    })
+  }
+  if (query.from || query.to) {
+    const rangeLabel = query.from && query.to
+      ? `${query.from} – ${query.to}`
+      : (query.from || query.to)
+    filterChips.push({
+      key: 'dateRange',
+      label: t('auditLog.chipDateRange', { range: rangeLabel, defaultValue: `Thời gian: ${rangeLabel}` }),
+      removeLabel: t('auditLog.resetFilters'),
+      onRemove: () => { setActivePreset(null); updateQuery({ from: '', to: '' }, { resetPage: true }) },
+    })
+  }
 
   return (
     <div>
@@ -295,6 +369,18 @@ export function AuditLogListScreen() {
         )}
       </div>
 
+      {/* ── Active-filter chips (desktop only; mobile uses its own toggle row) ── */}
+      {filterChips.length > 0 && (
+        <div className="hide-on-mobile">
+          <FilterChips
+            chips={filterChips}
+            onClearAll={filterChips.length > 1 ? handleReset : undefined}
+            clearAllLabel={t('auditLog.resetFilters')}
+            ariaLabel={t('auditLog.activeFiltersLabel', { defaultValue: 'Bộ lọc đang áp dụng' })}
+          />
+        </div>
+      )}
+
       {/* ── Results summary bar ── */}
       {state.status === 'success' && totalItems != null && totalItems > 0 && (
         <div className="audit-summary-bar">
@@ -333,10 +419,13 @@ export function AuditLogListScreen() {
             <AdminTable
               caption={t('auditLog.tableCaption')}
               columns={columns}
-              rows={state.items}
+              rows={sortedItems}
               loading={state.status === 'loading'}
               pageSize={query.pageSize}
               onRowClick={handleRowClick}
+              sortKey={sort.key}
+              sortDir={sort.dir}
+              onSortChange={handleSortChange}
               rowClassName={(r) => `audit-table-row${DANGEROUS_ACTIONS.has(r.action) ? ' audit-row-danger' : ''}`}
             />
           </div>
@@ -344,13 +433,15 @@ export function AuditLogListScreen() {
           <div className="audit-card-list" aria-label={t('auditLog.tableCaption')} role="list">
             {state.status === 'loading'
               ? Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="audit-card audit-card--skeleton" aria-hidden="true">
+                  <div key={i} className="audit-card audit-card--skeleton" aria-hidden="true" role="listitem">
                     <div className="skeleton-cell w-3/5 h-3.5 mb-2 rounded" />
                     <div className="skeleton-cell w-2/5 h-3 rounded" />
                   </div>
                 ))
-              : state.items.map((log) => (
-                  <AuditCard key={log.id} log={log} onClick={() => handleRowClick(log)} />
+              : sortedItems.map((log) => (
+                  <div key={log.id} role="listitem">
+                    <AuditCard log={log} onClick={() => handleRowClick(log)} />
+                  </div>
                 ))
             }
           </div>

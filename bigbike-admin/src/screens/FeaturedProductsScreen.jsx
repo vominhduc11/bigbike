@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { GripVertical, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { fetchHomepageBlocks, saveHomepageBlocks, fetchProducts } from '../lib/adminApi'
 import { useContentLang } from '../lib/contentLang'
+import { useDebounce } from '../lib/useDebounce'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { SortableList } from '../components/Sortable'
@@ -20,11 +21,13 @@ function ProductPicker({ onAdd, disabledIds, disabled }) {
   const contentLang = useContentLang()
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
+  // Debounce trước khi bắn request tìm kiếm để không gọi server mỗi phím gõ.
+  const debouncedQuery = useDebounce(query, 300)
 
   const { data, isFetching } = useQuery({
-    queryKey: ['featured-products-search', query, contentLang],
-    queryFn: () => fetchProducts({ q: query, page: 1, pageSize: 8, publishStatus: 'PUBLISHED' }),
-    enabled: open && query.trim().length > 0,
+    queryKey: ['featured-products-search', debouncedQuery, contentLang],
+    queryFn: () => fetchProducts({ q: debouncedQuery, page: 1, pageSize: 8, publishStatus: 'PUBLISHED' }),
+    enabled: open && debouncedQuery.trim().length > 0,
     staleTime: 30_000,
   })
 
@@ -144,7 +147,25 @@ export function FeaturedProductsScreen({ canUpdate }) {
   }
 
   function handleRemove(productId) {
+    const index = items.findIndex((p) => p.id === productId)
+    if (index === -1) return
+    const removed = items[index]
     setItems((prev) => prev.filter((p) => p.id !== productId))
+    toast.success(
+      t('featuredProducts.removedFromList', { defaultValue: 'Đã xóa khỏi danh sách' }),
+      {
+        action: {
+          label: t('common.undo', { defaultValue: 'Hoàn tác' }),
+          onClick: () =>
+            setItems((current) => {
+              if (current.some((p) => p.id === removed.id)) return current
+              const restored = [...current]
+              restored.splice(Math.min(index, restored.length), 0, removed)
+              return restored
+            }),
+        },
+      },
+    )
   }
 
   function handleSave() {
@@ -153,10 +174,33 @@ export function FeaturedProductsScreen({ canUpdate }) {
 
   const disabledIds = new Set(items.map((p) => p.id))
 
+  const pickerRef = useRef(null)
+  function focusPicker() {
+    pickerRef.current?.querySelector('input')?.focus()
+  }
+
   if (isLoading) {
     return (
-      <Screen>
-        <StatePanel tone="info" title={t('common.loading')} description={t('common.pleaseWait')} />
+      <Screen maxWidth="720px">
+        <div
+          className="flex flex-col gap-1"
+          role="status"
+          aria-busy="true"
+          aria-label={t('common.loading')}
+        >
+          {Array.from({ length: 4 }, (_, i) => (
+            <div
+              key={i}
+              className="flex items-center gap-3 p-3 border border-border bg-background animate-pulse"
+            >
+              <div className="w-12 h-12 bg-surface-muted rounded-xs flex-shrink-0" />
+              <div className="flex-1 min-w-0 flex flex-col gap-2">
+                <div className="h-4 w-1/2 bg-surface-muted rounded-xs" />
+                <div className="h-3 w-1/4 bg-surface-muted rounded-xs" />
+              </div>
+            </div>
+          ))}
+        </div>
       </Screen>
     )
   }
@@ -199,9 +243,13 @@ export function FeaturedProductsScreen({ canUpdate }) {
           </div>
 
           {items.length === 0 && (
-            <div className="border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-              {t('featuredProducts.emptyHint')}
-            </div>
+            <StatePanel
+              tone="info"
+              title={t('featuredProducts.emptyTitle', { defaultValue: 'Chưa có sản phẩm nổi bật' })}
+              description={t('featuredProducts.emptyHint')}
+              actionLabel={canUpdate ? t('featuredProducts.emptyAction', { defaultValue: 'Thêm sản phẩm' }) : undefined}
+              onAction={canUpdate ? focusPicker : undefined}
+            />
           )}
 
           {items.length > 0 && (
@@ -225,7 +273,7 @@ export function FeaturedProductsScreen({ canUpdate }) {
           )}
 
           {canUpdate && items.length < FEATURED_GRID_MAX && (
-            <div className="mt-2">
+            <div className="mt-2" ref={pickerRef}>
               <ProductPicker onAdd={handleAdd} disabledIds={disabledIds} disabled={!canUpdate} />
             </div>
           )}

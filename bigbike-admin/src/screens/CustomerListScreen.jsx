@@ -7,7 +7,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Crown, Download, UserCheck, UserPlus, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import { PaginationControls } from '../components/PaginationControls'
-import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
+import { AdminTable } from '../components/AdminTable'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { exportCustomersCsv, fetchCustomers, fetchCustomerSummary } from '../lib/adminApi'
@@ -75,6 +75,44 @@ export function CustomerListScreen({ navigate }) {
 
   const items = state.items || []
   const pagination = state.pagination
+  const isFiltered = !!query.search || query.status !== 'ALL'
+
+  const columns = [
+    {
+      key: 'customer',
+      label: t('customers.colCustomer'),
+      render: (c) => {
+        const name = formatText(c.fullName)
+        return (
+          <div className="bb-product-cell">
+            <span className="bb-product-thumb">{(name || '?').charAt(0).toUpperCase()}</span>
+            <span>
+              <div>{name}</div>
+              <div className="bb-cell-sub">{formatText(c.email)}</div>
+            </span>
+          </div>
+        )
+      },
+    },
+    { key: 'phone', label: t('customers.colPhone'), render: (c) => formatText(c.phone) },
+    { key: 'status', label: t('customers.colStatus'), render: (c) => <CustomerStatusBadge value={c.status} /> },
+    { key: 'orderCount', label: t('customers.colOrders'), align: 'right', render: (c) => c.orderCount },
+    { key: 'totalSpent', label: t('customers.colSpent'), align: 'right', render: (c) => <span className="font-bold">{formatCurrencyVnd(c.totalSpent)}</span> },
+    { key: 'createdAt', label: t('customers.colRegistered'), render: (c) => <span className="bb-muted text-xs">{formatDateTime(c.createdAt)}</span> },
+  ]
+
+  const mobileCard = (c) => ({
+    title: formatText(c.fullName),
+    subtitle: formatText(c.email),
+    status: <CustomerStatusBadge value={c.status} />,
+    meta: [
+      { label: t('customers.colPhone'), value: formatText(c.phone) },
+      { label: t('customers.colOrders'), value: c.orderCount },
+      { label: t('customers.colSpent'), value: formatCurrencyVnd(c.totalSpent), tone: 'strong' },
+      { label: t('customers.colRegistered'), value: formatDateTime(c.createdAt) },
+    ],
+    onClick: () => navigate(`/admin/customers/${c.id}`),
+  })
 
   return (
     <div>
@@ -171,80 +209,24 @@ export function CustomerListScreen({ navigate }) {
           actionLabel={t('common.retry')} onAction={() => state.refetch()} />
       )}
       {state.status === 'success' && items.length === 0 && (
-        <StatePanel tone="neutral" title={t('customers.empty')} description={t('customers.emptyDesc')}
-          actionLabel={t('common.resetFilters')} onAction={() => { setSearchInput(''); setQuery(INITIAL_QUERY) }} />
+        <StatePanel tone="neutral"
+          title={isFiltered ? t('customers.emptyFiltered', { defaultValue: t('customers.empty') }) : t('customers.empty')}
+          description={isFiltered ? t('customers.emptyFilteredDesc', { defaultValue: t('customers.emptyDesc') }) : t('customers.emptyDesc')}
+          actionLabel={isFiltered ? t('common.resetFilters') : undefined}
+          onAction={isFiltered ? () => { setSearchInput(''); setQuery(INITIAL_QUERY) } : undefined} />
       )}
 
       {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) && (
         <div className="bb-card">
           <div className="bb-card-body bb-card-body--flush">
-            <div className="hide-on-mobile">
-            <div className="bb-table-wrap">
-              <table className="bb-table">
-                <thead>
-                  <tr>
-                    <th>{t('customers.colCustomer')}</th>
-                    <th>{t('customers.colPhone')}</th>
-                    <th>{t('customers.colStatus')}</th>
-                    <th className="num">{t('customers.colOrders')}</th>
-                    <th className="num">{t('customers.colSpent')}</th>
-                    <th>{t('customers.colRegistered')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {state.status === 'loading' && items.length === 0 && (
-                    [...Array(6)].map((_, i) => (
-                      <tr key={`sk-${i}`}>
-                        <td colSpan={6}><div className="bb-skeleton-block" style={{ height: 28 }} /></td>
-                      </tr>
-                    ))
-                  )}
-                  {items.map((c) => {
-                    const name = formatText(c.fullName)
-                    const initial = (name || '?').charAt(0).toUpperCase()
-                    return (
-                      <tr key={c.id} onClick={() => navigate(`/admin/customers/${c.id}`)}>
-                        <td>
-                          <div className="bb-product-cell">
-                            <span className="bb-product-thumb">{initial}</span>
-                            <span>
-                              <div>{name}</div>
-                              <div className="bb-cell-sub">{formatText(c.email)}</div>
-                            </span>
-                          </div>
-                        </td>
-                        <td>{formatText(c.phone)}</td>
-                        <td><CustomerStatusBadge value={c.status} /></td>
-                        <td className="num">{c.orderCount}</td>
-                        <td className="num" style={{ fontWeight: 700 }}>{formatCurrencyVnd(c.totalSpent)}</td>
-                        <td className="bb-muted" style={{ fontSize: 12 }}>{formatDateTime(c.createdAt)}</td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-            </div>
-            <MobileCardList>
-              {items.map((c) => {
-                const name = formatText(c.fullName)
-                return (
-                  <MobileCard
-                    key={c.id}
-                    title={name}
-                    subtitle={formatText(c.email)}
-                    status={<CustomerStatusBadge value={c.status} />}
-                    meta={[
-                      { label: t('customers.colPhone'), value: formatText(c.phone) },
-                      { label: t('customers.colOrders'), value: c.orderCount },
-                      { label: t('customers.colSpent'), value: formatCurrencyVnd(c.totalSpent), tone: 'strong' },
-                      { label: t('customers.colRegistered'), value: formatDateTime(c.createdAt) },
-                    ]}
-                    onClick={() => navigate(`/admin/customers/${c.id}`)}
-                  />
-                )
-              })}
-            </MobileCardList>
+            <AdminTable
+              columns={columns}
+              rows={items}
+              loading={state.status === 'loading'}
+              pageSize={query.pageSize}
+              onRowClick={(c) => navigate(`/admin/customers/${c.id}`)}
+              mobileCard={mobileCard}
+            />
           </div>
           {state.status === 'success' && pagination && (
             <PaginationControls

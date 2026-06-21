@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 import { AlertTriangle, Download } from 'lucide-react'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
+import { FilterChips } from '../components/FilterChips'
 import { useContentLang } from '../lib/contentLang'
 import {
   fetchInventoryGrouped,
@@ -53,6 +54,30 @@ export function InventoryScreen({ canUpdate = false }) {
       .filter((g) => (g.productNameEn || '').trim() !== '')
       .map((g) => ({ ...g, productName: g.productNameEn }))
   }, [state.items, contentLang])
+
+  // Bộ lọc đang áp dụng (để hiển thị chip + phân biệt empty-state lọc/rỗng).
+  const isFiltered = Boolean(query.q) || query.stockState !== 'ALL'
+
+  function resetFilters() {
+    setSearchInput('')
+    setQuery(INITIAL_QUERY)
+  }
+
+  const filterChips = []
+  if (query.stockState !== 'ALL') {
+    filterChips.push({
+      key: 'stockState',
+      label: t(`status.stock.${query.stockState}`, { defaultValue: query.stockState }),
+      onRemove: () => setQuery((q) => ({ ...q, stockState: 'ALL', page: 1 })),
+    })
+  }
+  if (query.q) {
+    filterChips.push({
+      key: 'q',
+      label: t('inventory.chipSearch', { defaultValue: 'Tìm: {{term}}', term: query.q }),
+      onRemove: () => { setSearchInput(''); setQuery((q) => ({ ...q, q: '', page: 1 })) },
+    })
+  }
 
   useEffect(() => {
     fetchInventorySummary()
@@ -170,12 +195,27 @@ export function InventoryScreen({ canUpdate = false }) {
         />
       </div>
 
+      <FilterChips
+        chips={filterChips}
+        onClearAll={filterChips.length > 1 ? resetFilters : undefined}
+        clearAllLabel={t('common.resetFilters', { defaultValue: 'Xoá bộ lọc' })}
+        ariaLabel={t('inventory.activeFilters', { defaultValue: 'Bộ lọc đang áp dụng' })}
+      />
+
       {state.status === 'error' && (
         <StatePanel tone="danger" title={t('inventory.loadError')} description={state.error}
           actionLabel={t('common.retry')} onAction={() => setQuery((q) => ({ ...q }))} />
       )}
       {state.status === 'success' && visibleGroups.length === 0 && (
-        <StatePanel tone="neutral" title={t('inventory.empty')} description={t('inventory.emptyDesc')} />
+        <StatePanel tone="neutral"
+          title={isFiltered
+            ? t('inventory.emptyFiltered', { defaultValue: 'Không có sản phẩm khớp bộ lọc' })
+            : t('inventory.empty')}
+          description={isFiltered
+            ? t('inventory.emptyFilteredDesc', { defaultValue: 'Không tìm thấy sản phẩm nào khớp bộ lọc.' })
+            : t('inventory.emptyDesc', { defaultValue: 'Chưa có sản phẩm nào trong kho.' })}
+          actionLabel={isFiltered ? t('common.resetFilters', { defaultValue: 'Xoá bộ lọc' }) : undefined}
+          onAction={isFiltered ? resetFilters : undefined} />
       )}
       {(state.status === 'loading' || (state.status === 'success' && visibleGroups.length > 0)) && (
         <div className="bb-card">

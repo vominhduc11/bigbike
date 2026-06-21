@@ -1,5 +1,10 @@
 {
   "common": {
+    "selectedCount": "{{count}} đã chọn",
+    "selectAllMatching": "Chọn tất cả {{count}} kết quả khớp",
+    "allMatchingSelected": "Đã chọn tất cả {{count}} kết quả",
+    "deselect": "Bỏ chọn",
+    "bulkActions": "Hành động hàng loạt",
     "errEnSlugFormat": "Đường dẫn tiếng Anh chỉ gồm chữ thường, số và dấu gạch ngang.",
     "errEnSlugTooLong": "Đường dẫn tiếng Anh tối đa 100 ký tự.",
     "save": "Lưu",
@@ -1527,6 +1532,9 @@
       "phone": "Điện thoại:",
       "registered": "Ngày đăng ký:",
       "statusUpdated": "Đã cập nhật trạng thái tài khoản.",
+      "statusConfirmTitle": "Đổi trạng thái tài khoản",
+      "statusConfirmBody": "Chuyển tài khoản sang \"{{status}}\" sẽ chặn khách hàng đăng nhập và mua hàng. Tiếp tục?",
+      "statusConfirmOk": "Đổi trạng thái",
       "orderCount": "Số đơn hàng:",
       "totalSpent": "Tổng chi tiêu:"
     }

@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
+import { AlertCircle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -83,7 +84,7 @@ function SlotCard({ slotNumber, product, onProductChange, disabled }) {
           {!disabled && (
             <button
               type="button"
-              className="text-xs text-muted-foreground hover:text-foreground flex-shrink-0"
+              className="inline-flex min-w-[44px] min-h-[44px] items-center justify-center rounded-xs text-base text-muted-foreground hover:text-foreground hover:bg-muted flex-shrink-0 -m-2"
               onClick={() => onProductChange(null)}
               aria-label={t('homeHighlights.clearSlot')}
             >
@@ -161,13 +162,15 @@ export function HomeHighlightsScreen({ canUpdate }) {
     )
   }
 
+  const filledSlots = slots.filter((s) => s.product?.id)
+  const hasFilledSlot = filledSlots.length > 0
+
   function handleSave() {
-    const filled = slots.filter((s) => s.product?.id)
-    if (filled.length === 0) {
+    if (!hasFilledSlot) {
       toast.error(t('homeHighlights.noSlotsError'))
       return
     }
-    const body = filled.map((s) => ({ slot: s.slot, productId: s.product.id }))
+    const body = filledSlots.map((s) => ({ slot: s.slot, productId: s.product.id }))
     saveMutation.mutate(body)
   }
 
@@ -198,12 +201,22 @@ export function HomeHighlightsScreen({ canUpdate }) {
         actions={
           <Button
             onClick={handleSave}
-            disabled={!canUpdate || saveMutation.isPending}
+            disabled={!canUpdate || saveMutation.isPending || !hasFilledSlot}
           >
             {saveMutation.isPending ? t('common.saving') : t('homeHighlights.saveButton')}
           </Button>
         }
       />
+
+      {canUpdate && !hasFilledSlot && (
+        <p
+          role="status"
+          className="flex items-center gap-1.5 text-sm text-muted-foreground -mt-2 mb-1"
+        >
+          <AlertCircle size={14} aria-hidden="true" className="shrink-0" />
+          {t('homeHighlights.noSlotsHint', { defaultValue: 'Chọn ít nhất 1 sản phẩm để lưu.' })}
+        </p>
+      )}
 
       <div className="flex flex-col gap-4">
         {slots.map((s) => (

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ChevronDown, HelpCircle, LogOut, Maximize2, Menu, Minimize2, X } from 'lucide-react'
+import { ChevronDown, LogOut, Maximize2, Menu, Minimize2, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../lib/auth'
 import { useNavBadges } from '../lib/useNavBadges'
@@ -46,34 +46,38 @@ function Breadcrumb({ activePath, navGroups, navigate, t }) {
 
   return (
     <nav className="bb-breadcrumb" aria-label="Breadcrumb">
-      <div className="bb-breadcrumb-inner">
+      <ol className="bb-breadcrumb-inner">
         {isDashboardRoot ? (
-          <span className="current">{t('app.overview')}</span>
+          <li><span className="current" aria-current="page">{t('app.overview')}</span></li>
         ) : (
           <>
-            <a
-              href="/admin/dashboard"
-              onClick={(e) => { e.preventDefault(); navigate('/admin/dashboard') }}
-            >
-              {t('app.overview')}
-            </a>
-            <span className="sep">/</span>
-            {isDetail ? (
-              <a href={match.path} onClick={(e) => { e.preventDefault(); navigate(match.path) }}>
-                {match.label}
+            <li>
+              <a
+                href="/admin/dashboard"
+                onClick={(e) => { e.preventDefault(); navigate('/admin/dashboard') }}
+              >
+                {t('app.overview')}
               </a>
+            </li>
+            <li className="sep" aria-hidden="true">/</li>
+            {isDetail ? (
+              <li>
+                <a href={match.path} onClick={(e) => { e.preventDefault(); navigate(match.path) }}>
+                  {match.label}
+                </a>
+              </li>
             ) : (
-              <span className="current">{match.label}</span>
+              <li><span className="current" aria-current="page">{match.label}</span></li>
             )}
             {isDetail && (
               <>
-                <span className="sep">/</span>
-                <span className="current">{isCreate ? t('app.createNew') : t('app.detail')}</span>
+                <li className="sep" aria-hidden="true">/</li>
+                <li><span className="current" aria-current="page">{isCreate ? t('app.createNew') : t('app.detail')}</span></li>
               </>
             )}
           </>
         )}
-      </div>
+      </ol>
     </nav>
   )
 }
@@ -92,6 +96,8 @@ export function AdminShell({
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const userMenuRef = useRef(null)
+  const hamburgerRef = useRef(null)
+  const sidebarRef = useRef(null)
 
   const formRoute = isFormRoute(activePath)
   const [focusMode, setFocusMode] = useState(() => {
@@ -127,6 +133,18 @@ export function AdminShell({
   const navBadges = useNavBadges(visiblePaths)
 
   const closeSidebar = useCallback(() => setSidebarOpen(false), [])
+
+  // Mobile drawer: đóng bằng Escape + đưa focus vào drawer khi mở, trả focus về
+  // nút hamburger khi đóng — cho người dùng bàn phím/screen reader trên tablet.
+  useEffect(() => {
+    if (!sidebarOpen) return undefined
+    const onKey = (e) => {
+      if (e.key === 'Escape') { setSidebarOpen(false); hamburgerRef.current?.focus() }
+    }
+    document.addEventListener('keydown', onKey)
+    sidebarRef.current?.querySelector('a.bb-nav-link')?.focus()
+    return () => document.removeEventListener('keydown', onKey)
+  }, [sidebarOpen])
 
   function handleNavClick(e, path) {
     e.preventDefault()
@@ -169,9 +187,9 @@ export function AdminShell({
         data-screen-label="BigBike Admin"
       >
         {/* Mobile sidebar overlay */}
-        <div className="bb-sidebar-overlay" onClick={closeSidebar} aria-hidden="true" />
+        <div className="bb-sidebar-overlay" onClick={() => { setSidebarOpen(false); hamburgerRef.current?.focus() }} aria-hidden="true" />
 
-        <aside className="bb-sidebar" aria-label={t('nav.sidebarLabel')}>
+        <aside ref={sidebarRef} id="bb-mobile-sidebar" className="bb-sidebar" aria-label={t('nav.sidebarLabel')}>
           <div className="bb-sidebar-brand">
             <span className="bb-brand-mark" aria-hidden="true">BB</span>
             <div className="bb-brand-meta">
@@ -232,11 +250,13 @@ export function AdminShell({
           <header className="bb-topbar">
             {/* Hamburger — mobile only (hidden on ≥900px via CSS) */}
             <button
+              ref={hamburgerRef}
               type="button"
               className="bb-icon-btn bb-hamburger"
               onClick={() => setSidebarOpen((v) => !v)}
               aria-label={sidebarOpen ? t('common.close') : t('nav.openMenu')}
               aria-expanded={sidebarOpen}
+              aria-controls="bb-mobile-sidebar"
             >
               {sidebarOpen ? <X size={18} /> : <Menu size={18} />}
             </button>
@@ -276,10 +296,6 @@ export function AdminShell({
                 {focusMode ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
               </button>
             )}
-
-            <button className="bb-icon-btn" type="button" title={t('common.help', { defaultValue: 'Trợ giúp' })}>
-              <HelpCircle size={18} />
-            </button>
 
             {/* User dropdown */}
             <div ref={userMenuRef} style={{ position: 'relative' }}>

@@ -698,13 +698,20 @@ export function CategoryListScreen({ navigate, canUpdate }) {
           />
         )}
         {useTreeMode && (
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
-            <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" onClick={expandAll}>
-              {t('categories.expandAll')}
-            </button>
-            <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" onClick={collapseAll}>
-              {t('categories.collapseAll')}
-            </button>
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+            {/* Chế độ cây ẩn phân trang nên không có tổng số bản ghi; hiện
+                tổng số danh mục để admin vẫn biết quy mô dữ liệu (tiêu chí 6.3). */}
+            <span className="bb-muted" style={{ fontSize: 12 }}>
+              {t('categories.treeTotalCount', { count: allItems.length, defaultValue: `${allItems.length} danh mục` })}
+            </span>
+            <div style={{ display: 'flex', gap: 4 }}>
+              <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" onClick={expandAll}>
+                {t('categories.expandAll')}
+              </button>
+              <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" onClick={collapseAll}>
+                {t('categories.collapseAll')}
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -721,11 +728,15 @@ export function CategoryListScreen({ navigate, canUpdate }) {
       />
 
       {/* ── Bulk action bar ── */}
+      {/* Hợp đồng BulkActionBar: số → bar tự dịch "{n} đã chọn"; chuỗi → hiện
+          nguyên văn (dùng cho nhãn tiến độ tùy biến). Trùng lặp chữ "đã chọn"
+          trước đây là do truyền chuỗi đã-dịch cho trường hợp thường — nay
+          truyền số thô để khớp Order/Product list. */}
       <BulkActionBar
         selectedCount={canUpdate && selectedIds.size > 0
           ? (bulkProgress
             ? t('categories.bulkProcessing', { done: bulkProgress.done, total: bulkProgress.total })
-            : t('categories.bulkSelectedCount', { count: selectedIds.size }))
+            : selectedIds.size)
           : null}
         onClear={clearSelection}
         closeLabel={t('categories.bulkClear')}

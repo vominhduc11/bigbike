@@ -1,8 +1,10 @@
 import { useState } from 'react'
+import { AlertCircle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { formatCurrencyVnd } from '../../lib/formatters'
 import { posCreateRefund } from '../../lib/adminApi'
+import { showConfirm } from '../../lib/confirm'
 import { Modal } from '../../components/layout'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -28,6 +30,22 @@ export function RefundDialog({ order, maxRefundable, hasSerialItems, onClose, on
   async function handleSubmit(e) {
     e.preventDefault()
     if (submitDisabled) return
+    // Hoàn tiền là hành động KHÔNG THỂ HOÀN TÁC (hoàn tiền + đảo tồn kho/công nợ).
+    // Bắt buộc một lớp xác nhận danger thứ hai trước khi gọi API (tiêu chí 7.6).
+    const confirmed = await showConfirm(
+      t('pos.refundConfirmMessage', {
+        amount: formatCurrencyVnd(maxRefundable),
+        order: order?.orderNumber || '',
+        defaultValue: `Hoàn ${formatCurrencyVnd(maxRefundable)} cho đơn ${order?.orderNumber || ''} — hành động này không thể hoàn tác. Bạn chắc chắn?`,
+      }),
+      t('pos.refundConfirmTitle', { defaultValue: 'Xác nhận hoàn tiền' }),
+      {
+        variant: 'danger',
+        confirmLabel: t('pos.refundConfirm'),
+        cancelLabel: t('common.cancel'),
+      },
+    )
+    if (!confirmed) return
     setError('')
     setSubmitting(true)
     try {
@@ -94,7 +112,8 @@ export function RefundDialog({ order, maxRefundable, hasSerialItems, onClose, on
           </div>
 
           {error && (
-            <p className="m-0 mb-3 text-xs text-danger">
+            <p className="m-0 mb-3 flex items-center gap-1 text-xs text-danger" role="alert">
+              <AlertCircle size={13} aria-hidden="true" className="shrink-0" />
               {error}
             </p>
           )}

@@ -64,6 +64,23 @@ function SectionEmpty({ title, description }) {
   )
 }
 
+// Đưa hành vi mở-bằng-bàn-phím (Enter/Space) cho phần tử click được nhưng
+// không phải <a>/<button>. Trả về props role/tabIndex/onKeyDown chuẩn.
+function clickableProps(onActivate, label) {
+  return {
+    role: 'button',
+    tabIndex: 0,
+    'aria-label': label,
+    onClick: onActivate,
+    onKeyDown: (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault()
+        onActivate()
+      }
+    },
+  }
+}
+
 function SkeletonBlock({ height = 280 }) {
   return <div className="bb-skeleton-block" style={{ height }} />
 }
@@ -174,6 +191,11 @@ export function DashboardScreen({ navigate }) {
 
   const SEVERITY_RANK = { high: 0, medium: 1, low: 2 }
   const SEVERITY_TONE = { high: 'danger', medium: 'warning', low: 'info' }
+  const SEVERITY_LABEL = {
+    high: t('dashboard.attention.severityHigh'),
+    medium: t('dashboard.attention.severityMedium'),
+    low: t('dashboard.attention.severityLow'),
+  }
 
   const attentionItems = [
     overdueCount > 0 && {
@@ -229,13 +251,16 @@ export function DashboardScreen({ navigate }) {
           <p className="bb-muted">{t('dashboard.greetingDesc', { date: todayLabel })}</p>
         </div>
         <div className="bb-screen-actions">
-          <div className="bb-seg" role="tablist" aria-label={t('dashboard.periodLabel')}>
+          <div
+            className="bb-seg"
+            role="group"
+            aria-label={t('dashboard.periodControlLabel', { defaultValue: 'Khoảng thời gian biểu đồ doanh thu' })}
+          >
             {periodTabs.map((tab) => (
               <button
                 key={tab.key}
                 type="button"
-                role="tab"
-                aria-selected={period === tab.key}
+                aria-pressed={period === tab.key}
                 className={period === tab.key ? 'active' : ''}
                 onClick={() => setPeriod(tab.key)}
               >
@@ -275,9 +300,18 @@ export function DashboardScreen({ navigate }) {
         <>
           {/* KPI cards */}
           <div className="bb-kpi-grid">
-            <div className="bb-kpi clickable" onClick={() => navigate('/admin/reports')}>
+            <div
+              className="bb-kpi clickable"
+              {...clickableProps(
+                () => navigate('/admin/reports'),
+                t('dashboard.kpi.todayRevenueAria', { defaultValue: 'Doanh thu hôm nay — xem báo cáo' }),
+              )}
+            >
               <div className="bb-kpi-head">
-                <span>{t('dashboard.kpi.todayRevenue')}</span>
+                <span>
+                  {t('dashboard.kpi.todayRevenue')}
+                  <span className="bb-badge bb-badge-muted ml-2">{t('dashboard.kpi.todayScope', { defaultValue: 'Hôm nay' })}</span>
+                </span>
                 <span className="bb-kpi-icon brand"><CircleDollarSign size={15} /></span>
               </div>
               <div className="bb-kpi-value bb-kpi-value--money">{formatVndShort(data.kpi.todayRevenue)}</div>
@@ -291,9 +325,18 @@ export function DashboardScreen({ navigate }) {
               </div>
             </div>
 
-            <div className="bb-kpi clickable" onClick={() => navigate('/admin/orders')}>
+            <div
+              className="bb-kpi clickable"
+              {...clickableProps(
+                () => navigate('/admin/orders'),
+                t('dashboard.kpi.todayOrdersAria', { defaultValue: 'Đơn hàng hôm nay — xem đơn hàng' }),
+              )}
+            >
               <div className="bb-kpi-head">
-                <span>{t('dashboard.kpi.todayOrders')}</span>
+                <span>
+                  {t('dashboard.kpi.todayOrders')}
+                  <span className="bb-badge bb-badge-muted ml-2">{t('dashboard.kpi.todayScope', { defaultValue: 'Hôm nay' })}</span>
+                </span>
                 <span className="bb-kpi-icon info"><ShoppingBag size={15} /></span>
               </div>
               <div className="bb-kpi-value">{data.kpi.todayOrders.toLocaleString('vi-VN')}</div>
@@ -303,7 +346,13 @@ export function DashboardScreen({ navigate }) {
               </div>
             </div>
 
-            <div className="bb-kpi clickable" onClick={() => navigate('/admin/orders')}>
+            <div
+              className="bb-kpi clickable"
+              {...clickableProps(
+                () => navigate('/admin/orders'),
+                t('dashboard.kpi.pendingOrdersAria', { defaultValue: 'Đơn chờ xử lý — xem đơn hàng' }),
+              )}
+            >
               <div className="bb-kpi-head">
                 <span>{t('dashboard.kpi.pendingOrders')}</span>
                 <span className={`bb-kpi-icon ${data.kpi.pendingOrders > PENDING_WARN_THRESHOLD ? 'danger' : 'warning'}`}>
@@ -316,7 +365,13 @@ export function DashboardScreen({ navigate }) {
               </div>
             </div>
 
-            <div className="bb-kpi clickable" onClick={() => navigate('/admin/products')}>
+            <div
+              className="bb-kpi clickable"
+              {...clickableProps(
+                () => navigate('/admin/products'),
+                t('dashboard.kpi.activeProductsAria', { defaultValue: 'Sản phẩm đang bán — xem sản phẩm' }),
+              )}
+            >
               <div className="bb-kpi-head">
                 <span>{t('dashboard.kpi.activeProducts')}</span>
                 <span className="bb-kpi-icon success"><Package size={15} /></span>
@@ -374,8 +429,7 @@ export function DashboardScreen({ navigate }) {
                       {pieDataWithTotal.map((d) => (
                         <div
                           key={d.status}
-                          onClick={() => navigate('/admin/orders')}
-                          style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, cursor: 'pointer' }}
+                          style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5 }}
                         >
                           <span style={{ width: 10, height: 10, borderRadius: 3, background: d.color, flexShrink: 0 }} />
                           <span style={{ flex: 1, color: 'var(--bb-text-muted)' }}>{d.name}</span>
@@ -425,7 +479,8 @@ export function DashboardScreen({ navigate }) {
                       tabIndex={0}
                       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') item.onClick() }}
                     >
-                      <span className={`bb-attention-sev ${SEVERITY_TONE[item.severity]}`} />
+                      <span className={`bb-attention-sev ${SEVERITY_TONE[item.severity]}`} aria-hidden="true" />
+                      <span className="sr-only">{SEVERITY_LABEL[item.severity]}</span>
                       <span className="bb-attention-icon" aria-hidden="true">{item.icon}</span>
                       <div className="bb-attention-body">
                         <div className="bb-attention-title">{item.label}</div>
@@ -469,16 +524,25 @@ export function DashboardScreen({ navigate }) {
                     <table className="bb-table">
                       <thead>
                         <tr>
-                          <th>{t('dashboard.recentOrders.orderNumber')}</th>
-                          <th>{t('dashboard.recentOrders.customer')}</th>
-                          <th className="num">{t('dashboard.recentOrders.total')}</th>
-                          <th>{t('dashboard.recentOrders.status')}</th>
+                          <th scope="col">{t('dashboard.recentOrders.orderNumber')}</th>
+                          <th scope="col">{t('dashboard.recentOrders.customer')}</th>
+                          <th scope="col" className="num">{t('dashboard.recentOrders.total')}</th>
+                          <th scope="col">{t('dashboard.recentOrders.status')}</th>
                         </tr>
                       </thead>
                       <tbody>
                         {recentOrders.map((order) => (
-                          <tr key={order.id} onClick={() => navigate(`/admin/orders/${order.id}`)}>
-                            <td className="mono">{order.orderNumber}</td>
+                          <tr key={order.id}>
+                            <td className="mono">
+                              <button
+                                type="button"
+                                className="bg-transparent border-0 p-0 font-[inherit] text-[length:inherit] cursor-pointer hover:underline focus-visible:underline focus-visible:outline-2 focus-visible:outline-offset-2"
+                                style={{ color: 'var(--bb-primary)' }}
+                                onClick={() => navigate(`/admin/orders/${order.id}`)}
+                              >
+                                {order.orderNumber}
+                              </button>
+                            </td>
                             <td title={order.customerName || order.customerEmail || ''}>
                               {order.customerName || order.customerEmail}
                             </td>
@@ -507,9 +571,12 @@ export function DashboardScreen({ navigate }) {
                   </>
                 ) : (
                   <div className="bb-card-body">
-                    <SectionEmpty
+                    <StatePanel
+                      tone="neutral"
                       title={t('dashboard.recentOrders.empty')}
                       description={t('dashboard.recentOrders.emptyDesc')}
+                      actionLabel={t('dashboard.recentOrders.emptyCta', { defaultValue: 'Xem đơn hàng' })}
+                      onAction={() => navigate('/admin/orders')}
                     />
                   </div>
                 )}
@@ -537,25 +604,29 @@ export function DashboardScreen({ navigate }) {
                     <table className="bb-table">
                       <thead>
                         <tr>
-                          <th style={{ width: 36 }}>{t('dashboard.topProducts.rank')}</th>
-                          <th>{t('dashboard.topProducts.product')}</th>
-                          <th className="num">{t('dashboard.topProducts.units')}</th>
-                          <th className="num">{t('dashboard.topProducts.revenue')}</th>
+                          <th scope="col" style={{ width: 36 }}>{t('dashboard.topProducts.rank')}</th>
+                          <th scope="col">{t('dashboard.topProducts.product')}</th>
+                          <th scope="col" className="num">{t('dashboard.topProducts.units')}</th>
+                          <th scope="col" className="num">{t('dashboard.topProducts.revenue')}</th>
                         </tr>
                       </thead>
                       <tbody>
                         {topProducts.map((product, idx) => (
-                          <tr key={product.productId} onClick={() => navigate(`/admin/products/${product.productId}`)}>
+                          <tr key={product.productId}>
                             <td>
                               <span className={`bb-rank${idx < 3 ? ` bb-rank-${idx + 1}` : ''}`}>
                                 {idx + 1}
                               </span>
                             </td>
                             <td>
-                              <div className="bb-product-cell">
+                              <button
+                                type="button"
+                                className="bb-product-cell bg-transparent border-0 p-0 text-left cursor-pointer hover:underline focus-visible:underline focus-visible:outline-2 focus-visible:outline-offset-2"
+                                onClick={() => navigate(`/admin/products/${product.productId}`)}
+                              >
                                 <span className="bb-product-thumb"><Package size={18} /></span>
                                 <span title={product.name}>{product.name}</span>
-                              </div>
+                              </button>
                             </td>
                             <td className="num">{product.units}</td>
                             <td className="num" style={{ fontWeight: 700, color: 'var(--bb-primary)' }}>
@@ -583,9 +654,12 @@ export function DashboardScreen({ navigate }) {
                   </>
                 ) : (
                   <div className="bb-card-body">
-                    <SectionEmpty
+                    <StatePanel
+                      tone="neutral"
                       title={t('dashboard.topProducts.empty')}
                       description={t('dashboard.topProducts.emptyDesc')}
+                      actionLabel={t('dashboard.topProducts.emptyCta', { defaultValue: 'Thêm sản phẩm' })}
+                      onAction={() => navigate('/admin/products')}
                     />
                   </div>
                 )}

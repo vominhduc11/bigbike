@@ -264,7 +264,15 @@ export function MenuScreen({ canUpdate }) {
       toast.error(t('menus.deleteItemHasChildren', { count: childCount }))
       return
     }
-    const confirmed = await showConfirm(t('menus.deleteItemConfirm'), t('menus.deleteItemTitle'))
+    const label = pickLabel(itemById.get(itemId)) || t('menus.itemLabel')
+    const confirmed = await showConfirm(
+      t('menus.deleteItemConfirmNamed', {
+        label,
+        defaultValue: 'Xoá mục "{{label}}"? Khách sẽ không còn thấy mục này trên menu.',
+      }),
+      t('menus.deleteItemTitle'),
+      { variant: 'danger', confirmLabel: t('common.delete') },
+    )
     if (!confirmed) return
     deleteItemMutation.mutate(itemId)
   }
@@ -324,6 +332,25 @@ export function MenuScreen({ canUpdate }) {
     setSearch('')
   }
 
+  // Điều hướng tab bằng phím mũi tên / Home / End theo chuẩn ARIA tablist.
+  function handleTabKeyDown(e, index) {
+    let nextIndex = null
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      nextIndex = (index + 1) % SYSTEM_SLOTS.length
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      nextIndex = (index - 1 + SYSTEM_SLOTS.length) % SYSTEM_SLOTS.length
+    } else if (e.key === 'Home') {
+      nextIndex = 0
+    } else if (e.key === 'End') {
+      nextIndex = SYSTEM_SLOTS.length - 1
+    }
+    if (nextIndex === null) return
+    e.preventDefault()
+    const nextSlot = SYSTEM_SLOTS[nextIndex]
+    selectSlot(nextSlot.location)
+    document.getElementById(`menu-slot-tab-${nextSlot.location}`)?.focus()
+  }
+
   // ── Render ─────────────────────────────────────────────────────────────────
   if (isLoading) return <StatePanel tone="info" title={t('menus.loading')} description={t('common.pleaseWait')} />
   if (isError) return (
@@ -354,7 +381,7 @@ export function MenuScreen({ canUpdate }) {
 
       {/* ── Slot tabs ── */}
       <div className="menu-slot-tabs" role="tablist" aria-label={t('menus.selectMenu')}>
-        {SYSTEM_SLOTS.map((slot) => {
+        {SYSTEM_SLOTS.map((slot, slotIndex) => {
           const summary = menuByLocation.get(slot.location)
           const isActive = slot.location === selectedLocation
           const missing = !summary
@@ -362,11 +389,15 @@ export function MenuScreen({ canUpdate }) {
           return (
             <button
               key={slot.location}
+              id={`menu-slot-tab-${slot.location}`}
               type="button"
               role="tab"
               aria-selected={isActive}
+              aria-controls="menu-panel"
+              tabIndex={isActive ? 0 : -1}
               className={`menu-slot-tab${isActive ? ' is-active' : ''}${missing ? ' is-missing' : ''}`}
               onClick={() => selectSlot(slot.location)}
+              onKeyDown={(e) => handleTabKeyDown(e, slotIndex)}
             >
               <span className="menu-slot-tab-title">
                 {summary?.name?.trim() ? formatText(summary.name) : t(slot.titleKey)}
@@ -387,7 +418,13 @@ export function MenuScreen({ canUpdate }) {
       </div>
 
       {/* ── Panel: items for the selected slot ── */}
-      <main className="menu-panel">
+      <main
+        className="menu-panel"
+        id="menu-panel"
+        role="tabpanel"
+        tabIndex={0}
+        aria-labelledby={`menu-slot-tab-${selectedLocation}`}
+      >
         {slotMissing ? (
           <div className="menu-slot-missing">
             <AlertTriangle size={18} />
@@ -477,11 +514,17 @@ export function MenuScreen({ canUpdate }) {
                       </colgroup>
                       <thead>
                         <tr>
-                          <th className="menu-grip-cell" />
-                          <th>{t('menus.itemLabel')}</th>
-                          <th>{t('menus.itemParent')}</th>
-                          <th>{t('menus.itemUrl')}</th>
-                          {canUpdate && <th />}
+                          <th className="menu-grip-cell" scope="col">
+                            <span className="sr-only">{t('menus.itemReorder', { defaultValue: 'Sắp xếp' })}</span>
+                          </th>
+                          <th scope="col">{t('menus.itemLabel')}</th>
+                          <th scope="col">{t('menus.itemParent')}</th>
+                          <th scope="col">{t('menus.itemUrl')}</th>
+                          {canUpdate && (
+                            <th scope="col">
+                              <span className="sr-only">{t('menus.itemActions', { defaultValue: 'Thao tác' })}</span>
+                            </th>
+                          )}
                         </tr>
                       </thead>
                       <tbody>

@@ -305,7 +305,10 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
       <div className="bb-screen-header">
         <div className="bb-screen-title">
           <p className="bb-screen-eyebrow">
-            <a onClick={(e) => { e.preventDefault(); navigate('/admin/brands') }} style={{ cursor: 'pointer' }}>
+            <a
+              href="/admin/brands"
+              onClick={(e) => { e.preventDefault(); navigate('/admin/brands') }}
+            >
               ← {t('brands.detail.backToList')}
             </a>
           </p>
@@ -323,6 +326,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
                 const confirmed = await showConfirm(
                   t('brands.detail.hideConfirm').replace('{slug}', form.slug || state.item?.slug || '…'),
                   t('brands.detail.hideConfirmTitle'),
+                  { variant: 'danger', confirmLabel: t('brands.detail.hideBtn') },
                 )
                 if (!confirmed) return
                 setIsSubmitting(true)

@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FilterSelect } from '../components/FilterSelect'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
-import { Eye, EyeOff, Mail, MoreHorizontal, Pencil, UserPlus } from 'lucide-react'
+import { AlertCircle, Eye, EyeOff, Mail, Pencil, UserPlus } from 'lucide-react'
 import { PaginationControls } from '../components/PaginationControls'
-import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
+import { AdminTable } from '../components/AdminTable'
+import { FormField } from '../components/layout/FormField'
 import { Modal } from '../components/layout'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
@@ -19,6 +20,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input'
 
 const INITIAL_QUERY = { search: '', page: 1, pageSize: 20, role: '', status: '' }
+
+// Đủ để bắt lỗi nhập sai phổ biến phía client; backend vẫn là nguồn xác thực cuối.
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const PASSWORD_MIN_LENGTH = 8
 
 // Static metadata for built-in roles (label i18n key).
 const ROLE_META = {
@@ -73,18 +78,23 @@ function UserStatusBadge({ status, t }) {
   )
 }
 
-function PasswordField({ value, onChange, placeholder, label, hint }) {
+function PasswordField({ value, onChange, placeholder, label, hint, error }) {
   const [show, setShow] = useState(false)
+  const inputId = useId()
+  const errorId = `${inputId}-error`
   return (
     <label className="au-field">
       <span className="au-field-label">{label}</span>
       <div className="au-field-row">
         <Input
+          id={inputId}
           type={show ? 'text' : 'password'}
           value={value}
           onChange={onChange}
           placeholder={placeholder}
           autoComplete="new-password"
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? errorId : undefined}
         />
         <Button
           type="button"
@@ -97,7 +107,14 @@ function PasswordField({ value, onChange, placeholder, label, hint }) {
           {show ? <EyeOff size={14} aria-hidden="true" /> : <Eye size={14} aria-hidden="true" />}
         </Button>
       </div>
-      {hint && <span className="au-field-hint">{hint}</span>}
+      {error ? (
+        <span id={errorId} className="flex items-center gap-1 text-xs text-danger" role="alert">
+          <AlertCircle size={13} aria-hidden="true" className="shrink-0" />
+          {error}
+        </span>
+      ) : hint ? (
+        <span className="au-field-hint">{hint}</span>
+      ) : null}
     </label>
   )
 }
@@ -113,6 +130,8 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
   const debouncedSearch = useDebounce(searchInput, 250)
   const isFirstSearchRender = useRef(true)
   const [listState, setListState] = useState({ status: 'loading', items: [], pagination: null, warning: '' })
+  // Sắp xếp phía client (endpoint admin users không hỗ trợ sort server-side).
+  const [sort, setSort] = useState({ key: null, dir: 'asc' })
 
   // ── Dynamic roles ───────────────────────────────────────────────────────
   const [dynamicRoles, setDynamicRoles] = useState([])
@@ -130,6 +149,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
   const [editUser, setEditUser] = useState(null)
   const [editForm, setEditForm] = useState({})
   const [editError, setEditError] = useState('')
+  const [editFieldErrors, setEditFieldErrors] = useState({})
   const [editSuccess, setEditSuccess] = useState(false)
   const [editSaving, setEditSaving] = useState(false)
 
@@ -167,12 +187,14 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
     setEditUser(user)
     setEditForm({ displayName: user.displayName || '', status: user.status || 'ACTIVE', role: user.role || '', newPassword: '' })
     setEditError('')
+    setEditFieldErrors({})
     setEditSuccess(false)
   }
 
   function closeEdit() {
     setEditUser(null)
     setEditError('')
+    setEditFieldErrors({})
     setEditSuccess(false)
   }
 
@@ -195,14 +217,38 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
     setQuery((p) => ({ ...p, role: next.role, status: next.status, page: 1 }))
   }
 
+  // Kiểm tra hợp lệ phía client cho drawer sửa — trả về true nếu hợp lệ.
+  function validateEditForm() {
+    const errs = {}
+    const pwd = (editForm.newPassword || '').trim()
+    if (pwd && pwd.length < PASSWORD_MIN_LENGTH) {
+      errs.newPassword = t('adminUsers.errPasswordTooShort', {
+        defaultValue: 'Mật khẩu phải có ít nhất {{min}} ký tự.',
+        min: PASSWORD_MIN_LENGTH,
+      })
+    }
+    setEditFieldErrors(errs)
+    return Object.keys(errs).length === 0
+  }
+
   // Submit edit — with confirmation for sensitive changes.
   async function requestEditSubmit() {
+    setEditError('')
+    if (!validateEditForm()) return
+
     const statusChanged = editForm.status !== editUser.status
     const roleChanged = editForm.role !== editUser.role
     const sensitiveStatus = statusChanged && editForm.status !== 'ACTIVE'
 
     if (sensitiveStatus) {
-      const ok = await showConfirm(t('adminUsers.confirmDisable'), t('adminUsers.confirmSensitiveTitle'))
+      const ok = await showConfirm(
+        t('adminUsers.confirmDisable'),
+        t('adminUsers.confirmSensitiveTitle'),
+        {
+          variant: 'danger',
+          confirmLabel: t('adminUsers.confirmDisableBtn', { defaultValue: 'Khoá tài khoản' }),
+        },
+      )
       if (!ok) return
     } else if (roleChanged) {
       const ok = await showConfirm(t('adminUsers.confirmRoleChange'), t('adminUsers.confirmSensitiveTitle'))
@@ -215,6 +261,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
     if (!editUser) return
     setEditSaving(true)
     setEditError('')
+    setEditFieldErrors({})
     setEditSuccess(false)
     try {
       // Never send role/status changes for the current user's own account.
@@ -230,19 +277,44 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
       setEditUser(r.item)
       setEditSuccess(true)
       if (r.item.role !== editForm.role && editForm.role) {
-        setEditError(t('adminUsers.roleIgnored'))
+        // Vai trò bị bỏ qua (do quyền) → gắn cạnh ô vai trò, không để ở banner.
+        setEditFieldErrors({ role: t('adminUsers.roleIgnored') })
       }
     } catch (err) {
-      setEditError(err.message || t('common.error'))
+      // Gắn lỗi xác thực vào đúng ô; lỗi không thuộc ô nào giữ ở banner đầu drawer.
+      const fieldErrs = mapValidationErrors(err)
+      if (Object.keys(fieldErrs).length > 0) {
+        setEditFieldErrors(fieldErrs)
+      } else {
+        setEditError(err.message || t('common.error'))
+      }
     } finally {
       setEditSaving(false)
     }
   }, [editUser, editForm, currentUserId, t])
 
+  // Kiểm tra hợp lệ phía client cho form tạo mới — trả về true nếu hợp lệ.
+  function validateCreateForm() {
+    const errs = {}
+    const email = createForm.email.trim()
+    const displayName = createForm.displayName.trim()
+    if (!email) {
+      errs.email = t('adminUsers.errEmailRequired', { defaultValue: 'Vui lòng nhập email.' })
+    } else if (!EMAIL_RE.test(email)) {
+      errs.email = t('adminUsers.errEmailInvalid', { defaultValue: 'Email không hợp lệ.' })
+    }
+    if (!displayName) {
+      errs.displayName = t('adminUsers.errDisplayNameRequired', { defaultValue: 'Vui lòng nhập tên hiển thị.' })
+    }
+    setCreateFieldErrors(errs)
+    return Object.keys(errs).length === 0
+  }
+
   async function handleCreate(e) {
     e.preventDefault()
-    setCreateSaving(true)
     setCreateError('')
+    if (!validateCreateForm()) return
+    setCreateSaving(true)
     setCreateFieldErrors({})
     try {
       const r = await createAdminUser({
@@ -278,7 +350,135 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
   const isSelf = editUser != null && currentUserId != null && editUser.id === currentUserId
   const hasFilters = searchInput.trim() !== '' || roleFilter !== '' || statusFilter !== ''
   const isEmptyResult = listState.status === 'success' && listState.items.length === 0
-  const items = listState.items || []
+
+  // Sắp xếp phía client theo cột đang chọn (chỉ trên trang hiện tại).
+  // Gắn _idx để màu avatar giữ ổn định theo thứ tự hiển thị.
+  const items = useMemo(() => {
+    const base = listState.items || []
+    let ordered = base
+    if (sort.key) {
+      const factor = sort.dir === 'asc' ? 1 : -1
+      const valueOf = (u) => {
+        if (sort.key === 'user') return (u.displayName || u.email || '').toLowerCase()
+        if (sort.key === 'role') return (u.role || '').toLowerCase()
+        if (sort.key === 'status') return (u.status || '').toLowerCase()
+        if (sort.key === 'lastLogin') return u.lastLoginAt ? new Date(u.lastLoginAt).getTime() : 0
+        return ''
+      }
+      ordered = [...base].sort((a, b) => {
+        const av = valueOf(a)
+        const bv = valueOf(b)
+        if (av < bv) return -1 * factor
+        if (av > bv) return 1 * factor
+        return 0
+      })
+    }
+    return ordered.map((u, i) => ({ ...u, _idx: i }))
+  }, [listState.items, sort])
+
+  const isLoading = listState.status === 'loading' && (listState.items || []).length === 0
+
+  const columns = [
+    {
+      key: 'user',
+      label: t('adminUsers.colUser'),
+      sortable: true,
+      skeletonWidth: '70%',
+      render: (u) => {
+        const name = u.displayName || u.email
+        return (
+          <div className="product-cell">
+            <span className={`inline-flex items-center justify-center size-12 rounded-full text-sm font-bold flex-shrink-0 ${AVATAR_COLORS[(u._idx ?? 0) % AVATAR_COLORS.length]}`}>
+              {(name || '?').charAt(0).toUpperCase()}
+            </span>
+            <div className="info">
+              <div className="name">{name}</div>
+              {u.displayName && (
+                <div className="sku" style={{ fontFamily: 'inherit' }}>{u.email}</div>
+              )}
+            </div>
+          </div>
+        )
+      },
+    },
+    {
+      key: 'role',
+      label: t('adminUsers.colRole'),
+      sortable: true,
+      skeletonWidth: '50%',
+      render: (u) => <RoleBadge role={u.role} t={t} />,
+    },
+    {
+      key: 'status',
+      label: t('adminUsers.colStatus'),
+      sortable: true,
+      skeletonWidth: '50%',
+      render: (u) => <UserStatusBadge status={u.status} t={t} />,
+    },
+    {
+      key: 'lastLogin',
+      label: t('adminUsers.colLastLogin'),
+      align: 'right',
+      sortable: true,
+      skeletonWidth: '60%',
+      render: (u) => (
+        <span className="bb-muted text-xs">
+          {u.lastLoginAt ? formatDateTime(u.lastLoginAt) : t('adminUsers.notLastLogin')}
+        </span>
+      ),
+    },
+    ...(canUpdate
+      ? [{
+          key: 'actions',
+          label: '',
+          align: 'right',
+          render: (u) => (
+            <div className="inline-flex items-center justify-end gap-1">
+              {u.status === 'INVITED' && (
+                <button type="button" className="bb-icon-btn" title={t('adminUsers.resendInvite')} aria-label={t('adminUsers.resendInvite')} onClick={() => handleResendInvite(u)}>
+                  <Mail size={14} />
+                </button>
+              )}
+              <button type="button" className="bb-icon-btn" title={t('common.edit')} aria-label={t('common.edit')} onClick={() => openEdit(u)}>
+                <Pencil size={14} />
+              </button>
+            </div>
+          ),
+        }]
+      : []),
+  ]
+
+  const mobileCard = (u) => {
+    const name = u.displayName || u.email
+    return {
+      title: (
+        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span className={`inline-flex items-center justify-center size-8 rounded-full text-xs font-bold flex-shrink-0 ${AVATAR_COLORS[(u._idx ?? 0) % AVATAR_COLORS.length]}`}>
+            {(name || '?').charAt(0).toUpperCase()}
+          </span>
+          {name}
+        </span>
+      ),
+      subtitle: u.displayName ? u.email : undefined,
+      status: <UserStatusBadge status={u.status} t={t} />,
+      meta: [
+        { label: t('adminUsers.colRole'), value: <RoleBadge role={u.role} t={t} /> },
+        { label: t('adminUsers.colLastLogin'), value: u.lastLoginAt ? formatDateTime(u.lastLoginAt) : t('adminUsers.notLastLogin') },
+      ],
+      actions: canUpdate ? (
+        <>
+          {u.status === 'INVITED' && (
+            <button type="button" className="bb-icon-btn" title={t('adminUsers.resendInvite')} aria-label={t('adminUsers.resendInvite')} onClick={() => handleResendInvite(u)}>
+              <Mail size={14} />
+            </button>
+          )}
+          <button type="button" className="bb-icon-btn" title={t('common.edit')} aria-label={t('common.edit')} onClick={() => openEdit(u)}>
+            <Pencil size={14} />
+          </button>
+        </>
+      ) : undefined,
+    }
+  }
 
   return (
     <div>
@@ -382,104 +582,16 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
       {(listState.status === 'loading' || (listState.status === 'success' && items.length > 0)) && (
         <div className="bb-card">
           <div className="bb-card-body bb-card-body--flush">
-            <div className="hide-on-mobile">
-            <div className="bb-table-wrap">
-              <table className="bb-table">
-                <thead>
-                  <tr>
-                    <th>{t('adminUsers.colUser')}</th>
-                    <th>{t('adminUsers.colRole')}</th>
-                    <th>{t('adminUsers.colStatus')}</th>
-                    <th>{t('adminUsers.colLastLogin')}</th>
-                    {canUpdate && <th />}
-                  </tr>
-                </thead>
-                <tbody>
-                  {listState.status === 'loading' && items.length === 0 && (
-                    [...Array(6)].map((_, i) => (
-                      <tr key={`sk-${i}`}>
-                        <td colSpan={canUpdate ? 5 : 4}><div className="dash-skeleton-block" style={{ height: 28 }} /></td>
-                      </tr>
-                    ))
-                  )}
-                  {items.map((u, i) => {
-                    const name = u.displayName || u.email
-                    return (
-                      <tr key={u.id}>
-                        <td>
-                          <div className="product-cell">
-                            <span className={`inline-flex items-center justify-center size-12 rounded-full text-sm font-bold flex-shrink-0 ${AVATAR_COLORS[i % AVATAR_COLORS.length]}`}>
-                              {(name || '?').charAt(0).toUpperCase()}
-                            </span>
-                            <div className="info">
-                              <div className="name">{name}</div>
-                              {u.displayName && (
-                                <div className="sku" style={{ fontFamily: 'inherit' }}>{u.email}</div>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-                        <td><RoleBadge role={u.role} t={t} /></td>
-                        <td><UserStatusBadge status={u.status} t={t} /></td>
-                        <td className="bb-muted" style={{ fontSize: 12 }}>
-                          {u.lastLoginAt ? formatDateTime(u.lastLoginAt) : t('adminUsers.notLastLogin')}
-                        </td>
-                        {canUpdate && (
-                          <td className="col-actions">
-                            {u.status === 'INVITED' && (
-                              <button type="button" className="bb-icon-btn" title={t('adminUsers.resendInvite')} onClick={() => handleResendInvite(u)}>
-                                <Mail size={14} />
-                              </button>
-                            )}
-                            <button type="button" className="bb-icon-btn" title={t('common.edit')} onClick={() => openEdit(u)}>
-                              <Pencil size={14} />
-                            </button>
-                            <button type="button" className="bb-icon-btn" title={t('common.edit')} onClick={() => openEdit(u)}>
-                              <MoreHorizontal size={15} />
-                            </button>
-                          </td>
-                        )}
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-            </div>
-            <MobileCardList>
-              {items.map((u, i) => {
-                const name = u.displayName || u.email
-                return (
-                  <MobileCard
-                    key={u.id}
-                    title={(
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span className={`inline-flex items-center justify-center size-8 rounded-full text-xs font-bold flex-shrink-0 ${AVATAR_COLORS[i % AVATAR_COLORS.length]}`}>
-                          {(name || '?').charAt(0).toUpperCase()}
-                        </span>
-                        {name}
-                      </span>
-                    )}
-                    subtitle={u.displayName ? u.email : undefined}
-                    status={<UserStatusBadge status={u.status} t={t} />}
-                    meta={[
-                      { label: t('adminUsers.colRole'), value: <RoleBadge role={u.role} t={t} /> },
-                      { label: t('adminUsers.colLastLogin'), value: u.lastLoginAt ? formatDateTime(u.lastLoginAt) : t('adminUsers.notLastLogin') },
-                    ]}
-                    actions={canUpdate ? (
-                      <>
-                        <button type="button" className="bb-icon-btn" title={t('common.edit')} onClick={() => openEdit(u)}>
-                          <Pencil size={14} />
-                        </button>
-                        <button type="button" className="bb-icon-btn" title={t('common.edit')} onClick={() => openEdit(u)}>
-                          <MoreHorizontal size={15} />
-                        </button>
-                      </>
-                    ) : undefined}
-                  />
-                )
-              })}
-            </MobileCardList>
+            <AdminTable
+              columns={columns}
+              rows={items}
+              loading={isLoading}
+              pageSize={query.pageSize}
+              mobileCard={mobileCard}
+              sortKey={sort.key}
+              sortDir={sort.dir}
+              onSortChange={(key, dir) => setSort({ key, dir })}
+            />
           </div>
           {listState.status === 'success' && listState.pagination && (
             <PaginationControls
@@ -509,7 +621,12 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
       >
         {editUser && (
           <div className="audit-drawer-body !gap-0">
-            {editError && <p className="mb-4 text-sm text-danger">{editError}</p>}
+            {editError && (
+              <p className="mb-4 flex items-center gap-1 text-sm text-danger" role="alert">
+                <AlertCircle size={14} aria-hidden="true" className="shrink-0" />
+                {editError}
+              </p>
+            )}
             {editSuccess && !editError && (
               <p className="mb-4 text-sm text-success">{t('adminUsers.saveSuccess')}</p>
             )}
@@ -522,21 +639,19 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
                 </Alert>
               )}
               <div className="au-form-grid">
-                <label className="au-field">
-                  <span className="au-field-label">{t('adminUsers.formDisplayName')}</span>
+                <FormField label={t('adminUsers.formDisplayName')} error={editFieldErrors.displayName}>
                   <Input
                     value={editForm.displayName}
                     onChange={(e) => setEditForm((p) => ({ ...p, displayName: e.target.value }))}
                   />
-                </label>
-                <label className="au-field">
-                  <span className="au-field-label">{t('adminUsers.formRole')}</span>
+                </FormField>
+                <FormField label={t('adminUsers.formRole')} error={editFieldErrors.role}>
                   <Select
                     value={editForm.role}
                     disabled={isSelf}
                     onValueChange={(val) => setEditForm((p) => ({ ...p, role: val }))}
                   >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger aria-invalid={editFieldErrors.role ? true : undefined}><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {roleOptions.map((r) => {
                         const meta = ROLE_META[r]
@@ -544,22 +659,21 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
                       })}
                     </SelectContent>
                   </Select>
-                </label>
-                <label className="au-field">
-                  <span className="au-field-label">{t('adminUsers.formStatus')}</span>
+                </FormField>
+                <FormField label={t('adminUsers.formStatus')} error={editFieldErrors.status}>
                   <Select
                     value={editForm.status}
                     disabled={isSelf}
                     onValueChange={(val) => setEditForm((p) => ({ ...p, status: val }))}
                   >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger aria-invalid={editFieldErrors.status ? true : undefined}><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {Object.entries(STATUS_META).map(([key, meta]) => (
                         <SelectItem key={key} value={key}>{t(meta.labelKey)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                </label>
+                </FormField>
               </div>
             </div>
 
@@ -571,6 +685,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
                 placeholder={t('adminUsers.formPasswordHint')}
                 label={t('adminUsers.formPasswordNew')}
                 hint={t('adminUsers.formPasswordStrengthHint')}
+                error={editFieldErrors.newPassword}
               />
             </div>
           </div>
@@ -592,21 +707,21 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
         }
       >
         <form id="create-user-form" onSubmit={handleCreate} className="flex flex-col gap-3">
-          {createError && <p className="text-sm text-destructive">{createError}</p>}
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium">{t('adminUsers.formEmail')}</label>
+          {createError && (
+            <p className="flex items-center gap-1 text-sm text-danger" role="alert">
+              <AlertCircle size={14} aria-hidden="true" className="shrink-0" />
+              {createError}
+            </p>
+          )}
+          <FormField label={t('adminUsers.formEmail')} required error={createFieldErrors.email}>
             <Input type="email" value={createForm.email}
               onChange={(e) => setCreateForm((p) => ({ ...p, email: e.target.value }))} required />
-            {createFieldErrors.email && <p className="text-xs text-destructive">{createFieldErrors.email}</p>}
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium">{t('adminUsers.formDisplayName')}</label>
+          </FormField>
+          <FormField label={t('adminUsers.formDisplayName')} required error={createFieldErrors.displayName}>
             <Input value={createForm.displayName}
               onChange={(e) => setCreateForm((p) => ({ ...p, displayName: e.target.value }))} required />
-            {createFieldErrors.displayName && <p className="text-xs text-destructive">{createFieldErrors.displayName}</p>}
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium">{t('adminUsers.formRole')}</label>
+          </FormField>
+          <FormField label={t('adminUsers.formRole')}>
             <Select value={createForm.role} onValueChange={(val) => setCreateForm((p) => ({ ...p, role: val }))}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -616,7 +731,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
                 })}
               </SelectContent>
             </Select>
-          </div>
+          </FormField>
           <p className="text-xs text-muted-foreground">{t('adminUsers.inviteHint')}</p>
         </form>
       </Modal>

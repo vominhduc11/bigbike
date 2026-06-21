@@ -58,9 +58,27 @@ function PieTooltip({ active, payload, orderUnit }) {
 
 export function RevenueAreaChart({ revenueData }) {
   const { t } = useTranslation()
+
+  // Tóm tắt cho screen reader: tổng doanh thu trong kỳ + ngày cao nhất.
+  // Biểu đồ recharts (SVG) không tự phát ra số liệu, tooltip lại chỉ hiện khi
+  // rê chuột — nên cung cấp bản đọc-được không cần hover.
+  const totalRevenue = revenueData.reduce((s, d) => s + (d.revenue || 0), 0)
+  const peak = revenueData.reduce(
+    (best, d) => (d.revenue > (best?.revenue ?? -1) ? d : best),
+    null,
+  )
+  const summary = t('dashboard.revenueChart.a11ySummary', {
+    defaultValue: 'Tổng doanh thu trong kỳ: {{total}}. Ngày cao nhất: {{peakDate}} với {{peakValue}}.',
+    total: formatVndShort(totalRevenue),
+    peakDate: peak ? fmtIsoDateShort(peak.date) : '—',
+    peakValue: peak ? formatVndShort(peak.revenue) : '—',
+  })
+
   return (
-    <ResponsiveContainer width="100%" height={260}>
-      <AreaChart data={revenueData} margin={{ top: 4, right: 16, left: 8, bottom: 0 }}>
+    <figure role="group" aria-label={t('dashboard.revenueChart.a11yLabel', { defaultValue: 'Biểu đồ doanh thu theo ngày' })} className="m-0">
+      <p className="sr-only">{summary}</p>
+      <ResponsiveContainer width="100%" height={260}>
+        <AreaChart data={revenueData} margin={{ top: 4, right: 16, left: 8, bottom: 0 }}>
         <defs>
           <linearGradient id="grad-revenue" x1="0" y1="0" x2="0" y2="1">
             <stop offset="5%" stopColor="var(--bb-primary)" stopOpacity={0.18} />
@@ -94,14 +112,19 @@ export function RevenueAreaChart({ revenueData }) {
           dot={false}
           activeDot={{ r: 5, strokeWidth: 0 }}
         />
-      </AreaChart>
-    </ResponsiveContainer>
+        </AreaChart>
+      </ResponsiveContainer>
+    </figure>
   )
 }
 
 export function OrderStatusPie({ pieDataWithTotal }) {
   const { t } = useTranslation()
+  // Bản đọc-được cho biểu đồ tròn: legend dạng chữ đã có ở DashboardScreen,
+  // nên ở đây chỉ cần tên truy cập tổng quát cho vùng đồ hoạ.
+  const label = t('dashboard.orderStatusChart.a11yLabel', { defaultValue: 'Biểu đồ cơ cấu đơn hàng theo trạng thái' })
   return (
+    <div role="group" aria-label={label}>
     <ResponsiveContainer width="100%" height={200}>
       <PieChart>
         <Pie
@@ -120,5 +143,6 @@ export function OrderStatusPie({ pieDataWithTotal }) {
         <Tooltip content={<PieTooltip orderUnit={t('dashboard.orderStatusChart.orderUnit')} />} />
       </PieChart>
     </ResponsiveContainer>
+    </div>
   )
 }

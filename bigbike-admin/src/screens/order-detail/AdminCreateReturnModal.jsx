@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { AlertCircle } from 'lucide-react'
 import { adminCreateReturn } from '../../lib/adminApi'
 import { Modal } from '../../components/layout'
 import { Button } from '@/components/ui/button'
@@ -81,6 +82,7 @@ export function AdminCreateReturnModal({ order, onClose, onSuccess }) {
                       min={0}
                       max={item.quantity}
                       className="w-16 text-center"
+                      aria-label={t('orders.detail.crmReturnQtyAria', { product: item.productName, defaultValue: `Số lượng trả ${item.productName}` })}
                       value={qtys[item.id] ?? 0}
                       onChange={(e) => setQtys((prev) => ({ ...prev, [item.id]: Math.min(item.quantity, Math.max(0, Number(e.target.value))) }))}
                     />
@@ -97,7 +99,12 @@ export function AdminCreateReturnModal({ order, onClose, onSuccess }) {
           <Textarea rows={2} value={customerNote} onChange={(e) => setCustomerNote(e.target.value)} />
         </div>
 
-        {error && <p className="field-error">{error}</p>}
+        {error && (
+          <p className="field-error flex items-center gap-1.5" role="alert">
+            <AlertCircle size={14} aria-hidden="true" />
+            {error}
+          </p>
+        )}
 
         <div className="flex gap-2">
           <Button type="button" variant="outline" size="sm" onClick={onClose}>{t('common.cancel')}</Button>

@@ -1,5 +1,10 @@
 {
   "common": {
+    "selectedCount": "{{count}} selected",
+    "selectAllMatching": "Select all {{count}} matching results",
+    "allMatchingSelected": "All {{count}} results selected",
+    "deselect": "Deselect",
+    "bulkActions": "Bulk actions",
     "errEnSlugFormat": "English slug must contain only lowercase letters, numbers and hyphens.",
     "errEnSlugTooLong": "English slug must be at most 100 characters.",
     "save": "Save",
@@ -1528,6 +1533,9 @@
       "phone": "Phone:",
       "registered": "Registered:",
       "statusUpdated": "Account status updated.",
+      "statusConfirmTitle": "Change account status",
+      "statusConfirmBody": "Switching this account to \"{{status}}\" will block the customer from signing in and purchasing. Continue?",
+      "statusConfirmOk": "Change status",
       "orderCount": "Orders:",
       "totalSpent": "Total spent:"
     }

@@ -26,6 +26,8 @@ export function GlobalSearch({ navigate, visiblePaths }) {
   const [loading, setLoading] = useState(false)
   const [activeIndex, setActiveIndex] = useState(0)
   const inputRef = useRef(null)
+  const triggerRef = useRef(null)
+  const listRef = useRef(null)
   const reqIdRef = useRef(0)
   const debounced = useDebounce(term, 220)
 
@@ -40,6 +42,12 @@ export function GlobalSearch({ navigate, visiblePaths }) {
     setActiveIndex(0)
   }, [])
 
+  // Đóng + trả focus về nút mở (cho người dùng bàn phím/screen reader).
+  const closeAndRestore = useCallback(() => {
+    close()
+    triggerRef.current?.focus()
+  }, [close])
+
   // ⌘K / Ctrl+K toggles the palette; Esc closes it.
   useEffect(() => {
     function onKey(e) {
@@ -47,12 +55,18 @@ export function GlobalSearch({ navigate, visiblePaths }) {
         e.preventDefault()
         setOpen((o) => !o)
       } else if (e.key === 'Escape' && open) {
-        close()
+        closeAndRestore()
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [open, close])
+  }, [open, closeAndRestore])
+
+  // Cuộn dòng đang chọn vào tầm nhìn khi điều hướng bằng phím ↑/↓.
+  useEffect(() => {
+    if (!open) return
+    listRef.current?.querySelector(`#bb-search-opt-${activeIndex}`)?.scrollIntoView({ block: 'nearest' })
+  }, [activeIndex, open])
 
   useEffect(() => {
     if (open) {
@@ -129,6 +143,10 @@ export function GlobalSearch({ navigate, visiblePaths }) {
       e.preventDefault()
       const hit = flat[activeIndex]
       if (hit) go(hit.to)
+    } else if (e.key === 'Tab') {
+      // Giam focus trong palette — điều hướng bằng ↑/↓ + Enter, không Tab ra nền.
+      e.preventDefault()
+      inputRef.current?.focus()
     }
   }
 
@@ -138,6 +156,7 @@ export function GlobalSearch({ navigate, visiblePaths }) {
   return (
     <>
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen(true)}
         className="hidden h-9 w-full max-w-[320px] items-center gap-2 rounded-sm border border-border bg-surface-muted px-3 text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground md:flex"
@@ -159,7 +178,7 @@ export function GlobalSearch({ navigate, visiblePaths }) {
           <div
             className="fixed inset-0"
             style={{ background: 'var(--admin-color-overlay)' }}
-            onClick={close}
+            onClick={closeAndRestore}
             aria-hidden="true"
           />
           <div
@@ -177,11 +196,17 @@ export function GlobalSearch({ navigate, visiblePaths }) {
                 onKeyDown={onInputKeyDown}
                 placeholder={t('search.placeholder')}
                 className="h-12 flex-1 border-none bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+                role="combobox"
+                aria-expanded={hasQuery && flat.length > 0}
+                aria-controls="bb-search-listbox"
+                aria-activedescendant={hasQuery && flat.length > 0 ? `bb-search-opt-${activeIndex}` : undefined}
+                aria-autocomplete="list"
+                autoComplete="off"
               />
               <kbd className="rounded border border-border bg-surface-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">Esc</kbd>
             </div>
 
-            <div className="max-h-[52vh] overflow-y-auto p-1.5">
+            <div ref={listRef} id="bb-search-listbox" role="listbox" aria-label={t('search.title')} className="max-h-[52vh] overflow-y-auto p-1.5">
               {!hasQuery && (
                 <p className="px-3 py-6 text-center text-sm text-muted-foreground">{t('search.hint')}</p>
               )}
@@ -203,7 +228,11 @@ export function GlobalSearch({ navigate, visiblePaths }) {
                       return (
                         <button
                           key={row.key}
+                          id={`bb-search-opt-${flatIndex}`}
                           type="button"
+                          role="option"
+                          aria-selected={isActive}
+                          tabIndex={-1}
                           onMouseEnter={() => setActiveIndex(flatIndex)}
                           onClick={() => go(row.to)}
                           className={`flex w-full items-center gap-2.5 rounded-sm px-2.5 py-2 text-left transition-colors ${

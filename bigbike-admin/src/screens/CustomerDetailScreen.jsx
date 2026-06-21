@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { DetailSection } from '../components/DetailSection'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { fetchCustomerCoupons, fetchCustomerCredit, fetchCustomerDetail, updateCustomer, updateCustomerCredit, updateCustomerStatus } from '../lib/adminApi'
+import { showConfirm } from '../lib/confirm'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
@@ -133,10 +135,25 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
     return () => { active = false }
   }, [customerId, canReadCoupons])
 
-  async function handleStatusChange(e) {
+  async function handleStatusChange(value) {
+    // Radix Select truyền thẳng value (chuỗi), không phải DOM event.
+    if (!value || value === state.customer?.status) return
+    // DISABLED/BLOCKED khóa khách khỏi đăng nhập/mua hàng → xác nhận hậu quả trước khi áp dụng.
+    if (value === 'BLOCKED' || value === 'DISABLED') {
+      const label = t(`status.customer.${value}`, { defaultValue: value })
+      const ok = await showConfirm(
+        t('customers.detail.statusConfirmBody', {
+          status: label,
+          defaultValue: `Chuyển tài khoản sang "${label}" sẽ chặn khách hàng đăng nhập và mua hàng. Tiếp tục?`,
+        }),
+        t('customers.detail.statusConfirmTitle', { defaultValue: 'Đổi trạng thái tài khoản' }),
+        { confirmLabel: t('customers.detail.statusConfirmOk', { defaultValue: 'Đổi trạng thái' }) },
+      )
+      if (!ok) return
+    }
     setSaving(true)
     try {
-      const r = await updateCustomerStatus(customerId, e.target.value)
+      const r = await updateCustomerStatus(customerId, value)
       setState((p) => ({ ...p, customer: r.item }))
       toast.success(t('customers.detail.statusUpdated'))
     } catch (err) {
@@ -353,7 +370,8 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
                   aria-invalid={phoneError || undefined}
                  />
                 {phoneError ? (
-                  <span className="mt-1 block text-xs text-danger">
+                  <span className="mt-1 flex items-center gap-1 text-xs text-danger font-semibold" role="alert">
+                    <AlertCircle size={13} aria-hidden="true" className="shrink-0" />
                     Số điện thoại phải gồm 8–15 chữ số (có thể bắt đầu bằng dấu +).
                   </span>
                 ) : (
@@ -542,7 +560,10 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
                     aria-invalid={creditLimitError || undefined}
                    />
                   {creditLimitError ? (
-                    <span className="mt-1 block text-xs text-danger">Hạn mức không được là số âm.</span>
+                    <span className="mt-1 flex items-center gap-1 text-xs text-danger font-semibold" role="alert">
+                      <AlertCircle size={13} aria-hidden="true" className="shrink-0" />
+                      Hạn mức không được là số âm.
+                    </span>
                   ) : (
                     <span className="mt-1 block text-xs text-muted-foreground">Để trống nếu không giới hạn. Không nhập số âm.</span>
                   )}
@@ -560,7 +581,10 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
                     aria-invalid={paymentTermsError || undefined}
                    />
                   {paymentTermsError ? (
-                    <span className="mt-1 block text-xs text-danger">Thời hạn phải từ 1 đến 365 ngày.</span>
+                    <span className="mt-1 flex items-center gap-1 text-xs text-danger font-semibold" role="alert">
+                      <AlertCircle size={13} aria-hidden="true" className="shrink-0" />
+                      Thời hạn phải từ 1 đến 365 ngày.
+                    </span>
                   ) : (
                     <span className="mt-1 block text-xs text-muted-foreground">Từ 1 đến 365 ngày. Để trống nếu không áp dụng.</span>
                   )}

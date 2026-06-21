@@ -1,15 +1,14 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FilterSelect } from '../components/FilterSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { useQueryClient } from '@tanstack/react-query'
-import { Check, Download, Plus, SlidersHorizontal, Store } from 'lucide-react'
-import { BulkActionBar } from '../components/BulkActionBar'
+import { Download, Plus, SlidersHorizontal, Store } from 'lucide-react'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
-import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
+import { AdminTable } from '../components/AdminTable'
 import { exportOrdersCsv, fetchOrders } from '../lib/adminApi'
 import { subscribeAdminWs } from '../lib/adminWebSocket'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
@@ -38,7 +37,6 @@ export function OrderListScreen({ navigate }) {
     const params = new URLSearchParams(window.location.search)
     return params.get('search') || INITIAL_QUERY.search
   })
-  const [selected, setSelected] = useState(() => new Set())
   const debouncedSearch = useDebounce(searchInput, 250)
   const isFirstSearchRender = useRef(true)
   const isFirstPage = query.page === 1 && query.orderStatus === 'ALL' && !query.search
@@ -55,7 +53,6 @@ export function OrderListScreen({ navigate }) {
       isFirstSearchRender.current = false
       return
     }
-    setSelected(new Set())
     setQuery((prev) => ({ ...prev, search: debouncedSearch, page: 1 }))
   }, [debouncedSearch])
 
@@ -68,7 +65,6 @@ export function OrderListScreen({ navigate }) {
   }, [isFirstPage, queryClient])
 
   function updateQuery(partial, options = { resetPage: false }) {
-    setSelected(new Set())
     setQuery((prev) => {
       const next = { ...prev, ...partial }
       if (options.resetPage) next.page = 1
@@ -88,21 +84,83 @@ export function OrderListScreen({ navigate }) {
 
   const items = useMemo(() => state.items || [], [state.items])
   const pagination = state.pagination
+  const isFiltered = !!query.search || query.orderStatus !== 'ALL' || query.paymentStatus !== 'ALL'
 
-  const toggle = useCallback((id) => {
-    setSelected((prev) => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
-  }, [])
-  const toggleAll = useCallback(() => {
-    setSelected((prev) => (
-      prev.size === items.length ? new Set() : new Set(items.map((o) => o.id))
-    ))
-  }, [items])
+  // Sort hiện do FilterSelect quản (chuỗi "field:dir"). Cho phép bấm tiêu đề cột
+  // Ngày/Tổng để đổi sort ngay trên lưới — backend chỉ sort được 2 trường này.
+  const [sortKey, sortDir] = useMemo(() => {
+    const [k, d] = String(query.sort || 'createdAt:desc').split(':')
+    return [k, d === 'asc' ? 'asc' : 'desc']
+  }, [query.sort])
 
-  const allChecked = items.length > 0 && selected.size === items.length
+  function handleSortChange(key, dir) {
+    updateQuery({ sort: `${key}:${dir}` }, { resetPage: true })
+  }
+
+  const columns = [
+    {
+      key: 'orderNumber',
+      label: t('orders.colOrder'),
+      render: (order) => (
+        <span className="mono" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {formatText(order.orderNumber)}
+          {order.source === 'pos' && <span className="bb-badge bb-badge-neutral">POS</span>}
+        </span>
+      ),
+    },
+    {
+      key: 'customer',
+      label: t('orders.colCustomer'),
+      render: (order) => (
+        <div className="bb-product-cell">
+          <div>
+            <div style={{ fontWeight: 500 }}>{formatText(order.customerName) || formatText(order.customerEmail)}</div>
+            <div className="bb-cell-sub">{formatText(order.customerEmail)}</div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'createdAt',
+      label: t('orders.colDate'),
+      sortable: true,
+      render: (order) => <span className="bb-muted">{formatDateTime(order.createdAt)}</span>,
+    },
+    {
+      key: 'total',
+      label: t('orders.colTotal'),
+      align: 'right',
+      sortable: true,
+      render: (order) => <span style={{ fontWeight: 700 }}>{formatCurrencyVnd(order.total)}</span>,
+    },
+    {
+      key: 'paymentStatus',
+      label: t('orders.colPaymentStatus'),
+      render: (order) => <StatusBadge type="payment" status={order.paymentStatus} />,
+    },
+    {
+      key: 'orderStatus',
+      label: t('orders.colStatus'),
+      render: (order) => <StatusBadge type="order" status={order.orderStatus} />,
+    },
+  ]
+
+  const mobileCard = (order) => ({
+    title: (
+      <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        {formatText(order.orderNumber)}
+        {order.source === 'pos' && <span className="bb-badge bb-badge-neutral">POS</span>}
+      </span>
+    ),
+    subtitle: formatText(order.customerName) || formatText(order.customerEmail),
+    status: <StatusBadge type="order" status={order.orderStatus} />,
+    meta: [
+      { label: t('orders.colDate'), value: formatDateTime(order.createdAt) },
+      { label: t('orders.colTotal'), value: formatCurrencyVnd(order.total), tone: 'strong' },
+      { label: t('orders.colPaymentStatus'), value: <StatusBadge type="payment" status={order.paymentStatus} /> },
+    ],
+    onClick: () => navigate(`/admin/orders/${order.id}`),
+  })
 
   return (
     <div>
@@ -185,120 +243,43 @@ export function OrderListScreen({ navigate }) {
         </button>
       </div>
 
-      <BulkActionBar
-        selectedCount={selected.size}
-        onClear={() => setSelected(new Set())}
-      />
-
       {state.status === 'error' && (
         <StatePanel tone="danger" title={t('orders.loadError')} description={state.error}
           actionLabel={t('common.retry')} onAction={() => state.refetch()} />
       )}
 
       {state.status === 'success' && items.length === 0 && (
-        <StatePanel tone="neutral" title={t('orders.empty')} description={t('orders.emptyDesc')}
-          actionLabel={t('orders.clearFilters')} onAction={resetFilters} />
+        isFiltered ? (
+          <StatePanel tone="neutral" title={t('orders.empty')} description={t('orders.emptyDesc')}
+            actionLabel={t('orders.clearFilters')} onAction={resetFilters} />
+        ) : (
+          <StatePanel tone="neutral"
+            title={t('orders.emptyAll', { defaultValue: 'Chưa có đơn hàng nào' })}
+            description={t('orders.emptyAllDesc', { defaultValue: 'Khi có đơn đặt trên website hoặc bán tại quầy, đơn sẽ hiện ở đây.' })}
+            actionLabel={t('orders.createNew', { defaultValue: 'Tạo đơn mới' })}
+            onAction={() => navigate('/admin/pos')} />
+        )
       )}
 
       {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) && (
         <div className="bb-card">
-          {/* responsive: table on tablet+/desktop, cards on phones */}
-          <div className="hide-on-mobile">
-          <div className="bb-table-wrap">
-            <table className="bb-table">
-              <thead>
-                <tr>
-                  <th className="col-check">
-                    <span
-                      className={`bb-cb${allChecked ? ' checked' : ''}`}
-                      role="checkbox"
-                      aria-checked={allChecked}
-                      tabIndex={0}
-                      onClick={toggleAll}
-                      onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleAll() } }}
-                    >
-                      {allChecked && <Check size={11} />}
-                    </span>
-                  </th>
-                  <th>{t('orders.colOrder')}</th>
-                  <th>{t('orders.colCustomer')}</th>
-                  <th>{t('orders.colDate')}</th>
-                  <th className="num">{t('orders.colTotal')}</th>
-                  <th>{t('orders.colPaymentStatus')}</th>
-                  <th>{t('orders.colStatus')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {state.status === 'loading' && items.length === 0 && (
-                  [...Array(8)].map((_, i) => (
-                    <tr key={`sk-${i}`}>
-                      <td colSpan={7}><div className="bb-skeleton-block" style={{ height: 28 }} /></td>
-                    </tr>
-                  ))
-                )}
-                {items.map((order) => {
-                  const checked = selected.has(order.id)
-                  return (
-                    <tr key={order.id} className={checked ? 'selected' : ''}>
-                      <td className="col-check" onClick={(e) => { e.stopPropagation(); toggle(order.id) }}>
-                        <span className={`bb-cb${checked ? ' checked' : ''}`} role="checkbox" aria-checked={checked}>
-                          {checked && <Check size={11} />}
-                        </span>
-                      </td>
-                      <td className="mono" onClick={() => navigate(`/admin/orders/${order.id}`)}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          {formatText(order.orderNumber)}
-                          {order.source === 'pos' && <span className="bb-badge bb-badge-neutral">POS</span>}
-                        </span>
-                      </td>
-                      <td onClick={() => navigate(`/admin/orders/${order.id}`)}>
-                        <div className="bb-product-cell">
-                          <div>
-                            <div style={{ fontWeight: 500 }}>{formatText(order.customerName) || formatText(order.customerEmail)}</div>
-                            <div className="bb-cell-sub">{formatText(order.customerEmail)}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="bb-muted" onClick={() => navigate(`/admin/orders/${order.id}`)}>
-                        {formatDateTime(order.createdAt)}
-                      </td>
-                      <td className="num" style={{ fontWeight: 700 }} onClick={() => navigate(`/admin/orders/${order.id}`)}>
-                        {formatCurrencyVnd(order.total)}
-                      </td>
-                      <td onClick={() => navigate(`/admin/orders/${order.id}`)}>
-                        <StatusBadge type="payment" status={order.paymentStatus} />
-                      </td>
-                      <td onClick={() => navigate(`/admin/orders/${order.id}`)}>
-                        <StatusBadge type="order" status={order.orderStatus} />
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+          <div
+            className="bb-card-body bb-card-body--flush"
+            aria-busy={state.isFetching}
+            style={state.isFetching ? { opacity: 0.6, transition: 'opacity 0.15s' } : undefined}
+          >
+            <AdminTable
+              columns={columns}
+              rows={items}
+              loading={state.status === 'loading'}
+              pageSize={query.pageSize}
+              onRowClick={(order) => navigate(`/admin/orders/${order.id}`)}
+              mobileCard={mobileCard}
+              sortKey={sortKey}
+              sortDir={sortDir}
+              onSortChange={handleSortChange}
+            />
           </div>
-          </div>
-          <MobileCardList>
-            {items.map((order) => (
-              <MobileCard
-                key={order.id}
-                title={(
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    {formatText(order.orderNumber)}
-                    {order.source === 'pos' && <span className="bb-badge bb-badge-neutral">POS</span>}
-                  </span>
-                )}
-                subtitle={formatText(order.customerName) || formatText(order.customerEmail)}
-                status={<StatusBadge type="order" status={order.orderStatus} />}
-                meta={[
-                  { label: t('orders.colDate'), value: formatDateTime(order.createdAt) },
-                  { label: t('orders.colTotal'), value: formatCurrencyVnd(order.total), tone: 'strong' },
-                  { label: t('orders.colPaymentStatus'), value: <StatusBadge type="payment" status={order.paymentStatus} /> },
-                ]}
-                onClick={() => navigate(`/admin/orders/${order.id}`)}
-              />
-            ))}
-          </MobileCardList>
           {state.status === 'success' && pagination && (
             <PaginationControls
               pagination={pagination}

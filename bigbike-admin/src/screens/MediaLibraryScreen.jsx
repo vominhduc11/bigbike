@@ -23,6 +23,7 @@ import {
   deleteMedia,
   fetchMedia,
   fetchMediaFolders,
+  fetchMediaReferences,
   fetchMediaStats,
   hardDeleteMedia,
   restoreMedia,
@@ -177,40 +178,79 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
   // panel. Otherwise dragging a file over the panel would trigger an upload overlay.
   const { isDragging } = useDragDropUpload(dropZoneRef, uploadFiles)
 
+  // Xoá item khỏi danh sách hiển thị nhưng GIỮ lại snapshot {item, index}
+  // để có thể chèn lại đúng vị trí nếu server từ chối (rollback optimistic, tiêu chí 8.4).
+  function removeItemLocally(mediaId) {
+    let snapshot = null
+    setState((p) => {
+      const index = p.items.findIndex((m) => m.id === mediaId)
+      if (index === -1) return p
+      snapshot = { item: p.items[index], index }
+      return { ...p, items: p.items.filter((m) => m.id !== mediaId) }
+    })
+    return snapshot
+  }
+
+  function restoreItemLocally(snapshot) {
+    if (!snapshot) return
+    setState((p) => {
+      if (p.items.some((m) => m.id === snapshot.item.id)) return p
+      const items = [...p.items]
+      items.splice(Math.min(snapshot.index, items.length), 0, snapshot.item)
+      return { ...p, items }
+    })
+  }
+
   // ── Single delete / restore / hard delete ────────────────────
   async function handleDelete(mediaId) {
     const confirmed = await showConfirm(t('media.deleteConfirm'), t('media.deleteConfirmTitle'))
     if (!confirmed) return
     setDeleting(mediaId)
+    const snapshot = removeItemLocally(mediaId)
     try {
       await deleteMedia(mediaId)
-      setState((p) => ({ ...p, items: p.items.filter((m) => m.id !== mediaId) }))
       toast.success(t('media.deleteSuccess'))
-    } catch (e) { toast.error(e.message || t('media.deleteError')) }
+    } catch (e) {
+      restoreItemLocally(snapshot)
+      toast.error(e.message || t('media.deleteError'))
+    }
     finally { setDeleting(null) }
   }
 
   async function handleRestore(mediaId) {
     setDeleting(mediaId)
+    const snapshot = removeItemLocally(mediaId)
     try {
       await restoreMedia(mediaId)
-      setState((p) => ({ ...p, items: p.items.filter((m) => m.id !== mediaId) }))
       toast.success(t('media.restoreSuccess'))
-    } catch (e) { toast.error(e.message || t('media.deleteError')) }
+    } catch (e) {
+      restoreItemLocally(snapshot)
+      toast.error(e.message || t('media.deleteError'))
+    }
     finally { setDeleting(null) }
   }
 
   async function handleHardDelete(media) {
-    const confirmed = await showConfirm(
-      t('media.hardDeleteConfirm', { name: (media.filename ?? '').split('/').pop() }),
-      t('media.hardDeleteConfirmTitle'))
+    // Cảnh báo mạnh hơn cho hành động không thể hoàn tác: cho admin thấy số nơi
+    // đang dùng file trước khi xoá vĩnh viễn khỏi kho (tiêu chí 7.6).
+    let refCount = null
+    try { refCount = (await fetchMediaReferences(media.id)).length } catch { /* không chặn xoá nếu không lấy được tham chiếu */ }
+    const name = (media.filename ?? '').split('/').pop()
+    const message = refCount && refCount > 0
+      ? t('media.hardDeleteConfirmInUse', { name, count: refCount,
+          defaultValue: `File "${name}" đang được dùng ở ${refCount} nơi. Xoá vĩnh viễn sẽ không thể hoàn tác và có thể làm hỏng các nơi đang dùng. Tiếp tục?` })
+      : t('media.hardDeleteConfirm', { name })
+    const confirmed = await showConfirm(message, t('media.hardDeleteConfirmTitle'))
     if (!confirmed) return
     setDeleting(media.id)
+    const snapshot = removeItemLocally(media.id)
     try {
       await hardDeleteMedia(media.id)
-      setState((p) => ({ ...p, items: p.items.filter((m) => m.id !== media.id) }))
       toast.success(t('media.hardDeleteSuccess'))
-    } catch (e) { toast.error(e.message || t('media.deleteError')) }
+    } catch (e) {
+      restoreItemLocally(snapshot)
+      toast.error(e.message || t('media.deleteError'))
+    }
     finally { setDeleting(null) }
   }
 

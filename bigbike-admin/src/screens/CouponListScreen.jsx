@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FilterSelect } from '../components/FilterSelect'
+import { FilterChips } from '../components/FilterChips'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { toast } from 'sonner'
 import { Plus, Send } from 'lucide-react'
 import { PaginationControls } from '../components/PaginationControls'
+import { AdminTable } from '../components/AdminTable'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
-import { MobileCardList } from '../components/layout/MobileCardList'
 import { createCoupon, deleteCoupon, fetchCoupons, mapValidationErrors, sendBulkCouponGift, updateCoupon, updateCouponStatus } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import { CustomerPickerModal } from '../components/CustomerPickerModal'
@@ -20,8 +21,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input'
 import { INITIAL_QUERY, EMPTY_FORM, toEndOfDayInstant } from './coupon-list/constants'
 import { BulkGiftPanel } from './coupon-list/BulkGiftPanel'
-import { CouponRow } from './coupon-list/CouponRow'
-import { CouponMobileCard } from './coupon-list/CouponMobileCard'
+import { couponColumns } from './coupon-list/CouponRow'
+import { couponMobileCard } from './coupon-list/CouponMobileCard'
 
 export function CouponListScreen({ canUpdate }) {
   const { t } = useTranslation()
@@ -40,6 +41,7 @@ export function CouponListScreen({ canUpdate }) {
   const [editCoupon, setEditCoupon] = useState(null)
   const [editForm, setEditForm] = useState({})
   const [editError, setEditError] = useState('')
+  const [editFieldErrors, setEditFieldErrors] = useState({})
   const [editSaving, setEditSaving] = useState(false)
   const [actionError, setActionError] = useState('')
 
@@ -47,7 +49,6 @@ export function CouponListScreen({ canUpdate }) {
   const [bulkCoupon, setBulkCoupon] = useState(null)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [bulkSaving, setBulkSaving] = useState(false)
-  const [bulkConfirm, setBulkConfirm] = useState(false)
 
   // Danh sách mã ACTIVE cho panel gửi hàng loạt — chỉ tải khi panel mở.
   const { data: bulkData, isLoading: bulkCouponsLoading } = useQuery({
@@ -93,8 +94,12 @@ export function CouponListScreen({ canUpdate }) {
 
   async function handleCreate(e) {
     e.preventDefault()
-    if (!form.code.trim()) { setFormError(t('coupons.formCode') + ' ' + t('common.required').toLowerCase()); return }
-    if (!form.name.trim()) { setFormError(t('coupons.formName') + ' ' + t('common.required').toLowerCase()); return }
+    // Bắt buộc Mã + Tên: hiển thị lỗi ngay cạnh ô tương ứng (formFieldErrors),
+    // thay vì chỉ một banner ở đầu form xa khỏi ô bị thiếu.
+    const requiredErrs = {}
+    if (!form.code.trim()) requiredErrs.code = t('coupons.formCode') + ' ' + t('common.required').toLowerCase()
+    if (!form.name.trim()) requiredErrs.name = t('coupons.formName') + ' ' + t('common.required').toLowerCase()
+    if (Object.keys(requiredErrs).length > 0) { setFormFieldErrors(requiredErrs); return }
     setFormSaving(true)
     setFormError('')
     setFormFieldErrors({})
@@ -136,12 +141,14 @@ export function CouponListScreen({ canUpdate }) {
       channel: coupon.channel || 'ALL',
     })
     setEditError('')
+    setEditFieldErrors({})
   }
 
   async function handleEdit(e) {
     e.preventDefault()
     setEditSaving(true)
     setEditError('')
+    setEditFieldErrors({})
     try {
       const payload = {
         discountType: editForm.discountType,
@@ -155,15 +162,36 @@ export function CouponListScreen({ canUpdate }) {
       queryClient.invalidateQueries({ queryKey: ['coupons'] })
       setEditCoupon(null)
     } catch (e) {
-      setEditError(e.message || t('common.error'))
+      // Khớp với luồng tạo mới: ưu tiên lỗi theo từng ô (hiển thị cạnh ô sai),
+      // chỉ rơi về banner chung khi backend không trả về lỗi theo trường.
+      const fieldErrs = mapValidationErrors(e)
+      if (Object.keys(fieldErrs).length > 0) {
+        setEditFieldErrors(fieldErrs)
+      } else {
+        setEditError(e.message || t('common.error'))
+      }
     } finally {
       setEditSaving(false)
     }
   }
 
   async function handleBulkSend() {
-    if (!bulkConfirm) { setBulkConfirm(true); return }
     if (!bulkCoupon) return
+    // Hành động không thể hoàn tác (gửi email hàng loạt đến mọi khách đang hoạt
+    // động) → bắt buộc xác nhận qua hộp thoại danger riêng, thay vì chỉ nhấn nút
+    // 2 lần (tránh nhấn nhầm liên tiếp gây gửi email hàng loạt).
+    const confirmed = await showConfirm(
+      t('coupons.bulkConfirmMessage', {
+        code: bulkCoupon.code,
+        defaultValue: `Gửi email mã "${bulkCoupon.code}" đến TOÀN BỘ khách hàng đang hoạt động có email xác minh.\n\nThao tác KHÔNG THỂ hoàn tác.`,
+      }),
+      t('coupons.bulkConfirmTitle', { defaultValue: 'Xác nhận gửi mã hàng loạt' }),
+      {
+        variant: 'danger',
+        confirmLabel: t('coupons.bulkConfirmCta', { defaultValue: 'Gửi mã hàng loạt' }),
+      },
+    )
+    if (!confirmed) return
     setBulkSaving(true)
     try {
       const result = await sendBulkCouponGift({ couponId: bulkCoupon.id })
@@ -172,7 +200,6 @@ export function CouponListScreen({ canUpdate }) {
       queryClient.invalidateQueries({ queryKey: ['coupons'] })
     } catch (err) {
       toast.error(err.message || 'Gửi mã thất bại.')
-      setBulkConfirm(false)
     } finally {
       setBulkSaving(false)
     }
@@ -183,7 +210,6 @@ export function CouponListScreen({ canUpdate }) {
   function closeBulkPanel() {
     setBulkOpen(false)
     setBulkCoupon(null)
-    setBulkConfirm(false)
   }
 
   function updateQuery(partial, options = { resetPage: false }) {
@@ -195,6 +221,42 @@ export function CouponListScreen({ canUpdate }) {
   }
 
   const items = state.items || []
+  const isFiltered = !!query.search || query.status !== 'ALL'
+
+  // Nhãn trạng thái cho chip bộ lọc đang áp dụng.
+  const STATUS_FILTER_LABELS = {
+    ACTIVE: t('coupons.statusActive'),
+    INACTIVE: t('coupons.statusInactive'),
+    EXPIRED: t('coupons.statusExpired'),
+  }
+  const filterChips = []
+  if (query.search) {
+    filterChips.push({
+      key: 'search',
+      label: t('coupons.chipSearch', { term: query.search, defaultValue: `Tìm: "${query.search}"` }),
+      removeLabel: t('common.resetFilters'),
+      onRemove: () => { setSearchInput(''); updateQuery({ search: '' }, { resetPage: true }) },
+    })
+  }
+  if (query.status !== 'ALL') {
+    filterChips.push({
+      key: 'status',
+      label: t('coupons.chipStatus', {
+        status: STATUS_FILTER_LABELS[query.status] || query.status,
+        defaultValue: `Trạng thái: ${STATUS_FILTER_LABELS[query.status] || query.status}`,
+      }),
+      removeLabel: t('common.resetFilters'),
+      onRemove: () => updateQuery({ status: 'ALL' }, { resetPage: true }),
+    })
+  }
+
+  function resetFilters() {
+    setSearchInput('')
+    setQuery(INITIAL_QUERY)
+  }
+
+  const columns = couponColumns({ t, canUpdate, onEdit: openEdit, onToggleStatus: handleToggleStatus, onDelete: handleDelete })
+  const mobileCard = (c) => couponMobileCard({ t, c, canUpdate, onEdit: openEdit, onToggleStatus: handleToggleStatus, onDelete: handleDelete })
 
   return (
     <>
@@ -217,7 +279,7 @@ export function CouponListScreen({ canUpdate }) {
             <button
               type="button"
               className="bb-btn bb-btn-secondary"
-              onClick={() => { if (bulkOpen) { closeBulkPanel() } else { setBulkOpen(true); setBulkConfirm(false) } setShowForm(false) }}
+              onClick={() => { if (bulkOpen) { closeBulkPanel() } else { setBulkOpen(true) } setShowForm(false) }}
             >
               <Send size={14} />{bulkOpen ? t('common.cancel') : 'Gửi mã hàng loạt'}
             </button>
@@ -245,9 +307,7 @@ export function CouponListScreen({ canUpdate }) {
           bulkCoupons={bulkCoupons}
           bulkCoupon={bulkCoupon}
           bulkSaving={bulkSaving}
-          bulkConfirm={bulkConfirm}
           setBulkCoupon={setBulkCoupon}
-          setBulkConfirm={setBulkConfirm}
           onSend={handleBulkSend}
           onClose={() => closeBulkPanel()}
         />
@@ -282,7 +342,9 @@ export function CouponListScreen({ canUpdate }) {
               </label>
               <label className="form-field">
                 <span>{t('coupons.formValue')}</span>
-                <Input type="number" min="0" required value={form.discountValue} onChange={(e) => setForm((p) => ({ ...p, discountValue: e.target.value }))} />
+                <Input type="number" min="0" max={form.discountType === 'PERCENT' ? '100' : undefined} required value={form.discountValue} onChange={(e) => setForm((p) => ({ ...p, discountValue: e.target.value }))} />
+                {form.discountType === 'PERCENT' && <span className="hint">{t('coupons.percentMaxHint', { defaultValue: 'Tối đa 100%' })}</span>}
+                {formFieldErrors.amount && <span className="hint text-danger">{formFieldErrors.amount}</span>}
               </label>
               <label className="form-field">
                 <span>{t('coupons.formMinOrder')}</span>
@@ -336,11 +398,14 @@ export function CouponListScreen({ canUpdate }) {
               </label>
               <label className="form-field">
                 <span>{t('coupons.formValue')}</span>
-                <Input type="number" min="0" required value={editForm.discountValue} onChange={(e) => setEditForm((p) => ({ ...p, discountValue: e.target.value }))} />
+                <Input type="number" min="0" max={editForm.discountType === 'PERCENT' ? '100' : undefined} required value={editForm.discountValue} onChange={(e) => setEditForm((p) => ({ ...p, discountValue: e.target.value }))} />
+                {editForm.discountType === 'PERCENT' && <span className="hint">{t('coupons.percentMaxHint', { defaultValue: 'Tối đa 100%' })}</span>}
+                {editFieldErrors.amount && <span className="hint text-danger">{editFieldErrors.amount}</span>}
               </label>
               <label className="form-field">
                 <span>{t('coupons.formMinOrder')}</span>
                 <Input type="number" min="0" value={editForm.minimumOrderAmount} onChange={(e) => setEditForm((p) => ({ ...p, minimumOrderAmount: e.target.value }))} />
+                {editFieldErrors.minimumAmount && <span className="hint text-danger">{editFieldErrors.minimumAmount}</span>}
               </label>
               <label className="form-field">
                 <span>{t('coupons.formMaxUses')}</span>
@@ -396,68 +461,35 @@ export function CouponListScreen({ canUpdate }) {
         />
       </div>
 
+      <FilterChips
+        chips={filterChips}
+        onClearAll={filterChips.length > 1 ? resetFilters : undefined}
+        clearAllLabel={t('common.resetFilters')}
+        ariaLabel={t('coupons.filterStatus')}
+      />
+
       {state.status === 'error' && (
         <StatePanel tone="danger" title={t('coupons.error')} description={state.error}
           actionLabel={t('common.retry')} onAction={() => queryClient.invalidateQueries({ queryKey: ['coupons'] })} />
       )}
       {state.status === 'success' && items.length === 0 && (
-        <StatePanel tone="neutral" title={t('coupons.empty')} description={t('coupons.emptyDesc')}
-          actionLabel={t('common.resetFilters')} onAction={() => { setSearchInput(''); setQuery(INITIAL_QUERY) }} />
+        <StatePanel tone="neutral"
+          title={isFiltered ? t('coupons.emptyFiltered', { defaultValue: t('coupons.empty') }) : t('coupons.empty')}
+          description={isFiltered ? t('coupons.emptyFilteredDesc', { defaultValue: t('coupons.emptyDesc') }) : t('coupons.emptyDesc')}
+          actionLabel={isFiltered ? t('common.resetFilters') : undefined}
+          onAction={isFiltered ? resetFilters : undefined} />
       )}
 
       {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) && (
         <div className="bb-card">
           <div className="bb-card-body bb-card-body--flush">
-            <div className="hide-on-mobile">
-            <div className="bb-table-wrap">
-              <table className="bb-table">
-                <thead>
-                  <tr>
-                    <th>{t('coupons.colCode')}</th>
-                    <th>{t('coupons.colName')}</th>
-                    <th>{t('coupons.colDiscount')}</th>
-                    <th className="num">{t('coupons.colUsed')}</th>
-                    <th>Tỉ lệ dùng</th>
-                    <th>Kênh</th>
-                    <th>{t('coupons.colExpires')}</th>
-                    <th>{t('coupons.colStatus')}</th>
-                    {canUpdate && <th />}
-                  </tr>
-                </thead>
-                <tbody>
-                  {state.status === 'loading' && items.length === 0 && (
-                    [...Array(6)].map((_, i) => (
-                      <tr key={`sk-${i}`}>
-                        <td colSpan={canUpdate ? 9 : 8}><div className="dash-skeleton-block" style={{ height: 28 }} /></td>
-                      </tr>
-                    ))
-                  )}
-                  {items.map((c) => (
-                    <CouponRow
-                      key={c.id}
-                      c={c}
-                      canUpdate={canUpdate}
-                      onEdit={openEdit}
-                      onToggleStatus={handleToggleStatus}
-                      onDelete={handleDelete}
-                    />
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            </div>
-            <MobileCardList>
-              {items.map((c) => (
-                <CouponMobileCard
-                  key={c.id}
-                  c={c}
-                  canUpdate={canUpdate}
-                  onEdit={openEdit}
-                  onToggleStatus={handleToggleStatus}
-                  onDelete={handleDelete}
-                />
-              ))}
-            </MobileCardList>
+            <AdminTable
+              columns={columns}
+              rows={items}
+              loading={state.status === 'loading'}
+              pageSize={query.pageSize}
+              mobileCard={mobileCard}
+            />
           </div>
           {state.status === 'success' && state.pagination && (
             <PaginationControls

@@ -399,8 +399,17 @@ export function BannerScreen({ canUpdate = false, navigate }) {
             alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 16px',
           }}
         >
-          <span className="bb-muted" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
-            {saveSuccess ? (
+          <span
+            className="bb-muted"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13,
+              color: saveError ? 'var(--bb-danger)' : undefined,
+            }}
+            role={saveError ? 'alert' : undefined}
+          >
+            {saveError ? (
+              <><AlertCircle size={14} style={{ color: 'var(--bb-danger)' }} /> {saveError}</>
+            ) : saveSuccess ? (
               <><CheckCircle2 size={15} style={{ color: 'var(--bb-success)' }} /> {t('banners.saveSuccess')}</>
             ) : (
               <><AlertCircle size={14} /> {t('banners.unsavedCount', { count: dirtyKeys.length })}</>
@@ -417,10 +426,6 @@ export function BannerScreen({ canUpdate = false, navigate }) {
             </button>
           </div>
         </div>
-      )}
-
-      {saveError && (
-        <p style={{ color: 'var(--bb-danger)', fontSize: 13, marginTop: 8 }}>{saveError}</p>
       )}
     </div>
   )

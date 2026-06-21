@@ -11,7 +11,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
-import { GripVertical, Play, Plus } from 'lucide-react'
+import { AlertCircle, GripVertical, Play, Plus } from 'lucide-react'
 import { useDragSensors, SortableRow } from '../components/Sortable'
 import { toast } from 'sonner'
 import {
@@ -27,6 +27,8 @@ import { MediaDimensionWarning } from '../components/MediaDimensionWarning'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
+import { BulkActionBar } from '../components/BulkActionBar'
+import { FormField } from '../components/layout/FormField'
 import { showConfirm } from '../lib/confirm'
 import { useContentLang } from '../lib/contentLang'
 import { extractAllowedYouTubeId, validateHomeVideoUrl } from '../lib/urlPolicies'
@@ -47,6 +49,7 @@ const EMPTY_FORM = {
 }
 
 function VideoPreviewModal({ video, onClose }) {
+  const { t } = useTranslation()
   const contentLang = useContentLang()
   const displayTitle = contentLang === 'en' ? (video.titleEn || video.title) : video.title
   const embedUrl = video.youtubeId
@@ -77,8 +80,8 @@ function VideoPreviewModal({ video, onClose }) {
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-2.5 right-3 z-[1] rounded-xs border-none bg-black/60 text-2xl leading-none cursor-pointer px-2 py-0.5 text-white"
-          aria-label="Đóng"
+          className="absolute top-2.5 right-3 z-[1] inline-flex min-w-[44px] min-h-[44px] items-center justify-center rounded-xs border-none bg-black/60 text-2xl leading-none cursor-pointer text-white"
+          aria-label={t('common.close', { defaultValue: 'Đóng' })}
         >×</button>
 
         <div className="relative pb-[56.25%]">
@@ -209,7 +212,8 @@ export function HomeVideoListScreen({ canUpdate }) {
   const [showForm, setShowForm] = useState(false)
   const [editingVideo, setEditingVideo] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
-  const [formError, setFormError] = useState('')
+  // Lỗi gắn theo từng ô (title/videoUrl) + lỗi chung của form (vd lỗi lưu từ server).
+  const [fieldErrors, setFieldErrors] = useState({})
   const [localItems, setLocalItems] = useState(null)
   const [activeId, setActiveId] = useState(null)
   const [videoPickerOpen, setVideoPickerOpen] = useState(false)
@@ -237,7 +241,7 @@ export function HomeVideoListScreen({ canUpdate }) {
       toast.success(t('homeVideos.createSuccess'))
       resetForm()
     },
-    onError: (err) => setFormError(err.message || t('homeVideos.createError')),
+    onError: (err) => setFieldErrors({ form: err.message || t('homeVideos.createError') }),
   })
 
   const updateMutation = useMutation({
@@ -248,7 +252,7 @@ export function HomeVideoListScreen({ canUpdate }) {
       toast.success(t('homeVideos.updateSuccess'))
       resetForm()
     },
-    onError: (err) => setFormError(err.message || t('homeVideos.updateError')),
+    onError: (err) => setFieldErrors({ form: err.message || t('homeVideos.updateError') }),
   })
 
   const deleteMutation = useMutation({
@@ -290,7 +294,7 @@ export function HomeVideoListScreen({ canUpdate }) {
     setShowForm(false)
     setEditingVideo(null)
     setForm(EMPTY_FORM)
-    setFormError('')
+    setFieldErrors({})
   }
 
   function openEdit(video) {
@@ -304,7 +308,7 @@ export function HomeVideoListScreen({ canUpdate }) {
       thumbnailAlt: video.thumbnail?.alt || '',
       isActive: video.isActive,
     })
-    setFormError('')
+    setFieldErrors({})
     setShowForm(true)
   }
 
@@ -321,31 +325,58 @@ export function HomeVideoListScreen({ canUpdate }) {
     })
   }
 
+  // Kiểm tra hợp lệ trả về lỗi gắn theo từng ô để hiện ngay cạnh ô sai (tiêu chí 7.2/7.3).
+  function validateForm(values) {
+    const errors = {}
+    if (!values.title.trim()) {
+      errors.title = t('homeVideos.validationTitle')
+    }
+    const videoCheck = validateHomeVideoUrl(values.videoUrl)
+    if (!videoCheck.valid) {
+      errors.videoUrl = values.videoType === 'youtube'
+        ? t('homeVideos.validationYoutube')
+        : t('homeVideos.validationUpload')
+    } else if (values.videoType === 'youtube' && !extractAllowedYouTubeId(values.videoUrl)) {
+      errors.videoUrl = t('homeVideos.validationYoutube')
+    } else if (values.videoType === 'upload' && videoCheck.source !== 'upload') {
+      errors.videoUrl = t('homeVideos.validationUpload')
+    }
+    return errors
+  }
+
+  // "Reward early, punish late": chỉ báo lỗi ô khi admin rời ô (blur), và xoá lỗi
+  // ngay khi admin sửa lại đúng (tiêu chí 7.1).
+  function validateField(field) {
+    const errors = validateForm(form)
+    setFieldErrors((prev) => {
+      const next = { ...prev }
+      if (errors[field]) next[field] = errors[field]
+      else delete next[field]
+      return next
+    })
+  }
+
+  function clearFieldError(field) {
+    setFieldErrors((prev) => {
+      if (!prev[field] && !prev.form) return prev
+      const next = { ...prev }
+      delete next[field]
+      delete next.form
+      return next
+    })
+  }
+
   function handleSubmit(event) {
     event.preventDefault()
 
+    const errors = validateForm(form)
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors)
+      return
+    }
+
     const title = form.title.trim()
-    if (!title) {
-      setFormError(t('homeVideos.validationTitle'))
-      return
-    }
-
     const videoCheck = validateHomeVideoUrl(form.videoUrl)
-    if (!videoCheck.valid) {
-      setFormError(form.videoType === 'youtube' ? t('homeVideos.validationYoutube') : t('homeVideos.validationUpload'))
-      return
-    }
-
-    if (form.videoType === 'youtube' && !extractAllowedYouTubeId(form.videoUrl)) {
-      setFormError(t('homeVideos.validationYoutube'))
-      return
-    }
-
-    if (form.videoType === 'upload' && videoCheck.source !== 'upload') {
-      setFormError(t('homeVideos.validationUpload'))
-      return
-    }
-
     const hasThumbnail = Boolean(form.thumbnailUrl.trim())
     const newSortOrder = items.length > 0
       ? Math.max(...items.map((video) => video.sortOrder)) + 1
@@ -362,7 +393,7 @@ export function HomeVideoListScreen({ canUpdate }) {
       ...(editingVideo && !hasThumbnail ? { clearThumbnail: true } : {}),
     }
 
-    setFormError('')
+    setFieldErrors({})
     if (editingVideo) {
       updateMutation.mutate({ id: editingVideo.id, input })
     } else {
@@ -451,11 +482,25 @@ export function HomeVideoListScreen({ canUpdate }) {
   const isBusy = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending
   const youtubePreviewId = extractAllowedYouTubeId(form.videoUrl)
 
-  if (isLoading) return <StatePanel tone="neutral" title={t('homeVideos.loading')} />
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-2.5" aria-busy="true" aria-label={t('homeVideos.loading')}>
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div key={index} className="bb-skeleton-block" style={{ height: 82 }} />
+        ))}
+      </div>
+    )
+  }
   if (isError) return <StatePanel tone="danger" title={t('homeVideos.loadError')} description={error?.message} />
 
   const listContent = items.length === 0 ? (
-    <StatePanel tone="neutral" title={t('homeVideos.empty')} description={t('homeVideos.emptyDescription')} />
+    <StatePanel
+      tone="neutral"
+      title={t('homeVideos.empty')}
+      description={t('homeVideos.emptyDescription')}
+      actionLabel={canUpdate ? t('homeVideos.addButton') : undefined}
+      onAction={canUpdate ? () => { setShowForm(true); setEditingVideo(null); setForm(EMPTY_FORM); setFieldErrors({}) } : undefined}
+    />
   ) : (
     <div className="flex flex-col gap-2.5">
 
@@ -465,27 +510,33 @@ export function HomeVideoListScreen({ canUpdate }) {
           type="search"
           value={searchText}
           onChange={(e) => { setSearchText(e.target.value); setSelectedIds(new Set()) }}
-          placeholder="Tìm theo tên video..."
+          placeholder={t('homeVideos.searchPlaceholder', { defaultValue: 'Tìm theo tên video...' })}
           className="flex-1"
         />
         <Select value={statusFilter} onValueChange={(val) => { setStatusFilter(val); setSelectedIds(new Set()) }}>
           <SelectTrigger className="w-auto text-xs h-8"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="ALL">Tất cả ({items.length})</SelectItem>
-            <SelectItem value="active">Đang hiện ({items.filter((v) => v.isActive).length})</SelectItem>
-            <SelectItem value="hidden">Đang ẩn ({items.filter((v) => !v.isActive).length})</SelectItem>
+            <SelectItem value="ALL">{t('homeVideos.filterAll', { defaultValue: 'Tất cả' })} ({items.length})</SelectItem>
+            <SelectItem value="active">{t('homeVideos.filterActive', { defaultValue: 'Đang hiện' })} ({items.filter((v) => v.isActive).length})</SelectItem>
+            <SelectItem value="hidden">{t('homeVideos.filterHidden', { defaultValue: 'Đang ẩn' })} ({items.filter((v) => !v.isActive).length})</SelectItem>
           </SelectContent>
         </Select>
         {isFiltering && (
           <Button type="button" variant="outline" size="sm" className="whitespace-nowrap"
             onClick={() => { setSearchText(''); setStatusFilter('ALL'); setSelectedIds(new Set()) }}>
-            Xoá bộ lọc
+            {t('homeVideos.clearFilter', { defaultValue: 'Xoá bộ lọc' })}
           </Button>
         )}
       </div>
 
       {filteredItems.length === 0 ? (
-        <StatePanel tone="neutral" title="Không tìm thấy video" description="Thử thay đổi từ khoá hoặc bộ lọc trạng thái." />
+        <StatePanel
+          tone="neutral"
+          title={t('homeVideos.noMatch', { defaultValue: 'Không tìm thấy video' })}
+          description={t('homeVideos.noMatchDescription', { defaultValue: 'Thử thay đổi từ khoá hoặc bộ lọc trạng thái.' })}
+          actionLabel={t('homeVideos.clearFilter', { defaultValue: 'Xoá bộ lọc' })}
+          onAction={() => { setSearchText(''); setStatusFilter('ALL'); setSelectedIds(new Set()) }}
+        />
       ) : (<>
 
       {canUpdate && (
@@ -493,37 +544,41 @@ export function HomeVideoListScreen({ canUpdate }) {
           <Checkbox
             checked={allSelected ? true : someSelected ? 'indeterminate' : false}
             onCheckedChange={(checked) => handleSelectAll(checked)}
-            aria-label="Chọn tất cả"
+            aria-label={t('homeVideos.selectAll', { defaultValue: 'Chọn tất cả' })}
            />
           <span className="text-sm text-muted-foreground">
-            {selectionMode ? `Đã chọn ${selectedIds.size} / ${items.length}` : 'Chọn tất cả'}
+            {selectionMode
+              ? t('homeVideos.selectedOf', { selected: selectedIds.size, total: items.length, defaultValue: `Đã chọn ${selectedIds.size} / ${items.length}` })
+              : t('homeVideos.selectAll', { defaultValue: 'Chọn tất cả' })}
           </span>
           {selectionMode && (
             <Button type="button" variant="outline" size="sm" className="ml-1"
               onClick={() => setSelectedIds(new Set())}>
-              Bỏ chọn
+              {t('common.deselect', { defaultValue: 'Bỏ chọn' })}
             </Button>
           )}
         </div>
       )}
 
       {selectionMode && canUpdate && (
-        <div className="flex gap-2 items-center rounded-md border border-border bg-surface-raised px-3.5 py-2.5">
-          <span className="text-sm font-semibold mr-1">
-            {selectedIds.size} video đã chọn:
-          </span>
-          <Button type="button" variant="outline" size="sm" disabled={isBulkBusy}
-            onClick={() => handleBulkSetActive(false)}>Ẩn</Button>
-          <Button type="button" variant="outline" size="sm" disabled={isBulkBusy}
-            onClick={() => handleBulkSetActive(true)}>Hiện</Button>
-          <Button type="button" variant="danger" size="sm" disabled={isBulkBusy}
-            onClick={handleBulkDelete}>Xoá</Button>
-        </div>
+        <BulkActionBar
+          selectedCount={t('homeVideos.bulkSelectedLabel', { count: selectedIds.size, defaultValue: `${selectedIds.size} video đã chọn` })}
+          onClear={() => setSelectedIds(new Set())}
+          actions={[
+            { label: t('homeVideos.hideAction'), onClick: () => handleBulkSetActive(false), disabled: isBulkBusy },
+            { label: t('homeVideos.showAction'), onClick: () => handleBulkSetActive(true), disabled: isBulkBusy },
+            { label: t('common.delete'), onClick: handleBulkDelete, disabled: isBulkBusy, tone: 'danger' },
+          ]}
+        />
       )}
 
       {isFiltering && (
         <p className="text-xs text-muted-foreground m-0 mb-1 ml-0.5">
-          {filteredItems.length} / {items.length} video — kéo thả sắp xếp bị tắt khi đang lọc
+          {t('homeVideos.filterReorderHint', {
+            shown: filteredItems.length,
+            total: items.length,
+            defaultValue: `${filteredItems.length} / ${items.length} video — kéo thả sắp xếp bị tắt khi đang lọc`,
+          })}
         </p>
       )}
 
@@ -560,7 +615,7 @@ export function HomeVideoListScreen({ canUpdate }) {
             <button
               type="button"
               className="bb-btn bb-btn-primary"
-              onClick={() => { setShowForm(true); setEditingVideo(null); setForm(EMPTY_FORM); setFormError('') }}
+              onClick={() => { setShowForm(true); setEditingVideo(null); setForm(EMPTY_FORM); setFieldErrors({}) }}
             >
               <Plus size={14} />{t('homeVideos.addButton')}
             </button>
@@ -574,19 +629,29 @@ export function HomeVideoListScreen({ canUpdate }) {
             <h2>{editingVideo ? t('homeVideos.editTitle') : t('homeVideos.createTitle')}</h2>
           </div>
           <form onSubmit={handleSubmit} className="bb-card-body flex flex-col gap-3">
-          {formError ? (
-            <p className="text-danger m-0">{formError}</p>
+          {fieldErrors.form ? (
+            <div
+              role="alert"
+              className="flex items-center gap-1.5 rounded-xs border border-danger-border bg-danger-bg px-3 py-2 text-sm text-danger m-0"
+            >
+              <AlertCircle size={15} aria-hidden="true" className="shrink-0" />
+              {fieldErrors.form}
+            </div>
           ) : null}
 
-          <label className="flex flex-col gap-1 text-sm font-semibold">
-            {t('homeVideos.formTitle')}
+          <FormField
+            label={t('homeVideos.formTitle')}
+            required
+            error={fieldErrors.title}
+          >
             <Input
               required
               value={form.title}
-              onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
+              onChange={(event) => { setForm((prev) => ({ ...prev, title: event.target.value })); clearFieldError('title') }}
+              onBlur={() => validateField('title')}
               placeholder={t('homeVideos.formTitlePlaceholder')}
             />
-          </label>
+          </FormField>
 
           <label className="flex flex-col gap-1 text-sm font-semibold">
             {t('homeVideos.formTitleEn')}
@@ -602,7 +667,7 @@ export function HomeVideoListScreen({ canUpdate }) {
             {t('homeVideos.formSource')}
             <RadioGroup
               value={form.videoType}
-              onValueChange={(value) => setForm((prev) => ({ ...prev, videoType: value, videoUrl: '' }))}
+              onValueChange={(value) => { setForm((prev) => ({ ...prev, videoType: value, videoUrl: '' })); clearFieldError('videoUrl') }}
               className="flex gap-5 font-normal"
             >
               <label className="flex items-center gap-1.5 cursor-pointer">
@@ -617,18 +682,22 @@ export function HomeVideoListScreen({ canUpdate }) {
           </div>
 
           {form.videoType === 'youtube' ? (
-            <label className="flex flex-col gap-1 text-sm font-semibold">
-              {t('homeVideos.formYoutubeUrl')}
-              <Input
+            <div className="flex flex-col gap-1">
+              <FormField
+                label={t('homeVideos.formYoutubeUrl')}
                 required
-                type="url"
-                value={form.videoUrl}
-                onChange={(event) => setForm((prev) => ({ ...prev, videoUrl: event.target.value }))}
-                placeholder="https://www.youtube.com/watch?v=..."
-              />
-              <span className="text-xs text-muted-foreground font-normal">
-                {t('homeVideos.youtubeHint')}
-              </span>
+                error={fieldErrors.videoUrl}
+                helper={t('homeVideos.youtubeHint')}
+              >
+                <Input
+                  required
+                  type="url"
+                  value={form.videoUrl}
+                  onChange={(event) => { setForm((prev) => ({ ...prev, videoUrl: event.target.value })); clearFieldError('videoUrl') }}
+                  onBlur={() => validateField('videoUrl')}
+                  placeholder="https://www.youtube.com/watch?v=..."
+                />
+              </FormField>
               {youtubePreviewId && (
                 <img
                   src={`https://img.youtube.com/vi/${youtubePreviewId}/maxresdefault.jpg`}
@@ -636,10 +705,16 @@ export function HomeVideoListScreen({ canUpdate }) {
                   className="mt-1.5 w-full max-w-xs h-auto rounded-xs border border-border"
                 />
               )}
-            </label>
+            </div>
           ) : (
             <div className="flex flex-col gap-1 text-sm font-semibold">
               {t('homeVideos.formUpload')}
+              {fieldErrors.videoUrl ? (
+                <span className="flex items-center gap-1 text-xs text-danger font-normal" role="alert">
+                  <AlertCircle size={13} aria-hidden="true" className="shrink-0" />
+                  {fieldErrors.videoUrl}
+                </span>
+              ) : null}
               <div className="flex gap-2 items-center">
                 <Button variant="secondary" size="sm"
                   type="button"
@@ -730,7 +805,7 @@ export function HomeVideoListScreen({ canUpdate }) {
 
       {videoPickerOpen && canUpdate && (
         <VideoPickerModal
-          onSelect={(url) => { setForm((prev) => ({ ...prev, videoUrl: url })); setVideoPickerOpen(false) }}
+          onSelect={(url) => { setForm((prev) => ({ ...prev, videoUrl: url })); clearFieldError('videoUrl'); setVideoPickerOpen(false) }}
           onClose={() => setVideoPickerOpen(false)}
         />
       )}

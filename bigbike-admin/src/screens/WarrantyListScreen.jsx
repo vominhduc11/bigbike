@@ -6,8 +6,8 @@ import { FilterSearchInput } from '../components/FilterSearchInput'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { PaginationControls } from '../components/PaginationControls'
+import { AdminTable } from '../components/AdminTable'
 import { Modal } from '../components/layout'
-import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { fetchWarranties, voidWarranty } from '../lib/adminApi'
@@ -104,7 +104,7 @@ function WarrantyDetailModal({ item, onClose, onVoided, canUpdate }) {
                 {error && <p className="field-error">{error}</p>}
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={() => setConfirm(false)} disabled={voiding}>
-                    {t('warranty.modalVoidNo')}
+                    {t('warranty.modalVoidKeep', { defaultValue: 'Giữ lại phiếu' })}
                   </Button>
                   <Button variant="danger" size="sm" onClick={handleVoid} disabled={voiding}>
                     {voiding ? t('warranty.modalVoiding') : t('warranty.modalVoidConfirm')}
@@ -145,6 +145,72 @@ export function WarrantyListScreen({ canUpdate }) {
 
   const items = state.items || []
   const pagination = state.pagination
+  const isFiltered = !!searchInput || query.status !== 'ALL'
+
+  function resetFilters() {
+    setSearchInput('')
+    setQuery(INITIAL_QUERY)
+  }
+
+  const columns = [
+    {
+      key: 'customerEmail',
+      label: t('warranty.colCustomerEmail'),
+      render: (r) => <span className="text-xs">{r.customerEmail ?? '—'}</span>,
+    },
+    {
+      key: 'customerPhone',
+      label: t('warranty.colCustomerPhone'),
+      render: (r) => <span className="text-xs">{r.customerPhone ?? '—'}</span>,
+    },
+    {
+      key: 'startDate',
+      label: t('warranty.colStartDate'),
+      render: (r) => <span className="text-xs">{formatDate(r.startDate)}</span>,
+    },
+    {
+      key: 'endDate',
+      label: t('warranty.colEndDate'),
+      render: (r) => <span className="text-xs">{formatDate(r.endDate)}</span>,
+    },
+    {
+      key: 'status',
+      label: t('warranty.colStatus'),
+      render: (r) => <StatusBadge type="warranty" status={r.status} />,
+    },
+    {
+      key: 'createdAt',
+      label: t('warranty.colCreatedAt'),
+      render: (r) => <span className="bb-muted" style={{ fontSize: 12 }}>{formatDateTime(r.createdAt)}</span>,
+    },
+    {
+      key: 'actions',
+      label: '',
+      align: 'right',
+      render: (r) => (
+        <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setDetailItem(r) }}>
+          {t('warranty.viewBtn')}
+        </Button>
+      ),
+    },
+  ]
+
+  const mobileCard = (r) => ({
+    title: r.customerEmail ?? '—',
+    subtitle: r.customerPhone ?? '—',
+    status: <StatusBadge type="warranty" status={r.status} />,
+    meta: [
+      { label: t('warranty.colStartDate'), value: formatDate(r.startDate) },
+      { label: t('warranty.colEndDate'), value: formatDate(r.endDate) },
+      { label: t('warranty.colCreatedAt'), value: formatDateTime(r.createdAt) },
+    ],
+    actions: (
+      <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setDetailItem(r) }}>
+        {t('warranty.viewBtn')}
+      </Button>
+    ),
+    onClick: () => setDetailItem(r),
+  })
 
   return (
     <div>
@@ -182,74 +248,29 @@ export function WarrantyListScreen({ canUpdate }) {
           actionLabel={t('common.retry')} onAction={() => state.refetch()} />
       )}
       {state.status === 'success' && items.length === 0 && (
-        <StatePanel tone="neutral" title={t('warranty.empty')} description={t('warranty.emptyDesc')} />
+        <StatePanel tone="neutral"
+          title={isFiltered ? t('warranty.emptyFiltered', { defaultValue: t('warranty.empty') }) : t('warranty.empty')}
+          description={isFiltered ? t('warranty.emptyFilteredDesc', { defaultValue: t('warranty.emptyDesc') }) : t('warranty.emptyDesc')}
+          actionLabel={isFiltered ? t('common.resetFilters') : undefined}
+          onAction={isFiltered ? resetFilters : undefined} />
       )}
 
       {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) && (
         <div className="bb-card">
-          <div className="bb-card-body bb-card-body--flush">
-            <div className="hide-on-mobile">
-            <div className="bb-table-wrap">
-              <table className="bb-table">
-                <thead>
-                  <tr>
-                    <th>{t('warranty.colCustomerEmail')}</th>
-                    <th>{t('warranty.colCustomerPhone')}</th>
-                    <th>{t('warranty.colStartDate')}</th>
-                    <th>{t('warranty.colEndDate')}</th>
-                    <th>{t('warranty.colStatus')}</th>
-                    <th>{t('warranty.colCreatedAt')}</th>
-                    <th />
-                  </tr>
-                </thead>
-                <tbody>
-                  {state.status === 'loading' && items.length === 0 && (
-                    [...Array(8)].map((_, i) => (
-                      <tr key={`sk-${i}`}>
-                        <td colSpan={7}><div className="dash-skeleton-block" style={{ height: 28 }} /></td>
-                      </tr>
-                    ))
-                  )}
-                  {items.map((r) => (
-                    <tr key={r.id} onClick={() => setDetailItem(r)}>
-                      <td className="text-xs">{r.customerEmail ?? '—'}</td>
-                      <td className="text-xs">{r.customerPhone ?? '—'}</td>
-                      <td className="text-xs">{formatDate(r.startDate)}</td>
-                      <td className="text-xs">{formatDate(r.endDate)}</td>
-                      <td><StatusBadge type="warranty" status={r.status} /></td>
-                      <td className="bb-muted" style={{ fontSize: 12 }}>{formatDateTime(r.createdAt)}</td>
-                      <td className="col-actions" onClick={(e) => e.stopPropagation()}>
-                        <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" onClick={() => setDetailItem(r)}>
-                          {t('warranty.viewBtn')}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            </div>
-            <MobileCardList>
-              {items.map((r) => (
-                <MobileCard
-                  key={r.id}
-                  title={r.customerEmail ?? '—'}
-                  subtitle={r.customerPhone ?? '—'}
-                  status={<StatusBadge type="warranty" status={r.status} />}
-                  meta={[
-                    { label: t('warranty.colStartDate'), value: formatDate(r.startDate) },
-                    { label: t('warranty.colEndDate'), value: formatDate(r.endDate) },
-                    { label: t('warranty.colCreatedAt'), value: formatDateTime(r.createdAt) },
-                  ]}
-                  actions={(
-                    <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" onClick={(e) => { e.stopPropagation(); setDetailItem(r) }}>
-                      {t('warranty.viewBtn')}
-                    </button>
-                  )}
-                  onClick={() => setDetailItem(r)}
-                />
-              ))}
-            </MobileCardList>
+          <div
+            className="bb-card-body bb-card-body--flush"
+            aria-busy={state.isFetching}
+            style={state.isFetching ? { opacity: 0.6, transition: 'opacity 0.15s' } : undefined}
+          >
+            <AdminTable
+              columns={columns}
+              rows={items}
+              caption={t('warranty.tableCaption')}
+              loading={state.status === 'loading'}
+              pageSize={query.pageSize}
+              onRowClick={(r) => setDetailItem(r)}
+              mobileCard={mobileCard}
+            />
           </div>
           {state.status === 'success' && pagination && (
             <PaginationControls

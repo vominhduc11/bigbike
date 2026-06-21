@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { AlertCircle } from 'lucide-react'
 import { ImageUrlInput } from '../../components/ImageUrlInput'
 import { IMAGE_RECO } from '../../lib/imageRecommendations'
 import { Input } from '@/components/ui/input'
@@ -48,7 +49,11 @@ export function SeoCard({ form, isEnLang, isReadOnly, validationErrors, updateFi
             maxLength={255}
             placeholder={t('categories.detail.seoTitlePlaceholder', { defaultValue: 'Để trống sẽ tự dùng tên danh mục' })}
           />
-          {validationErrors.seoTitle && <span className="hint text-danger">{validationErrors.seoTitle}</span>}
+          {validationErrors.seoTitle && (
+            <span className="hint text-danger flex items-center gap-1">
+              <AlertCircle size={13} aria-hidden="true" />{validationErrors.seoTitle}
+            </span>
+          )}
         </label>
         <label className="form-field">
           <span className="flex items-center justify-between">
@@ -65,7 +70,11 @@ export function SeoCard({ form, isEnLang, isReadOnly, validationErrors, updateFi
             disabled={isReadOnly}
             placeholder={t('categories.detail.seoDescriptionPlaceholder', { defaultValue: 'Mô tả ngắn hiển thị dưới tiêu đề trên Google' })}
           />
-          {validationErrors.seoDescription && <span className="hint text-danger">{validationErrors.seoDescription}</span>}
+          {validationErrors.seoDescription && (
+            <span className="hint text-danger flex items-center gap-1">
+              <AlertCircle size={13} aria-hidden="true" />{validationErrors.seoDescription}
+            </span>
+          )}
         </label>
         <label className="form-field">
           <span>{t('categories.detail.seoCanonicalUrl', { defaultValue: 'Địa chỉ chuẩn (canonical URL)' })}</span>
@@ -75,7 +84,11 @@ export function SeoCard({ form, isEnLang, isReadOnly, validationErrors, updateFi
             disabled={isReadOnly}
             placeholder="https://bigbike.vn/..."
           />
-          {validationErrors.seoCanonicalUrl && <span className="hint text-danger">{validationErrors.seoCanonicalUrl}</span>}
+          {validationErrors.seoCanonicalUrl && (
+            <span className="hint text-danger flex items-center gap-1">
+              <AlertCircle size={13} aria-hidden="true" />{validationErrors.seoCanonicalUrl}
+            </span>
+          )}
         </label>
         {/* Ảnh chia sẻ mạng xã hội (OG image) — dùng chung cho cả hai ngôn ngữ */}
         <div className="form-field" data-field="seoOgImageUrl">

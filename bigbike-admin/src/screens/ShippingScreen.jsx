@@ -11,6 +11,7 @@ import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { SortableList } from '../components/Sortable'
 import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
+import { FormField } from '../components/layout/FormField'
 import { showConfirm } from '../lib/confirm'
 import { formatCurrencyVnd } from '../lib/formatters'
 import { useContentLang } from '../lib/contentLang'
@@ -52,7 +53,31 @@ export function ShippingScreen({ canUpdate }) {
   const [methodForm, setMethodForm] = useState(EMPTY_METHOD_FORM)
   const [editMethodId, setEditMethodId] = useState(null)
   const [methodFormError, setMethodFormError] = useState('')
+  const [methodFieldErrors, setMethodFieldErrors] = useState({})
   const [methodFormSaving, setMethodFormSaving] = useState(false)
+  // Phản hồi success ngắn sau khi tạo/sửa/xoá phương thức (tự ẩn sau ~4.5s).
+  const [successMessage, setSuccessMessage] = useState('')
+
+  // Validate từng field, trả về thông báo lỗi (chuỗi rỗng = hợp lệ). Dùng chung
+  // cho cả onBlur (reward early) lẫn submit (chốt chặn).
+  function validateTitle(value) {
+    return value.trim() ? '' : t('common.required')
+  }
+  function validateCost(value) {
+    // Empty được hiểu là 0 (giữ đúng hành vi cũ); chỉ chặn số âm / không hợp lệ.
+    const n = Number(value)
+    return (isNaN(n) || n < 0) ? t('shipping.costNonNegative') : ''
+  }
+  function validateThreshold(value) {
+    if (value === '') return ''
+    const n = Number(value)
+    return (isNaN(n) || n < 0) ? t('shipping.thresholdNonNegative') : ''
+  }
+
+  function showSuccess(message) {
+    setSuccessMessage(message)
+    setTimeout(() => setSuccessMessage(''), 4500)
+  }
 
   function loadZones() {
     setZonesStatus('loading')
@@ -84,11 +109,19 @@ export function ShippingScreen({ canUpdate }) {
 
   async function handleMethodSubmit(e) {
     e.preventDefault()
-    if (!methodForm.title.trim()) { setMethodFormError(t('common.required')); return }
-    const costVal = Number(methodForm.cost)
     const thresholdRaw = methodForm.freeShippingThreshold
-    if (isNaN(costVal) || costVal < 0) { setMethodFormError(t('shipping.costNonNegative')); return }
-    if (thresholdRaw !== '' && (isNaN(Number(thresholdRaw)) || Number(thresholdRaw) < 0)) { setMethodFormError(t('shipping.thresholdNonNegative')); return }
+    const fieldErrors = {
+      title: validateTitle(methodForm.title),
+      cost: validateCost(methodForm.cost),
+      threshold: validateThreshold(thresholdRaw),
+    }
+    if (fieldErrors.title || fieldErrors.cost || fieldErrors.threshold) {
+      setMethodFieldErrors(fieldErrors)
+      setMethodFormError('')
+      return
+    }
+    const costVal = Number(methodForm.cost)
+    setMethodFieldErrors({})
     setMethodFormSaving(true)
     setMethodFormError('')
     try {
@@ -115,6 +148,8 @@ export function ShippingScreen({ canUpdate }) {
       setShowMethodForm(false)
       setEditMethodId(null)
       setMethodForm(EMPTY_METHOD_FORM)
+      setMethodFieldErrors({})
+      showSuccess(t('shipping.saveSuccess', { defaultValue: 'Đã lưu phương thức giao hàng' }))
       loadMethods(selectedZoneId)
     } catch (e) {
       setMethodFormError(e.message || t('shipping.saveError'))
@@ -124,11 +159,20 @@ export function ShippingScreen({ canUpdate }) {
   }
 
   async function handleDeleteMethod(methodId) {
-    const confirmed = await showConfirm(t('shipping.deleteConfirm'), t('shipping.deleteTitle'))
+    const target = methods.find((m) => m.id === methodId)
+    const name = target ? methodTitle(target) : ''
+    const confirmed = await showConfirm(
+      name
+        ? t('shipping.deleteConfirmNamed', { title: name, defaultValue: 'Xoá phương thức "{{title}}"? Hành động không thể hoàn tác.' })
+        : t('shipping.deleteConfirm'),
+      t('shipping.deleteTitle'),
+      { variant: 'danger', confirmLabel: t('common.delete') },
+    )
     if (!confirmed) return
     setActionError('')
     try {
       await deleteShippingMethod(selectedZoneId, methodId)
+      showSuccess(t('shipping.deleteSuccess', { defaultValue: 'Đã xoá phương thức giao hàng' }))
       loadMethods(selectedZoneId)
     } catch (e) {
       setActionError(e.message || t('common.error'))
@@ -180,6 +224,12 @@ export function ShippingScreen({ canUpdate }) {
         </Alert>
       )}
 
+      {successMessage && (
+        <Alert tone="success" dismissible onDismiss={() => setSuccessMessage('')}>
+          {successMessage}
+        </Alert>
+      )}
+
       {zonesStatus === 'loading' && <StatePanel tone="info" title={t('shipping.loading')} description={t('common.pleaseWait')} />}
       {zonesStatus === 'error' && <StatePanel tone="danger" title={t('shipping.error')} description={zonesError} actionLabel={t('common.retry')} onAction={loadZones} />}
 
@@ -216,22 +266,65 @@ export function ShippingScreen({ canUpdate }) {
                     <form onSubmit={handleMethodSubmit} className="bb-card-body">
                       {methodFormError && <Alert tone="danger" size="sm" className="mb-3">{methodFormError}</Alert>}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <label className="form-field col-span-2">
-                          <span>{t('shipping.formTitle')} *</span>
-                          <Input required value={methodForm.title} onChange={(e) => setMethodForm((p) => ({ ...p, title: e.target.value }))} />
-                        </label>
-                        <label className="form-field col-span-2">
-                          <span>{t('shipping.formTitleEn')}</span>
-                          <Input value={methodForm.titleEn} onChange={(e) => setMethodForm((p) => ({ ...p, titleEn: e.target.value }))} placeholder={t('shipping.formTitleEnHint')} />
-                        </label>
-                                        <label className="form-field">
-                          <span>{t('shipping.formCost')}</span>
-                          <Input type="number" min="0" value={methodForm.cost} onChange={(e) => setMethodForm((p) => ({ ...p, cost: e.target.value }))} />
-                        </label>
-                        <label className="form-field">
-                          <span>{t('shipping.formFreeThreshold')}</span>
-                          <Input type="number" min="0" placeholder={t('shipping.formFreeThresholdHint')} value={methodForm.freeShippingThreshold} onChange={(e) => setMethodForm((p) => ({ ...p, freeShippingThreshold: e.target.value }))} />
-                        </label>
+                        <div className="col-span-2">
+                          <FormField
+                            htmlFor="shipping-method-title"
+                            label={t('shipping.formTitle')}
+                            required
+                            error={methodFieldErrors.title}
+                          >
+                            <Input
+                              value={methodForm.title}
+                              onChange={(e) => {
+                                setMethodForm((p) => ({ ...p, title: e.target.value }))
+                                if (methodFieldErrors.title) setMethodFieldErrors((p) => ({ ...p, title: '' }))
+                              }}
+                              onBlur={(e) => setMethodFieldErrors((p) => ({ ...p, title: validateTitle(e.target.value) }))}
+                            />
+                          </FormField>
+                        </div>
+                        <div className="col-span-2">
+                          <FormField
+                            htmlFor="shipping-method-title-en"
+                            label={t('shipping.formTitleEn')}
+                            helper={t('shipping.formTitleEnHint')}
+                          >
+                            <Input value={methodForm.titleEn} onChange={(e) => setMethodForm((p) => ({ ...p, titleEn: e.target.value }))} />
+                          </FormField>
+                        </div>
+                        <FormField
+                          htmlFor="shipping-method-cost"
+                          label={t('shipping.formCost')}
+                          error={methodFieldErrors.cost}
+                        >
+                          <Input
+                            type="number"
+                            min="0"
+                            value={methodForm.cost}
+                            onChange={(e) => {
+                              setMethodForm((p) => ({ ...p, cost: e.target.value }))
+                              if (methodFieldErrors.cost) setMethodFieldErrors((p) => ({ ...p, cost: '' }))
+                            }}
+                            onBlur={(e) => setMethodFieldErrors((p) => ({ ...p, cost: validateCost(e.target.value) }))}
+                          />
+                        </FormField>
+                        <FormField
+                          htmlFor="shipping-method-threshold"
+                          label={t('shipping.formFreeThreshold')}
+                          helper={t('shipping.formFreeThresholdHint')}
+                          error={methodFieldErrors.threshold}
+                        >
+                          <Input
+                            type="number"
+                            min="0"
+                            value={methodForm.freeShippingThreshold}
+                            onChange={(e) => {
+                              setMethodForm((p) => ({ ...p, freeShippingThreshold: e.target.value }))
+                              if (methodFieldErrors.threshold) setMethodFieldErrors((p) => ({ ...p, threshold: '' }))
+                            }}
+                            onBlur={(e) => setMethodFieldErrors((p) => ({ ...p, threshold: validateThreshold(e.target.value) }))}
+                          />
+                        </FormField>
                       </div>
                       <label className="mt-2 flex items-center gap-2.5 p-2.5 border border-border text-sm cursor-pointer hover:bg-muted w-fit">
                         <Checkbox checked={methodForm.enabled} onCheckedChange={(checked) => setMethodForm((p) => ({ ...p, enabled: checked }))} />
@@ -239,7 +332,7 @@ export function ShippingScreen({ canUpdate }) {
                       </label>
                       <div className="mt-4 flex gap-2">
                         <Button type="submit" loading={methodFormSaving}>{editMethodId ? t('common.save') : t('common.add')}</Button>
-                        <Button variant="secondary" type="button" onClick={() => { setShowMethodForm(false); setEditMethodId(null) }}>{t('common.cancel')}</Button>
+                        <Button variant="secondary" type="button" onClick={() => { setShowMethodForm(false); setEditMethodId(null); setMethodFieldErrors({}); setMethodFormError('') }}>{t('common.cancel')}</Button>
                       </div>
                     </form>
                   </div>
@@ -256,7 +349,7 @@ export function ShippingScreen({ canUpdate }) {
                       <Button
                         size="sm"
                         variant={showMethodForm ? 'secondary' : 'default'}
-                        onClick={() => { setEditMethodId(null); setMethodForm(EMPTY_METHOD_FORM); setShowMethodForm(!showMethodForm) }}
+                        onClick={() => { setEditMethodId(null); setMethodForm(EMPTY_METHOD_FORM); setMethodFieldErrors({}); setMethodFormError(''); setShowMethodForm(!showMethodForm) }}
                       >
                         {showMethodForm ? t('common.cancel') : t('shipping.addMethod')}
                       </Button>
@@ -322,7 +415,7 @@ export function ShippingScreen({ canUpdate }) {
                                     <button
                                       type="button"
                                       className="bb-btn bb-btn-ghost bb-btn-sm"
-                                      onClick={() => { setEditMethodId(m.id); setMethodForm({ title: m.title, titleEn: m.titleEn || '', cost: String(m.cost), freeShippingThreshold: m.freeShippingThreshold != null ? String(m.freeShippingThreshold) : '', enabled: m.enabled }); setShowMethodForm(true) }}
+                                      onClick={() => { setEditMethodId(m.id); setMethodForm({ title: m.title, titleEn: m.titleEn || '', cost: String(m.cost), freeShippingThreshold: m.freeShippingThreshold != null ? String(m.freeShippingThreshold) : '', enabled: m.enabled }); setMethodFieldErrors({}); setMethodFormError(''); setShowMethodForm(true) }}
                                     >
                                       {t('common.edit')}
                                     </button>
@@ -355,7 +448,7 @@ export function ShippingScreen({ canUpdate }) {
                                 <button
                                   type="button"
                                   className="bb-btn bb-btn-ghost bb-btn-sm"
-                                  onClick={() => { setEditMethodId(m.id); setMethodForm({ title: m.title, titleEn: m.titleEn || '', cost: String(m.cost), freeShippingThreshold: m.freeShippingThreshold != null ? String(m.freeShippingThreshold) : '', enabled: m.enabled }); setShowMethodForm(true) }}
+                                  onClick={() => { setEditMethodId(m.id); setMethodForm({ title: m.title, titleEn: m.titleEn || '', cost: String(m.cost), freeShippingThreshold: m.freeShippingThreshold != null ? String(m.freeShippingThreshold) : '', enabled: m.enabled }); setMethodFieldErrors({}); setMethodFormError(''); setShowMethodForm(true) }}
                                 >
                                   {t('common.edit')}
                                 </button>

@@ -71,10 +71,11 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false }) {
 
   const handleDraftChange = useCallback((key, value) => {
     setDrafts((p) => ({ ...p, [key]: value }))
-    // Validate inline
-    const err = validateValue(key, value)
-    setErrors((p) => ({ ...p, [key]: err ? t(err) : '' }))
-  }, [t])
+    // "Reward early, punish late": khi đang gõ chỉ XÓA lỗi cũ, không bắt lỗi từng
+    // ký tự (gõ dở email/URL/hotline không bị báo đỏ ngay). Validate đầy đủ chạy
+    // lại ở handleSave trước khi lưu, nên không bỏ sót giá trị sai.
+    setErrors((p) => (p[key] ? { ...p, [key]: '' } : p))
+  }, [])
 
   // English drafts: text-only, no validation (titles/descriptions).
   const handleDraftChangeEn = useCallback((key, value) => {

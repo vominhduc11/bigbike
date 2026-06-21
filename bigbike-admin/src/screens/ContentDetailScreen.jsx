@@ -347,6 +347,19 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
 
   const isArticle = normalizedType === 'ARTICLE'
 
+  // Nhãn cho ô bắt buộc — gắn dấu * đỏ ngay sau tên ô (cùng kiểu với SectionCard)
+  // để admin biết chính xác ô nào trong thẻ "bắt buộc" phải điền (tiêu chí 7.8).
+  const requiredLabel = (text) => (
+    <>
+      {text}
+      <span
+        className="ml-0.5 text-[var(--admin-color-status-danger-text)]"
+        aria-label={t('common.required', { defaultValue: 'bắt buộc' })}
+        title={t('common.required', { defaultValue: 'Bắt buộc' })}
+      >*</span>
+    </>
+  )
+
   const sectionErrors = computeSectionErrorsFromMap(validationErrors)
   const tabCounts = Object.fromEntries(
     Object.entries(TAB_SECTIONS).map(([tab, keys]) => [tab, keys.filter((k) => sectionErrors[k]).length]),
@@ -512,7 +525,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                 required
               >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Field full label={t('content.detail.title')} error={!isEnLang ? validationErrors.title : undefined} hint={isEnLang ? t('content.detail.enFieldHint') : undefined}>
+                  <Field full label={isEnLang ? t('content.detail.title') : requiredLabel(t('content.detail.title'))} error={!isEnLang ? validationErrors.title : undefined} hint={isEnLang ? t('content.detail.enFieldHint') : undefined}>
                     <Input
                       value={isEnLang ? (form.translations?.en?.title ?? '') : form.title}
                       onChange={(e) => isEnLang ? (isArticle ? handleEnTitleChange(e.target.value) : updateTranslation('title', e.target.value)) : updateField('title', e.target.value)}
@@ -539,7 +552,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                       />
                     </Field>
                   ) : (
-                    <Field full label={t('content.detail.slug')} error={validationErrors.slug}>
+                    <Field full label={requiredLabel(t('content.detail.slug'))} error={validationErrors.slug}>
                       <Input
                         value={form.slug}
                         onChange={(e) => updateField('slug', e.target.value)}

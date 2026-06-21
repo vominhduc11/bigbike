@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Check, Copy, ExternalLink, Hash, Package, X as XIcon } from 'lucide-react'
+import { AlertCircle, Check, Copy, ExternalLink, Hash, Package, X as XIcon } from 'lucide-react'
 import {
   createCategory,
   fetchCategoryDetail,
@@ -232,7 +232,13 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
     const message = descendantCount > 0
       ? t('categories.detail.hardDeleteConfirmWithChildren', { name, count: descendantCount })
       : t('categories.detail.hardDeleteConfirm', { name })
-    const confirmed = await showConfirm(message, t('categories.detail.hardDeleteConfirmTitle'))
+    // Nút xác nhận phải nêu rõ hành động (Xoá vĩnh viễn) thay vì "Xác nhận"
+    // chung chung, để người dùng biết chính xác việc sắp làm (tiêu chí 7.5).
+    const confirmed = await showConfirm(message, t('categories.detail.hardDeleteConfirmTitle'), {
+      variant: 'danger',
+      confirmLabel: t('categories.detail.hardDeleteBtn'),
+      cancelLabel: t('common.cancel'),
+    })
     if (!confirmed) return
     hardDeleteMutation.mutate()
   }
@@ -523,7 +529,11 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                   disabled={isReadOnly}
                   placeholder={isEnLang ? t('categories.detail.namePlaceholderEn', { defaultValue: 'English name (optional)' }) : undefined}
                 />
-                {!isEnLang && validationErrors.name && <span className="hint text-danger">{validationErrors.name}</span>}
+                {!isEnLang && validationErrors.name && (
+                  <span className="hint text-danger flex items-center gap-1">
+                    <AlertCircle size={13} aria-hidden="true" />{validationErrors.name}
+                  </span>
+                )}
               </label>
               <label className="form-field">
                 <span>{t('categories.detail.parentId')}</span>
@@ -539,7 +549,11 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
                   </SelectContent>
                 </Select>
                 <span className="hint">{t('categories.detail.parentIdHint')}</span>
-                {validationErrors.parentId && <span className="hint text-danger">{validationErrors.parentId}</span>}
+                {validationErrors.parentId && (
+                  <span className="hint text-danger flex items-center gap-1">
+                    <AlertCircle size={13} aria-hidden="true" />{validationErrors.parentId}
+                  </span>
+                )}
               </label>
               <div className="form-field" style={{ gridColumn: '1 / -1' }}>
                 <span>{t('categories.detail.description')}</span>
@@ -652,8 +666,16 @@ export function CategoryDetailScreen({ categoryId, isCreate = false, navigate, c
               />
               <span className="hint">{isEnLang ? t('categories.detail.slugHintEn', { defaultValue: 'Để trống sẽ dùng đường dẫn tiếng Việt cho bản tiếng Anh.' }) : t('categories.detail.slugHint')}</span>
               {isEnLang
-                ? validationErrors['translations.en.slug'] && <span className="hint text-danger">{validationErrors['translations.en.slug']}</span>
-                : validationErrors.slug && <span className="hint text-danger">{validationErrors.slug}</span>}
+                ? validationErrors['translations.en.slug'] && (
+                  <span className="hint text-danger flex items-center gap-1">
+                    <AlertCircle size={13} aria-hidden="true" />{validationErrors['translations.en.slug']}
+                  </span>
+                )
+                : validationErrors.slug && (
+                  <span className="hint text-danger flex items-center gap-1">
+                    <AlertCircle size={13} aria-hidden="true" />{validationErrors.slug}
+                  </span>
+                )}
             </label>
           </div>
         </div>

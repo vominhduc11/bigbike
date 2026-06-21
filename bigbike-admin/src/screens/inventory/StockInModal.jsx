@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { AlertCircle } from 'lucide-react'
 import { Modal } from '../../components/layout'
 import { useDebounce } from '../../lib/useDebounce'
 import { adjustStock, adjustProductStock, fetchInventory } from '../../lib/adminApi'
@@ -21,6 +22,7 @@ export function StockInModal({ item, onSuccess, onClose }) {
   const [serials, setSerials] = useState([])
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
+  const [qtyError, setQtyError] = useState('')
   const searchRef = useRef(null)
   const qtyRef = useRef(null)
 
@@ -65,6 +67,7 @@ export function StockInModal({ item, onSuccess, onClose }) {
     setQuantity('')
     setSerials([])
     setFormError('')
+    setQtyError('')
     setTimeout(() => qtyRef.current?.focus(), 60)
   }
 
@@ -74,18 +77,26 @@ export function StockInModal({ item, onSuccess, onClose }) {
     setQuantity('')
     setSerials([])
     setFormError('')
+    setQtyError('')
     setTimeout(() => searchRef.current?.focus(), 60)
   }
 
   const isVariantItem = Boolean(selectedItem?.variantId)
 
-  function validate() {
+  // Kiểm tra riêng ô Số lượng — trả về thông báo lỗi (hoặc '' nếu hợp lệ).
+  function validateQty() {
+    const qty = parseInt(quantity, 10)
+    if (!quantity || isNaN(qty) || qty < 1) {
+      return t('inventory.stockIn.errorQtyRequired')
+    }
+    return ''
+  }
+
+  // Lỗi cấp form (không gắn với ô cụ thể) — hiển thị ở chân modal.
+  function validateForm() {
     const qty = parseInt(quantity, 10)
     if (!selectedItem?.variantId && !selectedItem?.productId) {
       return t('inventory.stockIn.errorVariantRequired', { defaultValue: 'Vui lòng chọn sản phẩm cần nhập hàng.' })
-    }
-    if (!quantity || isNaN(qty) || qty < 1) {
-      return t('inventory.stockIn.errorQtyRequired')
     }
     if (serials.length > qty) {
       return t('inventory.stockIn.errorSerialCount', { serials: serials.length, qty })
@@ -96,10 +107,21 @@ export function StockInModal({ item, onSuccess, onClose }) {
     return ''
   }
 
+  function handleQtyBlur() {
+    setQtyError(validateQty())
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
-    const validationError = validate()
-    if (validationError) { setFormError(validationError); return }
+    const qtyValidationError = validateQty()
+    setQtyError(qtyValidationError)
+    if (qtyValidationError) {
+      setFormError('')
+      qtyRef.current?.focus()
+      return
+    }
+    const formValidationError = validateForm()
+    if (formValidationError) { setFormError(formValidationError); return }
     setFormError('')
     setSubmitting(true)
     try {
@@ -130,7 +152,12 @@ export function StockInModal({ item, onSuccess, onClose }) {
       onClose={submitting ? undefined : onClose}
       actions={
         <>
-          {formError && <p className="field-error mr-auto">{formError}</p>}
+          {formError && (
+            <p role="alert" className="field-error mr-auto flex items-center gap-1">
+              <AlertCircle size={14} aria-hidden="true" />
+              {formError}
+            </p>
+          )}
           <button type="button" className="bb-btn bb-btn-secondary bb-btn-sm" onClick={onClose} disabled={submitting}>
             {t('common.cancel')}
           </button>
@@ -263,10 +290,19 @@ export function StockInModal({ item, onSuccess, onClose }) {
                 min="1"
                 step="1"
                 value={quantity}
-                onChange={(e) => { setQuantity(e.target.value); setFormError('') }}
+                onChange={(e) => { setQuantity(e.target.value); setFormError(''); if (qtyError) setQtyError('') }}
+                onBlur={handleQtyBlur}
                 disabled={submitting}
                 placeholder="1"
+                aria-invalid={qtyError ? true : undefined}
+                aria-describedby={qtyError ? 'stock-in-qty-error' : undefined}
                />
+              {qtyError && (
+                <p id="stock-in-qty-error" role="alert" className="field-error mt-1 flex items-center gap-1">
+                  <AlertCircle size={14} aria-hidden="true" />
+                  {qtyError}
+                </p>
+              )}
             </div>
 
             <div className="form-group mb-4">

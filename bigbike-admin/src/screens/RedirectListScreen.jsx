@@ -13,7 +13,7 @@ import {
   updateRedirect,
 } from '../lib/adminApi'
 import { PaginationControls } from '../components/PaginationControls'
-import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
+import { AdminTable } from '../components/AdminTable'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { showConfirm } from '../lib/confirm'
@@ -291,6 +291,7 @@ export function RedirectListScreen({ canUpdate }) {
           value={searchInput}
           onChange={setSearchInput}
           placeholder={t('redirects.searchPlaceholder', { defaultValue: 'Nguồn, đích, ghi chú, legacy ID' })}
+          ariaLabel={t('redirects.searchPlaceholder', { defaultValue: 'Nguồn, đích, ghi chú, legacy ID' })}
         />
         <FilterSelect
           value={query.enabled}

@@ -6,8 +6,8 @@ import { FilterSearchInput } from '../components/FilterSearchInput'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { PaginationControls } from '../components/PaginationControls'
+import { AdminTable } from '../components/AdminTable'
 import { Modal } from '../components/layout'
-import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { fetchAllSerials, updateSerialStatus, getWarrantyBySerial } from '../lib/adminApi'
@@ -290,6 +290,58 @@ export function SerialListScreen({ canUpdate = false, canReadWarranty = false })
 
   const items = state.items || []
   const pagination = state.pagination
+  const isFiltered = !!searchInput || query.status !== 'ALL'
+
+  function resetFilters() {
+    setSearchInput('')
+    setQuery(INITIAL_QUERY)
+  }
+
+  const columns = [
+    {
+      key: 'serialNumber',
+      label: t('serial.colSerialNumber'),
+      render: (item) => <span className="mono">{item.serialNumber}</span>,
+    },
+    {
+      key: 'product',
+      label: t('serial.colProduct'),
+      render: (item) => (
+        <div>
+          <div style={{ fontWeight: 600 }}>{item.productName || '—'}</div>
+          {item.variantName && <div className="bb-muted" style={{ fontSize: 12 }}>{item.variantName}</div>}
+        </div>
+      ),
+    },
+    {
+      key: 'status',
+      label: t('serial.colStatus'),
+      render: (item) => <SerialStatusPill status={item.status} />,
+    },
+    {
+      key: 'receivedAt',
+      label: t('serial.colReceivedAt'),
+      align: 'right',
+      render: (item) => <span className="bb-muted" style={{ fontSize: 12 }}>{formatDate(item.receivedAt)}</span>,
+    },
+    {
+      key: 'soldAt',
+      label: t('serial.colSoldAt'),
+      align: 'right',
+      render: (item) => <span style={{ fontSize: 12 }}>{formatDate(item.soldAt)}</span>,
+    },
+  ]
+
+  const mobileCard = (item) => ({
+    title: <span className="mono">{item.serialNumber}</span>,
+    subtitle: item.variantName ? `${item.productName || '—'} · ${item.variantName}` : (item.productName || '—'),
+    status: <SerialStatusPill status={item.status} />,
+    meta: [
+      { label: t('serial.colReceivedAt'), value: formatDate(item.receivedAt) },
+      { label: t('serial.colSoldAt'), value: formatDate(item.soldAt) },
+    ],
+    onClick: () => setSelected(item),
+  })
 
   return (
     <div>
@@ -332,63 +384,29 @@ export function SerialListScreen({ canUpdate = false, canReadWarranty = false })
         />
       )}
       {state.status === 'success' && items.length === 0 && (
-        <StatePanel tone="neutral" title={t('serial.empty')} description={t('serial.emptyDesc')} />
+        <StatePanel tone="neutral"
+          title={isFiltered ? t('serial.emptyFiltered', { defaultValue: t('serial.empty') }) : t('serial.empty')}
+          description={isFiltered ? t('serial.emptyFilteredDesc', { defaultValue: t('serial.emptyDesc') }) : t('serial.emptyDesc')}
+          actionLabel={isFiltered ? t('common.resetFilters') : undefined}
+          onAction={isFiltered ? resetFilters : undefined} />
       )}
 
       {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) && (
         <div className="bb-card">
-          <div className="bb-card-body bb-card-body--flush">
-            <div className="hide-on-mobile">
-            <div className="bb-table-wrap">
-              <table className="bb-table">
-                <thead>
-                  <tr>
-                    <th>{t('serial.colSerialNumber')}</th>
-                    <th>{t('serial.colProduct')}</th>
-                    <th>{t('serial.colStatus')}</th>
-                    <th className="num">{t('serial.colReceivedAt')}</th>
-                    <th className="num">{t('serial.colSoldAt')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {state.status === 'loading' && items.length === 0 && (
-                    [...Array(8)].map((_, i) => (
-                      <tr key={`sk-${i}`}>
-                        <td colSpan={5}><div className="dash-skeleton-block" style={{ height: 28 }} /></td>
-                      </tr>
-                    ))
-                  )}
-                  {items.map((item) => (
-                    <tr key={item.id} onClick={() => setSelected(item)}>
-                      <td className="mono">{item.serialNumber}</td>
-                      <td>
-                        <div style={{ fontWeight: 600 }}>{item.productName || '—'}</div>
-                        {item.variantName && <div className="bb-muted" style={{ fontSize: 12 }}>{item.variantName}</div>}
-                      </td>
-                      <td><SerialStatusPill status={item.status} /></td>
-                      <td className="num bb-muted" style={{ fontSize: 12 }}>{formatDate(item.receivedAt)}</td>
-                      <td className="num" style={{ fontSize: 12 }}>{formatDate(item.soldAt)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            </div>
-            <MobileCardList>
-              {items.map((item) => (
-                <MobileCard
-                  key={item.id}
-                  title={<span className="mono">{item.serialNumber}</span>}
-                  subtitle={item.variantName ? `${item.productName || '—'} · ${item.variantName}` : (item.productName || '—')}
-                  status={<SerialStatusPill status={item.status} />}
-                  meta={[
-                    { label: t('serial.colReceivedAt'), value: formatDate(item.receivedAt) },
-                    { label: t('serial.colSoldAt'), value: formatDate(item.soldAt) },
-                  ]}
-                  onClick={() => setSelected(item)}
-                />
-              ))}
-            </MobileCardList>
+          <div
+            className="bb-card-body bb-card-body--flush"
+            aria-busy={state.isFetching}
+            style={state.isFetching ? { opacity: 0.6, transition: 'opacity 0.15s' } : undefined}
+          >
+            <AdminTable
+              columns={columns}
+              rows={items}
+              caption={t('serial.tableCaption')}
+              loading={state.status === 'loading'}
+              pageSize={query.pageSize}
+              onRowClick={(item) => setSelected(item)}
+              mobileCard={mobileCard}
+            />
           </div>
           {state.status === 'success' && pagination && (
             <PaginationControls

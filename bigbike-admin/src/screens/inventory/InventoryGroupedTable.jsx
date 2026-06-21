@@ -280,23 +280,23 @@ export function InventoryGroupedTable({ groups, loading, pageSize, canUpdate, se
       <table className="w-full border-collapse text-sm min-w-[480px] sm:min-w-[600px] md:min-w-[700px]">
         <thead>
           <tr className="border-b-2 border-border">
-            <th className="w-8 py-2 px-1" />
-            <th className="py-2 px-3 text-left text-xs font-semibold text-muted-foreground">
+            <th scope="col" className="w-8 py-2 px-1" />
+            <th scope="col" className="py-2 px-3 text-left text-xs font-semibold text-muted-foreground">
               {t('inventory.colProduct')}
             </th>
-            <th className="hidden md:table-cell py-2 px-3 text-left text-xs font-semibold text-muted-foreground">
+            <th scope="col" className="hidden md:table-cell py-2 px-3 text-left text-xs font-semibold text-muted-foreground">
               {t('inventory.colVariant')}
             </th>
-            <th className="py-2 px-3 text-left text-xs font-semibold text-muted-foreground">
+            <th scope="col" className="py-2 px-3 text-left text-xs font-semibold text-muted-foreground">
               {t('inventory.colStockState')}
             </th>
-            <th className="py-2 px-3 text-right text-xs font-semibold text-muted-foreground">
+            <th scope="col" className="py-2 px-3 text-right text-xs font-semibold text-muted-foreground">
               {t('inventory.colQty')}
             </th>
-            <th className="hidden sm:table-cell py-2 px-3 text-right text-xs font-semibold text-muted-foreground">
+            <th scope="col" className="hidden sm:table-cell py-2 px-3 text-right text-xs font-semibold text-muted-foreground">
               {t('inventory.colPrice')}
             </th>
-            <th className="py-2 px-3 text-left text-xs font-semibold text-muted-foreground">
+            <th scope="col" className="py-2 px-3 text-left text-xs font-semibold text-muted-foreground">
               {t('common.actions')}
             </th>
           </tr>

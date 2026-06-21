@@ -2,6 +2,7 @@ import { Fragment, useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { AlertCircle } from 'lucide-react'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { RefundModal } from '../components/RefundModal'
 import { StatePanel } from '../components/StatePanel'
@@ -52,6 +53,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
   const status = orderQuery.isLoading ? 'loading' : orderQuery.isError ? 'error' : 'success'
 
   const [saving, setSaving] = useState(false)
+  const [pendingAction, setPendingAction] = useState(null)
   const [allowedTransitions, setAllowedTransitions] = useState([])
   const [transitionsError, setTransitionsError] = useState(false)
   const [transitionsKey, setTransitionsKey] = useState(0)
@@ -63,6 +65,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
   const [fulfillmentSaving, setFulfillmentSaving] = useState(false)
   const [showShipForm, setShowShipForm] = useState(false)
   const [trackingNumber, setTrackingNumber] = useState('')
+  const [trackingError, setTrackingError] = useState('')
   const [shippingCarrier, setShippingCarrier] = useState('')
   const [orderReturns, setOrderReturns] = useState([])
   const [showCreateReturn, setShowCreateReturn] = useState(false)
@@ -102,6 +105,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
 
   async function doStatusChange(newStatus, reason) {
     setSaving(true)
+    setPendingAction(`status:${newStatus}`)
     try {
       const response = await updateOrderStatus(orderId, newStatus, reason)
       const updatedOrder = response.item
@@ -114,6 +118,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
       toast.error(err.message || t('orders.detail.updateStatusError'))
     } finally {
       setSaving(false)
+      setPendingAction(null)
     }
   }
 
@@ -154,6 +159,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
       if (!confirmed) return
     }
     setSaving(true)
+    setPendingAction(`payment:${newStatus}`)
     try {
       const response = await updateOrderPaymentStatus(orderId, newStatus)
       applyOrderUpdate(response.item)
@@ -162,6 +168,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
       toast.error(err.message || t('orders.detail.updatePaymentError'))
     } finally {
       setSaving(false)
+      setPendingAction(null)
     }
   }
 
@@ -193,9 +200,10 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
       if (!await showConfirm(t('orders.detail.confirmFulfillmentMessage', { label }), t('orders.detail.confirmFulfillmentTitle'))) return
     }
     if (newFulfillmentStatus === 'SHIPPED' && !trackingNumber.trim()) {
-      toast.error(t('orders.detail.trackingRequiredError'))
+      setTrackingError(t('orders.detail.trackingRequiredError'))
       return
     }
+    setTrackingError('')
     setFulfillmentSaving(true)
     try {
       const body = { fulfillmentStatus: newFulfillmentStatus }
@@ -208,6 +216,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
       setShowShipForm(false)
       setTrackingNumber('')
       setShippingCarrier('')
+      setTrackingError('')
       toast.success(t('orders.detail.fulfillmentUpdated'))
     } catch (err) {
       toast.error(err.message || t('orders.detail.fulfillmentError'))
@@ -283,6 +292,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                 const cfg = ORDER_STATUS_ACTION[s] ?? { variant: 'secondary' }
                 const isPrimary = cfg.variant === 'primary' || cfg.variant === 'success'
                 const isDanger = cfg.variant === 'destructive'
+                const isPending = pendingAction === `status:${s}`
                 return (
                   <button
                     key={s}
@@ -291,7 +301,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                     disabled={saving}
                     onClick={() => handleStatusChange(s)}
                   >
-                    → {getOrderStatusLabel(s, order, t)}
+                    {isPending ? t('orders.detail.savingShort') : <>→ {getOrderStatusLabel(s, order, t)}</>}
                   </button>
                 )
               })}
@@ -319,7 +329,9 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                   disabled={saving}
                   onClick={() => handlePaymentStatusChange(s)}
                 >
-                  {PAYMENT_ACTION_LABEL[s] ? t(PAYMENT_ACTION_LABEL[s]) : s}
+                  {pendingAction === `payment:${s}`
+                    ? t('orders.detail.savingShort')
+                    : PAYMENT_ACTION_LABEL[s] ? t(PAYMENT_ACTION_LABEL[s]) : s}
                 </button>
               ))}
             </div>
@@ -724,11 +736,20 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                           type="text"
                           placeholder={t('orders.detail.trackingPlaceholder')}
                           value={trackingNumber}
-                          onChange={(e) => setTrackingNumber(e.target.value)}
+                          onChange={(e) => { setTrackingNumber(e.target.value); if (trackingError) setTrackingError('') }}
                           disabled={fulfillmentSaving}
                           required
+                          aria-invalid={trackingError ? true : undefined}
+                          aria-describedby={trackingError ? 'ship-tracking-error' : undefined}
                         />
-                        <p className="bb-muted" style={{ fontSize: 12 }}>{t('orders.detail.trackingHint')}</p>
+                        {trackingError ? (
+                          <p id="ship-tracking-error" role="alert" className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--bb-danger)' }}>
+                            <AlertCircle size={13} aria-hidden="true" />
+                            {trackingError}
+                          </p>
+                        ) : (
+                          <p className="bb-muted" style={{ fontSize: 12 }}>{t('orders.detail.trackingHint')}</p>
+                        )}
                         <Input
                           type="text"
                           placeholder={t('orders.detail.carrierPlaceholder')}
@@ -741,7 +762,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                             {fulfillmentSaving ? t('orders.detail.savingShort') : t('orders.detail.ffConfirmShip')}
                           </button>
                           <button type="button" className="bb-btn bb-btn-secondary bb-btn-sm" disabled={fulfillmentSaving}
-                            onClick={() => { setShowShipForm(false); setTrackingNumber(''); setShippingCarrier('') }}>
+                            onClick={() => { setShowShipForm(false); setTrackingNumber(''); setShippingCarrier(''); setTrackingError('') }}>
                             {t('common.cancel')}
                           </button>
                         </div>

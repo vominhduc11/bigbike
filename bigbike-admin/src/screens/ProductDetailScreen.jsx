@@ -684,6 +684,19 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   const tabCounts = Object.fromEntries(
     Object.entries(TAB_SECTIONS).map(([tab, keys]) => [tab, keys.filter((k) => sectionErrors[k]).length]),
   )
+  // Badge số lỗi cho từng tab: tô màu cảnh báo (danger token) + nhãn ẩn cho trình
+  // đọc màn hình để phân biệt với badge đếm thông thường ("N lỗi" thay vì số trơ).
+  function tabErrorBadge(count) {
+    if (!count) return undefined
+    return (
+      <span style={{ color: 'var(--admin-color-status-danger-text)', fontWeight: 700 }}>
+        <span aria-hidden="true">{count}</span>
+        <span className="sr-only">
+          {t('products.detail.errorsInTab', { count, defaultValue: '{{count}} lỗi' })}
+        </span>
+      </span>
+    )
+  }
 
   // SEO checklist — chấm theo NGÔN NGỮ đang sửa. seoTitle / seoDescription là
   // song ngữ (theo tab VI/EN); slug, alt ảnh và OG image dùng chung nên giữ ở
@@ -838,10 +851,10 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
           value={activeTab}
           onChange={setActiveTab}
           items={[
-            { key: 'general',  label: t('products.detail.tabGeneral'),  count: tabCounts.general  || undefined },
-            { key: 'content',  label: t('products.detail.tabContent'),  count: tabCounts.content  || undefined },
-            { key: 'details',  label: t('products.detail.tabDetails'),  count: tabCounts.details  || undefined },
-            { key: 'variants', label: t('products.detail.tabVariants'), count: tabCounts.variants || undefined },
+            { key: 'general',  label: t('products.detail.tabGeneral'),  count: tabErrorBadge(tabCounts.general) },
+            { key: 'content',  label: t('products.detail.tabContent'),  count: tabErrorBadge(tabCounts.content) },
+            { key: 'details',  label: t('products.detail.tabDetails'),  count: tabErrorBadge(tabCounts.details) },
+            { key: 'variants', label: t('products.detail.tabVariants'), count: tabErrorBadge(tabCounts.variants) },
           ]}
         />
 
@@ -1268,7 +1281,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                       disabled={isReadOnly}
                       maxLength={5000}
                       placeholder={t('products.detail.seoDescription')}
-                      className={validationErrors.seoDescription ? 'border-danger' : undefined}
                     />
                   </Field>
 

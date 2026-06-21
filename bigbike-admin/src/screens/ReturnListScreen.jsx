@@ -6,11 +6,12 @@ import { FilterSearchInput } from '../components/FilterSearchInput'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { PaginationControls } from '../components/PaginationControls'
+import { AdminTable } from '../components/AdminTable'
+import { FilterChips } from '../components/FilterChips'
 import { Modal } from '../components/layout'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
-import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
 import { fetchReturnDetail, fetchReturns, inspectReturnItem, updateReturnStatus } from '../lib/adminApi'
 import { computeReturnedItemsValue, suggestedRefundAmount, validateRefundAmount } from '../lib/returns'
 import { showConfirm } from '../lib/confirm'
@@ -23,6 +24,7 @@ import { Alert } from '@/components/ui/alert'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
 
 const STATUSES = ['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'RECEIVED', 'INSPECTING', 'COMPLETED', 'REFUNDED']
 
@@ -193,9 +195,11 @@ function ReturnDetailModal({ ret, onClose, onUpdate, canUpdate, navigate }) {
             </div>
           </div>
 
-          {/* Partial-coverage info — refund covers only the returned items' value. */}
+          {/* Partial-coverage info — refund covers only the returned items' value.
+              Static explanatory notice → tone="info" + role="status" (polite, not
+              assertive) so it does not interrupt screen readers. */}
           {isPartialCoverage && next.includes('REFUNDED') && (
-            <Alert tone="warning">
+            <Alert tone="info" role="status">
               <p className="m-0">{t('returns.refundPartialInfo')}</p>
             </Alert>
           )}
@@ -297,11 +301,12 @@ function ReturnDetailModal({ ret, onClose, onUpdate, canUpdate, navigate }) {
             </div>
           )}
 
-          {/* QC incomplete hint */}
+          {/* QC incomplete hint — shared Alert (icon + border + role) so the caution
+              does not rely on color alone. */}
           {detail.status === 'INSPECTING' && !allInspected && (
-            <p className="text-sm text-warning">
-              {t('returns.modalQcWarning')}
-            </p>
+            <Alert tone="warning" size="sm">
+              <p className="m-0">{t('returns.modalQcWarning')}</p>
+            </Alert>
           )}
 
           {/* Update status form */}
@@ -313,25 +318,41 @@ function ReturnDetailModal({ ret, onClose, onUpdate, canUpdate, navigate }) {
           {showUpdateForm && (
             <form onSubmit={handleSubmit} className="flex flex-col gap-2.5 border-t border-border pt-4">
               <div className="form-field">
-                <label className="field-label">{t('returns.formNewStatus')} *</label>
-                <Select value={newStatus} onValueChange={applyStatus} required><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-                  {next.map((s) => <SelectItem key={s} value={s}>{t(`returns.status.${s}`, { defaultValue: s })}</SelectItem>)}
-                </SelectContent></Select>
+                <Label htmlFor="return-new-status">{t('returns.formNewStatus')} <span aria-hidden="true">*</span></Label>
+                <Select value={newStatus} onValueChange={applyStatus} required>
+                  <SelectTrigger id="return-new-status"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {next.map((s) => <SelectItem key={s} value={s}>{t(`returns.status.${s}`, { defaultValue: s })}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
               {newStatus === 'REFUNDED' && (
                 <div className="form-field">
-                  <label className="field-label">{t('returns.detailRefund')} *</label>
-                  <Input type="number" value={refundAmount}
-                    onChange={(e) => setRefundAmount(e.target.value)} placeholder="0" min="1"  />
-                  <p className="text-xs text-muted-foreground mt-1">{t(isPartialCoverage ? 'returns.refundPartialHint' : 'returns.refundFullHint')}</p>
+                  <Label htmlFor="return-refund-amount">{t('returns.detailRefund')} <span aria-hidden="true">*</span></Label>
+                  <Input id="return-refund-amount" type="number" value={refundAmount}
+                    onChange={(e) => setRefundAmount(e.target.value)} placeholder="0" min="1"
+                    aria-invalid={!!error}
+                    aria-describedby={error ? 'return-refund-hint return-form-error' : 'return-refund-hint'} />
+                  <p id="return-refund-hint" className="text-xs text-muted-foreground mt-1">{t(isPartialCoverage ? 'returns.refundPartialHint' : 'returns.refundFullHint')}</p>
+                  {/* Refund (money) error → placed beside the field, announced via Alert role="alert". */}
+                  {error && (
+                    <Alert id="return-form-error" tone="danger" size="sm" className="mt-1.5">
+                      <p className="m-0">{error}</p>
+                    </Alert>
+                  )}
                 </div>
               )}
               <div className="form-field">
-                <label className="field-label">{t('returns.detailAdminNote')}</label>
-                <Textarea rows={2} value={note}
+                <Label htmlFor="return-admin-note">{t('returns.detailAdminNote')}</Label>
+                <Textarea id="return-admin-note" rows={2} value={note}
                   onChange={(e) => setNote(e.target.value)}  />
               </div>
-              {error && <p className="field-error">{error}</p>}
+              {/* Non-refund errors (status / server) → announced at bottom of form. */}
+              {error && newStatus !== 'REFUNDED' && (
+                <Alert id="return-form-error" tone="danger" size="sm">
+                  <p className="m-0">{error}</p>
+                </Alert>
+              )}
               <div className="flex gap-2">
                 <Button type="button" variant="outline" size="sm" onClick={() => setShowUpdateForm(false)}>{t('returns.formCancel')}</Button>
                 <Button type="submit" size="sm" loading={saving}
@@ -380,6 +401,75 @@ export function ReturnListScreen({ canUpdate, navigate }) {
 
   const items = state.items || []
   const pagination = state.pagination
+  const isFiltered = query.status !== 'ALL' || !!query.q
+
+  function resetFilters() {
+    setSearchInput('')
+    setQuery((q) => ({ ...q, status: 'ALL', q: '', page: 1 }))
+  }
+
+  const columns = [
+    { key: 'returnNumber', label: t('returns.colRma'), render: (r) => <span className="id-cell">{r.returnNumber}</span>, skeletonWidth: '60%' },
+    {
+      key: 'order',
+      label: t('returns.colOrder'),
+      render: (r) => r.orderNumber ? (
+        <button
+          type="button"
+          className="text-xs font-semibold text-primary"
+          onClick={(e) => { e.stopPropagation(); navigate(`/admin/orders/${r.orderId}`) }}
+        >
+          #{r.orderNumber}
+        </button>
+      ) : (
+        <span className="bb-muted text-xs">{r.orderId?.slice(0, 8)}…</span>
+      ),
+    },
+    { key: 'customerEmail', label: t('returns.colCustomer'), render: (r) => <span className="text-xs">{r.customerEmail ?? '—'}</span> },
+    { key: 'reason', label: t('returns.colReason'), render: (r) => t(`returns.reason.${r.reason}`, { defaultValue: r.reason?.replace('_', ' ') }) },
+    { key: 'status', label: t('returns.colStatus'), render: (r) => <StatusBadge type="return" status={r.status} /> },
+    { key: 'refundAmount', label: t('returns.colRefund'), align: 'right', render: (r) => r.refundAmount > 0 ? formatCurrencyVnd(r.refundAmount) : '—' },
+    { key: 'createdAt', label: t('returns.colDate'), render: (r) => <span className="bb-muted text-xs">{formatDateTime(r.createdAt)}</span> },
+    {
+      key: 'actions',
+      label: '',
+      align: 'right',
+      render: (r) => (
+        <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" onClick={(e) => { e.stopPropagation(); setDetailRet(r) }}>
+          {t('returns.viewBtn')}
+        </button>
+      ),
+    },
+  ]
+
+  const mobileCard = (r) => ({
+    title: r.returnNumber,
+    subtitle: r.customerEmail ?? '—',
+    status: <StatusBadge type="return" status={r.status} />,
+    meta: [
+      { label: t('returns.colOrder'), value: r.orderNumber ? `#${r.orderNumber}` : `${r.orderId?.slice(0, 8)}…` },
+      { label: t('returns.colReason'), value: t(`returns.reason.${r.reason}`, { defaultValue: r.reason?.replace('_', ' ') }) },
+      { label: t('returns.colRefund'), value: r.refundAmount > 0 ? formatCurrencyVnd(r.refundAmount) : '—', tone: 'strong' },
+      { label: t('returns.colDate'), value: formatDateTime(r.createdAt) },
+    ],
+    onClick: () => setDetailRet(r),
+  })
+
+  const filterChips = []
+  if (query.status !== 'ALL') {
+    filterChips.push({
+      key: 'status',
+      label: `${t('returns.filterStatus')}: ${t(`returns.status.${query.status}`, { defaultValue: query.status })}`,
+      onRemove: () => setQuery((q) => ({ ...q, status: 'ALL', page: 1 })),
+    })
+  }
+  if (query.q) {
+    filterChips.push({
+      key: 'q',
+      label: `${t('returns.searchPlaceholder')}: ${query.q}`,
+      onRemove: () => { setSearchInput(''); setQuery((q) => ({ ...q, q: '', page: 1 })) },
+    })
+  }
 
   return (
     <div>
@@ -414,98 +504,36 @@ export function ReturnListScreen({ canUpdate, navigate }) {
         />
       </div>
 
+      <FilterChips
+        chips={filterChips}
+        onClearAll={filterChips.length > 1 ? resetFilters : undefined}
+        clearAllLabel={t('common.resetFilters')}
+        ariaLabel={t('returns.filterStatus')}
+      />
+
       {state.status === 'error' && (
         <StatePanel tone="danger" title={t('returns.loadError')} description={state.error}
           actionLabel={t('common.retry')} onAction={() => state.refetch()} />
       )}
       {state.status === 'success' && items.length === 0 && (
-        <StatePanel tone="neutral" title={t('returns.empty')} description={t('returns.emptyDesc')} />
+        <StatePanel tone="neutral"
+          title={isFiltered ? t('returns.emptyFiltered', { defaultValue: 'Không có kết quả khớp' }) : t('returns.empty')}
+          description={isFiltered ? t('returns.emptyFilteredDesc', { defaultValue: 'Thử đổi bộ lọc trạng thái hoặc từ khoá tìm kiếm.' }) : t('returns.emptyDesc')}
+          actionLabel={isFiltered ? t('common.resetFilters') : undefined}
+          onAction={isFiltered ? resetFilters : undefined} />
       )}
 
       {(state.status === 'loading' || (state.status === 'success' && items.length > 0)) && (
         <div className="bb-card">
           <div className="bb-card-body bb-card-body--flush">
-            <div className="hide-on-mobile">
-            <div className="bb-table-wrap">
-              <table className="bb-table">
-                <thead>
-                  <tr>
-                    <th>{t('returns.colRma')}</th>
-                    <th>{t('returns.colOrder')}</th>
-                    <th>{t('returns.colCustomer')}</th>
-                    <th>{t('returns.colReason')}</th>
-                    <th>{t('returns.colStatus')}</th>
-                    <th className="num">{t('returns.colRefund')}</th>
-                    <th>{t('returns.colDate')}</th>
-                    <th />
-                  </tr>
-                </thead>
-                <tbody>
-                  {state.status === 'loading' && items.length === 0 && (
-                    [...Array(8)].map((_, i) => (
-                      <tr key={`sk-${i}`}>
-                        <td colSpan={8}><div className="dash-skeleton-block" style={{ height: 28 }} /></td>
-                      </tr>
-                    ))
-                  )}
-                  {items.map((r) => (
-                    <tr key={r.id} onClick={() => setDetailRet(r)}>
-                      <td className="id-cell">{r.returnNumber}</td>
-                      <td className="id-cell" onClick={(e) => e.stopPropagation()}>
-                        {r.orderNumber ? (
-                          <button
-                            type="button"
-                            className="text-xs font-semibold"
-                            style={{ color: 'var(--bb-primary)', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
-                            onClick={() => navigate(`/admin/orders/${r.orderId}`)}
-                          >
-                            #{r.orderNumber}
-                          </button>
-                        ) : (
-                          <span className="bb-muted text-xs">{r.orderId?.slice(0, 8)}…</span>
-                        )}
-                      </td>
-                      <td className="text-xs">{r.customerEmail ?? '—'}</td>
-                      <td>{t(`returns.reason.${r.reason}`, { defaultValue: r.reason?.replace('_', ' ') })}</td>
-                      <td><StatusBadge type="return" status={r.status} /></td>
-                      <td className="num">{r.refundAmount > 0 ? formatCurrencyVnd(r.refundAmount) : '—'}</td>
-                      <td className="bb-muted text-xs">{formatDateTime(r.createdAt)}</td>
-                      <td className="col-actions" onClick={(e) => e.stopPropagation()}>
-                        <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" onClick={() => setDetailRet(r)}>
-                          {t('returns.viewBtn')}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            </div>
-            <MobileCardList>
-              {items.map((r) => (
-                <MobileCard
-                  key={r.id}
-                  title={r.returnNumber}
-                  subtitle={r.customerEmail ?? '—'}
-                  status={<StatusBadge type="return" status={r.status} />}
-                  meta={[
-                    {
-                      label: t('returns.colOrder'),
-                      value: r.orderNumber ? `#${r.orderNumber}` : `${r.orderId?.slice(0, 8)}…`,
-                    },
-                    { label: t('returns.colReason'), value: t(`returns.reason.${r.reason}`, { defaultValue: r.reason?.replace('_', ' ') }) },
-                    { label: t('returns.colRefund'), value: r.refundAmount > 0 ? formatCurrencyVnd(r.refundAmount) : '—', tone: 'strong' },
-                    { label: t('returns.colDate'), value: formatDateTime(r.createdAt) },
-                  ]}
-                  actions={(
-                    <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" onClick={() => setDetailRet(r)}>
-                      {t('returns.viewBtn')}
-                    </button>
-                  )}
-                  onClick={() => setDetailRet(r)}
-                />
-              ))}
-            </MobileCardList>
+            <AdminTable
+              columns={columns}
+              rows={items}
+              loading={state.status === 'loading'}
+              pageSize={query.pageSize}
+              onRowClick={(r) => setDetailRet(r)}
+              mobileCard={mobileCard}
+            />
           </div>
           {state.status === 'success' && pagination && (
             <PaginationControls

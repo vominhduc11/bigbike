@@ -8,6 +8,7 @@ import {
 import { AdminShell } from './components/AdminShell'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { OrderNotificationToast } from './components/OrderNotificationToast'
+import { ScreenSkeleton } from './components/ScreenSkeleton'
 import { StatePanel } from './components/StatePanel'
 import { AuthProvider, useAuth } from './lib/auth'
 import { readTokens } from './lib/authStorage'
@@ -23,7 +24,11 @@ const CHUNK_RELOAD_KEY = 'bb-admin-chunk-reload'
 function lazyScreen(factory, exportName) {
   return lazy(() =>
     factory()
-      .then((m) => ({ default: m[exportName] }))
+      .then((m) => {
+        // Tải chunk thành công → xóa cờ chống-lặp để lần deploy sau vẫn được tự reload 1 lần.
+        sessionStorage.removeItem(CHUNK_RELOAD_KEY)
+        return { default: m[exportName] }
+      })
       .catch((err) => {
         const alreadyReloaded = sessionStorage.getItem(CHUNK_RELOAD_KEY) === '1'
         if (!alreadyReloaded) {
@@ -269,9 +274,7 @@ function AdminApp() {
   const authState = useAuth()
   const { t } = useTranslation()
 
-  const SCREEN_SUSPENSE_FALLBACK = (
-    <StatePanel tone="info" title={t('common.loading')} description={t('common.pleaseWait')} />
-  )
+  const SCREEN_SUSPENSE_FALLBACK = <ScreenSkeleton />
 
   const navigate = useCallback((nextPath, options = {}) => {
     const qIdx = nextPath.indexOf('?')

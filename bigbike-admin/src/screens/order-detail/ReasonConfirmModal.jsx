@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { AlertCircle } from 'lucide-react'
 import { Modal } from '../../components/layout'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -37,8 +38,15 @@ export function ReasonConfirmModal({ targetStatus, onConfirm, onClose }) {
             placeholder={t('orders.detail.reasonPlaceholder')}
             className="resize-y"
             autoFocus
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? 'reason-confirm-error' : undefined}
           />
-          {error && <p className="text-xs text-danger">{error}</p>}
+          {error && (
+            <p id="reason-confirm-error" role="alert" className="flex items-center gap-1.5 text-xs text-danger">
+              <AlertCircle size={13} aria-hidden="true" />
+              {error}
+            </p>
+          )}
         </div>
         <div className="flex gap-2 justify-end">
           <Button type="button" variant="outline" size="sm" onClick={onClose}>

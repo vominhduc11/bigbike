@@ -255,12 +255,14 @@
    content below it, while the strip + bottom divider stay full-width chrome. */
 .bb-breadcrumb-inner {
   max-width: var(--bb-content-max);
-  margin-inline: auto;
+  margin: 0 auto;
   padding: 8px 24px;
   display: flex;
   align-items: center;
   gap: 6px;
+  list-style: none;
 }
+.bb-breadcrumb-inner li { display: inline-flex; align-items: center; }
 .bb-breadcrumb a {
   color: var(--bb-text-muted);
   text-decoration: none;
@@ -374,6 +376,22 @@
 .bb-btn-danger-ghost:hover:not(:disabled) { background: var(--bb-danger-bg); }
 .bb-btn-sm { height: 26px; padding: 0 8px; font-size: 12px; border-radius: 5px; }
 .bb-btn-lg { height: 38px; padding: 0 16px; font-size: 13.5px; }
+
+/* ─── Focus visible (a11y — WCAG 2.4.7 Focus Visible, Level A) ──────────────────
+   Các control bb-* trước đây chỉ có :hover, thiếu chỉ báo focus cho bàn phím. */
+.bb-btn:focus-visible,
+.bb-icon-btn:focus-visible,
+.bb-cb:focus-visible,
+.bb-pagination button:focus-visible,
+.bb-seg:focus-visible,
+.bb-user-chip:focus-visible,
+.bb-nav-link:focus-visible,
+.bb-table th[role="button"]:focus-visible,
+.bb-table tr[role="button"]:focus-visible {
+  outline: 2px solid var(--bb-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
 
 /* ─── Badges ────────────────────────────────────────────────────────────────── */
 .bb-badge {

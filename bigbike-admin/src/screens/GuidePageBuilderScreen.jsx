@@ -1,15 +1,17 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { GripVertical, Trash2, Eye, EyeOff, Plus } from 'lucide-react'
+import { GripVertical, Trash2, Eye, EyeOff, Plus, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { fetchGuidePage, saveGuidePage } from '../lib/adminApi'
+import { showConfirm } from '../lib/confirm'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { SortableList } from '../components/Sortable'
 import { Screen } from '../components/layout/Screen'
 import { ScreenHeader } from '../components/layout/ScreenHeader'
 import { FormField } from '../components/layout/FormField'
+import { StickyActionBar } from '../components/layout/StickyActionBar'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -32,6 +34,10 @@ function slugify(value) {
     .replace(/^-+|-+$/g, '')
 }
 
+// Một slug hợp lệ: chỉ chữ thường, số và dấu gạch nối (không khoảng trắng/ký tự lạ),
+// không bắt đầu/kết thúc bằng gạch nối. Dùng cho validate inline tại field.
+const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+
 function newEntry() {
   return {
     id: (window.crypto?.randomUUID?.() ?? `g-${Date.now()}-${Math.round(Math.random() * 1e6)}`),
@@ -47,12 +53,38 @@ function newEntry() {
   }
 }
 
+// So sánh trạng thái đã nạp với trạng thái đang chỉnh để biết có thay đổi chưa lưu.
+// Chỉ so các trường người dùng sửa được (hero + nội dung từng thẻ), bỏ qua id sinh tạm.
+function snapshot(hero, entries) {
+  return JSON.stringify({
+    hero: {
+      heroTitleVi: hero.heroTitleVi ?? '',
+      heroTitleEn: hero.heroTitleEn ?? '',
+      heroImageUrl: hero.heroImageUrl ?? '',
+    },
+    entries: entries.map((e) => ({
+      enabled: e.enabled !== false,
+      pathSegment: e.pathSegment ?? '',
+      pageSlug: e.pageSlug ?? '',
+      icon: e.icon ?? '',
+      titleVi: e.titleVi ?? '',
+      titleEn: e.titleEn ?? '',
+      descriptionVi: e.descriptionVi ?? '',
+      descriptionEn: e.descriptionEn ?? '',
+    })),
+  })
+}
+
 export function GuidePageBuilderScreen({ canUpdate }) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [hero, setHero] = useState({ heroTitleVi: '', heroTitleEn: '', heroImageUrl: '' })
   const [entries, setEntries] = useState([])
   const [initialized, setInitialized] = useState(false)
+  // Ảnh chụp trạng thái đã nạp/đã lưu — mốc để phát hiện thay đổi chưa lưu.
+  const [baseline, setBaseline] = useState('')
+  const [saveError, setSaveError] = useState('')
+  const [saveSuccess, setSaveSuccess] = useState(false)
 
   const { isLoading, isError, error, data } = useQuery({
     queryKey: ['guide-page'],
@@ -61,32 +93,77 @@ export function GuidePageBuilderScreen({ canUpdate }) {
 
   useEffect(() => {
     if (data && !initialized) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setHero({
+      const loadedHero = {
         heroTitleVi: data.heroTitleVi ?? '',
         heroTitleEn: data.heroTitleEn ?? '',
         heroImageUrl: data.heroImageUrl ?? '',
-      })
-      setEntries([...(data.entries ?? [])].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)))
+      }
+      const loadedEntries = [...(data.entries ?? [])].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setHero(loadedHero)
+      setEntries(loadedEntries)
+      setBaseline(snapshot(loadedHero, loadedEntries))
       setInitialized(true)
     }
   }, [data, initialized])
 
+  const isDirty = useMemo(
+    () => initialized && snapshot(hero, entries) !== baseline,
+    [initialized, hero, entries, baseline],
+  )
+
+  // Cảnh báo khi rời trang/tải lại lúc còn thay đổi chưa lưu (giống BannerScreen).
+  useEffect(() => {
+    if (!isDirty) return undefined
+    const handler = (e) => {
+      e.preventDefault()
+      e.returnValue = ''
+      return ''
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [isDirty])
+
   const saveMutation = useMutation({
     mutationFn: saveGuidePage,
-    onSuccess() {
+    onSuccess(_res, variables) {
       queryClient.invalidateQueries({ queryKey: ['guide-page'] })
+      // Đồng bộ state cục bộ về đúng giá trị đã lưu (pathSegment đã chuẩn hoá) rồi tái lập mốc,
+      // để sau khi lưu thành công không còn báo "chưa lưu".
+      const savedHero = {
+        heroTitleVi: variables.heroTitleVi,
+        heroTitleEn: variables.heroTitleEn,
+        heroImageUrl: variables.heroImageUrl,
+      }
+      setHero(savedHero)
+      setEntries(variables.entries)
+      setBaseline(snapshot(savedHero, variables.entries))
+      setSaveError('')
+      setSaveSuccess(true)
+      setTimeout(() => setSaveSuccess(false), 2500)
       toast.success(t('guideBuilder.savedSuccess'))
     },
     onError(err) {
-      toast.error(err?.message || t('common.errorOccurred'))
+      const msg = err?.message || t('common.errorOccurred')
+      // Lỗi server giữ lại inline ở thanh hành động để admin thấy trong lúc sửa, ngoài toast (tiêu chí 7.7).
+      setSaveError(msg)
+      setSaveSuccess(false)
+      toast.error(msg)
     },
   })
 
   function patchEntry(id, patch) {
     setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, ...patch } : e)))
   }
-  function removeEntry(id) {
+  async function removeEntry(id) {
+    // Xoá thẻ là hành động phá hủy nội dung đã nhập (tiêu đề/mô tả VI+EN, icon, định tuyến)
+    // và không khôi phục được trong phiên → xác nhận trước (tiêu chí 7.5).
+    const ok = await showConfirm(
+      t('guideBuilder.removeCardConfirm', { defaultValue: 'Xoá thẻ này? Nội dung đã nhập trong thẻ sẽ mất khi bạn lưu.' }),
+      t('guideBuilder.removeCardTitle', { defaultValue: 'Xoá thẻ' }),
+      { variant: 'danger', confirmLabel: t('common.delete', { defaultValue: 'Xoá' }) },
+    )
+    if (!ok) return
     setEntries((prev) => prev.filter((e) => e.id !== id))
   }
   function addEntry() {
@@ -97,6 +174,7 @@ export function GuidePageBuilderScreen({ canUpdate }) {
   }
 
   function handleSave() {
+    setSaveError('')
     const payloadEntries = entries.map((e, i) => ({
       ...e,
       sortOrder: i,
@@ -135,11 +213,6 @@ export function GuidePageBuilderScreen({ canUpdate }) {
         eyebrow={t('guideBuilder.eyebrow')}
         title={t('guideBuilder.title')}
         description={t('guideBuilder.description')}
-        actions={
-          <Button onClick={handleSave} disabled={disabled}>
-            {saveMutation.isPending ? t('common.saving') : t('guideBuilder.saveButton')}
-          </Button>
-        }
       />
 
       {/* Hero */}
@@ -207,6 +280,32 @@ export function GuidePageBuilderScreen({ canUpdate }) {
           />
         )}
       </section>
+
+      {/* Thanh hành động cố định đáy: Save luôn trong tầm với trên trang dài, kèm trạng thái lưu (tiêu chí 7.4). */}
+      {canUpdate && (
+        <StickyActionBar
+          info={
+            <span
+              className="flex items-center gap-1.5 text-sm"
+              role={saveError ? 'alert' : undefined}
+            >
+              {saveError ? (
+                <><AlertCircle size={14} className="text-danger shrink-0" /> <span className="text-danger">{saveError}</span></>
+              ) : saveMutation.isPending ? (
+                <>{t('common.saving')}</>
+              ) : saveSuccess ? (
+                <><CheckCircle2 size={15} className="text-[var(--admin-color-status-success-text)] shrink-0" /> {t('guideBuilder.savedSuccess')}</>
+              ) : isDirty ? (
+                <><AlertCircle size={14} className="shrink-0" /> {t('guideBuilder.unsavedChanges', { defaultValue: 'Có thay đổi chưa lưu' })}</>
+              ) : null}
+            </span>
+          }
+        >
+          <Button onClick={handleSave} disabled={disabled || !isDirty}>
+            {saveMutation.isPending ? t('common.saving') : t('guideBuilder.saveButton')}
+          </Button>
+        </StickyActionBar>
+      )}
     </Screen>
   )
 }
@@ -234,6 +333,29 @@ function IconField({ value, disabled, onChange, t }) {
 }
 
 function EntryCard({ entry, sortable, disabled, onPatch, onRemove, t }) {
+  // Đánh dấu field đã rời focus để chỉ báo lỗi sau khi người dùng nhập xong (validate on blur — tiêu chí 7.1).
+  const [touched, setTouched] = useState({})
+
+  const pathRaw = entry.pathSegment ?? ''
+  const slugRaw = entry.pageSlug ?? ''
+  // pathSegment được chuẩn hoá khi lưu → báo lỗi nếu rỗng (và không có titleVi để suy ra) hoặc không đúng dạng slug.
+  const pathError = touched.pathSegment
+    ? (!pathRaw.trim() && !(entry.titleVi ?? '').trim()
+        ? t('guideBuilder.pathSegmentRequired', { defaultValue: 'Nhập đường dẫn hoặc tiêu đề để tạo đường dẫn.' })
+        : pathRaw.trim() && !SLUG_RE.test(pathRaw.trim())
+          ? t('guideBuilder.slugInvalid', { defaultValue: 'Chỉ dùng chữ thường, số và dấu gạch nối.' })
+          : '')
+    : ''
+  const slugError = touched.pageSlug
+    ? (!slugRaw.trim()
+        ? t('guideBuilder.pageSlugRequired', { defaultValue: 'Nhập slug của trang nội dung đích.' })
+        : !SLUG_RE.test(slugRaw.trim())
+          ? t('guideBuilder.slugInvalid', { defaultValue: 'Chỉ dùng chữ thường, số và dấu gạch nối.' })
+          : '')
+    : ''
+  // Cho admin xem trước giá trị sẽ lưu thật (sau slugify) để không bất ngờ (tiêu chí 7.1).
+  const pathPreview = slugify(pathRaw) || slugify(entry.titleVi)
+
   return (
     <div
       ref={sortable?.setNodeRef}
@@ -326,19 +448,35 @@ function EntryCard({ entry, sortable, disabled, onPatch, onRemove, t }) {
 
       {/* Routing */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <FormField label={t('guideBuilder.pathSegment')} helper={t('guideBuilder.pathSegmentHint')}>
+        <FormField
+          htmlFor={`${entry.id}-path`}
+          label={t('guideBuilder.pathSegment')}
+          helper={
+            pathPreview && pathPreview !== pathRaw.trim()
+              ? t('guideBuilder.pathSegmentPreview', { value: pathPreview, defaultValue: 'Sẽ lưu thành: {{value}}' })
+              : t('guideBuilder.pathSegmentHint')
+          }
+          error={pathError || undefined}
+        >
           <Input
             disabled={disabled}
             value={entry.pathSegment ?? ''}
             onChange={(e) => onPatch(entry.id, { pathSegment: e.target.value })}
+            onBlur={() => setTouched((p) => ({ ...p, pathSegment: true }))}
             placeholder="mua-hang"
           />
         </FormField>
-        <FormField label={t('guideBuilder.pageSlug')} helper={t('guideBuilder.pageSlugHint')}>
+        <FormField
+          htmlFor={`${entry.id}-slug`}
+          label={t('guideBuilder.pageSlug')}
+          helper={t('guideBuilder.pageSlugHint')}
+          error={slugError || undefined}
+        >
           <Input
             disabled={disabled}
             value={entry.pageSlug ?? ''}
             onChange={(e) => onPatch(entry.id, { pageSlug: e.target.value })}
+            onBlur={() => setTouched((p) => ({ ...p, pageSlug: true }))}
             placeholder="huong-dan-mua-hang"
           />
         </FormField>

@@ -1,16 +1,18 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FilterSelect } from '../components/FilterSelect'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { GripVertical, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { SortableList } from '../components/Sortable'
-import { createSlider, deleteSlider, fetchSliders, reorderSliders, updateSlider } from '../lib/adminApi'
+import { createSlider, deleteSlider, fetchProducts, fetchSliders, reorderSliders, updateSlider } from '../lib/adminApi'
 import { useContentLang } from '../lib/contentLang'
+import { useDebounce } from '../lib/useDebounce'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
+import { ProductPickerCombobox } from '../components/ProductPickerCombobox'
 import { showConfirm } from '../lib/confirm'
 import { validateSafePublicLink } from '../lib/urlPolicies'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -28,10 +30,11 @@ const EMPTY_FORM = {
   mobileAlt: '',
   externalLink: '',
   productId: '',
+  productName: '',
   isActive: true,
 }
 
-function SliderCard({ slider, canUpdate, onEdit, onDelete, onToggleActive, sortable }) {
+function SliderCard({ slider, canUpdate, onEdit, onDelete, onToggleActive, sortable, toggling, deleting }) {
   const { t } = useTranslation()
   const contentLang = useContentLang()
   const productLabel = contentLang === 'en'
@@ -100,14 +103,34 @@ function SliderCard({ slider, canUpdate, onEdit, onDelete, onToggleActive, sorta
 
         {canUpdate && (
           <div className="flex gap-2" style={{ flexShrink: 0, alignItems: 'flex-start' }}>
-            <button type="button" className="bb-btn bb-btn-secondary bb-btn-sm" onClick={() => onToggleActive(slider)}>
-              {slider.isActive !== false ? t('common.disable') : t('common.enable')}
+            <button
+              type="button"
+              className="bb-btn bb-btn-secondary bb-btn-sm"
+              disabled={toggling}
+              aria-busy={toggling}
+              onClick={() => onToggleActive(slider)}
+            >
+              {toggling
+                ? t('common.saving')
+                : (slider.isActive !== false ? t('common.disable') : t('common.enable'))}
             </button>
-            <button type="button" className="bb-btn bb-btn-secondary bb-btn-sm" onClick={() => onEdit(slider)}>
+            <button
+              type="button"
+              className="bb-btn bb-btn-secondary bb-btn-sm"
+              disabled={deleting}
+              onClick={() => onEdit(slider)}
+            >
               {t('common.edit')}
             </button>
-            <button type="button" className="bb-btn bb-btn-secondary bb-btn-sm" style={{ color: 'var(--bb-danger)' }} onClick={() => onDelete(slider.id)}>
-              {t('common.delete')}
+            <button
+              type="button"
+              className="bb-btn bb-btn-secondary bb-btn-sm"
+              style={{ color: 'var(--bb-danger)' }}
+              disabled={deleting}
+              aria-busy={deleting}
+              onClick={() => onDelete(slider.id)}
+            >
+              {deleting ? t('common.deleting', { defaultValue: 'Đang xoá...' }) : t('common.delete')}
             </button>
           </div>
         )}
@@ -125,6 +148,22 @@ export function SliderListScreen({ canUpdate }) {
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState({ ...EMPTY_FORM, location: 'home' })
   const [formError, setFormError] = useState('')
+  // Lỗi inline cạnh nhóm link ngoài / product ID (tiêu chí 7.1/7.2).
+  const [linkFieldError, setLinkFieldError] = useState('')
+  // ID banner đang gọi API bật/tắt hoặc xoá → disable đúng nút trên thẻ đó.
+  const [togglingId, setTogglingId] = useState(null)
+  const [deletingId, setDeletingId] = useState(null)
+  // Tìm-chọn sản phẩm cho trường Product ID (thay ô gõ ID thủ công).
+  const [productSearch, setProductSearch] = useState('')
+  const [productPickerOpen, setProductPickerOpen] = useState(false)
+  const debouncedProductSearch = useDebounce(productSearch, 300)
+
+  const { data: productSearchData, isFetching: isSearchingProducts } = useQuery({
+    queryKey: ['slider-product-search', debouncedProductSearch, contentLang],
+    queryFn: () => fetchProducts({ q: debouncedProductSearch, page: 1, pageSize: 8, publishStatus: 'PUBLISHED' }),
+    enabled: productPickerOpen && debouncedProductSearch.trim().length > 0,
+    staleTime: 30_000,
+  })
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['sliders', location],
@@ -137,6 +176,9 @@ export function SliderListScreen({ canUpdate }) {
   const visibleItems = contentLang === 'en'
     ? items.filter((s) => !s.productId || (s.productNameEn || '').trim() !== '')
     : items
+  // Có banner ở vị trí này nhưng tất cả bị ẩn do lọc tiếng Anh (để phân biệt
+  // "trống thật" với "ẩn vì chưa có tên tiếng Anh" ở empty-state).
+  const filteredByLang = items.length > 0 && visibleItems.length === 0
   const warning = ''
 
   const reorderMutation = useMutation({
@@ -185,6 +227,7 @@ export function SliderListScreen({ canUpdate }) {
       toast.success(t('sliders.toggleSuccess', { defaultValue: 'Đã cập nhật trạng thái' }))
     },
     onError: (e) => toast.error(e?.message || t('sliders.saveError', { defaultValue: 'Lỗi khi cập nhật trạng thái' })),
+    onSettled: () => setTogglingId(null),
   })
 
   const deleteMutation = useMutation({
@@ -194,6 +237,7 @@ export function SliderListScreen({ canUpdate }) {
       toast.success(t('sliders.deleteSuccess', { defaultValue: 'Đã xoá slider' }))
     },
     onError: (e) => toast.error(e.message || t('sliders.deleteError')),
+    onSettled: () => setDeletingId(null),
   })
 
   function openAddForm() {
@@ -203,6 +247,9 @@ export function SliderListScreen({ canUpdate }) {
       : 0
     setForm({ ...EMPTY_FORM, location, sortOrder: String(nextOrder) })
     setFormError('')
+    setLinkFieldError('')
+    setProductSearch('')
+    setProductPickerOpen(false)
     setShowForm(true)
   }
 
@@ -217,9 +264,13 @@ export function SliderListScreen({ canUpdate }) {
       mobileAlt: slider.mobileImage?.alt || '',
       externalLink: slider.externalLink || '',
       productId: slider.productId || '',
+      productName: slider.productName || slider.productNameEn || '',
       isActive: slider.isActive !== false,
     })
     setFormError('')
+    setLinkFieldError('')
+    setProductSearch('')
+    setProductPickerOpen(false)
     setShowForm(true)
   }
 
@@ -227,15 +278,37 @@ export function SliderListScreen({ canUpdate }) {
     setShowForm(false)
     setEditingId(null)
     setFormError('')
+    setLinkFieldError('')
+    setProductSearch('')
+    setProductPickerOpen(false)
+  }
+
+  const handlePickProduct = useCallback((product) => {
+    setForm((p) => ({ ...p, productId: product.id, productName: product.name || product.id }))
+    setProductSearch('')
+    setProductPickerOpen(false)
+    setLinkFieldError('')
+    setFormError('')
+  }, [])
+
+  function clearSelectedProduct() {
+    setForm((p) => ({ ...p, productId: '', productName: '' }))
   }
 
   async function handleDelete(sliderId) {
-    const confirmed = await showConfirm(t('sliders.deleteConfirm'), t('sliders.deleteConfirmTitle'))
+    const confirmed = await showConfirm(
+      t('sliders.deleteConfirmDetail', {
+        defaultValue: 'Banner sẽ bị xoá vĩnh viễn và không còn hiển thị trên trang web. Thao tác này không thể hoàn tác.',
+      }),
+      t('sliders.deleteConfirmTitle'),
+    )
     if (!confirmed) return
+    setDeletingId(sliderId)
     deleteMutation.mutate(sliderId)
   }
 
   function handleToggleActive(slider) {
+    setTogglingId(slider.id)
     toggleActiveMutation.mutate({ id: slider.id, isActive: slider.isActive === false })
   }
 
@@ -258,18 +331,22 @@ export function SliderListScreen({ canUpdate }) {
 
   function handleSubmit(e) {
     e.preventDefault()
+    // Lỗi đích sát nhóm link ngoài / sản phẩm (tiêu chí 7.1/7.2) thay vì chỉ banner đầu form.
     if (!form.externalLink.trim() && !form.productId.trim()) {
-      setFormError(t('sliders.formRequired'))
+      setLinkFieldError(t('sliders.formRequired'))
+      setFormError('')
       return
     }
     if (form.externalLink.trim()) {
       const linkValidation = validateSafePublicLink(form.externalLink)
       if (!linkValidation.valid) {
-        setFormError(t('sliders.formExternalLinkInvalid'))
+        setLinkFieldError(t('sliders.formExternalLinkInvalid'))
+        setFormError('')
         return
       }
     }
     setFormError('')
+    setLinkFieldError('')
     const payload = buildPayload()
     if (editingId) {
       editMutation.mutate({ id: editingId, payload })
@@ -376,13 +453,45 @@ export function SliderListScreen({ canUpdate }) {
               </label>
               <label className="form-field" style={{ gridColumn: '1 / -1' }}>
                 <span>{t('sliders.formExternalLink')}</span>
-                <Input placeholder="https://..." value={form.externalLink} onChange={(e) => setForm((p) => ({ ...p, externalLink: e.target.value }))} />
+                <Input
+                  placeholder="https://..."
+                  value={form.externalLink}
+                  aria-invalid={linkFieldError ? true : undefined}
+                  onChange={(e) => { setForm((p) => ({ ...p, externalLink: e.target.value })); if (linkFieldError) setLinkFieldError('') }}
+                />
                 <span className="hint">{t('sliders.formExternalLinkHint')}</span>
               </label>
-              <label className="form-field">
-                <span>{t('sliders.formProductId')}</span>
-                <Input value={form.productId} onChange={(e) => setForm((p) => ({ ...p, productId: e.target.value }))} />
-              </label>
+              <div className="form-field" style={{ gridColumn: '1 / -1' }}>
+                <span>{t('sliders.formProduct', { defaultValue: 'Sản phẩm liên kết' })}</span>
+                {form.productId ? (
+                  <div className="flex items-center gap-2" style={{ flexWrap: 'wrap' }}>
+                    <span className="bb-badge bb-badge-neutral">
+                      {form.productName || form.productId}
+                    </span>
+                    <Button type="button" variant="outline" size="sm" onClick={clearSelectedProduct}>
+                      {t('common.remove', { defaultValue: 'Bỏ chọn' })}
+                    </Button>
+                  </div>
+                ) : (
+                  <ProductPickerCombobox
+                    search={productSearch}
+                    onSearchChange={(v) => { setProductSearch(v); setProductPickerOpen(true) }}
+                    onFocus={() => setProductPickerOpen(true)}
+                    open={productPickerOpen && productSearch.trim().length > 0}
+                    onOpenChange={(next) => { if (!next) setProductPickerOpen(false) }}
+                    loading={isSearchingProducts}
+                    items={productSearchData?.items ?? []}
+                    onPick={handlePickProduct}
+                    placeholder={t('sliders.formProductSearchPlaceholder', { defaultValue: 'Tìm sản phẩm theo tên hoặc SKU…' })}
+                    loadingText={`${t('common.loading')}…`}
+                    emptyText={t('sliders.formProductNoResults', { defaultValue: 'Không tìm thấy sản phẩm phù hợp.' })}
+                  />
+                )}
+                <span className="hint">{t('sliders.formProductHint', { defaultValue: 'Chọn sản phẩm để banner trỏ tới trang sản phẩm đó. Có thể để trống nếu đã nhập link ngoài.' })}</span>
+              </div>
+              {linkFieldError && (
+                <small className="field-error" style={{ gridColumn: '1 / -1' }} role="alert">{linkFieldError}</small>
+              )}
             </div>
             <div className="mt-4 flex gap-2">
               <Button type="submit" loading={isSaving}>{editingId ? t('common.update') : t('sliders.saveBtn')}</Button>
@@ -394,11 +503,26 @@ export function SliderListScreen({ canUpdate }) {
 
       {isLoading && <StatePanel tone="info" title={t('sliders.loading')} description={t('common.pleaseWait')} />}
       {isError && <StatePanel tone="danger" title={t('sliders.error')} description={error?.message} actionLabel={t('common.retry')} onAction={() => queryClient.invalidateQueries({ queryKey: ['sliders', location] })} />}
-      {!isLoading && !isError && items.length === 0 && (
-        <StatePanel tone="neutral" title={t('sliders.empty')} description={t('sliders.emptyDesc', { location })} />
+      {!isLoading && !isError && visibleItems.length === 0 && (
+        filteredByLang ? (
+          // Có banner ở vị trí này nhưng tất cả bị ẩn vì chưa có nội dung tiếng Anh.
+          <StatePanel
+            tone="neutral"
+            title={t('sliders.emptyFilteredLang', { defaultValue: 'Không có banner tiếng Anh ở vị trí này' })}
+            description={t('sliders.emptyFilteredLangDesc', { defaultValue: 'Các banner ở vị trí này được gắn sản phẩm chưa có tên tiếng Anh nên bị ẩn ở chế độ tiếng Anh. Chuyển về tiếng Việt để xem, hoặc bổ sung tên tiếng Anh cho sản phẩm.' })}
+          />
+        ) : (
+          <StatePanel
+            tone="neutral"
+            title={t('sliders.empty')}
+            description={t('sliders.emptyDesc', { location })}
+            actionLabel={canUpdate ? t('sliders.addBtn') : undefined}
+            onAction={canUpdate ? openAddForm : undefined}
+          />
+        )
       )}
 
-      {items.length > 0 && (
+      {visibleItems.length > 0 && (
         <SortableList
           items={visibleItems}
           disabled={!canUpdate || reorderMutation.isPending}
@@ -412,6 +536,8 @@ export function SliderListScreen({ canUpdate }) {
               onDelete={handleDelete}
               onToggleActive={handleToggleActive}
               sortable={sortable}
+              toggling={togglingId === slider.id && toggleActiveMutation.isPending}
+              deleting={deletingId === slider.id && deleteMutation.isPending}
             />
           )}
           renderOverlay={(slider) => (

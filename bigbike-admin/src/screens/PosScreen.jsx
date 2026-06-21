@@ -153,7 +153,18 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit, canOverri
           </div>
 
           {searching && (
-            <div className="pos-empty-hint">{t('common.loading')}…</div>
+            <div className="pos-product-grid" role="status" aria-label={t('common.loading')}>
+              {Array.from({ length: 6 }, (_, i) => (
+                <div key={i} className="pos-product-card animate-pulse" aria-hidden="true">
+                  <div className="pos-product-img bg-surface-muted" />
+                  <div className="pos-product-info flex flex-col gap-1.5">
+                    <div className="h-3 rounded-xs bg-surface-muted" style={{ width: '40%' }} />
+                    <div className="h-3.5 rounded-xs bg-surface-muted" style={{ width: '80%' }} />
+                    <div className="h-3 rounded-xs bg-surface-muted" style={{ width: '55%' }} />
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
 
           {!searching && results.length === 0 && dq.trim() && (
@@ -222,7 +233,12 @@ export function PosScreen({ canUpdate, userId, canOverrideCreditLimit, canOverri
                 type="button"
                 className="bb-btn bb-btn-ghost bb-btn-sm"
                 onClick={async () => {
-                  if (await showConfirm('Xoá toàn bộ giỏ hàng?', 'Xoá giỏ hàng')) {
+                  const ok = await showConfirm(
+                    t('pos.clearCartConfirm', { defaultValue: 'Xoá toàn bộ giỏ hàng?' }),
+                    t('pos.clearCartConfirmTitle', { defaultValue: 'Xoá giỏ hàng' }),
+                    { variant: 'danger', confirmLabel: t('pos.clearCart', { defaultValue: 'Xoá hết' }), cancelLabel: t('common.cancel') },
+                  )
+                  if (ok) {
                     setCart([])
                     try { localStorage.removeItem(POS_CART_KEY) } catch { /* ignore */ }
                   }

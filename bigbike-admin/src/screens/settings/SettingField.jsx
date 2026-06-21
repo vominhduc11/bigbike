@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { AlertCircle, MapPin } from 'lucide-react'
 import { RichTextEditor } from '../../components/RichTextEditor'
 import { ImageUrlInput } from '../../components/ImageUrlInput'
 import { IMAGE_RECO } from '../../lib/imageRecommendations'
@@ -27,10 +28,14 @@ export function SettingField({ setting, where, canUpdate, draft, draftEn, error,
   const type = isNumber ? 'number' : inputTypeFor(setting.key)
   const placeholder = placeholderFor(setting.key)
   const label = KEY_LABELS_VI[setting.key] || setting.description || setting.key
+  // Id ổn định để liên kết nhãn ↔ ô nhập (click nhãn focus ô, screen reader đọc tên nhãn).
+  const controlId = `setting-${setting.key}`
+  const labelId = `label-${setting.key}`
+  const errorId = `err-${setting.key}`
 
   return (
     <div className="form-field">
-      <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <label id={labelId} htmlFor={controlId} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         {label}
         {isDirty && (
           <span
@@ -40,8 +45,15 @@ export function SettingField({ setting, where, canUpdate, draft, draftEn, error,
         )}
       </label>
       {where && (
-        <span className="bb-muted" style={{ display: 'block', fontSize: 12, marginTop: -2, marginBottom: 6 }}>
-          📍 {where}
+        <span
+          className="bb-muted"
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 'var(--admin-space-1)',
+            fontSize: 'var(--admin-text-xs)', marginTop: 'calc(-1 * var(--admin-space-1) / 2)',
+            marginBottom: 'var(--admin-space-2)',
+          }}
+        >
+          <MapPin size={12} aria-hidden="true" /> {where}
         </span>
       )}
 
@@ -68,16 +80,18 @@ export function SettingField({ setting, where, canUpdate, draft, draftEn, error,
           </>
         ) : isLongText ? (
           <Textarea
+            id={controlId}
             className={error ? 'border-danger' : undefined}
             rows={3}
             value={currentValue}
             placeholder={placeholder || (rawValue ? '' : t('settings.empty'))}
             onChange={(e) => onChange(setting.key, e.target.value)}
-            aria-describedby={error ? `err-${setting.key}` : undefined}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? errorId : undefined}
           />
         ) : isBoolean ? (
           <Select value={currentValue || 'false'} onValueChange={(v) => onChange(setting.key, v)}>
-            <SelectTrigger className={error ? 'border-danger' : undefined}>
+            <SelectTrigger id={controlId} aria-labelledby={`${labelId} ${controlId}`} className={error ? 'border-danger' : undefined}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -87,6 +101,7 @@ export function SettingField({ setting, where, canUpdate, draft, draftEn, error,
           </Select>
         ) : (
           <Input
+            id={controlId}
             className={error ? 'border-danger' : undefined}
             type={type}
             inputMode={type === 'number' ? 'numeric' : undefined}
@@ -94,7 +109,8 @@ export function SettingField({ setting, where, canUpdate, draft, draftEn, error,
             value={currentValue}
             placeholder={placeholder || (rawValue ? '' : t('settings.empty'))}
             onChange={(e) => onChange(setting.key, e.target.value)}
-            aria-describedby={error ? `err-${setting.key}` : undefined}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? errorId : undefined}
           />
         )
       ) : isHtml ? (
@@ -142,7 +158,17 @@ export function SettingField({ setting, where, canUpdate, draft, draftEn, error,
       )}
 
       {error && (
-        <span id={`err-${setting.key}`} className="bb-muted" style={{ color: 'var(--bb-danger)' }}>{error}</span>
+        <span
+          id={errorId}
+          role="alert"
+          className="bb-muted"
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 'var(--admin-space-1)',
+            color: 'var(--bb-danger)',
+          }}
+        >
+          <AlertCircle size={13} aria-hidden="true" /> {error}
+        </span>
       )}
     </div>
   )

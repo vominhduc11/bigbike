@@ -4,14 +4,18 @@ import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { formatParentOption, isValidCustomUrl } from './constants'
 
-function MenuParentSelect({ value, onChange, options, label }) {
+// Radix Select cấm value rỗng, nên dùng sentinel cho lựa chọn "cấp gốc".
+const ROOT_VALUE = '__root__'
+
+function MenuParentSelect({ value, onChange, options, label, rootLabel }) {
   return (
     <label className="form-field">
       {label}
       <Select
-        value={value}
-        onValueChange={onChange}
+        value={value || ROOT_VALUE}
+        onValueChange={(v) => onChange(v === ROOT_VALUE ? '' : v)}
       ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+        <SelectItem value={ROOT_VALUE}>{rootLabel}</SelectItem>
         {options.map((item) => (
           <SelectItem key={item.id} value={item.id}>
             {formatParentOption(item)}
@@ -24,6 +28,7 @@ function MenuParentSelect({ value, onChange, options, label }) {
 
 export function ItemForm({ value, onChange, parentOptions, isNew }) {
   const { t } = useTranslation()
+  const urlInvalid = value.url.trim() !== '' && !isValidCustomUrl(value.url)
   return (
     <div className="form-grid">
       {/* Label — required (Vietnamese) */}
@@ -49,25 +54,28 @@ export function ItemForm({ value, onChange, parentOptions, isNew }) {
       </label>
 
       {/* URL */}
-      <label className="form-field form-field-wide">
+      <label className="form-field form-field-wide" htmlFor="menu-item-url">
         {t('menus.itemUrlCustom')}
         <Input
+          id="menu-item-url"
           value={value.url}
           onChange={(e) => onChange({ url: e.target.value })}
           placeholder="/danh-muc-san-pham/... hoặc https://..."
+          aria-invalid={urlInvalid || undefined}
+          aria-describedby="menu-item-url-hint"
          />
         {value.url.trim() ? (
-          !isValidCustomUrl(value.url) && (
-            <small className="menu-form-hint menu-form-hint--danger">
-              URL không hợp lệ. Ví dụ: /danh-muc-san-pham/xe-may hoặc https://example.com
+          urlInvalid && (
+            <small id="menu-item-url-hint" className="menu-form-hint menu-form-hint--danger">
+              {t('menus.urlInvalid', { defaultValue: 'Lỗi: URL không hợp lệ. Ví dụ: /danh-muc-san-pham/xe-may hoặc https://example.com' })}
             </small>
           )
         ) : (
-          <small className="menu-form-hint">{t('menus.urlHint')}</small>
+          <small id="menu-item-url-hint" className="menu-form-hint">{t('menus.urlHint')}</small>
         )}
       </label>
 
-      {/* Parent */}
+      {/* Parent — bao gồm lựa chọn "cấp gốc" để có thể đưa mục con lên cấp đầu */}
       <MenuParentSelect
         label={t('menus.itemParent')}
         rootLabel={t('menus.parentRoot')}

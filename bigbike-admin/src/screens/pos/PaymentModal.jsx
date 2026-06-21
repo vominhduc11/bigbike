@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import { X } from 'lucide-react'
+import { AlertCircle, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { DropdownPopover } from '../../components/DropdownPopover'
 import { formatCurrencyVnd } from '../../lib/formatters'
 import { fetchCustomers, fetchCustomerCredit, posCreateOrder } from '../../lib/adminApi'
-import { Modal } from '../../components/layout'
+import { Modal, FormField } from '../../components/layout'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Alert } from '@/components/ui/alert'
@@ -31,12 +31,14 @@ export function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCredi
   const [walkInQuery, setWalkInQuery] = useState('')
   const [walkInResults, setWalkInResults] = useState([])
   const [walkInCustomer, setWalkInCustomer] = useState(null)
+  const [walkInSearching, setWalkInSearching] = useState(false)
   // Gợi ý khách quen theo số điện thoại đang gõ
   const [phoneMatches, setPhoneMatches] = useState([])
 
   // CREDIT state
   const [customerQuery, setCustomerQuery] = useState('')
   const [customerResults, setCustomerResults] = useState([])
+  const [customerSearching, setCustomerSearching] = useState(false)
   const [selectedCustomer, setSelectedCustomer] = useState(null)
   const [customerCredit, setCustomerCredit] = useState(null)
   const [creditLoading, setCreditLoading] = useState(false)
@@ -72,19 +74,23 @@ export function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCredi
   }
 
   async function searchCustomers(q) {
-    if (!q || q.length < 2) { setCustomerResults([]); return }
+    if (!q || q.length < 2) { setCustomerResults([]); setCustomerSearching(false); return }
+    setCustomerSearching(true)
     try {
       const res = await fetchCustomers({ search: q, page: 1, pageSize: 10 })
       setCustomerResults(res.items || [])
     } catch { setCustomerResults([]) }
+    finally { setCustomerSearching(false) }
   }
 
   async function searchWalkIn(q) {
-    if (!q || q.length < 2) { setWalkInResults([]); return }
+    if (!q || q.length < 2) { setWalkInResults([]); setWalkInSearching(false); return }
+    setWalkInSearching(true)
     try {
       const res = await fetchCustomers({ search: q, page: 1, pageSize: 5 })
       setWalkInResults(res.items || [])
     } catch { setWalkInResults([]) }
+    finally { setWalkInSearching(false) }
   }
 
   // Tự gợi ý khách quen khi gõ SĐT (POS_CUSTOMER_002) — chỉ khi chưa liên kết khách nào
@@ -162,9 +168,12 @@ export function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCredi
         payload = basePayload
       }
       const result = await posCreateOrder(payload)
+      toast.success(
+        `${t('pos.orderCreated', { defaultValue: 'Đã tạo đơn' })} ${result?.orderNumber || ''}`.trim(),
+      )
       onSuccess({ ...result, _cardRef: method === 'CARD_TERMINAL' ? cardRef.trim() : null }, method)
     } catch (err) {
-      setError(err.message || 'Lỗi khi tạo đơn hàng.')
+      setError(err.message || t('pos.orderCreateError', { defaultValue: 'Lỗi khi tạo đơn hàng.' }))
     } finally {
       setSubmitting(false)
     }
@@ -174,25 +183,31 @@ export function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCredi
     <Modal open title={t('pos.paymentMethod')} onClose={onClose}>
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
-            <div>
-              <label className="field-label">Tên khách (tuỳ chọn)</label>
+            <FormField
+              label={t('pos.customerNameLabel', { defaultValue: 'Tên khách (tuỳ chọn)' })}
+              htmlFor="pos-customer-name"
+            >
               <Input
+                id="pos-customer-name"
                 placeholder="Nguyễn Văn A"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
                />
-            </div>
+            </FormField>
             <div>
-              <label className="field-label">Số điện thoại *</label>
-              <Input
-                placeholder="0901 234 567"
-                value={customerPhone}
-                onChange={(e) => { setCustomerPhone(e.target.value); searchByPhone(e.target.value) }}
-                aria-invalid={phoneMissing}
-               />
-              {phoneMissing && (
-                <p className="field-error mt-1">Cần số điện thoại để lưu hồ sơ khách.</p>
-              )}
+              <FormField
+                label={t('pos.customerPhoneLabel', { defaultValue: 'Số điện thoại' })}
+                htmlFor="pos-customer-phone"
+                required
+                error={phoneMissing ? t('pos.customerPhoneRequired', { defaultValue: 'Cần số điện thoại để lưu hồ sơ khách.' }) : undefined}
+              >
+                <Input
+                  id="pos-customer-phone"
+                  placeholder="0901 234 567"
+                  value={customerPhone}
+                  onChange={(e) => { setCustomerPhone(e.target.value); searchByPhone(e.target.value) }}
+                 />
+              </FormField>
               {method !== 'CREDIT' && !walkInCustomer && phoneMatches.length > 0 && (
                 <div className="mt-1 border border-border rounded-md bg-surface overflow-hidden">
                   <p className="px-2.5 py-1 text-xs text-muted-foreground">SĐT này là khách quen — bấm để liên kết:</p>
@@ -214,13 +229,14 @@ export function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCredi
 
           {method !== 'CREDIT' && (
             <div className="mb-3">
-              <label className="field-label">Liên kết khách hàng cũ (tuỳ chọn)</label>
+              <label className="field-label" htmlFor="pos-walkin-search">{t('pos.walkInLinkLabel', { defaultValue: 'Liên kết khách hàng cũ (tuỳ chọn)' })}</label>
               {!walkInCustomer ? (
                 <DropdownPopover
-                  open={walkInResults.length > 0}
+                  open={walkInResults.length > 0 || (walkInSearching && walkInQuery.trim().length >= 2)}
                   onOpenChange={(next) => { if (!next) setWalkInResults([]) }}
                   anchor={
                     <Input
+                      id="pos-walkin-search"
                       placeholder="Tìm theo tên, SĐT hoặc email..."
                       value={walkInQuery}
                       onChange={(e) => { setWalkInQuery(e.target.value); searchWalkIn(e.target.value) }}
@@ -228,7 +244,9 @@ export function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCredi
                     />
                   }
                 >
-                  {walkInResults.map((c) => (
+                  {walkInSearching && walkInResults.length === 0 ? (
+                    <p className="px-3 py-2 text-sm text-muted-foreground">{t('pos.searching', { defaultValue: 'Đang tìm…' })}</p>
+                  ) : walkInResults.map((c) => (
                     <button
                       key={c.id}
                       type="button"
@@ -266,21 +284,24 @@ export function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCredi
 
           {method === 'CASH' && (
             <div className="mt-3">
-              <label className="field-label">Tiền khách đưa (tuỳ chọn)</label>
-              <Input
-                type="number"
-                min={0}
-                placeholder="Nhập số tiền khách đưa..."
-                value={tendered}
-                onChange={(e) => setTendered(e.target.value)}
-               />
+              <FormField
+                label={t('pos.tenderedLabel', { defaultValue: 'Tiền khách đưa (tuỳ chọn)' })}
+                htmlFor="pos-tendered"
+                error={insufficientTendered ? t('pos.tenderedInsufficient', { defaultValue: 'Tiền đưa chưa đủ tổng thanh toán.' }) : undefined}
+              >
+                <Input
+                  id="pos-tendered"
+                  type="number"
+                  min={0}
+                  placeholder="Nhập số tiền khách đưa..."
+                  value={tendered}
+                  onChange={(e) => setTendered(e.target.value)}
+                 />
+              </FormField>
               {change !== null && change >= 0 && (
                 <p className="mt-1 text-sm text-success">
                   Tiền thừa trả lại: <strong>{formatCurrencyVnd(change)}</strong>
                 </p>
-              )}
-              {insufficientTendered && (
-                <p className="field-error mt-1">Tiền đưa chưa đủ tổng thanh toán.</p>
               )}
               {method === 'CASH' && (tendered === '' || tenderedNum === 0) && !insufficientTendered && (
                 <Alert className="mt-2 py-1.5 text-xs" role="note">
@@ -292,23 +313,29 @@ export function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCredi
 
           {method === 'CARD_TERMINAL' && (
             <div className="mt-3">
-              <label className="field-label">Mã giao dịch thẻ (tuỳ chọn)</label>
-              <Input
-                placeholder="REF-12345"
-                value={cardRef}
-                onChange={(e) => setCardRef(e.target.value)}
-               />
+              <FormField
+                label={t('pos.cardRefLabel', { defaultValue: 'Mã giao dịch thẻ (tuỳ chọn)' })}
+                htmlFor="pos-card-ref"
+              >
+                <Input
+                  id="pos-card-ref"
+                  placeholder="REF-12345"
+                  value={cardRef}
+                  onChange={(e) => setCardRef(e.target.value)}
+                 />
+              </FormField>
             </div>
           )}
 
           {method === 'CREDIT' && (
             <div className="mt-3">
-              <label className="field-label">Tìm khách hàng *</label>
+              <label className="field-label" htmlFor="pos-credit-search">{t('pos.creditSearchLabel', { defaultValue: 'Tìm khách hàng' })} *</label>
               <DropdownPopover
-                open={customerResults.length > 0}
+                open={customerResults.length > 0 || (customerSearching && customerQuery.trim().length >= 2)}
                 onOpenChange={(next) => { if (!next) setCustomerResults([]) }}
                 anchor={
                   <Input
+                    id="pos-credit-search"
                     placeholder="Nhập tên, SĐT hoặc email khách hàng..."
                     value={customerQuery}
                     onChange={(e) => {
@@ -321,7 +348,9 @@ export function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCredi
                   />
                 }
               >
-                {customerResults.map((c) => (
+                {customerSearching && customerResults.length === 0 ? (
+                  <p className="px-3 py-2 text-sm text-muted-foreground">{t('pos.searching', { defaultValue: 'Đang tìm…' })}</p>
+                ) : customerResults.map((c) => (
                   <button
                     key={c.id}
                     type="button"
@@ -370,9 +399,12 @@ export function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCredi
               )}
 
               {creditBlocked && (
-                <p className="field-error mt-1.5">
-                  Khách hàng không đủ điều kiện bán chịu
-                  {!creditEnabled ? ' (chưa được bật tín dụng)' : ` (trạng thái: ${customerCredit?.creditStatus})`}.
+                <p className="field-error mt-1.5 flex items-center gap-1" role="alert">
+                  <AlertCircle size={13} aria-hidden="true" className="shrink-0" />
+                  <span>
+                    Khách hàng không đủ điều kiện bán chịu
+                    {!creditEnabled ? ' (chưa được bật tín dụng)' : ` (trạng thái: ${customerCredit?.creditStatus})`}.
+                  </span>
                 </p>
               )}
 
@@ -383,8 +415,11 @@ export function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCredi
               )}
 
               {creditOverLimitBlocked && (
-                <p className="field-error mt-1.5">
-                  Vượt hạn mức tín dụng ({formatCurrencyVnd(total)} &gt; còn lại {formatCurrencyVnd(availableCredit)}). Bạn không có quyền override.
+                <p className="field-error mt-1.5 flex items-center gap-1" role="alert">
+                  <AlertCircle size={13} aria-hidden="true" className="shrink-0" />
+                  <span>
+                    Vượt hạn mức tín dụng ({formatCurrencyVnd(total)} &gt; còn lại {formatCurrencyVnd(availableCredit)}). Bạn không có quyền override.
+                  </span>
                 </p>
               )}
 
@@ -392,22 +427,29 @@ export function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCredi
           )}
 
           <div className="mt-3">
-            <label className="field-label">Mã giảm giá (tuỳ chọn)</label>
-            <Input
-              placeholder="Nhập mã giảm giá POS..."
-              value={couponCode}
-              onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-              autoComplete="off"
-             />
+            <FormField
+              label={t('pos.couponLabel', { defaultValue: 'Mã giảm giá (tuỳ chọn)' })}
+              htmlFor="pos-coupon"
+            >
+              <Input
+                id="pos-coupon"
+                placeholder="Nhập mã giảm giá POS..."
+                value={couponCode}
+                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                autoComplete="off"
+               />
+            </FormField>
           </div>
 
           <div className="mt-3">
-            <label className="field-label">{t('pos.note')}</label>
-            <Input
-              placeholder={t('pos.notePlaceholder')}
-              value={staffNote}
-              onChange={(e) => setStaffNote(e.target.value)}
-             />
+            <FormField label={t('pos.note')} htmlFor="pos-note">
+              <Input
+                id="pos-note"
+                placeholder={t('pos.notePlaceholder')}
+                value={staffNote}
+                onChange={(e) => setStaffNote(e.target.value)}
+               />
+            </FormField>
           </div>
 
           <div className="pos-pay-total">
@@ -415,7 +457,12 @@ export function PaymentModal({ cart, total, onClose, onSuccess, canOverrideCredi
             <strong>{formatCurrencyVnd(total)}</strong>
           </div>
 
-          {error && <p className="field-error mb-2">{error}</p>}
+          {error && (
+            <p className="field-error mb-2 flex items-center gap-1" role="alert">
+              <AlertCircle size={13} aria-hidden="true" className="shrink-0" />
+              <span>{error}</span>
+            </p>
+          )}
 
           <Button
             type="submit"
