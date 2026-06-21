@@ -626,6 +626,34 @@
         "removeSpec": "Remove specification",
         "addSpec": "Add spec"
       },
+      "sizeGuide": {
+        "columnsLabel": "Column names",
+        "columnLabel": "Column {{index}}",
+        "columnNamePlaceholder": "Column name (e.g. Head circumference)",
+        "addColumn": "Add column",
+        "removeColumn": "Remove column",
+        "rowsLabel": "Size rows",
+        "empty": "No size rows yet. Click \"+ Add row\" to start.",
+        "cellPlaceholder": "—",
+        "addRow": "Add row",
+        "removeRow": "Remove row",
+        "noteLabel": "Note",
+        "notePlaceholder": "Extra note (how to measure, sizing tips...) — optional",
+        "modeStructured": "Structured input",
+        "modeHtml": "Paste HTML",
+        "htmlPlaceholder": "Paste size-chart HTML (e.g. AI-generated) here...",
+        "htmlHint": "Unsafe code and custom styling are stripped to match the site's look. The preview below is exactly what customers will see.",
+        "previewLabel": "Preview (exactly as shown on the web)",
+        "previewEmpty": "Nothing to preview yet."
+      },
+      "suitability": {
+        "modeStructured": "Structured input",
+        "modeHtml": "Paste HTML",
+        "htmlPlaceholder": "Paste \"Who it's for\" HTML (e.g. AI-generated) here...",
+        "htmlHint": "When you paste HTML, it is used instead of the cards above. Unsafe code and custom styling are stripped to match the site's look. The preview below is exactly what customers will see.",
+        "previewLabel": "Preview (exactly as shown on the web)",
+        "previewEmpty": "Nothing to preview yet."
+      },
       "specStats": {
         "empty": "No stat boxes yet. Click \"+ Add box\" to start.",
         "hint": "Up to 4 highlight stat boxes right under the buy area — the closing argument that the price is worth it (e.g. 24-month warranty, 4.8★ rating, ECE certified, 2,500+ sold). Each box is one big number plus a short label. Do NOT repeat technical specs here. Max 4; leave empty to hide the block.",

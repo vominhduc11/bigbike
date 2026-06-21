@@ -218,10 +218,13 @@ public sealed interface DescriptionBlock
     }
 
     /**
-     * { type: "suitability", title?: string, cards: [{ audience, advice, linkLabel?, linkUrl? }] }
+     * { type: "suitability", title?: string, cards: [{ audience, advice, linkLabel?, linkUrl? }], html?: string }
      *
      * <p>Khối "Phù hợp với ai" (V240) nhúng trong mô tả — danh sách thẻ tư vấn. Bản EN nằm ở khối
      * tương ứng trong {@code descriptionBlocksEn}.
+     *
+     * <p>Chế độ "dán HTML": khi {@code html} non-blank, render {@code html} THAY cho {@code cards}
+     * (admin tự chọn chế độ ở UI). HTML được sanitize qua Safelist như sizeGuide.
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
@@ -233,6 +236,9 @@ public sealed interface DescriptionBlock
 
         @Size(max = 100, message = "suitability.cards must not exceed 100 entries.")
         private List<@jakarta.validation.Valid SuitabilityCard> cards;
+
+        @Size(max = 20000, message = "suitability.html must not exceed 20 000 characters.")
+        private String html;
 
         /** Một thẻ tư vấn: đối tượng + lời khuyên + link gợi ý nội bộ tuỳ chọn. */
         @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor

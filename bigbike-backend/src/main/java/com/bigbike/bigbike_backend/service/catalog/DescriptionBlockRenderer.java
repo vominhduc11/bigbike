@@ -177,11 +177,17 @@ public class DescriptionBlockRenderer {
         return sb.toString();
     }
 
-    /** Phù hợp với ai → mỗi thẻ một &lt;p&gt; (đối tượng đậm → lời khuyên → link). */
+    /** Phù hợp với ai → mỗi thẻ một &lt;p&gt; (đối tượng đậm → lời khuyên → link).
+     *  Chế độ "dán HTML": khi html non-blank, xuất html tự do THAY cho cards (sanitize qua Safelist chung). */
     private String renderSuitability(DescriptionBlock.SuitabilityBlock b) {
         StringBuilder sb = new StringBuilder("<div class=\"bb-suitability\">");
         if (b.getTitle() != null && !b.getTitle().isBlank()) {
             sb.append("<h2>").append(escapeHtml(b.getTitle())).append("</h2>");
+        }
+        if (b.getHtml() != null && !b.getHtml().isBlank()) {
+            sb.append(b.getHtml());
+            sb.append("</div>");
+            return sb.toString();
         }
         if (b.getCards() != null) {
             for (DescriptionBlock.SuitabilityBlock.SuitabilityCard c : b.getCards()) {

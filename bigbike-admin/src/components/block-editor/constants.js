@@ -34,7 +34,7 @@ export function createBlock(type, preset) {
     case 'video':     block = { ...base, provider: 'youtube', url: '', caption: '' }; break
     case 'callout':   block = { ...base, variant: 'info', html: '' }; break
     case 'feature':   block = { ...base, side: 'auto', url: '', alt: '', caption: '', subheading: '', heading: '', html: '', listStyle: 'bulleted', items: [''] }; break
-    case 'suitability': block = { ...base, title: '', cards: [{ audience: '', advice: '', linkLabel: '', linkUrl: '' }] }; break
+    case 'suitability': block = { ...base, title: '', cards: [{ audience: '', advice: '', linkLabel: '', linkUrl: '' }], html: '' }; break
     case 'sizeGuide':   block = { ...base, title: '', html: '' }; break
     case 'divider':   block = base; break
     default:          block = base; break

@@ -1,11 +1,17 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { GripVertical } from 'lucide-react'
 import { MediaDimensionWarning } from '../MediaDimensionWarning'
 import { RichTextEditor } from '../RichTextEditor'
 import { IMAGE_RECO } from '../../lib/imageRecommendations'
+import { generateId } from '@/lib/utils'
+import { parseSizeGuide, serializeSizeGuide } from '../../lib/sizeChart'
+import { sanitizeHtml } from '../../lib/sanitizeHtml'
 
 export function BlockControls({ disabled, onDuplicate, onRemove }) {
   const { t } = useTranslation()
@@ -408,16 +414,31 @@ export function StringListEditor({ items, onChange, disabled, placeholder, addLa
   )
 }
 
-/** Khối "Phù hợp với ai" (V246) — tiêu đề tuỳ chọn + danh sách thẻ tư vấn. */
+/**
+ * Khối "Phù hợp với ai" (V246) — admin chọn LINH HOẠT 2 chế độ (giống Bảng size):
+ *  1. "Có cấu trúc": tiêu đề + danh sách thẻ tư vấn (audience/advice/link) → ghi `cards`.
+ *  2. "Dán mã HTML": dán thẳng HTML (vd do AI tạo) → ghi `html`; web/backend render `html` THAY cho
+ *     `cards` khi html non-blank (html thắng). Vào lại chế độ có cấu trúc sẽ xoá html để cards có hiệu lực.
+ * Mở lại tự nhận diện chế độ theo việc html có nội dung hay không.
+ */
 export function SuitabilityBlockEditor({ block, onChange, disabled }) {
   const { t } = useTranslation()
+  const [mode, setMode] = useState(() => ((block.html || '').trim() ? 'html' : 'structured'))
   const cards = block.cards && block.cards.length ? block.cards : [{ audience: '', advice: '', linkLabel: '', linkUrl: '' }]
+
+  function changeMode(next) {
+    if (next === mode) return
+    // Vào chế độ có cấu trúc: xoá html để web render theo thẻ (html thắng khi còn nội dung).
+    if (next === 'structured' && (block.html || '').trim()) onChange({ html: '' })
+    setMode(next)
+  }
   function updateCard(i, patch) { onChange({ cards: cards.map((c, idx) => (idx === i ? { ...c, ...patch } : c)) }) }
   function addCard() { onChange({ cards: [...cards, { audience: '', advice: '', linkLabel: '', linkUrl: '' }] }) }
   function removeCard(i) {
     const next = cards.filter((_, idx) => idx !== i)
     onChange({ cards: next.length === 0 ? [{ audience: '', advice: '', linkLabel: '', linkUrl: '' }] : next })
   }
+
   return (
     <div className="flex-1 flex flex-col gap-3">
       <Input
@@ -428,60 +449,168 @@ export function SuitabilityBlockEditor({ block, onChange, disabled }) {
         disabled={disabled}
         maxLength={500}
       />
-      {cards.map((card, i) => (
-        <div key={i} className="flex flex-col gap-2 p-2 border border-border rounded-sm bg-muted/20">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">#{i + 1}</span>
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
-              onClick={() => removeCard(i)} disabled={disabled}
-              aria-label={t('products.detail.blocks.listRemoveItem')}>✕</Button>
-          </div>
-          <Input
-            placeholder={t('products.detail.blocks.suitabilityAudiencePlaceholder')}
-            value={card.audience || ''}
-            onChange={(e) => updateCard(i, { audience: e.target.value })}
+
+      <Tabs value={mode} onValueChange={changeMode}>
+        <TabsList>
+          <TabsTrigger value="structured" disabled={disabled}>
+            {t('products.detail.suitability.modeStructured')}
+          </TabsTrigger>
+          <TabsTrigger value="html" disabled={disabled}>
+            {t('products.detail.suitability.modeHtml')}
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Chế độ NHẬP CÓ CẤU TRÚC */}
+        <TabsContent value="structured" className="flex flex-col gap-3">
+          {cards.map((card, i) => (
+            <div key={i} className="flex flex-col gap-2 p-2 border border-border rounded-sm bg-muted/20">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">#{i + 1}</span>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
+                  onClick={() => removeCard(i)} disabled={disabled}
+                  aria-label={t('products.detail.blocks.listRemoveItem')}>✕</Button>
+              </div>
+              <Input
+                placeholder={t('products.detail.blocks.suitabilityAudiencePlaceholder')}
+                value={card.audience || ''}
+                onChange={(e) => updateCard(i, { audience: e.target.value })}
+                disabled={disabled}
+                maxLength={500}
+              />
+              <Input
+                placeholder={t('products.detail.blocks.suitabilityAdvicePlaceholder')}
+                value={card.advice || ''}
+                onChange={(e) => updateCard(i, { advice: e.target.value })}
+                disabled={disabled}
+                maxLength={2000}
+              />
+              <div className="flex gap-2">
+                <Input
+                  className="flex-1"
+                  placeholder={t('products.detail.blocks.suitabilityLinkLabelPlaceholder')}
+                  value={card.linkLabel || ''}
+                  onChange={(e) => updateCard(i, { linkLabel: e.target.value })}
+                  disabled={disabled}
+                  maxLength={500}
+                />
+                <Input
+                  className="flex-1"
+                  placeholder={t('products.detail.blocks.suitabilityLinkUrlPlaceholder')}
+                  value={card.linkUrl || ''}
+                  onChange={(e) => updateCard(i, { linkUrl: e.target.value })}
+                  disabled={disabled}
+                  maxLength={2000}
+                />
+              </div>
+            </div>
+          ))}
+          <Button variant="outline" size="sm" onClick={addCard} disabled={disabled} className="self-start">
+            + {t('products.detail.blocks.suitabilityAddCard')}
+          </Button>
+        </TabsContent>
+
+        {/* Chế độ DÁN MÃ HTML */}
+        <TabsContent value="html" className="flex flex-col gap-2">
+          <Textarea
+            className="font-mono text-xs"
+            placeholder={t('products.detail.suitability.htmlPlaceholder')}
+            value={block.html || ''}
+            onChange={(e) => onChange({ html: e.target.value })}
             disabled={disabled}
-            maxLength={500}
+            rows={8}
+            maxLength={20000}
           />
-          <Input
-            placeholder={t('products.detail.blocks.suitabilityAdvicePlaceholder')}
-            value={card.advice || ''}
-            onChange={(e) => updateCard(i, { advice: e.target.value })}
-            disabled={disabled}
-            maxLength={2000}
-          />
-          <div className="flex gap-2">
-            <Input
-              className="flex-1"
-              placeholder={t('products.detail.blocks.suitabilityLinkLabelPlaceholder')}
-              value={card.linkLabel || ''}
-              onChange={(e) => updateCard(i, { linkLabel: e.target.value })}
-              disabled={disabled}
-              maxLength={500}
-            />
-            <Input
-              className="flex-1"
-              placeholder={t('products.detail.blocks.suitabilityLinkUrlPlaceholder')}
-              value={card.linkUrl || ''}
-              onChange={(e) => updateCard(i, { linkUrl: e.target.value })}
-              disabled={disabled}
-              maxLength={2000}
-            />
+          <p className="text-xs text-muted-foreground">{t('products.detail.suitability.htmlHint')}</p>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              {t('products.detail.suitability.previewLabel')}
+            </label>
+            {(block.html || '').trim() ? (
+              <div
+                className="size-guide-preview rounded-sm border border-border bg-surface p-3 overflow-x-auto"
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(block.html) }}
+              />
+            ) : (
+              <p className="list-editor-empty">{t('products.detail.suitability.previewEmpty')}</p>
+            )}
           </div>
-        </div>
-      ))}
-      <Button variant="outline" size="sm" onClick={addCard} disabled={disabled} className="self-start">
-        + {t('products.detail.blocks.suitabilityAddCard')}
-      </Button>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
 
 /** Khối "Bảng size" (V246) — tiêu đề tuỳ chọn + HTML tự do (thường là bảng). */
+/** HTML hiện tại có phải do trình nhập có cấu trúc tạo ra không (round-trip ổn định).
+ *  Dùng để mở đúng chế độ: HTML admin tự dán (không round-trip được) → mở tab HTML, giữ nguyên. */
+function isStructuredHtml(html) {
+  const h = html || ''
+  if (!h.trim()) return true
+  return serializeSizeGuide(parseSizeGuide(h)) === h
+}
+
+/**
+ * Bảng size — admin chọn LINH HOẠT giữa 2 chế độ nhập, cùng ghi vào một field `block.html`:
+ *  1. "Có cấu trúc": trình nhập cột/dòng (số cột linh hoạt) — xem lib/sizeChart.
+ *  2. "Dán mã HTML": dán thẳng HTML (vd do AI tạo) + xem trước đã được lọc đúng như web hiển thị.
+ * Chế độ KHÔNG lưu vào dữ liệu (giữ nguyên contract {title, html}); mở lại tự nhận diện: HTML tùy
+ * chỉnh (không round-trip được) → mở tab HTML để khỏi mất; bảng có cấu trúc → mở tab có cấu trúc.
+ * State cục bộ là nguồn sự thật khi đang sửa (reseed khi remount theo block._key ở SortableList).
+ */
 export function SizeGuideBlockEditor({ block, onChange, disabled }) {
   const { t } = useTranslation()
+  const [mode, setMode] = useState(() => (isStructuredHtml(block.html) ? 'structured' : 'html'))
+  const [model, setModel] = useState(() => parseSizeGuide(block.html))
+
+  function changeMode(next) {
+    if (next === mode) return
+    // Vào tab có cấu trúc: nạp lại model từ HTML hiện tại (kể cả HTML vừa dán).
+    if (next === 'structured') setModel(parseSizeGuide(block.html))
+    setMode(next)
+  }
+
+  function commit(next) {
+    setModel(next)
+    onChange({ html: serializeSizeGuide(next) })
+  }
+  const setNote = (note) => commit({ ...model, note })
+  const renameColumn = (ci, label) =>
+    commit({ ...model, columns: model.columns.map((c, idx) => (idx === ci ? { ...c, label } : c)) })
+  const addColumn = () =>
+    commit({
+      ...model,
+      columns: [...model.columns, { _key: generateId(), label: '' }],
+      rows: model.rows.map((r) => ({ ...r, cells: [...r.cells, ''] })),
+    })
+  const removeColumn = (ci) =>
+    commit({
+      ...model,
+      columns: model.columns.filter((_, idx) => idx !== ci),
+      rows: model.rows.map((r) => ({ ...r, cells: r.cells.filter((_, idx) => idx !== ci) })),
+    })
+  const updateCell = (ri, ci, value) =>
+    commit({
+      ...model,
+      rows: model.rows.map((r, idx) =>
+        idx === ri ? { ...r, cells: r.cells.map((c, j) => (j === ci ? value : c)) } : r,
+      ),
+    })
+  const addRow = () =>
+    commit({ ...model, rows: [...model.rows, { _key: generateId(), cells: model.columns.map(() => '') }] })
+  const removeRow = (ri) => commit({ ...model, rows: model.rows.filter((_, idx) => idx !== ri) })
+  function moveRow(ri, dir) {
+    const target = ri + dir
+    if (target < 0 || target >= model.rows.length) return
+    const rows = [...model.rows]
+    ;[rows[ri], rows[target]] = [rows[target], rows[ri]]
+    commit({ ...model, rows })
+  }
+
+  const colCount = model.columns.length
+  const gridStyle = { gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }
+
   return (
-    <div className="flex-1 flex flex-col gap-2">
+    <div className="flex-1 flex flex-col gap-3">
       <Input
         className="font-bold"
         placeholder={t('products.detail.blocks.sectionTitlePlaceholder')}
@@ -490,13 +619,133 @@ export function SizeGuideBlockEditor({ block, onChange, disabled }) {
         disabled={disabled}
         maxLength={500}
       />
-      <RichTextEditor
-        key={block._key}
-        value={block.html || ''}
-        onChange={(html) => onChange({ html })}
-        disabled={disabled}
-        enableImagePicker={false}
-      />
+
+      <Tabs value={mode} onValueChange={changeMode}>
+        <TabsList>
+          <TabsTrigger value="structured" disabled={disabled}>
+            {t('products.detail.sizeGuide.modeStructured')}
+          </TabsTrigger>
+          <TabsTrigger value="html" disabled={disabled}>
+            {t('products.detail.sizeGuide.modeHtml')}
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Chế độ NHẬP CÓ CẤU TRÚC */}
+        <TabsContent value="structured" className="flex flex-col gap-3">
+          {/* Tên các cột */}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              {t('products.detail.sizeGuide.columnsLabel')}
+            </label>
+            <div className="flex items-start gap-2">
+              <div className="grid flex-1 gap-2" style={gridStyle}>
+                {model.columns.map((col, ci) => (
+                  <div key={col._key} className="flex items-center gap-1">
+                    <Input
+                      placeholder={t('products.detail.sizeGuide.columnNamePlaceholder')}
+                      aria-label={t('products.detail.sizeGuide.columnLabel', { index: ci + 1 })}
+                      value={col.label || ''}
+                      onChange={(e) => renameColumn(ci, e.target.value)}
+                      disabled={disabled}
+                      maxLength={120}
+                    />
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive shrink-0"
+                      onClick={() => removeColumn(ci)} disabled={disabled || colCount <= 1}
+                      aria-label={t('products.detail.sizeGuide.removeColumn')}>✕</Button>
+                  </div>
+                ))}
+              </div>
+              {/* chừa chỗ thẳng hàng với nút xoá dòng bên dưới */}
+              <div className="w-7 shrink-0" aria-hidden="true" />
+            </div>
+            <Button variant="outline" size="sm" onClick={addColumn} disabled={disabled} className="self-start">
+              + {t('products.detail.sizeGuide.addColumn')}
+            </Button>
+          </div>
+
+          {/* Các dòng size */}
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              {t('products.detail.sizeGuide.rowsLabel')}
+            </label>
+            {model.rows.length === 0 && (
+              <p className="list-editor-empty">{t('products.detail.sizeGuide.empty')}</p>
+            )}
+            {model.rows.map((row, ri) => (
+              <div key={row._key} className="flex items-center gap-2">
+                <div className="flex flex-col gap-0.5 shrink-0">
+                  <Button variant="outline" size="icon" className="h-5 w-7"
+                    onClick={() => moveRow(ri, -1)} disabled={disabled || ri === 0}
+                    aria-label={t('products.detail.moveUp')}>▲</Button>
+                  <Button variant="outline" size="icon" className="h-5 w-7"
+                    onClick={() => moveRow(ri, 1)} disabled={disabled || ri === model.rows.length - 1}
+                    aria-label={t('products.detail.moveDown')}>▼</Button>
+                </div>
+                <div className="grid flex-1 gap-2" style={gridStyle}>
+                  {row.cells.map((cell, ci) => (
+                    <Input
+                      key={model.columns[ci]?._key || ci}
+                      placeholder={t('products.detail.sizeGuide.cellPlaceholder')}
+                      value={cell || ''}
+                      onChange={(e) => updateCell(ri, ci, e.target.value)}
+                      disabled={disabled}
+                      maxLength={120}
+                    />
+                  ))}
+                </div>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive shrink-0"
+                  onClick={() => removeRow(ri)} disabled={disabled}
+                  aria-label={t('products.detail.sizeGuide.removeRow')}>✕</Button>
+              </div>
+            ))}
+            <Button variant="outline" size="sm" onClick={addRow} disabled={disabled} className="self-start">
+              + {t('products.detail.sizeGuide.addRow')}
+            </Button>
+          </div>
+
+          {/* Ghi chú */}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              {t('products.detail.sizeGuide.noteLabel')}
+            </label>
+            <Textarea
+              placeholder={t('products.detail.sizeGuide.notePlaceholder')}
+              value={model.note || ''}
+              onChange={(e) => setNote(e.target.value)}
+              disabled={disabled}
+              rows={2}
+              maxLength={2000}
+            />
+          </div>
+        </TabsContent>
+
+        {/* Chế độ DÁN MÃ HTML */}
+        <TabsContent value="html" className="flex flex-col gap-2">
+          <Textarea
+            className="font-mono text-xs"
+            placeholder={t('products.detail.sizeGuide.htmlPlaceholder')}
+            value={block.html || ''}
+            onChange={(e) => onChange({ html: e.target.value })}
+            disabled={disabled}
+            rows={8}
+            maxLength={20000}
+          />
+          <p className="text-xs text-muted-foreground">{t('products.detail.sizeGuide.htmlHint')}</p>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              {t('products.detail.sizeGuide.previewLabel')}
+            </label>
+            {(block.html || '').trim() ? (
+              <div
+                className="size-guide-preview rounded-sm border border-border bg-surface p-3 overflow-x-auto"
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(block.html) }}
+              />
+            ) : (
+              <p className="list-editor-empty">{t('products.detail.sizeGuide.previewEmpty')}</p>
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

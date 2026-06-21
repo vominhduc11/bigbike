@@ -3208,6 +3208,13 @@ body:has(.bb-home) {
 .bb-wp-pdp-page .wyswyg table:not(.shop_attributes) th * {
   font-size: 18px !important;
 }
+/* Ô dữ liệu (td) — ép 18px kể cả khi HTML dán bọc nội dung trong <p>/<span> (vd bảng do AI tạo);
+   nếu không, luật .wyswyg p{16px} (theme WP, unlayered) kéo cột giá trị nhỏ hơn header. Đồng cỡ
+   với th để bảng dán HTML hiển thị nhất quán như bảng nhập có cấu trúc. */
+.bb-wp-pdp-page .wyswyg table:not(.shop_attributes) td,
+.bb-wp-pdp-page .wyswyg table:not(.shop_attributes) td * {
+  font-size: 18px !important;
+}
 .bb-wp-pdp-page .wyswyg table:not(.shop_attributes) tbody tr:nth-child(even) td {
   background: var(--bb-bg-surface-raised);
 }

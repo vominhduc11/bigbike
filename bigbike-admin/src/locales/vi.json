@@ -626,6 +626,34 @@
         "removeSpec": "Xoá thông số",
         "addSpec": "Thêm thông số"
       },
+      "sizeGuide": {
+        "columnsLabel": "Tên các cột",
+        "columnLabel": "Cột {{index}}",
+        "columnNamePlaceholder": "Tên cột (vd: Vòng đầu)",
+        "addColumn": "Thêm cột",
+        "removeColumn": "Xoá cột",
+        "rowsLabel": "Các dòng size",
+        "empty": "Chưa có dòng size. Nhấn \"+ Thêm dòng\" để bắt đầu.",
+        "cellPlaceholder": "—",
+        "addRow": "Thêm dòng",
+        "removeRow": "Xoá dòng",
+        "noteLabel": "Ghi chú",
+        "notePlaceholder": "Ghi chú thêm (cách đo, lưu ý chọn size...) — tùy chọn",
+        "modeStructured": "Nhập có cấu trúc",
+        "modeHtml": "Dán mã HTML",
+        "htmlPlaceholder": "Dán đoạn mã HTML bảng size (vd do AI tạo) vào đây...",
+        "htmlHint": "Hệ thống tự lọc bỏ mã nguy hiểm và định dạng tô màu riêng để đồng bộ giao diện web. Xem trước bên dưới là kết quả thật sự hiển thị cho khách.",
+        "previewLabel": "Xem trước (đúng như hiển thị trên web)",
+        "previewEmpty": "Chưa có nội dung để xem trước."
+      },
+      "suitability": {
+        "modeStructured": "Nhập có cấu trúc",
+        "modeHtml": "Dán mã HTML",
+        "htmlPlaceholder": "Dán đoạn mã HTML khối \"Phù hợp với ai\" (vd do AI tạo) vào đây...",
+        "htmlHint": "Khi dán HTML, hệ thống dùng HTML này thay cho danh sách thẻ ở trên. Mã nguy hiểm và định dạng tô màu riêng bị lọc để đồng bộ giao diện web. Xem trước bên dưới là kết quả thật sự hiển thị cho khách.",
+        "previewLabel": "Xem trước (đúng như hiển thị trên web)",
+        "previewEmpty": "Chưa có nội dung để xem trước."
+      },
       "specStats": {
         "empty": "Chưa có ô số liệu. Nhấn \"+ Thêm ô\" để bắt đầu.",
         "hint": "4 ô số liệu nổi bật ngay dưới khu vực mua hàng — là \"đòn chốt\" giúp khách thấy đáng tiền (vd: 24 tháng bảo hành, 4.8★ đánh giá, đạt chuẩn ECE, 2.500+ đã bán). Mỗi ô gồm một con số lớn và nhãn ngắn. KHÔNG nên lặp lại thông số kỹ thuật. Tối đa 4 ô; để trống thì khối tự ẩn.",

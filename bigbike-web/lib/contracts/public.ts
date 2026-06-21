@@ -193,10 +193,12 @@ export type DescriptionBlock =
       items?: string[];
     }
   // Phù hợp với ai (V246, từ V240) — danh sách thẻ tư vấn nhúng trong mô tả.
+  // `html` (chế độ dán HTML): khi non-blank thì render html THAY cho cards.
   | {
       type: "suitability";
       title?: string;
       cards?: Array<{ audience?: string; advice?: string; linkLabel?: string; linkUrl?: string }>;
+      html?: string;
     }
   // Bảng size (V246) — HTML tự do (thường là bảng) nhúng trong mô tả.
   | { type: "sizeGuide"; title?: string; html?: string };

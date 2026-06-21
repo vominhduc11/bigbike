@@ -3,7 +3,7 @@
 // and to satisfy react-refresh (non-component exports must live in a .js file).
 
 import { createContext } from 'react'
-import { parseSizeGuide } from '../../lib/sizeChart'
+import { parseSizeGuide, emptySizeGuide } from '../../lib/sizeChart'
 import { normalizeVariantToken, isColorAttributeName } from '../../lib/schemas'
 import { generateId } from '@/lib/utils'
 
@@ -222,7 +222,7 @@ export function buildEmptyForm() {
     positiveNotes: [],
     negativeNotes: [],
     originBrandCountry: '',
-    sizeChart: { col2: 'Vòng đầu (cm)', rows: [], note: '' },
+    sizeChart: emptySizeGuide(),
     // "Phù hợp với ai" (V240) — danh sách thẻ {audience, advice, linkLabel, linkUrl + *En}.
     // Serialize thành 2 chuỗi JSON (vi + en) khi lưu; xem parse/serializeSuitabilityCards.
     suitabilityCards: [],

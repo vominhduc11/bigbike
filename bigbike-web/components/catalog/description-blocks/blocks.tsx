@@ -197,8 +197,20 @@ function BlockTitle({ text }: { text?: string }) {
   );
 }
 
-/** Khối "Phù hợp với ai" (V246) — danh sách thẻ tư vấn (đối tượng đậm → lời khuyên → link nội bộ). */
+/** Khối "Phù hợp với ai" (V246) — danh sách thẻ tư vấn (đối tượng đậm → lời khuyên → link nội bộ).
+ *  Chế độ "dán HTML": khi block.html non-blank thì render html (sanitize) THAY cho cards. */
 export function SuitabilityBlockView({ block }: { block: SuitabilityBlockT }) {
+  const rawHtml = (block.html ?? "").trim();
+  if (rawHtml) {
+    const html = sanitizeRichHtml(rawHtml);
+    if (!html) return null;
+    return (
+      <div className="flex flex-col gap-4">
+        <BlockTitle text={block.title} />
+        <div className="wyswyg text-ui-18 max-md:text-ui-16" dangerouslySetInnerHTML={{ __html: html }} />
+      </div>
+    );
+  }
   const cards = (block.cards ?? []).filter(
     (c) => (c.audience ?? "").trim() || (c.advice ?? "").trim(),
   );

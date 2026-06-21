@@ -531,6 +531,29 @@ a {
   outline: none;
 }
 
+/* ─── Xem trước HTML bảng size (chế độ "Dán mã HTML") ────────────────────────*/
+.size-guide-preview {
+  font-size: 0.875rem;
+}
+.size-guide-preview table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.size-guide-preview th,
+.size-guide-preview td {
+  border: 1px solid var(--admin-color-border-default);
+  padding: 0.4em 0.6em;
+  text-align: left;
+  vertical-align: top;
+}
+.size-guide-preview th {
+  background: var(--admin-color-surface-muted);
+  font-weight: 600;
+}
+.size-guide-preview p:last-child {
+  margin-bottom: 0;
+}
+
 /* ─── react-day-picker overrides ─────────────────────────────────────────────*/
 .rdp-root {
   font-family: var(--admin-font-body) !important;
