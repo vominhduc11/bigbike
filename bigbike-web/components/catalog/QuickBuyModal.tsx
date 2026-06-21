@@ -1,16 +1,7 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
-import { useForm } from "react-hook-form";
-import { useLocale, useTranslations } from "next-intl";
-import { useAuth } from "@/lib/auth/auth-store";
-import { fetchCheckoutOptions, fetchMyAddresses, submitQuickBuy } from "@/lib/api/client-api";
-import { getRegionForProvince } from "@/lib/vn-region-map";
-import type { ShippingMethodOption } from "@/lib/contracts/commerce";
-import { createQuickBuySchema, type QuickBuyFormValues } from "@/lib/schemas/quick-buy";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { VnAddressFields } from "@/components/ui/VnAddressFields";
+import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -29,19 +20,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { cn, generateId } from "@/lib/utils";
+import { VnAddressFields } from "@/components/ui/VnAddressFields";
+import { cn } from "@/lib/utils";
 import { formatVnd } from "@/lib/utils/format";
+import { useQuickBuyForm } from "./quick-buy-modal/useQuickBuyForm";
+import { ShippingMethodsSection } from "./quick-buy-modal/ShippingMethodsSection";
+import type { QuickBuyModalProps } from "./quick-buy-modal/types";
 
-export type QuickBuyModalProps = {
-  open: boolean;
-  onClose: () => void;
-  productId: string;
-  productName: string;
-  selectedVariantId?: string | null;
-  variantLabel?: string | null;
-  unitPrice?: number | null;
-  onSuccess: (order: { orderNumber: string; orderKey: string; paymentMethod: string }) => void;
-};
+export type { QuickBuyModalProps };
 
 export function QuickBuyModal({
   open,
@@ -53,146 +39,22 @@ export function QuickBuyModal({
   unitPrice,
   onSuccess,
 }: QuickBuyModalProps) {
-  const locale = useLocale();
   const t = useTranslations("Checkout");
   const tQb = useTranslations("Checkout.quickbuy");
-  const tV = useTranslations("Checkout.validation");
-  const auth = useAuth();
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [shippingMethods, setShippingMethods] = useState<ShippingMethodOption[]>([]);
 
-  // Idempotency key — regenerated each time modal opens
-  const idempotencyKeyRef = useRef<string>(generateId());
-  useEffect(() => {
-    if (open) idempotencyKeyRef.current = generateId();
-  }, [open]);
-
-  const form = useForm<QuickBuyFormValues>({
-    resolver: zodResolver(createQuickBuySchema((key) => tV(key))),
-    defaultValues: {
-      customerName: "",
-      phone: "",
-      email: "",
-      province: "",
-      district: "",
-      ward: "",
-      addressLine1: "",
-      quantity: 1,
-      shippingMethodId: "",
-      paymentMethod: "COD",
-      customerNote: "",
-    },
-  });
-
-  // Prefill from profile when authenticated
-  useEffect(() => {
-    if (!open || auth.status !== "authenticated") return;
-    const { profile } = auth;
-    form.setValue("customerName", profile.displayName ?? "");
-    form.setValue("phone", profile.phone ?? "");
-    form.setValue("email", profile.email ?? "");
-
-    fetchMyAddresses()
-      .then((addresses) => {
-        const def = addresses.find((a) => a.isDefault) ?? addresses[0] ?? null;
-        if (!def) return;
-        if (def.province) form.setValue("province", def.province);
-        if (def.district) form.setValue("district", def.district);
-        if (def.ward) form.setValue("ward", def.ward ?? "");
-        if (def.addressLine1) form.setValue("addressLine1", def.addressLine1);
-      })
-      .catch(() => { /* ignore — prefill is best-effort */ });
-  }, [open, auth]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Load shipping options once on modal open
-  useEffect(() => {
-    if (!open) return;
-    fetchCheckoutOptions(locale)
-      .then((opts) => setShippingMethods(opts.shippingMethods ?? []))
-      .catch(() => { /* non-critical — shipping estimate is best-effort */ });
-  }, [open, locale]);
-
-  // Reset form and error on close
-  useEffect(() => {
-    if (!open) {
-      form.reset();
-      setSubmitError(null);
-    }
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  async function onSubmit(values: QuickBuyFormValues) {
-    setSubmitError(null);
-    try {
-      const order = await submitQuickBuy(
-        {
-          productId,
-          productVariantId: selectedVariantId ?? undefined,
-          quantity: values.quantity,
-          billingAddress: {
-            fullName: values.customerName,
-            phone: values.phone,
-            email: values.email,
-            country: "VN",
-            province: values.province,
-            district: values.district,
-            ward: values.ward ?? "",
-            addressLine1: values.addressLine1,
-          },
-          shippingMethodId: values.shippingMethodId || null,
-          paymentMethod: values.paymentMethod,
-          customerNote: values.customerNote || undefined,
-        },
-        idempotencyKeyRef.current,
-      );
-      onSuccess({
-        orderNumber: order.orderNumber,
-        orderKey: order.orderKey,
-        paymentMethod: values.paymentMethod,
-      });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : tQb("errSubmitFailed");
-      setSubmitError(message);
-    }
-  }
-
-  const isSubmitting = form.formState.isSubmitting;
-  const paymentMethod = form.watch("paymentMethod");
-  const province = form.watch("province");
-  const quantity = form.watch("quantity") ?? 1;
-  const selectedShippingId = form.watch("shippingMethodId");
-  const quantityId = useId();
-
-  // Methods available for the currently selected province's region
-  const availableMethodsForRegion = (() => {
-    if (!shippingMethods.length || !province) return [];
-    const region = getRegionForProvince(province);
-    const zoneMatched = shippingMethods.filter((m) => m.zoneRegionCode === region);
-    return zoneMatched.length > 0
-      ? zoneMatched
-      : shippingMethods.filter((m) => !m.zoneRegionCode);
-  })();
-
-  // Auto-select shipping: keep current selection if still valid, otherwise pick first available
-  useEffect(() => {
-    if (!province || !shippingMethods.length) return;
-    const region = getRegionForProvince(province);
-    const zoneMatched = shippingMethods.filter((m) => m.zoneRegionCode === region);
-    const available = zoneMatched.length > 0 ? zoneMatched : shippingMethods.filter((m) => !m.zoneRegionCode);
-    const currentId = form.getValues("shippingMethodId");
-    if (!available.some((m) => m.id === currentId)) {
-      form.setValue("shippingMethodId", available[0]?.id ?? "");
-    }
-  }, [province, shippingMethods]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Compute cost for the currently selected shipping method
-  const shippingEstimate = (() => {
-    const method = shippingMethods.find((m) => m.id === selectedShippingId);
-    if (!method) return null;
-    const subtotal = (unitPrice ?? 0) * quantity;
-    if (method.minOrderAmount && subtotal < method.minOrderAmount) return null;
-    const isFree = method.freeShippingThreshold != null && subtotal >= method.freeShippingThreshold;
-    return { id: method.id, title: method.title, cost: isFree ? 0 : method.cost, isFree, threshold: method.freeShippingThreshold };
-  })();
+  const {
+    form,
+    onSubmit,
+    submitError,
+    isSubmitting,
+    paymentMethod,
+    province,
+    quantity,
+    selectedShippingId,
+    quantityId,
+    availableMethodsForRegion,
+    shippingEstimate,
+  } = useQuickBuyForm({ open, productId, selectedVariantId, unitPrice, onSuccess });
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
@@ -350,68 +212,15 @@ export function QuickBuyModal({
 
               {/* Phương thức vận chuyển */}
               {province && (
-                <section>
-                  <p className="text-overline font-semibold uppercase tracking-display text-muted-foreground mb-3">
-                    {tQb("shippingSection")}
-                  </p>
-                  {availableMethodsForRegion.length === 0 ? (
-                    <p className="text-caption text-muted-foreground">{tQb("summaryShippingUnknown")}</p>
-                  ) : availableMethodsForRegion.length === 1 ? (
-                    <div className="flex items-center justify-between px-3 py-2.5 border border-border text-caption">
-                      <span className="font-medium">{availableMethodsForRegion[0].title}</span>
-                      <span className={cn("font-medium tabular-nums", shippingEstimate?.isFree && "text-state-success-text")}>
-                        {shippingEstimate
-                          ? shippingEstimate.isFree
-                            ? tQb("summaryShippingFree")
-                            : formatVnd(shippingEstimate.cost)
-                          : "—"}
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-2">
-                      {availableMethodsForRegion.map((method) => {
-                        const subtotal = (unitPrice ?? 0) * quantity;
-                        const isFree = method.freeShippingThreshold != null && subtotal >= method.freeShippingThreshold;
-                        const cost = isFree ? 0 : method.cost;
-                        return (
-                          <label
-                            key={method.id}
-                            className={cn(
-                              "flex items-center justify-between gap-3 p-3 border cursor-pointer transition-colors",
-                              selectedShippingId === method.id
-                                ? "border-foreground bg-muted/40"
-                                : "border-border hover:border-foreground/40",
-                              isSubmitting && "opacity-60 cursor-not-allowed",
-                            )}
-                          >
-                            <div className="flex items-center gap-3">
-                              <input
-                                type="radio"
-                                name="shippingMethodId"
-                                value={method.id}
-                                checked={selectedShippingId === method.id}
-                                onChange={() => form.setValue("shippingMethodId", method.id)}
-                                disabled={isSubmitting}
-                                className="accent-foreground"
-                              />
-                              <div className="flex flex-col gap-0.5">
-                                <span className="text-caption font-medium">{method.title}</span>
-                                {method.freeShippingThreshold != null && !isFree && (
-                                  <span className="text-overline text-muted-foreground">
-                                    {tQb("shippingFreeFrom", { amount: formatVnd(method.freeShippingThreshold) })}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            <span className={cn("text-caption font-semibold tabular-nums shrink-0", isFree && "text-state-success-text")}>
-                              {isFree ? tQb("summaryShippingFree") : formatVnd(cost)}
-                            </span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  )}
-                </section>
+                <ShippingMethodsSection
+                  availableMethodsForRegion={availableMethodsForRegion}
+                  shippingEstimate={shippingEstimate}
+                  selectedShippingId={selectedShippingId}
+                  isSubmitting={isSubmitting}
+                  unitPrice={unitPrice}
+                  quantity={quantity}
+                  onSelect={(id) => form.setValue("shippingMethodId", id)}
+                />
               )}
 
               {/* Phương thức thanh toán */}
