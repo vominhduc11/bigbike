@@ -28,6 +28,7 @@ export function AcceptInviteScreen() {
   useEffect(() => {
     let active = true
     if (!token) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPhase('invalid')
       setError(t('acceptInvite.missingToken'))
       return

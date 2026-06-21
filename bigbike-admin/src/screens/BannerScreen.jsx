@@ -79,8 +79,8 @@ function SourceBadge({ source, t }) {
     <span
       className="bb-badge"
       style={{
-        background: isDefault ? 'var(--bb-warning-bg, #fef3c7)' : 'var(--bb-surface-muted, #f1f1f1)',
-        color: isDefault ? 'var(--bb-warning-fg, #92400e)' : 'var(--bb-muted-fg, #6b7280)',
+        background: isDefault ? 'var(--bb-warning-bg)' : 'var(--bb-surface-muted)',
+        color: isDefault ? 'var(--bb-warning)' : 'var(--bb-text-muted)',
       }}
     >
       {isDefault ? t('banners.usingDefault') : t('banners.usingFallback')}
@@ -243,7 +243,7 @@ function CrossLinksCard({ navigate, t }) {
       <div className="bb-card-body" style={{ display: 'grid', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-            <FolderTree size={18} style={{ marginTop: 2, color: 'var(--bb-muted-fg, #6b7280)' }} />
+            <FolderTree size={18} style={{ marginTop: 2, color: 'var(--bb-text-muted)' }} />
             <div>
               <div style={{ fontWeight: 600, fontSize: 13 }}>{t('banners.categoryLinkTitle')}</div>
               <div className="bb-muted" style={{ fontSize: 12 }}>{t('banners.categoryLinkDesc')}</div>
@@ -255,7 +255,7 @@ function CrossLinksCard({ navigate, t }) {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-            <FileText size={18} style={{ marginTop: 2, color: 'var(--bb-muted-fg, #6b7280)' }} />
+            <FileText size={18} style={{ marginTop: 2, color: 'var(--bb-text-muted)' }} />
             <div>
               <div style={{ fontWeight: 600, fontSize: 13 }}>{t('banners.contentLinkTitle')}</div>
               <div className="bb-muted" style={{ fontSize: 12 }}>{t('banners.contentLinkDesc')}</div>
@@ -401,7 +401,7 @@ export function BannerScreen({ canUpdate = false, navigate }) {
         >
           <span className="bb-muted" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
             {saveSuccess ? (
-              <><CheckCircle2 size={15} style={{ color: 'var(--bb-success-fg, #16a34a)' }} /> {t('banners.saveSuccess')}</>
+              <><CheckCircle2 size={15} style={{ color: 'var(--bb-success)' }} /> {t('banners.saveSuccess')}</>
             ) : (
               <><AlertCircle size={14} /> {t('banners.unsavedCount', { count: dirtyKeys.length })}</>
             )}

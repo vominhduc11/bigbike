@@ -10,8 +10,8 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
-import { GripVertical, Pencil, Trash2, Search, X, Plus, AlertTriangle } from 'lucide-react'
-import { useDragSensors, SortableRow } from '../components/Sortable'
+import { Search, X, Plus, AlertTriangle } from 'lucide-react'
+import { useDragSensors } from '../components/Sortable'
 import { toast } from 'sonner'
 import {
   createMenuItem,
@@ -21,331 +21,28 @@ import {
   reorderMenuItems,
   updateMenuItem,
 } from '../lib/adminApi'
-import { normalizeMenu } from '../lib/contracts'
 import { useContentLang } from '../lib/contentLang'
 import { showConfirm } from '../lib/confirm'
 import { formatText } from '../lib/formatters'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
-import { Modal as LayoutModal } from '../components/layout'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
-
-function safeMenuDetailCache(data) {
-  if (!data) return data
-  if (data?.item) return { ...data, item: normalizeMenu(data.item) }
-  return data
-}
-
-// ── System slots ───────────────────────────────────────────────────────────────
-// Mirrors backend `MenuLocations.SYSTEM_LOCATIONS`. The storefront only renders
-// menus at these locations, so the admin UI exposes them as fixed tabs and never
-// allows creating/deleting menu containers.
-
-const SYSTEM_SLOTS = [
-  {
-    location: 'primary',
-    titleKey: 'menus.slotPrimaryTitle',
-    descKey: 'menus.slotPrimaryDesc',
-    fallbackName: 'Header Menu',
-  },
-  {
-    location: 'footer',
-    titleKey: 'menus.slotFooterTitle',
-    descKey: 'menus.slotFooterDesc',
-    fallbackName: 'Footer Navigation',
-  },
-  {
-    location: 'guide',
-    titleKey: 'menus.slotGuideTitle',
-    descKey: 'menus.slotGuideDesc',
-    fallbackName: 'Buying Guide Menu',
-  },
-  {
-    location: 'policy',
-    titleKey: 'menus.slotPolicyTitle',
-    descKey: 'menus.slotPolicyDesc',
-    fallbackName: 'Policy Pages Menu',
-  },
-]
-
-// ── Constants ──────────────────────────────────────────────────────────────────
-
-const EMPTY_ITEM = {
-  label: '',
-  labelEn: '',
-  url: '',
-  sortOrder: '0',
-  parentId: '',
-  openInNewTab: false,
-  cssClass: '',
-  status: 'ACTIVE',
-}
-
-function normalizeParentId(parentId) {
-  return parentId || ''
-}
-
-function sameParent(a, b) {
-  return normalizeParentId(a) === normalizeParentId(b)
-}
-
-function sortMenuItems(items) {
-  return [...items].sort((a, b) => {
-    const byOrder = Number(a.sortOrder ?? 0) - Number(b.sortOrder ?? 0)
-    if (byOrder !== 0) return byOrder
-    return String(a.label || '').localeCompare(String(b.label || ''))
-  })
-}
-
-function buildMenuTree(items) {
-  const byId = new Map()
-  sortMenuItems(items).forEach((item) => {
-    if (!item?.id || item.id === 'unknown') return
-    byId.set(item.id, { ...item, children: [] })
-  })
-  const roots = []
-  byId.forEach((node) => {
-    const parentId = normalizeParentId(node.parentId)
-    const parent = parentId ? byId.get(parentId) : null
-    if (parent) {
-      parent.children.push(node)
-    } else {
-      roots.push(node)
-    }
-  })
-  const sortChildren = (nodes) => {
-    nodes.sort((a, b) => {
-      const byOrder = Number(a.sortOrder ?? 0) - Number(b.sortOrder ?? 0)
-      if (byOrder !== 0) return byOrder
-      return String(a.label || '').localeCompare(String(b.label || ''))
-    })
-    nodes.forEach((node) => sortChildren(node.children))
-  }
-  sortChildren(roots)
-  return roots
-}
-
-function flattenMenuTree(nodes, depth = 0) {
-  return nodes
-    .filter((node) => node != null && node.id)
-    .flatMap((node) => [
-      { ...node, depth },
-      ...flattenMenuTree(node.children ?? [], depth + 1),
-    ])
-}
-
-function collectDescendantIds(items, itemId) {
-  const childrenByParent = new Map()
-  items.forEach((item) => {
-    const parentId = normalizeParentId(item.parentId)
-    if (!parentId) return
-    if (!childrenByParent.has(parentId)) childrenByParent.set(parentId, [])
-    childrenByParent.get(parentId).push(item.id)
-  })
-  const descendants = new Set()
-  const visit = (id) => {
-    for (const childId of childrenByParent.get(id) ?? []) {
-      if (descendants.has(childId)) continue
-      descendants.add(childId)
-      visit(childId)
-    }
-  }
-  visit(itemId)
-  return descendants
-}
-
-function formatParentOption(item) {
-  return `${'── '.repeat(item.depth)}${item.label}`
-}
-
-function isValidCustomUrl(url) {
-  const v = url.trim()
-  if (!v) return false
-  if (v.startsWith('/') || v.startsWith('#') || v.startsWith('tel:') || v.startsWith('mailto:')) return true
-  try { new URL(v); return true } catch { return false }
-}
-
-function isItemFormValid(data) {
-  if (!data.label.trim()) return false
-  return data.url.trim() !== '' && isValidCustomUrl(data.url)
-}
-
-const SLOT_CONTEXT_NOTES = {
-  primary: 'Mục này sẽ xuất hiện trên thanh điều hướng đầu trang website. Chỉ mục đang bật và có mục cha đang bật mới hiển thị.',
-  footer:  'Mục này sẽ xuất hiện ở menu footer (cuối trang). Chỉ mục đang bật và có mục cha đang bật mới hiển thị.',
-  guide:   'Mục này sẽ xuất hiện trong widget Hướng dẫn mua hàng ở footer. Chỉ mục đang bật và có mục cha đang bật mới hiển thị.',
-  policy:  'Mục này sẽ xuất hiện ở thanh bên trang Chính sách (/chinh-sach). Mỗi mục trỏ tới một Trang nội dung, ví dụ /chinh-sach/chinh-sach-bao-hanh. Chỉ mục đang bật mới hiển thị.',
-}
-
-// ── Shared sub-components ─────────────────────────────────────────────────────
-
-function Modal({ title, onClose, children, footer }) {
-  return (
-    <LayoutModal open title={title} onClose={onClose} actions={footer}>
-      {children}
-    </LayoutModal>
-  )
-}
-
-function MenuParentSelect({ value, onChange, options, label }) {
-  return (
-    <label className="form-field">
-      {label}
-      <Select
-        value={value}
-        onValueChange={onChange}
-      ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-        {options.map((item) => (
-          <SelectItem key={item.id} value={item.id}>
-            {formatParentOption(item)}
-          </SelectItem>
-        ))}
-      </SelectContent></Select>
-    </label>
-  )
-}
-
-
-function ItemForm({ value, onChange, parentOptions, t, isNew }) {
-  return (
-    <div className="form-grid">
-      {/* Label — required (Vietnamese) */}
-      <label className="form-field form-field-wide">
-        {t('menus.itemLabel')}
-        <Input
-          value={value.label}
-          onChange={(e) => onChange({ label: e.target.value })}
-          placeholder={t('menus.itemLabelPlaceholder')}
-          autoFocus={isNew}
-         />
-      </label>
-
-      {/* Label — English (optional) */}
-      <label className="form-field form-field-wide">
-        {t('menus.itemLabelEn')}
-        <Input
-          value={value.labelEn}
-          onChange={(e) => onChange({ labelEn: e.target.value })}
-          placeholder={t('menus.itemLabelEnPlaceholder')}
-         />
-        <small className="menu-form-hint">{t('menus.itemLabelEnHint')}</small>
-      </label>
-
-      {/* URL */}
-      <label className="form-field form-field-wide">
-        {t('menus.itemUrlCustom')}
-        <Input
-          value={value.url}
-          onChange={(e) => onChange({ url: e.target.value })}
-          placeholder="/danh-muc-san-pham/... hoặc https://..."
-         />
-        {value.url.trim() ? (
-          !isValidCustomUrl(value.url) && (
-            <small className="menu-form-hint menu-form-hint--danger">
-              URL không hợp lệ. Ví dụ: /danh-muc-san-pham/xe-may hoặc https://example.com
-            </small>
-          )
-        ) : (
-          <small className="menu-form-hint">{t('menus.urlHint')}</small>
-        )}
-      </label>
-
-      {/* Parent */}
-      <MenuParentSelect
-        label={t('menus.itemParent')}
-        rootLabel={t('menus.parentRoot')}
-        value={value.parentId}
-        options={parentOptions}
-        onChange={(v) => onChange({ parentId: v })}
-      />
-
-      {/* Status */}
-      <label className="form-field">
-        {t('menus.itemStatus')}
-        <Select
-          value={value.status}
-          onValueChange={(val) => onChange({ status: val })}
-        ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-          <SelectItem value="ACTIVE">{t('menus.statusActive')}</SelectItem>
-          <SelectItem value="INACTIVE">{t('menus.statusInactive')}</SelectItem>
-        </SelectContent></Select>
-        {value.status === 'INACTIVE' && (
-          <small className="menu-form-hint menu-form-hint--warn">{t('menus.statusInactiveHint')}</small>
-        )}
-      </label>
-
-      {/* Open in new tab */}
-      <label className="form-checkbox">
-        <Checkbox
-          checked={value.openInNewTab}
-          onCheckedChange={(checked) => onChange({ openInNewTab: checked === true })}
-         />
-        {t('menus.itemOpenInNewTab')}
-      </label>
-    </div>
-  )
-}
-
-function SortableMenuItem({ item, displayLabel, parentLabel, rootLabel, canUpdate, onEdit, onDelete, isDeleting }) {
-  const isInactive = item.status === 'INACTIVE'
-
-  return (
-    <SortableRow id={item.id}>
-      {(sortable) => (
-    <tr
-      ref={sortable.setNodeRef}
-      style={{ ...sortable.style, opacity: sortable.isDragging ? 0.4 : 1 }}
-      className={isInactive ? 'is-inactive' : ''}
-    >
-      <td className="menu-grip-cell">
-        {canUpdate && (
-          <button
-            type="button"
-            className="menu-grab-btn"
-            title="Kéo để sắp xếp (cùng cấp)"
-            {...sortable.handleProps}
-          >
-            <GripVertical size={15} />
-          </button>
-        )}
-      </td>
-      <td style={{ paddingLeft: `${8 + item.depth * 18}px` }}>
-        <div className="menu-item-label-cell">
-          {item.depth > 0 && (
-            <span className="menu-item-depth">L{item.depth + 1}</span>
-          )}
-          <span className="menu-item-name">{displayLabel ?? item.label}</span>
-          {isInactive && <span className="menu-item-badge-inactive">Ẩn</span>}
-        </div>
-      </td>
-      <td>
-        <span className="menu-item-parent-cell">
-          {parentLabel || <span className="text-muted-foreground">{rootLabel}</span>}
-        </span>
-      </td>
-      <td>
-        <span className="menu-item-url-cell" title={item.url}>{item.url}</span>
-      </td>
-      {canUpdate && (
-        <td className="menu-item-actions-cell">
-          <div className="menu-row-actions">
-            <Button variant="outline" size="icon" onClick={() => onEdit(item)} title="Chỉnh sửa mục này" disabled={isDeleting}>
-              <Pencil size={13} />
-            </Button>
-            <Button variant="danger" size="icon" onClick={() => onDelete(item.id)} title="Xoá mục này" loading={isDeleting}>
-              <Trash2 size={13} />
-            </Button>
-          </div>
-        </td>
-      )}
-    </tr>
-      )}
-    </SortableRow>
-  )
-}
+import {
+  SYSTEM_SLOTS,
+  EMPTY_ITEM,
+  SLOT_CONTEXT_NOTES,
+  safeMenuDetailCache,
+  normalizeParentId,
+  sameParent,
+  sortMenuItems,
+  buildMenuTree,
+  flattenMenuTree,
+  collectDescendantIds,
+  isItemFormValid,
+} from './menu/constants'
+import { Modal } from './menu/Modal'
+import { ItemForm } from './menu/ItemForm'
+import { SortableMenuItem } from './menu/SortableMenuItem'
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 
@@ -842,7 +539,6 @@ export function MenuScreen({ canUpdate }) {
               value={newItem}
               onChange={(patch) => setNewItem((p) => ({ ...p, ...patch }))}
               parentOptions={parentOptions}
-              t={t}
               isNew
             />
           </form>
@@ -875,7 +571,6 @@ export function MenuScreen({ canUpdate }) {
               value={editItemForm}
               onChange={(patch) => setEditItemForm((p) => ({ ...p, ...patch }))}
               parentOptions={editParentOptions}
-              t={t}
               isNew={false}
             />
           </form>

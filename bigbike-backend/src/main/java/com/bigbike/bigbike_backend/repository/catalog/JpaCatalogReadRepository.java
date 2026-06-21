@@ -4,7 +4,6 @@ import com.bigbike.bigbike_backend.domain.catalog.Brand;
 import com.bigbike.bigbike_backend.domain.catalog.BrandSummary;
 import com.bigbike.bigbike_backend.domain.catalog.Category;
 import com.bigbike.bigbike_backend.domain.catalog.CategorySummary;
-import com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock;
 import com.bigbike.bigbike_backend.domain.catalog.GalleryMedia;
 import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
@@ -16,13 +15,8 @@ import com.bigbike.bigbike_backend.domain.catalog.ProductHighlight;
 import com.bigbike.bigbike_backend.domain.catalog.ProductPrice;
 import com.bigbike.bigbike_backend.domain.catalog.ProductSpecification;
 import com.bigbike.bigbike_backend.domain.catalog.ProductSpecStat;
-import com.bigbike.bigbike_backend.domain.catalog.ProductTab;
-import com.bigbike.bigbike_backend.domain.catalog.ProductTranslations;
-import com.bigbike.bigbike_backend.domain.catalog.CategoryTranslations;
-import com.bigbike.bigbike_backend.domain.catalog.BrandTranslations;
 import com.bigbike.bigbike_backend.domain.catalog.ProductVariant;
 import com.bigbike.bigbike_backend.domain.catalog.ProductVariantOption;
-import com.bigbike.bigbike_backend.domain.catalog.SeoMeta;
 import com.bigbike.bigbike_backend.domain.catalog.VideoAsset;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.BrandEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
@@ -51,21 +45,31 @@ import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
-import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
+
+import static com.bigbike.bigbike_backend.repository.catalog.JpaCatalogReadSupport.isPresent;
+import static com.bigbike.bigbike_backend.repository.catalog.JpaCatalogReadSupport.maskStockQuantityForPublic;
+import static com.bigbike.bigbike_backend.repository.catalog.JpaCatalogReadSupport.normalizeVariantToken;
+import static com.bigbike.bigbike_backend.repository.catalog.JpaCatalogReadSupport.pick;
+import static com.bigbike.bigbike_backend.repository.catalog.JpaCatalogReadSupport.pickBlocks;
+import static com.bigbike.bigbike_backend.repository.catalog.JpaCatalogReadSupport.resolveTabs;
+import static com.bigbike.bigbike_backend.repository.catalog.JpaCatalogReadSupport.toBrandTranslations;
+import static com.bigbike.bigbike_backend.repository.catalog.JpaCatalogReadSupport.toCategoryTranslations;
+import static com.bigbike.bigbike_backend.repository.catalog.JpaCatalogReadSupport.toImageAsset;
+import static com.bigbike.bigbike_backend.repository.catalog.JpaCatalogReadSupport.toSeoMeta;
+import static com.bigbike.bigbike_backend.repository.catalog.JpaCatalogReadSupport.toTranslations;
+import static com.bigbike.bigbike_backend.repository.catalog.JpaCatalogReadSupport.preferLabel;
+import static com.bigbike.bigbike_backend.repository.catalog.JpaCatalogReadSupport.withColorScopedVariantMedia;
 
 @Repository
 @Primary
@@ -74,9 +78,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class JpaCatalogReadRepository implements CatalogReadRepository {
 
-    private static final Set<String> COLOR_ATTRIBUTE_KEYS = Set.of(
-            "color", "colour", "mau", "mau sac", "pa color", "pa mau", "pa mau sac"
-    );
     private static final Comparator<ProductHighlightEntity> HIGHLIGHT_ORDER = Comparator.comparingInt(ProductHighlightEntity::getSortOrder);
     private static final Comparator<ProductGalleryImageEntity> GALLERY_ORDER = Comparator.comparingInt(ProductGalleryImageEntity::getSortOrder);
     private static final Comparator<ProductVariantGalleryImageEntity> VARIANT_GALLERY_ORDER = Comparator.comparingInt(ProductVariantGalleryImageEntity::getSortOrder);
@@ -92,57 +93,6 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
 
     private static final String LOCALE_VI = "vi";
     private static final String LOCALE_EN = "en";
-
-    /**
-     * Resolve one translatable field for the requested locale. English content
-     * falls back to Vietnamese field-by-field when the {@code _en} column is
-     * blank (see {@code BUSINESS_RULES.md PRODUCT_RULE_002}).
-     */
-    private static String pick(String base, String en, String locale) {
-        if (LOCALE_EN.equals(locale) && en != null && !en.isBlank()) {
-            return en;
-        }
-        return base;
-    }
-
-    /**
-     * Locale variant of {@link #pick} for structured description blocks (V229). English blocks are
-     * used only when present and non-empty; otherwise falls back to the Vietnamese blocks.
-     */
-    private static List<DescriptionBlock> pickBlocks(
-            List<DescriptionBlock> base, List<DescriptionBlock> en, String locale) {
-        if (LOCALE_EN.equals(locale) && en != null && !en.isEmpty()) {
-            return en;
-        }
-        return base;
-    }
-
-    /**
-     * Per-product PDP tabs (V231). Null entity value → null (web falls back to the default tab set).
-     * Public reads resolve each tab's label/blocks for the locale and drop the raw English; admin reads
-     * keep the raw bilingual tabs so the editor can show both languages.
-     */
-    private static List<ProductTab> resolveTabs(ProductEntity entity, boolean publicView, String locale) {
-        List<ProductTab> tabs = entity.getProductTabs();
-        if (tabs == null) {
-            return null;
-        }
-        if (!publicView) {
-            return tabs;
-        }
-        return tabs.stream()
-                .map(t -> new ProductTab(
-                        t.id(),
-                        t.type(),
-                        t.enabled(),
-                        t.sortOrder(),
-                        pick(t.label(), t.labelEn(), locale),
-                        null,
-                        pickBlocks(t.blocks(), t.blocksEn(), locale),
-                        null
-                ))
-                .toList();
-    }
 
     private final ProductJpaRepository productJpaRepository;
     private final CategoryJpaRepository categoryJpaRepository;
@@ -494,18 +444,6 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         return toDomain(entity, false, LOCALE_VI);
     }
 
-    /**
-     * Mask on-hand stock count for public-facing responses. Guests/customers see exact
-     * count only when state is LOW_STOCK and quantity is small enough to drive urgency
-     * ("Chỉ còn N sản phẩm") — otherwise null, so scrapers cannot read precise inventory
-     * for every SKU. Admin reads (publicView=false) get the raw value untouched.
-     */
-    private static Integer maskStockQuantityForPublic(Integer raw, ProductStockState state) {
-        if (raw == null || state != ProductStockState.LOW_STOCK) return null;
-        if (raw <= 0 || raw > 10) return null;
-        return raw;
-    }
-
     private Product toDomain(ProductEntity entity, boolean publicView, String locale) {
         CategorySummary primaryCategory = toCategorySummary(entity.getCategory());
         List<CategorySummary> categories = primaryCategory == null
@@ -647,20 +585,6 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         );
     }
 
-    private static CategoryTranslations toCategoryTranslations(CategoryEntity entity) {
-        boolean anyEnglish = isPresent(entity.getNameEn())
-                || isPresent(entity.getDescriptionEn())
-                || isPresent(entity.getSeoTitleEn())
-                || isPresent(entity.getSeoDescriptionEn());
-        if (!anyEnglish) return null;
-        return new CategoryTranslations(new CategoryTranslations.CategoryContent(
-                entity.getNameEn(),
-                entity.getDescriptionEn(),
-                entity.getSeoTitleEn(),
-                entity.getSeoDescriptionEn()
-        ));
-    }
-
     /** Admin detail read: Vietnamese content + raw English translations. */
     private Brand toDomain(BrandEntity entity) {
         return toDomain(entity, LOCALE_VI, true);
@@ -704,20 +628,6 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
         );
-    }
-
-    private static BrandTranslations toBrandTranslations(BrandEntity entity) {
-        boolean anyEnglish = isPresent(entity.getNameEn())
-                || isPresent(entity.getDescriptionEn())
-                || isPresent(entity.getSeoTitleEn())
-                || isPresent(entity.getSeoDescriptionEn());
-        if (!anyEnglish) return null;
-        return new BrandTranslations(new BrandTranslations.BrandContent(
-                entity.getNameEn(),
-                entity.getDescriptionEn(),
-                entity.getSeoTitleEn(),
-                entity.getSeoDescriptionEn()
-        ));
     }
 
     private List<GalleryMedia> toGallery(ProductEntity entity) {
@@ -909,42 +819,6 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     }
 
     /**
-     * Raw English product-level content for admin detail reads. Returns
-     * {@code null} when no English content exists at all, so the public response
-     * shape is unchanged and the admin editor can detect "no translation yet".
-     */
-    private static ProductTranslations toTranslations(ProductEntity entity) {
-        List<DescriptionBlock> descriptionBlocksEn = entity.getDescriptionBlocksEn();
-        boolean anyEnglish = isPresent(entity.getNameEn())
-                || isPresent(entity.getShortDescriptionEn())
-                || isPresent(entity.getDescriptionEn())
-                || isPresent(entity.getPromotionContentEn())
-                || isPresent(entity.getInstallationGuideEn())
-                || isPresent(entity.getSuitabilityAdvisoryEn())
-                || isPresent(entity.getSeoTitleEn())
-                || isPresent(entity.getSeoDescriptionEn())
-                || (descriptionBlocksEn != null && !descriptionBlocksEn.isEmpty());
-        if (!anyEnglish) {
-            return null;
-        }
-        return new ProductTranslations(new ProductTranslations.ProductContent(
-                entity.getNameEn(),
-                entity.getShortDescriptionEn(),
-                entity.getDescriptionEn(),
-                entity.getPromotionContentEn(),
-                entity.getInstallationGuideEn(),
-                entity.getSuitabilityAdvisoryEn(),
-                entity.getSeoTitleEn(),
-                entity.getSeoDescriptionEn(),
-                descriptionBlocksEn
-        ));
-    }
-
-    private static boolean isPresent(String value) {
-        return value != null && !value.isBlank();
-    }
-
-    /**
      * Admin-curated related products as list-view items (no nested gallery/specs/
      * relatedProducts). Public reads drop non-PUBLISHED and trashed entries so the
      * PDP never links to hidden products; admin reads keep everything for the editor.
@@ -983,88 +857,6 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 .map(v -> toVariant(v, publicView, locale))
                 .toList();
         return withColorScopedVariantMedia(variants);
-    }
-
-    /**
-     * Force every variant in the same color group to expose the same {@code image}
-     * and {@code gallery}. The write path already scopes both fields by color
-     * ({@link com.bigbike.bigbike_backend.service.admin.AdminCatalogMutationService}),
-     * but legacy WordPress imports persisted these per-variant rows independently
-     * — and any future write path that bypasses the mutation service could too.
-     * Scoping on read keeps the storefront, mobile app, and admin form aligned
-     * with the "image and gallery are color-scoped" invariant regardless of how
-     * the rows landed in the DB.
-     *
-     * Variants without a recognised color attribute have both fields cleared
-     * since the gallery validator rejects per-variant gallery without a color
-     * — keeping image alive for those rows would be the only place where the
-     * read response disagreed with the write response.
-     */
-    private static List<ProductVariant> withColorScopedVariantMedia(List<ProductVariant> variants) {
-        Map<String, List<GalleryMedia>> galleryByColor = new HashMap<>();
-        Map<String, ImageAsset> imageByColor = new HashMap<>();
-        for (ProductVariant variant : variants) {
-            String colorKey = variantColorKey(variant);
-            if (colorKey == null) continue;
-            if (variant.gallery() != null && !variant.gallery().isEmpty()) {
-                galleryByColor.putIfAbsent(colorKey, variant.gallery());
-            }
-            if (variant.image() != null) {
-                imageByColor.putIfAbsent(colorKey, variant.image());
-            }
-        }
-
-        return variants.stream()
-                .map(variant -> {
-                    String colorKey = variantColorKey(variant);
-                    List<GalleryMedia> gallery = colorKey == null
-                            ? List.of()
-                            : galleryByColor.getOrDefault(colorKey, List.of());
-                    ImageAsset image = colorKey == null
-                            ? null
-                            : imageByColor.get(colorKey);
-                    return new ProductVariant(
-                            variant.id(),
-                            variant.sku(),
-                            variant.name(),
-                            variant.options(),
-                            variant.price(),
-                            variant.stockState(),
-                            variant.stockQuantity(),
-                            image,
-                            gallery,
-                            variant.isAvailable(),
-                            variant.trackSerials()
-                    );
-                })
-                .toList();
-    }
-
-    private static String variantColorKey(ProductVariant variant) {
-        if (variant.options() == null) return null;
-        for (ProductVariantOption option : variant.options()) {
-            if (option == null) continue;
-            if (isColorAttributeName(option.name())) {
-                String value = normalizeVariantToken(option.value());
-                return value.isEmpty() ? null : value;
-            }
-        }
-        return null;
-    }
-
-    private static boolean isColorAttributeName(String name) {
-        return COLOR_ATTRIBUTE_KEYS.contains(normalizeVariantToken(name));
-    }
-
-    private static String normalizeVariantToken(String raw) {
-        if (raw == null || raw.isBlank()) return "";
-        return Normalizer.normalize(raw.trim(), Normalizer.Form.NFD)
-                .replaceAll("\\p{M}+", "")
-                .replace('\u0110', 'D')
-                .replace('\u0111', 'd')
-                .toLowerCase(Locale.ROOT)
-                .replaceAll("[^a-z0-9]+", " ")
-                .trim();
     }
 
     private ProductVariant toVariant(ProductVariantEntity entity, boolean publicView, String locale) {
@@ -1197,13 +989,6 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         );
     }
 
-    /** Returns the first non-blank value, or empty string if neither has content. */
-    private static String preferLabel(String preferred, String fallback) {
-        if (preferred != null && !preferred.isBlank()) return preferred;
-        if (fallback != null && !fallback.isBlank()) return fallback;
-        return "";
-    }
-
     private CategorySummary toCategorySummary(CategoryEntity entity) {
         if (entity == null) {
             return null;
@@ -1223,46 +1008,5 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
             return null;
         }
         return new BrandSummary(entity.getId(), entity.getSlug(), entity.getSlugEn(), entity.getName());
-    }
-
-    private static ImageAsset toImageAsset(
-            String id,
-            String url,
-            String alt,
-            Integer width,
-            Integer height,
-            String mimeType
-    ) {
-        if (url == null || url.isBlank()) {
-            return null;
-        }
-        return new ImageAsset(id, url, alt, width, height, mimeType);
-    }
-
-    private static SeoMeta toSeoMeta(
-            String title,
-            String description,
-            String canonicalUrl,
-            String ogImageId,
-            String ogImageUrl,
-            String ogImageAlt,
-            Integer ogImageWidth,
-            Integer ogImageHeight,
-            String ogImageMimeType
-    ) {
-        if ((title == null || title.isBlank())
-                && (description == null || description.isBlank())
-                && (canonicalUrl == null || canonicalUrl.isBlank())
-                && (ogImageUrl == null || ogImageUrl.isBlank())) {
-            return null;
-        }
-
-        return new SeoMeta(
-                title,
-                description,
-                canonicalUrl,
-                toImageAsset(ogImageId, ogImageUrl, ogImageAlt, ogImageWidth, ogImageHeight, ogImageMimeType),
-                false   // noIndex — catalog entities (product/brand/category) don't expose per-entity noindex
-        );
     }
 }

@@ -5,13 +5,10 @@ import { generateId } from '@/lib/utils'
  * model nhập theo dòng dùng trong admin:
  *   { col2, col3, col4, rows:[{_key,size,value,value3,value4}], note }.
  * Cột 1 luôn là "Size". Cột 2 (số đo) luôn có. Cột 3 & 4 là TÙY CHỌN — chỉ xuất ra
- * HTML khi admin đặt tên cho cột (vd "Kích cỡ vỏ", "Ghi chú"), nên dữ liệu cũ 2 cột
- * vẫn render đúng 2 cột. Tách khỏi component để SizeChartEditor.jsx chỉ export component.
+ * HTML khi admin đặt tên cho cột, nên dữ liệu cũ 2 cột vẫn render đúng 2 cột.
  */
 
 export const SIZE_COL2_DEFAULT = 'Vòng đầu (cm)'
-export const SIZE_COL3_PLACEHOLDER = 'Kích cỡ vỏ'
-export const SIZE_COL4_PLACEHOLDER = 'Ghi chú'
 
 function escapeHtml(s) {
   return String(s ?? '')

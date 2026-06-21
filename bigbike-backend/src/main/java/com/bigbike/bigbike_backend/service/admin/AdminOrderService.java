@@ -48,12 +48,18 @@ import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.ws.AdminOrderWsService;
 import com.bigbike.bigbike_backend.service.ws.OrderWsEvent;
+import static com.bigbike.bigbike_backend.service.admin.AdminOrderSupport.buildAudit;
+import static com.bigbike.bigbike_backend.service.admin.AdminOrderSupport.buildNote;
+import static com.bigbike.bigbike_backend.service.admin.AdminOrderSupport.buildStatusChangedEvent;
+import static com.bigbike.bigbike_backend.service.admin.AdminOrderSupport.parseFromDate;
+import static com.bigbike.bigbike_backend.service.admin.AdminOrderSupport.parseToDate;
+import static com.bigbike.bigbike_backend.service.admin.AdminOrderSupport.resolveSort;
+import static com.bigbike.bigbike_backend.service.admin.AdminOrderSupport.safeCustomerName;
+import static com.bigbike.bigbike_backend.service.admin.AdminOrderSupport.withResolvedCustomerName;
 import jakarta.persistence.criteria.Predicate;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -65,7 +71,6 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -770,26 +775,6 @@ public class AdminOrderService {
         return result;
     }
 
-    /**
-     * Mirrors {@link #toDetail}'s customer-name fallback for the list: when an
-     * order has no customer_name of its own, use the shipping-address name so
-     * the list shows the same name the detail screen does.
-     */
-    private static AdminOrderListItemResponse withResolvedCustomerName(
-            AdminOrderListItemResponse dto, Map<UUID, String> fallbackNameMap) {
-        if (dto.customerName() != null && !dto.customerName().isBlank()) {
-            return dto;
-        }
-        String fallback = fallbackNameMap.get(dto.id());
-        if (fallback == null || fallback.isBlank()) {
-            return dto;
-        }
-        return new AdminOrderListItemResponse(
-                dto.id(), dto.orderNumber(), dto.status(), dto.paymentStatus(),
-                dto.customerEmail(), dto.customerPhone(), fallback,
-                dto.totalAmount(), dto.currency(), dto.placedAt(), dto.itemCount(), dto.source());
-    }
-
     private AdminOrderDetailResponse toDetail(OrderEntity order) {
         List<OrderLineItemResponse> lineItems = lineItemRepo.findByOrderId(order.getId())
                 .stream().map(this::toLineItem).toList();
@@ -882,92 +867,6 @@ public class AdminOrderService {
 
     private OrderAppliedCouponResponse toAppliedCoupon(OrderAppliedCouponEntity e) {
         return orderAppliedCouponMapper.toResponse(e);
-    }
-
-    // ── Build helpers ─────────────────────────────────────────────────────────
-
-    private static String safeCustomerName(OrderEntity order) {
-        if (order.getCustomerName() != null && !order.getCustomerName().isBlank()) {
-            return order.getCustomerName();
-        }
-        return "Khách hàng";
-    }
-
-    private OrderNoteEntity buildNote(OrderEntity order, UUID adminId, String noteType,
-            String content, boolean customerVisible, Instant now) {
-        OrderNoteEntity note = new OrderNoteEntity();
-        note.setOrder(order);
-        note.setAuthorType("ADMIN");
-        note.setAuthorId(adminId);
-        note.setNoteType(noteType);
-        note.setContent(content);
-        note.setCustomerVisible(customerVisible);
-        note.setCreatedAt(now);
-        return note;
-    }
-
-    private AuditLogEntity buildAudit(UUID adminId, String action, String resourceType,
-            UUID resourceId, String before, String after, Instant now, String clientIp, String userAgent) {
-        AuditLogEntity log = new AuditLogEntity();
-        log.setActorType("ADMIN");
-        log.setActorId(adminId);
-        log.setAction(action);
-        log.setResourceType(resourceType);
-        log.setResourceId(resourceId);
-        log.setBeforeData(before);
-        log.setAfterData(after);
-        log.setIpAddress(clientIp);
-        log.setUserAgent(userAgent);
-        log.setCreatedAt(now);
-        return log;
-    }
-
-    // ── Date parsing helpers ──────────────────────────────────────────────────
-
-    private static Instant parseFromDate(String date) {
-        if (date == null || date.isBlank()) return null;
-        try {
-            return LocalDate.parse(date).atStartOfDay(ZoneOffset.UTC).toInstant();
-        } catch (Exception e) { return null; }
-    }
-
-    private static Instant parseToDate(String date) {
-        if (date == null || date.isBlank()) return null;
-        try {
-            return LocalDate.parse(date).plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
-        } catch (Exception e) { return null; }
-    }
-
-    private static Sort resolveSort(String sort) {
-        if (sort == null || sort.isBlank()) {
-            return Sort.by(Sort.Order.desc("placedAt").nullsLast(), Sort.Order.desc("createdAt"));
-        }
-        String[] parts = sort.split(":", 2);
-        String field = parts[0].trim();
-        boolean desc = parts.length < 2 || !"asc".equalsIgnoreCase(parts[1].trim());
-        Sort.Order order = switch (field) {
-            case "total", "totalAmount" -> desc
-                    ? Sort.Order.desc("totalAmount")
-                    : Sort.Order.asc("totalAmount");
-            case "createdAt", "placedAt" -> desc
-                    ? Sort.Order.desc("placedAt").nullsLast()
-                    : Sort.Order.asc("placedAt").nullsLast();
-            default -> Sort.Order.desc("placedAt").nullsLast();
-        };
-        return Sort.by(order, Sort.Order.desc("createdAt"));
-    }
-
-    private static OrderWsEvent buildStatusChangedEvent(OrderEntity order, String newStatus) {
-        return new OrderWsEvent(
-                "ORDER_STATUS_CHANGED",
-                order.getId(),
-                order.getOrderNumber(),
-                safeCustomerName(order),
-                order.getTotalAmount(),
-                newStatus,
-                order.getPaymentStatus(),
-                Instant.now()
-        );
     }
 
     private void runAfterCommit(Runnable action) {

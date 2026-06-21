@@ -24,8 +24,24 @@ export function CustomerPickerModal({ open, onClose }) {
   const [sending, setSending] = useState(false)
   const searchTimeout = useRef(null)
 
+  async function loadCustomers(p, q) {
+    setCustomers((prev) => ({ ...prev, loading: true }))
+    try {
+      const result = await fetchCustomers({ page: p, pageSize: PAGE_SIZE, search: q, status: 'ACTIVE', emailVerified: true })
+      setCustomers({
+        items: result.items ?? [],
+        totalItems: result.pagination?.totalItems ?? 0,
+        totalPages: result.pagination?.totalPages ?? 1,
+        loading: false,
+      })
+    } catch {
+      setCustomers((prev) => ({ ...prev, loading: false }))
+    }
+  }
+
   useEffect(() => {
     if (!open) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSearch('')
     setPage(1)
     setSelected(new Set())
@@ -44,27 +60,13 @@ export function CustomerPickerModal({ open, onClose }) {
 
   useEffect(() => {
     if (step !== 'coupon') return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCouponsLoading(true)
     fetchCoupons({ status: 'ACTIVE', page: 1, pageSize: 100, search: '' })
       .then((r) => setCoupons(r.items ?? []))
       .catch(() => setCoupons([]))
       .finally(() => setCouponsLoading(false))
   }, [step])
-
-  async function loadCustomers(p, q) {
-    setCustomers((prev) => ({ ...prev, loading: true }))
-    try {
-      const result = await fetchCustomers({ page: p, pageSize: PAGE_SIZE, search: q, status: 'ACTIVE', emailVerified: true })
-      setCustomers({
-        items: result.items ?? [],
-        totalItems: result.pagination?.totalItems ?? 0,
-        totalPages: result.pagination?.totalPages ?? 1,
-        loading: false,
-      })
-    } catch {
-      setCustomers((prev) => ({ ...prev, loading: false }))
-    }
-  }
 
   function toggleCustomer(id) {
     setSelected((prev) => {

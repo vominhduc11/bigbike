@@ -5,7 +5,7 @@ import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { ChevronRight, ExternalLink, FolderTree, GripVertical, ImageOff, Plus } from 'lucide-react'
+import { ChevronRight, ExternalLink, GripVertical, ImageOff, Plus } from 'lucide-react'
 import {
   DndContext,
   closestCenter,
@@ -32,66 +32,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
-
-const STOREFRONT_BASE = `${import.meta.env.VITE_STOREFRONT_BASE_URL ?? 'https://bigbike.vn'}/danh-muc-san-pham`
-
-const INITIAL_QUERY = {
-  search: '',
-  visibility: 'ALL',
-  sort: 'sortOrder:asc',
-  page: 1,
-  pageSize: 20,
-}
-
-const EMPTY_ITEMS = []
-
-// Build map: id → full breadcrumb path (e.g. "Mũ Bảo Hiểm / Mũ Fullface")
-function buildBreadcrumbMap(items) {
-  const byId = new Map(items.map((c) => [c.id, c]))
-  const cache = new Map()
-  const getPath = (id) => {
-    if (cache.has(id)) return cache.get(id)
-    const cat = byId.get(id)
-    if (!cat) return ''
-    const path = cat.parentId
-      ? `${getPath(cat.parentId)} / ${cat.name}`
-      : cat.name
-    cache.set(id, path)
-    return path
-  }
-  const map = new Map()
-  items.forEach((c) => map.set(c.id, getPath(c.id)))
-  return map
-}
-
-// Build tree from flat list for tree-view rendering
-function buildTree(items) {
-  const byId = new Map(items.map((c) => [c.id, { ...c, children: [] }]))
-  const roots = []
-  for (const c of byId.values()) {
-    if (c.parentId && byId.has(c.parentId)) {
-      byId.get(c.parentId).children.push(c)
-    } else {
-      roots.push(c)
-    }
-  }
-  const sort = (arr) =>
-    arr.sort((a, b) => {
-      if (a.sortOrder != null && b.sortOrder != null) return a.sortOrder - b.sortOrder
-      if (a.sortOrder != null) return -1
-      if (b.sortOrder != null) return 1
-      return a.name.localeCompare(b.name)
-    })
-  const flatten = (nodes, depth) => {
-    const result = []
-    sort(nodes).forEach((node) => {
-      result.push({ ...node, _depth: depth })
-      result.push(...flatten(node.children, depth + 1))
-    })
-    return result
-  }
-  return flatten(roots, 0)
-}
+import {
+  EMPTY_ITEMS,
+  INITIAL_QUERY,
+  STOREFRONT_BASE,
+  buildBreadcrumbMap,
+  buildTree,
+} from './category-list/constants'
+import { CategoryEmptyState } from './category-list/CategoryEmptyState'
+import { CategoryFlatTableHead, CategoryTreeTableHead } from './category-list/CategoryTableHead'
 
 // Wrap matched substring(s) in <mark> for live search highlighting.
 function highlightMatch(text, term) {
@@ -801,24 +750,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
           {allCatsResult == null ? (
             <div className="table-scroll-wrap">
               <table className="admin-table cat-tree-table cat-table-tree" aria-busy="true">
-                <colgroup>
-                  {canUpdate && <col className="col-select" />}
-                  <col className="col-name" />
-                  <col className="col-desc" />
-                  <col className="col-vis" />
-                  <col className="col-updated" />
-                  <col className="col-actions" />
-                </colgroup>
-                <thead>
-                  <tr>
-                    {selectAllCheckbox}
-                    <th>{t('categories.colCategory')}</th>
-                    <th>{t('categories.colDescription')}</th>
-                    <th>{t('categories.colVisibility')}</th>
-                    <th>{t('categories.colUpdated')}</th>
-                    <th className="align-right">{t('categories.colActions')}</th>
-                  </tr>
-                </thead>
+                <CategoryTreeTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} />
                 <tbody>
                   {Array.from({ length: 8 }).map((_, i) => (
                     <tr key={i} className="skel-row">
@@ -831,29 +763,13 @@ export function CategoryListScreen({ navigate, canUpdate }) {
               </table>
             </div>
           ) : visibleTreeRows.length === 0 ? (
-            <div className="cat-empty-state">
-              <FolderTree size={56} aria-hidden="true" className="cat-empty-icon" />
-              <h2 className="cat-empty-title">
-                {searchTerm ? t('categories.emptySearchTitle') : t('categories.emptyTitle')}
-              </h2>
-              <p className="cat-empty-desc">
-                {searchTerm
-                  ? t('categories.emptySearchDesc', { value: searchTerm })
-                  : t('categories.emptyDesc')}
-              </p>
-              <div className="cat-empty-actions">
-                {(searchTerm || query.visibility !== 'ALL' || query.sort !== 'sortOrder:asc') && (
-                  <Button variant="outline" onClick={resetFilters}>
-                    {t('common.resetFilters')}
-                  </Button>
-                )}
-                {canUpdate && (
-                  <Button onClick={() => navigate('/admin/categories/new')}>
-                    <Plus size={14} />{t('categories.create')}
-                  </Button>
-                )}
-              </div>
-            </div>
+            <CategoryEmptyState
+              searchTerm={searchTerm}
+              query={query}
+              canUpdate={canUpdate}
+              onResetFilters={resetFilters}
+              onCreate={() => navigate('/admin/categories/new')}
+            />
           ) : (
             <div className="table-scroll-wrap">
               <DndContext
@@ -867,24 +783,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
                 >
               <table className="admin-table cat-tree-table cat-table-tree">
                 <caption className="sr-only">{t('categories.tableCaption')}</caption>
-                <colgroup>
-                  {canUpdate && <col className="col-select" />}
-                  <col className="col-name" />
-                  <col className="col-desc" />
-                  <col className="col-vis" />
-                  <col className="col-updated" />
-                  <col className="col-actions" />
-                </colgroup>
-                <thead>
-                  <tr>
-                    {selectAllCheckbox}
-                    <th>{t('categories.colCategory')}</th>
-                    <th>{t('categories.colDescription')}</th>
-                    <th>{t('categories.colVisibility')}</th>
-                    <th>{t('categories.colUpdated')}</th>
-                    <th className="align-right">{t('categories.colActions')}</th>
-                  </tr>
-                </thead>
+                <CategoryTreeTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} />
                 <tbody>
                   {visibleTreeRows.map((row) =>
                     canUpdate && !searchTerm
@@ -928,26 +827,7 @@ export function CategoryListScreen({ navigate, canUpdate }) {
               <div className="table-scroll-wrap">
                 <table className="admin-table cat-tree-table cat-table-flat">
                   <caption className="sr-only">{t('categories.tableCaption')}</caption>
-                  <colgroup>
-                    {canUpdate && <col className="col-select" />}
-                    <col className="col-name" />
-                    <col className="col-desc" />
-                    <col className="col-vis" />
-                    <col className="col-sort" />
-                    <col className="col-updated" />
-                    <col className="col-actions" />
-                  </colgroup>
-                  <thead>
-                    <tr>
-                      {selectAllCheckbox}
-                      <th>{t('categories.colCategory')}</th>
-                      <th>{t('categories.colDescription')}</th>
-                      <th>{t('categories.colVisibility')}</th>
-                      <th className="align-right">{t('categories.colSortOrder')}</th>
-                      <th>{t('categories.colUpdated')}</th>
-                      <th className="align-right">{t('categories.colActions')}</th>
-                    </tr>
-                  </thead>
+                  <CategoryFlatTableHead canUpdate={canUpdate} selectAllCheckbox={selectAllCheckbox} />
                   <tbody>
                     {flatModeStatus === 'loading'
                       ? Array.from({ length: query.pageSize }).map((_, i) => (

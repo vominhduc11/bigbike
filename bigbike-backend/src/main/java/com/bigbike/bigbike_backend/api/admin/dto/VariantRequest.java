@@ -1,11 +1,15 @@
 package com.bigbike.bigbike_backend.api.admin.dto;
 
+import lombok.Getter;
+import lombok.Setter;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.util.List;
 
+@Getter
+@Setter
 public class VariantRequest {
 
     @Size(max = 100, message = "Variant ID is too long.")
@@ -50,56 +54,23 @@ public class VariantRequest {
     @Size(max = 50, message = "Variant gallery may not have more than 50 images.")
     private List<GalleryImageRequest> gallery;
 
-    public String getId() { return id; }
-    public void setId(String id) { this.id = id; }
-
-    public String getSku() { return sku; }
-    public void setSku(String sku) { this.sku = sku; }
-
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-
-    public BigDecimal getRetailPrice() { return retailPrice; }
     public void setRetailPrice(BigDecimal retailPrice) {
         this.retailPrice = retailPrice;
         this.retailPricePresent = true;
     }
 
-    public boolean isRetailPricePresent() { return retailPricePresent; }
-
-    public BigDecimal getCompareAtPrice() { return compareAtPrice; }
     public void setCompareAtPrice(BigDecimal compareAtPrice) {
         this.compareAtPrice = compareAtPrice;
         this.compareAtPricePresent = true;
     }
 
-    public boolean isCompareAtPricePresent() { return compareAtPricePresent; }
-
-    public BigDecimal getSalePrice() { return salePrice; }
     public void setSalePrice(BigDecimal salePrice) {
         this.salePrice = salePrice;
         this.salePricePresent = true;
     }
 
-    public boolean isSalePricePresent() { return salePricePresent; }
-
-    public BigDecimal getCostPrice() { return costPrice; }
     public void setCostPrice(BigDecimal costPrice) {
         this.costPrice = costPrice;
         this.costPricePresent = true;
     }
-
-    public boolean isCostPricePresent() { return costPricePresent; }
-
-    public Boolean getIsAvailable() { return isAvailable; }
-    public void setIsAvailable(Boolean isAvailable) { this.isAvailable = isAvailable; }
-
-    public Integer getSortOrder() { return sortOrder; }
-    public void setSortOrder(Integer sortOrder) { this.sortOrder = sortOrder; }
-
-    public List<VariantOptionRequest> getOptions() { return options; }
-    public void setOptions(List<VariantOptionRequest> options) { this.options = options; }
-
-    public List<GalleryImageRequest> getGallery() { return gallery; }
-    public void setGallery(List<GalleryImageRequest> gallery) { this.gallery = gallery; }
 }

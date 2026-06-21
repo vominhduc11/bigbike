@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -13,18 +13,6 @@ import {
   TrendingDown,
   TrendingUp,
 } from 'lucide-react'
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  Cell,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
@@ -49,45 +37,10 @@ const ORDER_STATUS_COLORS = {
   REFUNDED:   'var(--admin-color-text-muted)',
 }
 
-function fmtAxisMillions(value) {
-  if (!value && value !== 0) return ''
-  return (value / 1_000_000).toFixed(value >= 10_000_000 ? 0 : 1)
-}
-
-function fmtIsoDateShort(isoDate) {
-  if (!isoDate) return ''
-  const [, m, d] = isoDate.split('-')
-  return `${parseInt(d)}/${parseInt(m)}`
-}
-
-function RevenueTooltip({ active, payload, label, ordersUnit }) {
-  if (!active || !payload?.length) return null
-  return (
-    <div className="bb-dash-tooltip">
-      <div className="bb-dash-tooltip-date">{fmtIsoDateShort(label)}</div>
-      {payload.map((p) => (
-        <div key={p.dataKey} className="bb-dash-tooltip-row">
-          {p.name}: {p.dataKey === 'revenue' ? formatVndShort(p.value) : `${p.value} ${ordersUnit}`}
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function PieTooltip({ active, payload, orderUnit }) {
-  if (!active || !payload?.length) return null
-  const d = payload[0]
-  const total = d.payload?.total || 1
-  const pct = Math.round((d.value / total) * 100)
-  return (
-    <div className="bb-dash-tooltip">
-      <div className="bb-dash-tooltip-name">{d.name}</div>
-      <div className="bb-dash-tooltip-meta">
-        {d.value} {orderUnit} ({pct}%)
-      </div>
-    </div>
-  )
-}
+// Charts pull in recharts (~346KB) — load them lazily so the dashboard shell
+// (KPIs + tables) paints immediately and the charts stream in afterwards.
+const RevenueAreaChart = lazy(() => import('./dashboard/charts').then((m) => ({ default: m.RevenueAreaChart })))
+const OrderStatusPie = lazy(() => import('./dashboard/charts').then((m) => ({ default: m.OrderStatusPie })))
 
 function TrendPill({ direction, label }) {
   const cls = direction === 'up' ? 'up' : direction === 'down' ? 'down' : 'flat'
@@ -386,43 +339,9 @@ export function DashboardScreen({ navigate }) {
               </div>
               <div className="bb-card-body">
                 {hasRevenue ? (
-                  <ResponsiveContainer width="100%" height={260}>
-                    <AreaChart data={revenueData} margin={{ top: 4, right: 16, left: 8, bottom: 0 }}>
-                      <defs>
-                        <linearGradient id="grad-revenue" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="var(--bb-primary)" stopOpacity={0.18} />
-                          <stop offset="95%" stopColor="var(--bb-primary)" stopOpacity={0.01} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="var(--bb-border-faint)" vertical={false} />
-                      <XAxis
-                        dataKey="date"
-                        tick={{ fontSize: 11, fill: 'var(--bb-text-muted)' }}
-                        tickLine={false}
-                        axisLine={false}
-                        interval={Math.max(0, Math.floor(revenueData.length / 6))}
-                        tickFormatter={fmtIsoDateShort}
-                      />
-                      <YAxis
-                        tick={{ fontSize: 11, fill: 'var(--bb-text-muted)' }}
-                        tickLine={false}
-                        axisLine={false}
-                        tickFormatter={fmtAxisMillions}
-                        width={40}
-                      />
-                      <Tooltip content={<RevenueTooltip ordersUnit={t('dashboard.revenueChart.ordersAxis')} />} />
-                      <Area
-                        type="monotone"
-                        dataKey="revenue"
-                        name={t('dashboard.revenueChart.revenue')}
-                        stroke="var(--bb-primary)"
-                        strokeWidth={2}
-                        fill="url(#grad-revenue)"
-                        dot={false}
-                        activeDot={{ r: 5, strokeWidth: 0 }}
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
+                  <Suspense fallback={<SkeletonBlock height={260} />}>
+                    <RevenueAreaChart revenueData={revenueData} />
+                  </Suspense>
                 ) : (
                   <SectionEmpty
                     title={t('dashboard.revenueChart.empty')}
@@ -448,24 +367,9 @@ export function DashboardScreen({ navigate }) {
               <div className="bb-card-body">
                 {pieTotal > 0 ? (
                   <div>
-                    <ResponsiveContainer width="100%" height={200}>
-                      <PieChart>
-                        <Pie
-                          data={pieDataWithTotal}
-                          cx="50%" cy="50%"
-                          innerRadius={58}
-                          outerRadius={88}
-                          paddingAngle={2}
-                          dataKey="count"
-                          nameKey="name"
-                        >
-                          {pieDataWithTotal.map((entry) => (
-                            <Cell key={entry.status} fill={entry.color} stroke="transparent" />
-                          ))}
-                        </Pie>
-                        <Tooltip content={<PieTooltip orderUnit={t('dashboard.orderStatusChart.orderUnit')} />} />
-                      </PieChart>
-                    </ResponsiveContainer>
+                    <Suspense fallback={<SkeletonBlock height={200} />}>
+                      <OrderStatusPie pieDataWithTotal={pieDataWithTotal} />
+                    </Suspense>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 12 }}>
                       {pieDataWithTotal.map((d) => (
                         <div

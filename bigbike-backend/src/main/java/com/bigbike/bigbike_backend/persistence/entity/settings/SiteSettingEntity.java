@@ -1,5 +1,7 @@
 package com.bigbike.bigbike_backend.persistence.entity.settings;
 
+import lombok.Getter;
+import lombok.Setter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -13,6 +15,8 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "site_settings")
+@Getter
+@Setter
 public class SiteSettingEntity {
 
     @Id
@@ -43,33 +47,6 @@ public class SiteSettingEntity {
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
-
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-
-    public String getSettingKey() { return settingKey; }
-    public void setSettingKey(String settingKey) { this.settingKey = settingKey; }
-
-    public String getSettingValue() { return settingValue; }
-    public void setSettingValue(String settingValue) { this.settingValue = settingValue; }
-
-    public String getSettingValueEn() { return settingValueEn; }
-    public void setSettingValueEn(String settingValueEn) { this.settingValueEn = settingValueEn; }
-
-    public String getSettingGroup() { return settingGroup; }
-    public void setSettingGroup(String settingGroup) { this.settingGroup = settingGroup; }
-
-    public boolean isPublic() { return isPublic; }
-    public void setPublic(boolean aPublic) { isPublic = aPublic; }
-
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
-
-    public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
-
-    public Instant getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
 
     @PrePersist
     void onPrePersist() {

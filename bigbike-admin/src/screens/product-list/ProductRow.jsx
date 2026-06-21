@@ -1,0 +1,132 @@
+import { useTranslation } from 'react-i18next'
+import { Check, Copy, MoreHorizontal, Package, Pencil, Trash2, Undo2 } from 'lucide-react'
+import { PublishStatusBadge } from '../../components/StatusBadge'
+import { formatCurrencyVnd, formatDateTime, formatText } from '../../lib/formatters'
+import { StockCell } from './cells'
+import { categoryLabel } from './constants'
+
+// Desktop table row for ProductListScreen. Behaviour is identical to the inline
+// markup it replaced; state lives in the parent and is threaded via props.
+export function ProductRow({
+  product,
+  navigate,
+  canUpdate,
+  checked,
+  isDeleting,
+  isRestoring,
+  isMenuOpen,
+  onToggleSelect,
+  onToggleMenu,
+  onCloseMenu,
+  onDuplicate,
+  onRestore,
+  onDelete,
+}) {
+  const { t } = useTranslation()
+  const isTrashed = product.publishStatus === 'TRASH'
+  const isBusy = isDeleting || isRestoring
+  const block = product.homepageBlock
+  const catName = categoryLabel(product)
+
+  return (
+    <tr className={checked ? 'selected' : ''} onClick={() => navigate(`/admin/products/${product.id}`)}>
+      <td className="col-check" onClick={(e) => { e.stopPropagation(); onToggleSelect(product.id) }}>
+        <span className={`bb-cb${checked ? ' checked' : ''}`} role="checkbox" aria-checked={checked}>
+          {checked && <Check size={11} />}
+        </span>
+      </td>
+      <td>
+        <div className="bb-product-cell">
+          <span className="bb-product-thumb" style={{ width: 40, height: 40 }}>
+            {product.image?.url ? (
+              <img
+                src={product.image.url}
+                alt={product.image.alt || product.name}
+                referrerPolicy="no-referrer"
+                loading="lazy"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            ) : (
+              <Package size={22} />
+            )}
+          </span>
+          <span>{formatText(product.name)}</span>
+        </div>
+      </td>
+      <td className="mono hidden lg:table-cell">{formatText(product.sku, 'SKU TBD')}</td>
+      <td className="num" style={{ fontWeight: 700 }}>
+        {formatCurrencyVnd(product.price?.retailPrice)}
+        {product.price?.salePrice ? (
+          <div className="bb-cell-sub" style={{ textDecoration: 'line-through' }}>
+            {formatCurrencyVnd(product.price.salePrice)}
+          </div>
+        ) : null}
+      </td>
+      <td><StockCell quantity={product.stockQuantity} state={product.stockState} /></td>
+      <td className="hidden xl:table-cell">
+        {catName ? formatText(catName) : <span className="bb-muted">—</span>}
+      </td>
+      <td className="hidden 2xl:table-cell">
+        {product.brand?.name ? formatText(product.brand.name) : <span className="bb-muted">—</span>}
+      </td>
+      <td className="hidden xl:table-cell">
+        {!block || block === 'NONE' ? (
+          <span className="bb-muted">—</span>
+        ) : (
+          <span style={{ fontSize: 12.5, fontWeight: 600 }}>
+            {t('products.homepageFeatured')}
+            {Number.isFinite(product.homepageOrder) ? ` · #${product.homepageOrder}` : ''}
+          </span>
+        )}
+      </td>
+      <td><PublishStatusBadge value={product.publishStatus} /></td>
+      <td className="bb-muted hidden lg:table-cell">{formatDateTime(product.updatedAt)}</td>
+      <td className="col-actions" onClick={(e) => e.stopPropagation()}>
+        <button
+          type="button"
+          className="bb-icon-btn"
+          title={t('common.edit')}
+          onClick={() => navigate(`/admin/products/${product.id}`)}
+        >
+          <Pencil size={14} />
+        </button>
+        <div style={{ position: 'relative', display: 'inline-block' }}>
+          <button
+            type="button"
+            className="bb-icon-btn"
+            data-row-menu-trigger
+            title={t('common.actions')}
+            onClick={() => onToggleMenu(product.id)}
+          >
+            <MoreHorizontal size={15} />
+          </button>
+          {isMenuOpen && (
+            <div className="bb-row-menu">
+              <button type="button" onClick={() => { onCloseMenu(); navigate(`/admin/products/${product.id}`) }}>
+                <Pencil size={13} />{t('common.edit')}
+              </button>
+              {canUpdate && (
+                <button type="button" onClick={() => { onCloseMenu(); onDuplicate(product) }}>
+                  <Copy size={13} />{t('products.duplicate')}
+                </button>
+              )}
+              {canUpdate && isTrashed && (
+                <button type="button" disabled={isBusy} onClick={() => { onCloseMenu(); onRestore(product) }}>
+                  <Undo2 size={13} />{isRestoring ? t('products.restoringLabel') : t('products.restore')}
+                </button>
+              )}
+              {canUpdate && !isTrashed && (
+                <>
+                  <hr />
+                  <button type="button" className="danger" disabled={isBusy} onClick={() => { onCloseMenu(); onDelete(product) }}>
+                    <Trash2 size={13} />{isDeleting ? t('products.deletingLabel') : t('common.delete')}
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      </td>
+    </tr>
+  )
+}

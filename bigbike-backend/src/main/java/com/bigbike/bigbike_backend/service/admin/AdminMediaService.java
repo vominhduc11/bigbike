@@ -17,6 +17,11 @@ import com.bigbike.bigbike_backend.persistence.repository.media.MediaJpaReposito
 import com.bigbike.bigbike_backend.persistence.repository.media.MediaSpecifications;
 import com.bigbike.bigbike_backend.persistence.repository.media.MediaTagJdbc;
 import com.bigbike.bigbike_backend.service.common.PageResult;
+import static com.bigbike.bigbike_backend.service.admin.MediaServiceHelpers.buildSort;
+import static com.bigbike.bigbike_backend.service.admin.MediaServiceHelpers.nvl;
+import static com.bigbike.bigbike_backend.service.admin.MediaServiceHelpers.sameMimeGroup;
+import static com.bigbike.bigbike_backend.service.admin.MediaServiceHelpers.sanitizeFilename;
+import static com.bigbike.bigbike_backend.service.admin.MediaServiceHelpers.startsWith;
 import tools.jackson.databind.ObjectMapper;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
@@ -242,13 +247,6 @@ public class AdminMediaService {
         return toDetail(media);
     }
 
-    private static boolean sameMimeGroup(String a, String b) {
-        if (a == null || b == null) return false;
-        int slashA = a.indexOf('/'), slashB = b.indexOf('/');
-        if (slashA < 0 || slashB < 0) return a.equalsIgnoreCase(b);
-        return a.substring(0, slashA).equalsIgnoreCase(b.substring(0, slashB));
-    }
-
     // ── List ──────────────────────────────────────────────────────────────────
 
     @Transactional(readOnly = true)
@@ -363,10 +361,6 @@ public class AdminMediaService {
         return new AdminMediaStatsResponse(total, used, unused, activeCount, deletedCount, byMime, totalSize);
     }
 
-    private static boolean startsWith(String s, String prefix) {
-        return s != null && s.toLowerCase(Locale.ROOT).startsWith(prefix);
-    }
-
     private Specification<MediaEntity> buildBaseSpec(MediaListQuery query) {
         Specification<MediaEntity> spec;
         if (query.status() != null && !query.status().isBlank()) {
@@ -419,16 +413,6 @@ public class AdminMediaService {
             spec = spec.and(MediaSpecifications.idIn(mediaIds));
         }
         return spec;
-    }
-
-    private static final Set<String> ALLOWED_SORT_KEYS = Set.of("createdAt", "fileSize", "title", "usageCount");
-
-    private static Sort buildSort(String sortKey, String dir) {
-        String key = (sortKey != null && ALLOWED_SORT_KEYS.contains(sortKey)) ? sortKey : "createdAt";
-        // usageCount is computed in memory; fallback to createdAt for the DB-level sort
-        if ("usageCount".equals(key)) key = "createdAt";
-        Sort.Direction direction = "asc".equalsIgnoreCase(dir) ? Sort.Direction.ASC : Sort.Direction.DESC;
-        return Sort.by(direction, key);
     }
 
     // ── Detail ────────────────────────────────────────────────────────────────
@@ -677,8 +661,6 @@ public class AdminMediaService {
         }
     }
 
-    private static String nvl(String s) { return s != null ? s : ""; }
-
     // ── File helpers ──────────────────────────────────────────────────────────
 
     /**
@@ -717,12 +699,5 @@ public class AdminMediaService {
             throw ValidationException.fromField("file", "MIME_MISMATCH",
                     "File content does not match an allowed type (detected: " + detected + ").");
         }
-    }
-
-    private static String sanitizeFilename(String original) {
-        if (original == null || original.isBlank()) return "upload";
-        // Keep extension intact, sanitize the rest
-        String name = original.replaceAll("[^a-zA-Z0-9._-]", "_").toLowerCase(Locale.ROOT);
-        return name.length() > 200 ? name.substring(0, 200) : name;
     }
 }

@@ -32,44 +32,23 @@ import { useDebounce } from '../lib/useDebounce'
 import { useUrlSyncedState } from '../lib/useUrlSyncedState'
 import { useDragDropUpload } from '../lib/useDragDropUpload'
 import { useKeyboardNav } from '../lib/useKeyboardNav'
-import { cn } from '@/lib/utils'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
-
-const ALLOWED_MIME = [
-  'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml',
-  'video/mp4',
-]
-const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50 MB
-const PAGE_SIZE_OPTIONS = [12, 24, 48, 96]
-
-const DEFAULT_QUERY = {
-  search: '', mimeType: 'ALL', status: 'ACTIVE', usageFilter: 'ALL',
-  uploadedFrom: '', uploadedTo: '',
-  minSize: '', maxSize: '',
-  minWidth: '', minHeight: '',
-  sort: 'createdAt', dir: 'desc',
-  view: 'grid',
-  folderFilter: '', tag: '',
-  page: 1, pageSize: 24,
-}
-
-function formatBytes(bytes) {
-  if (!bytes) return '—'
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`
-}
-
-function formatNumber(n) {
-  return new Intl.NumberFormat('vi-VN').format(n ?? 0)
-}
-
-function dateToInstantStart(d) { if (!d) return ''; const x = new Date(d + 'T00:00:00'); return Number.isNaN(x.getTime()) ? '' : x.toISOString() }
-function dateToInstantEnd(d) { if (!d) return ''; const x = new Date(d + 'T00:00:00'); if (Number.isNaN(x.getTime())) return ''; x.setDate(x.getDate() + 1); return x.toISOString() }
+import {
+  ALLOWED_MIME,
+  MAX_FILE_SIZE,
+  PAGE_SIZE_OPTIONS,
+  DEFAULT_QUERY,
+  formatBytes,
+  formatNumber,
+  dateToInstantStart,
+  dateToInstantEnd,
+  hasAdvancedFilters,
+  buildActiveChips,
+} from './media-library/constants'
+import { UploadQueue } from './media-library/UploadQueue'
 
 export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
   const { t } = useTranslation()
@@ -394,7 +373,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
       <p className="text-xs text-muted-foreground -mt-1">{t('mediaReco.uploadGuide')}</p>
 
       {/* Upload queue */}
-      {uploadQueue.length > 0 && <UploadQueue queue={uploadQueue} onDismiss={(id) => setUploadQueue((q) => q.filter((u) => u.id !== id))} t={t} />}
+      {uploadQueue.length > 0 && <UploadQueue queue={uploadQueue} onDismiss={(id) => setUploadQueue((q) => q.filter((u) => u.id !== id))} />}
 
       <div className="medialib-layout">
         <MediaFolderSidebar
@@ -646,76 +625,4 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
       )}
     </div>
   )
-}
-
-// ── Upload queue panel ───────────────────────────────────────
-
-function UploadQueue({ queue, onDismiss, t }) {
-  const pending = queue.filter((u) => u.status === 'uploading' || u.status === 'pending').length
-  return (
-    <div className="fixed bottom-4 right-4 z-50 bg-surface border border-border rounded-md shadow-xl w-[360px] max-w-[calc(100vw-2rem)] max-h-[360px] overflow-y-auto">
-      <div className="px-3 py-2 border-b border-border font-bold text-sm">
-        {pending > 0 ? t('media.uploading') + ` (${pending})` : t('media.uploadComplete', { count: queue.length })}
-      </div>
-      {queue.map((u) => (
-        <div key={u.id} className="px-3 py-2 border-b border-border text-xs">
-          <div className="flex justify-between items-center gap-1.5">
-            <span className="truncate flex-1" title={u.name}>{u.name}</span>
-            <button type="button" onClick={() => onDismiss(u.id)} aria-label="Dismiss"
-              className="bg-transparent border-none cursor-pointer p-0.5 text-muted-foreground">
-              <XIcon size={12} />
-            </button>
-          </div>
-          {u.status === 'error' ? (
-            <p className="text-danger mt-1 mb-0 text-xs">{u.error}</p>
-          ) : (
-            <div className="h-1 bg-surface-muted rounded-full mt-1 overflow-hidden">
-              <div
-                className={cn('h-full transition-[width] duration-200', u.status === 'done' ? 'bg-success' : 'bg-primary')}
-                style={{ width: `${u.progress}%` }}
-              />
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-  )
-}
-
-// ── Helpers ──────────────────────────────────────────────────
-
-function hasAdvancedFilters(q) {
-  return Boolean(q.uploadedFrom || q.uploadedTo || q.minSize || q.maxSize || q.minWidth || q.minHeight)
-}
-
-function buildActiveChips(query, t, folders, onRemove) {
-  const chips = []
-  if (query.search) chips.push({ key: 'search', label: `${t('common.search')}: ${query.search}`, onRemove: () => onRemove('search', '') })
-  if (query.mimeType !== 'ALL') {
-    const label = query.mimeType === 'image/' ? t('media.images')
-      : query.mimeType === 'video/' ? t('media.videos')
-      : query.mimeType === 'audio/' ? t('media.audios') : query.mimeType
-    chips.push({ key: 'mimeType', label: `${t('media.filterType')}: ${label}`, onRemove: () => onRemove('mimeType', 'ALL') })
-  }
-  if (query.usageFilter !== 'ALL') {
-    const label = query.usageFilter === 'USED' ? t('media.usageUsed') : t('media.usageUnusedOption')
-    chips.push({ key: 'usageFilter', label: `${t('media.filterUsage')}: ${label}`, onRemove: () => onRemove('usageFilter', 'ALL') })
-  }
-  if (query.status !== DEFAULT_QUERY.status) {
-    chips.push({ key: 'status', label: `${t('media.filterStatus')}: ${query.status === 'DELETED' ? t('media.statusDeleted') : t('media.statusActive')}`,
-      onRemove: () => onRemove('status', DEFAULT_QUERY.status) })
-  }
-  if (query.uploadedFrom) chips.push({ key: 'uploadedFrom', label: `${t('media.uploadedFrom')}: ${query.uploadedFrom}`, onRemove: () => onRemove('uploadedFrom', '') })
-  if (query.uploadedTo) chips.push({ key: 'uploadedTo', label: `${t('media.uploadedTo')}: ${query.uploadedTo}`, onRemove: () => onRemove('uploadedTo', '') })
-  if (query.minSize) chips.push({ key: 'minSize', label: `≥ ${(Number(query.minSize) / 1024 / 1024).toFixed(1)} MB`, onRemove: () => onRemove('minSize', '') })
-  if (query.maxSize) chips.push({ key: 'maxSize', label: `≤ ${(Number(query.maxSize) / 1024 / 1024).toFixed(1)} MB`, onRemove: () => onRemove('maxSize', '') })
-  if (query.minWidth) chips.push({ key: 'minWidth', label: `${t('media.minWidthPx')} ${query.minWidth}`, onRemove: () => onRemove('minWidth', '') })
-  if (query.minHeight) chips.push({ key: 'minHeight', label: `${t('media.minHeightPx')} ${query.minHeight}`, onRemove: () => onRemove('minHeight', '') })
-  if (query.folderFilter) {
-    const label = query.folderFilter === 'NONE' ? t('media.uncategorized')
-      : (folders || []).find((f) => f.id === query.folderFilter)?.name ?? query.folderFilter
-    chips.push({ key: 'folderFilter', label: `${t('media.folder')}: ${label}`, onRemove: () => onRemove('folderFilter', '') })
-  }
-  if (query.tag) chips.push({ key: 'tag', label: `#${query.tag}`, onRemove: () => onRemove('tag', '') })
-  return chips
 }

@@ -3146,6 +3146,15 @@ body:has(.bb-home) {
   font-size: var(--text-18) !important;
 }
 
+/* Nhịp giữa các ĐOẠN trong khối rich-text admin gõ (.wyswyg bên trong mô tả): theme WP đặt
+   `.wyswyg p{margin-bottom:30px}` → lệch với nhịp 16px của khung (flex gap-4 giữa tiêu đề→nội dung
+   và giữa các ý). Hạ về 16px để mạch đọc đồng đều. KHÔNG dùng !important: rule này (specificity 0,2,1)
+   đã thắng `.wyswyg p` của WP (0,1,1); và rule bỏ lề đoạn CUỐI `.bb-wp-pdp-page .wyswyg > :last-child`
+   bên dưới (cùng 0,2,1, đứng sau) vẫn thắng nhờ thứ tự nguồn → đoạn cuối không dư đáy. */
+.pdp-desc-rich .wyswyg p {
+  margin-bottom: 16px;
+}
+
 /* Khối mô tả tự giãn cách bằng flex `gap` (gap-2 giữa các khối chữ, gap-1.5 trong danh sách).
    Theme WP (UNLAYERED) lại gán margin cho h1-h6 (.5rem), ul/ol (1rem) → cộng dồn lên `gap`
    làm hở dư, rõ nhất ở tiêu đề→danh sách. Reset margin về 0 để CHỈ còn `gap` điều khiển.

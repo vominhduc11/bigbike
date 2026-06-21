@@ -204,7 +204,8 @@ export function SuitabilityBlockView({ block }: { block: SuitabilityBlockT }) {
   );
   if (cards.length === 0) return null;
   return (
-    <div className="flex flex-col gap-5">
+    // gap-4 = khoảng tiêu đề→nội dung, đồng nhất với TextStack/FeatureBody (16px mọi loại khối).
+    <div className="flex flex-col gap-4">
       <BlockTitle text={block.title} />
       <div className="flex flex-col gap-3">
         {cards.map((card, index) => {
@@ -242,7 +243,8 @@ export function SizeGuideBlockView({ block }: { block: SizeGuideBlockT }) {
   const html = block.html ? sanitizeRichHtml(block.html) : "";
   if (!html) return null;
   return (
-    <div className="flex flex-col gap-5">
+    // gap-4 = khoảng tiêu đề→nội dung, đồng nhất với TextStack/FeatureBody (16px mọi loại khối).
+    <div className="flex flex-col gap-4">
       <BlockTitle text={block.title} />
       <div className="wyswyg text-ui-18 max-md:text-ui-16" dangerouslySetInnerHTML={{ __html: html }} />
     </div>

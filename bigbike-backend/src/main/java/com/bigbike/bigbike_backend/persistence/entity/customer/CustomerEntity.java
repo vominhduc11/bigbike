@@ -9,9 +9,13 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "customers")
+@Getter
+@Setter
 public class CustomerEntity {
 
     @Id
@@ -88,76 +92,4 @@ public class CustomerEntity {
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
-
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-
-    public Long getLegacyId() { return legacyId; }
-    public void setLegacyId(Long legacyId) { this.legacyId = legacyId; }
-
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
-
-    public String getPhone() { return phone; }
-    public void setPhone(String phone) { this.phone = phone; }
-
-    public String getPasswordHash() { return passwordHash; }
-    public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
-
-    public String getDisplayName() { return displayName; }
-    public void setDisplayName(String displayName) { this.displayName = displayName; }
-
-    public String getFirstName() { return firstName; }
-    public void setFirstName(String firstName) { this.firstName = firstName; }
-
-    public String getLastName() { return lastName; }
-    public void setLastName(String lastName) { this.lastName = lastName; }
-
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
-
-    public boolean isSynthetic() { return isSynthetic; }
-    public void setSynthetic(boolean synthetic) { isSynthetic = synthetic; }
-
-    public Instant getEmailVerifiedAt() { return emailVerifiedAt; }
-    public void setEmailVerifiedAt(Instant emailVerifiedAt) { this.emailVerifiedAt = emailVerifiedAt; }
-
-    public Instant getPhoneVerifiedAt() { return phoneVerifiedAt; }
-    public void setPhoneVerifiedAt(Instant phoneVerifiedAt) { this.phoneVerifiedAt = phoneVerifiedAt; }
-
-    public String getGender() { return gender; }
-    public void setGender(String gender) { this.gender = gender; }
-
-    public LocalDate getDob() { return dob; }
-    public void setDob(LocalDate dob) { this.dob = dob; }
-
-    public Instant getLastLoginAt() { return lastLoginAt; }
-    public void setLastLoginAt(Instant lastLoginAt) { this.lastLoginAt = lastLoginAt; }
-
-    public String getOauthProvider() { return oauthProvider; }
-    public void setOauthProvider(String oauthProvider) { this.oauthProvider = oauthProvider; }
-
-    public String getOauthSubject() { return oauthSubject; }
-    public void setOauthSubject(String oauthSubject) { this.oauthSubject = oauthSubject; }
-
-    public boolean isCreditEnabled() { return creditEnabled; }
-    public void setCreditEnabled(boolean creditEnabled) { this.creditEnabled = creditEnabled; }
-
-    public java.math.BigDecimal getCreditLimit() { return creditLimit; }
-    public void setCreditLimit(java.math.BigDecimal creditLimit) { this.creditLimit = creditLimit; }
-
-    public Integer getPaymentTermsDays() { return paymentTermsDays; }
-    public void setPaymentTermsDays(Integer paymentTermsDays) { this.paymentTermsDays = paymentTermsDays; }
-
-    public String getCreditStatus() { return creditStatus; }
-    public void setCreditStatus(String creditStatus) { this.creditStatus = creditStatus; }
-
-    public String getCreditNote() { return creditNote; }
-    public void setCreditNote(String creditNote) { this.creditNote = creditNote; }
-
-    public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
-
-    public Instant getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
 }

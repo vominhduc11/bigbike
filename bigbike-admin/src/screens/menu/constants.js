@@ -1,0 +1,152 @@
+// System slots, form defaults, context notes and pure helpers for MenuScreen.
+// Extracted from MenuScreen.jsx so the screen file stays behaviour-focused and
+// fast-refresh only sees components in the .jsx files.
+
+import { normalizeMenu } from '../../lib/contracts'
+
+export function safeMenuDetailCache(data) {
+  if (!data) return data
+  if (data?.item) return { ...data, item: normalizeMenu(data.item) }
+  return data
+}
+
+// ── System slots ───────────────────────────────────────────────────────────────
+// Mirrors backend `MenuLocations.SYSTEM_LOCATIONS`. The storefront only renders
+// menus at these locations, so the admin UI exposes them as fixed tabs and never
+// allows creating/deleting menu containers.
+
+export const SYSTEM_SLOTS = [
+  {
+    location: 'primary',
+    titleKey: 'menus.slotPrimaryTitle',
+    descKey: 'menus.slotPrimaryDesc',
+    fallbackName: 'Header Menu',
+  },
+  {
+    location: 'footer',
+    titleKey: 'menus.slotFooterTitle',
+    descKey: 'menus.slotFooterDesc',
+    fallbackName: 'Footer Navigation',
+  },
+  {
+    location: 'guide',
+    titleKey: 'menus.slotGuideTitle',
+    descKey: 'menus.slotGuideDesc',
+    fallbackName: 'Buying Guide Menu',
+  },
+  {
+    location: 'policy',
+    titleKey: 'menus.slotPolicyTitle',
+    descKey: 'menus.slotPolicyDesc',
+    fallbackName: 'Policy Pages Menu',
+  },
+]
+
+// ── Constants ──────────────────────────────────────────────────────────────────
+
+export const EMPTY_ITEM = {
+  label: '',
+  labelEn: '',
+  url: '',
+  sortOrder: '0',
+  parentId: '',
+  openInNewTab: false,
+  cssClass: '',
+  status: 'ACTIVE',
+}
+
+export function normalizeParentId(parentId) {
+  return parentId || ''
+}
+
+export function sameParent(a, b) {
+  return normalizeParentId(a) === normalizeParentId(b)
+}
+
+export function sortMenuItems(items) {
+  return [...items].sort((a, b) => {
+    const byOrder = Number(a.sortOrder ?? 0) - Number(b.sortOrder ?? 0)
+    if (byOrder !== 0) return byOrder
+    return String(a.label || '').localeCompare(String(b.label || ''))
+  })
+}
+
+export function buildMenuTree(items) {
+  const byId = new Map()
+  sortMenuItems(items).forEach((item) => {
+    if (!item?.id || item.id === 'unknown') return
+    byId.set(item.id, { ...item, children: [] })
+  })
+  const roots = []
+  byId.forEach((node) => {
+    const parentId = normalizeParentId(node.parentId)
+    const parent = parentId ? byId.get(parentId) : null
+    if (parent) {
+      parent.children.push(node)
+    } else {
+      roots.push(node)
+    }
+  })
+  const sortChildren = (nodes) => {
+    nodes.sort((a, b) => {
+      const byOrder = Number(a.sortOrder ?? 0) - Number(b.sortOrder ?? 0)
+      if (byOrder !== 0) return byOrder
+      return String(a.label || '').localeCompare(String(b.label || ''))
+    })
+    nodes.forEach((node) => sortChildren(node.children))
+  }
+  sortChildren(roots)
+  return roots
+}
+
+export function flattenMenuTree(nodes, depth = 0) {
+  return nodes
+    .filter((node) => node != null && node.id)
+    .flatMap((node) => [
+      { ...node, depth },
+      ...flattenMenuTree(node.children ?? [], depth + 1),
+    ])
+}
+
+export function collectDescendantIds(items, itemId) {
+  const childrenByParent = new Map()
+  items.forEach((item) => {
+    const parentId = normalizeParentId(item.parentId)
+    if (!parentId) return
+    if (!childrenByParent.has(parentId)) childrenByParent.set(parentId, [])
+    childrenByParent.get(parentId).push(item.id)
+  })
+  const descendants = new Set()
+  const visit = (id) => {
+    for (const childId of childrenByParent.get(id) ?? []) {
+      if (descendants.has(childId)) continue
+      descendants.add(childId)
+      visit(childId)
+    }
+  }
+  visit(itemId)
+  return descendants
+}
+
+export function formatParentOption(item) {
+  return `${'── '.repeat(item.depth)}${item.label}`
+}
+
+export function isValidCustomUrl(url) {
+  const v = url.trim()
+  if (!v) return false
+  if (v.startsWith('/') || v.startsWith('#') || v.startsWith('tel:') || v.startsWith('mailto:')) return true
+  try { new URL(v); return true } catch { return false }
+}
+
+export function isItemFormValid(data) {
+  if (!data.label.trim()) return false
+  return data.url.trim() !== '' && isValidCustomUrl(data.url)
+}
+
+export const SLOT_CONTEXT_NOTES = {
+  primary: 'Mục này sẽ xuất hiện trên thanh điều hướng đầu trang website. Chỉ mục đang bật và có mục cha đang bật mới hiển thị.',
+  footer:  'Mục này sẽ xuất hiện ở menu footer (cuối trang). Chỉ mục đang bật và có mục cha đang bật mới hiển thị.',
+  guide:   'Mục này sẽ xuất hiện trong widget Hướng dẫn mua hàng ở footer. Chỉ mục đang bật và có mục cha đang bật mới hiển thị.',
+  policy:  'Mục này sẽ xuất hiện ở thanh bên trang Chính sách (/chinh-sach). Mỗi mục trỏ tới một Trang nội dung, ví dụ /chinh-sach/chinh-sach-bao-hanh. Chỉ mục đang bật mới hiển thị.',
+}

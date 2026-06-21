@@ -4,54 +4,24 @@ import { FilterSelect } from '../components/FilterSelect'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { toast } from 'sonner'
-import { BadgeCheck, Copy, Pencil, Plus, Send, Trash2 } from 'lucide-react'
+import { Plus, Send } from 'lucide-react'
 import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
-import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
+import { MobileCardList } from '../components/layout/MobileCardList'
 import { createCoupon, deleteCoupon, fetchCoupons, mapValidationErrors, sendBulkCouponGift, updateCoupon, updateCouponStatus } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import { CustomerPickerModal } from '../components/CustomerPickerModal'
-import { formatCurrencyVnd, formatDateTime } from '../lib/formatters'
 import { useDebounce } from '../lib/useDebounce'
 import { useAdminList } from '../lib/useAdminList'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Alert } from '@/components/ui/alert'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
-
-// Coupon status → prototype badge palette.
-const STATUS_BADGE = { ACTIVE: 'bb-badge-success', INACTIVE: 'bb-badge-neutral', EXPIRED: 'bb-badge-danger', ARCHIVED: 'bb-badge-neutral' }
-const CHANNEL_BADGE = { ALL: 'bb-badge-neutral', ONLINE: 'bb-badge-info', POS: 'bb-badge-warning' }
-const CHANNEL_LABELS = { ALL: 'Tất cả kênh', ONLINE: 'Chỉ online', POS: 'Chỉ tại quầy' }
-
-const INITIAL_QUERY = { search: '', status: 'ALL', page: 1, pageSize: 20 }
-const EMPTY_FORM = { code: '', name: '', discountType: 'FIXED', discountValue: '', minimumOrderAmount: '', maxUsage: '', expiresAt: '', channel: 'ALL' }
-
-// Convert "YYYY-MM-DD" date picker value to end-of-day Vietnam time ISO instant.
-function toEndOfDayInstant(dateStr) {
-  if (!dateStr) return undefined
-  return dateStr + 'T23:59:59+07:00'
-}
-
-function CouponStatusBadge({ value }) {
-  const { t } = useTranslation()
-  const labels = {
-    ACTIVE: t('coupons.statusActive'),
-    INACTIVE: t('coupons.statusInactive'),
-    EXPIRED: t('coupons.statusExpired'),
-    ARCHIVED: t('coupons.statusArchived'),
-  }
-  return (
-    <span className={`bb-badge ${STATUS_BADGE[value] || 'bb-badge-neutral'}`}>
-      {labels[value] ?? value}
-    </span>
-  )
-}
-
-function ChannelBadge({ value }) {
-  return <span className={`bb-badge ${CHANNEL_BADGE[value] || 'bb-badge-neutral'}`}>{CHANNEL_LABELS[value] ?? value}</span>
-}
+import { INITIAL_QUERY, EMPTY_FORM, toEndOfDayInstant } from './coupon-list/constants'
+import { BulkGiftPanel } from './coupon-list/BulkGiftPanel'
+import { CouponRow } from './coupon-list/CouponRow'
+import { CouponMobileCard } from './coupon-list/CouponMobileCard'
 
 export function CouponListScreen({ canUpdate }) {
   const { t } = useTranslation()
@@ -270,99 +240,17 @@ export function CouponListScreen({ canUpdate }) {
 
       {/* Bulk gift form */}
       {bulkOpen && (
-        <div className="bb-card mb-4">
-          <div className="bb-card-header">
-            <div>
-              <h2>Gửi mã giảm giá hàng loạt</h2>
-              <p className="sub">Chọn mã để gửi thông báo — hệ thống gửi email chứa code mã đó đến toàn bộ khách ACTIVE có email xác minh. Không tạo mã mới.</p>
-            </div>
-          </div>
-          <div className="bb-card-body">
-            {bulkCouponsLoading ? (
-              <p className="bb-muted text-sm py-6 text-center">Đang tải danh sách mã...</p>
-            ) : bulkCoupons.length === 0 ? (
-              <div className="text-center py-6">
-                <p className="bb-muted text-sm">Không có mã giảm giá đang hoạt động.</p>
-                <p className="bb-muted text-xs mt-1">Tạo mã trước rồi mới có thể gửi hàng loạt.</p>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {bulkCoupons.map((c) => {
-                  const isSelected = bulkCoupon?.id === c.id
-                  const pct = c.maxUsage ? Math.min(100, (c.usageCount / c.maxUsage) * 100) : null
-                  return (
-                    <button
-                      key={c.id}
-                      type="button"
-                      disabled={bulkSaving}
-                      onClick={() => { setBulkCoupon(c); setBulkConfirm(false) }}
-                      className={`w-full text-left rounded-lg border p-3 transition-colors ${
-                        isSelected
-                          ? 'border-[var(--admin-color-primary)] bg-[var(--admin-color-primary)]/5'
-                          : 'border-[var(--admin-border-default)] hover:border-[var(--admin-color-primary)]/40'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-mono font-semibold text-sm" style={{ color: 'var(--admin-color-primary)' }}>{c.code}</span>
-                            {c.name && <span className="text-sm bb-muted truncate">{c.name}</span>}
-                          </div>
-                          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                            <span className="bb-badge bb-badge-info">
-                              {c.discountType === 'PERCENT' ? `-${c.discountValue}%` : `-${formatCurrencyVnd(c.discountValue)}`}
-                            </span>
-                            <span className="bb-badge bb-badge-neutral">{CHANNEL_LABELS[c.channel] ?? c.channel}</span>
-                            {c.expiresAt && <span className="text-xs bb-muted">Hết hạn: {formatDateTime(c.expiresAt)}</span>}
-                            {c.minimumOrderAmount > 0 && <span className="text-xs bb-muted">Tối thiểu: {formatCurrencyVnd(c.minimumOrderAmount)}</span>}
-                          </div>
-                          {pct !== null && (
-                            <div className="flex items-center gap-2 mt-2">
-                              <div className="stock-bar" style={{ flex: '0 0 80px' }}><div style={{ width: pct + '%' }} /></div>
-                              <span className="text-xs bb-muted">{c.usageCount}/{c.maxUsage} đã dùng</span>
-                            </div>
-                          )}
-                        </div>
-                        {isSelected && <BadgeCheck size={18} className="shrink-0 mt-0.5" style={{ color: 'var(--admin-color-primary)' }} />}
-                      </div>
-                    </button>
-                  )
-                })}
-              </div>
-            )}
-
-            {bulkCoupon && (
-              <div className="mt-4 p-3 rounded-md text-sm" style={{ background: 'var(--admin-surface-muted)', border: '1px solid var(--admin-border-default)' }}>
-                Sẽ gửi email thông báo mã <span className="font-mono font-semibold" style={{ color: 'var(--admin-color-primary)' }}>{bulkCoupon.code}</span> đến <strong>toàn bộ khách ACTIVE có email xác minh</strong>. Không tạo mã mới.
-              </div>
-            )}
-
-            {bulkConfirm && (
-              <Alert tone="warning" className="mt-3">
-                Xác nhận gửi? Thao tác sẽ tạo hàng loạt mã và email — <strong>không thể hoàn tác</strong>.
-              </Alert>
-            )}
-
-            <div className="mt-4 flex gap-2">
-              <button
-                type="button"
-                className="bb-btn bb-btn-primary"
-                disabled={!bulkCoupon || bulkSaving}
-                onClick={handleBulkSend}
-              >
-                {bulkSaving ? 'Đang gửi...' : bulkConfirm ? 'Xác nhận gửi' : 'Tiếp tục'}
-              </button>
-              <button
-                type="button"
-                className="bb-btn bb-btn-secondary"
-                onClick={() => closeBulkPanel()}
-                disabled={bulkSaving}
-              >
-                Hủy
-              </button>
-            </div>
-          </div>
-        </div>
+        <BulkGiftPanel
+          bulkCouponsLoading={bulkCouponsLoading}
+          bulkCoupons={bulkCoupons}
+          bulkCoupon={bulkCoupon}
+          bulkSaving={bulkSaving}
+          bulkConfirm={bulkConfirm}
+          setBulkCoupon={setBulkCoupon}
+          setBulkConfirm={setBulkConfirm}
+          onSend={handleBulkSend}
+          onClose={() => closeBulkPanel()}
+        />
       )}
 
       {/* Create form */}
@@ -544,120 +432,31 @@ export function CouponListScreen({ canUpdate }) {
                       </tr>
                     ))
                   )}
-                  {items.map((c) => {
-                    const pct = c.maxUsage ? Math.min(100, (c.usageCount / c.maxUsage) * 100) : 0
-                    return (
-                      <tr key={c.id}>
-                        <td>
-                          <span className="mono" style={{ fontSize: 13, color: 'var(--admin-color-primary)' }}>{c.code}</span>
-                        </td>
-                        <td>{c.name || '—'}</td>
-                        <td>
-                          <span className="bb-badge bb-badge-info">
-                            {c.discountType === 'PERCENT' ? `-${c.discountValue}%` : `-${formatCurrencyVnd(c.discountValue)}`}
-                          </span>
-                        </td>
-                        <td className="num">{c.usageCount}{c.maxUsage ? ` / ${c.maxUsage}` : ''}</td>
-                        <td style={{ minWidth: 140 }}>
-                          {c.maxUsage ? (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <div className="stock-bar"><div style={{ width: pct + '%' }} /></div>
-                              <span className="bb-muted" style={{ fontSize: 12 }}>{pct.toFixed(0)}%</span>
-                            </div>
-                          ) : (
-                            <span className="bb-muted" style={{ fontSize: 12 }}>—</span>
-                          )}
-                        </td>
-                        <td><ChannelBadge value={c.channel || 'ALL'} /></td>
-                        <td className="bb-muted" style={{ fontSize: 12 }}>{formatDateTime(c.expiresAt)}</td>
-                        <td><CouponStatusBadge value={c.status} /></td>
-                        {canUpdate && (
-                          <td className="col-actions">
-                            <button type="button" className="bb-icon-btn" title={t('common.edit')} onClick={() => openEdit(c)}>
-                              <Pencil size={14} />
-                            </button>
-                            <button
-                              type="button"
-                              className="bb-icon-btn"
-                              title={c.status === 'ACTIVE' ? t('common.disable') : t('common.enable')}
-                              onClick={() => handleToggleStatus(c)}
-                            >
-                              <Copy size={14} />
-                            </button>
-                            <button
-                              type="button"
-                              className="bb-icon-btn"
-                              title={t('common.delete')}
-                              onClick={() => handleDelete(c)}
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </td>
-                        )}
-                      </tr>
-                    )
-                  })}
+                  {items.map((c) => (
+                    <CouponRow
+                      key={c.id}
+                      c={c}
+                      canUpdate={canUpdate}
+                      onEdit={openEdit}
+                      onToggleStatus={handleToggleStatus}
+                      onDelete={handleDelete}
+                    />
+                  ))}
                 </tbody>
               </table>
             </div>
             </div>
             <MobileCardList>
-              {items.map((c) => {
-                const pct = c.maxUsage ? Math.min(100, (c.usageCount / c.maxUsage) * 100) : 0
-                return (
-                  <MobileCard
-                    key={c.id}
-                    title={<span className="mono" style={{ fontSize: 13, color: 'var(--admin-color-primary)' }}>{c.code}</span>}
-                    subtitle={c.name || '—'}
-                    status={<CouponStatusBadge value={c.status} />}
-                    meta={[
-                      {
-                        label: t('coupons.colDiscount'),
-                        value: (
-                          <span className="bb-badge bb-badge-info">
-                            {c.discountType === 'PERCENT' ? `-${c.discountValue}%` : `-${formatCurrencyVnd(c.discountValue)}`}
-                          </span>
-                        ),
-                      },
-                      { label: t('coupons.colUsed'), value: `${c.usageCount}${c.maxUsage ? ` / ${c.maxUsage}` : ''}` },
-                      {
-                        label: 'Tỉ lệ dùng',
-                        value: c.maxUsage ? (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <div className="stock-bar"><div style={{ width: pct + '%' }} /></div>
-                            <span className="bb-muted" style={{ fontSize: 12 }}>{pct.toFixed(0)}%</span>
-                          </div>
-                        ) : '—',
-                      },
-                      { label: 'Kênh', value: <ChannelBadge value={c.channel || 'ALL'} /> },
-                      { label: t('coupons.colExpires'), value: formatDateTime(c.expiresAt) },
-                    ]}
-                    actions={canUpdate ? (
-                      <>
-                        <button type="button" className="bb-icon-btn" title={t('common.edit')} onClick={() => openEdit(c)}>
-                          <Pencil size={14} />
-                        </button>
-                        <button
-                          type="button"
-                          className="bb-icon-btn"
-                          title={c.status === 'ACTIVE' ? t('common.disable') : t('common.enable')}
-                          onClick={() => handleToggleStatus(c)}
-                        >
-                          <Copy size={14} />
-                        </button>
-                        <button
-                          type="button"
-                          className="bb-icon-btn"
-                          title={t('common.delete')}
-                          onClick={() => handleDelete(c)}
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </>
-                    ) : undefined}
-                  />
-                )
-              })}
+              {items.map((c) => (
+                <CouponMobileCard
+                  key={c.id}
+                  c={c}
+                  canUpdate={canUpdate}
+                  onEdit={openEdit}
+                  onToggleStatus={handleToggleStatus}
+                  onDelete={handleDelete}
+                />
+              ))}
             </MobileCardList>
           </div>
           {state.status === 'success' && state.pagination && (

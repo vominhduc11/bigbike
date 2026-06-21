@@ -3,12 +3,16 @@ package com.bigbike.bigbike_backend.api.admin.dto;
 import com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock;
 import com.bigbike.bigbike_backend.domain.catalog.HomepageBlock;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
+import lombok.Getter;
+import lombok.Setter;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.util.List;
 
+@Getter
+@Setter
 public class UpsertProductRequest {
 
     private static final String SLUG_REGEX = "^[a-z0-9]+(?:-[a-z0-9]+)*$";
@@ -204,69 +208,9 @@ public class UpsertProductRequest {
     private List<ProductTabRequest> tabs;
     private boolean tabsPresent = false;
 
-    public String getSku() {
-        return sku;
-    }
-
     public void setSku(String sku) {
         this.sku = sku;
         this.skuPresent = true;
-    }
-
-    public boolean isSkuPresent() {
-        return skuPresent;
-    }
-
-    public String getSlug() {
-        return slug;
-    }
-
-    public void setSlug(String slug) {
-        this.slug = slug;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getShortDescription() {
-        return shortDescription;
-    }
-
-    public void setShortDescription(String shortDescription) {
-        this.shortDescription = shortDescription;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public String getBrandId() {
-        return brandId;
-    }
-
-    public void setBrandId(String brandId) {
-        this.brandId = brandId;
-    }
-
-    public String getCategoryId() {
-        return categoryId;
-    }
-
-    public void setCategoryId(String categoryId) {
-        this.categoryId = categoryId;
-    }
-
-    public ImageAssetRequest getImage() {
-        return image;
     }
 
     public void setImage(ImageAssetRequest image) {
@@ -274,25 +218,9 @@ public class UpsertProductRequest {
         this.imagePresent = true;
     }
 
-    public boolean isImagePresent() {
-        return imagePresent;
-    }
-
-    public BigDecimal getRetailPrice() {
-        return retailPrice;
-    }
-
     public void setRetailPrice(BigDecimal retailPrice) {
         this.retailPrice = retailPrice;
         this.retailPricePresent = true;
-    }
-
-    public boolean isRetailPricePresent() {
-        return retailPricePresent;
-    }
-
-    public BigDecimal getCompareAtPrice() {
-        return compareAtPrice;
     }
 
     public void setCompareAtPrice(BigDecimal compareAtPrice) {
@@ -300,25 +228,9 @@ public class UpsertProductRequest {
         this.compareAtPricePresent = true;
     }
 
-    public boolean isCompareAtPricePresent() {
-        return compareAtPricePresent;
-    }
-
-    public BigDecimal getSalePrice() {
-        return salePrice;
-    }
-
     public void setSalePrice(BigDecimal salePrice) {
         this.salePrice = salePrice;
         this.salePricePresent = true;
-    }
-
-    public boolean isSalePricePresent() {
-        return salePricePresent;
-    }
-
-    public BigDecimal getCostPrice() {
-        return costPrice;
     }
 
     public void setCostPrice(BigDecimal costPrice) {
@@ -326,57 +238,9 @@ public class UpsertProductRequest {
         this.costPricePresent = true;
     }
 
-    public boolean isCostPricePresent() {
-        return costPricePresent;
-    }
-
-    public String getCurrency() {
-        return currency;
-    }
-
-    public void setCurrency(String currency) {
-        this.currency = currency;
-    }
-
-    public PublishStatus getPublishStatus() {
-        return publishStatus;
-    }
-
-    public void setPublishStatus(PublishStatus publishStatus) {
-        this.publishStatus = publishStatus;
-    }
-
-    public Boolean getForceOutOfStock() {
-        return forceOutOfStock;
-    }
-
-    public void setForceOutOfStock(Boolean forceOutOfStock) {
-        this.forceOutOfStock = forceOutOfStock;
-    }
-
-    public HomepageBlock getHomepageBlock() {
-        return homepageBlock;
-    }
-
-    public void setHomepageBlock(HomepageBlock homepageBlock) {
-        this.homepageBlock = homepageBlock;
-    }
-
-    public Integer getHomepageOrder() {
-        return homepageOrder;
-    }
-
     public void setHomepageOrder(Integer homepageOrder) {
         this.homepageOrder = homepageOrder;
         this.homepageOrderPresent = true;
-    }
-
-    public boolean isHomepageOrderPresent() {
-        return homepageOrderPresent;
-    }
-
-    public String getPromotionContent() {
-        return promotionContent;
     }
 
     public void setPromotionContent(String promotionContent) {
@@ -384,26 +248,9 @@ public class UpsertProductRequest {
         this.promotionContentPresent = true;
     }
 
-    public boolean isPromotionContentPresent() {
-        return promotionContentPresent;
-    }
-
-    public String getInstallationGuide() {
-        return installationGuide;
-    }
-
     public void setInstallationGuide(String installationGuide) {
         this.installationGuide = installationGuide;
         this.installationGuidePresent = true;
-    }
-
-    public boolean isInstallationGuidePresent() {
-        return installationGuidePresent;
-    }
-
-
-    public String getOriginBrandCountry() {
-        return originBrandCountry;
     }
 
     public void setOriginBrandCountry(String originBrandCountry) {
@@ -411,25 +258,9 @@ public class UpsertProductRequest {
         this.originBrandCountryPresent = true;
     }
 
-    public boolean isOriginBrandCountryPresent() {
-        return originBrandCountryPresent;
-    }
-
-    public String getSizeGuide() {
-        return sizeGuide;
-    }
-
     public void setSizeGuide(String sizeGuide) {
         this.sizeGuide = sizeGuide;
         this.sizeGuidePresent = true;
-    }
-
-    public boolean isSizeGuidePresent() {
-        return sizeGuidePresent;
-    }
-
-    public String getSectionVisibility() {
-        return sectionVisibility;
     }
 
     public void setSectionVisibility(String sectionVisibility) {
@@ -437,25 +268,9 @@ public class UpsertProductRequest {
         this.sectionVisibilityPresent = true;
     }
 
-    public boolean isSectionVisibilityPresent() {
-        return sectionVisibilityPresent;
-    }
-
-    public String getSuitabilityAdvisory() {
-        return suitabilityAdvisory;
-    }
-
     public void setSuitabilityAdvisory(String suitabilityAdvisory) {
         this.suitabilityAdvisory = suitabilityAdvisory;
         this.suitabilityAdvisoryPresent = true;
-    }
-
-    public boolean isSuitabilityAdvisoryPresent() {
-        return suitabilityAdvisoryPresent;
-    }
-
-    public String getGender() {
-        return gender;
     }
 
     public void setGender(String gender) {
@@ -463,25 +278,9 @@ public class UpsertProductRequest {
         this.genderPresent = true;
     }
 
-    public boolean isGenderPresent() {
-        return genderPresent;
-    }
-
-    public SeoMetaRequest getSeo() {
-        return seo;
-    }
-
     public void setSeo(SeoMetaRequest seo) {
         this.seo = seo;
         this.seoPresent = true;
-    }
-
-    public boolean isSeoPresent() {
-        return seoPresent;
-    }
-
-    public ProductTranslationRequest getTranslations() {
-        return translations;
     }
 
     public void setTranslations(ProductTranslationRequest translations) {
@@ -489,68 +288,19 @@ public class UpsertProductRequest {
         this.translationsPresent = true;
     }
 
-    public boolean isTranslationsPresent() {
-        return translationsPresent;
-    }
-
-    public List<GalleryImageRequest> getGallery() { return gallery; }
-    public void setGallery(List<GalleryImageRequest> gallery) { this.gallery = gallery; }
-
-    public List<VideoRequest> getVideos() { return videos; }
-    public void setVideos(List<VideoRequest> videos) { this.videos = videos; }
-
-    public List<SpecificationRequest> getSpecifications() { return specifications; }
-    public void setSpecifications(List<SpecificationRequest> specifications) { this.specifications = specifications; }
-
-    public List<SpecStatRequest> getSpecStats() { return specStats; }
-    public void setSpecStats(List<SpecStatRequest> specStats) { this.specStats = specStats; }
-
-    public List<FaqRequest> getFaqs() { return faqs; }
-    public void setFaqs(List<FaqRequest> faqs) { this.faqs = faqs; }
-
-    public List<CommitmentRequest> getCommitments() { return commitments; }
-    public void setCommitments(List<CommitmentRequest> commitments) { this.commitments = commitments; }
-
-    public List<PurchaseLineRequest> getPurchaseLines() { return purchaseLines; }
-    public void setPurchaseLines(List<PurchaseLineRequest> purchaseLines) { this.purchaseLines = purchaseLines; }
-
-    public List<TrustBadgeRequest> getTrustBadges() { return trustBadges; }
-    public void setTrustBadges(List<TrustBadgeRequest> trustBadges) { this.trustBadges = trustBadges; }
-
-    public List<HighlightRequest> getPositiveNotes() { return positiveNotes; }
-    public void setPositiveNotes(List<HighlightRequest> positiveNotes) { this.positiveNotes = positiveNotes; }
-
-    public List<HighlightRequest> getNegativeNotes() { return negativeNotes; }
-    public void setNegativeNotes(List<HighlightRequest> negativeNotes) { this.negativeNotes = negativeNotes; }
-
-    public List<VariantRequest> getVariants() { return variants; }
-    public void setVariants(List<VariantRequest> variants) { this.variants = variants; }
-
-    public List<String> getRelatedProductIds() { return relatedProductIds; }
-    public void setRelatedProductIds(List<String> relatedProductIds) { this.relatedProductIds = relatedProductIds; }
-
-    public List<String> getAccessoryProductIds() { return accessoryProductIds; }
-    public void setAccessoryProductIds(List<String> accessoryProductIds) { this.accessoryProductIds = accessoryProductIds; }
-
-    public List<DescriptionBlock> getDescriptionBlocks() { return descriptionBlocks; }
     public void setDescriptionBlocks(List<DescriptionBlock> descriptionBlocks) {
         this.descriptionBlocks = descriptionBlocks;
         this.descriptionBlocksPresent = true;
     }
-    public boolean isDescriptionBlocksPresent() { return descriptionBlocksPresent; }
 
-    public List<DescriptionBlock> getDescriptionBlocksEn() { return descriptionBlocksEn; }
     public void setDescriptionBlocksEn(List<DescriptionBlock> descriptionBlocksEn) {
         this.descriptionBlocksEn = descriptionBlocksEn;
         this.descriptionBlocksEnPresent = true;
     }
-    public boolean isDescriptionBlocksEnPresent() { return descriptionBlocksEnPresent; }
 
-    public List<ProductTabRequest> getTabs() { return tabs; }
     public void setTabs(List<ProductTabRequest> tabs) {
         this.tabs = tabs;
         this.tabsPresent = true;
     }
-    public boolean isTabsPresent() { return tabsPresent; }
 }
 

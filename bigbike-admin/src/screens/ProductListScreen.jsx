@@ -2,8 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Check, Copy, Download, MoreHorizontal, Package, Pencil, Plus, Trash2, Undo2 } from 'lucide-react'
-import { PublishStatusBadge, StockStatusBadge } from '../components/StatusBadge'
+import { Check, Download, Plus } from 'lucide-react'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { BulkActionBar } from '../components/BulkActionBar'
@@ -12,61 +11,16 @@ import { FilterSearchInput } from '../components/FilterSearchInput'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { showConfirm } from '../lib/confirm'
 import { ApiClientError, exportProductsCsv, fetchBrands, fetchCategoryTree, fetchProductDetail, fetchProducts, restoreProduct, softDeleteProduct } from '../lib/adminApi'
-import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
 import { useAdminList } from '../lib/useAdminList'
 import { useContentLang } from '../lib/contentLang'
 import { useDebounce } from '../lib/useDebounce'
 import { readQueryFromUrl, syncQueryToUrl } from '../lib/useUrlQuery'
 import { Alert } from '@/components/ui/alert'
 import { PaginationControls } from '../components/PaginationControls'
-import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
-
-const DUPLICATE_SESSION_KEY = 'product-duplicate-payload'
-
-const INITIAL_QUERY = {
-  search: '',
-  publishStatus: 'ALL',
-  stockState: 'ALL',
-  brandId: '',
-  categoryId: '',
-  homepageBlock: 'ALL',
-  sort: 'updatedAt:desc',
-  page: 1,
-  pageSize: 20,
-}
-
-const HOMEPAGE_BLOCK_LIMITS = {
-  FEATURED_GRID: 12,
-}
-const HOMEPAGE_BLOCK_LABEL_KEYS = {
-  NONE: 'products.hbNone',
-  FEATURED_GRID: 'products.hbFeatured',
-}
-
-// Stock cell: prominent on-hand quantity (the number a shop manager actually
-// scans for) plus the colour-coded state badge. Falls back to "—" when the
-// product does not track inventory (stockQuantity === null).
-function StockCell({ quantity, state }) {
-  const { t } = useTranslation()
-  const hasQty = Number.isFinite(quantity)
-  return (
-    <span className="inline-flex items-center gap-2">
-      <span
-        className="font-semibold tabular-nums"
-        style={{ minWidth: 26, textAlign: 'right' }}
-        title={hasQty ? undefined : t('products.stockNotTracked')}
-      >
-        {hasQty ? quantity : '—'}
-      </span>
-      <StockStatusBadge value={state} />
-    </span>
-  )
-}
-
-function categoryLabel(product) {
-  const category = product.category
-  return category && category.id !== 'uncategorized' ? category.name : null
-}
+import { MobileCardList } from '../components/layout/MobileCardList'
+import { DUPLICATE_SESSION_KEY, HOMEPAGE_BLOCK_LABEL_KEYS, HOMEPAGE_BLOCK_LIMITS, INITIAL_QUERY } from './product-list/constants'
+import { ProductRow } from './product-list/ProductRow'
+import { ProductMobileCard } from './product-list/ProductMobileCard'
 
 export function ProductListScreen({ navigate, canUpdate }) {
   const { t } = useTranslation()
@@ -451,229 +405,42 @@ export function ProductListScreen({ navigate, canUpdate }) {
                     </tr>
                   ))
                 )}
-                {items.map((product) => {
-                  const isDeleting = deletingId === product.id
-                  const isRestoring = restoringId === product.id
-                  const isTrashed = product.publishStatus === 'TRASH'
-                  const isBusy = isDeleting || isRestoring
-                  const block = product.homepageBlock
-                  const checked = selected.has(product.id)
-                  const catName = categoryLabel(product)
-                  return (
-                    <tr key={product.id} className={checked ? 'selected' : ''} onClick={() => navigate(`/admin/products/${product.id}`)}>
-                      <td className="col-check" onClick={(e) => { e.stopPropagation(); toggle(product.id) }}>
-                        <span className={`bb-cb${checked ? ' checked' : ''}`} role="checkbox" aria-checked={checked}>
-                          {checked && <Check size={11} />}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="bb-product-cell">
-                          <span className="bb-product-thumb" style={{ width: 40, height: 40 }}>
-                            {product.image?.url ? (
-                              <img
-                                src={product.image.url}
-                                alt={product.image.alt || product.name}
-                                referrerPolicy="no-referrer"
-                                loading="lazy"
-                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                              />
-                            ) : (
-                              <Package size={22} />
-                            )}
-                          </span>
-                          <span>{formatText(product.name)}</span>
-                        </div>
-                      </td>
-                      <td className="mono hidden lg:table-cell">{formatText(product.sku, 'SKU TBD')}</td>
-                      <td className="num" style={{ fontWeight: 700 }}>
-                        {formatCurrencyVnd(product.price?.retailPrice)}
-                        {product.price?.salePrice ? (
-                          <div className="bb-cell-sub" style={{ textDecoration: 'line-through' }}>
-                            {formatCurrencyVnd(product.price.salePrice)}
-                          </div>
-                        ) : null}
-                      </td>
-                      <td><StockCell quantity={product.stockQuantity} state={product.stockState} /></td>
-                      <td className="hidden xl:table-cell">
-                        {catName ? formatText(catName) : <span className="bb-muted">—</span>}
-                      </td>
-                      <td className="hidden 2xl:table-cell">
-                        {product.brand?.name ? formatText(product.brand.name) : <span className="bb-muted">—</span>}
-                      </td>
-                      <td className="hidden xl:table-cell">
-                        {!block || block === 'NONE' ? (
-                          <span className="bb-muted">—</span>
-                        ) : (
-                          <span style={{ fontSize: 12.5, fontWeight: 600 }}>
-                            {t('products.homepageFeatured')}
-                            {Number.isFinite(product.homepageOrder) ? ` · #${product.homepageOrder}` : ''}
-                          </span>
-                        )}
-                      </td>
-                      <td><PublishStatusBadge value={product.publishStatus} /></td>
-                      <td className="bb-muted hidden lg:table-cell">{formatDateTime(product.updatedAt)}</td>
-                      <td className="col-actions" onClick={(e) => e.stopPropagation()}>
-                        <button
-                          type="button"
-                          className="bb-icon-btn"
-                          title={t('common.edit')}
-                          onClick={() => navigate(`/admin/products/${product.id}`)}
-                        >
-                          <Pencil size={14} />
-                        </button>
-                        <div style={{ position: 'relative', display: 'inline-block' }}>
-                          <button
-                            type="button"
-                            className="bb-icon-btn"
-                            data-row-menu-trigger
-                            title={t('common.actions')}
-                            onClick={() => setOpenMenu(openMenu === product.id ? null : product.id)}
-                          >
-                            <MoreHorizontal size={15} />
-                          </button>
-                          {openMenu === product.id && (
-                            <div className="bb-row-menu">
-                              <button type="button" onClick={() => { setOpenMenu(null); navigate(`/admin/products/${product.id}`) }}>
-                                <Pencil size={13} />{t('common.edit')}
-                              </button>
-                              {canUpdate && (
-                                <button type="button" onClick={() => { setOpenMenu(null); handleDuplicate(product) }}>
-                                  <Copy size={13} />{t('products.duplicate')}
-                                </button>
-                              )}
-                              {canUpdate && isTrashed && (
-                                <button type="button" disabled={isBusy} onClick={() => { setOpenMenu(null); handleRestore(product) }}>
-                                  <Undo2 size={13} />{isRestoring ? t('products.restoringLabel') : t('products.restore')}
-                                </button>
-                              )}
-                              {canUpdate && !isTrashed && (
-                                <>
-                                  <hr />
-                                  <button type="button" className="danger" disabled={isBusy} onClick={() => { setOpenMenu(null); handleDelete(product) }}>
-                                    <Trash2 size={13} />{isDeleting ? t('products.deletingLabel') : t('common.delete')}
-                                  </button>
-                                </>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
+                {items.map((product) => (
+                  <ProductRow
+                    key={product.id}
+                    product={product}
+                    navigate={navigate}
+                    canUpdate={canUpdate}
+                    checked={selected.has(product.id)}
+                    isDeleting={deletingId === product.id}
+                    isRestoring={restoringId === product.id}
+                    isMenuOpen={openMenu === product.id}
+                    onToggleSelect={toggle}
+                    onToggleMenu={(id) => setOpenMenu(openMenu === id ? null : id)}
+                    onCloseMenu={() => setOpenMenu(null)}
+                    onDuplicate={handleDuplicate}
+                    onRestore={handleRestore}
+                    onDelete={handleDelete}
+                  />
+                ))}
               </tbody>
             </table>
           </div>
           </div>
           <MobileCardList>
-            {items.map((product) => {
-              const isDeleting = deletingId === product.id
-              const isRestoring = restoringId === product.id
-              const isTrashed = product.publishStatus === 'TRASH'
-              const isBusy = isDeleting || isRestoring
-              const block = product.homepageBlock
-              return (
-                <MobileCard
-                  key={product.id}
-                  title={(
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span className="bb-product-thumb" style={{ width: 32, height: 32, flexShrink: 0 }}>
-                        {product.image?.url ? (
-                          <img
-                            src={product.image.url}
-                            alt={product.image.alt || product.name}
-                            referrerPolicy="no-referrer"
-                            loading="lazy"
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                          />
-                        ) : (
-                          <Package size={18} />
-                        )}
-                      </span>
-                      {formatText(product.name)}
-                    </span>
-                  )}
-                  subtitle={formatText(product.sku, 'SKU TBD')}
-                  status={<PublishStatusBadge value={product.publishStatus} />}
-                  meta={[
-                    {
-                      label: t('products.colPrice'),
-                      value: product.price?.salePrice ? (
-                        <span>
-                          {formatCurrencyVnd(product.price?.retailPrice)}
-                          <span style={{ textDecoration: 'line-through', marginLeft: 6 }}>
-                            {formatCurrencyVnd(product.price.salePrice)}
-                          </span>
-                        </span>
-                      ) : (
-                        formatCurrencyVnd(product.price?.retailPrice)
-                      ),
-                      tone: 'strong',
-                    },
-                    { label: t('products.colStock'), value: <StockCell quantity={product.stockQuantity} state={product.stockState} /> },
-                    { label: t('products.colCategory'), value: categoryLabel(product) ? formatText(categoryLabel(product)) : <span className="bb-muted">—</span> },
-                    { label: t('products.colBrand'), value: product.brand?.name ? formatText(product.brand.name) : <span className="bb-muted">—</span> },
-                    {
-                      label: t('products.colHomepage'),
-                      value: (!block || block === 'NONE') ? (
-                        <span className="bb-muted">—</span>
-                      ) : (
-                        <span style={{ fontSize: 12.5, fontWeight: 600 }}>
-                          {t('products.homepageFeatured')}
-                          {Number.isFinite(product.homepageOrder) ? ` · #${product.homepageOrder}` : ''}
-                        </span>
-                      ),
-                    },
-                    { label: t('products.colUpdated'), value: formatDateTime(product.updatedAt) },
-                  ]}
-                  actions={(
-                    <div onClick={(e) => e.stopPropagation()}>
-                      <button
-                        type="button"
-                        className="bb-icon-btn"
-                        title={t('common.edit')}
-                        onClick={() => navigate(`/admin/products/${product.id}`)}
-                      >
-                        <Pencil size={14} />
-                      </button>
-                      {canUpdate && (
-                        <button
-                          type="button"
-                          className="bb-icon-btn"
-                          title={t('products.duplicate')}
-                          onClick={() => handleDuplicate(product)}
-                        >
-                          <Copy size={14} />
-                        </button>
-                      )}
-                      {canUpdate && isTrashed && (
-                        <button
-                          type="button"
-                          className="bb-icon-btn"
-                          disabled={isBusy}
-                          title={isRestoring ? t('products.restoringLabel') : t('products.restore')}
-                          onClick={() => handleRestore(product)}
-                        >
-                          <Undo2 size={14} />
-                        </button>
-                      )}
-                      {canUpdate && !isTrashed && (
-                        <button
-                          type="button"
-                          className="bb-icon-btn"
-                          disabled={isBusy}
-                          title={isDeleting ? t('products.deletingLabel') : t('common.delete')}
-                          onClick={() => handleDelete(product)}
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      )}
-                    </div>
-                  )}
-                  onClick={() => navigate(`/admin/products/${product.id}`)}
-                />
-              )
-            })}
+            {items.map((product) => (
+              <ProductMobileCard
+                key={product.id}
+                product={product}
+                navigate={navigate}
+                canUpdate={canUpdate}
+                isDeleting={deletingId === product.id}
+                isRestoring={restoringId === product.id}
+                onDuplicate={handleDuplicate}
+                onRestore={handleRestore}
+                onDelete={handleDelete}
+              />
+            ))}
           </MobileCardList>
           {state.status === 'success' && pagination && (
             <PaginationControls

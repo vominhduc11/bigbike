@@ -14,6 +14,9 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -24,6 +27,8 @@ import org.hibernate.type.SqlTypes;
                 @UniqueConstraint(name = "uq_sliders_location_sort_order", columnNames = {"location", "sort_order"})
         }
 )
+@Getter
+@Setter
 public class SliderEntity {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
@@ -37,10 +42,15 @@ public class SliderEntity {
     @Column(nullable = false)
     private String location;
 
+    // Persisted as raw JSON text; exposed only via the typed ImageAsset accessors below.
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "desktop_image", columnDefinition = "json")
     private String desktopImageJson;
 
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "mobile_image", columnDefinition = "json")
     private String mobileImageJson;
@@ -61,30 +71,6 @@ public class SliderEntity {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public Integer getSortOrder() {
-        return sortOrder;
-    }
-
-    public void setSortOrder(Integer sortOrder) {
-        this.sortOrder = sortOrder;
-    }
-
-    public String getLocation() {
-        return location;
-    }
-
-    public void setLocation(String location) {
-        this.location = location;
-    }
-
     public ImageAsset getDesktopImage() {
         return parseImage(desktopImageJson);
     }
@@ -99,46 +85,6 @@ public class SliderEntity {
 
     public void setMobileImage(ImageAsset mobileImage) {
         this.mobileImageJson = writeImage(mobileImage);
-    }
-
-    public ProductEntity getProduct() {
-        return product;
-    }
-
-    public void setProduct(ProductEntity product) {
-        this.product = product;
-    }
-
-    public String getExternalLink() {
-        return externalLink;
-    }
-
-    public void setExternalLink(String externalLink) {
-        this.externalLink = externalLink;
-    }
-
-    public boolean isActive() {
-        return isActive;
-    }
-
-    public void setActive(boolean isActive) {
-        this.isActive = isActive;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
     }
 
     private static ImageAsset parseImage(String value) {

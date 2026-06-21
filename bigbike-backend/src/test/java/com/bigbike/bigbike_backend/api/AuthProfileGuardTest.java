@@ -17,7 +17,7 @@ import org.springframework.web.context.WebApplicationContext;
         "bigbike.jwt.secret=prod-guard-test-secret-strong-enough-abc123",
         "spring.jpa.hibernate.ddl-auto=create-drop",
         "spring.flyway.enabled=false",
-        "spring.datasource.url=jdbc:h2:mem:bigbike-prod-test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH",
+        "spring.datasource.url=jdbc:h2:mem:bigbike-prod-test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;NON_KEYWORDS=VALUE",
         "bigbike.cors.allowed-origins=https://bigbike.vn,https://admin.bigbike.vn"
 })
 class AuthProfileGuardTest {

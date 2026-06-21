@@ -9,12 +9,3 @@ export function DetailSection({ title, description, children }) {
     </section>
   )
 }
-
-export function DetailField({ label, value }) {
-  return (
-    <div className="detail-field">
-      <span>{label}</span>
-      <strong>{value ?? '—'}</strong>
-    </div>
-  )
-}

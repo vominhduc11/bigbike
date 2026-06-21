@@ -48,10 +48,14 @@ export function DescriptionBlocksView({ blocks }: { blocks: DescriptionBlock[] }
       {groups.map((g, idx) => (
         <section
           key={idx}
-          // Khoảng cách giữa các khối: MỘT giá trị cố định cho MỌI breakpoint (không còn nhảy
-          // 40px→56px ở desktop) và đối xứng đều hai bên đường kẻ chia → nhịp dọc bằng nhau,
-          // không bị "khối thì sát khối thì hở" như khi mỗi breakpoint một con số.
-          className={cn(idx === 0 && "mb-8", idx > 0 && "border-t border-t-border-default pt-8 pb-8")}
+          // Khoảng cách giữa các khối: đối xứng đều hai bên đường kẻ chia → nhịp dọc bằng nhau,
+          // không bị "khối thì sát khối thì hở". Mobile 24px (màn hẹp, gọn hơn), desktop 32px
+          // (thoáng hơn cho khổ rộng) — chỉ đổi ĐÚNG con số này theo breakpoint, vẫn một giá trị
+          // duy nhất mỗi bên đường kẻ nên nhịp không bị giật.
+          className={cn(
+            idx === 0 && "mb-6 md:mb-8",
+            idx > 0 && "border-t border-t-border-default pt-6 pb-6 md:pt-8 md:pb-8",
+          )}
         >
           {g.kind === "flow" ? (
             <TextStack blocks={g.blocks} />

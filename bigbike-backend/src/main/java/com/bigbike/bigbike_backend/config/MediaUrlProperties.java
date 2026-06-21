@@ -3,11 +3,15 @@ package com.bigbike.bigbike_backend.config;
 import jakarta.annotation.PostConstruct;
 import java.net.URI;
 import java.net.URISyntaxException;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @ConfigurationProperties(prefix = "bigbike.media")
+@Getter
+@Setter
 public class MediaUrlProperties {
 
     private static final String DEFAULT_PUBLIC_BASE_URL = "http://localhost:9000/bigbike-media";
@@ -38,14 +42,6 @@ public class MediaUrlProperties {
         } catch (URISyntaxException e) {
             throw new IllegalStateException("bigbike.media.public-base-url is invalid: " + e.getMessage(), e);
         }
-    }
-
-    public String getPublicBaseUrl() {
-        return publicBaseUrl;
-    }
-
-    public void setPublicBaseUrl(String publicBaseUrl) {
-        this.publicBaseUrl = publicBaseUrl;
     }
 
     private static String normalize(String value) {

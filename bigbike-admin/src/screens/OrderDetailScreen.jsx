@@ -7,222 +7,20 @@ import { RefundModal } from '../components/RefundModal'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
-import { addOrderNote, adminCreateReturn, fetchOrderAllowedTransitions, fetchOrderAuditTrail, fetchOrderDetail, fetchReturnsByOrder, updateOrderFulfillment, updateOrderPaymentStatus, updateOrderStatus } from '../lib/adminApi'
+import { addOrderNote, fetchOrderAllowedTransitions, fetchOrderAuditTrail, fetchOrderDetail, fetchReturnsByOrder, updateOrderFulfillment, updateOrderPaymentStatus, updateOrderStatus } from '../lib/adminApi'
 import { subscribeAdminWs } from '../lib/adminWebSocket'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
 import { showConfirm } from '../lib/confirm'
-import { Modal } from '../components/layout'
-import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
-
-const PAYMENT_TRANSITIONS = {
-  UNPAID:    ['PAID', 'CANCELLED'],
-  PAID:      ['UNPAID'],
-  REFUNDED:  [],
-  CANCELLED: [],
-}
-
-const REASON_REQUIRED = new Set(['CANCELLED', 'FAILED'])
-
-// Ghép phần đường/phường/quận/tỉnh của một địa chỉ thành 1 dòng (bỏ phần rỗng).
-function addressLine(addr) {
-  if (!addr) return ''
-  return [addr.addressLine1, addr.addressLine2, addr.ward, addr.district, addr.province]
-    .filter(Boolean)
-    .join(', ')
-}
-
-// So sánh địa chỉ thanh toán vs giao hàng để chỉ hiện địa chỉ thanh toán khi KHÁC nhau.
-function sameAddress(a, b) {
-  if (!a || !b) return false
-  return a.fullName === b.fullName && a.phone === b.phone && addressLine(a) === addressLine(b)
-}
-
-function ReasonConfirmModal({ targetStatus, t, onConfirm, onClose }) {
-  const [reason, setReason] = useState('')
-  const [error, setError] = useState('')
-
-  const isFailed = targetStatus === 'FAILED'
-  const title = isFailed ? t('orders.detail.confirmFailedTitle') : t('orders.detail.confirmCancelTitle')
-  const description = isFailed
-    ? t('orders.detail.confirmFailedDesc')
-    : t('orders.detail.confirmCancelDesc')
-
-  function handleSubmit(e) {
-    e.preventDefault()
-    if (!reason.trim()) {
-      setError(t('orders.detail.reasonRequired'))
-      return
-    }
-    onConfirm(reason.trim())
-  }
-
-  return (
-    <Modal open title={title} onClose={onClose}>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
-        <p className="text-sm text-muted-foreground">{description}</p>
-        <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">{t('orders.detail.reasonLabel')} *</label>
-          <Textarea
-            rows={3}
-            value={reason}
-            onChange={(e) => { setReason(e.target.value); setError('') }}
-            placeholder={t('orders.detail.reasonPlaceholder')}
-            className="resize-y"
-            autoFocus
-          />
-          {error && <p className="text-xs text-danger">{error}</p>}
-        </div>
-        <div className="flex gap-2 justify-end">
-          <Button type="button" variant="outline" size="sm" onClick={onClose}>
-            {t('common.cancel')}
-          </Button>
-          <Button type="submit" variant="danger" size="sm">
-            {title}
-          </Button>
-        </div>
-      </form>
-    </Modal>
-  )
-}
-
-const ORDER_STATUS_ACTION = {
-  PROCESSING: { labelKey: 'orders.detail.actionProcessing', variant: 'primary',     confirm: false },
-  ON_HOLD:    { labelKey: 'orders.detail.actionOnHold',     variant: 'secondary',   confirm: false },
-  COMPLETED:  { labelKey: 'orders.detail.actionCompleted',  variant: 'success',     confirm: true  },
-  CANCELLED:  { labelKey: 'orders.detail.actionCancelled',  variant: 'destructive', confirm: true  },
-  FAILED:     { labelKey: 'orders.detail.actionFailed',     variant: 'destructive', confirm: true  },
-}
-
-function getOrderStatusLabel(targetStatus, order, t) {
-  if (targetStatus === 'PROCESSING' && order?.orderStatus === 'ON_HOLD' && order?.paymentMethod === 'BACS') {
-    return t('orders.detail.actionBacsConfirm')
-  }
-  const key = ORDER_STATUS_ACTION[targetStatus]?.labelKey
-  return key ? t(key) : targetStatus
-}
-
-const PAYMENT_ACTION_LABEL = {
-  PAID:      'orders.detail.payActionPaid',
-  UNPAID:    'orders.detail.payActionUnpaid',
-  CANCELLED: 'orders.detail.payActionCancelled',
-}
-
-const RETURN_REASONS = [
-  { value: 'DEFECTIVE', labelKey: 'orders.detail.reasonDefective' },
-  { value: 'WRONG_ITEM', labelKey: 'orders.detail.reasonWrongItem' },
-  { value: 'NOT_AS_DESCRIBED', labelKey: 'orders.detail.reasonNotAsDescribed' },
-  { value: 'CHANGED_MIND', labelKey: 'orders.detail.reasonChangedMind' },
-  { value: 'OTHER', labelKey: 'orders.detail.reasonOther' },
-]
-
-const RETURN_REASON_KEY = { DEFECTIVE: 'orders.detail.reasonDefective', WRONG_ITEM: 'orders.detail.reasonWrongItem', NOT_AS_DESCRIBED: 'orders.detail.reasonNotAsDescribed', CHANGED_MIND: 'orders.detail.reasonChangedMind', OTHER: 'orders.detail.reasonOther' }
-const RETURN_STATUS_KEY = { PENDING: 1, APPROVED: 1, RECEIVED: 1, COMPLETED: 1, REFUNDED: 1, REJECTED: 1 }
-
-function AdminCreateReturnModal({ order, onClose, onSuccess }) {
-  const { t } = useTranslation()
-  const [reason, setReason] = useState('DEFECTIVE')
-  const [customerNote, setCustomerNote] = useState('')
-  const [qtys, setQtys] = useState(() =>
-    Object.fromEntries((order.items ?? []).map((i) => [i.id, 0]))
-  )
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
-
-  const hasAny = Object.values(qtys).some((q) => q > 0)
-
-  async function handleSubmit(e) {
-    e.preventDefault()
-    if (!hasAny) { setError(t('orders.detail.crmNoItemError')); return }
-    setSaving(true)
-    setError('')
-    try {
-      const items = (order.items ?? [])
-        .filter((i) => qtys[i.id] > 0)
-        .map((i) => ({ orderLineItemId: i.id, quantity: qtys[i.id] }))
-      const ret = await adminCreateReturn({
-        orderId: order.id,
-        reason,
-        customerNote: customerNote.trim() || undefined,
-        items,
-      })
-      onSuccess(ret)
-    } catch (err) {
-      setError(err.message || t('orders.detail.crmError'))
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  return (
-    <Modal open title={t('orders.detail.createReturnTitle')} onClose={onClose}>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
-        <div className="form-field">
-          <label className="field-label">{t('orders.detail.crmReasonLabel')} *</label>
-          <Select value={reason} onValueChange={setReason}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {RETURN_REASONS.map((r) => <SelectItem key={r.value} value={r.value}>{t(r.labelKey)}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="form-field">
-          <label className="field-label">{t('orders.detail.crmItemsLabel')} *</label>
-          <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-sm">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="text-left py-1 font-semibold">{t('orders.detail.crmColProduct')}</th>
-                <th className="text-center py-1 px-2 font-semibold">{t('orders.detail.crmColBought')}</th>
-                <th className="text-center py-1 px-2 font-semibold">{t('orders.detail.crmColReturnQty')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(order.items ?? []).map((item) => (
-                <tr key={item.id} className="border-b border-border/50">
-                  <td className="py-1.5">
-                    <div className="font-medium">{item.productName}</div>
-                    {item.variantName && <div className="text-xs text-muted-foreground">{item.variantName}</div>}
-                  </td>
-                  <td className="text-center py-1.5 px-2">{item.quantity}</td>
-                  <td className="text-center py-1.5 px-2">
-                    <Input
-                      type="number"
-                      min={0}
-                      max={item.quantity}
-                      className="w-16 text-center"
-                      value={qtys[item.id] ?? 0}
-                      onChange={(e) => setQtys((prev) => ({ ...prev, [item.id]: Math.min(item.quantity, Math.max(0, Number(e.target.value))) }))}
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          </div>
-        </div>
-
-        <div className="form-field">
-          <label className="field-label">{t('orders.detail.crmNoteLabel')}</label>
-          <Textarea rows={2} value={customerNote} onChange={(e) => setCustomerNote(e.target.value)} />
-        </div>
-
-        {error && <p className="field-error">{error}</p>}
-
-        <div className="flex gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={onClose}>{t('common.cancel')}</Button>
-          <Button type="submit" size="sm" loading={saving} disabled={!hasAny}>
-            {t('orders.detail.crmSubmit')}
-          </Button>
-        </div>
-      </form>
-    </Modal>
-  )
-}
+import {
+  PAYMENT_TRANSITIONS, REASON_REQUIRED, addressLine, sameAddress,
+  ORDER_STATUS_ACTION, getOrderStatusLabel, PAYMENT_ACTION_LABEL,
+  RETURN_REASON_KEY, RETURN_STATUS_KEY,
+} from './order-detail/constants'
+import { ReasonConfirmModal } from './order-detail/ReasonConfirmModal'
+import { AdminCreateReturnModal } from './order-detail/AdminCreateReturnModal'
 
 export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
   const { t } = useTranslation()
@@ -987,7 +785,6 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
       {reasonModal && (
         <ReasonConfirmModal
           targetStatus={reasonModal.targetStatus}
-          t={t}
           onConfirm={(reason) => {
             setReasonModal(null)
             doStatusChange(reasonModal.targetStatus, reason)

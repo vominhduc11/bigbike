@@ -11,9 +11,13 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "admin_roles")
+@Getter
+@Setter
 public class AdminRoleEntity {
 
     @Id
@@ -39,25 +43,4 @@ public class AdminRoleEntity {
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
-
-    public String getId() { return id; }
-    public void setId(String id) { this.id = id; }
-
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
-
-    public boolean isSystem() { return isSystem; }
-    public void setSystem(boolean system) { isSystem = system; }
-
-    public Set<String> getPermissions() { return permissions; }
-    public void setPermissions(Set<String> permissions) { this.permissions = permissions; }
-
-    public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
-
-    public Instant getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
 }

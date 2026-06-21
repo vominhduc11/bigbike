@@ -95,10 +95,6 @@ export function stripHtml(value, fallback = '—') {
   }
 }
 
-export function formatBoolean(value, trueLabel = 'Yes', falseLabel = 'No') {
-  return value ? trueLabel : falseLabel
-}
-
 export function formatDateTimeWithSeconds(value) {
   if (!value) return '—'
   const parsed = new Date(value)

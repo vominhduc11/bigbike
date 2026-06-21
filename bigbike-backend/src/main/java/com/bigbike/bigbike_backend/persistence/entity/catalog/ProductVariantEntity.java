@@ -1,5 +1,7 @@
 package com.bigbike.bigbike_backend.persistence.entity.catalog;
 
+import lombok.Getter;
+import lombok.Setter;
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -17,6 +19,8 @@ import java.util.List;
 
 @Entity
 @Table(name = "product_variants")
+@Getter
+@Setter
 public class ProductVariantEntity {
 
     @Id
@@ -76,180 +80,4 @@ public class ProductVariantEntity {
 
     @OneToMany(mappedBy = "variant", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<ProductVariantGalleryImageEntity> gallery;
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public ProductEntity getProduct() {
-        return product;
-    }
-
-    public void setProduct(ProductEntity product) {
-        this.product = product;
-    }
-
-    public String getSku() {
-        return sku;
-    }
-
-    public void setSku(String sku) {
-        this.sku = sku;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public BigDecimal getRetailPrice() {
-        return retailPrice;
-    }
-
-    public void setRetailPrice(BigDecimal retailPrice) {
-        this.retailPrice = retailPrice;
-    }
-
-    public BigDecimal getCompareAtPrice() {
-        return compareAtPrice;
-    }
-
-    public void setCompareAtPrice(BigDecimal compareAtPrice) {
-        this.compareAtPrice = compareAtPrice;
-    }
-
-    public BigDecimal getSalePrice() {
-        return salePrice;
-    }
-
-    public void setSalePrice(BigDecimal salePrice) {
-        this.salePrice = salePrice;
-    }
-
-    public BigDecimal getCostPrice() {
-        return costPrice;
-    }
-
-    public void setCostPrice(BigDecimal costPrice) {
-        this.costPrice = costPrice;
-    }
-
-    public String getCurrency() {
-        return currency;
-    }
-
-    public void setCurrency(String currency) {
-        this.currency = currency;
-    }
-
-    public ProductStockState getStockState() {
-        return stockState;
-    }
-
-    public void setStockState(ProductStockState stockState) {
-        this.stockState = stockState;
-    }
-
-    public String getImageId() {
-        return imageId;
-    }
-
-    public void setImageId(String imageId) {
-        this.imageId = imageId;
-    }
-
-    public String getImageUrl() {
-        return imageUrl;
-    }
-
-    public void setImageUrl(String imageUrl) {
-        this.imageUrl = imageUrl;
-    }
-
-    public String getImageAlt() {
-        return imageAlt;
-    }
-
-    public void setImageAlt(String imageAlt) {
-        this.imageAlt = imageAlt;
-    }
-
-    public Integer getImageWidth() {
-        return imageWidth;
-    }
-
-    public void setImageWidth(Integer imageWidth) {
-        this.imageWidth = imageWidth;
-    }
-
-    public Integer getImageHeight() {
-        return imageHeight;
-    }
-
-    public void setImageHeight(Integer imageHeight) {
-        this.imageHeight = imageHeight;
-    }
-
-    public String getImageMimeType() {
-        return imageMimeType;
-    }
-
-    public void setImageMimeType(String imageMimeType) {
-        this.imageMimeType = imageMimeType;
-    }
-
-    public int getQuantityOnHand() {
-        return quantityOnHand;
-    }
-
-    public void setQuantityOnHand(int quantityOnHand) {
-        this.quantityOnHand = quantityOnHand;
-    }
-
-    public boolean isTrackSerials() {
-        return trackSerials;
-    }
-
-    public void setTrackSerials(boolean trackSerials) {
-        this.trackSerials = trackSerials;
-    }
-
-    public boolean isAvailable() {
-        return isAvailable;
-    }
-
-    public void setAvailable(boolean available) {
-        isAvailable = available;
-    }
-
-    public int getSortOrder() {
-        return sortOrder;
-    }
-
-    public void setSortOrder(int sortOrder) {
-        this.sortOrder = sortOrder;
-    }
-
-    public List<ProductVariantOptionEntity> getOptions() {
-        return options;
-    }
-
-    public void setOptions(List<ProductVariantOptionEntity> options) {
-        this.options = options;
-    }
-
-    public List<ProductVariantGalleryImageEntity> getGallery() {
-        return gallery;
-    }
-
-    public void setGallery(List<ProductVariantGalleryImageEntity> gallery) {
-        this.gallery = gallery;
-    }
 }
