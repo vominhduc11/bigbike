@@ -1,6 +1,6 @@
 "use client";
 
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 import Link from "next/link";
 
 import { WpPurchaseSection } from "@/components/wp/WpPurchaseSection";
@@ -18,13 +18,14 @@ import {
 import { ProductDescriptionBlocks } from "@/components/catalog/ProductDescriptionBlocks";
 import { ProductTabsSection, type BuiltinTab } from "@/components/catalog/ProductTabsSection";
 import { FeaturedSpecsBar } from "@/components/catalog/FeaturedSpecsBar";
-import { TrustLivePrice, TrustLiveStock } from "@/components/catalog/ProductTrustLive";
 import { ProductSwiper } from "@/components/catalog/ProductSwiper";
 import { ReadingProgressBar } from "@/components/catalog/ReadingProgressBar";
 import { ReviewsSection } from "@/components/catalog/ReviewsSection";
 import { WriteReviewDialog } from "@/components/catalog/WriteReviewDialog";
 import { RecentlyViewedSection } from "@/components/catalog/RecentlyViewedSection";
 import { ProductContactCta } from "@/components/catalog/ProductContactCta";
+import { PdpSectionHeading, PDP_SECTION_SEP } from "@/components/catalog/product-view/PdpSection";
+import { buildTrustItems, ProductTrustCard } from "@/components/catalog/product-view/ProductTrustCard";
 import type { RecentProduct } from "@/lib/recently-viewed";
 import type { DescriptionBlock, Product, PublicSiteSetting } from "@/lib/contracts/public";
 import { safeArray, safeText } from "@/lib/utils/format";
@@ -53,33 +54,6 @@ type ProductViewProps = {
  * customers see. SEO concerns (metadata, JSON-LD) stay in the server page; this
  * component owns only the visible body.
  */
-
-/**
- * Tiêu đề khối nội dung PDP (desktop) — H2 in hoa, đậm, lớn. Thống nhất nhịp tiêu
- * đề mọi section (theo mockup PDP), dùng token/Arial — KHÔNG hardcode màu/font.
- * `id` để mobile-anchor/scroll trỏ tới.
- */
-function PdpSectionHeading({
-  title,
-  id,
-}: {
-  title: ReactNode;
-  id?: string;
-}) {
-  return (
-    <div id={id} className="pdp-section-head scroll-mt-[var(--bb-header-height)]">
-      <h2 className="title">{title}</h2>
-    </div>
-  );
-}
-
-/**
- * Ngăn cách giữa các khối nội dung PDP (desktop + khối hiện trên mobile): vạch hairline mảnh ở ĐẦU
- * mỗi mục + nhịp dọc đều, đồng bộ với khối Đánh giá. Dùng token `border-border` (KHÔNG hardcode màu)
- * và thang spacing 4px của Tailwind. DÙNG CHUNG cho MỌI section — kể cả 2 carousel (Sản phẩm tương tự /
- * Phụ kiện bán kèm) — để toàn trang có một nhịp dọc đồng đều, tiêu đề căn trái thống nhất.
- */
-const PDP_SECTION_SEP = "mt-12 border-t border-border pt-12 max-md:mt-10 max-md:pt-10";
 
 export function ProductView({ product, settings, previewMode = false }: ProductViewProps) {
   const name = safeText(product.name, "Sản phẩm");
@@ -145,63 +119,10 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
   const showRelated = related.length > 0;
   const showAccessories = accessories.length > 0;
 
-  // Trust block "Mua tại BigBike.vn" (#11) — lưới ô số liệu thương mại. Giá/Kho lấy THỜI GIAN THỰC
-  // (TrustLivePrice/TrustLiveStock — cùng nguồn với nút mua, có tính giảm giá + tắt-bán thủ công, để
-  // KHÔNG mâu thuẫn) ở ĐẦU; giữa là các dòng admin tự thêm theo từng sản phẩm (purchaseLines — nhãn
-  // text admin nhập, không qua i18n; backend đã resolve theo ngôn ngữ); Hotline/Địa chỉ từ site
-  // settings ở CUỐI (rỗng trong preview). Mỗi item có `labelKey` (nhãn i18n) HOẶC `label` (nhãn raw).
-  const retailPrice = product.price?.retailPrice ?? null;
-  const trustItems: Array<{ key: string; labelKey?: string; label?: string; value: ReactNode }> = [];
-  if (retailPrice != null) {
-    trustItems.push({ key: "price", labelKey: "trustPrice", value: <TrustLivePrice product={product} previewMode={previewMode} /> });
-  }
-  if (product.stockState) {
-    trustItems.push({ key: "stock", labelKey: "trustStock", value: <TrustLiveStock product={product} previewMode={previewMode} /> });
-  }
-  // Dòng admin tự thêm (không giới hạn). Nhãn + giá trị là text admin nhập → render THẲNG, không i18n.
-  safeArray(product.purchaseLines).forEach((line, index) => {
-    const label = safeText(line?.label, "");
-    const value = safeText(line?.value, "");
-    if (!label && !value) return;
-    trustItems.push({ key: `pl-${index}`, label, value });
-  });
-  if (hotline) {
-    trustItems.push({ key: "hotline", labelKey: "trustHotline", value: hotline });
-  }
-  if (contactAddress) {
-    trustItems.push({ key: "address", labelKey: "trustAddress", value: contactAddress });
-  }
-  // Số cột lưới ô trust tự khít theo SỐ ô: chia thành các hàng tối đa 4 ô, cân đều — tránh hàng cuối lẻ
-  // 1 ô để hở 2 ô trống (VD 4 ô → 1 hàng 4; 7 ô → 4+3; 5 ô → 3+2; 6 ô → 3+3). Cột desktop truyền qua
-  // biến CSS --bb-trust-cols. Mobile luôn 2 cột; nếu tổng ô lẻ thì ô cuối kéo rộng cả hàng cho gọn.
-  const trustCols = (() => {
-    const n = trustItems.length;
-    if (n <= 1) return 1;
-    const rows = Math.ceil(n / 4);
-    return Math.ceil(n / rows);
-  })();
-  // Thẻ trust "cam kết" (chỉ lưới ô số liệu, KHÔNG tiêu đề bên trong). Tiêu đề mục đặt NGOÀI thẻ qua
-  // <PdpSectionHeading> — DÙNG CHUNG desktop + mobile: khối này là section xếp chồng độc lập ở cả hai,
-  // KHÔNG còn nằm trong widget tab mobile. Tự ẩn khi rỗng.
-  const trustCard = trustItems.length > 0 ? (
-    <div className="bg-secondary p-6 text-foreground">
-      <dl
-        className={`grid grid-cols-2 gap-3 sm:[grid-template-columns:repeat(var(--bb-trust-cols),minmax(0,1fr))] ${
-          trustItems.length % 2 === 1 ? "max-sm:[&>:last-child]:col-span-2" : ""
-        }`}
-        style={{ "--bb-trust-cols": trustCols } as CSSProperties}
-      >
-        {trustItems.map((item) => (
-          <div key={item.key} className="border border-border bg-background p-3">
-            <dd className="m-0 font-barlow text-18 max-md:text-ui-16 font-semibold">{item.value}</dd>
-            <dt className="mt-1 text-ui-14 max-md:text-ui-12 uppercase tracking-wide text-muted-foreground">
-              {item.labelKey ? <Tr ns="Product" k={item.labelKey} /> : item.label}
-            </dt>
-          </div>
-        ))}
-      </dl>
-    </div>
-  ) : null;
+  // Trust block "Mua tại BigBike.vn" (#11) — lưới ô số liệu thương mại (xem product-view/ProductTrustCard).
+  // Tự ẩn khi rỗng; tiêu đề mục đặt NGOÀI thẻ qua <PdpSectionHeading> (xem bodyNodes.trust).
+  const trustItems = buildTrustItems({ product, previewMode, hotline, contactAddress });
+  const trustCard = trustItems.length > 0 ? <ProductTrustCard items={trustItems} /> : null;
 
   // MOBILE: gói nội dung Mô tả/Thông số/FAQ/Video/Đánh giá vào MỘT widget tab. Thứ tự tab = đúng mạch
   // desktop. Tự ẩn từng tab khi rỗng; reviews bỏ qua trong preview. Khối "cam kết" (trust) KHÔNG vào
