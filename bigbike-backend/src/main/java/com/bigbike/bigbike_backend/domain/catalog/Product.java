@@ -59,6 +59,10 @@ public record Product(
         /** "Phù hợp với ai" — JSON array các thẻ {@code [{audience, advice, linkLabel?, linkUrl?}]}
          *  (V237; format đổi ở V240). Opaque string, web parse JSON. Detail-only; null in list. */
         String suitabilityAdvisory,
+        /** "Dán mã HTML" cho khối Thông số kỹ thuật (V255). Khi non-blank, web render HTML này
+         *  (sanitizeRichHtml, cho phép {@code <table>}) THAY cho bảng {@code specifications} có cấu
+         *  trúc ("html thắng"). Detail-only; null in list. Resolved per-locale via {@code pick}. */
+        String specificationsHtml,
         /** Giới tính mục tiêu: "Nam" | "Nữ" | "Unisex". Null = chưa gắn. */
         String gender,
         /**

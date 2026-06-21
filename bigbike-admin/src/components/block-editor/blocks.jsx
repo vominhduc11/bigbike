@@ -8,6 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { GripVertical } from 'lucide-react'
 import { MediaDimensionWarning } from '../MediaDimensionWarning'
 import { RichTextEditor } from '../RichTextEditor'
+import { RichTextEditorWithSource } from '../RichTextEditorWithSource'
 import { IMAGE_RECO } from '../../lib/imageRecommendations'
 import { generateId } from '@/lib/utils'
 import { parseSizeGuide, serializeSizeGuide } from '../../lib/sizeChart'
@@ -55,7 +56,7 @@ export function HeadingBlockEditor({ block, onChange, disabled }) {
 export function ParagraphBlockEditor({ block, onChange, disabled }) {
   return (
     <div className="flex-1">
-      <RichTextEditor
+      <RichTextEditorWithSource
         key={block._key}
         value={block.html || ''}
         onChange={(html) => onChange({ html })}

@@ -152,6 +152,8 @@ Gợi ý bố cục:
 
 Ví dụ: `Chất liệu vỏ: Sợi carbon` · `Trọng lượng: 1.250g` · `Tiêu chuẩn: ECE 22.06` · `Số cửa thông gió: 4` · `Kính: Chống UV, chống xước`.
 
+> **Chế độ HTML (V255):** Ngoài nhập từng dòng tên–giá trị, admin có thể bật tab **"Dán mã HTML"** để dán/thiết kế một bảng thông số tùy biến (gộp ô, v.v.). Khi ô HTML có nội dung, web hiển thị HTML đó **thay cho** bảng dòng chuẩn ("HTML thắng"); để trống thì giữ bảng dòng như cũ. Song ngữ tách riêng (vi/en). HTML được lọc an toàn khi hiển thị (cho phép `<table>`; mã nguy hiểm + style bị loại).
+
 ---
 
 ## 7. Bảo hành · Xuất xứ · Trọng lượng (#11, #16, #13)

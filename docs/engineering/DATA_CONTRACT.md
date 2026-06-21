@@ -276,6 +276,29 @@ cần" block reuses the existing `relatedProducts` (no new cross-sell column).
 
 Status: `CONFIRMED_FROM_CODE`
 
+### Product specs HTML override — `specifications_html` (V255)
+
+Cho phép admin thay bảng "Thông số kỹ thuật" có cấu trúc (`product_specifications`)
+bằng một khối HTML tự do — chế độ "HTML thắng". Theo đúng `shortDescription`/`suitability_advisory`
+dual-text pattern: cột canonical (vi) + `_en`, `pick(vi, en, locale)` on read, raw English
+surfaced in `translations.en` for the admin editor.
+
+| Field | DB columns (added) | Type | PDP surface |
+|---|---|---|---|
+| `specificationsHtml` | `specifications_html` + `specifications_html_en` (`V255`) | `TEXT`, max 50 000 | Khi non-blank, web render HTML này (qua `sanitizeRichHtml`, cho phép `<table>`) **THAY** cho bảng `specifications` có cấu trúc; blank/null → render bảng dòng tên/giá trị như cũ ("html thắng"). |
+
+It is detail-only (null in list responses), nullable, presence-flag on PATCH,
+empty/blank normalized to `NULL`. Bảng con `specifications` vẫn được lưu/trả như cũ —
+chỉ phần *hiển thị* trên PDP bị HTML override khi có nội dung. HTML thô được sanitize ở web
+(`sanitizeRichHtml`), không parse/sanitize ở backend (opaque như `suitability_advisory`).
+
+Status: `CONFIRMED_FROM_CODE` — `ProductEntity.specificationsHtml`/`specificationsHtmlEn`,
+`Product.specificationsHtml`, `ProductTranslations.ProductContent.specificationsHtml`,
+`UpsertProductRequest` (+ presence flag) / `ProductTranslationRequest`,
+`AdminCatalogMutationService.applyProductPatch` / `ProductFieldApplier.applyTranslations`,
+`JpaCatalogReadRepository` (detail mapper `pick`s it; list mapper passes `null`),
+migration `V255__add_product_specifications_html.sql`.
+
 ### Product description blocks — `description_blocks` (V139)
 
 Admin-curated structured content stored as JSONB in `products.description_blocks` (nullable). The column holds a JSON array of block objects — the **structured** source of truth for the "Mô tả sản phẩm" section. The mutation service renders blocks to HTML and writes the result into the existing `description` (TEXT) column simultaneously, so public consumers see no change.

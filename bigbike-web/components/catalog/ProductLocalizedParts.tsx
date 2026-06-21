@@ -83,10 +83,26 @@ export function ProductProsCons({
   );
 }
 
-/** Tab "Thông số kĩ thuật" — bảng spec, đổi theo ngôn ngữ. */
-export function ProductSpecsTable({ viSpecs }: { viSpecs: Spec[] }) {
+/** Tab "Thông số kĩ thuật" — bảng spec, đổi theo ngôn ngữ.
+ *  V255: nếu có `specificationsHtml` ("Dán mã HTML"), render HTML đó THAY bảng dòng ("html thắng"). */
+export function ProductSpecsTable({ viSpecs, viSpecsHtml = "" }: { viSpecs: Spec[]; viSpecsHtml?: string }) {
   const t = useTranslations("Product");
   const enSpecs = useLocalizedField<Spec[]>("specifications");
+  const enSpecsHtml = useLocalizedField<string>("specificationsHtml");
+
+  // "HTML thắng": có HTML (EN override khi đổi ngôn ngữ, hoặc bản vi) → render HTML đã sanitize,
+  // bỏ qua bảng dòng tên/giá trị.
+  const specsHtml =
+    typeof enSpecsHtml === "string" && enSpecsHtml.trim() ? enSpecsHtml : viSpecsHtml;
+  if (specsHtml && specsHtml.trim()) {
+    return (
+      <div
+        className="thong-so-ki-thuat overflow-x-auto"
+        dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(specsHtml) }}
+      />
+    );
+  }
+
   const specs = Array.isArray(enSpecs) && enSpecs.length > 0 ? enSpecs : viSpecs;
 
   if (specs.length === 0) {

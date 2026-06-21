@@ -209,6 +209,8 @@ export function buildEmptyForm() {
     gallery: [],
     videos: [],
     specifications: [],
+    // Chế độ "Dán mã HTML" cho khối Thông số kỹ thuật (V255) — bản vi; bản en ở translations.en.
+    specificationsHtml: '',
     // "Specs Dashboard" — ô số liệu nổi bật dưới khu vực mua hàng (V235).
     specStats: [],
     faqs: [],
@@ -249,6 +251,7 @@ export function buildEmptyTranslation() {
     shortDescription: '',
     description: '',
     suitabilityAdvisory: '',
+    specificationsHtml: '',
     seoTitle: '',
     seoDescription: '',
   }
@@ -317,10 +320,13 @@ export function buildFormFromItem(item) {
     slug: item.slug || '',
     name: item.name || '',
     shortDescription: item.shortDescription || '',
+    // Chế độ "Dán mã HTML" cho khối Thông số kỹ thuật (V255) — bản vi.
+    specificationsHtml: item.specificationsHtml || '',
     description: item.description || '',
-    descriptionBlocks: item.descriptionBlocks ?? null,
+    // Nạp lại _key cho từng khối (đã bị strip khi lưu) — thiếu _key thì kéo-thả sắp xếp chết.
+    descriptionBlocks: hydrateBlockKeys(item.descriptionBlocks),
     // Khối mô tả tiếng Anh (V229) — nằm trong translations.en để admin nạp song ngữ.
-    descriptionBlocksEn: item.translations?.en?.descriptionBlocks ?? null,
+    descriptionBlocksEn: hydrateBlockKeys(item.translations?.en?.descriptionBlocks),
     brandId: item.brandId || item.brand?.id || '',
     categoryId: item.categoryId || item.category?.id || item.categories?.[0]?.id || '',
     retailPrice:
@@ -482,6 +488,15 @@ export function translationToPayload(en) {
   return out
 }
 
+// Nạp lại _key (mã tracking client-only, bị strip khi lưu) cho khối mô tả khi mở sản phẩm:
+// thiếu _key thì SortableList không nhận diện được khối → kéo-thả sắp xếp chết. Đối xứng với
+// cleanDescriptionBlocks (chiều ngược lại). Trả null khi không phải mảng để giữ ngữ nghĩa
+// "chưa có khối / dùng HTML legacy".
+function hydrateBlockKeys(blocks) {
+  if (!Array.isArray(blocks)) return null
+  return blocks.map((b) => (b._key ? b : { ...b, _key: generateId() }))
+}
+
 // Lọc + dọn khối mô tả trước khi gửi: bỏ khối rỗng (sẽ fail @NotBlank ở backend) và
 // strip _key (chỉ dùng tracking ở frontend). Dùng chung cho cả khối VI và EN.
 export function cleanDescriptionBlocks(blocks) {
@@ -621,6 +636,8 @@ export function toPayload(form) {
     slug: form.slug.trim(),
     name: form.name.trim(),
     shortDescription: form.shortDescription.trim() || undefined,
+    // V255: luôn gửi key (null khi rỗng) để presence-flag backend xoá được HTML khi quay về tab cấu trúc.
+    specificationsHtml: form.specificationsHtml?.trim() || null,
     description: Array.isArray(form.descriptionBlocks) ? undefined : (form.description.trim() || undefined),
     // Template SEO scalars (V175). Null khi cleared (presence-flag).
     originBrandCountry: form.originBrandCountry.trim() ? form.originBrandCountry.trim() : null,

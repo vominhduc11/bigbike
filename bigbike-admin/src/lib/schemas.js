@@ -67,6 +67,8 @@ export function createProductSchema(t, isCreate = false) {
       description: z.string().optional(),
       descriptionBlocks: z.array(z.any()).nullable().optional(),
       shortDescription: z.string().optional(),
+      // "Dán mã HTML" cho khối Thông số kỹ thuật (V255) — vi; bản en ở translations.en.
+      specificationsHtml: z.string().max(50000, 'Mã HTML thông số tối đa 50000 ký tự.').nullable().optional(),
       retailPrice: z.string().optional(),
       compareAtPrice: z.string().optional(),
       salePrice: z.string().optional(),
@@ -160,6 +162,7 @@ export function createProductSchema(t, isCreate = false) {
           shortDescription: z.string().optional(),
           description: z.string().optional(),
           suitabilityAdvisory: z.string().max(20000, 'Phù hợp với ai tối đa 20000 ký tự.').optional(),
+          specificationsHtml: z.string().max(50000, 'Mã HTML thông số tối đa 50000 ký tự.').optional(),
           seoTitle: z.string().optional(),
           seoDescription: z.string().optional(),
         }).optional(),
@@ -300,7 +303,7 @@ export function createProductSchema(t, isCreate = false) {
       const en = data.translations?.en ?? {}
       const enLimits = [
         ['name', 255], ['shortDescription', 2000], ['description', 20000],
-        ['contentBottom', 50000],
+        ['contentBottom', 50000], ['specificationsHtml', 50000],
         ['seoTitle', 255], ['seoDescription', 5000],
       ]
       for (const [field, max] of enLimits) {

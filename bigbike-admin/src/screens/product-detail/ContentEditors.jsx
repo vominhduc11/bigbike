@@ -5,12 +5,14 @@ import { MediaPickerModal } from '../../components/MediaPickerModal'
 import { VideoPickerModal } from '../../components/VideoPickerModal'
 import { MediaDimensionWarning } from '../../components/MediaDimensionWarning'
 import { IMAGE_RECO } from '../../lib/imageRecommendations'
-import { RichTextEditor } from '../../components/RichTextEditor'
+import { RichTextEditorWithSource } from '../../components/RichTextEditorWithSource'
+import { sanitizeHtml } from '../../lib/sanitizeHtml'
 import { SortableList } from '../../components/Sortable'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { generateId } from '@/lib/utils'
 import { resolveDisplayUrl } from '@/lib/contracts'
 import { extractYouTubeId, SECTION_VISIBILITY_KEYS, sectionHasContent } from './constants'
@@ -412,11 +414,26 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
   )
 }
 
-export function SpecificationsEditor({ items, onChange, disabled, validationErrors, contentLang = 'vi' }) {
+/**
+ * Thông số kỹ thuật — admin chọn LINH HOẠT 2 chế độ (cơ chế "HTML thắng" — V255):
+ *  1. "Nhập có cấu trúc": danh sách dòng tên/giá trị (song ngữ theo contentLang) → ghi `specifications`.
+ *  2. "Dán mã HTML": dán bảng HTML tùy biến → ghi `specificationsHtml` (theo ngôn ngữ). Khi html
+ *     non-blank, web render html THAY cho bảng dòng. Vào lại tab cấu trúc sẽ xoá html để bảng có hiệu lực.
+ * Mở lại tự nhận diện chế độ theo việc html có nội dung hay không.
+ */
+export function SpecificationsEditor({ items, onChange, disabled, validationErrors, contentLang = 'vi', html = '', onHtmlChange }) {
   const { t } = useTranslation()
   const isEn = contentLang === 'en'
   const fName = isEn ? 'nameEn' : 'name'
   const fValue = isEn ? 'valueEn' : 'value'
+  const [mode, setMode] = useState(() => ((html || '').trim() ? 'html' : 'structured'))
+
+  function changeMode(next) {
+    if (next === mode) return
+    // Vào tab có cấu trúc: xoá HTML để bảng dòng có hiệu lực (có html thì web bỏ qua bảng).
+    if (next === 'structured' && (html || '').trim()) onHtmlChange?.('')
+    setMode(next)
+  }
   function updateItem(index, field, value) {
     const next = items.map((item, i) => i === index ? { ...item, [field]: value } : item)
     onChange(next)
@@ -436,6 +453,13 @@ export function SpecificationsEditor({ items, onChange, disabled, validationErro
   }
 
   return (
+    <Tabs value={mode} onValueChange={changeMode}>
+      <TabsList>
+        <TabsTrigger value="structured" disabled={disabled}>{t('products.detail.specs.modeStructured')}</TabsTrigger>
+        <TabsTrigger value="html" disabled={disabled}>{t('products.detail.specs.modeHtml')}</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="structured">
     <div className="list-editor">
       {items.length === 0 && (
         <p className="list-editor-empty">{t('products.detail.specs.empty')}</p>
@@ -491,6 +515,34 @@ export function SpecificationsEditor({ items, onChange, disabled, validationErro
         + {t('products.detail.specs.addSpec')}
       </Button>
     </div>
+      </TabsContent>
+
+      <TabsContent value="html" className="flex flex-col gap-2">
+        <Textarea
+          className="font-mono text-xs"
+          placeholder={t('products.detail.specs.htmlPlaceholder')}
+          value={html || ''}
+          onChange={(e) => onHtmlChange?.(e.target.value)}
+          disabled={disabled}
+          rows={10}
+          maxLength={50000}
+        />
+        <p className="text-xs text-muted-foreground">{t('products.detail.specs.htmlHint')}</p>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            {t('products.detail.specs.previewLabel')}
+          </label>
+          {(html || '').trim() ? (
+            <div
+              className="size-guide-preview rounded-sm border border-border bg-surface p-3 overflow-x-auto"
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }}
+            />
+          ) : (
+            <p className="list-editor-empty">{t('products.detail.specs.previewEmpty')}</p>
+          )}
+        </div>
+      </TabsContent>
+    </Tabs>
   )
 }
 
@@ -659,13 +711,14 @@ export function FaqEditor({ items, onChange, disabled, validationErrors, content
                 {errQuestion && <small className="field-error">{errQuestion}</small>}
               </div>
               <div>
-                <RichTextEditor
+                <RichTextEditorWithSource
                   key={`faq-answer-${item._key}-${contentLang}`}
                   value={item[fAnswer] || ''}
                   onChange={(html) => updateItem(index, fAnswer, html)}
                   placeholder={t('products.detail.faqs.answerPlaceholder')}
                   disabled={disabled}
                   hasError={Boolean(errAnswer)}
+                  maxLength={20000}
                 />
                 {errAnswer && <small className="field-error">{errAnswer}</small>}
               </div>

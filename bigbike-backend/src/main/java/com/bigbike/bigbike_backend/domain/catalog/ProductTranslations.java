@@ -20,6 +20,8 @@ public record ProductTranslations(ProductContent en) {
             String installationGuide,
             /** English "Phù hợp với ai" advisory HTML (V237). */
             String suitabilityAdvisory,
+            /** English specs HTML override (V255); "html thắng" cho khối Thông số kỹ thuật. */
+            String specificationsHtml,
             String seoTitle,
             String seoDescription,
             /** English structured description blocks (V229); null when authored as legacy HTML. */

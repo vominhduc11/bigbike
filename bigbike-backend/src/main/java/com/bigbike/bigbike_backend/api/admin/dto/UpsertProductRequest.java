@@ -100,6 +100,12 @@ public class UpsertProductRequest {
     private String suitabilityAdvisory;
     private boolean suitabilityAdvisoryPresent = false;
 
+    // "Dán mã HTML" cho khối Thông số kỹ thuật (V255) — HTML thô, backend lưu opaque
+    // (như size_guide); web sanitize khi render. Khi non-blank → web hiện HTML thay bảng specs.
+    @Size(max = 50000, message = "Specifications HTML is too long.")
+    private String specificationsHtml;
+    private boolean specificationsHtmlPresent = false;
+
     @Size(max = 20, message = "Gender is too long.")
     private String gender;
     private boolean genderPresent = false;
@@ -271,6 +277,11 @@ public class UpsertProductRequest {
     public void setSuitabilityAdvisory(String suitabilityAdvisory) {
         this.suitabilityAdvisory = suitabilityAdvisory;
         this.suitabilityAdvisoryPresent = true;
+    }
+
+    public void setSpecificationsHtml(String specificationsHtml) {
+        this.specificationsHtml = specificationsHtml;
+        this.specificationsHtmlPresent = true;
     }
 
     public void setGender(String gender) {

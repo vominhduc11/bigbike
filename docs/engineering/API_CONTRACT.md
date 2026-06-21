@@ -363,7 +363,7 @@ renders; the heavy detail-only payload is served exclusively by
 | `brand`, `category`, `categories`, `image`, `price` | ✅ present | ✅ present |
 | `stockState`, `stockQuantity`, `forceOutOfStock`, `rating`, `ratingCount`, `homepageBlock`, `homepageOrder` | ✅ present | ✅ present |
 | `description`, `contentBottom`, `promotionContent`, `installationGuide`, `suitabilityAdvisory` | ❌ `null` | ✅ present |
-| `originBrandCountry`, `sizeGuide` | ❌ `null` | ✅ present |
+| `originBrandCountry`, `sizeGuide`, `specificationsHtml` | ❌ `null` | ✅ present |
 | `gallery`, `videos`, `specifications`, `specStats`, `faqs`, `commitments`, `purchaseLines`, `positiveNotes`, `negativeNotes` | ❌ `[]` | ✅ present |
 | `videos[].description` | — | ✅ present (detail) |
 | `seo` | ❌ `null` | ✅ present |
@@ -500,6 +500,20 @@ It is returned by `GET /api/v1/products/{slug}` (locale-resolved via `pick`, wit
 Status: `CONFIRMED_FROM_CODE`
 
 Evidence: `UpsertProductRequest.java` (`suitabilityAdvisory` + presence flag), `ProductTranslationRequest.ProductContentRequest`, `AdminCatalogMutationService.applyProductPatch`/`applyTranslations`, `Product.java` + `ProductTranslations.java`, `JpaCatalogReadRepository` (detail mapper `pick`s it; list mapper passes `null`), `V237__add_product_suitability_advisory.sql`, `V240__convert_suitability_advisory_to_cards.sql`, `V253__drop_product_quick_answer_summary.sql`.
+
+### Product specs HTML override — `specificationsHtml` (V255)
+
+`POST /api/v1/admin/products` and `PATCH /api/v1/admin/products/{id}` accept the bilingual field:
+
+- **`specificationsHtml`** — optional string, max 50 000 chars (presence-flag). When non-blank, the web PDP renders this HTML (via `sanitizeRichHtml`, which allows `<table>`) **instead of** the structured `specifications` name/value table ("html wins"); blank/null → the structured table renders as before. The structured `specifications` array is still stored and returned unchanged — only the PDP *rendering* is overridden.
+
+It is bilingual: the vi value goes to the canonical column, English to `_en`. On `PATCH`, sending no key leaves the field untouched; sending `null`/blank clears it. English is written via the `translations.en` object (`ProductContentRequest.specificationsHtml`).
+
+It is returned by `GET /api/v1/products/{slug}` (locale-resolved via `pick`, with vi fallback) and the admin product read (`GET /api/v1/admin/products/{id}` carries vi + raw English in `translations.en`). **Not** included in product *list* responses.
+
+Status: `CONFIRMED_FROM_CODE`
+
+Evidence: `UpsertProductRequest.java` (`specificationsHtml` + presence flag), `ProductTranslationRequest.ProductContentRequest`, `AdminCatalogMutationService.applyProductPatch`/`applyTranslations`, `Product.java` + `ProductTranslations.java`, `JpaCatalogReadRepository` (detail mapper `pick`s it; list mapper passes `null`), `V255__add_product_specifications_html.sql`.
 
 ### Product description blocks — `descriptionBlocks` (V139)
 

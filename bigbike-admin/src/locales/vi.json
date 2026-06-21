@@ -98,7 +98,13 @@
     "unlink": "Xoá liên kết",
     "image": "Chèn ảnh từ thư viện",
     "apply": "Áp dụng",
-    "charCount": "{{count}} ký tự"
+    "charCount": "{{count}} ký tự",
+    "modeVisual": "Soạn thảo",
+    "modeHtml": "Mã HTML",
+    "htmlPlaceholder": "Nhập hoặc dán mã HTML tại đây...",
+    "htmlHint": "Nhập/dán HTML thô (vd bảng hoặc bố cục do AI tạo). Nếu quay lại tab Soạn thảo rồi chỉnh sửa, các thẻ nâng cao như bảng/bố cục có thể bị rút gọn. Mã nguy hiểm luôn bị lọc — phần xem trước bên dưới đúng như khách thấy.",
+    "previewLabel": "Xem trước (đúng như hiển thị trên web)",
+    "previewEmpty": "Chưa có nội dung để xem trước."
   },
   "acceptInvite": {
     "title": "Kích hoạt tài khoản quản trị",
@@ -624,7 +630,13 @@
         "nameLabel": "Tên thông số (bắt buộc)",
         "valueLabel": "Giá trị (bắt buộc)",
         "removeSpec": "Xoá thông số",
-        "addSpec": "Thêm thông số"
+        "addSpec": "Thêm thông số",
+        "modeStructured": "Nhập có cấu trúc",
+        "modeHtml": "Dán mã HTML",
+        "htmlPlaceholder": "Dán đoạn mã HTML bảng thông số (vd do AI tạo) vào đây...",
+        "htmlHint": "Khi dán HTML, web hiển thị HTML này THAY cho bảng thông số dòng. Mã nguy hiểm và định dạng tô màu riêng bị lọc để đồng bộ giao diện web; xem trước bên dưới là kết quả thật sự khách thấy. Quay lại tab \"Nhập có cấu trúc\" sẽ xoá HTML để bảng dòng có hiệu lực.",
+        "previewLabel": "Xem trước (đúng như hiển thị trên web)",
+        "previewEmpty": "Chưa có nội dung để xem trước."
       },
       "sizeGuide": {
         "columnsLabel": "Tên các cột",
