@@ -78,6 +78,8 @@ Status: `CONFIRMED_FROM_CODE` — `SettingDefinitionRegistry.java`, `AdminSettin
 | `PUT /api/v1/admin/contact-page` | `content.update`. **Ghi xuyên `site_settings`** chỉ giới hạn whitelist nhóm `contact` (`ContactPageService.WRITE_THROUGH_KEYS`) nên EDITOR sửa được giá trị kênh **không cần** `settings.write`. | `CONFIRMED_FROM_CODE` | `AdminContactPageController.java`, `ContactPageService.save` |
 | `GET /api/v1/admin/guide-page` | `content.read` (trình dựng trang Hướng dẫn) | `CONFIRMED_FROM_CODE` | `AdminGuidePageController.java` |
 | `PUT /api/v1/admin/guide-page` | `content.update` (lưới ô + hero trang `/huong-dan`; không ghi xuyên `site_settings`) | `CONFIRMED_FROM_CODE` | `AdminGuidePageController.java`, `GuidePageService.save` |
+| `GET /api/v1/contact-page` | public (storefront `/lien-he` đọc bố cục trình dựng; whitelist GET trong `SecurityConfig`, fallback bố cục mặc định nếu trống) | `CONFIRMED_FROM_CODE` | `SecurityConfig.java`, `PublicContactPageController.java` |
+| `GET /api/v1/guide-page` | public (storefront `/huong-dan` đọc bố cục trình dựng; whitelist GET trong `SecurityConfig`, fallback bố cục mặc định nếu trống) | `CONFIRMED_FROM_CODE` | `SecurityConfig.java`, `PublicGuidePageController.java` |
 | `/api/v1/admin/pos/products/search` | admin role + `pos.read` | `CONFIRMED_FROM_CODE` | `SecurityConfig.java`, `AdminPosController.java` |
 | `/api/v1/admin/pos/orders` | admin role + `pos.write` | `CONFIRMED_FROM_CODE` | `SecurityConfig.java`, `AdminPosController.java` |
 | POS price override | `pos.price_override` | `CONFIRMED_FROM_CODE` | `AdminPosController.java`, `PosOrderService.java` |

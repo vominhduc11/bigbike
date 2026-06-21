@@ -1,7 +1,6 @@
 export const queryKeys = {
   cart: () => ["cart"] as const,
   checkoutOptions: (lang?: string) => ["checkout", "options", lang ?? "vi"] as const,
-  publicSettings: () => ["settings", "public"] as const,
   profile: () => ["customer", "me"] as const,
   addresses: () => ["customer", "addresses"] as const,
   orders: (page: number, status?: string) => ["customer", "orders", page, status ?? "all"] as const,

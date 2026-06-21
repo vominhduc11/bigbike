@@ -66,6 +66,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/articles/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/content-categories").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/pages/**").permitAll()
+                        // Public page-builder layouts for the Contact (/lien-he) and Guide (/huong-dan) pages.
+                        // Storefront reads these to render admin-managed blocks; falls back to defaults if absent.
+                        .requestMatchers(HttpMethod.GET, "/api/v1/contact-page").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/guide-page").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/sliders").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/home-videos").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/home/category-highlights").permitAll()
