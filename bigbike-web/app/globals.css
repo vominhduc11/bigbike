@@ -1779,9 +1779,6 @@ body:has(.bb-account-layout) .bb-breadcrumb {
 /* -- Loading / skeleton states ---------------------------- */
 .bb-empty-state { text-align: center; padding: 60px 0; color: var(--bb-text-muted); }
 
-/* -- Skeleton primitives (use these to compose layout-matched skeletons) -- */
-@keyframes bb-spin { to { transform: rotate(360deg); } }
-
 /* -- Order detail: line items ------------------------------ */
 
 /* -- Order detail: totals ---------------------------------- */
