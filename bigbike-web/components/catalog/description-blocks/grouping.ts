@@ -55,9 +55,9 @@ export function groupBlocks(blocks: DescriptionBlock[]): Group[] {
     } else if (!FLOW_TYPES.has(b.type)) {
       // Loại không render trong mô tả (vd "prosCons" — đã có khối riêng): bỏ qua, KHÔNG tạo flow rỗng.
       i += 1;
-    } else {
-      // Một "mục" = (tiêu đề nếu có) + các đoạn/danh sách/ghi chú đi liền sau, dừng TRƯỚC tiêu đề kế.
-      // Nhờ vậy mỗi tiêu đề mở một mục mới và được kẻ vạch chia → tránh dồn thành một cột chữ dài.
+    } else if (b.type === "heading") {
+      // Mục mở đầu bằng TIÊU ĐỀ = tiêu đề + các đoạn/danh sách/ghi chú đi liền sau (phần thân của nó),
+      // dừng TRƯỚC tiêu đề kế. Tiêu đề và nội dung của nó thuộc cùng một mục, không bị vạch chia cắt rời.
       const section: DescriptionBlock[] = [b];
       i += 1;
       while (i < blocks.length && NON_HEADING_TEXT.has(blocks[i].type)) {
@@ -65,6 +65,12 @@ export function groupBlocks(blocks: DescriptionBlock[]): Group[] {
         i += 1;
       }
       groups.push({ kind: "flow", blocks: section });
+    } else {
+      // Đoạn văn / danh sách / ghi chú đứng ĐỘC LẬP (không nằm dưới một tiêu đề) → MỖI khối là một mục
+      // riêng. Nhờ vậy 2 khối Văn bản cạnh nhau (mô tả sản phẩm không có tiêu đề/divider) vẫn được kẻ
+      // vạch tách bạch như các khối Bảng size / Tính năng, thay vì dồn dính liền thành một cột chữ.
+      groups.push({ kind: "flow", blocks: [b] });
+      i += 1;
     }
   }
   return groups;

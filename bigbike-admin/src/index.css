@@ -1529,7 +1529,9 @@ a {
   height: 110px;
   object-fit: cover;
   display: block;
-  background: var(--admin-color-background-app);
+  /* Match the media library thumbnail backdrop so lazy-loading or dark images
+     don't read as solid-black tiles (app bg is near-black #010409 in dark). */
+  background: var(--admin-color-surface-muted);
 }
 
 .mpicker-thumb-placeholder {
@@ -2048,9 +2050,8 @@ a {
 /* ─── Discount helper ────────────────────────────────────────────────────────*/
 .discount-helper .detail-section-desc { flex-basis: 100%; }
 
-/* ─── Gallery multi-pick ─────────────────────────────────────────────────────*/
+/* ─── Gallery ────────────────────────────────────────────────────────────────*/
 .gallery-editor { display: flex; flex-direction: column; gap: var(--admin-space-3); }
-.gallery-multi-pick-btn { align-self: flex-start; }
 
 /* ─── VariantsEditor toolbar ─────────────────────────────────────────────────*/
 .variants-editor-toolbar {

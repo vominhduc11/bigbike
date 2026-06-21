@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { fetchMedia, uploadMedia } from '../lib/adminApi'
 import { useDebounce } from '../lib/useDebounce'
@@ -294,7 +295,10 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
   const selectionCount = multiSelect ? selectedUrls.size : (selectedUrls ? 1 : 0)
   const isLoading = state.status === 'loading'
 
-  return (
+  // Portal to <body> so the fixed-position backdrop/modal cover the whole
+  // viewport. Rendered inline, an ancestor with a transform (e.g. a dnd-kit
+  // sortable card) would become the containing block and trap the overlay.
+  return createPortal(
     <>
       <div className="mpicker-backdrop" onClick={onClose} aria-hidden="true" />
       <div
@@ -510,6 +514,7 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
           onClose={closeDetail}
         />
       )}
-    </>
+    </>,
+    document.body,
   )
 }

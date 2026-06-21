@@ -12,6 +12,19 @@ import { generateId } from '@/lib/utils'
 // Components read this via context and fall back to the i18n defaults if empty/unloaded.
 export const AssignmentConfigContext = createContext(null)
 
+// Base URL trang sản phẩm trên storefront. Canonical luôn tự sinh từ slug
+// (https://bigbike.vn/product/{slug}) — admin không nhập tay (khớp PRODUCT_DATA_COMPLETENESS_AUDIT).
+const PRODUCT_STOREFRONT_BASE = `${(import.meta.env.VITE_STOREFRONT_BASE_URL ?? 'https://bigbike.vn').replace(/\/$/, '')}/product`
+
+// URL canonical tự sinh từ slug. null khi chưa có slug.
+// Dấu "/" cuối khớp với route web (next.config trailingSlash:true → /product/{slug}/).
+// Luôn dùng slug tiếng Việt (bản canonical theo PRODUCT_RULE_001) bất kể admin đang xem VI hay EN;
+// bản tiếng Anh được web khai báo qua hreflang alternate (slugEn), không phải qua canonical.
+export function canonicalUrlFromSlug(slug) {
+  const s = (slug || '').trim()
+  return s ? `${PRODUCT_STOREFRONT_BASE}/${s}/` : null
+}
+
 // Matches YouTube IDs across watch, share, embed, and shorts URLs.
 export function extractYouTubeId(url) {
   if (!url || typeof url !== 'string') return null
@@ -117,7 +130,7 @@ export function getPublishReadiness(form, t, isCreate = false) {
     // Điều kiện `ok` mirror đúng bộ lọc trong toPayload để khớp cái thực sự được lưu.
     { id: 'seoTitle',      label: t('products.detail.checklist.seoTitle'),      ok: Boolean(form.seoTitle?.trim()),           required: false },
     { id: 'seoDesc',       label: t('products.detail.checklist.seoDesc'),       ok: Boolean(form.seoDescription?.trim()),     required: false },
-    { id: 'seoCanonical',  label: t('products.detail.checklist.seoCanonical'),  ok: Boolean(form.seoCanonicalUrl?.trim()),    required: false },
+    { id: 'seoCanonical',  label: t('products.detail.checklist.seoCanonical'),  ok: Boolean(form.slug?.trim()),    required: false },
     { id: 'gallery',       label: t('products.detail.checklist.gallery'),       ok: (form.gallery || []).some((img) => img.url?.trim()),                                                       required: false },
     { id: 'prosCons',      label: t('products.detail.checklist.prosCons'),      ok: (form.positiveNotes || []).some((h) => (h.content || '').trim()) || (form.negativeNotes || []).some((h) => (h.content || '').trim()), required: false },
     { id: 'suitability',   label: t('products.detail.checklist.suitability'),   ok: (Array.isArray(form.descriptionBlocks) ? form.descriptionBlocks : []).some((b) => b.type === 'suitability' && (b.cards || []).some((c) => c.audience?.trim() || c.advice?.trim() || c.linkLabel?.trim())),    required: false },
@@ -590,10 +603,13 @@ export function resolveSectionVisibilityForm(saved, seedFromForm) {
 }
 
 export function toPayload(form) {
+  // Canonical luôn tự sinh từ slug — không lấy từ ô nhập tay nữa.
+  const canonicalUrl = canonicalUrlFromSlug(form.slug)
+
   const hasSeo =
     form.seoTitle.trim() ||
     form.seoDescription.trim() ||
-    form.seoCanonicalUrl.trim() ||
+    canonicalUrl ||
     form.seoOgImageUrl.trim() ||
     form.seoOgImageAlt.trim()
 
@@ -627,7 +643,7 @@ export function toPayload(form) {
       ? {
           title: form.seoTitle.trim() || null,
           description: form.seoDescription.trim() || null,
-          canonicalUrl: form.seoCanonicalUrl.trim() || null,
+          canonicalUrl,
           ogImage: form.seoOgImageUrl.trim()
             ? { url: form.seoOgImageUrl.trim(), alt: form.seoOgImageAlt.trim() || undefined }
             : null,

@@ -22,8 +22,9 @@ import {
  * Bố cục cố định, dễ đoán cho admin:
  *  • Khối `feature` (ảnh + tiêu đề + đoạn + danh sách trong MỘT khối) → một "hàng tính năng" 2 cột
  *    ảnh–chữ, xen kẽ trái/phải khi `side`="auto"/null (giống mockup); "left"/"right" ép vị trí ảnh.
- *  • Cụm chữ rộng hết khổ, NGẮT THÀNH TỪNG MỤC tại mỗi tiêu đề: một tiêu đề + các đoạn/danh sách/ghi chú
- *    đi liền sau nó = một mục, dừng trước tiêu đề kế tiếp (xem groupBlocks). Mỗi mục được kẻ vạch chia.
+ *  • Cụm chữ rộng hết khổ, NGẮT THÀNH TỪNG MỤC: một tiêu đề + các đoạn/danh sách/ghi chú đi liền sau nó
+ *    = một mục; còn mỗi đoạn/danh sách/ghi chú đứng độc lập (không có tiêu đề) là một mục RIÊNG (xem
+ *    groupBlocks). Mỗi mục được kẻ vạch chia → 2 khối Văn bản cạnh nhau vẫn tách bạch, không dính liền.
  *  • Ảnh/Video đứng một mình → khung ảnh rộng hết khổ.
  *
  * Bộ render từng khối nằm ở description-blocks/blocks; logic gom nhóm ở description-blocks/grouping.

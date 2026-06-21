@@ -601,8 +601,6 @@
         "altPlaceholder": "Alt text (mô tả ảnh)",
         "altAriaLabel": "Mô tả ảnh (alt text)",
         "addImage": "Thêm ảnh",
-        "multiSelectTitle": "Chọn nhiều ảnh cùng lúc từ thư viện",
-        "multiSelect": "Chọn nhiều ảnh",
         "sizeHint": "Nên dùng ảnh vuông, tối thiểu 1000×1000px (lý tưởng 1200×1200px). Ảnh không vuông sẽ bị viền trắng, ảnh nhỏ sẽ mờ khi khách phóng to trên web.",
         "dragToReorder": "Kéo để sắp xếp (ảnh đầu tiên là ảnh bìa)"
       },
@@ -1396,6 +1394,7 @@
       "seoTitle": "SEO title",
       "seoDescription": "SEO description",
       "seoCanonicalUrl": "SEO canonical URL",
+      "seoCanonicalAuto": "Tự sinh theo đường dẫn (slug) — không cần nhập.",
       "seoOgImageUrl": "SEO OG image URL",
       "seoOgImageUrlHint": "Ảnh chia sẻ MXH, 1200×630px.",
       "seoOgImageAlt": "Alt text OG image",

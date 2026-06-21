@@ -53,6 +53,7 @@ import {
   buildCategoryPathMap,
   buildFormFromItem,
   toPayload,
+  canonicalUrlFromSlug,
   TAB_SECTIONS,
   computeSectionErrorsFromMap,
   findTabForErrors,
@@ -1227,7 +1228,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     <span>{t('products.detail.serpPreview', { defaultValue: 'Xem trước trên Google' })}</span>
                   </div>
                   <div className="text-xs text-[#5f6368] break-all mb-1">
-                    {form.seoCanonicalUrl?.trim() || `https://bigbike.vn/product/${form.slug || 'duong-dan-san-pham'}`}
+                    {canonicalUrlFromSlug(form.slug) || `https://bigbike.vn/product/duong-dan-san-pham/`}
                   </div>
                   <div className="text-lg leading-snug text-[#1a0dab] break-words mb-1">
                     {(form.seoTitle || form.name || t('products.detail.serpTitleFallback', { defaultValue: 'Tiêu đề sản phẩm trên Google' })).slice(0, 60)}
@@ -1271,13 +1272,16 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     />
                   </Field>
 
-                  <Field full label={t('products.detail.seoCanonicalUrl')} error={validationErrors.seoCanonicalUrl}>
+                  <Field
+                    full
+                    label={t('products.detail.seoCanonicalUrl')}
+                    hint={t('products.detail.seoCanonicalAuto', { defaultValue: 'Tự sinh theo đường dẫn (slug) — không cần nhập.' })}
+                  >
                     <Input
-                      value={form.seoCanonicalUrl}
-                      onChange={(e) => updateField('seoCanonicalUrl', e.target.value)}
-                      disabled={isReadOnly}
-                      placeholder="https://..."
-                      className={validationErrors.seoCanonicalUrl ? 'border-danger' : undefined}
+                      value={canonicalUrlFromSlug(form.slug) || ''}
+                      readOnly
+                      disabled
+                      placeholder={`https://bigbike.vn/product/duong-dan-san-pham/`}
                     />
                   </Field>
 

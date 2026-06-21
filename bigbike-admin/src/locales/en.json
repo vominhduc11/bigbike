@@ -601,8 +601,6 @@
         "altPlaceholder": "Alt text (image description)",
         "altAriaLabel": "Image alt text",
         "addImage": "Add image",
-        "multiSelectTitle": "Pick multiple images from the library",
-        "multiSelect": "Pick multiple images",
         "sizeHint": "Use square images, at least 1000×1000px (ideally 1200×1200px). Non-square images get white bars, and small images look blurry when customers zoom in on the website.",
         "dragToReorder": "Drag to reorder (the first image becomes the cover)"
       },
@@ -1397,6 +1395,7 @@
       "seoTitle": "SEO title",
       "seoDescription": "SEO description",
       "seoCanonicalUrl": "SEO canonical URL",
+      "seoCanonicalAuto": "Auto-generated from the slug — no input needed.",
       "seoOgImageUrl": "SEO OG image URL",
       "seoOgImageUrlHint": "Social share image, 1200×630px.",
       "seoOgImageAlt": "OG image alt text",

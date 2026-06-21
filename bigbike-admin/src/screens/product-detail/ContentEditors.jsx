@@ -211,7 +211,6 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
 
 export function GalleryEditor({ items, onChange, disabled, validationErrors = {} }) {
   const { t } = useTranslation()
-  const [multiPickerOpen, setMultiPickerOpen] = useState(false)
 
   function updateItem(index, field, value) {
     onChange(items.map((item, i) => i === index ? { ...item, [field]: value } : item))
@@ -258,34 +257,12 @@ export function GalleryEditor({ items, onChange, disabled, validationErrors = {}
           <Button
             variant="outline"
             size="sm"
-            className="gallery-multi-pick-btn"
-            onClick={() => setMultiPickerOpen(true)}
-            title={t('products.detail.gallery.multiSelectTitle')}
-          >
-            + {t('products.detail.gallery.multiSelect')}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
             onClick={addVideoItem}
             title={t('products.detail.gallery.addVideoTitle', { defaultValue: 'Thêm video vào dải ảnh sản phẩm' })}
           >
             + {t('products.detail.gallery.addVideo', { defaultValue: 'Thêm video' })}
           </Button>
         </div>
-      )}
-      {multiPickerOpen && (
-        <MediaPickerModal
-          multiSelect
-          onSelectMultiple={(urls) => {
-            onChange([
-              ...items,
-              ...urls.map((url) => ({ _key: generateId(), url, alt: '' })),
-            ])
-            setMultiPickerOpen(false)
-          }}
-          onClose={() => setMultiPickerOpen(false)}
-        />
       )}
     </div>
   )
