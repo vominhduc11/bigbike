@@ -274,6 +274,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 null,           // originBrandCountry
                 null,           // sizeGuide
                 null,           // suitabilityAdvisory
+                null,           // specificationsHtml
                 null,           // gender
                 List.of(),      // relatedProducts
                 List.of(),      // accessoryProducts
@@ -336,6 +337,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 null,           // originBrandCountry
                 null,           // sizeGuide
                 null,           // suitabilityAdvisory
+                null,           // specificationsHtml
                 null,           // gender
                 List.of(),      // relatedProducts
                 List.of(),      // accessoryProducts
@@ -398,6 +400,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 null,           // originBrandCountry
                 null,           // sizeGuide
                 null,           // suitabilityAdvisory
+                null,           // specificationsHtml
                 null,           // gender
                 List.of(),      // relatedProducts
                 List.of(),      // accessoryProducts

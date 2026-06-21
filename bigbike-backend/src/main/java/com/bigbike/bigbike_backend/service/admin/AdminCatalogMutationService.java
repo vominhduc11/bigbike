@@ -600,6 +600,9 @@ public class AdminCatalogMutationService {
         if (create || request.isSuitabilityAdvisoryPresent()) {
             entity.setSuitabilityAdvisory(AdminMutationValidators.trimToNull(request.getSuitabilityAdvisory()));
         }
+        if (create || request.isSpecificationsHtmlPresent()) {
+            entity.setSpecificationsHtml(AdminMutationValidators.trimToNull(request.getSpecificationsHtml()));
+        }
         if (create || request.isGenderPresent()) {
             entity.setGender(AdminMutationValidators.trimToNull(request.getGender()));
         }

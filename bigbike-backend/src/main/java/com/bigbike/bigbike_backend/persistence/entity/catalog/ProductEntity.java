@@ -179,6 +179,12 @@ public class ProductEntity {
     @Column(name = "suitability_advisory", columnDefinition = "text")
     private String suitabilityAdvisory;
 
+    // "Dán mã HTML" cho khối Thông số kỹ thuật (V255) — khi non-blank, web render HTML này
+    // THAY cho bảng product_specifications có cấu trúc ("html thắng"). Bilingual dual-text
+    // (vi canonical + _en); detail-only. Opaque string; web sanitize khi render.
+    @Column(name = "specifications_html", columnDefinition = "text")
+    private String specificationsHtml;
+
     @Column(name = "gender", length = 20)
     private String gender;
 
@@ -250,6 +256,9 @@ public class ProductEntity {
 
     @Column(name = "suitability_advisory_en", columnDefinition = "text")
     private String suitabilityAdvisoryEn;
+
+    @Column(name = "specifications_html_en", columnDefinition = "text")
+    private String specificationsHtmlEn;
 
     @Column(nullable = false)
     private Instant createdAt;

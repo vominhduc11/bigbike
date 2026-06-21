@@ -75,6 +75,8 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
   const gallery = safeArray(product.gallery);
   const descriptionBlocks = safeArray(product.descriptionBlocks) as DescriptionBlock[];
   const specs = safeArray(product.specifications);
+  // "Dán mã HTML" cho Thông số kỹ thuật (V255): khi có, web hiện HTML thay bảng dòng ("html thắng").
+  const specsHtml = product.specificationsHtml?.trim() ? product.specificationsHtml : "";
   const specStats = safeArray(product.specStats);
   const faqs = safeArray(product.faqs);
   const videos = safeArray(product.videos);
@@ -110,7 +112,7 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
   };
 
   // Gate có-nội-dung + đã-bật cho các section TRONG TAB (dùng chung desktop + widget tab mobile).
-  const showSpecs = specs.length > 0 && vis("specifications");
+  const showSpecs = (specs.length > 0 || Boolean(specsHtml)) && vis("specifications");
   const showFaqs = faqs.length > 0 && vis("faqs");
   const showVideos = videos.length > 0 && vis("videos");
   const showReviews = !previewMode && vis("reviews");
@@ -143,7 +145,7 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
   if (showSpecs) {
     // Khóa map PHẢI khớp khóa thứ tự ("specifications"/"faqs" trong BODY_SECTION_DEFAULT_ORDER) —
     // ProductTabsSection tra builtins[type] theo khóa thứ tự; lệch tên → tab + mục anchor nav bị bỏ.
-    specGroupBuiltins.specifications = { id: "tab-more_infomation", labelKey: "specs", content: <ProductSpecsTable viSpecs={specs} /> };
+    specGroupBuiltins.specifications = { id: "tab-more_infomation", labelKey: "specs", content: <ProductSpecsTable viSpecs={specs} viSpecsHtml={specsHtml} /> };
   }
   if (showFaqs) {
     specGroupBuiltins.faqs = { id: "tab-faq", labelKey: "faqs", content: <ProductFaqs viFaqs={faqs} /> };

@@ -56,6 +56,9 @@ public class ProductTranslationRequest {
         @Size(max = 20000, message = "English suitability advisory is too long.")
         private String suitabilityAdvisory;
 
+        @Size(max = 50000, message = "English specifications HTML is too long.")
+        private String specificationsHtml;
+
         @Size(max = 255, message = "English SEO title is too long.")
         private String seoTitle;
 

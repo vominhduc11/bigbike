@@ -339,6 +339,9 @@ export type Product = {
   /** "Phù hợp với ai" — JSON array các thẻ `[{audience, advice, linkLabel?, linkUrl?}]`
    *  (V237; format đổi ở V240). Từ V246 render như khối mô tả (type "suitability"). Detail-only. */
   suitabilityAdvisory?: string | null;
+  /** Chế độ "Dán mã HTML" cho khối Thông số kỹ thuật (V255). Khi non-blank, render HTML này
+   *  (sanitizeRichHtml, cho phép `<table>`) THAY cho bảng `specifications` có cấu trúc. Detail-only. */
+  specificationsHtml?: string | null;
   /** Giới tính mục tiêu: "Nam" | "Nữ" | "Unisex". Null = chưa gắn. */
   gender?: string | null;
   /**

@@ -103,7 +103,13 @@
     "unlink": "Remove link",
     "image": "Insert image from library",
     "apply": "Apply",
-    "charCount": "{{count}} characters"
+    "charCount": "{{count}} characters",
+    "modeVisual": "Visual editor",
+    "modeHtml": "HTML source",
+    "htmlPlaceholder": "Enter or paste HTML here...",
+    "htmlHint": "Enter/paste raw HTML (e.g. tables or AI-generated layout). If you switch back to the Visual tab and edit, advanced tags like tables/layout may be simplified. Unsafe code is always filtered — the preview below matches what customers see.",
+    "previewLabel": "Preview (as shown on the website)",
+    "previewEmpty": "Nothing to preview yet."
   },
   "acceptInvite": {
     "title": "Activate admin account",
@@ -629,7 +635,13 @@
         "nameLabel": "Spec name (required)",
         "valueLabel": "Spec value (required)",
         "removeSpec": "Remove specification",
-        "addSpec": "Add spec"
+        "addSpec": "Add spec",
+        "modeStructured": "Structured input",
+        "modeHtml": "Paste HTML",
+        "htmlPlaceholder": "Paste the specifications table HTML (e.g. AI-generated) here...",
+        "htmlHint": "When you paste HTML, the web shows it INSTEAD of the row-based spec table. Unsafe code and custom styling are stripped to match the site; the preview below is exactly what customers see. Switching back to \"Structured input\" clears the HTML so the row table takes effect.",
+        "previewLabel": "Preview (as shown on the website)",
+        "previewEmpty": "Nothing to preview yet."
       },
       "sizeGuide": {
         "columnsLabel": "Column names",

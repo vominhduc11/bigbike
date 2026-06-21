@@ -25,7 +25,7 @@ import { StatePanel } from '../components/StatePanel'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { ProductPickerCombobox } from '../components/ProductPickerCombobox'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
-import { RichTextEditor } from '../components/RichTextEditor'
+import { RichTextEditorWithSource } from '../components/RichTextEditorWithSource'
 import { BlockEditor } from '../components/BlockEditor'
 import { SortableList } from '../components/Sortable'
 import { LivePreview } from '../components/LivePreview'
@@ -986,13 +986,14 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     hint={t('products.detail.shortDescriptionHint')}
                     error={validationErrors.shortDescription}
                   >
-                    <RichTextEditor
+                    <RichTextEditorWithSource
                       key={`shortDescription-${contentLang}`}
                       value={langValue('shortDescription')}
                       onChange={(html) => langChange('shortDescription', html)}
                       placeholder={t('products.detail.shortDescriptionPlaceholder')}
                       disabled={isReadOnly}
                       hasError={Boolean(validationErrors.shortDescription)}
+                      maxLength={2000}
                     />
                   </Field>
 
@@ -1403,11 +1404,14 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 }
               >
                 <SpecificationsEditor
+                  key={`specs-${contentLang}`}
                   items={form.specifications}
                   onChange={(next) => updateField('specifications', next)}
                   disabled={isReadOnly}
                   validationErrors={validationErrors}
                   contentLang={contentLang}
+                  html={langValue('specificationsHtml')}
+                  onHtmlChange={(v) => langChange('specificationsHtml', v)}
                 />
               </SectionCard>
 
