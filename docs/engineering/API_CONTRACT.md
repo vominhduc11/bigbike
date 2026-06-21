@@ -219,6 +219,21 @@ On update (`PATCH`), `null` for either field = giữ nguyên giá trị hiện c
 
 Status: `CONFIRMED_FROM_CODE` — `ContentController.listArticles`, `UpsertArticleRequest.featured`, `SeoMetaRequest.noIndex`, migration `V222__add_article_featured_and_seo_no_index.sql`. Xem [DATA_CONTRACT.md](DATA_CONTRACT.md) §"Article featured + seo_no_index (V222)".
 
+### Admin content list — sort params
+
+`GET /api/v1/admin/content` accepts an optional `sort` param in `field:direction` format (default `updatedAt:desc`). The allowed sort fields are whitelisted by `AdminContentReadService.CONTENT_SORT_FIELDS`:
+
+| Field | Notes |
+|---|---|
+| `title` | Case-insensitive. |
+| `createdAt` / `updatedAt` / `publishedAt` | Timestamps; `publishedAt` falls back to `createdAt` when null. |
+| `type` | `ARTICLE` / `PAGE`. DB-paginated path falls back to `updatedAt` (not a DB column). |
+| `publishStatus` | Sort theo trạng thái xuất bản (gom nhóm bản nháp/đã đăng khi triage nội dung). |
+
+An unsupported field returns `400 UNSUPPORTED_SORT_FIELD` (not a silent fallback) via `SortParser`. The admin content list screen exposes column sort on `title`, `publishStatus`, and `updatedAt`.
+
+Status: `CONFIRMED_FROM_CODE` — `AdminContentReadService.CONTENT_SORT_FIELDS` + `contentComparator`, `SortParser.parse`.
+
 ### Article preview — admin dry-run render (`POST /api/v1/admin/content/articles/preview`)
 
 Mirror of the product preview: powers the **live preview** in the article editor — renders exactly what the storefront blog detail (`/tin-tuc/{slug}`) will show for the *current, unsaved* form input, without persisting anything.

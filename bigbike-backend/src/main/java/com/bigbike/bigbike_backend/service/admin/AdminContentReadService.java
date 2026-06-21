@@ -27,7 +27,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AdminContentReadService {
 
-    private static final Set<String> CONTENT_SORT_FIELDS = Set.of("title", "createdAt", "updatedAt", "publishedAt", "type");
+    private static final Set<String> CONTENT_SORT_FIELDS =
+            Set.of("title", "createdAt", "updatedAt", "publishedAt", "type", "publishStatus");
 
     private final ContentReadRepository contentReadRepository;
     private final SortParser sortParser;
@@ -227,6 +228,8 @@ public class AdminContentReadService {
             case "publishedAt" -> Comparator.comparing(
                     content -> content.publishedAt() == null ? content.createdAt() : content.publishedAt());
             case "type" -> Comparator.comparing(AdminContentItem::type);
+            case "publishStatus" -> Comparator.comparing(
+                    AdminContentItem::publishStatus, Comparator.nullsLast(Comparator.naturalOrder()));
             default -> throw new IllegalStateException("Unsupported sort field.");
         };
         return sortSpec.direction() == SortDirection.DESC ? comparator.reversed() : comparator;
