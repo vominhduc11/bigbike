@@ -13,6 +13,11 @@ import {
 // AggregateRating / positiveNotes / BreadcrumbList / FAQPage / VideoObject
 // đúng cấu trúc schema.org VÀ các field nhạy cảm chỉ phát sinh khi có dữ liệu thật.
 
+// JSON-LD có cấu trúc động (schema.org) nên builder trả Record<string, unknown>.
+// Hai helper ép kiểu từ unknown (KHÔNG dùng any) để truy cập key/phần tử lồng nhau.
+const obj = (v: unknown) => v as Record<string, unknown>;
+const arr = (v: unknown) => v as Array<Record<string, unknown>>;
+
 function makeProduct(overrides: Partial<Product> = {}): Product {
   return {
     id: "p1",
@@ -56,7 +61,7 @@ describe("buildProductJsonLd", () => {
       negativeNotes: [{ content: "Giá cao" }],
     });
 
-    const ld = buildProductJsonLd(product) as Record<string, any>;
+    const ld = obj(buildProductJsonLd(product));
 
     expect(ld["@context"]).toBe("https://schema.org");
     expect(ld["@type"]).toBe("Product");
@@ -89,36 +94,34 @@ describe("buildProductJsonLd", () => {
     });
 
     // positiveNotes / negativeNotes → ItemList có position tăng dần.
-    expect(ld.positiveNotes["@type"]).toBe("ItemList");
-    expect(ld.positiveNotes.itemListElement).toEqual([
+    expect(obj(ld.positiveNotes)["@type"]).toBe("ItemList");
+    expect(obj(ld.positiveNotes).itemListElement).toEqual([
       { "@type": "ListItem", position: 1, name: "Nhẹ" },
       { "@type": "ListItem", position: 2, name: "Thoáng khí" },
     ]);
-    expect(ld.negativeNotes.itemListElement).toHaveLength(1);
+    expect(obj(ld.negativeNotes).itemListElement).toHaveLength(1);
   });
 
   it("dùng giá bán lẻ khi không có giá khuyến mãi", () => {
-    const ld = buildProductJsonLd(
-      makeProduct({ price: { retailPrice: 500_000, currency: "VND" } }),
-    ) as Record<string, any>;
-    expect(ld.offers.price).toBe(500_000);
+    const ld = obj(
+      buildProductJsonLd(makeProduct({ price: { retailPrice: 500_000, currency: "VND" } })),
+    );
+    expect(obj(ld.offers).price).toBe(500_000);
   });
 
   it("map tồn kho hết hàng → OutOfStock", () => {
-    const ld = buildProductJsonLd(makeProduct({ stockState: "OUT_OF_STOCK" })) as Record<string, any>;
-    expect(ld.offers.availability).toBe("https://schema.org/OutOfStock");
+    const ld = obj(buildProductJsonLd(makeProduct({ stockState: "OUT_OF_STOCK" })));
+    expect(obj(ld.offers).availability).toBe("https://schema.org/OutOfStock");
   });
 
   it("KHÔNG khai aggregateRating khi chưa có review thật (chống khai khống #23)", () => {
-    expect((buildProductJsonLd(makeProduct({ rating: 0, ratingCount: 0 })) as any).aggregateRating).toBeUndefined();
-    expect((buildProductJsonLd(makeProduct({ rating: 4, ratingCount: 0 })) as any).aggregateRating).toBeUndefined();
-    expect((buildProductJsonLd(makeProduct({ ratingCount: null })) as any).aggregateRating).toBeUndefined();
+    expect(obj(buildProductJsonLd(makeProduct({ rating: 0, ratingCount: 0 }))).aggregateRating).toBeUndefined();
+    expect(obj(buildProductJsonLd(makeProduct({ rating: 4, ratingCount: 0 }))).aggregateRating).toBeUndefined();
+    expect(obj(buildProductJsonLd(makeProduct({ ratingCount: null }))).aggregateRating).toBeUndefined();
   });
 
   it("bỏ field rỗng khi thiếu dữ liệu GĐ3 (ưu/nhược)", () => {
-    const ld = buildProductJsonLd(
-      makeProduct({ positiveNotes: [], negativeNotes: [] }),
-    ) as Record<string, any>;
+    const ld = obj(buildProductJsonLd(makeProduct({ positiveNotes: [], negativeNotes: [] })));
     expect(ld.positiveNotes).toBeUndefined();
     expect(ld.negativeNotes).toBeUndefined();
   });
@@ -126,16 +129,16 @@ describe("buildProductJsonLd", () => {
 
 describe("buildBreadcrumbJsonLd", () => {
   it("ưu tiên thương hiệu: Trang chủ → Thương hiệu → Sản phẩm", () => {
-    const ld = buildBreadcrumbJsonLd(makeProduct()) as Record<string, any>;
+    const ld = obj(buildBreadcrumbJsonLd(makeProduct()));
     expect(ld["@type"]).toBe("BreadcrumbList");
-    const names = ld.itemListElement.map((i: any) => i.name);
+    const names = arr(ld.itemListElement).map((i) => i.name);
     expect(names).toEqual(["Trang chủ", "ABC", "Áo giáp mô tô ABC"]);
-    expect(ld.itemListElement.map((i: any) => i.position)).toEqual([1, 2, 3]);
+    expect(arr(ld.itemListElement).map((i) => i.position)).toEqual([1, 2, 3]);
   });
 
   it("dùng danh mục khi không có thương hiệu", () => {
-    const ld = buildBreadcrumbJsonLd(makeProduct({ brand: undefined })) as Record<string, any>;
-    expect(ld.itemListElement.map((i: any) => i.name)).toEqual([
+    const ld = obj(buildBreadcrumbJsonLd(makeProduct({ brand: undefined })));
+    expect(arr(ld.itemListElement).map((i) => i.name)).toEqual([
       "Trang chủ",
       "Áo giáp",
       "Áo giáp mô tô ABC",
@@ -143,22 +146,22 @@ describe("buildBreadcrumbJsonLd", () => {
   });
 
   it("bỏ qua danh mục 'chua-phan-loai' khi không có thương hiệu", () => {
-    const ld = buildBreadcrumbJsonLd(
+    const ld = obj(buildBreadcrumbJsonLd(
       makeProduct({ brand: undefined, category: { id: "c0", slug: "chua-phan-loai", name: "Chưa phân loại" } }),
-    ) as Record<string, any>;
-    expect(ld.itemListElement.map((i: any) => i.name)).toEqual(["Trang chủ", "Áo giáp mô tô ABC"]);
+    ));
+    expect(arr(ld.itemListElement).map((i) => i.name)).toEqual(["Trang chủ", "Áo giáp mô tô ABC"]);
   });
 });
 
 describe("buildFaqPageJsonLd", () => {
   it("sinh FAQPage với Question/Answer", () => {
-    const ld = buildFaqPageJsonLd([
+    const ld = obj(buildFaqPageJsonLd([
       { question: "Bảo hành bao lâu?", answer: "12 tháng." },
       { question: "Có ship không?", answer: "Toàn quốc." },
-    ]) as Record<string, any>;
+    ]));
     expect(ld["@type"]).toBe("FAQPage");
     expect(ld.mainEntity).toHaveLength(2);
-    expect(ld.mainEntity[0]).toMatchObject({
+    expect(arr(ld.mainEntity)[0]).toMatchObject({
       "@type": "Question",
       name: "Bảo hành bao lâu?",
       acceptedAnswer: { "@type": "Answer", text: "12 tháng." },
@@ -182,7 +185,7 @@ describe("buildVideoObjectsJsonLd", () => {
         thumbnail: { url: "https://cdn/thumb.jpg" },
       },
     ];
-    const [ld] = buildVideoObjectsJsonLd(videos, product) as Record<string, any>[];
+    const ld = obj(buildVideoObjectsJsonLd(videos, product)[0]);
     expect(ld["@type"]).toBe("VideoObject");
     expect(ld.name).toBe("Đánh giá");
     expect(ld.description).toBe("Cận cảnh áo giáp.");
@@ -193,10 +196,7 @@ describe("buildVideoObjectsJsonLd", () => {
   });
 
   it("video tải lên (không phải YouTube) → contentUrl; thiếu thumbnail thì lấy ảnh SP", () => {
-    const [ld] = buildVideoObjectsJsonLd(
-      [{ url: "https://cdn/clip.mp4", title: "Clip" }],
-      product,
-    ) as Record<string, any>[];
+    const ld = obj(buildVideoObjectsJsonLd([{ url: "https://cdn/clip.mp4", title: "Clip" }], product)[0]);
     expect(ld.embedUrl).toBeUndefined();
     expect(ld.contentUrl).toBe("https://cdn/clip.mp4");
     expect(ld.thumbnailUrl).toEqual(["https://cdn/main.jpg"]); // fallback ảnh chính SP
