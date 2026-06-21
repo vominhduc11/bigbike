@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { useLocale, useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth/auth-store";
@@ -521,13 +522,13 @@ export function QuickBuyModal({
             {/* Coupon hint */}
             <p className="px-6 pb-2 text-overline text-muted-foreground">
               {tQb("couponHintText")}{" "}
-              <a
+              <Link
                 href="/gio-hang"
                 onClick={onClose}
                 className="underline underline-offset-2 hover:text-foreground transition-colors"
               >
                 {tQb("couponHintLinkText")}
-              </a>
+              </Link>
             </p>
 
             <DialogFooter className="flex-row gap-2 px-6 pb-6 pt-2">
