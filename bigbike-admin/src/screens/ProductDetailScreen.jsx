@@ -50,6 +50,7 @@ import {
   buildEmptyForm,
   findOptionById,
   prependSelectedOption,
+  buildCategoryPathMap,
   buildFormFromItem,
   toPayload,
   TAB_SECTIONS,
@@ -231,7 +232,10 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   const selectedBrandRef = findOptionById([loadedProduct?.brand].filter(Boolean), form.brandId)
   const categoryOptions = prependSelectedOption(categories, selectedCategoryRef)
   const brandOptions = prependSelectedOption(brands, selectedBrandRef)
+  // Nhãn "Cha › Con › Cháu" để phân biệt cha/con khi cây danh mục có nhiều cấp.
+  const categoryPathById = useMemo(() => buildCategoryPathMap(categoryOptions), [categoryOptions])
   const selectedCategoryLabel =
+    categoryPathById.get(form.categoryId) ||
     findOptionById(categoryOptions, form.categoryId)?.name ||
     (form.categoryId ? t('products.detail.optionNotFound', { id: form.categoryId }) : undefined)
   const selectedBrandLabel =
@@ -923,7 +927,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                         {form.categoryId && !categoryOptions.some((c) => c.id === form.categoryId) && (
                           <SelectItem value={form.categoryId} disabled>{t('products.detail.optionNotFound', { id: form.categoryId })}</SelectItem>
                         )}
-                        {categoryOptions.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                        {categoryOptions.map((c) => <SelectItem key={c.id} value={c.id}>{categoryPathById.get(c.id) || c.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </Field>

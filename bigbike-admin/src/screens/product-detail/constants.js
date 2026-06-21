@@ -253,6 +253,35 @@ export function prependSelectedOption(items, selected) {
   return [selected, ...items]
 }
 
+// Map id → đường dẫn đầy đủ "Cha › Con › Cháu" cho ô chọn danh mục nhiều cấp.
+// Đi ngược theo parentId tới gốc; `seen` chặn vòng lặp parentId hỏng (dừng ở tên
+// hiện tại). Mục thiếu parentId / không tìm thấy cha → chỉ hiện tên của chính nó.
+export function buildCategoryPathMap(items, separator = ' › ') {
+  const byId = new Map()
+  for (const it of items) {
+    if (it?.id) byId.set(it.id, it)
+  }
+  const cache = new Map()
+  const pathFor = (id, seen) => {
+    if (!id || !byId.has(id)) return ''
+    if (cache.has(id)) return cache.get(id)
+    const node = byId.get(id)
+    let full = node.name
+    if (node.parentId && !seen.has(id)) {
+      seen.add(id)
+      const parentPath = pathFor(node.parentId, seen)
+      if (parentPath) full = `${parentPath}${separator}${node.name}`
+    }
+    cache.set(id, full)
+    return full
+  }
+  const result = new Map()
+  for (const it of items) {
+    if (it?.id) result.set(it.id, pathFor(it.id, new Set()))
+  }
+  return result
+}
+
 export function buildFormFromItem(item) {
   if (!item) return buildEmptyForm()
 
