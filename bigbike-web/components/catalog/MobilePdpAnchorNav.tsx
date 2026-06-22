@@ -194,8 +194,8 @@ export function MobilePdpAnchorNav({
       // để GPU lo transform. Lúc ẩn dùng pointer-events-none để không chặn tương tác bên
       // dưới. Tôn trọng prefers-reduced-motion (tắt transition → hiện tức thì, không trượt).
       className={cn(
-        "flex flex-nowrap whitespace-nowrap md:!hidden top-[var(--bb-header-height)] z-[9]",
-        "overflow-x-auto overflow-y-hidden [scroll-snap-type:x_mandatory] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+        "bb-pdp-anchor-nav flex flex-nowrap whitespace-nowrap md:!hidden top-[var(--bb-header-height)] z-[9]",
+        "overflow-x-auto overflow-y-hidden [scroll-snap-type:x_mandatory]",
         "bg-white border-b border-border px-2 gap-0 shadow-[0_4px_12px_-6px_rgba(0,0,0,0.25)]",
         stickyInline
           // Sticky-inline (mockup): dính trong dòng chảy, luôn hiện, không reveal.

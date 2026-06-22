@@ -582,20 +582,6 @@
         "blockerMessage": "{{count}} required item(s) are still missing. Please complete them first.",
         "warningMessage": "{{count}} section(s) are recommended to make the product page fuller and nicer (optional). You can still publish now."
       },
-      "sectionVisibility": {
-        "title": "Show on website",
-        "hint": "Controls the tab block on the product page (Description / Specifications / FAQ / Video / Reviews). A tab appears only when turned on and it has content. New products start with everything off. Blocks outside the tab show automatically when they have content.",
-        "showAll": "Turn all on",
-        "hideAll": "Turn all off",
-        "noContent": "no content yet",
-        "items": {
-          "description": "Description / Detailed features",
-          "specifications": "Specifications",
-          "faqs": "FAQ",
-          "videos": "Videos",
-          "reviews": "Reviews"
-        }
-      },
       "assign": {
         "title": "Assignment",
         "roleContent": "Content",

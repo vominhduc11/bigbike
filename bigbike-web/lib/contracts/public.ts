@@ -332,10 +332,6 @@ export type Product = {
   originBrandCountry?: string | null;
   /** Bảng size dạng HTML (rich-text). Detail-only. */
   sizeGuide?: string | null;
-  /** "Hiển thị trên web" (V245) — opaque JSON string `{sectionKey: boolean}`; admin bật/tắt từng
-   *  section PDP. Null/thiếu = chưa cấu hình → hiện theo nội dung (legacy). Parse qua
-   *  `parseSectionVisibility`. Detail-only. */
-  sectionVisibility?: string | null;
   /** "Phù hợp với ai" — JSON array các thẻ `[{audience, advice, linkLabel?, linkUrl?}]`
    *  (V237; format đổi ở V240). Từ V246 render như khối mô tả (type "suitability"). Detail-only. */
   suitabilityAdvisory?: string | null;

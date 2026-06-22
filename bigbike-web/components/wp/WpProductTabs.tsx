@@ -24,11 +24,15 @@ export type WpAnchorExtra = { id: string; label?: string; labelKey?: string };
 export function WpProductTabs({
   tabs,
   anchorExtras = [],
+  hideAnchorNav = false,
 }: {
   tabs: WpTab[];
   /** Mục neo phụ ngoài hệ tab (vd. section Đánh giá nằm dưới khối tab) — chỉ thêm
    *  vào thanh nav nổi mobile để cuộn nhanh tới, không tạo thêm panel tab. */
   anchorExtras?: WpAnchorExtra[];
+  /** Ẩn thanh nav nhảy-mục riêng của khối tab. Dùng khi PDP đã có MỘT thanh nav
+   *  tổng ở đầu trang phủ toàn bộ section (tránh hiện 2 thanh chồng nhau). */
+  hideAnchorNav?: boolean;
 }) {
   const tt = useTranslations("Product.tabs");
   const ttShort = useTranslations("Product.tabsShort");
@@ -75,13 +79,15 @@ export function WpProductTabs({
           chỉ dính trong phạm vi khối tab (Mô tả…FAQ) rồi tự nhả sau panel cuối — không
           dính lì xuống tới "sản phẩm liên quan". Mobile xếp dọc nên bấm 1 mục = cuộn
           tới section theo id. */}
-      <MobilePdpAnchorNav
-        stickyInline
-        items={[
-          ...tabs.map((t) => ({ id: t.id, label: navLabelOf(t) })),
-          ...anchorExtras.map((a): AnchorNavItem => ({ id: a.id, label: navLabelOf(a) })),
-        ]}
-      />
+      {!hideAnchorNav && (
+        <MobilePdpAnchorNav
+          stickyInline
+          items={[
+            ...tabs.map((t) => ({ id: t.id, label: navLabelOf(t) })),
+            ...anchorExtras.map((a): AnchorNavItem => ({ id: a.id, label: navLabelOf(a) })),
+          ]}
+        />
+      )}
       {/* Tab nav ngang — chỉ desktop. Mobile ẩn: các panel xếp dọc bên dưới. */}
       <div className="tabs-nav max-md:hidden">
         <ul className="nav nav-tabs" role="tablist">

@@ -244,8 +244,6 @@ export function buildEmptyForm() {
     accessoryProductChips: [],
     // Optional English content (V136). Vietnamese above stays canonical.
     translations: { en: buildEmptyTranslation() },
-    // "Hiển thị trên web" (V245) — sản phẩm MỚI mặc định tắt hết (opt-in): admin tự bật phần nào hiện phần đó.
-    sectionVisibility: resolveSectionVisibilityForm(null, null),
   }
 }
 
@@ -492,9 +490,6 @@ export function buildFormFromItem(item) {
     if (enTrustHtml) form.translations.en.trustBadgesHtml = enTrustHtml
   }
 
-  // "Hiển thị trên web" (V245): cấu hình đã lưu thắng; sản phẩm cũ chưa cấu hình → seed bật theo
-  // nội dung hiện có (web giữ nguyên cho tới khi admin chỉnh & lưu).
-  form.sectionVisibility = resolveSectionVisibilityForm(parseSectionVisibilityForm(item.sectionVisibility), form)
   return form
 }
 
@@ -620,55 +615,8 @@ export function parseSuitabilityCards(viRaw, enRaw) {
 }
 
 // (V246) serializeSuitabilityCards đã gỡ — "Phù hợp với ai" giờ nhập qua KHỐI suitability trong mô tả.
-
-// "Hiển thị trên web" (V245) — danh sách section PDP admin bật/tắt. Key PHẢI khớp web
-// (lib/utils/section-visibility + ProductView). contentBottom không nằm đây (admin không soạn ở form).
-// CHỈ gồm các section nằm TRONG khối Tab của PDP (Mô tả · Thông số · FAQ · Video · Đánh giá). Các khối
-// NGOÀI tab (ô số liệu nổi bật, dải tin cậy, khối cam kết, "Mua tại BigBike.vn",
-// sản phẩm tương tự, phụ kiện bán kèm) KHÔNG quản ở đây — web tự hiện chúng khi có nội dung.
-// Ưu/Nhược điểm · Phù hợp với ai · Bảng size (V246) là KHỐI trong mô tả → theo visibility của 'description'.
-export const SECTION_VISIBILITY_KEYS = [
-  'description', 'specifications', 'faqs', 'videos', 'reviews',
-]
-
-// Có nội dung trong form chưa — để seed "bật sẵn" cho sản phẩm cũ chưa cấu hình (giữ web như cũ).
-// reviews là nội dung động → seed bật cho hàng cũ.
-export function sectionHasContent(form, key) {
-  const arr = (v) => (Array.isArray(v) ? v : [])
-  const t = (v) => String(v ?? '').trim()
-  switch (key) {
-    case 'description':    return Array.isArray(form.descriptionBlocks) ? form.descriptionBlocks.length > 0 : Boolean(t(form.description))
-    case 'specifications': return Boolean(t(form.specificationsHtml)) || arr(form.specifications).some((s) => t(s.name) && t(s.value))
-    case 'faqs':           return arr(form.faqs).some((f) => t(f.question) && t(f.answer))
-    case 'videos':         return arr(form.videos).some((v) => t(v.url))
-    case 'reviews':        return true
-    default:               return false
-  }
-}
-
-// Parse chuỗi JSON visibility từ backend → map bool (chỉ giữ key hợp lệ). null nếu rỗng/hỏng.
-// Map cũ có thể chứa key ngoài-tab + `_order` (trước V246 mở rộng) — bỏ qua an toàn, chỉ giữ 5 key tab.
-export function parseSectionVisibilityForm(raw) {
-  if (typeof raw !== 'string' || !raw.trim()) return null
-  try {
-    const parsed = JSON.parse(raw)
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null
-    const map = {}
-    for (const k of SECTION_VISIBILITY_KEYS) if (typeof parsed[k] === 'boolean') map[k] = parsed[k]
-    return map
-  } catch { return null }
-}
-
-// Dựng map visibility cho form. saved (đã cấu hình) thắng; key thiếu → seed theo nội dung khi
-// seedFromForm có (sản phẩm cũ), ngược lại false (sản phẩm MỚI = opt-in, admin tự bật).
-export function resolveSectionVisibilityForm(saved, seedFromForm) {
-  const map = {}
-  for (const k of SECTION_VISIBILITY_KEYS) {
-    if (saved && typeof saved[k] === 'boolean') map[k] = saved[k]
-    else map[k] = seedFromForm ? sectionHasContent(seedFromForm, k) : false
-  }
-  return map
-}
+// (2026-06-22) "Hiển thị trên web" đã GỠ (SECTION_VISIBILITY_KEYS + sectionHasContent + parse/resolveSectionVisibilityForm):
+// 5 phần PDP giờ hiện thuần theo nội dung, không còn bật/tắt từng phần. Backend giữ cột section_visibility ngủ yên.
 
 export function toPayload(form) {
   // Canonical luôn tự sinh từ slug — không lấy từ ô nhập tay nữa.
@@ -698,9 +646,6 @@ export function toPayload(form) {
     description: Array.isArray(form.descriptionBlocks) ? undefined : (form.description.trim() || undefined),
     // Template SEO scalars (V175). Null khi cleared (presence-flag).
     originBrandCountry: form.originBrandCountry.trim() ? form.originBrandCountry.trim() : null,
-    // "Hiển thị trên web" (V245) — luôn gửi map đầy đủ (presence-flag): "đóng băng" trạng thái hiện tại
-    // thành cờ explicit nên web không đổi với sản phẩm cũ, và áp opt-in cho sản phẩm mới.
-    sectionVisibility: JSON.stringify(form.sectionVisibility || resolveSectionVisibilityForm(null, form)),
     gender: form.gender.trim() ? form.gender.trim() : null,
     brandId: form.brandId.trim() || undefined,
     categoryId: form.categoryId.trim(),
@@ -938,14 +883,15 @@ export const TAB_SECTIONS = {
 
 // Within the "product" tab the sections are split into 3 collapsible groups that
 // mirror the storefront product-page flow (the owner's "thứ tự đầy đủ trang sản phẩm"
-// reference): `buyArea` = đầu trang (ảnh/giá/biến thể/ô số liệu), `body` = thân trang
-// (mô tả/ưu-nhược/thông số/FAQ), `closing` = cuối trang (tin cậy/bán kèm/hiển thị).
+// reference): `buyArea` = đầu trang (ảnh/giá/biến thể/cam kết/ô số liệu), `body` = thân
+// trang (mô tả → ưu-nhược → tương tự → phù hợp → bảng size → thông số → FAQ → video),
+// `closing` = cuối trang (Mua tại BigBike.vn → bán kèm → xuất xứ/hiển thị).
 // `buyArea` (required) opens by default; the two optional groups start collapsed.
-// Keys/order mirror the render order in ProductDetailScreen.
+// Keys/order mirror the render order in ProductDetailScreen (canonical PDP order §0b).
 export const PRODUCT_GROUPS = {
-  buyArea: ['basic', 'media', 'gallery', 'trustBadges', 'pricing', 'variants', 'specStats'],
-  body:    ['description', 'specs', 'faqs', 'videos', 'related'],
-  closing: ['commitments', 'purchaseLines', 'accessories'],
+  buyArea: ['basic', 'media', 'gallery', 'trustBadges', 'pricing', 'variants', 'commitments', 'specStats'],
+  body:    ['description', 'related', 'specs', 'faqs', 'videos'],
+  closing: ['purchaseLines', 'accessories'],
 }
 
 // First group (top-down) containing any failing section — used to auto-expand the

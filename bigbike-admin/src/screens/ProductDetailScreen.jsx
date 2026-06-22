@@ -77,7 +77,6 @@ import {
   GalleryEditor,
   VideoEditor,
   SpecificationsEditor,
-  SectionVisibilityEditor,
   HighlightsEditor,
   FaqEditor,
 } from './product-detail/ContentEditors'
@@ -1281,6 +1280,27 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 />
               </SectionCard>
 
+              {/* ── Card: Cam kết (dưới nút mua hàng) (V232) — thuộc khu mua hàng (đầu trang) ── */}
+              <SectionCard
+                title={t('products.detail.sectionCommitments')}
+                badge={
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5">
+                      {form.commitments.length} {t('products.detail.commitments.unit', { defaultValue: 'dòng' })}
+                    </span>
+                    <RoleBadge role="content" />
+                  </div>
+                }
+              >
+                <p className="text-xs text-muted-foreground mb-2">{t('products.detail.commitments.hint')}</p>
+                <CommitmentEditor
+                  items={form.commitments}
+                  onChange={(next) => updateField('commitments', next)}
+                  disabled={isReadOnly}
+                  contentLang={contentLang}
+                />
+              </SectionCard>
+
               {/* ── Card: Specs Dashboard — ô số liệu nổi bật (V235) ── */}
               <SectionCard
                 title={t('products.detail.sectionSpecStats')}
@@ -1372,39 +1392,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 </div>
               </SectionCard>
 
-              {/* ── Card: Phù hợp với ai (#6) — tách RA khỏi trình dựng mô tả; lưu dạng khối suitability trong descriptionBlocks ── */}
-              <SectionCard
-                title={t('products.detail.blocks.blockTypeSuitability')}
-                badge={<RoleBadge role="content" />}
-              >
-                <p className="text-xs text-muted-foreground mb-3">
-                  {t('products.detail.suitabilityCard.hint', { defaultValue: 'Các thẻ tư vấn "đối tượng → lời khuyên". Hiện thành khối riêng cố định trên trang sản phẩm (ngay sau Ưu/nhược điểm), không phụ thuộc vị trí trong mô tả. Để trống → web ẩn khối.' })}
-                </p>
-                <SuitabilityBlockEditor
-                  key={`suit-${productId ?? 'new'}-${specialDescField}-${suitabilityBlock._key}`}
-                  block={suitabilityBlock}
-                  disabled={isReadOnly}
-                  onChange={(patch) => updateField(specialDescField, upsertSpecialBlock(specialDescAll, { ...suitabilityBlock, ...patch }))}
-                />
-              </SectionCard>
-
-              {/* ── Card: Bảng size (#7) — tách RA khỏi trình dựng mô tả; lưu dạng khối sizeGuide trong descriptionBlocks ── */}
-              <SectionCard
-                title={t('products.detail.blocks.blockTypeSizeGuide')}
-                badge={<RoleBadge role="content" />}
-              >
-                <p className="text-xs text-muted-foreground mb-3">
-                  {t('products.detail.sizeGuideCard.hint', { defaultValue: 'Bảng chọn size (nhập theo cột/dòng hoặc dán HTML). Hiện thành khối riêng cố định trên trang sản phẩm (ngay sau Phù hợp với ai). Để trống → web ẩn khối.' })}
-                </p>
-                <SizeGuideBlockEditor
-                  key={`size-${productId ?? 'new'}-${specialDescField}-${sizeGuideBlock._key}`}
-                  block={sizeGuideBlock}
-                  disabled={isReadOnly}
-                  onChange={(patch) => updateField(specialDescField, upsertSpecialBlock(specialDescAll, { ...sizeGuideBlock, ...patch }))}
-                />
-              </SectionCard>
-
-              {/* ── Card: Sản phẩm tương tự — "Xem thêm lựa chọn" ── */}
+              {/* ── Card: Sản phẩm tương tự — "Xem thêm lựa chọn" (#5) — ngay sau Ưu/Nhược, trước Phù hợp với ai ── */}
               <SectionCard
                 title={t('products.detail.sectionRelated')}
                 badge={
@@ -1468,6 +1456,38 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     )}
                   </>
                 )}
+              </SectionCard>
+
+              {/* ── Card: Phù hợp với ai (#6) — tách RA khỏi trình dựng mô tả; lưu dạng khối suitability trong descriptionBlocks ── */}
+              <SectionCard
+                title={t('products.detail.blocks.blockTypeSuitability')}
+                badge={<RoleBadge role="content" />}
+              >
+                <p className="text-xs text-muted-foreground mb-3">
+                  {t('products.detail.suitabilityCard.hint', { defaultValue: 'Các thẻ tư vấn "đối tượng → lời khuyên". Hiện thành khối riêng cố định trên trang sản phẩm (ngay sau Ưu/nhược điểm), không phụ thuộc vị trí trong mô tả. Để trống → web ẩn khối.' })}
+                </p>
+                <SuitabilityBlockEditor
+                  key={`suit-${productId ?? 'new'}-${specialDescField}-${suitabilityBlock._key}`}
+                  block={suitabilityBlock}
+                  disabled={isReadOnly}
+                  onChange={(patch) => updateField(specialDescField, upsertSpecialBlock(specialDescAll, { ...suitabilityBlock, ...patch }))}
+                />
+              </SectionCard>
+
+              {/* ── Card: Bảng size (#7) — tách RA khỏi trình dựng mô tả; lưu dạng khối sizeGuide trong descriptionBlocks ── */}
+              <SectionCard
+                title={t('products.detail.blocks.blockTypeSizeGuide')}
+                badge={<RoleBadge role="content" />}
+              >
+                <p className="text-xs text-muted-foreground mb-3">
+                  {t('products.detail.sizeGuideCard.hint', { defaultValue: 'Bảng chọn size (nhập theo cột/dòng hoặc dán HTML). Hiện thành khối riêng cố định trên trang sản phẩm (ngay sau Phù hợp với ai). Để trống → web ẩn khối.' })}
+                </p>
+                <SizeGuideBlockEditor
+                  key={`size-${productId ?? 'new'}-${specialDescField}-${sizeGuideBlock._key}`}
+                  block={sizeGuideBlock}
+                  disabled={isReadOnly}
+                  onChange={(patch) => updateField(specialDescField, upsertSpecialBlock(specialDescAll, { ...sizeGuideBlock, ...patch }))}
+                />
               </SectionCard>
 
               {/* ── Card: Thông số ── */}
@@ -1540,27 +1560,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 onToggle={() => toggleGroup('closing')}
                 errorCount={groupCounts.closing}
               >
-              {/* ── Card: Cam kết (dưới nút mua hàng) (V232) ── */}
-              <SectionCard
-                title={t('products.detail.sectionCommitments')}
-                badge={
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5">
-                      {form.commitments.length} {t('products.detail.commitments.unit', { defaultValue: 'dòng' })}
-                    </span>
-                    <RoleBadge role="content" />
-                  </div>
-                }
-              >
-                <p className="text-xs text-muted-foreground mb-2">{t('products.detail.commitments.hint')}</p>
-                <CommitmentEditor
-                  items={form.commitments}
-                  onChange={(next) => updateField('commitments', next)}
-                  disabled={isReadOnly}
-                  contentLang={contentLang}
-                />
-              </SectionCard>
-
               {/* ── Card: Bảng "Mua tại BigBike.vn" (dưới khu mua hàng) ── */}
               <SectionCard
                 title={t('products.detail.sectionPurchaseLines', { defaultValue: 'Mua tại BigBike.vn' })}
@@ -1664,19 +1663,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     maxLength={120}
                   />
                 </Field>
-              </SectionCard>
-
-              {/* ── Card: Hiển thị trên web (V245) ── */}
-              <SectionCard title={t('products.detail.sectionVisibility.title', { defaultValue: 'Hiển thị trên web' })} badge={<RoleBadge role="content" />}>
-                <p className="mb-3 text-xs text-muted-foreground">
-                  {t('products.detail.sectionVisibility.hint', { defaultValue: 'Bật phần nào thì phần đó mới hiện trên trang sản phẩm (cần có nội dung). Sản phẩm mới mặc định tắt hết.' })}
-                </p>
-                <SectionVisibilityEditor
-                  value={form.sectionVisibility}
-                  onChange={(next) => updateField('sectionVisibility', next)}
-                  form={form}
-                  disabled={isReadOnly}
-                />
               </SectionCard>
               </CollapsibleGroup>
             </>

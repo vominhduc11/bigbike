@@ -23,6 +23,7 @@ export function ProductTabsSection({
   tabs: config,
   builtins,
   defaultOrder,
+  hideAnchorNav = false,
 }: {
   /** Cấu hình tab của sản phẩm; rỗng → dùng thứ tự builtin mặc định. */
   tabs: ProductTab[];
@@ -30,6 +31,8 @@ export function ProductTabsSection({
   builtins: Record<string, BuiltinTab>;
   /** Thứ tự builtin mặc định khi sản phẩm không có cấu hình riêng. */
   defaultOrder: string[];
+  /** Ẩn thanh nav nhảy-mục riêng của khối tab (PDP dùng thanh nav tổng ở đầu trang). */
+  hideAnchorNav?: boolean;
 }) {
   let resolved: WpTab[];
 
@@ -63,5 +66,5 @@ export function ProductTabsSection({
   }
 
   if (resolved.length === 0) return null;
-  return <WpProductTabs tabs={resolved} />;
+  return <WpProductTabs tabs={resolved} hideAnchorNav={hideAnchorNav} />;
 }

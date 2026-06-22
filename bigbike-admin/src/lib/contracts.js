@@ -477,9 +477,6 @@ export function normalizeProduct(input) {
     specificationsHtml: toTrimmedString(source.specificationsHtml) || undefined,
     specStatsHtml: toTrimmedString(source.specStatsHtml) || undefined,
     trustBadgesHtml: toTrimmedString(source.trustBadgesHtml) || undefined,
-    // "Hiển thị trên web" (V245) — chuỗi JSON opaque {sectionKey: boolean}, detail-only. PHẢI surface
-    // để form nạp đúng cấu hình đã lưu (nếu không admin luôn re-seed từ nội dung, bỏ lựa chọn đã lưu).
-    sectionVisibility: toTrimmedString(source.sectionVisibility) || undefined,
     // Admin-curated related products — list-view refs used to render product
     // chips in the editor and to power the PDP "Sản phẩm liên quan" section.
     relatedProducts: Array.isArray(source.relatedProducts)

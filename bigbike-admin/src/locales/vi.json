@@ -582,20 +582,6 @@
         "blockerMessage": "Còn {{count}} mục bắt buộc chưa điền. Vui lòng quay lại bổ sung.",
         "warningMessage": "Còn {{count}} phần nên bổ sung để trang sản phẩm đầy đủ và đẹp hơn (không bắt buộc). Bạn vẫn có thể đăng ngay."
       },
-      "sectionVisibility": {
-        "title": "Hiển thị trên web",
-        "hint": "Điều khiển khối Tab trên trang sản phẩm (Mô tả / Thông số / FAQ / Video / Đánh giá). Bật phần nào thì tab đó mới hiện (cần có nội dung). Sản phẩm mới mặc định tắt hết. Các khối ngoài tab tự hiện khi có nội dung.",
-        "showAll": "Bật tất cả",
-        "hideAll": "Tắt tất cả",
-        "noContent": "chưa có nội dung",
-        "items": {
-          "description": "Mô tả / Tính năng chi tiết",
-          "specifications": "Thông số kỹ thuật",
-          "faqs": "Câu hỏi thường gặp (FAQ)",
-          "videos": "Video",
-          "reviews": "Đánh giá"
-        }
-      },
       "assign": {
         "title": "Phân công",
         "roleContent": "Content",

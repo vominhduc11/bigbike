@@ -1851,6 +1851,12 @@ html { scrollbar-gutter: stable; }
 }
 *::-webkit-scrollbar-thumb:hover { background: var(--bb-color-gray-450); }
 
+/* PDP anchor nav (thanh nhảy-mục mobile) cuộn ngang nhưng KHÔNG hiện scrollbar. Phải đặt UNLAYERED ở đây
+   để thắng quy tắc `*::-webkit-scrollbar{width/height}` toàn cục phía trên — class ẩn kiểu Tailwind (layered)
+   bị quy tắc unlayered này đè (xem memory wp_css_overrides_tailwind_layer). */
+.bb-pdp-anchor-nav { scrollbar-width: none; }
+.bb-pdp-anchor-nav::-webkit-scrollbar { width: 0; height: 0; display: none; }
+
 /* Radix Dialog/Sheet uses react-remove-scroll, which compensates for the
    scrollbar by adding margin-right to body. The root already reserves that
    space via scrollbar-gutter, so the extra margin creates a second 15px gap

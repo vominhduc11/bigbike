@@ -17,7 +17,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { generateId } from '@/lib/utils'
 import { parseSpecsFromHtml, mergeSpecsIntoHtml } from '../../lib/specSheet'
 import { resolveDisplayUrl } from '@/lib/contracts'
-import { extractYouTubeId, SECTION_VISIBILITY_KEYS, sectionHasContent } from './constants'
+import { extractYouTubeId } from './constants'
 
 export function IconChevronDown() {
   return (
@@ -555,63 +555,6 @@ export function SpecificationsEditor({ disabled, html = '', onHtmlChange }) {
         </div>
       </TabsContent>
     </Tabs>
-  )
-}
-
-/**
- * "Hiển thị trên web" (V245) — bảng công tắc bật/tắt các section nằm TRONG khối Tab của PDP
- * (Mô tả · Thông số · FAQ · Video · Đánh giá). Sản phẩm mới mặc định tắt hết. Các khối ngoài tab
- * không quản ở đây (web tự hiện khi có nội dung).
- */
-export function SectionVisibilityEditor({ value, onChange, form, disabled }) {
-  const { t } = useTranslation()
-  const map = value || {}
-
-  function toggle(key, on) {
-    onChange({ ...map, [key]: on })
-  }
-  function setAll(on) {
-    onChange(Object.fromEntries(SECTION_VISIBILITY_KEYS.map((k) => [k, on])))
-  }
-
-  return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" onClick={() => setAll(true)} disabled={disabled}>
-          {t('products.detail.sectionVisibility.showAll', { defaultValue: 'Bật tất cả' })}
-        </Button>
-        <Button variant="outline" size="sm" onClick={() => setAll(false)} disabled={disabled}>
-          {t('products.detail.sectionVisibility.hideAll', { defaultValue: 'Tắt tất cả' })}
-        </Button>
-      </div>
-      <div className="flex flex-col gap-1.5">
-        {SECTION_VISIBILITY_KEYS.map((key) => {
-          const on = map[key] === true
-          const empty = !sectionHasContent(form, key)
-          return (
-            <div
-              key={key}
-              className="flex select-none items-center gap-3 rounded-sm border border-border px-3 py-2 text-sm"
-            >
-              <Checkbox
-                checked={on}
-                onCheckedChange={(v) => toggle(key, v === true)}
-                disabled={disabled}
-                id={`sv-${key}`}
-              />
-              <label htmlFor={`sv-${key}`} className="flex-1 cursor-pointer">
-                {t(`products.detail.sectionVisibility.items.${key}`)}
-              </label>
-              {on && empty && (
-                <span className="text-xs text-muted-foreground">
-                  {t('products.detail.sectionVisibility.noContent', { defaultValue: 'chưa có nội dung' })}
-                </span>
-              )}
-            </div>
-          )
-        })}
-      </div>
-    </div>
   )
 }
 

@@ -1159,10 +1159,9 @@ Trang chi tiết sản phẩm (public `GET /api/v1/products/{slug}` + admin upse
 - `tabs: ProductTab[] | null` — cấu hình tab PDP, **detail-only**, `null` = web dùng tab mặc định. Mỗi
   `ProductTab`: `{ id, type, enabled, sortOrder, label, blocks }` đã resolve theo `lang` (public bỏ raw
   English). `type` ∈ `description|reviews|specs|installation|faq|custom`; `custom` mới có `blocks`.
-- `sectionVisibility: string | null` (V245) — "Hiển thị trên web", **detail-only**, opaque JSON string
-  `{sectionKey: boolean}`. Chỉ quản **5 section dạng tab**: `description, specifications, faqs, videos, reviews`.
-  `null` = chưa cấu hình → web hiện theo nội dung (legacy); `key=false` ẩn, `key=true` hiện-nếu-có-nội-dung.
-  Khối ngoài tab không nằm trong map (web tự hiện khi có nội dung). Web parse + gate (`PRODUCT_RULE_006`).
+- ~~`sectionVisibility: string | null` (V245)~~ — **GỠ khỏi admin+web (2026-06-22).** Chức năng "Hiển thị
+  trên web" (bật/tắt riêng 5 section tab) đã bỏ; mọi khối PDP hiện **thuần theo nội dung**. Backend còn trả
+  field `section_visibility` (cột giữ ngủ yên, không còn tác dụng) nhưng **web bỏ qua, admin không gửi**.
 
 **Admin upsert** (`POST /api/v1/admin/products`, `PATCH /api/v1/admin/products/{id}`) — presence-flag:
 - `descriptionBlocksEn: DescriptionBlock[]` (≤200) — khối mô tả tiếng Anh; gửi key (kể cả []) thì render →
@@ -1170,13 +1169,10 @@ Trang chi tiết sản phẩm (public `GET /api/v1/products/{slug}` + admin upse
 - ~~`specifications[].featured: boolean`~~ — **GỠ BỎ ở V235**, thay bằng `specStats` (full-replace, ≤4 ô).
 - `tabs: ProductTabRequest[]` (≤30) — cấu hình tab; mỗi tab `{ id, type, enabled, sortOrder, label, labelEn,
   blocks, blocksEn }`. Gửi key (kể cả []/null) thay/clear; bỏ key thì giữ nguyên. `[]`/null = reset về mặc định.
-  Lưu ý (V245): ẩn/hiện 5 section dạng tab đã chuyển sang `sectionVisibility`; admin form không còn gửi `enabled`
-  như công tắc hiển thị (luôn `true`), tab editor chỉ đổi thứ tự + đổi tên.
-- `sectionVisibility: string` (V245, ≤4000) — opaque JSON string `{sectionKey: boolean}` cho **5 section dạng
-  tab** (`description, specifications, faqs, videos, reviews`). Presence-flag: gửi key thay cấu hình; bỏ key giữ
-  nguyên; null/blank xoá (về legacy). Admin luôn gửi map đầy đủ 5 khoá (đông cứng trạng thái). SP mới = tắt hết
-  (opt-in). Map cũ chứa khoá ngoài-tab hoặc `_order` được bỏ qua an toàn. Xem `DATA_CONTRACT.md` §V245 +
-  `PRODUCT_RULE_006`.
+  Lưu ý: admin form không gửi `enabled` như công tắc hiển thị (luôn `true`), tab editor chỉ đổi thứ tự + đổi tên.
+  (Việc ẩn/hiện riêng 5 section qua `sectionVisibility` đã **GỠ 2026-06-22** — nay hiện thuần theo nội dung.)
+- ~~`sectionVisibility: string` (V245, ≤4000)~~ — **GỠ 2026-06-22.** Admin không còn gửi field này (đã bỏ ô
+  "Hiển thị trên web"). Backend vẫn chấp nhận key tùy chọn (present-flag) nhưng không còn nguồn tạo nó.
 
 Status: `CONFIRMED_FROM_CODE` — `CatalogController` (public detail), `AdminCatalogController` (upsert/preview),
 `UpsertProductRequest` (`descriptionBlocksEn`/`tabs`), `Product`/`ProductTab`/`ProductSpecification`
