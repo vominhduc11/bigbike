@@ -19,22 +19,23 @@
 
 ## 0b. Thứ tự khối hiển thị trên trang sản phẩm (canonical layout)
 
-Trang chi tiết sản phẩm (`bigbike-web` — `components/catalog/ProductView.tsx`) render các khối theo đúng thứ tự sau (khối tự ẩn khi không có dữ liệu):
+Trang chi tiết sản phẩm (`bigbike-web` — `components/catalog/ProductView.tsx`) render các khối theo đúng thứ tự sau (khối tự ẩn khi không có dữ liệu). **Thứ tự GIỐNG NHAU trên desktop và mobile** — khác biệt duy nhất là cách trình bày 5 khối #3–#7 (Mô tả · Thông số · FAQ · Video · Đánh giá): **mobile gom 5 khối vào MỘT widget tab**; **desktop render giãn, xếp chồng** (không tab). Cụm Ưu/Nhược + Sản phẩm liên quan → Phù hợp với ai → Bảng size (#8–#11) nằm NGOÀI tab, xếp chồng ngay sau cụm trên ở cả hai màn.
 
 | # | Khối | Nguồn dữ liệu | Ghi chú |
 |---|---|---|---|
 | 1 | Gallery + thông tin mua hàng | `WpPurchaseSection` | Hàng sao có link "Viết đánh giá đầu tiên" → cuộn tới khối Đánh giá (`#reviews`) |
 | 2 | Specs Dashboard (4 ô số liệu) | `specStats` | — |
-| 3 | Tính năng chi tiết | `descriptionBlocks` | Khối full-trang (đã kéo RA khỏi tab). Khối `feature` (ảnh+tiêu đề+đoạn+danh sách) render 2 cột ảnh–chữ so le trên desktop (mobile xếp dọc); `side`=`auto` tự xen kẽ trái/phải. Cơ chế "ghép ngầm" cũ (tự gom `image`+`text` liền nhau) đã GỠ — muốn 2 cột phải dùng khối `feature`. "Phù hợp với ai"/"Bảng size" nhập ở **2 card riêng** (không còn là khối thêm trong trình dựng mô tả); dữ liệu vẫn lưu dạng khối `suitability`/`sizeGuide` trong `descriptionBlocks`, web **TÁCH RA** render thành khối #6/#7 riêng. |
-| 4 | Ưu điểm & Nhược điểm | `positiveNotes` / `negativeNotes` | 2 cột |
-| 5 | **Sản phẩm tương tự — "Xem thêm lựa chọn"** | `relatedProducts` | Cùng loại (auto theo tag). Đặt NGAY sau Ưu/Nhược điểm: khách vừa đọc nhược điểm/giá → thấy ngay lựa chọn thay thế, giữ khách lại site. **DESKTOP** render ở vị trí này; **MOBILE** render ở cuối trang. |
-| 6 | **Phù hợp với ai** | `descriptionBlocks` (khối `suitability`) | Danh sách thẻ (đối tượng + lời khuyên + link nội bộ tùy chọn). **Tách RA khỏi luồng mô tả**, render khối riêng cố định ngay sau "Sản phẩm tương tự". Theo visibility của `description`. *(Trước V246 dùng field `suitabilityAdvisory`; nay là khối `suitability` trong `descriptionBlocks`.)* |
-| 7 | Bảng size | `descriptionBlocks` (khối `sizeGuide`) | Khối xếp chồng riêng (không còn widget tab); có điều kiện. **Tách RA khỏi luồng mô tả**, render ngay sau "Phù hợp với ai". Theo visibility của `description`. *(Trước V246 dùng field `sizeGuide`; nay là khối `sizeGuide` trong `descriptionBlocks`.)* |
-| 8 | Thông số kỹ thuật | `specifications` | Khối xếp chồng riêng |
-| 9 | FAQ | `faqs` | Khối xếp chồng riêng (Lắp đặt `installationGuide` — **lưới các bước** số thứ tự + icon + tiêu đề + nội dung + hộp mẹo/cảnh báo + ghi chú bảo dưỡng, V242 — chèn giữa #8–#9 nếu có; Thông tin bổ sung bảo hành/xuất xứ/trọng lượng đặt sau FAQ) |
-| 10 | Đánh giá | `ReviewsSection` | Đã kéo RA khỏi tab, đặt SAU FAQ, `id="reviews"` |
-| 11 | Trust block "Mua tại BigBike.vn" | product + site settings | Lưới 7 ô (Giá · Kho · **Bảo hành · Giao hàng · Đổi size** · Liên hệ · Địa chỉ). Giá/Kho realtime; **Liên hệ = Hotline + Zalo** và **Địa chỉ** auto từ `site_settings`; 3 ô Bảo hành/Giao hàng/Đổi size là **dòng admin tự sửa theo từng SP** (`product_purchase_lines`), đã backfill mặc định chung cho mọi SP ở V258 (Bảo hành "12 tháng tại BigBike", Giao hàng "Toàn quốc · COD · Đồng kiểm khi nhận", Đổi size "Miễn phí đổi trong 30 ngày nếu không vừa"). Trống Zalo/Hotline/Địa chỉ thì auto bỏ ô đó. |
-| 12 | Hoàn thiện bộ bảo hộ — cross-sell | `accessories` (admin curate) | Khác loại (găng/áo giáp/giày) để tăng AOV; render một lần ở cuối luồng marketing |
+| 3 | Tính năng chi tiết | `descriptionBlocks` | Khối full-trang (đã kéo RA khỏi tab). Khối `feature` (ảnh+tiêu đề+đoạn+danh sách) render 2 cột ảnh–chữ so le trên desktop (mobile xếp dọc); `side`=`auto` tự xen kẽ trái/phải. Cơ chế "ghép ngầm" cũ (tự gom `image`+`text` liền nhau) đã GỠ — muốn 2 cột phải dùng khối `feature`. "Phù hợp với ai"/"Bảng size" nhập ở **2 card riêng** (không còn là khối thêm trong trình dựng mô tả); dữ liệu vẫn lưu dạng khối `suitability`/`sizeGuide` trong `descriptionBlocks`, web **TÁCH RA** render thành khối #10/#11 riêng. |
+| 4 | Thông số kỹ thuật | `specifications` | Khối xếp chồng riêng (desktop) / tab trong widget (mobile) |
+| 5 | FAQ | `faqs` | Khối xếp chồng riêng (Lắp đặt `installationGuide` — **lưới các bước** số thứ tự + icon + tiêu đề + nội dung + hộp mẹo/cảnh báo + ghi chú bảo dưỡng, V242 — chèn giữa #4–#5 nếu có; Thông tin bổ sung bảo hành/xuất xứ/trọng lượng đặt sau FAQ) |
+| 6 | Video sản phẩm | `videos` | Khối xếp chồng riêng (desktop) / tab trong widget (mobile); dùng chung `HomeVideoCarousel` |
+| 7 | Đánh giá | `ReviewsSection` | Đặt SAU Video, `id="reviews"` (desktop render giãn; mobile là tab cuối trong widget) |
+| 8 | Ưu điểm & Nhược điểm | `positiveNotes` / `negativeNotes` | 2 cột. Gộp chung MỘT khối `prosConsRelated` với "Sản phẩm tương tự" (#9). Khối NGOÀI tab → hiện ngay sau cụm #3–#7 trên CẢ desktop lẫn mobile |
+| 9 | **Sản phẩm tương tự — "Xem thêm lựa chọn"** | `relatedProducts` | Cùng loại (auto theo tag). Đặt NGAY sau Ưu/Nhược điểm (gộp chung khối `prosConsRelated`): khách vừa đọc nhược điểm/giá → thấy ngay lựa chọn thay thế, giữ khách lại site. Hiện ở vị trí này trên CẢ desktop lẫn mobile. |
+| 10 | **Phù hợp với ai** | `descriptionBlocks` (khối `suitability`) | Danh sách thẻ (đối tượng + lời khuyên + link nội bộ tùy chọn). **Tách RA khỏi luồng mô tả**, render khối riêng cố định ngay sau "Sản phẩm tương tự". Theo visibility của `description`. *(Trước V246 dùng field `suitabilityAdvisory`; nay là khối `suitability` trong `descriptionBlocks`.)* |
+| 11 | Bảng size | `descriptionBlocks` (khối `sizeGuide`) | Khối xếp chồng riêng (không còn widget tab); có điều kiện. **Tách RA khỏi luồng mô tả**, render ngay sau "Phù hợp với ai". Theo visibility của `description`. *(Trước V246 dùng field `sizeGuide`; nay là khối `sizeGuide` trong `descriptionBlocks`.)* |
+| 12 | Trust block "Mua tại BigBike.vn" | product + site settings | Lưới 7 ô (Giá · Kho · **Bảo hành · Giao hàng · Đổi size** · Liên hệ · Địa chỉ). Giá/Kho realtime; **Liên hệ = Hotline + Zalo** và **Địa chỉ** auto từ `site_settings`; 3 ô Bảo hành/Giao hàng/Đổi size là **dòng admin tự sửa theo từng SP** (`product_purchase_lines`), đã backfill mặc định chung cho mọi SP ở V258 (Bảo hành "12 tháng tại BigBike", Giao hàng "Toàn quốc · COD · Đồng kiểm khi nhận", Đổi size "Miễn phí đổi trong 30 ngày nếu không vừa"). Trống Zalo/Hotline/Địa chỉ thì auto bỏ ô đó. |
+| 13 | Hoàn thiện bộ bảo hộ — cross-sell | `accessories` (admin curate) | Khác loại (găng/áo giáp/giày) để tăng AOV; render một lần ở cuối luồng marketing |
 
 Sticky mua-hàng (mobile), "Đã xem gần đây", dải liên hệ giữ nguyên ở cuối.
 

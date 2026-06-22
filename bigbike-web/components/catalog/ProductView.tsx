@@ -183,14 +183,16 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
   if (showReviews) {
     specGroupBuiltins.reviews = { id: "reviews", labelKey: "reviews", content: <ReviewsSection productId={product.id} embedded /> };
   }
-  // Thứ tự CỐ ĐỊNH các section body theo canonical layout (PDP_CONTENT_GUIDE §0b): Mô tả → Ưu/Nhược +
-  // Sản phẩm liên quan → Phù hợp với ai → Bảng size → Thông số → FAQ → Video → Đánh giá → Trust → Phụ kiện.
-  // Cụm "prosConsRelated → suitability → sizeGuide" là các khối NGOÀI tab (không vào widget tab mobile):
-  // trên DESKTOP hiện ngay sau Mô tả; trên MOBILE hiện ngay DƯỚI widget tab (widget gom 5 khối
-  // description→reviews) — cụm vẫn liền mạch ĐÚNG thứ tự ở cả hai. "Sản phẩm đã xem gần đây" render riêng.
+  // Thứ tự CỐ ĐỊNH các section body theo canonical layout (PDP_CONTENT_GUIDE §0b): Mô tả → Thông số → FAQ
+  // → Video → Đánh giá → Ưu/Nhược + Sản phẩm liên quan → Phù hợp với ai → Bảng size → Trust → Phụ kiện.
+  // 5 khối Mô tả→Thông số→FAQ→Video→Đánh giá là cụm "vào được" widget tab (TAB_KEYS); cụm "prosConsRelated
+  // → suitability → sizeGuide" là các khối NGOÀI tab. MOBILE: widget tab gom 5 khối rồi cụm ngoài-tab xếp
+  // chồng ngay dưới. DESKTOP: 5 khối render giãn (không tab) rồi tới cụm ngoài-tab — nên thứ tự DESKTOP
+  // KHỚP MOBILE. Đổi mảng này KHÔNG ảnh hưởng mobile (mobile lấy thứ tự qua TAB_KEYS + xếp chồng riêng).
+  // "Sản phẩm đã xem gần đây" render riêng.
   const bodyOrder = [
-    "description", "prosConsRelated", "suitability", "sizeGuide",
-    "specifications", "faqs", "videos", "reviews", "trust", "accessories",
+    "description", "specifications", "faqs", "videos", "reviews",
+    "prosConsRelated", "suitability", "sizeGuide", "trust", "accessories",
   ];
 
   // Mobile tab widget chỉ gồm tab nhét được vào widget (KHÔNG gồm prosConsRelated/suitability/sizeGuide/
