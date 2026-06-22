@@ -655,11 +655,12 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   }
 
   // ── Tab navigation state (replaces the old TOC sidebar) ─────────────────────
-  // Two tabs ("product" + "seo"). Inside the product tab, three collapsible groups —
-  // the required `core` group opens by default, the optional ones start collapsed so
-  // the form opens short.
+  // Two tabs ("product" + "seo"). Inside the product tab, three collapsible groups that
+  // follow the storefront product-page flow — `buyArea` (đầu trang, required) opens by
+  // default, `body` (thân trang) and `closing` (cuối trang) start collapsed so the form
+  // opens short.
   const [activeTab, setActiveTab] = useState('product')
-  const [openGroups, setOpenGroups] = useState({ core: true, content: false, sales: false })
+  const [openGroups, setOpenGroups] = useState({ buyArea: true, body: false, closing: false })
   const toggleGroup = (group) => setOpenGroups((prev) => ({ ...prev, [group]: !prev[group] }))
   const [savedFlash, setSavedFlash] = useState(false)
 
@@ -890,11 +891,11 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
           {activeTab === 'product' && (
             <>
               <CollapsibleGroup
-                title={t('products.detail.groupCore', { defaultValue: 'Cơ bản, Giá & Ảnh' })}
-                hint={t('products.detail.groupCoreHint', { defaultValue: 'Bắt buộc — đủ để đăng' })}
-                open={openGroups.core}
-                onToggle={() => toggleGroup('core')}
-                errorCount={groupCounts.core}
+                title={t('products.detail.groupBuyArea', { defaultValue: 'Khu mua hàng (đầu trang)' })}
+                hint={t('products.detail.groupBuyAreaHint', { defaultValue: 'Bắt buộc — ảnh, giá, biến thể, ô số liệu' })}
+                open={openGroups.buyArea}
+                onToggle={() => toggleGroup('buyArea')}
+                errorCount={groupCounts.buyArea}
               >
               {/* ── Card: Thông tin cơ bản ── */}
               <SectionCard
@@ -1022,28 +1023,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     />
                   </Field>
 
-                  <Field full label={t('products.detail.description')} error={validationErrors.description}>
-                    {isEnLang ? (
-                      <BlockEditor
-                        value={form.descriptionBlocksEn}
-                        onChange={(blocks) => updateField('descriptionBlocksEn', blocks)}
-                        disabled={isReadOnly}
-                        hasError={Boolean(validationErrors.description)}
-                        fallbackHtml={langValue('description')}
-                        productMode
-                      />
-                    ) : (
-                      <BlockEditor
-                        value={form.descriptionBlocks}
-                        onChange={(blocks) => updateField('descriptionBlocks', blocks)}
-                        disabled={isReadOnly}
-                        hasError={Boolean(validationErrors.description)}
-                        fallbackHtml={form.description}
-                        productMode
-                      />
-                    )}
-                  </Field>
-
                 </div>
               </SectionCard>
 
@@ -1057,6 +1036,49 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   disabled={isReadOnly}
                   error={validationErrors.imageUrl}
                   recommend={IMAGE_RECO.productImage}
+                />
+              </SectionCard>
+
+              {/* ── Card: Gallery (ảnh phụ) ── */}
+              <SectionCard
+                title={t('products.detail.gallerySectionTitle')}
+                badge={
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5">
+                      {form.gallery.length} {t('products.detail.galleryUnit', { defaultValue: 'ảnh' })}
+                    </span>
+                    <RoleBadge role="content" />
+                  </div>
+                }
+              >
+                <GalleryEditor
+                  items={form.gallery}
+                  onChange={(next) => updateField('gallery', next)}
+                  disabled={isReadOnly}
+                  validationErrors={validationErrors}
+                />
+              </SectionCard>
+
+              {/* ── Card: Dải tin cậy (trên tên sản phẩm) (V233) ── */}
+              <SectionCard
+                title={t('products.detail.sectionTrustBadges', { defaultValue: 'Dải tin cậy (trên tên sản phẩm)' })}
+                badge={
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5">
+                      {parseTrustBadgesFromHtml(langValue('trustBadgesHtml')).length} {t('products.detail.trustBadges.unit', { defaultValue: 'nhãn' })}
+                    </span>
+                    <RoleBadge role="content" />
+                  </div>
+                }
+              >
+                <p className="text-xs text-muted-foreground mb-2">
+                  {t('products.detail.trustBadges.hint', { defaultValue: 'Các nhãn ngắn hiển thị NGAY TRÊN tên sản phẩm (vd "Chính hãng", "BH 2 năm", "Freeship"). Để trống → web ẩn dải. Mỗi sản phẩm tự nhập riêng.' })}
+                </p>
+                <TrustBadgesEditor
+                  key={`trustbadges-${contentLang}`}
+                  disabled={isReadOnly}
+                  html={langValue('trustBadgesHtml')}
+                  onHtmlChange={(v) => langChange('trustBadgesHtml', v)}
                 />
               </SectionCard>
 
@@ -1206,68 +1228,25 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   </label>
                 </div>
               </SectionCard>
-              </CollapsibleGroup>
 
-              <CollapsibleGroup
-                title={t('products.detail.groupContent', { defaultValue: 'Nội dung hiển thị' })}
-                hint={t('products.detail.groupOptionalHint', { defaultValue: 'Tùy chọn' })}
-                open={openGroups.content}
-                onToggle={() => toggleGroup('content')}
-                errorCount={groupCounts.content}
-              >
-              {/* ── Card: Xuất xứ ── */}
+              {/* ── Card: Biến thể (màu/size) — cạnh Giá vì cùng quyết định "bán thế nào" ── */}
               <SectionCard
-                title={t('products.detail.trust.sectionTitle', { defaultValue: 'Xuất xứ' })}
-                badge={<RoleBadge role="content" />}
-              >
-                <Field label={t('products.detail.trust.originBrand', { defaultValue: 'Thương hiệu (nước)' })}>
-                  <Input
-                    placeholder="vd: Ý"
-                    value={form.originBrandCountry}
-                    onChange={(e) => updateField('originBrandCountry', e.target.value)}
-                    disabled={isReadOnly}
-                    maxLength={120}
-                  />
-                </Field>
-              </SectionCard>
-
-              {/* ── Card: Gallery ── */}
-              <SectionCard
-                title={t('products.detail.gallerySectionTitle')}
+                title={t('products.detail.variantSectionTitle')}
                 badge={
                   <div className="flex items-center gap-1.5">
                     <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5">
-                      {form.gallery.length} {t('products.detail.galleryUnit', { defaultValue: 'ảnh' })}
+                      {form.variants.length} {t('products.detail.variantUnit', { defaultValue: 'biến thể' })}
                     </span>
                     <RoleBadge role="content" />
                   </div>
                 }
               >
-                <GalleryEditor
-                  items={form.gallery}
-                  onChange={(next) => updateField('gallery', next)}
+                <VariantsEditor
+                  items={form.variants}
+                  onChange={(next) => updateField('variants', next)}
                   disabled={isReadOnly}
                   validationErrors={validationErrors}
-                />
-              </SectionCard>
-
-              {/* ── Card: Video ── */}
-              <SectionCard
-                title={t('products.detail.videoSectionTitle')}
-                badge={
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5">
-                      {form.videos.length} video
-                    </span>
-                    <RoleBadge role="content" />
-                  </div>
-                }
-              >
-                <VideoEditor
-                  items={form.videos}
-                  onChange={(next) => updateField('videos', next)}
-                  disabled={isReadOnly}
-                  validationErrors={validationErrors}
+                  onOpenMatrixWizard={() => setShowMatrixWizard(true)}
                 />
               </SectionCard>
 
@@ -1290,6 +1269,42 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   html={langValue('specStatsHtml')}
                   onHtmlChange={(v) => langChange('specStatsHtml', v)}
                 />
+              </SectionCard>
+              </CollapsibleGroup>
+
+              <CollapsibleGroup
+                title={t('products.detail.groupBody', { defaultValue: 'Mô tả & nội dung trang' })}
+                hint={t('products.detail.groupBodyHint', { defaultValue: 'Tính năng, ưu/nhược, thông số, FAQ' })}
+                open={openGroups.body}
+                onToggle={() => toggleGroup('body')}
+                errorCount={groupCounts.body}
+              >
+              {/* ── Card: Mô tả chi tiết — trình dựng khối: #4 Tính năng, #7 Phù hợp với ai, #8 Bảng size soạn tại đây ── */}
+              <SectionCard title={t('products.detail.sectionDescription', { defaultValue: 'Mô tả chi tiết' })} required badge={<RoleBadge role="content" />}>
+                <p className="text-xs text-muted-foreground mb-3">
+                  {t('products.detail.descriptionBuilderHint', { defaultValue: 'Trình dựng khối — thêm các khối Tính năng chi tiết, Phù hợp với ai, Bảng size… Kéo-thả để đổi thứ tự hiển thị trên trang.' })}
+                </p>
+                <Field full label={t('products.detail.description')} error={validationErrors.description}>
+                  {isEnLang ? (
+                    <BlockEditor
+                      value={form.descriptionBlocksEn}
+                      onChange={(blocks) => updateField('descriptionBlocksEn', blocks)}
+                      disabled={isReadOnly}
+                      hasError={Boolean(validationErrors.description)}
+                      fallbackHtml={langValue('description')}
+                      productMode
+                    />
+                  ) : (
+                    <BlockEditor
+                      value={form.descriptionBlocks}
+                      onChange={(blocks) => updateField('descriptionBlocks', blocks)}
+                      disabled={isReadOnly}
+                      hasError={Boolean(validationErrors.description)}
+                      fallbackHtml={form.description}
+                      productMode
+                    />
+                  )}
+                </Field>
               </SectionCard>
 
               {/* ── Card: Ưu điểm & Nhược điểm (V251) — khối RIÊNG cố định dưới mô tả, ngoài tab ── */}
@@ -1326,148 +1341,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 </div>
               </SectionCard>
 
-              {/* ── Card: Thông số ── */}
-              <SectionCard
-                title={t('products.detail.specsSectionTitle')}
-                badge={
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5">
-                      {t('products.detail.specCount', { count: parseSpecsFromHtml(langValue('specificationsHtml')).length })}
-                    </span>
-                    <RoleBadge role="content" />
-                  </div>
-                }
-              >
-                <SpecificationsEditor
-                  key={`specs-${contentLang}`}
-                  disabled={isReadOnly}
-                  html={langValue('specificationsHtml')}
-                  onHtmlChange={(v) => langChange('specificationsHtml', v)}
-                />
-              </SectionCard>
-
-              {/* Phù hợp với ai · Ưu/Nhược điểm · Bảng size (V246): nhập qua KHỐI trong "Mô tả sản phẩm"
-                  (trình dựng khối), không còn ô nhập riêng tại đây. */}
-
-              {/* ── Card: FAQ ── */}
-              <SectionCard
-                title={t('products.detail.sectionFaqs')}
-                badge={
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5">
-                      {form.faqs.length} {t('products.detail.faqs.unit', { defaultValue: 'câu hỏi' })}
-                    </span>
-                    <RoleBadge role="content" />
-                  </div>
-                }
-              >
-                <p className="text-xs text-muted-foreground mb-2">{t('products.detail.faqs.hint')}</p>
-                <FaqEditor
-                  items={form.faqs}
-                  onChange={(next) => updateField('faqs', next)}
-                  disabled={isReadOnly}
-                  validationErrors={validationErrors}
-                  contentLang={contentLang}
-                />
-              </SectionCard>
-              </CollapsibleGroup>
-
-              <CollapsibleGroup
-                title={t('products.detail.groupSales', { defaultValue: 'Bán hàng & Liên kết' })}
-                hint={t('products.detail.groupOptionalHint', { defaultValue: 'Tùy chọn' })}
-                open={openGroups.sales}
-                onToggle={() => toggleGroup('sales')}
-                errorCount={groupCounts.sales}
-              >
-              {/* ── Card: Biến thể (màu/size) — cạnh Giá vì cùng quyết định "bán thế nào" ── */}
-              <SectionCard
-                title={t('products.detail.variantSectionTitle')}
-                badge={
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5">
-                      {form.variants.length} {t('products.detail.variantUnit', { defaultValue: 'biến thể' })}
-                    </span>
-                    <RoleBadge role="content" />
-                  </div>
-                }
-              >
-                <VariantsEditor
-                  items={form.variants}
-                  onChange={(next) => updateField('variants', next)}
-                  disabled={isReadOnly}
-                  validationErrors={validationErrors}
-                  onOpenMatrixWizard={() => setShowMatrixWizard(true)}
-                />
-              </SectionCard>
-
-              {/* ── Card: Dải tin cậy (trên tên sản phẩm) (V233) ── */}
-              <SectionCard
-                title={t('products.detail.sectionTrustBadges', { defaultValue: 'Dải tin cậy (trên tên sản phẩm)' })}
-                badge={
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5">
-                      {parseTrustBadgesFromHtml(langValue('trustBadgesHtml')).length} {t('products.detail.trustBadges.unit', { defaultValue: 'nhãn' })}
-                    </span>
-                    <RoleBadge role="content" />
-                  </div>
-                }
-              >
-                <p className="text-xs text-muted-foreground mb-2">
-                  {t('products.detail.trustBadges.hint', { defaultValue: 'Các nhãn ngắn hiển thị NGAY TRÊN tên sản phẩm (vd "Chính hãng", "BH 2 năm", "Freeship"). Để trống → web ẩn dải. Mỗi sản phẩm tự nhập riêng.' })}
-                </p>
-                <TrustBadgesEditor
-                  key={`trustbadges-${contentLang}`}
-                  disabled={isReadOnly}
-                  html={langValue('trustBadgesHtml')}
-                  onHtmlChange={(v) => langChange('trustBadgesHtml', v)}
-                />
-              </SectionCard>
-
-              {/* ── Card: Cam kết (dưới nút mua hàng) (V232) ── */}
-              <SectionCard
-                title={t('products.detail.sectionCommitments')}
-                badge={
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5">
-                      {form.commitments.length} {t('products.detail.commitments.unit', { defaultValue: 'dòng' })}
-                    </span>
-                    <RoleBadge role="content" />
-                  </div>
-                }
-              >
-                <p className="text-xs text-muted-foreground mb-2">{t('products.detail.commitments.hint')}</p>
-                <CommitmentEditor
-                  items={form.commitments}
-                  onChange={(next) => updateField('commitments', next)}
-                  disabled={isReadOnly}
-                  contentLang={contentLang}
-                />
-              </SectionCard>
-
-              {/* ── Card: Bảng "Mua tại BigBike.vn" (dưới khu mua hàng) ── */}
-              <SectionCard
-                title={t('products.detail.sectionPurchaseLines', { defaultValue: 'Mua tại BigBike.vn' })}
-                badge={
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5">
-                      {form.purchaseLines.length} {t('products.detail.purchaseLines.unit', { defaultValue: 'dòng' })}
-                    </span>
-                    <RoleBadge role="content" />
-                  </div>
-                }
-              >
-                <p className="text-xs text-muted-foreground mb-2">
-                  {t('products.detail.purchaseLines.hint', { defaultValue: 'Bảng hiển thị dưới khu mua hàng. Giá, Tồn kho, Hotline và Địa chỉ tự động hiện sẵn — ở đây bạn thêm các dòng riêng (vd Bảo hành, Giao hàng, Đổi trả).' })}
-                </p>
-                <PurchaseLineEditor
-                  items={form.purchaseLines}
-                  onChange={(next) => updateField('purchaseLines', next)}
-                  disabled={isReadOnly}
-                  contentLang={contentLang}
-                />
-              </SectionCard>
-
-              {/* ── Card: Sản phẩm liên quan ── */}
+              {/* ── Card: Sản phẩm tương tự — "Xem thêm lựa chọn" ── */}
               <SectionCard
                 title={t('products.detail.sectionRelated')}
                 badge={
@@ -1531,6 +1405,120 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     )}
                   </>
                 )}
+              </SectionCard>
+
+              {/* ── Card: Thông số ── */}
+              <SectionCard
+                title={t('products.detail.specsSectionTitle')}
+                badge={
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5">
+                      {t('products.detail.specCount', { count: parseSpecsFromHtml(langValue('specificationsHtml')).length })}
+                    </span>
+                    <RoleBadge role="content" />
+                  </div>
+                }
+              >
+                <SpecificationsEditor
+                  key={`specs-${contentLang}`}
+                  disabled={isReadOnly}
+                  html={langValue('specificationsHtml')}
+                  onHtmlChange={(v) => langChange('specificationsHtml', v)}
+                />
+              </SectionCard>
+
+              {/* ── Card: FAQ ── */}
+              <SectionCard
+                title={t('products.detail.sectionFaqs')}
+                badge={
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5">
+                      {form.faqs.length} {t('products.detail.faqs.unit', { defaultValue: 'câu hỏi' })}
+                    </span>
+                    <RoleBadge role="content" />
+                  </div>
+                }
+              >
+                <p className="text-xs text-muted-foreground mb-2">{t('products.detail.faqs.hint')}</p>
+                <FaqEditor
+                  items={form.faqs}
+                  onChange={(next) => updateField('faqs', next)}
+                  disabled={isReadOnly}
+                  validationErrors={validationErrors}
+                  contentLang={contentLang}
+                />
+              </SectionCard>
+
+              {/* ── Card: Video ── */}
+              <SectionCard
+                title={t('products.detail.videoSectionTitle')}
+                badge={
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5">
+                      {form.videos.length} video
+                    </span>
+                    <RoleBadge role="content" />
+                  </div>
+                }
+              >
+                <VideoEditor
+                  items={form.videos}
+                  onChange={(next) => updateField('videos', next)}
+                  disabled={isReadOnly}
+                  validationErrors={validationErrors}
+                />
+              </SectionCard>
+              </CollapsibleGroup>
+
+              <CollapsibleGroup
+                title={t('products.detail.groupClosing', { defaultValue: 'Tin cậy & bán kèm (cuối trang)' })}
+                hint={t('products.detail.groupOptionalHint', { defaultValue: 'Tùy chọn' })}
+                open={openGroups.closing}
+                onToggle={() => toggleGroup('closing')}
+                errorCount={groupCounts.closing}
+              >
+              {/* ── Card: Cam kết (dưới nút mua hàng) (V232) ── */}
+              <SectionCard
+                title={t('products.detail.sectionCommitments')}
+                badge={
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5">
+                      {form.commitments.length} {t('products.detail.commitments.unit', { defaultValue: 'dòng' })}
+                    </span>
+                    <RoleBadge role="content" />
+                  </div>
+                }
+              >
+                <p className="text-xs text-muted-foreground mb-2">{t('products.detail.commitments.hint')}</p>
+                <CommitmentEditor
+                  items={form.commitments}
+                  onChange={(next) => updateField('commitments', next)}
+                  disabled={isReadOnly}
+                  contentLang={contentLang}
+                />
+              </SectionCard>
+
+              {/* ── Card: Bảng "Mua tại BigBike.vn" (dưới khu mua hàng) ── */}
+              <SectionCard
+                title={t('products.detail.sectionPurchaseLines', { defaultValue: 'Mua tại BigBike.vn' })}
+                badge={
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5">
+                      {form.purchaseLines.length} {t('products.detail.purchaseLines.unit', { defaultValue: 'dòng' })}
+                    </span>
+                    <RoleBadge role="content" />
+                  </div>
+                }
+              >
+                <p className="text-xs text-muted-foreground mb-2">
+                  {t('products.detail.purchaseLines.hint', { defaultValue: 'Bảng hiển thị dưới khu mua hàng. Giá, Tồn kho, Hotline và Địa chỉ tự động hiện sẵn — ở đây bạn thêm các dòng riêng (vd Bảo hành, Giao hàng, Đổi trả).' })}
+                </p>
+                <PurchaseLineEditor
+                  items={form.purchaseLines}
+                  onChange={(next) => updateField('purchaseLines', next)}
+                  disabled={isReadOnly}
+                  contentLang={contentLang}
+                />
               </SectionCard>
 
               {/* ── Card: Phụ kiện (sản phẩm bán kèm) ── */}
@@ -1597,6 +1585,22 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     )}
                   </>
                 )}
+              </SectionCard>
+
+              {/* ── Card: Xuất xứ ── */}
+              <SectionCard
+                title={t('products.detail.trust.sectionTitle', { defaultValue: 'Xuất xứ' })}
+                badge={<RoleBadge role="content" />}
+              >
+                <Field label={t('products.detail.trust.originBrand', { defaultValue: 'Thương hiệu (nước)' })}>
+                  <Input
+                    placeholder="vd: Ý"
+                    value={form.originBrandCountry}
+                    onChange={(e) => updateField('originBrandCountry', e.target.value)}
+                    disabled={isReadOnly}
+                    maxLength={120}
+                  />
+                </Field>
               </SectionCard>
 
               {/* ── Card: Hiển thị trên web (V245) ── */}

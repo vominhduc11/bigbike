@@ -932,17 +932,20 @@ export const SECTION_DEFS = [
 // groups below), with SEO on its own tab so the SEO-role workflow stays separate.
 // Keys must match SECTION_DEFS keys; drives the per-tab error badge + findTabForErrors.
 export const TAB_SECTIONS = {
-  product: ['basic', 'pricing', 'media', 'variants', 'gallery', 'videos', 'specs', 'specStats', 'faqs', 'commitments', 'purchaseLines', 'trustBadges', 'related', 'accessories'],
+  product: ['basic', 'description', 'pricing', 'media', 'variants', 'gallery', 'videos', 'specs', 'specStats', 'faqs', 'commitments', 'purchaseLines', 'trustBadges', 'related', 'accessories'],
   seo:     ['seo'],
 }
 
-// Within the "product" tab the sections are split into 3 collapsible groups so the
-// form opens short: `core` (required) is open by default; the two optional groups
-// start collapsed. Keys/order mirror the render order in ProductDetailScreen.
+// Within the "product" tab the sections are split into 3 collapsible groups that
+// mirror the storefront product-page flow (the owner's "thứ tự đầy đủ trang sản phẩm"
+// reference): `buyArea` = đầu trang (ảnh/giá/biến thể/ô số liệu), `body` = thân trang
+// (mô tả/ưu-nhược/thông số/FAQ), `closing` = cuối trang (tin cậy/bán kèm/hiển thị).
+// `buyArea` (required) opens by default; the two optional groups start collapsed.
+// Keys/order mirror the render order in ProductDetailScreen.
 export const PRODUCT_GROUPS = {
-  core:    ['basic', 'pricing', 'media'],
-  content: ['gallery', 'videos', 'specs', 'specStats', 'faqs'],
-  sales:   ['variants', 'trustBadges', 'commitments', 'purchaseLines', 'related', 'accessories'],
+  buyArea: ['basic', 'media', 'gallery', 'trustBadges', 'pricing', 'variants', 'specStats'],
+  body:    ['description', 'specs', 'faqs', 'videos', 'related'],
+  closing: ['commitments', 'purchaseLines', 'accessories'],
 }
 
 // First group (top-down) containing any failing section — used to auto-expand the
@@ -957,7 +960,8 @@ export function findGroupForErrors(sectionErrors) {
 // Field-prefix groups by section key — single source of truth used by both the
 // in-render sectionErrors derivation and the synchronous save-time tab switch.
 export const SECTION_FIELD_PREFIXES = {
-  basic:         ['name','slug','sku','gender','shortDescription','description','brandId','categoryId','publishStatus'],
+  basic:         ['name','slug','sku','gender','shortDescription','brandId','categoryId','publishStatus'],
+  description:   ['description'],
   pricing:       ['retailPrice','compareAtPrice','salePrice','costPrice'],
   media:         ['imageUrl'],
   seo:           ['seoTitle','seoDescription','seoCanonicalUrl','seoOgImageUrl','seoOgImageAlt'],
