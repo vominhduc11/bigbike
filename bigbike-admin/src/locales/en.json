@@ -628,6 +628,13 @@
         "titlePlaceholder": "Video title (optional)",
         "descriptionPlaceholder": "Short description (optional)"
       },
+      "aiBrief": {
+        "title": "AI brief for on-brand HTML",
+        "copy": "Copy",
+        "copied": "AI brief copied",
+        "copyFailed": "Couldn't copy",
+        "prompt": "Generate HTML for a content block on a BigBike product detail page. Hard requirements:\n- Return plain HTML with inline CSS only (the style=\"...\" attribute). NO <script>, NO <style> tag, no classes, no ids.\n- Fonts: body text uses \"Arial, Helvetica, sans-serif\"; headings use \"'Barlow Condensed', Arial, sans-serif\", UPPERCASE and bold.\n- Font sizes: body 18px; notes/captions 14px.\n- Colors: main text #111111; secondary text #6f6f6f; accent (headings, key numbers) #cc0906; links #005fcc.\n- Tables and frames: 1px solid #dddddd border; white #ffffff background; square corners (border-radius: 0); table header cells use #f5f5f5 background and bold text.\n- Spacing in multiples of 4px (4, 8, 12, 16, 24px).\n- NO dark backgrounds, box-shadow, gradients, or any color outside the list above.\n\nContent to present (replace with your own):\n[paste your content here]"
+      },
       "specs": {
         "empty": "No specifications yet. Click \"+ Add spec\" to start.",
         "namePlaceholder": "Spec name",
@@ -639,7 +646,7 @@
         "modeStructured": "Structured input",
         "modeHtml": "Paste HTML",
         "htmlPlaceholder": "Paste the specifications table HTML (e.g. AI-generated) here...",
-        "htmlHint": "When you paste HTML, the web shows it INSTEAD of the row-based spec table. Unsafe code and custom styling are stripped to match the site; the preview below is exactly what customers see. Switching back to \"Structured input\" clears the HTML so the row table takes effect.",
+        "htmlHint": "When you paste HTML, the web shows it INSTEAD of the row-based spec table. You may style it with inline CSS — match the product page's fonts, colors and spacing, and avoid odd backgrounds/shadows/colors that clash. Only unsafe code is filtered; the preview below is exactly what customers see. Switching back to \"Structured input\" clears the HTML so the row table takes effect.",
         "previewLabel": "Preview (as shown on the website)",
         "previewEmpty": "Nothing to preview yet."
       },
@@ -659,7 +666,7 @@
         "modeStructured": "Structured input",
         "modeHtml": "Paste HTML",
         "htmlPlaceholder": "Paste size-chart HTML (e.g. AI-generated) here...",
-        "htmlHint": "Unsafe code and custom styling are stripped to match the site's look. The preview below is exactly what customers will see.",
+        "htmlHint": "You may style it with inline CSS — match the product page's fonts, colors and spacing, and avoid odd backgrounds/shadows/colors that clash. Only unsafe code is filtered. The preview below is exactly what customers will see.",
         "previewLabel": "Preview (exactly as shown on the web)",
         "previewEmpty": "Nothing to preview yet."
       },
@@ -667,7 +674,7 @@
         "modeStructured": "Structured input",
         "modeHtml": "Paste HTML",
         "htmlPlaceholder": "Paste \"Who it's for\" HTML (e.g. AI-generated) here...",
-        "htmlHint": "This tab is pre-filled with the HTML that matches the cards above. Edit it here to write your own HTML instead — the site will then render this HTML (ignoring the cards). To go back to the cards, open the \"Structured input\" tab. Unsafe code and custom styling are stripped to match the site's look.",
+        "htmlHint": "This tab is pre-filled with the HTML that matches the cards above. Edit it here to write your own HTML instead — the site will then render this HTML (ignoring the cards). You may style it with inline CSS; match the product page's fonts, colors and spacing and avoid odd backgrounds/shadows/colors that clash. To go back to the cards, open the \"Structured input\" tab. Only unsafe code is filtered.",
         "previewLabel": "Preview (exactly as shown on the web)",
         "previewEmpty": "Nothing to preview yet."
       },

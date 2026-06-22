@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { generateId } from '@/lib/utils'
 import { sanitizeHtml } from '../../lib/sanitizeHtml'
+import AiHtmlBrief from '../../components/AiHtmlBrief'
 import { SortableList, DragHandle } from '../../components/Sortable'
 import { parseSpecStatsFromHtml, mergeSpecStatsIntoHtml } from '../../lib/specStatsBlock'
 import { parseTrustBadgesFromHtml, mergeTrustBadgesIntoHtml } from '../../lib/trustBadgesBlock'
@@ -331,6 +332,7 @@ export function TrustBadgesEditor({ disabled, html = '', onHtmlChange }) {
           maxLength={50000}
         />
         <p className="text-xs text-muted-foreground">{t('products.detail.specs.htmlHint')}</p>
+        <AiHtmlBrief />
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             {t('products.detail.specs.previewLabel')}
@@ -456,6 +458,7 @@ export function SpecStatEditor({ disabled, html = '', onHtmlChange }) {
           maxLength={50000}
         />
         <p className="text-xs text-muted-foreground">{t('products.detail.specs.htmlHint')}</p>
+        <AiHtmlBrief />
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             {t('products.detail.specs.previewLabel')}

@@ -628,6 +628,13 @@
         "titlePlaceholder": "Tiêu đề video (tuỳ chọn)",
         "descriptionPlaceholder": "Mô tả ngắn (tuỳ chọn)"
       },
+      "aiBrief": {
+        "title": "Yêu cầu cho AI tạo HTML khớp giao diện",
+        "copy": "Sao chép",
+        "copied": "Đã sao chép yêu cầu cho AI",
+        "copyFailed": "Không sao chép được",
+        "prompt": "Tạo HTML cho một khối nội dung trên trang chi tiết sản phẩm của BigBike. Yêu cầu bắt buộc:\n- Chỉ trả về HTML thuần kèm CSS inline (thuộc tính style=\"...\"). KHÔNG dùng <script>, KHÔNG dùng thẻ <style>, không class, không id.\n- Phông chữ: chữ thường để \"Arial, Helvetica, sans-serif\"; tiêu đề để \"'Barlow Condensed', Arial, sans-serif\", VIẾT IN HOA và in đậm.\n- Cỡ chữ: nội dung 18px; ghi chú/chú thích 14px.\n- Màu: chữ chính #111111; chữ phụ #6f6f6f; màu nhấn (tiêu đề, số nổi bật) #cc0906; liên kết #005fcc.\n- Bảng và khung: viền 1px solid #dddddd; nền trắng #ffffff; góc vuông (border-radius: 0); ô tiêu đề bảng nền #f5f5f5 và chữ đậm.\n- Khoảng cách dùng bội số của 4px (4, 8, 12, 16, 24px).\n- KHÔNG dùng nền tối, đổ bóng (box-shadow), gradient, hay bất kỳ màu nào ngoài danh sách trên.\n\nNội dung cần trình bày (thay bằng nội dung của bạn):\n[dán nội dung tại đây]"
+      },
       "specs": {
         "empty": "Chưa có thông số. Nhấn \"+ Thêm thông số\" để bắt đầu.",
         "namePlaceholder": "Tên thông số",
@@ -639,7 +646,7 @@
         "modeStructured": "Nhập có cấu trúc",
         "modeHtml": "Dán mã HTML",
         "htmlPlaceholder": "Dán đoạn mã HTML bảng thông số (vd do AI tạo) vào đây...",
-        "htmlHint": "Khi dán HTML, web hiển thị HTML này THAY cho bảng thông số dòng. Mã nguy hiểm và định dạng tô màu riêng bị lọc để đồng bộ giao diện web; xem trước bên dưới là kết quả thật sự khách thấy. Quay lại tab \"Nhập có cấu trúc\" sẽ xoá HTML để bảng dòng có hiệu lực.",
+        "htmlHint": "Khi dán HTML, web hiển thị HTML này THAY cho bảng thông số dòng. Bạn được tự định dạng bằng CSS inline — hãy bám đúng phông chữ, màu sắc và khoảng cách của trang sản phẩm, tránh nền/đổ bóng/màu lạ để không lệch giao diện. Chỉ mã nguy hiểm bị lọc; xem trước bên dưới là kết quả thật sự khách thấy. Quay lại tab \"Nhập có cấu trúc\" sẽ xoá HTML để bảng dòng có hiệu lực.",
         "previewLabel": "Xem trước (đúng như hiển thị trên web)",
         "previewEmpty": "Chưa có nội dung để xem trước."
       },
@@ -659,7 +666,7 @@
         "modeStructured": "Nhập có cấu trúc",
         "modeHtml": "Dán mã HTML",
         "htmlPlaceholder": "Dán đoạn mã HTML bảng size (vd do AI tạo) vào đây...",
-        "htmlHint": "Hệ thống tự lọc bỏ mã nguy hiểm và định dạng tô màu riêng để đồng bộ giao diện web. Xem trước bên dưới là kết quả thật sự hiển thị cho khách.",
+        "htmlHint": "Bạn được tự định dạng bằng CSS inline — hãy bám đúng phông chữ, màu sắc và khoảng cách của trang sản phẩm, tránh nền/đổ bóng/màu lạ để không lệch giao diện. Chỉ mã nguy hiểm bị lọc. Xem trước bên dưới là kết quả thật sự hiển thị cho khách.",
         "previewLabel": "Xem trước (đúng như hiển thị trên web)",
         "previewEmpty": "Chưa có nội dung để xem trước."
       },
@@ -667,7 +674,7 @@
         "modeStructured": "Nhập có cấu trúc",
         "modeHtml": "Dán mã HTML",
         "htmlPlaceholder": "Dán đoạn mã HTML khối \"Phù hợp với ai\" (vd do AI tạo) vào đây...",
-        "htmlHint": "Tab này tự hiển thị sẵn mã HTML tương ứng với danh sách thẻ ở trên. Sửa trực tiếp vào đây để tự viết HTML thay thế — khi đó web sẽ hiển thị theo HTML này (bỏ qua thẻ). Muốn dùng lại thẻ, mở tab \"Nhập có cấu trúc\". Mã nguy hiểm và định dạng tô màu riêng bị lọc để đồng bộ giao diện web.",
+        "htmlHint": "Tab này tự hiển thị sẵn mã HTML tương ứng với danh sách thẻ ở trên. Sửa trực tiếp vào đây để tự viết HTML thay thế — khi đó web sẽ hiển thị theo HTML này (bỏ qua thẻ). Bạn được tự định dạng bằng CSS inline; hãy bám đúng phông chữ, màu sắc và khoảng cách của trang sản phẩm, tránh nền/đổ bóng/màu lạ để không lệch giao diện. Muốn dùng lại thẻ, mở tab \"Nhập có cấu trúc\". Chỉ mã nguy hiểm bị lọc.",
         "previewLabel": "Xem trước (đúng như hiển thị trên web)",
         "previewEmpty": "Chưa có nội dung để xem trước."
       },

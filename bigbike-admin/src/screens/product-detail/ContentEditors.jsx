@@ -7,6 +7,7 @@ import { MediaDimensionWarning } from '../../components/MediaDimensionWarning'
 import { IMAGE_RECO } from '../../lib/imageRecommendations'
 import { RichTextEditor } from '../../components/RichTextEditor'
 import { sanitizeHtml } from '../../lib/sanitizeHtml'
+import AiHtmlBrief from '../../components/AiHtmlBrief'
 import { SortableList, DragHandle } from '../../components/Sortable'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -538,6 +539,7 @@ export function SpecificationsEditor({ disabled, html = '', onHtmlChange }) {
           maxLength={50000}
         />
         <p className="text-xs text-muted-foreground">{t('products.detail.specs.htmlHint')}</p>
+        <AiHtmlBrief />
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             {t('products.detail.specs.previewLabel')}

@@ -14,6 +14,7 @@ import { generateId } from '@/lib/utils'
 import { parseSizeGuide, serializeSizeGuide, mergeSizeGuideIntoHtml } from '../../lib/sizeChart'
 import { parseSuitabilityCards, mergeSuitabilityIntoHtml, emptySuitabilityCard } from '../../lib/suitabilityCards'
 import { sanitizeHtml } from '../../lib/sanitizeHtml'
+import AiHtmlBrief from '../AiHtmlBrief'
 import { SortableList, DragHandle } from '../Sortable'
 
 export function BlockControls({ disabled, onDuplicate, onRemove }) {
@@ -550,6 +551,7 @@ export function SuitabilityBlockEditor({ block, onChange, disabled }) {
             maxLength={20000}
           />
           <p className="text-xs text-muted-foreground">{t('products.detail.suitability.htmlHint')}</p>
+          <AiHtmlBrief />
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               {t('products.detail.suitability.previewLabel')}
@@ -756,6 +758,7 @@ export function SizeGuideBlockEditor({ block, onChange, disabled }) {
             maxLength={20000}
           />
           <p className="text-xs text-muted-foreground">{t('products.detail.sizeGuide.htmlHint')}</p>
+          <AiHtmlBrief />
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               {t('products.detail.sizeGuide.previewLabel')}
