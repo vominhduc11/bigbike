@@ -25,11 +25,11 @@ Trang chi tiết sản phẩm (`bigbike-web` — `components/catalog/ProductView
 |---|---|---|---|
 | 1 | Gallery + thông tin mua hàng | `WpPurchaseSection` | Hàng sao có link "Viết đánh giá đầu tiên" → cuộn tới khối Đánh giá (`#reviews`) |
 | 2 | Specs Dashboard (4 ô số liệu) | `specStats` | — |
-| 3 | Tính năng chi tiết | `descriptionBlocks` | Khối full-trang (đã kéo RA khỏi tab). Khối `feature` (ảnh+tiêu đề+đoạn+danh sách) render 2 cột ảnh–chữ so le trên desktop (mobile xếp dọc); `side`=`auto` tự xen kẽ trái/phải. Cơ chế "ghép ngầm" cũ (tự gom `image`+`text` liền nhau) đã GỠ — muốn 2 cột phải dùng khối `feature`. |
+| 3 | Tính năng chi tiết | `descriptionBlocks` | Khối full-trang (đã kéo RA khỏi tab). Khối `feature` (ảnh+tiêu đề+đoạn+danh sách) render 2 cột ảnh–chữ so le trên desktop (mobile xếp dọc); `side`=`auto` tự xen kẽ trái/phải. Cơ chế "ghép ngầm" cũ (tự gom `image`+`text` liền nhau) đã GỠ — muốn 2 cột phải dùng khối `feature`. "Phù hợp với ai"/"Bảng size" nhập ở **2 card riêng** (không còn là khối thêm trong trình dựng mô tả); dữ liệu vẫn lưu dạng khối `suitability`/`sizeGuide` trong `descriptionBlocks`, web **TÁCH RA** render thành khối #6/#7 riêng. |
 | 4 | Ưu điểm & Nhược điểm | `positiveNotes` / `negativeNotes` | 2 cột |
 | 5 | **Sản phẩm tương tự — "Xem thêm lựa chọn"** | `relatedProducts` | Cùng loại (auto theo tag). Đặt NGAY sau Ưu/Nhược điểm: khách vừa đọc nhược điểm/giá → thấy ngay lựa chọn thay thế, giữ khách lại site. **DESKTOP** render ở vị trí này; **MOBILE** render ở cuối trang. |
-| 6 | **Phù hợp với ai** | `suitabilityAdvisory` | Danh sách thẻ (đối tượng + lời khuyên + link nội bộ tùy chọn) |
-| 7 | Bảng size | `sizeGuide` | Khối xếp chồng riêng (không còn widget tab); có điều kiện |
+| 6 | **Phù hợp với ai** | `descriptionBlocks` (khối `suitability`) | Danh sách thẻ (đối tượng + lời khuyên + link nội bộ tùy chọn). **Tách RA khỏi luồng mô tả**, render khối riêng cố định ngay sau "Sản phẩm tương tự". Theo visibility của `description`. *(Trước V246 dùng field `suitabilityAdvisory`; nay là khối `suitability` trong `descriptionBlocks`.)* |
+| 7 | Bảng size | `descriptionBlocks` (khối `sizeGuide`) | Khối xếp chồng riêng (không còn widget tab); có điều kiện. **Tách RA khỏi luồng mô tả**, render ngay sau "Phù hợp với ai". Theo visibility của `description`. *(Trước V246 dùng field `sizeGuide`; nay là khối `sizeGuide` trong `descriptionBlocks`.)* |
 | 8 | Thông số kỹ thuật | `specifications` | Khối xếp chồng riêng |
 | 9 | FAQ | `faqs` | Khối xếp chồng riêng (Lắp đặt `installationGuide` — **lưới các bước** số thứ tự + icon + tiêu đề + nội dung + hộp mẹo/cảnh báo + ghi chú bảo dưỡng, V242 — chèn giữa #8–#9 nếu có; Thông tin bổ sung bảo hành/xuất xứ/trọng lượng đặt sau FAQ) |
 | 10 | Đánh giá | `ReviewsSection` | Đã kéo RA khỏi tab, đặt SAU FAQ, `id="reviews"` |

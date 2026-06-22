@@ -30,6 +30,8 @@ import { parseSpecStatsFromHtml } from '../lib/specStatsBlock'
 import { parseTrustBadgesFromHtml } from '../lib/trustBadgesBlock'
 import { RichTextEditorWithSource } from '../components/RichTextEditorWithSource'
 import { BlockEditor } from '../components/BlockEditor'
+import { SuitabilityBlockEditor, SizeGuideBlockEditor } from '../components/block-editor/blocks'
+import { createBlock } from '../components/block-editor/constants'
 import { SortableList } from '../components/Sortable'
 import { LivePreview } from '../components/LivePreview'
 import { Button } from '@/components/ui/button'
@@ -111,6 +113,25 @@ import {
   Field,
 } from './product-detail/Layout'
 import { AssignmentConfigContext } from './product-detail/constants'
+
+// "Phù hợp với ai" (suitability) và "Bảng size" (sizeGuide) KHÔNG còn nhập trong trình dựng mô tả —
+// chúng có card riêng. Nhưng dữ liệu vẫn lưu chung trong descriptionBlocks (web tách render #6/#7).
+// Các helper dưới đây tách/ghép 2 khối đặc biệt đó khỏi danh sách khối hiển thị trong BlockEditor.
+const isSpecialDescBlock = (b) => b.type === 'suitability' || b.type === 'sizeGuide'
+// Khối hiển thị trong trình dựng mô tả: BỎ suitability/sizeGuide. Giữ null (chế độ HTML legacy) nguyên.
+const descBuilderBlocks = (all) => (Array.isArray(all) ? all.filter((b) => !isSpecialDescBlock(b)) : all)
+// Ghép lại sau khi sửa trong trình dựng: giữ nguyên 2 khối đặc biệt (web bỏ qua vị trí → thêm vào cuối).
+const mergeBuilderBlocks = (builderBlocks, all) => [
+  ...(builderBlocks ?? []),
+  ...(Array.isArray(all) ? all.filter(isSpecialDescBlock) : []),
+]
+const findSpecialBlock = (all, type) => (Array.isArray(all) ? all.find((b) => b.type === type) : undefined)
+// Upsert 1 khối đặc biệt theo type (sửa tại chỗ nếu có, thêm vào cuối nếu chưa) — giữ các khối khác.
+const upsertSpecialBlock = (all, block) => {
+  const arr = Array.isArray(all) ? all : []
+  const idx = arr.findIndex((b) => b.type === block.type)
+  return idx === -1 ? [...arr, block] : arr.map((b, i) => (i === idx ? block : b))
+}
 
 // ── Main screen ────────────────────────────────────────────────────────────────
 
@@ -401,6 +422,16 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   }
 
   const isEnLang = contentLang === 'en'
+
+  // "Phù hợp với ai" / "Bảng size" — nhập ở 2 card riêng (bên dưới), lưu vào descriptionBlocks(En) theo
+  // ngôn ngữ đang chọn. Khối rỗng mặc định có _key ổn định (useMemo) để editor không reseed giữa các lần
+  // render; `key` của editor kèm productId + ngôn ngữ nên VẪN reseed đúng khi đổi sản phẩm / đổi ngôn ngữ.
+  const suitabilityDefault = useMemo(() => createBlock('suitability'), [])
+  const sizeGuideDefault = useMemo(() => createBlock('sizeGuide'), [])
+  const specialDescField = isEnLang ? 'descriptionBlocksEn' : 'descriptionBlocks'
+  const specialDescAll = isEnLang ? form.descriptionBlocksEn : form.descriptionBlocks
+  const suitabilityBlock = findSpecialBlock(specialDescAll, 'suitability') ?? suitabilityDefault
+  const sizeGuideBlock = findSpecialBlock(specialDescAll, 'sizeGuide') ?? sizeGuideDefault
 
   // Value of a translatable product-level text field for the active language.
   function langValue(field) {
@@ -1279,16 +1310,16 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 onToggle={() => toggleGroup('body')}
                 errorCount={groupCounts.body}
               >
-              {/* ── Card: Mô tả chi tiết — trình dựng khối: #4 Tính năng, #7 Phù hợp với ai, #8 Bảng size soạn tại đây ── */}
+              {/* ── Card: Mô tả chi tiết — trình dựng khối Tính năng (#3). "Phù hợp với ai"/"Bảng size" có card riêng bên dưới ── */}
               <SectionCard title={t('products.detail.sectionDescription', { defaultValue: 'Mô tả chi tiết' })} required badge={<RoleBadge role="content" />}>
                 <p className="text-xs text-muted-foreground mb-3">
-                  {t('products.detail.descriptionBuilderHint', { defaultValue: 'Trình dựng khối — thêm các khối Tính năng chi tiết, Phù hợp với ai, Bảng size… Kéo-thả để đổi thứ tự hiển thị trên trang.' })}
+                  {t('products.detail.descriptionBuilderHint', { defaultValue: 'Trình dựng khối Tính năng chi tiết (chữ, ảnh, ảnh + chữ). Kéo-thả để đổi thứ tự. "Phù hợp với ai" và "Bảng size" nhập ở 2 card riêng bên dưới.' })}
                 </p>
                 <Field full label={t('products.detail.description')} error={validationErrors.description}>
                   {isEnLang ? (
                     <BlockEditor
-                      value={form.descriptionBlocksEn}
-                      onChange={(blocks) => updateField('descriptionBlocksEn', blocks)}
+                      value={descBuilderBlocks(form.descriptionBlocksEn)}
+                      onChange={(blocks) => updateField('descriptionBlocksEn', mergeBuilderBlocks(blocks, form.descriptionBlocksEn))}
                       disabled={isReadOnly}
                       hasError={Boolean(validationErrors.description)}
                       fallbackHtml={langValue('description')}
@@ -1296,8 +1327,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     />
                   ) : (
                     <BlockEditor
-                      value={form.descriptionBlocks}
-                      onChange={(blocks) => updateField('descriptionBlocks', blocks)}
+                      value={descBuilderBlocks(form.descriptionBlocks)}
+                      onChange={(blocks) => updateField('descriptionBlocks', mergeBuilderBlocks(blocks, form.descriptionBlocks))}
                       disabled={isReadOnly}
                       hasError={Boolean(validationErrors.description)}
                       fallbackHtml={form.description}
@@ -1339,6 +1370,38 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                     />
                   </div>
                 </div>
+              </SectionCard>
+
+              {/* ── Card: Phù hợp với ai (#6) — tách RA khỏi trình dựng mô tả; lưu dạng khối suitability trong descriptionBlocks ── */}
+              <SectionCard
+                title={t('products.detail.blocks.blockTypeSuitability')}
+                badge={<RoleBadge role="content" />}
+              >
+                <p className="text-xs text-muted-foreground mb-3">
+                  {t('products.detail.suitabilityCard.hint', { defaultValue: 'Các thẻ tư vấn "đối tượng → lời khuyên". Hiện thành khối riêng cố định trên trang sản phẩm (ngay sau Ưu/nhược điểm), không phụ thuộc vị trí trong mô tả. Để trống → web ẩn khối.' })}
+                </p>
+                <SuitabilityBlockEditor
+                  key={`suit-${productId ?? 'new'}-${specialDescField}-${suitabilityBlock._key}`}
+                  block={suitabilityBlock}
+                  disabled={isReadOnly}
+                  onChange={(patch) => updateField(specialDescField, upsertSpecialBlock(specialDescAll, { ...suitabilityBlock, ...patch }))}
+                />
+              </SectionCard>
+
+              {/* ── Card: Bảng size (#7) — tách RA khỏi trình dựng mô tả; lưu dạng khối sizeGuide trong descriptionBlocks ── */}
+              <SectionCard
+                title={t('products.detail.blocks.blockTypeSizeGuide')}
+                badge={<RoleBadge role="content" />}
+              >
+                <p className="text-xs text-muted-foreground mb-3">
+                  {t('products.detail.sizeGuideCard.hint', { defaultValue: 'Bảng chọn size (nhập theo cột/dòng hoặc dán HTML). Hiện thành khối riêng cố định trên trang sản phẩm (ngay sau Phù hợp với ai). Để trống → web ẩn khối.' })}
+                </p>
+                <SizeGuideBlockEditor
+                  key={`size-${productId ?? 'new'}-${specialDescField}-${sizeGuideBlock._key}`}
+                  block={sizeGuideBlock}
+                  disabled={isReadOnly}
+                  onChange={(patch) => updateField(specialDescField, upsertSpecialBlock(specialDescAll, { ...sizeGuideBlock, ...patch }))}
+                />
               </SectionCard>
 
               {/* ── Card: Sản phẩm tương tự — "Xem thêm lựa chọn" ── */}

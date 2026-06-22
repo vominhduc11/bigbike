@@ -11,16 +11,15 @@ export const CONTENT_MENU = BLOCK_TYPES.map((type) => ({
   labelKey: `products.detail.blocks.blockType${type.charAt(0).toUpperCase()}${type.slice(1)}`,
 }))
 
-// Vốn từ cho SẢN PHẨM (V238 + V246 + V251): 4 khối mô tả cơ bản + 2 khối chuyên biệt PDP
-// (Phù hợp với ai, Bảng size). Ưu/Nhược điểm KHÔNG còn là khối — tách RA thành khối riêng cố
-// định dưới mô tả (nhập ở card "Ưu điểm & Nhược điểm", lưu vào product_highlights — xem V251).
+// Vốn từ cho SẢN PHẨM (V238): chỉ các khối mô tả/tính năng cơ bản. "Phù hợp với ai" và "Bảng size"
+// KHÔNG còn là khối thêm trong mô tả — tách RA thành 2 card nhập RIÊNG (giống "Ưu điểm & Nhược điểm").
+// Dữ liệu vẫn lưu dạng khối suitability/sizeGuide trong descriptionBlocks; web render thành khối cố
+// định #6/#7 (xem PDP_CONTENT_GUIDE §0b). Ưu/Nhược điểm nhập ở card riêng, lưu vào product_highlights.
 export const PRODUCT_MENU = [
   { type: 'paragraph',   labelKey: 'products.detail.blocks.blockTypeText' },
   { type: 'image',       labelKey: 'products.detail.blocks.blockTypeImage' },
   { type: 'feature',     labelKey: 'products.detail.blocks.blockTypeFeatureRight', preset: { side: 'right' } },
   { type: 'feature',     labelKey: 'products.detail.blocks.blockTypeFeatureLeft',  preset: { side: 'left' } },
-  { type: 'suitability', labelKey: 'products.detail.blocks.blockTypeSuitability' },
-  { type: 'sizeGuide',   labelKey: 'products.detail.blocks.blockTypeSizeGuide' },
 ]
 
 export function createBlock(type, preset) {

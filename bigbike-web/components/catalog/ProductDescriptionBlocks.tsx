@@ -6,7 +6,7 @@ import { useLocalizedField } from "@/components/i18n/LocalizedContent";
 import type { DescriptionBlock } from "@/lib/contracts/public";
 import { resolveMediaUrl } from "@/lib/utils/format";
 import { cn } from "@/lib/utils";
-import { groupBlocks, type Group } from "./description-blocks/grouping";
+import { groupBlocks, type Group, type SizeGuideBlockT, type SuitabilityBlockT } from "./description-blocks/grouping";
 import {
   FeatureBody,
   MediaBlock,
@@ -114,4 +114,45 @@ export function ProductDescriptionBlocks({
     return <>{fallback}</>;
   }
   return <DescriptionBlocksView blocks={active} />;
+}
+
+/**
+ * Khối "Phù hợp với ai" (#6) và "Bảng size" (#7) — TÁCH RA khỏi luồng mô tả tự do để render thành
+ * SECTION RIÊNG ở vị trí cố định theo canonical layout (PDP_CONTENT_GUIDE §0b), thay vì để admin chèn
+ * lẫn vào giữa mô tả. Dùng chung bộ render khối (Suitability/SizeGuideBlockView) và cùng cơ chế đổi
+ * ngôn ngữ: bản EN lấy qua `useLocalizedField("descriptionBlocks")` rồi LỌC theo type; chưa có EN
+ * (server/SSR) → dùng khối VI (prop, đã lọc sẵn ở ProductView) → giữ nội dung trong HTML cho SEO.
+ */
+export function ProductSuitabilitySection({ blocks }: { blocks: DescriptionBlock[] }) {
+  const enBlocks = useLocalizedField<DescriptionBlock[]>("descriptionBlocks");
+  const items = (
+    Array.isArray(enBlocks) && enBlocks.length > 0
+      ? enBlocks.filter((b) => b.type === "suitability")
+      : blocks
+  ) as SuitabilityBlockT[];
+  if (items.length === 0) return null;
+  return (
+    <div className="pdp-desc-rich flex flex-col gap-8">
+      {items.map((b, i) => (
+        <SuitabilityBlockView key={i} block={b} />
+      ))}
+    </div>
+  );
+}
+
+export function ProductSizeGuideSection({ blocks }: { blocks: DescriptionBlock[] }) {
+  const enBlocks = useLocalizedField<DescriptionBlock[]>("descriptionBlocks");
+  const items = (
+    Array.isArray(enBlocks) && enBlocks.length > 0
+      ? enBlocks.filter((b) => b.type === "sizeGuide")
+      : blocks
+  ) as SizeGuideBlockT[];
+  if (items.length === 0) return null;
+  return (
+    <div className="pdp-desc-rich flex flex-col gap-8">
+      {items.map((b, i) => (
+        <SizeGuideBlockView key={i} block={b} />
+      ))}
+    </div>
+  );
 }

@@ -935,7 +935,7 @@
       "groupBodyHint": "Features, pros/cons, specs, FAQ",
       "groupClosing": "Trust & cross-sell (bottom of page)",
       "sectionDescription": "Detailed description",
-      "descriptionBuilderHint": "Block builder — add Feature, Who it suits, Size chart blocks… Drag to reorder how they appear on the page.",
+      "descriptionBuilderHint": "Block builder for Feature blocks (text, image, image + text). Drag to reorder. \"Who it's for\" and \"Size guide\" are entered in their own cards below.",
       "tabsAriaLabel": "Product sections",
       "contentLanguageAriaLabel": "Content language",
       "moreSaveOptions": "More save options",

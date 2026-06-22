@@ -15,7 +15,11 @@ import {
   ProductSpecsTable,
   ProductVideosSection,
 } from "@/components/catalog/ProductLocalizedParts";
-import { ProductDescriptionBlocks } from "@/components/catalog/ProductDescriptionBlocks";
+import {
+  ProductDescriptionBlocks,
+  ProductSizeGuideSection,
+  ProductSuitabilitySection,
+} from "@/components/catalog/ProductDescriptionBlocks";
 import { ProductTabsSection, type BuiltinTab } from "@/components/catalog/ProductTabsSection";
 import { FeaturedSpecsBar } from "@/components/catalog/FeaturedSpecsBar";
 import { ProductSwiper } from "@/components/catalog/ProductSwiper";
@@ -78,6 +82,14 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
   // product, không còn lấy từ settings.
   const gallery = safeArray(product.gallery);
   const descriptionBlocks = safeArray(product.descriptionBlocks) as DescriptionBlock[];
+  // Canonical layout (PDP_CONTENT_GUIDE §0b): "Phù hợp với ai" (#6) và "Bảng size" (#7) là SECTION RIÊNG,
+  // thứ tự CỐ ĐỊNH ngay sau Ưu/Nhược điểm + Sản phẩm liên quan — KHÔNG để admin chèn lẫn giữa mô tả. Tách
+  // 2 loại khối này RA khỏi luồng mô tả; phần còn lại (chữ/feature/ảnh/video) là "Mô tả / Tính năng" (#3).
+  const suitabilityBlocks = descriptionBlocks.filter((b) => b.type === "suitability");
+  const sizeGuideBlocks = descriptionBlocks.filter((b) => b.type === "sizeGuide");
+  const descBlocks = descriptionBlocks.filter(
+    (b) => b.type !== "suitability" && b.type !== "sizeGuide",
+  );
   const specs = safeArray(product.specifications);
   // "Dán mã HTML" cho Thông số kỹ thuật (V255): khi có, web hiện HTML thay bảng dòng ("html thắng").
   const specsHtml = product.specificationsHtml?.trim() ? product.specificationsHtml : "";
@@ -94,9 +106,8 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
   const descriptionHtml = product.description ? sanitizeRichHtml(product.description) : "";
   const contentBottomHtml = product.contentBottom ? sanitizeRichHtml(product.contentBottom) : "";
 
-  // Phù hợp với ai · Bảng size (V246): KHỐI nằm trong mô tả (descriptionBlocks), admin tự đặt vị trí;
-  // web render qua ProductDescriptionBlocks.
-  const hasDescription = (descriptionBlocks.length > 0 || Boolean(descriptionHtml)) && vis("description");
+  // "Mô tả / Tính năng" (#3) chỉ gồm phần mô tả thuần (đã tách Phù hợp với ai · Bảng size ra khối riêng).
+  const hasDescription = (descBlocks.length > 0 || Boolean(descriptionHtml)) && vis("description");
 
   // Ưu/Nhược điểm (V251): tách RA khỏi mô tả — KHỐI RIÊNG cố định ngay dưới mô tả, NGOÀI tab (nguồn
   // product_highlights). Schema.org positiveNotes/negativeNotes suy ra từ đây (json-ld).
@@ -126,6 +137,10 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
   const showProsCons = positiveNotes.length > 0 || negativeNotes.length > 0;
   const showRelated = related.length > 0;
   const showAccessories = accessories.length > 0;
+  // "Phù hợp với ai" · "Bảng size" theo visibility của 'description' (admin không có toggle riêng cho 2
+  // khối này — SECTION_VISIBILITY_KEYS chỉ có 'description'); tự ẩn khi không có khối tương ứng.
+  const showSuitability = suitabilityBlocks.length > 0 && vis("description");
+  const showSizeGuide = sizeGuideBlocks.length > 0 && vis("description");
 
   // Trust block "Mua tại BigBike.vn" (#11) — lưới ô số liệu thương mại (xem product-view/ProductTrustCard).
   // Tự ẩn khi rỗng; tiêu đề mục đặt NGOÀI thẻ qua <PdpSectionHeading> (xem bodyNodes.trust).
@@ -142,7 +157,7 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
       labelKey: "description",
       content: (
         <ProductDescriptionBlocks
-          blocks={descriptionBlocks}
+          blocks={descBlocks}
           fallback={<ProductDescriptionTab viHtml={descriptionHtml} />}
         />
       ),
@@ -168,17 +183,18 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
   if (showReviews) {
     specGroupBuiltins.reviews = { id: "reviews", labelKey: "reviews", content: <ReviewsSection productId={product.id} embedded /> };
   }
-  // Thứ tự CỐ ĐỊNH các section body. 5 khối "trong tab" (description → reviews) xếp LIỀN MẠCH để thứ tự
-  // trên desktop khớp đúng ô tab mobile (widget gom đúng 5 khối này). "prosConsRelated" (Ưu/Nhược điểm +
-  // Sản phẩm tương tự) là MỘT section chung NGOÀI tab, đặt NGAY SAU nhóm tab (sau "reviews"): trên mobile
-  // nó nằm dưới ô tab, trên desktop nằm dưới khối Đánh giá → cùng một mạch ở cả hai (không còn chèn giữa
-  // các khối tab). "accessories" (Phụ kiện bán kèm) ở cuối. "Sản phẩm đã xem gần đây" render riêng ngoài
-  // bodyOrder, ngay dưới.
+  // Thứ tự CỐ ĐỊNH các section body theo canonical layout (PDP_CONTENT_GUIDE §0b): Mô tả → Ưu/Nhược +
+  // Sản phẩm liên quan → Phù hợp với ai → Bảng size → Thông số → FAQ → Video → Đánh giá → Trust → Phụ kiện.
+  // Cụm "prosConsRelated → suitability → sizeGuide" là các khối NGOÀI tab (không vào widget tab mobile):
+  // trên DESKTOP hiện ngay sau Mô tả; trên MOBILE hiện ngay DƯỚI widget tab (widget gom 5 khối
+  // description→reviews) — cụm vẫn liền mạch ĐÚNG thứ tự ở cả hai. "Sản phẩm đã xem gần đây" render riêng.
   const bodyOrder = [
-    "description", "specifications", "faqs", "videos", "reviews", "prosConsRelated", "trust", "accessories",
+    "description", "prosConsRelated", "suitability", "sizeGuide",
+    "specifications", "faqs", "videos", "reviews", "trust", "accessories",
   ];
 
-  // Mobile tab widget chỉ gồm các tab có thể nhét vào widget (không phải prosConsRelated/accessories/trust).
+  // Mobile tab widget chỉ gồm tab nhét được vào widget (KHÔNG gồm prosConsRelated/suitability/sizeGuide/
+  // accessories/trust — các khối này hiện xếp chồng dưới widget).
   const TAB_KEYS = new Set(["description", "specifications", "faqs", "videos", "reviews"]);
   const specGroupOrder = bodyOrder.filter((k) => TAB_KEYS.has(k));
   const hasSpecGroup = Object.keys(specGroupBuiltins).length > 0;
@@ -190,7 +206,7 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
     bodyNodes.description = (
       <div key="description" className={`max-md:hidden ${PDP_SECTION_SEP}`}>
         <ProductDescriptionBlocks
-          blocks={descriptionBlocks}
+          blocks={descBlocks}
           fallback={<ProductDescriptionTab viHtml={descriptionHtml} />}
         />
       </div>
@@ -232,6 +248,29 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
     );
   }
 
+  // "Phù hợp với ai" (#6) — SECTION riêng ngay sau cụm Ưu/Nhược + Sản phẩm liên quan. Hiện cả desktop lẫn
+  // mobile (NGOÀI widget tab, như prosConsRelated). Tiêu đề lấy từ chính khối (admin nhập).
+  if (showSuitability) {
+    bodyNodes.suitability = (
+      <div key="suitability" className={PDP_SECTION_SEP}>
+        <section>
+          <ProductSuitabilitySection blocks={suitabilityBlocks} />
+        </section>
+      </div>
+    );
+  }
+
+  // "Bảng size" (#7) — SECTION riêng ngay sau "Phù hợp với ai".
+  if (showSizeGuide) {
+    bodyNodes.sizeGuide = (
+      <div key="sizeGuide" className={PDP_SECTION_SEP}>
+        <section>
+          <ProductSizeGuideSection blocks={sizeGuideBlocks} />
+        </section>
+      </div>
+    );
+  }
+
   // Các khối desktop-only dưới đây bọc trong <div max-md:hidden> THAY VÌ đặt max-md:hidden thẳng lên
   // <section>: CSS reset WP (unlayered) ép `section{display:block}`, thắng utility Tailwind (layered)
   // nên max-md:hidden trên <section> KHÔNG ẩn được → bản desktop lọt xuống mobile, trùng với bản trong
@@ -241,7 +280,7 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
       <div key="specifications" className={`max-md:hidden ${PDP_SECTION_SEP}`}>
         <section>
           <PdpSectionHeading title={<Tr ns="Product" k="specifications" />} />
-          <ProductSpecsTable viSpecs={specs} />
+          <ProductSpecsTable viSpecs={specs} viSpecsHtml={specsHtml} />
         </section>
       </div>
     );

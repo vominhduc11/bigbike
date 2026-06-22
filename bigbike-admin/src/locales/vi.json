@@ -934,7 +934,7 @@
       "groupBodyHint": "Tính năng, ưu/nhược, thông số, FAQ",
       "groupClosing": "Tin cậy & bán kèm (cuối trang)",
       "sectionDescription": "Mô tả chi tiết",
-      "descriptionBuilderHint": "Trình dựng khối — thêm các khối Tính năng chi tiết, Phù hợp với ai, Bảng size… Kéo-thả để đổi thứ tự hiển thị trên trang.",
+      "descriptionBuilderHint": "Trình dựng khối Tính năng chi tiết (chữ, ảnh, ảnh + chữ). Kéo-thả để đổi thứ tự. \"Phù hợp với ai\" và \"Bảng size\" nhập ở 2 card riêng bên dưới.",
       "tabsAriaLabel": "Phần của sản phẩm",
       "contentLanguageAriaLabel": "Ngôn ngữ nội dung",
       "moreSaveOptions": "Thêm tuỳ chọn lưu",
