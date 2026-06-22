@@ -638,7 +638,7 @@ export function sectionHasContent(form, key) {
   const t = (v) => String(v ?? '').trim()
   switch (key) {
     case 'description':    return Array.isArray(form.descriptionBlocks) ? form.descriptionBlocks.length > 0 : Boolean(t(form.description))
-    case 'specifications': return arr(form.specifications).some((s) => t(s.name) && t(s.value))
+    case 'specifications': return Boolean(t(form.specificationsHtml)) || arr(form.specifications).some((s) => t(s.name) && t(s.value))
     case 'faqs':           return arr(form.faqs).some((f) => t(f.question) && t(f.answer))
     case 'videos':         return arr(form.videos).some((v) => t(v.url))
     case 'reviews':        return true
@@ -928,13 +928,30 @@ export const SECTION_DEFS = [
   { id: 'section-accessories',    key: 'accessories',   icon: 'PlusCircle', labelKey: 'products.detail.sectionAccessories',    required: false },
 ]
 
-// Group sections into 4 fixed tabs — keys must match SECTION_DEFS keys.
-// `general` holds the three required sections so users can publish from a single tab.
+// Two tabs only: everything product-related on one page (split into collapsible
+// groups below), with SEO on its own tab so the SEO-role workflow stays separate.
+// Keys must match SECTION_DEFS keys; drives the per-tab error badge + findTabForErrors.
 export const TAB_SECTIONS = {
-  general:  ['basic', 'pricing', 'media', 'variants'],
-  content:  ['seo', 'gallery', 'videos'],
-  details:  ['specs', 'specStats', 'faqs'],
-  variants: ['trustBadges', 'commitments', 'purchaseLines', 'related', 'accessories'],
+  product: ['basic', 'pricing', 'media', 'variants', 'gallery', 'videos', 'specs', 'specStats', 'faqs', 'commitments', 'purchaseLines', 'trustBadges', 'related', 'accessories'],
+  seo:     ['seo'],
+}
+
+// Within the "product" tab the sections are split into 3 collapsible groups so the
+// form opens short: `core` (required) is open by default; the two optional groups
+// start collapsed. Keys/order mirror the render order in ProductDetailScreen.
+export const PRODUCT_GROUPS = {
+  core:    ['basic', 'pricing', 'media'],
+  content: ['gallery', 'videos', 'specs', 'specStats', 'faqs'],
+  sales:   ['variants', 'trustBadges', 'commitments', 'purchaseLines', 'related', 'accessories'],
+}
+
+// First group (top-down) containing any failing section — used to auto-expand the
+// right group when validation fails on save.
+export function findGroupForErrors(sectionErrors) {
+  for (const [group, keys] of Object.entries(PRODUCT_GROUPS)) {
+    if (keys.some((k) => sectionErrors[k])) return group
+  }
+  return null
 }
 
 // Field-prefix groups by section key — single source of truth used by both the

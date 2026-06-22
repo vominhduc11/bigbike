@@ -358,6 +358,11 @@ function normalizeProductTranslations(input) {
     contentBottom: toTrimmedString(source.contentBottom) || undefined,
     promotionContent: toTrimmedString(source.promotionContent) || undefined,
     suitabilityAdvisory: toTrimmedString(source.suitabilityAdvisory) || undefined,
+    // "Dán mã HTML" bản EN (V255/V256/V257) — surface để translationFormFromItem nạp vào
+    // form.translations.en; nếu không, mở SP hiện trống bản EN → Lưu ghi đè xoá HTML EN đã lưu.
+    specificationsHtml: toTrimmedString(source.specificationsHtml) || undefined,
+    specStatsHtml: toTrimmedString(source.specStatsHtml) || undefined,
+    trustBadgesHtml: toTrimmedString(source.trustBadgesHtml) || undefined,
     seoTitle: toTrimmedString(source.seoTitle) || undefined,
     seoDescription: toTrimmedString(source.seoDescription) || undefined,
     // Khối mô tả tiếng Anh (V229) — giữ nguyên mảng để admin BlockEditor (EN) hydrate.
@@ -466,6 +471,15 @@ export function normalizeProduct(input) {
             : null))
           .filter((b) => b && b.content)
       : [],
+    // "Dán mã HTML" cho 3 khối (V255/V256/V257) — web render HTML này thay bảng/lưới/dải có cấu trúc.
+    // PHẢI surface ở đây: nếu không form admin nạp undefined → mở SP hiện trống → bấm Lưu gửi null
+    // → xoá mất HTML đã lưu (đúng anti-pattern đã ghi chú ở positiveNotes/trustBadges phía trên).
+    specificationsHtml: toTrimmedString(source.specificationsHtml) || undefined,
+    specStatsHtml: toTrimmedString(source.specStatsHtml) || undefined,
+    trustBadgesHtml: toTrimmedString(source.trustBadgesHtml) || undefined,
+    // "Hiển thị trên web" (V245) — chuỗi JSON opaque {sectionKey: boolean}, detail-only. PHẢI surface
+    // để form nạp đúng cấu hình đã lưu (nếu không admin luôn re-seed từ nội dung, bỏ lựa chọn đã lưu).
+    sectionVisibility: toTrimmedString(source.sectionVisibility) || undefined,
     // Admin-curated related products — list-view refs used to render product
     // chips in the editor and to power the PDP "Sản phẩm liên quan" section.
     relatedProducts: Array.isArray(source.relatedProducts)

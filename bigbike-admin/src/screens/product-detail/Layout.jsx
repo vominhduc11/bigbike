@@ -1,6 +1,6 @@
 import { cloneElement, isValidElement, useContext, useId } from 'react'
 import { useTranslation } from 'react-i18next'
-import { AlertCircle, GripVertical, ImageOff, Users, X } from 'lucide-react'
+import { AlertCircle, ChevronDown, GripVertical, ImageOff, Users, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { resolveDisplayUrl } from '@/lib/contracts'
 import { AssignmentConfigContext } from './constants'
@@ -208,5 +208,46 @@ export function Field({ label, hint, error, count, countWarn, full, children }) 
           ? <span id={hintId} className="text-xs text-muted-foreground">{hint}</span>
           : null}
     </div>
+  )
+}
+
+// Collapsible group header that wraps a run of SectionCards inside the "product" tab.
+// Controlled (open/onToggle). Shows an inline hint (Bắt buộc / Tùy chọn) after the
+// title and a danger-coloured error count on the right when a contained section fails
+// validation. Children are unmounted while collapsed to keep the form light.
+export function CollapsibleGroup({ title, hint, open, onToggle, errorCount = 0, children }) {
+  const panelId = useId()
+  return (
+    <section className="flex flex-col gap-4">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        aria-controls={panelId}
+        className="flex items-center gap-2.5 w-full text-left px-3 py-2.5 border bg-surface-muted hover:bg-muted/60 transition-colors"
+        style={errorCount ? { borderColor: 'var(--admin-color-status-danger-border)' } : undefined}
+      >
+        <ChevronDown
+          size={18}
+          aria-hidden="true"
+          className={cn('shrink-0 text-muted-foreground transition-transform', !open && '-rotate-90')}
+        />
+        <span className="font-semibold uppercase tracking-wide text-sm text-foreground">{title}</span>
+        {hint && (
+          <span className="text-xs font-normal normal-case text-muted-foreground hidden sm:inline">· {hint}</span>
+        )}
+        {errorCount > 0 && (
+          <span className="ml-auto text-xs font-bold" style={{ color: 'var(--admin-color-status-danger-text)' }}>
+            <span aria-hidden="true">{errorCount} lỗi</span>
+            <span className="sr-only">{errorCount} lỗi cần sửa</span>
+          </span>
+        )}
+      </button>
+      {open && (
+        <div id={panelId} className="flex flex-col gap-6">
+          {children}
+        </div>
+      )}
+    </section>
   )
 }

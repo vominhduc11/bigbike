@@ -60,6 +60,8 @@ import {
   TAB_SECTIONS,
   computeSectionErrorsFromMap,
   findTabForErrors,
+  findGroupForErrors,
+  PRODUCT_GROUPS,
   publishBadgeClass,
   RELATED_PRODUCTS_MAX,
   PURCHASE_LINE_MAX,
@@ -104,6 +106,7 @@ import {
   RelatedProductRow,
   RoleBadge,
   SectionCard,
+  CollapsibleGroup,
   AssignmentBanner,
   Field,
 } from './product-detail/Layout'
@@ -617,8 +620,13 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
       // Switch to the first tab containing an error so the user sees the field
       // we're about to focus. computeSectionErrorsFromMap reuses the same
       // prefix logic used by sectionErrors below.
-      const failedTab = findTabForErrors(computeSectionErrorsFromMap(clientErrors))
+      const failedSections = computeSectionErrorsFromMap(clientErrors)
+      const failedTab = findTabForErrors(failedSections)
       if (failedTab && failedTab !== activeTab) setActiveTab(failedTab)
+      // Auto-expand the collapsible group holding the first failing field so the user
+      // actually sees the error we're about to focus.
+      const failedGroup = findGroupForErrors(failedSections)
+      if (failedGroup) setOpenGroups((prev) => ({ ...prev, [failedGroup]: true }))
       focusFirstError()
       return
     }
@@ -647,7 +655,12 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   }
 
   // ── Tab navigation state (replaces the old TOC sidebar) ─────────────────────
-  const [activeTab, setActiveTab] = useState('general')
+  // Two tabs ("product" + "seo"). Inside the product tab, three collapsible groups —
+  // the required `core` group opens by default, the optional ones start collapsed so
+  // the form opens short.
+  const [activeTab, setActiveTab] = useState('product')
+  const [openGroups, setOpenGroups] = useState({ core: true, content: false, sales: false })
+  const toggleGroup = (group) => setOpenGroups((prev) => ({ ...prev, [group]: !prev[group] }))
   const [savedFlash, setSavedFlash] = useState(false)
 
   if (state.status === 'loading') {
@@ -687,6 +700,9 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   const sectionErrors = computeSectionErrorsFromMap(validationErrors)
   const tabCounts = Object.fromEntries(
     Object.entries(TAB_SECTIONS).map(([tab, keys]) => [tab, keys.filter((k) => sectionErrors[k]).length]),
+  )
+  const groupCounts = Object.fromEntries(
+    Object.entries(PRODUCT_GROUPS).map(([group, keys]) => [group, keys.filter((k) => sectionErrors[k]).length]),
   )
   // Badge số lỗi cho từng tab: tô màu cảnh báo (danger token) + nhãn ẩn cho trình
   // đọc màn hình để phân biệt với badge đếm thông thường ("N lỗi" thay vì số trơ).
@@ -855,10 +871,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
           value={activeTab}
           onChange={setActiveTab}
           items={[
-            { key: 'general',  label: t('products.detail.tabGeneral'),  count: tabErrorBadge(tabCounts.general) },
-            { key: 'content',  label: t('products.detail.tabContent'),  count: tabErrorBadge(tabCounts.content) },
-            { key: 'details',  label: t('products.detail.tabDetails'),  count: tabErrorBadge(tabCounts.details) },
-            { key: 'variants', label: t('products.detail.tabVariants'), count: tabErrorBadge(tabCounts.variants) },
+            { key: 'product', label: t('products.detail.tabProduct', { defaultValue: 'Sản phẩm' }), count: tabErrorBadge(tabCounts.product) },
+            { key: 'seo',     label: t('products.detail.tabSeo', { defaultValue: 'SEO' }),           count: tabErrorBadge(tabCounts.seo) },
           ]}
         />
 
@@ -873,8 +887,15 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
             }
           }}
         >
-          {activeTab === 'general' && (
+          {activeTab === 'product' && (
             <>
+              <CollapsibleGroup
+                title={t('products.detail.groupCore', { defaultValue: 'Cơ bản, Giá & Ảnh' })}
+                hint={t('products.detail.groupCoreHint', { defaultValue: 'Bắt buộc — đủ để đăng' })}
+                open={openGroups.core}
+                onToggle={() => toggleGroup('core')}
+                errorCount={groupCounts.core}
+              >
               {/* ── Card: Thông tin cơ bản ── */}
               <SectionCard
                 title={t('products.detail.sectionBasic')}
@@ -1185,28 +1206,15 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   </label>
                 </div>
               </SectionCard>
+              </CollapsibleGroup>
 
-              {/* ── Card: Biến thể (màu/size) — cạnh Giá vì cùng quyết định "bán thế nào" ── */}
-              <SectionCard
-                title={t('products.detail.variantSectionTitle')}
-                badge={
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5">
-                      {form.variants.length} {t('products.detail.variantUnit', { defaultValue: 'biến thể' })}
-                    </span>
-                    <RoleBadge role="content" />
-                  </div>
-                }
+              <CollapsibleGroup
+                title={t('products.detail.groupContent', { defaultValue: 'Nội dung hiển thị' })}
+                hint={t('products.detail.groupOptionalHint', { defaultValue: 'Tùy chọn' })}
+                open={openGroups.content}
+                onToggle={() => toggleGroup('content')}
+                errorCount={groupCounts.content}
               >
-                <VariantsEditor
-                  items={form.variants}
-                  onChange={(next) => updateField('variants', next)}
-                  disabled={isReadOnly}
-                  validationErrors={validationErrors}
-                  onOpenMatrixWizard={() => setShowMatrixWizard(true)}
-                />
-              </SectionCard>
-
               {/* ── Card: Xuất xứ ── */}
               <SectionCard
                 title={t('products.detail.trust.sectionTitle', { defaultValue: 'Xuất xứ' })}
@@ -1222,11 +1230,7 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   />
                 </Field>
               </SectionCard>
-            </>
-          )}
 
-          {activeTab === 'content' && (
-            <>
               {/* ── Card: Gallery ── */}
               <SectionCard
                 title={t('products.detail.gallerySectionTitle')}
@@ -1267,125 +1271,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 />
               </SectionCard>
 
-              {/* ── Card: SEO ── */}
-              <SectionCard title={t('products.detail.sectionSeo')} badge={<RoleBadge role="seo" />}>
-                {/* Live Google SERP preview */}
-                <div className="mb-4 p-3 border border-border bg-white">
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
-                    <PfSearch size={12} />
-                    <span>{t('products.detail.serpPreview', { defaultValue: 'Xem trước trên Google' })}</span>
-                  </div>
-                  <div className="text-xs text-[#5f6368] break-all mb-1">
-                    {canonicalUrlFromSlug(form.slug) || `https://bigbike.vn/product/duong-dan-san-pham/`}
-                  </div>
-                  <div className="text-lg leading-snug text-[#1a0dab] break-words mb-1">
-                    {(form.seoTitle || form.name || t('products.detail.serpTitleFallback', { defaultValue: 'Tiêu đề sản phẩm trên Google' })).slice(0, 60)}
-                  </div>
-                  <div className="text-sm leading-relaxed text-[#4d5156] break-words">
-                    {form.seoDescription || form.shortDescription || t('products.detail.serpDescFallback', { defaultValue: 'Mô tả ngắn về sản phẩm sẽ hiển thị ở đây.' })}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Field
-                    full
-                    label={t('products.detail.seoTitle')}
-                    count={`${langValue('seoTitle').length} / 60`}
-                    countWarn={langValue('seoTitle').length > 60}
-                    error={validationErrors.seoTitle}
-                  >
-                    <Input
-                      value={langValue('seoTitle')}
-                      onChange={(e) => langChange('seoTitle', e.target.value)}
-                      disabled={isReadOnly}
-                      maxLength={255}
-                      placeholder={t('products.detail.seoTitle')}
-                    />
-                  </Field>
-
-                  <Field
-                    full
-                    label={t('products.detail.seoDescription')}
-                    count={`${langValue('seoDescription').length} / 155`}
-                    countWarn={langValue('seoDescription').length > 155}
-                    error={validationErrors.seoDescription}
-                  >
-                    <Textarea
-                      value={langValue('seoDescription')}
-                      onChange={(e) => langChange('seoDescription', e.target.value)}
-                      disabled={isReadOnly}
-                      maxLength={5000}
-                      placeholder={t('products.detail.seoDescription')}
-                    />
-                  </Field>
-
-                  <Field
-                    full
-                    label={t('products.detail.seoCanonicalUrl')}
-                    hint={t('products.detail.seoCanonicalAuto', { defaultValue: 'Tự sinh theo đường dẫn (slug) — không cần nhập.' })}
-                  >
-                    <Input
-                      value={canonicalUrlFromSlug(form.slug) || ''}
-                      readOnly
-                      disabled
-                      placeholder={`https://bigbike.vn/product/duong-dan-san-pham/`}
-                    />
-                  </Field>
-
-                  <Field full label={t('products.detail.seoOgImageUrl')} hint="1200×630px (chuẩn mạng xã hội)." error={validationErrors.seoOgImageUrl}>
-                    <ImageUrlInput
-                      value={form.seoOgImageUrl}
-                      onChange={(url) => updateField('seoOgImageUrl', url)}
-                      alt={form.seoOgImageAlt}
-                      onAltChange={(v) => updateField('seoOgImageAlt', v)}
-                      disabled={isReadOnly}
-                      error={validationErrors.seoOgImageUrl}
-                      recommend={IMAGE_RECO.cover}
-                    />
-                  </Field>
-
-
-                </div>
-
-                {/* SEO checklist */}
-                <div className="mt-4 p-3 border border-border bg-muted/30">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="flex items-center gap-1.5 text-sm font-semibold">
-                      <Check size={14} />
-                      {t('products.detail.seoChecklist', { defaultValue: 'Checklist SEO' })}
-                    </span>
-                    <span className="font-mono font-bold text-sm text-[var(--admin-color-status-success-text)]">
-                      {seoPassed} / {seoChecks.length}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-y-1 gap-x-3">
-                    {seoChecks.map((c, i) => (
-                      <div key={i} className={cn('flex items-center gap-2 text-xs', c.ok ? 'text-foreground' : 'text-muted-foreground')}>
-                        <span className={cn(
-                          'w-4 h-4 flex items-center justify-center',
-                          c.ok
-                            ? 'bg-[var(--admin-color-status-success-bg)] text-[var(--admin-color-status-success-text)]'
-                            : 'bg-muted',
-                        )}>
-                          {c.ok ? <Check size={11} /> : null}
-                        </span>
-                        <span>
-                          {c.label}
-                          {c.hint != null && (
-                            <span className="ml-1 font-mono text-muted-foreground">({c.hint})</span>
-                          )}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </SectionCard>
-
-            </>
-          )}
-
-          {activeTab === 'details' && (
-            <>
               {/* ── Card: Specs Dashboard — ô số liệu nổi bật (V235) ── */}
               <SectionCard
                 title={t('products.detail.sectionSpecStats')}
@@ -1485,12 +1370,36 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   contentLang={contentLang}
                 />
               </SectionCard>
+              </CollapsibleGroup>
 
-            </>
-          )}
+              <CollapsibleGroup
+                title={t('products.detail.groupSales', { defaultValue: 'Bán hàng & Liên kết' })}
+                hint={t('products.detail.groupOptionalHint', { defaultValue: 'Tùy chọn' })}
+                open={openGroups.sales}
+                onToggle={() => toggleGroup('sales')}
+                errorCount={groupCounts.sales}
+              >
+              {/* ── Card: Biến thể (màu/size) — cạnh Giá vì cùng quyết định "bán thế nào" ── */}
+              <SectionCard
+                title={t('products.detail.variantSectionTitle')}
+                badge={
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5">
+                      {form.variants.length} {t('products.detail.variantUnit', { defaultValue: 'biến thể' })}
+                    </span>
+                    <RoleBadge role="content" />
+                  </div>
+                }
+              >
+                <VariantsEditor
+                  items={form.variants}
+                  onChange={(next) => updateField('variants', next)}
+                  disabled={isReadOnly}
+                  validationErrors={validationErrors}
+                  onOpenMatrixWizard={() => setShowMatrixWizard(true)}
+                />
+              </SectionCard>
 
-          {activeTab === 'variants' && (
-            <>
               {/* ── Card: Dải tin cậy (trên tên sản phẩm) (V233) ── */}
               <SectionCard
                 title={t('products.detail.sectionTrustBadges', { defaultValue: 'Dải tin cậy (trên tên sản phẩm)' })}
@@ -1701,6 +1610,125 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                   form={form}
                   disabled={isReadOnly}
                 />
+              </SectionCard>
+              </CollapsibleGroup>
+            </>
+          )}
+
+          {activeTab === 'seo' && (
+            <>
+              {/* ── Card: SEO ── */}
+              <SectionCard title={t('products.detail.sectionSeo')} badge={<RoleBadge role="seo" />}>
+                {/* Live Google SERP preview */}
+                <div className="mb-4 p-3 border border-border bg-white">
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                    <PfSearch size={12} />
+                    <span>{t('products.detail.serpPreview', { defaultValue: 'Xem trước trên Google' })}</span>
+                  </div>
+                  <div className="text-xs text-[#5f6368] break-all mb-1">
+                    {canonicalUrlFromSlug(form.slug) || `https://bigbike.vn/product/duong-dan-san-pham/`}
+                  </div>
+                  <div className="text-lg leading-snug text-[#1a0dab] break-words mb-1">
+                    {(form.seoTitle || form.name || t('products.detail.serpTitleFallback', { defaultValue: 'Tiêu đề sản phẩm trên Google' })).slice(0, 60)}
+                  </div>
+                  <div className="text-sm leading-relaxed text-[#4d5156] break-words">
+                    {form.seoDescription || form.shortDescription || t('products.detail.serpDescFallback', { defaultValue: 'Mô tả ngắn về sản phẩm sẽ hiển thị ở đây.' })}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Field
+                    full
+                    label={t('products.detail.seoTitle')}
+                    count={`${langValue('seoTitle').length} / 60`}
+                    countWarn={langValue('seoTitle').length > 60}
+                    error={validationErrors.seoTitle}
+                  >
+                    <Input
+                      value={langValue('seoTitle')}
+                      onChange={(e) => langChange('seoTitle', e.target.value)}
+                      disabled={isReadOnly}
+                      maxLength={255}
+                      placeholder={t('products.detail.seoTitle')}
+                    />
+                  </Field>
+
+                  <Field
+                    full
+                    label={t('products.detail.seoDescription')}
+                    count={`${langValue('seoDescription').length} / 155`}
+                    countWarn={langValue('seoDescription').length > 155}
+                    error={validationErrors.seoDescription}
+                  >
+                    <Textarea
+                      value={langValue('seoDescription')}
+                      onChange={(e) => langChange('seoDescription', e.target.value)}
+                      disabled={isReadOnly}
+                      maxLength={5000}
+                      placeholder={t('products.detail.seoDescription')}
+                    />
+                  </Field>
+
+                  <Field
+                    full
+                    label={t('products.detail.seoCanonicalUrl')}
+                    hint={t('products.detail.seoCanonicalAuto', { defaultValue: 'Tự sinh theo đường dẫn (slug) — không cần nhập.' })}
+                  >
+                    <Input
+                      value={canonicalUrlFromSlug(form.slug) || ''}
+                      readOnly
+                      disabled
+                      placeholder={`https://bigbike.vn/product/duong-dan-san-pham/`}
+                    />
+                  </Field>
+
+                  <Field full label={t('products.detail.seoOgImageUrl')} hint="1200×630px (chuẩn mạng xã hội)." error={validationErrors.seoOgImageUrl}>
+                    <ImageUrlInput
+                      value={form.seoOgImageUrl}
+                      onChange={(url) => updateField('seoOgImageUrl', url)}
+                      alt={form.seoOgImageAlt}
+                      onAltChange={(v) => updateField('seoOgImageAlt', v)}
+                      disabled={isReadOnly}
+                      error={validationErrors.seoOgImageUrl}
+                      recommend={IMAGE_RECO.cover}
+                    />
+                  </Field>
+
+
+                </div>
+
+                {/* SEO checklist */}
+                <div className="mt-4 p-3 border border-border bg-muted/30">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="flex items-center gap-1.5 text-sm font-semibold">
+                      <Check size={14} />
+                      {t('products.detail.seoChecklist', { defaultValue: 'Checklist SEO' })}
+                    </span>
+                    <span className="font-mono font-bold text-sm text-[var(--admin-color-status-success-text)]">
+                      {seoPassed} / {seoChecks.length}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-y-1 gap-x-3">
+                    {seoChecks.map((c, i) => (
+                      <div key={i} className={cn('flex items-center gap-2 text-xs', c.ok ? 'text-foreground' : 'text-muted-foreground')}>
+                        <span className={cn(
+                          'w-4 h-4 flex items-center justify-center',
+                          c.ok
+                            ? 'bg-[var(--admin-color-status-success-bg)] text-[var(--admin-color-status-success-text)]'
+                            : 'bg-muted',
+                        )}>
+                          {c.ok ? <Check size={11} /> : null}
+                        </span>
+                        <span>
+                          {c.label}
+                          {c.hint != null && (
+                            <span className="ml-1 font-mono text-muted-foreground">({c.hint})</span>
+                          )}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </SectionCard>
             </>
           )}

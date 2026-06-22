@@ -49,24 +49,21 @@ export function ProductGallery({
   const hasVariantGallery = variantSplit.images.length > 0;
   const stripBody: ImageAsset[] = hasVariantGallery ? variantSplit.images : productSplit.images;
   const galleryVideos: VideoAsset[] = hasVariantGallery ? variantSplit.videos : productSplit.videos;
-  // Khi đã chọn màu (có variantGallery): ảnh chính = ẢNH ĐẦU của gallery màu đó
-  // (variantGallery[0]), KHÔNG dùng variant.image làm cover. Sau khử trùng bên dưới,
-  // dải ảnh chính là gallery của màu theo đúng thứ tự. Khi chưa chọn màu thì giữ
-  // nguyên: ảnh đại diện sản phẩm (variantImage null → mainImage) đứng đầu.
-  const coverImage: ImageAsset | null = hasVariantGallery
-    ? (variantSplit.images[0] ?? variantImage ?? mainImage ?? null)
-    : (variantImage ?? mainImage ?? null);
-  // Khử trùng TOÀN BỘ danh sách (cover + dải), không chỉ lọc cover. Ảnh đại diện
-  // của biến thể thường cũng nằm trong gallery của nó (import WP gộp vào), và dải
-  // có thể tự chứa trùng → nếu chỉ lọc theo cover.url sẽ lọt 2 thumbnail giống
-  // nhau. So khớp theo cả `id` lẫn `url`: trùng 1 trong 2 là cùng một ảnh. Cover
-  // luôn đứng đầu vì được duyệt trước.
+  // Dải ảnh trên PDP = ĐÚNG bộ ảnh trong gallery (của sản phẩm, hoặc của màu đang
+  // xem), theo đúng thứ tự admin sắp. KHÔNG chèn thêm ảnh đại diện
+  // (product.image / variant.image) lên đầu nữa: admin có bao nhiêu ảnh trong
+  // gallery thì web hiện đúng bấy nhiêu. Ảnh đại diện chỉ làm ẢNH DỰ PHÒNG khi
+  // gallery rỗng (sản phẩm chưa có ảnh trong thư viện) để PDP không bị trống.
+  const fallbackCover: ImageAsset | null = variantImage ?? mainImage ?? null;
+  // Khử trùng trong chính dải gallery (import WP có thể lặp ảnh). So khớp theo cả
+  // `id` lẫn `url`: trùng 1 trong 2 là cùng một ảnh.
   const images: ImageAsset[] = (() => {
-    const ordered = coverImage ? [coverImage, ...stripBody] : stripBody;
+    const source: ImageAsset[] =
+      stripBody.length > 0 ? stripBody : fallbackCover ? [fallbackCover] : [];
     const seenIds = new Set<string>();
     const seenUrls = new Set<string>();
     const out: ImageAsset[] = [];
-    for (const img of ordered) {
+    for (const img of source) {
       if ((img.id && seenIds.has(img.id)) || (img.url && seenUrls.has(img.url))) {
         continue;
       }
