@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { parseSizeGuide, serializeSizeGuide, emptySizeGuide, SIZE_COL2_DEFAULT } from './sizeChart'
+import {
+  parseSizeGuide,
+  serializeSizeGuide,
+  mergeSizeGuideIntoHtml,
+  emptySizeGuide,
+  SIZE_COL2_DEFAULT,
+} from './sizeChart'
 
 const cols = (...labels) => labels.map((label) => ({ _key: label, label }))
 const row = (...cells) => ({ _key: cells.join('|'), cells })
@@ -105,5 +111,57 @@ describe('parseSizeGuide', () => {
     const e = emptySizeGuide()
     expect(e.columns).toHaveLength(2)
     expect(e.columns[0]._key).not.toBe(e.columns[1]._key)
+  })
+})
+
+describe('mergeSizeGuideIntoHtml', () => {
+  it('html trống → sinh mặc định như serializeSizeGuide', () => {
+    const model = { columns: cols('Size', 'X'), rows: [row('M', '57')], note: '' }
+    expect(mergeSizeGuideIntoHtml(model, '')).toBe(serializeSizeGuide(model))
+  })
+
+  it('GIỮ NGUYÊN style/class, chỉ đổi text', () => {
+    const styled =
+      '<table style="border:1px solid red" class="size-tbl"><thead><tr><th style="color:blue">Size</th><th>Vòng đầu</th></tr></thead><tbody><tr><td>M</td><td>57</td></tr></tbody></table>'
+    const model = { columns: cols('Cỡ', 'Vòng đầu (cm)'), rows: [row('M', '58')], note: '' }
+    const out = mergeSizeGuideIntoHtml(model, styled)
+    expect(out).toContain('style="border:1px solid red"')
+    expect(out).toContain('class="size-tbl"')
+    expect(out).toContain('style="color:blue"')
+    expect(out).toContain('Cỡ')
+    expect(out).toContain('58')
+    expect(out).not.toContain('>57<')
+  })
+
+  it('thêm dòng → nhân bản giữ style của dòng cuối', () => {
+    const styled =
+      '<table><thead><tr><th>Size</th><th>Vòng đầu</th></tr></thead><tbody><tr class="r"><td style="padding:4px">M</td><td>57</td></tr></tbody></table>'
+    const model = { columns: cols('Size', 'Vòng đầu'), rows: [row('M', '57'), row('L', '59')], note: '' }
+    const out = mergeSizeGuideIntoHtml(model, styled)
+    expect(out).toContain('L')
+    expect(out).toContain('59')
+    // dòng mới kế thừa style ô của dòng cuối
+    expect((out.match(/style="padding:4px"/g) || []).length).toBe(2)
+  })
+
+  it('bớt dòng → gỡ node thừa', () => {
+    const styled =
+      '<table><thead><tr><th>Size</th><th>X</th></tr></thead><tbody><tr><td>M</td><td>1</td></tr><tr><td>L</td><td>2</td></tr></tbody></table>'
+    const model = { columns: cols('Size', 'X'), rows: [row('M', '1')], note: '' }
+    const out = mergeSizeGuideIntoHtml(model, styled)
+    expect(out).toContain('>M<')
+    expect(out).not.toContain('>L<')
+  })
+
+  it('bảng hết nội dung → gỡ bảng, giữ/đặt ghi chú', () => {
+    const styled = '<table><thead><tr><th>Size</th></tr></thead><tbody><tr><td>M</td></tr></tbody></table>'
+    const out = mergeSizeGuideIntoHtml({ columns: cols('Size'), rows: [], note: 'Ghi chú' }, styled)
+    expect(out).not.toContain('<table')
+    expect(out).toContain('Ghi chú')
+  })
+
+  it('html không phải bảng → sinh mặc định', () => {
+    const model = { columns: cols('Size', 'X'), rows: [row('M', '57')], note: '' }
+    expect(mergeSizeGuideIntoHtml(model, '<div>tùy biến</div>')).toBe(serializeSizeGuide(model))
   })
 })

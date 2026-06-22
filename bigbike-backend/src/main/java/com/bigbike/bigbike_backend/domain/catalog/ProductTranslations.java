@@ -22,6 +22,10 @@ public record ProductTranslations(ProductContent en) {
             String suitabilityAdvisory,
             /** English specs HTML override (V255); "html thắng" cho khối Thông số kỹ thuật. */
             String specificationsHtml,
+            /** English "Ô số liệu nổi bật" HTML (V256); nguồn render khi non-blank. */
+            String specStatsHtml,
+            /** English "Dải tin cậy" HTML (V257); nguồn render khi non-blank. */
+            String trustBadgesHtml,
             String seoTitle,
             String seoDescription,
             /** English structured description blocks (V229); null when authored as legacy HTML. */

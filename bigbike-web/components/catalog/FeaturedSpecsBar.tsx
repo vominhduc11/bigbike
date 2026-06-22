@@ -1,6 +1,7 @@
 "use client";
 
 import { useLocalizedField } from "@/components/i18n/LocalizedContent";
+import { sanitizeRichHtml } from "@/lib/utils/html";
 import type { ProductSpecStat } from "@/lib/contracts/public";
 
 /**
@@ -12,8 +13,32 @@ import type { ProductSpecStat } from "@/lib/contracts/public";
  */
 const MAX = 4;
 
-export function FeaturedSpecsBar({ stats }: { stats: ProductSpecStat[] }) {
+export function FeaturedSpecsBar({
+  stats,
+  viStatsHtml = "",
+}: {
+  stats: ProductSpecStat[];
+  viStatsHtml?: string;
+}) {
   const enStats = useLocalizedField<ProductSpecStat[]>("specStats");
+  const enStatsHtml = useLocalizedField<string>("specStatsHtml");
+
+  // "HTML thắng" (V256): có HTML (EN override khi đổi ngôn ngữ, hoặc bản vi) → render HTML đã
+  // sanitize (cho phép CSS inline), bỏ qua lưới ô số liệu có cấu trúc.
+  const statsHtml = typeof enStatsHtml === "string" && enStatsHtml.trim() ? enStatsHtml : viStatsHtml;
+  if (statsHtml && statsHtml.trim()) {
+    const html = sanitizeRichHtml(statsHtml, { allowInlineStyles: true });
+    if (!html) return null;
+    return (
+      <div
+        role="region"
+        aria-label="Số liệu nổi bật"
+        className="my-10 featured-specs-html"
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+    );
+  }
+
   const source = Array.isArray(enStats) && enStats.length > 0 ? enStats : stats;
   const boxes = (source ?? []).filter((s) => s?.value?.trim() && s?.label?.trim()).slice(0, MAX);
 

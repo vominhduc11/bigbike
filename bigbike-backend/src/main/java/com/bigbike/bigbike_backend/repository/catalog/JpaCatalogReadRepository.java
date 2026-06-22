@@ -206,6 +206,8 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 null,                       // sizeGuide — detail only
                 null,                       // suitabilityAdvisory — detail only
                 null,                       // specificationsHtml — detail only
+                null,                       // specStatsHtml — detail only
+                null,                       // trustBadgesHtml — detail only
                 entity.getGender(),
                 List.of(),                  // relatedProducts — detail only
                 List.of(),                  // accessoryProducts — detail only
@@ -506,6 +508,8 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 entity.getSizeGuide(),
                 pick(entity.getSuitabilityAdvisory(), entity.getSuitabilityAdvisoryEn(), locale),
                 pick(entity.getSpecificationsHtml(), entity.getSpecificationsHtmlEn(), locale),
+                pick(entity.getSpecStatsHtml(), entity.getSpecStatsHtmlEn(), locale),
+                pick(entity.getTrustBadgesHtml(), entity.getTrustBadgesHtmlEn(), locale),
                 entity.getGender(),
                 toRelatedProducts(entity, publicView, locale),
                 toAccessoryProducts(entity, publicView, locale),

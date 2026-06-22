@@ -63,6 +63,12 @@ public record Product(
          *  (sanitizeRichHtml, cho phép {@code <table>}) THAY cho bảng {@code specifications} có cấu
          *  trúc ("html thắng"). Detail-only; null in list. Resolved per-locale via {@code pick}. */
         String specificationsHtml,
+        /** "Dán mã HTML" cho khối "Ô số liệu nổi bật" (specStats, V256). Khi non-blank, web render
+         *  HTML này THAY cho lưới {@code specStats} có cấu trúc. Detail-only; null in list. */
+        String specStatsHtml,
+        /** "Dán mã HTML" cho khối "Dải tin cậy" (trustBadges, V257). Khi non-blank, web render HTML
+         *  này THAY cho dải {@code trustBadges} có cấu trúc. Detail-only; null in list. */
+        String trustBadgesHtml,
         /** Giới tính mục tiêu: "Nam" | "Nữ" | "Unisex". Null = chưa gắn. */
         String gender,
         /**

@@ -121,6 +121,8 @@ final class ProductFieldApplier {
         entity.setInstallationGuideEn(en == null ? null : AdminMutationValidators.trimToNull(en.getInstallationGuide()));
         entity.setSuitabilityAdvisoryEn(en == null ? null : AdminMutationValidators.trimToNull(en.getSuitabilityAdvisory()));
         entity.setSpecificationsHtmlEn(en == null ? null : AdminMutationValidators.trimToNull(en.getSpecificationsHtml()));
+        entity.setSpecStatsHtmlEn(en == null ? null : AdminMutationValidators.trimToNull(en.getSpecStatsHtml()));
+        entity.setTrustBadgesHtmlEn(en == null ? null : AdminMutationValidators.trimToNull(en.getTrustBadgesHtml()));
         entity.setSeoTitleEn(en == null ? null : AdminMutationValidators.trimToNull(en.getSeoTitle()));
         entity.setSeoDescriptionEn(en == null ? null : AdminMutationValidators.trimToNull(en.getSeoDescription()));
     }

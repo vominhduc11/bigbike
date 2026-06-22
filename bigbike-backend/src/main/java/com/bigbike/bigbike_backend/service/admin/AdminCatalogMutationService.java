@@ -603,6 +603,12 @@ public class AdminCatalogMutationService {
         if (create || request.isSpecificationsHtmlPresent()) {
             entity.setSpecificationsHtml(AdminMutationValidators.trimToNull(request.getSpecificationsHtml()));
         }
+        if (create || request.isSpecStatsHtmlPresent()) {
+            entity.setSpecStatsHtml(AdminMutationValidators.trimToNull(request.getSpecStatsHtml()));
+        }
+        if (create || request.isTrustBadgesHtmlPresent()) {
+            entity.setTrustBadgesHtml(AdminMutationValidators.trimToNull(request.getTrustBadgesHtml()));
+        }
         if (create || request.isGenderPresent()) {
             entity.setGender(AdminMutationValidators.trimToNull(request.getGender()));
         }

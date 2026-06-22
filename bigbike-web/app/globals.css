@@ -3139,10 +3139,12 @@ body:has(.bb-home) {
    token rem co lại còn 15.75px, không ra 18px như tên gọi.
    !important: theme WP nạp `.wyswyg{font-size:.875rem}` + `body .wyswyg{16px}` UNLAYERED, thắng mọi
    rule layered của Tailwind v4 bất kể specificity → phải !important mới đè (WP rule không !important). */
-.pdp-desc-rich .text-body-lg,
-.pdp-desc-rich .wyswyg,
-.pdp-desc-rich .wyswyg p,
-.pdp-desc-rich .wyswyg li {
+/* `:not([style*="font-size"])`: phần tử admin TỰ đặt cỡ chữ inline (qua trình soạn / dán HTML có CSS)
+   được TÔN TRỌNG — luật ép 18px chỉ áp cho nội dung KHÔNG tự đặt cỡ chữ. */
+.pdp-desc-rich .text-body-lg:not([style*="font-size"]),
+.pdp-desc-rich .wyswyg:not([style*="font-size"]),
+.pdp-desc-rich .wyswyg p:not([style*="font-size"]),
+.pdp-desc-rich .wyswyg li:not([style*="font-size"]) {
   font-size: var(--text-18) !important;
 }
 
@@ -3161,7 +3163,7 @@ body:has(.bb-home) {
    Loại trừ phải là `.pdp-desc-rich .wyswyg *` (khối rich-text admin nhập BÊN TRONG mô tả) —
    KHÔNG dùng `.wyswyg *` trần: trên mobile cả khối mô tả bị bọc trong panel tab `.wyswyg`
    (WpProductTabs), nên `.wyswyg *` sẽ vô hiệu reset cho toàn bộ → lề WP quay lại, hở dư. */
-.pdp-desc-rich :is(h1, h2, h3, h4, h5, h6, ul, ol, li):not(.pdp-desc-rich .wyswyg *) {
+.pdp-desc-rich :is(h1, h2, h3, h4, h5, h6, ul, ol, li):not(.pdp-desc-rich .wyswyg *):not([style*="margin"]) {
   margin: 0 !important;
 }
 
@@ -3199,20 +3201,19 @@ body:has(.bb-home) {
   color: var(--bb-text-inverse);
   font-weight: 700;
   text-transform: uppercase;
-  font-size: 18px !important;
   letter-spacing: 0.04em;
 }
 /* Nếu admin nhập tiêu đề bọc trong <p>/<span>, ép cỡ chữ con theo th (18px) — tránh bị
    luật .wyswyg p{16px} (theme WP, unlayered) kéo nhỏ lại. */
-.bb-wp-pdp-page .wyswyg table:not(.shop_attributes) th,
-.bb-wp-pdp-page .wyswyg table:not(.shop_attributes) th * {
+.bb-wp-pdp-page .wyswyg table:not(.shop_attributes) th:not([style*="font-size"]),
+.bb-wp-pdp-page .wyswyg table:not(.shop_attributes) th *:not([style*="font-size"]) {
   font-size: 18px !important;
 }
 /* Ô dữ liệu (td) — ép 18px kể cả khi HTML dán bọc nội dung trong <p>/<span> (vd bảng do AI tạo);
    nếu không, luật .wyswyg p{16px} (theme WP, unlayered) kéo cột giá trị nhỏ hơn header. Đồng cỡ
    với th để bảng dán HTML hiển thị nhất quán như bảng nhập có cấu trúc. */
-.bb-wp-pdp-page .wyswyg table:not(.shop_attributes) td,
-.bb-wp-pdp-page .wyswyg table:not(.shop_attributes) td * {
+.bb-wp-pdp-page .wyswyg table:not(.shop_attributes) td:not([style*="font-size"]),
+.bb-wp-pdp-page .wyswyg table:not(.shop_attributes) td *:not([style*="font-size"]) {
   font-size: 18px !important;
 }
 .bb-wp-pdp-page .wyswyg table:not(.shop_attributes) tbody tr:nth-child(even) td {

@@ -196,10 +196,18 @@ export function WpPurchaseSection({
     "",
   );
 
+  // Dải tin cậy (V257): "HTML thắng" — có HTML (EN override hoặc bản vi) → render HTML đã sanitize
+  // (cho phép CSS inline), bỏ qua dải badge có cấu trúc.
+  const enTrustHtml = useLocalizedField<string>("trustBadgesHtml");
+  const trustBadgesHtml =
+    typeof enTrustHtml === "string" && enTrustHtml.trim()
+      ? enTrustHtml
+      : product.trustBadgesHtml ?? "";
+
   // Mô tả ngắn nằm trong khối mua hàng (dưới đánh giá, trên phần chọn biến thể) — vị trí gốc.
   // Đổi ngôn ngữ qua LHtml (field "shortDescription"); trống → không render.
   const shortDescriptionHtml = product.shortDescription
-    ? sanitizeRichHtml(product.shortDescription)
+    ? sanitizeRichHtml(product.shortDescription, { allowInlineStyles: true })
     : "";
 
   // Eyebrow (danh mục / thương hiệu·xuất xứ) ngay trên tiêu đề — port mockup PDP. GIỮ design
@@ -243,7 +251,12 @@ export function WpPurchaseSection({
         <div className="product-information">
           {/* Eyebrow + dải tin cậy: 2 dòng nhỏ trên tiêu đề. KHÔNG dùng <ul>/<li> để né
               dấu đầu dòng của theme WP; chấm phân cách tự vẽ, chỉ chen GIỮA các mục. */}
-          {trustItems.length > 0 ? (
+          {trustBadgesHtml.trim() ? (
+            <div
+              className="mb-11 bb-trust-badges-html"
+              dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(trustBadgesHtml, { allowInlineStyles: true }) }}
+            />
+          ) : trustItems.length > 0 ? (
             <div className="mb-11 flex flex-wrap items-center gap-x-4 gap-y-2 text-ui-14 max-md:text-ui-12 text-muted-foreground">
               {trustItems.map((item, i) => (
                 <span key={`${item}-${i}`} className="flex items-center gap-2">
@@ -287,6 +300,7 @@ export function WpPurchaseSection({
               <LHtml
                 field="shortDescription"
                 viHtml={shortDescriptionHtml}
+                allowInlineStyles
                 className="woocommerce-product-details__short-description"
               />
             </div>

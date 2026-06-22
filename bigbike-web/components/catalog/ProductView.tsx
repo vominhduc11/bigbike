@@ -78,6 +78,8 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
   // "Dán mã HTML" cho Thông số kỹ thuật (V255): khi có, web hiện HTML thay bảng dòng ("html thắng").
   const specsHtml = product.specificationsHtml?.trim() ? product.specificationsHtml : "";
   const specStats = safeArray(product.specStats);
+  // "Dán mã HTML" cho Ô số liệu nổi bật (V256): khi có, web render HTML thay lưới ("html thắng").
+  const specStatsHtml = product.specStatsHtml?.trim() ? product.specStatsHtml : "";
   const faqs = safeArray(product.faqs);
   const videos = safeArray(product.videos);
   const related = safeArray(product.relatedProducts).filter((p) => p.id !== product.id);
@@ -162,13 +164,14 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
   if (showReviews) {
     specGroupBuiltins.reviews = { id: "reviews", labelKey: "reviews", content: <ReviewsSection productId={product.id} embedded /> };
   }
-  // Thứ tự CỐ ĐỊNH các section body. Không cho đổi thứ tự — mọi khối luôn ở vị trí cố định.
-  // "prosConsRelated" (Ưu/Nhược điểm + Sản phẩm tương tự) là MỘT section chung ngay dưới mô tả, ngoài
-  // tab — 2 phần liên quan nhau: khách vừa đọc nhược điểm/giá, có thể phân vân → đưa "xem thêm lựa chọn"
-  // ngay trong cùng khối để giữ họ ở lại site. "accessories" (Phụ kiện bán kèm) ở cuối. "Sản phẩm đã xem
-  // gần đây" render riêng ngoài bodyOrder, ngay dưới.
+  // Thứ tự CỐ ĐỊNH các section body. 5 khối "trong tab" (description → reviews) xếp LIỀN MẠCH để thứ tự
+  // trên desktop khớp đúng ô tab mobile (widget gom đúng 5 khối này). "prosConsRelated" (Ưu/Nhược điểm +
+  // Sản phẩm tương tự) là MỘT section chung NGOÀI tab, đặt NGAY SAU nhóm tab (sau "reviews"): trên mobile
+  // nó nằm dưới ô tab, trên desktop nằm dưới khối Đánh giá → cùng một mạch ở cả hai (không còn chèn giữa
+  // các khối tab). "accessories" (Phụ kiện bán kèm) ở cuối. "Sản phẩm đã xem gần đây" render riêng ngoài
+  // bodyOrder, ngay dưới.
   const bodyOrder = [
-    "description", "prosConsRelated", "specifications", "faqs", "videos", "reviews", "trust", "accessories",
+    "description", "specifications", "faqs", "videos", "reviews", "prosConsRelated", "trust", "accessories",
   ];
 
   // Mobile tab widget chỉ gồm các tab có thể nhét vào widget (không phải prosConsRelated/accessories/trust).
@@ -345,7 +348,7 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
 
         {/* #2 Specs Dashboard (V235) — tối đa 4 ô số liệu nổi bật ngay dưới khu vực mua hàng.
             "Đòn chốt" bán hàng. Khối ngoài tab → tự ẩn khi không có ô nào (không gate visibility). */}
-        <FeaturedSpecsBar stats={specStats} />
+        <FeaturedSpecsBar stats={specStats} viStatsHtml={specStatsHtml} />
 
         {/* MOBILE — widget tab (đủ bộ các section có thể nhét vào tab, theo thứ tự admin cấu hình).
             Chỉ hiện ở max-md; desktop dùng khối xếp chồng bên dưới. */}

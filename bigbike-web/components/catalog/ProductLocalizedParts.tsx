@@ -98,7 +98,7 @@ export function ProductSpecsTable({ viSpecs, viSpecsHtml = "" }: { viSpecs: Spec
     return (
       <div
         className="thong-so-ki-thuat overflow-x-auto"
-        dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(specsHtml) }}
+        dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(specsHtml, { allowInlineStyles: true }) }}
       />
     );
   }
@@ -166,7 +166,7 @@ export function ProductFaqs({ viFaqs }: { viFaqs: Faq[] }) {
           <AccordionContent>
             <div
               className="wyswyg pl-9 text-muted-foreground"
-              dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(faq.answer ?? "") }}
+              dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(faq.answer ?? "", { allowInlineStyles: true }) }}
             />
           </AccordionContent>
         </AccordionItem>

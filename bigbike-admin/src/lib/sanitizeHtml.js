@@ -13,6 +13,10 @@ const ALLOWED_ATTR = [
   'href', 'rel', 'target',
   'alt', 'src', 'width', 'height', 'loading',
   'colspan', 'rowspan', 'scope',
+  // `style` cho phép admin tự chỉnh giao diện bằng CSS inline khi dán HTML (3 khối
+  // Thông số kỹ thuật / Phù hợp với ai / Bảng size). DOMPurify vẫn chặn
+  // script/onclick/javascript: và làm sạch nội dung CSS nguy hiểm.
+  'style',
 ]
 
 /**

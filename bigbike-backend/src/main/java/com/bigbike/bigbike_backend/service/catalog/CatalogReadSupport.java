@@ -218,6 +218,8 @@ final class CatalogReadSupport {
                 null,                       // sizeGuide — detail only
                 null,                       // suitabilityAdvisory — detail only
                 null,                       // specificationsHtml — detail only
+                null,                       // specStatsHtml — detail only
+                null,                       // trustBadgesHtml — detail only
                 p.gender(),
                 List.of(),                  // relatedProducts — detail only
                 List.of(),                  // accessoryProducts — detail only

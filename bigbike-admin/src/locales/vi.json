@@ -667,7 +667,7 @@
         "modeStructured": "Nhập có cấu trúc",
         "modeHtml": "Dán mã HTML",
         "htmlPlaceholder": "Dán đoạn mã HTML khối \"Phù hợp với ai\" (vd do AI tạo) vào đây...",
-        "htmlHint": "Khi dán HTML, hệ thống dùng HTML này thay cho danh sách thẻ ở trên. Mã nguy hiểm và định dạng tô màu riêng bị lọc để đồng bộ giao diện web. Xem trước bên dưới là kết quả thật sự hiển thị cho khách.",
+        "htmlHint": "Tab này tự hiển thị sẵn mã HTML tương ứng với danh sách thẻ ở trên. Sửa trực tiếp vào đây để tự viết HTML thay thế — khi đó web sẽ hiển thị theo HTML này (bỏ qua thẻ). Muốn dùng lại thẻ, mở tab \"Nhập có cấu trúc\". Mã nguy hiểm và định dạng tô màu riêng bị lọc để đồng bộ giao diện web.",
         "previewLabel": "Xem trước (đúng như hiển thị trên web)",
         "previewEmpty": "Chưa có nội dung để xem trước."
       },
@@ -738,8 +738,7 @@
         "addCon": "Thêm nhược điểm",
         "remove": "Xóa mục"
       },
-      "moveUp": "Lên",
-      "moveDown": "Xuống",
+      "dragToReorder": "Kéo để sắp xếp",
       "blocks": {
         "addBlock": "Thêm khối",
         "dragToReorder": "Kéo để sắp xếp",
@@ -925,10 +924,10 @@
       "viewLive": "Xem trên web",
       "unsavedChangesTitle": "Có thay đổi chưa lưu",
       "unsavedChangesConfirm": "Bạn có thay đổi chưa lưu. Rời khỏi trang này sẽ mất những thay đổi đó. Tiếp tục?",
-      "tabGeneral": "Tổng quan",
-      "tabContent": "Nội dung & SEO",
-      "tabDetails": "Thông số & hướng dẫn",
-      "tabVariants": "Biến thể & liên kết",
+      "tabGeneral": "Cơ bản & Giá",
+      "tabContent": "Hình ảnh & SEO",
+      "tabDetails": "Nội dung & Thông số",
+      "tabVariants": "Tin cậy & Liên kết",
       "tabsAriaLabel": "Phần của sản phẩm",
       "contentLanguageAriaLabel": "Ngôn ngữ nội dung",
       "moreSaveOptions": "Thêm tuỳ chọn lưu",

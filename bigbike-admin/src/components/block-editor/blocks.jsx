@@ -11,8 +11,10 @@ import { RichTextEditor } from '../RichTextEditor'
 import { RichTextEditorWithSource } from '../RichTextEditorWithSource'
 import { IMAGE_RECO } from '../../lib/imageRecommendations'
 import { generateId } from '@/lib/utils'
-import { parseSizeGuide, serializeSizeGuide } from '../../lib/sizeChart'
+import { parseSizeGuide, serializeSizeGuide, mergeSizeGuideIntoHtml } from '../../lib/sizeChart'
+import { parseSuitabilityCards, mergeSuitabilityIntoHtml, emptySuitabilityCard } from '../../lib/suitabilityCards'
 import { sanitizeHtml } from '../../lib/sanitizeHtml'
+import { SortableList, DragHandle } from '../Sortable'
 
 export function BlockControls({ disabled, onDuplicate, onRemove }) {
   const { t } = useTranslation()
@@ -415,30 +417,56 @@ export function StringListEditor({ items, onChange, disabled, placeholder, addLa
   )
 }
 
+/** HTML khối suitability có phải do trình nhập cấu trúc sinh ra không (để mở đúng tab mặc định:
+ *  HTML admin tự dán/tùy chỉnh → mở tab HTML, giữ nguyên). */
+function isGeneratedSuitabilityHtml(html) {
+  const h = (html || '').trim()
+  if (!h) return true
+  return h.includes('suitability-list')
+}
+
 /**
- * Khối "Phù hợp với ai" (V246) — admin chọn LINH HOẠT 2 chế độ (giống Bảng size):
- *  1. "Có cấu trúc": tiêu đề + danh sách thẻ tư vấn (audience/advice/link) → ghi `cards`.
- *  2. "Dán mã HTML": dán thẳng HTML (vd do AI tạo) → ghi `html`; web/backend render `html` THAY cho
- *     `cards` khi html non-blank (html thắng). Vào lại chế độ có cấu trúc sẽ xoá html để cards có hiệu lực.
- * Mở lại tự nhận diện chế độ theo việc html có nội dung hay không.
+ * Khối "Phù hợp với ai" — `html` là NGUỒN DUY NHẤT được lưu & web render. Tab "Có cấu trúc" chỉ là
+ * công cụ nhập: mọi thay đổi thẻ được GHÉP vào `html` hiện có (giữ nguyên CSS/markup, chỉ đổi chữ).
+ *  - HTML → Cấu trúc (chuyển tab): parse `html` ra thẻ (bỏ CSS, chỉ lấy chữ).
+ *  - Cấu trúc → HTML: `html` đã được merge cập nhật sẵn.
+ *  - Cho phép CSS inline khi dán HTML (sanitizeHtml admin đã mở `style`).
  */
 export function SuitabilityBlockEditor({ block, onChange, disabled }) {
   const { t } = useTranslation()
-  const [mode, setMode] = useState(() => ((block.html || '').trim() ? 'html' : 'structured'))
-  const cards = block.cards && block.cards.length ? block.cards : [{ audience: '', advice: '', linkLabel: '', linkUrl: '' }]
+  const [mode, setMode] = useState(() =>
+    ((block.html || '').trim() && !isGeneratedSuitabilityHtml(block.html)) ? 'html' : 'structured',
+  )
+  const seedCards = () => {
+    const parsed = parseSuitabilityCards(block.html)
+    if (parsed.length) return parsed
+    if (block.cards && block.cards.length) return block.cards.map((c) => ({ ...emptySuitabilityCard(), ...c }))
+    return [emptySuitabilityCard()]
+  }
+  const [cards, setCards] = useState(seedCards)
 
+  // Ghi thẻ → merge vào html (giữ CSS). html là field được lưu; bỏ ghi `cards` xuống dữ liệu.
+  function commit(nextCards) {
+    setCards(nextCards)
+    onChange({ html: mergeSuitabilityIntoHtml(nextCards, block.html), cards: undefined })
+  }
   function changeMode(next) {
     if (next === mode) return
-    // Vào chế độ có cấu trúc: xoá html để web render theo thẻ (html thắng khi còn nội dung).
-    if (next === 'structured' && (block.html || '').trim()) onChange({ html: '' })
+    // Vào tab có cấu trúc: nạp lại thẻ từ html hiện tại (bỏ CSS, chỉ lấy chữ).
+    if (next === 'structured') {
+      const parsed = parseSuitabilityCards(block.html)
+      setCards(parsed.length ? parsed : [emptySuitabilityCard()])
+    }
     setMode(next)
   }
-  function updateCard(i, patch) { onChange({ cards: cards.map((c, idx) => (idx === i ? { ...c, ...patch } : c)) }) }
-  function addCard() { onChange({ cards: [...cards, { audience: '', advice: '', linkLabel: '', linkUrl: '' }] }) }
+  function updateCard(i, patch) { commit(cards.map((c, idx) => (idx === i ? { ...c, ...patch } : c))) }
+  function addCard() { commit([...cards, emptySuitabilityCard()]) }
   function removeCard(i) {
     const next = cards.filter((_, idx) => idx !== i)
-    onChange({ cards: next.length === 0 ? [{ audience: '', advice: '', linkLabel: '', linkUrl: '' }] : next })
+    commit(next.length === 0 ? [emptySuitabilityCard()] : next)
   }
+
+  const html = block.html || ''
 
   return (
     <div className="flex-1 flex flex-col gap-3">
@@ -510,13 +538,13 @@ export function SuitabilityBlockEditor({ block, onChange, disabled }) {
           </Button>
         </TabsContent>
 
-        {/* Chế độ DÁN MÃ HTML */}
+        {/* Chế độ DÁN MÃ HTML — chỉnh trực tiếp, cho phép CSS inline. */}
         <TabsContent value="html" className="flex flex-col gap-2">
           <Textarea
             className="font-mono text-xs"
             placeholder={t('products.detail.suitability.htmlPlaceholder')}
-            value={block.html || ''}
-            onChange={(e) => onChange({ html: e.target.value })}
+            value={html}
+            onChange={(e) => onChange({ html: e.target.value, cards: undefined })}
             disabled={disabled}
             rows={8}
             maxLength={20000}
@@ -526,10 +554,10 @@ export function SuitabilityBlockEditor({ block, onChange, disabled }) {
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               {t('products.detail.suitability.previewLabel')}
             </label>
-            {(block.html || '').trim() ? (
+            {html.trim() ? (
               <div
                 className="size-guide-preview rounded-sm border border-border bg-surface p-3 overflow-x-auto"
-                dangerouslySetInnerHTML={{ __html: sanitizeHtml(block.html) }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }}
               />
             ) : (
               <p className="list-editor-empty">{t('products.detail.suitability.previewEmpty')}</p>
@@ -570,9 +598,10 @@ export function SizeGuideBlockEditor({ block, onChange, disabled }) {
     setMode(next)
   }
 
+  // Merge model vào html hiện có (giữ CSS, chỉ đổi chữ). html là field được lưu & web render.
   function commit(next) {
     setModel(next)
-    onChange({ html: serializeSizeGuide(next) })
+    onChange({ html: mergeSizeGuideIntoHtml(next, block.html) })
   }
   const setNote = (note) => commit({ ...model, note })
   const renameColumn = (ci, label) =>
@@ -599,13 +628,6 @@ export function SizeGuideBlockEditor({ block, onChange, disabled }) {
   const addRow = () =>
     commit({ ...model, rows: [...model.rows, { _key: generateId(), cells: model.columns.map(() => '') }] })
   const removeRow = (ri) => commit({ ...model, rows: model.rows.filter((_, idx) => idx !== ri) })
-  function moveRow(ri, dir) {
-    const target = ri + dir
-    if (target < 0 || target >= model.rows.length) return
-    const rows = [...model.rows]
-    ;[rows[ri], rows[target]] = [rows[target], rows[ri]]
-    commit({ ...model, rows })
-  }
 
   const colCount = model.columns.length
   const gridStyle = { gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }
@@ -672,36 +694,38 @@ export function SizeGuideBlockEditor({ block, onChange, disabled }) {
             {model.rows.length === 0 && (
               <p className="list-editor-empty">{t('products.detail.sizeGuide.empty')}</p>
             )}
-            {model.rows.map((row, ri) => (
-              <div key={row._key} className="flex items-center gap-2">
-                <div className="flex flex-col gap-0.5 shrink-0">
-                  <Button variant="outline" size="icon" className="h-5 w-7"
-                    onClick={() => moveRow(ri, -1)} disabled={disabled || ri === 0}
-                    aria-label={t('products.detail.moveUp')}>▲</Button>
-                  <Button variant="outline" size="icon" className="h-5 w-7"
-                    onClick={() => moveRow(ri, 1)} disabled={disabled || ri === model.rows.length - 1}
-                    aria-label={t('products.detail.moveDown')}>▼</Button>
+            <SortableList
+              items={model.rows}
+              getId={(it) => it._key}
+              onReorder={(rows) => commit({ ...model, rows })}
+              disabled={disabled}
+              className="flex flex-col gap-2"
+              renderItem={(row, sortable, ri) => (
+                <div ref={sortable.setNodeRef} style={sortable.style} className="flex items-center gap-2">
+                  <DragHandle handleProps={sortable.handleProps} disabled={disabled} label={t('products.detail.dragToReorder')} />
+                  <div className="grid flex-1 gap-2" style={gridStyle}>
+                    {row.cells.map((cell, ci) => (
+                      <Input
+                        key={model.columns[ci]?._key || ci}
+                        placeholder={t('products.detail.sizeGuide.cellPlaceholder')}
+                        value={cell || ''}
+                        onChange={(e) => updateCell(ri, ci, e.target.value)}
+                        disabled={disabled}
+                        maxLength={120}
+                      />
+                    ))}
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive shrink-0"
+                    onClick={() => removeRow(ri)} disabled={disabled}
+                    aria-label={t('products.detail.sizeGuide.removeRow')}>✕</Button>
                 </div>
-                <div className="grid flex-1 gap-2" style={gridStyle}>
-                  {row.cells.map((cell, ci) => (
-                    <Input
-                      key={model.columns[ci]?._key || ci}
-                      placeholder={t('products.detail.sizeGuide.cellPlaceholder')}
-                      value={cell || ''}
-                      onChange={(e) => updateCell(ri, ci, e.target.value)}
-                      disabled={disabled}
-                      maxLength={120}
-                    />
-                  ))}
-                </div>
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive shrink-0"
-                  onClick={() => removeRow(ri)} disabled={disabled}
-                  aria-label={t('products.detail.sizeGuide.removeRow')}>✕</Button>
-              </div>
-            ))}
-            <Button variant="outline" size="sm" onClick={addRow} disabled={disabled} className="self-start">
-              + {t('products.detail.sizeGuide.addRow')}
-            </Button>
+              )}
+              footer={
+                <Button variant="outline" size="sm" onClick={addRow} disabled={disabled} className="self-start">
+                  + {t('products.detail.sizeGuide.addRow')}
+                </Button>
+              }
+            />
           </div>
 
           {/* Ghi chú */}

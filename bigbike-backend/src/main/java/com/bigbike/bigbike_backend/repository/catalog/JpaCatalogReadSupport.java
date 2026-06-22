@@ -145,6 +145,8 @@ final class JpaCatalogReadSupport {
                 || isPresent(entity.getInstallationGuideEn())
                 || isPresent(entity.getSuitabilityAdvisoryEn())
                 || isPresent(entity.getSpecificationsHtmlEn())
+                || isPresent(entity.getSpecStatsHtmlEn())
+                || isPresent(entity.getTrustBadgesHtmlEn())
                 || isPresent(entity.getSeoTitleEn())
                 || isPresent(entity.getSeoDescriptionEn())
                 || (descriptionBlocksEn != null && !descriptionBlocksEn.isEmpty());
@@ -159,6 +161,8 @@ final class JpaCatalogReadSupport {
                 entity.getInstallationGuideEn(),
                 entity.getSuitabilityAdvisoryEn(),
                 entity.getSpecificationsHtmlEn(),
+                entity.getSpecStatsHtmlEn(),
+                entity.getTrustBadgesHtmlEn(),
                 entity.getSeoTitleEn(),
                 entity.getSeoDescriptionEn(),
                 descriptionBlocksEn

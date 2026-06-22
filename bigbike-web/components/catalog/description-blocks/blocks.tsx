@@ -78,7 +78,7 @@ function TextBlock({ block }: { block: DescriptionBlock }) {
     case "paragraph": {
       const html = block.html?.trim();
       if (!html) return null;
-      return <div className="wyswyg text-ui-18 max-md:text-ui-16" dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(html) }} />;
+      return <div className="wyswyg text-ui-18 max-md:text-ui-16" dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(html, { allowInlineStyles: true }) }} />;
     }
     case "list": {
       const items = (block.items ?? []).map((it) => (it ?? "").trim()).filter(Boolean);
@@ -111,7 +111,7 @@ function TextBlock({ block }: { block: DescriptionBlock }) {
       if (!html) return null;
       return (
         <div className="border-l-4 border-brand bg-muted px-4 py-3">
-          <div className="wyswyg text-ui-18 max-md:text-ui-16" dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(html) }} />
+          <div className="wyswyg text-ui-18 max-md:text-ui-16" dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(html, { allowInlineStyles: true }) }} />
         </div>
       );
     }
@@ -159,7 +159,7 @@ export function FeatureBody({ block }: { block: FeatureBlockT }) {
           ) : null}
         </div>
       ) : null}
-      {html ? <div className="wyswyg text-ui-18 max-md:text-ui-16" dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(html) }} /> : null}
+      {html ? <div className="wyswyg text-ui-18 max-md:text-ui-16" dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(html, { allowInlineStyles: true }) }} /> : null}
       {items.length > 0 ? (
         block.listStyle === "numbered" ? (
           <ol className="flex list-none flex-col gap-2 text-ui-18 max-md:text-ui-16 leading-snug">
@@ -202,7 +202,8 @@ function BlockTitle({ text }: { text?: string }) {
 export function SuitabilityBlockView({ block }: { block: SuitabilityBlockT }) {
   const rawHtml = (block.html ?? "").trim();
   if (rawHtml) {
-    const html = sanitizeRichHtml(rawHtml);
+    // html là nguồn render; cho phép CSS inline để admin tự chỉnh giao diện khi dán HTML.
+    const html = sanitizeRichHtml(rawHtml, { allowInlineStyles: true });
     if (!html) return null;
     return (
       <div className="flex flex-col gap-4">
@@ -252,7 +253,8 @@ export function SuitabilityBlockView({ block }: { block: SuitabilityBlockT }) {
 
 /** Khối "Bảng size" (V246) — HTML tự do (thường là bảng), sanitize trước khi render. */
 export function SizeGuideBlockView({ block }: { block: SizeGuideBlockT }) {
-  const html = block.html ? sanitizeRichHtml(block.html) : "";
+  // html là nguồn render; cho phép CSS inline để admin tự chỉnh giao diện khi dán HTML.
+  const html = block.html ? sanitizeRichHtml(block.html, { allowInlineStyles: true }) : "";
   if (!html) return null;
   return (
     // gap-4 = khoảng tiêu đề→nội dung, đồng nhất với TextStack/FeatureBody (16px mọi loại khối).

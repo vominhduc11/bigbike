@@ -106,6 +106,16 @@ public class UpsertProductRequest {
     private String specificationsHtml;
     private boolean specificationsHtmlPresent = false;
 
+    // "Dán mã HTML" cho khối "Ô số liệu nổi bật" (specStats, V256) — HTML thô, opaque như trên.
+    @Size(max = 50000, message = "Spec stats HTML is too long.")
+    private String specStatsHtml;
+    private boolean specStatsHtmlPresent = false;
+
+    // "Dán mã HTML" cho khối "Dải tin cậy" (trustBadges, V257) — HTML thô, opaque như trên.
+    @Size(max = 50000, message = "Trust badges HTML is too long.")
+    private String trustBadgesHtml;
+    private boolean trustBadgesHtmlPresent = false;
+
     @Size(max = 20, message = "Gender is too long.")
     private String gender;
     private boolean genderPresent = false;
@@ -282,6 +292,16 @@ public class UpsertProductRequest {
     public void setSpecificationsHtml(String specificationsHtml) {
         this.specificationsHtml = specificationsHtml;
         this.specificationsHtmlPresent = true;
+    }
+
+    public void setSpecStatsHtml(String specStatsHtml) {
+        this.specStatsHtml = specStatsHtml;
+        this.specStatsHtmlPresent = true;
+    }
+
+    public void setTrustBadgesHtml(String trustBadgesHtml) {
+        this.trustBadgesHtml = trustBadgesHtml;
+        this.trustBadgesHtmlPresent = true;
     }
 
     public void setGender(String gender) {

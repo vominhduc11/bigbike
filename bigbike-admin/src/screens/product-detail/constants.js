@@ -4,6 +4,10 @@
 
 import { createContext } from 'react'
 import { parseSizeGuide, emptySizeGuide } from '../../lib/sizeChart'
+import { serializeSuitabilityCards } from '../../lib/suitabilityCards'
+import { serializeSpecs } from '../../lib/specSheet'
+import { serializeSpecStats } from '../../lib/specStatsBlock'
+import { serializeTrustBadges } from '../../lib/trustBadgesBlock'
 import { normalizeVariantToken, isColorAttributeName } from '../../lib/schemas'
 import { generateId } from '@/lib/utils'
 
@@ -133,7 +137,7 @@ export function getPublishReadiness(form, t, isCreate = false) {
     { id: 'seoCanonical',  label: t('products.detail.checklist.seoCanonical'),  ok: Boolean(form.slug?.trim()),    required: false },
     { id: 'gallery',       label: t('products.detail.checklist.gallery'),       ok: (form.gallery || []).some((img) => img.url?.trim()),                                                       required: false },
     { id: 'prosCons',      label: t('products.detail.checklist.prosCons'),      ok: (form.positiveNotes || []).some((h) => (h.content || '').trim()) || (form.negativeNotes || []).some((h) => (h.content || '').trim()), required: false },
-    { id: 'suitability',   label: t('products.detail.checklist.suitability'),   ok: (Array.isArray(form.descriptionBlocks) ? form.descriptionBlocks : []).some((b) => b.type === 'suitability' && (b.cards || []).some((c) => c.audience?.trim() || c.advice?.trim() || c.linkLabel?.trim())),    required: false },
+    { id: 'suitability',   label: t('products.detail.checklist.suitability'),   ok: (Array.isArray(form.descriptionBlocks) ? form.descriptionBlocks : []).some((b) => b.type === 'suitability' && ((b.html || '').trim() || (b.cards || []).some((c) => c.audience?.trim() || c.advice?.trim() || c.linkLabel?.trim()))),    required: false },
     { id: 'specifications',label: t('products.detail.checklist.specifications'),ok: (form.specifications || []).some((s) => s.name?.trim() && s.value?.trim()),                                required: false },
     { id: 'variants',      label: t('products.detail.checklist.variants'),      ok: (form.variants || []).some((v) => v.name?.trim()),                                                         required: false },
   ]
@@ -211,6 +215,10 @@ export function buildEmptyForm() {
     specifications: [],
     // Chế độ "Dán mã HTML" cho khối Thông số kỹ thuật (V255) — bản vi; bản en ở translations.en.
     specificationsHtml: '',
+    // "Dán mã HTML" cho khối Ô số liệu nổi bật (V256) — bản vi; bản en ở translations.en.
+    specStatsHtml: '',
+    // "Dán mã HTML" cho khối Dải tin cậy (V257) — bản vi; bản en ở translations.en.
+    trustBadgesHtml: '',
     // "Specs Dashboard" — ô số liệu nổi bật dưới khu vực mua hàng (V235).
     specStats: [],
     faqs: [],
@@ -252,6 +260,8 @@ export function buildEmptyTranslation() {
     description: '',
     suitabilityAdvisory: '',
     specificationsHtml: '',
+    specStatsHtml: '',
+    trustBadgesHtml: '',
     seoTitle: '',
     seoDescription: '',
   }
@@ -320,8 +330,24 @@ export function buildFormFromItem(item) {
     slug: item.slug || '',
     name: item.name || '',
     shortDescription: item.shortDescription || '',
-    // Chế độ "Dán mã HTML" cho khối Thông số kỹ thuật (V255) — bản vi.
-    specificationsHtml: item.specificationsHtml || '',
+    // Thông số kỹ thuật — html là nguồn render. Dữ liệu cũ chỉ có bảng `specifications` có cấu trúc
+    // → sinh html (bản vi) để không mất nội dung khi web chuyển sang render-theo-html.
+    specificationsHtml:
+      item.specificationsHtml
+      || serializeSpecs((item.specifications || []).map((s) => ({ name: s.name, value: s.value })))
+      || '',
+    // Ô số liệu nổi bật — html là nguồn render (V256). Dữ liệu cũ chỉ có lưới `specStats` có cấu trúc
+    // → sinh html (bản vi) để không mất nội dung khi web chuyển sang render-theo-html.
+    specStatsHtml:
+      item.specStatsHtml
+      || serializeSpecStats((item.specStats || []).map((s) => ({ value: s.value, label: s.label })))
+      || '',
+    // Dải tin cậy — html là nguồn render (V257). Dữ liệu cũ chỉ có dải `trustBadges` có cấu trúc
+    // → sinh html (bản vi) để không mất nội dung khi web chuyển sang render-theo-html.
+    trustBadgesHtml:
+      item.trustBadgesHtml
+      || serializeTrustBadges((item.trustBadges || []).map((b) => ({ content: b.content })))
+      || '',
     description: item.description || '',
     // Nạp lại _key cho từng khối (đã bị strip khi lưu) — thiếu _key thì kéo-thả sắp xếp chết.
     descriptionBlocks: hydrateBlockKeys(item.descriptionBlocks),
@@ -450,6 +476,22 @@ export function buildFormFromItem(item) {
     translations: { en: { ...translationFormFromItem(item.translations?.en), slug: item.slugEn || '' } },
   }
 
+  // Thông số kỹ thuật bản EN: backfill html từ bảng cấu trúc cũ (nameEn/valueEn) nếu chưa có html EN.
+  if (!(form.translations.en.specificationsHtml || '').trim()) {
+    const enSpecsHtml = serializeSpecs((item.specifications || []).map((s) => ({ name: s.nameEn, value: s.valueEn })))
+    if (enSpecsHtml) form.translations.en.specificationsHtml = enSpecsHtml
+  }
+  // Ô số liệu nổi bật bản EN: backfill html từ lưới cấu trúc cũ (valueEn/labelEn) nếu chưa có html EN.
+  if (!(form.translations.en.specStatsHtml || '').trim()) {
+    const enStatsHtml = serializeSpecStats((item.specStats || []).map((s) => ({ value: s.valueEn, label: s.labelEn })))
+    if (enStatsHtml) form.translations.en.specStatsHtml = enStatsHtml
+  }
+  // Dải tin cậy bản EN: backfill html từ dải cấu trúc cũ (contentEn) nếu chưa có html EN.
+  if (!(form.translations.en.trustBadgesHtml || '').trim()) {
+    const enTrustHtml = serializeTrustBadges((item.trustBadges || []).map((b) => ({ content: b.contentEn })))
+    if (enTrustHtml) form.translations.en.trustBadgesHtml = enTrustHtml
+  }
+
   // "Hiển thị trên web" (V245): cấu hình đã lưu thắng; sản phẩm cũ chưa cấu hình → seed bật theo
   // nội dung hiện có (web giữ nguyên cho tới khi admin chỉnh & lưu).
   form.sectionVisibility = resolveSectionVisibilityForm(parseSectionVisibilityForm(item.sectionVisibility), form)
@@ -494,7 +536,15 @@ export function translationToPayload(en) {
 // "chưa có khối / dùng HTML legacy".
 function hydrateBlockKeys(blocks) {
   if (!Array.isArray(blocks)) return null
-  return blocks.map((b) => (b._key ? b : { ...b, _key: generateId() }))
+  return blocks.map((b) => {
+    const withKey = b._key ? b : { ...b, _key: generateId() }
+    // Khối suitability: html là nguồn render. Dữ liệu cũ chỉ có `cards` → sinh html để không mất
+    // nội dung khi web chuyển sang render-theo-html.
+    if (withKey.type === 'suitability' && !(withKey.html ?? '').trim() && Array.isArray(withKey.cards)) {
+      return { ...withKey, html: serializeSuitabilityCards(withKey.cards) }
+    }
+    return withKey
+  })
 }
 
 // Lọc + dọn khối mô tả trước khi gửi: bỏ khối rỗng (sẽ fail @NotBlank ở backend) và
@@ -512,7 +562,7 @@ export function cleanDescriptionBlocks(blocks) {
         case 'video':     return (b.url ?? '').trim().length > 0
         case 'callout':   return (b.html ?? '').trim().length > 0
         case 'feature':   return (b.url ?? '').trim().length > 0
-        case 'suitability': return (b.cards ?? []).some(cardHasContent)
+        case 'suitability': return (b.html ?? '').trim().length > 0 || (b.cards ?? []).some(cardHasContent)
         case 'sizeGuide': return (b.html ?? '').trim().length > 0
         default:          return true
       }
@@ -522,9 +572,12 @@ export function cleanDescriptionBlocks(blocks) {
       if (rest.type === 'feature' && Array.isArray(rest.items)) {
         return { ...rest, items: rest.items.filter((it) => (it ?? '').trim().length > 0) }
       }
-      // Phù hợp với ai (V246): bỏ thẻ rỗng.
+      // Phù hợp với ai: html là nguồn DUY NHẤT được lưu (web render theo html). Bỏ `cards` khỏi
+      // payload; nếu thiếu html (dữ liệu cũ) thì sinh từ cards để không mất nội dung.
       if (rest.type === 'suitability') {
-        return { ...rest, cards: (rest.cards ?? []).filter(cardHasContent) }
+        const html = (rest.html ?? '').trim() || serializeSuitabilityCards(rest.cards)
+        const { cards: _cards, ...keep } = rest
+        return { ...keep, html }
       }
       return rest
     })
@@ -638,6 +691,10 @@ export function toPayload(form) {
     shortDescription: form.shortDescription.trim() || undefined,
     // V255: luôn gửi key (null khi rỗng) để presence-flag backend xoá được HTML khi quay về tab cấu trúc.
     specificationsHtml: form.specificationsHtml?.trim() || null,
+    // V256: Ô số liệu nổi bật — html là nguồn render web; luôn gửi key (null khi rỗng).
+    specStatsHtml: form.specStatsHtml?.trim() || null,
+    // V257: Dải tin cậy — html là nguồn render web; luôn gửi key (null khi rỗng).
+    trustBadgesHtml: form.trustBadgesHtml?.trim() || null,
     description: Array.isArray(form.descriptionBlocks) ? undefined : (form.description.trim() || undefined),
     // Template SEO scalars (V175). Null khi cleared (presence-flag).
     originBrandCountry: form.originBrandCountry.trim() ? form.originBrandCountry.trim() : null,
@@ -874,10 +931,10 @@ export const SECTION_DEFS = [
 // Group sections into 4 fixed tabs — keys must match SECTION_DEFS keys.
 // `general` holds the three required sections so users can publish from a single tab.
 export const TAB_SECTIONS = {
-  general:  ['basic', 'pricing', 'media'],
+  general:  ['basic', 'pricing', 'media', 'variants'],
   content:  ['seo', 'gallery', 'videos'],
-  details:  ['specs', 'specStats', 'faqs', 'commitments', 'purchaseLines', 'trustBadges'],
-  variants: ['variants', 'related', 'accessories'],
+  details:  ['specs', 'specStats', 'faqs'],
+  variants: ['trustBadges', 'commitments', 'purchaseLines', 'related', 'accessories'],
 }
 
 // Field-prefix groups by section key — single source of truth used by both the

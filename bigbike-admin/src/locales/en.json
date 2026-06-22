@@ -667,7 +667,7 @@
         "modeStructured": "Structured input",
         "modeHtml": "Paste HTML",
         "htmlPlaceholder": "Paste \"Who it's for\" HTML (e.g. AI-generated) here...",
-        "htmlHint": "When you paste HTML, it is used instead of the cards above. Unsafe code and custom styling are stripped to match the site's look. The preview below is exactly what customers will see.",
+        "htmlHint": "This tab is pre-filled with the HTML that matches the cards above. Edit it here to write your own HTML instead — the site will then render this HTML (ignoring the cards). To go back to the cards, open the \"Structured input\" tab. Unsafe code and custom styling are stripped to match the site's look.",
         "previewLabel": "Preview (exactly as shown on the web)",
         "previewEmpty": "Nothing to preview yet."
       },
@@ -738,8 +738,7 @@
         "addCon": "Add con",
         "remove": "Remove item"
       },
-      "moveUp": "Move up",
-      "moveDown": "Move down",
+      "dragToReorder": "Drag to reorder",
       "blocks": {
         "addBlock": "Add block",
         "dragToReorder": "Drag to reorder",
@@ -926,10 +925,10 @@
       "viewLive": "View on site",
       "unsavedChangesTitle": "Unsaved changes",
       "unsavedChangesConfirm": "You have unsaved changes. Leaving this page will discard them. Continue?",
-      "tabGeneral": "Overview",
-      "tabContent": "Content & SEO",
-      "tabDetails": "Specs & guides",
-      "tabVariants": "Variants & related",
+      "tabGeneral": "Basics & Price",
+      "tabContent": "Images & SEO",
+      "tabDetails": "Content & Specs",
+      "tabVariants": "Trust & Links",
       "tabsAriaLabel": "Product sections",
       "contentLanguageAriaLabel": "Content language",
       "moreSaveOptions": "More save options",

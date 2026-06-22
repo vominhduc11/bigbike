@@ -185,6 +185,16 @@ public class ProductEntity {
     @Column(name = "specifications_html", columnDefinition = "text")
     private String specificationsHtml;
 
+    // "Dán mã HTML" cho khối "Ô số liệu nổi bật" (specStats, V256) — khi non-blank, web render HTML
+    // này THAY cho lưới product_spec_stats có cấu trúc. Bilingual dual-text (vi + _en); detail-only.
+    @Column(name = "spec_stats_html", columnDefinition = "text")
+    private String specStatsHtml;
+
+    // "Dán mã HTML" cho khối "Dải tin cậy" (trustBadges, V257) — khi non-blank, web render HTML này
+    // THAY cho dải product_trust_badges có cấu trúc. Bilingual dual-text (vi + _en); detail-only.
+    @Column(name = "trust_badges_html", columnDefinition = "text")
+    private String trustBadgesHtml;
+
     @Column(name = "gender", length = 20)
     private String gender;
 
@@ -259,6 +269,12 @@ public class ProductEntity {
 
     @Column(name = "specifications_html_en", columnDefinition = "text")
     private String specificationsHtmlEn;
+
+    @Column(name = "spec_stats_html_en", columnDefinition = "text")
+    private String specStatsHtmlEn;
+
+    @Column(name = "trust_badges_html_en", columnDefinition = "text")
+    private String trustBadgesHtmlEn;
 
     @Column(nullable = false)
     private Instant createdAt;

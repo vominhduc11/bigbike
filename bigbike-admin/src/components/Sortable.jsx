@@ -17,6 +17,8 @@ import {
   rectSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { GripVertical } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 // Shared drag-and-drop reorder primitives for bigbike-admin.
 //
@@ -69,6 +71,33 @@ export function SortableRow({ id, disabled = false, children }) {
     isDragging,
     handleProps: { ...attributes, ...listeners },
   })
+}
+
+/**
+ * Standard grip handle for a sortable row. Spread `handleProps` from a
+ * <SortableRow>/<SortableList> child onto it — that's where the drag listeners
+ * live. When `disabled`, the listeners are dropped and the handle renders as a
+ * muted, non-interactive placeholder so the row layout stays aligned.
+ */
+export function DragHandle({ handleProps, label, disabled = false, className }) {
+  return (
+    <button
+      type="button"
+      {...(disabled ? {} : handleProps)}
+      disabled={disabled}
+      className={cn(
+        'flex h-9 w-7 shrink-0 items-center justify-center rounded-sm text-muted-foreground',
+        disabled
+          ? 'opacity-40'
+          : 'cursor-grab touch-none hover:bg-muted hover:text-foreground active:cursor-grabbing',
+        className,
+      )}
+      title={label}
+      aria-label={label}
+    >
+      <GripVertical size={16} aria-hidden="true" />
+    </button>
+  )
 }
 
 /**

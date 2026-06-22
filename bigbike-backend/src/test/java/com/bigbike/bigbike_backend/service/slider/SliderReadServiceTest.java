@@ -79,6 +79,8 @@ class SliderReadServiceTest {
                         null,       // sizeGuide
                         null,       // suitabilityAdvisory
                         null,       // specificationsHtml
+                        null,       // specStatsHtml
+                        null,       // trustBadgesHtml
                         null,       // gender
                         List.of(),  // relatedProducts
                         List.of(),  // accessoryProducts

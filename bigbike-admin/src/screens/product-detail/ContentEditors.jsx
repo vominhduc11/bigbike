@@ -5,15 +5,16 @@ import { MediaPickerModal } from '../../components/MediaPickerModal'
 import { VideoPickerModal } from '../../components/VideoPickerModal'
 import { MediaDimensionWarning } from '../../components/MediaDimensionWarning'
 import { IMAGE_RECO } from '../../lib/imageRecommendations'
-import { RichTextEditorWithSource } from '../../components/RichTextEditorWithSource'
+import { RichTextEditor } from '../../components/RichTextEditor'
 import { sanitizeHtml } from '../../lib/sanitizeHtml'
-import { SortableList } from '../../components/Sortable'
+import { SortableList, DragHandle } from '../../components/Sortable'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { generateId } from '@/lib/utils'
+import { parseSpecsFromHtml, mergeSpecsIntoHtml } from '../../lib/specSheet'
 import { resolveDisplayUrl } from '@/lib/contracts'
 import { extractYouTubeId, SECTION_VISIBILITY_KEYS, sectionHasContent } from './constants'
 
@@ -414,42 +415,52 @@ export function VideoEditor({ items, onChange, disabled, validationErrors = {} }
   )
 }
 
-/**
- * Thông số kỹ thuật — admin chọn LINH HOẠT 2 chế độ (cơ chế "HTML thắng" — V255):
- *  1. "Nhập có cấu trúc": danh sách dòng tên/giá trị (song ngữ theo contentLang) → ghi `specifications`.
- *  2. "Dán mã HTML": dán bảng HTML tùy biến → ghi `specificationsHtml` (theo ngôn ngữ). Khi html
- *     non-blank, web render html THAY cho bảng dòng. Vào lại tab cấu trúc sẽ xoá html để bảng có hiệu lực.
- * Mở lại tự nhận diện chế độ theo việc html có nội dung hay không.
- */
-export function SpecificationsEditor({ items, onChange, disabled, validationErrors, contentLang = 'vi', html = '', onHtmlChange }) {
-  const { t } = useTranslation()
-  const isEn = contentLang === 'en'
-  const fName = isEn ? 'nameEn' : 'name'
-  const fValue = isEn ? 'valueEn' : 'value'
-  const [mode, setMode] = useState(() => ((html || '').trim() ? 'html' : 'structured'))
+/** HTML thông số có phải do trình nhập cấu trúc sinh ra không (để mở đúng tab mặc định). */
+function isGeneratedSpecsHtml(html) {
+  const h = (html || '').trim()
+  if (!h) return true
+  return h.includes('shop_attributes')
+}
 
+/**
+ * Thông số kỹ thuật — `specificationsHtml` (theo ngôn ngữ) là NGUỒN DUY NHẤT được lưu & web render.
+ * Tab "Có cấu trúc" chỉ là công cụ nhập: mỗi thay đổi dòng tên/giá trị được GHÉP vào html hiện có
+ * (giữ nguyên CSS/markup, chỉ đổi chữ). HTML → Cấu trúc (chuyển tab): parse html ra dòng (bỏ CSS).
+ * Cho phép CSS inline khi dán HTML. Component được key theo contentLang ở screen nên đổi ngôn ngữ =
+ * remount + nạp lại theo html ngôn ngữ đó.
+ */
+export function SpecificationsEditor({ disabled, html = '', onHtmlChange }) {
+  const { t } = useTranslation()
+  const newRow = () => ({ _key: generateId(), name: '', value: '' })
+  const [mode, setMode] = useState(() =>
+    ((html || '').trim() && !isGeneratedSpecsHtml(html)) ? 'html' : 'structured',
+  )
+  const [rows, setRows] = useState(() => {
+    const parsed = parseSpecsFromHtml(html)
+    return parsed.length ? parsed : [newRow()]
+  })
+
+  // Ghi dòng → merge vào html (giữ CSS). html là field được lưu (qua onHtmlChange).
+  function commit(nextRows) {
+    setRows(nextRows)
+    onHtmlChange?.(mergeSpecsIntoHtml(nextRows, html))
+  }
   function changeMode(next) {
     if (next === mode) return
-    // Vào tab có cấu trúc: xoá HTML để bảng dòng có hiệu lực (có html thì web bỏ qua bảng).
-    if (next === 'structured' && (html || '').trim()) onHtmlChange?.('')
+    // Vào tab có cấu trúc: nạp lại dòng từ html hiện tại (bỏ CSS, chỉ lấy chữ).
+    if (next === 'structured') {
+      const parsed = parseSpecsFromHtml(html)
+      setRows(parsed.length ? parsed : [newRow()])
+    }
     setMode(next)
   }
-  function updateItem(index, field, value) {
-    const next = items.map((item, i) => i === index ? { ...item, [field]: value } : item)
-    onChange(next)
+  function updateRow(index, field, value) {
+    commit(rows.map((r, i) => (i === index ? { ...r, [field]: value } : r)))
   }
-  function addItem() {
-    onChange([...items, { _key: generateId(), name: '', value: '', groupName: '', nameEn: '', valueEn: '' }])
-  }
-  function removeItem(index) {
-    onChange(items.filter((_, i) => i !== index))
-  }
-  function moveItem(index, dir) {
-    const next = [...items]
-    const target = index + dir
-    if (target < 0 || target >= next.length) return
-    ;[next[index], next[target]] = [next[target], next[index]]
-    onChange(next)
+  function addRow() { commit([...rows, newRow()]) }
+  function removeRow(index) {
+    const next = rows.filter((_, i) => i !== index)
+    commit(next.length === 0 ? [newRow()] : next)
   }
 
   return (
@@ -460,61 +471,60 @@ export function SpecificationsEditor({ items, onChange, disabled, validationErro
       </TabsList>
 
       <TabsContent value="structured">
-    <div className="list-editor">
-      {items.length === 0 && (
-        <p className="list-editor-empty">{t('products.detail.specs.empty')}</p>
-      )}
-      {items.map((item, index) => {
-        const errName = validationErrors?.[`specifications.${index}.name`]
-        const errValue = validationErrors?.[`specifications.${index}.value`]
-        return (
-          <div key={item._key} className="list-editor-row list-editor-row--stack">
-            <div className="list-editor-reorder">
-              <Button variant="outline" size="icon" onClick={() => moveItem(index, -1)} disabled={disabled || index === 0} aria-label={t('products.detail.moveUp')}>▲</Button>
-              <Button variant="outline" size="icon" onClick={() => moveItem(index, 1)} disabled={disabled || index === items.length - 1} aria-label={t('products.detail.moveDown')}>▼</Button>
+    <SortableList
+      items={rows}
+      getId={(it) => it._key}
+      onReorder={(next) => commit(next)}
+      disabled={disabled}
+      className="list-editor"
+      renderItem={(row, sortable, index) => (
+        <div
+          ref={sortable.setNodeRef}
+          style={sortable.style}
+          className="list-editor-row list-editor-row--stack"
+        >
+          <DragHandle handleProps={sortable.handleProps} disabled={disabled} label={t('products.detail.dragToReorder')} />
+          <div className="flex flex-1 flex-col gap-2">
+            <div>
+              <Input
+                placeholder={t('products.detail.specs.namePlaceholder')}
+                aria-label={t('products.detail.specs.nameLabel')}
+                value={row.name || ''}
+                onChange={(e) => updateRow(index, 'name', e.target.value)}
+                disabled={disabled}
+                maxLength={255}
+               />
             </div>
-            <div className="flex flex-1 flex-col gap-2">
-              <div>
-                <Input className={errName ? 'border-danger' : undefined}
-                  placeholder={t('products.detail.specs.namePlaceholder')}
-                  aria-label={t('products.detail.specs.nameLabel')}
-                  value={item[fName] || ''}
-                  onChange={(e) => updateItem(index, fName, e.target.value)}
-                  disabled={disabled}
-                  maxLength={255}
-                 />
-                {errName && <small className="field-error">{errName}</small>}
-              </div>
-              <div>
-                <Textarea className={errValue ? 'border-danger' : undefined}
-                  placeholder={t('products.detail.specs.valuePlaceholder')}
-                  aria-label={t('products.detail.specs.valueLabel')}
-                  value={item[fValue] || ''}
-                  onChange={(e) => updateItem(index, fValue, e.target.value)}
-                  disabled={disabled}
-                  rows={3}
-                  maxLength={2000}
-                 />
-                {errValue && <small className="field-error">{errValue}</small>}
-              </div>
+            <div>
+              <Textarea
+                placeholder={t('products.detail.specs.valuePlaceholder')}
+                aria-label={t('products.detail.specs.valueLabel')}
+                value={row.value || ''}
+                onChange={(e) => updateRow(index, 'value', e.target.value)}
+                disabled={disabled}
+                rows={3}
+                maxLength={2000}
+               />
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-destructive hover:text-destructive"
-              onClick={() => removeItem(index)}
-              disabled={disabled}
-              aria-label={t('products.detail.specs.removeSpec')}
-            >
-              ✕
-            </Button>
           </div>
-        )
-      })}
-      <Button variant="outline" size="sm" onClick={addItem} disabled={disabled}>
-        + {t('products.detail.specs.addSpec')}
-      </Button>
-    </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-destructive hover:text-destructive"
+            onClick={() => removeRow(index)}
+            disabled={disabled}
+            aria-label={t('products.detail.specs.removeSpec')}
+          >
+            ✕
+          </Button>
+        </div>
+      )}
+      footer={
+        <Button variant="outline" size="sm" onClick={addRow} disabled={disabled}>
+          + {t('products.detail.specs.addSpec')}
+        </Button>
+      }
+    />
       </TabsContent>
 
       <TabsContent value="html" className="flex flex-col gap-2">
@@ -618,22 +628,17 @@ export function HighlightsEditor({ items, onChange, disabled, contentLang = 'vi'
   function removeItem(index) {
     onChange(items.filter((_, i) => i !== index))
   }
-  function moveItem(index, dir) {
-    const next = [...items]
-    const target = index + dir
-    if (target < 0 || target >= next.length) return
-    ;[next[index], next[target]] = [next[target], next[index]]
-    onChange(next)
-  }
 
   return (
-    <div className="list-editor">
-      {items.map((item, index) => (
-        <div key={item._key} className="list-editor-row">
-          <div className="list-editor-reorder">
-            <Button variant="outline" size="icon" onClick={() => moveItem(index, -1)} disabled={disabled || index === 0} aria-label={t('products.detail.moveUp')}>▲</Button>
-            <Button variant="outline" size="icon" onClick={() => moveItem(index, 1)} disabled={disabled || index === items.length - 1} aria-label={t('products.detail.moveDown')}>▼</Button>
-          </div>
+    <SortableList
+      items={items}
+      getId={(it) => it._key}
+      onReorder={(next) => onChange(next)}
+      disabled={disabled}
+      className="list-editor"
+      renderItem={(item, sortable, index) => (
+        <div ref={sortable.setNodeRef} style={sortable.style} className="list-editor-row">
+          <DragHandle handleProps={sortable.handleProps} disabled={disabled} label={t('products.detail.dragToReorder')} />
           <div className="flex-1">
             <Input
               placeholder={placeholder}
@@ -654,11 +659,13 @@ export function HighlightsEditor({ items, onChange, disabled, contentLang = 'vi'
             ✕
           </Button>
         </div>
-      ))}
-      <Button variant="outline" size="sm" onClick={addItem} disabled={disabled}>
-        + {addLabel}
-      </Button>
-    </div>
+      )}
+      footer={
+        <Button variant="outline" size="sm" onClick={addItem} disabled={disabled}>
+          + {addLabel}
+        </Button>
+      }
+    />
   )
 }
 
@@ -677,28 +684,24 @@ export function FaqEditor({ items, onChange, disabled, validationErrors, content
   function removeItem(index) {
     onChange(items.filter((_, i) => i !== index))
   }
-  function moveItem(index, dir) {
-    const next = [...items]
-    const target = index + dir
-    if (target < 0 || target >= next.length) return
-    ;[next[index], next[target]] = [next[target], next[index]]
-    onChange(next)
-  }
 
   return (
     <div className="list-editor">
       {items.length === 0 && (
         <p className="list-editor-empty">{t('products.detail.faqs.empty')}</p>
       )}
-      {items.map((item, index) => {
+      <SortableList
+        items={items}
+        getId={(it) => it._key}
+        onReorder={(next) => onChange(next)}
+        disabled={disabled}
+        className="list-editor"
+        renderItem={(item, sortable, index) => {
         const errQuestion = validationErrors?.[`faqs.${index}.question`]
         const errAnswer = validationErrors?.[`faqs.${index}.answer`]
         return (
-          <div key={item._key} className="list-editor-row list-editor-row--stack">
-            <div className="list-editor-reorder">
-              <Button variant="outline" size="icon" onClick={() => moveItem(index, -1)} disabled={disabled || index === 0} aria-label={t('products.detail.moveUp')}>▲</Button>
-              <Button variant="outline" size="icon" onClick={() => moveItem(index, 1)} disabled={disabled || index === items.length - 1} aria-label={t('products.detail.moveDown')}>▼</Button>
-            </div>
+          <div ref={sortable.setNodeRef} style={sortable.style} className="list-editor-row list-editor-row--stack">
+            <DragHandle handleProps={sortable.handleProps} disabled={disabled} label={t('products.detail.dragToReorder')} />
             <div className="flex flex-1 flex-col gap-2">
               <div>
                 <Input className={errQuestion ? 'border-danger' : undefined}
@@ -711,14 +714,13 @@ export function FaqEditor({ items, onChange, disabled, validationErrors, content
                 {errQuestion && <small className="field-error">{errQuestion}</small>}
               </div>
               <div>
-                <RichTextEditorWithSource
+                <RichTextEditor
                   key={`faq-answer-${item._key}-${contentLang}`}
                   value={item[fAnswer] || ''}
                   onChange={(html) => updateItem(index, fAnswer, html)}
                   placeholder={t('products.detail.faqs.answerPlaceholder')}
                   disabled={disabled}
                   hasError={Boolean(errAnswer)}
-                  maxLength={20000}
                 />
                 {errAnswer && <small className="field-error">{errAnswer}</small>}
               </div>
@@ -735,10 +737,13 @@ export function FaqEditor({ items, onChange, disabled, validationErrors, content
             </Button>
           </div>
         )
-      })}
-      <Button variant="outline" size="sm" onClick={addItem} disabled={disabled}>
-        + {t('products.detail.faqs.addFaq')}
-      </Button>
+      }}
+        footer={
+          <Button variant="outline" size="sm" onClick={addItem} disabled={disabled}>
+            + {t('products.detail.faqs.addFaq')}
+          </Button>
+        }
+      />
     </div>
   )
 }

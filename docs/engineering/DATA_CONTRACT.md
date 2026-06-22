@@ -276,21 +276,24 @@ cần" block reuses the existing `relatedProducts` (no new cross-sell column).
 
 Status: `CONFIRMED_FROM_CODE`
 
-### Product specs HTML override — `specifications_html` (V255)
+### Product specs HTML — `specifications_html` (V255, mô hình "HTML là nguồn" — cập nhật)
 
-Cho phép admin thay bảng "Thông số kỹ thuật" có cấu trúc (`product_specifications`)
-bằng một khối HTML tự do — chế độ "HTML thắng". Theo đúng `shortDescription`/`suitability_advisory`
-dual-text pattern: cột canonical (vi) + `_en`, `pick(vi, en, locale)` on read, raw English
-surfaced in `translations.en` for the admin editor.
+`specifications_html` là **nguồn render DUY NHẤT** của tab "Thông số kỹ thuật" trên web. Theo
+đúng `shortDescription`/`suitability_advisory` dual-text pattern: cột canonical (vi) + `_en`,
+`pick(vi, en, locale)` on read, raw English surfaced in `translations.en` cho admin editor.
 
 | Field | DB columns (added) | Type | PDP surface |
 |---|---|---|---|
-| `specificationsHtml` | `specifications_html` + `specifications_html_en` (`V255`) | `TEXT`, max 50 000 | Khi non-blank, web render HTML này (qua `sanitizeRichHtml`, cho phép `<table>`) **THAY** cho bảng `specifications` có cấu trúc; blank/null → render bảng dòng tên/giá trị như cũ ("html thắng"). |
+| `specificationsHtml` | `specifications_html` + `specifications_html_en` (`V255`) | `TEXT`, max 50 000 | Web **luôn** render HTML này (qua `sanitizeRichHtml`, **cho phép `<table>` và CSS inline `style`**). Bảng con `specifications` có cấu trúc chỉ còn là **lưới an toàn legacy** khi `specifications_html` rỗng. |
 
 It is detail-only (null in list responses), nullable, presence-flag on PATCH,
-empty/blank normalized to `NULL`. Bảng con `specifications` vẫn được lưu/trả như cũ —
-chỉ phần *hiển thị* trên PDP bị HTML override khi có nội dung. HTML thô được sanitize ở web
-(`sanitizeRichHtml`), không parse/sanitize ở backend (opaque như `suitability_advisory`).
+empty/blank normalized to `NULL`. **Admin UX (không đổi contract):** ô "Thông số kỹ thuật" có 2 tab —
+nhập "có cấu trúc" (dòng tên/giá trị) HOẶC "dán HTML"; **cả 2 cùng ghi vào `specificationsHtml`**.
+Tab cấu trúc chỉ là công cụ nhập: sửa dòng được GHÉP vào HTML hiện có (giữ nguyên `style`/markup,
+chỉ đổi chữ — helper `lib/specSheet.js`). Chuyển HTML→cấu trúc thì parse HTML lấy chữ (bỏ CSS).
+Khi nạp sản phẩm cũ chưa có `specifications_html`, admin sinh HTML từ bảng `specifications` để
+không mất nội dung. HTML thô được sanitize ở web (`sanitizeRichHtml` với `allowInlineStyles`),
+không parse/sanitize ở backend (opaque như `suitability_advisory`).
 
 Status: `CONFIRMED_FROM_CODE` — `ProductEntity.specificationsHtml`/`specificationsHtmlEn`,
 `Product.specificationsHtml`, `ProductTranslations.ProductContent.specificationsHtml`,
@@ -298,6 +301,42 @@ Status: `CONFIRMED_FROM_CODE` — `ProductEntity.specificationsHtml`/`specificat
 `AdminCatalogMutationService.applyProductPatch` / `ProductFieldApplier.applyTranslations`,
 `JpaCatalogReadRepository` (detail mapper `pick`s it; list mapper passes `null`),
 migration `V255__add_product_specifications_html.sql`.
+
+### Product spec-stats HTML — `spec_stats_html` (V256, mô hình "HTML là nguồn")
+
+`spec_stats_html` là **nguồn render** của khối "Ô số liệu nổi bật" (specStats) dưới khu mua hàng trên
+web. Mô hình giống `specifications_html` (V255): cột canonical (vi) + `_en`, `pick(vi, en, locale)`
+on read, raw English trong `translations.en`, detail-only, presence-flag on PATCH, blank→`NULL`.
+
+| Field | DB columns (added) | Type | PDP surface |
+|---|---|---|---|
+| `specStatsHtml` | `spec_stats_html` + `spec_stats_html_en` (`V256`) | `TEXT`, max 50 000 | Khi non-blank, web **render HTML này** (qua `sanitizeRichHtml` với `allowInlineStyles`) THAY cho lưới `specStats` có cấu trúc; rỗng → lưới ô số liệu có cấu trúc (`product_spec_stats`) làm lưới an toàn legacy. |
+
+**Admin UX (không đổi contract):** khối có 2 tab — nhập "có cấu trúc" (value/nhãn, tối đa 4) HOẶC
+"dán HTML"; cả 2 cùng ghi vào `specStatsHtml`. Tab cấu trúc là công cụ nhập: sửa được GHÉP vào HTML
+hiện có (giữ style/markup, chỉ đổi chữ — helper `lib/specStatsBlock.js`, lưới sinh ra có class
+`bb-specstats` + inline-style tự chứa mô phỏng `FeaturedSpecsBar`). HTML→cấu trúc parse lấy chữ (bỏ
+CSS). Nạp sản phẩm cũ chưa có `spec_stats_html` → admin sinh HTML từ lưới `specStats`. Status:
+`CONFIRMED_FROM_CODE` — `ProductEntity.specStatsHtml`/`specStatsHtmlEn`, `Product.specStatsHtml`,
+`UpsertProductRequest`(+presence)/`ProductTranslationRequest`, `AdminCatalogMutationService` /
+`ProductFieldApplier`, `JpaCatalogReadRepository`/`JpaCatalogReadSupport`, migration
+`V256__add_product_spec_stats_html.sql`.
+
+### Product trust-badges HTML — `trust_badges_html` (V257, mô hình "HTML là nguồn")
+
+`trust_badges_html` là **nguồn render** của khối "Dải tin cậy" (trustBadges) trên tên sản phẩm ở web.
+Mô hình giống `spec_stats_html` (V256): cột vi + `_en`, `pick` per-locale, raw EN trong
+`translations.en`, detail-only, presence-flag, blank→`NULL`.
+
+| Field | DB columns (added) | Type | PDP surface |
+|---|---|---|---|
+| `trustBadgesHtml` | `trust_badges_html` + `trust_badges_html_en` (`V257`) | `TEXT`, max 50 000 | Khi non-blank, web **render HTML này** (qua `sanitizeRichHtml` với `allowInlineStyles`) THAY cho dải `trustBadges` có cấu trúc; rỗng → dải badge có cấu trúc (`product_trust_badges`) làm lưới an toàn legacy. |
+
+**Admin UX:** 2 tab (cấu trúc: danh sách nhãn ngắn / dán HTML), cùng ghi `trustBadgesHtml`; sửa cấu
+trúc GHÉP vào HTML giữ style + chấm tròn, chỉ đổi chữ (helper `lib/trustBadgesBlock.js`, class
+`bb-trust-badges`). Nạp sản phẩm cũ → sinh HTML từ dải `trustBadges`. Status: `CONFIRMED_FROM_CODE` —
+migration `V257__add_product_trust_badges_html.sql` (+ thread `ProductEntity`/`Product`/
+`ProductTranslations`/`UpsertProductRequest`/`ProductTranslationRequest`/mutation+read như V256).
 
 ### Product description blocks — `description_blocks` (V139)
 
@@ -315,10 +354,10 @@ Eleven block types (8 gốc + 3 khối PDP chuyên biệt V246):
 | `callout` | `variant` (`info`\|`warning`\|`note`), `html` (≤ 10 000 chars) | — |
 | `divider` | — | — |
 | `feature` | `url` (≤ 2 000 chars) | `side` (`auto`\|`left`\|`right`, mặc định `auto`), `alt` (≤ 500), `caption` (≤ 500), `subheading` (≤ 500), `heading` (≤ 500), `html` (≤ 50 000), `listStyle` (`bulleted`\|`numbered`), `items` (≤ 200 strings, each ≤ 2 000 chars) |
-| `suitability` (V246) | — | `title` (≤ 500), `cards` (≤ 100 thẻ `{audience ≤500, advice ≤2000, linkLabel ≤500, linkUrl ≤2000}`), `html` (≤ 20 000; chế độ "dán HTML" — khi `html` non-blank thì render `html` THAY cho `cards`) |
-| `sizeGuide` (V246) | — | `title` (≤ 500), `html` (≤ 20 000; cho phép thẻ `<table>`) |
+| `suitability` (V246) | — | `title` (≤ 500), `html` (≤ 20 000; **nguồn render web**, cho phép `<table>` + CSS inline). `cards` chỉ là lưới an toàn legacy — payload mới CHỈ gửi `html` (xem dưới) |
+| `sizeGuide` (V246) | — | `title` (≤ 500), `html` (≤ 20 000; **nguồn render web**, cho phép thẻ `<table>` + CSS inline) |
 
-**2 khối PDP chuyên biệt (V246) — chỉ dùng cho SẢN PHẨM:** `suitability` (Phù hợp với ai), `sizeGuide` (Bảng size). Bản EN nằm ở khối tương ứng trong `description_blocks_en` (theo vị trí). **Cả 2 khối hỗ trợ 2 chế độ nhập ở admin (admin tự chọn):** nhập có cấu trúc HOẶC dán HTML thô. Với `sizeGuide`, cả 2 chế độ ghi vào cùng field `html`. Với `suitability`, chế độ có cấu trúc ghi `cards`, chế độ dán HTML ghi `html` — **khi `html` non-blank, web/backend render `html` và BỎ QUA `cards`** (html thắng). HTML thô luôn được sanitize (web `sanitizeRichHtml`, backend Jsoup `Safelist`) nên `style`/script bị loại; bảng/khối hiển thị theo CSS chuẩn của trang. **Ưu/Nhược điểm (`prosCons`) ĐÃ TÁCH RA khỏi mô tả (V251)** — quay lại là khối RIÊNG cố định ngay dưới mô tả, ngoài tab; nguồn dữ liệu là bảng con `product_highlights` (xem §Ưu điểm/Nhược điểm), KHÔNG còn là khối trong `description_blocks`. Subtype `ProsConsBlock` vẫn còn trong sealed interface (dormant, để deserialize an toàn dữ liệu cũ); migration `V251` gỡ mọi khối `prosCons` còn sót trong `description_blocks`/`_en`.
+**2 khối PDP chuyên biệt (V246) — chỉ dùng cho SẢN PHẨM:** `suitability` (Phù hợp với ai), `sizeGuide` (Bảng size). Bản EN nằm ở khối tương ứng trong `description_blocks_en` (theo vị trí). **Mô hình mới (cập nhật):** `html` là **nguồn render DUY NHẤT** của cả 2 khối trên web. Cả 2 hỗ trợ 2 tab nhập ở admin — "có cấu trúc" HOẶC "dán HTML" — **cùng ghi vào field `html`**. Tab cấu trúc chỉ là công cụ nhập: thao tác (`sizeGuide`: cột/dòng/ghi chú; `suitability`: thẻ đối tượng/lời khuyên/link) được **GHÉP vào `html` hiện có, giữ nguyên CSS/markup, chỉ đổi chữ** (helpers `lib/sizeChart.js`, `lib/suitabilityCards.js`). Chuyển HTML→cấu trúc thì parse `html` lấy chữ (bỏ CSS); thêm dòng/thẻ nhân bản phần tử cuối (kế thừa CSS). **Payload chỉ gửi `html`** cho 2 khối này (suitability bỏ `cards` khỏi payload — `cleanDescriptionBlocks`); `cards` chỉ còn là lưới an toàn legacy khi `html` rỗng (admin sinh `html` từ `cards` lúc nạp để không mất nội dung). HTML thô được sanitize ở web (`sanitizeRichHtml` với `allowInlineStyles` → **giữ `style` inline**, vẫn chặn script/onclick/javascript:); admin preview dùng `sanitizeHtml` đã mở `style`. **Ưu/Nhược điểm (`prosCons`) ĐÃ TÁCH RA khỏi mô tả (V251)** — quay lại là khối RIÊNG cố định ngay dưới mô tả, ngoài tab; nguồn dữ liệu là bảng con `product_highlights` (xem §Ưu điểm/Nhược điểm), KHÔNG còn là khối trong `description_blocks`. Subtype `ProsConsBlock` vẫn còn trong sealed interface (dormant, để deserialize an toàn dữ liệu cũ); migration `V251` gỡ mọi khối `prosCons` còn sót trong `description_blocks`/`_en`.
 
 **`feature` — hàng ảnh + chữ 2 cột (thêm sau V139, code-only):** Gói chung 1 ảnh + tiêu đề phụ (`subheading`, eyebrow) + tiêu đề chính (`heading`) + đoạn mô tả (`html`) + danh sách vào MỘT khối, render thành khối 2 cột ảnh–chữ trên web (chỉ desktop; mobile xếp dọc). `side`=`auto`/null → các khối `feature` liên tiếp tự xen kẽ trái/phải (so le); `left`/`right` ép vị trí ảnh. Chỉ `url` bắt buộc. **Khối này thay thế cơ chế "ghép ngầm" cũ** (web từng tự gom một khối `image`/`video` + cụm `text` liền sau thành hàng 2 cột) — cơ chế ghép ngầm đã được GỠ BỎ; muốn 2 cột phải dùng khối `feature`.
 

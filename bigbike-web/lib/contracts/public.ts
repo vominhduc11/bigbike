@@ -342,6 +342,12 @@ export type Product = {
   /** Chế độ "Dán mã HTML" cho khối Thông số kỹ thuật (V255). Khi non-blank, render HTML này
    *  (sanitizeRichHtml, cho phép `<table>`) THAY cho bảng `specifications` có cấu trúc. Detail-only. */
   specificationsHtml?: string | null;
+  /** Chế độ "Dán mã HTML" cho khối "Ô số liệu nổi bật" (specStats, V256). Khi non-blank, render
+   *  HTML này (sanitizeRichHtml, cho phép CSS inline) THAY cho lưới ô số liệu có cấu trúc. Detail-only. */
+  specStatsHtml?: string | null;
+  /** Chế độ "Dán mã HTML" cho khối "Dải tin cậy" (trustBadges, V257). Khi non-blank, render HTML
+   *  này (sanitizeRichHtml, cho phép CSS inline) THAY cho dải badge có cấu trúc. Detail-only. */
+  trustBadgesHtml?: string | null;
   /** Giới tính mục tiêu: "Nam" | "Nữ" | "Unisex". Null = chưa gắn. */
   gender?: string | null;
   /**
