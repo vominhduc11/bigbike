@@ -714,7 +714,8 @@
       },
       "purchaseLines": {
         "empty": "No rows yet. Click \"+ Add row\" to start.",
-        "hint": "This table appears under the buy area. Price, Stock, Hotline and Address show automatically — here you add your own rows (e.g. Warranty, Delivery, Returns).",
+        "hint": "This table appears under the buy area. Price, Stock, Contact (Hotline + Zalo) and Address show automatically — here you add your own rows. Pick a \"Row type\" to quick-fill the label + suggested content (e.g. Warranty, Shipping, Size exchange).",
+        "typeLabel": "Row type",
         "labelPlaceholder": "Label (e.g. Warranty) *",
         "valuePlaceholder": "Value (e.g. 24 months)",
         "addRow": "Add row",

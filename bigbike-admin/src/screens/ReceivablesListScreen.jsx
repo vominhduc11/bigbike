@@ -5,7 +5,7 @@ import { FilterChips } from '../components/FilterChips'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { AlertTriangle, Clock, FileX, Wallet } from 'lucide-react'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 import {
   fetchReceivables,
   fetchReceivableSummary,

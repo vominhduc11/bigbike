@@ -1,5 +1,5 @@
 import { Pencil, Trash2, RotateCcw, AlertTriangle, Music, FileText, Copy, Eye } from 'lucide-react'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 import { useTranslation } from 'react-i18next'
 import { formatText } from '../lib/formatters'
 import { Checkbox } from '@/components/ui/checkbox'

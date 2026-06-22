@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 import { Trash2, Upload, Grid as GridIcon, List as ListIcon, X as XIcon } from 'lucide-react'
 import { PaginationControls } from '../components/PaginationControls'
 import { PageSizeSelect } from '../components/PageSizeSelect'

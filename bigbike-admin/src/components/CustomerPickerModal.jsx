@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 import { fetchCoupons, fetchCustomers, sendTargetedCouponGift } from '../lib/adminApi'
 import { formatCurrencyVnd, formatDateTime } from '../lib/formatters'
 import { Button } from '@/components/ui/button'

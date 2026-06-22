@@ -5,7 +5,7 @@ import {
   ChevronUp, ChevronDown, ChevronsUpDown,
   CircleDollarSign, Wallet, RotateCcw, PiggyBank, ShoppingBag, Receipt,
 } from 'lucide-react'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 import {
   Area, AreaChart, Bar, BarChart,
   CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,

@@ -12,7 +12,7 @@ import {
 } from '@dnd-kit/sortable'
 import { Search, X, Plus, AlertTriangle } from 'lucide-react'
 import { useDragSensors } from '../components/Sortable'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 import {
   createMenuItem,
   deleteMenuItem,

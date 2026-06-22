@@ -14,7 +14,7 @@ import { ReceiptModal } from './pos/ReceiptModal'
 export function PosScreen({ canUpdate, userId, canOverrideCreditLimit, canOverridePrice, canRefund }) {
   const { t } = useTranslation()
   const [q, setQ] = useState('')
-  const dq = useDebounce(q, 200)
+  const dq = useDebounce(q, 300)
   const [results, setResults] = useState([])
   const [searching, setSearching] = useState(false)
   const [cart, setCart] = useState(() => {

@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 import { importBulkSerials } from '../../lib/adminApi'
 import { Input } from '@/components/ui/input'
 import { parseSerialFileAsObjects } from './constants'

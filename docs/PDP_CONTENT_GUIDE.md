@@ -33,7 +33,7 @@ Trang chi tiết sản phẩm (`bigbike-web` — `components/catalog/ProductView
 | 8 | Thông số kỹ thuật | `specifications` | Khối xếp chồng riêng |
 | 9 | FAQ | `faqs` | Khối xếp chồng riêng (Lắp đặt `installationGuide` — **lưới các bước** số thứ tự + icon + tiêu đề + nội dung + hộp mẹo/cảnh báo + ghi chú bảo dưỡng, V242 — chèn giữa #8–#9 nếu có; Thông tin bổ sung bảo hành/xuất xứ/trọng lượng đặt sau FAQ) |
 | 10 | Đánh giá | `ReviewsSection` | Đã kéo RA khỏi tab, đặt SAU FAQ, `id="reviews"` |
-| 11 | Trust block "Mua tại BigBike.vn" | product + site settings | Lưới 7 ô (Giá · Kho · BH · Giao · Đổi · Hotline · Địa chỉ) |
+| 11 | Trust block "Mua tại BigBike.vn" | product + site settings | Lưới 7 ô (Giá · Kho · **Bảo hành · Giao hàng · Đổi size** · Liên hệ · Địa chỉ). Giá/Kho realtime; **Liên hệ = Hotline + Zalo** và **Địa chỉ** auto từ `site_settings`; 3 ô Bảo hành/Giao hàng/Đổi size là **dòng admin tự sửa theo từng SP** (`product_purchase_lines`), đã backfill mặc định chung cho mọi SP ở V258 (Bảo hành "12 tháng tại BigBike", Giao hàng "Toàn quốc · COD · Đồng kiểm khi nhận", Đổi size "Miễn phí đổi trong 30 ngày nếu không vừa"). Trống Zalo/Hotline/Địa chỉ thì auto bỏ ô đó. |
 | 12 | Hoàn thiện bộ bảo hộ — cross-sell | `accessories` (admin curate) | Khác loại (găng/áo giáp/giày) để tăng AOV; render một lần ở cuối luồng marketing |
 
 Sticky mua-hàng (mobile), "Đã xem gần đây", dải liên hệ giữ nguyên ở cuối.

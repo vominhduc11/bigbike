@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { AlertCircle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 import { formatCurrencyVnd } from '../../lib/formatters'
 import { posCreateRefund } from '../../lib/adminApi'
 import { showConfirm } from '../../lib/confirm'

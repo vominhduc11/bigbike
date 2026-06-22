@@ -459,6 +459,15 @@ product detail (public + admin) dưới dạng mảng `purchaseLines` của doma
 (`pdp_shipping_line`) và Đổi trả (`pdp_return_line`), giữ nguyên thứ tự. Cột scalar
 gốc được giữ dormant (không drop).
 
+`V258` **backfill mặc định chung**: vì chỉ ~2/1.232 SP có dữ liệu cũ nên đa số SP để
+trống → trust block PDP thiếu Bảo hành/Giao hàng/Đổi size. V258 chèn 3 dòng tiêu chuẩn
+cho **mọi SP chưa có dòng nào** (không đụng SP đã có): Bảo hành "12 tháng tại BigBike"
+(sort 0), Giao hàng "Toàn quốc · COD · Đồng kiểm khi nhận" (sort 1), Đổi size "Miễn phí
+đổi trong 30 ngày nếu không vừa" (sort 2). Admin sửa riêng từng SP sau qua editor (chọn
+"Loại dòng" để điền nhanh nhãn + gợi ý giá trị). Trên web, trust block ghép thêm 2 ô auto
+từ `site_settings`: **Liên hệ** (`hotline` + `zalo_display`, nhãn i18n `trustContact`) và
+**Địa chỉ** (`contact_address`) — ô tự ẩn khi setting trống / ở chế độ preview.
+
 Status: `CONFIRMED_FROM_CODE` — `ProductPurchaseLineEntity`, `ProductPurchaseLine`
 domain record, `PurchaseLineRequest`, `UpsertProductRequest` (`purchaseLines`),
 `AdminCatalogMutationService.applyPurchaseLines`, `JpaCatalogReadRepository.toPurchaseLines`,

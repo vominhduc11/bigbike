@@ -307,7 +307,7 @@
   /* ─── Text ─── */
   --admin-color-text-primary:     #e6edf3;
   --admin-color-text-secondary:   #8b949e;
-  --admin-color-text-muted:       #6e7681;
+  --admin-color-text-muted:       #848e99; /* WCAG AA (A2): #6e7681 chỉ đạt 3.8–4.1:1 trên nền tối → nâng lên ~5.2:1 */
   --admin-color-text-placeholder: #484f58;
   --admin-color-text-inverse:     #0d1117;
 

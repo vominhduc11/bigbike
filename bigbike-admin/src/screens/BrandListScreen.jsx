@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 import { FilterSelect } from '../components/FilterSelect'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
@@ -43,7 +43,7 @@ export function BrandListScreen({ navigate, canUpdate }) {
     const params = new URLSearchParams(window.location.search)
     return params.get('search') || INITIAL_QUERY.search
   })
-  const debouncedSearch = useDebounce(searchInput, 250)
+  const debouncedSearch = useDebounce(searchInput, 300)
   const isFirstSearchRender = useRef(true)
   const [selectedIds, setSelectedIds] = useState([])
   const [bulkProgress, setBulkProgress] = useState(null) // {done,total} or null

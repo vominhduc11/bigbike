@@ -4,7 +4,7 @@ import { FilterSelect } from '../components/FilterSelect'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 import { PaginationControls } from '../components/PaginationControls'
 import { AdminTable } from '../components/AdminTable'
 import { FilterChips } from '../components/FilterChips'
@@ -379,7 +379,7 @@ export function ReturnListScreen({ canUpdate, navigate }) {
     const params = new URLSearchParams(window.location.search)
     return params.get('q') || INITIAL_QUERY.q
   })
-  const debouncedSearch = useDebounce(searchInput, 250)
+  const debouncedSearch = useDebounce(searchInput, 300)
   const isFirst = useRef(true)
   const [detailRet, setDetailRet] = useState(null)
 

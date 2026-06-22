@@ -714,7 +714,8 @@
       },
       "purchaseLines": {
         "empty": "Chưa có dòng nào. Nhấn \"+ Thêm dòng\" để bắt đầu.",
-        "hint": "Bảng hiển thị dưới khu mua hàng. Giá, Tồn kho, Hotline và Địa chỉ tự động hiện sẵn — ở đây bạn thêm các dòng riêng (vd Bảo hành, Giao hàng, Đổi trả).",
+        "hint": "Bảng hiển thị dưới khu mua hàng. Giá, Tồn kho, Liên hệ (Hotline + Zalo) và Địa chỉ tự động hiện sẵn — ở đây bạn thêm các dòng riêng. Chọn \"Loại dòng\" để tự điền nhanh nhãn + gợi ý nội dung (vd Bảo hành, Giao hàng, Đổi size).",
+        "typeLabel": "Loại dòng",
         "labelPlaceholder": "Nhãn (vd: Bảo hành) *",
         "valuePlaceholder": "Giá trị (vd: 24 tháng)",
         "addRow": "Thêm dòng",

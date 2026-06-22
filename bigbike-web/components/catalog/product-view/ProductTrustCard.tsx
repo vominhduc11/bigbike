@@ -10,16 +10,18 @@ type BuildTrustItemsArgs = {
   product: Product;
   previewMode: boolean;
   hotline: string;
+  zaloDisplay: string;
   contactAddress: string;
 };
 
 /**
  * Dựng danh sách ô của khối "Mua tại BigBike.vn" (#11): Giá/Kho THỜI GIAN THỰC ở đầu
  * (cùng nguồn nút mua, có giảm giá + tắt-bán thủ công), giữa là các dòng admin tự thêm
- * theo từng sản phẩm (purchaseLines — nhãn raw, không qua i18n), Hotline/Địa chỉ từ site
- * settings ở cuối (rỗng trong preview). Mỗi item có `labelKey` (i18n) HOẶC `label` (raw).
+ * theo từng sản phẩm (purchaseLines — nhãn raw, không qua i18n), Liên hệ (Hotline + Zalo)
+ * và Địa chỉ từ site settings ở cuối (rỗng trong preview). Mỗi item có `labelKey` (i18n)
+ * HOẶC `label` (raw).
  */
-export function buildTrustItems({ product, previewMode, hotline, contactAddress }: BuildTrustItemsArgs): TrustItem[] {
+export function buildTrustItems({ product, previewMode, hotline, zaloDisplay, contactAddress }: BuildTrustItemsArgs): TrustItem[] {
   const retailPrice = product.price?.retailPrice ?? null;
   const trustItems: TrustItem[] = [];
   if (retailPrice != null) {
@@ -35,8 +37,10 @@ export function buildTrustItems({ product, previewMode, hotline, contactAddress 
     if (!label && !value) return;
     trustItems.push({ key: `pl-${index}`, label, value });
   });
-  if (hotline) {
-    trustItems.push({ key: "hotline", labelKey: "trustHotline", value: hotline });
+  // Liên hệ = Hotline + Zalo gộp một ô (mẫu "J. TRUST BLOCK"). Zalo lùi về rỗng khi chưa cấu hình.
+  const contactValue = [hotline, zaloDisplay].filter(Boolean).join(" · ");
+  if (contactValue) {
+    trustItems.push({ key: "contact", labelKey: "trustContact", value: contactValue });
   }
   if (contactAddress) {
     trustItems.push({ key: "address", labelKey: "trustAddress", value: contactAddress });

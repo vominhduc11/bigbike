@@ -4,7 +4,7 @@ import { FilterSelect } from '../components/FilterSelect'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 import { PaginationControls } from '../components/PaginationControls'
 import { AdminTable } from '../components/AdminTable'
 import { Modal } from '../components/layout'
@@ -272,7 +272,7 @@ export function SerialListScreen({ canUpdate = false, canReadWarranty = false })
   const queryClient = useQueryClient()
   const [query, setQuery] = useState(INITIAL_QUERY)
   const [searchInput, setSearchInput] = useState('')
-  const debouncedSearch = useDebounce(searchInput, 250)
+  const debouncedSearch = useDebounce(searchInput, 300)
   const isFirst = useRef(true)
   const [selected, setSelected] = useState(null)
 

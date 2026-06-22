@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 import { PaginationControls } from '../../components/PaginationControls'
 import { showConfirm } from '../../lib/confirm'
 import { formatDateTime } from '../../lib/formatters'

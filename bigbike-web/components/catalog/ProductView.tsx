@@ -36,7 +36,9 @@ import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 
 type ProductViewProps = {
   product: Product;
-  /** Site settings for the bottom contact band (NAP). Empty in preview. */
+  /** Site settings for the bottom contact band + trust block NAP. Public PDP passes
+   *  server-fetched settings; live-preview fetches the same public endpoint client-side
+   *  so Hotline/Địa chỉ match the live page. */
   settings: PublicSiteSetting[];
   /**
    * Live-preview mode (admin editor iframe). Skips sections that fetch by a
@@ -64,11 +66,13 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
   const vis = (key: string) => isSectionVisible(sectionVis, key);
 
   // Business NAP — same key set as footer / contact page so the bottom contact
-  // band shows site-wide values (consistent local-SEO). Empty array in preview.
+  // band shows site-wide values (consistent local-SEO). Live-preview also loads
+  // these (client fetch) so the trust block + contact band match the live page.
   const siteName = pickSetting(settings, ["site_name"]) || "BigBike";
   const contactAddress = pickSetting(settings, ["contact_address", "address"]);
   const hotline = pickSetting(settings, ["hotline", "phone"]);
   const zaloUrl = pickSetting(settings, ["zalo_url"]);
+  const zaloDisplay = pickSetting(settings, ["zalo_display"]);
   // Khối cam kết dưới nút mua hàng (V232) + dải tin cậy trên tên sản phẩm (V233) giờ quản theo
   // TỪNG sản phẩm (product.commitments / product.trustBadges) — WpPurchaseSection tự đọc thẳng từ
   // product, không còn lấy từ settings.
@@ -125,7 +129,7 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
 
   // Trust block "Mua tại BigBike.vn" (#11) — lưới ô số liệu thương mại (xem product-view/ProductTrustCard).
   // Tự ẩn khi rỗng; tiêu đề mục đặt NGOÀI thẻ qua <PdpSectionHeading> (xem bodyNodes.trust).
-  const trustItems = buildTrustItems({ product, previewMode, hotline, contactAddress });
+  const trustItems = buildTrustItems({ product, previewMode, hotline, zaloDisplay, contactAddress });
   const trustCard = trustItems.length > 0 ? <ProductTrustCard items={trustItems} /> : null;
 
   // MOBILE: gói nội dung Mô tả/Thông số/FAQ/Video/Đánh giá vào MỘT widget tab. Thứ tự tab = đúng mạch

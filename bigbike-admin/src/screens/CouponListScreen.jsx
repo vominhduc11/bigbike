@@ -4,7 +4,7 @@ import { FilterSelect } from '../components/FilterSelect'
 import { FilterChips } from '../components/FilterChips'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 import { Plus, Send } from 'lucide-react'
 import { PaginationControls } from '../components/PaginationControls'
 import { AdminTable } from '../components/AdminTable'
@@ -28,7 +28,7 @@ export function CouponListScreen({ canUpdate }) {
   const { t } = useTranslation()
   const [query, setQuery] = useState(INITIAL_QUERY)
   const [searchInput, setSearchInput] = useState(INITIAL_QUERY.search)
-  const debouncedSearch = useDebounce(searchInput, 250)
+  const debouncedSearch = useDebounce(searchInput, 300)
   const isFirstSearchRender = useRef(true)
   const queryClient = useQueryClient()
   // Danh sách mã giảm giá qua react-query (cache + dedupe + giữ trang cũ khi đổi filter).

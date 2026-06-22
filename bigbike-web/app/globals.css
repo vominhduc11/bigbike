@@ -3133,6 +3133,21 @@ body:has(.bb-home) {
   margin-bottom: 0 !important;
 }
 
+/* "Ô số liệu nổi bật" (FeaturedSpecsBar, V256) khi render từ HTML đã lưu (specStatsHtml): HTML tự
+   chứa dùng lưới `repeat(auto-fit,minmax(120px,1fr))`. auto-fit CHỈ co cột RỖNG hoàn toàn — với 4 ô
+   trên mobile (rơi xuống 3 cột) ô thứ 4 đứng một mình hàng dưới, chừa 2 ô xám trống → trông lỗi.
+   Ép lưới về đúng thiết kế gốc của FeaturedSpecsBar bản có cấu trúc (`grid-cols-2` / `md:grid-cols-4`):
+   4 ô = 2×2 trên mobile, 1×4 trên desktop, không còn ô trống. Sửa hiển thị cho MỌI sản phẩm (kể cả
+   HTML đã lưu trong DB) không cần migration. !important để thắng inline-style trong HTML chèn. */
+.featured-specs-html .bb-specstats {
+  grid-template-columns: repeat(2, 1fr) !important;
+}
+@media (min-width: 768px) {
+  .featured-specs-html .bb-specstats {
+    grid-template-columns: repeat(4, 1fr) !important;
+  }
+}
+
 /* Mô tả sản phẩm dạng khối (ProductDescriptionBlocks): chữ thường (đoạn văn / danh sách / ghi chú /
    khối ảnh-chữ) = 18px CỐ ĐỊNH.
    Dùng --text-18 (18px tuyệt đối) thay vì --fs-body-lg (1.125rem): trang WP đặt cỡ gốc = 14px nên

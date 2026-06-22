@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 import { AlertCircle } from 'lucide-react'
 import { Modal } from '../../components/layout'
 import { useDebounce } from '../../lib/useDebounce'
@@ -15,7 +15,7 @@ export function StockInModal({ item, onSuccess, onClose }) {
   const [selectedItem, setSelectedItem] = useState(item || null)
   const [showPicker, setShowPicker] = useState(!item)
   const [pickerSearch, setPickerSearch] = useState('')
-  const debouncedPickerSearch = useDebounce(pickerSearch, 250)
+  const debouncedPickerSearch = useDebounce(pickerSearch, 300)
   const [pickerState, setPickerState] = useState({ status: item ? 'idle' : 'loading', items: [] })
   const [quantity, setQuantity] = useState('')
   const [note, setNote] = useState('')

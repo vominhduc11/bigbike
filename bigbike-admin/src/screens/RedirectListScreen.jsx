@@ -5,7 +5,7 @@ import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ExternalLink, Pencil, Plus, Trash2 } from 'lucide-react'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 import {
   createRedirect,
   deleteRedirect,
@@ -14,6 +14,7 @@ import {
 } from '../lib/adminApi'
 import { PaginationControls } from '../components/PaginationControls'
 import { AdminTable } from '../components/AdminTable'
+import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { showConfirm } from '../lib/confirm'
@@ -66,7 +67,7 @@ export function RedirectListScreen({ canUpdate }) {
   const isFirstSearchRender = useRef(true)
   const [query, setQuery] = useState(INITIAL_QUERY)
   const [searchInput, setSearchInput] = useState(INITIAL_QUERY.search)
-  const debouncedSearch = useDebounce(searchInput, 250)
+  const debouncedSearch = useDebounce(searchInput, 300)
   const [showForm, setShowForm] = useState(false)
   const [editingRedirect, setEditingRedirect] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { Check, Eye, EyeOff, Image as ImageIcon, Loader2, MessageSquare } from 'lucide-react'
@@ -52,7 +52,7 @@ export function ReviewListScreen({ navigate, canUpdate }) {
   const contentLang = useContentLang()
   const [query, setQuery] = useState(INITIAL_QUERY)
   const [searchInput, setSearchInput] = useState(INITIAL_QUERY.search)
-  const debouncedSearch = useDebounce(searchInput, 250)
+  const debouncedSearch = useDebounce(searchInput, 300)
   const isFirstSearchRender = useRef(true)
   const queryClient = useQueryClient()
   // Danh sách đánh giá qua react-query: cache + dedupe + giữ trang cũ khi đổi filter.

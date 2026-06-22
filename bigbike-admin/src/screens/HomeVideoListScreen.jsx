@@ -13,7 +13,7 @@ import {
 } from '@dnd-kit/sortable'
 import { AlertCircle, GripVertical, Play, Plus } from 'lucide-react'
 import { useDragSensors, SortableRow } from '../components/Sortable'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 import {
   fetchHomeVideos,
   createHomeVideo,

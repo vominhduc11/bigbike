@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { AlertCircle, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 import { DropdownPopover } from '../../components/DropdownPopover'
 import { formatCurrencyVnd } from '../../lib/formatters'
 import { fetchCustomers, fetchCustomerCredit, posCreateOrder } from '../../lib/adminApi'

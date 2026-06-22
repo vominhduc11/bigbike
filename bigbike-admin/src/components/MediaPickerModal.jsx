@@ -79,7 +79,7 @@ export function MediaPickerModal({ onSelect, onSelectMultiple, multiSelect = fal
   const modalRef = useRef(null)
   const previousFocusRef = useRef(null)
   const [search, setSearch] = useState('')
-  const debouncedSearch = useDebounce(search, 280)
+  const debouncedSearch = useDebounce(search, 300)
   const [page, setPage] = useState(1)
   const [state, setState] = useState({ status: 'loading', items: [], totalPages: 1 })
   // Single-select: string | null; Multi-select: Set<string>

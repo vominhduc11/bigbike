@@ -4,7 +4,7 @@ import { FilterSelect } from '../components/FilterSelect'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 import { PaginationControls } from '../components/PaginationControls'
 import { AdminTable } from '../components/AdminTable'
 import { Modal } from '../components/layout'
@@ -129,7 +129,7 @@ export function WarrantyListScreen({ canUpdate }) {
   const [query, setQuery] = useState(INITIAL_QUERY)
   const [detailItem, setDetailItem] = useState(null)
   const [searchInput, setSearchInput] = useState('')
-  const debouncedSearch = useDebounce(searchInput, 250)
+  const debouncedSearch = useDebounce(searchInput, 300)
   const isFirstSearch = useRef(true)
 
   useEffect(() => {

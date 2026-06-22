@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { FilterSelect } from '../components/FilterSelect'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 import { AlertTriangle, Download } from 'lucide-react'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
@@ -31,7 +31,7 @@ export function InventoryScreen({ canUpdate = false }) {
   const queryClient = useQueryClient()
   const [query, setQuery] = useState(INITIAL_QUERY)
   const [searchInput, setSearchInput] = useState('')
-  const debouncedSearch = useDebounce(searchInput, 250)
+  const debouncedSearch = useDebounce(searchInput, 300)
   const isFirst = useRef(true)
   const [summary, setSummary] = useState(null)
   const [stockInTarget, setStockInTarget] = useState(null)

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 import { Check, ChevronDown, ChevronsUpDown, ChevronUp, Download, Plus } from 'lucide-react'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
@@ -32,7 +32,7 @@ export function ProductListScreen({ navigate, canUpdate }) {
     const params = new URLSearchParams(window.location.search)
     return params.get('search') || INITIAL_QUERY.search
   })
-  const debouncedSearch = useDebounce(searchInput, 250)
+  const debouncedSearch = useDebounce(searchInput, 300)
   const isFirstSearchRender = useRef(true)
   const [deletingId, setDeletingId] = useState(null)
   const [restoringId, setRestoringId] = useState(null)

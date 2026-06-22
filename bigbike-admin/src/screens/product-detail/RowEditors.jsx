@@ -118,9 +118,25 @@ export function CommitmentEditor({ items, onChange, disabled, contentLang = 'vi'
   )
 }
 
-// Trình soạn bảng "Mua tại BigBike.vn" dưới khu mua hàng: mỗi dòng = icon + nhãn (label)
-// + giá trị (value), song ngữ (theo contentLang); icon dùng chung. Thêm/bớt/đảo dòng tùy ý,
-// tối đa 12 dòng. Mirror CommitmentEditor — dùng lại COMMITMENT_ICON_OPTIONS.
+// Loại dòng dựng sẵn cho khối "Mua tại BigBike.vn": chọn 1 loại → tự điền NHÃN + biểu tượng,
+// và GỢI Ý giá trị (chỉ điền khi ô giá trị đang trống — không đè chữ admin đã gõ). 3 loại đầu
+// (Bảo hành / Giao hàng / Đổi size) khớp mẫu "J. TRUST BLOCK" + dữ liệu backfill V258.
+const PURCHASE_LINE_PRESETS = [
+  { icon: 'shield-check', Icon: ShieldCheck, label: 'Bảo hành', labelEn: 'Warranty', value: '12 tháng tại BigBike', valueEn: '12 months at BigBike' },
+  { icon: 'truck', Icon: Truck, label: 'Giao hàng', labelEn: 'Shipping', value: 'Toàn quốc · COD · Đồng kiểm khi nhận', valueEn: 'Nationwide · COD · check on delivery' },
+  { icon: 'refresh-cw', Icon: RefreshCw, label: 'Đổi size', labelEn: 'Size exchange', value: 'Miễn phí đổi trong 30 ngày nếu không vừa', valueEn: 'Free size exchange within 30 days' },
+  { icon: 'badge-check', Icon: BadgeCheck, label: 'Chính hãng', labelEn: 'Genuine', value: '', valueEn: '' },
+  { icon: 'credit-card', Icon: CreditCard, label: 'Thanh toán', labelEn: 'Payment', value: '', valueEn: '' },
+  { icon: 'headphones', Icon: Headphones, label: 'Hỗ trợ / Tư vấn', labelEn: 'Support', value: '', valueEn: '' },
+  { icon: 'map-pin', Icon: MapPin, label: 'Cửa hàng', labelEn: 'Store', value: '', valueEn: '' },
+  { icon: 'wrench', Icon: Wrench, label: 'Lắp đặt', labelEn: 'Installation', value: '', valueEn: '' },
+  { icon: 'gift', Icon: Gift, label: 'Quà tặng', labelEn: 'Gift', value: '', valueEn: '' },
+  { icon: 'award', Icon: Award, label: 'Chất lượng', labelEn: 'Quality', value: '', valueEn: '' },
+]
+
+// Trình soạn bảng "Mua tại BigBike.vn" dưới khu mua hàng: mỗi dòng = LOẠI DÒNG (dropdown tự điền
+// nhãn + gợi ý giá trị) + nhãn (label) + giá trị (value), song ngữ (theo contentLang). Thêm/bớt/đảo
+// dòng tùy ý, tối đa 12 dòng. Mirror CommitmentEditor.
 export function PurchaseLineEditor({ items, onChange, disabled, contentLang = 'vi' }) {
   const { t } = useTranslation()
   const isEn = contentLang === 'en'
@@ -128,6 +144,18 @@ export function PurchaseLineEditor({ items, onChange, disabled, contentLang = 'v
   const fValue = isEn ? 'valueEn' : 'value'
   function updateItem(index, field, value) {
     onChange(items.map((item, i) => (i === index ? { ...item, [field]: value } : item)))
+  }
+  // Chọn loại dòng: đặt biểu tượng + nhãn theo loại; điền gợi ý giá trị CHỈ khi đang trống.
+  function applyPreset(index, presetIcon) {
+    const preset = PURCHASE_LINE_PRESETS.find((p) => p.icon === presetIcon)
+    if (!preset) return
+    onChange(items.map((item, i) => {
+      if (i !== index) return item
+      const next = { ...item, icon: preset.icon, [fLabel]: isEn ? preset.labelEn : preset.label }
+      const presetValue = isEn ? preset.valueEn : preset.value
+      if (presetValue && !String(item[fValue] || '').trim()) next[fValue] = presetValue
+      return next
+    }))
   }
   function addItem() {
     onChange([...items, { _key: generateId(), icon: 'shield-check', label: '', value: '', labelEn: '', valueEn: '' }])
@@ -151,17 +179,17 @@ export function PurchaseLineEditor({ items, onChange, disabled, contentLang = 'v
         <div ref={sortable.setNodeRef} style={sortable.style} className="list-editor-row list-editor-row--stack">
           <DragHandle handleProps={sortable.handleProps} disabled={disabled} label={t('products.detail.dragToReorder')} />
           <div className="flex flex-1 flex-col gap-2">
-            {/* Icon dùng chung mọi ngôn ngữ — chỉ cho sửa ở chế độ nội dung tiếng Việt để tránh nhầm. */}
-            <Select value={item.icon || 'shield-check'} onValueChange={(v) => updateItem(index, 'icon', v)} disabled={disabled || isEn}>
-              <SelectTrigger className="w-full sm:w-56" aria-label={t('products.detail.commitments.iconLabel')}>
-                <SelectValue placeholder={t('products.detail.commitments.iconLabel')} />
+            {/* Loại dòng: chọn → tự điền nhãn + biểu tượng, gợi ý giá trị (nếu trống). Biểu tượng dùng chung mọi ngôn ngữ. */}
+            <Select value={item.icon || 'shield-check'} onValueChange={(v) => applyPreset(index, v)} disabled={disabled}>
+              <SelectTrigger className="w-full sm:w-56" aria-label={t('products.detail.purchaseLines.typeLabel')}>
+                <SelectValue placeholder={t('products.detail.purchaseLines.typeLabel')} />
               </SelectTrigger>
               <SelectContent>
-                {COMMITMENT_ICON_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
+                {PURCHASE_LINE_PRESETS.map((opt) => (
+                  <SelectItem key={opt.icon} value={opt.icon}>
                     <span className="flex items-center gap-2">
                       <opt.Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-                      {t(`products.detail.commitments.icons.${opt.labelKey}`)}
+                      {isEn ? opt.labelEn : opt.label}
                     </span>
                   </SelectItem>
                 ))}

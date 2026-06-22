@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Folder, FolderOpen, Plus, Pencil, Trash2, Inbox, Hash } from 'lucide-react'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 import { showConfirm } from '../lib/confirm'
 import {
   createMediaFolder,

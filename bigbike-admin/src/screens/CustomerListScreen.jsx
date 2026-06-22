@@ -5,7 +5,7 @@ import { PageSizeSelect } from '../components/PageSizeSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { useQuery } from '@tanstack/react-query'
 import { Crown, Download, UserCheck, UserPlus, Users } from 'lucide-react'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 import { PaginationControls } from '../components/PaginationControls'
 import { AdminTable } from '../components/AdminTable'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
@@ -45,7 +45,7 @@ export function CustomerListScreen({ navigate }) {
     const params = new URLSearchParams(window.location.search)
     return params.get('search') || INITIAL_QUERY.search
   })
-  const debouncedSearch = useDebounce(searchInput, 250)
+  const debouncedSearch = useDebounce(searchInput, 300)
   const isFirstSearchRender = useRef(true)
 
   const state = useAdminList(['customers', query], () => fetchCustomers(query))

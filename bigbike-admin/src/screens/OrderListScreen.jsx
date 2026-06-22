@@ -37,7 +37,7 @@ export function OrderListScreen({ navigate }) {
     const params = new URLSearchParams(window.location.search)
     return params.get('search') || INITIAL_QUERY.search
   })
-  const debouncedSearch = useDebounce(searchInput, 250)
+  const debouncedSearch = useDebounce(searchInput, 300)
   const isFirstSearchRender = useRef(true)
   const isFirstPage = query.page === 1 && query.orderStatus === 'ALL' && !query.search
 

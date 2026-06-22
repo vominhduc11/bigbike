@@ -127,7 +127,7 @@ export function AdminUsersScreen({ canUpdate, currentUserId }) {
   const [searchInput, setSearchInput] = useState('')
   const [roleFilter, setRoleFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
-  const debouncedSearch = useDebounce(searchInput, 250)
+  const debouncedSearch = useDebounce(searchInput, 300)
   const isFirstSearchRender = useRef(true)
   const [listState, setListState] = useState({ status: 'loading', items: [], pagination: null, warning: '' })
   // Sắp xếp phía client (endpoint admin users không hỗ trợ sort server-side).

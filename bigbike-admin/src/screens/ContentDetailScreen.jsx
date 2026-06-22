@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 import { AlertCircle, Check, Eye, Info, Loader2, Lock, Save, Search, Trash2, X } from 'lucide-react'
 import {
   createContent,

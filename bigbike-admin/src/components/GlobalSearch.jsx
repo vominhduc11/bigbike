@@ -29,7 +29,7 @@ export function GlobalSearch({ navigate, visiblePaths }) {
   const triggerRef = useRef(null)
   const listRef = useRef(null)
   const reqIdRef = useRef(0)
-  const debounced = useDebounce(term, 220)
+  const debounced = useDebounce(term, 300)
 
   const canOrders = visiblePaths.has('/admin/orders')
   const canProducts = visiblePaths.has('/admin/products')

@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 
 import { ProductView } from "@/components/catalog/ProductView";
 import { PreviewGuard } from "@/components/preview/PreviewGuard";
-import type { Product } from "@/lib/contracts/public";
+import { fetchPublicSettings } from "@/lib/api/client-api";
+import type { Product, PublicSiteSetting } from "@/lib/contracts/public";
 import { env } from "@/env";
 
 // Origin của app admin — chỉ nhận postMessage từ đây (chống frame lạ chèn dữ liệu).
@@ -21,6 +22,29 @@ type PreviewInbound = { type: "bigbike-preview"; data: Product };
  */
 export default function ProductPreviewPage() {
   const [product, setProduct] = useState<Product | null>(null);
+  // NAP toàn site (Hotline / Địa chỉ / Zalo) dùng cho khối "Mua tại BigBike.vn" + dải
+  // liên hệ chân trang. PDP công khai lấy từ server; route preview là client nên tự gọi
+  // endpoint public (không cần đăng nhập) để khung xem trước KHỚP web thật — trước đây
+  // truyền [] nên 2 ô Hotline/Địa chỉ bị trống. Lỗi/đang tải → giữ [] (ô rỗng tự ẩn,
+  // không chặn preview).
+  const [settings, setSettings] = useState<PublicSiteSetting[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchPublicSettings()
+      .then((list) => {
+        if (cancelled) return;
+        // Client API trả {settingKey,settingValue}; ProductView nhận PublicSiteSetting
+        // (thêm settingGroup) — chỉ đọc key/value nên gán group = null là đủ.
+        setSettings(list.map((s) => ({ ...s, settingGroup: null })));
+      })
+      .catch(() => {
+        /* settings lỗi → preview vẫn chạy, chỉ thiếu NAP như trước */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     function handleMessage(event: MessageEvent) {
@@ -51,7 +75,7 @@ export default function ProductPreviewPage() {
   return (
     <>
       <PreviewGuard />
-      <ProductView product={product} settings={[]} previewMode />
+      <ProductView product={product} settings={settings} previewMode />
     </>
   );
 }
