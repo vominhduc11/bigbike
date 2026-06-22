@@ -364,7 +364,7 @@ function isGeneratedSpecStatsHtml(html) {
 // Component được key theo contentLang ở screen → đổi ngôn ngữ = remount + nạp lại theo html.
 export function SpecStatEditor({ disabled, html = '', onHtmlChange }) {
   const { t } = useTranslation()
-  const newRow = () => ({ _key: generateId(), value: '', label: '' })
+  const newRow = () => ({ _key: generateId(), value: '', unit: '', label: '' })
   const [mode, setMode] = useState(() =>
     ((html || '').trim() && !isGeneratedSpecStatsHtml(html)) ? 'html' : 'structured',
   )
@@ -418,6 +418,13 @@ export function SpecStatEditor({ disabled, html = '', onHtmlChange }) {
               onChange={(e) => updateItem(index, 'value', e.target.value)}
               disabled={disabled}
               maxLength={60}
+            />
+            <Input
+              placeholder={t('products.detail.specStats.unitPlaceholder')}
+              value={item.unit || ''}
+              onChange={(e) => updateItem(index, 'unit', e.target.value)}
+              disabled={disabled}
+              maxLength={40}
             />
             <Input
               placeholder={t('products.detail.specStats.labelPlaceholder')}

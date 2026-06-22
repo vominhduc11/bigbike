@@ -680,9 +680,10 @@
       },
       "specStats": {
         "empty": "No stat boxes yet. Click \"+ Add box\" to start.",
-        "hint": "Up to 4 highlight stat boxes right under the buy area — the closing argument that the price is worth it (e.g. 24-month warranty, 4.8★ rating, ECE certified, 2,500+ sold). Each box is one big number plus a short label. Do NOT repeat technical specs here. Max 4; leave empty to hide the block.",
-        "valuePlaceholder": "Value (e.g. 24 months) *",
-        "labelPlaceholder": "Label (e.g. Warranty) *",
+        "hint": "Up to 4 highlight stat boxes right under the buy area — the closing argument that the price is worth it. Each box has 3 lines: the main figure (large, accent color) · a unit/note (gray, optional) · the metric name (uppercase). E.g. 1,350 / grams / WEIGHT, or ECE / 22.06 / SAFETY STANDARD. Do NOT repeat technical specs here. Max 4; leave empty to hide the block.",
+        "valuePlaceholder": "Main figure (e.g. 1,350) *",
+        "unitPlaceholder": "Unit / note (e.g. grams) — optional",
+        "labelPlaceholder": "Metric name (e.g. Weight) *",
         "removeRow": "Remove box",
         "addRow": "Add box"
       },

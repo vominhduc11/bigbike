@@ -680,9 +680,10 @@
       },
       "specStats": {
         "empty": "Chưa có ô số liệu. Nhấn \"+ Thêm ô\" để bắt đầu.",
-        "hint": "4 ô số liệu nổi bật ngay dưới khu vực mua hàng — là \"đòn chốt\" giúp khách thấy đáng tiền (vd: 24 tháng bảo hành, 4.8★ đánh giá, đạt chuẩn ECE, 2.500+ đã bán). Mỗi ô gồm một con số lớn và nhãn ngắn. KHÔNG nên lặp lại thông số kỹ thuật. Tối đa 4 ô; để trống thì khối tự ẩn.",
-        "valuePlaceholder": "Số liệu (vd: 24 tháng) *",
-        "labelPlaceholder": "Nhãn (vd: Bảo hành) *",
+        "hint": "4 ô số liệu nổi bật ngay dưới khu vực mua hàng — là \"đòn chốt\" giúp khách thấy đáng tiền. Mỗi ô gồm 3 dòng: số liệu chính (lớn, màu nhấn) · đơn vị/chú thích (xám, có thể bỏ trống) · tên chỉ tiêu (in hoa). Ví dụ: 1.350 / gram / TRỌNG LƯỢNG, hoặc ECE / 22.06 / CHUẨN AN TOÀN. KHÔNG nên lặp lại thông số kỹ thuật. Tối đa 4 ô; để trống thì khối tự ẩn.",
+        "valuePlaceholder": "Số liệu chính (vd: 1.350) *",
+        "unitPlaceholder": "Đơn vị / chú thích (vd: gram) — tùy chọn",
+        "labelPlaceholder": "Tên chỉ tiêu (vd: Trọng lượng) *",
         "removeRow": "Xoá ô",
         "addRow": "Thêm ô"
       },

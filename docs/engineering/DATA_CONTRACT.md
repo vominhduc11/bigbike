@@ -312,10 +312,15 @@ on read, raw English trong `translations.en`, detail-only, presence-flag on PATC
 |---|---|---|---|
 | `specStatsHtml` | `spec_stats_html` + `spec_stats_html_en` (`V256`) | `TEXT`, max 50 000 | Khi non-blank, web **render HTML này** (qua `sanitizeRichHtml` với `allowInlineStyles`) THAY cho lưới `specStats` có cấu trúc; rỗng → lưới ô số liệu có cấu trúc (`product_spec_stats`) làm lưới an toàn legacy. |
 
-**Admin UX (không đổi contract):** khối có 2 tab — nhập "có cấu trúc" (value/nhãn, tối đa 4) HOẶC
+**Admin UX (không đổi contract):** khối có 2 tab — nhập "có cấu trúc" (mỗi ô tối đa 3 dòng: **value**
+số liệu chính + **unit** đơn vị/chú thích TÙY CHỌN + **label** tên chỉ tiêu, tối đa 4 ô) HOẶC
 "dán HTML"; cả 2 cùng ghi vào `specStatsHtml`. Tab cấu trúc là công cụ nhập: sửa được GHÉP vào HTML
 hiện có (giữ style/markup, chỉ đổi chữ — helper `lib/specStatsBlock.js`, lưới sinh ra có class
-`bb-specstats` + inline-style tự chứa mô phỏng `FeaturedSpecsBar`). HTML→cấu trúc parse lấy chữ (bỏ
+`bb-specstats` + inline-style tự chứa mô phỏng `FeaturedSpecsBar`). Mỗi ô mã hoá theo **số span**: 2
+span = `[value, label]` (không đơn vị — gồm cả HTML legacy chỉ-2-dòng), 3 span = `[value, unit, label]`;
+`value` luôn span đầu, `label` luôn span cuối → parse không nhập nhằng, sản phẩm cũ 2 dòng vẫn đọc đúng.
+Lưu ý: dòng `unit` chỉ nằm TRONG `specStatsHtml`; mảng `specStats` có cấu trúc (`product_spec_stats`,
+fallback legacy) vẫn chỉ `{value, label}` — đúng mô hình "HTML là nguồn". HTML→cấu trúc parse lấy chữ (bỏ
 CSS). Nạp sản phẩm cũ chưa có `spec_stats_html` → admin sinh HTML từ lưới `specStats`. Status:
 `CONFIRMED_FROM_CODE` — `ProductEntity.specStatsHtml`/`specStatsHtmlEn`, `Product.specStatsHtml`,
 `UpsertProductRequest`(+presence)/`ProductTranslationRequest`, `AdminCatalogMutationService` /
