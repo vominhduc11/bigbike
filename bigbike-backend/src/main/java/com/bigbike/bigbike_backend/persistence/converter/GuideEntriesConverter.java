@@ -10,7 +10,7 @@ import java.util.List;
 
 /**
  * JPA converter that marshals {@code List<GuideEntry>} to/from a JSON string stored in the
- * {@code guide_page_layout.entries} JSONB column. Mirrors {@link ContactBlocksConverter}.
+ * {@code guide_page_layout.entries} JSONB column.
  */
 @Converter
 public class GuideEntriesConverter implements AttributeConverter<List<GuideEntry>, String> {

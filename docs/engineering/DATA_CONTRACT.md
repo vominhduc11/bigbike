@@ -927,28 +927,11 @@ Status: `CONFIRMED_FROM_CODE` — `ArticleEntity.bodyBlocks`, `Article.bodyBlock
 
 Status: `CONFIRMED_FROM_CODE` — `PageEntity.bodyBlocks`, `Page.bodyBlocks`, `AdminContentItem.bodyBlocks`, `UpsertPageRequest.bodyBlocksPresent`, `AdminContentMutationService.applyPagePatch`, migration `V140/V141`.
 
-### Contact page layout — `contact_page_layout.blocks` (V224)
+### Contact page layout — đã gỡ (`contact_page_layout`, V224 → drop V270)
 
-Bảng singleton `contact_page_layout(id uuid PK, blocks jsonb, updated_at timestamptz)` — đúng **một dòng** (id cố định `…0000c0`, seed trong `V224`). Cột `blocks` là mảng khối bố cục của trang `/lien-he`; builder thay cả mảng khi lưu (giống pattern save-whole-list của home highlights).
+Trang `/lien-he` nay là **trang tĩnh**: bố cục cố định trong code web, không còn bảng layout do admin quản lý. Bảng singleton `contact_page_layout` (V224) đã bị **drop ở `V270`**; toàn bộ Java mapping (entity/repository/converter/service/controllers) đã gỡ. Thông tin liên hệ (hotline/địa chỉ/giờ/URL mạng xã hội) vẫn ở `site_settings` nhóm `contact` (single source dùng chung header/footer/web) — xem §"Site settings groups".
 
-Mỗi phần tử (`ContactBlock`):
-
-| field | kiểu | ghi chú |
-|---|---|---|
-| `id` | string | khóa ổn định cho reorder |
-| `type` | enum | `channel` \| `address` \| `hours` \| `map` \| `richtext` |
-| `enabled` | boolean | khối có render trên web không |
-| `sortOrder` | int | thứ tự trong cột (tăng dần) |
-| `column` | enum | `main` (trái) \| `online` (phải) |
-| `icon` | string | tên lucide (vd `Phone`) **hoặc** đường dẫn/URL ảnh |
-| `labelVi` / `labelEn` | string | nhãn song ngữ; web lùi về VI khi EN trống |
-| `bindKey` | string? | key `site_settings` cấp giá trị (null = khối custom) |
-| `value` / `href` | string? | giá trị/link **chỉ** cho khối custom (bound thì null) |
-| `htmlVi` / `htmlEn` | string? | nội dung HTML cho khối `richtext` |
-
-**Single source of truth:** giá trị khối bound (hotline, địa chỉ, giờ, URL mạng xã hội) **không** lưu trong `blocks` — nằm ở `site_settings`, ghi xuyên qua endpoint contact-page (whitelist nhóm `contact`). Xem `BUSINESS_RULES.md` §"Contact Page Builder Rules".
-
-Status: `CONFIRMED_FROM_CODE` — `ContactBlock.java`, `ContactPageLayoutEntity.java`, `ContactBlocksConverter.java`, `ContactPageService.java`, migration `V224`.
+Status: `CONFIRMED_FROM_CODE` — `bigbike-web/app/lien-he/page.tsx`, `bigbike-web/components/contact/ContactPageContent.tsx`, migration `V270__drop_contact_page_layout.sql`.
 
 ### Guide page layout — `guide_page_layout.entries` (V227)
 
@@ -1213,9 +1196,9 @@ Evidence: `AdminAnalyticsResponse.java`, `AdminReportService.java`, `OrderJpaRep
 | `setting_group` | Purpose | Admin tab |
 |---|---|---|
 | `general` | Site name, footer text, BCT registration URL | Cài đặt chung |
-| `contact` | Public contact email/address, social links | Liên hệ |
+| `contact` | Hotline/email/address, opening hours, social links — **shared site data** for the header/footer + the static `/lien-he` and `/gioi-thieu` pages. Since 2026-06-23 both the contact page builder and the Settings "Liên hệ" tab are gone; the group has **no admin UI** (hidden via `HIDDEN_GROUPS`). Rows stay in the DB and feed the web read-only; unhide `CONTACT` to allow editing again. | (ẩn — dữ liệu chung, không UI) |
 | `public_home` | Homepage hotline, promo banner, experience/about blocks | Trang chủ |
-| `public_about` | **Legacy/backup (V270, 2026-06-23).** Was the source of the About page (`/gioi-thieu`); the page is now authored as **`Page.body` / `bodyBlocks`** in the Nội dung module like every other CMS page. The 28 keys (seeded `V223`/`V269`) are kept as a content backup but no longer drive the page, and the "Trang Giới thiệu" tab is hidden in admin (`HIDDEN_GROUPS`). | (ẩn — backup) |
+| `public_about` | **Unused since 2026-06-23.** The About page's **body copy is now static** — hardcoded in the web via the i18n `About` namespace, not read from settings. The 28 keys (seeded `V223`/`V269`) remain in the DB but drive nothing; admin "Trang Giới thiệu" tab is hidden (`HIDDEN_GROUPS`). The page **hero banner + SEO stay admin-managed** via the `pages` entity. | (ẩn — không dùng) |
 | `public_product` | **No shared settings.** All product-detail content is per-product now: the commitment-rows block under the buy buttons (`product.commitments`, child table `product_commitments`, V232) and the trust-badge row above the title (`product.trustBadges`, child table `product_trust_badges`, V233). The former `product_commitment_*` (V228) and `product_trust_*` keys were removed in V232/V233. | Trang sản phẩm |
 | `public_hero` | Hero banners for listing pages (`/san-pham`, `/brands`, `/tin-tuc`) — 17 keys (5 per page incl. per-page `illustration_url` + 2 global fallbacks). Managed by the dedicated **Banner trang** admin screen (`BannerScreen.jsx`), not the generic settings screen. | Banner trang |
 | `promo` | Homepage promotion banner | Khuyến mãi |
@@ -1229,7 +1212,7 @@ Evidence: `AdminAnalyticsResponse.java`, `AdminReportService.java`, `OrderJpaRep
 
 ### `public_about` keys — full About page content (V223)
 
-> **Superseded by `V270` (2026-06-23).** The About page is no longer rendered from these settings — it is now authored as `Page.body` + `bodyBlocks` (22 text blocks for VI, raw HTML for `body_en`) in the Nội dung module, exactly like `/lien-he`, `/huong-dan`, `/chinh-sach/*`. `V270` seeds that page content from the VI copy below; the 28 `public_about` rows are **retained untouched as a backup** (not dropped) and the admin "Trang Giới thiệu" settings tab is hidden. `AboutServiceMediaSeeder` + the registry group remain but are dormant. The historical description below is kept for reference.
+> **Unused since 2026-06-23.** The About page's **body copy** is now static (hardcoded in the web, i18n `About` namespace) and these `public_about` settings drive nothing. The page's **hero banner + SEO are still admin-managed** via the `pages` entity (Nội dung module). The 28 rows stay in the DB (not dropped) and the keys below are kept for reference only.
 
 The `/gioi-thieu` page was previously rendered from hardcoded theme copy (i18n `About` namespace) whenever the `Page.body` was blank. `V223__seed_about_page_content_settings.sql` lifts that copy into `site_settings` (group `public_about`, all `is_public = true`) so the shop admin can edit every part from **Cài đặt → Trang Giới thiệu** while keeping the original 5-tile layout. Each text key is seeded with both `setting_value` (VI) and `setting_value_en` (EN). The web page reads settings-first and falls back to the i18n `About` defaults only when a key is blank.
 

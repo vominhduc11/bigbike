@@ -8,7 +8,6 @@ import type {
   CatalogFacets,
   Category,
   ClientError,
-  ContactBlock,
   ContentCategoryWithCount,
   DataResult,
   GuidePageLayout,
@@ -372,15 +371,6 @@ export function getPublicMenu(location: string, lang?: string): Promise<DataResu
 
 export function listPublicSettings(lang?: string): Promise<DataResult<PublicSiteSetting[]>> {
   return loadDataWithQuery("/api/v1/settings/public", { lang }, 3600, ["settings", `lang:${lang ?? "vi"}`]);
-}
-
-export function getContactPageLayout(lang?: string): Promise<DataResult<ContactBlock[]>> {
-  return loadDataWithQuery(
-    "/api/v1/contact-page",
-    { lang },
-    3600,
-    ["contact-page", "page:lien-he", `lang:${lang ?? "vi"}`],
-  );
 }
 
 export function getGuidePageLayout(lang?: string): Promise<DataResult<GuidePageLayout>> {

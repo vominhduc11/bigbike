@@ -894,7 +894,7 @@ Status: `REMOVED`
   - `promo_title`, `promo_off`, `promo_href`, `promo_image_url` — homepage promo banner block.
   - `home_exp_subtitle`, `home_exp_title`, `home_exp_desc` — homepage experience/news teaser section copy.
   - `about_title`, `about_subtitle`, `about_content_html` — homepage about block copy.
-- `public_about`: **legacy/backup since `V270` (2026-06-23).** Was the editable copy for the **About page** (`/gioi-thieu`, added in `V223`). The page is now authored as `Page.body`/`bodyBlocks` in the Nội dung module (like `/lien-he`, `/huong-dan`); `V270` seeds that page content and these 28 keys are **kept as a backup, not dropped**. The admin "Trang Giới thiệu" settings tab is hidden (`HIDDEN_GROUPS`). The keys below are retained for reference/restore only.
+- `public_about`: **unused since 2026-06-23.** Was the editable copy for the **About page** (`/gioi-thieu`, added in `V223`). The About page's **body copy is now static** — hardcoded in the web via the i18n `About` namespace, not read from settings. The 28 keys stay in the DB (not dropped) but drive nothing; the admin "Trang Giới thiệu" settings tab is hidden (`HIDDEN_GROUPS`). **The page's hero banner (title/image) + SEO are still admin-managed** via the `pages` entity (`GET /api/v1/pages/gioi-thieu`, Nội dung module) — only the body copy is static.
   - `about_page_kicker` (STRING), `about_page_tagline` (LONG_TEXT) — intro block-head.
   - `about_page_intro_html` (HTML) — the four opening paragraphs as one rich-text field.
   - `about_page_quality_heading` (STRING), `about_page_quality_body` (LONG_TEXT) — "Chất lượng dịch vụ" block-head.
@@ -930,19 +930,9 @@ Concrete keys: `hero_products_*`, `hero_brands_*`, `hero_news_*` (15 total). All
 
 **Public `Page` response** adds `heroImageUrl`, `heroImageAlt`, `heroTitle`, `heroDescription`, `heroKicker` (all nullable strings) to the existing shape.
 
-## Contact Page Builder Contract
+## Contact Page (trang tĩnh — không có endpoint)
 
-Bố cục trang `/lien-he` (xem [DATA_CONTRACT.md](DATA_CONTRACT.md) §"Contact page layout").
-
-> **Admin UI (2026-06-23):** trình dựng được nhúng làm một tab trong trang editor của module Nội dung (mở trang CMS slug `lien-he`), không còn màn riêng. Một lần bấm Lưu của trang gọi tuần tự `PUT /pages/{id}` (tiêu đề/SEO) **rồi** `PUT /admin/contact-page` (bố cục + giá trị) — endpoint không đổi. Tab "Liên hệ" ở Cài đặt đã gỡ; các key contact (gồm `zalo_display`/`messenger_display`) nhập trong tab này.
-
-| Endpoint | Permission | Behavior | Status | Evidence |
-|---|---|---|---|---|
-| `GET /api/v1/admin/contact-page` | `content.read` | Trả `{ blocks, values }`: toàn bộ khối (cả khối ẩn) + giá trị hiện tại của mọi key contact whitelisted để builder sửa inline. | `CONFIRMED_FROM_CODE` | `AdminContactPageController.java`, `ContactPageService.getForAdmin` |
-| `PUT /api/v1/admin/contact-page` | `content.update` | Body `{ "blocks":[…], "values":[{"key","value","valueEn"}] }`. Lưu cả mảng khối (tối đa 40); với khối bound, **ghi xuyên** `values` xuống `site_settings` qua `AdminSettingsService` (chỉ key thuộc whitelist nhóm `contact` — editor không cần `settings.write`). Validate giá trị theo `SettingValueValidator`. Revalidate `page:lien-he` + `settings`. | `CONFIRMED_FROM_CODE` | `AdminContactPageController.java`, `ContactPageService.save` |
-| `GET /api/v1/contact-page` | public | `?lang=vi\|en`. Trả mảng khối `enabled`, nhãn/HTML đã resolve theo lang. Web tự merge giá trị khối bound từ `GET /api/v1/settings/public`. | `CONFIRMED_FROM_CODE` | `PublicContactPageController.java`, `ContactPageService.listPublicBlocks` |
-
-Whitelist key ghi xuyên (`ContactPageService.WRITE_THROUGH_KEYS`): `hotline`, `hotline_2`, `hotline_3`, `contact_email`, `contact_address`, `zalo_url`, `zalo_display`, `facebook_url`, `messenger_url`, `messenger_display`, `instagram_url`, `youtube_url`, `tiktok_url`, `opening_hours_weekday`, `opening_hours_weekend`, `opening_hours_holiday`.
+Trang `/lien-he` là **trang tĩnh hoàn toàn**: bố cục, nhãn, tiêu đề và SEO cố định trong code web (i18n `Contact`/`StaticPage`), admin không quản lý. **Đã gỡ toàn bộ endpoint contact-page** (cả `GET/PUT /api/v1/admin/contact-page` lẫn public `GET /api/v1/contact-page`) và bảng `contact_page_layout` (drop ở `V270`, was V224). Số điện thoại/địa chỉ/giờ/mạng xã hội hiển thị trên trang là dữ liệu chung lấy từ `GET /api/v1/settings/public` (nhóm `contact`, cùng nguồn header/footer). Evidence: `bigbike-web/app/lien-he/page.tsx`, `bigbike-web/components/contact/ContactPageContent.tsx`, `V270__drop_contact_page_layout.sql`.
 
 ## Guide Page Builder Contract
 

@@ -229,22 +229,20 @@ Evidence:
 - `V138__add_article_page_bilingual_content.sql`
 - `DATA_CONTRACT.md` — "Page bilingual content"
 
-## Contact Page Builder Rules
+## Contact Page Rules
 
-Trang `/lien-he` không phải nội dung tĩnh: phần thân do admin dựng qua **trình dựng trang Liên hệ** (một danh sách khối có thứ tự). Tiêu đề/mô tả đầu trang vẫn lấy từ trang CMS slug `lien-he` (theo Static Page Rules).
+Trang `/lien-he` là **trang tĩnh hoàn toàn**: bố cục, nhãn, tiêu đề và SEO cố định trong code web (i18n `Contact`/`StaticPage`). Không có hero. Admin **không quản lý** trang này — không trang CMS, không trình dựng khối, không tab Cài đặt. (Đảo bỏ trình dựng `contact_page_layout` trước đây — bảng đã drop ở `V270`.)
 
-- `CONTACT_PAGE_RULE_000`: Trình dựng được **nhúng ngay trong tab "Nội dung"** của trang editor module Nội dung (mở trang CMS slug `lien-he` → cuộn xuống dưới phần soạn thảo là phần bố cục liên hệ; **không còn tab "Bố cục liên hệ" riêng** — đã gộp vào tab Nội dung); **không còn màn "Trang Liên hệ" riêng** ở menu, và **không còn tab "Liên hệ" ở Cài đặt**. Tiêu đề/SEO (phần trang CMS) và bố cục/giá trị (phần trình dựng) lưu **chung trong một lần bấm Lưu** của trang. `CONFIRMED_FROM_CODE`
-- `CONTACT_PAGE_RULE_001`: Bố cục là một mảng khối (tối đa 40) lưu trong bảng singleton `contact_page_layout`. Mỗi khối có `type` ∈ {`channel`,`address`,`hours`,`map`,`richtext`}, cờ `enabled`, `sortOrder`, `column` ∈ {`main`,`online`}, `icon`, nhãn song ngữ (`labelVi`/`labelEn`). `CONFIRMED_FROM_CODE`
-- `CONTACT_PAGE_RULE_002`: Giá trị của khối **bound** (kênh dùng chung như hotline/địa chỉ/giờ/URL mạng xã hội, gồm cả `zalo_display`/`messenger_display`) **không** lưu trong khối — nó nằm ở `site_settings` (single source dùng chung header/footer) và được **ghi xuyên** qua endpoint contact-page, giới hạn bởi whitelist nhóm `contact` (`WRITE_THROUGH_KEYS`). Trình dựng có thêm mục "Thông tin liên hệ dùng chung" để nhập mọi key whitelisted một nơi (kể cả key chưa gắn khối nào). Chỉ khối custom (không `bindKey`) mới giữ `value`/`href` riêng; `richtext` giữ `htmlVi`/`htmlEn`. `CONFIRMED_FROM_CODE`
-- `CONTACT_PAGE_RULE_003`: Nhãn/HTML lùi về bản tiếng Việt khi thiếu bản tiếng Anh (giống `PAGE_RULE_002`). Quản lý bằng quyền `content.update`; storefront chỉ nhận khối `enabled`. `CONFIRMED_FROM_CODE`
+- `CONTACT_PAGE_RULE_001`: Bố cục cố định trong code (`bigbike-web/components/contact/ContactPageContent.tsx`): cột thông tin (hotline / địa chỉ / giờ làm việc) + cột kênh trực tuyến (Zalo / Facebook / hotline) + bản đồ Google nhúng dựng từ địa chỉ cửa hàng. `CONFIRMED_FROM_CODE`
+- `CONTACT_PAGE_RULE_002`: Số điện thoại / địa chỉ / giờ / URL mạng xã hội **không** hardcode trong code — là dữ liệu CHUNG ở `site_settings` nhóm `contact` (single source dùng chung header/footer/trang Giới thiệu), web đọc qua `GET /api/v1/settings/public`. Vì admin không quản lý trang Liên hệ, nhóm `contact` hiện không có UI sửa (tab Cài đặt ẩn qua `HIDDEN_GROUPS`); muốn cho sửa lại thì bỏ `CONTACT` khỏi `HIDDEN_GROUPS`. `CONFIRMED_FROM_CODE`
+- `CONTACT_PAGE_RULE_003`: Nhãn/tiêu đề song ngữ VI/EN qua i18n; không còn endpoint admin/public riêng cho trang (`GET/PUT /api/v1/admin/contact-page` và `GET /api/v1/contact-page` đã gỡ). `CONFIRMED_FROM_CODE`
 
 Evidence:
 
-- `ContactBlock.java`, `ContactPageLayoutEntity.java`, `ContactBlocksConverter.java`
-- `ContactPageService.java` (whitelist `WRITE_THROUGH_KEYS`, write-through qua `AdminSettingsService`)
-- `AdminContactPageController.java` (`content.update`), `PublicContactPageController.java`
-- `V224__add_contact_page_layout.sql`
-- `bigbike-web/app/lien-he/page.tsx` (render động), `bigbike-admin/src/screens/ContactPageBuilderScreen.jsx` (export `ContactPageBuilderPanel`, nhúng trong `ContentDetailScreen.jsx`)
+- `bigbike-web/app/lien-he/page.tsx`, `bigbike-web/components/contact/ContactPageContent.tsx` (trang tĩnh)
+- `bigbike-web/messages/{vi,en}.json` namespace `Contact` (nhãn/tiêu đề song ngữ)
+- `V270__drop_contact_page_layout.sql` (drop bảng; gỡ controller/service/entity/DTO/converter contact-page + whitelist `SecurityConfig`)
+- `bigbike-admin/src/screens/settings/constants.js` (`CONTACT` trong `HIDDEN_GROUPS`)
 
 ## Guide Page Builder Rules
 
@@ -253,7 +251,7 @@ Trang tổng `/huong-dan` không phải nội dung tĩnh: lưới ô hướng d�
 - `GUIDE_PAGE_RULE_000`: Trình dựng được **nhúng làm một tab bên trong trang editor của module Nội dung** (mở trang CMS slug `huong-dan` → tab "Lưới hướng dẫn"); **không còn màn "Trang Hướng dẫn" riêng** ở menu. Hero/lưới (phần trình dựng) và tiêu đề/SEO (phần trang CMS) lưu **chung trong một lần bấm Lưu** của trang. `CONFIRMED_FROM_CODE`
 - `GUIDE_PAGE_RULE_001`: Lưới là một mảng ô (tối đa 40) lưu trong bảng singleton `guide_page_layout`. Mỗi ô có `enabled`, `sortOrder`, `pathSegment` (đoạn URL dưới `/huong-dan/`), `pageSlug` (trang CMS chứa nội dung), `icon` (lucide hoặc URL ảnh MinIO), tiêu đề/mô tả song ngữ. `CONFIRMED_FROM_CODE`
 - `GUIDE_PAGE_RULE_002`: Web dựng lưới, sidebar và map `pathSegment→pageSlug` **chỉ** từ entries của builder — không còn đọc menu location `guide` cho sidebar (menu đó giữ lại nhưng không dùng cho trang này). Ô `pathSegment` không khớp entry nào → 404. `CONFIRMED_FROM_CODE`
-- `GUIDE_PAGE_RULE_003`: Tiêu đề/mô tả/hero lùi về bản tiếng Việt khi thiếu bản tiếng Anh (giống `CONTACT_PAGE_RULE_003`). Quản lý bằng quyền `content.update`; storefront chỉ nhận ô `enabled`. Ảnh icon/hero upload qua media library → MinIO, chỉ lưu URL. `CONFIRMED_FROM_CODE`
+- `GUIDE_PAGE_RULE_003`: Tiêu đề/mô tả/hero lùi về bản tiếng Việt khi thiếu bản tiếng Anh (giống `PAGE_RULE_002`). Quản lý bằng quyền `content.update`; storefront chỉ nhận ô `enabled`. Ảnh icon/hero upload qua media library → MinIO, chỉ lưu URL. `CONFIRMED_FROM_CODE`
 
 Evidence:
 
@@ -349,4 +347,4 @@ Evidence:
 
 ## Contact Inbox Rules
 
-> Removed. The public contact form and admin contact inbox were deleted (migration `V128__drop_contact_messages.sql`). Customers reach the shop through the contact info on `/lien-he` (hotline, Zalo, Facebook, address, map) — now **admin-managed via the contact page builder** (see "Contact Page Builder Rules"), not a static page. There is still no contact form, no `contact_messages` table, and no `contact.read`/`contact.write` permissions.
+> Removed. The public contact form and admin contact inbox were deleted (migration `V128__drop_contact_messages.sql`). Customers reach the shop through the contact info on `/lien-he` (hotline, Zalo, Facebook, address, map) — a **static page** (see "Contact Page Rules"); the shared contact values come from `site_settings` group `contact`. There is still no contact form, no `contact_messages` table, and no `contact.read`/`contact.write` permissions.

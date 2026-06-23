@@ -20,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>The hero and the card grid live in the singleton {@code guide_page_layout} row. Detail bodies
  * are <em>not</em> stored here — each card points (via {@link GuideEntry#pageSlug()}) at a CMS page
  * whose body/SEO/EN content is managed in the existing Content → Pages module. Save replaces the
- * whole card array, mirroring {@code ContactPageService}.
+ * whole card array.
  */
 @Service
 @RequiredArgsConstructor

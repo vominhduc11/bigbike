@@ -53,14 +53,11 @@ import {
 import { ContentAssignmentBanner } from './content-detail/ContentAssignmentBanner'
 import { SectionCard } from './content-detail/SectionCard'
 import { Field } from './content-detail/Field'
-import { ContactPageBuilderPanel } from './ContactPageBuilderScreen'
 import { GuidePageBuilderPanel } from './GuidePageBuilderScreen'
 
 // Trang CMS đặc biệt có trình dựng khối nhúng kèm (gộp quản lý vào module Nội dung). Khóa theo slug
-// cố định của trang (PAGE_RULE_003) — khớp cách web định tuyến riêng /lien-he và /huong-dan.
+// cố định của trang (PAGE_RULE_003) — khớp cách web định tuyến riêng /huong-dan.
 const SPECIAL_BUILDERS = {
-  // Liên hệ: gộp trình dựng vào tab "Nội dung" → không cần nhãn tab riêng.
-  'lien-he': { kind: 'contact' },
   'huong-dan': { kind: 'guide', tabLabelKey: 'content.detail.tabGuideBuilder' },
 }
 
@@ -291,7 +288,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
       if (pageChanged) {
         await saveMutation.mutateAsync(toPayload(form, isCreate))
       }
-      // Lưu phần trình dựng khối nhúng (Liên hệ/Hướng dẫn) trong cùng một lần bấm Lưu.
+      // Lưu phần trình dựng khối nhúng (Hướng dẫn) trong cùng một lần bấm Lưu.
       if (builderChanged) {
         setIsSubmitting(true) // page onSuccess đã tắt cờ — bật lại trong lúc lưu builder
         await builderRef.current.save()
@@ -545,8 +542,8 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
           items={[
             { key: 'content', label: t('content.detail.tabContent'),     count: tabCounts.content || undefined },
             { key: 'seo',     label: t('content.detail.tabSeoPublish'),  count: tabCounts.seo     || undefined },
-            // Trang Liên hệ gộp trình dựng vào tab Nội dung (không tab riêng); các builder khác (Hướng dẫn) vẫn ở tab riêng.
-            ...(specialBuilder && specialBuilder.kind !== 'contact' ? [{ key: 'builder', label: t(specialBuilder.tabLabelKey) }] : []),
+            // Trang có trình dựng khối nhúng (Hướng dẫn) hiển thị thêm một tab riêng.
+            ...(specialBuilder ? [{ key: 'builder', label: t(specialBuilder.tabLabelKey) }] : []),
           ]}
         />
 
@@ -925,16 +922,11 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
           )}
         </form>
 
-        {/* Trình dựng khối nhúng (Liên hệ / Hướng dẫn) — luôn mounted để giữ ref + cờ "chưa lưu";
-            ẩn khi không ở tab tương ứng. Lưu chung với nút Lưu của trang.
-            Liên hệ: hiển thị ngay trong tab "Nội dung". Hướng dẫn: ở tab riêng "builder". */}
+        {/* Trình dựng khối nhúng (Hướng dẫn) — luôn mounted để giữ ref + cờ "chưa lưu";
+            ẩn khi không ở tab "builder". Lưu chung với nút Lưu của trang. */}
         {specialBuilder && (
-          <div className={cn('flex flex-col gap-6 pb-4', activeTab === (specialBuilder.kind === 'contact' ? 'content' : 'builder') ? '' : 'hidden')}>
-            {specialBuilder.kind === 'contact' ? (
-              <ContactPageBuilderPanel ref={builderRef} canUpdate={canUpdate} onDirtyChange={setBuilderDirty} />
-            ) : (
-              <GuidePageBuilderPanel ref={builderRef} canUpdate={canUpdate} onDirtyChange={setBuilderDirty} />
-            )}
+          <div className={cn('flex flex-col gap-6 pb-4', activeTab === 'builder' ? '' : 'hidden')}>
+            <GuidePageBuilderPanel ref={builderRef} canUpdate={canUpdate} onDirtyChange={setBuilderDirty} />
           </div>
         )}
 

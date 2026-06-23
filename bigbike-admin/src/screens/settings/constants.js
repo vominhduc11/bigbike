@@ -4,7 +4,7 @@
 import {
   Store, Phone, CreditCard, Tag, Globe, Settings,
   Home, Building2, Image as ImageIcon, Package, Users,
-  Landmark, Info, ShieldCheck, ShoppingBag,
+  Landmark, ShieldCheck, ShoppingBag,
 } from 'lucide-react'
 import { IMAGE_RECO } from '../../lib/imageRecommendations'
 
@@ -88,7 +88,7 @@ export function validateValue(key, value) {
 
 // Groups whose display text is shown on the storefront and can carry an English
 // translation. Config / contact / store / tax keys stay Vietnamese-only.
-const TRANSLATABLE_GROUPS = new Set(['GENERAL', 'PUBLIC_HOME', 'PUBLIC_ABOUT', 'PUBLIC_PRODUCT', 'PUBLIC_HERO', 'SEO'])
+const TRANSLATABLE_GROUPS = new Set(['GENERAL', 'PUBLIC_HOME', 'PUBLIC_PRODUCT', 'PUBLIC_HERO', 'SEO'])
 
 // A setting is English-translatable when it lives in a translatable group AND renders
 // as text (rich-text, long-text, or a plain text input) — never images/URLs/numbers/phones.
@@ -110,7 +110,7 @@ export function isTranslatableSetting(setting) {
 export const BANNERS_TAB_ID = '__banners__'
 
 export const TAB_ORDER = [
-  'GENERAL', 'CONTACT', 'PAYMENT', 'PUBLIC_HOME', 'PUBLIC_ABOUT', 'PUBLIC_PRODUCT', 'PUBLIC_HERO', 'PROMO', 'SEO', 'STORE', 'TAX', 'INVENTORY',
+  'GENERAL', 'CONTACT', 'PAYMENT', 'PUBLIC_HOME', 'PUBLIC_PRODUCT', 'PUBLIC_HERO', 'PROMO', 'SEO', 'STORE', 'TAX', 'INVENTORY',
   'PRODUCT_ASSIGN',
 ]
 
@@ -127,11 +127,13 @@ export const SENSITIVE_SETTING_TABS = new Set(['STORE', 'TAX'])
 //   nay nhúng làm tab "Banner trang" NGAY TRONG màn Cài đặt (xem BANNERS_TAB_ID) — ẩn khỏi danh
 //   sách tab generic để không hiện 2 lần / sửa 2 nơi.
 // - CONTACT: thông tin liên hệ (hotline/địa chỉ/giờ/mạng xã hội, gồm cả zalo_display/messenger_display)
-//   giờ nhập trong trang Liên hệ của module Nội dung (trình dựng nhúng, ghi xuyên site_settings) —
-//   gỡ khỏi đây để không sửa 2 nơi. Vẫn dùng chung cho header/footer.
-// - PUBLIC_ABOUT: trang Giới thiệu giờ soạn bằng KHỐI trong module Nội dung (mở trang CMS slug
-//   'gioi-thieu'), không dựng từ settings nữa (xem migration V270). Ẩn tab để không sửa 2 nơi.
-//   28 dòng about_page_* vẫn giữ trong DB làm bản lưu dự phòng — không xoá.
+//   là dữ liệu CHUNG cho header/footer + trang Liên hệ (tĩnh) + trang Giới thiệu. Trang Liên hệ nay
+//   là TRANG TĨNH, không còn trình dựng — không màn admin nào sửa nhóm này (cố định theo yêu cầu owner).
+//   Bản ghi vẫn ở site_settings để web/header/footer đọc; muốn cho sửa lại thì bỏ 'CONTACT' khỏi
+//   HIDDEN_GROUPS để hiện lại tab Cài đặt › Liên hệ.
+// - PUBLIC_ABOUT: trang Giới thiệu (/gioi-thieu) nay là TRANG TĨNH trong web — chữ cố định trong
+//   code (i18n `About`), không đọc settings nữa. Admin không quản lý copy trang này; ẩn tab khỏi
+//   Cài đặt. 28 dòng about_page_* vẫn còn trong DB (không xoá) nhưng không tác động gì tới web.
 export const HIDDEN_GROUPS = new Set(['SECURITY', 'PAYMENT_SEPAY', 'COMMERCE', 'PUBLIC_HERO', 'CONTACT', 'PUBLIC_ABOUT'])
 
 // Field cụ thể bị ẩn vì giá trị mặc định luôn đúng cho shop VN, đổi gây rủi ro:
@@ -144,7 +146,6 @@ export const TAB_META = {
   CONTACT:     { icon: Phone,      labelKey: 'settings.group_contact' },
   PAYMENT:     { icon: Landmark,   labelKey: 'settings.group_payment' },
   PUBLIC_HOME: { icon: Home,       labelKey: 'settings.group_public_home' },
-  PUBLIC_ABOUT:{ icon: Info,       labelKey: 'settings.group_public_about' },
   PUBLIC_PRODUCT: { icon: ShoppingBag, labelKey: 'settings.group_public_product' },
   PUBLIC_HERO: { icon: ImageIcon,  labelKey: 'settings.group_public_hero' },
   PROMO:       { icon: Tag,        labelKey: 'settings.group_promo' },
@@ -197,35 +198,6 @@ export const KEY_LABELS_VI = {
   home_news_kicker: 'Khu Tin tức — kicker',
   home_news_title: 'Khu Tin tức — tiêu đề',
   home_videos_title: 'Khu Video — tiêu đề',
-  // public_about (trang Giới thiệu /gioi-thieu)
-  about_page_kicker: 'Đầu trang — tiêu đề nhỏ (kicker)',
-  about_page_tagline: 'Đầu trang — câu tagline',
-  about_page_intro_html: 'Đoạn giới thiệu mở đầu (rich-text)',
-  about_page_quality_heading: 'Khối chất lượng — tiêu đề',
-  about_page_quality_body: 'Khối chất lượng — mô tả',
-  about_page_service1_title: 'Ô dịch vụ 1 — tiêu đề',
-  about_page_service1_body: 'Ô dịch vụ 1 — mô tả',
-  about_page_service1_image: 'Ô dịch vụ 1 — hình',
-  about_page_service1_highlight: 'Ô dịch vụ 1 — nền cam nổi bật',
-  about_page_service2_title: 'Ô dịch vụ 2 — tiêu đề',
-  about_page_service2_body: 'Ô dịch vụ 2 — mô tả',
-  about_page_service2_image: 'Ô dịch vụ 2 — hình',
-  about_page_service2_highlight: 'Ô dịch vụ 2 — nền cam nổi bật',
-  about_page_service3_title: 'Ô dịch vụ 3 — tiêu đề',
-  about_page_service3_body: 'Ô dịch vụ 3 — mô tả',
-  about_page_service3_image: 'Ô dịch vụ 3 — hình',
-  about_page_service3_highlight: 'Ô dịch vụ 3 — nền cam nổi bật',
-  about_page_service4_title: 'Ô dịch vụ 4 — tiêu đề',
-  about_page_service4_body: 'Ô dịch vụ 4 — mô tả',
-  about_page_service4_image: 'Ô dịch vụ 4 — hình',
-  about_page_service4_highlight: 'Ô dịch vụ 4 — nền cam nổi bật',
-  about_page_service5_title: 'Ô dịch vụ 5 — tiêu đề',
-  about_page_service5_body: 'Ô dịch vụ 5 — mô tả',
-  about_page_service5_image: 'Ô dịch vụ 5 — hình',
-  about_page_service5_highlight: 'Ô dịch vụ 5 — nền cam nổi bật',
-  about_page_connect_heading: 'Khối kết nối — tiêu đề',
-  about_page_connect_intro1: 'Khối kết nối — dòng 1',
-  about_page_connect_intro2: 'Khối kết nối — dòng 2',
   // public_product — toàn bộ nội dung PDP giờ quản theo TỪNG sản phẩm (trang sửa sản phẩm):
   // khối "cam kết" dưới nút mua (V232) + dải "tin cậy" trên tên sản phẩm (V233). Không còn setting chung.
   // seo
@@ -266,11 +238,6 @@ export const KEY_LABELS_VI = {
 }
 
 export const KEY_HINTS_VI = {
-  about_page_service1_image: 'Hình minh hoạ ô dịch vụ, ví dụ 120×120px (PNG nền trong).',
-  about_page_service2_image: 'Hình minh hoạ ô dịch vụ, ví dụ 120×120px (PNG nền trong).',
-  about_page_service3_image: 'Hình minh hoạ ô dịch vụ, ví dụ 120×120px (PNG nền trong).',
-  about_page_service4_image: 'Hình minh hoạ ô dịch vụ, ví dụ 120×120px (PNG nền trong).',
-  about_page_service5_image: 'Hình minh hoạ ô dịch vụ, ví dụ 120×120px (PNG nền trong).',
   promo_image_url:          'Ảnh nằm ngang, ví dụ 1200×400px.',
   og_image_url:             '1200×630px (chuẩn mạng xã hội).',
   hero_products_image_url:         'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
@@ -323,10 +290,6 @@ export const SECTION_GUIDE = {
   home_featured:   { title: 'Trang chủ › Khối Sản phẩm nổi bật', path: '/' },
   home_news:       { title: 'Trang chủ › Khối Tin tức', path: '/' },
   home_videos:     { title: 'Trang chủ › Khối Video', path: '/' },
-  about_head:      { title: 'Trang Giới thiệu › Đầu trang + giới thiệu', path: '/gioi-thieu' },
-  about_quality:   { title: 'Trang Giới thiệu › Khối chất lượng dịch vụ', path: '/gioi-thieu' },
-  about_services:  { title: 'Trang Giới thiệu › Lưới 5 ô dịch vụ', path: '/gioi-thieu' },
-  about_connect:   { title: 'Trang Giới thiệu › Khối kết nối', path: '/gioi-thieu' },
   hero_products:   { title: 'Banner đầu trang Tất cả sản phẩm', path: '/san-pham' },
   hero_brands:     { title: 'Banner đầu trang Thương hiệu', path: '/brands' },
   hero_news:       { title: 'Banner đầu trang Tin tức', path: '/tin-tuc' },
@@ -383,35 +346,6 @@ export const KEY_GUIDE = {
   home_news_kicker:      ['home_news', 'dòng chữ nhỏ phía trên'],
   home_news_title:       ['home_news', 'tiêu đề'],
   home_videos_title:     ['home_videos', 'tiêu đề'],
-
-  about_page_kicker:            ['about_head', 'tiêu đề nhỏ đầu trang'],
-  about_page_tagline:           ['about_head', 'câu tagline đầu trang'],
-  about_page_intro_html:        ['about_head', 'đoạn giới thiệu mở đầu'],
-  about_page_quality_heading:   ['about_quality', 'tiêu đề khối chất lượng'],
-  about_page_quality_body:      ['about_quality', 'mô tả khối chất lượng'],
-  about_page_service1_title:    ['about_services', 'ô 1: tiêu đề'],
-  about_page_service1_body:     ['about_services', 'ô 1: mô tả'],
-  about_page_service1_image:    ['about_services', 'ô 1: hình'],
-  about_page_service1_highlight:['about_services', 'ô 1: nền cam'],
-  about_page_service2_title:    ['about_services', 'ô 2: tiêu đề'],
-  about_page_service2_body:     ['about_services', 'ô 2: mô tả'],
-  about_page_service2_image:    ['about_services', 'ô 2: hình'],
-  about_page_service2_highlight:['about_services', 'ô 2: nền cam'],
-  about_page_service3_title:    ['about_services', 'ô 3: tiêu đề'],
-  about_page_service3_body:     ['about_services', 'ô 3: mô tả'],
-  about_page_service3_image:    ['about_services', 'ô 3: hình'],
-  about_page_service3_highlight:['about_services', 'ô 3: nền cam'],
-  about_page_service4_title:    ['about_services', 'ô 4: tiêu đề'],
-  about_page_service4_body:     ['about_services', 'ô 4: mô tả'],
-  about_page_service4_image:    ['about_services', 'ô 4: hình'],
-  about_page_service4_highlight:['about_services', 'ô 4: nền cam'],
-  about_page_service5_title:    ['about_services', 'ô 5: tiêu đề'],
-  about_page_service5_body:     ['about_services', 'ô 5: mô tả'],
-  about_page_service5_image:    ['about_services', 'ô 5: hình'],
-  about_page_service5_highlight:['about_services', 'ô 5: nền cam'],
-  about_page_connect_heading:   ['about_connect', 'tiêu đề khối kết nối'],
-  about_page_connect_intro1:    ['about_connect', 'dòng 1'],
-  about_page_connect_intro2:    ['about_connect', 'dòng 2'],
 
   hero_products_image_url:        ['hero_products', 'ảnh nền banner (desktop)'],
   hero_products_mobile_image_url: ['hero_products', 'ảnh nền banner (điện thoại)'],

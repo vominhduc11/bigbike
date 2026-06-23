@@ -21,7 +21,7 @@ import org.hibernate.type.SqlTypes;
  * Singleton row holding the admin-managed layout of the public guide landing page
  * ({@code /huong-dan}): the hero plus the ordered grid of guide cards. There is exactly one row
  * (seeded by Flyway with {@link #SINGLETON_ID}); the builder replaces the whole {@code entries}
- * array on save, mirroring {@code ContactPageLayoutEntity}. Detail bodies live in {@code pages}.
+ * array on save. Detail bodies live in {@code pages}.
  */
 @Entity
 @Table(name = "guide_page_layout")

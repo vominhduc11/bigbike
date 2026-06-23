@@ -1236,7 +1236,11 @@
     "chatZalo": "Chat on Zalo",
     "altContact": "Contact",
     "altAddress": "Address",
-    "altHours": "Working hours"
+    "altHours": "Working hours",
+    "store": "Store",
+    "hotline": "Hotline",
+    "zalo": "Zalo",
+    "facebook": "Facebook"
   },
   "About": {
     "titleFallback": "About us",

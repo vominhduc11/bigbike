@@ -1207,30 +1207,6 @@ export async function saveHomeHighlights(slots) {
   return { items: Array.isArray(payload?.data) ? payload.data : [] }
 }
 
-// Contact page builder (/lien-he layout). Returns { blocks, values } where values is the live
-// value of every whitelisted contact setting key (single source shared with header/footer).
-export async function fetchContactPage() {
-  const payload = await requestJson('/admin/contact-page')
-  const data = payload?.data ?? {}
-  return {
-    blocks: Array.isArray(data.blocks) ? data.blocks : [],
-    values: Array.isArray(data.values) ? data.values : [],
-  }
-}
-
-// Saves the whole block list plus write-through values for bound contact settings in one PUT.
-export async function saveContactPage({ blocks, values }) {
-  const payload = await requestJson('/admin/contact-page', {
-    method: 'PUT',
-    body: { blocks, values },
-  })
-  const data = payload?.data ?? {}
-  return {
-    blocks: Array.isArray(data.blocks) ? data.blocks : [],
-    values: Array.isArray(data.values) ? data.values : [],
-  }
-}
-
 // Guide page builder (/huong-dan layout). Returns { heroTitleVi, heroTitleEn, heroImageUrl, entries }.
 // Detail bodies live in Content -> Pages (referenced by each entry's pageSlug).
 export async function fetchGuidePage() {

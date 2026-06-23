@@ -557,19 +557,6 @@ export type GuidePageLayout = {
   entries: GuideEntry[];
 };
 
-/** One enabled block of the admin-managed contact page (/lien-he). Labels/HTML already resolved by lang. */
-export type ContactBlock = {
-  type: "channel" | "address" | "hours" | "map" | "richtext";
-  column: "main" | "online";
-  sortOrder: number;
-  icon: string | null;
-  label: string | null;
-  bindKey: string | null;
-  value: string | null;
-  href: string | null;
-  html: string | null;
-};
-
 export type ClientError = {
   status: number;
   code: string;

@@ -1327,6 +1327,18 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   color: var(--bb-text-brand);
 }
 
+/* Trang Liên hệ (tĩnh): SĐT ở CỘT THÔNG TIN bên trái là link tel: nên dính màu xanh
+   `a{color:#007bff}` của wp-theme-static.css (theme nạp qua <link> SAU globals, unlayered).
+   Ép về #000 cho khớp phần còn lại của cột (`.contact-page .information{color:#000}`), hover
+   brand-red. Dùng !important để chắc chắn thắng rule `a` của theme bất kể thứ tự nạp/cache.
+   Cột phải `.contact-form .webform` (kênh trực tuyến) KHÔNG đụng — vẫn giữ kiểu link. */
+.contact-page .information .desc a {
+  color: #000 !important;
+}
+.contact-page .information .desc a:hover {
+  color: var(--bb-text-brand) !important;
+}
+
 /* -- WP Floating Chat ---------------------------------------- */
 
 /* -- Responsive ---------------------------------------------- */
