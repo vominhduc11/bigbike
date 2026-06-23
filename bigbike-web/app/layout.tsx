@@ -7,7 +7,7 @@ import { WpHeader } from "@/components/wp/WpHeader";
 import { WpFooter } from "@/components/wp/WpFooter";
 import { WpThemeInteractions } from "@/components/wp/WpThemeInteractions";
 import { WpMobileMenuController } from "@/components/wp/WpMobileMenuController";
-import type { HeaderNavNode } from "@/components/layout/HeaderNavItem";
+import type { HeaderNavNode } from "@/components/layout/header-nav/shared";
 import { getPublicMenu } from "@/lib/api/public-api";
 import { buildPublicMenuTree } from "@/lib/utils/public-menu";
 import { ClientIntlProvider } from "@/components/providers/ClientIntlProvider";

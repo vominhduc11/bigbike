@@ -93,8 +93,8 @@ export const iconBtn =
 
 /** Submenu category icon (was `.bb-submenu-icon`): a 20×16 mask-image glyph that
  * paints with currentColor, so it follows the parent link's text color (white →
- * brand-red on hover). The mask-image URL is set inline per item. Shared by the
- * desktop mega-menu (HeaderNavItem) and the catalog sidebar filter. */
+ * brand-red on hover). The mask-image URL is set inline per item. Used by the
+ * catalog sidebar filter (WpCategorySidebar). */
 export const submenuIcon =
   "inline-block shrink-0 w-5 h-4 bg-current " +
   "[mask-repeat:no-repeat] [mask-position:center] [mask-size:contain] " +

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getLocale } from "next-intl/server";
 import { Tr } from "@/components/i18n/Tr";
-import type { HeaderNavNode } from "@/components/layout/HeaderNavItem";
+import type { HeaderNavNode } from "@/components/layout/header-nav/shared";
 import { listPublicSettings } from "@/lib/api/public-api";
 import { normalizeMenuUrl } from "@/lib/utils/nav";
 import { telHref } from "@/lib/utils/format";

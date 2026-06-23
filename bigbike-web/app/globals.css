@@ -785,43 +785,76 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   body .container .navigation .mobile-item {
     display: none;
   }
-  /* "Tất cả sản phẩm" (WpMegaNavItem) dùng mega menu trên desktop — ẩn dropdown
-     .sub-menu hẹp gốc của WP cho riêng item này (marker .bb-has-mega). ≤1260px
-     không áp dụng → off-canvas mobile giữ nguyên .sub-menu lồng. */
-  header .navigation ul .navigation--item.bb-has-mega > .sub-menu {
-    display: none !important;
+  /* "Tất cả sản phẩm" — dropdown desktop port 1:1 từ bigbike.vn live
+     (header.php + styles/custom.css): .sub-menu hẹp 300px, hover hiện, cấp 3+
+     bay ra phải (left:100%). Bản port theme thiếu phần khôi phục dropdown desktop
+     nên dựng lại ở đây. Prefix `body .container …` để thắng base
+     `.sub-menu{display:none}` của wp-theme-*.css (load sau globals).
+     Màu/viền dùng token khớp đúng WP live: chữ nghỉ gray-500 (#6f6f6f) =
+     --bb-text-secondary, hover đỏ tươi (#ff0c09) = --bb-brand-primary, viền
+     gray-200 (≈#dfdfdf) = --bb-border-subtle; font kế thừa nav (Barlow
+     Condensed) thay Oswald đã gỡ. */
+  body .container .navigation ul .navigation--item > .sub-menu,
+  body .container .navigation ul .navigation--item > .sub-menu li > .sub-menu {
+    display: block;
+    position: absolute;
+    width: 300px;
+    padding: 0;
+    margin: 0;
+    background: var(--bb-bg-surface);
+    box-shadow: var(--bb-shadow-dropdown);
+    z-index: var(--bb-z-dropdown);
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s ease;
   }
-  /* Theme WP nạp reset Bootstrap `a{color:#007bff}` KHÔNG nằm trong @layer nên đè
-     mọi utility màu của Tailwind (đã được layer) → chữ trong mega menu bị xanh.
-     Ép lại màu hệ thống (foreground/brand) cho riêng panel mega; item active/hover
-     mang sẵn class .text-brand nên giữ đúng màu đỏ thương hiệu. */
-  header .navigation [data-dropdown] a,
-  header .navigation [data-dropdown] button {
-    color: var(--foreground);
+  /* Cấp 2 thả xuống dưới mục cha; cấp 3+ bay ra phải. */
+  body .container .navigation ul .navigation--item > .sub-menu {
+    top: 100%;
+    left: 0;
+    transform: translateY(-10px);
   }
-  header .navigation [data-dropdown] a:hover,
-  header .navigation [data-dropdown] a.text-brand,
-  header .navigation [data-dropdown] button:hover,
-  header .navigation [data-dropdown] button.text-brand {
-    color: var(--bb-text-brand);
+  body .container .navigation ul .navigation--item > .sub-menu li > .sub-menu {
+    top: 0;
+    left: 100%;
+    transform: translateX(-10px);
   }
-  /* Mega menu là NỘI DUNG (danh sách danh mục) → phải dùng font body của hệ thống
-     như mọi nội dung khác trên site. Hiện kế thừa `font-family:Barlow Condensed`
-     từ `header .navigation` (unlayered → đè utility font-body đã-layer của Tailwind)
-     nên chữ bị kéo sang font display của thanh nav. Ép lại 1 font body duy nhất;
-     phân cấp tiêu đề/mục con đã có sẵn qua độ đậm + cỡ chữ trong component. */
-  header .navigation [data-dropdown],
-  header .navigation [data-dropdown] a,
-  header .navigation [data-dropdown] button {
-    font-family: var(--bb-font-body);
+  /* Hover mục cha → hiện submenu tương ứng. */
+  body .container .navigation ul .navigation--item:hover > .sub-menu {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
   }
-  /* Panel mega bám sát mép dưới header WP (cao 80px), KHÔNG đè lên header.
-     Component đặt top: var(--bb-header-height) nhưng biến này chỉ định nghĩa ở
-     body:has(.bb-home) → trên route khác (giỏ hàng, tin tức…) là undefined →
-     top:auto → panel rơi về vị trí tĩnh trong header → đè header. Ghim cứng 80px. */
-  header .navigation [data-dropdown] {
-    top: 80px;
-    max-height: calc(100vh - 80px - 0.5rem);
+  body .container .navigation ul .navigation--item > .sub-menu li:hover > .sub-menu {
+    visibility: visible;
+    opacity: 1;
+    transform: translateX(0);
+  }
+  /* Mỗi mục trong dropdown (mọi cấp). */
+  body .container .navigation ul .navigation--item > .sub-menu li {
+    position: relative;
+    border-bottom: 1px solid var(--bb-border-subtle);
+  }
+  body .container .navigation ul .navigation--item > .sub-menu li:last-child {
+    border-bottom: none;
+  }
+  body .container .navigation ul .navigation--item > .sub-menu li > a {
+    display: block;
+    padding: 14px 24px;
+    color: var(--bb-text-secondary);
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: none;
+    white-space: normal;
+    transition: color 0.15s ease;
+  }
+  body .container .navigation ul .navigation--item > .sub-menu li > a:hover {
+    /* Đỏ tươi khớp đúng WP live (#ff0c09) thay vì đỏ AA-safe — theo yêu cầu giống live. */
+    color: var(--bb-brand-primary);
+  }
+  /* Chevron `.arrow` chỉ phục vụ off-canvas mobile — ẩn ở dropdown desktop. */
+  body .container .navigation .menu-item-has-children > .arrow {
+    display: none;
   }
   /* Ẩn hamburger ở desktop — thắng rule
      `header .user-control--item.hammer-menu{display:inline-block!important}`. */
@@ -1023,9 +1056,9 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
    .bb-header-nav-item kept as a marker (JS reads `.bb-header-nav-item.is-open`). */
 
 /* Submenu category icon (.bb-submenu-icon) migrated to the shared `submenuIcon`
-   constant in lib/ui-classes.ts (mask-image glyph, currentColor). The nav dropdown
-   enter/exit animation ([data-dropdown] / .is-visible) is inlined in HeaderNavItem
-   MegaMenu; the data-dropdown attribute is kept as a JS hook. */
+   constant in lib/ui-classes.ts (mask-image glyph, currentColor). The desktop nav
+   dropdown ("Tất cả sản phẩm") is the WP-style CSS-only `.sub-menu` flyout defined
+   in the `@media (min-width:1261px)` block above (port 1:1 từ bigbike.vn live). */
 
 /* -- User control action icons: the .bb-icon-btn / .bb-cart-icon-link base,
    hover and focus styling migrated to the shared `iconBtn` constant in

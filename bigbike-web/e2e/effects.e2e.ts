@@ -60,33 +60,27 @@ test.describe("Effects — desktop @1440", () => {
     await expectClosedAndUnlocked(page, "search (close button)");
   });
 
-  test("nav mega-menu opens on hover and closes via keyboard Escape", async ({ page }) => {
+  test("nav dropdown opens on hover (WP-style sub-menu)", async ({ page }) => {
     await gotoAndSettle(page, "/");
-    const links = page.locator(".bb-header-nav-link");
-    const count = await links.count();
-    let openedLink = -1;
-    for (let i = 0; i < count; i++) {
-      await links.nth(i).hover();
-      await page.waitForTimeout(250);
-      const dd = page.locator("[data-dropdown]");
-      if ((await dd.count()) > 0 && (await dd.first().isVisible().catch(() => false))) {
-        openedLink = i;
-        break;
-      }
-    }
-    if (openedLink < 0) {
-      test.skip(true, "No hover mega-menu present in current nav data");
+    // Mục cấp 1 có submenu ("Tất cả sản phẩm") — dropdown WP hiện khi hover (CSS-only,
+    // khớp bigbike.vn live). Skip nếu menu hiện tại không có mục con nào.
+    const parent = page
+      .locator("header .header-nav > .navigation--item.menu-item-has-children")
+      .first();
+    if ((await parent.count()) === 0) {
+      test.skip(true, "No parent menu item with children in current nav data");
       return;
     }
-    const dropdown = page.locator("[data-dropdown]").first();
-    await expect(dropdown).toBeVisible();
+    const submenu = parent.locator(".sub-menu").first();
+    await expect(submenu).toBeHidden();
 
-    // Close via the keyboard a11y path (Escape on the focused nav link).
-    await links.nth(openedLink).focus();
-    await page.keyboard.press("Escape");
-    await page.waitForTimeout(350);
-    await expect(dropdown).toBeHidden();
-    expect(await isScrollLocked(page), "scroll lock stuck after mega-menu close").toBeFalsy();
+    await parent.hover();
+    await expect(submenu).toBeVisible();
+
+    // Rời chuột sang logo → dropdown đóng lại (không kẹt scroll-lock).
+    await page.locator("header .logo").first().hover();
+    await expect(submenu).toBeHidden();
+    expect(await isScrollLocked(page), "scroll lock stuck after dropdown close").toBeFalsy();
   });
 
   test("featured product card reveals add-to-cart CTA on hover (slide-up)", async ({ page }) => {

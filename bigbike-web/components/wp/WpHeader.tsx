@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { ShoppingCart } from "lucide-react";
 import { getLocale } from "next-intl/server";
-import type { HeaderNavNode } from "@/components/layout/HeaderNavItem";
+import type { HeaderNavNode } from "@/components/layout/header-nav/shared";
 import { listPublicSettings } from "@/lib/api/public-api";
 import { normalizeMenuUrl } from "@/lib/utils/nav";
+import { submenuIcon } from "@/lib/ui-classes";
 import { Tr } from "@/components/i18n/Tr";
 import { WpSearchIcon } from "./WpSearchIcon";
 import { pickSetting } from "@/lib/utils/settings";
@@ -11,7 +12,6 @@ import { toCartPath } from "@/lib/utils/routes";
 import { WpCartCount } from "./WpCartCount";
 import { WpHeaderUser } from "./WpHeaderUser";
 import { WpLangSwitch } from "./WpLangSwitch";
-import { WpMegaNavItem } from "./WpMegaNavItem";
 
 const T = "/wp-content/themes/bigbike";
 
@@ -80,6 +80,8 @@ function WpContactMe({
 function WpMenu({ nodes, top = false }: { nodes: HeaderNavNode[]; top?: boolean }) {
   // Khớp DOM wp_nav_menu gốc: ul top = .header-nav, li top có .navigation--item;
   // submenu = ul.sub-menu, li chỉ .menu-item. CSS theme tô màu nav qua các class này.
+  // Item có submenu ("Tất cả sản phẩm") = dropdown lồng giống bigbike.vn live:
+  // desktop hover hiện .sub-menu (CSS trong globals.css), mobile dùng off-canvas.
   return (
     <ul className={top ? "header-nav" : "sub-menu"}>
       {nodes.map((node) => {
@@ -87,22 +89,24 @@ function WpMenu({ nodes, top = false }: { nodes: HeaderNavNode[]; top?: boolean 
         const hasChildren = node.children.length > 0;
         const target = node.openInNewTab ? "_blank" : undefined;
 
-        // Item cấp 1 có submenu (chỉ "Tất cả sản phẩm") → mega menu trên desktop;
-        // .sub-menu lồng truyền qua children để off-canvas mobile dùng như cũ.
-        if (top && hasChildren) {
-          return (
-            <WpMegaNavItem key={node.id} node={node}>
-              <WpMenu nodes={node.children} />
-            </WpMegaNavItem>
-          );
-        }
-
         const liClass =
           (top ? "navigation--item menu-item" : "menu-item") +
           (hasChildren ? " menu-item-has-children" : "");
         return (
           <li key={node.id} className={liClass}>
             <Link href={href} target={target} rel={target ? "noopener" : undefined}>
+              {/* Icon danh mục (mask đơn sắc, tô theo màu chữ → xám, đỏ khi hover)
+                  — chỉ ở trong dropdown/sub-menu, giống mega menu cũ + WP live. */}
+              {!top && node.iconUrl && (
+                <span
+                  className={`${submenuIcon} mr-2 align-middle`}
+                  style={{
+                    maskImage: `url(${node.iconUrl})`,
+                    WebkitMaskImage: `url(${node.iconUrl})`,
+                  }}
+                  aria-hidden="true"
+                />
+              )}
               {node.label}
             </Link>
             {hasChildren && <WpMenu nodes={node.children} />}
