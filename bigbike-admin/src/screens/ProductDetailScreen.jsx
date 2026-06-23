@@ -56,6 +56,7 @@ import {
   findOptionById,
   prependSelectedOption,
   buildCategoryPathMap,
+  buildCategoryTreeOrder,
   buildFormFromItem,
   toPayload,
   canonicalUrlFromSlug,
@@ -262,6 +263,8 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
   const brandOptions = prependSelectedOption(brands, selectedBrandRef)
   // Nhãn "Cha › Con › Cháu" để phân biệt cha/con khi cây danh mục có nhiều cấp.
   const categoryPathById = useMemo(() => buildCategoryPathMap(categoryOptions), [categoryOptions])
+  // Thứ tự cây + độ sâu để thụt lề con dưới cha trong ô chọn danh mục.
+  const categoryTree = useMemo(() => buildCategoryTreeOrder(categoryOptions), [categoryOptions])
   const selectedCategoryLabel =
     categoryPathById.get(form.categoryId) ||
     findOptionById(categoryOptions, form.categoryId)?.name ||
@@ -997,7 +1000,11 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                         {form.categoryId && !categoryOptions.some((c) => c.id === form.categoryId) && (
                           <SelectItem value={form.categoryId} disabled>{t('products.detail.optionNotFound', { id: form.categoryId })}</SelectItem>
                         )}
-                        {categoryOptions.map((c) => <SelectItem key={c.id} value={c.id}>{categoryPathById.get(c.id) || c.name}</SelectItem>)}
+                        {categoryTree.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            <span style={{ paddingInlineStart: `${c.depth * 16}px` }}>{c.name}</span>
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </Field>

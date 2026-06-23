@@ -306,6 +306,42 @@ export function buildCategoryPathMap(items, separator = ' › ') {
   return result
 }
 
+// Sắp danh mục theo thứ tự cây (depth-first): con nằm ngay dưới cha, kèm `depth`
+// để thụt lề trong ô chọn. Mục thiếu parentId hoặc không tìm thấy cha được coi là
+// gốc; `seen` chặn vòng lặp parentId hỏng. Giữ nguyên thứ tự đầu vào trong mỗi cấp.
+export function buildCategoryTreeOrder(items) {
+  const byId = new Map()
+  for (const it of items) {
+    if (it?.id) byId.set(it.id, it)
+  }
+  const childrenByParent = new Map()
+  const roots = []
+  for (const it of items) {
+    if (!it?.id) continue
+    const hasParent = it.parentId && it.parentId !== it.id && byId.has(it.parentId)
+    if (hasParent) {
+      if (!childrenByParent.has(it.parentId)) childrenByParent.set(it.parentId, [])
+      childrenByParent.get(it.parentId).push(it)
+    } else {
+      roots.push(it)
+    }
+  }
+  const result = []
+  const seen = new Set()
+  const visit = (node, depth) => {
+    if (seen.has(node.id)) return
+    seen.add(node.id)
+    result.push({ ...node, depth })
+    for (const kid of childrenByParent.get(node.id) || []) visit(kid, depth + 1)
+  }
+  for (const root of roots) visit(root, 0)
+  // Phòng mục còn sót do vòng lặp parentId: append như gốc.
+  for (const it of items) {
+    if (it?.id && !seen.has(it.id)) visit(it, 0)
+  }
+  return result
+}
+
 export function buildFormFromItem(item) {
   if (!item) return buildEmptyForm()
 

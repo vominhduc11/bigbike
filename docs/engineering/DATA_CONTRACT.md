@@ -1215,7 +1215,7 @@ Evidence: `AdminAnalyticsResponse.java`, `AdminReportService.java`, `OrderJpaRep
 | `general` | Site name, footer text, BCT registration URL | Cài đặt chung |
 | `contact` | Public contact email/address, social links | Liên hệ |
 | `public_home` | Homepage hotline, promo banner, experience/about blocks | Trang chủ |
-| `public_about` | Full About page (`/gioi-thieu`) copy: intro block-head, intro paragraphs (HTML), quality block, 5 service tiles (title/body/image/highlight), connect block — 28 keys. Seeded by `V223`. | Trang Giới thiệu |
+| `public_about` | **Legacy/backup (V270, 2026-06-23).** Was the source of the About page (`/gioi-thieu`); the page is now authored as **`Page.body` / `bodyBlocks`** in the Nội dung module like every other CMS page. The 28 keys (seeded `V223`/`V269`) are kept as a content backup but no longer drive the page, and the "Trang Giới thiệu" tab is hidden in admin (`HIDDEN_GROUPS`). | (ẩn — backup) |
 | `public_product` | **No shared settings.** All product-detail content is per-product now: the commitment-rows block under the buy buttons (`product.commitments`, child table `product_commitments`, V232) and the trust-badge row above the title (`product.trustBadges`, child table `product_trust_badges`, V233). The former `product_commitment_*` (V228) and `product_trust_*` keys were removed in V232/V233. | Trang sản phẩm |
 | `public_hero` | Hero banners for listing pages (`/san-pham`, `/brands`, `/tin-tuc`) — 17 keys (5 per page incl. per-page `illustration_url` + 2 global fallbacks). Managed by the dedicated **Banner trang** admin screen (`BannerScreen.jsx`), not the generic settings screen. | Banner trang |
 | `promo` | Homepage promotion banner | Khuyến mãi |
@@ -1228,6 +1228,8 @@ Evidence: `AdminAnalyticsResponse.java`, `AdminReportService.java`, `OrderJpaRep
 **Removed:** `payment_sepay` — the SePay payment gateway was removed in V59; any leftover `payment_sepay` rows are deleted by V132.
 
 ### `public_about` keys — full About page content (V223)
+
+> **Superseded by `V270` (2026-06-23).** The About page is no longer rendered from these settings — it is now authored as `Page.body` + `bodyBlocks` (22 text blocks for VI, raw HTML for `body_en`) in the Nội dung module, exactly like `/lien-he`, `/huong-dan`, `/chinh-sach/*`. `V270` seeds that page content from the VI copy below; the 28 `public_about` rows are **retained untouched as a backup** (not dropped) and the admin "Trang Giới thiệu" settings tab is hidden. `AboutServiceMediaSeeder` + the registry group remain but are dormant. The historical description below is kept for reference.
 
 The `/gioi-thieu` page was previously rendered from hardcoded theme copy (i18n `About` namespace) whenever the `Page.body` was blank. `V223__seed_about_page_content_settings.sql` lifts that copy into `site_settings` (group `public_about`, all `is_public = true`) so the shop admin can edit every part from **Cài đặt → Trang Giới thiệu** while keeping the original 5-tile layout. Each text key is seeded with both `setting_value` (VI) and `setting_value_en` (EN). The web page reads settings-first and falls back to the i18n `About` defaults only when a key is blank.
 

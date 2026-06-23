@@ -59,7 +59,8 @@ import { GuidePageBuilderPanel } from './GuidePageBuilderScreen'
 // Trang CMS đặc biệt có trình dựng khối nhúng kèm (gộp quản lý vào module Nội dung). Khóa theo slug
 // cố định của trang (PAGE_RULE_003) — khớp cách web định tuyến riêng /lien-he và /huong-dan.
 const SPECIAL_BUILDERS = {
-  'lien-he': { kind: 'contact', tabLabelKey: 'content.detail.tabContactBuilder' },
+  // Liên hệ: gộp trình dựng vào tab "Nội dung" → không cần nhãn tab riêng.
+  'lien-he': { kind: 'contact' },
   'huong-dan': { kind: 'guide', tabLabelKey: 'content.detail.tabGuideBuilder' },
 }
 
@@ -544,7 +545,8 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
           items={[
             { key: 'content', label: t('content.detail.tabContent'),     count: tabCounts.content || undefined },
             { key: 'seo',     label: t('content.detail.tabSeoPublish'),  count: tabCounts.seo     || undefined },
-            ...(specialBuilder ? [{ key: 'builder', label: t(specialBuilder.tabLabelKey) }] : []),
+            // Trang Liên hệ gộp trình dựng vào tab Nội dung (không tab riêng); các builder khác (Hướng dẫn) vẫn ở tab riêng.
+            ...(specialBuilder && specialBuilder.kind !== 'contact' ? [{ key: 'builder', label: t(specialBuilder.tabLabelKey) }] : []),
           ]}
         />
 
@@ -924,9 +926,10 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
         </form>
 
         {/* Trình dựng khối nhúng (Liên hệ / Hướng dẫn) — luôn mounted để giữ ref + cờ "chưa lưu";
-            ẩn khi không ở tab này. Lưu chung với nút Lưu của trang. */}
+            ẩn khi không ở tab tương ứng. Lưu chung với nút Lưu của trang.
+            Liên hệ: hiển thị ngay trong tab "Nội dung". Hướng dẫn: ở tab riêng "builder". */}
         {specialBuilder && (
-          <div className={cn('flex flex-col gap-6 pb-4', activeTab === 'builder' ? '' : 'hidden')}>
+          <div className={cn('flex flex-col gap-6 pb-4', activeTab === (specialBuilder.kind === 'contact' ? 'content' : 'builder') ? '' : 'hidden')}>
             {specialBuilder.kind === 'contact' ? (
               <ContactPageBuilderPanel ref={builderRef} canUpdate={canUpdate} onDirtyChange={setBuilderDirty} />
             ) : (

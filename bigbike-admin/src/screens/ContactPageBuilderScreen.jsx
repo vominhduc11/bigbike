@@ -25,7 +25,6 @@ const BIND_KEYS = [
   'hotline', 'hotline_2', 'hotline_3', 'contact_email', 'contact_address',
   'zalo_url', 'facebook_url', 'messenger_url', 'instagram_url', 'youtube_url', 'tiktok_url',
 ]
-const HOURS_KEYS = ['opening_hours_weekday', 'opening_hours_weekend', 'opening_hours_holiday']
 
 // Shared contact values (single source for header/footer too) edited in one place so nothing is
 // only reachable through a block binding. Mirrors the `contact` site-setting group / WRITE_THROUGH_KEYS.
@@ -225,8 +224,6 @@ export const ContactPageBuilderPanel = forwardRef(function ContactPageBuilderPan
           onPatch={patchBlock}
           onRemove={removeBlock}
           onAdd={(type) => addBlock(type, 'main')}
-          settingValues={settingValues}
-          onSetValue={setValue}
           t={t}
         />
         <ColumnEditor
@@ -238,8 +235,6 @@ export const ContactPageBuilderPanel = forwardRef(function ContactPageBuilderPan
           onPatch={patchBlock}
           onRemove={removeBlock}
           onAdd={(type) => addBlock(type, 'online')}
-          settingValues={settingValues}
-          onSetValue={setValue}
           t={t}
         />
       </div>
@@ -247,7 +242,7 @@ export const ContactPageBuilderPanel = forwardRef(function ContactPageBuilderPan
   )
 })
 
-function ColumnEditor({ title, blocks, disabled, onReorder, onPatch, onRemove, onAdd, settingValues, onSetValue, t }) {
+function ColumnEditor({ title, blocks, disabled, onReorder, onPatch, onRemove, onAdd, t }) {
   return (
     <section className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
@@ -272,8 +267,6 @@ function ColumnEditor({ title, blocks, disabled, onReorder, onPatch, onRemove, o
               disabled={disabled}
               onPatch={onPatch}
               onRemove={onRemove}
-              settingValues={settingValues}
-              onSetValue={onSetValue}
               t={t}
             />
           )}
@@ -321,7 +314,7 @@ function IconField({ value, disabled, onChange, t }) {
   )
 }
 
-function BlockCard({ block, sortable, disabled, onPatch, onRemove, settingValues, onSetValue, t }) {
+function BlockCard({ block, sortable, disabled, onPatch, onRemove, t }) {
   const bound = block.type === 'channel' || block.type === 'address' || block.type === 'map'
   const bindValue = block.bindKey || CUSTOM
 
@@ -430,15 +423,10 @@ function BlockCard({ block, sortable, disabled, onPatch, onRemove, settingValues
             </Select>
           </FormField>
 
-          {block.bindKey ? (
-            <FormField label={t('contactBuilder.value')} helper={t('contactBuilder.sharedHint')}>
-              <Input
-                disabled={disabled}
-                value={settingValues[block.bindKey]?.value ?? ''}
-                onChange={(e) => onSetValue(block.bindKey, 'value', e.target.value)}
-              />
-            </FormField>
-          ) : (
+          {/* Khối dùng dữ liệu chung: chỉ chọn nguồn ở trên — giá trị (số/email/địa chỉ/URL) nhập
+              một nơi duy nhất tại "Thông tin liên hệ dùng chung". Chỉ khối tùy chỉnh (không gắn
+              nguồn chung) mới nhập giá trị/liên kết riêng. */}
+          {!block.bindKey && (
             <>
               <FormField label={t('contactBuilder.customValue')}>
                 <Input
@@ -457,20 +445,6 @@ function BlockCard({ block, sortable, disabled, onPatch, onRemove, settingValues
               </FormField>
             </>
           )}
-        </div>
-      )}
-
-      {block.type === 'hours' && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {HOURS_KEYS.map((k) => (
-            <FormField key={k} label={t(`contactBuilder.bind.${k}`)} helper={t('contactBuilder.sharedHint')}>
-              <Input
-                disabled={disabled}
-                value={settingValues[k]?.value ?? ''}
-                onChange={(e) => onSetValue(k, 'value', e.target.value)}
-              />
-            </FormField>
-          ))}
         </div>
       )}
 

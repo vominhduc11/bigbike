@@ -1427,7 +1427,6 @@
       "errArchiveFailed": "Không thể đưa nội dung vào thùng rác.",
       "tabContent": "Nội dung",
       "tabSeoPublish": "SEO & Hiển thị",
-      "tabContactBuilder": "Bố cục liên hệ",
       "tabGuideBuilder": "Lưới hướng dẫn",
       "tabsAriaLabel": "Phần của nội dung",
       "assign": {
@@ -2423,12 +2422,10 @@
     "labelVi": "Nhãn (Tiếng Việt)",
     "labelEn": "Nhãn (English)",
     "dataSource": "Nguồn dữ liệu",
-    "value": "Giá trị",
     "customValue": "Giá trị (tùy chỉnh)",
     "customHref": "Liên kết (tùy chỉnh)",
     "htmlVi": "Nội dung HTML (Tiếng Việt)",
     "htmlEn": "Nội dung HTML (English)",
-    "sharedHint": "Dùng chung với phần đầu/cuối trang.",
     "bindCustom": "Tùy chỉnh (không dùng cài đặt chung)",
     "type": {
       "channel": "Kênh liên hệ",

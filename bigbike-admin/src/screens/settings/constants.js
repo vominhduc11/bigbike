@@ -129,7 +129,10 @@ export const SENSITIVE_SETTING_TABS = new Set(['STORE', 'TAX'])
 // - CONTACT: thông tin liên hệ (hotline/địa chỉ/giờ/mạng xã hội, gồm cả zalo_display/messenger_display)
 //   giờ nhập trong trang Liên hệ của module Nội dung (trình dựng nhúng, ghi xuyên site_settings) —
 //   gỡ khỏi đây để không sửa 2 nơi. Vẫn dùng chung cho header/footer.
-export const HIDDEN_GROUPS = new Set(['SECURITY', 'PAYMENT_SEPAY', 'COMMERCE', 'PUBLIC_HERO', 'CONTACT'])
+// - PUBLIC_ABOUT: trang Giới thiệu giờ soạn bằng KHỐI trong module Nội dung (mở trang CMS slug
+//   'gioi-thieu'), không dựng từ settings nữa (xem migration V270). Ẩn tab để không sửa 2 nơi.
+//   28 dòng about_page_* vẫn giữ trong DB làm bản lưu dự phòng — không xoá.
+export const HIDDEN_GROUPS = new Set(['SECURITY', 'PAYMENT_SEPAY', 'COMMERCE', 'PUBLIC_HERO', 'CONTACT', 'PUBLIC_ABOUT'])
 
 // Field cụ thể bị ẩn vì giá trị mặc định luôn đúng cho shop VN, đổi gây rủi ro:
 // - store_currency: luôn VND

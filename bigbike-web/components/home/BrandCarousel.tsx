@@ -4,7 +4,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import Link from "next/link";
 import "swiper/css";
 import type { Brand } from "@/lib/contracts/public";
-import { resolveMediaUrl, toLegacyWpMediaUrl } from "@/lib/utils/format";
+import { resolveMediaUrl } from "@/lib/utils/format";
 
 type Props = { brands: Brand[] };
 
@@ -51,7 +51,8 @@ export function BrandCarousel({ brands }: Props) {
           }}
         >
           {brands.map((b) => {
-            const logo = toLegacyWpMediaUrl(resolveMediaUrl(b.logo?.url?.trim()));
+            // Logo từ MinIO (same-origin), không hotlink web cũ (AGENTS.md §14.3).
+            const logo = resolveMediaUrl(b.logo?.url?.trim());
             return (
               <SwiperSlide className="swiper-slide" key={b.id}>
                 <Link href={`/brands/${b.slug}`}>

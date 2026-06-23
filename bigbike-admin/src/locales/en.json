@@ -1428,7 +1428,6 @@
       "errArchiveFailed": "Failed to move content to trash.",
       "tabContent": "Content",
       "tabSeoPublish": "SEO & Publishing",
-      "tabContactBuilder": "Contact layout",
       "tabGuideBuilder": "Guide grid",
       "tabsAriaLabel": "Content sections",
       "assign": {
@@ -2424,12 +2423,10 @@
     "labelVi": "Label (Vietnamese)",
     "labelEn": "Label (English)",
     "dataSource": "Data source",
-    "value": "Value",
     "customValue": "Value (custom)",
     "customHref": "Link (custom)",
     "htmlVi": "HTML content (Vietnamese)",
     "htmlEn": "HTML content (English)",
-    "sharedHint": "Shared with the header/footer.",
     "bindCustom": "Custom (not a shared setting)",
     "type": {
       "channel": "Contact channel",

@@ -894,7 +894,7 @@ Status: `REMOVED`
   - `promo_title`, `promo_off`, `promo_href`, `promo_image_url` — homepage promo banner block.
   - `home_exp_subtitle`, `home_exp_title`, `home_exp_desc` — homepage experience/news teaser section copy.
   - `about_title`, `about_subtitle`, `about_content_html` — homepage about block copy.
-- `public_about`: full **About page** (`/gioi-thieu`) editable copy — added in `V223__seed_about_page_content_settings.sql`. All `publicAllowed`; text keys carry `setting_value_en`. The web page renders these settings-first and falls back to the original theme copy (i18n `About` namespace) only when a key is blank, so the page is never empty.
+- `public_about`: **legacy/backup since `V270` (2026-06-23).** Was the editable copy for the **About page** (`/gioi-thieu`, added in `V223`). The page is now authored as `Page.body`/`bodyBlocks` in the Nội dung module (like `/lien-he`, `/huong-dan`); `V270` seeds that page content and these 28 keys are **kept as a backup, not dropped**. The admin "Trang Giới thiệu" settings tab is hidden (`HIDDEN_GROUPS`). The keys below are retained for reference/restore only.
   - `about_page_kicker` (STRING), `about_page_tagline` (LONG_TEXT) — intro block-head.
   - `about_page_intro_html` (HTML) — the four opening paragraphs as one rich-text field.
   - `about_page_quality_heading` (STRING), `about_page_quality_body` (LONG_TEXT) — "Chất lượng dịch vụ" block-head.

@@ -9,7 +9,7 @@ import { WpCategoryPagination } from "@/components/wp/WpCategoryPagination";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchPublicBrandList, type PublicBrandListResult } from "@/lib/api/client-api";
 import type { Brand } from "@/lib/contracts/public";
-import { resolveMediaUrl, safeText, toLegacyWpMediaUrl } from "@/lib/utils/format";
+import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { buildQueryString } from "@/lib/utils/query";
 import { toBrandListPath } from "@/lib/utils/routes";
 
@@ -94,7 +94,8 @@ export function WpBrandListClient({
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 3xl:grid-cols-6 4xl:grid-cols-7">
         {brands.map((brand) => {
           const name = safeText(brand.name, "Thương hiệu");
-          const logoUrl = toLegacyWpMediaUrl(resolveMediaUrl(brand.logo?.url?.trim()));
+          // Logo từ MinIO (same-origin), không hotlink web cũ (AGENTS.md §14.3).
+          const logoUrl = resolveMediaUrl(brand.logo?.url?.trim());
           const initials = name.replace(/[^A-Za-zÀ-ỹ]/g, "").slice(0, 2).toUpperCase();
           return (
             <LocalizedLink

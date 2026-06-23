@@ -111,7 +111,8 @@ export default async function BrandDetailPage({ params }: BrandDetailPageProps) 
   ];
 
   const heroBgUrl = toLegacyWpMediaUrl(resolveMediaUrl(brand.bannerImage?.url?.trim()));
-  const heroIllustrationUrl = toLegacyWpMediaUrl(resolveMediaUrl(brand.logo?.url?.trim()));
+  // Logo hãng phục vụ từ MinIO (same-origin), không hotlink web cũ (AGENTS.md §14.3).
+  const heroIllustrationUrl = resolveMediaUrl(brand.logo?.url?.trim());
 
   return (
     <>
