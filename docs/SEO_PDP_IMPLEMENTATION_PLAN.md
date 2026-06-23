@@ -89,7 +89,7 @@ Chỉ sửa `lib/seo/json-ld.ts` + `app/product/[slug]/page.tsx`. Không đụng
 | # | Field | Mục đích SEO | Triển khai | Item |
 |---|---|---|---|---|
 | 3.1 | `positiveNotes` / `negativeNotes` (Ưu / Nhược) | **USP độc quyền** — 4 đối thủ không có; vào schema `positiveNotes`/`negativeNotes` | Field riêng (list string) + khối hiển thị riêng + schema | #7, #18 |
-| 3.2 | `warrantyMonths` + phạm vi | Đối thủ có, BigBike thiếu — thua trust tại trang bán | Field + hiển thị trong trust block (`ProductContactCta`) | #11 |
+| 3.2 | ~~`warrantyMonths` + phạm vi~~ | ~~Đối thủ có, BigBike thiếu — thua trust tại trang bán~~ | ~~Field + hiển thị trong trust block~~ — **đã gỡ:** field về `product_purchase_lines` (V249), rồi **module bảo hành gỡ hẳn (V266, 2026-06-23)** | #11 |
 | 3.3 | Xuất xứ tách bạch | Phân biệt "thương hiệu [nước]" vs "sản xuất tại [nước]" | Có thể làm bằng **2 dòng trong bảng spec** (nội dung, không cần field) hoặc field riêng | #16 |
 | 3.4 | `weightGram` | Vào Product schema (`weight`) + bảng spec | Field + schema | #13, #17 |
 | 3.5 | Bảng size HTML | Cả 5 web dùng ảnh → làm `<table>` HTML là độc quyền | Field rich-content hoặc cấu trúc size rows + render `<table>` | #9 |
@@ -164,7 +164,7 @@ Code chỉ cung cấp chỗ điền; nội dung do Brand team viết theo templa
 | 2.4 | Render contentBottom | 🟦 FE | ☑ Xong (2026-06-12) | | Render dưới khối tab; field đã có, trước đây bỏ quên |
 | 2.5 | Text dưới video | 🟩 GĐ3 | 🟡 Schema xong, caption ẩn | | Gộp vào 3.6 |
 | 3.1 | Ưu/Nhược + schema | 🟩 | ☑ Xong (2026-06-12) | | Bảng `product_highlights` (kind PRO/CON, song ngữ); render 2 cột + ItemList schema |
-| 3.2 | Bảo hành | 🟩 | ☑ Xong (2026-06-12) | | `warranty_months` + `warranty_scope`; trust block |
+| 3.2 | ~~Bảo hành~~ | ⬜ | ☒ Đã gỡ (2026-06-23) | | `warranty_months` + `warranty_scope` chuyển sang `product_purchase_lines` (V249) rồi **module bảo hành gỡ hẳn (V266)**; 2 cột đã drop |
 | 3.3 | Xuất xứ tách bạch | 🟩 | ☑ Xong (2026-06-12) | | `origin_brand_country` + `origin_manufacture_country` |
 | 3.4 | ~~Trọng lượng + schema~~ | ⬜ | ☒ Đã gỡ (2026-06-19) | | Field `weightGrams` + schema `Product.weight` (QuantitativeValue) đã gỡ theo quyết định chủ shop. Cột `weight_kg` giữ trong DB nhưng không phơi/khai nữa. |
 | 3.5 | Bảng size HTML | 🟩 | ☑ Xong (2026-06-12) | | `size_guide` rich-HTML; render sanitize |
@@ -182,7 +182,7 @@ Code chỉ cung cấp chỗ điền; nội dung do Brand team viết theo templa
 
 **Quyết định data shape:**
 - Ưu/Nhược điểm: 1 bảng con `product_highlights` (cột `kind` PRO/CON), song ngữ inline `content`/`content_en` — admin sửa được EN qua nút VI/EN.
-- Bảo hành (`warranty_months`, `warranty_scope`), xuất xứ (`origin_brand_country`, `origin_manufacture_country`), bảng size (`size_guide`) = **1 ngôn ngữ** (fallback VI như giá/SKU) để giảm điểm chạm cơ chế `translations`. Có thể nâng song ngữ sau nếu cần.
+- ~~Bảo hành (`warranty_months`, `warranty_scope`)~~ **đã gỡ** (chuyển sang `product_purchase_lines` V249, rồi module bảo hành gỡ hẳn V266 — 2 cột đã drop), xuất xứ (`origin_brand_country`, `origin_manufacture_country`), bảng size (`size_guide`) = **1 ngôn ngữ** (fallback VI như giá/SKU) để giảm điểm chạm cơ chế `translations`. Có thể nâng song ngữ sau nếu cần.
 - Trọng lượng: **đã gỡ (2026-06-19)** — field `weightGrams` và schema `Product.weight` không còn. Cột `weight_kg` vẫn còn trong DB (kích thước WooCommerce-import) nhưng không phơi ra UI/schema.
 
 **⚠️ Cần làm khi deploy:** migration **V175** sẽ tự chạy khi backend khởi động (Flyway). Cần restart backend để áp schema mới — KHÔNG tự ý restart container (shared state), yêu cầu user.

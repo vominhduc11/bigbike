@@ -7,7 +7,6 @@ public record AdminStockVariantResponse(
         String variantName,
         String variantSku,
         String stockState,
-        int quantityOnHand,
-        BigDecimal retailPrice,
-        boolean trackSerials
+        boolean available,
+        BigDecimal retailPrice
 ) {}

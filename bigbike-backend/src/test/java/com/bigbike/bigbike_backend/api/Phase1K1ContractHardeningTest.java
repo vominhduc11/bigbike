@@ -198,14 +198,6 @@ class Phase1K1ContractHardeningTest {
     }
 
     @Test
-    void openApi_couponStatusIncludesArchived() throws Exception {
-        MvcResult result = mockMvc.perform(get("/v3/api-docs"))
-                .andExpect(status().isOk())
-                .andReturn();
-        assertThat(result.getResponse().getContentAsString()).contains("ARCHIVED");
-    }
-
-    @Test
     void openApi_menuStatusDocumentsActiveInactive() throws Exception {
         MvcResult result = mockMvc.perform(get("/v3/api-docs"))
                 .andExpect(status().isOk())
@@ -235,32 +227,11 @@ class Phase1K1ContractHardeningTest {
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    // SECTION 5 — Missing required request parameter must be 400, not 500
+    // SECTION 5 — (removed) Missing-required-request-parameter coverage previously
+    // exercised the POS product-search endpoint, which was deleted when the POS
+    // feature was removed (owner decision 2026-06-23: online-only). No other admin
+    // endpoint declares a required @RequestParam, so there is nothing to retarget.
     // ══════════════════════════════════════════════════════════════════════════
-
-    // A required @RequestParam that is absent must map to 400 VALIDATION_ERROR via
-    // GlobalExceptionHandler, never fall through to the generic 500 SERVER_ERROR.
-    @Test
-    void missingRequiredQueryParam_returns400NotServerError() throws Exception {
-        MvcResult result = mockMvc.perform(get("/api/v1/admin/pos/products/search")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isBadRequest())
-                .andReturn();
-        String body = result.getResponse().getContentAsString();
-        assertThat(body).contains("VALIDATION_ERROR");
-        assertThat(body).contains("\"q\"");
-        assertThat(body).contains("REQUIRED");
-    }
-
-    // Same endpoint with the required param present must succeed (2xx), proving the
-    // 400 above is specifically about the missing parameter, not a broken endpoint.
-    @Test
-    void presentRequiredQueryParam_returns2xx() throws Exception {
-        mockMvc.perform(get("/api/v1/admin/pos/products/search")
-                        .param("q", "mu")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().is2xxSuccessful());
-    }
 
     // ══════════════════════════════════════════════════════════════════════════
     // HELPERS

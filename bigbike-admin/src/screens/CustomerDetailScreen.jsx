@@ -6,12 +6,11 @@ import { DetailSection } from '../components/DetailSection'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
-import { fetchCustomerCoupons, fetchCustomerCredit, fetchCustomerDetail, updateCustomer, updateCustomerCredit, updateCustomerStatus } from '../lib/adminApi'
+import { fetchCustomerDetail, updateCustomer, updateCustomerStatus } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 
 const CUSTOMER_STATUSES = ['ACTIVE', 'DISABLED', 'BLOCKED']
@@ -23,17 +22,6 @@ function isPhoneInvalid(phone) {
   const v = (phone || '').trim()
   return v !== '' && !PHONE_PATTERN.test(v)
 }
-function isCreditLimitInvalid(value) {
-  if (value === '' || value == null) return false
-  const n = Number(value)
-  return Number.isNaN(n) || n < 0
-}
-function isPaymentTermsInvalid(value) {
-  if (value === '' || value == null) return false
-  const n = Number(value)
-  return Number.isNaN(n) || n < 1 || n > 365
-}
-
 const SEGMENT_BADGE_CLASSES = {
   VIP:      'text-primary bg-surface-selected',
   LOYAL:    'text-info bg-info-bg',
@@ -51,45 +39,13 @@ function SegmentBadge({ segment }) {
   )
 }
 
-const CREDIT_STATUS_LABELS = { ACTIVE: 'Hoạt động', SUSPENDED: 'Tạm khóa', BLOCKED: 'Chặn vĩnh viễn' }
-
-const CREDIT_STATUS_CLASSES = {
-  ACTIVE:    'text-success bg-success-bg',
-  SUSPENDED: 'text-warning bg-warning-bg',
-  BLOCKED:   'text-danger bg-danger-bg',
-}
-
-function CreditStatusBadge({ status }) {
-  const cls = CREDIT_STATUS_CLASSES[status] ?? 'text-muted-foreground bg-surface-muted'
-  return (
-    <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${cls}`}>
-      {CREDIT_STATUS_LABELS[status] ?? status}
-    </span>
-  )
-}
-
-export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermission }) {
+export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
   const { t } = useTranslation()
   const [state, setState] = useState({ status: 'loading', customer: null, warning: '' })
   const [saving, setSaving] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [editForm, setEditForm] = useState({ displayName: '', phone: '' })
   const [editSaving, setEditSaving] = useState(false)
-
-  // Credit profile state
-  const [credit, setCredit] = useState(null)
-  const [creditLoading, setCreditLoading] = useState(false)
-  const [creditEditOpen, setCreditEditOpen] = useState(false)
-  const [creditForm, setCreditForm] = useState({
-    creditEnabled: false, creditLimit: '', paymentTermsDays: '', creditStatus: 'ACTIVE', creditNote: '',
-  })
-  const [creditSaving, setCreditSaving] = useState(false)
-  const canReadReceivables = hasPermission ? hasPermission('receivables.read') : false
-  const canEditCredit = hasPermission ? hasPermission('receivables.create') : false
-  const canReadCoupons = hasPermission ? hasPermission('coupons.read') : false
-
-  // Customer coupons state
-  const [coupons, setCoupons] = useState({ status: 'idle', items: [], totalItems: 0 })
 
   useEffect(() => {
     let active = true
@@ -98,42 +54,6 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
       .catch((e) => { if (!active) return; setState({ status: 'error', customer: null, warning: '', error: e.message }) })
     return () => { active = false }
   }, [customerId])
-
-  useEffect(() => {
-    if (!canReadReceivables) return
-    let active = true
-    queueMicrotask(() => { if (active) setCreditLoading(true) })
-    fetchCustomerCredit(customerId)
-      .then((r) => {
-        if (!active) return
-        setCredit(r)
-        setCreditForm({
-          creditEnabled: r.creditEnabled ?? false,
-          creditLimit: r.creditLimit != null ? String(r.creditLimit) : '',
-          paymentTermsDays: r.paymentTermsDays != null ? String(r.paymentTermsDays) : '',
-          creditStatus: r.creditStatus ?? 'ACTIVE',
-          creditNote: r.creditNote ?? '',
-        })
-      })
-      .catch((e) => {
-        if (!active) return
-        setCredit(null)
-        toast.error(e.message || t('common.error'))
-      })
-      .finally(() => { if (active) setCreditLoading(false) })
-    return () => { active = false }
-  }, [customerId, canReadReceivables, t])
-
-  useEffect(() => {
-    if (!canReadCoupons) return
-    let active = true
-    // queueMicrotask: tránh setState đồng bộ trong effect (cùng cách xử lý như creditLoading ở trên)
-    queueMicrotask(() => { if (active) setCoupons({ status: 'loading', items: [], totalItems: 0 }) })
-    fetchCustomerCoupons(customerId, { page: 1, pageSize: 20 })
-      .then((r) => { if (active) setCoupons({ status: 'success', items: r.items ?? [], totalItems: r.totalItems ?? 0 }) })
-      .catch(() => { if (active) setCoupons({ status: 'error', items: [], totalItems: 0 }) })
-    return () => { active = false }
-  }, [customerId, canReadCoupons])
 
   async function handleStatusChange(value) {
     // Radix Select truyền thẳng value (chuỗi), không phải DOM event.
@@ -201,37 +121,6 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
     }
   }
 
-  async function handleCreditSave(e) {
-    e.preventDefault()
-    if (isCreditLimitInvalid(creditForm.creditLimit)) {
-      toast.error('Hạn mức tín dụng không được âm.')
-      return
-    }
-    if (isPaymentTermsInvalid(creditForm.paymentTermsDays)) {
-      toast.error('Thời hạn thanh toán phải từ 1 đến 365 ngày.')
-      return
-    }
-    setCreditSaving(true)
-    try {
-      const payload = {
-        creditEnabled: creditForm.creditEnabled,
-        creditLimit: creditForm.creditLimit !== '' ? Number(creditForm.creditLimit) : null,
-        paymentTermsDays: creditForm.paymentTermsDays !== '' ? Number(creditForm.paymentTermsDays) : null,
-        creditStatus: creditForm.creditStatus,
-        creditNote: creditForm.creditNote || null,
-      }
-      const updated = await updateCustomerCredit(customerId, payload)
-      setCredit(updated)
-      setCreditEditOpen(false)
-      toast.success('Hồ sơ tín dụng đã được cập nhật.')
-    } catch (err) {
-      toast.error(err.message || t('common.error'))
-    } finally {
-      setCreditSaving(false)
-    }
-  }
-
-
   if (state.status === 'loading') return <StatePanel tone="info" title={t('customers.detail.loading')} description={t('common.pleaseWait')} />
   if (state.status === 'error') return <StatePanel tone="danger" title={t('customers.detail.error')} description={state.error} actionLabel={t('common.back')} onAction={() => navigate('/admin/customers')} />
   if (!state.customer) return <StatePanel tone="neutral" title={t('customers.detail.notFound')} description={`ID: ${customerId}`} actionLabel={t('common.back')} onAction={() => navigate('/admin/customers')} />
@@ -239,8 +128,6 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
   const { customer } = state
 
   const phoneError = isPhoneInvalid(editForm.phone)
-  const creditLimitError = isCreditLimitInvalid(creditForm.creditLimit)
-  const paymentTermsError = isPaymentTermsInvalid(creditForm.paymentTermsDays)
 
   return (
     <div>
@@ -453,210 +340,6 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate, hasPermi
           </DetailSection>
         )}
       </div>
-
-      {/* Credit profile section — full width below the grid */}
-      {canReadReceivables && (
-        <div className="mt-6">
-          <DetailSection title="Hồ sơ tín dụng (Công nợ)">
-            {creditLoading ? (
-              <p className="text-muted-foreground text-sm">Đang tải...</p>
-            ) : credit === null ? (
-              <p className="text-muted-foreground text-sm">Không có dữ liệu tín dụng.</p>
-            ) : !creditEditOpen ? (
-              <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-4 gap-x-8 mb-4">
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-0.5">Bán chịu</p>
-                    <p className="font-bold">{credit.creditEnabled ? 'Được phép' : 'Không cho phép'}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-0.5">Trạng thái tín dụng</p>
-                    <CreditStatusBadge status={credit.creditStatus} />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-0.5">Hạn mức tín dụng</p>
-                    <p className="font-bold">{credit.creditLimit != null ? formatCurrencyVnd(credit.creditLimit) : '—'}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-0.5">Thời hạn thanh toán</p>
-                    <p className="font-semibold">{credit.paymentTermsDays != null ? `${credit.paymentTermsDays} ngày` : '—'}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-0.5">Dư nợ hiện tại</p>
-                    <p className={`font-bold${credit.currentOutstanding > 0 ? ' text-danger' : ''}`}>
-                      {formatCurrencyVnd(credit.currentOutstanding ?? 0)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-0.5">Hạn mức còn lại</p>
-                    <p className={`font-bold ${credit.availableCredit <= 0 ? 'text-danger' : 'text-success'}`}>
-                      {credit.creditLimit != null ? formatCurrencyVnd(credit.availableCredit ?? 0) : '—'}
-                    </p>
-                  </div>
-                </div>
-                {credit.creditNote && (
-                  <p className="text-sm text-muted-foreground mb-3">
-                    <strong>Ghi chú:</strong> {credit.creditNote}
-                  </p>
-                )}
-                <div className="flex gap-3 items-center">
-                  {canEditCredit && (
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setCreditForm({
-                          creditEnabled: credit.creditEnabled ?? false,
-                          creditLimit: credit.creditLimit != null ? String(credit.creditLimit) : '',
-                          paymentTermsDays: credit.paymentTermsDays != null ? String(credit.paymentTermsDays) : '',
-                          creditStatus: credit.creditStatus ?? 'ACTIVE',
-                          creditNote: credit.creditNote ?? '',
-                        })
-                        setCreditEditOpen(true)
-                      }}
-                    >
-                      Chỉnh sửa tín dụng
-                    </Button>
-                  )}
-                  <Button
-                    variant="ghost"
-                    onClick={() => navigate(`/admin/receivables?customerId=${customerId}`)}
-                  >
-                    Xem công nợ →
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <form onSubmit={handleCreditSave} className="flex flex-col gap-3 max-w-[480px]">
-                <label className="flex items-center gap-2">
-                  <Checkbox
-                    checked={creditForm.creditEnabled}
-                    onCheckedChange={(checked) => setCreditForm((p) => ({ ...p, creditEnabled: checked === true }))}
-                    disabled={creditSaving}
-                   />
-                  Cho phép bán chịu
-                </label>
-                <label>
-                  Trạng thái tín dụng
-                  <Select
-                    value={creditForm.creditStatus}
-                    onValueChange={(val) => setCreditForm((p) => ({ ...p, creditStatus: val }))}
-                    disabled={creditSaving}
-                  ><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
-                    <SelectItem value="ACTIVE">Hoạt động</SelectItem>
-                    <SelectItem value="SUSPENDED">Tạm khóa</SelectItem>
-                    <SelectItem value="BLOCKED">Chặn vĩnh viễn</SelectItem>
-                  </SelectContent></Select>
-                </label>
-                <label>
-                  Hạn mức tín dụng (VND)
-                  <Input
-                    type="number"
-                    min="0"
-                    step="1000"
-                    value={creditForm.creditLimit}
-                    onChange={(e) => setCreditForm((p) => ({ ...p, creditLimit: e.target.value }))}
-                    placeholder="Không giới hạn nếu để trống"
-                    disabled={creditSaving}
-                    aria-invalid={creditLimitError || undefined}
-                   />
-                  {creditLimitError ? (
-                    <span className="mt-1 flex items-center gap-1 text-xs text-danger font-semibold" role="alert">
-                      <AlertCircle size={13} aria-hidden="true" className="shrink-0" />
-                      Hạn mức không được là số âm.
-                    </span>
-                  ) : (
-                    <span className="mt-1 block text-xs text-muted-foreground">Để trống nếu không giới hạn. Không nhập số âm.</span>
-                  )}
-                </label>
-                <label>
-                  Thời hạn thanh toán (ngày)
-                  <Input
-                    type="number"
-                    min="1"
-                    max="365"
-                    value={creditForm.paymentTermsDays}
-                    onChange={(e) => setCreditForm((p) => ({ ...p, paymentTermsDays: e.target.value }))}
-                    placeholder="VD: 30"
-                    disabled={creditSaving}
-                    aria-invalid={paymentTermsError || undefined}
-                   />
-                  {paymentTermsError ? (
-                    <span className="mt-1 flex items-center gap-1 text-xs text-danger font-semibold" role="alert">
-                      <AlertCircle size={13} aria-hidden="true" className="shrink-0" />
-                      Thời hạn phải từ 1 đến 365 ngày.
-                    </span>
-                  ) : (
-                    <span className="mt-1 block text-xs text-muted-foreground">Từ 1 đến 365 ngày. Để trống nếu không áp dụng.</span>
-                  )}
-                </label>
-                <label>
-                  Ghi chú tín dụng
-                  <Input
-                    type="text"
-                    value={creditForm.creditNote}
-                    onChange={(e) => setCreditForm((p) => ({ ...p, creditNote: e.target.value }))}
-                    disabled={creditSaving}
-                   />
-                </label>
-                <div className="flex gap-2">
-                  <Button type="submit" disabled={creditSaving || creditLimitError || paymentTermsError}>
-                    {creditSaving ? 'Đang lưu...' : 'Lưu'}
-                  </Button>
-                  <Button type="button" variant="outline" onClick={() => setCreditEditOpen(false)} disabled={creditSaving}>
-                    Hủy
-                  </Button>
-                </div>
-              </form>
-            )}
-          </DetailSection>
-        </div>
-      )}
-
-      {/* Customer coupons list — full width below credit */}
-      {canReadCoupons && (
-        <div className="mt-6">
-          <DetailSection title="Mã giảm giá của khách hàng">
-            {coupons.status === 'loading' && (
-              <p className="text-muted-foreground text-sm">Đang tải...</p>
-            )}
-            {coupons.status === 'error' && (
-              <p className="text-danger text-sm">Không thể tải danh sách mã giảm giá.</p>
-            )}
-            {coupons.status === 'success' && coupons.items.length === 0 && (
-              <p className="text-muted-foreground text-sm">Khách hàng chưa có mã giảm giá nào.</p>
-            )}
-            {coupons.status === 'success' && coupons.items.length > 0 && (
-              <div className="flex flex-col gap-2">
-                {coupons.items.map((c) => (
-                  <div key={c.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 py-2 border-b border-border last:border-0 text-sm">
-                    <span className="font-mono font-semibold tracking-wider text-primary">{c.code}</span>
-                    <span className="text-muted-foreground">{c.name}</span>
-                    <span className="font-medium">
-                      {c.discountType === 'PERCENT'
-                        ? `${c.discountValue}%`
-                        : formatCurrencyVnd(c.discountValue)}
-                    </span>
-                    <StatusBadge status={c.status} type="coupon" />
-                    {c.expiresAt && (
-                      <span className="text-xs text-muted-foreground">HSD: {formatDateTime(c.expiresAt)}</span>
-                    )}
-                    <span className="text-xs text-muted-foreground ml-auto">
-                      {c.usageCount}/{c.maxUsage ?? '∞'} lần dùng
-                    </span>
-                  </div>
-                ))}
-                {coupons.totalItems > 20 && (
-                  <p className="text-xs text-muted-foreground pt-1">
-                    Hiển thị 20 / {coupons.totalItems} mã
-                  </p>
-                )}
-              </div>
-            )}
-          </DetailSection>
-        </div>
-      )}
-
-
     </div>
   )
 }

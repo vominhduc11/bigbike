@@ -34,7 +34,7 @@ type Props = {
 /** Shape trả về của /api/products/[slug]/snapshot — chỉ phần cần freshness (giá/tồn/variants). */
 type ProductSnapshot = {
   pricing: { retailPrice: number; compareAtPrice: number | null; salePrice: number | null; discountPercent: number; currency: string };
-  stock: { stockState: string; label: string; forceOutOfStock: boolean; quantity?: number | null };
+  stock: { stockState: string; label: string; forceOutOfStock: boolean };
   variants: ProductVariant[];
 };
 
@@ -84,7 +84,6 @@ export function WpPurchaseSection({
       }
     : product.price;
   const freshStockState = (snapshot?.stock.stockState as ProductStockState | undefined) ?? product.stockState;
-  const freshStockQty = snapshot ? (snapshot.stock.quantity ?? null) : product.stockQuantity;
   const freshForceOutOfStock = snapshot ? snapshot.stock.forceOutOfStock : product.forceOutOfStock;
 
   const hasVariants = variants.length > 0;
@@ -111,30 +110,11 @@ export function WpPurchaseSection({
   const showOld = compare != null && compare > current;
 
   // STOCK_RULE_009 — hiển thị buy-box PDP (display-only, KHÔNG đổi điều kiện mua
-  // ở STOCK_RULE_005/006):
-  //  • Sản phẩm CÓ biến thể, khách CHƯA chọn → chỉ "Còn hàng" / "Hết hàng" theo
-  //    product.stockState (aggregate STOCK_RULE_008). KHÔNG hiện "Sắp hết".
-  //    (product.stockQuantity là null/0 cho hàng có biến thể nên không phân tầng được.)
-  //  • Đã xác định 1 đơn vị tồn cụ thể (biến thể đã chọn → variant.stockQuantity,
-  //    hoặc sản phẩm không biến thể → product.stockQuantity): phân tầng theo SỐ
-  //    SERIAL còn lại — >=10 "Còn hàng", 1..9 "Sắp hết", <=0 "Hết hàng". Ngưỡng 10
-  //    là hằng số hiển thị riêng của PDP, độc lập với low_stock_threshold (mặc
-  //    định 5) vốn chỉ chi phối checkout/cảnh báo admin.
-  const PDP_LOW_STOCK_CUTOFF = 10;
-  const stockUnitKnown = !hasVariants || !!selectedVariant;
-  const unitQty = selectedVariant ? selectedVariant.stockQuantity : freshStockQty;
+  // ở STOCK_RULE_005/006). Mô hình tồn kho giờ là boolean Còn/Hết — KHÔNG hiển thị
+  // số lượng, KHÔNG còn tầng "Sắp hết". Trạng thái lấy từ biến thể đã chọn (nếu có)
+  // hoặc trạng thái tổng của sản phẩm, cộng cờ "tắt bán thủ công".
   const unitState = selectedVariant?.stockState ?? freshStockState;
-  // Tồn của đơn vị đang xét: ưu tiên số serial; thiếu số thì suy từ stockState.
-  const unitOut = typeof unitQty === "number" ? unitQty <= 0 : unitState === "OUT_OF_STOCK";
-  const unitLow =
-    !unitOut &&
-    (typeof unitQty === "number" ? unitQty < PDP_LOW_STOCK_CUTOFF : unitState === "LOW_STOCK");
-
-  const isOutOfStock =
-    Boolean(freshForceOutOfStock) ||
-    (stockUnitKnown ? unitOut : freshStockState === "OUT_OF_STOCK");
-  // "Sắp hết" chỉ khi đã xác định đơn vị tồn cụ thể (chưa chọn biến thể → bỏ qua).
-  const isLowStock = !isOutOfStock && stockUnitKnown && unitLow;
+  const isOutOfStock = Boolean(freshForceOutOfStock) || unitState === "OUT_OF_STOCK";
   // Ở chế độ xem trước (admin) luôn KHÔNG cho mua: sản phẩm nháp chưa có trong kho,
   // mọi thao tác mua sẽ vô nghĩa/đổ lỗi. canBuy=false vô hiệu hoá cả nút thêm giỏ,
   // mua ngay (disabled) lẫn thanh mua cố định trên mobile (mirror trạng thái nút gốc).
@@ -282,8 +262,8 @@ export function WpPurchaseSection({
               </p>
             </div>
             <div className="status">
-              <p className={"stock " + (isOutOfStock ? "out-of-stock" : isLowStock ? "low-stock" : "in-stock")} style={{ paddingLeft: "2rem", paddingRight: "2rem" }}>
-                <span>{isOutOfStock ? tb("stockOut") : isLowStock ? tb("stockLow") : tb("stockIn")}</span>
+              <p className={"stock " + (isOutOfStock ? "out-of-stock" : "in-stock")} style={{ paddingLeft: "2rem", paddingRight: "2rem" }}>
+                <span>{isOutOfStock ? tb("stockOut") : tb("stockIn")}</span>
               </p>
             </div>
           </div>

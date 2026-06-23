@@ -1,25 +1,18 @@
 import type {
   Cart,
-  CheckoutOptions,
   CheckoutPayload,
-  CreateReturnPayload,
   CustomerAddress,
   CustomerAuthData,
   CustomerProfile,
-  CustomerReturn,
   OrderDetail,
   OrderListItem,
   OrderSummary,
   QuickBuyPayload,
-  ReturnEligibility,
   SaveAddressPayload,
   UpdateCustomerProfilePayload,
 } from "@/lib/contracts/commerce";
 import type { Article, Brand, Category, Page, Product } from "@/lib/contracts/public";
 import { env } from "@/env";
-
-// Re-export for consumers that import from client-api
-export type { CustomerReturn } from "@/lib/contracts/commerce";
 
 const API_BASE_URL = env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
 
@@ -81,24 +74,11 @@ export function clearCart(): Promise<Cart> {
   return clientRequest("DELETE", "/api/v1/cart/clear");
 }
 
-export function applyCoupon(code: string): Promise<Cart> {
-  return clientRequest("POST", "/api/v1/cart/coupons", { code });
-}
-
-export function removeCoupon(code: string): Promise<Cart> {
-  return clientRequest("DELETE", `/api/v1/cart/coupons/${encodeURIComponent(code)}`);
-}
-
 // ── Checkout ──────────────────────────────────────────────────────────────────
 
 export function submitCheckout(payload: CheckoutPayload, idempotencyKey?: string): Promise<OrderSummary> {
   const extra = idempotencyKey ? { "Idempotency-Key": idempotencyKey } : undefined;
   return clientRequest("POST", "/api/v1/checkout", payload, extra);
-}
-
-export function fetchCheckoutOptions(lang?: string): Promise<CheckoutOptions> {
-  const qs = lang ? `?lang=${encodeURIComponent(lang)}` : "";
-  return clientRequest("GET", `/api/v1/checkout/options${qs}`);
 }
 
 export type PublicSetting = { settingKey: string; settingValue: string };
@@ -396,24 +376,6 @@ export async function fetchMyOrders(page = 1, status?: string): Promise<{ data: 
   };
 }
 
-// ── Returns ───────────────────────────────────────────────────────────────────
-
-export function fetchMyReturns(): Promise<CustomerReturn[]> {
-  return clientRequest("GET", "/api/v1/customer/orders/returns");
-}
-
-export function fetchMyReturn(returnId: string): Promise<CustomerReturn> {
-  return clientRequest("GET", `/api/v1/customer/orders/returns/${encodeURIComponent(returnId)}`);
-}
-
-export function createReturn(orderId: string, payload: CreateReturnPayload): Promise<CustomerReturn> {
-  return clientRequest("POST", `/api/v1/customer/orders/${encodeURIComponent(orderId)}/returns`, payload);
-}
-
-export function fetchReturnEligibility(orderId: string): Promise<ReturnEligibility> {
-  return clientRequest("GET", `/api/v1/customer/orders/${encodeURIComponent(orderId)}/return-eligibility`);
-}
-
 export function cancelMyOrder(orderId: string): Promise<OrderDetail> {
   return clientRequest("PATCH", `/api/v1/customer/orders/${encodeURIComponent(orderId)}/cancel`);
 }
@@ -430,21 +392,6 @@ export async function fetchMyOrder(orderId: string): Promise<OrderDetail> {
   }
   if (payload === null) throw new Error("Máy chủ không trả về dữ liệu hợp lệ.");
   return (payload as { data: OrderDetail }).data ?? (payload as OrderDetail);
-}
-
-// ── Warranty ──────────────────────────────────────────────────────────────────
-
-export type WarrantyLookupResult = {
-  serialNumber: string;
-  productName: string;
-  startDate: string;
-  endDate: string;
-  status: "ACTIVE" | "EXPIRED" | "VOIDED";
-  daysLeft: number;
-};
-
-export function lookupWarranty(serial: string): Promise<WarrantyLookupResult> {
-  return clientRequest("GET", `/api/v1/warranties/lookup?serial=${encodeURIComponent(serial)}`);
 }
 
 // ── Email verification ────────────────────────────────────────────────────────

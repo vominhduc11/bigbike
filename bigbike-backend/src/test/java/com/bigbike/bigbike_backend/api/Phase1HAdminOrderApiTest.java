@@ -726,7 +726,7 @@ class Phase1HAdminOrderApiTest {
 
     // ── Direct PATCH status COMPLETED → REFUNDED must be rejected.
     //    Refund integrity (refund_transaction, payment.refundAmount, warranty void,
-    //    SOLD serial restore, receivable write-off) belongs to RefundService;
+    //    stock restore) belongs to RefundService;
     //    the dedicated POST /refund endpoint is the only legitimate path.
     @Test
     void updateOrderStatus_completedToRefunded_isRejected() throws Exception {
@@ -1196,22 +1196,25 @@ class Phase1HAdminOrderApiTest {
 
     // ── Business rule guards: COMPLETED / CANCELLED preconditions ─────────────
 
-    // Rule 2: COD orders cannot be COMPLETED until cash has been collected.
+    // Owner decision 2026-06-23: payment no longer gates completion. A delivered order can be
+    // completed even while still UNPAID — the admin reconciles money offline. Only the delivery
+    // lifecycle still gates COMPLETED (see completeOrder_codPaidButNotDelivered_isRejected).
     @Test
-    void completeOrder_codDeliveryUnpaid_isRejected() throws Exception {
+    void completeOrder_deliveredButUnpaid_succeeds() throws Exception {
         OrderInfo order = placeGuestOrder(1700000);
-        // Goods on the doorstep, but the courier hasn't handed cash back yet.
+        // Goods delivered; cash not yet reconciled — completion is still allowed.
         markDelivered(order.orderId);
 
         mockMvc.perform(patch("/api/v1/admin/orders/" + order.orderId + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\":\"COMPLETED\"}")
                         .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isConflict());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("COMPLETED"));
 
         OrderEntity reloaded = orderRepo.findById(order.orderId).orElseThrow();
-        assertThat(reloaded.getStatus()).isEqualTo("PROCESSING");
-        assertThat(reloaded.getCompletedAt()).isNull();
+        assertThat(reloaded.getStatus()).isEqualTo("COMPLETED");
+        assertThat(reloaded.getCompletedAt()).isNotNull();
     }
 
     // Rule 3: DELIVERY orders cannot be COMPLETED until they are marked DELIVERED.
@@ -1312,7 +1315,7 @@ class Phase1HAdminOrderApiTest {
 
     // ── Direct PAID→REFUNDED via payment-status must be rejected ──────────────
     // Refund must go through POST /refund so RefundService handles transaction,
-    // payment record, receivable write-off, serial restore, and audit log atomically.
+    // payment record, stock restore, and audit log atomically.
     @Test
     void updatePaymentStatus_paidToRefunded_isRejected() throws Exception {
         OrderInfo order = placeGuestOrder(9100000);

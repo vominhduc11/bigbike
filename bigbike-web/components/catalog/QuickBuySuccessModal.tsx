@@ -13,7 +13,6 @@ import { Button } from "@/components/ui/button";
 type SuccessOrder = {
   orderNumber: string;
   orderKey: string;
-  paymentMethod: string;
 };
 
 type Props = {
@@ -52,11 +51,6 @@ export function QuickBuySuccessModal({ order, onClose }: Props) {
             </p>
           )}
           <p className="text-caption text-muted-foreground">{t("success.willContact")}</p>
-          {order?.paymentMethod === "BACS" && (
-            <p className="text-caption text-state-warning-text bg-[var(--bb-state-warning-bg)] px-3 py-2 border border-[var(--bb-state-warning-border)]">
-              {t("success.bacsHint")}
-            </p>
-          )}
 
           <div className="flex flex-col gap-2 pt-2">
             <Button

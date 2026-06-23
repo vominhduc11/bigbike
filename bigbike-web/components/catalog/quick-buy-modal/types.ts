@@ -6,5 +6,5 @@ export type QuickBuyModalProps = {
   selectedVariantId?: string | null;
   variantLabel?: string | null;
   unitPrice?: number | null;
-  onSuccess: (order: { orderNumber: string; orderKey: string; paymentMethod: string }) => void;
+  onSuccess: (order: { orderNumber: string; orderKey: string }) => void;
 };

@@ -8,25 +8,18 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { generateId } from "@/lib/utils";
 import { submitCheckout } from "@/lib/api/client-api";
 import { useCart } from "@/lib/cart-context";
-import { useAddresses, useCartQuery, useCheckoutOptions, useProfile } from "@/lib/query/hooks";
+import { useAddresses, useCartQuery, useProfile } from "@/lib/query/hooks";
 import type { PriceChange } from "@/lib/contracts/commerce";
 import { createCheckoutAddressSchema, type CheckoutAddressFormValues } from "@/lib/schemas/checkout";
 import { pushDataLayer, toGtmCartItems } from "@/lib/analytics";
-import { formatVnd } from "@/lib/utils/format";
 import { toOrderConfirmPath } from "@/lib/utils/routes";
-import { getVietnamRegion } from "@/lib/utils/vn-region";
-import {
-  effectiveMethodCost,
-  isZoneMismatch,
-  normalizeMethodCode,
-  pickDefaultAddress,
-} from "./helpers";
+import { pickDefaultAddress } from "./helpers";
 
 /**
  * Toàn bộ state + logic nghiệp vụ của trang Thanh toán: 2 form địa chỉ (billing +
- * giao tới địa chỉ khác) react-hook-form/zod, nạp shipping/payment options, prefill
- * từ profile/address, GTM begin_checkout, khớp vùng giao (zone), min-order,
- * price-change và đặt đơn (idempotency key). Tách khỏi JSX để file component chỉ còn markup.
+ * giao tới địa chỉ khác) react-hook-form/zod, prefill từ profile/address,
+ * GTM begin_checkout, price-change và đặt đơn (idempotency key). Đơn online không
+ * tính phí vận chuyển. Tách khỏi JSX để file component chỉ còn markup.
  */
 export function useCheckout() {
   const t = useTranslations("Checkout");
@@ -34,8 +27,6 @@ export function useCheckout() {
   const router = useRouter();
   const { refreshCount } = useCart();
 
-  const [paymentMethod, setPaymentMethod] = useState("");
-  const [shippingMethodId, setShippingMethodId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [priceChanges, setPriceChanges] = useState<PriceChange[]>([]);
@@ -47,12 +38,6 @@ export function useCheckout() {
   const hasPrefilledRef = useRef(false);
 
   const { data: cart, isLoading: cartLoading, error: cartError } = useCartQuery();
-  const {
-    data: checkoutOptions,
-    isLoading: optionsLoading,
-    isError: optionsError,
-    refetch: refetchOptions,
-  } = useCheckoutOptions();
   const { data: profile } = useProfile();
   const { data: addresses } = useAddresses();
 
@@ -102,12 +87,6 @@ export function useCheckout() {
   });
 
   const formShip = watchShip();
-
-  useEffect(() => {
-    if (!checkoutOptions) return;
-    setPaymentMethod((prev) => prev || checkoutOptions.paymentMethods[0]?.code || "");
-    setShippingMethodId((prev) => prev || checkoutOptions.shippingMethods[0]?.id || "");
-  }, [checkoutOptions]);
 
   useEffect(() => {
     if (!cart || gtmFired) return;
@@ -169,19 +148,9 @@ export function useCheckout() {
     [formShip],
   );
 
+  // Đơn online không tính phí vận chuyển → tổng = subtotal - giảm giá (cart.totalAmount).
   const cartSubtotal = cart?.totals.subtotalAmount ?? 0;
-  const cartTotal = cart?.totals.totalAmount ?? 0;
-  const shippingMethods = checkoutOptions?.shippingMethods ?? [];
-  const paymentMethods = checkoutOptions?.paymentMethods ?? [];
-  const selectedShipping = shippingMethods.find((m) => m.id === shippingMethodId);
-  const effectiveShippingCost = effectiveMethodCost(selectedShipping, cartSubtotal);
-  const grandTotal = cartTotal + effectiveShippingCost;
-  const minOrderAmount = selectedShipping?.minOrderAmount ?? null;
-  const belowMinOrder = minOrderAmount !== null && minOrderAmount > 0 ? cartSubtotal < minOrderAmount : false;
-  // Vùng giao tính theo địa chỉ hàng thực sự được gửi tới (shipping nếu có, không thì billing).
-  const deliveryProvince = shipToDifferent ? resolvedShip.province : resolvedAddress.province;
-  const userRegion = getVietnamRegion(deliveryProvince);
-  const selectedShippingZoneMismatch = selectedShipping ? isZoneMismatch(selectedShipping, userRegion) : false;
+  const grandTotal = cart?.totals.totalAmount ?? 0;
 
   async function placeOrder() {
     if (!cart?.items.length) {
@@ -200,26 +169,6 @@ export function useCheckout() {
         setSubmitError(t("errorMissingShipping"));
         return;
       }
-    }
-    if (!paymentMethod) {
-      setSubmitError(t("errorMissingPayment"));
-      return;
-    }
-    if (!shippingMethodId) {
-      setSubmitError(t("errorShippingUnavailable"));
-      return;
-    }
-    if (selectedShippingZoneMismatch) {
-      setSubmitError(t("shippingZoneMismatch"));
-      return;
-    }
-    if (belowMinOrder && minOrderAmount) {
-      setSubmitError(t("belowMinOrder", { amount: formatVnd(minOrderAmount) }));
-      return;
-    }
-    if (normalizeMethodCode(paymentMethod) === "BACS" && !resolvedAddress.email.trim()) {
-      setSubmitError(t("errorEmailRequiredForBacs"));
-      return;
     }
 
     setSubmitError("");
@@ -249,8 +198,6 @@ export function useCheckout() {
                 addressLine1: resolvedShip.addressLine1,
               }
             : undefined,
-          shippingMethodId: shippingMethodId || null,
-          paymentMethod,
           customerNote: customerNote.trim() || undefined,
         },
         idempotencyKey.current,
@@ -303,21 +250,7 @@ export function useCheckout() {
     formShip,
     setValueShip,
     cartSubtotal,
-    effectiveShippingCost,
     grandTotal,
-    selectedShipping,
-    shippingMethods,
-    shippingMethodId,
-    setShippingMethodId,
-    paymentMethods,
-    paymentMethod,
-    setPaymentMethod,
-    optionsLoading,
-    optionsError,
-    refetchOptions,
-    userRegion,
     submitting,
-    belowMinOrder,
-    selectedShippingZoneMismatch,
   };
 }

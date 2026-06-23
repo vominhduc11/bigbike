@@ -32,9 +32,6 @@ public class OrderShippingItemEntity {
     @Column(name = "legacy_item_id")
     private Long legacyItemId;
 
-    @Column(name = "shipping_method_id")
-    private UUID shippingMethodId;
-
     @Column(name = "method_code", length = 100)
     private String methodCode;
 

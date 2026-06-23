@@ -115,8 +115,6 @@ class AdminRolesApiTest {
         assertThat(json).contains("permissions");
         assertThat(json).contains("roles.read");
         assertThat(json).contains("roles.write");
-        assertThat(json).contains("pos.read");
-        assertThat(json).contains("receivables.read");
         assertThat(json).contains("reports.read");
     }
 

@@ -57,7 +57,7 @@
                       <td align="right" style="font-size:16px;font-weight:700;color:#151515;padding-top:12px;"
                           th:text="${totalFormatted}">0 VND</td>
                     </tr>
-                    <tr>
+                    <tr th:if="${hasPayment}">
                       <td style="font-size:13px;color:#6b7280;padding-top:6px;">Thanh toán</td>
                       <td align="right" style="font-size:14px;color:#151515;padding-top:6px;"
                           th:text="${paymentLabel}">COD</td>

@@ -1,14 +1,13 @@
-import { Fragment, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
 import { AlertCircle } from 'lucide-react'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
-import { RefundModal } from '../components/RefundModal'
 import { StatePanel } from '../components/StatePanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { MobileCardList, MobileCard } from '../components/layout/MobileCardList'
-import { addOrderNote, fetchOrderAllowedTransitions, fetchOrderAuditTrail, fetchOrderDetail, fetchReturnsByOrder, updateOrderFulfillment, updateOrderPaymentStatus, updateOrderStatus } from '../lib/adminApi'
+import { addOrderNote, fetchOrderAllowedTransitions, fetchOrderAuditTrail, fetchOrderDetail, updateOrderFulfillment, updateOrderPaymentStatus, updateOrderStatus } from '../lib/adminApi'
 import { subscribeAdminWs } from '../lib/adminWebSocket'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
 import { showConfirm } from '../lib/confirm'
@@ -18,10 +17,8 @@ import { Textarea } from '@/components/ui/textarea'
 import {
   PAYMENT_TRANSITIONS, REASON_REQUIRED, addressLine, sameAddress,
   ORDER_STATUS_ACTION, getOrderStatusLabel, PAYMENT_ACTION_LABEL,
-  RETURN_REASON_KEY, RETURN_STATUS_KEY,
 } from './order-detail/constants'
 import { ReasonConfirmModal } from './order-detail/ReasonConfirmModal'
-import { AdminCreateReturnModal } from './order-detail/AdminCreateReturnModal'
 
 export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
   const { t } = useTranslation()
@@ -57,8 +54,6 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
   const [allowedTransitions, setAllowedTransitions] = useState([])
   const [transitionsError, setTransitionsError] = useState(false)
   const [transitionsKey, setTransitionsKey] = useState(0)
-  const [returnsError, setReturnsError] = useState(false)
-  const [showRefundModal, setShowRefundModal] = useState(false)
   const [noteContent, setNoteContent] = useState('')
   const [noteCustomerVisible, setNoteCustomerVisible] = useState(false)
   const [submittingNote, setSubmittingNote] = useState(false)
@@ -67,8 +62,6 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
   const [trackingNumber, setTrackingNumber] = useState('')
   const [trackingError, setTrackingError] = useState('')
   const [shippingCarrier, setShippingCarrier] = useState('')
-  const [orderReturns, setOrderReturns] = useState([])
-  const [showCreateReturn, setShowCreateReturn] = useState(false)
   const [reasonModal, setReasonModal] = useState(null)
 
   function applyOrderUpdate(updatedOrder) {
@@ -76,15 +69,6 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
     queryClient.invalidateQueries({ queryKey: ['orders'] })
     queryClient.invalidateQueries({ queryKey: ['order-audit', orderId] })
   }
-
-  useEffect(() => {
-    if (!orderQuery.isSuccess) return undefined
-    let active = true
-    fetchReturnsByOrder(orderId)
-      .then((r) => { if (active) { setOrderReturns(r); setReturnsError(false) } })
-      .catch(() => { if (active) setReturnsError(true) })
-    return () => { active = false }
-  }, [orderId, orderQuery.isSuccess])
 
   useEffect(() => {
     if (!orderQuery.isSuccess || !order?.orderStatus) return undefined
@@ -257,7 +241,6 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
             </span>
             <StatusBadge type="order" status={order.orderStatus} />
             <StatusBadge type="payment" status={order.paymentStatus} />
-            {order.source === 'pos' && <span className="bb-badge bb-badge-neutral">POS</span>}
           </h1>
           <p className="bb-muted">
             {t('orders.detail.orderDate')} {formatDateTime(order.createdAt)}
@@ -411,14 +394,6 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                       <dd style={{ textAlign: 'right', color: 'var(--bb-danger)' }}>-{formatCurrencyVnd(order.discount)}</dd>
                     </>
                   )}
-                  {order.appliedCoupons?.length > 0 && order.appliedCoupons.map((c) => (
-                    <Fragment key={c.code}>
-                      <dt style={{ textTransform: 'none', fontSize: 12, letterSpacing: 0, fontWeight: 400, paddingLeft: 12, color: 'var(--bb-text-secondary)' }}>
-                        {t('orders.detail.coupon', { defaultValue: 'Mã giảm giá' })}: <span style={{ fontFamily: 'var(--font-mono, monospace)' }}>{c.code}</span>
-                      </dt>
-                      <dd style={{ textAlign: 'right', fontSize: 12, color: 'var(--bb-text-secondary)' }}>-{formatCurrencyVnd(c.discountAmount)}</dd>
-                    </Fragment>
-                  ))}
                   <dt style={{ textTransform: 'none', fontWeight: 700, fontSize: 15, paddingTop: 8 }}>{t('orders.detail.total')}</dt>
                   <dd style={{ textAlign: 'right', fontSize: 18, fontWeight: 800, color: 'var(--bb-primary)', paddingTop: 8 }}>
                     {formatCurrencyVnd(order.total)}
@@ -473,65 +448,6 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
               </div>
             </div>
           )}
-
-          {/* Returns */}
-          <div className="bb-card" style={{ marginBottom: 16 }}>
-            <div className="bb-card-header">
-              <h3>{t('orders.detail.returnsTitle')}</h3>
-              {canUpdate && order.orderStatus === 'COMPLETED' && (
-                <button type="button" className="bb-btn bb-btn-ghost bb-btn-sm" onClick={() => setShowCreateReturn(true)}>
-                  {t('orders.detail.createReturnBtn')}
-                </button>
-              )}
-            </div>
-            <div className="bb-card-body--flush">
-              {returnsError ? (
-                <div className="bb-card-body"><p style={{ color: 'var(--bb-danger)' }}>{t('orders.detail.returnsLoadError')}</p></div>
-              ) : orderReturns.length === 0 ? (
-                <div className="bb-card-body"><p className="bb-muted">{t('orders.detail.returnsEmpty')}</p></div>
-              ) : (
-                <>
-                <div className="hide-on-mobile">
-                <div className="bb-table-wrap">
-                  <table className="bb-table">
-                    <thead>
-                      <tr>
-                        <th>{t('orders.detail.colRma')}</th>
-                        <th>{t('orders.detail.colReason')}</th>
-                        <th>{t('orders.detail.colReturnStatus')}</th>
-                        <th className="num">{t('orders.detail.colRefund')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {orderReturns.map((r) => (
-                        <tr key={r.id}>
-                          <td className="mono">{r.returnNumber}</td>
-                          <td>{RETURN_REASON_KEY[r.reason] ? t(RETURN_REASON_KEY[r.reason]) : r.reason}</td>
-                          <td><StatusBadge type="return" status={RETURN_STATUS_KEY[r.status] ? r.status : 'UNKNOWN'} /></td>
-                          <td className="num">{r.refundAmount > 0 ? formatCurrencyVnd(r.refundAmount) : '—'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                </div>
-                <MobileCardList>
-                  {orderReturns.map((r) => (
-                    <MobileCard
-                      key={r.id}
-                      title={r.returnNumber}
-                      subtitle={RETURN_REASON_KEY[r.reason] ? t(RETURN_REASON_KEY[r.reason]) : r.reason}
-                      status={<StatusBadge type="return" status={RETURN_STATUS_KEY[r.status] ? r.status : 'UNKNOWN'} />}
-                      meta={[
-                        { label: t('orders.detail.colRefund'), value: r.refundAmount > 0 ? formatCurrencyVnd(r.refundAmount) : '—', tone: 'strong' },
-                      ]}
-                    />
-                  ))}
-                </MobileCardList>
-                </>
-              )}
-            </div>
-          </div>
 
           {/* Notes */}
           <div className="bb-card" style={{ marginBottom: 16 }}>
@@ -647,34 +563,6 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
             </div>
           </div>
 
-          {/* Refund */}
-          {canUpdate && order.paymentStatus === 'PAID' && (
-            <div className="bb-card" style={{ marginBottom: 16 }}>
-              <div className="bb-card-header"><h3>{t('refund.sectionTitle')}</h3></div>
-              <div className="bb-card-body">
-                <dl className="bb-info-grid">
-                  <dt>{t('refund.paidAmount')}</dt>
-                  <dd style={{ fontWeight: 600 }}>{formatCurrencyVnd(order.paidAmount)}</dd>
-                  {order.refundAmount > 0 && (
-                    <>
-                      <dt>{t('refund.alreadyRefunded')}</dt>
-                      <dd style={{ color: 'var(--bb-danger)', fontWeight: 600 }}>{formatCurrencyVnd(order.refundAmount)}</dd>
-                    </>
-                  )}
-                </dl>
-                <button type="button" className="bb-btn bb-btn-danger" style={{ marginTop: 12 }} onClick={() => setShowRefundModal(true)}>
-                  {t('refund.buttonCreate')}
-                </button>
-                {order.refundReason && (
-                  <p className="bb-muted" style={{ marginTop: 8, fontSize: 12 }}>{t('refund.reason')}: {order.refundReason}</p>
-                )}
-                {order.refundedAt && (
-                  <p className="bb-muted" style={{ fontSize: 12 }}>{t('refund.refundedAt')}: {formatDateTime(order.refundedAt)}</p>
-                )}
-              </div>
-            </div>
-          )}
-
           {/* Fulfillment */}
           {order.fulfillmentType === 'DELIVERY' && (
             <div className="bb-card" style={{ marginBottom: 16 }}>
@@ -683,12 +571,6 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                 <dl className="bb-info-grid">
                   <dt>{t('orders.detail.fulfillmentStatusLabel')}</dt>
                   <dd style={{ fontWeight: 600 }}>{ffStatusLabel}</dd>
-                  {order.shippingItems?.length > 0 && (
-                    <>
-                      <dt>{t('orders.detail.shippingMethod')}</dt>
-                      <dd>{order.shippingItems.map((si) => si.methodTitle).filter(Boolean).join(', ') || '—'}</dd>
-                    </>
-                  )}
                   {order.trackingNumber && (
                     <>
                       <dt>{t('orders.detail.colRma', { defaultValue: 'Mã vận đơn' })}</dt>
@@ -790,19 +672,6 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
         </div>
       </div>
 
-      {showRefundModal && (
-        <RefundModal
-          orderId={orderId}
-          paidAmount={order.paidAmount}
-          alreadyRefunded={order.refundAmount || 0}
-          onSuccess={(updatedOrder) => {
-            applyOrderUpdate(updatedOrder)
-            setShowRefundModal(false)
-          }}
-          onClose={() => setShowRefundModal(false)}
-        />
-      )}
-
       {reasonModal && (
         <ReasonConfirmModal
           targetStatus={reasonModal.targetStatus}
@@ -811,19 +680,6 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
             doStatusChange(reasonModal.targetStatus, reason)
           }}
           onClose={() => setReasonModal(null)}
-        />
-      )}
-
-      {showCreateReturn && (
-        <AdminCreateReturnModal
-          order={order}
-          onClose={() => setShowCreateReturn(false)}
-          onSuccess={(ret) => {
-            setOrderReturns((prev) => [ret, ...prev])
-            queryClient.invalidateQueries({ queryKey: ['returns'] })
-            setShowCreateReturn(false)
-            toast.success(t('orders.detail.returnCreatedToast', { number: ret.returnNumber }))
-          }}
         />
       )}
     </div>

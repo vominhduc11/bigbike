@@ -96,11 +96,10 @@ class Phase1KOpenApiContractTest {
     }
 
     @Test
-    void openApi_containsAdminSettingsMenuCouponEndpoints() throws Exception {
+    void openApi_containsAdminSettingsMenuEndpoints() throws Exception {
         String body = fetchApiDocs();
         assertThat(body).contains("/api/v1/admin/settings");
         assertThat(body).contains("/api/v1/admin/menus");
-        assertThat(body).contains("/api/v1/admin/coupons");
     }
 
     // ── 4. Security — sensitive data not exposed ──────────────────────────────

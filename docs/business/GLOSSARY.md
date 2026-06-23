@@ -44,12 +44,10 @@ Nguyên tắc đọc file này:
 | Payment | Business Term | Thanh toán nội bộ/manual COD/BACS và trạng thái payment. | `CONFIRMED_FROM_REPO` | `BUSINESS_PROCESS.md`, `STATE_MACHINES.md` |
 | Shipping | Business Term | Shipping zones/methods nội bộ và phí ship. | `CONFIRMED_FROM_REPO` | `BUSINESS_PROCESS.md`, `WORKFLOW_OVERVIEW.md` |
 | Inventory | Business Term | Tồn kho, stock state, stock movement. | `CONFIRMED_FROM_REPO` | `BUSINESS_PROCESS.md`, `STATE_MACHINES.md` |
-| Return | Business Term | Đổi/trả hàng, return status lifecycle. | `CONFIRMED_FROM_REPO` | `BUSINESS_PROCESS.md`, `STATE_MACHINES.md` |
-| Refund | Business Term | Hoàn tiền toàn phần/một phần. | `CONFIRMED_FROM_REPO` | `BUSINESS_RULES.md`, `STATE_MACHINES.md` |
+| Return / Đổi trả | Business Term | Chính sách đổi/trả hàng cam kết thủ công với khách (không phải tính năng hệ thống). (Hệ thống xử lý đổi-trả/hoàn tiền đã gỡ 2026-06-23.) | `CONFIRMED_FROM_REPO` | `BUSINESS_RULES.md` |
 | Media | Business Term | File/media asset cho product/content/homepage. | `CONFIRMED_FROM_REPO` | `MODULE_CATALOG.md` |
 | Content | Business Term | Article/page/policy/guide CMS content. | `CONFIRMED_FROM_REPO` | `MODULE_CATALOG.md` |
 | SEO | Business Term | Metadata, canonical, JSON-LD, redirects, sitemap/robots nếu có. | `CONFIRMED_FROM_REPO` một phần | `MODULE_CATALOG.md`, `WORKFLOW_OVERVIEW.md` |
-| Coupon / Discount | Business Term | Mã giảm giá/admin coupon; checkout behavior cần verify. | `DOCUMENTED_NEEDS_VERIFICATION` | `BUSINESS_PROCESS.md`, `ACCEPTANCE_CRITERIA.md` |
 | Module | Module / Feature Term | Nhóm chức năng lớn xuyên UI/API/data/rule/test. | `STANDARD_ANALYSIS_TERM` | `MODULE_CATALOG.md` |
 | Feature | Module / Feature Term | Chức năng cụ thể trong module. | `STANDARD_ANALYSIS_TERM` | `MODULE_CATALOG.md` |
 | Business Process | Workflow / Process Term | Quy trình vận hành nhìn từ business. | `STANDARD_ANALYSIS_TERM` | `BUSINESS_PROCESS.md` |
@@ -99,7 +97,7 @@ Nguyên tắc đọc file này:
 |---|---|
 | Category | Project Term |
 | Definition | Dashboard nội bộ dùng để quản lý vận hành BigBike. |
-| BigBike Context | App `bigbike-admin` là Vite + React SPA, có routes cho products, categories, brands, content, orders, customers, media, coupons, redirects, menus, sliders, shipping, reviews, admin-users, settings. |
+| BigBike Context | App `bigbike-admin` là Vite + React SPA, có routes cho products, categories, brands, content, orders, customers, media, redirects, menus, sliders, shipping, reviews, admin-users, settings. |
 | Example | `/admin/products` yêu cầu `products.read`; `/admin/orders` yêu cầu `orders.read`. |
 | Related Docs | `USER_ROLES.md`, `MODULE_CATALOG.md`, `PERMISSION_MATRIX.md` nếu có |
 | Status | `CONFIRMED_FROM_REPO` |
@@ -280,9 +278,9 @@ Nguyên tắc đọc file này:
 | Field | Value |
 |---|---|
 | Category | Business Term |
-| Definition | Inventory là quản lý tồn kho; Stock là số lượng/trạng thái có hàng của product/variant. |
-| BigBike Context | Stock được validate khi checkout, decrement khi tạo order, restore khi cancel/refund/return theo docs. |
-| Example | `IN_STOCK`, `LOW_STOCK`, `OUT_OF_STOCK`, `PREORDER`, `CONTACT_FOR_STOCK`. |
+| Definition | Inventory là quản lý tồn kho; Stock là **trạng thái có hàng** (boolean) của product/variant — không còn là số lượng (V261). |
+| BigBike Context | Availability là cờ "Còn hàng / Hết hàng" admin tự bật/tắt. Checkout chặn theo `is_available` của biến thể. **Bán không tự đổi availability** — admin tự đánh dấu "Hết hàng" khi hết (không tự chặn bán quá). Không decrement/restore số lượng. |
+| Example | `IN_STOCK`, `OUT_OF_STOCK` (`LOW_STOCK` giữ trong enum nhưng không còn sinh ra). |
 | Related Docs | `BUSINESS_RULES.md`, `STATE_MACHINES.md`, `ACCEPTANCE_CRITERIA.md` |
 | Status | `CONFIRMED_FROM_REPO` |
 | Evidence | `ProductStockState.java`, `BUSINESS_RULES.md` |
@@ -311,29 +309,17 @@ Nguyên tắc đọc file này:
 | Status | `CONFIRMED_FROM_REPO` một phần; sitemap/robots/per-page SEO `NEEDS_BUSINESS_CONFIRMATION` nếu cần scope chính xác |
 | Evidence | `bigbike-web/lib/utils/routes.ts`, `PROJECT_OVERVIEW.md` |
 
-### Refund / Return
+### Return / Đổi trả
 
 | Field | Value |
 |---|---|
 | Category | Business Term |
-| Definition | Return là yêu cầu đổi/trả; Refund là hoàn tiền. |
-| BigBike Context | Admin return/refund workflows được docs xác nhận; customer return route/API có evidence trong docs/mobile routes. |
-| Example | Return `PENDING -> APPROVED -> RECEIVED -> COMPLETED`; refund yêu cầu order paid/partially paid. |
-| Related Docs | `BUSINESS_PROCESS.md`, `BUSINESS_RULES.md`, `STATE_MACHINES.md` |
+| Definition | Chỉ còn là chính sách đổi/trả hiển thị cho khách (các trang chính sách CMS — gồm cả "Chính sách bảo hành" — và dòng "Đổi size 30 ngày" theo từng sản phẩm) — một cam kết thủ công thực hiện ngoài hệ thống, KHÔNG phải tính năng được theo dõi trong hệ thống. (Hệ thống xử lý đổi-trả/hoàn tiền đã gỡ 2026-06-23; tính năng bảo hành cũng đã gỡ hẳn 2026-06-23, V264.) |
+| BigBike Context | Khách đọc cam kết đổi/trả; shop thực hiện thủ công. Không còn yêu cầu đổi/trả, không còn vòng đời trạng thái, không còn hoàn tiền tự động trong hệ thống. |
+| Example | Dòng "Đổi size 30 ngày" trên trang sản phẩm; nội dung chính sách đổi/trả trên trang chính sách CMS. |
+| Related Docs | `BUSINESS_RULES.md` |
 | Status | `CONFIRMED_FROM_REPO` |
-| Evidence | `STATE_MACHINES.md`, `bigbike_mobile/lib/core/router/app_router.dart` |
-
-### Coupon / Discount
-
-| Field | Value |
-|---|---|
-| Category | Business Term |
-| Definition | Coupon/Discount là mã hoặc rule giảm giá. |
-| BigBike Context | Admin coupon module tồn tại; docs ghi coupon-cart/checkout integration còn cần verify/drift. |
-| Example | Admin tạo coupon; checkout áp dụng coupon cần kiểm tra thêm. |
-| Related Docs | `BUSINESS_PROCESS.md`, `ACCEPTANCE_CRITERIA.md` |
-| Status | `DOCUMENTED_NEEDS_VERIFICATION` |
-| Evidence | `BUSINESS_PROCESS.md`, `ACCEPTANCE_CRITERIA.md` |
+| Evidence | Per-product policy text; CMS policy pages |
 
 ### Report / Settings
 
@@ -530,8 +516,8 @@ Nguyên tắc đọc file này:
 | Field | Value |
 |---|---|
 | Definition | State Machine mô tả các trạng thái hợp lệ và transition giữa chúng. State/Status là giá trị hiện tại; Transition là hành động đổi trạng thái. |
-| BigBike Context | Product publish status, order status, payment status, return status, media status, admin user status. |
-| Example | Product `DRAFT -> PUBLISHED`; Order `PROCESSING -> COMPLETED`; Return `PENDING -> APPROVED`. |
+| BigBike Context | Product publish status, order status, payment status, media status, admin user status. |
+| Example | Product `DRAFT -> PUBLISHED`; Order `PROCESSING -> COMPLETED`; Payment `UNPAID -> PAID`. |
 | Related Docs | `STATE_MACHINES.md` |
 | Status | `STANDARD_ANALYSIS_TERM` / status values `CONFIRMED_FROM_REPO` |
 | Evidence | `PublishStatus.java`, `ProductStockState.java`, `STATE_MACHINES.md` |
@@ -553,7 +539,7 @@ Nguyên tắc đọc file này:
 |---|---|
 | Definition | Initial State là trạng thái ban đầu; Terminal State là trạng thái kết thúc; Precondition là điều kiện trước action; Postcondition là kết quả sau action; Enforcement Layer là nơi rule được kiểm soát. |
 | BigBike Context | COD order starts `PROCESSING`; BACS starts `ON_HOLD`; backend/service là enforcement layer cho state/payment/inventory. |
-| Example | Refund precondition: order paid/partially paid; postcondition: refund amount/status updated. |
+| Example | Publish precondition: product có đủ field bắt buộc; postcondition: product status `PUBLISHED`. |
 | Related Docs | `STATE_MACHINES.md`, `BUSINESS_RULES.md` |
 | Status | `STANDARD_ANALYSIS_TERM` |
 | Evidence | `STATE_MACHINES.md`, `BUSINESS_RULES.md` |
@@ -690,7 +676,7 @@ Nguyên tắc đọc file này:
 | Field | Value |
 |---|---|
 | Definition | Edge Case là trường hợp biên/dễ lỗi; Negative Case là case phải reject; Positive Case là happy path phải pass. |
-| BigBike Context | Checkout out-of-stock, invalid transition, duplicate slug, refund vượt paid amount là negative/edge cases. |
+| BigBike Context | Checkout out-of-stock, invalid transition, duplicate slug là negative/edge cases. |
 | Example | Order `CANCELLED -> PROCESSING` phải fail. |
 | Related Docs | `BUSINESS_RULES.md`, `STATE_MACHINES.md`, `ACCEPTANCE_CRITERIA.md` |
 | Status | `STANDARD_ANALYSIS_TERM` |
@@ -844,7 +830,6 @@ Nguyên tắc đọc file này:
 | Term | Where it appears | Conflict | Recommended canonical meaning | Needs verification |
 |---|---|---|---|---|
 | Staff | `USER_ROLES.md`, business docs | Business dùng generic Staff; role map không có exact `STAFF`. | Dùng `Staff` là business-level generic; technical roles là `SHOP_MANAGER`, `EDITOR`, `AUTHOR`, `CONTRIBUTOR`, `SEO_EDITOR`. | Business xác nhận cách gọi role nội bộ tiếng Việt. |
-| Coupon / Discount | `BUSINESS_PROCESS.md`, `ACCEPTANCE_CRITERIA.md` | Admin coupon module có evidence, nhưng coupon-cart/checkout integration bị ghi cần verify/drift. | Coupon = admin promotion entity; discount application during checkout phải verify riêng. | Audit service/tests checkout coupon. |
 | Payment Provider / Payment Method | Business docs | COD/BACS confirmed; external provider/webhook intentionally not used. | Payment Method hiện là COD/BACS internal/manual; Payment Provider hiện không dùng — admin tự đối soát chuyển khoản thủ công. SePay auto-reconciliation đã bị bỏ (V59). | Đã chốt: không tích hợp cổng tự động. |
 | Shipping Provider / Shipping Method | Business docs | Internal shipping method confirmed; carrier integration not found. | Shipping Method là cấu hình nội bộ; Shipping Provider là carrier external. | Business xác nhận GHN/GHTK/ViettelPost scope. |
 | Staging | Prompt yêu cầu kiểm nếu có | Repo có dev/mock/prod; staging chưa thấy. | Không dùng staging như confirmed environment nếu chưa có config/deploy evidence. | Business/DevOps xác nhận có staging không. |
@@ -859,7 +844,7 @@ Nguyên tắc đọc file này:
 | External Payment Provider | Integration Term | `NOT_FOUND_IN_REPO` | COD/BACS/manual payment confirmed, không phải external provider. |
 | Shipping Provider | Integration Term | `NOT_FOUND_IN_REPO` | Không thấy GHN/GHTK/ViettelPost/carrier provider integration. |
 | Carrier Tracking / Waybill | Integration Term | `NOT_FOUND_IN_REPO` | Shipping methods confirmed, fulfillment tracking transition chưa rõ. |
-| Inventory Movement serial lifecycle | Business Term | `NEEDS_BUSINESS_CONFIRMATION` | Có stock movement/serial term trong docs nhưng full lifecycle cần audit sâu. |
+| Inventory Movement serial lifecycle | Business Term | `REMOVED` | Theo dõi theo số serial đã được gỡ toàn nền tảng (2026-06-23, V259). Tồn kho nay quản theo số lượng thủ công; không còn vòng đời serial. |
 | Customer Account production readiness | Business Term | `DOCUMENTED_NEEDS_VERIFICATION` | Customer auth/account exists; production readiness/gates chưa được chứng minh trong docs này. |
 | Audit Log completeness | Technical / Business Term | `DOCUMENTED_NEEDS_VERIFICATION` | Audit log exists, coverage every sensitive action needs matrix. |
 | Staging Environment | Project Term | `NOT_FOUND_IN_REPO` | dev/mock/prod confirmed; staging not confirmed. |

@@ -30,7 +30,6 @@ export type Cart = {
   currency: string
   items: CartItem[]
   totals: CartTotals
-  couponCodes?: string[]
 }
 
 export type CheckoutAddress = {
@@ -50,16 +49,17 @@ export type QuickBuyPayload = {
   productVariantId?: string | null
   quantity: number
   billingAddress: CheckoutAddress
-  shippingMethodId?: string | null
-  paymentMethod: string
+  // Optional (owner decision 2026-06-23): online orders no longer ask the customer to choose a
+  // payment method — the admin reconciles payment offline.
+  paymentMethod?: string
   customerNote?: string
 }
 
 export type CheckoutPayload = {
   billingAddress: CheckoutAddress
   shippingAddress?: CheckoutAddress | null
-  shippingMethodId?: string | null
-  paymentMethod: string
+  // Optional — see QuickBuyPayload#paymentMethod.
+  paymentMethod?: string
   customerNote?: string
 }
 
@@ -68,19 +68,8 @@ export type PaymentMethodOption = {
   title: string
 }
 
-export type ShippingMethodOption = {
-  id: string
-  code: string
-  title: string
-  cost: number
-  freeShippingThreshold?: number | null
-  minOrderAmount?: number | null
-  zoneRegionCode?: string | null
-}
-
 export type CheckoutOptions = {
   paymentMethods: PaymentMethodOption[]
-  shippingMethods: ShippingMethodOption[]
 }
 
 export type PriceChange = {
@@ -259,76 +248,3 @@ export type SaveAddressPayload = {
   isDefault?: boolean
 }
 
-export type CustomerReturnItem = {
-  id: string
-  productName: string
-  variantName: string | null
-  sku: string | null
-  quantity: number
-  unitPrice: number
-  reason: string | null
-}
-
-export type CustomerReturnHistory = {
-  fromStatus: string | null
-  toStatus: string
-  note: string | null
-  createdAt: string
-}
-
-export type CustomerReturn = {
-  id: string
-  returnNumber: string
-  orderId: string
-  orderNumber: string | null
-  status: string
-  reason: string
-  customerNote: string | null
-  adminNote: string | null
-  refundAmount: number
-  items: CustomerReturnItem[]
-  history: CustomerReturnHistory[]
-  createdAt: string
-  updatedAt: string
-}
-
-export type CreateReturnItemPayload = {
-  orderLineItemId: string
-  quantity: number
-  reason?: string | null
-}
-
-export type CreateReturnPayload = {
-  reason: string
-  customerNote?: string
-  items: CreateReturnItemPayload[]
-}
-
-export type ReturnEligibilityReason =
-  | "OK"
-  | "ORDER_NOT_FOUND"
-  | "NOT_OWNER"
-  | "ORDER_NOT_COMPLETED"
-  | "WINDOW_EXPIRED"
-  | "RETURN_IN_PROGRESS"
-  | "NOTHING_TO_RETURN"
-
-export type ReturnEligibilityItem = {
-  orderLineItemId: string
-  productName: string
-  variantName: string | null
-  sku: string | null
-  orderedQuantity: number
-  alreadyReturnedQuantity: number
-  returnableQuantity: number
-  unitPrice: number
-}
-
-export type ReturnEligibility = {
-  orderId: string
-  orderStatus: string | null
-  eligible: boolean
-  reason: ReturnEligibilityReason
-  daysRemaining: number | null
-  items: ReturnEligibilityItem[]
-}

@@ -4,6 +4,6 @@ package com.bigbike.bigbike_backend.migration.wordpress.model;
 public record WpOrderItem(
         long orderItemId,
         String orderItemName,
-        String orderItemType,  // line_item, shipping, fee, coupon, tax
+        String orderItemType,  // line_item, shipping, fee, tax
         long orderId
 ) {}

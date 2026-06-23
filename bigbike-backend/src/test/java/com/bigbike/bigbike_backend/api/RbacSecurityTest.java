@@ -113,13 +113,6 @@ class RbacSecurityTest {
                 .andExpect(status().isNotFound());
     }
 
-    @Test
-    void warrantyLookupWithUnknownSerialReturns404() throws Exception {
-        mockMvc.perform(get("/api/v1/warranties/lookup")
-                        .param("serial", "NO-SUCH-SERIAL-" + UUID.randomUUID()))
-                .andExpect(status().isNotFound());
-    }
-
     // ── helpers ──────────────────────────────────────────────────────────────
 
     private record Session(Cookie[] cookies, String csrf) {}

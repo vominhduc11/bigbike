@@ -13,8 +13,7 @@ public record ProductVariant(
         Integer stockQuantity,
         ImageAsset image,
         List<GalleryMedia> gallery,
-        boolean isAvailable,
-        boolean trackSerials
+        boolean isAvailable
 ) {
 }
 

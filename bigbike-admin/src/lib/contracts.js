@@ -268,7 +268,6 @@ function normalizeVariant(input) {
       ? input.gallery.map(normalizeGalleryMedia).filter(Boolean)
       : [],
     isAvailable: input.isAvailable !== false,
-    trackSerials: Boolean(input.trackSerials),
   }
 }
 
@@ -797,7 +796,6 @@ export function normalizeOrder(input) {
     addresses,
     shippingAddress,
     billingAddress,
-    shippingItems: Array.isArray(s.shippingItems) ? s.shippingItems : [],
     payments,
     notes: Array.isArray(s.notes) ? s.notes.map(normalizeOrderNote) : [],
     // Applied coupons (code + per-coupon discount) so the detail screen can show which
@@ -912,34 +910,6 @@ export function normalizeSetting(input) {
     settingGroup: toTrimmedStringLocal(s.settingGroup) || 'GENERAL',
     valueType: toTrimmedStringLocal(s.valueType) || 'STRING',
     superAdminOnly: Boolean(s.superAdminOnly),
-    updatedAt: toTrimmedStringLocal(s.updatedAt) || undefined,
-  }
-}
-
-// ── Coupons ──────────────────────────────────────────────────────────────────
-
-export const COUPON_STATUS_VALUES = ['ACTIVE', 'INACTIVE', 'EXPIRED', 'ARCHIVED']
-export const DISCOUNT_TYPE_VALUES = ['PERCENT', 'FIXED']
-
-export function normalizeCoupon(input) {
-  const s = input && typeof input === 'object' ? input : {}
-  const rawType = toTrimmedStringLocal(s.discountType)
-  const discountType = DISCOUNT_TYPE_VALUES.includes(rawType) ? rawType : 'FIXED'
-  return {
-    id: toTrimmedStringLocal(s.id) || 'unknown-coupon',
-    code: toTrimmedStringLocal(s.code) || 'UNKNOWN',
-    name: toTrimmedStringLocal(s.name) || '',
-    discountType,
-    discountValue: toIntegerLocal(s.amount, 0),
-    minimumOrderAmount: toIntegerLocal(s.minimumAmount, 0),
-    maximumAmount: s.maximumAmount != null ? toIntegerLocal(s.maximumAmount) : undefined,
-    maxUsage: s.usageLimit != null ? toIntegerLocal(s.usageLimit) : undefined,
-    usageCount: toIntegerLocal(s.usageCount, 0),
-    status: COUPON_STATUS_VALUES.includes(s.status) ? s.status : 'INACTIVE',
-    channel: ['ALL', 'ONLINE', 'POS'].includes(s.channel) ? s.channel : 'ALL',
-    customerId: toTrimmedStringLocal(s.customerId) || undefined,
-    expiresAt: toTrimmedStringLocal(s.expiresAt) || undefined,
-    createdAt: toTrimmedStringLocal(s.createdAt) || undefined,
     updatedAt: toTrimmedStringLocal(s.updatedAt) || undefined,
   }
 }

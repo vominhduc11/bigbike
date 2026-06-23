@@ -5,8 +5,6 @@ import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderNoteEn
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderNoteJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.settings.SiteSettingJpaRepository;
-import com.bigbike.bigbike_backend.service.inventory.OrderStockRestoreService;
-import com.bigbike.bigbike_backend.service.inventory.SerialLifecycleService;
 import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import com.bigbike.bigbike_backend.service.ws.AdminOrderWsService;
 import com.bigbike.bigbike_backend.service.ws.OrderWsEvent;
@@ -22,7 +20,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 /**
  * Auto-cancels BACS orders that have been ON_HOLD with status UNPAID for longer
  * than the configured threshold. Reuses the same cancel side-effects as a
- * customer cancel: release serial reservation + restore non-serial stock + system note.
+ * customer cancel: restore stock + system note.
  *
  * Threshold is read from {@code site_settings.bacs_unpaid_auto_cancel_hours}
  * (default 72h). Set to 0 to disable.
@@ -42,8 +40,6 @@ public class OrderAutoCancelService {
     private final OrderJpaRepository orderRepo;
     private final OrderNoteJpaRepository noteRepo;
     private final SiteSettingJpaRepository settingRepo;
-    private final SerialLifecycleService serialLifecycleService;
-    private final OrderStockRestoreService orderStockRestoreService;
     private final WebRevalidationService webRevalidationService;
     private final AdminOrderWsService adminOrderWsService;
     private final TransactionTemplate txTemplate;
@@ -52,8 +48,6 @@ public class OrderAutoCancelService {
             OrderJpaRepository orderRepo,
             OrderNoteJpaRepository noteRepo,
             SiteSettingJpaRepository settingRepo,
-            SerialLifecycleService serialLifecycleService,
-            OrderStockRestoreService orderStockRestoreService,
             WebRevalidationService webRevalidationService,
             AdminOrderWsService adminOrderWsService,
             PlatformTransactionManager txManager
@@ -61,8 +55,6 @@ public class OrderAutoCancelService {
         this.orderRepo = orderRepo;
         this.noteRepo = noteRepo;
         this.settingRepo = settingRepo;
-        this.serialLifecycleService = serialLifecycleService;
-        this.orderStockRestoreService = orderStockRestoreService;
         this.webRevalidationService = webRevalidationService;
         this.adminOrderWsService = adminOrderWsService;
         this.txTemplate = new TransactionTemplate(txManager);
@@ -117,8 +109,7 @@ public class OrderAutoCancelService {
         }
         orderRepo.save(order);
 
-        serialLifecycleService.releaseReservationForOrder(orderId, "ORDER_BACS_UNPAID_AUTO_CANCELLED");
-        orderStockRestoreService.restoreForCancel(orderId);
+        // Inventory is boolean availability only (owner decision 2026-06-23) — nothing to restore.
 
         OrderNoteEntity note = new OrderNoteEntity();
         note.setOrder(order);

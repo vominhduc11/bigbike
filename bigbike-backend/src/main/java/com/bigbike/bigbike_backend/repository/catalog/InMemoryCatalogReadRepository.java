@@ -230,8 +230,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                                 12,
                                 null,
                                 List.of(),
-                                true,
-                                false
+                                true
                         ),
                         new ProductVariant(
                                 "var_ls2_ff800_black_l",
@@ -246,8 +245,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                                 3,
                                 null,
                                 List.of(),
-                                true,
-                                false
+                                true
                         )
                 ),
                 List.of(

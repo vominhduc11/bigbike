@@ -28,22 +28,10 @@ public final class PermissionCatalog {
             new Entry("orders.write",                 false),
             new Entry("customers.read",               false),
             new Entry("customers.write",              false),
-            new Entry("coupons.read",                 false),
-            new Entry("coupons.write",                false),
             new Entry("shipping.read",                false),
             new Entry("shipping.write",               false),
             new Entry("reviews.read",                 false),
             new Entry("reviews.write",                false),
-            new Entry("pos.read",                     false),
-            new Entry("pos.write",                    false),
-            new Entry("pos.price_override",           true),
-            new Entry("pos.sell_below_cost",          true),
-            new Entry("pos.refund",                   true),
-            new Entry("receivables.read",             false),
-            new Entry("receivables.create",           false),
-            new Entry("receivables.record_payment",   false),
-            new Entry("receivables.write_off",        true),
-            new Entry("receivables.override_limit",   true),
             new Entry("reports.read",                 false),
             new Entry("reports.export",               false)
         )),
@@ -54,9 +42,7 @@ public final class PermissionCatalog {
             new Entry("catalog.read",     false),
             new Entry("catalog.update",   false),
             new Entry("inventory.read",   false),
-            new Entry("inventory.write",  false),
-            new Entry("warranty.read",    false),
-            new Entry("warranty.write",   false)
+            new Entry("inventory.write",  false)
         )),
 
         new Group("roles.groupContent", List.of(

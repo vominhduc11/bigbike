@@ -278,10 +278,6 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Receivables-specific status badge palette
-   Reuses generic .status-badge layout from index.css; just adds the tones.
-   ═══════════════════════════════════════════════════════════════════════════ */
-/* ═══════════════════════════════════════════════════════════════════════════
    Tooltip-on-button helper (uses native title= for now;
    this class only ensures the cursor signals "more info").
    ═══════════════════════════════════════════════════════════════════════════ */

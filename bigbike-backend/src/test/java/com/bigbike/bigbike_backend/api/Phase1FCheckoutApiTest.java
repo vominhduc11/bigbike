@@ -7,42 +7,26 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.bigbike.bigbike_backend.domain.catalog.ProductSerialStatus;
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.CategoryEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
-import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductSerialEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.StockMovementEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartEntity;
-import com.bigbike.bigbike_backend.persistence.entity.coupon.CouponEntity;
-import com.bigbike.bigbike_backend.persistence.entity.shipping.ShippingMethodEntity;
-import com.bigbike.bigbike_backend.persistence.entity.shipping.ShippingZoneEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.catalog.OrderLineItemSerialJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductSerialJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.StockMovementJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLineItemJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.coupon.CouponJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.shipping.ShippingMethodJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.shipping.ShippingZoneJpaRepository;
 import jakarta.servlet.http.Cookie;
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,10 +44,6 @@ import org.springframework.web.context.WebApplicationContext;
 @Sql(scripts = "/db/test-seed.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
 class Phase1FCheckoutApiTest {
 
-    // Known seed IDs from V1001__seed_settings_menu_shipping_dev.sql
-    private static final String COD_METHOD_ID = "00000000-0000-0000-0000-000000000401";
-    private static final String FLAT_RATE_METHOD_ID = "00000000-0000-0000-0000-000000000402";
-
     private static final String VALID_BILLING = """
             {"fullName":"Nguyen Van A","phone":"0909123456","email":"buyer@example.com",
              "addressLine1":"123 Duong ABC","province":"HCM","country":"VN"}
@@ -74,17 +54,11 @@ class Phase1FCheckoutApiTest {
     @Autowired ProductJpaRepository productRepo;
     @Autowired CategoryJpaRepository categoryRepo;
     @Autowired OrderJpaRepository orderRepo;
-    @Autowired ShippingMethodJpaRepository shippingMethodRepo;
-    @Autowired ShippingZoneJpaRepository shippingZoneRepo;
-    @Autowired CouponJpaRepository couponRepo;
-    @Autowired ProductSerialJpaRepository serialRepo;
-    @Autowired OrderLineItemSerialJpaRepository olisRepo;
     @Autowired OrderLineItemJpaRepository lineItemRepo;
     @Autowired ProductVariantJpaRepository variantRepo;
     @Autowired StockMovementJpaRepository stockMovementRepo;
 
     private MockMvc mockMvc;
-    private final java.util.List<UUID> testShippingMethodIds = new java.util.ArrayList<>();
 
     private static String testCategoryId;
 
@@ -94,13 +68,6 @@ class Phase1FCheckoutApiTest {
                 .apply(SecurityMockMvcConfigurers.springSecurity())
                 .build();
         ensureTestCategory();
-    }
-
-    @org.junit.jupiter.api.AfterEach
-    void cleanupTestShippingMethods() {
-        testShippingMethodIds.forEach(id -> shippingMethodRepo.findById(id)
-                .ifPresent(shippingMethodRepo::delete));
-        testShippingMethodIds.clear();
     }
 
     private void ensureTestCategory() {
@@ -119,16 +86,14 @@ class Phase1FCheckoutApiTest {
     // ── Checkout options (2) ──────────────────────────────────────────────────
 
     @Test
-    void getOptions_returnsPaymentAndShippingMethods() throws Exception {
+    void getOptions_returnsPaymentMethodsOnly() throws Exception {
+        // Shipping methods removed (owner decision 2026-06-23) — options carry payment methods only.
         mockMvc.perform(get("/api/v1/checkout/options"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.paymentMethods").isArray())
                 // Only COD and BACS — no automatic payment gateway
                 .andExpect(jsonPath("$.data.paymentMethods.length()").value(2))
-                .andExpect(jsonPath("$.data.shippingMethods").isArray())
-                // Only 1 enabled shipping method in seed (COD, flat_rate is disabled)
-                .andExpect(jsonPath("$.data.shippingMethods.length()").value(1))
-                .andExpect(jsonPath("$.data.shippingMethods[0].code").value("cod"));
+                .andExpect(jsonPath("$.data.shippingMethods").doesNotExist());
     }
 
     @Test
@@ -235,44 +200,19 @@ class Phase1FCheckoutApiTest {
                 .andExpect(status().isBadRequest());
     }
 
-    // ── Shipping method selection (3) ─────────────────────────────────────────
+    // ── Online orders carry no shipping fee (owner decision 2026-06-23) ────────
 
     @Test
-    void checkout_shippingMethodAutoSelected_whenOnlyOneEnabled() throws Exception {
+    void checkout_createsOrder_withoutShippingMethod() throws Exception {
         GuestSession session = newGuestSessionWithItem(3000000);
-        // No shippingMethodId — auto-selects the single enabled COD method
-        MvcResult result = mockMvc.perform(post("/api/v1/checkout")
+        // Shipping method choice removed — checkout succeeds with no shippingMethodId and zero shipping.
+        mockMvc.perform(post("/api/v1/checkout")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
                         .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
                 .andExpect(status().isOk())
-                .andReturn();
-
-        String body = result.getResponse().getContentAsString();
-        assertThat(body).contains("orderNumber");
-    }
-
-    @Test
-    void checkout_shippingMethodById_accepted() throws Exception {
-        GuestSession session = newGuestSessionWithItem(3000000);
-        mockMvc.perform(post("/api/v1/checkout")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentMethod\":\"COD\",\"shippingMethodId\":\"" + COD_METHOD_ID + "\"," +
-                                 "\"billingAddress\":" + VALID_BILLING + "}")
-                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.orderNumber").isString());
-    }
-
-    @Test
-    void checkout_disabledShippingMethod_returns400() throws Exception {
-        GuestSession session = newGuestSessionWithItem(3000000);
-        mockMvc.perform(post("/api/v1/checkout")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentMethod\":\"COD\",\"shippingMethodId\":\"" + FLAT_RATE_METHOD_ID + "\"," +
-                                 "\"billingAddress\":" + VALID_BILLING + "}")
-                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
-                .andExpect(status().isBadRequest());
+                .andExpect(jsonPath("$.data.orderNumber").isString())
+                .andExpect(jsonPath("$.data.shippingAmount").value(0.00));
     }
 
     // ── Guest checkout happy paths (5) ────────────────────────────────────────
@@ -477,71 +417,6 @@ class Phase1FCheckoutApiTest {
                 .andExpect(status().isConflict());
     }
 
-    // ── Product-level serial (no variant) — Issue 1 regression guard ─────────
-    // Before fix: validate pass counted IN_STOCK serials but apply-stock pass
-    // skipped serial reservation entirely (only handled manageStock/stockQuantity).
-    // Order could be created without any serial reserved → oversell.
-
-    @Test
-    void quickBuy_productLevelSerial_reservesSerialAndCreatesBridge() throws Exception {
-        ProductEntity product = createProductLevelSerialProduct("QB Serial Product", 4000000);
-        ProductSerialEntity s1 = createInStockSerial(product, "QB-SER-A-" + UUID.randomUUID());
-        ProductSerialEntity s2 = createInStockSerial(product, "QB-SER-B-" + UUID.randomUUID());
-        GuestSession session = newGuestSession();
-
-        MvcResult result = mockMvc.perform(post("/api/v1/orders/quick-buy")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"productId\":\"" + product.getId() + "\",\"quantity\":1," +
-                                 "\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
-                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        String body = result.getResponse().getContentAsString();
-        UUID orderId = UUID.fromString(extractJsonValue(body, "id"));
-
-        // Exactly one serial moved IN_STOCK → RESERVED, the other untouched.
-        long reserved = serialRepo.countByProduct_IdAndVariantIsNullAndStatus(
-                product.getId(), ProductSerialStatus.RESERVED);
-        long inStock = serialRepo.countByProduct_IdAndVariantIsNullAndStatus(
-                product.getId(), ProductSerialStatus.IN_STOCK);
-        assertThat(reserved).isEqualTo(1);
-        assertThat(inStock).isEqualTo(1);
-
-        // Bridge row links the order line item to the reserved serial.
-        UUID lineItemId = lineItemRepo.findByOrderId(orderId).get(0).getId();
-        assertThat(olisRepo.findByOrderLineItemId(lineItemId)).hasSize(1);
-    }
-
-    @Test
-    void checkoutFromCart_productLevelSerial_reservesSerialAndCreatesBridge() throws Exception {
-        ProductEntity product = createProductLevelSerialProduct("Checkout Serial Product", 4500000);
-        createInStockSerial(product, "CHK-SER-A-" + UUID.randomUUID());
-        createInStockSerial(product, "CHK-SER-B-" + UUID.randomUUID());
-        GuestSession session = newGuestSession();
-        addProductToGuestCart(session, product.getId(), 1);
-
-        MvcResult result = mockMvc.perform(post("/api/v1/checkout")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
-                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        String body = result.getResponse().getContentAsString();
-        UUID orderId = UUID.fromString(extractJsonValue(body, "id"));
-
-        long reserved = serialRepo.countByProduct_IdAndVariantIsNullAndStatus(
-                product.getId(), ProductSerialStatus.RESERVED);
-        long inStock = serialRepo.countByProduct_IdAndVariantIsNullAndStatus(
-                product.getId(), ProductSerialStatus.IN_STOCK);
-        assertThat(reserved).isEqualTo(1);
-        assertThat(inStock).isEqualTo(1);
-
-        UUID lineItemId = lineItemRepo.findByOrderId(orderId).get(0).getId();
-        assertThat(olisRepo.findByOrderLineItemId(lineItemId)).hasSize(1);
-    }
-
     // ── Cart-checkout stock for migrated wp-* catalog — V176 regression guard ─────
     // Before V176: cart_items had no product_variant_pk and CheckoutService keyed on the UUID
     // product_id/product_variant_id, which are null for wp-* string-PK catalog. Both the validate
@@ -551,7 +426,7 @@ class Phase1FCheckoutApiTest {
     @Test
     void checkoutFromCart_wpVariantNonSerial_decrementsVariantStock_andWritesOutMovement() throws Exception {
         ProductEntity product = createWpProduct("WP Variant NonSerial", 6000000);
-        ProductVariantEntity variant = createWpVariant(product, /*qoh*/ 5, /*serial*/ false, 6000000);
+        ProductVariantEntity variant = createWpVariant(product, /*qoh*/ 5, 6000000);
         GuestSession session = newGuestSession();
         addVariantToGuestCart(session, product.getId(), variant.getId(), 2);
 
@@ -579,32 +454,6 @@ class Phase1FCheckoutApiTest {
     }
 
     @Test
-    void checkoutFromCart_wpVariantSerial_reservesSerialAndCreatesBridge() throws Exception {
-        ProductEntity product = createWpProduct("WP Variant Serial", 6500000);
-        ProductVariantEntity variant = createWpVariant(product, /*qoh*/ 0, /*serial*/ true, 6500000);
-        createInStockSerialForWpVariant(product, variant, "WPVAR-SER-A-" + UUID.randomUUID());
-        createInStockSerialForWpVariant(product, variant, "WPVAR-SER-B-" + UUID.randomUUID());
-        GuestSession session = newGuestSession();
-        addVariantToGuestCart(session, product.getId(), variant.getId(), 1);
-
-        MvcResult result = mockMvc.perform(post("/api/v1/checkout")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
-                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
-                .andExpect(status().isOk())
-                .andReturn();
-        UUID orderId = UUID.fromString(extractJsonValue(result.getResponse().getContentAsString(), "id"));
-
-        assertThat(serialRepo.countByVariant_IdAndStatus(variant.getId(), ProductSerialStatus.RESERVED))
-                .as("exactly one wp-* variant serial reserved on cart checkout").isEqualTo(1);
-        assertThat(serialRepo.countByVariant_IdAndStatus(variant.getId(), ProductSerialStatus.IN_STOCK))
-                .as("the other serial stays IN_STOCK").isEqualTo(1);
-
-        UUID lineItemId = lineItemRepo.findByOrderId(orderId).get(0).getId();
-        assertThat(olisRepo.findByOrderLineItemId(lineItemId)).hasSize(1);
-    }
-
-    @Test
     void cartAdd_twoDistinctWpProducts_doNotMerge() throws Exception {
         ProductEntity a = createWpProduct("WP Merge A", 1000000);
         ProductEntity b = createWpProduct("WP Merge B", 2000000);
@@ -621,7 +470,7 @@ class Phase1FCheckoutApiTest {
     @Test
     void cartAdd_sameWpVariantTwice_mergesToSingleLine() throws Exception {
         ProductEntity product = createWpProduct("WP Merge Same", 1200000);
-        ProductVariantEntity variant = createWpVariant(product, /*qoh*/ 10, false, 1200000);
+        ProductVariantEntity variant = createWpVariant(product, /*qoh*/ 10, 1200000);
         GuestSession session = newGuestSession();
         addVariantToGuestCart(session, product.getId(), variant.getId(), 1);
         addVariantToGuestCart(session, product.getId(), variant.getId(), 2);
@@ -636,7 +485,7 @@ class Phase1FCheckoutApiTest {
     @Test
     void checkoutFromCart_wpVariant_insufficientStock_returns409_andDoesNotDecrement() throws Exception {
         ProductEntity product = createWpProduct("WP Oversell Guard", 5500000);
-        ProductVariantEntity variant = createWpVariant(product, /*qoh*/ 3, false, 5500000);
+        ProductVariantEntity variant = createWpVariant(product, /*qoh*/ 3, 5500000);
         GuestSession session = newGuestSession();
         addVariantToGuestCart(session, product.getId(), variant.getId(), 2); // 2 <= 3 → accepted at cart
 
@@ -659,7 +508,7 @@ class Phase1FCheckoutApiTest {
     @Test
     void cartUpdateQuantity_wpVariant_beyondStock_returns409() throws Exception {
         ProductEntity product = createWpProduct("WP Update Qty Guard", 1300000);
-        ProductVariantEntity variant = createWpVariant(product, /*qoh*/ 2, false, 1300000);
+        ProductVariantEntity variant = createWpVariant(product, /*qoh*/ 2, 1300000);
         GuestSession session = newGuestSession();
         MvcResult add = mockMvc.perform(post("/api/v1/cart/items")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -699,7 +548,7 @@ class Phase1FCheckoutApiTest {
     @Test
     void mergeGuestCart_sameWpVariant_dedupsIntoCustomerLine() throws Exception {
         ProductEntity product = createWpProduct("WP Merge Login", 1700000);
-        ProductVariantEntity variant = createWpVariant(product, /*qoh*/ 10, false, 1700000);
+        ProductVariantEntity variant = createWpVariant(product, /*qoh*/ 10, 1700000);
 
         // Customer registers, logs in, and adds the wp-* variant to their (customer) cart.
         String email = "wp-merge-" + UUID.randomUUID() + "@bigbike.vn";
@@ -735,56 +584,6 @@ class Phase1FCheckoutApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.items.length()").value(1))
                 .andExpect(jsonPath("$.data.items[0].quantity").value(3));
-    }
-
-    // ── Cart serial-aware quantity validation — Issue 4 regression guard ─────
-    // Before fix: cart used variant.quantityOnHand / product.stockQuantity only;
-    // for serial-tracked items without manage_stock=true, cart accepted any
-    // quantity and checkout failed later. Now cart counts IN_STOCK serials.
-
-    @Test
-    void cartAdd_productLevelSerial_quantityExceedsAvailable_isRejected() throws Exception {
-        ProductEntity product = createProductLevelSerialProduct("Cart Serial Reject", 5000000);
-        createInStockSerial(product, "CART-REJ-A-" + UUID.randomUUID());
-        createInStockSerial(product, "CART-REJ-B-" + UUID.randomUUID());
-        // 2 IN_STOCK serials, but request 3 → must reject at cart, not at checkout.
-
-        GuestSession session = newGuestSession();
-        mockMvc.perform(post("/api/v1/cart/items")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"productId\":\"" + product.getId() + "\",\"quantity\":3}")
-                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
-                .andExpect(status().isConflict());
-    }
-
-    @Test
-    void cartAdd_productLevelSerial_quantityWithinAvailable_isAccepted() throws Exception {
-        ProductEntity product = createProductLevelSerialProduct("Cart Serial Accept", 5100000);
-        createInStockSerial(product, "CART-ACC-A-" + UUID.randomUUID());
-        createInStockSerial(product, "CART-ACC-B-" + UUID.randomUUID());
-
-        GuestSession session = newGuestSession();
-        mockMvc.perform(post("/api/v1/cart/items")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"productId\":\"" + product.getId() + "\",\"quantity\":2}")
-                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    void cartAdd_variantSerial_quantityExceedsAvailable_isRejected() throws Exception {
-        VariantSerialFixture f = createVariantSerialFixture("Cart Variant Serial", 5200000);
-        createInStockSerialForVariant(f, "CART-VAR-A-" + UUID.randomUUID());
-        // Only 1 IN_STOCK serial on the variant; request 2 → reject.
-
-        GuestSession session = newGuestSession();
-        mockMvc.perform(post("/api/v1/cart/items")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"productId\":\"" + f.productId
-                                + "\",\"productVariantId\":\"" + f.variantId
-                                + "\",\"quantity\":2}")
-                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
-                .andExpect(status().isConflict());
     }
 
     @Test
@@ -950,288 +749,21 @@ class Phase1FCheckoutApiTest {
         assertThat(orderRepo.count()).isEqualTo(ordersBefore + 2);
     }
 
-    // ── Shipping enforcement tests (3) ───────────────────────────────────────
-
     @Test
-    void checkout_belowMinOrderAmount_returns400() throws Exception {
-        // Create a method with minOrderAmount=5,000,000
-        ShippingMethodEntity highMin = createTestShippingMethod("high_min", "High Min Method",
-                java.math.BigDecimal.ZERO, new java.math.BigDecimal("5000000"), null);
-        GuestSession session = newGuestSessionWithItem(1000000); // subtotal < minOrderAmount
-
-        mockMvc.perform(post("/api/v1/checkout")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentMethod\":\"COD\",\"shippingMethodId\":\"" + highMin.getId() +
-                                 "\",\"billingAddress\":" + VALID_BILLING + "}")
-                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.details[0].field").value("shippingMethodId"))
-                .andExpect(jsonPath("$.error.details[0].code").value("MIN_ORDER_AMOUNT_NOT_MET"));
-    }
-
-    @Test
-    void checkout_freeShippingThreshold_appliesWhenSubtotalMeetsOrExceeds() throws Exception {
-        // Create a method with cost=30,000 and freeShippingThreshold=1,000,000
-        ShippingMethodEntity freeAbove = createTestShippingMethod("free_above_1m", "Free Above 1M",
-                new java.math.BigDecimal("30000"), java.math.BigDecimal.ZERO,
-                new java.math.BigDecimal("1000000"));
-        GuestSession session = newGuestSessionWithItem(1000000); // subtotal == threshold → free
-
-        mockMvc.perform(post("/api/v1/checkout")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentMethod\":\"COD\",\"shippingMethodId\":\"" + freeAbove.getId() +
-                                 "\",\"billingAddress\":" + VALID_BILLING + "}")
-                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.shippingAmount").value(0.00));
-    }
-
-    @Test
-    void checkout_orderShippingItem_snapshotIsCorrect() throws Exception {
-        ShippingMethodEntity paid = createTestShippingMethod("paid_ship", "Paid Shipping",
-                new java.math.BigDecimal("50000"), java.math.BigDecimal.ZERO, null);
+    void checkout_orderHasZeroShipping_andTotalEqualsSubtotal() throws Exception {
         GuestSession session = newGuestSessionWithItem(3000000);
 
         MvcResult result = mockMvc.perform(post("/api/v1/checkout")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentMethod\":\"COD\",\"shippingMethodId\":\"" + paid.getId() +
-                                 "\",\"billingAddress\":" + VALID_BILLING + "}")
+                        .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
                         .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
                 .andExpect(status().isOk())
                 .andReturn();
 
         String orderNumber = extractJsonValue(result.getResponse().getContentAsString(), "orderNumber");
         var order = orderRepo.findByOrderNumber(orderNumber).orElseThrow();
-        assertThat(order.getShippingAmount()).isEqualByComparingTo(new java.math.BigDecimal("50000"));
-        assertThat(order.getTotalAmount()).isEqualByComparingTo(
-                order.getSubtotalAmount().add(new java.math.BigDecimal("50000")));
-    }
-
-    // ── Coupon checkout tests (7) ─────────────────────────────────────────────
-
-    // C1. FIXED coupon applied → discount reflected in order totals
-    @Test
-    void checkout_withFixedCoupon_discountApplied() throws Exception {
-        CouponEntity coupon = createTestCoupon("FIXED10", "FIXED", new BigDecimal("100000"), null, null);
-        GuestSession session = newGuestSessionWithItem(1000000);
-        applyCoupon(session, coupon.getCode());
-
-        MvcResult result = mockMvc.perform(post("/api/v1/checkout")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
-                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.discountAmount").value(100000.00))
-                .andExpect(jsonPath("$.data.totalAmount").value(900000.00))
-                .andReturn();
-
-        String orderNumber = extractJsonValue(result.getResponse().getContentAsString(), "orderNumber");
-        var order = orderRepo.findByOrderNumber(orderNumber).orElseThrow();
-        assertThat(order.getDiscountAmount()).isEqualByComparingTo(new BigDecimal("100000.00"));
-        assertThat(order.getTotalAmount()).isEqualByComparingTo(new BigDecimal("900000.00"));
-
-        CouponEntity reloaded = couponRepo.findByCode(coupon.getCode()).orElseThrow();
-        assertThat(reloaded.getUsageCount()).isEqualTo(1);
-    }
-
-    // C2. Admin disables coupon after apply → checkout rejects with 409
-    @Test
-    void checkout_withDisabledCoupon_returns409() throws Exception {
-        CouponEntity coupon = createTestCoupon("DISABLED10", "FIXED", new BigDecimal("50000"), null, null);
-        GuestSession session = newGuestSessionWithItem(500000);
-        applyCoupon(session, coupon.getCode());
-
-        coupon.setStatus("INACTIVE");
-        coupon.setUpdatedAt(Instant.now());
-        couponRepo.save(coupon);
-
-        mockMvc.perform(post("/api/v1/checkout")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
-                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
-                .andExpect(status().isConflict());
-    }
-
-    // C3. Coupon expires after apply → checkout rejects with 409
-    @Test
-    void checkout_withExpiredCoupon_returns409() throws Exception {
-        CouponEntity coupon = createTestCoupon("EXPIRED10", "FIXED", new BigDecimal("50000"), null, null);
-        GuestSession session = newGuestSessionWithItem(500000);
-        applyCoupon(session, coupon.getCode());
-
-        coupon.setExpiresAt(Instant.now().minus(1, ChronoUnit.HOURS));
-        coupon.setUpdatedAt(Instant.now());
-        couponRepo.save(coupon);
-
-        mockMvc.perform(post("/api/v1/checkout")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
-                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
-                .andExpect(status().isConflict());
-    }
-
-    // C4. usageLimit=1: two sessions apply while usageCount=0, first checkout succeeds,
-    //     second checkout blocked by atomic UPDATE guard (returns 409)
-    @Test
-    void checkout_couponUsageLimitExhausted_secondCheckoutFails() throws Exception {
-        CouponEntity coupon = createTestCoupon("LIMIT1", "FIXED", new BigDecimal("50000"), null, 1);
-        // Both sessions apply the coupon while usageCount is still 0
-        GuestSession session1 = newGuestSessionWithItem(500000);
-        applyCoupon(session1, coupon.getCode());
-        GuestSession session2 = newGuestSessionWithItem(500000);
-        applyCoupon(session2, coupon.getCode());
-
-        // Session1 checks out first → usageCount becomes 1
-        mockMvc.perform(post("/api/v1/checkout")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
-                        .cookie(session1.cookies).header("X-CSRF-Token", session1.csrf))
-                .andExpect(status().isOk());
-
-        assertThat(couponRepo.findByCode(coupon.getCode()).orElseThrow().getUsageCount()).isEqualTo(1);
-
-        // Session2 checkout must be rejected — limit already reached
-        mockMvc.perform(post("/api/v1/checkout")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
-                        .cookie(session2.cookies).header("X-CSRF-Token", session2.csrf))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.error.message")
-                        .value("Mã giảm giá đã đạt giới hạn sử dụng."));
-
-        assertThat(couponRepo.findByCode(coupon.getCode()).orElseThrow().getUsageCount()).isEqualTo(1);
-    }
-
-    // C5. Lowering subtotal below minimumAmount removes the coupon before checkout
-    @Test
-    void checkout_afterSubtotalDropsBelowMinimumAmount_couponRemovedBeforeCheckout() throws Exception {
-        CouponEntity coupon = createTestCoupon(
-                "MINDROP", "FIXED", new BigDecimal("50000"), new BigDecimal("1500000"), null);
-        ProductEntity product = createTestProduct("Min Drop Checkout Product", 1000000, null, PublishStatus.PUBLISHED);
-        GuestSession session = newGuestSession();
-
-        MvcResult addResult = mockMvc.perform(post("/api/v1/cart/items")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"productId\":\"" + product.getId() + "\",\"quantity\":2}")
-                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        applyCoupon(session, coupon.getCode());
-
-        String itemId = extractItemId(addResult.getResponse().getContentAsString(), 0);
-        mockMvc.perform(patch("/api/v1/cart/items/" + itemId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"quantity\":1}")
-                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.couponCodes.length()").value(0))
-                .andExpect(jsonPath("$.data.totals.discountAmount").value(0.00));
-
-        MvcResult checkout = mockMvc.perform(post("/api/v1/checkout")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
-                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.discountAmount").value(0.00))
-                .andExpect(jsonPath("$.data.totalAmount").value(1000000.00))
-                .andReturn();
-
-        String orderNumber = extractJsonValue(checkout.getResponse().getContentAsString(), "orderNumber");
-        var order = orderRepo.findByOrderNumber(orderNumber).orElseThrow();
-        assertThat(order.getDiscountAmount()).isEqualByComparingTo(BigDecimal.ZERO.setScale(2));
-        assertThat(couponRepo.findByCode(coupon.getCode()).orElseThrow().getUsageCount()).isEqualTo(0);
-    }
-
-    // C6. Idempotency-Key retry does NOT double-increment coupon usageCount
-    @Test
-    void checkout_idempotencyKeyRetry_noDoubleCouponIncrement() throws Exception {
-        CouponEntity coupon = createTestCoupon("IDEM10", "FIXED", new BigDecimal("50000"), null, null);
-        GuestSession session = newGuestSessionWithItem(500000);
-        applyCoupon(session, coupon.getCode());
-
-        String idempotencyKey = "coupon-idem-" + UUID.randomUUID();
-        String payload = "{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}";
-
-        MvcResult first = mockMvc.perform(post("/api/v1/checkout")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(payload)
-                        .header("Idempotency-Key", idempotencyKey)
-                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        MvcResult second = mockMvc.perform(post("/api/v1/checkout")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(payload)
-                        .header("Idempotency-Key", idempotencyKey)
-                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        assertThat(extractJsonValue(second.getResponse().getContentAsString(), "orderNumber"))
-                .isEqualTo(extractJsonValue(first.getResponse().getContentAsString(), "orderNumber"));
-        assertThat(couponRepo.findByCode(coupon.getCode()).orElseThrow().getUsageCount()).isEqualTo(1);
-    }
-
-    // C7. Two concurrent checkouts competing for the last redemption:
-    // one succeeds, one gets the generic redeem conflict message, and usageCount stays at 1.
-    @Test
-    void checkout_concurrentRequests_onlyOneRedeemsLastCouponUse() throws Exception {
-        CouponEntity coupon = createTestCoupon("RACE1", "FIXED", new BigDecimal("50000"), null, 1);
-        GuestSession session1 = newGuestSessionWithItem(500000);
-        GuestSession session2 = newGuestSessionWithItem(500000);
-        applyCoupon(session1, coupon.getCode());
-        applyCoupon(session2, coupon.getCode());
-
-        CountDownLatch ready = new CountDownLatch(2);
-        CountDownLatch start = new CountDownLatch(1);
-        ExecutorService executor = Executors.newFixedThreadPool(2);
-        String payload = "{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}";
-
-        try {
-            Future<MvcResult> first = executor.submit(() -> {
-                ready.countDown();
-                assertThat(start.await(5, TimeUnit.SECONDS)).isTrue();
-                return mockMvc.perform(post("/api/v1/checkout")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(payload)
-                                .cookie(session1.cookies).header("X-CSRF-Token", session1.csrf))
-                        .andReturn();
-            });
-            Future<MvcResult> second = executor.submit(() -> {
-                ready.countDown();
-                assertThat(start.await(5, TimeUnit.SECONDS)).isTrue();
-                return mockMvc.perform(post("/api/v1/checkout")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(payload)
-                                .cookie(session2.cookies).header("X-CSRF-Token", session2.csrf))
-                        .andReturn();
-            });
-
-            assertThat(ready.await(5, TimeUnit.SECONDS)).isTrue();
-            start.countDown();
-
-            MvcResult firstResult = first.get(10, TimeUnit.SECONDS);
-            MvcResult secondResult = second.get(10, TimeUnit.SECONDS);
-
-            List<MvcResult> results = List.of(firstResult, secondResult);
-            List<Integer> statuses = results.stream()
-                    .map(r -> r.getResponse().getStatus())
-                    .toList();
-            assertThat(statuses).containsExactlyInAnyOrder(200, 409);
-
-            MvcResult failed = results.stream()
-                    .filter(r -> r.getResponse().getStatus() == 409)
-                    .findFirst()
-                    .orElseThrow();
-            assertThat(failed.getResponse().getContentAsString())
-                    .contains("Mã giảm giá không còn hiệu lực hoặc đã đạt giới hạn sử dụng.");
-
-            assertThat(couponRepo.findByCode(coupon.getCode()).orElseThrow().getUsageCount()).isEqualTo(1);
-        } finally {
-            executor.shutdownNow();
-        }
+        assertThat(order.getShippingAmount()).isEqualByComparingTo(java.math.BigDecimal.ZERO);
+        assertThat(order.getTotalAmount()).isEqualByComparingTo(order.getSubtotalAmount());
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────
@@ -1312,63 +844,6 @@ class Phase1FCheckoutApiTest {
         return productRepo.save(product);
     }
 
-    private ProductEntity createProductLevelSerialProduct(String name, int retailPrice) {
-        ProductEntity product = createTestProduct(name, retailPrice, null, PublishStatus.PUBLISHED);
-        product.setTrackSerials(true);
-        product.setForceOutOfStock(false);
-        product.setStockState(ProductStockState.IN_STOCK);
-        product.setUpdatedAt(Instant.now());
-        return productRepo.save(product);
-    }
-
-    private ProductSerialEntity createInStockSerial(ProductEntity product, String serialNumber) {
-        Instant now = Instant.now();
-        ProductSerialEntity serial = new ProductSerialEntity();
-        serial.setProduct(product);
-        serial.setSerialNumber(serialNumber);
-        serial.setStatus(ProductSerialStatus.IN_STOCK);
-        serial.setReceivedAt(now);
-        serial.setCreatedAt(now);
-        serial.setUpdatedAt(now);
-        return serialRepo.save(serial);
-    }
-
-    private record VariantSerialFixture(String productId, String variantId,
-                                        ProductEntity product, ProductVariantEntity variant) {}
-
-    private VariantSerialFixture createVariantSerialFixture(String name, int retailPrice) {
-        ProductEntity product = createTestProduct(name, retailPrice, null, PublishStatus.PUBLISHED);
-
-        ProductVariantEntity variant = new ProductVariantEntity();
-        variant.setId(UUID.randomUUID().toString());
-        variant.setProduct(product);
-        variant.setName("Default");
-        variant.setSku("CART-VAR-" + variant.getId().replace("-", "").substring(0, 8));
-        variant.setRetailPrice(java.math.BigDecimal.valueOf(retailPrice));
-        variant.setCurrency("VND");
-        variant.setStockState(ProductStockState.IN_STOCK);
-        variant.setQuantityOnHand(0);
-        variant.setAvailable(true);
-        variant.setSortOrder(0);
-        variant.setTrackSerials(true);
-        variantRepo.save(variant);
-
-        return new VariantSerialFixture(product.getId(), variant.getId(), product, variant);
-    }
-
-    private ProductSerialEntity createInStockSerialForVariant(VariantSerialFixture f, String serialNumber) {
-        Instant now = Instant.now();
-        ProductSerialEntity serial = new ProductSerialEntity();
-        serial.setProduct(f.product());
-        serial.setVariant(f.variant());
-        serial.setSerialNumber(serialNumber);
-        serial.setStatus(ProductSerialStatus.IN_STOCK);
-        serial.setReceivedAt(now);
-        serial.setCreatedAt(now);
-        serial.setUpdatedAt(now);
-        return serialRepo.save(serial);
-    }
-
     private void addProductToGuestCart(GuestSession session, String productId, int qty) throws Exception {
         mockMvc.perform(post("/api/v1/cart/items")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -1406,7 +881,7 @@ class Phase1FCheckoutApiTest {
     }
 
     /** Migrated variant shape: varchar "wp-var-*" PK, UUID column null. */
-    private ProductVariantEntity createWpVariant(ProductEntity product, int qoh, boolean trackSerials, int retailPrice) {
+    private ProductVariantEntity createWpVariant(ProductEntity product, int qoh, int retailPrice) {
         ProductVariantEntity v = new ProductVariantEntity();
         v.setId("wp-var-" + UUID.randomUUID().toString().replace("-", "").substring(0, 8));
         v.setProduct(product);
@@ -1418,22 +893,7 @@ class Phase1FCheckoutApiTest {
         v.setQuantityOnHand(qoh);
         v.setAvailable(true);
         v.setSortOrder(0);
-        v.setTrackSerials(trackSerials);
         return variantRepo.save(v);
-    }
-
-    private ProductSerialEntity createInStockSerialForWpVariant(
-            ProductEntity product, ProductVariantEntity variant, String serialNumber) {
-        Instant now = Instant.now();
-        ProductSerialEntity serial = new ProductSerialEntity();
-        serial.setProduct(product);
-        serial.setVariant(variant);
-        serial.setSerialNumber(serialNumber);
-        serial.setStatus(ProductSerialStatus.IN_STOCK);
-        serial.setReceivedAt(now);
-        serial.setCreatedAt(now);
-        serial.setUpdatedAt(now);
-        return serialRepo.save(serial);
     }
 
     private String getCookieValue(MockHttpServletResponse response, String name) {
@@ -1490,58 +950,6 @@ class Phase1FCheckoutApiTest {
             cursor = found + idMarker.length();
         }
         return null;
-    }
-
-    private ShippingMethodEntity createTestShippingMethod(
-            String methodCode, String title,
-            java.math.BigDecimal cost,
-            java.math.BigDecimal minOrderAmount,
-            java.math.BigDecimal freeShippingThreshold
-    ) {
-        ShippingZoneEntity zone = shippingZoneRepo.findById(
-                UUID.fromString("00000000-0000-0000-0000-000000000301")).orElseThrow();
-        ShippingMethodEntity m = new ShippingMethodEntity();
-        m.setZone(zone);
-        m.setMethodCode(methodCode + "-" + UUID.randomUUID().toString().replace("-", "").substring(0, 6));
-        m.setTitle(title);
-        m.setCost(cost);
-        m.setMinOrderAmount(minOrderAmount);
-        m.setFreeShippingThreshold(freeShippingThreshold);
-        m.setSortOrder(99);
-        m.setEnabled(true);
-        Instant now = Instant.now();
-        m.setCreatedAt(now);
-        m.setUpdatedAt(now);
-        ShippingMethodEntity saved = shippingMethodRepo.save(m);
-        testShippingMethodIds.add(saved.getId());
-        return saved;
-    }
-
-    private CouponEntity createTestCoupon(
-            String code, String discountType, BigDecimal amount,
-            BigDecimal minimumAmount, Integer usageLimit
-    ) {
-        Instant now = Instant.now();
-        CouponEntity c = new CouponEntity();
-        c.setCode((code + "-" + UUID.randomUUID().toString().replace("-", "").substring(0, 6)).toUpperCase());
-        c.setName(code + " test coupon");
-        c.setDiscountType(discountType);
-        c.setAmount(amount);
-        c.setMinAmount(minimumAmount);
-        c.setUsageLimit(usageLimit);
-        c.setUsageCount(0);
-        c.setStatus("ACTIVE");
-        c.setCreatedAt(now);
-        c.setUpdatedAt(now);
-        return couponRepo.save(c);
-    }
-
-    private void applyCoupon(GuestSession session, String code) throws Exception {
-        mockMvc.perform(post("/api/v1/cart/coupons")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"code\":\"" + code + "\"}")
-                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
-                .andExpect(status().isOk());
     }
 
     // ── value types ───────────────────────────────────────────────────────────

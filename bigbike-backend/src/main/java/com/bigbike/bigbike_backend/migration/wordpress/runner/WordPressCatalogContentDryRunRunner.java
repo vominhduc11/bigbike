@@ -246,7 +246,7 @@ public class WordPressCatalogContentDryRunRunner implements ApplicationRunner {
         sb.append("- [x] No frontend changes\n");
         sb.append("- [x] No WordPress source modification\n");
         sb.append("- [x] No media files copied\n");
-        sb.append("- [x] No customer / order / coupon importer\n");
+        sb.append("- [x] No customer / order importer\n");
         sb.append("- [x] No write plan implemented\n");
         sb.append("- [x] No destructive command executed\n");
         sb.append("- [x] `dry-run=true` enforced (default)\n\n");
@@ -254,7 +254,7 @@ public class WordPressCatalogContentDryRunRunner implements ApplicationRunner {
         // H. Recommended next phase
         sb.append("## H. Recommended Next Phase\n\n");
         sb.append("| Phase | Scope |\n|-------|-------|\n");
-        sb.append("| **Phase 2C** | Customer / Order / Coupon dry-run importer |\n");
+        sb.append("| **Phase 2C** | Customer / Order dry-run importer |\n");
         sb.append("| **Phase 2D** | Write plan + idempotent real import command |\n");
         sb.append("| **Phase 2E** | Media copy / sync (`wp-content/uploads` → storage) |\n");
         sb.append("| **Phase 3**  | Legacy URL / SEO runtime alignment |\n");

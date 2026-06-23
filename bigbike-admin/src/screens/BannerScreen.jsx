@@ -271,7 +271,9 @@ function CrossLinksCard({ navigate, t }) {
 }
 
 // ── Screen ───────────────────────────────────────────────────────────────────
-export function BannerScreen({ canUpdate = false, navigate }) {
+// `embedded` = render bên trong một tab của màn Cài đặt: bỏ tiêu đề trang riêng
+// (tránh trùng heading), chỉ giữ phần mô tả ngắn để có ngữ cảnh.
+export function BannerScreen({ canUpdate = false, navigate, embedded = false }) {
   const { t } = useTranslation()
   const [state, setState] = useState({ status: 'loading', items: [], warning: '' })
   const [fetchKey, setFetchKey] = useState(0)
@@ -363,13 +365,17 @@ export function BannerScreen({ canUpdate = false, navigate }) {
 
   return (
     <div>
-      <div className="bb-screen-header">
-        <div className="bb-screen-title">
-          <p className="bb-screen-eyebrow">{t('banners.eyebrow')}</p>
-          <h1>{t('banners.title')}</h1>
-          <p className="bb-muted">{t('banners.description')}</p>
+      {embedded ? (
+        <p className="bb-muted" style={{ marginTop: 0, marginBottom: 16 }}>{t('banners.description')}</p>
+      ) : (
+        <div className="bb-screen-header">
+          <div className="bb-screen-title">
+            <p className="bb-screen-eyebrow">{t('banners.eyebrow')}</p>
+            <h1>{t('banners.title')}</h1>
+            <p className="bb-muted">{t('banners.description')}</p>
+          </div>
         </div>
-      </div>
+      )}
 
       {state.warning && <ReadOnlyBanner warning={state.warning} />}
 

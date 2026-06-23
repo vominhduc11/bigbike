@@ -98,7 +98,6 @@ public class WordPressOrderMapper {
             List<WordPressWooCommerceOrderItemMapper.MappedLineItem> lineItemsDetailed,
             List<WordPressWooCommerceOrderItemMapper.MappedShippingItem> shippingItems,
             List<WordPressWooCommerceOrderItemMapper.MappedFeeItem> feeItems,
-            List<WordPressWooCommerceOrderItemMapper.MappedCouponItem> couponItems,
             int taxItemsDeferred,
             MappedOrderPayment payment
     ) {}
@@ -178,7 +177,6 @@ public class WordPressOrderMapper {
         List<WordPressWooCommerceOrderItemMapper.MappedLineItem>     lineItemsDetailed = new ArrayList<>();
         List<WordPressWooCommerceOrderItemMapper.MappedShippingItem> shippingItems     = new ArrayList<>();
         List<WordPressWooCommerceOrderItemMapper.MappedFeeItem>      feeItems          = new ArrayList<>();
-        List<WordPressWooCommerceOrderItemMapper.MappedCouponItem>   couponItems       = new ArrayList<>();
         int taxItemsDeferred = 0;
 
         for (WpOrderItem item : items) {
@@ -200,11 +198,6 @@ public class WordPressOrderMapper {
                     WordPressWooCommerceOrderItemMapper.MappedFeeItem fi = itemMapper.mapFeeItem(item, im);
                     feeItems.add(fi);
                     warnings.addAll(fi.warnings());
-                }
-                case "coupon" -> {
-                    WordPressWooCommerceOrderItemMapper.MappedCouponItem ci = itemMapper.mapCouponItem(item, im);
-                    couponItems.add(ci);
-                    warnings.addAll(ci.warnings());
                 }
                 case "tax" -> taxItemsDeferred++;
                 default -> warnings.add("Unknown order_item_type '" + item.orderItemType()
@@ -259,7 +252,7 @@ public class WordPressOrderMapper {
                 metaMap.get("_shipping_postcode"),
                 metaMap.getOrDefault("_shipping_country", "VN"),
                 ipAddress, userAgent,
-                lineItemsDetailed, shippingItems, feeItems, couponItems,
+                lineItemsDetailed, shippingItems, feeItems,
                 taxItemsDeferred, payment
         );
     }
@@ -278,7 +271,8 @@ public class WordPressOrderMapper {
             case "wc-on-hold"    -> "ON_HOLD";
             case "wc-completed"  -> "COMPLETED";
             case "wc-cancelled"  -> "CANCELLED";
-            case "wc-refunded"   -> "REFUNDED";
+            // Refunds were removed — legacy wc-refunded orders import as CANCELLED.
+            case "wc-refunded"   -> "CANCELLED";
             case "wc-failed"     -> "FAILED";
             default -> {
                 warnings.add("Unknown WooCommerce order status: '" + postStatus
@@ -291,7 +285,6 @@ public class WordPressOrderMapper {
     private String derivePaymentStatus(String orderStatus, LocalDateTime paidAt,
                                         String transactionId, BigDecimal paidAmount,
                                         BigDecimal total, List<String> warnings) {
-        if ("REFUNDED".equals(orderStatus)) return "REFUNDED";
         if ("CANCELLED".equals(orderStatus) || "FAILED".equals(orderStatus)) return "CANCELLED";
         if (paidAt != null) return "PAID";
         if (transactionId != null && !transactionId.isBlank()) return "PAID";

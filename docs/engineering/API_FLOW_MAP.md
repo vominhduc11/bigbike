@@ -8,25 +8,21 @@
 | Tin tức list page (`/tin-tuc`) | `GET /api/v1/articles`, `GET /api/v1/content-categories` | `ContentController` -> `ContentReadService` | Paginated article list + content categories with published-article counts for the category filter (desktop sidebar + mobile drawer) | `CONFIRMED_FROM_CODE` |
 | Web/mobile address lookup | `GET /api/v1/address/**` | `VnAddressController` | Read-only administrative address data | `CONFIRMED_FROM_CODE` |
 | Product comparison page (`/so-sanh`) | `GET /api/v1/products/{slug}` | `CatalogController` -> catalog read service | One detail fetch per compared product (incl. `specifications`, omitted from list responses); read-only, no write side effects. Comparison list itself lives in browser `localStorage` | `CONFIRMED_FROM_CODE` |
-| Cart UI/mobile | `/api/v1/cart`, `/api/v1/cart/items`, `/api/v1/cart/coupons` | `CartController` -> `CartService` | Session/customer cart, item snapshots, coupon attach/remove | `CONFIRMED_FROM_CODE` |
-| Checkout UI/mobile | `POST /api/v1/checkout`, `POST /api/v1/orders/quick-buy` | `CheckoutController` -> `CheckoutService` | Order/payment/shipping/coupon snapshots, stock decrement, notifications, WS event | `CONFIRMED_FROM_CODE` |
+| Cart UI/mobile | `/api/v1/cart`, `/api/v1/cart/items` | `CartController` -> `CartService` | Session/customer cart, item snapshots | `CONFIRMED_FROM_CODE` |
+| Checkout UI/mobile | `POST /api/v1/checkout`, `POST /api/v1/orders/quick-buy` | `CheckoutController` -> `CheckoutService` | Order/payment/shipping snapshots, per-variant `isAvailable` gate (no quantity decrement, V261), notifications, WS event | `CONFIRMED_FROM_CODE` |
 | Customer address UI/mobile | `/api/v1/customer/addresses` | `CustomerAddressController` -> `CustomerAddressService` | Own-address CRUD | `CONFIRMED_FROM_CODE` |
 | Customer orders UI/mobile | `/api/v1/customer/orders` | `CustomerOrderController` -> `OrderReadService` | Own order list/detail | `CONFIRMED_FROM_CODE` |
-| Customer returns UI/mobile | `/api/v1/customer/orders/returns`, `/{returnId}`, `/{orderId}/returns` | `CustomerOrderController` -> `CustomerReturnService` | Own return list/detail/create | `CONFIRMED_FROM_CODE` |
 | Storefront login screen (`/dang-nhap`, `/dang-ky`) | `POST /api/v1/customer/auth/login` (+ `remember`), `POST /register`, `GET /oauth/{provider}/authorize` + `/callback` | `CustomerAuthController` / `CustomerOAuthController` -> `CustomerAuthService` / `CustomerOAuthService` | Session cookies issued; `remember` drives refresh-cookie lifetime; OAuth links-or-creates the customer | `CONFIRMED_FROM_CODE` |
-| Admin POS UI | `/api/v1/admin/pos/products/search`, `/api/v1/admin/pos/orders` | `AdminPosController` -> `PosOrderService` | POS search; immediate sale (CASH/CARD_TERMINAL); credit sale (CREDIT): validates customer credit profile, creates order with UNPAID paymentStatus, creates ReceivableEntity | `CONFIRMED_FROM_CODE` |
-| Admin receivables UI | `GET /admin/receivables`, `GET /admin/receivables/{id}`, `GET /admin/receivables/summary`, `GET /admin/receivables/aging`, `POST /admin/receivables/{id}/payments`, `POST /admin/receivables/{id}/write-off`, `GET/PATCH /admin/customers/{id}/credit` | `AdminReceivableController` -> `ReceivableService` / `ReceivableQueryService` | Receivable list/detail/filter, payment recording (updates paidAmount + paymentStatus + ReceivableEntity + audit log), write-off (sets WRITTEN_OFF + audit log), customer credit profile CRUD | `CONFIRMED_FROM_CODE` |
 | Admin media UI | `/api/v1/admin/media` | `AdminMediaController` -> `AdminMediaService` | Tika validation, MinIO storage, metadata persistence | `CONFIRMED_FROM_CODE` |
-| Admin inventory UI | `/api/v1/admin/inventory/**` | `AdminInventoryController` -> `AdminInventoryService` | Stock list, movement list, serial validation, manual adjustments | `CONFIRMED_FROM_CODE` |
+| Admin dashboard out-of-stock alert | `GET /api/v1/admin/inventory/summary` | `AdminInventoryController` -> `AdminInventoryService` | Standalone admin inventory screen removed 2026-06-23; only the summary endpoint is still called (by the Dashboard "Hết hàng" alert). Còn/Hết toggled per-variant in the product editor (`products.update`). `grouped` / `PATCH .../availability` / `export.csv` endpoints remain in the controller but are no longer called from admin UI. Serial tracking removed V259, quantity model removed V261 | `CONFIRMED_FROM_CODE` |
 | Admin product editor live preview | `POST /api/v1/admin/products/preview` | `AdminCatalogController` -> `AdminCatalogMutationService.previewProduct` -> `JpaCatalogReadRepository.mapPreviewProduct` | Dry-run render of the unsaved upsert payload to the public `Product` shape; **no persistence** (`@Transactional(readOnly=true)`); admin embeds the bigbike-web `/preview/product` iframe and postMessages the result | `CONFIRMED_FROM_CODE` |
-| Admin returns UI | `/api/v1/admin/returns/**` | `AdminReturnController` -> `AdminReturnService` | Return read/update, refund/stock side effects path | `CONFIRMED_FROM_CODE`; full refund side-effect detail `NEEDS_VERIFICATION` |
 | Admin live order feed | WebSocket `/ws` + topic `/topic/admin/orders` | `WebSocketConfig` + `AdminOrderWsService` | Admin push notifications after commit | `CONFIRMED_FROM_CODE` |
 
 ## Flow Highlights
 
 ### Checkout
 
-`cart client -> CheckoutService -> order/payment/shipping tables -> stock movements -> order-applied coupons -> email + /topic/admin/orders`
+`cart client -> CheckoutService -> order/payment/shipping tables -> email + /topic/admin/orders` (per-variant `isAvailable` gate; no stock movements written — V261)
 
 Status: `CONFIRMED_FROM_CODE`
 
@@ -36,37 +32,11 @@ Status: `CONFIRMED_FROM_CODE`
 
 Status: `CONFIRMED_FROM_CODE`
 
-### POS
+### POS — REMOVED (owner decision 2026-06-23, online-only)
 
-`admin POS UI -> AdminPosController -> PosOrderService -> order/payment/audit/stock movement -> /topic/admin/orders`
+The admin POS flow was removed entirely. There is no `admin POS UI -> AdminPosController -> PosOrderService` path anymore; all sales flow through the storefront checkout (`Checkout UI/mobile` row above).
 
-Status: `CONFIRMED_FROM_CODE`
-
-### POS credit sale (CREDIT payment method)
-
-`admin POS UI -> AdminPosController -> PosOrderService -> CreditPolicyService (validate limit) -> OrderEntity (COMPLETED + UNPAID) + ReceivableEntity (OPEN) + AuditLogEntity`
-
-Note: downPayment feature was removed in V114 (migration simplified payment model). CREDIT orders are always fully unpaid at creation; debt is collected later via ReceivableService.recordPayment.
-
-Status: `CONFIRMED_FROM_CODE`
-
-### Receivable payment recording
-
-`admin receivables UI -> AdminReceivableController -> ReceivableService.recordPayment -> ReceivableEntity (paidAmount++) + OrderEntity (paidAmount++) + PaymentEntity (new) + AuditLogEntity`
-
-Transitions: OPEN/OVERDUE → PARTIALLY_PAID (if partially paid) → CLOSED (if fully paid)
-
-Status: `CONFIRMED_FROM_CODE`
-
-### Receivable write-off
-
-`admin receivables UI -> AdminReceivableController -> ReceivableService.writeOff -> ReceivableEntity (WRITTEN_OFF) + AuditLogEntity`
-
-Note: OrderEntity.paymentStatus is NOT updated on write-off — it stays UNPAID. The debt is cancelled at the AR level only. V116 CHECK constraint prohibits WRITTEN_OFF as an order payment status value.
-
-Requires `receivables.write_off` permission (ADMIN only).
-
-Status: `CONFIRMED_FROM_CODE`
+Status: `REMOVED`
 
 ### Customer login + remember-me
 
@@ -86,6 +56,6 @@ Status: `CONFIRMED_FROM_CODE`
 
 ### Inventory receiving caveat
 
-The `stock_receipts` schema was **dropped in V120** — no receiving flow was ever built. Stock-in runs through `stock_movements`.
+The `stock_receipts` schema was **dropped in V120** — no receiving flow was ever built. Since V261 inventory is a boolean availability toggle (no quantity, no stock-in); the `stock_movements` ledger is dormant.
 
 Status: `REMOVED`

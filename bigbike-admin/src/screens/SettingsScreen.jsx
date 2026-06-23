@@ -7,13 +7,14 @@ import { fetchSettings, batchUpdateSettings } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import {
   validateValue, TAB_ORDER, SENSITIVE_SETTING_TABS, HIDDEN_GROUPS, HIDDEN_KEYS,
-  TAB_META, FALLBACK_META, tabLabel,
+  TAB_META, FALLBACK_META, tabLabel, BANNERS_TAB_ID,
 } from './settings/constants'
 import { SettingTabPanel } from './settings/SettingTabPanel'
+import { BannerScreen } from './BannerScreen'
 
 // ── SettingsScreen ────────────────────────────────────────────────────────────
 
-export function SettingsScreen({ canUpdate, isSuperAdmin = false }) {
+export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
   const { t } = useTranslation()
   const [state, setState] = useState({ status: 'loading', items: [], warning: '' })
   const [fetchKey, setFetchKey] = useState(0)
@@ -60,9 +61,21 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false }) {
     return sorted
   }, [state.items, isSuperAdmin])
 
+  // Danh sách tab điều hướng = các settingGroup thật + tab "Banner trang" (nhúng BannerScreen).
+  // Banner chèn ngay sau PUBLIC_PRODUCT cho gần các tab nội dung trang công khai.
+  const navTabs = useMemo(() => {
+    const tabs = [...groups.keys()].map((group) => ({ id: group, kind: 'group' }))
+    const i = tabs.findIndex((tab) => tab.id === 'PUBLIC_PRODUCT')
+    const bannerTab = { id: BANNERS_TAB_ID, kind: 'banners' }
+    if (i === -1) tabs.push(bannerTab)
+    else tabs.splice(i + 1, 0, bannerTab)
+    return tabs
+  }, [groups])
+
   // Derive active tab: user pick takes priority, else first available tab
   const firstTab = groups.size > 0 ? [...groups.keys()][0] : null
-  const activeTab = (activeTabOverride && groups.has(activeTabOverride)) ? activeTabOverride : firstTab
+  const isValidOverride = activeTabOverride && (groups.has(activeTabOverride) || activeTabOverride === BANNERS_TAB_ID)
+  const activeTab = isValidOverride ? activeTabOverride : firstTab
 
   const activeItems = useMemo(() => {
     if (!activeTab) return []
@@ -186,7 +199,27 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false }) {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[200px_1fr]">
           {/* Tab sidebar — prototype .settings-nav */}
           <nav className="settings-nav" aria-label={t('settings.tabsAria')}>
-            {[...groups.entries()].map(([group, items]) => {
+            {navTabs.map((tab) => {
+              // Tab "Banner trang" — nhúng trình sửa banner, không có settingGroup/đếm dirty riêng.
+              if (tab.kind === 'banners') {
+                const Icon = TAB_META.PUBLIC_HERO.icon
+                const isActive = activeTab === BANNERS_TAB_ID
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    className={isActive ? 'active' : ''}
+                    onClick={() => setActiveTabOverride(BANNERS_TAB_ID)}
+                    aria-current={isActive ? 'true' : undefined}
+                  >
+                    <Icon size={15} />
+                    <span style={{ flex: 1 }}>{tabLabel('PUBLIC_HERO', t)}</span>
+                  </button>
+                )
+              }
+
+              const group = tab.id
+              const items = groups.get(group) || []
               const meta = TAB_META[group] || FALLBACK_META
               const Icon = meta.icon
               const label = tabLabel(group, t)
@@ -215,7 +248,7 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false }) {
 
           {/* Content panel */}
           <div>
-            {saveSuccess && (
+            {saveSuccess && activeTab !== BANNERS_TAB_ID && (
               <div
                 role="status"
                 className="settings-save-banner mb-3"
@@ -225,7 +258,11 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false }) {
               </div>
             )}
 
-            {activeTab && (
+            {activeTab === BANNERS_TAB_ID && (
+              <BannerScreen embedded canUpdate={canUpdate} navigate={navigate} />
+            )}
+
+            {activeTab && activeTab !== BANNERS_TAB_ID && (
               <SettingTabPanel
                 title={tabLabel(activeTab, t)}
                 items={activeItems}

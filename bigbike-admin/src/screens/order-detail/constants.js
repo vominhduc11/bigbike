@@ -46,14 +46,3 @@ export const PAYMENT_ACTION_LABEL = {
   UNPAID:    'orders.detail.payActionUnpaid',
   CANCELLED: 'orders.detail.payActionCancelled',
 }
-
-export const RETURN_REASONS = [
-  { value: 'DEFECTIVE', labelKey: 'orders.detail.reasonDefective' },
-  { value: 'WRONG_ITEM', labelKey: 'orders.detail.reasonWrongItem' },
-  { value: 'NOT_AS_DESCRIBED', labelKey: 'orders.detail.reasonNotAsDescribed' },
-  { value: 'CHANGED_MIND', labelKey: 'orders.detail.reasonChangedMind' },
-  { value: 'OTHER', labelKey: 'orders.detail.reasonOther' },
-]
-
-export const RETURN_REASON_KEY = { DEFECTIVE: 'orders.detail.reasonDefective', WRONG_ITEM: 'orders.detail.reasonWrongItem', NOT_AS_DESCRIBED: 'orders.detail.reasonNotAsDescribed', CHANGED_MIND: 'orders.detail.reasonChangedMind', OTHER: 'orders.detail.reasonOther' }
-export const RETURN_STATUS_KEY = { PENDING: 1, APPROVED: 1, RECEIVED: 1, COMPLETED: 1, REFUNDED: 1, REJECTED: 1 }

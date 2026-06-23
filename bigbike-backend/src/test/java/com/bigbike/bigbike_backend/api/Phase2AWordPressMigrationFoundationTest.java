@@ -8,7 +8,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.bigbike.bigbike_backend.migration.wordpress.config.WordPressMigrationProperties;
 import com.bigbike.bigbike_backend.migration.wordpress.inventory.WordPressDumpInventoryService;
 import com.bigbike.bigbike_backend.migration.wordpress.inventory.WordPressDumpInventoryService.DumpSummary;
-import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressCouponMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressCustomerMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressMediaMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressMenuMapper;
@@ -52,7 +51,6 @@ class Phase2AWordPressMigrationFoundationTest {
     @Autowired WordPressMediaMapper mediaMapper;
     @Autowired WordPressCustomerMapper customerMapper;
     @Autowired WordPressOrderMapper orderMapper;
-    @Autowired WordPressCouponMapper couponMapper;
     @Autowired WordPressMenuMapper menuMapper;
     @Autowired WordPressMappingPlanService mappingPlanService;
     @Autowired WordPressMigrationProperties migrationProperties;
@@ -273,35 +271,6 @@ class Phase2AWordPressMigrationFoundationTest {
         assertThat(result.lineItems().get(0).name()).isEqualTo("Honda ABC 125");
     }
 
-    // ── 11. Coupon mapper: maps shop_coupon basics ────────────────────────────
-
-    @Test
-    void couponMapper_mapsShopCouponBasics() {
-        WpPost post = new WpPost(501L, 1L, LocalDateTime.now(), LocalDateTime.now(),
-                "", "GIAM10", "Giảm 10%", "publish", "closed",
-                "giam10", "shop_coupon", 0L, 0, "", "", 0L);
-
-        List<WpPostMeta> metas = List.of(
-                new WpPostMeta(5001L, 501L, "discount_type", "percent"),
-                new WpPostMeta(5002L, 501L, "coupon_amount", "10"),
-                new WpPostMeta(5003L, 501L, "minimum_amount", "500000"),
-                new WpPostMeta(5005L, 501L, "usage_limit", "100"),
-                new WpPostMeta(5006L, 501L, "usage_count", "23"),
-                new WpPostMeta(5007L, 501L, "date_expires", "9999999999")
-        );
-
-        WordPressCouponMapper.MappedCoupon result = couponMapper.map(post, metas);
-
-        assertThat(result.code()).isEqualTo("GIAM10");
-        assertThat(result.discountType()).isEqualTo("PERCENT");
-        assertThat(result.amount()).isEqualByComparingTo(new BigDecimal("10"));
-        assertThat(result.minimumAmount()).isEqualByComparingTo(new BigDecimal("500000"));
-        assertThat(result.usageLimit()).isEqualTo(100);
-        assertThat(result.usageCount()).isEqualTo(23);
-        assertThat(result.expiresAt()).isNotNull();
-        assertThat(result.status()).isEqualTo("ACTIVE");
-    }
-
     // ── 12. Menu mapper: maps nav_menu_item basics ────────────────────────────
 
     @Test
@@ -340,7 +309,7 @@ class Phase2AWordPressMigrationFoundationTest {
         assertThat(plan.domains()).containsKeys(
                 "products", "categories", "brands", "media",
                 "pages", "articles", "redirects", "menus",
-                "customers", "orders", "coupons", "settings"
+                "customers", "orders", "settings"
         );
     }
 

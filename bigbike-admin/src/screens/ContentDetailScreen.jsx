@@ -53,6 +53,15 @@ import {
 import { ContentAssignmentBanner } from './content-detail/ContentAssignmentBanner'
 import { SectionCard } from './content-detail/SectionCard'
 import { Field } from './content-detail/Field'
+import { ContactPageBuilderPanel } from './ContactPageBuilderScreen'
+import { GuidePageBuilderPanel } from './GuidePageBuilderScreen'
+
+// Trang CMS đặc biệt có trình dựng khối nhúng kèm (gộp quản lý vào module Nội dung). Khóa theo slug
+// cố định của trang (PAGE_RULE_003) — khớp cách web định tuyến riêng /lien-he và /huong-dan.
+const SPECIAL_BUILDERS = {
+  'lien-he': { kind: 'contact', tabLabelKey: 'content.detail.tabContactBuilder' },
+  'huong-dan': { kind: 'guide', tabLabelKey: 'content.detail.tabGuideBuilder' },
+}
 
 export function ContentDetailScreen({ contentType, contentId, isCreate = false, navigate, canUpdate }) {
   const { t } = useTranslation()
@@ -179,12 +188,18 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
   )
   const formRef = useRef(null)
 
+  // Trình dựng khối nhúng (trang Liên hệ / Hướng dẫn): giữ luôn mounted để ref + cờ "chưa lưu"
+  // sống độc lập với tab đang xem; lưu chung trong một lần bấm Lưu của trang.
+  const builderRef = useRef(null)
+  const [builderDirty, setBuilderDirty] = useState(false)
+  const combinedDirty = isDirty || builderDirty
+
   useEffect(() => {
-    if (!isDirty) return
+    if (!combinedDirty) return
     const handler = (e) => { e.preventDefault(); e.returnValue = '' }
     window.addEventListener('beforeunload', handler)
     return () => window.removeEventListener('beforeunload', handler)
-  }, [isDirty])
+  }, [combinedDirty])
 
   useEffect(() => {
     if (!isCreate) return
@@ -252,7 +267,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
     })
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     if (event && typeof event.preventDefault === 'function') event.preventDefault()
     if (!canUpdate) return
 
@@ -268,7 +283,29 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
 
     setIsSubmitting(true)
     setValidationErrors({})
-    saveMutation.mutate(toPayload(form, isCreate))
+    const pageChanged = isCreate || isDirty
+    const builderChanged = Boolean(builderRef.current?.isDirty?.())
+    try {
+      // Lưu phần trang trước (tiêu đề/nội dung/SEO) nếu có thay đổi.
+      if (pageChanged) {
+        await saveMutation.mutateAsync(toPayload(form, isCreate))
+      }
+      // Lưu phần trình dựng khối nhúng (Liên hệ/Hướng dẫn) trong cùng một lần bấm Lưu.
+      if (builderChanged) {
+        setIsSubmitting(true) // page onSuccess đã tắt cờ — bật lại trong lúc lưu builder
+        await builderRef.current.save()
+      }
+      // Chỉ có thay đổi ở trình dựng (trang không đổi): saveMutation.onSuccess không chạy nên báo ở đây.
+      if (!pageChanged && builderChanged) {
+        toast.success(t('content.detail.successUpdatePage'))
+        setSavedFlash(true)
+        setTimeout(() => setSavedFlash(false), 1200)
+      }
+    } catch {
+      // Lỗi đã được toast ở onError của từng mutation (trang/builder). Ở đây chỉ cần kết thúc trạng thái.
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   // ── Tab navigation state (replaces TOC sidebar) ───────────────────────────
@@ -347,6 +384,9 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
 
   const isArticle = normalizedType === 'ARTICLE'
 
+  // Trang CMS đặc biệt (Liên hệ / Hướng dẫn) có trình dựng khối nhúng — khóa theo slug đã lưu.
+  const specialBuilder = !isCreate && !isArticle ? (SPECIAL_BUILDERS[state.item?.slug ?? ''] ?? null) : null
+
   // Nhãn cho ô bắt buộc — gắn dấu * đỏ ngay sau tên ô (cùng kiểu với SectionCard)
   // để admin biết chính xác ô nào trong thẻ "bắt buộc" phải điền (tiêu chí 7.8).
   const requiredLabel = (text) => (
@@ -376,14 +416,14 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
   ]
   const seoPassed = seoChecks.filter((c) => c.ok).length
 
-  const saveDotState = isSubmitting ? 'saving' : savedFlash ? 'saved' : isDirty ? 'dirty' : 'saved'
+  const saveDotState = isSubmitting ? 'saving' : savedFlash ? 'saved' : combinedDirty ? 'dirty' : 'saved'
   const saveDotClass =
     saveDotState === 'saving' ? 'bg-[var(--admin-color-status-info-text)] animate-pulse'
     : saveDotState === 'dirty' ? 'bg-[var(--admin-color-status-warning-text)] animate-pulse'
     :                            'bg-[var(--admin-color-status-success-text)]'
   const saveLabel = isSubmitting
     ? t('content.detail.savingShort', { defaultValue: 'Đang lưu...' })
-    : isDirty
+    : combinedDirty
       ? t('content.detail.saveDirty', { defaultValue: 'Có thay đổi chưa lưu' })
       : t('content.detail.saveClean', { defaultValue: 'Đã lưu' })
 
@@ -396,7 +436,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
     : t('content.detail.saveBtn')
 
   async function handleClose() {
-    if (isDirty) {
+    if (combinedDirty) {
       const confirmed = await showConfirm(
         t('products.detail.unsavedChangesConfirm', { defaultValue: 'Bạn có thay đổi chưa lưu. Rời khỏi trang này sẽ mất những thay đổi đó. Tiếp tục?' }),
         t('products.detail.unsavedChangesTitle', { defaultValue: 'Có thay đổi chưa lưu' }),
@@ -504,6 +544,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
           items={[
             { key: 'content', label: t('content.detail.tabContent'),     count: tabCounts.content || undefined },
             { key: 'seo',     label: t('content.detail.tabSeoPublish'),  count: tabCounts.seo     || undefined },
+            ...(specialBuilder ? [{ key: 'builder', label: t(specialBuilder.tabLabelKey) }] : []),
           ]}
         />
 
@@ -882,6 +923,18 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
           )}
         </form>
 
+        {/* Trình dựng khối nhúng (Liên hệ / Hướng dẫn) — luôn mounted để giữ ref + cờ "chưa lưu";
+            ẩn khi không ở tab này. Lưu chung với nút Lưu của trang. */}
+        {specialBuilder && (
+          <div className={cn('flex flex-col gap-6 pb-4', activeTab === 'builder' ? '' : 'hidden')}>
+            {specialBuilder.kind === 'contact' ? (
+              <ContactPageBuilderPanel ref={builderRef} canUpdate={canUpdate} onDirtyChange={setBuilderDirty} />
+            ) : (
+              <GuidePageBuilderPanel ref={builderRef} canUpdate={canUpdate} onDirtyChange={setBuilderDirty} />
+            )}
+          </div>
+        )}
+
         <StickyActionBar
           info={
             <span className="flex items-center gap-2 text-sm">
@@ -915,7 +968,7 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
           )}
           <Button
             type="button"
-            disabled={isReadOnly || (!isCreate && !isDirty)}
+            disabled={isReadOnly || (!isCreate && !combinedDirty)}
             onClick={handleSubmit}
           >
             {isSubmitting && <Loader2 size={14} className="animate-spin mr-1.5" />}

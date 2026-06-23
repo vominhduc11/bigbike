@@ -12,7 +12,6 @@ public record StockMovementResponse(
         String referenceType,
         String note,
         Instant createdAt,
-        long serialCount,
         String productName,
         String variantName,
         String variantSku

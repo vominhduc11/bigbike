@@ -254,60 +254,6 @@ public class SettingDefinitionRegistry {
                 SettingDefinition.builder("about_page_connect_intro2", "public_about", SettingValueType.LONG_TEXT)
                         .publicAllowed().description("Trang Giới thiệu — dòng 2 khối Kết nối.").build(),
 
-                // ── PUBLIC_WARRANTY ── (toàn bộ copy trang Tra cứu bảo hành /bao-hanh — admin sửa được;
-                // công cụ tra cứu serial giữ nguyên chức năng, chỉ chữ là động. Web render settings-first,
-                // fallback copy theme (i18n Warranty) khi trống nên trang không bao giờ trắng.)
-                SettingDefinition.builder("warranty_page_meta_title", "public_warranty", SettingValueType.STRING)
-                        .publicAllowed().description("Trang Bảo hành — tiêu đề SEO (thẻ <title>).").build(),
-                SettingDefinition.builder("warranty_page_meta_description", "public_warranty", SettingValueType.LONG_TEXT)
-                        .publicAllowed().description("Trang Bảo hành — mô tả SEO (meta description).").build(),
-                SettingDefinition.builder("warranty_page_heading", "public_warranty", SettingValueType.STRING)
-                        .publicAllowed().description("Trang Bảo hành — tiêu đề banner đầu trang.").build(),
-                SettingDefinition.builder("warranty_page_kicker", "public_warranty", SettingValueType.STRING)
-                        .publicAllowed().description("Trang Bảo hành — tiêu đề nhỏ (kicker) trên khối tra cứu.").build(),
-                SettingDefinition.builder("warranty_page_subheading", "public_warranty", SettingValueType.LONG_TEXT)
-                        .publicAllowed().description("Trang Bảo hành — dòng mô tả dưới kicker.").build(),
-                SettingDefinition.builder("warranty_page_intro_html", "public_warranty", SettingValueType.HTML)
-                        .publicAllowed().description("Trang Bảo hành — khối nội dung giới thiệu phía trên ô tra cứu (rich-text, để trống sẽ ẩn).").build(),
-                SettingDefinition.builder("warranty_page_intro_image", "public_warranty", SettingValueType.IMAGE_URL)
-                        .publicAllowed().description("Trang Bảo hành — hình minh hoạ tuỳ chọn cho khối giới thiệu (để trống sẽ ẩn).").build(),
-                SettingDefinition.builder("warranty_page_serial_label", "public_warranty", SettingValueType.STRING)
-                        .publicAllowed().description("Trang Bảo hành — nhãn ô nhập số serial.").build(),
-                SettingDefinition.builder("warranty_page_serial_placeholder", "public_warranty", SettingValueType.STRING)
-                        .publicAllowed().description("Trang Bảo hành — chữ gợi ý trong ô nhập serial (placeholder).").build(),
-                SettingDefinition.builder("warranty_page_serial_hint", "public_warranty", SettingValueType.LONG_TEXT)
-                        .publicAllowed().description("Trang Bảo hành — dòng hướng dẫn dưới ô nhập serial.").build(),
-                SettingDefinition.builder("warranty_page_submit_button", "public_warranty", SettingValueType.STRING)
-                        .publicAllowed().description("Trang Bảo hành — chữ trên nút tra cứu.").build(),
-                SettingDefinition.builder("warranty_page_submitting", "public_warranty", SettingValueType.STRING)
-                        .publicAllowed().description("Trang Bảo hành — chữ nút khi đang tra cứu.").build(),
-                SettingDefinition.builder("warranty_page_not_found", "public_warranty", SettingValueType.STRING)
-                        .publicAllowed().description("Trang Bảo hành — thông báo khi không tìm thấy bảo hành.").build(),
-                SettingDefinition.builder("warranty_page_result_heading", "public_warranty", SettingValueType.STRING)
-                        .publicAllowed().description("Trang Bảo hành — tiêu đề khối kết quả.").build(),
-                SettingDefinition.builder("warranty_page_field_product", "public_warranty", SettingValueType.STRING)
-                        .publicAllowed().description("Trang Bảo hành — nhãn dòng Sản phẩm trong kết quả.").build(),
-                SettingDefinition.builder("warranty_page_field_serial", "public_warranty", SettingValueType.STRING)
-                        .publicAllowed().description("Trang Bảo hành — nhãn dòng Số serial trong kết quả.").build(),
-                SettingDefinition.builder("warranty_page_field_start", "public_warranty", SettingValueType.STRING)
-                        .publicAllowed().description("Trang Bảo hành — nhãn dòng Ngày bắt đầu trong kết quả.").build(),
-                SettingDefinition.builder("warranty_page_field_end", "public_warranty", SettingValueType.STRING)
-                        .publicAllowed().description("Trang Bảo hành — nhãn dòng Ngày kết thúc trong kết quả.").build(),
-                SettingDefinition.builder("warranty_page_status_active", "public_warranty", SettingValueType.STRING)
-                        .publicAllowed().description("Trang Bảo hành — nhãn trạng thái Còn hiệu lực. Giữ {daysLeft} để hiện số ngày còn lại.").build(),
-                SettingDefinition.builder("warranty_page_status_almost_expired", "public_warranty", SettingValueType.STRING)
-                        .publicAllowed().description("Trang Bảo hành — nhãn trạng thái Sắp hết hạn. Giữ {daysLeft} để hiện số ngày còn lại.").build(),
-                SettingDefinition.builder("warranty_page_status_expired", "public_warranty", SettingValueType.STRING)
-                        .publicAllowed().description("Trang Bảo hành — nhãn trạng thái Hết hạn.").build(),
-                SettingDefinition.builder("warranty_page_status_voided", "public_warranty", SettingValueType.STRING)
-                        .publicAllowed().description("Trang Bảo hành — nhãn trạng thái Đã huỷ.").build(),
-                SettingDefinition.builder("warranty_page_footer_active", "public_warranty", SettingValueType.LONG_TEXT)
-                        .publicAllowed().description("Trang Bảo hành — ghi chú dưới kết quả khi bảo hành còn hiệu lực.").build(),
-                SettingDefinition.builder("warranty_page_footer_voided", "public_warranty", SettingValueType.LONG_TEXT)
-                        .publicAllowed().description("Trang Bảo hành — ghi chú dưới kết quả khi bảo hành đã huỷ.").build(),
-                SettingDefinition.builder("warranty_page_policy_html", "public_warranty", SettingValueType.HTML)
-                        .publicAllowed().description("Trang Bảo hành — khối chính sách / câu hỏi thường gặp phía dưới (rich-text, để trống sẽ ẩn).").build(),
-
                 // ── PUBLIC_PRODUCT ── (KHÔNG còn setting chung nào.)
                 // Mọi nội dung trang chi tiết sản phẩm giờ quản theo TỪNG sản phẩm:
                 //  • Khối "cam kết" dưới nút mua → bảng product_commitments (V232).
@@ -395,16 +341,6 @@ public class SettingDefinitionRegistry {
                 SettingDefinition.builder("low_stock_threshold", "STORE", SettingValueType.INTEGER)
                         .min(0L).max(10_000L)
                         .description("Ngưỡng low-stock cho variant.").build(),
-
-                // ── INVENTORY ── (vận hành kho; admin shop chỉnh, không public)
-                SettingDefinition.builder("reservation_ttl_minutes", "inventory", SettingValueType.INTEGER)
-                        .min(1L).max(1440L)
-                        .description("Số phút giữ hàng trong giỏ trước khi nhả lại kho.").build(),
-                SettingDefinition.builder("default_warranty_months", "inventory", SettingValueType.INTEGER)
-                        .min(0L).max(600L)
-                        .description("Thời hạn bảo hành mặc định khi tạo phiếu (tháng).").build(),
-                SettingDefinition.builder("serial_inventory_only", "inventory", SettingValueType.BOOLEAN)
-                        .description("Chỉ bán sản phẩm có serial đã nhập kho.").build(),
 
                 // ── PRODUCT_ASSIGN ── (text phân công đội ngũ trên màn tạo/sửa sản phẩm; chỉ SUPER_ADMIN sửa)
                 SettingDefinition.builder("product_assign_title", "product_assign", SettingValueType.STRING)

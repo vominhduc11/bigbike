@@ -2,13 +2,11 @@ import { lazy, Suspense, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import {
-  AlertTriangle,
   CircleDollarSign,
   Clock,
   Minus,
   Package,
   PackageOpen,
-  RotateCcw,
   ShoppingBag,
   TrendingDown,
   TrendingUp,
@@ -20,9 +18,7 @@ import { formatVndShort } from '../lib/formatters'
 import { useAuth } from '../lib/auth'
 import {
   fetchDashboardSummary,
-  fetchReceivableSummary,
   fetchInventorySummary,
-  fetchReturns,
 } from '../lib/adminApi'
 
 const PENDING_WARN_THRESHOLD = 5
@@ -101,7 +97,7 @@ export function DashboardScreen({ navigate }) {
     { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' },
   )
 
-  // Số liệu vận hành (doanh thu, công nợ, tồn thấp, trả hàng chờ) cần tươi mà không cần
+  // Số liệu vận hành (doanh thu, tồn thấp, đơn chờ) cần tươi mà không cần
   // instant → polling định kỳ 90s + làm mới khi admin quay lại tab. Refetch chạy nền,
   // không show loading lại (refetchInterval mặc định không bật loading state).
   const DASHBOARD_REFRESH_MS = 90_000
@@ -114,23 +110,9 @@ export function DashboardScreen({ navigate }) {
     refetchOnWindowFocus: true,
   })
 
-  const { data: arSummary } = useQuery({
-    queryKey: ['receivable-summary'],
-    queryFn: fetchReceivableSummary,
-    staleTime: 60_000,
-    refetchInterval: DASHBOARD_REFRESH_MS,
-    refetchOnWindowFocus: true,
-  })
   const { data: invSummary } = useQuery({
     queryKey: ['inventory-summary'],
     queryFn: fetchInventorySummary,
-    staleTime: 60_000,
-    refetchInterval: DASHBOARD_REFRESH_MS,
-    refetchOnWindowFocus: true,
-  })
-  const { data: pendingReturns } = useQuery({
-    queryKey: ['returns-pending-count'],
-    queryFn: () => fetchReturns({ status: 'PENDING', page: 1, pageSize: 1 }),
     staleTime: 60_000,
     refetchInterval: DASHBOARD_REFRESH_MS,
     refetchOnWindowFocus: true,
@@ -183,11 +165,7 @@ export function DashboardScreen({ navigate }) {
   }
 
   const pendingOrdersCount = data?.kpi.pendingOrders ?? 0
-  const overdueCount = arSummary?.countOverdue ?? 0
-  const overdueAmount = arSummary?.overdueOutstanding ?? 0
-  const lowStockCount = (invSummary?.lowStockCount ?? 0) + (invSummary?.outOfStockCount ?? 0)
   const outOfStockCount = invSummary?.outOfStockCount ?? 0
-  const pendingReturnsCount = pendingReturns?.pagination?.totalItems ?? 0
 
   const SEVERITY_RANK = { high: 0, medium: 1, low: 2 }
   const SEVERITY_TONE = { high: 'danger', medium: 'warning', low: 'info' }
@@ -198,25 +176,15 @@ export function DashboardScreen({ navigate }) {
   }
 
   const attentionItems = [
-    overdueCount > 0 && {
-      key: 'overdueReceivables',
+    outOfStockCount > 0 && {
+      key: 'outOfStock',
       severity: 'high',
-      icon: <AlertTriangle size={18} />,
-      label: t('dashboard.attention.overdueReceivables.label'),
-      count: overdueCount,
-      hint: t('dashboard.attention.overdueReceivables.hint', { amount: formatVndShort(overdueAmount) }),
-      cta: t('dashboard.attention.viewAction'),
-      onClick: () => navigate('/admin/receivables'),
-    },
-    lowStockCount > 0 && {
-      key: 'lowStock',
-      severity: outOfStockCount > 0 ? 'high' : 'medium',
       icon: <PackageOpen size={18} />,
-      label: t('dashboard.attention.lowStock.label'),
-      count: lowStockCount,
-      hint: t('dashboard.attention.lowStock.hint'),
+      label: t('dashboard.attention.outOfStock.label'),
+      count: outOfStockCount,
+      hint: t('dashboard.attention.outOfStock.hint'),
       cta: t('dashboard.attention.viewAction'),
-      onClick: () => navigate('/admin/inventory'),
+      onClick: () => navigate('/admin/products?stockState=OUT_OF_STOCK'),
     },
     pendingOrdersCount > 0 && {
       key: 'pendingOrders',
@@ -227,16 +195,6 @@ export function DashboardScreen({ navigate }) {
       hint: t('dashboard.attention.pendingOrders.hint'),
       cta: t('dashboard.attention.viewAction'),
       onClick: () => navigate('/admin/orders'),
-    },
-    pendingReturnsCount > 0 && {
-      key: 'pendingReturns',
-      severity: 'low',
-      icon: <RotateCcw size={18} />,
-      label: t('dashboard.attention.pendingReturns.label'),
-      count: pendingReturnsCount,
-      hint: t('dashboard.attention.pendingReturns.hint'),
-      cta: t('dashboard.attention.viewAction'),
-      onClick: () => navigate('/admin/returns'),
     },
   ]
     .filter(Boolean)

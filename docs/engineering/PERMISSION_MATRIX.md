@@ -7,20 +7,22 @@
 - `PermissionCatalog.java` is the canonical catalog of **valid permission keys + groupings + sensitive flags**. It is served by `GET /api/v1/admin/permissions` and used by `AdminRoleService` to validate which keys may be assigned to a custom role. New permissions must be added here first, then seeded into `role_permissions` by a migration.
 - `AdminRolePermissions.java` is a **human-readable reference snapshot only** — it is explicitly NOT called at runtime. Do not treat it as authoritative.
 
-### Inventory, Warranty & POS-refund permissions
+### Inventory permissions
 
 | Permission | Granted roles (seed) | Endpoint | Evidence |
 |---|---|---|---|
-| `inventory.read` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER`, `EDITOR` | `GET /api/v1/admin/inventory/**` (stock + serial reads) | `V121__realign_inventory_warranty_permissions.sql`, `AdminInventoryController.java` |
-| `inventory.write` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER` | `POST`/`PATCH /api/v1/admin/inventory/**` (stock adjust, serial add/status/import) | `V121__realign_inventory_warranty_permissions.sql`, `AdminInventoryController.java` |
-| `warranty.read` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER` | `GET /api/v1/admin/warranties/**` | `V121__realign_inventory_warranty_permissions.sql`, `AdminWarrantyController.java` |
-| `warranty.write` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER` | `PATCH /api/v1/admin/warranties/{id}/void` | `V121__realign_inventory_warranty_permissions.sql`, `AdminWarrantyController.java` |
-| `pos.refund` | `SUPER_ADMIN` (wildcard), `ADMIN` | `POST /api/v1/admin/pos/orders/{id}/refund` | `V112__add_pos_refund_permission.sql`, `AdminPosController.java` |
-| `pos.sell_below_cost` | `SUPER_ADMIN` (wildcard), `ADMIN` | `POST /api/v1/admin/pos/orders` — bypass the below-cost guard when overriding a unit price below cost (`ORDER_RULE_008`) | `V196__add_pos_sell_below_cost_permission.sql`, `AdminPosController.java`, `PosOrderService.java` |
+| `inventory.read` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER`, `EDITOR` | `GET /api/v1/admin/inventory/**` (stock list / grouped / summary / movements) | `V121__realign_inventory_warranty_permissions.sql`, `AdminInventoryController.java` |
+| `inventory.write` | `SUPER_ADMIN` (wildcard), `ADMIN`, `SHOP_MANAGER` | `POST /api/v1/admin/inventory/**` (manual stock adjust) | `V121__realign_inventory_warranty_permissions.sql`, `AdminInventoryController.java` |
 
-All are listed in `PermissionCatalog` (`inventory.*` and `warranty.*` in `roles.groupProducts`, `pos.refund` and `pos.sell_below_cost` in `roles.groupSales`) so they are grantable to custom roles via the Roles UI.
+`inventory.*` is listed in `PermissionCatalog` (`roles.groupProducts`), so it is grantable to custom roles via the Roles UI.
 
-> **AL-03 realignment (V121).** Before V121, `inventory.*` gated the **Warranty** module while the **Inventory/Serial** module was gated by `products.*` — the permission name did not match the module it controlled. V121 introduced `warranty.*` and re-gated both controllers + the admin UI so each permission matches its module. The migration is a **non-breaking backfill**: every role holding `inventory.*` also received `warranty.*`, and every role holding `products.*` also received `inventory.*`. `EDITOR` therefore keeps `inventory.read` (it held `products.read`) — a deliberate compatibility grant. A post-launch RBAC cleanup may remove `inventory.read` from `EDITOR` if the business confirms EDITOR is content-only.
+> **POS permissions removed (2026-06-23, online-only).** The four POS permissions — `pos.read`, `pos.write`, `pos.price_override`, `pos.sell_below_cost` — were **deleted** together with the POS module (admin POS screen, `POST /admin/pos/orders`, `GET /admin/pos/products/search`, `AdminPosController` / `PosOrderService`). They were dropped from `PermissionCatalog` and revoked from every role. BigBike is now online-only.
+>
+> **AL-03 realignment (V121).** Before V121, `inventory.*` gated the (now-removed) **Warranty** module while the **Inventory** module was gated by `products.*` — the permission name did not match the module it controlled. V121 introduced the dedicated permissions and re-gated each controller + the admin UI. The migration was a **non-breaking backfill**: every role holding `products.*` also received `inventory.*`. `EDITOR` therefore keeps `inventory.read` (it held `products.read`) — a deliberate compatibility grant. A post-launch RBAC cleanup may remove `inventory.read` from `EDITOR` if the business confirms EDITOR is content-only.
+>
+> **Serial feature removed (2026-06-23, V259).** `inventory.*` now gates **stock reads / manual quantity adjustments only** — the admin inventory serial endpoints (`/inventory/serials*`, `/variants/{id}/serials`, `/products/{id}/serials`, `/serials/{id}/status`, `/serials/import`) were deleted along with serial tracking.
+>
+> **Warranty module removed (2026-06-23, V266).** The `warranty.read` / `warranty.write` permissions were **deleted** together with the warranty feature (admin warranty endpoints, public lookup, records, and the `/bao-hanh` page). They were dropped from `PermissionCatalog` and revoked from every role by the migration.
 
 ## Roles
 
@@ -29,11 +31,11 @@ Four built-in admin roles are seeded as **system roles** (`is_system = TRUE`). `
 | Role | Type | Current scope | Status | Evidence |
 |---|---|---|---|---|
 | `SUPER_ADMIN` | system (built-in) | wildcard `*` — permissions immutable; cannot be edited or deleted | `CONFIRMED_FROM_CODE` | `V49__create_roles_permissions_tables.sql`, `AdminRoleService.java` |
-| `ADMIN` | system (built-in) | full operations including media, settings, redirects, POS override | `CONFIRMED_FROM_CODE` | `V49__create_roles_permissions_tables.sql` |
-| `SHOP_MANAGER` | system (built-in) | catalog/orders/customers/coupons/shipping read/reviews/POS without price override | `CONFIRMED_FROM_CODE` | `V49__create_roles_permissions_tables.sql` |
+| `ADMIN` | system (built-in) | full operations including media, settings, redirects | `CONFIRMED_FROM_CODE` | `V49__create_roles_permissions_tables.sql` |
+| `SHOP_MANAGER` | system (built-in) | catalog/orders/customers/reviews (shipping permissions removed 2026-06-23 `SHIP_RULE_001`; POS removed 2026-06-23) | `CONFIRMED_FROM_CODE` | `V49__create_roles_permissions_tables.sql`, `V264__remove_shipping_methods.sql` |
 | `EDITOR` | system (built-in) | catalog/content/media/menu/slider + SEO redirects operations | `CONFIRMED_FROM_CODE` | `V49__create_roles_permissions_tables.sql`, `V200__reduce_default_roles.sql` |
 | custom roles | non-system | any keys from `PermissionCatalog`; created/edited/deleted via the Roles API | `CONFIRMED_FROM_CODE` | `AdminRoleService.createRole/deleteRole` |
-| `CUSTOMER` | storefront (not an admin role) | own profile/address/order/return APIs; **not** in `admin_roles` | `CONFIRMED_FROM_CONFIG` | `SecurityConfig.java` |
+| `CUSTOMER` | storefront (not an admin role) | own profile/address/order APIs; **not** in `admin_roles` | `CONFIRMED_FROM_CONFIG` | `SecurityConfig.java` |
 
 ### Role Governance
 
@@ -75,21 +77,13 @@ Status: `CONFIRMED_FROM_CODE` — `SettingDefinitionRegistry.java`, `AdminSettin
 | `/api/v1/admin/**` | Spring Security URL gate requires `isAuthenticated() and !hasRole('CUSTOMER')` — any admin role (built-in or custom) passes, a logged-in customer is rejected (403). Fine-grained permission is then enforced at controller level by `requirePermission()`. See `PERMISSION_RBAC_AUDIT.md` findings F1/F2. | `CONFIRMED_FROM_CODE` | `SecurityConfig.java`, `DevAdminAuthService.requirePermission`, admin controllers |
 | `POST /api/v1/admin/products/preview` | `products.update` (live preview dry-run; no persistence) | `CONFIRMED_FROM_CODE` | `AdminCatalogController.previewProduct`, `AdminCatalogMutationService.previewProduct` |
 | `GET /api/v1/admin/contact-page` | `content.read` (trình dựng trang Liên hệ) | `CONFIRMED_FROM_CODE` | `AdminContactPageController.java` |
-| `PUT /api/v1/admin/contact-page` | `content.update`. **Ghi xuyên `site_settings`** chỉ giới hạn whitelist nhóm `contact` (`ContactPageService.WRITE_THROUGH_KEYS`) nên EDITOR sửa được giá trị kênh **không cần** `settings.write`. | `CONFIRMED_FROM_CODE` | `AdminContactPageController.java`, `ContactPageService.save` |
+| `PUT /api/v1/admin/contact-page` | `content.update`. **Ghi xuyên `site_settings`** chỉ giới hạn whitelist nhóm `contact` (`ContactPageService.WRITE_THROUGH_KEYS`, gồm cả `zalo_display`/`messenger_display`) nên EDITOR sửa được giá trị kênh **không cần** `settings.write`. Từ 2026-06-23 đây là **đường duy nhất** sửa các key contact (tab "Liên hệ" trong Cài đặt — vốn cần `settings.write` — đã gỡ khỏi UI; trình dựng nhúng trong trang editor module Nội dung). | `CONFIRMED_FROM_CODE` | `AdminContactPageController.java`, `ContactPageService.save` |
 | `GET /api/v1/admin/guide-page` | `content.read` (trình dựng trang Hướng dẫn) | `CONFIRMED_FROM_CODE` | `AdminGuidePageController.java` |
 | `PUT /api/v1/admin/guide-page` | `content.update` (lưới ô + hero trang `/huong-dan`; không ghi xuyên `site_settings`) | `CONFIRMED_FROM_CODE` | `AdminGuidePageController.java`, `GuidePageService.save` |
 | `GET /api/v1/contact-page` | public (storefront `/lien-he` đọc bố cục trình dựng; whitelist GET trong `SecurityConfig`, fallback bố cục mặc định nếu trống) | `CONFIRMED_FROM_CODE` | `SecurityConfig.java`, `PublicContactPageController.java` |
 | `GET /api/v1/guide-page` | public (storefront `/huong-dan` đọc bố cục trình dựng; whitelist GET trong `SecurityConfig`, fallback bố cục mặc định nếu trống) | `CONFIRMED_FROM_CODE` | `SecurityConfig.java`, `PublicGuidePageController.java` |
-| `/api/v1/admin/pos/products/search` | admin role + `pos.read` | `CONFIRMED_FROM_CODE` | `SecurityConfig.java`, `AdminPosController.java` |
-| `/api/v1/admin/pos/orders` | admin role + `pos.write` | `CONFIRMED_FROM_CODE` | `SecurityConfig.java`, `AdminPosController.java` |
-| POS price override | `pos.price_override` | `CONFIRMED_FROM_CODE` | `AdminPosController.java`, `PosOrderService.java` |
-| `/api/v1/admin/coupons/**` | admin/security role; controller permissions `coupons.read` or `coupons.write` | `CONFIRMED_FROM_CODE` | `SecurityConfig.java`, `AdminCouponController.java` |
 | `/api/v1/admin/dashboard` GET | `orders.read`; `ROLE_ADMIN`, `ROLE_SUPER_ADMIN`, or `ROLE_SHOP_MANAGER` | `CONFIRMED_FROM_CODE` | `SecurityConfig.java`, `AdminDashboardController.java` |
 | `/api/v1/admin/orders/{orderId}/audit` GET | `orders.read` | `CONFIRMED_FROM_CODE` | `AdminOrderController.listAuditTrail`, `AdminOrderService.listAuditTrail` |
-| `/api/v1/admin/returns` GET | `orders.read` | `CONFIRMED_FROM_CODE` | `AdminReturnController.java` |
-| `/api/v1/admin/returns/{returnId}/status` PATCH | `orders.write` | `CONFIRMED_FROM_CODE` | `AdminReturnController.java` |
-| `/api/v1/admin/returns/{returnId}/items/{itemId}/inspect` PATCH | `orders.write` (V104) | `CONFIRMED_FROM_CODE` | `AdminReturnController.java`, `AdminReturnService.inspectItem` |
-| `/api/v1/customer/orders/{orderId}/return-eligibility` GET | `ROLE_CUSTOMER` | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java` |
 | `/api/v1/customer/orders/**` | `ROLE_CUSTOMER` | `CONFIRMED_FROM_CONFIG` | `SecurityConfig.java` |
 | `/api/v1/customer/addresses/**` | `ROLE_CUSTOMER` | `CONFIRMED_FROM_CONFIG` | `SecurityConfig.java` |
 | `GET /api/v1/auth/admin/invite` | public (token-gated) — validate an admin invite token | `CONFIRMED_FROM_CODE` | `SecurityConfig.java`, `AdminInviteService.validateToken` |
@@ -115,22 +109,6 @@ Status: `CONFIRMED_FROM_CONFIG`
 Evidence:
 
 - `SecurityConfig.java`
-
-## Accounts Receivable Permissions
-
-Status: `CONFIRMED_FROM_CODE` — implemented in `AdminRolePermissions.java`.
-
-| Permission string | Granted roles | Purpose |
-|---|---|---|
-| `receivables.read` | `SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER` | View receivables list, per-customer outstanding balance, aging report, customer credit profile |
-| `receivables.create` | `SUPER_ADMIN`, `ADMIN` | Update customer credit profile (creditEnabled, limit, terms, status) |
-| `receivables.record_payment` | `SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER` | Record a partial or full payment against a credit receivable |
-| `receivables.write_off` | `SUPER_ADMIN`, `ADMIN` | Write off an uncollectable receivable (mandatory reason required) |
-| `receivables.override_limit` | `SUPER_ADMIN`, `ADMIN` | Bypass credit limit check when creating a POS credit sale |
-
-> `receivables.export` was removed in `V122__remove_unused_receivables_export_permission.sql` (audit AL-05). It was declared and seeded but no endpoint ever consumed it — there is no receivables export feature. Removing it keeps the catalog 1:1 with real endpoints.
-
-Evidence: `AdminRolePermissions.java`, `AdminReceivableController.java`
 
 ## Reports Permissions
 

@@ -13,10 +13,10 @@ import { useCheckout } from "./checkout/useCheckout";
  * Nội dung trang Thanh toán — port markup từ woocommerce/checkout/form-checkout.php
  * + review-order.php + payment.php (class .check-out-title / .check-out-form /
  * .check-out-step / .checkout-summary / .summary--items / .form-group / .form-submit).
- * GIỮ NGUYÊN 100% logic/data thật của bigbike-web (xem hook useCheckout): react-hook-form +
- * zod validation, shipping/payment options, zone matching, min-order, price-change, GTM
- * begin_checkout, prefill từ profile/address. Cột phải (CheckoutSummary) dùng vocabulary
- * summary của theme vì bảng .shop_table mặc định của WooCommerce không nằm trong bundle CSS theme.
+ * GIỮ NGUYÊN logic/data thật của bigbike-web (xem hook useCheckout): react-hook-form +
+ * zod validation, price-change, GTM begin_checkout, prefill từ profile/address. Đơn online
+ * không tính phí vận chuyển. Cột phải (CheckoutSummary) dùng vocabulary summary của theme
+ * vì bảng .shop_table mặc định của WooCommerce không nằm trong bundle CSS theme.
  */
 export function WpCheckoutClient() {
   const t = useTranslations("Checkout");
@@ -44,22 +44,8 @@ export function WpCheckoutClient() {
     formShip,
     setValueShip,
     cartSubtotal,
-    effectiveShippingCost,
     grandTotal,
-    selectedShipping,
-    shippingMethods,
-    shippingMethodId,
-    setShippingMethodId,
-    paymentMethods,
-    paymentMethod,
-    setPaymentMethod,
-    optionsLoading,
-    optionsError,
-    refetchOptions,
-    userRegion,
     submitting,
-    belowMinOrder,
-    selectedShippingZoneMismatch,
   } = useCheckout();
 
   if (cartLoading && !cart) {
@@ -205,23 +191,9 @@ export function WpCheckoutClient() {
           <CheckoutSummary
             cart={cart}
             cartSubtotal={cartSubtotal}
-            effectiveShippingCost={effectiveShippingCost}
             grandTotal={grandTotal}
-            selectedShipping={selectedShipping}
-            shippingMethods={shippingMethods}
-            shippingMethodId={shippingMethodId}
-            setShippingMethodId={setShippingMethodId}
-            paymentMethods={paymentMethods}
-            paymentMethod={paymentMethod}
-            setPaymentMethod={setPaymentMethod}
-            optionsLoading={optionsLoading}
-            optionsError={optionsError}
-            onRetryOptions={() => refetchOptions()}
-            userRegion={userRegion}
             submitting={submitting}
             cartLoading={cartLoading}
-            belowMinOrder={belowMinOrder}
-            selectedShippingZoneMismatch={selectedShippingZoneMismatch}
           />
         </div>
       </div>

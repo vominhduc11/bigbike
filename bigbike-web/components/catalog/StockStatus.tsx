@@ -7,8 +7,6 @@ export type StockData = {
   stockState: string;
   label: string;
   forceOutOfStock: boolean;
-  /** On-hand count when tracked; null/undefined when not exposed by API. */
-  quantity?: number | null;
 };
 
 type StockStatusProps = {
@@ -22,11 +20,6 @@ type StockStatusProps = {
   variant?: "badge" | "inline";
 };
 
-// At/under this threshold the badge swaps from generic "Còn ít" to a
-// concrete "Chỉ còn N sản phẩm" message. Keeps urgency honest — if backend
-// returns 18 for a LOW_STOCK product, "Chỉ còn 18" undermines urgency.
-const LOW_STOCK_URGENCY_THRESHOLD = 10;
-
 export function StockStatus({
   data,
   fallbackState,
@@ -36,39 +29,32 @@ export function StockStatus({
   const tProduct = useTranslations("Product");
   if (isLoading && !fallbackState) return null;
 
+  // Boolean tồn kho: chỉ còn Còn hàng / Hết hàng. LOW_STOCK không còn phát sinh
+  // (backend không emit) — gộp vào "Còn hàng", KHÔNG hiển thị số lượng.
   const rawState = data?.forceOutOfStock
     ? "OUT_OF_STOCK"
-    : (data?.stockState ?? fallbackState ?? "UNKNOWN");
+    : (data?.stockState ?? fallbackState) === "OUT_OF_STOCK"
+      ? "OUT_OF_STOCK"
+      : (data?.stockState ?? fallbackState)
+        ? "IN_STOCK"
+        : "UNKNOWN";
 
   const stateKey =
-    rawState === "IN_STOCK" || rawState === "LOW_STOCK" || rawState === "OUT_OF_STOCK"
-      ? rawState
-      : "UNKNOWN";
+    rawState === "IN_STOCK" || rawState === "OUT_OF_STOCK" ? rawState : "UNKNOWN";
   // Use `||` not `??`: the selected-variant path (PurchaseSectionClient)
   // passes label: "" rather than null, and `??` would keep that empty string —
   // rendering the skewed badge with no text (an empty red block on the PDP).
   // Falling back to the i18n state label restores "Hết hàng"/"Còn hàng".
-  const baseLabel = data?.label || tProduct(`stockState.${stateKey}`);
-  const qty = data?.quantity ?? null;
-
-  // Mirror WP's `wc_get_stock_html()` "Chỉ còn N sản phẩm" copy when the
-  // count is small enough to feel scarce; otherwise keep the abstract
-  // "Còn ít" so big numbers don't read as plenty.
-  const label =
-    rawState === "LOW_STOCK" && qty != null && qty > 0 && qty <= LOW_STOCK_URGENCY_THRESHOLD
-      ? tProduct("lowStockRemaining", { count: qty })
-      : baseLabel;
+  const label = data?.label || tProduct(`stockState.${stateKey}`);
 
   // Inline status line — coloured dot + label (mockup buy-box style).
   if (variant === "inline") {
     const dotColor =
       rawState === "OUT_OF_STOCK"
         ? "var(--bb-state-danger)"
-        : rawState === "LOW_STOCK"
-          ? "var(--bb-state-warning-text)"
-          : rawState === "IN_STOCK"
-            ? "var(--bb-state-success)"
-            : "var(--bb-text-muted)";
+        : rawState === "IN_STOCK"
+          ? "var(--bb-state-success)"
+          : "var(--bb-text-muted)";
     const isOut = rawState === "OUT_OF_STOCK";
     return (
       <span className="inline-flex items-center gap-2 text-caption">

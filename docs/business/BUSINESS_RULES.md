@@ -18,12 +18,12 @@ Evidence:
 ## SKU Roles
 
 - `product.sku` is a **model/group code** — an optional descriptive identifier for the product family. It is not the selling code when variants exist. `CONFIRMED_FROM_CODE`
-- `variant.sku` is the **selling SKU** — the code used at POS, cart, checkout, inventory, and returns to identify the actual unit being sold. `CONFIRMED_FROM_CODE`
+- `variant.sku` is the **selling SKU** — the code used in cart, checkout, and inventory to identify the actual unit being sold. `CONFIRMED_FROM_CODE`
 - **`PRODUCT_RULE_SKU_001` — every variant must have a SKU, and variant SKUs must be unique.** On the admin product upsert API, each variant in the `variants[]` list must carry a non-blank `sku` (`@NotBlank` on `VariantRequest.sku`; admin form blocks save with a per-row error). Variant SKUs are **globally unique, case-insensitive** across all products: the backend rejects a save that reuses a SKU held by another variant (and the admin form flags duplicates within the same product before submit). `product.sku` stays optional and is **not** part of the uniqueness check. `CONFIRMED_FROM_CODE`
 - Uniqueness is enforced at the DB level by a partial unique index `ux_product_variants_sku_lower` on `lower(sku)` (V244), which also backfilled SKUs for legacy/WP-import variants that had none and de-duplicated pre-existing collisions. The application layer pre-validates duplicates to return a friendly error before hitting the constraint. `CONFIRMED_FROM_CODE`
 - The `product_variants.sku varchar(100)` column stays nullable so the index ignores any future null (the requirement is a **write-time validation**, not a `NOT NULL` schema change); `products.sku varchar(100)` remains fully optional with no uniqueness. `CONFIRMED_FROM_CODE`
 - When snapshotting line items into cart/order, the system uses `variant.sku` if present, otherwise falls back to `product.sku`. This fallback covers single-variant or no-variant products where the parent SKU is the selling code. `CONFIRMED_FROM_CODE`
-- Inventory search and serial-tracking views read both `p.sku` and `v.sku` so admin tools can locate units by either code. `CONFIRMED_FROM_CODE`
+- Inventory search reads both `p.sku` and `v.sku` so admin tools can locate stock by either code. `CONFIRMED_FROM_CODE`
 
 Evidence:
 
@@ -34,43 +34,7 @@ Evidence:
 - `PosOrderService.java` (line 233 — fallback `variant.getSku() != null ? variant.getSku() : product.getSku()`)
 - `CartService.java` (line 153 — same fallback)
 - `CheckoutService.java` (line 723 — same fallback)
-- `V51__add_serial_tracking.sql` (lines 123, 127 — `variant_sku`, `product_sku` in `serial_inventory_view`)
-- `V1__create_catalog_content_tables.sql` (lines 65, 166)
-
-## Coupon Rules
-
-- One coupon per cart is enforced in service logic and backed by DB uniqueness. `CONFIRMED_FROM_CODE`
-- Applying a coupon locks the coupon row and validates status, expiry, usage limit, and minimum amount. `CONFIRMED_FROM_CODE`
-- Cart refresh removes coupons that become invalid after apply. `CONFIRMED_FROM_CODE`
-- Checkout revalidates coupons from fresh DB state and atomically increments usage. `CONFIRMED_FROM_CODE`
-- Scheduler flips overdue active coupons to `EXPIRED` hourly. `CONFIRMED_FROM_CODE`
-- Each coupon has a `channel` field: `ALL` (default) | `ONLINE` | `POS`. `CONFIRMED_FROM_CODE`
-  - `ONLINE` coupons can only be applied via web/mobile cart — rejected at POS. `CONFIRMED_FROM_CODE`
-  - `POS` coupons can only be applied at point of sale — rejected in web/mobile cart. `CONFIRMED_FROM_CODE`
-  - `ALL` coupons work on both channels. `CONFIRMED_FROM_CODE`
-- A coupon may be restricted to a specific customer via `customer_id` (nullable FK). `NULL` = shared for all customers. `CONFIRMED_FROM_CODE`
-- Admin can send a personalized coupon gift to a single customer (`POST /api/v1/admin/customers/{id}/coupon-gift`): creates a unique `GIFT`-prefixed code, sets `customer_id`, and emails it. Requires `coupons.write` permission and the customer must have an email address. `CONFIRMED_FROM_CODE`
-- Admin can bulk-notify all active customers (`POST /api/v1/admin/coupon-gifts/bulk`): sends email with an existing coupon's code to every active customer with a verified email. Accepts `{ couponId }` — selected coupon must be ACTIVE. No new coupon is created. Returns `{ sent, skipped }`. Requires `coupons.write` permission. `CONFIRMED_FROM_CODE`
-- Admin can targeted-notify selected customers (`POST /api/v1/admin/coupon-gifts/targeted`): sends email with an existing coupon's code to a specified list of customers. Accepts `{ couponId, customerIds }` — coupon must be ACTIVE. No new coupon is created. Returns `{ sent, skipped }`. Requires `coupons.write` permission. `CONFIRMED_FROM_CODE`
-- **Xoá coupon** (`DELETE /api/v1/admin/coupons/{id}`): chỉ xoá được khi coupon **chưa từng được áp dụng vào đơn hàng nào**. Nếu đã có ≥1 dòng `order_applied_coupons` tham chiếu → **chặn (HTTP 409)** kèm thông báo gợi ý admin **chuyển sang INACTIVE** thay vì xoá, để giữ lịch sử đơn. (Trước đây không guard → khoá ngoại RESTRICT ném 500 thô.) `CONFIRMED_FROM_CODE`
-
-Evidence:
-
-- `CartService.java`
-- `CheckoutService.java`
-- `CouponPolicyService.java`
-- `PosOrderService.java`
-- `CouponExpiryScheduler.java`
-- `AdminCouponGiftService.java`
-- `AdminCouponService.java` (`deleteCoupon` — guard `order_applied_coupons` reference)
-- `AdminCustomerController.java`
-- `AdminCouponGiftController.java`
-- `V73__enforce_one_coupon_per_cart.sql`
-- `V118__add_coupon_channel.sql`
-- `V119__add_coupon_customer_restriction.sql`
-- `Phase1ECartApiTest.java`
-- `Phase1FCheckoutApiTest.java`
-- `Phase1JAdminSettingsMenuCouponApiTest.java`
+- `V1__create_catalog_content_tables.sql` (lines 65, 166 — `product_sku` / `variant_sku` columns)
 
 ## Order Completion & Cancellation Rules
 
@@ -82,48 +46,25 @@ The three statuses on an order are independent and **never** to be conflated:
 | `OrderEntity.paymentStatus` | Where the money is. |
 | `OrderEntity.fulfillmentStatus` | Where the goods are (DELIVERY orders only). |
 
-`COMPLETED` means **goods delivered**, not **money received**. The two must be checked separately before the transition.
+`COMPLETED` means **goods delivered**. Payment is reconciled separately by the admin and does **not** gate completion (owner decision 2026-06-23).
 
-- `ORDER_RULE_001` — `OrderStatus.COMPLETED` is allowed with `paymentStatus = UNPAID` only when the order is `paymentMethod = CREDIT` AND has a valid `customerId`. Anything else is rejected. Reason: only credit/receivable orders have a downstream collection process; non-credit unpaid completions leave money on the table with no receivable to chase it. (`PARTIALLY_PAID` was a valid state before V114; removed by V114 migration — V116 CHECK constraint now enforces `UNPAID/PAID/REFUNDED/CANCELLED` as the only valid values.) `CONFIRMED_FROM_CODE`
-- `ORDER_RULE_002` — `paymentMethod = COD` orders cannot transition to `COMPLETED` unless `paymentStatus = PAID`. Reason: COD means cash on delivery; "complete" is goods + money, not just goods. Backend message: `Đơn COD phải được thu tiền trước khi hoàn thành.` `CONFIRMED_FROM_CODE`
-- `ORDER_RULE_003` — `fulfillmentType = DELIVERY` orders cannot transition to `COMPLETED` unless `fulfillmentStatus = DELIVERED`. Reason: a delivery order cannot be "complete" before it has actually been delivered. Admin must walk fulfillment through `UNFULFILLED → PROCESSING → SHIPPED → DELIVERED` (or jump straight to `DELIVERED` from `UNFULFILLED`) via `PATCH /admin/orders/{id}/fulfillment` first. POS in-store orders (`fulfillmentType = IN_STORE`) are exempt — goods change hands at the counter on creation. Backend message: `Chỉ được hoàn thành đơn giao hàng sau khi đã giao thành công.` `CONFIRMED_FROM_CODE`
-- `ORDER_RULE_004` — Orders with `paymentStatus = PAID` cannot transition to `CANCELLED` directly. They must go through `POST /admin/orders/{id}/refund` (RefundService) so the refund_transaction, payment record, receivable write-off, warranty void, and serial/stock restore stay atomic. When the guard rejects the cancel, stock is NOT restored and serials are NOT released — the order stays in its current status. Backend message: `Đơn đã có thanh toán, cần xử lý hoàn tiền/void trước khi hủy.` `CONFIRMED_FROM_CODE` (`PARTIALLY_PAID` removed in V114; only `PAID` remains as the blocking condition.)
-- `ORDER_RULE_005` — POS orders are created with `status = COMPLETED` directly. CASH/CARD_TERMINAL force `paymentStatus = PAID`; CREDIT forces `paymentStatus = UNPAID` (always fully unpaid at creation — downPayment was removed in V114) AND requires `customerId` + a successful `ReceivableService.createReceivableForOrder` — receivable creation failure rolls back the whole POS order transaction. Debt is collected later via `ReceivableService.recordPayment`. `CONFIRMED_FROM_CODE`
-- `ORDER_RULE_006` — POS orders that are already `COMPLETED` cannot be `CANCELLED` directly. `COMPLETED` is terminal in `ALLOWED_TRANSITIONS`. A POS-specific void flow (separate from `CANCELLED`) is not implemented today; cancelling a completed POS sale must currently be modelled as a refund/return. `CONFIRMED_FROM_CODE`
-- `ORDER_RULE_007` — Direct `COMPLETED → REFUNDED` status patch is rejected. Refunds must go through `POST /admin/orders/{id}/refund` → `RefundService.applyRefund` so refund_transaction, payment.refundAmount, warranty void, SOLD serial restore, receivable write-off, and the status flip happen atomically. `CONFIRMED_FROM_CODE`
-- `ORDER_RULE_008` — POS below-cost guard. A POS price override (`unitPriceOverride`) that is **below the resolved cost price** is rejected (409) unless the staff holds `pos.sell_below_cost` (`SUPER_ADMIN` wildcard / `ADMIN` by default). Cost resolves variant-first then product (`product_variants.cost_price` → `products.cost_price`); when cost is `NULL` (unknown) there is no enforcement. Cost is admin-only and never exposed on the public storefront (see DATA_CONTRACT "Cost price"). `CONFIRMED_FROM_CODE`
+- `ORDER_RULE_001` — Payment status no longer blocks completion. An order may be transitioned to `COMPLETED` while `paymentStatus = UNPAID`; the admin reconciles the money offline and may mark the order paid before or after completing it (owner decision 2026-06-23 — see `PAY_RULE_001`). The only completion precondition that remains is delivery (`ORDER_RULE_003`). (History: an UNPAID order was blocked from completion until 2026-06-23. `PARTIALLY_PAID` was removed by V114; the `REFUNDED` payment status was removed 2026-06-23 — the CHECK constraint allows `UNPAID/PAID/CANCELLED` only.) `CONFIRMED_FROM_CODE`
+- `ORDER_RULE_002` — `paymentMethod` is **optional** for online orders and no longer affects completion. Online checkout no longer asks the customer to choose a payment method, so new web/quick-buy orders are stored with `paymentMethod = null`; legacy/explicit `COD`/`BACS` values are still accepted and displayed. (History: until 2026-06-23 a `COD` order could not be completed until `paymentStatus = PAID`; that guard was removed with the owner decision to reconcile payment offline.) `CONFIRMED_FROM_CODE`
+- `ORDER_RULE_003` — `fulfillmentType = DELIVERY` orders cannot transition to `COMPLETED` unless `fulfillmentStatus = DELIVERED`. Reason: a delivery order cannot be "complete" before it has actually been delivered. Admin must walk fulfillment through `UNFULFILLED → PROCESSING → SHIPPED → DELIVERED` (or jump straight to `DELIVERED` from `UNFULFILLED`) via `PATCH /admin/orders/{id}/fulfillment` first. (Every order is now a `DELIVERY` order — the in-store `IN_STORE` fulfillment type was retired with POS, 2026-06-23.) Backend message: `Chỉ được hoàn thành đơn giao hàng sau khi đã giao thành công.` `CONFIRMED_FROM_CODE`
+- `ORDER_RULE_004` — Orders with `paymentStatus = PAID` **can be cancelled directly** (no refund step). Refunds were removed platform-wide (2026-06-23); the admin reconciles the money manually outside the system. Cancelling restores stock as for any other cancel. (`PARTIALLY_PAID` removed in V114; `REFUNDED` removed 2026-06-23 — the prior cancel-blocking guard and its `POST /admin/orders/{id}/refund` requirement no longer exist.) `CONFIRMED_FROM_CODE`
+- `ORDER_RULE_005` — ~~POS auto-complete + CASH/CARD_TERMINAL paid-at-counter rule.~~ **REMOVED (owner decision 2026-06-23, online-only — see "POS Rules" banner below).** The POS create-order path no longer exists; there is no longer an order that starts `COMPLETED + PAID`. `REMOVED`
+- `ORDER_RULE_006` — ~~POS completed orders cannot be cancelled directly.~~ **REMOVED (2026-06-23, online-only).** No POS order is created `COMPLETED` anymore, so this guard is moot. `COMPLETED` remains terminal in `ALLOWED_TRANSITIONS` for online orders. `REMOVED`
+- `ORDER_RULE_008` — ~~POS below-cost override guard (`pos.sell_below_cost`).~~ **REMOVED (2026-06-23, online-only).** Price override only existed in the POS flow, which is gone; the `pos.*` permissions were dropped. Cost price is still admin-only and never exposed on the storefront (see DATA_CONTRACT "Cost price"). `REMOVED`
 
 Evidence:
 
 - `AdminOrderService.java` — `validateBeforeComplete`, `validateBeforeCancel`, `ALLOWED_TRANSITIONS`
 - `CheckoutService.java` — initial `fulfillmentStatus = UNFULFILLED` for DELIVERY orders
-- `PosOrderService.java` — POS CASH/CARD/CREDIT branches, receivable creation rollback
-- `RefundService.java` — single authoritative refund flow
-- `Phase1HAdminOrderApiTest.java` — covers all four rules above (happy + rejection paths)
-- `Phase1MPosApiTest.java` — covers POS CASH/CARD/CREDIT including missing-customer rejection and credit limit overrides
+- `Phase1HAdminOrderApiTest.java` — covers the surviving rules above (happy + rejection paths)
 
 ## POS Rules
 
-- POS endpoints require admin JWT plus `pos.read` or `pos.write`; price override requires `pos.price_override`. `CONFIRMED_FROM_CODE`
-- POS sale is immediate: order status `COMPLETED`, payment status `PAID`, payment provider `POS`. `CONFIRMED_FROM_CODE`
-- POS writes order snapshots including customer/staff fields when provided/available. `CONFIRMED_FROM_CODE`
-- POS decrements stock immediately and writes stock movement + audit log. `CONFIRMED_FROM_CODE`
-- No POS expiry cleanup lifecycle is currently documented because no live cleanup job was confirmed. `NOT_FOUND_IN_REPO`
-
-### POS Customer Identity (`POS_CUSTOMER_*`)
-
-- `POS_CUSTOMER_001`: Every POS order **requires `customerPhone`** (NotBlank, pattern `^\+?[0-9]{8,15}$`). A sale cannot be completed without a phone — the phone is the customer identity key at the counter. `INTENDED` (this PR)
-- `POS_CUSTOMER_002`: On sale, the system **normalizes the phone** (strip spaces/dashes, `+84`/`84` prefix → `0`) and resolves the customer by phone (`CustomerJpaRepository.findByPhone`). If a customer with that phone exists → the order is linked to that existing profile (`order.customer_id` set). If none exists → a **new customer profile is auto-created** (`phone` = normalized, `display_name` = entered name or fallback `"Khách tại quầy"`, `status = ACTIVE`, `is_synthetic = true`, `credit_enabled = false`) and the order is linked to it. `INTENDED` (this PR)
-- `POS_CUSTOMER_003`: When the entered phone matches an existing profile but the entered name differs, the **existing profile is preserved unchanged** — the entered name is only snapshotted onto that order's `customer_name` (printed on the receipt), never written back to the customer record. `INTENDED` (this PR)
-- `POS_CUSTOMER_004`: If the request carries an explicit valid `customerId` (e.g. staff picked an existing customer), that link is used directly without phone lookup. CREDIT sales still require an explicit `customerId` of a credit-enabled customer (auto-created walk-in profiles have `credit_enabled = false`, so a brand-new walk-in cannot buy on credit until credit is enabled on their profile). `INTENDED` (this PR)
-
-Evidence:
-
-- `AdminPosController.java`
-- `PosOrderService.java`
-- `AdminRolePermissions.java`
-- `V71__add_pos_staff_and_customer_name_to_orders.sql`
-- `Phase1MPosApiTest.java`
+> **POS (Point of Sale / "bán tại quầy" / walk-in) was REMOVED platform-wide (owner decision 2026-06-23).** BigBike is now **online-only**: every order is placed through the storefront / quick-buy and is a `DELIVERY` order. Walk-in customers are no longer recorded in the system. The endpoints `POST /admin/pos/orders` and `GET /admin/pos/products/search`, the `AdminPosController` / `PosOrderService`, the `pos.read` / `pos.write` / `pos.price_override` / `pos.sell_below_cost` permissions, and the old `POS_CUSTOMER_*` rules were all deleted. Legacy POS orders (`channel`/`fulfillmentType = IN_STORE`, `source = 'pos'`) were purged from the database. The `channel` / `fulfillment_type` / `source` columns still exist (online orders use `fulfillmentType = DELIVERY`), but `IN_STORE` / `'pos'` values are no longer written.
 
 ## Media Rules
 
@@ -137,43 +78,42 @@ Evidence:
 - `AdminMediaService.java`
 - `AdminMediaP0Test.java`
 
-## Inventory And Serial Rules
+## Inventory Rules
 
-- Active manual inventory movement types are `IN`, `OUT`, `ADJUSTMENT`, and `RETURN`. `CONFIRMED_FROM_CODE`
-- For manual stock-in, serial numbers are required and must match quantity exactly. `CONFIRMED_FROM_CODE`
-- For other movement types, serials are optional but cannot exceed movement quantity. `CONFIRMED_FROM_CODE`
-- Duplicate serials in request or existing DB state are rejected. `CONFIRMED_FROM_CODE`
-- Current serial handling is movement-log based, not a fully modeled product-serial lifecycle table. `CONFIRMED_FROM_CODE`
-- Receipt-based receiving tables were **dropped in V120** — schema-only, never implemented in Java. Stock-in is movement-log based only. `REMOVED`
+> **Serial-number tracking was REMOVED platform-wide (2026-06-23, V259).** There are no more per-unit serials, no serial lifecycle, and no serial-only selling mode. (The old `RULE-SER-*` IDs and the dedicated serial docs were deleted.)
+>
+> **Inventory switched to a BOOLEAN availability model (2026-06-23, V262).** There is no longer a tracked stock **quantity**. Availability is a simple **"Còn hàng / Hết hàng"** flag that the admin toggles by hand. The quantity columns are kept in the database but are **dormant** (no longer drive availability), and the `LOW_STOCK` tier no longer exists.
+
+- Availability is a **boolean**, not a count: a variant is either available or not; a no-variant product is either in stock or out of stock. There is no on-hand number anymore. `CONFIRMED_FROM_CODE`
+- The admin sets availability by hand via a toggle in the Inventory screen. **Selling does NOT change availability** — there is no auto-decrement, no auto-restore, and no per-unit ledger for sales. `CONFIRMED_FROM_CODE`
+- **Overselling is NOT auto-prevented.** When an item sells out, the admin must manually flip it to **"Hết hàng"**; until then the storefront keeps accepting orders. `CONFIRMED_FROM_CODE`
+- Manual inventory movement types `IN` / `OUT` / `ADJUSTMENT` / `RETURN` are no longer written for sales or restores. (The `stock_movements` ledger is dormant for the availability model.) `CONFIRMED_FROM_CODE`
+- The dormant columns `product_variants.quantity_on_hand`, `products.stock_quantity` and `products.manage_stock` are kept for compatibility but are **not** read for availability. The `low_stock_threshold` site setting is now **irrelevant**. `CONFIRMED_FROM_CODE`
+- Receipt-based receiving tables were **dropped in V120** — schema-only, never implemented in Java. `REMOVED`
 
 ### Stock State Derivation Rules `CONFIRMED_FROM_CODE`
 
-- `stockState` (`IN_STOCK`, `LOW_STOCK`, `OUT_OF_STOCK`) is always **derived**: from `variant.quantityOnHand` per variant, from `product.stockQuantity` for no-variant products, and — for products **with** variants — the product-level `stockState` is an **aggregate of its variants** (see `STOCK_RULE_008`). Admin cannot set it manually via the catalog create/update API.
-- `STOCK_RULE_001`: New product or variant is always created with `stockState = OUT_OF_STOCK` (initial `quantityOnHand = 0`).
-- `STOCK_RULE_002`: Every time `quantityOnHand` changes (stock-in, sale, cancel, return), `stockState` is recomputed via `InventoryPolicyService.recomputeStockState()`.
-- `STOCK_RULE_003`: Thresholds — `quantityOnHand <= 0` → `OUT_OF_STOCK`; `0 < quantityOnHand <= low_stock_threshold` → `LOW_STOCK`; `quantityOnHand > low_stock_threshold` → `IN_STOCK`. Default threshold is 5 (configurable via `low_stock_threshold` site setting).
-- `STOCK_RULE_004`: `forceOutOfStock` (product-level boolean) is a separate emergency override. It disables purchase on web even when `stockState = IN_STOCK`. It is still manually controlled by admin.
-- `STOCK_RULE_005`: For products with variants, checkout enforces stock via `variant.quantityOnHand` directly (not `variant.stockState`). `variant.stockState` is used for display only (web UI disables "Mua ngay" when `OUT_OF_STOCK`). The web variant selector (`VariantSelector.tsx`) also **dims out-of-stock options by `stockState`** (still clickable for image preview) so customers see at a glance which colour/size combinations are buyable without clicking through each one; truly inactive variants (`isAvailable = false`) remain locked.
-- `STOCK_RULE_006`: For no-variant products, checkout enforces via `product.stockState == OUT_OF_STOCK` AND `product.stockQuantity`. Both are derived from stock movements.
-- `STOCK_RULE_007`: Sản phẩm có tồn kho = 0 → khách chỉ xem được, không thể đặt hàng. Không có chế độ "đặt trước" hay "HÀNG ODER" qua web. Muốn nhận đơn ODER, admin phải nhập hàng về trước (tồn kho > 0) thì khách mới đặt được.
-- `STOCK_RULE_008`: For products **with variants**, the product-level `stockState` is an **aggregate** of its variants, not a manually maintained field: `IN_STOCK` if **any** variant is `IN_STOCK`; else `LOW_STOCK` if any variant is `LOW_STOCK`; else `OUT_OF_STOCK` (only when **all** variants are out). This is what the storefront product-level badge reads (`products.stock_state`) and what the admin inventory grouped view shows. It is maintained by the DB trigger `fn_sync_product_state_from_variants` on `product_variants` (`V165`), which fires whenever any variant's `stock_state` changes — including serial-driven changes that flow through `fn_sync_qty_from_serial_lifecycle` (`V89`) → variant row → this trigger. **Rationale / prior bug:** before `V165` nothing recomputed the product-level state for variant products. `V108` set `products.stock_state` from `stock_quantity`, which is null/0 for variant products, so they were stuck at `OUT_OF_STOCK` permanently — the storefront showed "Hết hàng" even while a variant still had stock. `CONFIRMED_FROM_CODE`
-- `STOCK_RULE_009`: **Hiển thị badge tồn kho ở buy-box trang chi tiết sản phẩm (web — chỉ phần nhìn, KHÔNG đổi điều kiện mua ở `STOCK_RULE_005`/`006`).** Cài đặt trong `WpPurchaseSection.tsx`.
-  - **Sản phẩm có biến thể, khách CHƯA chọn biến thể:** badge chỉ hiện **"Còn hàng" / "Hết hàng"** theo product-level aggregate `stockState` (`STOCK_RULE_008`) — **không** hiện "Sắp hết". "Hết hàng" ⟺ `product.stockState == OUT_OF_STOCK` (mọi biến thể đều 0 serial) hoặc `forceOutOfStock`. (`product.stockQuantity` là null/0 cho sản phẩm có biến thể nên không dùng để phân tầng — xem prior bug ở `STOCK_RULE_008`.)
-  - **Khi đã xác định một đơn vị tồn cụ thể** — biến thể đã chọn đủ (`variant.stockQuantity`) hoặc sản phẩm không biến thể (`product.stockQuantity`): phân tầng theo **số serial còn lại** — `>= 10` → "Còn hàng"; `1..9` → "Sắp hết"; `<= 0` → "Hết hàng". Ngưỡng **10** (`PDP_LOW_STOCK_CUTOFF`) là hằng số hiển thị riêng của PDP, **độc lập** với `low_stock_threshold` (mặc định 5 ở `STOCK_RULE_003`) vốn chỉ chi phối checkout enforcement và cảnh báo tồn kho ở admin.
-  - Biến thể 0 serial vẫn theo `STOCK_RULE_005`: làm mờ option (vẫn click được để xem ảnh màu), chỉ khoá khi `isAvailable = false`; nếu khách chọn trúng biến thể 0 serial → buy-box "Hết hàng" và nút mua bị vô hiệu. `CONFIRMED_FROM_CODE`
+- `stockState` is a two-state badge (`IN_STOCK` / `OUT_OF_STOCK`) that **mirrors the boolean availability**. `LOW_STOCK` is **no longer produced** — the enum value is kept only for compatibility. Admin cannot set `stockState` directly via the catalog create/update API; it is driven by the availability toggle on the Inventory module.
+- `STOCK_RULE_001`: New product or variant is always created **out of stock** (`stockState = OUT_OF_STOCK`, `is_available = false`); admin must toggle it to "Còn hàng" before it can sell.
+- `STOCK_RULE_002`: Toggling availability is the only thing that changes a variant's / product's stock state. There is no quantity to recompute on sale, cancel, or return.
+- `STOCK_RULE_003`: ~~Quantity thresholds (`LOW_STOCK` tier, `low_stock_threshold`).~~ **REMOVED (V262).** No "sắp hết" tier exists; availability is binary. The `low_stock_threshold` setting is now unused.
+- `STOCK_RULE_004`: `forceOutOfStock` (product-level boolean) remains a separate hard override. It disables purchase on web even when the item is marked available. Still manually controlled by admin.
+- `STOCK_RULE_005`: For products **with variants**, availability is gated **per variant** by `product_variants.is_available`. The variant's `stockState` mirrors it (`IN_STOCK` if available, else `OUT_OF_STOCK`). The web variant selector (`VariantSelector.tsx`) dims unavailable options (still clickable for image preview); buying a variant requires `is_available = true`.
+- `STOCK_RULE_006`: For products **without variants**, `products.stock_state` (`IN_STOCK` / `OUT_OF_STOCK`) is set **directly by the admin toggle**. `forceOutOfStock` still hard-disables purchase regardless.
+- `STOCK_RULE_007`: Sản phẩm đang **"Hết hàng"** → khách chỉ xem được, không thể đặt hàng. Không có chế độ "đặt trước" hay "HÀNG ODER" qua web. Muốn nhận đơn ODER, admin phải bật **"Còn hàng"** thì khách mới đặt được. **Lưu ý:** bán không tự chuyển sang "Hết hàng" — khi bán hết, admin phải tự tắt, nếu không web vẫn cho đặt (không tự chặn bán quá).
+- `STOCK_RULE_008`: For products **with variants**, the product-level `stockState` is an **aggregate** of its variants: `IN_STOCK` if **any** variant is `is_available`, else `OUT_OF_STOCK` (only when **all** variants are unavailable). This is what the storefront product-level badge reads (`products.stock_state`) and what the admin inventory grouped view shows. `CONFIRMED_FROM_CODE`
+- `STOCK_RULE_009`: **Hiển thị badge tồn kho ở buy-box trang chi tiết sản phẩm (web — chỉ phần nhìn).** Cài đặt trong `WpPurchaseSection.tsx`. Badge chỉ còn **hai trạng thái**: **"Còn hàng" / "Hết hàng"** theo `stockState` (per-variant `is_available` khi đã chọn biến thể; product-level aggregate `STOCK_RULE_008` khi chưa chọn) hoặc `forceOutOfStock`. Thông báo cũ **"Chỉ còn N sản phẩm" / "Sắp hết" đã bị gỡ** cùng với mô hình số lượng (V262). `CONFIRMED_FROM_CODE`
 
 Evidence:
 
 - `AdminInventoryService.java`
-- `InventoryPolicyService.java`
-- `CheckoutService.java` (lines 323–357, 862–901)
+- `AdminInventoryController.java` (availability PATCH endpoints)
+- `CheckoutService.java` (per-variant `isAvailable` gate)
 - `AdminCatalogMutationService.java`
-- `StockMovementSerialEntity.java`
-- `V57__add_stock_movement_serials.sql`
-- `V108__backfill_stock_state_from_quantity.sql`
 - `V120__drop_stock_receipt_tables.sql`
-- `V165__aggregate_variant_product_stock_state.sql` (product-level aggregate trigger + backfill — `STOCK_RULE_008`)
-- `V89__add_product_serial_lifecycle.sql` (`fn_sync_qty_from_serial_lifecycle` — variant qty/state from serial count)
+- `V165__aggregate_variant_product_stock_state.sql` (product-level aggregate trigger — `STOCK_RULE_008`)
+- `V259__remove_serial_management.sql` (serial tracking removed — 2026-06-23)
+- `V262__inventory_availability_toggle.sql` (boolean availability; backfilled `is_available` + `stock_state` from prior quantities; quantity columns kept dormant — 2026-06-23. Note: `V261` was taken by the return/refund removal, so the inventory migration is `V262`.)
 - `bigbike-web/components/wp/WpPurchaseSection.tsx` (`STOCK_RULE_009` — PDP buy-box badge display)
 
 ## Product Catalog Rules
@@ -293,8 +233,9 @@ Evidence:
 
 Trang `/lien-he` không phải nội dung tĩnh: phần thân do admin dựng qua **trình dựng trang Liên hệ** (một danh sách khối có thứ tự). Tiêu đề/mô tả đầu trang vẫn lấy từ trang CMS slug `lien-he` (theo Static Page Rules).
 
+- `CONTACT_PAGE_RULE_000`: Trình dựng được **nhúng làm một tab bên trong trang editor của module Nội dung** (mở trang CMS slug `lien-he` → tab "Bố cục liên hệ"); **không còn màn "Trang Liên hệ" riêng** ở menu, và **không còn tab "Liên hệ" ở Cài đặt**. Tiêu đề/SEO (phần trang CMS) và bố cục/giá trị (phần trình dựng) lưu **chung trong một lần bấm Lưu** của trang. `CONFIRMED_FROM_CODE`
 - `CONTACT_PAGE_RULE_001`: Bố cục là một mảng khối (tối đa 40) lưu trong bảng singleton `contact_page_layout`. Mỗi khối có `type` ∈ {`channel`,`address`,`hours`,`map`,`richtext`}, cờ `enabled`, `sortOrder`, `column` ∈ {`main`,`online`}, `icon`, nhãn song ngữ (`labelVi`/`labelEn`). `CONFIRMED_FROM_CODE`
-- `CONTACT_PAGE_RULE_002`: Giá trị của khối **bound** (kênh dùng chung như hotline/địa chỉ/giờ/URL mạng xã hội) **không** lưu trong khối — nó nằm ở `site_settings` (single source dùng chung header/footer) và được **ghi xuyên** qua endpoint contact-page, giới hạn bởi whitelist nhóm `contact`. Chỉ khối custom (không `bindKey`) mới giữ `value`/`href` riêng; `richtext` giữ `htmlVi`/`htmlEn`. `CONFIRMED_FROM_CODE`
+- `CONTACT_PAGE_RULE_002`: Giá trị của khối **bound** (kênh dùng chung như hotline/địa chỉ/giờ/URL mạng xã hội, gồm cả `zalo_display`/`messenger_display`) **không** lưu trong khối — nó nằm ở `site_settings` (single source dùng chung header/footer) và được **ghi xuyên** qua endpoint contact-page, giới hạn bởi whitelist nhóm `contact` (`WRITE_THROUGH_KEYS`). Trình dựng có thêm mục "Thông tin liên hệ dùng chung" để nhập mọi key whitelisted một nơi (kể cả key chưa gắn khối nào). Chỉ khối custom (không `bindKey`) mới giữ `value`/`href` riêng; `richtext` giữ `htmlVi`/`htmlEn`. `CONFIRMED_FROM_CODE`
 - `CONTACT_PAGE_RULE_003`: Nhãn/HTML lùi về bản tiếng Việt khi thiếu bản tiếng Anh (giống `PAGE_RULE_002`). Quản lý bằng quyền `content.update`; storefront chỉ nhận khối `enabled`. `CONFIRMED_FROM_CODE`
 
 Evidence:
@@ -303,12 +244,13 @@ Evidence:
 - `ContactPageService.java` (whitelist `WRITE_THROUGH_KEYS`, write-through qua `AdminSettingsService`)
 - `AdminContactPageController.java` (`content.update`), `PublicContactPageController.java`
 - `V224__add_contact_page_layout.sql`
-- `bigbike-web/app/lien-he/page.tsx` (render động), `bigbike-admin/src/screens/ContactPageBuilderScreen.jsx`
+- `bigbike-web/app/lien-he/page.tsx` (render động), `bigbike-admin/src/screens/ContactPageBuilderScreen.jsx` (export `ContactPageBuilderPanel`, nhúng trong `ContentDetailScreen.jsx`)
 
 ## Guide Page Builder Rules
 
 Trang tổng `/huong-dan` không phải nội dung tĩnh: lưới ô hướng dẫn + hero do admin dựng qua **trình dựng trang Hướng dẫn**. Thân bài chi tiết của từng ô vẫn là một trang CMS (module Trang) trỏ tới qua `pageSlug` — giữ nguyên SEO/bản EN/rich text.
 
+- `GUIDE_PAGE_RULE_000`: Trình dựng được **nhúng làm một tab bên trong trang editor của module Nội dung** (mở trang CMS slug `huong-dan` → tab "Lưới hướng dẫn"); **không còn màn "Trang Hướng dẫn" riêng** ở menu. Hero/lưới (phần trình dựng) và tiêu đề/SEO (phần trang CMS) lưu **chung trong một lần bấm Lưu** của trang. `CONFIRMED_FROM_CODE`
 - `GUIDE_PAGE_RULE_001`: Lưới là một mảng ô (tối đa 40) lưu trong bảng singleton `guide_page_layout`. Mỗi ô có `enabled`, `sortOrder`, `pathSegment` (đoạn URL dưới `/huong-dan/`), `pageSlug` (trang CMS chứa nội dung), `icon` (lucide hoặc URL ảnh MinIO), tiêu đề/mô tả song ngữ. `CONFIRMED_FROM_CODE`
 - `GUIDE_PAGE_RULE_002`: Web dựng lưới, sidebar và map `pathSegment→pageSlug` **chỉ** từ entries của builder — không còn đọc menu location `guide` cho sidebar (menu đó giữ lại nhưng không dùng cho trang này). Ô `pathSegment` không khớp entry nào → 404. `CONFIRMED_FROM_CODE`
 - `GUIDE_PAGE_RULE_003`: Tiêu đề/mô tả/hero lùi về bản tiếng Việt khi thiếu bản tiếng Anh (giống `CONTACT_PAGE_RULE_003`). Quản lý bằng quyền `content.update`; storefront chỉ nhận ô `enabled`. Ảnh icon/hero upload qua media library → MinIO, chỉ lưu URL. `CONFIRMED_FROM_CODE`
@@ -318,7 +260,7 @@ Evidence:
 - `GuideEntry.java`, `GuidePageLayoutEntity.java`, `GuideEntriesConverter.java`
 - `GuidePageService.java`, `AdminGuidePageController.java` (`content.update`), `PublicGuidePageController.java`
 - `V227__add_guide_page_layout.sql`
-- `bigbike-web/app/huong-dan/GuidePage.tsx` (render động), `bigbike-admin/src/screens/GuidePageBuilderScreen.jsx`
+- `bigbike-web/app/huong-dan/GuidePage.tsx` (render động), `bigbike-admin/src/screens/GuidePageBuilderScreen.jsx` (export `GuidePageBuilderPanel`, nhúng trong `ContentDetailScreen.jsx`)
 
 ## Policy Page Rules
 
@@ -339,7 +281,7 @@ Evidence:
 - WebSocket STOMP connect must include native header `Authorization: Bearer <token>`. `CONFIRMED_FROM_CODE`
 - Only `ADMIN` and `SUPER_ADMIN` roles are allowed to connect. `CONFIRMED_FROM_CODE`
 - Current confirmed topic is `/topic/admin/orders`. `CONFIRMED_FROM_CODE`
-- Confirmed event type in checkout/POS flow is `NEW_ORDER`; `ORDER_STATUS_CHANGED` is declared in the event record comment but needs a live sender check before relying on it. `NEEDS_VERIFICATION`
+- Confirmed event type in the checkout flow is `NEW_ORDER`; `ORDER_STATUS_CHANGED` is declared in the event record comment but needs a live sender check before relying on it. `NEEDS_VERIFICATION`
 
 Evidence:
 
@@ -351,79 +293,35 @@ Evidence:
 ## Redirect And Integration Rules
 
 - Internal redirect endpoints are `permitAll` in Spring Security and are expected to be locked down at infra layer in production. `CONFIRMED_FROM_CONFIG`
-- `PAY_RULE_001`: Online checkout accepts only payment-method codes `COD` and `BACS`. Both are confirmed manually by admin — there is no automatic payment gateway. `CONFIRMED_FROM_CODE`
-- `PAY_RULE_002`: Manual-confirm reconciliation. `COD` — admin marks the order paid after cash is collected on delivery. `BACS` — admin verifies the bank transfer, then patches `paymentStatus`/`paidAmount`. No payment redirect, no provider webhook. The Alepay/ZaloPay online-gateway plan was dropped; those method codes are no longer accepted. `CONFIRMED_FROM_CODE`
+- `PAY_RULE_001`: Online checkout no longer asks the customer to choose a payment method (owner decision 2026-06-23). The web checkout and quick-buy ("Mua nhanh") forms send no `paymentMethod`, and the order is stored with `paymentMethod = null`. The field is optional on the API; the only accepted explicit codes remain `COD` and `BACS` (for legacy/backward-compatible callers). There is no automatic payment gateway — all payment is reconciled manually by the admin. `CONFIRMED_FROM_CODE`
+- `PAY_RULE_002`: Manual-confirm reconciliation. New online orders are created in `PROCESSING` with `paymentStatus = UNPAID`; the admin reconciles the money offline (cash on delivery or bank transfer, however the customer pays) and marks the order paid via `PATCH /admin/orders/{id}/payment-status` whenever convenient — payment does not gate completion (`ORDER_RULE_001`). No payment redirect, no provider webhook. Legacy `BACS` orders still start in `ON_HOLD`. The Alepay/ZaloPay online-gateway plan was dropped. `CONFIRMED_FROM_CODE`
+- `SHIP_RULE_001`: Shipping-method choice and shipping fee removed (owner decision 2026-06-23). Online checkout and quick-buy no longer ask the customer to pick a shipping method, and online orders carry **no shipping fee** (`shippingAmount = 0`, `totalAmount = subtotal − discount`). The whole admin shipping-management module (shipping zones + shipping methods, `/api/v1/admin/shipping/*`, the admin "Vận chuyển" screen, the `shipping_zones`/`shipping_methods` tables, and the `shipping.read`/`shipping.write` permissions) was dropped (migration `V264`). The shop arranges and charges delivery offline (COD). The order's shipping **address** and delivery/fulfillment **status** (tracking, carrier) are unchanged; `order_shipping_items` is kept only as a historical snapshot for legacy/imported orders and gets no new rows. `CONFIRMED_FROM_CODE`
 - No external shipping carrier integration was confirmed in active repo code. `NOT_FOUND_IN_REPO`
 
 Evidence:
 
 - `SecurityConfig.java`
+- `CheckoutService.java`, `CheckoutOptionsResponse.java`, `V264__remove_shipping_methods.sql`
 - repo search for payment/shipping providers
 
-## Accounts Receivable Rules
-
-AR module implemented in V75 (Flyway). Rules below are `CONFIRMED_FROM_CODE`.
-
-- `AR_RULE_001`: Credit sale (bán chịu) is supported via POS CREDIT payment method. Only customers with `creditEnabled=true` and `creditStatus=ACTIVE` may purchase on credit. ADMIN role can create and manage all receivables; SHOP_MANAGER can read and record payments. `CONFIRMED_FROM_CODE`
-- `AR_RULE_002`: Credit limit is configurable per customer (`credit_limit` column on `customers` table). A null limit means no cap. ADMIN with `receivables.override_limit` permission may override the limit at point of sale. `CONFIRMED_FROM_CODE`
-- `AR_RULE_003`: Payment terms are configurable per customer (`payment_terms_days`). Due date = `placedAt + paymentTermsDays` days, persisted on `accounts_receivable.due_date`. `CONFIRMED_FROM_CODE`
-- `AR_RULE_004`: Credit sales are POS-only (walk-in). Web/mobile checkout does not support CREDIT payment. `CONFIRMED_FROM_CODE`
-- `AR_RULE_005`: Exceeding credit limit blocks the POS sale with HTTP 422. ADMIN with `receivables.override_limit` permission can bypass. `CONFIRMED_FROM_CODE`
-- `AR_RULE_006`: Partial payments are supported. Each `POST /admin/receivables/{id}/payments` call records a PaymentEntity and updates `paidAmount`. `paymentStatus` transitions: UNPAID → PARTIALLY_PAID → PAID. `CONFIRMED_FROM_CODE`
-- `AR_RULE_007`: Write-off is supported via `POST /admin/receivables/{id}/write-off` with mandatory reason. Requires `receivables.write_off` permission (ADMIN only). Sets AR status=WRITTEN_OFF and records audit log. The linked `orders.payment_status` is NOT updated — it stays UNPAID (the debt is cancelled at the AR level, not collected; V116 CHECK constraint does not permit WRITTEN_OFF as an order payment status). `CONFIRMED_FROM_CODE`
-- `AR_RULE_008`: Overdue receivables are flagged by scheduler. `ReceivableOverdueScheduler` runs daily at 00:05 (`@Scheduled(cron = "0 5 0 * * ?")`) and calls `ReceivableService.refreshOverdueStatus()`, which transitions OPEN/PARTIALLY_PAID receivables past `dueDate` to OVERDUE. No auto-cancellation — status becomes OVERDUE for staff attention. `CONFIRMED_FROM_CODE`
-- `AR_RULE_009`: Target is registered customers (UUID FK on `accounts_receivable.customer_id`). `customer_id` is nullable at the schema level; `customer_name` and `customer_phone` are snapshotted at creation. Note: since `POS_CUSTOMER_001/002`, every POS sale now resolves or auto-creates a customer profile by phone, so POS-originated receivables normally carry a non-null `customer_id`. `CONFIRMED_FROM_CODE` (schema) + `INTENDED` (POS auto-link, this PR)
-- `AR_RULE_010`: No customer-facing SOA in web/mobile portal. Receivables are admin-only. `CONFIRMED_FROM_CODE`
-- `AR_RULE_011`: Aging report implemented: buckets are notDue, 0–30 days, 31–60 days, 61–90 days, 90+ days. Also: total outstanding, overdue outstanding, written-off total, open/overdue count. `CONFIRMED_FROM_CODE`
-
-### Customer credit status state machine
-
-`ACTIVE` → `SUSPENDED` (admin manual) → `ACTIVE` (reinstate)
-`ACTIVE` → `BLOCKED` (admin manual, permanent — requires credit clear)
-
-### Receivable payment status state machine
-
-`UNPAID` → `PARTIALLY_PAID` (paidAmount > 0 and < outstanding) → `PAID` (paidAmount ≥ outstanding)
-
-### Receivable status state machine
-
-`OPEN` → `PARTIALLY_PAID` → `CLOSED` (fully paid)
-`OPEN` / `PARTIALLY_PAID` → `OVERDUE` (past due date, not closed)
-`OPEN` / `PARTIALLY_PAID` / `OVERDUE` → `WRITTEN_OFF` (admin write-off with reason)
-
-Evidence:
-
-- `V75__add_credit_and_receivables.sql`
-- `CustomerEntity.java` (credit fields added)
-- `ReceivableEntity.java`
-- `ReceivableJpaRepository.java`
-- `CreditPolicyService.java`
-- `ReceivableService.java`
-- `ReceivableQueryService.java`
-- `ReceivableOverdueScheduler.java` (cron `0 5 0 * * ?` daily 00:05; verifies `@EnableScheduling` in `BigbikeBackendApplication.java`)
-- `AdminReceivableController.java`
-- `PosOrderService.java` (CREDIT branch)
-- `AdminRolePermissions.java` (`receivables.*` permissions added)
-- `AdminReceivableApiTest.java`
+> **Accounts Receivable (công nợ / bán chịu) was REMOVED platform-wide (2026-06-23).** The credit-sale flow (POS `CREDIT` payment method), per-customer credit limit / payment terms, the `accounts_receivable` ledger, receivable payments, write-off, and the overdue scheduler no longer exist. (POS itself was subsequently removed entirely, 2026-06-23, online-only — see "POS Rules".) There is no downstream debt-collection process. The old `AR_RULE_*` IDs and the three receivable state machines were deleted.
 
 ## Reports Rules
 
-Status: `CONFIRMED_FROM_CODE` — derived from audit of `AdminReportService.java`, `OrderJpaRepository.java`, `OrderLineItemJpaRepository.java`, `RefundService.java`, `AdminCustomerService.java`.
+Status: `CONFIRMED_FROM_CODE` — derived from audit of `AdminReportService.java`, `OrderJpaRepository.java`, `OrderLineItemJpaRepository.java`, `AdminCustomerService.java`.
+
+> **Refund metrics were removed (2026-06-23)** together with the refund feature: `refundAmount`, `netRevenue` (= paid − refund), and the `REFUNDED`-related status handling no longer exist. Net revenue now equals paid revenue.
 
 ### Metric Definitions
 
-- `REPORT_RULE_001`: **GMV (`grossOrderValue`)** = `SUM(totalAmount)` for orders where `placedAt` is within the requested range AND `status NOT IN ('CANCELLED', 'FAILED')`. REFUNDED orders are **included** in GMV — they represent real demand placed in the period. `CONFIRMED_FROM_CODE`
-- `REPORT_RULE_002`: **Paid Revenue (`paidRevenue`)** = `SUM(paidAmount)` for orders where `placedAt` is within the requested range AND `paymentStatus IN ('PAID', 'REFUNDED')` AND `status NOT IN ('CANCELLED', 'FAILED')`. `paidAmount` is never modified by `RefundService.applyRefund()` — it is the total cash collected. `PARTIALLY_PAID` and `PARTIALLY_REFUNDED` were removed in V114 migration. `REFUNDED` orders are included because `paidAmount` reflects the total cash collected and is not decremented when a refund is applied. `CONFIRMED_FROM_CODE`
-- `REPORT_RULE_003`: **Refund Amount (`refundAmount`)** = `SUM(refundAmount)` for orders where `placedAt` is within the requested range AND `refundAmount IS NOT NULL AND refundAmount > 0`. Anchored to `placedAt`, not `refundedAt`. `CONFIRMED_FROM_CODE`
-- `REPORT_RULE_004`: **Net Revenue (`netRevenue`)** = `paidRevenue − refundAmount`. No clamp. Negative net revenue is a valid business scenario (e.g. refunds exceed cash collected in a cohort). Display as-is. `CONFIRMED_FROM_CODE`
-- `REPORT_RULE_005`: **Order Count (`orderCount`)** = `COUNT(id)` excluding `status IN ('CANCELLED', 'FAILED')`. REFUNDED orders count. `CONFIRMED_FROM_CODE`
+- `REPORT_RULE_001`: **GMV (`grossOrderValue`)** = `SUM(totalAmount)` for orders where `placedAt` is within the requested range AND `status NOT IN ('CANCELLED', 'FAILED')`. `CONFIRMED_FROM_CODE`
+- `REPORT_RULE_002`: **Paid Revenue (`paidRevenue`)** = `SUM(paidAmount)` for orders where `placedAt` is within the requested range AND `paymentStatus = 'PAID'` AND `status NOT IN ('CANCELLED', 'FAILED')`. `paidAmount` is the total cash collected. `PARTIALLY_PAID` was removed in V114; the `REFUNDED` payment status was removed 2026-06-23. `CONFIRMED_FROM_CODE`
+- `REPORT_RULE_005`: **Order Count (`orderCount`)** = `COUNT(id)` excluding `status IN ('CANCELLED', 'FAILED')`. `CONFIRMED_FROM_CODE`
 - `REPORT_RULE_006`: **Average Order Value (`avgOrderValue`)** = `grossOrderValue / orderCount`. Returns zero if `orderCount = 0`. `CONFIRMED_FROM_CODE`
 
 ### Excluded Status Sets
 
-- `REPORT_RULE_007`: Two separate excluded-status sets are used:
-  - **REVENUE_EXCLUDED** = `['CANCELLED', 'FAILED']` — applied to GMV, paidRevenue, orderCount, avgOrderValue, daily revenue.
-  - **RANKING_EXCLUDED** = `['CANCELLED', 'FAILED', 'REFUNDED']` — applied to topProducts and topCustomers rankings. REFUNDED orders are excluded from rankings because refunded revenue is not retained. `CONFIRMED_FROM_CODE`
+- `REPORT_RULE_007`: Both revenue and ranking metrics exclude `status IN ('CANCELLED', 'FAILED')` — applied to GMV, paidRevenue, orderCount, avgOrderValue, daily revenue, topProducts and topCustomers rankings. (The separate `REFUNDED` ranking exclusion was removed 2026-06-23.) `CONFIRMED_FROM_CODE`
 
 ### Timezone
 
@@ -434,36 +332,20 @@ Status: `CONFIRMED_FROM_CODE` — derived from audit of `AdminReportService.java
 - `REPORT_RULE_009`: **topProducts** uses `COALESCE(product_pk, product_id::text)` as group key. Admin-created products have `product_id = NULL` and `product_pk` set; regular products have both. Filtering `product_id IS NOT NULL` (legacy behavior) silently excludes admin-created products. `CONFIRMED_FROM_CODE`
 - `REPORT_RULE_010`: **topCustomers** uses `COALESCE(customer_id::text, customer_email)` as group key to prevent the same customer appearing as multiple rows if their email changed over time. Display email is `MAX(customer_email)`. `CONFIRMED_FROM_CODE`
 
-### Known Limitation
-
-- `REPORT_RULE_011`: **Refund attribution is period-inaccurate.** `refundedAt` on `OrderEntity` is overwritten on every `RefundService.applyRefund()` call — for an order with multiple partial refunds, it holds only the timestamp of the last one. Switching to `refundedAt`-based aggregation would silently drop early partial refunds and double-count in cross-period scenarios. Therefore `refundAmount` is currently attributed to the order's `placedAt` period, not the period the refund occurred. This means the Reports module cannot accurately answer "how much was refunded this week?" if the order was placed in a prior week. A `refund_transactions` table (planned P1/P2) is required for per-period refund accuracy. `CONFIRMED_FROM_CODE`
-
 Evidence:
 
 - `AdminReportService.java`
 - `OrderJpaRepository.java`
 - `OrderLineItemJpaRepository.java`
-- `RefundService.java`
 - `AdminCustomerService.java`
 
-## Returns And Inspection Rules
+## Returns And Refunds
 
-- `RETURN_RULE_001`: Customer returns are only valid for orders in `COMPLETED` status within `RETURN_WINDOW_DAYS = 30` days from `orders.completed_at`. `CONFIRMED_FROM_CODE`
-- `RETURN_RULE_002`: An order can have **at most one active return** at a time. Active = status in `{PENDING, APPROVED, RECEIVED, INSPECTING}`. Enforced both in `CustomerReturnService`/`AdminReturnService` and by the `idx_returns_order_active` partial unique index (V65, extended to include `INSPECTING` in V191). `CONFIRMED_FROM_CODE`
-- `RETURN_RULE_003`: For each `order_line_item_id`, the running sum of `return_items.quantity` across non-`REJECTED` returns must not exceed the original `order_line_items.quantity`. Validated server-side at submission time. `CONFIRMED_FROM_CODE`
-- `RETURN_RULE_004`: **Inspection step (V104).** Returns may transition `RECEIVED → INSPECTING` to enter a per-item QC phase. Every `ReturnItem` must be marked `PASS` or `FAIL` via `PATCH /admin/returns/{id}/items/{itemId}/inspect` before the return can move on to `COMPLETED` or `REFUNDED`. Skipping inspection is allowed (legacy path `RECEIVED → COMPLETED/REFUNDED`), but is **not recommended for safety equipment** (mũ bảo hiểm, áo giáp). `CONFIRMED_FROM_CODE`
-- `RETURN_RULE_005`: **FAIL items never re-enter stock.** When a return closes from `INSPECTING`, `restoreStockForReturn` skips any `ReturnItem` with `inspection_result = 'FAIL'`. This prevents customer-damaged goods from being put back on the sellable shelf. `CONFIRMED_FROM_CODE`
-- `RETURN_RULE_006`: `GET /api/v1/customer/orders/{orderId}/return-eligibility` is read-only and never mutates state. It returns one of the stable reason codes `OK`, `ORDER_NOT_FOUND`, `NOT_OWNER`, `ORDER_NOT_COMPLETED`, `WINDOW_EXPIRED`, `RETURN_IN_PROGRESS`, `NOTHING_TO_RETURN`. Frontend MUST call this before rendering the return form (see `RETURN_RULE_008`). `CONFIRMED_FROM_CODE`
-- `RETURN_RULE_007`: **REFUNDED via RMA supports both full and partial coverage.** Transitioning a return to `REFUNDED` (from `RECEIVED` or `INSPECTING`) is allowed for any coverage. Two paths: (a) **full coverage** (every line item's non-rejected return quantity equals the ordered quantity) → `RefundService.applyRefund` refunds the whole order (`refundAmount` must equal `orderRefundableAmount`), restores all stock/serials and flips the order to `REFUNDED`; (b) **partial coverage** → `RefundService.applyReturnPartialRefund` refunds only the returned items' value (`refundAmount` in `(0, orderRefundableAmount]`), stock for the returned PASS items is restored at RMA level (`restoreStockForReturn`), and the order **stays `PAID`/`COMPLETED`** with `refundAmount` accumulating — it flips to `REFUNDED` only once the cumulative refund reaches the full paid amount. There is no `PARTIALLY_REFUNDED` status (V114); revenue reports subtract `SUM(orders.refund_amount)` so partial refunds reduce net revenue correctly. An order-level refund unrelated to an RMA still goes through `POST /admin/orders/{id}/refund` (full-only). `CONFIRMED_FROM_CODE`
-- `RETURN_RULE_008`: **Frontend must consult eligibility before render.** Customer FE for both the order-detail "Yêu cầu trả" button and the standalone returns page (`/tai-khoan/doi-tra`) MUST call `GET /api/v1/customer/orders/{orderId}/return-eligibility` and respect both `eligible` and per-item `returnableQuantity`. Submitting without checking leads to backend `ValidationException` and bad UX. Items with `returnableQuantity = 0` must be hidden; the input cap MUST be `returnableQuantity`, not the original ordered quantity. `CONFIRMED_FROM_CODE`
-
-Evidence:
-
-- `AdminReturnService.java`
-- `CustomerReturnService.java`
-- `ReturnItemEntity.java`
-- `V104__add_return_item_inspection.sql`
-- `RefundService.java` (V114 full-refund constraint)
+> **Returns (RMA) and Refunds were REMOVED platform-wide (2026-06-23).** The customer return flow, the admin returns module, per-item inspection, RMA stock-restore, and **every refund path** (cancel-time refund, POS refund, manual order refund) no longer exist. The `returns` / `return_items` / `return_history` tables, the `refund_amount` / `refund_reason` / `refunded_at` order & payment columns, and the `REFUNDED` order/payment status were dropped. Old `REFUNDED` orders were migrated to `CANCELLED`. The old `RETURN_RULE_*` IDs, the return state machine, and `RefundService` were deleted.
+>
+> A **paid order is now cancelled directly** — the admin reconciles the money manually outside the system (see `ORDER_RULE_004`). There is no system-tracked return lifecycle.
+>
+> **Customer-facing return/exchange policy text is kept** (CMS policy pages — including "Chính sách bảo hành" — and the per-product "Đổi size 30 ngày" line). That is a **manual commitment shown to customers**, not a system feature. (The separate warranty-lookup feature/page was removed entirely 2026-06-23, V266.)
 
 ## Contact Inbox Rules
 

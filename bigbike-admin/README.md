@@ -28,7 +28,6 @@ npm run lint
 | `/admin/redirects` | `redirects.read / redirects.write` |
 | `/admin/menus` | `menus.read` |
 | `/admin/sliders` | `sliders.read` |
-| `/admin/shipping` | `shipping.read` |
 | `/admin/reviews` | `reviews.read` |
 | `/admin/admin-users` | `admin-users.read` |
 | `/admin/settings` | `settings.read` |

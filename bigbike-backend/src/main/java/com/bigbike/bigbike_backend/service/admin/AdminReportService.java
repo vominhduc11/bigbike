@@ -56,8 +56,8 @@ public class AdminReportService {
     // REVENUE_EXCLUDED: orders that generated no revenue and should not appear in GMV/paidRevenue/count.
     private static final List<String> REVENUE_EXCLUDED = List.of("CANCELLED", "FAILED");
 
-    // RANKING_EXCLUDED: orders excluded from topProducts/topCustomers because refunded revenue is not retained.
-    private static final List<String> RANKING_EXCLUDED = List.of("CANCELLED", "FAILED", "REFUNDED");
+    // RANKING_EXCLUDED: orders excluded from topProducts/topCustomers (no revenue generated).
+    private static final List<String> RANKING_EXCLUDED = List.of("CANCELLED", "FAILED");
 
     private final OrderJpaRepository orderRepo;
     private final OrderLineItemJpaRepository lineItemRepo;
@@ -84,11 +84,9 @@ public class AdminReportService {
         // paidAmount is never modified by RefundService.applyRefund() — it is the total cash collected.
         BigDecimal paidRevenue = orderRepo.sumPaidRevenueBetweenExcluding(fromInstant, toInstant, REVENUE_EXCLUDED);
 
-        // Refund amount: SUM(order.refundAmount) for orders placed in the selected range.
-        BigDecimal refundAmount = orderRepo.sumRefundAmountInRange(fromInstant, toInstant);
-
-        // Net revenue may be negative — no clamp
-        BigDecimal netRevenue = paidRevenue.subtract(refundAmount);
+        // Refunds were removed from the system — there is no refunded revenue to subtract.
+        BigDecimal refundAmount = BigDecimal.ZERO;
+        BigDecimal netRevenue = paidRevenue;
 
         long orderCount = orderRepo.countOrdersBetweenExcluding(fromInstant, toInstant, REVENUE_EXCLUDED);
         BigDecimal avgOrderValue = orderCount > 0
@@ -168,8 +166,8 @@ public class AdminReportService {
         CSVFormat format = CSVFormat.DEFAULT.builder()
                 .setHeader("order_number", "status", "payment_status", "customer_email",
                         "customer_phone", "currency", "subtotal", "discount", "shipping",
-                        "total", "paid_amount", "refund_amount", "placed_at", "paid_at",
-                        "completed_at", "cancelled_at", "refunded_at")
+                        "total", "paid_amount", "placed_at", "paid_at",
+                        "completed_at", "cancelled_at")
                 .build();
 
         try (CSVPrinter printer = new CSVPrinter(sw, format)) {
@@ -186,12 +184,10 @@ public class AdminReportService {
                         formatDecimal(o.getShippingAmount()),
                         formatDecimal(o.getTotalAmount()),
                         formatDecimal(o.getPaidAmount()),
-                        formatDecimal(o.getRefundAmount()),
                         formatInstant(o.getPlacedAt()),
                         formatInstant(o.getPaidAt()),
                         formatInstant(o.getCompletedAt()),
-                        formatInstant(o.getCancelledAt()),
-                        formatInstant(o.getRefundedAt())
+                        formatInstant(o.getCancelledAt())
                 );
             }
         } catch (IOException e) {

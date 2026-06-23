@@ -6,7 +6,7 @@ export function ModuleBadge({ resourceType }) {
   const { t } = useTranslation()
   const TONE_MAP = {
     ORDER: 'info', PRODUCT: 'success', CATEGORY: 'neutral', BRAND: 'neutral',
-    INVENTORY: 'warning', COUPON: 'warning', CUSTOMER: 'neutral', SETTING: 'danger',
+    INVENTORY: 'warning', CUSTOMER: 'neutral', SETTING: 'danger',
     MEDIA: 'neutral', MENU: 'neutral', CONTENT: 'neutral', ROLE: 'danger', ADMIN_USER: 'neutral', REDIRECT: 'warning',
   }
   const tone = TONE_MAP[resourceType] || 'neutral'

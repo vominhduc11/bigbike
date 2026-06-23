@@ -24,7 +24,6 @@ public final class AdminRolePermissions {
             "ADMIN", List.of(
                     "products.read", "products.update",
                     "inventory.read", "inventory.write",
-                    "warranty.read", "warranty.write",
                     "catalog.read", "catalog.update",
                     "content.read", "content.update",
                     "orders.read", "orders.write",
@@ -33,8 +32,6 @@ public final class AdminRolePermissions {
                     "settings.read", "settings.write",
                     "menus.read", "menus.write",
                     "sliders.read", "sliders.write",
-                    "coupons.read", "coupons.write",
-                    "shipping.read", "shipping.write",
                     "reviews.read", "reviews.write",
                     "admin-users.read", "admin-users.write",
                     "roles.read", "roles.write",
@@ -42,23 +39,15 @@ public final class AdminRolePermissions {
                     "home_videos.read", "home_videos.write",
                     "home_highlights.read", "home_highlights.write",
                     "redirects.read", "redirects.write",
-                    "pos.read", "pos.write", "pos.price_override", "pos.refund",
-                    "receivables.read", "receivables.create", "receivables.record_payment",
-                    "receivables.write_off", "receivables.override_limit",
                     "reports.read", "reports.export"
             ),
             "SHOP_MANAGER", List.of(
                     "products.read", "products.update",
                     "inventory.read", "inventory.write",
-                    "warranty.read", "warranty.write",
                     "catalog.read",
                     "orders.read", "orders.write",
                     "customers.read", "customers.write",
-                    "coupons.read", "coupons.write",
-                    "shipping.read",
                     "reviews.read", "reviews.write",
-                    "pos.read", "pos.write",
-                    "receivables.read", "receivables.record_payment",
                     "reports.read", "reports.export"
             ),
             "EDITOR", List.of(

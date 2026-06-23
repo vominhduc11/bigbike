@@ -7,7 +7,7 @@ BigBike is a commerce platform for motorcycle safety gear and rider accessories.
 | Surface | Runtime | Purpose | Current status | Evidence |
 |---|---|---|---|---|
 | `bigbike-web` | Next.js 16.2.4 + React 19 | Public catalog, SEO content, cart, checkout, customer account | `CONFIRMED_FROM_CODE` | `bigbike-web/package.json`, `bigbike-web/app`, `bigbike-web/lib` |
-| `bigbike-admin` | Vite 8 + React 19 | Internal catalog, orders, customers, media, coupons, POS, returns | `CONFIRMED_FROM_CODE` | `bigbike-admin/package.json`, `bigbike-admin/src` |
+| `bigbike-admin` | Vite 8 + React 19 | Internal catalog, orders, customers, media (online-only; POS and returns removed 2026-06-23) | `CONFIRMED_FROM_CODE` | `bigbike-admin/package.json`, `bigbike-admin/src` |
 | `bigbike-backend` | Spring Boot 4.0.5, Java 17 | API, business rules, persistence, auth, integrations, WebSocket | `CONFIRMED_FROM_CODE` | `bigbike-backend/pom.xml`, `bigbike-backend/src/main/java` |
 | `bigbike_mobile` | Flutter / Dart | Companion client with shared public/account/cart/checkout APIs | `CONFIRMED_FROM_CODE`; production ownership `NEEDS_VERIFICATION` | `bigbike_mobile/pubspec.yaml`, `bigbike_mobile/lib/core` |
 
@@ -16,9 +16,8 @@ BigBike is a commerce platform for motorcycle safety gear and rider accessories.
 | Domain | Current reality | Status | Evidence |
 |---|---|---|---|
 | Catalog | Public product/category/brand/content reads are implemented across backend and web. | `CONFIRMED_FROM_CODE` | `SecurityConfig.java`, public controllers, `bigbike-web/lib/api/public-api.ts` |
-| Cart and checkout | Guest and customer carts are live; checkout validates stock, price, shipping method, CSRF, and idempotency. | `CONFIRMED_FROM_CODE` | `CartService.java`, `CheckoutService.java`, `Phase1ECartApiTest.java`, `Phase1FCheckoutApiTest.java` |
-| Coupon | Cart apply, cart refresh revalidation, checkout redemption, and expiry scheduler are live. | `CONFIRMED_FROM_CODE` | `CartService.java`, `CheckoutService.java`, `CouponExpiryScheduler.java`, coupon tests |
-| POS | Admin POS is a live immediate-sale flow, not a deferred payment workflow. | `CONFIRMED_FROM_CODE` | `AdminPosController.java`, `PosOrderService.java`, `Phase1MPosApiTest.java` |
+| Cart and checkout | Guest and customer carts are live; checkout validates stock, price, CSRF, and idempotency. No shipping-method choice or shipping fee (`SHIP_RULE_001`). | `CONFIRMED_FROM_CODE` | `CartService.java`, `CheckoutService.java`, `Phase1ECartApiTest.java`, `Phase1FCheckoutApiTest.java` |
+| ~~POS~~ | **REMOVED (owner decision 2026-06-23).** BigBike is now **online-only** — there is no in-store / walk-in point-of-sale flow. Walk-in customers are not entered into the system. | `REMOVED` | — |
 | Media | Admin media upload uses Apache Tika validation and rejects unsupported MIME types; SVG is accepted but sanitized on upload (`SvgSanitizer`). | `CONFIRMED_FROM_CODE` | `AdminMediaService.java`, `SvgSanitizer.java`, `AdminMediaP0Test.java` |
 | Inventory | Active service layer is movement-based inventory adjustment plus checkout/order/return side effects. | `CONFIRMED_FROM_CODE` | `AdminInventoryService.java`, `CheckoutService.java`, `AdminReturnService.java` |
 | Returns | Customer return creation/listing and admin return status management are live. | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java`, `AdminReturnController.java`, `Phase1LReturnsApiTest.java` |

@@ -87,7 +87,7 @@ export function PurchaseSectionClient({
   const [quantity, setQuantity] = useState(1);
   const [addLoading, setAddLoading] = useState(false);
   const [quickBuyOpen, setQuickBuyOpen] = useState(false);
-  const [successOrder, setSuccessOrder] = useState<{ orderNumber: string; orderKey: string; paymentMethod: string } | null>(null);
+  const [successOrder, setSuccessOrder] = useState<{ orderNumber: string; orderKey: string } | null>(null);
   const [addError, setAddError] = useState("");
 
   const { data: snapshot, isLoading: snapshotLoading } =
@@ -132,7 +132,6 @@ export function PurchaseSectionClient({
         stockState: selectedVariant.stockState,
         label: "",
         forceOutOfStock: snapshot?.stock?.forceOutOfStock ?? false,
-        quantity: selectedVariant.stockQuantity ?? null,
       }
     : (snapshot?.stock ?? null);
 
@@ -277,11 +276,6 @@ export function PurchaseSectionClient({
                 <QuantityStepper
                   value={quantity}
                   onChange={setQuantity}
-                  max={
-                    effectiveStockData?.quantity && effectiveStockData.quantity > 0
-                      ? effectiveStockData.quantity
-                      : undefined
-                  }
                   ariaLabel={t("quantityLabel")}
                 />
               </div>

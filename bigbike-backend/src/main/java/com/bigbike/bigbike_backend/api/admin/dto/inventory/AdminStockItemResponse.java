@@ -11,9 +11,8 @@ public record AdminStockItemResponse(
         String variantName,
         String variantSku,
         String stockState,
-        int quantityOnHand,
+        boolean available,
         BigDecimal retailPrice,
-        boolean trackSerials,
         boolean forceOutOfStock
 ) {
     public record ImageRef(

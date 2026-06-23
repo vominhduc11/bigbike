@@ -227,7 +227,7 @@ Mọi text trong dự án thuộc **đúng một** trong hai nhóm; không có g
 - **`text-ui-N`** (mới, trong `@theme inline`): **= đúng N px cố định.** Dùng cho nhóm chữ cố định.
 - **`text-9/10/11/13/22/26…`** (legacy, từ `--bb-text-*`): tên **SAI** giá trị (`text-13`=14px, `text-22`=18px — nay đều cố định, không còn clamp). Chỉ còn vài chỗ cũ dùng; **không dùng cho code mới** — thay bằng `text-ui-N` (cố định) hoặc token chữ đọc.
 
-**Ngoại lệ còn raw `text-[…]` có chủ đích:** vài giá trị rem lẻ kế thừa WooCommerce ở trang giỏ hàng (`1.143rem`/`1.429rem`/`1.714rem`/`1em` — stepper số lượng, coupon) không khớp thang px chẵn → giữ nguyên; và `FloatingChat` (cơ chế chat).
+**Ngoại lệ còn raw `text-[…]` có chủ đích:** vài giá trị rem lẻ kế thừa WooCommerce ở trang giỏ hàng (`1.429rem`/`1.714rem`/`1em` — stepper số lượng) không khớp thang px chẵn → giữ nguyên; và `FloatingChat` (cơ chế chat).
 
 **Ngoại lệ scale-lên ở 3xl/4xl — bảng gợi ý tìm kiếm (search panel):** Tuy thuộc nhóm chữ cố định, panel tìm kiếm desktop (`SearchToggle.tsx`) được phép **phóng to cả khung lẫn chữ ở ≥3xl (1920px) và ≥4xl (2560px)** để không lọt thỏm trên màn lớn — khung mở rộng `770 → 940 → 1120px`, ô nhập `24 → 28 → 32px`, và các nhãn/chip/giá/tiêu đề gợi ý tăng một bậc `text-ui-N` mỗi mốc (dùng biến thể `3xl:`/`4xl:`). Đây là exception có chủ đích **chỉ cho riêng panel này** — không áp cho nhãn cố định ở nơi khác. (Các dòng "đọc" trong panel — lịch sử tìm kiếm, tên sản phẩm — vẫn dùng `text-caption` fluid nên đã tự scale.)
 

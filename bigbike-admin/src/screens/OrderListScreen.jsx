@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { FilterSelect } from '../components/FilterSelect'
 import { FilterSearchInput } from '../components/FilterSearchInput'
 import { useQueryClient } from '@tanstack/react-query'
-import { Download, Plus, SlidersHorizontal, Store } from 'lucide-react'
+import { Download, SlidersHorizontal } from 'lucide-react'
 import { PageSizeSelect } from '../components/PageSizeSelect'
 import { PaginationControls } from '../components/PaginationControls'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
@@ -104,7 +104,6 @@ export function OrderListScreen({ navigate }) {
       render: (order) => (
         <span className="mono" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           {formatText(order.orderNumber)}
-          {order.source === 'pos' && <span className="bb-badge bb-badge-neutral">POS</span>}
         </span>
       ),
     },
@@ -149,7 +148,6 @@ export function OrderListScreen({ navigate }) {
     title: (
       <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         {formatText(order.orderNumber)}
-        {order.source === 'pos' && <span className="bb-badge bb-badge-neutral">POS</span>}
       </span>
     ),
     subtitle: formatText(order.customerName) || formatText(order.customerEmail),
@@ -179,12 +177,6 @@ export function OrderListScreen({ navigate }) {
             })}
           >
             <Download size={14} />{t('common.exportCsv', { defaultValue: 'Xuất CSV' })}
-          </button>
-          <button type="button" className="bb-btn bb-btn-secondary" onClick={() => navigate('/admin/pos')}>
-            <Store size={14} />{t('orders.openPos', { defaultValue: 'Mở POS' })}
-          </button>
-          <button type="button" className="bb-btn bb-btn-primary" onClick={() => navigate('/admin/pos')}>
-            <Plus size={14} />{t('orders.createNew', { defaultValue: 'Tạo đơn mới' })}
           </button>
         </div>
       </div>
@@ -255,9 +247,7 @@ export function OrderListScreen({ navigate }) {
         ) : (
           <StatePanel tone="neutral"
             title={t('orders.emptyAll', { defaultValue: 'Chưa có đơn hàng nào' })}
-            description={t('orders.emptyAllDesc', { defaultValue: 'Khi có đơn đặt trên website hoặc bán tại quầy, đơn sẽ hiện ở đây.' })}
-            actionLabel={t('orders.createNew', { defaultValue: 'Tạo đơn mới' })}
-            onAction={() => navigate('/admin/pos')} />
+            description={t('orders.emptyAllDesc', { defaultValue: 'Khi có đơn đặt trên website, đơn sẽ hiện ở đây.' })} />
         )
       )}
 

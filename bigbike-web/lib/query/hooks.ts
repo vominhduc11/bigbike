@@ -1,11 +1,9 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useLocale } from "next-intl";
 import {
   cancelMyOrder,
   fetchCart,
-  fetchCheckoutOptions,
   fetchMe,
   fetchMyAddresses,
   fetchMyOrder,
@@ -42,17 +40,6 @@ export function useRemoveCartItem() {
   return useMutation({
     mutationFn: (itemId: string) => removeCartItem(itemId),
     onSuccess: (cart) => qc.setQueryData(queryKeys.cart(), cart),
-  });
-}
-
-// ── Checkout ────────────────────────────────────────────────────────────────
-
-export function useCheckoutOptions() {
-  const locale = useLocale();
-  return useQuery({
-    queryKey: queryKeys.checkoutOptions(locale),
-    queryFn: () => fetchCheckoutOptions(locale),
-    staleTime: 5 * 60 * 1000,
   });
 }
 

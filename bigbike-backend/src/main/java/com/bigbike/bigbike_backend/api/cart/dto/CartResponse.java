@@ -8,6 +8,5 @@ public record CartResponse(
         String status,
         String currency,
         List<CartItemResponse> items,
-        CartTotalsResponse totals,
-        List<String> couponCodes
+        CartTotalsResponse totals
 ) {}

@@ -58,12 +58,6 @@ public class PaymentEntity {
     @Column(name = "failed_at")
     private Instant failedAt;
 
-    @Column(name = "refund_amount", nullable = false, precision = 19, scale = 2)
-    private BigDecimal refundAmount = BigDecimal.ZERO;
-
-    @Column(name = "refunded_at")
-    private Instant refundedAt;
-
     @Column(columnDefinition = "text")
     private String metadata;
 

@@ -103,8 +103,13 @@ export function CheckoutAddressFields({
         </div>
       </div>
 
-      <div className="col-md-12">
-        <VnAddressFields value={vnValue} onChange={onVnChange} required />
+      <div className="col-md-12 space-y-[30px] mb-[30px]">
+        <VnAddressFields
+          value={vnValue}
+          onChange={onVnChange}
+          required
+          labelClassName="block text-[14px] mb-2.5"
+        />
         {(errors.province || errors.district) && (
           <FieldError message={errors.province?.message ?? errors.district?.message} />
         )}

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useTranslations } from "next-intl";
 import {
   Dialog,
@@ -21,10 +20,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { VnAddressFields } from "@/components/ui/VnAddressFields";
-import { cn } from "@/lib/utils";
 import { formatVnd } from "@/lib/utils/format";
 import { useQuickBuyForm } from "./quick-buy-modal/useQuickBuyForm";
-import { ShippingMethodsSection } from "./quick-buy-modal/ShippingMethodsSection";
 import type { QuickBuyModalProps } from "./quick-buy-modal/types";
 
 export type { QuickBuyModalProps };
@@ -39,7 +36,6 @@ export function QuickBuyModal({
   unitPrice,
   onSuccess,
 }: QuickBuyModalProps) {
-  const t = useTranslations("Checkout");
   const tQb = useTranslations("Checkout.quickbuy");
 
   const {
@@ -47,13 +43,8 @@ export function QuickBuyModal({
     onSubmit,
     submitError,
     isSubmitting,
-    paymentMethod,
-    province,
     quantity,
-    selectedShippingId,
     quantityId,
-    availableMethodsForRegion,
-    shippingEstimate,
   } = useQuickBuyForm({ open, productId, selectedVariantId, unitPrice, onSuccess });
 
   return (
@@ -210,58 +201,6 @@ export function QuickBuyModal({
                 />
               </section>
 
-              {/* Phương thức vận chuyển */}
-              {province && (
-                <ShippingMethodsSection
-                  availableMethodsForRegion={availableMethodsForRegion}
-                  shippingEstimate={shippingEstimate}
-                  selectedShippingId={selectedShippingId}
-                  isSubmitting={isSubmitting}
-                  unitPrice={unitPrice}
-                  quantity={quantity}
-                  onSelect={(id) => form.setValue("shippingMethodId", id)}
-                />
-              )}
-
-              {/* Phương thức thanh toán */}
-              <section>
-                <p className="text-overline font-semibold uppercase tracking-display text-muted-foreground mb-3">
-                  {tQb("paymentSection")}
-                </p>
-                <div className="flex flex-col gap-2">
-                  {(["COD", "BACS"] as const).map((method) => (
-                    <label
-                      key={method}
-                      className={cn(
-                        "flex items-start gap-3 p-3 border cursor-pointer transition-colors",
-                        paymentMethod === method
-                          ? "border-foreground bg-muted/40"
-                          : "border-border hover:border-foreground/40",
-                        isSubmitting && "opacity-60 cursor-not-allowed",
-                      )}
-                    >
-                      <input
-                        type="radio"
-                        name="paymentMethod"
-                        value={method}
-                        checked={paymentMethod === method}
-                        onChange={() => form.setValue("paymentMethod", method)}
-                        disabled={isSubmitting}
-                        className="mt-0.5 accent-foreground"
-                      />
-                      <span className="flex flex-col gap-0.5">
-                        <span className="text-caption font-medium">
-                          {t(`paymentMethod.${method}`)}
-                        </span>
-                        {method === "BACS" && (
-                          <span className="text-overline text-muted-foreground">{tQb("paymentBacsHint")}</span>
-                        )}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </section>
-
               {/* Ghi chú */}
               <FormField
                 control={form.control}
@@ -300,45 +239,14 @@ export function QuickBuyModal({
                     {formatVnd(unitPrice * quantity)}
                   </span>
                 </div>
-                <div className="flex justify-between px-3 py-2 border-b border-border">
-                  <span className="text-muted-foreground">{tQb("summaryShipping")}</span>
-                  <span className={cn("font-medium tabular-nums", shippingEstimate?.isFree && "text-state-success-text")}>
-                    {!province
-                      ? <span className="text-muted-foreground text-overline">{tQb("summaryShippingSelectProvince")}</span>
-                      : shippingEstimate == null
-                        ? <span className="text-muted-foreground text-overline">{tQb("summaryShippingUnknown")}</span>
-                        : shippingEstimate.isFree
-                          ? tQb("summaryShippingFree")
-                          : formatVnd(shippingEstimate.cost)
-                    }
-                  </span>
-                </div>
                 <div className="flex justify-between px-3 py-2 font-semibold">
                   <span>{tQb("summaryTotal")}</span>
                   <span className="tabular-nums text-brand">
-                    {shippingEstimate != null
-                      ? formatVnd(unitPrice * quantity + shippingEstimate.cost)
-                      : formatVnd(unitPrice * quantity)
-                    }
-                    {shippingEstimate == null && province && (
-                      <span className="text-overline font-normal text-muted-foreground ml-1">+ {tQb("summaryShippingUnknown")}</span>
-                    )}
+                    {formatVnd(unitPrice * quantity)}
                   </span>
                 </div>
               </div>
             )}
-
-            {/* Coupon hint */}
-            <p className="px-6 pb-2 text-overline text-muted-foreground">
-              {tQb("couponHintText")}{" "}
-              <Link
-                href="/gio-hang"
-                onClick={onClose}
-                className="underline underline-offset-2 hover:text-foreground transition-colors"
-              >
-                {tQb("couponHintLinkText")}
-              </Link>
-            </p>
 
             <DialogFooter className="flex-row gap-2 px-6 pb-6 pt-2">
               <Button

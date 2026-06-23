@@ -5,8 +5,6 @@ import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.order.dto.OrderDetailResponse;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
-import com.bigbike.bigbike_backend.service.inventory.OrderStockRestoreService;
-import com.bigbike.bigbike_backend.service.inventory.SerialLifecycleService;
 import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import java.time.Instant;
 import java.util.UUID;
@@ -21,8 +19,6 @@ public class CustomerOrderCancelService {
 
     private final OrderJpaRepository orderRepo;
     private final OrderReadService orderReadService;
-    private final SerialLifecycleService serialLifecycleService;
-    private final OrderStockRestoreService orderStockRestoreService;
     private final WebRevalidationService webRevalidationService;
 
     @Transactional
@@ -53,8 +49,7 @@ public class CustomerOrderCancelService {
 
         orderRepo.save(order);
 
-        serialLifecycleService.releaseReservationForOrder(orderId, "ORDER_CANCELLED_BY_CUSTOMER");
-        orderStockRestoreService.restoreForCancel(orderId);
+        // Inventory is boolean availability only (owner decision 2026-06-23) — nothing to restore.
         webRevalidationService.revalidateProductsForOrder(orderId);
 
         return orderReadService.getCustomerOrderDetail(customerId, orderId);
@@ -68,7 +63,8 @@ public class CustomerOrderCancelService {
      *   • PROCESSING + not yet SHIPPED/DELIVERED — COD or BACS confirmed but still
      *                                            packable / cancellable in-house
      * In every case paymentStatus must be UNPAID. Once payment is captured (PAID),
-     * customers must request a refund via admin so the financial flow goes through RefundService.
+     * the customer must contact the shop, which cancels the order and reconciles any
+     * money returned manually (there is no system refund flow).
      */
     private static boolean isCustomerCancellable(OrderEntity order) {
         String paymentStatus = order.getPaymentStatus();

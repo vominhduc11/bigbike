@@ -3,30 +3,25 @@ package com.bigbike.bigbike_backend.service.admin;
 import com.bigbike.bigbike_backend.api.admin.dto.inventory.AdminStockItemResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.inventory.AdminStockProductGroupResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.inventory.AdminStockVariantResponse;
-import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
 
 /**
  * Stateless mapping/formatting helpers extracted from {@link AdminInventoryService}.
  *
  * <p>These methods take plain arguments, reference no Spring bean / repository, and
- * perform pure DTO mapping, response formatting, serial/state parsing, CSV escaping,
- * and audit-snapshot building. They are moved verbatim from the service; stock
- * mutation, serial lifecycle, movement writes, and repository orchestration remain
- * in the service.
+ * perform pure DTO mapping, response formatting, state parsing, CSV escaping, and
+ * audit-snapshot building. Stock mutation, movement writes, and repository
+ * orchestration remain in the service.
  *
  * <p>Follows the {@code ProductFieldApplier} precedent: a package-private {@code final}
  * class of {@code public static} helpers with a private constructor and no Spring
@@ -42,14 +37,14 @@ final class AdminInventoryMapper {
         AdminStockItemResponse.ImageRef img = buildProductImageRef(p);
 
         if (variants.isEmpty()) {
+            boolean available = p.getStockState() != ProductStockState.OUT_OF_STOCK;
             return new AdminStockProductGroupResponse(
                     p.getId(), p.getName(), p.getNameEn(), p.getSku(), img,
                     p.getStockState() != null ? p.getStockState().name() : "UNKNOWN",
-                    p.getStockQuantity() != null ? p.getStockQuantity() : 0,
+                    available,
                     p.getRetailPrice(),
                     Boolean.TRUE.equals(p.getForceOutOfStock()),
                     true,
-                    p.isTrackSerials(),
                     List.of()
             );
         }
@@ -58,14 +53,13 @@ final class AdminInventoryMapper {
                 .map(v -> new AdminStockVariantResponse(
                         v.getId(), v.getName(), v.getSku(),
                         v.getStockState() != null ? v.getStockState().name() : "UNKNOWN",
-                        v.getQuantityOnHand(),
-                        v.getRetailPrice(),
-                        v.isTrackSerials()
+                        v.isAvailable(),
+                        v.getRetailPrice()
                 ))
                 .toList();
 
         String aggregateState = computeAggregateState(variants);
-        int totalQty = variants.stream().mapToInt(v -> v.getQuantityOnHand()).sum();
+        boolean anyAvailable = variants.stream().anyMatch(ProductVariantEntity::isAvailable);
         BigDecimal minPrice = variants.stream()
                 .map(v -> v.getRetailPrice())
                 .filter(Objects::nonNull)
@@ -74,24 +68,19 @@ final class AdminInventoryMapper {
 
         return new AdminStockProductGroupResponse(
                 p.getId(), p.getName(), p.getNameEn(), p.getSku(), img,
-                aggregateState, totalQty, minPrice,
+                aggregateState, anyAvailable, minPrice,
                 Boolean.TRUE.equals(p.getForceOutOfStock()),
-                false,
                 false,
                 variantDtos
         );
     }
 
-    // Product-level aggregate of variant stock states (BUSINESS_RULES STOCK_RULE_008,
-    // kept in sync at write time by the V165 trigger). A product is only OUT_OF_STOCK
-    // when ALL variants are out; if any variant still has stock the product is
-    // IN_STOCK (any variant IN_STOCK) or LOW_STOCK (only low-stock variants remain).
+    // Product-level aggregate of variant availability (BUSINESS_RULES STOCK_RULE_008,
+    // boolean model since 2026-06-23). A product is IN_STOCK when ANY variant is
+    // available, else OUT_OF_STOCK. LOW_STOCK is never produced.
     static String computeAggregateState(List<ProductVariantEntity> variants) {
         boolean anyIn = variants.stream().anyMatch(v -> v.getStockState() == ProductStockState.IN_STOCK);
-        if (anyIn) return "IN_STOCK";
-        boolean anyLow = variants.stream().anyMatch(v -> v.getStockState() == ProductStockState.LOW_STOCK);
-        if (anyLow) return "LOW_STOCK";
-        return "OUT_OF_STOCK";
+        return anyIn ? "IN_STOCK" : "OUT_OF_STOCK";
     }
 
     static AdminStockItemResponse.ImageRef buildProductImageRef(ProductEntity p) {
@@ -107,29 +96,6 @@ final class AdminInventoryMapper {
         if (stockState == null || stockState.isBlank() || "ALL".equalsIgnoreCase(stockState)) return null;
         try { return ProductStockState.valueOf(stockState.toUpperCase(Locale.ROOT)); }
         catch (IllegalArgumentException ignored) { return null; }
-    }
-
-    /**
-     * Trim, de-blank, and de-duplicate serial numbers from the request.
-     * Throws ValidationException if duplicates are found within the list.
-     */
-    static List<String> parseSerials(List<String> raw) {
-        if (raw == null || raw.isEmpty()) return List.of();
-
-        List<String> result = new ArrayList<>();
-        Set<String> seen = new HashSet<>();
-
-        for (String entry : raw) {
-            if (entry == null) continue;
-            String trimmed = entry.strip();
-            if (trimmed.isEmpty()) continue;
-            if (!seen.add(trimmed)) {
-                throw ValidationException.fromField("serialNumbers", "DUPLICATE_IN_REQUEST",
-                        "Duplicate serial number in request: " + trimmed);
-            }
-            result.add(trimmed);
-        }
-        return result;
     }
 
     static AdminStockItemResponse toProductStockItem(ProductEntity p) {
@@ -154,9 +120,8 @@ final class AdminInventoryMapper {
                 null,
                 null,
                 p.getStockState() != null ? p.getStockState().name() : "UNKNOWN",
-                p.getStockQuantity() != null ? p.getStockQuantity() : 0,
+                p.getStockState() != ProductStockState.OUT_OF_STOCK,
                 p.getRetailPrice(),
-                p.isTrackSerials(),
                 Boolean.TRUE.equals(p.getForceOutOfStock())
         );
     }
@@ -171,9 +136,8 @@ final class AdminInventoryMapper {
                 v.getName(),
                 v.getSku(),
                 v.getStockState() != null ? v.getStockState().name() : "UNKNOWN",
-                v.getQuantityOnHand(),
+                v.isAvailable(),
                 v.getRetailPrice(),
-                v.isTrackSerials(),
                 Boolean.TRUE.equals(v.getProduct().getForceOutOfStock())
         );
     }

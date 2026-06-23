@@ -14,7 +14,7 @@ Evidence:
 
 - `CartService.java`
 - `CheckoutService.java`
-- POS, cart, and checkout tests
+- cart and checkout tests
 
 ### Media fields
 
@@ -36,11 +36,11 @@ Evidence:
 | Field | DB column | Role | Required? |
 |---|---|---|---|
 | `product.sku` | `products.sku varchar(100)` | **Model code / group code** — optional descriptive identifier for the product family. Not used as the selling code when variants exist. | Optional (nullable, no unique constraint) |
-| `variant.sku` | `product_variants.sku varchar(100)` | **Selling SKU** — the code used at POS, cart, checkout, inventory, and returns to identify the actual unit sold. | **Required + globally unique** on the admin upsert API (`@NotBlank` + case-insensitive uniqueness; see `BUSINESS_RULES.md` → `PRODUCT_RULE_SKU_001`). Enforced by partial unique index `ux_product_variants_sku_lower` on `lower(sku)` (V244). Column stays nullable (index ignores nulls) so the requirement is write-time, not a schema `NOT NULL`. |
+| `variant.sku` | `product_variants.sku varchar(100)` | **Selling SKU** — the code used in cart, checkout, and inventory to identify the actual unit sold. | **Required + globally unique** on the admin upsert API (`@NotBlank` + case-insensitive uniqueness; see `BUSINESS_RULES.md` → `PRODUCT_RULE_SKU_001`). Enforced by partial unique index `ux_product_variants_sku_lower` on `lower(sku)` (V244). Column stays nullable (index ignores nulls) so the requirement is write-time, not a schema `NOT NULL`. |
 
-When snapshotting line items into cart/order/POS, the system uses `variant.sku` first, falling back to `product.sku`. This fallback supports products that have no variants (where `product.sku` is the selling code) and legacy variants whose `sku` is still null (created before the requirement / WP-import).
+When snapshotting line items into cart/order, the system uses `variant.sku` first, falling back to `product.sku`. This fallback supports products that have no variants (where `product.sku` is the selling code) and legacy variants whose `sku` is still null (created before the requirement / WP-import).
 
-Inventory and serial-tracking views surface both fields (`product_sku`, `variant_sku`) so admin tools can locate units by either code.
+Inventory views surface both fields (`product_sku`, `variant_sku`) so admin tools can locate stock by either code.
 
 Status: `CONFIRMED_FROM_CODE`
 
@@ -52,11 +52,10 @@ Evidence:
 - `CartService.java` (line 153)
 - `CheckoutService.java` (line 723)
 - `V1__create_catalog_content_tables.sql` (lines 65, 166)
-- `V51__add_serial_tracking.sql` (lines 123, 127)
 
 ### Cost price (admin-only)
 
-`products.cost_price` and `product_variants.cost_price` (`numeric(19,2)`, nullable, `>= 0`; added in `V195`) store the purchase/cost price used by the POS below-cost guard (`ORDER_RULE_008`). Resolution mirrors selling price: **variant cost first, then product cost**; `NULL` means cost is unknown and no enforcement applies.
+`products.cost_price` and `product_variants.cost_price` (`numeric(19,2)`, nullable, `>= 0`; added in `V195`) store the purchase/cost price. (These columns formerly backed the POS below-cost guard, which was removed with the POS module 2026-06-23; cost price is retained for margin reporting.) Resolution mirrors selling price: **variant cost first, then product cost**; `NULL` means cost is unknown.
 
 **Cost is admin-only and must never reach the storefront.** The shared `ProductPrice` domain record carries `costPrice`, but it is populated **only on admin (non-public) reads** (`publicView == false`); public reads pass `null`, and the public DTO `ProductSnapshotResponse` maps an explicit price subset (`retailPrice`, `compareAtPrice`, `salePrice`) that excludes cost entirely. Admin sets it via the product create/update API (`UpsertProductRequest.costPrice`, `VariantRequest.costPrice`).
 
@@ -91,23 +90,13 @@ Evidence:
 - `CustomerAddressResponse.java`
 - `SaveCustomerAddressRequest.java`
 
-### POS order snapshot fields
+### POS order snapshot fields — REMOVED (owner decision 2026-06-23, online-only)
 
-Current POS flow persists or emits these notable fields:
+The POS flow was removed entirely; there is no longer any code that writes `channel`/`fulfillmentType = IN_STORE`, `source = 'pos'`, a `POS` payment provider, or an immediate `COMPLETED + PAID` POS order. Legacy POS orders were purged from the database.
 
-- order channel/source: `IN_STORE` / `pos`
-- immediate `COMPLETED` and `PAID` state
-- `createdByAdminId`
-- `customerName`
-- `customerPhone`
-- `customerNote`
-- payment record with provider `POS`
+The `orders.channel`, `orders.fulfillment_type`, and `orders.source` columns **still exist** — online orders use `fulfillmentType = DELIVERY` and `channel = WEB`. Only the `IN_STORE` / `'pos'` values are no longer written. `AdminOrderListItemResponse.source` is retained on the order list/detail responses but only ever carries online values now.
 
-`AdminOrderListItemResponse` (admin order list) exposes `source` so the list can render a POS badge — previously `source` was only on the order detail response. `PosOrderResponse` exposes `customerName`/`customerPhone`/`customerId` so the POS receipt can print buyer info and the UI can navigate to the linked profile. Evidence: `AdminOrderListItemResponse.java`, `OrderMapper.toAdminListItem`, `PosOrderService.PosOrderResponse`.
-
-**POS-created customer profiles (this PR):** since POS now requires a phone and resolves/auto-creates the customer (`POS_CUSTOMER_002`), a brand-new walk-in produces a `customers` row with `phone` (normalized), `display_name` (entered name or `"Khách tại quầy"`), `status = ACTIVE`, `is_synthetic = true`, `credit_enabled = false`, and no `email`/`password_hash`. No schema change is needed — `customers.phone` is already nullable+unique (`customers_phone_unique`, V64) and email/password are nullable. These profiles appear in the admin customer list (the list does not filter out `is_synthetic` by default). The order snapshot columns (`customer_name`/`customer_phone`) are unchanged and still reflect exactly what staff typed for that sale.
-
-**Phone normalization (this PR):** `customers.phone` is now stored in normalized form (`PhoneNumbers.normalize`: strip spaces/dashes, `+84`/`84` → `0`) consistently across **online registration, login, profile update, admin customer edit, and POS**. This makes phone a reliable identity key (the same person typing `+84…` or `0…` resolves to one profile). Lookups also try the `+84…` variant so pre-existing rows stored before this change (no backfill performed) still match. The WordPress importer (`CustomerImporter`) is intentionally excluded — historical import data is left as-is.
+**Phone normalization:** `customers.phone` is stored in normalized form (`PhoneNumbers.normalize`: strip spaces/dashes, `+84`/`84` → `0`) consistently across **online registration, login, profile update, and admin customer edit**. This makes phone a reliable identity key (the same person typing `+84…` or `0…` resolves to one profile). Lookups also try the `+84…` variant so pre-existing rows stored before this change (no backfill performed) still match. The WordPress importer (`CustomerImporter`) is intentionally excluded — historical import data is left as-is.
 
 Status: `CONFIRMED_FROM_CODE`
 
@@ -122,114 +111,75 @@ Flow: create admin (`admin-users.write`) → row inserted `status = INVITED`, no
 
 Status: `CONFIRMED_FROM_CODE`
 
-Evidence:
+### Return / Refund data — removed (2026-06-23)
 
-- `PosOrderService.java`
-- `V71__add_pos_staff_and_customer_name_to_orders.sql`
+> **Removed (2026-06-23).** The Return (RMA) and Refund data model — `returns` / `return_items` / `return_history` tables, the `refund_amount` / `refund_reason` / `refunded_at` columns on `orders` & `payments`, and the `REFUNDED` value on order status & payment_status — was dropped. Old REFUNDED orders were migrated to CANCELLED.
 
-### Coupon channel
+## Inventory Model
 
-`CouponEntity` has a `channel` column (`coupons.channel varchar(20) NOT NULL DEFAULT 'ALL'`) controlling which sales channel may redeem the coupon.
+> **Serial-number tracking was REMOVED platform-wide (2026-06-23, V259).** `product_serials`, `order_line_item_serials`, `return_item_serials`, `stock_movement_serials`, the `track_serials` columns, the serial→quantity sync trigger (`fn_sync_qty_from_serial_lifecycle`), and the `serial_inventory_only` / `reservation_ttl_minutes` settings are all dropped.
+>
+> **Inventory switched to a BOOLEAN availability model (2026-06-23, V261).** There is no tracked stock **quantity** anymore. Availability is a per-variant / per-product boolean that the admin toggles by hand.
 
-| Value | Allowed in |
-|---|---|
-| `ALL` | Both online (web/mobile cart) and POS |
-| `ONLINE` | Web/mobile cart only — rejected at POS |
-| `POS` | POS only — rejected in web/mobile cart |
-
-`CouponPolicyService.validateChannel(coupon, channel)` enforces the check. `CartService` passes `"ONLINE"` and `PosOrderService` passes `"POS"`.
-
-Status: `CONFIRMED_FROM_CODE`
-
-Evidence:
-
-- `CouponEntity.java`
-- `CouponPolicyService.java`
-- `CartService.java`
-- `PosOrderService.java`
-- `V118__add_coupon_channel.sql`
-
-### Coupon snapshot
-
-Checkout and POS both copy coupon usage to `OrderAppliedCouponEntity` with:
-
-- `couponId`
-- `code`
-- `discountAmount`
-- `createdAt`
-
-Status: `CONFIRMED_FROM_CODE`
-
-Evidence:
-
-- `CheckoutService.java`
-- `PosOrderService.java`
-
-### Return data
-
-`CustomerReturnResponse` currently includes:
-
-- identity: `id`, `returnNumber`, `orderId`, `orderNumber`
-- state: `status`
-- narrative: `reason`, `customerNote`, `adminNote`
-- financials: `refundAmount`
-- nested `items[]` and `history[]`
-- timestamps: `createdAt`, `updatedAt`
-
-Status: `CONFIRMED_FROM_CODE`
-
-Evidence:
-
-- `CustomerReturnResponse.java`
-- `CreateReturnRequest.java`
-
-## Inventory And Serial Model
-
-- Active serial model is `stock_movement_serials` linked to `StockMovementEntity`.
-- Manual stock-in requires exact serial count match.
-- Receipt-based receiving (`stock_receipts`, `stock_receipt_lines`, `stock_receipt_serials`) was **dropped in V120**. The tables were schema-only — no Java entity/service/controller/UI ever referenced them. Stock-in runs entirely through `stock_movements` (type `IN`) + `stock_movement_serials`.
+- Availability is a **boolean**, not a quantity:
+  - **Per variant** — `product_variants.is_available` (existing column) is the **sole gate**. The variant's `stock_state` mirrors it: `IN_STOCK` if available, else `OUT_OF_STOCK`.
+  - **Per product without variants** — `products.stock_state` (`IN_STOCK` / `OUT_OF_STOCK`) is set **directly** by the admin toggle. `products.force_out_of_stock` remains a hard override.
+  - **Product with variants** — `stock_state` = `IN_STOCK` if **any** variant `is_available`, else `OUT_OF_STOCK`.
+- **Dormant quantity columns:** `product_variants.quantity_on_hand`, `products.stock_quantity` and `products.manage_stock` are **kept but no longer read** for availability. The `low_stock_threshold` site setting is now **unused**.
+- **No quantity behavior:** no stock validation by quantity, no auto-decrement on sale, no stock restore on cancel, and **no stock movements written for sales or restores**. Selling does not change availability; the admin must manually mark an item "Hết hàng" when it sells out (overselling is not auto-prevented). The `stock_movements` ledger is dormant for this model.
+- `LOW_STOCK` is **no longer produced** (enum value kept for compat). There is no "low stock" tier.
+- Receipt-based receiving (`stock_receipts`, `stock_receipt_lines`, `stock_receipt_serials`) was **dropped in V120** — schema-only, never implemented in Java.
 
 Status:
 
-- movement serial model: `CONFIRMED_FROM_CODE`
+- boolean availability model: `CONFIRMED_FROM_CODE` (V261 — 2026-06-23)
+- quantity columns (`quantity_on_hand` / `stock_quantity` / `manage_stock`): `DORMANT` (kept, not used)
+- serial model: `REMOVED` (V259 — 2026-06-23)
 - receipt workflow: `REMOVED` (V120 — dropped, never implemented)
 
 Evidence:
 
 - `AdminInventoryService.java`
-- `StockMovementSerialEntity.java`
-- `V57__add_stock_movement_serials.sql`
+- `AdminInventoryController.java` (availability PATCH endpoints)
+- `CheckoutService.java` (per-variant `isAvailable` gate)
 - `V120__drop_stock_receipt_tables.sql`
+- `V259__remove_serial_management.sql`
+- `V261__inventory_availability_toggle.sql` (backfilled `is_available` + `stock_state` from current quantities)
 
-### stockState — derived field `CONFIRMED_FROM_CODE`
+### warranty_records — removed (2026-06-23, V266) `CONFIRMED_FROM_CODE`
 
-`stockState` trên `product_variants` và `products` là **derived field** — luôn tính từ `quantityOnHand` / `stock_quantity`. Không được set thủ công qua catalog create/update API.
-
-| Bảng | Quantity field | stockState owner |
-|---|---|---|
-| `product_variants` | `quantity_on_hand` | `variant.stockState` |
-| `products` | `stock_quantity` (dùng cho sản phẩm không có variant) | `product.stockState` |
-
-**Quy tắc:**
-- `quantity <= 0` → `OUT_OF_STOCK`
-- `0 < quantity <= low_stock_threshold` → `LOW_STOCK`
-- `quantity > low_stock_threshold` → `IN_STOCK`
-
-**API input contract:** `stockState` bị bỏ khỏi `UpsertProductRequest` và `VariantRequest`. Nếu client gửi trường này lên, backend bỏ qua.
-
-**API response contract:** `stockState` vẫn có trong response (read-only) để FE và client hiển thị.
-
-**forceOutOfStock:** field này vẫn là manual override (emergency disable) và khác biệt với `stockState`. Checkout sẽ từ chối ngay cả khi `stockState = IN_STOCK` nếu `forceOutOfStock = true`.
+> **Removed (2026-06-23, V266).** The `warranty_records` table and the entire warranty feature were dropped — no warranty entity, no per-order-line warranty creation on `COMPLETED`/POS sale, no void, and no `default_warranty_months` setting. Lookup is gone too. Customer-facing warranty wording survives only as CMS policy content and per-product marketing rows (`product_purchase_lines`).
 
 Evidence:
 
-- `InventoryPolicyService.java`
+- `V266__remove_warranty.sql`
+
+### stockState — derived from boolean availability `CONFIRMED_FROM_CODE`
+
+`stockState` trên `product_variants` và `products` chỉ còn **hai trạng thái** (`IN_STOCK` / `OUT_OF_STOCK`), **mirror trực tiếp** từ cờ availability — **không** còn tính từ số lượng. `LOW_STOCK` không còn được sinh ra (giá trị enum giữ để tương thích).
+
+| Bảng | Availability gate | stockState owner |
+|---|---|---|
+| `product_variants` | `is_available` (boolean) | `variant.stockState` = `IN_STOCK` nếu `is_available`, else `OUT_OF_STOCK` |
+| `products` (không variant) | admin toggle | `product.stockState` set trực tiếp (`IN_STOCK` / `OUT_OF_STOCK`) |
+| `products` (có variant) | aggregate | `IN_STOCK` nếu **bất kỳ** variant `is_available`, else `OUT_OF_STOCK` |
+
+**Cột số lượng `quantity_on_hand` / `stock_quantity` / `manage_stock` giờ DORMANT** — giữ trong DB nhưng không đọc cho availability. `low_stock_threshold` không còn dùng.
+
+**API input contract:** `stockState` bị bỏ khỏi `UpsertProductRequest` và `VariantRequest`. Availability đổi qua Inventory module (`PATCH .../availability`), không qua catalog create/update API.
+
+**API response contract:** `stockState` vẫn có trong response (read-only). Public `stockQuantity` (product & variant) **luôn null** — storefront chỉ hiển thị "Còn hàng / Hết hàng".
+
+**forceOutOfStock:** field này vẫn là manual override (hard disable) và khác biệt với `stockState`. Checkout sẽ từ chối ngay cả khi `stockState = IN_STOCK` nếu `forceOutOfStock = true`.
+
+Evidence:
+
+- `AdminInventoryService.java` / `AdminInventoryController.java` (availability toggle)
 - `AdminCatalogMutationService.java` (removed stockState from create/update path)
-- `CheckoutService.java`
-- `BUSINESS_RULES.md` STOCK_RULE_001–007
-- `V108__backfill_stock_state_from_quantity.sql`
+- `CheckoutService.java` (per-variant `isAvailable` gate)
+- `BUSINESS_RULES.md` STOCK_RULE_001–009
 - `V165__aggregate_variant_product_stock_state.sql` (trigger giữ `products.stockState` đồng bộ với variants)
-- `V174__recompute_stock_state_from_real_inventory.sql` (backfill: dọn "còn hàng ảo" của hàng WP-import — variant + sản phẩm không variant về `OUT_OF_STOCK` khi `quantity <= 0` và không còn serial `IN_STOCK`)
+- `V261__inventory_availability_toggle.sql` (boolean availability; backfill `is_available` + `stock_state` từ số lượng hiện tại — 2026-06-23)
 
 ### Product rich-text content fields
 
@@ -438,9 +388,10 @@ Per-product list of free-form rows rendered inside the **"Mua tại BigBike.vn"*
 trust block on the PDP. Each product owns its own rows (admin tự thêm/bớt dòng),
 mirroring `product_commitments` (V232) với cột song ngữ inline. **Thay thế** 4 field
 scalar cũ `warranty_months` / `warranty_scope` / `pdp_shipping_line` /
-`pdp_return_line` (giờ dormant — xem bảng "Cột scalar trên `products`"): domain field
-tương ứng đã gỡ khỏi API/admin/web, dữ liệu cũ được V249 backfill sang bảng này.
-Child table của `products`.
+`pdp_return_line` (`warranty_months`/`warranty_scope` đã **DROP ở V266** cùng module bảo
+hành; `pdp_shipping_line`/`pdp_return_line` còn dormant — xem bảng "Cột scalar trên
+`products`"): domain field tương ứng đã gỡ khỏi API/admin/web, dữ liệu cũ được V249
+backfill sang bảng này. Child table của `products`.
 
 | Column | Type | Null | Notes |
 |---|---|---|---|
@@ -461,8 +412,9 @@ product detail (public + admin) dưới dạng mảng `purchaseLines` của doma
 
 `V249` còn **backfill**: với mọi sản phẩm có dữ liệu cũ, tạo các dòng từ Bảo hành
 (`warranty_months` → "N tháng" / "N months", fallback `warranty_scope`), Giao hàng
-(`pdp_shipping_line`) và Đổi trả (`pdp_return_line`), giữ nguyên thứ tự. Cột scalar
-gốc được giữ dormant (không drop).
+(`pdp_shipping_line`) và Đổi trả (`pdp_return_line`), giữ nguyên thứ tự. Lúc V249, cột
+scalar gốc được giữ dormant (không drop); riêng `warranty_months`/`warranty_scope` về
+sau đã bị **DROP ở V266** khi gỡ module bảo hành.
 
 `V258` **backfill mặc định chung**: vì chỉ ~2/1.232 SP có dữ liệu cũ nên đa số SP để
 trống → trust block PDP thiếu Bảo hành/Giao hàng/Đổi size. V258 chèn 3 dòng tiêu chuẩn
@@ -550,8 +502,8 @@ drop. Đọc ra domain `Product` thành 2 mảng `positiveNotes` / `negativeNote
 
 | Column | Type | Null | Notes |
 |---|---|---|---|
-| `warranty_months` | `INTEGER` | YES | **(dormant từ V249)** Domain field `warrantyMonths` đã gỡ; cột giữ làm lưới an toàn, dữ liệu đã backfill sang `product_purchase_lines`. Không còn admin đọc/ghi. |
-| `warranty_scope` | `TEXT` | YES | **(dormant từ V249)** Domain field `warrantyScope` đã gỡ; cột giữ làm lưới an toàn, dữ liệu đã backfill (fallback) sang `product_purchase_lines`. Không còn admin đọc/ghi. |
+| ~~`warranty_months`~~ | — | — | **Đã DROP ở V266** (gỡ module bảo hành). Domain field `warrantyMonths` đã gỡ từ V249, dữ liệu đã backfill sang `product_purchase_lines`; cột nay bị xoá hẳn. |
+| ~~`warranty_scope`~~ | — | — | **Đã DROP ở V266** (gỡ module bảo hành). Domain field `warrantyScope` đã gỡ từ V249, dữ liệu đã backfill (fallback) sang `product_purchase_lines`; cột nay bị xoá hẳn. |
 | `pdp_shipping_line` | `TEXT` | YES | **(dormant từ V249)** Domain field `pdpShippingLine` đã gỡ; cột giữ làm lưới an toàn, dữ liệu đã backfill sang `product_purchase_lines`. Không còn admin đọc/ghi. |
 | `pdp_return_line` | `TEXT` | YES | **(dormant từ V249)** Domain field `pdpReturnLine` đã gỡ; cột giữ làm lưới an toàn, dữ liệu đã backfill sang `product_purchase_lines`. Không còn admin đọc/ghi. |
 | `origin_brand_country` | `VARCHAR(120)` | YES | "Thương hiệu [nước]". Domain `originBrandCountry`. |
@@ -1107,20 +1059,6 @@ Read-only aggregation served by `GET /api/v1/catalog/facets` (see [API_CONTRACT.
 
 Status: `CONFIRMED_FROM_CODE` — `CatalogFacets.java`, `CatalogReadService.computeFacets`.
 
-## Accounts Receivable Data Fields
-
-Status: `CONFIRMED_FROM_CODE` — implemented in `V75__add_credit_and_receivables.sql`.
-
-### customers table — credit columns added (V75)
-
-| Column | Type | Nullable | Default | Purpose |
-|---|---|---|---|---|
-| `credit_enabled` | `BOOLEAN` | NO | `false` | Whether this customer is allowed to purchase on credit |
-| `credit_limit` | `NUMERIC(19,2)` | YES | `null` | Maximum outstanding balance; null = uncapped |
-| `payment_terms_days` | `INTEGER` | YES | `null` | Days until payment is due after credit sale |
-| `credit_status` | `VARCHAR(50)` | NO | `'ACTIVE'` | `ACTIVE` / `SUSPENDED` / `BLOCKED` |
-| `credit_note` | `TEXT` | YES | `null` | Internal admin note on credit profile |
-
 ### customers / customer_addresses — account page fields (V127)
 
 | Table | Column | Type | Nullable | Default | Purpose |
@@ -1149,13 +1087,11 @@ Evidence: `OrderReadService.resolveProductThumbnails`, `ProductJpaRepository.fin
 `var_<hex>` for admin-created), so the legacy UUID column `product_variant_id` is `null` for
 every non-UUID variant — the same UUID/varchar mismatch V74 fixed on the product side. Resolve
 the variant from a line by **`product_variant_id` (UUID) first, then `product_variant_pk`** — see
-`OrderLineItemEntity.resolveVariantKey()` (and `resolveProductKey()` for the product side). The
-stock-restore paths (`OrderStockRestoreService`, `AdminReturnService`) use this so cancel /
-refund / completed-return correctly restock variants of migrated products.
+`OrderLineItemEntity.resolveVariantKey()` (and `resolveProductKey()` for the product side). This varchar PK still uniquely identifies the line's variant for snapshots. _(Since V261 inventory is a boolean availability toggle — there is no quantity decrement/restore, so the former stock-restore paths no longer run.)_
 
-Snapshotted at line creation on every sell path that decrements the variant by its string id —
-POS (`PosOrderService`), storefront quick-buy (`CheckoutService.buildLineItemFromProduct`), and
-storefront cart-checkout (`CheckoutService.buildLineItemFromCart`, since V176). Historical rows
+Snapshotted at line creation on every sell path that records the variant by its string id —
+storefront quick-buy (`CheckoutService.buildLineItemFromProduct`) and
+storefront cart-checkout (`CheckoutService.buildLineItemFromCart`, since V176). (The former POS sell path was removed 2026-06-23.) Historical rows
 keep `product_variant_pk = NULL` and fall back to product-level restore. Fixed BUG-2 — see
 `TEST_REPORT.md` and `QaBug2StockRestoreTest`.
 
@@ -1163,10 +1099,10 @@ keep `product_variant_pk = NULL` and fall back to product-level restore. Fixed B
 > left `product_variant_pk` null on the assumption that cart-checkout decrement was product-level —
 > but `CheckoutService` resolved cart lines by the UUID `product_id`/`product_variant_id`, which are
 > null for wp-* catalog, so the stock-validate and stock-apply passes **skipped wp-* cart lines
-> entirely** (no validation, no decrement, no serial reservation) → silent oversell on the main
+> entirely** (no validation, no decrement) → silent oversell on the main
 > storefront purchase path. V176 adds `cart_items.product_variant_pk`, populates it at add-to-cart,
 > and switches cart + checkout resolution to `product_pk` / `product_variant_pk` (varchar, uniform
-> for UUID and wp-* entities). Cart-checkout now decrements/reserves at variant level and snapshots
+> for UUID and wp-* entities). Cart-checkout now decrements at variant level and snapshots
 > `product_variant_pk` onto the order line, so restore stays symmetric. See `cart_items —
 > product_variant_pk (V176)` below.
 
@@ -1194,64 +1130,14 @@ the UUID column (exact) and from `product_pk` + `variant_name` (best-effort, onl
 
 Partial unique index `ux_customers_oauth` on `(oauth_provider, oauth_subject)` where `oauth_provider IS NOT NULL` — prevents two accounts linking to the same provider identity.
 
-### accounts_receivable table (V75; `version` column added in V83)
-
-| Column | Type | Nullable | Purpose |
-|---|---|---|---|
-| `id` | `UUID PK` | NO | Primary key |
-| `order_id` | `UUID FK → orders.id UNIQUE` | NO | One receivable per order |
-| `customer_id` | `UUID FK → customers.id` | YES | Null for walk-in without account |
-| `customer_name` | `VARCHAR(200)` | YES | Name snapshot at creation |
-| `customer_phone` | `VARCHAR(30)` | YES | Phone snapshot at creation |
-| `original_amount` | `NUMERIC(19,2)` | NO | Total order amount at time of credit sale |
-| `paid_amount` | `NUMERIC(19,2)` | NO | Cumulative amount received so far |
-| `outstanding_amount` | `NUMERIC(19,2)` | NO | `original_amount - paid_amount` (maintained in-sync) |
-| `written_off_amount` | `NUMERIC(19,2)` | NO | Amount written off (0 unless WRITTEN_OFF) |
-| `status` | `VARCHAR(50)` | NO | `OPEN` / `PARTIALLY_PAID` / `OVERDUE` / `CLOSED` / `WRITTEN_OFF` |
-| `due_date` | `DATE` | YES | `placedAt + paymentTermsDays`; null if terms not set |
-| `payment_terms_days` | `INTEGER` | YES | Snapshot of terms at time of sale |
-| `credit_limit_snapshot` | `NUMERIC(19,2)` | YES | Snapshot of customer credit_limit at time of sale |
-| `created_from` | `VARCHAR(50)` | YES | Origin channel (e.g. `POS`) |
-| `note` | `TEXT` | YES | Staff note |
-| `write_off_reason` | `TEXT` | YES | Mandatory when WRITTEN_OFF |
-| `written_off_at` | `TIMESTAMPTZ` | YES | Timestamp of write-off |
-| `created_by_admin_id` | `UUID` | YES | Admin who created the receivable |
-| `created_at` | `TIMESTAMPTZ` | NO | Creation timestamp |
-| `updated_at` | `TIMESTAMPTZ` | NO | Last update timestamp |
-| `version` | `BIGINT` | NO | Optimistic locking version |
-
-Constraints: `UNIQUE(order_id)`, `CHECK status IN (...)`, `CHECK outstanding_amount >= 0`, `CHECK paid_amount >= 0`.
-
-Indexes: `(customer_id)`, `(status)`, `(due_date)`, `(created_at DESC)`.
-
-### API response shapes
-
-#### ReceivableListItemResponse
-
-`id`, `orderId`, `orderNumber`, `customerId`, `customerName`, `customerPhone`, `originalAmount`, `paidAmount`, `outstandingAmount`, `status`, `dueDate`, `overdueDays`, `createdFrom`, `createdAt`
-
-#### ReceivableDetailResponse
-
-All list fields plus: `writtenOffAmount`, `paymentTermsDays`, `creditLimitSnapshot`, `note`, `writeOffReason`, `writtenOffAt`, `updatedAt`
-
-#### ReceivableSummaryResponse
-
-`totalOutstanding`, `overdueOutstanding`, `writtenOffTotal`, `countOpen`, `countOverdue`
-
-#### ReceivableAgingResponse
-
-`notDue`, `days0To30`, `days31To60`, `days61To90`, `over90` (all BigDecimal outstanding amounts)
-
 ### Dashboard KPI — `todayPaidRevenue` field
 
 `AdminDashboardSummaryResponse.KpiResponse` includes:
 
 | Field | Computation | Purpose |
 |---|---|---|
-| `todayRevenue` | `SUM(totalAmount)` excluding CANCELLED/FAILED/REFUNDED | Gross GMV placed today |
+| `todayRevenue` | `SUM(totalAmount)` excluding CANCELLED/FAILED | Gross GMV placed today _(REFUNDED removed 2026-06-23)_ |
 | `todayPaidRevenue` | `SUM(paidAmount)` where `paymentStatus IN ('PAID')` | Actual cash collected today (PARTIALLY_PAID removed in V114) |
-
-Credit (CREDIT) orders contribute to `todayRevenue` but NOT to `todayPaidRevenue` (until payment is recorded), preserving accurate cash-vs-credit separation.
 
 Status: `CONFIRMED_FROM_CODE`
 
@@ -1286,10 +1172,8 @@ Evidence: `AdminCustomerService.java` line 48, `deriveSegment()` method
 
 | Field | Type | Description |
 |---|---|---|
-| `grossOrderValue` | `BigDecimal` | GMV: SUM(totalAmount) excl CANCELLED/FAILED (REFUNDED included) |
-| `paidRevenue` | `BigDecimal` | SUM(paidAmount) where paymentStatus IN (PAID, REFUNDED) excl CANCELLED orders (PARTIALLY_PAID / PARTIALLY_REFUNDED removed in V114) |
-| `refundAmount` | `BigDecimal` | SUM(refundAmount) for orders placed in range (placedAt-anchored) |
-| `netRevenue` | `BigDecimal` | paidRevenue − refundAmount; may be negative |
+| `grossOrderValue` | `BigDecimal` | GMV: SUM(totalAmount) excl CANCELLED/FAILED _(REFUNDED removed 2026-06-23)_ |
+| `paidRevenue` | `BigDecimal` | SUM(paidAmount) where paymentStatus = PAID, excl CANCELLED orders (PARTIALLY_PAID removed in V114; REFUNDED removed 2026-06-23) |
 | `orderCount` | `int` | COUNT excl CANCELLED/FAILED |
 | `avgOrderValue` | `BigDecimal` | grossOrderValue / orderCount; zero if orderCount = 0 |
 
@@ -1332,13 +1216,12 @@ Evidence: `AdminAnalyticsResponse.java`, `AdminReportService.java`, `OrderJpaRep
 | `contact` | Public contact email/address, social links | Liên hệ |
 | `public_home` | Homepage hotline, promo banner, experience/about blocks | Trang chủ |
 | `public_about` | Full About page (`/gioi-thieu`) copy: intro block-head, intro paragraphs (HTML), quality block, 5 service tiles (title/body/image/highlight), connect block — 28 keys. Seeded by `V223`. | Trang Giới thiệu |
-| `public_warranty` | Full Warranty-lookup page (`/bao-hanh`) copy: SEO meta, banner heading, lookup-box kicker/sub/labels/button, result-table labels, status badges (incl. `{daysLeft}` templates), result footers, plus two optional admin rich-text blocks (intro + policy/FAQ) and an optional intro image — 25 keys. Seeded by `V225`. The serial-lookup tool itself is unchanged; only the copy is dynamic. | Trang Bảo hành |
 | `public_product` | **No shared settings.** All product-detail content is per-product now: the commitment-rows block under the buy buttons (`product.commitments`, child table `product_commitments`, V232) and the trust-badge row above the title (`product.trustBadges`, child table `product_trust_badges`, V233). The former `product_commitment_*` (V228) and `product_trust_*` keys were removed in V232/V233. | Trang sản phẩm |
 | `public_hero` | Hero banners for listing pages (`/san-pham`, `/brands`, `/tin-tuc`) — 17 keys (5 per page incl. per-page `illustration_url` + 2 global fallbacks). Managed by the dedicated **Banner trang** admin screen (`BannerScreen.jsx`), not the generic settings screen. | Banner trang |
 | `promo` | Homepage promotion banner | Khuyến mãi |
 | `seo` | Homepage SEO title/description, OG image, bottom HTML block | SEO website |
 | `store` | Operational: low-stock threshold | Cửa hàng |
-| `inventory` | Operational: stock reservation TTL, default warranty months, serial-only selling | Tồn kho |
+| `inventory` | Operational. The `default_warranty_months` key was **removed in V266** (warranty module dropped); `reservation_ttl_minutes` and `serial_inventory_only` were **removed in V259** (serial tracking dropped). | Tồn kho |
 | `product_assign` | Editable text of the "Phân công" guide shown on the product create/edit screen — role names + task lists (7 keys). **Super-admin-only writable** (see below). | Phân công sản phẩm |
 | `security` | Login attempts, session timeout — devops-managed, hidden from the admin UI | (hidden) |
 
@@ -1365,33 +1248,9 @@ The `/gioi-thieu` page was previously rendered from hardcoded theme copy (i18n `
 
 Tile count is fixed at 5 (the grid layout depends on it); adding/removing tiles is a separate enhancement. The store/hotline/Facebook cards in the connect block still read the shared `contact` keys; brand logos still load from the brand taxonomy.
 
-### `public_warranty` keys — full Warranty-lookup page content (V225)
+### `public_warranty` keys — removed (2026-06-23, V266)
 
-All copy on `/bao-hanh` lives here. The web page (`app/bao-hanh/page.tsx`) reads settings-first and falls back to the `Warranty` i18n namespace per key, so the page is never blank if a row is empty. The serial-lookup tool's behaviour is unchanged — only its text is dynamic.
-
-| `setting_key` | Type | Content |
-|---|---|---|
-| `warranty_page_meta_title` | STRING | SEO `<title>` |
-| `warranty_page_meta_description` | LONG_TEXT | SEO meta description |
-| `warranty_page_heading` | STRING | Page banner heading (also breadcrumb leaf) |
-| `warranty_page_kicker` | STRING | Lookup-box kicker |
-| `warranty_page_subheading` | LONG_TEXT | Lookup-box sub-line |
-| `warranty_page_intro_html` | HTML | **New** rich-text block above the lookup box (empty → hidden) |
-| `warranty_page_intro_image` | IMAGE_URL | **New** optional illustration for the intro block (empty → hidden). Uploaded to MinIO via the admin media picker |
-| `warranty_page_serial_label` | STRING | Serial input label |
-| `warranty_page_serial_placeholder` | STRING | Serial input placeholder |
-| `warranty_page_serial_hint` | LONG_TEXT | Hint below the serial input |
-| `warranty_page_submit_button` | STRING | Lookup button text |
-| `warranty_page_submitting` | STRING | Button text while looking up |
-| `warranty_page_not_found` | STRING | "No warranty found" message |
-| `warranty_page_result_heading` | STRING | Result block heading |
-| `warranty_page_field_product` / `_serial` / `_start` / `_end` | STRING | Result-table row labels |
-| `warranty_page_status_active` / `_almost_expired` | STRING | Status badge templates — must keep the `{daysLeft}` placeholder |
-| `warranty_page_status_expired` / `_voided` | STRING | Status badge labels |
-| `warranty_page_footer_active` / `_voided` | LONG_TEXT | Note under the result for active / voided cards |
-| `warranty_page_policy_html` | HTML | **New** rich-text policy/FAQ block below the result (empty → hidden) |
-
-Edited from the generic **Settings** screen (`SettingsScreen.jsx`) under the new **Trang Bảo hành** tab — no dedicated screen. The group is in `TRANSLATABLE_GROUPS`, so text keys carry a VI + EN value (images/templates excluded from the EN editor as usual).
+> **Removed (2026-06-23, V266).** The entire `public_warranty` setting group (all `warranty_page_*` keys) and the `/bao-hanh` web page were **deleted** along with the warranty feature. There is no longer a warranty-lookup page, a **Trang Bảo hành** settings tab, or any `warranty_page_*` setting. Customer-facing warranty wording survives only as CMS policy content (e.g. the "Chính sách bảo hành" content page) and per-product marketing rows.
 
 ### `public_product` keys — product-page trust badges
 
@@ -1426,7 +1285,7 @@ Migration `V132__cleanup_sepay_and_normalize_inventory_settings.sql`:
 Status: `CONFIRMED_FROM_CODE`
 
 Evidence:
-- `SettingDefinitionRegistry.java` — registers keys for `general`/`contact`/`public_home`/`public_about`/`public_warranty`/`public_hero`/`promo`/`seo`/`store`/`tax`/`product_assign`
+- `SettingDefinitionRegistry.java` — registers keys for `general`/`contact`/`public_home`/`public_about`/`public_hero`/`promo`/`seo`/`store`/`tax`/`product_assign`
 - `V157__seed_product_assignment_settings.sql` — seeds the 7 `product_assign_*` rows
 - `AdminProductAssignmentController.java` — `GET /api/v1/admin/product-assignment` (read for the banner, `products.read`)
 - `SettingsScreen.jsx` — `TAB_ORDER` / `TAB_META` (tab rendering), `HIDDEN_GROUPS` (`security`, `payment_sepay`), super-admin filter for `superAdminOnly` keys

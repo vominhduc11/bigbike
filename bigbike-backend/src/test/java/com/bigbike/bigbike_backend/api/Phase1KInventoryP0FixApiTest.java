@@ -2,6 +2,7 @@ package com.bigbike.bigbike_backend.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -17,17 +18,10 @@ import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepos
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.catalog.StockMovementJpaRepository;
 import com.bigbike.bigbike_backend.service.auth.PasswordService;
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +34,12 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
+/**
+ * Inventory availability toggle (boolean model — owner decision 2026-06-23).
+ * Inventory is "còn hàng / hết hàng" only: a per-variant {@code is_available} toggle and a
+ * single {@code stock_state} toggle for no-variant products. There are no quantities, no
+ * stock movements written for the toggle, and no decrement/restore on sale/cancel.
+ */
 @SpringBootTest
 @Sql(scripts = "/db/test-seed.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
 class Phase1KInventoryP0FixApiTest {
@@ -55,7 +55,6 @@ class Phase1KInventoryP0FixApiTest {
     @Autowired CategoryJpaRepository categoryRepo;
     @Autowired ProductJpaRepository productRepo;
     @Autowired ProductVariantJpaRepository variantRepo;
-    @Autowired StockMovementJpaRepository movementRepo;
     @Autowired PasswordService passwordService;
 
     private MockMvc mockMvc;
@@ -77,99 +76,57 @@ class Phase1KInventoryP0FixApiTest {
         testVariantId   = ensureTestVariant(testProductName);
     }
 
-    // ── 1. Manual stock IN succeeds: quantity updated, movement written ───────────
+    // ── 1. Setting a variant out of stock flips is_available + stock_state ────────
 
     @Test
-    void manualStockIn_updatesQuantityAndWritesMovement() throws Exception {
-        ProductVariantEntity before = variantRepo.findById(testVariantId).orElseThrow();
-        int qtyBefore = before.getQuantityOnHand();
-
-        String s1 = "SN-P0-IN-" + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
-        String s2 = "SN-P0-IN-" + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
-
-        mockMvc.perform(post("/api/v1/admin/inventory/variants/" + testVariantId + "/adjust")
+    void setVariantUnavailable_flipsAvailabilityAndState() throws Exception {
+        mockMvc.perform(patch("/api/v1/admin/inventory/variants/" + testVariantId + "/availability")
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                { "quantityDelta": 2, "movementType": "IN",
-                                  "serialNumbers": ["%s", "%s"] }
-                                """.formatted(s1, s2)))
+                        .content("{ \"available\": false }"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.quantityOnHand").value(qtyBefore + 2));
+                .andExpect(jsonPath("$.available").value(false))
+                .andExpect(jsonPath("$.stockState").value("OUT_OF_STOCK"));
 
         ProductVariantEntity after = variantRepo.findById(testVariantId).orElseThrow();
-        assertThat(after.getQuantityOnHand()).isEqualTo(qtyBefore + 2);
-
-        long movCount = movementRepo.countByVariantId(testVariantId);
-        assertThat(movCount).isGreaterThan(0);
+        assertThat(after.isAvailable()).isFalse();
+        assertThat(after.getStockState()).isEqualTo(ProductStockState.OUT_OF_STOCK);
     }
 
-    // ── 2. Manual adjust cannot go below zero ────────────────────────────────────
+    // ── 2. Setting a variant in stock flips it back to available + IN_STOCK ───────
 
     @Test
-    void manualAdjust_belowZero_returns400() throws Exception {
-        ProductVariantEntity v = variantRepo.findById(testVariantId).orElseThrow();
-        int current = v.getQuantityOnHand();
-
-        mockMvc.perform(post("/api/v1/admin/inventory/variants/" + testVariantId + "/adjust")
+    void setVariantAvailable_flipsBackToInStock() throws Exception {
+        // first set out
+        mockMvc.perform(patch("/api/v1/admin/inventory/variants/" + testVariantId + "/availability")
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                { "quantityDelta": %d, "movementType": "OUT" }
-                                """.formatted(-(current + 100))))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.details[0].code").value("BELOW_ZERO"));
-    }
-
-    // ── 3. Movement response includes productName and variantName ────────────────
-
-    @Test
-    void movementList_includesProductAndVariantName() throws Exception {
-        String s1 = "SN-P0-NM-" + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
-
-        mockMvc.perform(post("/api/v1/admin/inventory/variants/" + testVariantId + "/adjust")
-                        .header("Authorization", "Bearer " + adminToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                { "quantityDelta": 1, "movementType": "IN",
-                                  "serialNumbers": ["%s"] }
-                                """.formatted(s1)))
+                        .content("{ \"available\": false }"))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(get("/api/v1/admin/inventory/variants/" + testVariantId + "/movements")
-                        .header("Authorization", "Bearer " + adminToken)
-                        .param("page", "1").param("size", "5"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items[0].productName").value(testProductName))
-                .andExpect(jsonPath("$.items[0].variantName").isString())
-                .andExpect(jsonPath("$.items[0].variantSku").isString());
-    }
-
-    // ── 4. Global movements list also includes productName ───────────────────────
-
-    @Test
-    void globalMovementList_includesProductName() throws Exception {
-        String s1 = "SN-P0-GL-" + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
-
-        mockMvc.perform(post("/api/v1/admin/inventory/variants/" + testVariantId + "/adjust")
+        mockMvc.perform(patch("/api/v1/admin/inventory/variants/" + testVariantId + "/availability")
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                { "quantityDelta": 1, "movementType": "IN",
-                                  "serialNumbers": ["%s"] }
-                                """.formatted(s1)))
-                .andExpect(status().isOk());
-
-        mockMvc.perform(get("/api/v1/admin/inventory/movements")
-                        .header("Authorization", "Bearer " + adminToken)
-                        .param("page", "1").param("size", "5")
-                        .param("movementType", "IN"))
+                        .content("{ \"available\": true }"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items[0].productName").isString())
-                .andExpect(jsonPath("$.items[0].variantSku").isString());
+                .andExpect(jsonPath("$.available").value(true))
+                .andExpect(jsonPath("$.stockState").value("IN_STOCK"));
+
+        assertThat(variantRepo.findById(testVariantId).orElseThrow().isAvailable()).isTrue();
     }
 
-    // ── 5. CSV export requires authentication ────────────────────────────────────
+    // ── 3. Missing 'available' field is rejected (Bean Validation) ────────────────
+
+    @Test
+    void setVariantAvailability_missingField_returns400() throws Exception {
+        mockMvc.perform(patch("/api/v1/admin/inventory/variants/" + testVariantId + "/availability")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ }"))
+                .andExpect(status().isBadRequest());
+    }
+
+    // ── 4. CSV export requires authentication ────────────────────────────────────
 
     @Test
     void csvExport_withoutToken_returns401() throws Exception {
@@ -185,180 +142,68 @@ class Phase1KInventoryP0FixApiTest {
                 .andExpect(content().contentTypeCompatibleWith("text/csv"));
     }
 
-    // ── 6. Permission denied for inventory adjust without inventory.write ─────────
+    // ── 5. Permission denied for availability toggle without inventory.write ──────
 
     @Test
-    void adjust_withViewerRole_returns403() throws Exception {
-        mockMvc.perform(post("/api/v1/admin/inventory/variants/" + testVariantId + "/adjust")
+    void setAvailability_withViewerRole_returns403() throws Exception {
+        mockMvc.perform(patch("/api/v1/admin/inventory/variants/" + testVariantId + "/availability")
                         .header("Authorization", "Bearer " + noPermToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                { "quantityDelta": 1, "movementType": "ADJUSTMENT" }
-                                """))
+                        .content("{ \"available\": false }"))
                 .andExpect(status().isForbidden());
     }
 
-    // ── 7. Concurrent adjust on same variant — no lost update ────────────────────
+    // ── 6. Product-level (no-variant) availability toggle ────────────────────────
 
     @Test
-    void concurrentAdjust_noLostUpdate() throws Exception {
-        // Seed enough stock to subtract from
-        String s1 = "SN-CONC-BASE-" + UUID.randomUUID().toString().replace("-", "").substring(0, 6);
-        String s2 = "SN-CONC-BASE-" + UUID.randomUUID().toString().replace("-", "").substring(0, 6);
-        String s3 = "SN-CONC-BASE-" + UUID.randomUUID().toString().replace("-", "").substring(0, 6);
-        String s4 = "SN-CONC-BASE-" + UUID.randomUUID().toString().replace("-", "").substring(0, 6);
-        mockMvc.perform(post("/api/v1/admin/inventory/variants/" + testVariantId + "/adjust")
+    void setProductUnavailable_setsOutOfStock() throws Exception {
+        String productId = ensureTestProduct("ProdLevel Avail " + UUID.randomUUID().toString().substring(0, 8));
+
+        mockMvc.perform(patch("/api/v1/admin/inventory/products/" + productId + "/availability")
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                { "quantityDelta": 4, "movementType": "IN",
-                                  "serialNumbers": ["%s","%s","%s","%s"] }
-                                """.formatted(s1, s2, s3, s4)))
-                .andExpect(status().isOk());
-
-        ProductVariantEntity seeded = variantRepo.findById(testVariantId).orElseThrow();
-        int qtyBeforeConcurrent = seeded.getQuantityOnHand();
-
-        // Fire two concurrent OUT adjustments of 1 each
-        int threads = 2;
-        ExecutorService pool = Executors.newFixedThreadPool(threads);
-        CountDownLatch ready = new CountDownLatch(threads);
-        CountDownLatch go    = new CountDownLatch(1);
-        List<Future<Integer>> futures = new ArrayList<>();
-
-        for (int i = 0; i < threads; i++) {
-            futures.add(pool.submit(() -> {
-                ready.countDown();
-                go.await();
-                MvcResult r = mockMvc.perform(post("/api/v1/admin/inventory/variants/" + testVariantId + "/adjust")
-                                .header("Authorization", "Bearer " + adminToken)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content("{\"quantityDelta\": -1, \"movementType\": \"OUT\"}"))
-                        .andReturn();
-                return r.getResponse().getStatus();
-            }));
-        }
-        ready.await();
-        go.countDown();
-        pool.shutdown();
-
-        long ok = futures.stream().mapToInt(f -> { try { return f.get(); } catch (Exception e) { return 0; } })
-                         .filter(s -> s == 200).count();
-        assertThat(ok).isEqualTo(threads); // Both should succeed
-
-        ProductVariantEntity final_ = variantRepo.findById(testVariantId).orElseThrow();
-        // Exact deduction: no lost update means qty decreased by exactly threads
-        assertThat(final_.getQuantityOnHand()).isEqualTo(qtyBeforeConcurrent - threads);
-    }
-
-    // ── 8. ADJUSTMENT movement type accepted ─────────────────────────────────────
-
-    @Test
-    void adjustment_movementType_accepted() throws Exception {
-        ProductVariantEntity v = variantRepo.findById(testVariantId).orElseThrow();
-        int qty = v.getQuantityOnHand();
-
-        mockMvc.perform(post("/api/v1/admin/inventory/variants/" + testVariantId + "/adjust")
-                        .header("Authorization", "Bearer " + adminToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                { "quantityDelta": 5, "movementType": "ADJUSTMENT",
-                                  "note": "Cycle count correction" }
-                                """))
+                        .content("{ \"available\": false }"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.quantityOnHand").value(qty + 5));
-    }
-
-    // ── 9. Invalid movementType rejected ─────────────────────────────────────────
-
-    @Test
-    void adjust_invalidMovementType_returns400() throws Exception {
-        mockMvc.perform(post("/api/v1/admin/inventory/variants/" + testVariantId + "/adjust")
-                        .header("Authorization", "Bearer " + adminToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                { "quantityDelta": 1, "movementType": "SALE" }
-                                """))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.details[0].code").value("INVALID"));
-    }
-
-    // ── 10. Product-level adjust — increases stockQuantity and writes movement ───
-
-    @Test
-    void productLevelAdjust_increasesStockAndWritesMovement() throws Exception {
-        String productId = ensureTestProduct("ProdLevel Adjust " + UUID.randomUUID().toString().substring(0, 8));
-
-        mockMvc.perform(post("/api/v1/admin/inventory/products/" + productId + "/adjust")
-                        .header("Authorization", "Bearer " + adminToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                { "quantityDelta": 10, "movementType": "IN", "note": "Initial stock" }
-                                """))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.quantityOnHand").value(10))
+                .andExpect(jsonPath("$.available").value(false))
+                .andExpect(jsonPath("$.stockState").value("OUT_OF_STOCK"))
                 .andExpect(jsonPath("$.variantId").doesNotExist());
 
         ProductEntity updated = productRepo.findById(productId).orElseThrow();
-        assertThat(updated.getStockQuantity()).isEqualTo(10);
-
-        long movCount = movementRepo.countByProductId(productId);
-        assertThat(movCount).isGreaterThan(0);
+        assertThat(updated.getStockState()).isEqualTo(ProductStockState.OUT_OF_STOCK);
     }
 
-    // ── 11. Product-level adjust below zero returns 400 ──────────────────────────
+    // ── 7. Product-level availability toggle requires inventory.write permission ──
 
     @Test
-    void productLevelAdjust_belowZero_returns400() throws Exception {
-        String productId = ensureTestProduct("ProdLevel BelowZero " + UUID.randomUUID().toString().substring(0, 8));
-
-        mockMvc.perform(post("/api/v1/admin/inventory/products/" + productId + "/adjust")
-                        .header("Authorization", "Bearer " + adminToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                { "quantityDelta": -999, "movementType": "OUT" }
-                                """))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.details[0].code").value("BELOW_ZERO"));
-    }
-
-    // ── 12. Product-level adjust requires inventory.write permission ──────────────
-
-    @Test
-    void productLevelAdjust_requiresInventoryWritePermission() throws Exception {
+    void productLevelAvailability_requiresInventoryWritePermission() throws Exception {
         String productId = ensureTestProduct("ProdLevel Perm " + UUID.randomUUID().toString().substring(0, 8));
 
-        mockMvc.perform(post("/api/v1/admin/inventory/products/" + productId + "/adjust")
+        mockMvc.perform(patch("/api/v1/admin/inventory/products/" + productId + "/availability")
                         .header("Authorization", "Bearer " + noPermToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                { "quantityDelta": 1, "movementType": "ADJUSTMENT" }
-                                """))
+                        .content("{ \"available\": true }"))
                 .andExpect(status().isForbidden());
     }
 
-    // ── 13. Adjust stock on TRASH product/variant returns 400 ────────────────────
+    // ── 8. Availability toggle on a TRASH product returns 400 ────────────────────
 
     @Test
-    void adjustStock_trashProduct_returns400() throws Exception {
+    void setAvailability_trashProduct_returns400() throws Exception {
         String productId = ensureTestProduct("ProdLevel Trash " + UUID.randomUUID().toString().substring(0, 8));
 
-        // Move product to TRASH
         ProductEntity p = productRepo.findById(productId).orElseThrow();
         p.setPublishStatus(PublishStatus.TRASH);
         productRepo.save(p);
 
-        mockMvc.perform(post("/api/v1/admin/inventory/products/" + productId + "/adjust")
+        mockMvc.perform(patch("/api/v1/admin/inventory/products/" + productId + "/availability")
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                { "quantityDelta": 5, "movementType": "ADJUSTMENT" }
-                                """))
+                        .content("{ \"available\": false }"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error.details[0].code").value("TRASH_PRODUCT"));
     }
 
-    // ── 14. filter_gender removed from handler — Spring ignores unknown query params ──
+    // ── 9. filter_gender removed from handler — Spring ignores unknown query params ──
 
     @Test
     void publicProductList_filterGender_isIgnoredReturns200() throws Exception {
@@ -398,7 +243,7 @@ class Phase1KInventoryP0FixApiTest {
         return body.substring(start, body.indexOf("\"", start));
     }
 
-    /** Creates a product WITHOUT variants (product-level stock) and returns the product ID. */
+    /** Creates a product WITHOUT variants (product-level availability) and returns the product ID. */
     private String ensureTestProduct(String productName) {
         String catId = "cat-p0fix-pl-" + UUID.randomUUID().toString().replace("-", "").substring(0, 6);
         CategoryEntity cat = new CategoryEntity();
@@ -420,8 +265,6 @@ class Phase1KInventoryP0FixApiTest {
         product.setCurrency("VND");
         product.setPublishStatus(PublishStatus.PUBLISHED);
         product.setStockState(ProductStockState.IN_STOCK);
-        product.setStockQuantity(0);
-        product.setManageStock(true);
         product.setCreatedAt(now);
         product.setUpdatedAt(now);
         product.setCategory(cat);
@@ -465,7 +308,6 @@ class Phase1KInventoryP0FixApiTest {
         variant.setRetailPrice(BigDecimal.valueOf(750000));
         variant.setCurrency("VND");
         variant.setStockState(ProductStockState.IN_STOCK);
-        variant.setQuantityOnHand(0);
         variant.setAvailable(true);
         variant.setSortOrder(0);
         variantRepo.save(variant);

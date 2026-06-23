@@ -2,9 +2,7 @@ package com.bigbike.bigbike_backend.migration.wordpress.runner;
 
 import com.bigbike.bigbike_backend.migration.wordpress.config.WordPressMigrationProperties;
 import com.bigbike.bigbike_backend.migration.wordpress.report.CatalogContentDryRunResult;
-import com.bigbike.bigbike_backend.migration.wordpress.report.CustomerOrderCouponDryRunResult;
 import com.bigbike.bigbike_backend.migration.wordpress.service.WordPressCatalogContentDryRunService;
-import com.bigbike.bigbike_backend.migration.wordpress.service.WordPressCustomerOrderCouponDryRunService;
 import com.bigbike.bigbike_backend.migration.wordpress.writeplan.MigrationWriteOperation;
 import com.bigbike.bigbike_backend.migration.wordpress.writeplan.MigrationWritePlan;
 import com.bigbike.bigbike_backend.migration.wordpress.writeplan.WordPressMigrationWritePlanService;
@@ -34,7 +32,6 @@ public class WordPressMigrationWritePlanRunner implements ApplicationRunner {
 
     private final WordPressMigrationProperties props;
     private final WordPressCatalogContentDryRunService catalogDryRunService;
-    private final WordPressCustomerOrderCouponDryRunService commerceDryRunService;
     private final WordPressMigrationWritePlanService writePlanService;
 
     @Override
@@ -61,14 +58,11 @@ public class WordPressMigrationWritePlanRunner implements ApplicationRunner {
             return;
         }
 
-        log.info("Step 1/3: Running catalog/content dry-run...");
+        log.info("Step 1/2: Running catalog/content dry-run...");
         CatalogContentDryRunResult catalog = catalogDryRunService.run(dumpPath);
 
-        log.info("Step 2/3: Running customer/order/coupon dry-run...");
-        CustomerOrderCouponDryRunResult commerce = commerceDryRunService.run(dumpPath);
-
-        log.info("Step 3/3: Generating write plan...");
-        MigrationWritePlan plan = writePlanService.buildPlan(catalog, commerce);
+        log.info("Step 2/2: Generating write plan...");
+        MigrationWritePlan plan = writePlanService.buildPlan(catalog);
 
         // ── Print plan to log ─────────────────────────────────────────────────
         log.info("");

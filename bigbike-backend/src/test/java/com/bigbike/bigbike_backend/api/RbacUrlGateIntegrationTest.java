@@ -41,12 +41,8 @@ import org.springframework.web.context.WebApplicationContext;
 class RbacUrlGateIntegrationTest {
 
     // Custom role IDs — unique per test run to avoid inter-test collisions
-    private static final String ROLE_POS_READER    = "RBAC_TEST_POS_READER";
-    private static final String ROLE_COUPON_READER = "RBAC_TEST_COUPON_READER";
     private static final String ROLE_ORDER_READER  = "RBAC_TEST_ORDER_READER";
 
-    private static final String POS_READER_EMAIL    = "rbac-pos-"    + UUID.randomUUID() + "@bigbike.test";
-    private static final String COUPON_READER_EMAIL = "rbac-coupon-" + UUID.randomUUID() + "@bigbike.test";
     private static final String ORDER_READER_EMAIL  = "rbac-order-"  + UUID.randomUUID() + "@bigbike.test";
     private static final String EDITOR_EMAIL        = "rbac-editor-" + UUID.randomUUID() + "@bigbike.test";
 
@@ -61,8 +57,6 @@ class RbacUrlGateIntegrationTest {
 
     private MockMvc mockMvc;
 
-    private String posReaderToken;
-    private String couponReaderToken;
     private String orderReaderToken;
     private String editorToken;
 
@@ -72,8 +66,6 @@ class RbacUrlGateIntegrationTest {
                 .apply(SecurityMockMvcConfigurers.springSecurity())
                 .build();
 
-        ensureRole(ROLE_POS_READER,    "RBAC Test POS Reader",    Set.of("pos.read"));
-        ensureRole(ROLE_COUPON_READER, "RBAC Test Coupon Reader", Set.of("coupons.read"));
         ensureRole(ROLE_ORDER_READER,  "RBAC Test Order Reader",  Set.of("orders.read"));
         // EDITOR is a built-in role seeded by Flyway V49, but tests run against H2 with Flyway
         // disabled (create-drop schema only). Seed EDITOR explicitly so DB matches the static map.
@@ -84,47 +76,11 @@ class RbacUrlGateIntegrationTest {
                 "menus.read", "menus.write",
                 "sliders.read", "sliders.write"));
 
-        ensureUser(POS_READER_EMAIL,    ROLE_POS_READER);
-        ensureUser(COUPON_READER_EMAIL, ROLE_COUPON_READER);
         ensureUser(ORDER_READER_EMAIL,  ROLE_ORDER_READER);
         ensureUser(EDITOR_EMAIL,        "EDITOR");
 
-        posReaderToken    = login(POS_READER_EMAIL);
-        couponReaderToken = login(COUPON_READER_EMAIL);
         orderReaderToken  = login(ORDER_READER_EMAIL);
         editorToken       = login(EDITOR_EMAIL);
-    }
-
-    // ── 1. Custom role with pos.read → POS search succeeds ───────────────────
-
-    @Test
-    void customRole_posRead_canCallPosSearch() throws Exception {
-        mockMvc.perform(get("/api/v1/admin/pos/products/search")
-                        .param("q", "rbac-test-" + UUID.randomUUID())
-                        .header("Authorization", "Bearer " + posReaderToken))
-                .andExpect(status().isOk());
-    }
-
-    // ── 2. Custom role without pos.write → POS mutation is 403 ───────────────
-
-    @Test
-    void customRole_noPosWrite_posOrderReturns403() throws Exception {
-        // Permission check fires first, before business logic — 403 regardless of body validity
-        mockMvc.perform(post("/api/v1/admin/pos/orders")
-                        .header("Authorization", "Bearer " + posReaderToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentMethod\":\"CASH\",\"posIdempotencyKey\":\""
-                                + UUID.randomUUID() + "\",\"tenderedAmount\":9999999,\"items\":[]}"))
-                .andExpect(status().isForbidden());
-    }
-
-    // ── 3. Custom role with coupons.read → coupon list succeeds ──────────────
-
-    @Test
-    void customRole_couponsRead_canCallCouponsList() throws Exception {
-        mockMvc.perform(get("/api/v1/admin/coupons")
-                        .header("Authorization", "Bearer " + couponReaderToken))
-                .andExpect(status().isOk());
     }
 
     // ── 4. Custom role with orders.read → dashboard succeeds ─────────────────
@@ -233,8 +189,8 @@ class RbacUrlGateIntegrationTest {
     @Test
     void adminGet_staysNoStore_notCacheable() throws Exception {
         // Admin endpoint reached with a valid token — response must NOT be cacheable.
-        String token = login(POS_READER_EMAIL);
-        mockMvc.perform(get("/api/v1/admin/pos/products/search").param("q", "x")
+        String token = login(ORDER_READER_EMAIL);
+        mockMvc.perform(get("/api/v1/admin/dashboard")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
                         .header().string("Cache-Control",

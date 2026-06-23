@@ -111,46 +111,5 @@ select '00000000-0000-0000-0000-000000000203',
        '2026-04-21T00:00:00Z'
 where not exists (select 1 from menus where location = 'guide');
 
--- Shipping zone: Vietnam
-insert into shipping_zones (id, legacy_id, name, region_code, sort_order, enabled, created_at, updated_at) values
-(
-    '00000000-0000-0000-0000-000000000301',
-    1,
-    'Vietnam',
-    'VN',
-    0,
-    true,
-    '2026-04-21T00:00:00Z',
-    '2026-04-21T00:00:00Z'
-);
-
--- Shipping method: COD
-insert into shipping_methods (id, zone_id, legacy_id, method_code, title, description, cost, min_order_amount, enabled, sort_order, created_at, updated_at) values
-(
-    '00000000-0000-0000-0000-000000000401',
-    '00000000-0000-0000-0000-000000000301',
-    1,
-    'cod',
-    'Thanh toán khi nhận hàng (COD)',
-    'Thanh toán tiền mặt khi nhận hàng.',
-    0,
-    0,
-    true,
-    0,
-    '2026-04-21T00:00:00Z',
-    '2026-04-21T00:00:00Z'
-),
-(
-    '00000000-0000-0000-0000-000000000402',
-    '00000000-0000-0000-0000-000000000301',
-    2,
-    'flat_rate',
-    'Phí vận chuyển cố định',
-    'Phí vận chuyển 30,000 VND cho mọi đơn hàng.',
-    30000,
-    0,
-    false,
-    1,
-    '2026-04-21T00:00:00Z',
-    '2026-04-21T00:00:00Z'
-);
+-- Shipping zones/methods seed removed (owner decision 2026-06-23): shipping-method management was
+-- dropped (see V264). Online orders no longer choose a shipping method or carry a shipping fee.

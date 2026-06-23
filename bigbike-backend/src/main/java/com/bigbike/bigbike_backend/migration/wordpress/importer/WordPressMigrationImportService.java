@@ -5,7 +5,6 @@ import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressArticleMa
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressBrandMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.normalizer.ProductNormalizationService;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressCategoryMapper;
-import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressCouponMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressCustomerMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressMediaMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressMenuMapper;
@@ -100,7 +99,6 @@ public class WordPressMigrationImportService {
     private final WordPressRedirectMapper redirectMapper;
     private final WordPressCustomerMapper customerMapper;
     private final WordPressOrderMapper orderMapper;
-    private final WordPressCouponMapper couponMapper;
     private final WordPressReviewMapper reviewMapper;
 
     private final CategoryImporter categoryImporter;
@@ -115,7 +113,6 @@ public class WordPressMigrationImportService {
     private final ProductImporter productImporter;
     private final ProductVariationImporter productVariationImporter;
     private final CustomerImporter customerImporter;
-    private final CouponImporter couponImporter;
     private final OrderImporter orderImporter;
     private final ReviewImporter reviewImporter;
     private final AttributeImporter attributeImporter;
@@ -134,7 +131,6 @@ public class WordPressMigrationImportService {
             WordPressRedirectMapper redirectMapper,
             WordPressCustomerMapper customerMapper,
             WordPressOrderMapper orderMapper,
-            WordPressCouponMapper couponMapper,
             CategoryImporter categoryImporter,
             BrandImporter brandImporter,
             MediaImporter mediaImporter,
@@ -147,7 +143,6 @@ public class WordPressMigrationImportService {
             ProductImporter productImporter,
             ProductVariationImporter productVariationImporter,
             CustomerImporter customerImporter,
-            CouponImporter couponImporter,
             OrderImporter orderImporter,
             WordPressReviewMapper reviewMapper,
             ReviewImporter reviewImporter,
@@ -165,7 +160,6 @@ public class WordPressMigrationImportService {
         this.redirectMapper = redirectMapper;
         this.customerMapper = customerMapper;
         this.orderMapper = orderMapper;
-        this.couponMapper = couponMapper;
         this.reviewMapper = reviewMapper;
         this.categoryImporter = categoryImporter;
         this.brandImporter = brandImporter;
@@ -179,7 +173,6 @@ public class WordPressMigrationImportService {
         this.productImporter = productImporter;
         this.productVariationImporter = productVariationImporter;
         this.customerImporter = customerImporter;
-        this.couponImporter = couponImporter;
         this.orderImporter = orderImporter;
         this.reviewImporter = reviewImporter;
         this.attributeImporter = attributeImporter;
@@ -215,7 +208,6 @@ public class WordPressMigrationImportService {
             Map<Long, WpUser> usersById = new HashMap<>();
             Map<Long, List<WpUserMeta>> metaByUser = new HashMap<>();
             List<WpPost> orderPosts = new ArrayList<>();
-            List<WpPost> couponPosts = new ArrayList<>();
             Map<Long, List<WpOrderItem>> itemsByOrder = new HashMap<>();
             Map<Long, List<WpOrderItemMeta>> metaByItem = new HashMap<>();
 
@@ -226,7 +218,6 @@ public class WordPressMigrationImportService {
                         WpPost p = toWpPost(row);
                         if (p == null) return;
                         if ("shop_order".equals(type)) orderPosts.add(p);
-                        else if ("shop_coupon".equals(type)) couponPosts.add(p);
                         else allPosts.add(p);
                     }
                     case "kd_postmeta" -> {
@@ -564,15 +555,6 @@ public class WordPressMigrationImportService {
                     if (mc != null) customers.add(mc);
                 }
                 results.put(MigrationDomain.CUSTOMERS, customerImporter.importBatch(customers, options));
-            }
-
-            // ── 13. Coupons ───────────────────────────────────────────────────
-            if (options.includesDomain(MigrationDomain.COUPONS)) {
-                List<WordPressCouponMapper.MappedCoupon> coupons = new ArrayList<>();
-                for (WpPost post : couponPosts) {
-                    coupons.add(couponMapper.map(post, metaByPost.getOrDefault(post.id(), List.of())));
-                }
-                results.put(MigrationDomain.COUPONS, couponImporter.importBatch(coupons, options));
             }
 
             // ── 14. Orders ────────────────────────────────────────────────────

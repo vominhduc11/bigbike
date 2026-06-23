@@ -76,9 +76,9 @@ public class UpsertProductRequest {
     private String installationGuide;
     private boolean installationGuidePresent = false;
 
-    // warranty_months / warranty_scope / pdp_shipping_line / pdp_return_line (V175/V247)
-    // gỡ khỏi DTO ở V249 — nội dung này giờ là các dòng per-product trong khối
-    // "Mua tại BigBike.vn" (purchaseLines).
+    // pdp_shipping_line / pdp_return_line (V247) gỡ khỏi DTO ở V249 — nội dung này giờ là
+    // các dòng per-product trong khối "Mua tại BigBike.vn" (purchaseLines). warranty_months /
+    // warranty_scope (V175) gỡ hẳn ở V266 cùng module bảo hành.
 
     @Size(max = 120, message = "Origin brand country is too long.")
     private String originBrandCountry;

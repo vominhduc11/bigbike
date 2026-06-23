@@ -3,7 +3,6 @@ package com.bigbike.bigbike_backend.schema;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
-import com.bigbike.bigbike_backend.persistence.entity.coupon.CouponEntity;
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerAddressEntity;
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEntity;
 import com.bigbike.bigbike_backend.persistence.entity.media.MediaEntity;
@@ -11,10 +10,7 @@ import com.bigbike.bigbike_backend.persistence.entity.menu.MenuEntity;
 import com.bigbike.bigbike_backend.persistence.entity.menu.MenuItemEntity;
 import com.bigbike.bigbike_backend.persistence.entity.redirect.RedirectEntity;
 import com.bigbike.bigbike_backend.persistence.entity.settings.SiteSettingEntity;
-import com.bigbike.bigbike_backend.persistence.entity.shipping.ShippingMethodEntity;
-import com.bigbike.bigbike_backend.persistence.entity.shipping.ShippingZoneEntity;
 import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.coupon.CouponJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerAddressJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.media.MediaJpaRepository;
@@ -22,8 +18,6 @@ import com.bigbike.bigbike_backend.persistence.repository.menu.MenuItemJpaReposi
 import com.bigbike.bigbike_backend.persistence.repository.menu.MenuJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.redirect.RedirectJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.settings.SiteSettingJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.shipping.ShippingMethodJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.shipping.ShippingZoneJpaRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -44,9 +38,6 @@ class Phase1BSchemaTest {
     @Autowired RedirectJpaRepository redirectRepo;
     @Autowired MenuJpaRepository menuRepo;
     @Autowired MenuItemJpaRepository menuItemRepo;
-    @Autowired CouponJpaRepository couponRepo;
-    @Autowired ShippingZoneJpaRepository shippingZoneRepo;
-    @Autowired ShippingMethodJpaRepository shippingMethodRepo;
     @Autowired SiteSettingJpaRepository siteSettingRepo;
     @Autowired AuditLogJpaRepository auditLogRepo;
 
@@ -72,22 +63,7 @@ class Phase1BSchemaTest {
         assertThat(menuRepo.findByLocation("guide")).isPresent();
     }
 
-    @Test
-    void shippingZone_seedLoaded() {
-        List<ShippingZoneEntity> zones = shippingZoneRepo.findByEnabledOrderBySortOrderAsc(true);
-        assertThat(zones).isNotEmpty();
-        assertThat(zones.get(0).getRegionCode()).isEqualTo("VN");
-    }
-
-    @Test
-    void shippingMethods_seedLoaded() {
-        List<ShippingZoneEntity> zones = shippingZoneRepo.findByEnabledOrderBySortOrderAsc(true);
-        assertThat(zones).isNotEmpty();
-        UUID zoneId = zones.get(0).getId();
-
-        List<ShippingMethodEntity> methods = shippingMethodRepo.findByZoneId(zoneId);
-        assertThat(methods).hasSizeGreaterThanOrEqualTo(2);
-    }
+    // Shipping zone/method seed tests removed (owner decision 2026-06-23) — see V264.
 
     // ── customer round-trip ────────────────────────────────────────────────
 
@@ -187,24 +163,6 @@ class Phase1BSchemaTest {
         List<MenuItemEntity> items = menuItemRepo.findByMenuIdOrderBySortOrderAsc(menu.getId());
         assertThat(items).isNotEmpty();
         assertThat(items.get(0).getLabel()).isEqualTo("Home");
-    }
-
-    // ── coupon round-trip ──────────────────────────────────────────────────
-
-    @Test
-    void coupon_saveAndFind() {
-        CouponEntity coupon = new CouponEntity();
-        coupon.setCode("TEST10-" + UUID.randomUUID().toString().substring(0, 8));
-        coupon.setName("Test 10%");
-        coupon.setDiscountType("percentage");
-        coupon.setAmount(new BigDecimal("10.00"));
-        coupon.setStatus("ACTIVE");
-        coupon.setCreatedAt(Instant.now());
-        coupon.setUpdatedAt(Instant.now());
-        CouponEntity saved = couponRepo.save(coupon);
-
-        assertThat(saved.getId()).isNotNull();
-        assertThat(couponRepo.findByCode(saved.getCode())).isPresent();
     }
 
     // ── audit log round-trip ───────────────────────────────────────────────

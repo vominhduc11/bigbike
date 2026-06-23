@@ -6,7 +6,6 @@ import com.bigbike.bigbike_backend.api.checkout.dto.CheckoutRequest;
 import com.bigbike.bigbike_backend.api.checkout.dto.OrderSummaryResponse;
 import com.bigbike.bigbike_backend.api.checkout.dto.PaymentMethodOptionResponse;
 import com.bigbike.bigbike_backend.api.checkout.dto.QuickBuyRequest;
-import com.bigbike.bigbike_backend.api.checkout.dto.ShippingMethodOptionResponse;
 import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
@@ -17,31 +16,19 @@ import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartItemEntity;
-import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderAppliedCouponEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderLineItemEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.payment.PaymentEntity;
-import com.bigbike.bigbike_backend.persistence.entity.shipping.ShippingMethodEntity;
-import com.bigbike.bigbike_backend.persistence.entity.catalog.StockMovementEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.catalog.StockMovementJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartCouponJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.CheckoutIdempotencyKeyJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderAddressJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderAppliedCouponJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLineItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderNoteJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderShippingItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.PaymentJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.coupon.CouponJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.shipping.ShippingMethodJpaRepository;
 import com.bigbike.bigbike_backend.service.cart.CartCalculator;
-import com.bigbike.bigbike_backend.service.coupon.CouponPolicyService;
-import com.bigbike.bigbike_backend.service.inventory.InventoryPolicyService;
-import com.bigbike.bigbike_backend.service.inventory.SerialLifecycleService;
 import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import com.bigbike.bigbike_backend.service.ws.AdminOrderWsService;
 import static com.bigbike.bigbike_backend.service.checkout.CheckoutSupport.*;
@@ -75,28 +62,19 @@ public class CheckoutService {
     private static final String FLOW_QUICK_BUY = "QUICK_BUY";
 
     private final CartJpaRepository cartRepo;
-    private final CartCouponJpaRepository cartCouponRepo;
     private final CheckoutIdempotencyKeyJpaRepository checkoutIdempotencyKeyRepo;
     private final OrderJpaRepository orderRepo;
     private final OrderLineItemJpaRepository lineItemRepo;
     private final OrderAddressJpaRepository addressRepo;
-    private final OrderAppliedCouponJpaRepository orderAppliedCouponRepo;
-    private final OrderShippingItemJpaRepository shippingItemRepo;
     private final OrderNoteJpaRepository noteRepo;
     private final PaymentJpaRepository paymentRepo;
-    private final ShippingMethodJpaRepository shippingMethodRepo;
     private final ProductJpaRepository productRepo;
     private final ProductVariantJpaRepository variantRepo;
-    private final StockMovementJpaRepository stockMovementRepo;
-    private final CouponJpaRepository couponRepo;
     private final OrderNumberGenerator orderNumberGenerator;
     private final OrderKeyGenerator orderKeyGenerator;
     private final CartCalculator cartCalculator;
     private final OrderNotificationService orderNotificationService;
     private final AdminOrderWsService adminOrderWsService;
-    private final InventoryPolicyService inventoryPolicyService;
-    private final SerialLifecycleService serialLifecycleService;
-    private final CouponPolicyService couponPolicy;
     private final JdbcTemplate jdbcTemplate;
     private final WebRevalidationService webRevalidationService;
 
@@ -147,37 +125,13 @@ public class CheckoutService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .setScale(2, RoundingMode.HALF_UP);
 
-        // Reload, revalidate, and recompute each coupon from fresh DB data before creating the order
-        record CouponRedemption(
-                String code,
-                com.bigbike.bigbike_backend.persistence.entity.coupon.CouponEntity coupon,
-                BigDecimal freshDiscount
-        ) {}
-        List<com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartCouponEntity> cartCoupons =
-                cartCouponRepo.findByCartId(cart.getId());
-        String callerCustomerId = customerId != null ? customerId.toString() : null;
-        List<CouponRedemption> couponRedemptions = new ArrayList<>();
-        for (var cc : cartCoupons) {
-            com.bigbike.bigbike_backend.persistence.entity.coupon.CouponEntity freshCoupon =
-                    couponRepo.findByCode(cc.getCouponCode())
-                            .orElseThrow(() -> new ConflictException(
-                                    "Mã giảm giá '" + cc.getCouponCode() + "' không còn tồn tại."));
-            couponPolicy.validateChannel(freshCoupon, "ONLINE");
-            couponPolicy.validateCustomer(freshCoupon, callerCustomerId);
-            couponPolicy.validate(freshCoupon, subtotal);
-            couponRedemptions.add(new CouponRedemption(
-                    cc.getCouponCode(), freshCoupon, couponPolicy.computeDiscount(freshCoupon, subtotal)));
-        }
+        // Coupons removed (owner decision 2026-06-23): orders never carry a discount.
+        BigDecimal discount = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
 
-        BigDecimal discount = couponRedemptions.stream()
-                .map(CouponRedemption::freshDiscount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add)
-                .setScale(2, RoundingMode.HALF_UP);
-
-        String shippingProvince = resolveShippingAddress(req.billingAddress(), req.shippingAddress()).province();
-        ShippingMethodEntity shippingMethod = resolveShippingMethod(req.shippingMethodId(), shippingProvince);
-        BigDecimal shippingCost = resolveShippingCost(shippingMethod, subtotal);
-        BigDecimal total = subtotal.subtract(discount).add(shippingCost).max(BigDecimal.ZERO)
+        // Shipping method choice removed (owner decision 2026-06-23): online orders no longer pick a
+        // shipping method and carry no shipping fee — the shop arranges/charges delivery offline (COD).
+        BigDecimal shippingCost = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        BigDecimal total = subtotal.subtract(discount).max(BigDecimal.ZERO)
                 .setScale(2, RoundingMode.HALF_UP);
 
         Instant now = Instant.now();
@@ -199,49 +153,26 @@ public class CheckoutService {
         );
         OrderEntity savedOrder = orderRepo.saveAndFlush(order);
 
-        // Save line items first — serial reservation needs the line item ID.
-        List<OrderLineItemEntity> savedLineItems = new ArrayList<>();
+        // Persist line items.
         for (CartItemEntity cartItem : items) {
-            savedLineItems.add(lineItemRepo.save(buildLineItemFromCart(savedOrder, cartItem, now)));
+            lineItemRepo.save(buildLineItemFromCart(savedOrder, cartItem, now));
         }
 
-        // Decrement stock / reserve serials per line item.
-        applyStockForLineItems(savedLineItems, items, savedOrder.getId(), now);
+        // Inventory is boolean availability only (owner decision 2026-06-23) — no decrement on sale.
 
         // Addresses
         addressRepo.save(buildAddress(savedOrder, "BILLING", req.billingAddress(), now));
         CheckoutAddressRequest shippingAddr = resolveShippingAddress(req.billingAddress(), req.shippingAddress());
         addressRepo.save(buildAddress(savedOrder, "SHIPPING", shippingAddr, now));
 
-        // Shipping item
-        shippingItemRepo.save(buildShippingItem(savedOrder, shippingMethod, shippingCost, now));
-
         // Payment
         paymentRepo.save(buildPayment(savedOrder, req.paymentMethod(), total, now));
 
-        // Atomically increment usageCount and snapshot each coupon onto the order
-        List<String> couponCodes = couponRedemptions.stream()
-                .map(CouponRedemption::code).toList();
-        for (CouponRedemption redemption : couponRedemptions) {
-            // Conditional UPDATE: returns 0 rows if another checkout exhausted the limit concurrently
-            int redeemed = couponRepo.attemptRedeem(redemption.coupon().getId(), now);
-            if (redeemed == 0) {
-                throw new ConflictException("Mã giảm giá không còn hiệu lực hoặc đã đạt giới hạn sử dụng.");
-            }
-            OrderAppliedCouponEntity appliedCoupon = new OrderAppliedCouponEntity();
-            appliedCoupon.setOrder(savedOrder);
-            appliedCoupon.setCouponId(redemption.coupon().getId());
-            appliedCoupon.setCode(redemption.code());
-            appliedCoupon.setDiscountAmount(redemption.freshDiscount());
-            appliedCoupon.setCreatedAt(now);
-            orderAppliedCouponRepo.save(appliedCoupon);
-        }
-
         // System note
-        String couponNote = couponCodes.isEmpty() ? "" : ". Mã giảm giá: " + String.join(", ", couponCodes);
+        String paymentNote = (req.paymentMethod() == null || req.paymentMethod().isBlank())
+                ? "" : " Phương thức thanh toán: " + req.paymentMethod() + ".";
         noteRepo.save(buildSystemNote(savedOrder,
-                "Đơn hàng được tạo. Phương thức thanh toán: " + req.paymentMethod() +
-                ". Phương thức vận chuyển: " + shippingMethod.getTitle() + couponNote + ".", now));
+                "Đơn hàng được tạo." + paymentNote + ".", now));
 
         // Mark cart converted
         cart.setStatus(CART_STATUS_CONVERTED);
@@ -292,39 +223,12 @@ public class CheckoutService {
             variant = variantRepo.findByIdForUpdate(req.productVariantId())
                     .orElseThrow(() -> new NotFoundException("Variant not found: " + req.productVariantId()));
             if (!variant.isAvailable()) {
-                throw new ConflictException("Sản phẩm '" + product.getName() + "' tạm ngừng bán.");
-            }
-            if (variant.isTrackSerials()) {
-                long available = serialLifecycleService.countAvailable(product.getId(), variant.getId());
-                if (available < req.quantity()) {
-                    throw new ConflictException(available <= 0
-                            ? "Sản phẩm '" + product.getName() + "' hết hàng."
-                            : "Sản phẩm '" + product.getName() + "' chỉ còn " + available + " trong kho.");
-                }
-            } else {
-                if (variant.getQuantityOnHand() < req.quantity()) {
-                    int onHand = variant.getQuantityOnHand();
-                    throw new ConflictException(onHand <= 0
-                            ? "Sản phẩm '" + product.getName() + "' hết hàng."
-                            : "Sản phẩm '" + product.getName() + "' chỉ còn " + onHand + " trong kho.");
-                }
+                throw new ConflictException("Sản phẩm '" + product.getName() + "' hết hàng.");
             }
         } else {
             if (Boolean.TRUE.equals(product.getForceOutOfStock())
                     || product.getStockState() == ProductStockState.OUT_OF_STOCK) {
                 throw new ConflictException("Sản phẩm '" + product.getName() + "' hết hàng.");
-            }
-            if (product.isTrackSerials()) {
-                long available = serialLifecycleService.countAvailable(product.getId(), null);
-                if (available < req.quantity()) {
-                    throw new ConflictException(available <= 0
-                            ? "Sản phẩm '" + product.getName() + "' hết hàng."
-                            : "Sản phẩm '" + product.getName() + "' chỉ còn " + available + " trong kho.");
-                }
-            } else if (Boolean.TRUE.equals(product.getManageStock()) && product.getStockQuantity() != null
-                    && product.getStockQuantity() < req.quantity()) {
-                throw new ConflictException("Sản phẩm '" + product.getName() + "' chỉ còn "
-                        + product.getStockQuantity() + " trong kho.");
             }
         }
 
@@ -334,9 +238,9 @@ public class CheckoutService {
         BigDecimal lineDiscount = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
         BigDecimal lineTotal = lineSubtotal.subtract(lineDiscount).setScale(2, RoundingMode.HALF_UP);
 
-        ShippingMethodEntity shippingMethod = resolveShippingMethod(req.shippingMethodId(), req.billingAddress().province());
-        BigDecimal shippingCost = resolveShippingCost(shippingMethod, lineTotal);
-        BigDecimal total = lineTotal.add(shippingCost).setScale(2, RoundingMode.HALF_UP);
+        // No shipping method/fee on online orders (owner decision 2026-06-23) — see checkoutFromCart.
+        BigDecimal shippingCost = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        BigDecimal total = lineTotal.setScale(2, RoundingMode.HALF_UP);
 
         Instant now = Instant.now();
         OrderEntity order = buildOrder(
@@ -357,47 +261,25 @@ public class CheckoutService {
         );
         OrderEntity savedOrder = orderRepo.saveAndFlush(order);
 
-        // Save line item first so serial reservation has a valid ID.
-        OrderLineItemEntity savedLineItem = lineItemRepo.save(buildLineItemFromProduct(
+        lineItemRepo.save(buildLineItemFromProduct(
                 savedOrder, product, variant, unitPrice, qty,
                 lineSubtotal, lineDiscount, lineTotal, now));
 
-        if (variant != null && variant.isTrackSerials()) {
-            Instant reservedUntil = serialLifecycleService.computeReservedUntil();
-            serialLifecycleService.reserveForOrderLine(
-                    savedLineItem, product.getId(), variant.getId(), qty, reservedUntil);
-        } else if (variant != null) {
-            decrementVariantStock(variant, qty, savedOrder.getId(), now);
-        } else if (product.isTrackSerials()) {
-            Instant reservedUntil = serialLifecycleService.computeReservedUntil();
-            serialLifecycleService.reserveForOrderLine(
-                    savedLineItem, product.getId(), null, qty, reservedUntil);
-        } else if (Boolean.TRUE.equals(product.getManageStock()) && product.getStockQuantity() != null) {
-            int newQty = product.getStockQuantity() - qty;
-            product.setStockQuantity(newQty);
-            int threshold = inventoryPolicyService.lowStockThreshold();
-            if (newQty <= 0) {
-                product.setStockState(ProductStockState.OUT_OF_STOCK);
-            } else if (newQty <= threshold) {
-                product.setStockState(ProductStockState.LOW_STOCK);
-            }
-            productRepo.save(product);
-        }
+        // Inventory is boolean availability only (owner decision 2026-06-23) — no decrement on sale.
 
         // Addresses
         addressRepo.save(buildAddress(savedOrder, "BILLING", req.billingAddress(), now));
         addressRepo.save(buildAddress(savedOrder, "SHIPPING", req.billingAddress(), now));
 
-        // Shipping item
-        shippingItemRepo.save(buildShippingItem(savedOrder, shippingMethod, shippingCost, now));
-
         // Payment
         paymentRepo.save(buildPayment(savedOrder, req.paymentMethod(), total, now));
 
         // System note
+        String quickPaymentNote = (req.paymentMethod() == null || req.paymentMethod().isBlank())
+                ? "" : " Phương thức thanh toán: " + req.paymentMethod() + ".";
         noteRepo.save(buildSystemNote(savedOrder,
-                "Quick-buy đơn hàng được tạo. Phương thức thanh toán: " + req.paymentMethod() +
-                ". Sản phẩm: " + product.getName() + " x" + qty + ".", now));
+                "Quick-buy đơn hàng được tạo." + quickPaymentNote +
+                " Sản phẩm: " + product.getName() + " x" + qty + ".", now));
 
         OrderEntity quickSnapshot = savedOrder;
         String quickPm = req.paymentMethod();
@@ -424,20 +306,8 @@ public class CheckoutService {
                 new PaymentMethodOptionResponse("COD", en ? "Cash on delivery (COD)" : "Thanh toán khi nhận hàng (COD)"),
                 new PaymentMethodOptionResponse("BACS", en ? "Bank transfer" : "Chuyển khoản")
         );
-        List<ShippingMethodOptionResponse> shippingMethods = shippingMethodRepo
-                .findByEnabledOrderBySortOrderAsc(true)
-                .stream()
-                .map(m -> new ShippingMethodOptionResponse(
-                        m.getId(),
-                        m.getMethodCode(),
-                        en && m.getTitleEn() != null && !m.getTitleEn().isBlank() ? m.getTitleEn() : m.getTitle(),
-                        m.getCost() != null ? m.getCost() : BigDecimal.ZERO,
-                        m.getFreeShippingThreshold(),
-                        m.getMinOrderAmount(),
-                        m.getZone().getRegionCode()
-                ))
-                .toList();
-        return new CheckoutOptionsResponse(paymentMethods, shippingMethods);
+        // Shipping methods removed (owner decision 2026-06-23): online orders carry no shipping choice.
+        return new CheckoutOptionsResponse(paymentMethods);
     }
 
     private <T> IdempotencyReservation reserveIdempotency(
@@ -518,46 +388,6 @@ public class CheckoutService {
                 .orElse(null);
     }
 
-    private ShippingMethodEntity resolveShippingMethod(String shippingMethodId, String province) {
-        ShippingMethodEntity method;
-        if (shippingMethodId != null && !shippingMethodId.isBlank()) {
-            UUID id;
-            try {
-                id = UUID.fromString(shippingMethodId);
-            } catch (IllegalArgumentException e) {
-                throw ValidationException.fromField("shippingMethodId", "INVALID",
-                        "Shipping method ID is invalid.");
-            }
-            method = shippingMethodRepo.findById(id)
-                    .orElseThrow(() -> ValidationException.fromField("shippingMethodId", "NOT_FOUND",
-                            "Shipping method not found."));
-            if (!method.isEnabled()) {
-                throw ValidationException.fromField("shippingMethodId", "DISABLED",
-                        "Shipping method is disabled.");
-            }
-        } else {
-            // Auto-select if exactly one enabled method
-            List<ShippingMethodEntity> enabled = shippingMethodRepo.findByEnabledOrderBySortOrderAsc(true);
-            if (enabled.size() == 1) {
-                method = enabled.get(0);
-            } else {
-                throw ValidationException.fromField("shippingMethodId", "REQUIRED",
-                        "Shipping method is required when multiple methods are available.");
-            }
-        }
-
-        // Lenient zone check: only enforce if zone has a known region code (MB/MT/MN)
-        String zoneRegionCode = method.getZone().getRegionCode();
-        if (zoneRegionCode != null && VietnamRegionMapper.KNOWN_REGION_CODES.contains(zoneRegionCode)) {
-            String customerRegion = VietnamRegionMapper.getRegion(province);
-            if (customerRegion != null && !customerRegion.equals(zoneRegionCode)) {
-                throw ValidationException.fromField("shippingMethodId", "SHIPPING_ZONE_MISMATCH",
-                        "Selected shipping method is not available for the delivery province.");
-            }
-        }
-        return method;
-    }
-
     // ── Build helpers ─────────────────────────────────────────────────────────
 
     private OrderEntity buildOrder(
@@ -576,7 +406,10 @@ public class CheckoutService {
             String userAgent,
             Instant now
     ) {
-        String orderStatus = "COD".equals(paymentMethod) ? ORDER_STATUS_PROCESSING : ORDER_STATUS_ON_HOLD;
+        // Online orders default to PROCESSING (owner decision 2026-06-23): the customer no longer
+        // chooses a payment method, so there is no "awaiting transfer" hold. Only legacy/explicit BACS
+        // callers still enter ON_HOLD.
+        String orderStatus = "BACS".equals(paymentMethod) ? ORDER_STATUS_ON_HOLD : ORDER_STATUS_PROCESSING;
 
         OrderEntity order = new OrderEntity();
         order.setOrderNumber(orderNumberGenerator.generate());
@@ -626,9 +459,8 @@ public class CheckoutService {
     }
 
     /**
-     * Pass 1: validate stock availability and re-sync prices from DB.
-     * For serial-tracked variants, validates against IN_STOCK serial count (not quantity_on_hand).
-     * Does NOT write any stock changes.
+     * Validate boolean availability (variant.isAvailable / product stock_state, owner decision
+     * 2026-06-23) and re-sync prices from DB. Does NOT write any stock changes.
      */
     private void syncPricesAndValidateStock(List<CartItemEntity> items,
             List<OrderSummaryResponse.PriceChange> priceChanges) {
@@ -653,43 +485,13 @@ public class CheckoutService {
                                 "Variant no longer exists for: " + cartItem.getProductName()));
                 if (!variant.isAvailable()) {
                     throw new ConflictException(
-                            "Sản phẩm '" + cartItem.getProductName() + "' tạm ngừng bán.");
-                }
-                if (variant.isTrackSerials()) {
-                    // Serial-only: count actual IN_STOCK serials, not quantity_on_hand
-                    long available = serialLifecycleService.countAvailable(
-                            product.getId(), variant.getId());
-                    if (available < cartItem.getQuantity()) {
-                        throw new ConflictException(available <= 0
-                                ? "Sản phẩm '" + cartItem.getProductName() + "' hết hàng."
-                                : "Sản phẩm '" + cartItem.getProductName() + "' chỉ còn " + available + " trong kho.");
-                    }
-                } else {
-                    if (variant.getQuantityOnHand() < cartItem.getQuantity()) {
-                        int onHand = variant.getQuantityOnHand();
-                        throw new ConflictException(onHand <= 0
-                                ? "Sản phẩm '" + cartItem.getProductName() + "' hết hàng."
-                                : "Sản phẩm '" + cartItem.getProductName() + "' chỉ còn " + onHand + " trong kho.");
-                    }
+                            "Sản phẩm '" + cartItem.getProductName() + "' hết hàng.");
                 }
             } else {
                 if (Boolean.TRUE.equals(product.getForceOutOfStock())
                         || product.getStockState() == ProductStockState.OUT_OF_STOCK) {
                     throw new ConflictException(
                             "Sản phẩm '" + cartItem.getProductName() + "' hết hàng.");
-                }
-                if (product.isTrackSerials()) {
-                    long available = serialLifecycleService.countAvailable(product.getId(), null);
-                    if (available < cartItem.getQuantity()) {
-                        throw new ConflictException(available <= 0
-                                ? "Sản phẩm '" + cartItem.getProductName() + "' hết hàng."
-                                : "Sản phẩm '" + cartItem.getProductName() + "' chỉ còn " + available + " trong kho.");
-                    }
-                } else if (Boolean.TRUE.equals(product.getManageStock()) && product.getStockQuantity() != null
-                        && product.getStockQuantity() < cartItem.getQuantity()) {
-                    throw new ConflictException(
-                            "Sản phẩm '" + cartItem.getProductName() + "' chỉ còn " +
-                            product.getStockQuantity() + " trong kho.");
                 }
             }
 
@@ -702,78 +504,6 @@ public class CheckoutService {
             cartItem.setUnitPrice(currentPrice);
             cartCalculator.recalculateItem(cartItem);
         }
-    }
-
-    /**
-     * Pass 2: for each saved line item, either reserve serials (serial-tracked)
-     * or decrement quantity_on_hand (legacy path).
-     * Line items must already be persisted so they have valid IDs for bridge records.
-     */
-    private void applyStockForLineItems(List<OrderLineItemEntity> savedLineItems,
-                                        List<CartItemEntity> cartItems,
-                                        UUID orderId, Instant now) {
-        int threshold = inventoryPolicyService.lowStockThreshold();
-        for (int i = 0; i < savedLineItems.size(); i++) {
-            OrderLineItemEntity lineItem = savedLineItems.get(i);
-            CartItemEntity cartItem = cartItems.get(i);
-            // Resolve by varchar PK — UUID columns are null for migrated wp-* catalog (see V176).
-            if (cartItem.getProductPk() == null) continue;
-
-            if (cartItem.getProductVariantPk() != null) {
-                variantRepo.findByIdForUpdate(cartItem.getProductVariantPk())
-                        .ifPresent(variant -> {
-                            if (variant.isTrackSerials()) {
-                                Instant reservedUntil = serialLifecycleService.computeReservedUntil();
-                                serialLifecycleService.reserveForOrderLine(
-                                        lineItem,
-                                        cartItem.getProductPk(),
-                                        variant.getId(),
-                                        cartItem.getQuantity(),
-                                        reservedUntil);
-                            } else {
-                                decrementVariantStock(variant, cartItem.getQuantity(), orderId, now);
-                            }
-                        });
-            } else {
-                productRepo.findByIdForUpdate(cartItem.getProductPk()).ifPresent(product -> {
-                    if (product.isTrackSerials()) {
-                        Instant reservedUntil = serialLifecycleService.computeReservedUntil();
-                        serialLifecycleService.reserveForOrderLine(
-                                lineItem,
-                                product.getId(),
-                                null,
-                                cartItem.getQuantity(),
-                                reservedUntil);
-                        return;
-                    }
-                    if (!Boolean.TRUE.equals(product.getManageStock()) || product.getStockQuantity() == null) return;
-                    int newQty = product.getStockQuantity() - cartItem.getQuantity();
-                    product.setStockQuantity(newQty);
-                    product.setStockState(newQty <= 0 ? ProductStockState.OUT_OF_STOCK
-                            : (newQty <= threshold ? ProductStockState.LOW_STOCK : ProductStockState.IN_STOCK));
-                    productRepo.save(product);
-                });
-            }
-        }
-    }
-
-    private void decrementVariantStock(ProductVariantEntity variant, int qty, UUID orderId, Instant now) {
-        int before = variant.getQuantityOnHand();
-        int after = before - qty;
-        variant.setQuantityOnHand(after);
-        inventoryPolicyService.recomputeStockState(variant);
-        variantRepo.save(variant);
-
-        StockMovementEntity movement = new StockMovementEntity();
-        movement.setVariant(variant);
-        movement.setMovementType("OUT");
-        movement.setQuantityDelta(-qty);
-        movement.setQuantityBefore(before);
-        movement.setQuantityAfter(after);
-        movement.setReferenceType("ORDER");
-        movement.setReferenceId(orderId);
-        movement.setCreatedAt(now);
-        stockMovementRepo.save(movement);
     }
 
     private record IdempotencyReservation(UUID reservationId, OrderSummaryResponse existingSummary) {

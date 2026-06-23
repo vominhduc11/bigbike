@@ -11,10 +11,9 @@ public record AdminStockProductGroupResponse(
         String productSku,
         ImageRef productImage,
         String aggregateStockState,
-        int totalQuantity,
+        boolean available,
         BigDecimal minRetailPrice,
         boolean forceOutOfStock,
         boolean isNoVariant,
-        boolean trackSerials,
         List<AdminStockVariantResponse> variants
 ) {}

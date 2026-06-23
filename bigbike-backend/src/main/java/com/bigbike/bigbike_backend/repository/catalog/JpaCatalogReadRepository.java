@@ -58,7 +58,6 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import static com.bigbike.bigbike_backend.repository.catalog.JpaCatalogReadSupport.isPresent;
-import static com.bigbike.bigbike_backend.repository.catalog.JpaCatalogReadSupport.maskStockQuantityForPublic;
 import static com.bigbike.bigbike_backend.repository.catalog.JpaCatalogReadSupport.normalizeVariantToken;
 import static com.bigbike.bigbike_backend.repository.catalog.JpaCatalogReadSupport.pick;
 import static com.bigbike.bigbike_backend.repository.catalog.JpaCatalogReadSupport.pickBlocks;
@@ -186,7 +185,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 List.of(),
                 List.of(),
                 entity.getStockState(),
-                entity.getStockQuantity(),
+                null, // stockQuantity never exposed — boolean availability model (2026-06-23)
                 entity.getForceOutOfStock(),
                 entity.getPublishStatus(),
                 entity.getHomepageBlock(),
@@ -453,9 +452,8 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 ? List.of()
                 : List.of(primaryCategory);
 
-        Integer productStockQty = publicView
-                ? maskStockQuantityForPublic(entity.getStockQuantity(), entity.getStockState())
-                : entity.getStockQuantity();
+        // Public never sees a count — boolean availability model (owner decision 2026-06-23).
+        Integer productStockQty = publicView ? null : entity.getStockQuantity();
 
         return new Product(
                 entity.getId(),
@@ -902,12 +900,8 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         .filter(m -> m != null)
                         .toList();
 
-        Integer variantStockQty;
-        if (publicView) {
-            variantStockQty = maskStockQuantityForPublic(entity.getQuantityOnHand(), entity.getStockState());
-        } else {
-            variantStockQty = entity.getQuantityOnHand();
-        }
+        // Public never sees a count — boolean availability model (owner decision 2026-06-23).
+        Integer variantStockQty = publicView ? null : entity.getQuantityOnHand();
 
         return new ProductVariant(
                 entity.getId(),
@@ -926,8 +920,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                         entity.getImageMimeType()
                 ),
                 gallery,
-                entity.isAvailable(),
-                entity.isTrackSerials()
+                entity.isAvailable()
         );
     }
 

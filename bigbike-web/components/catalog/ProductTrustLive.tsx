@@ -15,12 +15,9 @@ import { Tr } from "@/components/i18n/Tr";
 
 type Snapshot = {
   pricing: { retailPrice: number; compareAtPrice: number | null; salePrice: number | null; discountPercent: number; currency: string };
-  stock: { stockState: string; label: string; forceOutOfStock: boolean; quantity?: number | null };
+  stock: { stockState: string; label: string; forceOutOfStock: boolean };
   variants: unknown[];
 };
-
-// Khớp WpPurchaseSection: ngưỡng "Sắp hết" hiển thị riêng của PDP, độc lập low_stock_threshold.
-const PDP_LOW_STOCK_CUTOFF = 10;
 
 function useSnapshot(product: Product, previewMode: boolean): Snapshot | undefined {
   const locale = useLocale();
@@ -56,25 +53,17 @@ export function TrustLivePrice({ product, previewMode = false }: { product: Prod
 }
 
 /**
- * Tồn kho hiển thị — mirror STOCK_RULE_009 ở trạng thái CHƯA chọn biến thể:
- *  • Sản phẩm CÓ biến thể → chỉ Còn/Hết theo aggregate (không hiện "Sắp hết").
- *  • Sản phẩm KHÔNG biến thể → phân tầng theo số serial còn lại (>=10 Còn, 1..9 Sắp hết, <=0 Hết).
- *  • Luôn tôn trọng "tắt bán thủ công" (forceOutOfStock) như nút mua.
+ * Tồn kho hiển thị — mirror STOCK_RULE_009: mô hình boolean Còn/Hết, KHÔNG hiển
+ * thị số lượng và KHÔNG còn tầng "Sắp hết". Trạng thái lấy từ stockState tổng,
+ * luôn tôn trọng "tắt bán thủ công" (forceOutOfStock) như nút mua.
  */
 export function TrustLiveStock({ product, previewMode = false }: { product: Product; previewMode?: boolean }) {
   const snap = useSnapshot(product, previewMode);
 
-  const hasVariants = (snap?.variants ?? product.variants ?? []).length > 0;
-  const qty = snap ? (snap.stock.quantity ?? null) : (product.stockQuantity ?? null);
   const state = (snap?.stock.stockState as ProductStockState | undefined) ?? product.stockState;
   const force = snap ? snap.stock.forceOutOfStock : Boolean(product.forceOutOfStock);
 
-  const stockUnitKnown = !hasVariants;
-  const unitOut = typeof qty === "number" ? qty <= 0 : state === "OUT_OF_STOCK";
-  const unitLow = !unitOut && (typeof qty === "number" ? qty < PDP_LOW_STOCK_CUTOFF : state === "LOW_STOCK");
-  const isOut = force || (stockUnitKnown ? unitOut : state === "OUT_OF_STOCK");
-  const isLow = !isOut && stockUnitKnown && unitLow;
-
-  const key: ProductStockState = isOut ? "OUT_OF_STOCK" : isLow ? "LOW_STOCK" : "IN_STOCK";
+  const isOut = force || state === "OUT_OF_STOCK";
+  const key: ProductStockState = isOut ? "OUT_OF_STOCK" : "IN_STOCK";
   return <Tr ns="Product" k={`stockState.${key}`} />;
 }

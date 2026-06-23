@@ -94,15 +94,6 @@ public class OrderEntity {
     @Column(name = "paid_amount", nullable = false, precision = 19, scale = 2)
     private BigDecimal paidAmount = BigDecimal.ZERO;
 
-    @Column(name = "refund_amount", nullable = false, precision = 19, scale = 2)
-    private BigDecimal refundAmount = BigDecimal.ZERO;
-
-    @Column(name = "refund_reason", columnDefinition = "text")
-    private String refundReason;
-
-    @Column(name = "refunded_at")
-    private Instant refundedAt;
-
     @Column(nullable = false, length = 20)
     private String channel = "WEB";
 

@@ -1,17 +1,13 @@
-import { useEffect, useMemo, useState } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { GripVertical, Trash2, Eye, EyeOff, Plus, AlertCircle } from 'lucide-react'
+import { GripVertical, Trash2, Eye, EyeOff, Plus } from 'lucide-react'
 import { toast } from '@/lib/toast'
 import { fetchContactPage, saveContactPage } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
-import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { SortableList } from '../components/Sortable'
-import { Screen } from '../components/layout/Screen'
-import { ScreenHeader } from '../components/layout/ScreenHeader'
 import { FormField } from '../components/layout/FormField'
-import { StickyActionBar } from '../components/layout/StickyActionBar'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -30,6 +26,15 @@ const BIND_KEYS = [
   'zalo_url', 'facebook_url', 'messenger_url', 'instagram_url', 'youtube_url', 'tiktok_url',
 ]
 const HOURS_KEYS = ['opening_hours_weekday', 'opening_hours_weekend', 'opening_hours_holiday']
+
+// Shared contact values (single source for header/footer too) edited in one place so nothing is
+// only reachable through a block binding. Mirrors the `contact` site-setting group / WRITE_THROUGH_KEYS.
+const SHARED_VALUE_GROUPS = [
+  { titleKey: 'contactBuilder.sharedGroupPhone', keys: ['hotline', 'hotline_2', 'hotline_3'] },
+  { titleKey: 'contactBuilder.sharedGroupContact', keys: ['contact_email', 'contact_address'] },
+  { titleKey: 'contactBuilder.sharedGroupHours', keys: ['opening_hours_weekday', 'opening_hours_weekend', 'opening_hours_holiday'] },
+  { titleKey: 'contactBuilder.sharedGroupSocial', keys: ['facebook_url', 'zalo_url', 'zalo_display', 'messenger_url', 'messenger_display', 'instagram_url', 'youtube_url', 'tiktok_url'] },
+]
 
 const CUSTOM = '__custom__'
 
@@ -51,13 +56,43 @@ function newBlock(type, column) {
   }
 }
 
-export function ContactPageBuilderScreen({ canUpdate }) {
+// Trạng thái đã lưu vs đang sửa — chuẩn hoá thứ tự (main trước online) và bỏ id tạm để so chính xác.
+function snapshot(blocks, settingValues) {
+  const main = blocks.filter((b) => (b.column ?? 'main') !== 'online')
+  const online = blocks.filter((b) => (b.column ?? 'main') === 'online')
+  const ordered = [...main, ...online].map((b, i) => ({
+    type: b.type,
+    enabled: b.enabled !== false,
+    column: b.column ?? 'main',
+    icon: b.icon ?? '',
+    labelVi: b.labelVi ?? '',
+    labelEn: b.labelEn ?? '',
+    bindKey: b.bindKey ?? null,
+    value: b.value ?? null,
+    href: b.href ?? null,
+    htmlVi: b.htmlVi ?? null,
+    htmlEn: b.htmlEn ?? null,
+    sortOrder: i,
+  }))
+  const vals = Object.fromEntries(
+    Object.entries(settingValues).map(([k, v]) => [k, { value: v.value ?? '', valueEn: v.valueEn ?? '' }]),
+  )
+  return JSON.stringify({ blocks: ordered, values: vals })
+}
+
+/**
+ * Trình dựng trang Liên hệ — nhúng làm một tab bên trong trang editor của module Nội dung
+ * (trang CMS slug `lien-he`). Không có chrome/nút lưu riêng: cha gọi `save()` qua ref trong cùng
+ * một lần bấm Lưu, và theo dõi thay đổi chưa lưu qua `onDirtyChange`.
+ */
+export const ContactPageBuilderPanel = forwardRef(function ContactPageBuilderPanel({ canUpdate, onDirtyChange }, ref) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [blocks, setBlocks] = useState([])
   // settingValues: { [key]: { value, valueEn } } — single source shared with header/footer.
   const [settingValues, setSettingValues] = useState({})
   const [initialized, setInitialized] = useState(false)
+  const [baseline, setBaseline] = useState('')
 
   const { isLoading, isError, error, data } = useQuery({
     queryKey: ['contact-page'],
@@ -66,11 +101,13 @@ export function ContactPageBuilderScreen({ canUpdate }) {
 
   useEffect(() => {
     if (data && !initialized) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setBlocks([...(data.blocks ?? [])].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)))
+      const loadedBlocks = [...(data.blocks ?? [])].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
       const map = {}
       for (const v of data.values ?? []) map[v.key] = { value: v.value ?? '', valueEn: v.valueEn ?? '' }
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setBlocks(loadedBlocks)
       setSettingValues(map)
+      setBaseline(snapshot(loadedBlocks, map))
       setInitialized(true)
     }
   }, [data, initialized])
@@ -79,7 +116,6 @@ export function ContactPageBuilderScreen({ canUpdate }) {
     mutationFn: saveContactPage,
     onSuccess() {
       queryClient.invalidateQueries({ queryKey: ['contact-page'] })
-      toast.success(t('contactBuilder.savedSuccess'))
     },
     onError(err) {
       toast.error(err?.message || t('common.errorOccurred'))
@@ -88,6 +124,32 @@ export function ContactPageBuilderScreen({ canUpdate }) {
 
   const mainBlocks = useMemo(() => blocks.filter((b) => (b.column ?? 'main') !== 'online'), [blocks])
   const onlineBlocks = useMemo(() => blocks.filter((b) => (b.column ?? 'main') === 'online'), [blocks])
+
+  const isDirty = useMemo(
+    () => initialized && snapshot(blocks, settingValues) !== baseline,
+    [initialized, blocks, settingValues, baseline],
+  )
+
+  useEffect(() => {
+    onDirtyChange?.(isDirty)
+  }, [isDirty, onDirtyChange])
+
+  useImperativeHandle(ref, () => ({
+    isDirty: () => isDirty,
+    async save() {
+      if (!isDirty) return
+      const ordered = [...mainBlocks, ...onlineBlocks]
+      const payloadBlocks = ordered.map((b, i) => ({ ...b, sortOrder: i, column: b.column ?? 'main' }))
+      const values = Object.entries(settingValues).map(([key, v]) => ({
+        key,
+        value: v.value ?? '',
+        valueEn: v.valueEn ? v.valueEn : null,
+      }))
+      await saveMutation.mutateAsync({ blocks: payloadBlocks, values })
+      setBaseline(snapshot(ordered, settingValues))
+      onDirtyChange?.(false)
+    },
+  }), [isDirty, mainBlocks, onlineBlocks, settingValues, saveMutation, onDirtyChange])
 
   function patchBlock(id, patch) {
     setBlocks((prev) => prev.map((b) => (b.id === id ? { ...b, ...patch } : b)))
@@ -113,49 +175,46 @@ export function ContactPageBuilderScreen({ canUpdate }) {
     setSettingValues((prev) => ({ ...prev, [key]: { ...(prev[key] ?? { value: '', valueEn: '' }), [field]: val } }))
   }
 
-  function handleSave() {
-    const ordered = [...mainBlocks, ...onlineBlocks]
-    const payloadBlocks = ordered.map((b, i) => ({ ...b, sortOrder: i, column: b.column ?? 'main' }))
-    const values = Object.entries(settingValues).map(([key, v]) => ({
-      key,
-      value: v.value ?? '',
-      valueEn: v.valueEn ? v.valueEn : null,
-    }))
-    saveMutation.mutate({ blocks: payloadBlocks, values })
-  }
-
   if (isLoading) {
-    return (
-      <Screen>
-        <StatePanel tone="info" title={t('common.loading')} description={t('common.pleaseWait')} />
-      </Screen>
-    )
+    return <StatePanel tone="info" title={t('common.loading')} description={t('common.pleaseWait')} />
   }
   if (isError) {
-    return (
-      <Screen>
-        <StatePanel tone="danger" title={t('common.errorLoading')} description={error?.message} />
-      </Screen>
-    )
+    return <StatePanel tone="danger" title={t('common.errorLoading')} description={error?.message} />
   }
 
   const disabled = !canUpdate || saveMutation.isPending
 
   return (
-    <Screen maxWidth="980px">
-      {!canUpdate && <ReadOnlyBanner />}
+    <div className="flex flex-col gap-6">
+      <p className="text-sm text-muted-foreground">{t('contactBuilder.description')}</p>
 
-      <ScreenHeader
-        eyebrow={t('contactBuilder.eyebrow')}
-        title={t('contactBuilder.title')}
-        description={t('contactBuilder.description')}
-        actions={
-          <Button onClick={handleSave} disabled={disabled}>
-            {saveMutation.isPending ? t('common.saving') : t('contactBuilder.saveButton')}
-          </Button>
-        }
-      />
+      {/* Thông tin liên hệ dùng chung (header/footer + các khối bound) — nhập một nơi. */}
+      <section className="border border-border bg-background p-4 flex flex-col gap-4">
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            {t('contactBuilder.sharedSection')}
+          </h2>
+          <p className="text-xs text-muted-foreground mt-1">{t('contactBuilder.sharedSectionHint')}</p>
+        </div>
+        {SHARED_VALUE_GROUPS.map((g) => (
+          <div key={g.titleKey} className="flex flex-col gap-2">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground/80">{t(g.titleKey)}</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {g.keys.map((k) => (
+                <FormField key={k} label={t(`contactBuilder.bind.${k}`)}>
+                  <Input
+                    disabled={disabled}
+                    value={settingValues[k]?.value ?? ''}
+                    onChange={(e) => setValue(k, 'value', e.target.value)}
+                  />
+                </FormField>
+              ))}
+            </div>
+          </div>
+        ))}
+      </section>
 
+      {/* Bố cục các khối hiển thị trên trang /lien-he */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ColumnEditor
           column="main"
@@ -184,9 +243,9 @@ export function ContactPageBuilderScreen({ canUpdate }) {
           t={t}
         />
       </div>
-    </Screen>
+    </div>
   )
-}
+})
 
 function ColumnEditor({ title, blocks, disabled, onReorder, onPatch, onRemove, onAdd, settingValues, onSetValue, t }) {
   return (

@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 
 /**
  * Represents one row from the WordPress kd_posts table.
- * post_type values relevant to BigBike: product, shop_order, shop_coupon,
+ * post_type values relevant to BigBike: product, shop_order,
  * attachment, post, page, nav_menu_item.
  */
 public record WpPost(
@@ -18,7 +18,7 @@ public record WpPost(
         String postStatus,       // publish, draft, trash, auto-draft, inherit
         String commentStatus,
         String postName,         // slug
-        String postType,         // product, shop_order, attachment, post, page, nav_menu_item, shop_coupon
+        String postType,         // product, shop_order, attachment, post, page, nav_menu_item
         long postParent,
         int menuOrder,
         String guid,

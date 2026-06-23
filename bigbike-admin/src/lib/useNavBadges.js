@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { fetchOrders, fetchReturns } from './adminApi'
+import { fetchOrders } from './adminApi'
 
 const STALE_TIME = 60_000
 
@@ -15,17 +15,7 @@ export function useNavBadges(visiblePaths) {
     staleTime: STALE_TIME,
   })
 
-  // Shares the cache key with DashboardScreen's pending-returns query so
-  // visiting either screen warms the other.
-  const { data: pendingReturns } = useQuery({
-    queryKey: ['returns-pending-count'],
-    queryFn: () => fetchReturns({ status: 'PENDING', page: 1, pageSize: 1 }),
-    enabled: visiblePaths.has('/admin/returns'),
-    staleTime: STALE_TIME,
-  })
-
   return {
     '/admin/orders': pendingOrders?.pagination?.totalItems ?? 0,
-    '/admin/returns': pendingReturns?.pagination?.totalItems ?? 0,
   }
 }

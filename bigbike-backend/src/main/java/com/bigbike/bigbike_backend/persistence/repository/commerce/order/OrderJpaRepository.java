@@ -86,8 +86,6 @@ public interface OrderJpaRepository extends JpaRepository<OrderEntity, UUID>, Jp
            + "GROUP BY o.customerId HAVING COALESCE(SUM(o.totalAmount), 0) >= :threshold")
     List<UUID> findVipCustomerIds(@Param("threshold") BigDecimal threshold);
 
-    // ── POS background jobs ───────────────────────────────────────────────────
-
     // ── Dashboard: KPI aggregates ──────────────────────────────────────────────
 
     // Gross GMV: total order value placed regardless of payment status (includes unpaid/cancelled)
@@ -99,20 +97,20 @@ public interface OrderJpaRepository extends JpaRepository<OrderEntity, UUID>, Jp
 
     // Paid revenue: actual cash collected — SUM(paidAmount) for orders where payment was received
     @Query("SELECT COALESCE(SUM(o.paidAmount), 0) FROM OrderEntity o " +
-           "WHERE o.placedAt >= :from AND o.paymentStatus IN ('PAID', 'REFUNDED')")
+           "WHERE o.placedAt >= :from AND o.paymentStatus = 'PAID'")
     BigDecimal sumPaidRevenueSince(@Param("from") Instant from);
 
-    // Canonical paid revenue: PAID and REFUNDED orders (paidAmount is never reduced by RefundService).
+    // Canonical paid revenue: PAID orders only (cash actually collected).
     @Query("SELECT COALESCE(SUM(o.paidAmount), 0) FROM OrderEntity o " +
            "WHERE o.placedAt >= :from " +
-           "  AND o.paymentStatus IN ('PAID', 'REFUNDED') " +
+           "  AND o.paymentStatus = 'PAID' " +
            "  AND o.status NOT IN :excludedStatuses")
     BigDecimal sumPaidRevenueSinceExcluding(
             @Param("from") Instant from,
             @Param("excludedStatuses") List<String> excludedStatuses);
 
     @Query("SELECT COALESCE(SUM(o.paidAmount), 0) FROM OrderEntity o " +
-           "WHERE o.placedAt >= :from AND o.placedAt < :to AND o.paymentStatus IN ('PAID', 'REFUNDED')")
+           "WHERE o.placedAt >= :from AND o.placedAt < :to AND o.paymentStatus = 'PAID'")
     BigDecimal sumPaidRevenueBetween(@Param("from") Instant from, @Param("to") Instant to);
 
     @Query("SELECT COUNT(o) FROM OrderEntity o WHERE o.placedAt >= :from")
@@ -196,14 +194,10 @@ public interface OrderJpaRepository extends JpaRepository<OrderEntity, UUID>, Jp
             @Param("from") Instant from, @Param("to") Instant to,
             @Param("excludedStatuses") List<String> excludedStatuses);
 
-    @Query("SELECT COALESCE(SUM(o.refundAmount), 0) FROM OrderEntity o " +
-           "WHERE o.placedAt >= :from AND o.placedAt < :to AND o.refundAmount > 0")
-    BigDecimal sumRefundAmountInRange(@Param("from") Instant from, @Param("to") Instant to);
-
-    // Paid revenue: PAID and REFUNDED statuses (paidAmount is never reduced by RefundService.applyRefund()).
+    // Paid revenue: cash actually collected — SUM(paidAmount) for PAID orders.
     @Query("SELECT COALESCE(SUM(o.paidAmount), 0) FROM OrderEntity o " +
            "WHERE o.placedAt >= :from AND o.placedAt < :to " +
-           "  AND o.paymentStatus IN ('PAID', 'REFUNDED') " +
+           "  AND o.paymentStatus = 'PAID' " +
            "  AND o.status NOT IN :excludedStatuses")
     BigDecimal sumPaidRevenueBetweenExcluding(
             @Param("from") Instant from, @Param("to") Instant to,

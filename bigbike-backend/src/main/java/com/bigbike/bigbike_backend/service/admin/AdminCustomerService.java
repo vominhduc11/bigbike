@@ -180,7 +180,7 @@ public class AdminCustomerService {
             customer.setEmail(newEmail);
         }
 
-        // Phone uniqueness check — chuẩn hóa SĐT (nhất quán với đăng ký/POS) trước khi đối chiếu/lưu
+        // Phone uniqueness check — chuẩn hóa SĐT (nhất quán với đăng ký) trước khi đối chiếu/lưu
         if (req.phone() != null && !req.phone().isBlank()) {
             String normalizedPhone = com.bigbike.bigbike_backend.util.PhoneNumbers.normalize(req.phone());
             if (normalizedPhone != null) {

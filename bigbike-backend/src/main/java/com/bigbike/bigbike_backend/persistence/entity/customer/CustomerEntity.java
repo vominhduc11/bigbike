@@ -71,22 +71,6 @@ public class CustomerEntity {
     @Column(name = "oauth_subject", length = 255)
     private String oauthSubject;
 
-    // Credit profile (V75)
-    @Column(name = "credit_enabled", nullable = false)
-    private boolean creditEnabled = false;
-
-    @Column(name = "credit_limit", precision = 19, scale = 2)
-    private java.math.BigDecimal creditLimit;
-
-    @Column(name = "payment_terms_days")
-    private Integer paymentTermsDays;
-
-    @Column(name = "credit_status", nullable = false, length = 50)
-    private String creditStatus = "ACTIVE";
-
-    @Column(name = "credit_note", columnDefinition = "text")
-    private String creditNote;
-
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 

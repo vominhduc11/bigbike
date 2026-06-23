@@ -21,7 +21,7 @@ export default function CartPage() {
       breadcrumb={BREADCRUMB}
       showHero={false}
       mainClassName=""
-      cssHref="/wp-content/themes/bigbike/css/wp-theme-cart.css?v=1"
+      cssHref="/wp-content/themes/bigbike/css/wp-theme-cart.css?v=3"
     >
       <div className="container">
         {/* mt-20 theo page-cart.php; trên desktop đẩy thêm để h1 vượt qua đáy

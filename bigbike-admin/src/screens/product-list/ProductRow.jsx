@@ -75,7 +75,7 @@ export function ProductRow({
           </div>
         ) : null}
       </td>
-      <td><StockCell quantity={product.stockQuantity} state={product.stockState} /></td>
+      <td><StockCell state={product.stockState} /></td>
       <td className="hidden xl:table-cell">
         {catName ? formatText(catName) : <span className="bb-muted">—</span>}
       </td>

@@ -251,8 +251,7 @@ final class CatalogReadSupport {
                 v.stockQuantity(),
                 null,
                 List.of(),
-                v.isAvailable(),
-                v.trackSerials()
+                v.isAvailable()
         );
     }
 

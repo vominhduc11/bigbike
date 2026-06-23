@@ -100,13 +100,11 @@ Status: `CONFIRMED_FROM_CODE` — `PublicCacheHeaderFilter.java`, `SecurityConfi
 | `POST` | `/api/v1/customer/addresses` | Create own address | `ApiDataResponse<CustomerAddressResponse>` with HTTP `201` | `CONFIRMED_FROM_CODE` | `CustomerAddressController.java` |
 | `PATCH` | `/api/v1/customer/addresses/{id}` | Update own address | `ApiDataResponse<CustomerAddressResponse>` | `CONFIRMED_FROM_CODE` | `CustomerAddressController.java` |
 | `DELETE` | `/api/v1/customer/addresses/{id}` | Delete own address | HTTP `204` no body | `CONFIRMED_FROM_CODE` | `CustomerAddressController.java` |
-| `GET` | `/api/v1/customer/orders` | List own orders. Each item includes `channel` (`"WEB"` hoặc `"IN_STORE"`). | `ApiListResponse<OrderListItemResponse>` | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java` |
-| `GET` | `/api/v1/customer/orders/{orderId}` | Get own order detail. Response includes `channel` (`"WEB"` hoặc `"IN_STORE"`). | `ApiDataResponse<OrderDetailResponse>` | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java` |
-| `GET` | `/api/v1/customer/orders/returns` | List own returns | `ApiDataResponse<List<CustomerReturnResponse>>` | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java` |
-| `GET` | `/api/v1/customer/orders/returns/{returnId}` | Get own return detail | `ApiDataResponse<CustomerReturnResponse>` | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java` |
-| `POST` | `/api/v1/customer/orders/{orderId}/returns` | Create own return request | `ApiDataResponse<CustomerReturnResponse>` with HTTP `201` | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java` |
-| `PATCH` | `/api/v1/customer/orders/{orderId}/cancel` | Customer cancels own order. Allowed only when `paymentStatus = UNPAID` **and** order is `PENDING` / `ON_HOLD` / (`PROCESSING` with fulfillment not yet `SHIPPED`/`DELIVERED`) — see `CustomerOrderCancelService.isCustomerCancellable`. Sets `CANCELLED` (+ fulfillment `CANCELLED` for DELIVERY), releases reserved serials and restores stock, revalidates product pages. Once `PAID`, returns `409` — customer must request a refund via admin. | `ApiDataResponse<OrderDetailResponse>` | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java`, `CustomerOrderCancelService.java` |
-| `GET` | `/api/v1/customer/orders/{orderId}/return-eligibility` | Pre-check whether the customer can open a return on this order and which line items still have returnable quantity. Read-only. Returns stable reason codes (`OK`, `ORDER_NOT_FOUND`, `NOT_OWNER`, `ORDER_NOT_COMPLETED`, `WINDOW_EXPIRED`, `RETURN_IN_PROGRESS`, `NOTHING_TO_RETURN`, `IN_STORE_ORDER`). `IN_STORE_ORDER` — đơn được tạo qua POS (`channel="IN_STORE"`) không hỗ trợ trả hàng online; `eligible=false`. | `ApiDataResponse<ReturnEligibilityResponse>` | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java`, `CustomerReturnService.getReturnEligibility` |
+| `GET` | `/api/v1/customer/orders` | List own orders. Each item includes `channel` — now always `"WEB"` (POS / `"IN_STORE"` removed 2026-06-23, online-only). | `ApiListResponse<OrderListItemResponse>` | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java` |
+| `GET` | `/api/v1/customer/orders/{orderId}` | Get own order detail. Response includes `channel` — now always `"WEB"` (POS / `"IN_STORE"` removed 2026-06-23, online-only). | `ApiDataResponse<OrderDetailResponse>` | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java` |
+| `PATCH` | `/api/v1/customer/orders/{orderId}/cancel` | Customer cancels own order. Allowed only when `paymentStatus = UNPAID` **and** order is `PENDING` / `ON_HOLD` / (`PROCESSING` with fulfillment not yet `SHIPPED`/`DELIVERED`) — see `CustomerOrderCancelService.isCustomerCancellable`. Sets `CANCELLED` (+ fulfillment `CANCELLED` for DELIVERY), restores stock, revalidates product pages. Once `PAID`, returns `409` — the customer must contact the shop, who cancels the paid order directly. | `ApiDataResponse<OrderDetailResponse>` | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java`, `CustomerOrderCancelService.java` |
+
+> **Removed (2026-06-23).** The Return (RMA) and Refund feature was deleted platform-wide — the customer return endpoints (`/orders/returns`, `/orders/returns/{returnId}`, `/orders/{orderId}/returns`, `/orders/{orderId}/return-eligibility`), the admin returns/inspection endpoints, and every refund endpoint no longer exist. Customer-facing return/exchange policy text is kept as a manual commitment, not an API.
 | `GET` | `/api/v1/customer/wishlist` | List own wishlist product IDs, newest first | `ApiDataResponse<List<String>>` | `CONFIRMED_FROM_CODE` | `CustomerWishlistController.java` |
 | `GET` | `/api/v1/customer/wishlist/products` | List own wishlisted products (paginated, PUBLISHED only). Each `Product` uses the **list-view** shape — see "Product list — list-view payload vs detail payload". | `ApiListResponse<Product>` | `CONFIRMED_FROM_CODE` | `CustomerWishlistController.java` |
 | `POST` | `/api/v1/customer/wishlist` | Add a product to own wishlist (idempotent) | `ApiDataResponse<{productId,added}>` with HTTP `201` | `CONFIRMED_FROM_CODE` | `CustomerWishlistController.java` |
@@ -279,32 +277,26 @@ Status: `CONFIRMED_FROM_CODE` — `AdminContentItem.translations`, `ContentTrans
 
 | Endpoint | Current contract | Status | Evidence |
 |---|---|---|---|
-| `POST /api/v1/cart/coupons` | Applies one coupon to the active cart after validation and row locking. | `CONFIRMED_FROM_CODE` | `CartService.applyCoupon`, cart tests |
-| `POST /api/v1/checkout` | Revalidates price/stock/coupon state, creates order/payment/shipping rows, decrements stock, and snapshots coupons. | `CONFIRMED_FROM_CODE` | `CheckoutService.java`, checkout tests |
+| `POST /api/v1/checkout` | Revalidates price/availability state and creates order/payment rows. Availability is gated per-variant by `isAvailable` (boolean); there is **no quantity decrement** (V261). No shipping-method choice and **no shipping fee** (`shippingAmount = 0`, owner decision 2026-06-23, `SHIP_RULE_001`). | `CONFIRMED_FROM_CODE` | `CheckoutService.java`, checkout tests |
 | `POST /api/v1/orders/quick-buy` | Creates order directly from one product/variant request. | `CONFIRMED_FROM_CODE` | `CheckoutService.quickBuy` |
-| `POST /api/v1/admin/pos/orders` | Creates completed/paid in-store order immediately. | `CONFIRMED_FROM_CODE` | `AdminPosController.java`, `PosOrderService.java` |
+
+> **Removed (2026-06-23, online-only).** `POST /api/v1/admin/pos/orders` (immediate in-store sale) and `GET /api/v1/admin/pos/products/search` (POS product search) were deleted along with the POS module. See "POS Contract" below.
 
 ## Checkout Options Contract
 
 `GET /api/v1/checkout/options` — no auth required; accessible to guests and authenticated customers.
 
 Response shape: `ApiDataResponse<CheckoutOptionsResponse>`:
-- `paymentMethods`: `[{ code, title }]` — `COD` ("Thanh toán khi nhận hàng (COD)"), `BACS` ("Chuyển khoản"). **Codes are uppercase strings; `title` is the customer-facing label.** These are the only two accepted payment methods — there is no automatic payment gateway.
-- `shippingMethods`: `[{ id, code, title, cost, freeShippingThreshold, minOrderAmount, zoneRegionCode }]`
-  - `cost` — base shipping fee (VND, never null; zero-cost methods have `cost: 0`)
-  - `freeShippingThreshold` — if `orderSubtotal >= freeShippingThreshold`, effective shipping is 0; `null` means no threshold
-  - `minOrderAmount` — minimum subtotal required to use this method; `null` means no minimum
-  - `zoneRegionCode` — region/zone identifier (e.g. ISO-3166-2 code) this method applies to; `null` means applies to all regions
+- `paymentMethods`: `[{ code, title }]` — `COD` ("Thanh toán khi nhận hàng (COD)"), `BACS` ("Chuyển khoản"). **Codes are uppercase strings; `title` is the customer-facing label.** Still returned for backward-compatible callers, but the web checkout and quick-buy UIs **no longer render a payment-method choice** (owner decision 2026-06-23) — see `PAY_RULE_001`. The `POST /checkout` and `POST /orders/quick-buy` request field `paymentMethod` is now **optional**; when omitted the order is stored with `paymentMethod = null` and created in `PROCESSING`. An explicit value, if sent, must still be `COD` or `BACS`. There is no automatic payment gateway.
+- `shippingMethods`: **REMOVED (owner decision 2026-06-23)** — see `SHIP_RULE_001`. The shipping-method management module was dropped (migration `V264`); online orders no longer choose a shipping method and carry **no shipping fee** (`shippingAmount = 0`). The response no longer includes a `shippingMethods` array, and the `POST /checkout` / `POST /orders/quick-buy` request field `shippingMethodId` was **removed** (ignored if sent by an old client). The shop arranges/charges delivery offline (COD).
 
-Frontend must compute `effectiveShippingCost` using `freeShippingThreshold` before displaying totals — the cart total returned by `GET /api/v1/cart` does not include shipping (always 0 in cart phase).
-
-Status: `CONFIRMED_FROM_CODE` | Evidence: `CheckoutService.getOptions`, `ShippingMethodOptionResponse.java`, `CheckoutController.java`
+Status: `CONFIRMED_FROM_CODE` | Evidence: `CheckoutService.getOptions`, `CheckoutOptionsResponse.java`, `CheckoutController.java`, `V264__remove_shipping_methods.sql`
 
 ## Dashboard Contract
 
 | Endpoint | Permission | Current behavior | Status | Evidence |
 |---|---|---|---|---|
-| `GET /api/v1/admin/dashboard?period={7d\|30d\|90d}` | `orders.read`; accessible to `ADMIN`, `SUPER_ADMIN`, `SHOP_MANAGER` | Returns KPI aggregates, revenue series, order-status breakdown, recent orders, top products. Revenue excludes `CANCELLED`, `FAILED`, `REFUNDED` orders. Default period: `30d`. | `CONFIRMED_FROM_CODE` | `AdminDashboardController.java`, `AdminDashboardService.java` |
+| `GET /api/v1/admin/dashboard?period={7d\|30d\|90d}` | `orders.read`; accessible to `ADMIN`, `SUPER_ADMIN`, `SHOP_MANAGER` | Returns KPI aggregates, revenue series, order-status breakdown, recent orders, top products. Revenue excludes `CANCELLED`, `FAILED` orders. Default period: `30d`. | `CONFIRMED_FROM_CODE` | `AdminDashboardController.java`, `AdminDashboardService.java` |
 
 Response shape: `ApiDataResponse<AdminDashboardSummaryResponse>`:
 - `kpi`: `{ todayRevenue, todayPaidRevenue, todayRevenuePct, todayOrders, todayOrdersDelta, pendingOrders, activeProducts }`
@@ -377,13 +369,14 @@ renders; the heavy detail-only payload is served exclusively by
 | `id`, `sku`, `slug`, `name`, `shortDescription` | ✅ present | ✅ present |
 | `brand`, `category`, `categories`, `image`, `price` | ✅ present | ✅ present |
 | `stockState`, `stockQuantity`, `forceOutOfStock`, `rating`, `ratingCount`, `homepageBlock`, `homepageOrder` | ✅ present | ✅ present |
+| **Note (V261):** `stockQuantity` is **always `null`** on the public API (product & variant) — availability is boolean. The storefront shows only "Còn hàng / Hết hàng" from `stockState`; the old "Chỉ còn N sản phẩm" low-stock message was removed. | | |
 | `description`, `contentBottom`, `promotionContent`, `installationGuide`, `suitabilityAdvisory` | ❌ `null` | ✅ present |
 | `originBrandCountry`, `sizeGuide`, `specificationsHtml` | ❌ `null` | ✅ present |
 | `gallery`, `videos`, `specifications`, `specStats`, `faqs`, `commitments`, `purchaseLines`, `positiveNotes`, `negativeNotes` | ❌ `[]` | ✅ present |
 | `videos[].description` | — | ✅ present (detail) |
 | `seo` | ❌ `null` | ✅ present |
 | `variants` | ✅ present as **stubs** | ✅ full |
-| `variants[].id/sku/name/price/stockState/stockQuantity/isAvailable/trackSerials` | ✅ present | ✅ present |
+| `variants[].id/sku/name/price/stockState/stockQuantity/isAvailable` | ✅ present | ✅ present |
 | `variants[].options`, `variants[].gallery`, `variants[].image` | ❌ `[]` / `null` | ✅ present |
 
 **Why variant stubs and not full omission:** the storefront product card needs the
@@ -452,15 +445,36 @@ Evidence: `VariantRequest.java` (no `imageUrl`/`imageAlt`), `AdminCatalogMutatio
 
 ### Product upsert — `stockState` is read-only
 
-`POST /api/v1/admin/products` and `PATCH /api/v1/admin/products/{id}` do **not** accept `stockState` in the request body. The field is derived from `quantityOnHand` via `InventoryPolicyService` and can only be mutated through the Inventory module endpoints (`/api/v1/admin/inventory/...`).
+`POST /api/v1/admin/products` and `PATCH /api/v1/admin/products/{id}` do **not** accept `stockState` in the request body. The field mirrors the boolean availability and can only be mutated through the Inventory module availability endpoints (`/api/v1/admin/inventory/...`).
 
-- On create: backend forces `stockState = OUT_OF_STOCK` regardless of payload.
+- On create: backend forces `stockState = OUT_OF_STOCK` (item starts unavailable) regardless of payload.
 - On update: backend never reads `stockState` from the request.
 - DTO `UpsertProductRequest` has no setter for the field; admin form does not render a picker.
 
 Status: `CONFIRMED_BACKEND_ENFORCED`
 
-Evidence: `UpsertProductRequest.java` (no `stockState` setter), `AdminCatalogMutationService.applyProductPatch` (`if (create) entity.setStockState(OUT_OF_STOCK)`), `InventoryPolicyService.java` (sole writer post-create).
+Evidence: `UpsertProductRequest.java` (no `stockState` setter), `AdminCatalogMutationService.applyProductPatch` (`if (create) entity.setStockState(OUT_OF_STOCK)`).
+
+### Inventory — availability toggle endpoints (V261)
+
+Inventory availability is a **boolean** set by the admin. The former quantity-adjust endpoints `POST /api/v1/admin/inventory/variants/{id}/adjust` and `POST /api/v1/admin/inventory/products/{id}/adjust` (which took `quantityDelta`) are **REPLACED**:
+
+| Endpoint | Body | Permission | Effect |
+|---|---|---|---|
+| `PATCH /api/v1/admin/inventory/variants/{variantId}/availability` | `{ available: boolean }` | `inventory.write` | Sets `product_variants.is_available`; the variant's `stockState` mirrors it. The product-level `stockState` re-aggregates from its variants. |
+| `PATCH /api/v1/admin/inventory/products/{productId}/availability` | `{ available: boolean }` | `inventory.write` | For a no-variant product, sets `products.stock_state` (`IN_STOCK` / `OUT_OF_STOCK`) directly. |
+
+Response shape changes:
+
+- **Stock item / variant response** carries `available: boolean` instead of `quantityOnHand`.
+- **Product group** carries `available` instead of `totalQuantity`.
+- **Inventory summary** is `{ totalItems, inStockCount, outOfStockCount }` (the previous quantity-based counters are gone).
+
+There is **no auto-decrement on sale and no restore on cancel** — selling does not change availability, so the admin must manually toggle an item to "Hết hàng" when it sells out (overselling is not auto-prevented).
+
+Status: `CONFIRMED_FROM_CODE`
+
+Evidence: `AdminInventoryController.java` (availability PATCH endpoints), `AdminInventoryService.java`, `V261__inventory_availability_toggle.sql`.
 
 ### Product preview — admin dry-run render (`POST /api/v1/admin/products/preview`)
 
@@ -704,8 +718,7 @@ hoặc `en`. Khi
 (`COALESCE`, theo `PRODUCT_RULE_002` / `CATEGORY_RULE_002` / `BRAND_RULE_002`).
 List response **giữ nguyên shape** — không thêm khối `translations`; chỉ trường
 hiển thị được localize (chi tiết vẫn trả cả 2 bản như trên). `bigbike-admin` truyền
-`i18n.language` (chọn ở `LanguageSwitcher` header) vào `lang`. POS
-(`/admin/pos/...`) giữ tiếng Việt. **Lọc (`q`) và sắp xếp vẫn theo cột tiếng Việt**
+`i18n.language` (chọn ở `LanguageSwitcher` header) vào `lang`. **Lọc (`q`) và sắp xếp vẫn theo cột tiếng Việt**
 — tìm theo từ khóa chỉ-tiếng-Anh có thể không khớp.
 
 **Ghi — `POST/PATCH /api/v1/admin/products`:** nhận thêm:
@@ -844,40 +857,11 @@ Status: `CONFIRMED_FROM_CODE` — `PublicHomeVideoController` (`lang` param),
 `PublicHomeVideoResponse.from(video, lang)`, `AdminHomeVideoService`,
 `UpsertHomeVideoRequest` / `PatchHomeVideoRequest` (`titleEn`), migration `V161`.
 
-## POS Contract
+## POS Contract — REMOVED (owner decision 2026-06-23, online-only)
 
-| Endpoint | Permission | Current behavior | Status | Evidence |
-|---|---|---|---|---|
-| `GET /api/v1/admin/pos/products/search` | `pos.read` | Product search for POS UI | `CONFIRMED_FROM_CODE` | `AdminPosController.java` |
-| `POST /api/v1/admin/pos/orders` | `pos.write`; `pos.price_override` when overriding unit price | Immediate paid/completed order, payment record, stock movement, audit log, WS event. **`customerPhone` is required** (NotBlank, `^\+?[0-9]{8,15}$`); the order is linked to a customer resolved/auto-created by normalized phone (see POS_CUSTOMER rules). | `CONFIRMED_FROM_CODE` (sale) + `INTENDED` (phone-keyed customer, this PR) | `AdminPosController.java`, `PosOrderService.java`, `Phase1MPosApiTest.java` |
+The POS (point-of-sale / walk-in) contract was removed entirely. The endpoints `GET /api/v1/admin/pos/products/search` and `POST /api/v1/admin/pos/orders`, the `AdminPosController` / `PosOrderService`, the `PosOrderResponse` shape, and the `pos.read` / `pos.write` / `pos.price_override` / `pos.sell_below_cost` permissions no longer exist. BigBike is online-only — every order is created through the storefront checkout / quick-buy endpoints above.
 
-Response fields verified in `PosOrderResponse` usage:
-
-- `orderId`
-- `orderNumber`
-- `status`
-- `paymentStatus`
-- `paymentMethod`
-- `totalAmount`
-- `tenderedAmount` — tiền khách đưa (Long, VND)
-- `changeAmount` — tiền thừa trả lại (Long, VND)
-- `paidAmount`
-- `refundAmount`
-- `items` — danh sách line item
-- `discountAmount` — tổng discount từ coupon (BigDecimal, 0 khi không có coupon)
-- `couponCode` — mã coupon đã áp dụng (String, null khi không có coupon)
-- `customerName` — tên khách nhập lúc bán POS (String, null nếu không nhập) — dùng in lên hoá đơn
-- `customerPhone` — SĐT khách nhập lúc bán POS (String) — dùng in lên hoá đơn; **bắt buộc** kể từ POS_CUSTOMER_001
-- `customerId` — UUID hồ sơ khách đã được gắn/tạo cho đơn (String) — dùng để điều hướng tới hồ sơ khách sau khi bán `INTENDED` (this PR)
-
-**Ghi chú:**
-- Credit limit được check SAU khi tính coupon discount (`totalAfterDiscount`), không check trên `subtotal` trước coupon.
-- Minimum-order coupon vẫn validate trên `subtotal` (đúng intent của coupon).
-- `customerId` sai UUID format → HTTP 400 với field error `customerId: INVALID_FORMAT`.
-- `customerPhone` rỗng → HTTP 400 với field error `customerPhone` (NotBlank). Phone được chuẩn hóa (`+84`/`84` → `0`, bỏ khoảng trắng) trước khi tra/tạo khách.
-- Khách được tìm theo SĐT đã chuẩn hóa; trùng → gắn vào hồ sơ cũ (không sửa hồ sơ); chưa có → tạo hồ sơ mới (`is_synthetic=true`). Xem `POS_CUSTOMER_002/003`.
-
-Status: `CONFIRMED_FROM_CODE`
+Status: `REMOVED`
 
 ## Admin Settings Contract
 
@@ -950,17 +934,21 @@ Concrete keys: `hero_products_*`, `hero_brands_*`, `hero_news_*` (15 total). All
 
 Bố cục trang `/lien-he` (xem [DATA_CONTRACT.md](DATA_CONTRACT.md) §"Contact page layout").
 
+> **Admin UI (2026-06-23):** trình dựng được nhúng làm một tab trong trang editor của module Nội dung (mở trang CMS slug `lien-he`), không còn màn riêng. Một lần bấm Lưu của trang gọi tuần tự `PUT /pages/{id}` (tiêu đề/SEO) **rồi** `PUT /admin/contact-page` (bố cục + giá trị) — endpoint không đổi. Tab "Liên hệ" ở Cài đặt đã gỡ; các key contact (gồm `zalo_display`/`messenger_display`) nhập trong tab này.
+
 | Endpoint | Permission | Behavior | Status | Evidence |
 |---|---|---|---|---|
 | `GET /api/v1/admin/contact-page` | `content.read` | Trả `{ blocks, values }`: toàn bộ khối (cả khối ẩn) + giá trị hiện tại của mọi key contact whitelisted để builder sửa inline. | `CONFIRMED_FROM_CODE` | `AdminContactPageController.java`, `ContactPageService.getForAdmin` |
 | `PUT /api/v1/admin/contact-page` | `content.update` | Body `{ "blocks":[…], "values":[{"key","value","valueEn"}] }`. Lưu cả mảng khối (tối đa 40); với khối bound, **ghi xuyên** `values` xuống `site_settings` qua `AdminSettingsService` (chỉ key thuộc whitelist nhóm `contact` — editor không cần `settings.write`). Validate giá trị theo `SettingValueValidator`. Revalidate `page:lien-he` + `settings`. | `CONFIRMED_FROM_CODE` | `AdminContactPageController.java`, `ContactPageService.save` |
 | `GET /api/v1/contact-page` | public | `?lang=vi\|en`. Trả mảng khối `enabled`, nhãn/HTML đã resolve theo lang. Web tự merge giá trị khối bound từ `GET /api/v1/settings/public`. | `CONFIRMED_FROM_CODE` | `PublicContactPageController.java`, `ContactPageService.listPublicBlocks` |
 
-Whitelist key ghi xuyên (`ContactPageService.WRITE_THROUGH_KEYS`): `hotline`, `hotline_2`, `hotline_3`, `contact_email`, `contact_address`, `zalo_url`, `facebook_url`, `messenger_url`, `instagram_url`, `youtube_url`, `tiktok_url`, `opening_hours_weekday`, `opening_hours_weekend`, `opening_hours_holiday`.
+Whitelist key ghi xuyên (`ContactPageService.WRITE_THROUGH_KEYS`): `hotline`, `hotline_2`, `hotline_3`, `contact_email`, `contact_address`, `zalo_url`, `zalo_display`, `facebook_url`, `messenger_url`, `messenger_display`, `instagram_url`, `youtube_url`, `tiktok_url`, `opening_hours_weekday`, `opening_hours_weekend`, `opening_hours_holiday`.
 
 ## Guide Page Builder Contract
 
 Lưới trang tổng `/huong-dan` (xem [DATA_CONTRACT.md](DATA_CONTRACT.md) §"Guide page layout"). Thân bài chi tiết vẫn qua `GET /api/v1/pages/{slug}` của module Trang.
+
+> **Admin UI (2026-06-23):** trình dựng được nhúng làm một tab trong trang editor của module Nội dung (mở trang CMS slug `huong-dan`), không còn màn riêng. Một lần bấm Lưu gọi `PUT /pages/{id}` rồi `PUT /admin/guide-page` — endpoint không đổi.
 
 | Endpoint | Permission | Behavior | Status | Evidence |
 |---|---|---|---|---|
@@ -968,40 +956,11 @@ Lưới trang tổng `/huong-dan` (xem [DATA_CONTRACT.md](DATA_CONTRACT.md) §"G
 | `PUT /api/v1/admin/guide-page` | `content.update` | Body `{ heroTitleVi, heroTitleEn, heroImageUrl, entries:[…] }`. Lưu cả mảng ô (tối đa 40). Revalidate `page:huong-dan`. | `CONFIRMED_FROM_CODE` | `AdminGuidePageController.java`, `GuidePageService.save` |
 | `GET /api/v1/guide-page` | public | `?lang=vi\|en`. Trả `{ heroTitle, heroImageUrl, entries }` với ô `enabled`, tiêu đề/mô tả đã resolve theo lang. Web dựng lưới + sidebar + map `pathSegment→pageSlug` từ payload này. | `CONFIRMED_FROM_CODE` | `PublicGuidePageController.java`, `GuidePageService.getPublic` |
 
-## Coupon Gift Contract
-
-| Method | Path | Permission | Current behavior | Status | Evidence |
-|---|---|---|---|---|---|
-| `DELETE` | `/api/v1/admin/coupons/{couponId}` | `coupons.write` | Hard-deletes coupon by ID. Saves audit log entry `COUPON_DELETED`. Returns 204 No Content. | `CONFIRMED_FROM_CODE` | `AdminCouponController.java`, `AdminCouponService.java` |
-| `POST` | `/api/v1/admin/customers/{customerId}/coupon-gift` | `coupons.write` | Creates a unique `GIFT`-prefixed coupon locked to the customer, saves audit log, sends email async. Returns `AdminCouponDetailResponse`. Customer must have email. | `CONFIRMED_FROM_CODE` | `AdminCustomerController.java`, `AdminCouponGiftService.java` |
-| `POST` | `/api/v1/admin/coupon-gifts/bulk` | `coupons.write` | Sends email with an existing coupon's code to every active customer with verified email. Accepts `{ couponId }`. Coupon must be ACTIVE. No new coupon created. Returns `{ sent, skipped }`. | `CONFIRMED_FROM_CODE` | `AdminCouponGiftController.java`, `AdminCouponGiftService.java` |
-| `POST` | `/api/v1/admin/coupon-gifts/targeted` | `coupons.write` | Sends email with an existing coupon's code to explicitly selected customers. Accepts `{ couponId, customerIds }`. Coupon must be ACTIVE. No new coupon created. Returns `{ sent, skipped }`. | `CONFIRMED_FROM_CODE` | `AdminCouponGiftController.java`, `AdminCouponGiftService.java` |
-
-**Bulk notify request body:**
-```json
-{ "couponId": "uuid" }
-```
-
-**Targeted notify request body:**
-```json
-{ "couponId": "uuid", "customerIds": ["uuid1", "uuid2"] }
-```
-
-**Gift response shape:** `ApiDataResponse<BulkCouponGiftResult>` — `{ "sent": 3, "skipped": 0 }` where `skipped` = customers without verified email, inactive status, or not found.
-
 ## Customer Admin — Summary
 
 | Method | Path | Permission | Current behavior | Status | Evidence |
 |---|---|---|---|---|---|
 | `GET` | `/api/v1/admin/customers/summary` | `customers.read` | KPI counts for the admin Customers screen. Returns `AdminCustomerSummaryResponse`: `total` (all customers), `vip` (customers whose lifetime order total ≥ 10,000,000 VND — mirrors `AdminCustomerService.deriveSegment` VIP rule), `newLast30Days` (registered within the last 30 days), `active` (status = `ACTIVE`). | `CONFIRMED_FROM_CODE` | `AdminCustomerController.java`, `AdminCustomerService.java` |
-
-## Customer Admin — Coupons
-
-| Method | Path | Permission | Current behavior | Status | Evidence |
-|---|---|---|---|---|---|
-| `GET` | `/api/v1/admin/customers/{customerId}/coupons` | `coupons.read` | Paginated list of coupons owned by a specific customer. Returns `ApiListResponse<AdminCouponListItemResponse>`. Query params: `page` (default 1), `size` (1–100, default 20). | `PLANNED` | — |
-
-**Response item shape** (`AdminCouponListItemResponse`): `id`, `code`, `name`, `discountType` (`FIXED`\|`PERCENT`), `amount`, `minimumAmount`, `status` (`ACTIVE`\|`INACTIVE`\|`EXPIRED`), `channel` (`ALL`\|`ONLINE`\|`POS`), `usageCount`, `usageLimit`, `expiresAt`, `createdAt`.
 
 ## Audit Log Contract
 
@@ -1010,20 +969,18 @@ Lưới trang tổng `/huong-dan` (xem [DATA_CONTRACT.md](DATA_CONTRACT.md) §"G
 | `GET /api/v1/admin/audit-logs` | `audit-logs.read` | Paginated list (page/size), filterable by actorType, actorId, resourceType, resourceId, action, q (matches action text), from/to (LocalDate). Enriches actor display name and resource code. | `CONFIRMED_FROM_CODE` | `AdminAuditLogController.java`, `AdminAuditLogService.java` |
 
 **Resource types written by backend** (as of P0 fix):
-- `ORDER` — order lifecycle events (AdminOrderService, PosOrderService, RefundService)
+- `ORDER` — order lifecycle events (AdminOrderService, PosOrderService)
 - `PRODUCT` — create/update/publish/soft-delete/restore (AdminCatalogMutationService)
 - `CATEGORY` — create/update/soft-delete (AdminCatalogMutationService)
 - `BRAND` — create/update/soft-delete (AdminCatalogMutationService)
 - `INVENTORY` — stock adjustments (AdminInventoryService)
 - `CONTENT` — article/page create/update/delete (AdminContentMutationService)
-- `COUPON` — AdminCouponService
 - `CUSTOMER` — AdminCustomerService
 - `MEDIA` — AdminMediaService
 - `MENU` / `MENU_ITEM` — AdminMenuService
 - `REDIRECT` — AdminRedirectService
 - `SITE_SETTING` — AdminSettingsService
 - `REVIEW` — AdminReviewService
-- `RECEIVABLE` — ReceivableService
 - `ADMIN_USER` — AdminAdminUsersService
 - `ADMIN_ROLE` — AdminRoleService (fixed in V76; previously erroneously `ADMIN_ROLE:<roleId>`)
 
@@ -1031,45 +988,7 @@ Lưới trang tổng `/huong-dan` (xem [DATA_CONTRACT.md](DATA_CONTRACT.md) §"G
 
 **Write guarantee (non-blocking):** All audit-log writes go through the central `AuditLogWriter`, which persists in a separate transaction (`@Transactional(REQUIRES_NEW)`) wrapped in try/catch. An audit-write failure is logged and swallowed — it never rolls back or breaks the originating business action. `createdAt` is auto-set if a caller leaves it null. In the mock/read-only profile (no JPA repository) the write is a silent no-op. `CONFIRMED_FROM_CODE` — `AuditLogWriter.java`, `AuditLogPersister.java`.
 
-## Admin Returns Inspection Contract (V104)
-
-| Method | Path | Permission | Purpose | Status | Evidence |
-|---|---|---|---|---|---|
-| `PATCH` | `/api/v1/admin/returns/{returnId}/items/{itemId}/inspect` | `orders.write` | Records a per-item QC decision while the parent return is `INSPECTING`. Body: `{ "result": "PASS"|"FAIL", "note": "..." }`. Idempotent: calling again overwrites the previous decision. | `CONFIRMED_FROM_CODE` | `AdminReturnController.java`, `AdminReturnService.inspectItem`, `V104__add_return_item_inspection.sql` |
-
-`AdminReturnDetailResponse.ReturnItemResponse` now includes `inspectionResult`, `inspectionNote`, `inspectedAt`.
-
-`AdminReturnDetailResponse` now also includes order-level refund context fields (used by admin UI to gate the REFUNDED transition and prefill the refund amount):
-
-| Field | Type | Source | Purpose |
-|---|---|---|---|
-| `orderPaidAmount` | `BigDecimal` | `orders.paid_amount` | Total amount currently paid on the order |
-| `orderRefundedAmount` | `BigDecimal` | `orders.refund_amount` (NULL → 0) | Cumulative refunded so far |
-| `orderRefundableAmount` | `BigDecimal` | `paid − refunded` | Remaining refundable amount. Full-coverage REFUNDED requires `refundAmount` to equal this exactly; partial-coverage REFUNDED requires `0 < refundAmount ≤ this` |
-| `isFullReturnCoverage` | `boolean` | derived from `order_line_items.quantity` vs `sum(non-rejected return_items.quantity)` | `true` when every line item is fully covered by non-rejected returns. Full coverage → whole-order refund; `false` → partial refund (returned items' value only) |
-
-State machine guards (also see [STATE_MACHINES.md §10](../business/STATE_MACHINES.md)):
-- `INSPECTING → COMPLETED/REFUNDED` is rejected with `items.INSPECTION_INCOMPLETE` if any `ReturnItem` is missing an inspection result.
-- `RECEIVED|INSPECTING → REFUNDED` is allowed for both full- and partial-coverage RMAs. Full coverage (`isFullReturnCoverage = true`) → `refundAmount` must **equal** `orderRefundableAmount` and `RefundService.applyRefund` refunds the whole order. Partial coverage → `0 < refundAmount ≤ orderRefundableAmount` and `RefundService.applyReturnPartialRefund` refunds only the returned items' value, leaving the order `PAID`/`COMPLETED` until cumulative refund reaches the paid amount.
-- `restoreStockForReturn` skips items with `inspection_result = 'FAIL'` so customer-damaged goods don't re-enter inventory. On the **full-coverage** REFUNDED path it is not invoked — `RefundService.applyRefund` restores stock & serials at order level. On the **partial-coverage** REFUNDED path it IS invoked (RMA-level) so only the returned PASS items are restored.
-
-## Admin Warranty Contract
-
-All three endpoints are gated by `warranty.read` (read) or `warranty.write` (void). Responses are **not** wrapped in `ApiDataResponse` — these endpoints return the DTO directly, consistent with each other but inconsistent with the broader admin API envelope convention.
-
-`WarrantyRecordResponse` shape: `{ id: UUID, serialId: UUID, orderLineItemId: UUID|null, customerId: UUID|null, customerEmail: string|null, customerPhone: string|null, startDate: LocalDate, endDate: LocalDate, status: "ACTIVE"|"VOIDED", createdAt: Instant }`
-
-| Method | Path | Permission | Purpose | Status | Evidence |
-|---|---|---|---|---|---|
-| `GET` | `/api/v1/admin/warranties?page&size&status&customerId&q` | `warranty.read` | Paginated list filtered by optional `status` and `customerId`. Optional `q` is a case-insensitive free-text filter matching `customerEmail` or `customerPhone` (blank treated as no filter). Returns `PageResult<WarrantyRecordResponse>`. | `CONFIRMED_FROM_CODE` | `AdminWarrantyController.java`, `AdminWarrantyService.search` |
-| `GET` | `/api/v1/admin/warranties/by-serial/{serialId}` | `warranty.read` | Look up a warranty record by the internal serial UUID (not the human-readable serial number string). Returns `WarrantyRecordResponse` or `404` if no warranty exists for that serial. Wired into the `SerialListScreen` serial-detail "Bảo hành" panel via `adminApi.getWarrantyBySerial`; HTTP-tested. | `CONFIRMED_FROM_CODE` | `AdminWarrantyController.java:31`, `AdminWarrantyService.getBySerial`, `WarrantyApiTest.java`, audit finding F-08 |
-| `PATCH` | `/api/v1/admin/warranties/{warrantyId}/void` | `warranty.write` | Void an active warranty. Idempotent rejection: returns `409` if already `VOIDED`. Sets `status = "VOIDED"`, stamps `updatedAt`. | `CONFIRMED_FROM_CODE` | `AdminWarrantyController.java`, `AdminWarrantyService.voidWarranty`, `WarrantyApiTest.java` |
-
-**Public warranty lookup (no auth):**
-
-| Method | Path | Permission | Purpose | Status | Evidence |
-|---|---|---|---|---|---|
-| `GET` | `/api/v1/warranties/lookup?serial={serialNumber}` | None (public) | Customer-facing lookup by human-readable serial number string. Returns `ApiDataResponse<PublicWarrantyResponse>` with `{ serialNumber, productName, status, startDate, endDate, daysLeft }`. Consumed by web `/bao-hanh` and the mobile `WarrantyLookupScreen` (route `/bao-hanh`). | `CONFIRMED_FROM_CODE` | `PublicWarrantyController.java`, `WarrantyApiTest.java` |
+> **Warranty module removed (2026-06-23, V266).** The admin warranty contract — `GET /api/v1/admin/warranties` and `PATCH /api/v1/admin/warranties/{id}/void` — and the public lookup `GET /api/v1/warranties/lookup` were **deleted** along with the entire warranty feature (records, services, controllers, DTOs, the `/bao-hanh` web page, and the `warranty.read` / `warranty.write` permissions). Customer-facing warranty wording now lives only in CMS policy content and per-product marketing rows.
 
 ## Admin Notification Center Contract (V102)
 
@@ -1095,7 +1014,7 @@ Persistent counterpart of the WebSocket order feed — admins offline when an ev
 
 The repo does not use one wrapper consistently across every controller:
 
-- Most public/customer CRUD endpoints use `ApiDataResponse` or `ApiListResponse`. Customer-returns endpoints (`/returns`, `/returns/{id}`, `/{orderId}/returns`) are now also wrapped — the prior raw-payload inconsistency was fixed in `CustomerOrderController`.
+- Most public/customer CRUD endpoints use `ApiDataResponse` or `ApiListResponse`.
 - Some admin modules use raw `PageResult`, DTOs, CSV, or other non-envelope responses.
 
 Status: `CONFIRMED_FROM_CODE`
@@ -1104,37 +1023,8 @@ Status: `CONFIRMED_FROM_CODE`
 
 | Topic | Current status | Evidence |
 |---|---|---|
-| Search, address, customer address, customer returns are wrapped in mobile endpoint constants. | `CONFIRMED_FROM_CODE` | `api_endpoints.dart` |
+| Search, address, customer address are wrapped in mobile endpoint constants. | `CONFIRMED_FROM_CODE` | `api_endpoints.dart` |
 | Verify-email and home-videos are wrapped in `api_endpoints.dart` (constants `verifyEmail` line 52, `homeVideos` line 26). Home-videos widget integration is still pending in the mobile app (tracked as `CMS-004`). | `CONFIRMED_FROM_CODE` | `api_endpoints.dart` lines 26, 52 |
-
-## Proposed Accounts Receivable Endpoints
-
-> Status: `PROPOSED_FOR_AR_MODULE` — not yet implemented. Requires business confirmation (`AR_RULE_001`–`AR_RULE_011` in `BUSINESS_RULES.md`) and completion of Phase 1 prerequisite fixes before these endpoints are built.
-
-### Admin receivables endpoints
-
-| Method | Path | Permission | Proposed behavior |
-|---|---|---|---|
-| `GET` | `/api/v1/admin/receivables` | `receivables.read` | Paginated list of credit orders with `outstanding > 0`, filterable by `customerId`, `dueStatus` (CURRENT / OVERDUE / ALL), date range |
-| `GET` | `/api/v1/admin/receivables/summary` | `receivables.read` | Total outstanding amount, overdue count, aging buckets (0–30, 31–60, 61–90, 90+ days) |
-| `GET` | `/api/v1/admin/receivables/customers/{customerId}` | `receivables.read` | Per-customer credit orders and payment history |
-| `POST` | `/api/v1/admin/orders/{id}/payments` | `receivables.record_payment` | Record a payment against a receivable (credit) order; updates `paidAmount` on the `accounts_receivable` record; transitions AR `paymentStatus` toward `PAID`. `PARTIALLY_PAID` is a valid AR-level status (not order-level — order `payment_status` uses `UNPAID/PAID/REFUNDED/CANCELLED` per V114). |
-| `PATCH` | `/api/v1/admin/orders/{id}/credit-terms` | `receivables.set_credit_terms` | Set or update `due_at` and `credit_terms` on an existing order |
-| `POST` | `/api/v1/admin/orders/{id}/write-off` | `receivables.write_off` | Write off uncollectable receivable — sets `paymentStatus` to `CANCELLED` with an audit note |
-
-### POS endpoint extension (additive, same path)
-
-`POST /api/v1/admin/pos/orders` — if request body includes `paymentMethod: "CREDIT"` and the caller has `pos.credit_sale` permission:
-- Creates order with `status = COMPLETED` and `paymentStatus = UNPAID`
-- Requires `dueAt` in request body (ISO-8601 timestamp)
-- Does NOT create a `PaymentEntity` row (payment is deferred)
-- This is an additive extension to the existing POS endpoint; existing `CASH` / `CARD_TERMINAL` behavior is unchanged
-
-### Customer-facing extension (additive, existing endpoint)
-
-`GET /api/v1/customer/orders/{orderId}` — extend `OrderDetailResponse` with two additional read-only fields:
-- `outstanding`: `BigDecimal` — `totalAmount - paidAmount` (zero for fully paid orders)
-- `dueAt`: `Instant` nullable — payment due date for credit orders (null for non-credit)
 
 ### Account page fields — address email, order product names (V127)
 

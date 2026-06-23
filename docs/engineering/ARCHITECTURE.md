@@ -32,8 +32,8 @@
 ### Notable architectural realities
 
 - OpenAPI is a checked-in companion file, not an automatically trusted source without verification. `CONFIRMED_FROM_STRUCTURE`
-- POS is implemented inside the main order/inventory domain, not as a standalone payment subsystem. `CONFIRMED_FROM_CODE`
-- Current serial handling is stock-movement based. Older full-lifecycle serial tables were removed and later replaced with movement/receipt serial tables. `CONFIRMED_FROM_CODE`
+- POS (point-of-sale / walk-in) was **removed** platform-wide (owner decision 2026-06-23) — BigBike is online-only. The POS endpoints, `AdminPosController` / `PosOrderService`, and the `pos.*` permissions no longer exist; all sales go through the storefront checkout. `REMOVED`
+- Serial-number tracking was removed platform-wide (2026-06-23, V259). Inventory is a **boolean availability toggle** (2026-06-23, V261): per-variant `is_available` / per-no-variant-product `stock_state`, set by hand; no tracked quantity, no auto-decrement on sale (admin marks "Hết hàng" manually, oversell not auto-prevented). The quantity columns are kept but dormant. The warranty feature was removed entirely (2026-06-23, V266) — no warranty records, services, lookup, or `/bao-hanh` page. `CONFIRMED_FROM_CODE`
 - Receipt tables exist in the schema, but a receiving service/controller was not confirmed in the current Java layer. `NOT_FOUND_IN_REPO`
 
 ## Infrastructure And Integrations
@@ -64,7 +64,7 @@ Kiến trúc render: **ISR on-demand + SSG + CSR hybrid — KHÔNG SSR.** `CONFI
 
 **Nguyên tắc tách lớp ISR↔CSR (theo loại DỮ LIỆU, không theo trang):**
 - **Cần SEO + ít đổi** (mô tả, ảnh, thông số, breadcrumb, metadata, carousel trang chủ, sản phẩm liên quan) → **ISR**; admin sửa → backend `revalidateTag` bust ngay.
-- **Cần freshness cao, không cần SEO** (giá, tồn kho, badge "Hết hàng") → **CSR** fetch sau khi page load. Áp dụng ở PDP buy-box (snapshot) + lưới browsing; KHÔNG CSR carousel trang chủ/sản phẩm liên quan (curated, ISR + revalidate là đủ tươi — tránh hại LCP/SEO).
+- **Cần freshness cao, không cần SEO** (giá, badge "Còn hàng / Hết hàng") → **CSR** fetch sau khi page load. Áp dụng ở PDP buy-box (snapshot) + lưới browsing; KHÔNG CSR carousel trang chủ/sản phẩm liên quan (curated, ISR + revalidate là đủ tươi — tránh hại LCP/SEO).
 - Điều kiện vận hành: ① backend phải gọi revalidate sau mỗi admin save (đã có — `WebRevalidationService`); ② lớp CSR có skeleton/fallback (lưới có skeleton; PDP dùng giá trị ISR ban đầu nên không cần).
 
 **i18n & rendering:** locale canonical `vi` được render TĨNH ở server (`i18n/request.ts` KHÔNG đọc cookie — nếu đọc sẽ ép mọi route thành dynamic/SSR). Tiếng Anh xử lý ở CLIENT qua `ClientIntlProvider` (đọc cookie `NEXT_LOCALE` sau mount, nạp `messages/en.json`, swap không reload). **URL trang chi tiết danh mục/sản phẩm/thương hiệu đổi theo ngôn ngữ qua `slugEn`** (PRODUCT/CATEGORY/BRAND_RULE_003): server vẫn render vi/ISR + canonical=vi, nhưng `LanguageSwitcher` trên trang chi tiết **điều hướng (`router.push`)** sang URL slug ngôn ngữ đích (cả 2 slug có sẵn từ API qua `AltSlugProvider`); trang home/listing giữ swap-tại-chỗ. Backend OR-resolve theo vi/en slug nên cả 2 URL mở cùng entity; hreflang khai báo bản en. `timeZone` khai báo tường minh (`Asia/Ho_Chi_Minh`) để render tĩnh nhất quán. `CONFIRMED_FROM_CODE`

@@ -5,8 +5,6 @@ import com.bigbike.bigbike_backend.api.admin.dto.order.AdminOrderListItemRespons
 import com.bigbike.bigbike_backend.api.admin.dto.order.AdminOrderNoteResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.order.OrderAuditLogResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.order.CreateOrderNoteRequest;
-import com.bigbike.bigbike_backend.api.admin.dto.order.CreateRefundRequest;
-import com.bigbike.bigbike_backend.api.admin.dto.order.OrderAppliedCouponResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.order.UpdateFulfillmentRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.order.UpdateOrderStatusRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.order.UpdatePaymentStatusRequest;
@@ -19,14 +17,12 @@ import com.bigbike.bigbike_backend.api.order.dto.OrderPaymentResponse;
 import com.bigbike.bigbike_backend.api.order.dto.OrderShippingItemResponse;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.mapper.OrderAddressMapper;
-import com.bigbike.bigbike_backend.mapper.OrderAppliedCouponMapper;
 import com.bigbike.bigbike_backend.mapper.OrderItemMapper;
 import com.bigbike.bigbike_backend.mapper.OrderMapper;
 import com.bigbike.bigbike_backend.mapper.OrderNoteMapper;
 import com.bigbike.bigbike_backend.mapper.PaymentMapper;
 import com.bigbike.bigbike_backend.mapper.ShippingMapper;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderAddressEntity;
-import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderAppliedCouponEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderLineItemEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderNoteEntity;
@@ -35,15 +31,12 @@ import com.bigbike.bigbike_backend.persistence.entity.commerce.payment.PaymentEn
 import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
 import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderAddressJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderAppliedCouponJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLineItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderNoteJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderShippingItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.PaymentJpaRepository;
 import com.bigbike.bigbike_backend.service.checkout.OrderNotificationService;
-import com.bigbike.bigbike_backend.service.inventory.OrderStockRestoreService;
-import com.bigbike.bigbike_backend.service.inventory.SerialLifecycleService;
 import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.ws.AdminOrderWsService;
@@ -85,11 +78,11 @@ public class AdminOrderService {
     private static final int MAX_SIZE = 100;
 
     private static final Set<String> ALLOWED_ORDER_STATUSES = Set.of(
-            "PENDING", "PROCESSING", "ON_HOLD", "COMPLETED", "CANCELLED", "FAILED", "REFUNDED"
+            "PENDING", "PROCESSING", "ON_HOLD", "COMPLETED", "CANCELLED", "FAILED"
     );
 
     private static final Set<String> ALLOWED_PAYMENT_STATUSES = Set.of(
-            "UNPAID", "PAID", "REFUNDED", "CANCELLED"
+            "UNPAID", "PAID", "CANCELLED"
     );
 
     // Payment methods whose orders sit ON_HOLD until an admin confirms the money
@@ -104,27 +97,19 @@ public class AdminOrderService {
         ALLOWED_TRANSITIONS.put("PENDING",    Set.of("PROCESSING", "ON_HOLD", "CANCELLED", "FAILED"));
         ALLOWED_TRANSITIONS.put("ON_HOLD",    Set.of("PROCESSING", "CANCELLED", "FAILED"));
         ALLOWED_TRANSITIONS.put("PROCESSING", Set.of("COMPLETED", "CANCELLED", "FAILED"));
-        // COMPLETED → REFUNDED is intentionally NOT allowed via direct status patch.
-        // Refunds must go through POST /admin/orders/{id}/refund → RefundService.applyRefund,
-        // which writes the refund_transaction, payment.refundAmount, voids warranty,
-        // restores SOLD serials, writes off open receivable, and flips status to REFUNDED
-        // atomically. Patching status directly would skip every one of those steps.
+        // COMPLETED is terminal. There is no refund flow anymore — money returned to a
+        // customer (e.g. after cancelling a paid order) is reconciled manually by the admin
+        // outside the system.
         ALLOWED_TRANSITIONS.put("COMPLETED",  Set.of());
         ALLOWED_TRANSITIONS.put("CANCELLED",  Set.of());
         ALLOWED_TRANSITIONS.put("FAILED",     Set.of());
-        ALLOWED_TRANSITIONS.put("REFUNDED",   Set.of());
     }
 
     private static final Map<String, Set<String>> ALLOWED_PAYMENT_TRANSITIONS;
     static {
         ALLOWED_PAYMENT_TRANSITIONS = new HashMap<>();
         ALLOWED_PAYMENT_TRANSITIONS.put("UNPAID",    Set.of("PAID", "CANCELLED"));
-        // REFUNDED is intentionally excluded from PAID transitions.
-        // Setting paymentStatus=REFUNDED directly bypasses RefundService, which is
-        // the single authoritative refund flow (refund_transaction, payment.refundAmount,
-        // receivable write-off, SOLD serial restore, audit log). Use POST /refund instead.
         ALLOWED_PAYMENT_TRANSITIONS.put("PAID",      Set.of("UNPAID"));
-        ALLOWED_PAYMENT_TRANSITIONS.put("REFUNDED",  Set.of());
         ALLOWED_PAYMENT_TRANSITIONS.put("CANCELLED", Set.of());
     }
 
@@ -135,8 +120,7 @@ public class AdminOrderService {
     private static final Map<String, Set<String>> ALLOWED_FULFILLMENT_TRANSITIONS;
     static {
         ALLOWED_FULFILLMENT_TRANSITIONS = new HashMap<>();
-        // UNFULFILLED → DELIVERED direct is removed. Walk-in/POS orders use fulfillmentType=IN_STORE
-        // and never enter the fulfillment state machine. Delivery orders must go through SHIPPED first
+        // UNFULFILLED → DELIVERED direct is removed. Delivery orders must go through SHIPPED first
         // so tracking data is captured before the order can be completed.
         ALLOWED_FULFILLMENT_TRANSITIONS.put("UNFULFILLED", Set.of("PROCESSING", "CANCELLED"));
         ALLOWED_FULFILLMENT_TRANSITIONS.put("PROCESSING",  Set.of("SHIPPED", "CANCELLED"));
@@ -152,14 +136,10 @@ public class AdminOrderService {
     private final OrderShippingItemJpaRepository shippingItemRepo;
     private final OrderNoteJpaRepository noteRepo;
     private final PaymentJpaRepository paymentRepo;
-    private final OrderAppliedCouponJpaRepository appliedCouponRepo;
     private final AuditLogJpaRepository auditLogRepo;
     private final AuditLogWriter auditLogWriter;
     private final OrderNotificationService orderNotificationService;
     private final AdminOrderWsService adminOrderWsService;
-    private final com.bigbike.bigbike_backend.service.payment.RefundService refundService;
-    private final OrderStockRestoreService orderStockRestoreService;
-    private final SerialLifecycleService serialLifecycleService;
     private final WebRevalidationService webRevalidationService;
     private final OrderMapper orderMapper;
     private final OrderItemMapper orderItemMapper;
@@ -167,7 +147,6 @@ public class AdminOrderService {
     private final ShippingMapper shippingMapper;
     private final PaymentMapper paymentMapper;
     private final OrderNoteMapper orderNoteMapper;
-    private final OrderAppliedCouponMapper orderAppliedCouponMapper;
 
     // ── List ──────────────────────────────────────────────────────────────────
 
@@ -270,26 +249,21 @@ public class AdminOrderService {
     private boolean canComplete(OrderEntity order) {
         String fulfillmentType  = order.getFulfillmentType();
         String fulfillmentStatus = order.getFulfillmentStatus();
-        String paymentMethod    = order.getPaymentMethod();
-        String paymentStatus    = order.getPaymentStatus();
 
+        // Payment no longer gates completion (owner decision 2026-06-23): the admin reconciles money
+        // offline and may mark the order paid before or after completing it. Only the delivery
+        // lifecycle still gates COMPLETED for delivery orders.
         if ("DELIVERY".equalsIgnoreCase(fulfillmentType)
                 && !"DELIVERED".equals(fulfillmentStatus)) {
             return false;
-        }
-        if ("COD".equalsIgnoreCase(paymentMethod) && !"PAID".equals(paymentStatus)) {
-            return false;
-        }
-        if ("UNPAID".equals(paymentStatus)) {
-            boolean isCreditOrder = "CREDIT".equalsIgnoreCase(paymentMethod);
-            boolean hasCustomer   = order.getCustomerId() != null;
-            if (!isCreditOrder || !hasCustomer) return false;
         }
         return true;
     }
 
     private boolean canCancel(OrderEntity order) {
-        return !"PAID".equals(order.getPaymentStatus());
+        // Paid orders can now be cancelled directly — there is no system refund flow;
+        // any money already collected is reconciled manually by the admin.
+        return true;
     }
 
     // ── Update order status ───────────────────────────────────────────────────
@@ -325,8 +299,6 @@ public class AdminOrderService {
         // can stay focused on the actual transition.
         if ("COMPLETED".equals(newStatus)) {
             validateBeforeComplete(order);
-        } else if ("CANCELLED".equals(newStatus)) {
-            validateBeforeCancel(order);
         }
 
         String beforeStatus = order.getStatus();
@@ -374,18 +346,12 @@ public class AdminOrderService {
 
         orderRepo.save(order);
 
-        // Serial lifecycle transitions (idempotent; no-op if no serials linked).
-        // REFUNDED is unreachable here — ALLOWED_TRANSITIONS blocks it, refunds go through RefundService.
+        // Web cache side-effects.
         if ("COMPLETED".equals(newStatus)) {
-            serialLifecycleService.markSoldForOrder(orderId);
             webRevalidationService.revalidateProductsForOrder(orderId);
         } else if ("CANCELLED".equals(newStatus) || "FAILED".equals(newStatus)) {
-            // Release serial reservations, then restore non-serial stock.
-            // FAILED is treated identically to CANCELLED for inventory purposes — stock must be
-            // returned to available so other customers can purchase. Both restore methods are
-            // idempotent so duplicate calls (e.g. retry) are safe.
-            serialLifecycleService.releaseReservationForOrder(orderId, "ORDER_" + newStatus);
-            orderStockRestoreService.restoreForCancel(orderId);
+            // Inventory is boolean availability only (owner decision 2026-06-23) — nothing to
+            // restore on cancel/fail. Just refresh the web cache.
             webRevalidationService.revalidateProductsForOrder(orderId);
         }
 
@@ -433,7 +399,7 @@ public class AdminOrderService {
         if ("CANCELLED".equals(orderStatus) || "FAILED".equals(orderStatus) || "REFUNDED".equals(orderStatus)) {
             throw new ConflictException(
                     "Không thể cập nhật thanh toán cho đơn hàng đã " +
-                    ("CANCELLED".equals(orderStatus) ? "hủy" : "FAILED".equals(orderStatus) ? "thất bại" : "hoàn tiền") + ".");
+                    ("CANCELLED".equals(orderStatus) ? "hủy" : "thất bại") + ".");
         }
 
         String currentPaymentStatus = order.getPaymentStatus();
@@ -478,14 +444,6 @@ public class AdminOrderService {
                     throw ValidationException.fromField("paidAmount", "INVALID",
                             "paidAmount must be 0 for UNPAID.");
                 }
-                // Reject revert-to-UNPAID if a refund has already been applied.
-                // Allowing this would leave refundAmount > 0 with paymentStatus=UNPAID,
-                // which is an incoherent state that breaks refund idempotency checks.
-                BigDecimal existingRefund = order.getRefundAmount();
-                if (existingRefund != null && existingRefund.compareTo(BigDecimal.ZERO) > 0) {
-                    throw new ConflictException(
-                            "Không thể đặt lại thanh toán về UNPAID vì đơn hàng đã có hoàn tiền " + existingRefund + " VND.");
-                }
                 order.setPaymentStatus("UNPAID");
                 order.setPaidAmount(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
                 order.setPaidAt(null);
@@ -513,20 +471,6 @@ public class AdminOrderService {
                 order.getStatus(), newPaymentStatus, now);
         runAfterCommit(() -> adminOrderWsService.pushEvent(paymentStatusChangedEvent));
 
-        return toDetail(orderRepo.findById(orderId).orElseThrow());
-    }
-
-    // ── Create refund ─────────────────────────────────────────────────────────
-
-    @Transactional
-    public AdminOrderDetailResponse createRefund(UUID orderId, UUID adminId, CreateRefundRequest req,
-            String clientIp, String userAgent) {
-        String noteContent = req.note() != null && !req.note().isBlank() ? req.note() : null;
-        refundService.applyRefund(
-                orderId, adminId,
-                req.refundAmount(), req.refundReason(),
-                noteContent, Boolean.TRUE.equals(req.customerVisible()),
-                clientIp, userAgent);
         return toDetail(orderRepo.findById(orderId).orElseThrow());
     }
 
@@ -692,19 +636,12 @@ public class AdminOrderService {
      * Rule 2 — COD orders must have collected the cash before completion;
      * "complete" means goods + money, not just goods.
      *
-     * Rule 1 — COMPLETED + UNPAID is only legitimate for credit/receivable orders
-     * (POS CREDIT, walk-in công nợ). Anything else leaves money on the table
-     * with no receivable to chase it.
-     *
-     * POS in-store orders (fulfillmentType = IN_STORE) intentionally skip the
-     * DELIVERY guard — the goods change hands at the counter when the order
-     * is created.
+     * Rule 1 — COMPLETED + UNPAID is never legitimate; an order must be paid
+     * before it can be completed.
      */
     private void validateBeforeComplete(OrderEntity order) {
         String fulfillmentType = order.getFulfillmentType();
         String fulfillmentStatus = order.getFulfillmentStatus();
-        String paymentMethod = order.getPaymentMethod();
-        String paymentStatus = order.getPaymentStatus();
 
         if ("DELIVERY".equalsIgnoreCase(fulfillmentType)
                 && !"DELIVERED".equals(fulfillmentStatus)) {
@@ -712,36 +649,8 @@ public class AdminOrderService {
                     "Chỉ được hoàn thành đơn giao hàng sau khi đã giao thành công.");
         }
 
-        if ("COD".equalsIgnoreCase(paymentMethod) && !"PAID".equals(paymentStatus)) {
-            throw new ConflictException(
-                    "Đơn COD phải được thu tiền trước khi hoàn thành.");
-        }
-
-        if ("UNPAID".equals(paymentStatus)) {
-            boolean isCreditOrder = "CREDIT".equalsIgnoreCase(paymentMethod);
-            boolean hasCustomer = order.getCustomerId() != null;
-            if (!isCreditOrder || !hasCustomer) {
-                throw new ConflictException(
-                        "Đơn chưa thanh toán chỉ được hoàn thành khi là đơn công nợ có khách hàng hợp lệ.");
-            }
-        }
-    }
-
-    /**
-     * Reject direct cancel when the order already has money attached.
-     *
-     * Rule 4 — PAID orders must go through the refund flow
-     * ({@link com.bigbike.bigbike_backend.service.payment.RefundService})
-     * so the payment record, receivable, audit log, and stock/serial lifecycle
-     * stay consistent. A direct CANCELLED patch would skip every one of those
-     * steps and leave the books out of sync. UNPAID orders cancel cleanly.
-     */
-    private void validateBeforeCancel(OrderEntity order) {
-        String paymentStatus = order.getPaymentStatus();
-        if ("PAID".equals(paymentStatus)) {
-            throw new ConflictException(
-                    "Đơn đã có thanh toán, cần xử lý hoàn tiền trước khi hủy.");
-        }
+        // Payment status no longer blocks completion (owner decision 2026-06-23): the admin reconciles
+        // money offline and may mark paid before or after completing the order. See #canComplete.
     }
 
     // ── Mapping ───────────────────────────────────────────────────────────────
@@ -792,9 +701,6 @@ public class AdminOrderService {
         List<AdminOrderNoteResponse> notes = noteRepo.findByOrderIdOrderByCreatedAtAsc(order.getId())
                 .stream().map(this::toAdminNote).toList();
 
-        List<OrderAppliedCouponResponse> appliedCoupons = appliedCouponRepo.findByOrderId(order.getId())
-                .stream().map(this::toAppliedCoupon).toList();
-
         String customerName = (order.getCustomerName() != null && !order.getCustomerName().isBlank())
                 ? order.getCustomerName()
                 : addresses.stream()
@@ -828,19 +734,15 @@ public class AdminOrderService {
                 order.getTaxAmount(),
                 order.getTotalAmount(),
                 order.getPaidAmount(),
-                order.getRefundAmount(),
-                order.getRefundReason(),
                 order.getPlacedAt(),
                 order.getPaidAt(),
                 order.getCompletedAt(),
                 order.getCancelledAt(),
-                order.getRefundedAt(),
                 lineItems,
                 addresses,
                 shippingItems,
                 payments,
-                notes,
-                appliedCoupons
+                notes
         );
     }
 
@@ -863,10 +765,6 @@ public class AdminOrderService {
 
     private AdminOrderNoteResponse toAdminNote(OrderNoteEntity e) {
         return orderNoteMapper.toAdminResponse(e);
-    }
-
-    private OrderAppliedCouponResponse toAppliedCoupon(OrderAppliedCouponEntity e) {
-        return orderAppliedCouponMapper.toResponse(e);
     }
 
     private void runAfterCommit(Runnable action) {

@@ -6,6 +6,5 @@ public enum OrderStatus {
     ON_HOLD,
     COMPLETED,
     CANCELLED,
-    REFUNDED,
     FAILED
 }

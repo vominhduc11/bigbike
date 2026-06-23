@@ -43,19 +43,7 @@ INSERT INTO menus (id, location, name, status, created_at, updated_at)
 SELECT '00000000-0000-0000-0000-000000000203', 'guide', 'Buying Guide Menu', 'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM menus WHERE location = 'guide');
 
--- ── Shipping zone ──────────────────────────────────────────────────────────
-INSERT INTO shipping_zones (id, legacy_id, name, region_code, sort_order, enabled, created_at, updated_at)
-SELECT '00000000-0000-0000-0000-000000000301', 1, 'Vietnam', 'VN', 0, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-WHERE NOT EXISTS (SELECT 1 FROM shipping_zones WHERE id = '00000000-0000-0000-0000-000000000301');
-
--- ── Shipping methods ───────────────────────────────────────────────────────
-INSERT INTO shipping_methods (id, zone_id, legacy_id, method_code, title, description, cost, min_order_amount, enabled, sort_order, created_at, updated_at)
-SELECT '00000000-0000-0000-0000-000000000401', '00000000-0000-0000-0000-000000000301', 1, 'cod', 'Thanh toan khi nhan hang (COD)', 'Thanh toan tien mat.', 0, 0, true, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-WHERE NOT EXISTS (SELECT 1 FROM shipping_methods WHERE id = '00000000-0000-0000-0000-000000000401');
-
-INSERT INTO shipping_methods (id, zone_id, legacy_id, method_code, title, description, cost, min_order_amount, enabled, sort_order, created_at, updated_at)
-SELECT '00000000-0000-0000-0000-000000000402', '00000000-0000-0000-0000-000000000301', 2, 'flat_rate', 'Phi van chuyen co dinh', 'Phi van chuyen 30000 VND.', 30000, 0, false, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-WHERE NOT EXISTS (SELECT 1 FROM shipping_methods WHERE id = '00000000-0000-0000-0000-000000000402');
+-- Shipping zones/methods removed (owner decision 2026-06-23) — see V264 (tables dropped).
 
 -- ── Home sliders (8 entries) ───────────────────────────────────────────────
 INSERT INTO sliders (id, sort_order, location, is_active, desktop_image, mobile_image, product_id, external_link, created_at, updated_at)
@@ -239,7 +227,7 @@ WHERE NOT EXISTS (SELECT 1 FROM admin_roles WHERE id = 'SEO_EDITOR');
 INSERT INTO role_permissions (role_id, permission)
 SELECT 'SUPER_ADMIN', '*' WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id = 'SUPER_ADMIN' AND permission = '*');
 
--- ADMIN (matches AdminRolePermissions.MAP exactly, including pos/receivables/reports from V79/V78)
+-- ADMIN (matches AdminRolePermissions.MAP exactly, including pos/reports from V78)
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'products.read'               WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='products.read');
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'products.update'             WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='products.update');
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'catalog.read'                WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='catalog.read');
@@ -258,8 +246,6 @@ INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'menus.read' 
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'menus.write'                 WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='menus.write');
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'sliders.read'                WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='sliders.read');
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'sliders.write'               WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='sliders.write');
-INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'coupons.read'                WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='coupons.read');
-INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'coupons.write'               WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='coupons.write');
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'shipping.read'               WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='shipping.read');
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'shipping.write'              WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='shipping.write');
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'reviews.read'                WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='reviews.read');
@@ -273,21 +259,11 @@ INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'home_videos.
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'home_videos.write'           WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='home_videos.write');
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'redirects.read'              WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='redirects.read');
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'redirects.write'             WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='redirects.write');
-INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'pos.read'                    WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='pos.read');
-INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'pos.write'                   WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='pos.write');
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'pos.refund'                  WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='pos.refund');
-INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'pos.price_override'          WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='pos.price_override');
-INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'receivables.read'            WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='receivables.read');
-INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'receivables.create'          WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='receivables.create');
-INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'receivables.record_payment'  WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='receivables.record_payment');
-INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'receivables.write_off'       WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='receivables.write_off');
-INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'receivables.override_limit'  WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='receivables.override_limit');
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'reports.read'                WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='reports.read');
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'reports.export'              WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='reports.export');
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'inventory.read'              WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='inventory.read');
 INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'inventory.write'             WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='inventory.write');
-INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'warranty.read'               WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='warranty.read');
-INSERT INTO role_permissions (role_id, permission) SELECT 'ADMIN', 'warranty.write'              WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='ADMIN' AND permission='warranty.write');
 
 -- SHOP_MANAGER
 INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'products.read'              WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='SHOP_MANAGER' AND permission='products.read');
@@ -297,21 +273,13 @@ INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'order
 INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'orders.write'               WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='SHOP_MANAGER' AND permission='orders.write');
 INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'customers.read'             WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='SHOP_MANAGER' AND permission='customers.read');
 INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'customers.write'            WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='SHOP_MANAGER' AND permission='customers.write');
-INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'coupons.read'               WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='SHOP_MANAGER' AND permission='coupons.read');
-INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'coupons.write'              WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='SHOP_MANAGER' AND permission='coupons.write');
 INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'shipping.read'              WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='SHOP_MANAGER' AND permission='shipping.read');
 INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'reviews.read'               WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='SHOP_MANAGER' AND permission='reviews.read');
 INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'reviews.write'              WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='SHOP_MANAGER' AND permission='reviews.write');
-INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'pos.read'                   WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='SHOP_MANAGER' AND permission='pos.read');
-INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'pos.write'                  WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='SHOP_MANAGER' AND permission='pos.write');
-INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'receivables.read'           WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='SHOP_MANAGER' AND permission='receivables.read');
-INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'receivables.record_payment' WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='SHOP_MANAGER' AND permission='receivables.record_payment');
 INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'reports.read'               WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='SHOP_MANAGER' AND permission='reports.read');
 INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'reports.export'             WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='SHOP_MANAGER' AND permission='reports.export');
 INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'inventory.read'             WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='SHOP_MANAGER' AND permission='inventory.read');
 INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'inventory.write'            WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='SHOP_MANAGER' AND permission='inventory.write');
-INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'warranty.read'              WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='SHOP_MANAGER' AND permission='warranty.read');
-INSERT INTO role_permissions (role_id, permission) SELECT 'SHOP_MANAGER', 'warranty.write'             WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='SHOP_MANAGER' AND permission='warranty.write');
 
 -- EDITOR
 INSERT INTO role_permissions (role_id, permission) SELECT 'EDITOR', 'products.read'   WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role_id='EDITOR' AND permission='products.read');

@@ -1,17 +1,13 @@
-import { useEffect, useMemo, useState } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { GripVertical, Trash2, Eye, EyeOff, Plus, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { GripVertical, Trash2, Eye, EyeOff, Plus } from 'lucide-react'
 import { toast } from '@/lib/toast'
 import { fetchGuidePage, saveGuidePage } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
-import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { SortableList } from '../components/Sortable'
-import { Screen } from '../components/layout/Screen'
-import { ScreenHeader } from '../components/layout/ScreenHeader'
 import { FormField } from '../components/layout/FormField'
-import { StickyActionBar } from '../components/layout/StickyActionBar'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -75,7 +71,12 @@ function snapshot(hero, entries) {
   })
 }
 
-export function GuidePageBuilderScreen({ canUpdate }) {
+/**
+ * Trình dựng trang Hướng dẫn — nhúng làm một tab bên trong trang editor của module Nội dung
+ * (trang CMS slug `huong-dan`). Không có chrome/nút lưu riêng: cha gọi `save()` qua ref trong cùng
+ * một lần bấm Lưu, và theo dõi thay đổi chưa lưu qua `onDirtyChange`.
+ */
+export const GuidePageBuilderPanel = forwardRef(function GuidePageBuilderPanel({ canUpdate, onDirtyChange }, ref) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [hero, setHero] = useState({ heroTitleVi: '', heroTitleEn: '', heroImageUrl: '' })
@@ -83,8 +84,6 @@ export function GuidePageBuilderScreen({ canUpdate }) {
   const [initialized, setInitialized] = useState(false)
   // Ảnh chụp trạng thái đã nạp/đã lưu — mốc để phát hiện thay đổi chưa lưu.
   const [baseline, setBaseline] = useState('')
-  const [saveError, setSaveError] = useState('')
-  const [saveSuccess, setSaveSuccess] = useState(false)
 
   const { isLoading, isError, error, data } = useQuery({
     queryKey: ['guide-page'],
@@ -112,24 +111,15 @@ export function GuidePageBuilderScreen({ canUpdate }) {
     [initialized, hero, entries, baseline],
   )
 
-  // Cảnh báo khi rời trang/tải lại lúc còn thay đổi chưa lưu (giống BannerScreen).
   useEffect(() => {
-    if (!isDirty) return undefined
-    const handler = (e) => {
-      e.preventDefault()
-      e.returnValue = ''
-      return ''
-    }
-    window.addEventListener('beforeunload', handler)
-    return () => window.removeEventListener('beforeunload', handler)
-  }, [isDirty])
+    onDirtyChange?.(isDirty)
+  }, [isDirty, onDirtyChange])
 
   const saveMutation = useMutation({
     mutationFn: saveGuidePage,
     onSuccess(_res, variables) {
       queryClient.invalidateQueries({ queryKey: ['guide-page'] })
-      // Đồng bộ state cục bộ về đúng giá trị đã lưu (pathSegment đã chuẩn hoá) rồi tái lập mốc,
-      // để sau khi lưu thành công không còn báo "chưa lưu".
+      // Đồng bộ state cục bộ về đúng giá trị đã lưu (pathSegment đã chuẩn hoá) rồi tái lập mốc.
       const savedHero = {
         heroTitleVi: variables.heroTitleVi,
         heroTitleEn: variables.heroTitleEn,
@@ -138,19 +128,30 @@ export function GuidePageBuilderScreen({ canUpdate }) {
       setHero(savedHero)
       setEntries(variables.entries)
       setBaseline(snapshot(savedHero, variables.entries))
-      setSaveError('')
-      setSaveSuccess(true)
-      setTimeout(() => setSaveSuccess(false), 2500)
-      toast.success(t('guideBuilder.savedSuccess'))
+      onDirtyChange?.(false)
     },
     onError(err) {
-      const msg = err?.message || t('common.errorOccurred')
-      // Lỗi server giữ lại inline ở thanh hành động để admin thấy trong lúc sửa, ngoài toast (tiêu chí 7.7).
-      setSaveError(msg)
-      setSaveSuccess(false)
-      toast.error(msg)
+      toast.error(err?.message || t('common.errorOccurred'))
     },
   })
+
+  useImperativeHandle(ref, () => ({
+    isDirty: () => isDirty,
+    async save() {
+      if (!isDirty) return
+      const payloadEntries = entries.map((e, i) => ({
+        ...e,
+        sortOrder: i,
+        pathSegment: slugify(e.pathSegment) || slugify(e.titleVi),
+      }))
+      await saveMutation.mutateAsync({
+        heroTitleVi: hero.heroTitleVi,
+        heroTitleEn: hero.heroTitleEn,
+        heroImageUrl: hero.heroImageUrl,
+        entries: payloadEntries,
+      })
+    },
+  }), [isDirty, entries, hero, saveMutation])
 
   function patchEntry(id, patch) {
     setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, ...patch } : e)))
@@ -173,47 +174,18 @@ export function GuidePageBuilderScreen({ canUpdate }) {
     setHero((prev) => ({ ...prev, [field]: value }))
   }
 
-  function handleSave() {
-    setSaveError('')
-    const payloadEntries = entries.map((e, i) => ({
-      ...e,
-      sortOrder: i,
-      pathSegment: slugify(e.pathSegment) || slugify(e.titleVi),
-    }))
-    saveMutation.mutate({
-      heroTitleVi: hero.heroTitleVi,
-      heroTitleEn: hero.heroTitleEn,
-      heroImageUrl: hero.heroImageUrl,
-      entries: payloadEntries,
-    })
-  }
-
   if (isLoading) {
-    return (
-      <Screen>
-        <StatePanel tone="info" title={t('common.loading')} description={t('common.pleaseWait')} />
-      </Screen>
-    )
+    return <StatePanel tone="info" title={t('common.loading')} description={t('common.pleaseWait')} />
   }
   if (isError) {
-    return (
-      <Screen>
-        <StatePanel tone="danger" title={t('common.errorLoading')} description={error?.message} />
-      </Screen>
-    )
+    return <StatePanel tone="danger" title={t('common.errorLoading')} description={error?.message} />
   }
 
   const disabled = !canUpdate || saveMutation.isPending
 
   return (
-    <Screen maxWidth="980px">
-      {!canUpdate && <ReadOnlyBanner />}
-
-      <ScreenHeader
-        eyebrow={t('guideBuilder.eyebrow')}
-        title={t('guideBuilder.title')}
-        description={t('guideBuilder.description')}
-      />
+    <div className="flex flex-col gap-6">
+      <p className="text-sm text-muted-foreground">{t('guideBuilder.description')}</p>
 
       {/* Hero */}
       <section className="border border-border bg-background p-4 flex flex-col gap-3">
@@ -280,35 +252,9 @@ export function GuidePageBuilderScreen({ canUpdate }) {
           />
         )}
       </section>
-
-      {/* Thanh hành động cố định đáy: Save luôn trong tầm với trên trang dài, kèm trạng thái lưu (tiêu chí 7.4). */}
-      {canUpdate && (
-        <StickyActionBar
-          info={
-            <span
-              className="flex items-center gap-1.5 text-sm"
-              role={saveError ? 'alert' : undefined}
-            >
-              {saveError ? (
-                <><AlertCircle size={14} className="text-danger shrink-0" /> <span className="text-danger">{saveError}</span></>
-              ) : saveMutation.isPending ? (
-                <>{t('common.saving')}</>
-              ) : saveSuccess ? (
-                <><CheckCircle2 size={15} className="text-[var(--admin-color-status-success-text)] shrink-0" /> {t('guideBuilder.savedSuccess')}</>
-              ) : isDirty ? (
-                <><AlertCircle size={14} className="shrink-0" /> {t('guideBuilder.unsavedChanges', { defaultValue: 'Có thay đổi chưa lưu' })}</>
-              ) : null}
-            </span>
-          }
-        >
-          <Button onClick={handleSave} disabled={disabled || !isDirty}>
-            {saveMutation.isPending ? t('common.saving') : t('guideBuilder.saveButton')}
-          </Button>
-        </StickyActionBar>
-      )}
-    </Screen>
+    </div>
   )
-}
+})
 
 function isImageIcon(value) {
   return Boolean(value) && (value.startsWith('/') || value.startsWith('http'))

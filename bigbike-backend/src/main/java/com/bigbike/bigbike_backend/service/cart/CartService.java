@@ -7,25 +7,17 @@ import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
-import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartCouponEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartItemEntity;
-import com.bigbike.bigbike_backend.persistence.entity.coupon.CouponEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartCouponJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.coupon.CouponJpaRepository;
-import com.bigbike.bigbike_backend.service.coupon.CouponPolicyService;
-import com.bigbike.bigbike_backend.service.inventory.SerialLifecycleService;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -46,13 +38,9 @@ public class CartService {
 
     private final CartJpaRepository cartRepo;
     private final CartItemJpaRepository cartItemRepo;
-    private final CartCouponJpaRepository cartCouponRepo;
     private final ProductJpaRepository productRepo;
     private final ProductVariantJpaRepository variantRepo;
-    private final CouponJpaRepository couponRepo;
     private final CartCalculator calculator;
-    private final CouponPolicyService couponPolicy;
-    private final SerialLifecycleService serialLifecycleService;
 
     @Transactional
     public CartEntity getOrCreateCustomerCart(UUID customerId) {
@@ -201,7 +189,6 @@ public class CartService {
     @Transactional
     public CartEntity clearCart(CartEntity cart) {
         cartItemRepo.deleteAll(cartItemRepo.findByCartId(cart.getId()));
-        cartCouponRepo.deleteAllByCartId(cart.getId());
         return refreshCartTotals(cart);
     }
 
@@ -278,100 +265,18 @@ public class CartService {
         return unavailable;
     }
 
-    public List<CartCouponEntity> getCoupons(CartEntity cart) {
-        return cartCouponRepo.findByCartId(cart.getId());
-    }
-
-    @Transactional
-    public CartEntity applyCoupon(CartEntity cart, String code, String callerCustomerId) {
-        String normalized = couponPolicy.normalizeCode(code);
-
-        // Enforce one coupon per cart
-        List<CartCouponEntity> existing = cartCouponRepo.findByCartId(cart.getId());
-        if (!existing.isEmpty()) {
-            throw new ConflictException("Mỗi đơn hàng chỉ được áp dụng một mã giảm giá.");
-        }
-
-        // Pessimistic lock prevents two concurrent requests from both passing the usage limit check
-        CouponEntity coupon = couponRepo.findByCodeForUpdate(normalized)
-                .orElseThrow(() -> new NotFoundException("Mã giảm giá không tồn tại."));
-
-        List<CartItemEntity> items = cartItemRepo.findByCartId(cart.getId());
-        BigDecimal subtotal = items.stream()
-                .map(CartItemEntity::getLineSubtotal)
-                .reduce(BigDecimal.ZERO, BigDecimal::add)
-                .setScale(2, RoundingMode.HALF_UP);
-
-        couponPolicy.validateChannel(coupon, "ONLINE");
-        couponPolicy.validateCustomer(coupon, callerCustomerId);
-        couponPolicy.validate(coupon, subtotal);
-
-        BigDecimal discountAmount = couponPolicy.computeDiscount(coupon, subtotal);
-        Instant now = Instant.now();
-
-        CartCouponEntity cartCoupon = new CartCouponEntity();
-        cartCoupon.setCart(cart);
-        cartCoupon.setCouponCode(normalized);
-        cartCoupon.setDiscountType(coupon.getDiscountType());
-        cartCoupon.setDiscountAmount(discountAmount);
-        cartCoupon.setCreatedAt(now);
-        try {
-            cartCouponRepo.saveAndFlush(cartCoupon);
-        } catch (DataIntegrityViolationException ex) {
-            // Concurrent request slipped past the service-level pre-check and
-            // hit the DB UNIQUE(cart_id) constraint from V73 migration.
-            throw new ConflictException("Mỗi đơn hàng chỉ được áp dụng một mã giảm giá.");
-        }
-
-        return refreshCartTotals(cart);
-    }
-
-    @Transactional
-    public CartEntity removeCoupon(CartEntity cart, String code) {
-        String normalized = code.trim().toUpperCase(Locale.ROOT);
-        CartCouponEntity cartCoupon = cartCouponRepo.findByCartIdAndCouponCode(cart.getId(), normalized)
-                .orElseThrow(() -> new NotFoundException("Mã giảm giá không được áp dụng."));
-        cartCouponRepo.delete(cartCoupon);
-        return refreshCartTotals(cart);
-    }
-
     // ── private helpers ───────────────────────────────────────────────────────
 
     private void validateQuantityAgainstStock(ProductEntity product, ProductVariantEntity variant, int quantity) {
-        // Serial-tracked items: count available IN_STOCK serials directly. quantity_on_hand
-        // and stock_quantity are kept in sync by the DB trigger (V89) but checking the
-        // serial table avoids any sync lag and matches what checkout will re-validate.
-        if (variant != null && variant.isTrackSerials()) {
-            long available = serialLifecycleService.countAvailable(product.getId(), variant.getId());
-            if (available < quantity) {
-                throwStockShortage(product, (int) Math.min(Integer.MAX_VALUE, available));
-            }
-            return;
+        // Boolean availability only (owner decision 2026-06-23): block when out of stock,
+        // never by quantity. Method name/call sites kept.
+        boolean outOfStock = (variant != null)
+                ? !variant.isAvailable()
+                : Boolean.TRUE.equals(product.getForceOutOfStock())
+                        || product.getStockState() == ProductStockState.OUT_OF_STOCK;
+        if (outOfStock) {
+            throw new ConflictException("Sản phẩm '" + product.getName() + "' hết hàng.");
         }
-        if (variant == null && product.isTrackSerials()) {
-            long available = serialLifecycleService.countAvailable(product.getId(), null);
-            if (available < quantity) {
-                throwStockShortage(product, (int) Math.min(Integer.MAX_VALUE, available));
-            }
-            return;
-        }
-
-        // Legacy non-serial path — behaviour preserved exactly.
-        if (variant != null) {
-            if (variant.getQuantityOnHand() < quantity) {
-                throwStockShortage(product, variant.getQuantityOnHand());
-            }
-        } else if (Boolean.TRUE.equals(product.getManageStock()) && product.getStockQuantity() != null) {
-            if (product.getStockQuantity() < quantity) {
-                throwStockShortage(product, product.getStockQuantity());
-            }
-        }
-    }
-
-    private static void throwStockShortage(ProductEntity product, int onHand) {
-        throw new ConflictException(onHand <= 0
-                ? "Sản phẩm '" + product.getName() + "' hết hàng."
-                : "Sản phẩm '" + product.getName() + "' chỉ còn " + onHand + " trong kho.");
     }
 
     private CartItemEntity findOwnedItem(CartEntity cart, UUID itemId) {
@@ -385,45 +290,8 @@ public class CartService {
 
     private CartEntity refreshCartTotals(CartEntity cart) {
         List<CartItemEntity> items = cartItemRepo.findByCartId(cart.getId());
-        BigDecimal subtotal = items.stream()
-                .map(CartItemEntity::getLineSubtotal)
-                .reduce(BigDecimal.ZERO, BigDecimal::add)
-                .setScale(2, RoundingMode.HALF_UP);
-
-        List<CartCouponEntity> coupons = cartCouponRepo.findByCartId(cart.getId());
-        Instant now = Instant.now();
-        List<CartCouponEntity> toRemove = new ArrayList<>();
-
-        for (CartCouponEntity cc : coupons) {
-            Optional<CouponEntity> couponOpt = couponRepo.findByCode(cc.getCouponCode());
-            if (couponOpt.isEmpty()) {
-                toRemove.add(cc);
-                continue;
-            }
-            CouponEntity coupon = couponOpt.get();
-            boolean nowInvalid = !"ACTIVE".equals(coupon.getStatus())
-                    || (coupon.getExpiresAt() != null && now.isAfter(coupon.getExpiresAt()))
-                    || (coupon.getUsageLimit() != null && coupon.getUsageCount() >= coupon.getUsageLimit())
-                    || (coupon.getMinAmount() != null && subtotal.compareTo(coupon.getMinAmount()) < 0);
-            if (nowInvalid) {
-                toRemove.add(cc);
-                continue;
-            }
-            // Recompute — handles PERCENT discount changing with subtotal
-            BigDecimal recomputed = couponPolicy.computeDiscount(coupon, subtotal);
-            if (cc.getDiscountAmount().compareTo(recomputed) != 0) {
-                cc.setDiscountAmount(recomputed);
-                cartCouponRepo.save(cc);
-            }
-        }
-
-        if (!toRemove.isEmpty()) {
-            cartCouponRepo.deleteAll(toRemove);
-            coupons = cartCouponRepo.findByCartId(cart.getId());
-        }
-
-        calculator.recalculateCart(cart, items, coupons);
-        cart.setUpdatedAt(now);
+        calculator.recalculateCart(cart, items);
+        cart.setUpdatedAt(Instant.now());
         return cartRepo.save(cart);
     }
 

@@ -26,7 +26,6 @@ export const WP_THEME_ROUTES = new Set<string>([
   // Nhóm trang nội dung tĩnh đã port (khung WpStaticShell).
   "/gioi-thieu",
   "/lien-he",
-  "/bao-hanh",
   "/huong-dan",
 ]);
 

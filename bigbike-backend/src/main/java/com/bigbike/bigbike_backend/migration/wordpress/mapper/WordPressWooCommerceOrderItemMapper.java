@@ -17,7 +17,6 @@ import org.springframework.stereotype.Component;
  *   line_item → MappedLineItem
  *   shipping   → MappedShippingItem
  *   fee        → MappedFeeItem
- *   coupon     → MappedCouponItem
  *   tax        → deferred (counted, not mapped)
  *   unknown    → skipped with warning
  */
@@ -52,14 +51,6 @@ public class WordPressWooCommerceOrderItemMapper {
             String name,
             BigDecimal lineTotal,
             BigDecimal lineTax,
-            List<String> warnings
-    ) {}
-
-    public record MappedCouponItem(
-            long legacyItemId,
-            String code,
-            BigDecimal discountAmount,
-            BigDecimal discountAmountTax,
             List<String> warnings
     ) {}
 
@@ -120,18 +111,6 @@ public class WordPressWooCommerceOrderItemMapper {
                 item.orderItemName(),
                 parseBD(meta.get("_line_total"), "_line_total", warnings),
                 parseBD(meta.get("_line_tax"), "_line_tax", warnings),
-                warnings
-        );
-    }
-
-    public MappedCouponItem mapCouponItem(WpOrderItem item, List<WpOrderItemMeta> metas) {
-        List<String> warnings = new ArrayList<>();
-        Map<String, String> meta = toMetaMap(metas);
-        return new MappedCouponItem(
-                item.orderItemId(),
-                item.orderItemName(),
-                parseBD(meta.get("discount_amount"), "discount_amount", warnings),
-                parseBD(meta.get("discount_amount_tax"), "discount_amount_tax", warnings),
                 warnings
         );
     }

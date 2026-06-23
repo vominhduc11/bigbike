@@ -1,7 +1,6 @@
 package com.bigbike.bigbike_backend.api.cart;
 
 import com.bigbike.bigbike_backend.api.cart.dto.AddCartItemRequest;
-import com.bigbike.bigbike_backend.api.cart.dto.ApplyCouponRequest;
 import com.bigbike.bigbike_backend.api.cart.dto.CartItemResponse;
 import com.bigbike.bigbike_backend.api.cart.dto.CartResponse;
 import com.bigbike.bigbike_backend.api.cart.dto.CartTotalsResponse;
@@ -11,7 +10,6 @@ import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.config.CustomerSessionFilter;
 import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
 import com.bigbike.bigbike_backend.domain.customer.CustomerPrincipal;
-import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartCouponEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartItemEntity;
 import com.bigbike.bigbike_backend.service.cart.CartService;
@@ -55,8 +53,7 @@ public class CartController {
     public ApiDataResponse<CartResponse> getCart(HttpServletRequest request, HttpServletResponse response) {
         CartEntity cart = resolveCart(request, response);
         List<CartItemEntity> items = cartService.getItems(cart);
-        List<CartCouponEntity> coupons = cartService.getCoupons(cart);
-        return apiResponseFactory.data(toResponse(cart, items, coupons), request);
+        return apiResponseFactory.data(toResponse(cart, items), request);
     }
 
     @PostMapping("/items")
@@ -68,8 +65,7 @@ public class CartController {
         CartEntity cart = resolveCart(request, response);
         CartEntity updated = cartService.addItem(cart, req);
         List<CartItemEntity> items = cartService.getItems(updated);
-        List<CartCouponEntity> coupons = cartService.getCoupons(updated);
-        return apiResponseFactory.data(toResponse(updated, items, coupons), request);
+        return apiResponseFactory.data(toResponse(updated, items), request);
     }
 
     @PatchMapping("/items/{itemId}")
@@ -82,8 +78,7 @@ public class CartController {
         CartEntity cart = resolveCart(request, response);
         CartEntity updated = cartService.updateItemQuantity(cart, itemId, req.quantity());
         List<CartItemEntity> items = cartService.getItems(updated);
-        List<CartCouponEntity> coupons = cartService.getCoupons(updated);
-        return apiResponseFactory.data(toResponse(updated, items, coupons), request);
+        return apiResponseFactory.data(toResponse(updated, items), request);
     }
 
     @DeleteMapping("/items/{itemId}")
@@ -95,8 +90,7 @@ public class CartController {
         CartEntity cart = resolveCart(request, response);
         CartEntity updated = cartService.removeItem(cart, itemId);
         List<CartItemEntity> items = cartService.getItems(updated);
-        List<CartCouponEntity> coupons = cartService.getCoupons(updated);
-        return apiResponseFactory.data(toResponse(updated, items, coupons), request);
+        return apiResponseFactory.data(toResponse(updated, items), request);
     }
 
     // Both DELETE /cart and DELETE /cart/clear empty the cart — frontends use the latter.
@@ -105,35 +99,7 @@ public class CartController {
         CartEntity cart = resolveCart(request, response);
         CartEntity updated = cartService.clearCart(cart);
         List<CartItemEntity> items = cartService.getItems(updated);
-        List<CartCouponEntity> coupons = cartService.getCoupons(updated);
-        return apiResponseFactory.data(toResponse(updated, items, coupons), request);
-    }
-
-    @PostMapping("/coupons")
-    public ApiDataResponse<CartResponse> applyCoupon(
-            @Valid @RequestBody ApplyCouponRequest req,
-            HttpServletRequest request,
-            HttpServletResponse response
-    ) {
-        CartEntity cart = resolveCart(request, response);
-        String callerCustomerId = resolveCustomerId();
-        CartEntity updated = cartService.applyCoupon(cart, req.code(), callerCustomerId);
-        List<CartItemEntity> items = cartService.getItems(updated);
-        List<CartCouponEntity> coupons = cartService.getCoupons(updated);
-        return apiResponseFactory.data(toResponse(updated, items, coupons), request);
-    }
-
-    @DeleteMapping("/coupons/{code}")
-    public ApiDataResponse<CartResponse> removeCoupon(
-            @PathVariable String code,
-            HttpServletRequest request,
-            HttpServletResponse response
-    ) {
-        CartEntity cart = resolveCart(request, response);
-        CartEntity updated = cartService.removeCoupon(cart, code);
-        List<CartItemEntity> items = cartService.getItems(updated);
-        List<CartCouponEntity> coupons = cartService.getCoupons(updated);
-        return apiResponseFactory.data(toResponse(updated, items, coupons), request);
+        return apiResponseFactory.data(toResponse(updated, items), request);
     }
 
     // ── cart resolution ───────────────────────────────────────────────────────
@@ -186,17 +152,9 @@ public class CartController {
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 
-    private String resolveCustomerId() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.getPrincipal() instanceof CustomerPrincipal cp) {
-            return cp.customerId() != null ? cp.customerId().toString() : null;
-        }
-        return null;
-    }
-
     // ── mapping helpers ───────────────────────────────────────────────────────
 
-    private CartResponse toResponse(CartEntity cart, List<CartItemEntity> items, List<CartCouponEntity> coupons) {
+    private CartResponse toResponse(CartEntity cart, List<CartItemEntity> items) {
         Set<UUID> unavailableIds = cartService.findUnavailableItemIds(items);
         List<CartItemResponse> itemResponses = items.stream()
                 .map(item -> toItemResponse(item, !unavailableIds.contains(item.getId())))
@@ -208,10 +166,7 @@ public class CartController {
                 cart.getFeeAmount(),
                 cart.getTotalAmount()
         );
-        List<String> couponCodes = coupons.stream()
-                .map(CartCouponEntity::getCouponCode)
-                .toList();
-        return new CartResponse(cart.getId(), cart.getStatus(), cart.getCurrency(), itemResponses, totals, couponCodes);
+        return new CartResponse(cart.getId(), cart.getStatus(), cart.getCurrency(), itemResponses, totals);
     }
 
     private CartItemResponse toItemResponse(CartItemEntity item, boolean available) {

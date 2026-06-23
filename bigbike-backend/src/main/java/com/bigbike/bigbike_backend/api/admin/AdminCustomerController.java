@@ -1,7 +1,5 @@
 package com.bigbike.bigbike_backend.api.admin;
 
-import com.bigbike.bigbike_backend.api.admin.dto.coupon.AdminCouponDetailResponse;
-import com.bigbike.bigbike_backend.api.admin.dto.coupon.AdminCouponListItemResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.customer.AdminCustomerDetailResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.customer.AdminCustomerListItemResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.customer.AdminCustomerSummaryResponse;
@@ -10,8 +8,6 @@ import com.bigbike.bigbike_backend.api.admin.dto.customer.UpdateCustomerStatusRe
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiListResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
-import com.bigbike.bigbike_backend.service.admin.AdminCouponGiftService;
-import com.bigbike.bigbike_backend.service.admin.AdminCouponService;
 import com.bigbike.bigbike_backend.service.admin.AdminCustomerService;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,16 +16,13 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @Validated
@@ -39,8 +32,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminCustomerController extends AdminControllerSupport {
 
     private final AdminCustomerService adminCustomerService;
-    private final AdminCouponGiftService couponGiftService;
-    private final AdminCouponService adminCouponService;
     private final DevAdminAuthService devAdminAuthService;
     private final ApiResponseFactory apiResponseFactory;
 
@@ -94,30 +85,6 @@ public class AdminCustomerController extends AdminControllerSupport {
         devAdminAuthService.requirePermission(request, "customers.write");
         return apiResponseFactory.data(
                 adminCustomerService.updateCustomerStatus(customerId, resolveAdminId(), body), request);
-    }
-
-    @GetMapping("/{customerId}/coupons")
-    public ApiListResponse<AdminCouponListItemResponse> listCustomerCoupons(
-            @PathVariable UUID customerId,
-            @RequestParam(defaultValue = "1") @Min(1) int page,
-            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
-            HttpServletRequest request
-    ) {
-        devAdminAuthService.requirePermission(request, "coupons.read");
-        return apiResponseFactory.list(
-                adminCouponService.listCouponsByCustomer(customerId, page, size), request);
-    }
-
-    @PostMapping("/{customerId}/coupon-gift")
-    @ResponseStatus(HttpStatus.CREATED)
-    public ApiDataResponse<AdminCouponDetailResponse> sendCouponGift(
-            @PathVariable UUID customerId,
-            @Valid @RequestBody AdminCouponGiftService.SendCouponGiftRequest body,
-            HttpServletRequest request
-    ) {
-        devAdminAuthService.requirePermission(request, "coupons.write");
-        return apiResponseFactory.data(
-                couponGiftService.sendCouponGift(customerId, resolveAdminId(), body), request);
     }
 
 }

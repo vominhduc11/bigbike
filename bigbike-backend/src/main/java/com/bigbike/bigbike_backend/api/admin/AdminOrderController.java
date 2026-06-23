@@ -4,7 +4,6 @@ import com.bigbike.bigbike_backend.api.admin.dto.order.AdminOrderDetailResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.order.AdminOrderListItemResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.order.AdminOrderNoteResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.order.CreateOrderNoteRequest;
-import com.bigbike.bigbike_backend.api.admin.dto.order.CreateRefundRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.order.OrderAuditLogResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.order.UpdateFulfillmentRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.order.UpdateOrderStatusRequest;
@@ -103,21 +102,6 @@ public class AdminOrderController extends AdminControllerSupport {
         UUID adminId = resolveAdminId();
         return apiResponseFactory.data(
                 adminOrderService.updatePaymentStatus(orderId, adminId, body,
-                        extractClientIp(request), request.getHeader("User-Agent")),
-                request
-        );
-    }
-
-    @PostMapping("/{orderId}/refund")
-    public ApiDataResponse<AdminOrderDetailResponse> createRefund(
-            @PathVariable UUID orderId,
-            @Valid @RequestBody CreateRefundRequest body,
-            HttpServletRequest request
-    ) {
-        devAdminAuthService.requirePermission(request, "orders.write");
-        UUID adminId = resolveAdminId();
-        return apiResponseFactory.data(
-                adminOrderService.createRefund(orderId, adminId, body,
                         extractClientIp(request), request.getHeader("User-Agent")),
                 request
         );

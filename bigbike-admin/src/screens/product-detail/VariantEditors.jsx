@@ -16,7 +16,7 @@ import { Modal } from '../../components/layout'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
-import { Checkbox } from '@/components/ui/checkbox'
+import { Switch } from '@/components/ui/switch'
 import { generateId } from '@/lib/utils'
 import {
   getVariantColorValue,
@@ -539,14 +539,17 @@ function VariantCard({
               per-variant prices here would silently diverge from what the
               customer sees and pays. */}
 
-          <label className="form-checkbox form-field-wide">
-            <Checkbox
+          <div className="form-field form-field-wide flex items-center gap-2.5">
+            <Switch
               checked={variant.isAvailable}
               onCheckedChange={(checked) => updateField('isAvailable', checked)}
               disabled={disabled}
+              aria-label={t('products.detail.variant.isAvailable')}
              />
-            <span>{t('products.detail.variant.isAvailable')}</span>
-          </label>
+            <span className={variant.isAvailable ? 'text-success font-medium' : 'text-danger font-medium'}>
+              {variant.isAvailable ? t('status.stock.IN_STOCK') : t('status.stock.OUT_OF_STOCK')}
+            </span>
+          </div>
 
           <div className="form-field form-field-wide">
             <span className="form-field-label">{t('products.detail.variant.optionsLabel')}</span>

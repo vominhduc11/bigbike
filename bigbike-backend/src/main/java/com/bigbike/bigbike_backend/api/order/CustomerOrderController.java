@@ -4,14 +4,10 @@ import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiListResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.api.error.UnauthorizedException;
-import com.bigbike.bigbike_backend.api.order.dto.CreateReturnRequest;
-import com.bigbike.bigbike_backend.api.order.dto.CustomerReturnResponse;
 import com.bigbike.bigbike_backend.api.order.dto.OrderDetailResponse;
 import com.bigbike.bigbike_backend.api.order.dto.OrderListItemResponse;
-import com.bigbike.bigbike_backend.api.order.dto.ReturnEligibilityResponse;
 import com.bigbike.bigbike_backend.domain.customer.CustomerPrincipal;
 import com.bigbike.bigbike_backend.service.order.CustomerOrderCancelService;
-import com.bigbike.bigbike_backend.service.order.CustomerReturnService;
 import com.bigbike.bigbike_backend.service.order.OrderReadService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -40,7 +36,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class CustomerOrderController {
 
     private final OrderReadService orderReadService;
-    private final CustomerReturnService customerReturnService;
     private final CustomerOrderCancelService customerOrderCancelService;
     private final ApiResponseFactory apiResponseFactory;
 
@@ -55,28 +50,6 @@ public class CustomerOrderController {
         UUID customerId = requireCustomerId();
         return apiResponseFactory.list(
                 orderReadService.listCustomerOrders(customerId, page, size, status, paymentStatus),
-                request
-        );
-    }
-
-    /**
-     * Declared BEFORE /{orderId} so Spring doesn't try to parse "returns" as a UUID.
-     */
-    @GetMapping("/returns")
-    public ApiDataResponse<List<CustomerReturnResponse>> listReturns(HttpServletRequest request) {
-        return apiResponseFactory.data(
-                customerReturnService.listCustomerReturns(requireCustomerId()),
-                request
-        );
-    }
-
-    @GetMapping("/returns/{returnId}")
-    public ApiDataResponse<CustomerReturnResponse> getReturn(
-            @PathVariable UUID returnId,
-            HttpServletRequest request
-    ) {
-        return apiResponseFactory.data(
-                customerReturnService.getCustomerReturn(requireCustomerId(), returnId),
                 request
         );
     }
@@ -100,34 +73,6 @@ public class CustomerOrderController {
     ) {
         return apiResponseFactory.data(
                 customerOrderCancelService.cancel(requireCustomerId(), orderId),
-                request
-        );
-    }
-
-    @PostMapping("/{orderId}/returns")
-    @org.springframework.web.bind.annotation.ResponseStatus(org.springframework.http.HttpStatus.CREATED)
-    public ApiDataResponse<CustomerReturnResponse> createReturn(
-            @PathVariable UUID orderId,
-            @Valid @RequestBody CreateReturnRequest req,
-            HttpServletRequest request
-    ) {
-        return apiResponseFactory.data(
-                customerReturnService.createReturn(requireCustomerId(), orderId, req),
-                request
-        );
-    }
-
-    /**
-     * Pre-check whether this order can still be returned and which items remain.
-     * Frontend should call this before rendering the "Yêu cầu đổi/trả" form.
-     */
-    @GetMapping("/{orderId}/return-eligibility")
-    public ApiDataResponse<ReturnEligibilityResponse> getReturnEligibility(
-            @PathVariable UUID orderId,
-            HttpServletRequest request
-    ) {
-        return apiResponseFactory.data(
-                customerReturnService.getReturnEligibility(requireCustomerId(), orderId),
                 request
         );
     }

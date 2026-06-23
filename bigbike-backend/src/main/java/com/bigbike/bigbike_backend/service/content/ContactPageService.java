@@ -41,7 +41,7 @@ public class ContactPageService {
     public static final Set<String> WRITE_THROUGH_KEYS = Set.of(
             "hotline", "hotline_2", "hotline_3",
             "contact_email", "contact_address",
-            "zalo_url", "facebook_url", "messenger_url",
+            "zalo_url", "zalo_display", "facebook_url", "messenger_url", "messenger_display",
             "instagram_url", "youtube_url", "tiktok_url",
             "opening_hours_weekday", "opening_hours_weekend", "opening_hours_holiday"
     );

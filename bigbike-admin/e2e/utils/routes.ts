@@ -22,19 +22,14 @@ export const LIST_ROUTES: AdminRoute[] = [
   // ── sales ───────────────────────────────────────────────
   { path: '/admin/dashboard',               id: 'dashboard',           label: 'Tổng quan',                group: 'sales',    kind: 'dashboard' },
   { path: '/admin/orders',                  id: 'orders',              label: 'Đơn hàng',                 group: 'sales',    kind: 'list' },
-  { path: '/admin/pos',                     id: 'pos',                 label: 'POS / Bán tại quầy',       group: 'sales',    kind: 'workspace' },
   { path: '/admin/customers',               id: 'customers',           label: 'Khách hàng',               group: 'sales',    kind: 'list' },
   { path: '/admin/newsletter-subscribers',  id: 'newsletter',          label: 'Đăng ký nhận tin',         group: 'sales',    kind: 'list' },
   { path: '/admin/returns',                 id: 'returns',             label: 'Trả hàng / hoàn tiền',     group: 'sales',    kind: 'list' },
-  { path: '/admin/receivables',             id: 'receivables',         label: 'Công nợ',                  group: 'sales',    kind: 'list' },
   { path: '/admin/reviews',                 id: 'reviews',             label: 'Đánh giá',                 group: 'sales',    kind: 'list' },
-  { path: '/admin/coupons',                 id: 'coupons',             label: 'Mã giảm giá',              group: 'sales',    kind: 'list' },
   // ── products ────────────────────────────────────────────
   { path: '/admin/products',                id: 'products',            label: 'Sản phẩm',                 group: 'products', kind: 'list' },
   { path: '/admin/featured-products',       id: 'featured-products',   label: 'Sản phẩm nổi bật',         group: 'products', kind: 'workspace' },
-  { path: '/admin/inventory',               id: 'inventory',           label: 'Tồn kho',                  group: 'products', kind: 'list' },
   { path: '/admin/serials',                 id: 'serials',             label: 'Serial / IMEI',            group: 'products', kind: 'list' },
-  { path: '/admin/warranties',              id: 'warranties',          label: 'Bảo hành',                 group: 'products', kind: 'list' },
   { path: '/admin/categories',              id: 'categories',          label: 'Danh mục',                 group: 'products', kind: 'list' },
   { path: '/admin/brands',                  id: 'brands',              label: 'Thương hiệu',              group: 'products', kind: 'list' },
   { path: '/admin/attributes',              id: 'attributes',          label: 'Thuộc tính',               group: 'products', kind: 'list' },
@@ -49,7 +44,6 @@ export const LIST_ROUTES: AdminRoute[] = [
   // ── reports ─────────────────────────────────────────────
   { path: '/admin/reports',                 id: 'reports',             label: 'Báo cáo',                  group: 'reports',  kind: 'workspace' },
   // ── system ──────────────────────────────────────────────
-  { path: '/admin/shipping',                id: 'shipping',            label: 'Vận chuyển',               group: 'system',   kind: 'list' },
   { path: '/admin/settings',                id: 'settings',            label: 'Cài đặt',                  group: 'system',   kind: 'form' },
   { path: '/admin/admin-users',             id: 'admin-users',         label: 'Người dùng quản trị',      group: 'system',   kind: 'list' },
   { path: '/admin/roles',                   id: 'roles',               label: 'Vai trò & quyền',          group: 'system',   kind: 'list' },
@@ -71,7 +65,6 @@ export const KEY_ROUTES: AdminRoute[] = [
   LIST_ROUTES.find((r) => r.id === 'dashboard')!,
   LIST_ROUTES.find((r) => r.id === 'orders')!,
   LIST_ROUTES.find((r) => r.id === 'products')!,
-  LIST_ROUTES.find((r) => r.id === 'inventory')!,
   LIST_ROUTES.find((r) => r.id === 'customers')!,
   CREATE_ROUTES.find((r) => r.id === 'category-create')!,
 ]

@@ -12,9 +12,8 @@ public record QuickBuyRequest(
         String productVariantId,
         @Min(1) int quantity,
         @NotNull @Valid CheckoutAddressRequest billingAddress,
-        @Size(max = 64)
-        String shippingMethodId,
-        @NotBlank @Size(max = 32) String paymentMethod,
+        // Optional (owner decision 2026-06-23) — see CheckoutRequest#paymentMethod.
+        @Size(max = 32) String paymentMethod,
         @Size(max = 1000)
         String customerNote
 ) {}

@@ -1,7 +1,6 @@
 package com.bigbike.bigbike_backend.service.checkout;
 
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
-import com.bigbike.bigbike_backend.persistence.entity.commerce.returns.ReturnEntity;
 import com.bigbike.bigbike_backend.service.email.EmailDispatchService;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
@@ -21,7 +20,7 @@ public class OrderNotificationService {
 
     /** Statuses that customers care enough about to receive an email notification. */
     private static final Set<String> CUSTOMER_NOTIFIABLE_STATUSES =
-            Set.of("PROCESSING", "COMPLETED", "CANCELLED", "REFUNDED", "FAILED");
+            Set.of("PROCESSING", "COMPLETED", "CANCELLED", "FAILED");
 
     private final EmailDispatchService emailDispatch;
     private final String adminEmail;
@@ -57,6 +56,7 @@ public class OrderNotificationService {
         ctx.setVariable("customerName", safeCustomerName(order));
         ctx.setVariable("orderNumber", order.getOrderNumber());
         ctx.setVariable("totalFormatted", formatVnd(order.getTotalAmount()));
+        ctx.setVariable("hasPayment", paymentMethod != null && !paymentMethod.isBlank());
         ctx.setVariable("paymentLabel", paymentLabel(paymentMethod));
         ctx.setVariable("isCod", "COD".equalsIgnoreCase(paymentMethod));
         ctx.setVariable("isBacs", "BACS".equalsIgnoreCase(paymentMethod));
@@ -84,6 +84,7 @@ public class OrderNotificationService {
         ctx.setVariable("customerEmail", order.getCustomerEmail());
         ctx.setVariable("customerPhone", order.getCustomerPhone());
         ctx.setVariable("totalFormatted", formatVnd(order.getTotalAmount()));
+        ctx.setVariable("hasPayment", paymentMethod != null && !paymentMethod.isBlank());
         ctx.setVariable("paymentLabel", paymentLabel(paymentMethod));
         ctx.setVariable("source", order.getSource() != null ? order.getSource() : "WEB");
         ctx.setVariable("adminOrderUrl", adminBaseUrl + "/orders/" + order.getId());
@@ -163,85 +164,6 @@ public class OrderNotificationService {
         log.info("Shipment notification sent for order {}.", order.getOrderNumber());
     }
 
-    // ── Return notifications ──────────────────────────────────────────────────
-
-    public void sendReturnReceived(ReturnEntity ret, String customerEmail, String orderNumber) {
-        if (customerEmail == null || customerEmail.isBlank()) return;
-        if (!emailDispatch.isEnabled()) {
-            log.info("Mail not configured — return-received notification skipped for {}.", ret.getReturnNumber());
-            return;
-        }
-        Context ctx = new Context();
-        ctx.setVariable("customerName", customerEmail);
-        ctx.setVariable("returnNumber", ret.getReturnNumber());
-        ctx.setVariable("orderNumber", orderNumber);
-        ctx.setVariable("reasonLabel", reasonLabel(ret.getReason()));
-        ctx.setVariable("returnsUrl", siteBaseUrl + "/tai-khoan/doi-tra");
-        emailDispatch.send(customerEmail,
-                "[BigBike] Đã nhận yêu cầu đổi trả " + ret.getReturnNumber(),
-                "return-received", ctx);
-    }
-
-    public void sendReturnApproved(ReturnEntity ret, String customerEmail, String orderNumber) {
-        if (customerEmail == null || customerEmail.isBlank()) return;
-        if (!emailDispatch.isEnabled()) return;
-        Context ctx = new Context();
-        ctx.setVariable("customerName", customerEmail);
-        ctx.setVariable("returnNumber", ret.getReturnNumber());
-        ctx.setVariable("orderNumber", orderNumber);
-        ctx.setVariable("hasAdminNote", ret.getAdminNote() != null && !ret.getAdminNote().isBlank());
-        ctx.setVariable("adminNote", ret.getAdminNote());
-        ctx.setVariable("returnsUrl", siteBaseUrl + "/tai-khoan/doi-tra");
-        emailDispatch.send(customerEmail,
-                "[BigBike] Yêu cầu đổi trả " + ret.getReturnNumber() + " đã được duyệt",
-                "return-approved", ctx);
-    }
-
-    public void sendReturnRejected(ReturnEntity ret, String customerEmail, String orderNumber) {
-        if (customerEmail == null || customerEmail.isBlank()) return;
-        if (!emailDispatch.isEnabled()) return;
-        Context ctx = new Context();
-        ctx.setVariable("customerName", customerEmail);
-        ctx.setVariable("returnNumber", ret.getReturnNumber());
-        ctx.setVariable("orderNumber", orderNumber);
-        ctx.setVariable("hasAdminNote", ret.getAdminNote() != null && !ret.getAdminNote().isBlank());
-        ctx.setVariable("adminNote", ret.getAdminNote());
-        ctx.setVariable("returnsUrl", siteBaseUrl + "/tai-khoan/doi-tra");
-        emailDispatch.send(customerEmail,
-                "[BigBike] Yêu cầu đổi trả " + ret.getReturnNumber() + " không được chấp thuận",
-                "return-rejected", ctx);
-    }
-
-    public void sendReturnRefunded(ReturnEntity ret, String customerEmail, String orderNumber) {
-        if (customerEmail == null || customerEmail.isBlank()) return;
-        if (!emailDispatch.isEnabled()) return;
-        Context ctx = new Context();
-        ctx.setVariable("customerName", customerEmail);
-        ctx.setVariable("returnNumber", ret.getReturnNumber());
-        ctx.setVariable("orderNumber", orderNumber);
-        ctx.setVariable("refundFormatted", formatVnd(ret.getRefundAmount()));
-        ctx.setVariable("returnsUrl", siteBaseUrl + "/tai-khoan/doi-tra");
-        emailDispatch.send(customerEmail,
-                "[BigBike] Hoàn tiền " + formatVnd(ret.getRefundAmount()) + " — " + ret.getReturnNumber(),
-                "return-refunded", ctx);
-    }
-
-    public void sendReturnGoodsReceived(ReturnEntity ret, String customerEmail, String orderNumber) {
-        if (customerEmail == null || customerEmail.isBlank()) return;
-        if (!emailDispatch.isEnabled()) {
-            log.info("Mail not configured — return-goods-received notification skipped for {}.", ret.getReturnNumber());
-            return;
-        }
-        Context ctx = new Context();
-        ctx.setVariable("customerName", customerEmail);
-        ctx.setVariable("returnNumber", ret.getReturnNumber());
-        ctx.setVariable("orderNumber", orderNumber);
-        ctx.setVariable("returnsUrl", siteBaseUrl + "/tai-khoan/doi-tra");
-        emailDispatch.send(customerEmail,
-                "[BigBike] BigBike đã nhận hàng trả — " + ret.getReturnNumber(),
-                "return-goods-received", ctx);
-    }
-
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private static String safeCustomerName(OrderEntity order) {
@@ -257,17 +179,6 @@ public class OrderNotificationService {
     private static String formatVnd(BigDecimal amount) {
         if (amount == null) return "—";
         return VND.format(amount.toBigIntegerExact()) + " VND";
-    }
-
-    private static String reasonLabel(String reason) {
-        if (reason == null) return "Khác";
-        return switch (reason.toUpperCase(Locale.ROOT)) {
-            case "DEFECTIVE"        -> "Hàng bị lỗi";
-            case "WRONG_ITEM"       -> "Sai sản phẩm";
-            case "NOT_AS_DESCRIBED" -> "Không như mô tả";
-            case "CHANGED_MIND"     -> "Đổi ý";
-            default                 -> "Khác";
-        };
     }
 
     private static String paymentLabel(String method) {
@@ -300,11 +211,6 @@ public class OrderNotificationService {
                     "Đơn hàng đã bị hủy",
                     "Đơn hàng của bạn đã được hủy. Nếu bạn đã thanh toán, chúng tôi sẽ hoàn tiền trong vòng 3–5 ngày làm việc.",
                     "Đơn hàng bị hủy");
-            case "REFUNDED" -> new StatusContent(
-                    "ĐÃ HOÀN TIỀN", "#e0f2fe", "#075985",
-                    "Hoàn tiền thành công",
-                    "Chúng tôi đã xử lý hoàn tiền cho đơn hàng của bạn. Tiền sẽ được trả về tài khoản trong 3–5 ngày làm việc.",
-                    "Hoàn tiền đơn hàng");
             case "FAILED" -> new StatusContent(
                     "THẤT BẠI", "#fef9c3", "#854d0e",
                     "Đơn hàng gặp sự cố",

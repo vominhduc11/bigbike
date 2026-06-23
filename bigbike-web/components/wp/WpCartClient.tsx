@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { applyCoupon, fetchCart, removeCoupon, removeCartItem, updateCartItem } from "@/lib/api/client-api";
+import { fetchCart, removeCartItem, updateCartItem } from "@/lib/api/client-api";
 import type { Cart } from "@/lib/contracts/commerce";
 import { pushDataLayer, toGtmCartItems } from "@/lib/analytics";
 import { toProductListPath } from "@/lib/utils/routes";
@@ -15,9 +15,9 @@ import { CartSkeleton } from "./cart/CartSkeleton";
 
 /**
  * Nội dung giỏ hàng — port 1:1 markup từ woocommerce/cart/cart.php + cart-totals.php
- * (class .cart-avalable / .table--items / .summary / .promotion-form / .total-summary).
+ * (class .cart-avalable / .table--items / .summary / .total-summary).
  * Giữ NGUYÊN toàn bộ data/logic thật của bigbike-web (fetchCart, update/remove item,
- * apply/remove coupon, GTM view_cart) — chỉ reskin sang theme WP. WP gốc submit form
+ * GTM view_cart) — chỉ reskin sang theme WP. WP gốc submit form
  * cho mọi thao tác; bản React drive trực tiếp nên các nút +/- và xoá cập nhật ngay.
  */
 export function WpCartClient() {
@@ -27,9 +27,6 @@ export function WpCartClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [mutating, setMutating] = useState<Record<string, boolean>>({});
-  const [couponInput, setCouponInput] = useState("");
-  const [couponLoading, setCouponLoading] = useState(false);
-  const [couponError, setCouponError] = useState("");
 
   const syncCart = useCallback((nextCart: Cart) => {
     setCart(nextCart);
@@ -112,42 +109,6 @@ export function WpCartClient() {
     [setItemMutating, syncCart],
   );
 
-  const handleApplyCoupon = useCallback(
-    async (e: React.SyntheticEvent) => {
-      e.preventDefault();
-      const code = couponInput.trim();
-      if (!code) return;
-      setCouponLoading(true);
-      setCouponError("");
-      try {
-        const updated = await applyCoupon(code);
-        syncCart(updated);
-        setCouponInput("");
-      } catch (e: unknown) {
-        setCouponError((e as Error).message);
-      } finally {
-        setCouponLoading(false);
-      }
-    },
-    [couponInput, syncCart],
-  );
-
-  const handleRemoveCoupon = useCallback(
-    async (code: string) => {
-      setCouponLoading(true);
-      setCouponError("");
-      try {
-        const updated = await removeCoupon(code);
-        syncCart(updated);
-      } catch (e: unknown) {
-        setCouponError((e as Error).message);
-      } finally {
-        setCouponLoading(false);
-      }
-    },
-    [syncCart],
-  );
-
   const continueHref = toProductListPath();
 
   if (loading) {
@@ -199,18 +160,11 @@ export function WpCartClient() {
 
   return (
     <div className="woocommerce-cart-form">
-      {(error || couponError) && (
+      {error && (
         <div className="woocommerce-notices-wrapper">
-          {error && (
-            <div className="woocommerce-error" role="alert">
-              {error}
-            </div>
-          )}
-          {couponError && (
-            <div className="woocommerce-error" role="alert">
-              {couponError}
-            </div>
-          )}
+          <div className="woocommerce-error" role="alert">
+            {error}
+          </div>
         </div>
       )}
 
@@ -252,16 +206,7 @@ export function WpCartClient() {
           </div>
         </div>
 
-        <CartSummary
-          cart={cart}
-          hasUnavailable={hasUnavailable}
-          couponInput={couponInput}
-          setCouponInput={setCouponInput}
-          setCouponError={setCouponError}
-          couponLoading={couponLoading}
-          onApplyCoupon={handleApplyCoupon}
-          onRemoveCoupon={handleRemoveCoupon}
-        />
+        <CartSummary cart={cart} hasUnavailable={hasUnavailable} />
       </div>
     </div>
   );

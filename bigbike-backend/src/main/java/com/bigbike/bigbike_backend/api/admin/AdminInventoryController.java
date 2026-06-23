@@ -1,31 +1,21 @@
 package com.bigbike.bigbike_backend.api.admin;
 
-import com.bigbike.bigbike_backend.api.admin.dto.inventory.AddSerialsRequest;
-import com.bigbike.bigbike_backend.api.admin.dto.inventory.AdminSerialResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.inventory.AdminStockItemResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.inventory.AdminStockProductGroupResponse;
-import com.bigbike.bigbike_backend.api.admin.dto.inventory.AdjustStockRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.inventory.InventorySummaryResponse;
-import com.bigbike.bigbike_backend.api.admin.dto.inventory.SerialImportRequest;
-import com.bigbike.bigbike_backend.api.admin.dto.inventory.SerialImportResponse;
+import com.bigbike.bigbike_backend.api.admin.dto.inventory.SetAvailabilityRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.inventory.StockMovementResponse;
-import com.bigbike.bigbike_backend.api.admin.dto.inventory.UpdateSerialStatusRequest;
 import com.bigbike.bigbike_backend.service.admin.AdminInventoryService;
-import com.bigbike.bigbike_backend.service.admin.AdminSerialImportService;
-import com.bigbike.bigbike_backend.service.admin.AdminSerialService;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.io.IOException;
-import java.util.List;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -37,8 +27,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminInventoryController extends AdminControllerSupport {
 
     private final AdminInventoryService inventoryService;
-    private final AdminSerialService serialService;
-    private final AdminSerialImportService serialImportService;
     private final DevAdminAuthService devAdminAuthService;
 
     @GetMapping
@@ -111,118 +99,23 @@ public class AdminInventoryController extends AdminControllerSupport {
         return inventoryService.listProductMovements(productId, page, size);
     }
 
-    @PostMapping("/variants/{variantId}/adjust")
-    public AdminStockItemResponse adjustStock(
+    @PatchMapping("/variants/{variantId}/availability")
+    public AdminStockItemResponse setVariantAvailability(
             @PathVariable String variantId,
-            @Valid @RequestBody AdjustStockRequest req,
+            @Valid @RequestBody SetAvailabilityRequest req,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "inventory.write");
-        return inventoryService.adjustStock(variantId, resolveAdminId(), req);
+        return inventoryService.setVariantAvailability(variantId, resolveAdminId(), req.available());
     }
 
-    @PostMapping("/products/{productId}/adjust")
-    public AdminStockItemResponse adjustProductStock(
+    @PatchMapping("/products/{productId}/availability")
+    public AdminStockItemResponse setProductAvailability(
             @PathVariable String productId,
-            @Valid @RequestBody AdjustStockRequest req,
+            @Valid @RequestBody SetAvailabilityRequest req,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "inventory.write");
-        return inventoryService.adjustProductStock(productId, resolveAdminId(), req);
+        return inventoryService.setProductAvailability(productId, resolveAdminId(), req.available());
     }
-
-    // ── Serial management ─────────────────────────────────────────────────────
-
-    @GetMapping("/serials")
-    public PageResult<AdminSerialResponse> listAllSerials(
-            @RequestParam(required = false) String q,
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) String productId,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int size,
-            HttpServletRequest request
-    ) {
-        devAdminAuthService.requirePermission(request, "inventory.read");
-        return serialService.listAll(q, status, productId, page, size);
-    }
-
-    @GetMapping("/variants/{variantId}/serials")
-    public PageResult<AdminSerialResponse> listVariantSerials(
-            @PathVariable String variantId,
-            @RequestParam(required = false) String status,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int size,
-            HttpServletRequest request
-    ) {
-        devAdminAuthService.requirePermission(request, "inventory.read");
-        return serialService.listForVariant(variantId, status, page, size);
-    }
-
-    @GetMapping("/products/{productId}/serials")
-    public PageResult<AdminSerialResponse> listProductSerials(
-            @PathVariable String productId,
-            @RequestParam(required = false) String status,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int size,
-            HttpServletRequest request
-    ) {
-        devAdminAuthService.requirePermission(request, "inventory.read");
-        return serialService.listForProduct(productId, status, page, size);
-    }
-
-    @GetMapping("/serials/{serialId}")
-    public AdminSerialResponse getSerial(
-            @PathVariable UUID serialId,
-            HttpServletRequest request
-    ) {
-        devAdminAuthService.requirePermission(request, "inventory.read");
-        return serialService.getSerial(serialId);
-    }
-
-    @PostMapping("/variants/{variantId}/serials")
-    public List<AdminSerialResponse> addVariantSerials(
-            @PathVariable String variantId,
-            @Valid @RequestBody AddSerialsRequest req,
-            HttpServletRequest request
-    ) {
-        devAdminAuthService.requirePermission(request, "inventory.write");
-        return serialService.addToVariant(variantId, resolveAdminId(), req);
-    }
-
-    @PostMapping("/products/{productId}/serials")
-    public List<AdminSerialResponse> addProductSerials(
-            @PathVariable String productId,
-            @Valid @RequestBody AddSerialsRequest req,
-            HttpServletRequest request
-    ) {
-        devAdminAuthService.requirePermission(request, "inventory.write");
-        return serialService.addToProduct(productId, resolveAdminId(), req);
-    }
-
-    @PatchMapping("/serials/{serialId}/status")
-    public AdminSerialResponse updateSerialStatus(
-            @PathVariable UUID serialId,
-            @Valid @RequestBody UpdateSerialStatusRequest req,
-            HttpServletRequest request
-    ) {
-        devAdminAuthService.requirePermission(request, "inventory.write");
-        return serialService.updateStatus(serialId, resolveAdminId(), req);
-    }
-
-    /**
-     * POST /api/v1/admin/inventory/serials/import
-     * Bulk-insert product serials from a JSON payload.
-     * partialMode=false (default): all-or-nothing transaction.
-     * partialMode=true: skip bad rows, insert valid ones.
-     * Permission: inventory.write.
-     */
-    @PostMapping("/serials/import")
-    public SerialImportResponse importSerials(
-            @RequestBody @Valid SerialImportRequest req,
-            HttpServletRequest request
-    ) {
-        devAdminAuthService.requirePermission(request, "inventory.write");
-        return serialImportService.importSerials(req, resolveAdminId());
-    }
-
 }

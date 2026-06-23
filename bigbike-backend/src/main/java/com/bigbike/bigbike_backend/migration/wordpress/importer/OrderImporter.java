@@ -2,13 +2,11 @@ package com.bigbike.bigbike_backend.migration.wordpress.importer;
 
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressOrderMapper.MappedOrder;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressOrderMapper.MappedOrderPayment;
-import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressWooCommerceOrderItemMapper.MappedCouponItem;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressWooCommerceOrderItemMapper.MappedFeeItem;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressWooCommerceOrderItemMapper.MappedLineItem;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressWooCommerceOrderItemMapper.MappedShippingItem;
 import com.bigbike.bigbike_backend.migration.wordpress.writeplan.MigrationDomain;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderAddressEntity;
-import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderAppliedCouponEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderFeeItemEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderLineItemEntity;
@@ -16,7 +14,6 @@ import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderShippi
 import com.bigbike.bigbike_backend.persistence.entity.commerce.payment.PaymentEntity;
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEntity;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderAddressJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderAppliedCouponJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderFeeItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLineItemJpaRepository;
@@ -42,7 +39,6 @@ public class OrderImporter implements DomainImporter {
     private final OrderLineItemJpaRepository lineItemRepo;
     private final OrderShippingItemJpaRepository shippingItemRepo;
     private final OrderFeeItemJpaRepository feeItemRepo;
-    private final OrderAppliedCouponJpaRepository appliedCouponRepo;
     private final PaymentJpaRepository paymentRepo;
     private final CustomerJpaRepository customerRepo;
 
@@ -125,7 +121,6 @@ public class OrderImporter implements DomainImporter {
                     importLineItems(entity, mo.lineItemsDetailed());
                     importShippingItems(entity, mo.shippingItems());
                     importFeeItems(entity, mo.feeItems());
-                    importAppliedCoupons(entity, mo.couponItems());
                     if (mo.payment() != null) importPayment(entity, mo.payment());
                 }
                 if (isNew) inserted++; else updated++;
@@ -254,26 +249,6 @@ public class OrderImporter implements DomainImporter {
             entity.setTaxAmount(safe(fi.lineTax()));
             entity.setUpdatedAt(Instant.now());
             feeItemRepo.save(entity);
-        }
-    }
-
-    private void importAppliedCoupons(OrderEntity order, List<MappedCouponItem> items) {
-        if (items == null) return;
-        List<OrderAppliedCouponEntity> existing = appliedCouponRepo.findByOrderId(order.getId());
-        for (MappedCouponItem ci : items) {
-            if (ci.code() == null || ci.code().isBlank()) continue;
-            OrderAppliedCouponEntity entity = existing.stream()
-                    .filter(e -> ci.code().equalsIgnoreCase(e.getCode()))
-                    .findFirst()
-                    .orElseGet(() -> {
-                        OrderAppliedCouponEntity e = new OrderAppliedCouponEntity();
-                        e.setCreatedAt(Instant.now());
-                        return e;
-                    });
-            entity.setOrder(order);
-            entity.setCode(ci.code());
-            entity.setDiscountAmount(safe(ci.discountAmount()));
-            appliedCouponRepo.save(entity);
         }
     }
 

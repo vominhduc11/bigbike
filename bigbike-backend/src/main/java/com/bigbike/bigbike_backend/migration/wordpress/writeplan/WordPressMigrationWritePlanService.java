@@ -1,7 +1,6 @@
 package com.bigbike.bigbike_backend.migration.wordpress.writeplan;
 
 import com.bigbike.bigbike_backend.migration.wordpress.report.CatalogContentDryRunResult;
-import com.bigbike.bigbike_backend.migration.wordpress.report.CustomerOrderCouponDryRunResult;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -28,13 +27,11 @@ public class WordPressMigrationWritePlanService {
             MigrationDomain.CUSTOMERS,
             MigrationDomain.CUSTOMER_ADDRESSES,
             MigrationDomain.SYNTHETIC_CUSTOMERS,
-            MigrationDomain.COUPONS,
             MigrationDomain.ORDERS,
             MigrationDomain.ORDER_ADDRESSES,
             MigrationDomain.ORDER_LINE_ITEMS,
             MigrationDomain.ORDER_SHIPPING_ITEMS,
             MigrationDomain.ORDER_FEE_ITEMS,
-            MigrationDomain.ORDER_APPLIED_COUPONS,
             MigrationDomain.PAYMENTS,
             // Deferred
             MigrationDomain.PRODUCT_TAGS,
@@ -42,8 +39,7 @@ public class WordPressMigrationWritePlanService {
     );
 
     public MigrationWritePlan buildPlan(
-            CatalogContentDryRunResult catalog,
-            CustomerOrderCouponDryRunResult commerce) {
+            CatalogContentDryRunResult catalog) {
 
         List<MigrationWriteOperation> ops = new ArrayList<>();
         List<String> globalBlockers = new ArrayList<>();
@@ -128,63 +124,10 @@ public class WordPressMigrationWritePlanService {
                 + " FG redirects — missing new_url column in source. Investigation required.");
 
         // ── Commerce ───────────────────────────────────────────────────────────
-
-        if (commerce != null) {
-            ops.add(op(MigrationDomain.CUSTOMERS, MigrationOperationType.UPSERT,
-                    "customers", MigrationConflictStrategy.UPSERT_BY_LEGACY_ID,
-                    commerce.customersMapped(), toList(commerce.customerWarnings()), List.of(),
-                    "upsert by legacyId; phpass hash stored in metadata (not verified or converted)"));
-
-            ops.add(op(MigrationDomain.CUSTOMER_ADDRESSES, MigrationOperationType.UPSERT,
-                    "customer_addresses", MigrationConflictStrategy.UPSERT_BY_LEGACY_ID,
-                    commerce.customerAddressesMapped(), List.of(), List.of(),
-                    "upsert by customerId+type; billing and shipping addresses"));
-
-            ops.add(op(MigrationDomain.SYNTHETIC_CUSTOMERS, MigrationOperationType.UPSERT,
-                    "customers", MigrationConflictStrategy.UPSERT_BY_LEGACY_ID,
-                    commerce.syntheticCustomersMapped(), toList(commerce.customerWarnings()), List.of(),
-                    "synthetic guest customers; keyed by billing email+phone from order meta"));
-
-            ops.add(op(MigrationDomain.COUPONS, MigrationOperationType.UPSERT,
-                    "coupons", MigrationConflictStrategy.UPSERT_BY_LEGACY_ID,
-                    commerce.couponsMapped(), toList(commerce.couponWarnings()), List.of(),
-                    "upsert by legacyId, fallback code"));
-
-            ops.add(op(MigrationDomain.ORDERS, MigrationOperationType.UPSERT,
-                    "orders", MigrationConflictStrategy.UPSERT_BY_ORDER_NUMBER,
-                    commerce.ordersMapped(), toList(commerce.orderWarnings()), List.of(),
-                    "upsert by legacyId, fallback orderNumber/orderKey"));
-
-            ops.add(op(MigrationDomain.ORDER_ADDRESSES, MigrationOperationType.UPSERT,
-                    "order_addresses", MigrationConflictStrategy.UPSERT_BY_LEGACY_ID,
-                    commerce.ordersMapped() * 2, List.of(), List.of(),
-                    "upsert by orderId+type snapshot; billing and shipping"));
-
-            ops.add(op(MigrationDomain.ORDER_LINE_ITEMS, MigrationOperationType.UPSERT,
-                    "order_line_items", MigrationConflictStrategy.UPSERT_BY_LEGACY_ID,
-                    commerce.lineItemsMapped(), toList(commerce.orderItemWarnings()), List.of(),
-                    "upsert by legacyItemId"));
-
-            ops.add(op(MigrationDomain.ORDER_SHIPPING_ITEMS, MigrationOperationType.UPSERT,
-                    "order_shipping_items", MigrationConflictStrategy.UPSERT_BY_LEGACY_ID,
-                    commerce.shippingItemsMapped(), List.of(), List.of(),
-                    "upsert by legacyItemId"));
-
-            ops.add(op(MigrationDomain.ORDER_FEE_ITEMS, MigrationOperationType.UPSERT,
-                    "order_fee_items", MigrationConflictStrategy.UPSERT_BY_LEGACY_ID,
-                    commerce.feeItemsMapped(), List.of(), List.of(),
-                    "upsert by legacyItemId"));
-
-            ops.add(op(MigrationDomain.ORDER_APPLIED_COUPONS, MigrationOperationType.UPSERT,
-                    "order_applied_coupons", MigrationConflictStrategy.UPSERT_BY_LEGACY_ID,
-                    commerce.couponItemsMapped(), List.of(), List.of(),
-                    "upsert by legacyItemId"));
-
-            ops.add(op(MigrationDomain.PAYMENTS, MigrationOperationType.UPSERT,
-                    "payments", MigrationConflictStrategy.UPSERT_BY_LEGACY_ID,
-                    commerce.paymentsMapped(), toList(commerce.paymentWarnings()), List.of(),
-                    "one payment snapshot per order; upsert by orderId"));
-        }
+        // Commerce (customers/orders/payments) is handled by the real import path
+        // (WordPressMigrationImportService). The standalone commerce dry-run service
+        // and its result type were removed alongside the coupon feature, so the
+        // write-plan now only reports the catalog/content domains.
 
         // ── Compute totals ─────────────────────────────────────────────────────
         int totalInsert = 0, totalUpsert = 0, totalSkip = 0, totalDefer = 0;

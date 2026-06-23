@@ -59,7 +59,7 @@ export function ProductMobileCard({
           ),
           tone: 'strong',
         },
-        { label: t('products.colStock'), value: <StockCell quantity={product.stockQuantity} state={product.stockState} /> },
+        { label: t('products.colStock'), value: <StockCell state={product.stockState} /> },
         { label: t('products.colCategory'), value: categoryLabel(product) ? formatText(categoryLabel(product)) : <span className="bb-muted">—</span> },
         { label: t('products.colBrand'), value: product.brand?.name ? formatText(product.brand.name) : <span className="bb-muted">—</span> },
         {

@@ -88,7 +88,7 @@ export function validateValue(key, value) {
 
 // Groups whose display text is shown on the storefront and can carry an English
 // translation. Config / contact / store / tax keys stay Vietnamese-only.
-const TRANSLATABLE_GROUPS = new Set(['GENERAL', 'PUBLIC_HOME', 'PUBLIC_ABOUT', 'PUBLIC_WARRANTY', 'PUBLIC_PRODUCT', 'PUBLIC_HERO', 'SEO'])
+const TRANSLATABLE_GROUPS = new Set(['GENERAL', 'PUBLIC_HOME', 'PUBLIC_ABOUT', 'PUBLIC_PRODUCT', 'PUBLIC_HERO', 'SEO'])
 
 // A setting is English-translatable when it lives in a translatable group AND renders
 // as text (rich-text, long-text, or a plain text input) — never images/URLs/numbers/phones.
@@ -104,8 +104,13 @@ export function isTranslatableSetting(setting) {
 
 // ── Tab config ────────────────────────────────────────────────────────────────
 
+// Tab "Banner trang" KHÔNG phải một settingGroup thật — nó nhúng trình sửa banner
+// (BannerScreen) có khung xem trước ráp sẵn vào trong màn Cài đặt. Id dùng riêng,
+// không trùng group nào để không lẫn với các tab render bằng SettingTabPanel.
+export const BANNERS_TAB_ID = '__banners__'
+
 export const TAB_ORDER = [
-  'GENERAL', 'CONTACT', 'PAYMENT', 'PUBLIC_HOME', 'PUBLIC_ABOUT', 'PUBLIC_WARRANTY', 'PUBLIC_PRODUCT', 'PUBLIC_HERO', 'PROMO', 'SEO', 'STORE', 'TAX', 'INVENTORY',
+  'GENERAL', 'CONTACT', 'PAYMENT', 'PUBLIC_HOME', 'PUBLIC_ABOUT', 'PUBLIC_PRODUCT', 'PUBLIC_HERO', 'PROMO', 'SEO', 'STORE', 'TAX', 'INVENTORY',
   'PRODUCT_ASSIGN',
 ]
 
@@ -118,9 +123,13 @@ export const SENSITIVE_SETTING_TABS = new Set(['STORE', 'TAX'])
 // - PAYMENT_SEPAY: cổng thanh toán SePay đã gỡ khỏi hệ thống (V59) — chỉ còn dữ liệu rác, ẩn khỏi UI
 // - COMMERCE: rác import WordPress (key site.currency = VND) trùng với store_currency (nhóm STORE,
 //   đã ẩn vì luôn VND). Hàng rào phòng hờ ở UI; bản ghi gốc đã được xoá ở migration V192.
-// - PUBLIC_HERO: ảnh banner đầu trang giờ quản lý ở màn riêng "Banner trang" (BannerScreen)
-//   với preview ráp sẵn — gỡ khỏi đây để không sửa 2 nơi.
-export const HIDDEN_GROUPS = new Set(['SECURITY', 'PAYMENT_SEPAY', 'COMMERCE', 'PUBLIC_HERO'])
+// - PUBLIC_HERO: ảnh banner đầu trang render bằng trình riêng (BannerScreen) có preview ráp sẵn,
+//   nay nhúng làm tab "Banner trang" NGAY TRONG màn Cài đặt (xem BANNERS_TAB_ID) — ẩn khỏi danh
+//   sách tab generic để không hiện 2 lần / sửa 2 nơi.
+// - CONTACT: thông tin liên hệ (hotline/địa chỉ/giờ/mạng xã hội, gồm cả zalo_display/messenger_display)
+//   giờ nhập trong trang Liên hệ của module Nội dung (trình dựng nhúng, ghi xuyên site_settings) —
+//   gỡ khỏi đây để không sửa 2 nơi. Vẫn dùng chung cho header/footer.
+export const HIDDEN_GROUPS = new Set(['SECURITY', 'PAYMENT_SEPAY', 'COMMERCE', 'PUBLIC_HERO', 'CONTACT'])
 
 // Field cụ thể bị ẩn vì giá trị mặc định luôn đúng cho shop VN, đổi gây rủi ro:
 // - store_currency: luôn VND
@@ -133,7 +142,6 @@ export const TAB_META = {
   PAYMENT:     { icon: Landmark,   labelKey: 'settings.group_payment' },
   PUBLIC_HOME: { icon: Home,       labelKey: 'settings.group_public_home' },
   PUBLIC_ABOUT:{ icon: Info,       labelKey: 'settings.group_public_about' },
-  PUBLIC_WARRANTY: { icon: ShieldCheck, labelKey: 'settings.group_public_warranty' },
   PUBLIC_PRODUCT: { icon: ShoppingBag, labelKey: 'settings.group_public_product' },
   PUBLIC_HERO: { icon: ImageIcon,  labelKey: 'settings.group_public_hero' },
   PROMO:       { icon: Tag,        labelKey: 'settings.group_promo' },
@@ -215,32 +223,6 @@ export const KEY_LABELS_VI = {
   about_page_connect_heading: 'Khối kết nối — tiêu đề',
   about_page_connect_intro1: 'Khối kết nối — dòng 1',
   about_page_connect_intro2: 'Khối kết nối — dòng 2',
-  // public_warranty (trang Tra cứu bảo hành /bao-hanh)
-  warranty_page_meta_title: 'SEO — tiêu đề trang (thẻ <title>)',
-  warranty_page_meta_description: 'SEO — mô tả trang (meta)',
-  warranty_page_heading: 'Tiêu đề banner đầu trang',
-  warranty_page_kicker: 'Khối tra cứu — tiêu đề nhỏ (kicker)',
-  warranty_page_subheading: 'Khối tra cứu — dòng mô tả',
-  warranty_page_intro_html: 'Khối giới thiệu trên ô tra cứu (rich-text, để trống sẽ ẩn)',
-  warranty_page_intro_image: 'Khối giới thiệu — hình minh hoạ (để trống sẽ ẩn)',
-  warranty_page_serial_label: 'Ô tra cứu — nhãn ô nhập serial',
-  warranty_page_serial_placeholder: 'Ô tra cứu — chữ gợi ý trong ô (placeholder)',
-  warranty_page_serial_hint: 'Ô tra cứu — dòng hướng dẫn dưới ô nhập',
-  warranty_page_submit_button: 'Ô tra cứu — chữ nút tra cứu',
-  warranty_page_submitting: 'Ô tra cứu — chữ nút khi đang tra',
-  warranty_page_not_found: 'Thông báo khi không tìm thấy bảo hành',
-  warranty_page_result_heading: 'Khối kết quả — tiêu đề',
-  warranty_page_field_product: 'Khối kết quả — nhãn dòng Sản phẩm',
-  warranty_page_field_serial: 'Khối kết quả — nhãn dòng Số serial',
-  warranty_page_field_start: 'Khối kết quả — nhãn dòng Ngày bắt đầu',
-  warranty_page_field_end: 'Khối kết quả — nhãn dòng Ngày kết thúc',
-  warranty_page_status_active: 'Trạng thái — Còn hiệu lực (giữ {daysLeft})',
-  warranty_page_status_almost_expired: 'Trạng thái — Sắp hết hạn (giữ {daysLeft})',
-  warranty_page_status_expired: 'Trạng thái — Hết hạn',
-  warranty_page_status_voided: 'Trạng thái — Đã huỷ',
-  warranty_page_footer_active: 'Ghi chú dưới kết quả khi còn hiệu lực',
-  warranty_page_footer_voided: 'Ghi chú dưới kết quả khi đã huỷ',
-  warranty_page_policy_html: 'Khối chính sách / FAQ dưới kết quả (rich-text, để trống sẽ ẩn)',
   // public_product — toàn bộ nội dung PDP giờ quản theo TỪNG sản phẩm (trang sửa sản phẩm):
   // khối "cam kết" dưới nút mua (V232) + dải "tin cậy" trên tên sản phẩm (V233). Không còn setting chung.
   // seo
@@ -252,8 +234,6 @@ export const KEY_LABELS_VI = {
   low_stock_threshold: 'Ngưỡng cảnh báo sắp hết hàng (số lượng)',
   // inventory (operational)
   reservation_ttl_minutes: 'Số phút giữ hàng trong giỏ trước khi nhả lại kho',
-  default_warranty_months: 'Thời hạn bảo hành mặc định khi tạo phiếu (tháng)',
-  serial_inventory_only: 'Chỉ bán sản phẩm có serial đã nhập kho',
   // public_hero — Tất cả sản phẩm
   hero_products_image_url: 'Ảnh hero — trang Tất cả sản phẩm (desktop)',
   hero_products_mobile_image_url: 'Ảnh hero — trang Tất cả sản phẩm (điện thoại)',
@@ -288,7 +268,6 @@ export const KEY_HINTS_VI = {
   about_page_service3_image: 'Hình minh hoạ ô dịch vụ, ví dụ 120×120px (PNG nền trong).',
   about_page_service4_image: 'Hình minh hoạ ô dịch vụ, ví dụ 120×120px (PNG nền trong).',
   about_page_service5_image: 'Hình minh hoạ ô dịch vụ, ví dụ 120×120px (PNG nền trong).',
-  warranty_page_intro_image: 'Ảnh minh hoạ cho khối giới thiệu, ví dụ 1120×560px (tỷ lệ ngang). Tải lên sẽ lưu trên MinIO.',
   promo_image_url:          'Ảnh nằm ngang, ví dụ 1200×400px.',
   og_image_url:             '1200×630px (chuẩn mạng xã hội).',
   hero_products_image_url:         'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
@@ -454,8 +433,6 @@ export const KEY_GUIDE = {
   low_stock_threshold:      ['internal_store', 'ngưỡng cảnh báo sắp hết hàng'],
 
   reservation_ttl_minutes:  ['internal_inv', 'thời gian giữ hàng trong giỏ'],
-  default_warranty_months:  ['internal_inv', 'hạn bảo hành mặc định'],
-  serial_inventory_only:    ['internal_inv', 'chỉ bán hàng đã có serial'],
 
   product_assign_title:         ['internal_assign', 'tiêu đề banner phân công'],
   product_assign_role_content:  ['internal_assign', 'tên vai trò Content'],

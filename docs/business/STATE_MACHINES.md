@@ -8,8 +8,7 @@ File này dùng để tránh các lỗi kiểu:
 
 - Product `DRAFT` hiển thị public.
 - Order `COMPLETED` quay lại `PENDING` như chưa có chuyện gì xảy ra.
-- Payment `REFUNDED` được chuyển lại `PAID` tùy hứng.
-- Return `REJECTED` tự nhiên được `COMPLETED` như thể logic nghiệp vụ là trò tung xúc xắc.
+- Payment `PAID` được chuyển lại `UNPAID` tùy hứng.
 - Admin tự deactivate hoặc tự hạ quyền Super Admin cuối cùng.
 
 State transition ảnh hưởng dữ liệu, trạng thái, inventory, payment, permission hoặc public visibility phải được backend enforce. Frontend chỉ được hỗ trợ UX bằng badge/button/hide/disable action, không được là nguồn enforce cuối cùng.
@@ -54,11 +53,10 @@ File này liên quan trực tiếp đến:
 | Product | `publishStatus` | `DRAFT`, `PUBLISHED`, `HIDDEN`, `TRASH` | Controlled publish transitions; soft-delete to `TRASH`; restore `TRASH -> DRAFT`. Legacy values `ARCHIVED`, `PENDING`, `PRIVATE` migrated away. | Backend validator | `CONFIRMED_BACKEND_ENFORCED` | `PublishStatus.java`, `AdminMutationValidators.java`, `AdminCatalogMutationService.java`, `CatalogReadService.java` |
 | Category | `visible` | `true`, `false` | Soft-delete/hide sets visible false; public only visible; cannot hide parent with visible children. | Backend service | `CONFIRMED_BACKEND_ENFORCED` for visibility rules; no enum state machine | `AdminCatalogMutationService.java`, `CatalogReadService.java` |
 | Brand | `visible` | `true`, `false` | Delete sets visible false; public only visible. | Backend service | `CONFIRMED_BACKEND_ENFORCED` for visibility; no full transition map | `AdminCatalogMutationService.java`, `CatalogReadService.java` |
-| Order | `status` | `PENDING`, `PROCESSING`, `ON_HOLD`, `COMPLETED`, `CANCELLED`, `FAILED`, `REFUNDED` | Explicit allowed transition map in service. | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java`, `CheckoutService.java` |
-| Payment | `paymentStatus` on Order, `status` on Payment | Order payment: `UNPAID`, `PAID`, `REFUNDED`, `CANCELLED`. Payment record includes `PENDING`, `SUCCEEDED`, `REFUNDED` in observed service code. | Explicit order payment transition map; payment record status is updated as side effect. | Backend service | `CONFIRMED_BACKEND_ENFORCED` for order payment status; payment entity full lifecycle `STATUS_ONLY` | `AdminOrderService.java`, `CheckoutService.java` |
-| Shipping / Fulfillment | `fulfillmentStatus`, shipping method enabled flag | `fulfillmentStatus` field observed in order detail; shipping method enabled/disabled inferred from checkout resolver. | Shipping method selection enforced; fulfillment state transitions not confirmed. | Partial backend | `STATUS_ONLY` / `NEEDS_VERIFICATION` | `AdminOrderService.java`, `CheckoutService.java`, `AdminShippingController.java` |
-| Inventory / Stock | `stockState`, quantity fields | `IN_STOCK`, `LOW_STOCK`, `OUT_OF_STOCK` | `stockState` là **derived field** — luôn tính tự động từ `quantityOnHand`. Admin không được set thủ công qua catalog API. Sản phẩm mới tạo luôn bắt đầu `OUT_OF_STOCK` (qty=0). Mọi thay đổi qty (nhập hàng, bán, huỷ, đổi trả) → recompute ngay. | Backend policy/service | `CONFIRMED_BACKEND_ENFORCED` | `ProductStockState.java`, `InventoryPolicyService.java`, `AdminCatalogMutationService.java`, `CheckoutService.java`, `AdminReturnService.java`, `OrderStockRestoreService.java`, `BUSINESS_RULES.md` STOCK_RULE_001–007 |
-| Return | `status` | `PENDING`, `APPROVED`, `REJECTED`, `RECEIVED`, `COMPLETED`, `REFUNDED` | Explicit transition map. | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `AdminReturnService.java`, `CustomerOrderController.java` |
+| Order | `status` | `PENDING`, `PROCESSING`, `ON_HOLD`, `COMPLETED`, `CANCELLED`, `FAILED` | Explicit allowed transition map in service. (`REFUNDED` removed 2026-06-23 — old refunded orders migrated to `CANCELLED`.) | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java`, `CheckoutService.java` |
+| Payment | `paymentStatus` on Order, `status` on Payment | Order payment: `UNPAID`, `PAID`, `CANCELLED`. Payment record includes `PENDING`, `SUCCEEDED` in observed service code. (`REFUNDED` removed 2026-06-23.) | Explicit order payment transition map; payment record status is updated as side effect. | Backend service | `CONFIRMED_BACKEND_ENFORCED` for order payment status; payment entity full lifecycle `STATUS_ONLY` | `AdminOrderService.java`, `CheckoutService.java` |
+| Fulfillment | `fulfillmentStatus` | `fulfillmentStatus` field observed in order detail. (Shipping-method state removed 2026-06-23 — `SHIP_RULE_001`.) | Fulfillment state transitions not confirmed. | Partial backend | `STATUS_ONLY` / `NEEDS_VERIFICATION` | `AdminOrderService.java`, `CheckoutService.java` |
+| Inventory / Stock | `stockState`, availability flag | `IN_STOCK`, `OUT_OF_STOCK` | `stockState` mirrors the boolean availability toggle (V261). Admin không set thủ công qua catalog API. Sản phẩm/biến thể mới luôn bắt đầu `OUT_OF_STOCK`. Bán/huỷ không tự đổi availability. | Backend policy/service | `CONFIRMED_BACKEND_ENFORCED` | `ProductStockState.java`, `AdminInventoryService.java`, `AdminCatalogMutationService.java`, `CheckoutService.java`, `BUSINESS_RULES.md` STOCK_RULE_001–009 |
 | Admin User | `status`, `role` | Status: `INVITED`, `ACTIVE`, `DISABLED`, `SUSPENDED`; Roles: `SUPER_ADMIN`, `ADMIN`, `EDITOR`, `SHOP_MANAGER` (built-in, V200) + custom roles. New users start `INVITED` (no password) and become `ACTIVE` on accepting an email invite. | Status/role update validation; self-deactivation and Super Admin demotion guardrails; invite token lifecycle. | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `AdminAdminUsersService.java`, `AdminInviteService.java`, `SecurityConfig.java` |
 | Content Article/Page | `publishStatus` | Same `PublishStatus` enum; active values: `DRAFT`, `PUBLISHED`, `HIDDEN`, `TRASH`; legacy `ARCHIVED` migrated sang `HIDDEN`. | Publish transitions enforced on update; delete sets `TRASH` (soft-delete, restore `TRASH` → `DRAFT`). | Backend service | `CONFIRMED_BACKEND_ENFORCED`; public filtering `NEEDS_VERIFICATION` | `AdminContentController.java`, `AdminContentMutationService.java`, `AdminMutationValidators.java` |
 | Media | `status` | `ACTIVE`, `INACTIVE`, `DELETED` | Upload creates `ACTIVE`; update validates allowed statuses; soft-delete sets `DELETED`; restore sets `ACTIVE`; hard-delete removes row/object. | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `AdminMediaService.java` |
@@ -214,7 +212,7 @@ Category/Brand does not have a full enum state machine in audited evidence. They
 
 ### Purpose
 
-Order state machine kiểm soát vòng đời xử lý đơn hàng sau checkout: pending/on-hold/processing/completed/cancelled/failed/refunded.
+Order state machine kiểm soát vòng đời xử lý đơn hàng sau checkout: pending/on-hold/processing/completed/cancelled/failed.
 
 ### State Field
 
@@ -230,23 +228,23 @@ From `AdminOrderService.ALLOWED_ORDER_STATUSES`:
 - `COMPLETED`
 - `CANCELLED`
 - `FAILED`
-- `REFUNDED`
+
+(`REFUNDED` was removed 2026-06-23 together with the refund feature; old refunded orders were migrated to `CANCELLED`.)
 
 ### Initial State
 
 From checkout behavior:
 
-- `COD` creates order with `PROCESSING`.
-- `BACS` creates order with `ON_HOLD`.
-- `PENDING` exists as allowed order status, but checkout initial use needs deeper audit outside COD/BACS creation.
+- Online orders default to `PROCESSING` (owner decision 2026-06-23): the customer no longer chooses a payment method, so there is no "awaiting transfer" hold. `paymentMethod` is stored `null` and `paymentStatus = UNPAID`.
+- Legacy/explicit `BACS` (if a caller still sends it) creates the order with `ON_HOLD`; explicit `COD` creates `PROCESSING`.
+- `PENDING` exists as allowed order status, but checkout initial use needs deeper audit outside the default creation path.
 
 ### Terminal States
 
 - `CANCELLED`
 - `FAILED`
-- `REFUNDED`
 
-`COMPLETED` is terminal in `ALLOWED_TRANSITIONS` — direct status patch to `REFUNDED` is blocked. Refund must go through `POST /admin/orders/{id}/refund` → `RefundService.applyRefund`.
+`COMPLETED` is terminal in `ALLOWED_TRANSITIONS`.
 
 ### Allowed Transitions
 
@@ -254,28 +252,25 @@ From checkout behavior:
 |---|---|---|---|---|---|---|
 | `PENDING` | `PROCESSING` | Admin / `orders.write` | Order exists. | Audit log, status email, websocket event. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
 | `PENDING` | `ON_HOLD` | Admin / `orders.write` | Order exists. | Audit log, notification, websocket. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
-| `PENDING` | `CANCELLED` | Admin / `orders.write` | Order exists; `paymentStatus` is NOT `PAID` (see ORDER_RULE_004 in `BUSINESS_RULES.md`). (`PARTIALLY_PAID` removed in V114.) | Set `cancelledAt`, restore stock, audit, notification, websocket. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java#validateBeforeCancel` |
-| `PENDING` | `FAILED` | Admin / `orders.write` | Order exists. | Release serial reservations, restore stock, audit, notification, websocket. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
+| `PENDING` | `CANCELLED` | Admin / `orders.write` | Order exists. `PAID` orders can be cancelled directly (see ORDER_RULE_004 in `BUSINESS_RULES.md`; refund removed 2026-06-23). | Set `cancelledAt`, audit, notification, websocket. (No stock restore — availability is a manual boolean, V261.) | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java#validateBeforeCancel` |
+| `PENDING` | `FAILED` | Admin / `orders.write` | Order exists. | Audit, notification, websocket. (No stock restore — availability is a manual boolean, V261.) | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
 | `ON_HOLD` | `PROCESSING` | Admin / `orders.write` | Order exists. | Audit, notification, websocket. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
-| `ON_HOLD` | `CANCELLED` | Admin / `orders.write` | Order exists; `paymentStatus` is NOT `PAID`. (`PARTIALLY_PAID` removed in V114.) | Set `cancelledAt`, restore stock, audit, notification, websocket. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java#validateBeforeCancel` |
-| `ON_HOLD` | `FAILED` | Admin / `orders.write` | Order exists. | Release serial reservations, restore stock, audit, notification, websocket. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
-| `PROCESSING` | `COMPLETED` | Admin / `orders.write` | For `DELIVERY`: `fulfillmentStatus = DELIVERED`. For `COD`: `paymentStatus = PAID`. `UNPAID` only allowed for `CREDIT` orders with a customer (see ORDER_RULE_002/003 and AR_RULE_001 in `BUSINESS_RULES.md`). (`PARTIALLY_PAID` removed in V114.) | Set `completedAt`, audit, notification, websocket. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java#validateBeforeComplete` |
-| `PROCESSING` | `CANCELLED` | Admin / `orders.write` | `paymentStatus` is NOT `PAID`. (`PARTIALLY_PAID` removed in V114.) PAID must go through `POST /admin/orders/{id}/refund`. | Set `cancelledAt`, release serials, restore non-serial stock, audit, notification, websocket. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java#validateBeforeCancel` |
-| `PROCESSING` | `FAILED` | Admin / `orders.write` | Order exists. | Release serial reservations, restore stock, audit, notification, websocket. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
-| `COMPLETED` | `REFUNDED` | n/a — direct status patch is rejected | Must go through `POST /admin/orders/{id}/refund` → `RefundService.applyRefund`. Direct patch is blocked by the empty allowed-transition set. | RefundService writes refund_transaction, payment.refundAmount, voids warranty, restores SOLD serials, writes off open receivable, and flips status to `REFUNDED` atomically. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` (terminal map), `RefundService.java` |
+| `ON_HOLD` | `CANCELLED` | Admin / `orders.write` | Order exists. `PAID` orders can be cancelled directly (refund removed 2026-06-23). | Set `cancelledAt`, audit, notification, websocket. (No stock restore — availability is a manual boolean, V261.) | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java#validateBeforeCancel` |
+| `ON_HOLD` | `FAILED` | Admin / `orders.write` | Order exists. | Audit, notification, websocket. (No stock restore — availability is a manual boolean, V261.) | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
+| `PROCESSING` | `COMPLETED` | Admin / `orders.write` | For `DELIVERY`: `fulfillmentStatus = DELIVERED`. Payment status no longer gates completion (owner decision 2026-06-23) — an `UNPAID` order **can** be completed; the admin reconciles money offline (see ORDER_RULE_001/002/003 in `BUSINESS_RULES.md`). | Set `completedAt`, audit, notification, websocket. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java#validateBeforeComplete` |
+| `PROCESSING` | `CANCELLED` | Admin / `orders.write` | Order exists. `PAID` orders can now be cancelled directly (refund removed 2026-06-23; admin reconciles money manually). | Set `cancelledAt`, audit, notification, websocket. (No stock restore — availability is a manual boolean, V261.) | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java#validateBeforeCancel` |
+| `PROCESSING` | `FAILED` | Admin / `orders.write` | Order exists. | Audit, notification, websocket. (No stock restore — availability is a manual boolean, V261.) | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
 
 ### Forbidden Transitions
 
 | From | To | Reason | Enforcement | Evidence |
 |---|---|---|---|---|
-| `COMPLETED` | `PENDING` / `PROCESSING` / `ON_HOLD` / `CANCELLED` / `FAILED` / `REFUNDED` | `COMPLETED` is terminal in `ALLOWED_TRANSITIONS`. REFUNDED specifically must go through `RefundService` so refund_transaction, payment.refundAmount, warranty void, SOLD serial restore, and receivable write-off stay atomic. | Backend throws conflict. | `AdminOrderService.java`, `RefundService.java` |
+| `COMPLETED` | `PENDING` / `PROCESSING` / `ON_HOLD` / `CANCELLED` / `FAILED` | `COMPLETED` is terminal in `ALLOWED_TRANSITIONS`. | Backend throws conflict. | `AdminOrderService.java` |
 | `PROCESSING` / `PENDING` / `ON_HOLD` | `COMPLETED` (when `DELIVERY` + `fulfillmentStatus != DELIVERED`) | Rule 3: cannot complete a delivery order before goods are delivered. | Backend throws conflict with message `Chỉ được hoàn thành đơn giao hàng sau khi đã giao thành công.` | `AdminOrderService.java#validateBeforeComplete` |
-| `PROCESSING` | `COMPLETED` (when `paymentMethod = COD` + `paymentStatus != PAID`) | Rule 2: COD must collect cash before completion. | Backend throws conflict with message `Đơn COD phải được thu tiền trước khi hoàn thành.` | `AdminOrderService.java#validateBeforeComplete` |
-| `PROCESSING` | `COMPLETED` (when `UNPAID` and NOT a CREDIT order with customer) | Rule 1: only credit/receivable orders may be COMPLETED unpaid. (`PARTIALLY_PAID` removed in V114.) | Backend throws conflict with message `Đơn chưa thanh toán chỉ được hoàn thành khi là đơn công nợ có khách hàng hợp lệ.` | `AdminOrderService.java#validateBeforeComplete` |
-| `PROCESSING` / `PENDING` / `ON_HOLD` | `CANCELLED` (when `paymentStatus = PAID`) | Rule 4: money has already changed hands; must go through refund/void flow so payment record, receivable, audit log, and stock/serial lifecycle stay consistent. (`PARTIALLY_PAID` removed in V114.) | Backend throws conflict with message `Đơn đã có thanh toán, cần xử lý hoàn tiền/void trước khi hủy.` Stock is NOT restored. | `AdminOrderService.java#validateBeforeCancel` |
+| ~~`PROCESSING` → `COMPLETED` (when `paymentMethod = COD` + `paymentStatus != PAID`)~~ | **Removed 2026-06-23.** Payment no longer blocks completion; this transition is now allowed regardless of payment status. See `ORDER_RULE_001/002`. | n/a | `AdminOrderService.java#validateBeforeComplete` |
+| `PROCESSING` | `COMPLETED` (when `paymentStatus = UNPAID`) | Rule 1: an order cannot be completed while unpaid — there is no receivable/collection process to chase the money. (`PARTIALLY_PAID` removed in V114.) | Backend throws conflict with message `Đơn chưa thanh toán không thể hoàn thành.` | `AdminOrderService.java#validateBeforeComplete` |
 | `CANCELLED` | any other status | Terminal state, no outgoing transitions. | Backend throws conflict. | `AdminOrderService.java` |
 | `FAILED` | any other order status | Terminal state, no outgoing transitions. | Backend throws conflict. | `AdminOrderService.java` |
-| `REFUNDED` | any other order status | Terminal state, no outgoing transitions. | Backend throws conflict. | `AdminOrderService.java` |
 | any status | unknown status | Not in `ALLOWED_ORDER_STATUSES`. | Backend validation error. | `AdminOrderService.java` |
 | same status | same status | Idempotent no-op; returns current detail. | Backend no write. | `AdminOrderService.java` |
 
@@ -283,10 +278,9 @@ From checkout behavior:
 
 | Impact | Evidence | Status |
 |---|---|---|
-| `CANCELLED`, `FAILED`, or `REFUNDED` triggers `restoreStockForOrder` + `releaseReservationForOrder`. `FAILED` was a gap prior to the E2E audit fix — added in same commit. Migrated wp-* products/variants (string PKs, UUID columns null) were silently skipped on restore until V158 added `product_variant_pk` and restore began resolving via `OrderLineItemEntity.resolveVariantKey()`/`resolveProductKey()` (BUG-2 — see `TEST_REPORT.md`). | `AdminOrderService.java`, `OrderStockRestoreService.java`, `DATA_CONTRACT.md` (`product_variant_pk`) | `CONFIRMED_BACKEND_ENFORCED` |
+| ~~`CANCELLED` / `FAILED` triggers stock restore.~~ **Removed (V261):** availability is a manual boolean, so cancelling/failing an order no longer restores any quantity. Other side-effects (audit, notification, websocket) are unchanged. | `AdminOrderService.java` | `CONFIRMED_FROM_CODE` |
 | `COMPLETED` sets `completedAt` if missing. | `AdminOrderService.java` | `CONFIRMED_BACKEND_ENFORCED` |
 | `CANCELLED` sets `cancelledAt` if missing. | `AdminOrderService.java` | `CONFIRMED_BACKEND_ENFORCED` |
-| Full refund via `RefundService` flips order status to `REFUNDED` for any non-terminal order (PENDING, ON_HOLD, PROCESSING, COMPLETED). CANCELLED/FAILED/REFUNDED orders are not touched. | `RefundService.java` | `CONFIRMED_BACKEND_ENFORCED` |
 | `DELIVERY` orders cannot be COMPLETED until `fulfillmentStatus = DELIVERED`. | `AdminOrderService.java#validateBeforeComplete` | `CONFIRMED_BACKEND_ENFORCED` |
 | `listAllowedTransitions` filters `COMPLETED` and `CANCELLED` based on business preconditions (payment/fulfillment state) so the UI only shows actionable buttons. | `AdminOrderService.java#canComplete`, `#canCancel` | `CONFIRMED_BACKEND_ENFORCED` |
 
@@ -304,20 +298,20 @@ From checkout behavior:
 ### Test Coverage
 
 - Direct tests not found by targeted search in this task.
-- Stock restore on cancel / FAILED / refund (incl. migrated wp-* variants & product-level lines, idempotency, serial-skip): `QaBug2StockRestoreTest` (Testcontainers Postgres).
+- ~~Stock restore on cancel / FAILED.~~ No longer applicable (V261) — availability is a manual boolean; cancel/FAILED does not touch inventory.
 - Status: `MISSING_TEST_COVERAGE` for transition-map coverage; restore-impact covered by `QaBug2StockRestoreTest`.
 
 ### Needs Verification
 
 - Fresh tests for every allowed and forbidden transition.
-- Whether order `PENDING` is used by any checkout/POS flow.
+- Whether order `PENDING` is used by any checkout flow.
 - Fulfillment status relation.
 
 ## 7. Payment State Machine
 
 ### Purpose
 
-Payment state machine quản lý trạng thái thanh toán trên order và side effects lên payment record/refund.
+Payment state machine quản lý trạng thái thanh toán trên order và side effects lên payment record.
 
 ### State Field
 
@@ -326,18 +320,16 @@ Payment state machine quản lý trạng thái thanh toán trên order và side 
 
 ### States
 
-From `AdminOrderService.ALLOWED_PAYMENT_STATUSES` (simplified V114):
+From `AdminOrderService.ALLOWED_PAYMENT_STATUSES` (simplified V114; `REFUNDED` removed 2026-06-23):
 
 - `UNPAID`
 - `PAID`
-- `REFUNDED`
 - `CANCELLED`
 
 Payment record statuses observed:
 
 - `PENDING`
 - `SUCCEEDED`
-- `REFUNDED`
 
 Full `PaymentEntity.status` enum/lifecycle was not fully audited. Treat payment entity lifecycle as `STATUS_ONLY` beyond observed service writes.
 
@@ -352,7 +344,6 @@ Checkout creates:
 
 For order payment status map:
 
-- `REFUNDED`
 - `CANCELLED`
 
 ### Allowed Transitions (simplified V114)
@@ -361,17 +352,14 @@ For order payment status map:
 |---|---|---|---|---|---|---|
 | `UNPAID` | `PAID` | Admin / `orders.write` | Order exists; paidAmount default total or provided. | Set paidAmount, paidAt; payment record `SUCCEEDED`. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
 | `UNPAID` | `CANCELLED` | Admin / `orders.write` | Order exists. | paymentStatus updated. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
-| `PAID` | `REFUNDED` | Admin via `POST /admin/orders/{id}/refund` | Full refund only — refundAmount must equal paidAmount. `PAID→REFUNDED` via direct `PATCH /payment-status` is blocked (returns 409). | refundAmount/refundedAt; payment record `REFUNDED`; order status → `REFUNDED` for any non-terminal order (PENDING/ON_HOLD/PROCESSING/COMPLETED). | `CONFIRMED_BACKEND_ENFORCED` | `RefundService.java` |
-| `PAID` | `UNPAID` | Admin / `orders.write` | paidAmount must be 0 if provided; `refundAmount` must be 0 (cannot revert after refund applied). | Reset paidAmount and paidAt. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
+| `PAID` | `UNPAID` | Admin / `orders.write` | paidAmount must be 0 if provided. | Reset paidAmount and paidAt. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
 
 ### Forbidden Transitions
 
 | From | To | Reason | Enforcement | Evidence |
 |---|---|---|---|---|
-| `REFUNDED` | any other payment status | Terminal, no outgoing transitions. | Backend rejects. | `AdminOrderService.java` |
 | `CANCELLED` | any other payment status | Terminal, no outgoing transitions. | Backend rejects. | `AdminOrderService.java` |
 | any status | unknown payment status | Not in allowed payment statuses. | Backend validation error. | `AdminOrderService.java` |
-| `PAID` | `REFUNDED` via direct status patch | Must go through RefundService to keep audit/stock/serial lifecycle consistent. | Backend rejects direct patch. | `AdminOrderService.java` |
 
 ### Webhook / Callback
 
@@ -385,9 +373,8 @@ For order payment status map:
 ### Backend Enforcement
 
 - `ALLOWED_PAYMENT_TRANSITIONS` map enforces order payment status transitions.
-- Partial paid amount must be `> 0` and `< totalAmount`.
 - Unpaid paidAmount must be zero if provided.
-- Refund requires `paymentStatus = PAID` order and refund amount equal to the full paidAmount (partial refunds not supported — `RefundService` enforces full-only since V114). (`PARTIALLY_PAID` removed in V114.)
+- (`PARTIALLY_PAID` removed in V114; `REFUNDED` removed 2026-06-23.)
 
 ### Test Coverage
 
@@ -399,13 +386,12 @@ For order payment status map:
 
 - Full `PaymentEntity.status` enum/lifecycle.
 - External gateway/webhook lifecycle.
-- Revenue/report impact of partial/full refund.
 
 ## 8. Shipping / Fulfillment State Machine
 
 ### Purpose
 
-Tracks the physical delivery lifecycle of `DELIVERY` orders. `IN_STORE` (POS) orders do not enter this state machine — goods change hands at the counter when the order is created.
+Tracks the physical delivery lifecycle of `DELIVERY` orders. Since the platform is now online-only (POS / `IN_STORE` removed 2026-06-23), **every** order is a `DELIVERY` order and enters this state machine.
 
 ### State Field
 
@@ -434,7 +420,7 @@ Tracks the physical delivery lifecycle of `DELIVERY` orders. `IN_STORE` (POS) or
 
 | From | To | Reason | Enforcement | Evidence |
 |---|---|---|---|---|
-| `UNFULFILLED` | `DELIVERED` | Must go through PROCESSING → SHIPPED first so tracking data is captured. Walk-in/POS use `IN_STORE` fulfillment type and bypass this machine entirely. | Backend rejects (409). | `AdminOrderService.java` |
+| `UNFULFILLED` | `DELIVERED` | Must go through PROCESSING → SHIPPED first so tracking data is captured. | Backend rejects (409). | `AdminOrderService.java` |
 | `SHIPPED` | any without `trackingNumber` | `trackingNumber` is required when transitioning to SHIPPED. | Backend rejects (400). | `AdminOrderService.java#updateFulfillmentStatus` |
 | `DELIVERED` | `CANCELLED` / `PROCESSING` / `SHIPPED` | No back-transition from DELIVERED except RETURNED. | Backend rejects (409). | `AdminOrderService.java` |
 | `CANCELLED` | any | Terminal state. | Backend rejects (409). | `AdminOrderService.java` |
@@ -463,184 +449,73 @@ Tracks the physical delivery lifecycle of `DELIVERY` orders. `IN_STORE` (POS) or
   - `updateFulfillment_shippedWithoutTrackingNumber_isRejected`
   - `markDelivered` helper walks full UNFULFILLED→PROCESSING→SHIPPED→DELIVERED path.
 
-## 9. Inventory / Stock / Serial State Machine
+## 9. Inventory / Stock State Machine
+
+> **Serial-number tracking was removed (2026-06-23, V259).** There is no serial lifecycle state machine.
+>
+> **Inventory is a BOOLEAN availability toggle (2026-06-23, V261).** There is no tracked quantity. `stockState` is a two-state badge (`IN_STOCK` / `OUT_OF_STOCK`) that mirrors a per-variant / per-product availability flag the admin sets by hand. `LOW_STOCK` is no longer produced.
 
 ### Purpose
 
-Inventory state machine in current evidence is not a full serial lifecycle. It is mainly stock quantity + stockState recomputation for product/variant availability.
+Availability is a boolean: per variant `product_variants.is_available`; per no-variant product `products.stock_state` set directly by the admin toggle. `stockState` mirrors that flag for product/variant availability. No on-hand count is kept.
 
 ### State Field
 
-- `stockState`
-- Quantity fields such as stock quantity / variant quantity on hand.
-- Stock movement records (`IN`, `OUT`) for audit trail.
+- `stockState` (`IN_STOCK` / `OUT_OF_STOCK`).
+- `product_variants.is_available` — the per-variant gate.
+- Quantity columns (`quantity_on_hand` / `stock_quantity`) are **dormant** — not read for availability. The `stock_movements` ledger is no longer written for sales/restores.
 
 ### States
 
 From `ProductStockState.java`:
 
 - `IN_STOCK`
-- `LOW_STOCK`
 - `OUT_OF_STOCK`
+- `LOW_STOCK` — **enum value kept for compat but never produced** (no low-stock tier, V261).
 
 ### Initial State
 
-- Product create forces `stockState = OUT_OF_STOCK` regardless of request payload — `stockState` is a derived field, computed from `quantityOnHand` once stock is recorded via the Inventory module.
-- The admin product form does not expose a stockState picker (removed 2026-05-14). Inventory module (`AdminInventoryController`) and `InventoryPolicyService` are the only writers.
-- Variants inherit the same rule via `applyVariants` in `AdminCatalogMutationService`.
+- New product / variant starts `OUT_OF_STOCK` (`is_available = false`); the admin must toggle it to "Còn hàng" before it can sell.
+- The admin product form does not expose a stockState picker. The Inventory module (`AdminInventoryController` availability endpoints) is the writer.
 
 ### Allowed Transitions
 
 | From | To | Actor / Role | Preconditions | Side Effects | Enforcement | Evidence |
 |---|---|---|---|---|---|---|
-| quantity `> threshold` | `IN_STOCK` | System | Tự động recompute sau mọi thay đổi số lượng. | Variant stockState updated. | `CONFIRMED_BACKEND_ENFORCED` | `InventoryPolicyService.java` |
-| quantity `1..threshold` | `LOW_STOCK` | System | Tự động recompute. | Variant stockState updated. | `CONFIRMED_BACKEND_ENFORCED` | `InventoryPolicyService.java` |
-| quantity `<= 0` | `OUT_OF_STOCK` | System | Tự động recompute. | Variant stockState updated. | `CONFIRMED_BACKEND_ENFORCED` | `InventoryPolicyService.java` |
-| stock quantity | decrement | System | Checkout/quick-buy order created and stock available. | Stock movement `OUT` for variant (or serial reservation for serial-tracked); stock state recompute. Product/variant resolved via `product_pk` / `product_variant_pk` (varchar) so migrated wp-* catalog — whose UUID columns are null — decrements correctly on the cart-checkout path too (V176; before V176 cart-checkout silently skipped stock for wp-* lines). | `CONFIRMED_BACKEND_ENFORCED` | `CheckoutService.java` |
-| stock quantity | increment | System | Order cancelled/refunded or return completed. | Stock movement `IN` for variant restore flow; stock state recompute. Variant resolved via `product_variant_id` (UUID) or `product_variant_pk` (varchar, V158) so migrated wp-* variants restock correctly. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java`, `AdminReturnService.java`, `OrderStockRestoreService.java` |
+| `OUT_OF_STOCK` | `IN_STOCK` | Admin / `inventory.write` | `PATCH .../availability` with `{ available: true }`. | Variant `is_available = true` (or no-variant `stock_state = IN_STOCK`); product-level re-aggregates from variants. | `CONFIRMED_BACKEND_ENFORCED` | `AdminInventoryController.java`, `AdminInventoryService.java` |
+| `IN_STOCK` | `OUT_OF_STOCK` | Admin / `inventory.write` | `PATCH .../availability` with `{ available: false }`. | Variant `is_available = false` (or no-variant `stock_state = OUT_OF_STOCK`); product-level re-aggregates. | `CONFIRMED_BACKEND_ENFORCED` | `AdminInventoryController.java`, `AdminInventoryService.java` |
+
+**No automatic transitions:** a sale or cancel does **not** change availability. There is no quantity decrement or restore.
 
 ### Forbidden Transitions / States
 
 | From | To | Reason | Enforcement | Evidence |
 |---|---|---|---|---|
-| available stock insufficient | order-created stock decrement | Cannot sell beyond stock. | Backend rejects checkout. | `CheckoutService.java` |
-| serial lifecycle states | any | Serial lifecycle not fully confirmed. | `NEEDS_VERIFICATION` | `StockMovementSerialEntity` referenced in prior docs only |
+| `OUT_OF_STOCK` variant | add-to-cart / checkout | Cannot buy an unavailable variant. | Backend rejects checkout (`isAvailable` gate). | `CheckoutService.java` |
+
+> **No oversell guard by quantity.** Because availability is boolean and selling never decrements anything, the storefront keeps accepting orders for an available item even after it physically sells out. The admin must manually toggle it to "Hết hàng".
 
 ### Frontend Behavior
 
-- Inventory admin module exists; UI transitions/badges need audit.
+- Admin Inventory screen shows a "Còn hàng / Hết hàng" toggle per row; the public buy-box badge shows the two states only.
 
 ### Backend Enforcement
 
-- Stock state recomputation is backend service policy.
-- Checkout validates stock before decrement.
-- Cancel/refund/return restore stock where service paths apply.
+- Availability flag is the gate; checkout validates `isAvailable` per variant before order creation.
+- No stock recompute from quantity; no restore on cancel.
 
 ### Test Coverage
 
-- Restore-on-cancel/FAILED/refund and completed-return, with `IN` movement + stockState recompute, for both migrated wp-* (varchar PK) variants and product-level lines, plus idempotency and serial-skip: `QaBug2StockRestoreTest` (Testcontainers Postgres).
-- Other inventory transitions: direct tests not found by targeted search.
-- Status: restore-impact `COVERED` (`QaBug2StockRestoreTest`); recompute/decrement transitions remain `MISSING_TEST_COVERAGE`.
+- Per-variant `isAvailable` checkout gate covered by checkout API tests.
+- Availability-toggle transitions: `MISSING_TEST_COVERAGE` (targeted search).
 
 ### Needs Verification
 
-- Serial-level lifecycle.
-- ~~Product-level stock movement symmetry~~ — RESOLVED: product-level restore writes an `IN` movement and is covered by `QaBug2StockRestoreTest.fullRefund_wpStyleProductLevelLine_restoresProductStockQuantity`.
-- Concurrency/oversell tests.
-- Admin manual stock adjust state recompute details.
+- Admin availability-toggle endpoint tests.
 
 ## 10. Return / Refund State Machine
 
-### Purpose
-
-Return state machine kiểm soát quy trình đổi/trả sau khi customer tạo return và admin xử lý.
-
-### State Field
-
-`ReturnEntity.status`
-
-### States
-
-From `AdminReturnService.TRANSITIONS` and notification logic:
-
-- `PENDING`
-- `APPROVED`
-- `REJECTED`
-- `RECEIVED`
-- `INSPECTING` *(added V104 — optional QC step for safety-equipment domain)*
-- `COMPLETED`
-- `REFUNDED`
-
-### Initial State
-
-- `PENDING` inferred as initial state because transition map starts at `PENDING` and customer return creation exists; exact creation service should be audited.
-
-### Terminal States
-
-- `REJECTED`
-- `COMPLETED`
-- `REFUNDED`
-
-### Allowed Transitions
-
-| From | To | Actor / Role | Preconditions | Side Effects | Enforcement | Evidence |
-|---|---|---|---|---|---|---|
-| `PENDING` | `APPROVED` | Admin / return write permission | Return exists. | History record; customer notification. | `CONFIRMED_BACKEND_ENFORCED` | `AdminReturnService.java` |
-| `PENDING` | `REJECTED` | Admin / return write permission | Return exists. | History record; customer notification. | `CONFIRMED_BACKEND_ENFORCED` | `AdminReturnService.java` |
-| `APPROVED` | `RECEIVED` | Admin / return write permission | Return exists and approved. | History record; goods received notification; serial-tracked items marked `RETURNED`. | `CONFIRMED_BACKEND_ENFORCED` | `AdminReturnService.java` |
-| `RECEIVED` | `INSPECTING` | Admin / return write permission | Goods received. | History record; no customer email. Enables per-item PASS/FAIL via `PATCH /returns/{id}/items/{itemId}/inspect`. | `CONFIRMED_BACKEND_ENFORCED` | `AdminReturnService.java` (V104) |
-| `RECEIVED` | `COMPLETED` | Admin / return write permission | Goods received. | Restore stock for return items (variant-based); history record. No refund issued. | `CONFIRMED_BACKEND_ENFORCED` | `AdminReturnService.java` |
-| `RECEIVED` | `REFUNDED` | Admin / return write permission | Goods received. **Full-coverage required**: for every order line item, the running sum of non-rejected return quantities must equal the original ordered quantity (the return — together with any prior non-rejected returns — must cover the entire order). `refundAmount` required (`> 0`, **must equal** `paidAmount − alreadyRefunded`; partial refunds are not supported — V114). Order must be `paymentStatus = PAID`. | `RefundService.applyRefund` handles all stock & serial restoration at order level (non-serial via `OrderStockRestoreService.restoreForRefund`, SOLD serials via `SerialLifecycleService.restoreSoldSerialsForRefund`); RMA-level `restoreStockForReturn` is **skipped** on this path to avoid double-restore. Sync `orders.refundAmount`/`paymentStatus`/`refundedAt`; update `PaymentEntity`; write off open receivable; audit log; order note; WS event; refunded notification. | `CONFIRMED_BACKEND_ENFORCED` | `AdminReturnService.java`, `RefundService.java` |
-| `INSPECTING` | `COMPLETED` | Admin / return write permission | Every `ReturnItem` has `inspection_result` set (PASS or FAIL). | Restore stock **only for items marked PASS**; FAIL items kept out of inventory (defective / customer-damaged). History record. | `CONFIRMED_BACKEND_ENFORCED` | `AdminReturnService.java` (V104) |
-| `INSPECTING` | `REFUNDED` | Admin / return write permission | Same preconditions as `RECEIVED → REFUNDED` (full-coverage, exact refundAmount, paymentStatus=PAID) **plus** every `ReturnItem` has `inspection_result` set. | Same effects as `RECEIVED → REFUNDED`: `RefundService` handles all stock/serial restore at order level. FAIL items inside this return remain DAMAGED via the per-item `inspect` endpoint and are not affected. | `CONFIRMED_BACKEND_ENFORCED` | `AdminReturnService.java` (V104), `RefundService.java` |
-
-### Forbidden Transitions
-
-| From | To | Reason | Enforcement | Evidence |
-|---|---|---|---|---|
-| `PENDING` | `RECEIVED` / `COMPLETED` / `REFUNDED` | Must approve first. | Backend rejects. | `AdminReturnService.java` |
-| `APPROVED` | `COMPLETED` / `REFUNDED` / `REJECTED` | Must mark received first. | Backend rejects. | `AdminReturnService.java` |
-| `RECEIVED` | `PENDING` / `APPROVED` / `REJECTED` | Not in transition map. | Backend rejects. | `AdminReturnService.java` |
-| `RECEIVED` / `INSPECTING` | `REFUNDED` (partial-coverage) | Allowed. `RefundService.applyReturnPartialRefund` refunds the returned items' value (`refundAmount` ≤ `orderRefundableAmount`); stock for returned PASS items restored at RMA level; order stays `PAID`/`COMPLETED` (refundAmount accumulates) until cumulative refund reaches the paid amount, then flips `REFUNDED`. | `AdminReturnService.java`, `RefundService.applyReturnPartialRefund` | `CONFIRMED_BACKEND_ENFORCED` |
-| `INSPECTING` | `RECEIVED` / `PENDING` / `APPROVED` / `REJECTED` | Not in transition map — no QC-bounce-back path. If admin needs to re-receive, reject this RMA and open a new one. | Backend rejects. | `AdminReturnService.java` |
-| `REJECTED` | any state | No outgoing transitions. | Backend rejects via default empty set. | `AdminReturnService.java` |
-| `COMPLETED` | any state | No outgoing transitions. | Backend rejects via default empty set. | `AdminReturnService.java` |
-| `REFUNDED` | any state | No outgoing transitions. | Backend rejects via default empty set. | `AdminReturnService.java` |
-
-### Related Refund / Inventory Impact
-
-| Transition | Side Effect | Evidence | Status |
-|---|---|---|---|
-| `RECEIVED -> COMPLETED` | Restore stock for return items (RMA-level via `restoreStockForReturn`). Non-serial items: increment qty (variant resolved via `product_variant_id` or `product_variant_pk`, V158, so migrated wp-* variants restock). Serial items: stay `RETURNED` (admin promotes to `IN_STOCK` later via serial inspection API). Covered by `QaBug2StockRestoreTest`. | `AdminReturnService.java`, `OrderLineItemEntity.resolveVariantKey()` | `CONFIRMED_BACKEND_ENFORCED` |
-| `INSPECTING -> COMPLETED` | RMA-level restore stock **only for items with `inspection_result = 'PASS'`**; FAIL items skipped (kept out of inventory). FAIL-skip covered by `QaBug2StockRestoreTest` (via the RECEIVED→COMPLETED path). `INSPECTING` is now DB-reachable after V191 extended `chk_returns_status`. | `AdminReturnService.java` (V104) | `CONFIRMED_BACKEND_ENFORCED` |
-| `RECEIVED -> REFUNDED` / `INSPECTING -> REFUNDED` | RMA-level `restoreStockForReturn` is **skipped**. `RefundService.applyRefund` handles stock & serial restore at order level: non-serial via `OrderStockRestoreService.restoreForRefund`, SOLD serials via `SerialLifecycleService.restoreSoldSerialsForRefund` (returned items are already RETURNED so they're skipped — admin promotes via serial inspection API as in COMPLETED path). Sync `orders.refundAmount`/`paymentStatus`/`refundedAt`; update `PaymentEntity`; write off receivable; audit; order note; WS event. Send `RETURN_REFUNDED` notification. | `AdminReturnService.java`, `RefundService.java` | `CONFIRMED_BACKEND_ENFORCED` |
-| any valid transition | Save return history. | `AdminReturnService.java` | `CONFIRMED_BACKEND_ENFORCED` |
-| `PENDING -> APPROVED` | Send approved notification. | `AdminReturnService.java` | `CONFIRMED_BACKEND_ENFORCED` for service call; delivery runtime `NEEDS_VERIFICATION` |
-| `PENDING -> REJECTED` | Send rejected notification. | `AdminReturnService.java` | same |
-| `APPROVED -> RECEIVED` | Send goods received notification. | `AdminReturnService.java` | same |
-| `RECEIVED -> INSPECTING` | No customer email. Items remain in QC; admin must call `PATCH /items/{itemId}/inspect` for each before closing. | `AdminReturnService.java` (V104) | `CONFIRMED_BACKEND_ENFORCED` |
-
-### Inspection Sub-Workflow (V104)
-
-For BigBike, every return item touching safety gear (mũ bảo hiểm, áo giáp) should pass through `INSPECTING` before COMPLETED/REFUNDED so admins can confirm goods are sellable. INSPECTING is **optional** for backward compatibility — direct `RECEIVED -> COMPLETED/REFUNDED` is still accepted, in which case all received items are treated as PASS.
-
-Per-item inspection rules:
-
-- Endpoint: `PATCH /api/v1/admin/returns/{returnId}/items/{itemId}/inspect`
-- Body: `{ "result": "PASS"|"FAIL", "note": "..." }`
-- Allowed only when parent return status is `INSPECTING`.
-- Idempotent: calling again overwrites the previous decision and refreshes `inspected_at` / `inspected_by_admin_id`.
-- `INSPECTING -> COMPLETED/REFUNDED` is blocked until **every** ReturnItem has an inspection result.
-- Items marked `FAIL` are **excluded from stock restore** so customer-damaged goods cannot re-enter inventory.
-
-> **✅ RESOLVED (V191):** The `INSPECTING` status was previously in the code's transition map
-> but **not** in the `chk_returns_status` CHECK constraint (`PENDING`, `APPROVED`, `REJECTED`,
-> `RECEIVED`, `COMPLETED`, `REFUNDED` only — V66; V104 added inspection columns but did not extend
-> the constraint), so persisting a return as `INSPECTING` failed at the DB level and the QC
-> sub-workflow was unreachable end-to-end. `V191__add_inspecting_to_returns_status.sql` adds
-> `INSPECTING` to the CHECK constraint **and** to the `idx_returns_order_active` partial unique
-> index (so `RETURN_RULE_002`'s active set `{PENDING, APPROVED, RECEIVED, INSPECTING}` is enforced
-> at the DB too). The `RECEIVED → INSPECTING` sub-workflow is now reachable.
-
-### Frontend Behavior
-
-- Admin returns module exists; UI transition actions by status need audit.
-- Customer return create/list/detail exists; eligibility rules need deeper audit.
-
-### Backend Enforcement
-
-- `TRANSITIONS` map enforces return transition.
-- Invalid transition throws validation error.
-
-### Test Coverage
-
-- Direct tests not found by targeted search.
-- Status: `MISSING_TEST_COVERAGE`.
-
-### Needs Verification
-
-- Customer-created return initial status and eligibility rules.
-- Payment/order/report impact of return `REFUNDED` vs order refund flow.
+> **REMOVED (2026-06-23).** The Return (RMA) and Refund feature was deleted platform-wide: customer returns, the admin returns module, per-item inspection (V104), RMA stock-restore, and every refund flow no longer exist. The `returns` / `return_items` / `return_history` tables and the `REFUNDED` order/payment status were dropped; old `REFUNDED` orders were migrated to `CANCELLED`. There is no system-tracked return lifecycle. (Customer-facing return/exchange **policy text** is kept as a manual commitment — see `BUSINESS_RULES.md` "Returns And Refunds".)
 
 ## 11. User / Admin User State Machine
 
@@ -902,19 +777,14 @@ Notification/email/websocket events exist as side effects, but no persisted noti
 | Product | non-`PUBLISHED` | Checkout / Quick-buy | Quick-buy rejects product. | Prevent ordering unavailable product. | `CONFIRMED_BACKEND_ENFORCED` |
 | Category | `visible = false` | Public Web | Category excluded or not found. | Public category read filters visible. | `CONFIRMED_BACKEND_ENFORCED` |
 | Brand | `visible = false` | Public Web | Brand excluded or not found. | Public brand read filters visible. | `CONFIRMED_BACKEND_ENFORCED` |
-| Order | `CANCELLED` | Inventory | Stock restored. | Cancelled order returns inventory. | `CONFIRMED_BACKEND_ENFORCED` |
-| Order | `REFUNDED` | Inventory | Stock restored when order status becomes `REFUNDED`. | Refunded order returns inventory. | `CONFIRMED_BACKEND_ENFORCED` |
+| Order | `CANCELLED` | Inventory | No stock change (V261). | Availability is a manual boolean — cancelling does not restore quantity. | `CONFIRMED_FROM_CODE` |
 | Order | `COMPLETED` | Order timestamps | `completedAt` set if null. | Record completion time. | `CONFIRMED_BACKEND_ENFORCED` |
 | Order | `CANCELLED` | Order timestamps | `cancelledAt` set if null. | Record cancellation time. | `CONFIRMED_BACKEND_ENFORCED` |
 | Payment | `PAID` | Payment record | Payment record can be set `SUCCEEDED`; paidAt set. | Reflect successful payment. | `CONFIRMED_BACKEND_ENFORCED` |
-| Payment | full refund | Order | Payment status `REFUNDED`; order status may become `REFUNDED` only if allowed from current order status. | Keep order/payment consistent. | `CONFIRMED_BACKEND_ENFORCED` |
-| Return | `COMPLETED` | Inventory | Return stock restored (variant-based). | Goods received back into warehouse, no refund. | `CONFIRMED_BACKEND_ENFORCED` |
-| Return | `REFUNDED` | Inventory | Return stock restored (same as COMPLETED — goods physically returned). | Goods received + money refunded; stock must also return. | `CONFIRMED_BACKEND_ENFORCED` |
-| Return | `REFUNDED` | Order / Payment | `orders.refundAmount` incremented; `paymentStatus` → `PARTIALLY_REFUNDED`/`REFUNDED`; `refundedAt` set; `PaymentEntity` synced; audit log; order note; WS event. | Unified via `RefundService.applyRefund`. | `CONFIRMED_BACKEND_ENFORCED` |
 | Content | `PUBLISHED` | Public Web / SEO | `publishedAt` set; web revalidation triggered. | Public content lifecycle. | `CONFIRMED_BACKEND_ENFORCED`; public filtering `NEEDS_VERIFICATION` |
 | Media | `DELETED` | Media Library | Excluded by default from admin media list. | Avoid showing deleted media. | `CONFIRMED_BACKEND_ENFORCED` |
 | Admin User | `DISABLED` / `SUSPENDED` | Auth/API | Should block login/API use. | Security. | `NEEDS_VERIFICATION` |
-| Shipping Method | disabled | Checkout | Cannot be selected. | Avoid invalid shipping method. | `CONFIRMED_BACKEND_ENFORCED` |
+| ~~Shipping Method~~ | — | — | **REMOVED 2026-06-23** (`SHIP_RULE_001`): shipping-method management dropped (V264); no shipping choice or fee at checkout. | — | `REMOVED` |
 
 ## 16. Invalid Transition Policy
 
@@ -931,12 +801,12 @@ Notification/email/websocket events exist as side effects, but no persisted noti
 
 | Requirement | Applies To | Current Evidence | Status |
 |---|---|---|---|
-| Transition validation nằm ở service/domain layer. | Product, content, order, payment, return, media, admin user. | Validators/services contain maps/guards. | `CONFIRMED_BACKEND_ENFORCED` |
+| Transition validation nằm ở service/domain layer. | Product, content, order, payment, media, admin user. | Validators/services contain maps/guards. | `CONFIRMED_BACKEND_ENFORCED` |
 | Controller/API không update status tùy ý nếu thiếu validation. | Admin mutation APIs. | Controllers delegate to services. | `CONFIRMED_BACKEND_ENFORCED` for audited controllers |
-| Permission checked before transition. | Admin product/order/return/content/media/settings/users. | Controllers call `requirePermission` in audited modules. | `CONFIRMED_BACKEND_ENFORCED`; full matrix separate |
-| Preconditions checked before transition. | Product/category/order/payment/return/media/admin user. | Validations and conflicts present. | `CONFIRMED_BACKEND_ENFORCED` for audited flows |
-| Side effects atomic. | Order/payment/return/inventory/content/media. | Transactional annotations present on mutation methods. | `CONFIRMED_BACKEND_ENFORCED`; runtime DB transaction tests missing |
-| Invalid transition error clear. | Product/order/payment/return/admin user/media. | Validation/conflict messages present. | `CONFIRMED_BACKEND_ENFORCED` |
+| Permission checked before transition. | Admin product/order/content/media/settings/users. | Controllers call `requirePermission` in audited modules. | `CONFIRMED_BACKEND_ENFORCED`; full matrix separate |
+| Preconditions checked before transition. | Product/category/order/payment/media/admin user. | Validations and conflicts present. | `CONFIRMED_BACKEND_ENFORCED` for audited flows |
+| Side effects atomic. | Order/payment/inventory/content/media. | Transactional annotations present on mutation methods. | `CONFIRMED_BACKEND_ENFORCED`; runtime DB transaction tests missing |
+| Invalid transition error clear. | Product/order/payment/admin user/media. | Validation/conflict messages present. | `CONFIRMED_BACKEND_ENFORCED` |
 | Positive/negative tests cover transitions. | All critical state machines. | Direct tests not found by targeted search. | `MISSING_TEST_COVERAGE` |
 
 ## 18. Test Coverage Requirements
@@ -950,8 +820,7 @@ Notification/email/websocket events exist as side effects, but no persisted noti
 | Order | Allowed order transitions map | Needed | Needed for terminal state invalid transitions | `MISSING_TEST_COVERAGE` |
 | Payment | Allowed payment transitions map | Needed | Needed for terminal/invalid transitions and invalid partial amount | `MISSING_TEST_COVERAGE` |
 | Shipping | Enabled/disabled/multiple methods checkout selection | Needed | Needed | `MISSING_TEST_COVERAGE` |
-| Inventory | Stock decrement/restore/recompute | Cart-checkout decrement for wp-* variant (non-serial qoh + serial reservation) and the two-distinct-wp-products no-merge guard covered by `Phase1FCheckoutApiTest` (V176); restore covered by `QaBug2StockRestoreTest` | Still needed for oversell/concurrency under contention | `PARTIAL_TEST_COVERAGE` |
-| Return | `PENDING -> APPROVED/REJECTED`, `APPROVED -> RECEIVED`, `RECEIVED -> COMPLETED/REFUNDED` | Needed | Needed for invalid jumps | `MISSING_TEST_COVERAGE` |
+| Inventory | Availability boolean toggle | Per-variant `isAvailable` checkout gate covered by checkout API tests | Availability-toggle endpoint tests still needed (V261) | `PARTIAL_TEST_COVERAGE` |
 | Admin User | `ACTIVE -> DISABLED/SUSPENDED`, restore to active | Needed | Needed for self-deactivation/Super Admin demotion | `MISSING_TEST_COVERAGE` |
 | Content | Publish transitions and delete to archive | Needed | Needed for forbidden transitions | `MISSING_TEST_COVERAGE` |
 | Media | Upload active, update inactive/deleted, restore active, hard delete | Needed | Needed for invalid status/MIME/size | `MISSING_TEST_COVERAGE` |
@@ -970,14 +839,13 @@ Notes:
 | Payment Provider/Webhook lifecycle | `NOT_FOUND_IN_REPO` | No automatic payment gateway. Online checkout accepts only `COD`/`BACS`, both reconciled manually by admin. No payment redirect, no provider webhook. The Alepay/ZaloPay gateway plan was dropped. |
 | Shipping Provider/Tracking lifecycle | `NOT_FOUND_IN_REPO` | No carrier waybill/tracking/status state machine found. |
 | Fulfillment status lifecycle | `STATUS_ONLY` / `NEEDS_VERIFICATION` | `fulfillmentStatus` exposed in order detail, no transition map found. |
-| Serial lifecycle | `NEEDS_VERIFICATION` | Stock movement serial entity referenced in prior docs, but serial states/transitions not audited as confirmed. |
+| Serial lifecycle | `REMOVED` | Serial-number tracking was removed platform-wide (2026-06-23, V259). There is no serial lifecycle. Inventory is manual quantity only. |
 | Notification read/unread lifecycle | `CONFIRMED_FROM_CODE` | `admin_notifications` table (V102) + `AdminNotificationController` mark-read/mark-all-read. Archive not implemented. |
 | Settings lifecycle | `STATUS_ONLY` / `NEEDS_VERIFICATION` | Settings APIs exist; no state machine confirmed. |
-| Coupon lifecycle | `NEEDS_VERIFICATION` | Coupon status APIs exist from prior docs, but detailed state transition not audited here. |
 | Review moderation lifecycle | `NEEDS_VERIFICATION` | Review controllers exist in prior docs, but review status transitions not audited here. |
 | Customer account status lifecycle | `NEEDS_VERIFICATION` | Customer auth exists, but customer status/disable lifecycle not confirmed. |
 | Admin role lifecycle | `STATUS_ONLY` / `NEEDS_VERIFICATION` | Custom role CRUD exists, but role active/inactive lifecycle not confirmed. |
-| POS order lifecycle | `PARTIAL` / `NEEDS_VERIFICATION` | POS auto-complete condition exists in payment update. Customer linkage at POS is now defined (`POS_CUSTOMER_*` in BUSINESS_RULES — phone required, resolve-or-create by phone). Void/cancel of a completed POS sale still not documented (modelled as refund/return today). |
+| POS order lifecycle | `REMOVED` | POS (point of sale / walk-in / `IN_STORE`) was removed platform-wide (owner decision 2026-06-23, online-only). There is no longer a POS create-order path, no auto-complete-at-counter order, and no `IN_STORE` fulfillment branch. Every order now flows through the online order + delivery state machines above. |
 
 ## 20. Evidence Summary
 
@@ -987,11 +855,10 @@ Notes:
 | Product/content publish transitions | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminMutationValidators.java` | Allowed/forbidden publish transitions. | High |
 | Product mutation | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminCatalogMutationService.java` | Product create/update/publish/soft-delete uses transition validation. | High |
 | Public product/category/brand visibility | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/catalog/CatalogReadService.java` | Product `PUBLISHED` and category/brand visible filters. | High |
-| Order/payment transitions | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminOrderService.java` | Order/payment allowed transition maps, timestamps, stock restore, audit, notification/websocket side effects. | High |
-| Checkout initial state | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/CheckoutService.java` | COD/BACS initial order/payment state, stock decrement, order creation. | High |
-| Return transitions | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminReturnService.java` | Return transition map, history, notification, stock restore, refund sync. | High |
+| Order/payment transitions | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminOrderService.java` | Order/payment allowed transition maps, timestamps, audit, notification/websocket side effects. (No stock restore — availability is a manual boolean, V261.) | High |
+| Checkout initial state | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/CheckoutService.java` | COD/BACS initial order/payment state, per-variant `isAvailable` gate, order creation. (No quantity decrement — V261.) | High |
 | Inventory states | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/domain/catalog/ProductStockState.java` | Product stock states. | High |
-| Inventory policy | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/inventory/InventoryPolicyService.java` | Quantity-based recompute and admin-controlled states not overwritten. | High |
+| Inventory availability | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminInventoryController.java` | Per-variant / per-product boolean availability toggle (V261); `stockState` mirrors it. | High |
 | Content state | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminContentController.java` | Admin content accepted status filters and permission boundary. | Medium-High |
 | Content transitions | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminContentMutationService.java` | Article/page create/update/delete, shared publish validator, publishedAt/revalidation side effects. | High |
 | Media states | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminMediaService.java` | Media `ACTIVE/INACTIVE/DELETED`, upload active, delete/restore/hard delete behavior. | High |
@@ -1008,16 +875,14 @@ Notes:
 3. Content public visibility filtering needs deeper audit of public content read service.
 4. Order and payment transitions are backend-enforced, but direct tests were not found by targeted search.
 5. `PaymentEntity.status` full lifecycle is only partially observed through order service side effects; full enum/status source should be audited.
-6. Full refund can update order status to `REFUNDED` only when current order status allows it. Report/revenue side effects need finance/business confirmation.
-7. Return `REFUNDED` syncs order refundAmount if provided, but payment record/order payment status impact may differ from order refund flow and needs verification.
-8. Inventory stock state is recomputed for variants and some product restore paths, but serial lifecycle and product-level movement symmetry need deeper audit.
-9. `fulfillmentStatus` exists in order detail, but no transition map was found. Shipping/fulfillment lifecycle remains incomplete.
-10. Admin user `DISABLED`/`SUSPENDED` status updates are backend-enforced, but login/API blocking behavior for those statuses needs auth-service audit.
-11. Media `INACTIVE` status exists, but whether inactive media can be rendered by product/content public pages needs verification.
-12. Notification read/unread/archive state machine was not found. Only email/websocket side effects are confirmed.
-13. Payment/shipping external provider state machines are not found.
-14. Frontend hide/disable action behavior by status was not deeply audited in this task.
-15. Build/test/runtime were not run during this documentation task. Do not treat this file as green-build evidence.
+6. Inventory availability is a per-variant / per-product boolean toggle (V261); `stockState` mirrors it. Selling does not change availability — admin marks items "Hết hàng" by hand (oversell not auto-prevented). Serial tracking removed in V259.
+7. `fulfillmentStatus` exists in order detail, but no transition map was found. Shipping/fulfillment lifecycle remains incomplete.
+8. Admin user `DISABLED`/`SUSPENDED` status updates are backend-enforced, but login/API blocking behavior for those statuses needs auth-service audit.
+9. Media `INACTIVE` status exists, but whether inactive media can be rendered by product/content public pages needs verification.
+10. Notification read/unread/archive state machine was not found. Only email/websocket side effects are confirmed.
+11. Payment/shipping external provider state machines are not found.
+12. Frontend hide/disable action behavior by status was not deeply audited in this task.
+13. Build/test/runtime were not run during this documentation task. Do not treat this file as green-build evidence.
 
 ## 22. Relationship With Other Docs
 

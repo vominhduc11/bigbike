@@ -13,11 +13,9 @@ import com.bigbike.bigbike_backend.migration.wordpress.importer.WordPressMigrati
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressCategoryMapper;
 import com.bigbike.bigbike_backend.migration.wordpress.mapper.WordPressCategoryMapper.MappedCategory;
 import com.bigbike.bigbike_backend.migration.wordpress.report.CatalogContentDryRunResult;
-import com.bigbike.bigbike_backend.migration.wordpress.report.CustomerOrderCouponDryRunResult;
 import com.bigbike.bigbike_backend.migration.wordpress.runner.WordPressMigrationImportRunner;
 import com.bigbike.bigbike_backend.migration.wordpress.runner.WordPressMigrationWritePlanRunner;
 import com.bigbike.bigbike_backend.migration.wordpress.service.WordPressCatalogContentDryRunService;
-import com.bigbike.bigbike_backend.migration.wordpress.service.WordPressCustomerOrderCouponDryRunService;
 import com.bigbike.bigbike_backend.migration.wordpress.writeplan.MigrationConflictStrategy;
 import com.bigbike.bigbike_backend.migration.wordpress.writeplan.MigrationDomain;
 import com.bigbike.bigbike_backend.migration.wordpress.writeplan.MigrationOperationType;
@@ -45,7 +43,6 @@ class Phase2DWordPressMigrationWritePlanImportTest {
     @Autowired WordPressMigrationProperties migrationProperties;
     @Autowired WordPressMigrationWritePlanService writePlanService;
     @Autowired WordPressCatalogContentDryRunService catalogDryRunService;
-    @Autowired WordPressCustomerOrderCouponDryRunService commerceDryRunService;
     @Autowired WordPressMigrationWritePlanRunner writePlanRunner;
     @Autowired WordPressMigrationImportRunner importRunner;
     @Autowired WordPressMigrationImportService importService;
@@ -71,7 +68,7 @@ class Phase2DWordPressMigrationWritePlanImportTest {
     @Test
     void writePlan_generatesOperationsForCatalogContentDomains() {
         CatalogContentDryRunResult catalog = mockCatalogResult(50, 45, 12054, 22, 174, 3, 46, 40);
-        MigrationWritePlan plan = writePlanService.buildPlan(catalog, null);
+        MigrationWritePlan plan = writePlanService.buildPlan(catalog);
 
         assertThat(plan.operations()).isNotEmpty();
         var domains = plan.operations().stream()
@@ -89,26 +86,9 @@ class Phase2DWordPressMigrationWritePlanImportTest {
     }
 
     @Test
-    void writePlan_generatesOperationsForCustomerOrderCouponDomains() {
-        MigrationWritePlan plan = writePlanService.buildPlan(
-                mockCatalogResult(50, 45, 12054, 22, 174, 3, 46, 40),
-                mockCommerceResult(800, 400, 200, 50));
-
-        var domains = plan.operations().stream()
-                .map(op -> op.domain())
-                .toList();
-        assertThat(domains).contains(
-                MigrationDomain.CUSTOMERS,
-                MigrationDomain.COUPONS,
-                MigrationDomain.ORDERS,
-                MigrationDomain.PAYMENTS
-        );
-    }
-
-    @Test
     void writePlan_ordersDependenciesCorrectly() {
         MigrationWritePlan plan = writePlanService.buildPlan(
-                mockCatalogResult(50, 45, 12054, 22, 174, 3, 46, 40), null);
+                mockCatalogResult(50, 45, 12054, 22, 174, 3, 46, 40));
 
         List<MigrationDomain> order = plan.operations().stream()
                 .map(op -> op.domain())
@@ -128,7 +108,7 @@ class Phase2DWordPressMigrationWritePlanImportTest {
     @Test
     void writePlan_defersProductTagsWhenNoTargetSchema() {
         MigrationWritePlan plan = writePlanService.buildPlan(
-                mockCatalogResult(50, 45, 12054, 22, 174, 3, 46, 40), null);
+                mockCatalogResult(50, 45, 12054, 22, 174, 3, 46, 40));
 
         var tagOp = plan.operations().stream()
                 .filter(op -> op.domain() == MigrationDomain.PRODUCT_TAGS)
@@ -141,7 +121,7 @@ class Phase2DWordPressMigrationWritePlanImportTest {
     @Test
     void writePlan_defersFgRedirectsWithoutTarget() {
         MigrationWritePlan plan = writePlanService.buildPlan(
-                mockCatalogResult(50, 45, 12054, 22, 174, 3, 46, 40), null);
+                mockCatalogResult(50, 45, 12054, 22, 174, 3, 46, 40));
 
         var fgOp = plan.operations().stream()
                 .filter(op -> op.domain() == MigrationDomain.FG_REDIRECTS)
@@ -153,7 +133,7 @@ class Phase2DWordPressMigrationWritePlanImportTest {
     @Test
     void writePlan_warnsDuplicateSkus() {
         CatalogContentDryRunResult catalog = mockCatalogResultWithDupSku(1150, 9);
-        MigrationWritePlan plan = writePlanService.buildPlan(catalog, null);
+        MigrationWritePlan plan = writePlanService.buildPlan(catalog);
 
         var productOp = plan.operations().stream()
                 .filter(op -> op.domain() == MigrationDomain.PRODUCTS)
@@ -168,7 +148,7 @@ class Phase2DWordPressMigrationWritePlanImportTest {
     @Test
     void writePlan_usesLegacyIdAsPrimaryIdentity() {
         MigrationWritePlan plan = writePlanService.buildPlan(
-                mockCatalogResult(50, 45, 12054, 22, 174, 3, 46, 40), null);
+                mockCatalogResult(50, 45, 12054, 22, 174, 3, 46, 40));
 
         // Media and menu items use UPSERT_BY_LEGACY_ID
         var mediaOp = plan.operations().stream()
@@ -181,7 +161,7 @@ class Phase2DWordPressMigrationWritePlanImportTest {
     @Test
     void writePlan_reportContainsConflictStrategies() {
         MigrationWritePlan plan = writePlanService.buildPlan(
-                mockCatalogResult(50, 45, 12054, 22, 174, 3, 46, 40), null);
+                mockCatalogResult(50, 45, 12054, 22, 174, 3, 46, 40));
 
         // Each operation has a conflict strategy
         for (var op : plan.operations()) {
@@ -287,7 +267,7 @@ class Phase2DWordPressMigrationWritePlanImportTest {
         // ProductImporter handles duplicate SKUs via suffix appending
         // Verified at write plan level — plan warns but does not block
         MigrationWritePlan plan = writePlanService.buildPlan(
-                mockCatalogResultWithDupSku(1150, 9), null);
+                mockCatalogResultWithDupSku(1150, 9));
 
         // Should not have product domain as BLOCKED
         var productOp = plan.operations().stream()
@@ -317,8 +297,7 @@ class Phase2DWordPressMigrationWritePlanImportTest {
     void fixtureImport_passwordHashNotLogged() {
         // Password hashes are never printed in plan or execution report
         MigrationWritePlan plan = writePlanService.buildPlan(
-                mockCatalogResult(50, 45, 12054, 22, 174, 3, 46, 40),
-                mockCommerceResult(800, 400, 200, 50));
+                mockCatalogResult(50, 45, 12054, 22, 174, 3, 46, 40));
 
         // Check that no operation warning or blocker contains a hash-like pattern
         for (var op : plan.operations()) {
@@ -334,7 +313,7 @@ class Phase2DWordPressMigrationWritePlanImportTest {
     void fixtureImport_noPhysicalMediaCopy() {
         // Media importer only stores metadata, never copies files
         MigrationWritePlan plan = writePlanService.buildPlan(
-                mockCatalogResult(50, 45, 12054, 22, 174, 3, 46, 40), null);
+                mockCatalogResult(50, 45, 12054, 22, 174, 3, 46, 40));
 
         var mediaOp = plan.operations().stream()
                 .filter(op -> op.domain() == MigrationDomain.MEDIA)
@@ -382,8 +361,7 @@ class Phase2DWordPressMigrationWritePlanImportTest {
             return;
         }
         CatalogContentDryRunResult catalog = catalogDryRunService.run(REAL_DUMP);
-        CustomerOrderCouponDryRunResult commerce = commerceDryRunService.run(REAL_DUMP);
-        MigrationWritePlan plan = writePlanService.buildPlan(catalog, commerce);
+        MigrationWritePlan plan = writePlanService.buildPlan(catalog);
 
         assertThat(plan.totalPlannedRows()).isGreaterThan(0);
         assertThat(plan.operations()).isNotEmpty();
@@ -396,7 +374,7 @@ class Phase2DWordPressMigrationWritePlanImportTest {
             return;
         }
         CatalogContentDryRunResult catalog = catalogDryRunService.run(REAL_DUMP);
-        MigrationWritePlan plan = writePlanService.buildPlan(catalog, null);
+        MigrationWritePlan plan = writePlanService.buildPlan(catalog);
 
         // Categories: 51, Brands: 46, Media: 12054 — current real dump baseline.
         var catOp = plan.operations().stream()
@@ -419,7 +397,7 @@ class Phase2DWordPressMigrationWritePlanImportTest {
         }
         long categoriesBefore = categoryRepo.count();
         CatalogContentDryRunResult catalog = catalogDryRunService.run(REAL_DUMP);
-        writePlanService.buildPlan(catalog, null);
+        writePlanService.buildPlan(catalog);
         long categoriesAfter = categoryRepo.count();
 
         assertThat(categoriesAfter)
@@ -439,16 +417,6 @@ class Phase2DWordPressMigrationWritePlanImportTest {
         assertThat(result.categoriesMapped()).isGreaterThan(0);
         assertThat(result.brandsMapped()).isGreaterThan(0);
         assertThat(result.mediaMapped()).isGreaterThan(1000);
-    }
-
-    @Test
-    void customerOrderCouponDryRun_stillWorks() throws Exception {
-        if (!dumpPresent) {
-            assertThat(commerceDryRunService).isNotNull();
-            return;
-        }
-        CustomerOrderCouponDryRunResult result = commerceDryRunService.run(REAL_DUMP);
-        assertThat(result.ordersMapped()).isGreaterThan(0);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -492,30 +460,6 @@ class Phase2DWordPressMigrationWritePlanImportTest {
                 .rankMathRedirects(40, 40, 0, List.of())
                 .fgRedirects(19516, 0, 19516, List.of())
                 .permalinkManager(0, 0, List.of(), List.of())
-                .streamingWarnings(List.of())
-                .build();
-    }
-
-    private CustomerOrderCouponDryRunResult mockCommerceResult(
-            int customers, int orders, int coupons, int synthetics) {
-
-        return CustomerOrderCouponDryRunResult.builder(Path.of("test-dump.sql"))
-                .wpUsers(customers + 50, 50, customers, 0)
-                .customers(customers, customers * 2)
-                .syntheticCustomers(synthetics, synthetics, 0)
-                .orders(orders, orders, 0)
-                .lineItems(orders * 2, orders * 2, 0)
-                .shippingItems(orders, orders, 0)
-                .feeItems(0, 0, 0)
-                .couponItems(orders / 5, orders / 5, 0)
-                .taxItems(0, 0)
-                .payments(orders)
-                .coupons(coupons, coupons, 0)
-                .customerWarnings(List.of())
-                .orderWarnings(List.of())
-                .orderItemWarnings(List.of())
-                .paymentWarnings(List.of())
-                .couponWarnings(List.of())
                 .streamingWarnings(List.of())
                 .build();
     }

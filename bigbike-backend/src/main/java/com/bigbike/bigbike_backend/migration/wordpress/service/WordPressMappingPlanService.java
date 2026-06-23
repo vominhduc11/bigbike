@@ -194,7 +194,7 @@ public class WordPressMappingPlanService {
         domains.put("orders", new DomainMapping(
                 "orders",
                 "kd_posts (post_type=shop_order) + kd_postmeta + kd_woocommerce_order_items + kd_woocommerce_order_itemmeta",
-                "orders + order_line_items + order_addresses + order_shipping_items + order_applied_coupons",
+                "orders + order_line_items + order_addresses + order_shipping_items",
                 List.of(
                         new FieldMapping("post_name (order number)", "orderNumber", "WC_ORDER_NUMBER", true),
                         new FieldMapping("post_status", "status", "WC_STATUS_MAP", true),
@@ -205,36 +205,13 @@ public class WordPressMappingPlanService {
                         new FieldMapping("postmeta._shipping_*", "orderAddress(SHIPPING)", "SHIPPING_MAP", false),
                         new FieldMapping("postmeta._customer_user", "customerId", "LEGACY_ID_REF", false),
                         new FieldMapping("order_items (line_item)", "orderLineItems", "WC_LINE_ITEM_MAP", false),
-                        new FieldMapping("order_items (shipping)", "orderShippingItems", "WC_SHIPPING_MAP", false),
-                        new FieldMapping("order_items (coupon)", "orderAppliedCoupons", "WC_COUPON_MAP", false)
+                        new FieldMapping("order_items (shipping)", "orderShippingItems", "WC_SHIPPING_MAP", false)
                 ),
                 List.of(
                         "HPOS is OFF — source of truth is kd_posts legacy mode",
                         "kd_wc_orders table exists but is empty (HPOS never enabled)",
-                        "WC status map: wc-pending→PENDING_PAYMENT, wc-processing→PROCESSING, wc-completed→COMPLETED, wc-cancelled→CANCELLED, wc-refunded→REFUNDED",
+                        "WC status map: wc-pending→PENDING_PAYMENT, wc-processing→PROCESSING, wc-completed→COMPLETED, wc-cancelled→CANCELLED, wc-refunded→CANCELLED",
                         "Order number = postmeta._order_number or post_id if not set"
-                )
-        ));
-
-        domains.put("coupons", new DomainMapping(
-                "coupons",
-                "kd_posts (post_type=shop_coupon) + kd_postmeta",
-                "coupons",
-                List.of(
-                        new FieldMapping("post_title", "code", "UPPERCASE", true),
-                        new FieldMapping("post_excerpt", "description", "DIRECT", false),
-                        new FieldMapping("postmeta.discount_type", "discountType", "WC_COUPON_TYPE_MAP", true),
-                        new FieldMapping("postmeta.coupon_amount", "amount", "CAST_DECIMAL", true),
-                        new FieldMapping("postmeta.minimum_amount", "minimumAmount", "CAST_DECIMAL", false),
-                        new FieldMapping("postmeta.maximum_amount", "maximumAmount", "CAST_DECIMAL", false),
-                        new FieldMapping("postmeta.usage_limit", "usageLimit", "CAST_INT", false),
-                        new FieldMapping("postmeta.usage_count", "usageCount", "CAST_INT", false),
-                        new FieldMapping("postmeta.date_expires", "expiresAt", "UNIX_TIMESTAMP", false),
-                        new FieldMapping("post_status=publish", "status=ACTIVE", "STATUS_MAP", true)
-                ),
-                List.of(
-                        "WC discount_type: percent→PERCENT, fixed_cart→FIXED, fixed_product→FIXED",
-                        "post_status=trash → status=ARCHIVED"
                 )
         ));
 

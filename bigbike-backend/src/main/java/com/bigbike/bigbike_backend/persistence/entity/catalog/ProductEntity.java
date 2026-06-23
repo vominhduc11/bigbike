@@ -101,9 +101,6 @@ public class ProductEntity {
     @Column(name = "stock_quantity")
     private Integer stockQuantity;
 
-    @Column(name = "track_serials", nullable = false, columnDefinition = "boolean not null default false")
-    private boolean trackSerials;
-
     @Column(name = "manage_stock")
     private Boolean manageStock;
 
@@ -147,13 +144,6 @@ public class ProductEntity {
 
     @Column(name = "installation_guide", columnDefinition = "text")
     private String installationGuide;
-
-    // Template SEO fields (V175). 1 ngôn ngữ (fallback VI như giá/SKU); detail-only.
-    @Column(name = "warranty_months")
-    private Integer warrantyMonths;
-
-    @Column(name = "warranty_scope", columnDefinition = "text")
-    private String warrantyScope;
 
     // Dòng "Giao hàng" / "Đổi trả" của khối "Mua tại BigBike.vn" (V247). 1 ngôn ngữ; detail-only.
     @Column(name = "pdp_shipping_line", columnDefinition = "text")

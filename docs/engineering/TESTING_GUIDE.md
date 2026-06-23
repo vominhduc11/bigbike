@@ -26,9 +26,8 @@ GitHub Actions currently runs:
 |---|---|---|
 | Cart | `Phase1ECartApiTest.java` | `CONFIRMED_FROM_TEST` |
 | Checkout | `Phase1FCheckoutApiTest.java` | `CONFIRMED_FROM_TEST` |
-| Coupons/settings/menus | `Phase1JAdminSettingsMenuCouponApiTest.java` | `CONFIRMED_FROM_TEST` |
-| Returns | `Phase1LReturnsApiTest.java` | `CONFIRMED_FROM_TEST` |
-| POS | `Phase1MPosApiTest.java` | `CONFIRMED_FROM_TEST` |
+| Settings/menus | `Phase1JAdminSettingsMenuCouponApiTest.java` | `CONFIRMED_FROM_TEST` |
+| ~~POS~~ | Removed 2026-06-23 (online-only) — `Phase1MPosApiTest.java` deleted | `REMOVED` |
 | Media hardening | `AdminMediaP0Test.java` | `CONFIRMED_FROM_TEST` |
 
 ## Current Testing Gaps

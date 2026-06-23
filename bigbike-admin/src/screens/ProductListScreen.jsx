@@ -381,7 +381,6 @@ export function ProductListScreen({ navigate, canUpdate }) {
           options={[
             { value: 'ALL', label: t('products.filterStock') },
             { value: 'IN_STOCK', label: t('status.stock.IN_STOCK') },
-            { value: 'LOW_STOCK', label: t('status.stock.LOW_STOCK') },
             { value: 'OUT_OF_STOCK', label: t('status.stock.OUT_OF_STOCK') },
           ]}
         />

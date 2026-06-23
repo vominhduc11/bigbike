@@ -5,7 +5,6 @@ import com.bigbike.bigbike_backend.domain.catalog.CategoryTranslations;
 import com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock;
 import com.bigbike.bigbike_backend.domain.catalog.GalleryMedia;
 import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
-import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.ProductTab;
 import com.bigbike.bigbike_backend.domain.catalog.ProductTranslations;
 import com.bigbike.bigbike_backend.domain.catalog.ProductVariant;
@@ -89,18 +88,6 @@ final class JpaCatalogReadSupport {
                         null
                 ))
                 .toList();
-    }
-
-    /**
-     * Mask on-hand stock count for public-facing responses. Guests/customers see exact
-     * count only when state is LOW_STOCK and quantity is small enough to drive urgency
-     * ("Chỉ còn N sản phẩm") — otherwise null, so scrapers cannot read precise inventory
-     * for every SKU. Admin reads (publicView=false) get the raw value untouched.
-     */
-    static Integer maskStockQuantityForPublic(Integer raw, ProductStockState state) {
-        if (raw == null || state != ProductStockState.LOW_STOCK) return null;
-        if (raw <= 0 || raw > 10) return null;
-        return raw;
     }
 
     static CategoryTranslations toCategoryTranslations(CategoryEntity entity) {
@@ -221,8 +208,7 @@ final class JpaCatalogReadSupport {
                             variant.stockQuantity(),
                             image,
                             gallery,
-                            variant.isAvailable(),
-                            variant.trackSerials()
+                            variant.isAvailable()
                     );
                 })
                 .toList();

@@ -9,7 +9,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartItemEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderAddressEntity;
-import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderAppliedCouponEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderFeeItemEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderLineItemEntity;
@@ -20,7 +19,6 @@ import com.bigbike.bigbike_backend.persistence.entity.commerce.payment.PaymentEv
 import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderAddressJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderAppliedCouponJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderFeeItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLineItemJpaRepository;
@@ -52,7 +50,6 @@ class Phase1CCommerceSchemaTest {
     @Autowired OrderLineItemJpaRepository lineItemRepo;
     @Autowired OrderShippingItemJpaRepository shippingItemRepo;
     @Autowired OrderFeeItemJpaRepository feeItemRepo;
-    @Autowired OrderAppliedCouponJpaRepository appliedCouponRepo;
     @Autowired OrderAddressJpaRepository addressRepo;
     @Autowired OrderNoteJpaRepository noteRepo;
     @Autowired PaymentJpaRepository paymentRepo;
@@ -199,23 +196,6 @@ class Phase1CCommerceSchemaTest {
         List<OrderFeeItemEntity> items = feeItemRepo.findByOrderId(order.getId());
         assertThat(items).hasSize(1);
         assertThat(items.get(0).getName()).isEqualTo("Phí xử lý đơn hàng");
-    }
-
-    @Test
-    void orderAppliedCoupon_saveAndFindByCode() {
-        OrderEntity order = savedOrder();
-        String code = "SUMMER30-" + UUID.randomUUID().toString().substring(0, 4).toUpperCase();
-
-        OrderAppliedCouponEntity coupon = new OrderAppliedCouponEntity();
-        coupon.setOrder(order);
-        coupon.setCode(code);
-        coupon.setDiscountAmount(new BigDecimal("90000.00"));
-        coupon.setCreatedAt(Instant.now());
-        appliedCouponRepo.save(coupon);
-
-        List<OrderAppliedCouponEntity> found = appliedCouponRepo.findByCode(code);
-        assertThat(found).hasSize(1);
-        assertThat(found.get(0).getDiscountAmount()).isEqualByComparingTo(new BigDecimal("90000.00"));
     }
 
     @Test

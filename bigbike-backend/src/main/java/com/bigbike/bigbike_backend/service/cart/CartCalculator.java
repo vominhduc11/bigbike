@@ -1,6 +1,5 @@
 package com.bigbike.bigbike_backend.service.cart;
 
-import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartCouponEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartItemEntity;
 import java.math.BigDecimal;
@@ -23,7 +22,7 @@ public class CartCalculator {
         item.setLineTotal(subtotal.subtract(item.getLineDiscount()).setScale(SCALE, ROUNDING));
     }
 
-    public void recalculateCart(CartEntity cart, List<CartItemEntity> items, List<CartCouponEntity> coupons) {
+    public void recalculateCart(CartEntity cart, List<CartItemEntity> items) {
         BigDecimal subtotal = items.stream()
                 .map(CartItemEntity::getLineSubtotal)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
@@ -32,11 +31,8 @@ public class CartCalculator {
                 .map(CartItemEntity::getLineDiscount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .setScale(SCALE, ROUNDING);
-        BigDecimal couponDiscount = coupons.stream()
-                .map(CartCouponEntity::getDiscountAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add)
-                .setScale(SCALE, ROUNDING);
-        BigDecimal totalDiscount = itemDiscount.add(couponDiscount).setScale(SCALE, ROUNDING);
+        // Coupons removed (owner decision 2026-06-23): discount is item-level only, always ZERO at cart level.
+        BigDecimal totalDiscount = itemDiscount.setScale(SCALE, ROUNDING);
 
         cart.setSubtotalAmount(subtotal);
         cart.setDiscountAmount(totalDiscount);

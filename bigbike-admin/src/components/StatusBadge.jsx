@@ -22,32 +22,6 @@ const PAYMENT_STATUS_TONE = {
   UNKNOWN:   'muted',
 }
 
-const RETURN_STATUS_TONE = {
-  PENDING:    'warning',
-  APPROVED:   'info',
-  RECEIVED:   'info',
-  INSPECTING: 'info',
-  COMPLETED:  'success',
-  REFUNDED:   'success',
-  REJECTED:   'danger',
-}
-
-const WARRANTY_STATUS_TONE = {
-  ACTIVE:  'success',
-  EXPIRED: 'warning',
-  VOIDED:  'danger',
-}
-
-const SERIAL_STATUS_TONE = {
-  IN_STOCK:   'success',
-  RESERVED:   'info',
-  SOLD:       'neutral',
-  RETURNED:   'warning',
-  INSPECTION: 'info',
-  DAMAGED:    'danger',
-  SCRAPPED:   'neutral',
-}
-
 function toneFromPublish(status) {
   switch (status) {
     case 'PUBLISHED': return 'success'
@@ -61,7 +35,6 @@ function toneFromPublish(status) {
 function toneFromStock(status) {
   switch (status) {
     case 'IN_STOCK':     return 'success'
-    case 'LOW_STOCK':    return 'warning'
     case 'OUT_OF_STOCK': return 'danger'
     default:             return 'muted'
   }
@@ -91,15 +64,6 @@ export function StatusBadge({ status, type = 'order', className }) {
     const key = status ? 'VISIBLE' : 'HIDDEN'
     tone = key === 'VISIBLE' ? 'success' : 'neutral'
     label = key === 'VISIBLE' ? t('common.visible') : t('common.hidden')
-  } else if (type === 'return') {
-    tone = RETURN_STATUS_TONE[status] ?? 'muted'
-    label = t(`returns.status.${status}`, { defaultValue: status })
-  } else if (type === 'warranty') {
-    tone = WARRANTY_STATUS_TONE[status] ?? 'muted'
-    label = t(`warranty.status.${status}`, { defaultValue: status })
-  } else if (type === 'serial') {
-    tone = SERIAL_STATUS_TONE[status] ?? 'muted'
-    label = t(`serial.status.${status}`, { defaultValue: status })
   }
 
   return <Badge tone={tone} className={className}>{label}</Badge>

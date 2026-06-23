@@ -1,9 +1,9 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  Activity, AlignLeft, ArrowRightLeft, Award, BarChart2, BookOpen, FileText, Hash, Image, KeyRound, LayoutDashboard,
-  Package, Phone, RotateCcw, Settings, Shield, ShieldCheck, ShoppingCart, Star, Store, Tag, Ticket,
-  Truck, Users, Wallet,
+  Activity, AlignLeft, ArrowRightLeft, Award, BarChart2, FileText, Image, KeyRound, LayoutDashboard,
+  Package, Settings, Shield, ShoppingCart, Star, Tag,
+  Users,
 } from 'lucide-react'
 import { AdminShell } from './components/AdminShell'
 import { ErrorBoundary } from './components/ErrorBoundary'
@@ -48,7 +48,6 @@ const CategoryDetailScreen = lazyScreen(() => import('./screens/CategoryDetailSc
 const CategoryListScreen = lazyScreen(() => import('./screens/CategoryListScreen'), 'CategoryListScreen')
 const ContentDetailScreen = lazyScreen(() => import('./screens/ContentDetailScreen'), 'ContentDetailScreen')
 const ContentListScreen  = lazyScreen(() => import('./screens/ContentListScreen'),  'ContentListScreen')
-const CouponListScreen   = lazyScreen(() => import('./screens/CouponListScreen'),   'CouponListScreen')
 const CustomerDetailScreen = lazyScreen(() => import('./screens/CustomerDetailScreen'), 'CustomerDetailScreen')
 const CustomerListScreen = lazyScreen(() => import('./screens/CustomerListScreen'), 'CustomerListScreen')
 const MediaLibraryScreen = lazyScreen(() => import('./screens/MediaLibraryScreen'), 'MediaLibraryScreen')
@@ -60,26 +59,15 @@ const ProductListScreen  = lazyScreen(() => import('./screens/ProductListScreen'
 const ReviewListScreen   = lazyScreen(() => import('./screens/ReviewListScreen'),   'ReviewListScreen')
 const ReviewDetailScreen = lazyScreen(() => import('./screens/ReviewDetailScreen'), 'ReviewDetailScreen')
 const SettingsScreen     = lazyScreen(() => import('./screens/SettingsScreen'),     'SettingsScreen')
-const BannerScreen       = lazyScreen(() => import('./screens/BannerScreen'),       'BannerScreen')
-const ShippingScreen     = lazyScreen(() => import('./screens/ShippingScreen'),     'ShippingScreen')
 const SliderListScreen      = lazyScreen(() => import('./screens/SliderListScreen'),      'SliderListScreen')
 const HomeVideoListScreen   = lazyScreen(() => import('./screens/HomeVideoListScreen'),   'HomeVideoListScreen')
 const RedirectListScreen    = lazyScreen(() => import('./screens/RedirectListScreen'),    'RedirectListScreen')
 const AdminUsersScreen   = lazyScreen(() => import('./screens/AdminUsersScreen'),   'AdminUsersScreen')
 const AuditLogListScreen = lazyScreen(() => import('./screens/AuditLogListScreen'), 'AuditLogListScreen')
 const ReportsScreen      = lazyScreen(() => import('./screens/ReportsScreen'),      'ReportsScreen')
-const InventoryScreen    = lazyScreen(() => import('./screens/InventoryScreen'),    'InventoryScreen')
-const ReturnListScreen   = lazyScreen(() => import('./screens/ReturnListScreen'),   'ReturnListScreen')
 const RolesScreen        = lazyScreen(() => import('./screens/RolesScreen'),        'RolesScreen')
-const PosScreen              = lazyScreen(() => import('./screens/PosScreen'),              'PosScreen')
-const ReceivablesListScreen  = lazyScreen(() => import('./screens/ReceivablesListScreen'),  'ReceivablesListScreen')
-const ReceivableDetailScreen = lazyScreen(() => import('./screens/ReceivableDetailScreen'), 'ReceivableDetailScreen')
-const WarrantyListScreen     = lazyScreen(() => import('./screens/WarrantyListScreen'),     'WarrantyListScreen')
-const SerialListScreen       = lazyScreen(() => import('./screens/SerialListScreen'),       'SerialListScreen')
 const HomeHighlightsScreen       = lazyScreen(() => import('./screens/HomeHighlightsScreen'),       'HomeHighlightsScreen')
 const FeaturedProductsScreen     = lazyScreen(() => import('./screens/FeaturedProductsScreen'),     'FeaturedProductsScreen')
-const ContactPageBuilderScreen   = lazyScreen(() => import('./screens/ContactPageBuilderScreen'),   'ContactPageBuilderScreen')
-const GuidePageBuilderScreen      = lazyScreen(() => import('./screens/GuidePageBuilderScreen'),      'GuidePageBuilderScreen')
 
 // ── Grouped navigation definition ────────────────────────────────────────────
 const NAV_GROUP_DEFS = [
@@ -89,12 +77,8 @@ const NAV_GROUP_DEFS = [
     items: [
       { path: '/admin/dashboard',  labelKey: 'nav.dashboard',  permission: 'orders.read',    icon: LayoutDashboard },
       { path: '/admin/orders',     labelKey: 'nav.orders',     permission: 'orders.read',    icon: ShoppingCart },
-      { path: '/admin/pos',        labelKey: 'nav.pos',        permission: 'pos.read',       icon: Store },
       { path: '/admin/customers',  labelKey: 'nav.customers',  permission: 'customers.read', icon: Users },
-      { path: '/admin/returns',      labelKey: 'nav.returns',      permission: 'orders.read',       icon: RotateCcw },
-      { path: '/admin/receivables', labelKey: 'nav.receivables', permission: 'receivables.read', icon: Wallet },
       { path: '/admin/reviews',    labelKey: 'nav.reviews',    permission: 'reviews.read',   icon: Star },
-      { path: '/admin/coupons',    labelKey: 'nav.coupons',    permission: 'coupons.read',   icon: Ticket },
     ],
   },
   {
@@ -103,9 +87,6 @@ const NAV_GROUP_DEFS = [
     items: [
       { path: '/admin/products',          labelKey: 'nav.products',          permission: 'products.read',  icon: Package },
       { path: '/admin/featured-products', labelKey: 'nav.featuredProducts',  permission: 'products.update', icon: Star },
-      { path: '/admin/inventory',         labelKey: 'nav.inventory',         permission: 'inventory.read',    icon: Package },
-      { path: '/admin/serials',           labelKey: 'nav.serials',           permission: 'inventory.read',    icon: Hash },
-      { path: '/admin/warranties',        labelKey: 'nav.warranties',        permission: 'warranty.read',     icon: ShieldCheck },
       { path: '/admin/categories',        labelKey: 'nav.categories',        permission: 'catalog.read',   icon: Tag },
       { path: '/admin/brands',            labelKey: 'nav.brands',            permission: 'catalog.read',   icon: Award },
     ],
@@ -115,9 +96,6 @@ const NAV_GROUP_DEFS = [
     labelKey: 'nav.group.content',
     items: [
       { path: '/admin/content',    labelKey: 'nav.content',    permission: 'content.read',   icon: FileText },
-      { path: '/admin/contact-page', labelKey: 'nav.contactPage',  permission: 'content.read',      icon: Phone },
-      { path: '/admin/guide-page',   labelKey: 'nav.guidePage',    permission: 'content.read',      icon: BookOpen },
-      { path: '/admin/banners',      labelKey: 'nav.banners',      permission: 'settings.read',     icon: Image },
       { path: '/admin/sliders',      labelKey: 'nav.sliders',      permission: 'sliders.read',      icon: BarChart2 },
       { path: '/admin/home-videos',     labelKey: 'nav.homeVideos',       permission: 'home_videos.read',    icon: BarChart2 },
       { path: '/admin/home-highlights', labelKey: 'nav.homeHighlights',   permission: 'home_highlights.read', icon: LayoutDashboard },
@@ -137,7 +115,6 @@ const NAV_GROUP_DEFS = [
     groupKey: 'system',
     labelKey: 'nav.group.system',
     items: [
-      { path: '/admin/shipping',     labelKey: 'nav.shipping',    permission: 'shipping.read',     icon: Truck },
       { path: '/admin/settings',     labelKey: 'nav.settings',    permission: 'settings.read',     icon: Settings },
       { path: '/admin/admin-users',  labelKey: 'nav.adminUsers',  permission: 'admin-users.read',  icon: Shield },
       { path: '/admin/roles',        labelKey: 'nav.roles',       permission: 'roles.read',        icon: KeyRound },
@@ -179,9 +156,6 @@ function parseRoute(pathname) {
 
   if (module === 'featured-products') return { kind: 'screen', name: 'featured-products' }
 
-  if (module === 'contact-page') return { kind: 'screen', name: 'contact-page' }
-  if (module === 'guide-page') return { kind: 'screen', name: 'guide-page' }
-
   if (module === 'content' && !id) return { kind: 'screen', name: 'content-list' }
   if (module === 'content' && id && sub === 'new') return { kind: 'screen', name: 'content-create', contentType: id.toUpperCase() === 'PAGES' || id.toUpperCase() === 'PAGE' ? 'PAGE' : 'ARTICLE' }
   if (module === 'content' && id && sub) return { kind: 'screen', name: 'content-detail', contentType: id.toUpperCase() === 'PAGES' || id.toUpperCase() === 'PAGE' ? 'PAGE' : 'ARTICLE', contentId: sub }
@@ -196,26 +170,18 @@ function parseRoute(pathname) {
   if (module === 'reviews' && id)  return { kind: 'screen', name: 'review-detail', reviewId: id }
 
   if (module === 'media')       return { kind: 'screen', name: 'media-library' }
-  if (module === 'coupons')     return { kind: 'screen', name: 'coupons-list' }
   if (module === 'menus')       return { kind: 'screen', name: 'menus' }
   if (module === 'sliders')      return { kind: 'screen', name: 'sliders' }
   if (module === 'home-videos')      return { kind: 'screen', name: 'home-videos' }
   if (module === 'home-highlights')  return { kind: 'screen', name: 'home-highlights' }
   if (module === 'redirects')        return { kind: 'screen', name: 'redirects' }
-  if (module === 'shipping')    return { kind: 'screen', name: 'shipping' }
   if (module === 'admin-users') return { kind: 'screen', name: 'admin-users' }
   if (module === 'settings')    return { kind: 'screen', name: 'settings' }
-  if (module === 'banners')     return { kind: 'screen', name: 'banners' }
+  // Banner trang nay là một tab trong Cài đặt — giữ /admin/banners làm lối tắt cũ mở màn Cài đặt.
+  if (module === 'banners')     return { kind: 'screen', name: 'settings' }
   if (module === 'audit-logs')  return { kind: 'screen', name: 'audit-logs' }
   if (module === 'reports')     return { kind: 'screen', name: 'reports' }
-  if (module === 'inventory')   return { kind: 'screen', name: 'inventory' }
-  if (module === 'serials')     return { kind: 'screen', name: 'serials' }
-  if (module === 'returns')       return { kind: 'screen', name: 'returns' }
-  if (module === 'warranties')    return { kind: 'screen', name: 'warranties' }
-  if (module === 'receivables' && !id) return { kind: 'screen', name: 'receivables-list' }
-  if (module === 'receivables' && id) return { kind: 'screen', name: 'receivable-detail', receivableId: id }
   if (module === 'roles')       return { kind: 'screen', name: 'roles' }
-  if (module === 'pos')         return { kind: 'screen', name: 'pos' }
 
   return { kind: 'not-found' }
 }
@@ -236,35 +202,23 @@ function routePermission(routeName) {
     case 'content-create':               return 'content.update'
     case 'content-list':
     case 'content-detail':               return 'content.read'
-    case 'contact-page':                 return 'content.read'
-    case 'guide-page':                   return 'content.read'
     case 'orders-list':
     case 'order-detail':                 return 'orders.read'
     case 'customers-list':
     case 'customer-detail':              return 'customers.read'
     case 'media-library':                return 'media.read'
-    case 'coupons-list':                 return 'coupons.read'
     case 'menus':                        return 'menus.read'
     case 'sliders':                      return 'sliders.read'
     case 'home-videos':                  return 'home_videos.read'
     case 'home-highlights':              return 'home_highlights.read'
     case 'redirects':                    return 'redirects.read'
-    case 'shipping':                     return 'shipping.read'
     case 'reviews':                      return 'reviews.read'
     case 'review-detail':                return 'reviews.read'
     case 'admin-users':                  return 'admin-users.read'
     case 'settings':                     return 'settings.read'
-    case 'banners':                      return 'settings.read'
     case 'audit-logs':                   return 'audit-logs.read'
     case 'reports':                      return 'reports.read'
-    case 'inventory':                    return 'inventory.read'
-    case 'serials':                      return 'inventory.read'
-    case 'returns':                      return 'orders.read'
-    case 'warranties':                   return 'warranty.read'
-    case 'receivables-list':
-    case 'receivable-detail':            return 'receivables.read'
     case 'roles':                        return 'roles.read'
-    case 'pos':                          return 'pos.read'
     default:                             return ''
   }
 }
@@ -306,7 +260,7 @@ function AdminApp() {
     setWsReconnectCallback(() => {
       for (const queryKey of [
         ['orders'], ['order'], ['nav-badge'], ['dashboard'],
-        ['receivable-summary'], ['inventory-summary'], ['returns-pending-count'],
+        ['inventory-summary'],
       ]) {
         queryClient.invalidateQueries({ queryKey })
       }
@@ -427,10 +381,6 @@ function AdminApp() {
       screen = <ContentDetailScreen key={`content-create:${route.contentType}`} contentType={route.contentType} contentId={null} isCreate navigate={navigate} canUpdate={hasPermission('content.update')} />; break
     case 'content-detail':
       screen = <ContentDetailScreen key={`content:${route.contentType}:${route.contentId}`} contentType={route.contentType} contentId={route.contentId} navigate={navigate} canUpdate={hasPermission('content.update')} />; break
-    case 'contact-page':
-      screen = <ContactPageBuilderScreen canUpdate={hasPermission('content.update')} />; break
-    case 'guide-page':
-      screen = <GuidePageBuilderScreen canUpdate={hasPermission('content.update')} />; break
     case 'orders-list':
       screen = <OrderListScreen navigate={navigate} />; break
     case 'order-detail':
@@ -438,11 +388,9 @@ function AdminApp() {
     case 'customers-list':
       screen = <CustomerListScreen navigate={navigate} />; break
     case 'customer-detail':
-      screen = <CustomerDetailScreen key={route.customerId} customerId={route.customerId} navigate={navigate} canUpdate={hasPermission('customers.write')} hasPermission={hasPermission} />; break
+      screen = <CustomerDetailScreen key={route.customerId} customerId={route.customerId} navigate={navigate} canUpdate={hasPermission('customers.write')} />; break
     case 'media-library':
       screen = <MediaLibraryScreen canUpdate={hasPermission('media.write')} canHardDelete={hasPermission('*')} />; break
-    case 'coupons-list':
-      screen = <CouponListScreen canUpdate={hasPermission('coupons.write')} />; break
     case 'menus':
       screen = <MenuScreen canUpdate={hasPermission('menus.write')} />; break
     case 'sliders':
@@ -453,8 +401,6 @@ function AdminApp() {
       screen = <HomeHighlightsScreen canUpdate={hasPermission('home_highlights.write')} />; break
     case 'redirects':
       screen = <RedirectListScreen canUpdate={hasPermission('redirects.write')} />; break
-    case 'shipping':
-      screen = <ShippingScreen canUpdate={hasPermission('shipping.write')} />; break
     case 'reviews':
       screen = <ReviewListScreen navigate={navigate} canUpdate={hasPermission('reviews.write')} />; break
     case 'review-detail':
@@ -462,29 +408,13 @@ function AdminApp() {
     case 'admin-users':
       screen = <AdminUsersScreen canUpdate={hasPermission('admin-users.write')} currentUserId={authState.user?.id} />; break
     case 'settings':
-      screen = <SettingsScreen canUpdate={hasPermission('settings.write')} isSuperAdmin={hasPermission('*')} />; break
-    case 'banners':
-      screen = <BannerScreen navigate={navigate} canUpdate={hasPermission('settings.write')} />; break
+      screen = <SettingsScreen canUpdate={hasPermission('settings.write')} isSuperAdmin={hasPermission('*')} navigate={navigate} />; break
     case 'audit-logs':
       screen = <AuditLogListScreen />; break
     case 'reports':
       screen = <ReportsScreen />; break
-    case 'inventory':
-      screen = <InventoryScreen canUpdate={hasPermission('inventory.write')} />; break
-    case 'serials':
-      screen = <SerialListScreen canUpdate={hasPermission('inventory.write')} canReadWarranty={hasPermission('warranty.read')} />; break
-    case 'returns':
-      screen = <ReturnListScreen navigate={navigate} canUpdate={hasPermission('orders.write')} />; break
-    case 'warranties':
-      screen = <WarrantyListScreen canUpdate={hasPermission('warranty.write')} />; break
     case 'roles':
       screen = <RolesScreen canUpdate={hasPermission('roles.write')} currentUserRoles={authState.user?.roles} />; break
-    case 'pos':
-      screen = <PosScreen navigate={navigate} canUpdate={hasPermission('pos.write')} userId={authState.user?.id} canOverrideCreditLimit={hasPermission('receivables.override_limit')} canOverridePrice={hasPermission('pos.price_override')} canRefund={hasPermission('pos.refund')} />; break
-    case 'receivables-list':
-      screen = <ReceivablesListScreen navigate={navigate} canRecordPayment={hasPermission('receivables.record_payment')} canWriteOff={hasPermission('receivables.write_off')} />; break
-    case 'receivable-detail':
-      screen = <ReceivableDetailScreen key={route.receivableId} receivableId={route.receivableId} navigate={navigate} canRecordPayment={hasPermission('receivables.record_payment')} canWriteOff={hasPermission('receivables.write_off')} />; break
     case 'featured-products':
       screen = <FeaturedProductsScreen canUpdate={hasPermission('products.update')} />; break
     default:

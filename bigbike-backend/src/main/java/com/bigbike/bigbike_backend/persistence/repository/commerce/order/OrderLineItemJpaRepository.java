@@ -24,13 +24,6 @@ public interface OrderLineItemJpaRepository extends JpaRepository<OrderLineItemE
     @Query("SELECT li.order.id, li.productName FROM OrderLineItemEntity li WHERE li.order.id IN :orderIds ORDER BY li.order.id")
     List<Object[]> findProductNamesByOrderIdIn(@Param("orderIds") List<UUID> orderIds);
 
-    @Query("""
-        SELECT li.id, li.productName, li.variantName, li.order.orderNumber
-        FROM OrderLineItemEntity li
-        WHERE li.id IN :ids
-        """)
-    List<Object[]> findWarrantyInfoByIdIn(@Param("ids") List<UUID> ids);
-
     // ── Dashboard: top products by revenue ───────────────────────────────────
     // Groups by productId so each product has a single stable row;
     // skips legacy line items that have no productId.

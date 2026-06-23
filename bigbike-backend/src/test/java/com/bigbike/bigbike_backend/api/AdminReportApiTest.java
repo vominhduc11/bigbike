@@ -227,7 +227,7 @@ class AdminReportApiTest {
         double baseNet = fetchNetRevenue();
 
         Instant now = Instant.now();
-        // Unusual scenario: paidAmount=0 (credit/unpaid), refundAmount=50k (manual refund)
+        // Unusual scenario: paidAmount=0 (unpaid), refundAmount=50k (manual refund)
         OrderEntity o = buildOrder("REFUNDED", "REFUNDED", "500000", "50000", now);
         o.setPaidAmount(BigDecimal.ZERO); // override default (test: zero cash collected)
         orderRepo.save(o);
@@ -353,10 +353,7 @@ class AdminReportApiTest {
         o.setPaymentStatus(paymentStatus);
         o.setTotalAmount(new BigDecimal(totalAmount));
         o.setPaidAmount(new BigDecimal(totalAmount)); // default: all cash collected
-        if (refundAmount != null) {
-            o.setRefundAmount(new BigDecimal(refundAmount));
-            o.setRefundedAt(placedAt);
-        }
+        // Refund bookkeeping removed from OrderEntity (refund feature dropped) — param kept inert.
         o.setPlacedAt(placedAt);
         o.setCreatedAt(placedAt);
         o.setUpdatedAt(placedAt);

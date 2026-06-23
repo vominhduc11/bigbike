@@ -11,8 +11,6 @@ import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderAddres
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderLineItemEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderNoteEntity;
-import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderShippingItemEntity;
-import com.bigbike.bigbike_backend.persistence.entity.shipping.ShippingMethodEntity;
 import com.bigbike.bigbike_backend.service.ws.OrderWsEvent;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -59,6 +57,12 @@ final class CheckoutSupport {
     }
 
     static void validatePaymentMethod(String method) {
+        // Payment method is optional now (owner decision 2026-06-23): online orders no longer make the
+        // customer choose, the admin reconciles offline. Only reject an explicit, unrecognised value so
+        // backward-compatible callers that still send COD/BACS keep working.
+        if (method == null || method.isBlank()) {
+            return;
+        }
         if (!ALLOWED_PAYMENT_METHODS.contains(method)) {
             throw ValidationException.fromField("paymentMethod", "UNSUPPORTED",
                     "Payment method must be COD or BACS.");
@@ -121,22 +125,6 @@ final class CheckoutSupport {
                 shipping.addressLine1() != null ? shipping.addressLine1() : billing.addressLine1(),
                 shipping.addressLine2()
         );
-    }
-
-    static BigDecimal resolveShippingCost(ShippingMethodEntity method, BigDecimal orderSubtotal) {
-        BigDecimal minOrder = method.getMinOrderAmount();
-        if (minOrder != null && minOrder.compareTo(BigDecimal.ZERO) > 0
-                && orderSubtotal.compareTo(minOrder) < 0) {
-            throw ValidationException.fromField("shippingMethodId", "MIN_ORDER_AMOUNT_NOT_MET",
-                    "Order subtotal does not meet the minimum order amount for this shipping method.");
-        }
-        BigDecimal threshold = method.getFreeShippingThreshold();
-        if (threshold != null && orderSubtotal.compareTo(threshold) >= 0) {
-            return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
-        }
-        return method.getCost() != null
-                ? method.getCost().setScale(2, RoundingMode.HALF_UP)
-                : BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
     }
 
     // ── Build helpers ─────────────────────────────────────────────────────────
@@ -223,20 +211,6 @@ final class CheckoutSupport {
         entity.setCreatedAt(now);
         entity.setUpdatedAt(now);
         return entity;
-    }
-
-    static OrderShippingItemEntity buildShippingItem(
-            OrderEntity order, ShippingMethodEntity method, BigDecimal cost, Instant now
-    ) {
-        OrderShippingItemEntity item = new OrderShippingItemEntity();
-        item.setOrder(order);
-        item.setShippingMethodId(method.getId());
-        item.setMethodCode(method.getMethodCode());
-        item.setMethodTitle(method.getTitle());
-        item.setAmount(cost);
-        item.setCreatedAt(now);
-        item.setUpdatedAt(now);
-        return item;
     }
 
     static OrderNoteEntity buildSystemNote(OrderEntity order, String content, Instant now) {
