@@ -15,6 +15,8 @@ import { usePathname } from "next/navigation";
  *  5. Drawer liên hệ            → `.hammer-menu-desktop` mở / `.information-slide-bigbike .close` đóng.
  *  6. Accordion `.toggle--item` → click `.toggle--item-title` → mở/đóng phần kế.
  *  7. Sticky bộ lọc PLP         → `.product-list-filter` position:sticky top 80 (thay polyfill cũ).
+ *  8. Đóng dropdown desktop     → bấm link trong `.header-nav` → gắn `.bb-nav-hover-off`
+ *     lên mục vừa bấm (gỡ khi chuột rời) để dropdown không kẹt mở sau điều hướng SPA.
  *
  * Hành vi DEAD (selector không còn khớp sau khi React thay markup) được bỏ: +/- số lượng,
  * mua nhanh, chia sẻ FB/Twitter, vẽ sao `.rating-star`, select2, nút tìm kiếm header
@@ -140,6 +142,24 @@ export function WpThemeInteractions() {
         const reduce = window.matchMedia?.(PREFERS_REDUCED).matches;
         window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
         return;
+      }
+
+      // 8. Desktop: bấm link trong menu ngang → tắt dropdown hover của mục vừa bấm.
+      // Điều hướng SPA không tải lại trang nên chuột còn nằm trên mục, `:hover` vẫn
+      // đúng → dropdown kẹt mở. Gắn `.bb-nav-hover-off` ép ẩn cho tới khi chuột rời
+      // mục (mục khác hover bình thường). CSS suppress chỉ tồn tại trong @media desktop
+      // nên trên mobile (.sub-menu dùng .active, không hover) class này vô hại.
+      const navLink = target.closest("header .navigation .header-nav a");
+      if (navLink) {
+        const item = navLink.closest(".navigation--item");
+        if (item) {
+          item.classList.add("bb-nav-hover-off");
+          item.addEventListener(
+            "mouseleave",
+            () => item.classList.remove("bb-nav-hover-off"),
+            { once: true },
+          );
+        }
       }
     }
 

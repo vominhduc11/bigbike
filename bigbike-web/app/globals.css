@@ -830,6 +830,15 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
     opacity: 1;
     transform: translateX(0);
   }
+  /* Sau khi bấm link trong dropdown, điều hướng SPA KHÔNG tải lại trang nên chuột
+     vẫn nằm trên mục → `:hover` còn đúng → dropdown kẹt mở (WP gốc reset nhờ reload).
+     WpThemeInteractions gắn `.bb-nav-hover-off` lên đúng mục vừa bấm để ép ẩn cho tới
+     khi chuột rời mục đó; mục khác vẫn hover bình thường. */
+  body .container .navigation ul .navigation--item.bb-nav-hover-off:hover > .sub-menu,
+  body .container .navigation ul .navigation--item.bb-nav-hover-off > .sub-menu li:hover > .sub-menu {
+    visibility: hidden;
+    opacity: 0;
+  }
   /* Mỗi mục trong dropdown (mọi cấp). */
   body .container .navigation ul .navigation--item > .sub-menu li {
     position: relative;
