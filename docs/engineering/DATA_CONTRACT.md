@@ -109,6 +109,12 @@ Admin users are onboarded by **email invite**, not by an admin typing a password
 
 Flow: create admin (`admin-users.write`) → row inserted `status = INVITED`, no password, invite token + email sent → invitee opens `{ADMIN_BASE}/accept-invite?token=…` → `POST /api/v1/auth/admin/accept-invite` sets password, flips `status = ACTIVE`, consumes the token.
 
+Account lockout (`V283__admin_login_lockout.sql`): two columns added to `admin_users`:
+- `failed_login_attempts` (integer, `NOT NULL DEFAULT 0`) — running count of consecutive failed password attempts.
+- `locked_until` (timestamptz, nullable) — when set and in the future, `AdminAuthService.login` refuses the attempt before checking the password.
+
+After 5 consecutive failures the account is locked for 15 minutes (`AdminLoginAttemptService`, `REQUIRES_NEW` so the counter survives the rejected login). A successful login clears both columns. See `PERMISSION_MATRIX.md` → "Admin Login Security".
+
 Status: `CONFIRMED_FROM_CODE`
 
 ### Return / Refund data — removed (2026-06-23)

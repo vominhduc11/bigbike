@@ -72,6 +72,20 @@ Status: `CONFIRMED_FROM_CODE` — `SettingDefinitionRegistry.java`, `AdminSettin
 
 `SHOP_MANAGER` and `EDITOR` do **not** have `audit-logs.read`.
 
+## Admin Login Security
+
+Enforced in `AdminAuthService.login` (public endpoint `POST /api/v1/auth/login`), in addition to the per-IP rate limit (5/min) in `RateLimitingFilter`:
+
+- **Account lockout.** After **5 consecutive failed password attempts** an account is locked for **15 minutes** (`AdminLoginAttemptService`, constants `MAX_FAILED_ATTEMPTS` / `LOCK_DURATION`). While locked, login is refused before the password is checked. The failed-attempt counter is written in a `REQUIRES_NEW` transaction so it persists even though the rejected login rolls back. A successful login clears `failed_login_attempts` and `locked_until`.
+- **Enumeration stance.** Unknown email, missing-password (`INVITED`) and bad-password all return the same generic `Invalid email or password.` with a constant-time dummy verify. The lockout case returns a distinct "temporarily locked" message — a deliberate trade of minor account-existence disclosure for operational clarity on an internal admin panel.
+- **Audit events** (`actorType = ADMIN`, `resourceType = ADMIN_AUTH`, written via best-effort `AuditLogWriter`):
+  - `ADMIN_LOGIN_SUCCESS` — actor = the user id.
+  - `ADMIN_LOGIN_FAILED` — `afterData.reason` ∈ {`USER_NOT_FOUND`, `NO_PASSWORD`, `BAD_PASSWORD`, `ACCOUNT_LOCKED`, `INACTIVE`}; attempted email recorded in `afterData.email`.
+  - `ADMIN_ACCOUNT_LOCKED` — emitted when a failure crosses the threshold.
+  - `ADMIN_LOGOUT` — actor resolved from the revoked refresh token.
+
+Status: `CONFIRMED_FROM_CODE` — `AdminAuthService.java`, `AdminLoginAttemptService.java`, `V283__admin_login_lockout.sql`
+
 ## Critical Endpoint Permissions
 
 | Endpoint / surface | Required role/permission | Status | Evidence |

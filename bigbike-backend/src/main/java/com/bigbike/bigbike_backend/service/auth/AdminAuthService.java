@@ -5,10 +5,12 @@ import com.bigbike.bigbike_backend.api.auth.dto.TokenResponse;
 import com.bigbike.bigbike_backend.api.error.UnauthorizedException;
 import com.bigbike.bigbike_backend.config.JwtProperties;
 import com.bigbike.bigbike_backend.domain.auth.AdminUserProfile;
+import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.persistence.entity.auth.AdminRefreshTokenEntity;
 import com.bigbike.bigbike_backend.persistence.entity.auth.AdminUserEntity;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminRefreshTokenJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository;
+import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.util.List;
@@ -28,28 +30,56 @@ public class AdminAuthService {
     private final JwtService jwtService;
     private final JwtProperties jwtProperties;
     private final AdminPermissionService adminPermissionService;
+    private final AdminLoginAttemptService loginAttemptService;
+    private final AuditLogWriter auditLogWriter;
 
     @Transactional
     public TokenResponse login(String email, String rawPassword, HttpServletRequest request) {
+        String clientIp = request != null ? request.getRemoteAddr() : null;
+        String userAgent = request != null ? request.getHeader("User-Agent") : null;
+
         AdminUserEntity user = adminUserRepo.findByEmail(email).orElse(null);
 
-        if (user == null) {
-            // Constant-time dummy verify prevents timing-based user enumeration
+        // Unknown account, or an INVITED account with no password yet: keep timing flat
+        // (constant-time dummy verify) and return the same generic error to avoid enumeration.
+        if (user == null || user.getPasswordHash() == null) {
             passwordService.dummyVerify(rawPassword);
-            throw new UnauthorizedException("Invalid email or password.");
-        }
-        // An INVITED account has no password yet — block login (and keep timing flat).
-        if (user.getPasswordHash() == null) {
-            passwordService.dummyVerify(rawPassword);
-            throw new UnauthorizedException("Invalid email or password.");
-        }
-        // Always verify password before checking status — avoids leaking account existence
-        if (!passwordService.verify(rawPassword, user.getPasswordHash()) || !"ACTIVE".equals(user.getStatus())) {
+            auditLogin(null, "ADMIN_LOGIN_FAILED", email, user == null ? "USER_NOT_FOUND" : "NO_PASSWORD",
+                    clientIp, userAgent);
             throw new UnauthorizedException("Invalid email or password.");
         }
 
+        // Account lockout: refuse while the cool-down window is active, without touching the password.
+        if (user.getLockedUntil() != null && user.getLockedUntil().isAfter(Instant.now())) {
+            auditLogin(user.getId(), "ADMIN_LOGIN_FAILED", email, "ACCOUNT_LOCKED", clientIp, userAgent);
+            throw new UnauthorizedException(
+                    "Account is temporarily locked due to too many failed login attempts. Please try again later.");
+        }
+
+        if (!passwordService.verify(rawPassword, user.getPasswordHash())) {
+            // Counter write runs in its own transaction so it survives this method throwing.
+            boolean lockedNow = loginAttemptService.recordFailure(user.getId());
+            auditLogin(user.getId(), "ADMIN_LOGIN_FAILED", email, "BAD_PASSWORD", clientIp, userAgent);
+            if (lockedNow) {
+                auditLogin(user.getId(), "ADMIN_ACCOUNT_LOCKED", email, "TOO_MANY_FAILED_ATTEMPTS",
+                        clientIp, userAgent);
+            }
+            throw new UnauthorizedException("Invalid email or password.");
+        }
+
+        // Password correct but account not usable — same generic error, do not count as a brute-force miss.
+        if (!"ACTIVE".equals(user.getStatus())) {
+            auditLogin(user.getId(), "ADMIN_LOGIN_FAILED", email, "INACTIVE", clientIp, userAgent);
+            throw new UnauthorizedException("Invalid email or password.");
+        }
+
+        // Success: clear any lockout state.
+        user.setFailedLoginAttempts(0);
+        user.setLockedUntil(null);
         user.setLastLoginAt(Instant.now());
         adminUserRepo.save(user);
+
+        auditLogin(user.getId(), "ADMIN_LOGIN_SUCCESS", user.getEmail(), null, clientIp, userAgent);
 
         String accessToken = jwtService.generateAccessToken(user.getId().toString(), user.getEmail(), user.getRole());
         String rawRefreshToken = saveNewRefreshToken(user.getId(), request);
@@ -92,15 +122,52 @@ public class AdminAuthService {
     }
 
     @Transactional
-    public void logout(String rawRefreshToken) {
+    public void logout(String rawRefreshToken, HttpServletRequest request) {
         if (rawRefreshToken == null || rawRefreshToken.isBlank()) {
             return;
         }
+        String clientIp = request != null ? request.getRemoteAddr() : null;
+        String userAgent = request != null ? request.getHeader("User-Agent") : null;
         String tokenHash = jwtService.hashToken(rawRefreshToken);
         refreshTokenRepo.findByTokenHash(tokenHash).ifPresent(token -> {
             token.setRevokedAt(Instant.now());
             refreshTokenRepo.save(token);
+            auditLogin(token.getAdminUserId(), "ADMIN_LOGOUT", null, null, clientIp, userAgent);
         });
+    }
+
+    /** Best-effort audit entry for an authentication event (login/logout). Never throws. */
+    private void auditLogin(UUID actorId, String action, String email, String reason,
+            String clientIp, String userAgent) {
+        AuditLogEntity log = new AuditLogEntity();
+        log.setActorType("ADMIN");
+        log.setActorId(actorId);
+        log.setAction(action);
+        log.setResourceType("ADMIN_AUTH");
+        log.setAfterData(authDetailJson(email, reason));
+        log.setIpAddress(clientIp);
+        log.setUserAgent(userAgent);
+        log.setCreatedAt(Instant.now());
+        auditLogWriter.save(log);
+    }
+
+    private static String authDetailJson(String email, String reason) {
+        StringBuilder sb = new StringBuilder("{");
+        boolean hasEmail = email != null && !email.isBlank();
+        if (hasEmail) {
+            sb.append("\"email\":\"").append(jsonEscape(email)).append("\"");
+        }
+        if (reason != null) {
+            if (hasEmail) {
+                sb.append(",");
+            }
+            sb.append("\"reason\":\"").append(reason).append("\"");
+        }
+        return sb.append("}").toString();
+    }
+
+    private static String jsonEscape(String s) {
+        return s.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     public AdminUserProfile getProfile(UUID userId) {

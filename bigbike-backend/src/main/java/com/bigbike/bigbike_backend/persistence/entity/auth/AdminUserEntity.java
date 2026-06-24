@@ -58,6 +58,13 @@ public class AdminUserEntity {
     @Column(name = "last_login_at")
     private Instant lastLoginAt;
 
+    // Account lockout (V283): consecutive failed-login counter and active lock expiry.
+    @Column(name = "failed_login_attempts", nullable = false)
+    private int failedLoginAttempts;
+
+    @Column(name = "locked_until")
+    private Instant lockedUntil;
+
     @Column(nullable = false, name = "created_at")
     private Instant createdAt;
 

@@ -83,7 +83,7 @@ public class AuthController {
         if (rawToken == null && payload != null) {
             rawToken = payload.getRefreshToken();
         }
-        adminAuthService.logout(rawToken);
+        adminAuthService.logout(rawToken, request);
         clearRefreshCookie(response);
         return apiResponseFactory.data(null, request);
     }
