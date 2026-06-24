@@ -142,8 +142,8 @@ export default async function HomePage() {
     }),
     // "Góc trải nghiệm": ưu tiên các bài admin chọn tay (homeExperience=true), tối đa 3, mới nhất trước.
     listArticles({ page: 1, homeExperience: true, size: 3, sort: "publishedAt:desc", lang: locale }),
-    // Dự phòng khi admin chưa chọn bài nào: 3 bài Reviews mới nhất (hành vi cũ).
-    listArticles({ page: 1, category: "reviews", size: 3, sort: "publishedAt:desc", lang: locale }),
+    // Dự phòng khi admin chưa chọn bài nào: 3 bài viết mới nhất (sau khi gộp nhóm còn 1 "Tin tức").
+    listArticles({ page: 1, size: 3, sort: "publishedAt:desc", lang: locale }),
     listArticles({ page: 1, category: "tin-tuc", size: 3, sort: "publishedAt:desc", lang: locale }),
     listBrands({ page: 1, size: 12, sort: "name:asc", lang: locale }),
     listPublicSettings(locale),

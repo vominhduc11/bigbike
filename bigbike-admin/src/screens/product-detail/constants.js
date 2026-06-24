@@ -224,8 +224,6 @@ export function buildEmptyForm() {
     faqs: [],
     // Khối cam kết dưới nút mua hàng (V232) — admin quản theo từng sản phẩm.
     commitments: [],
-    // Bảng "Mua tại BigBike.vn" dưới khu mua hàng — admin thêm dòng riêng (vd Bảo hành, Giao hàng, Đổi trả).
-    purchaseLines: [],
     // Dải tin cậy trên tên sản phẩm (V233) — admin quản theo từng sản phẩm.
     trustBadges: [],
     // Template SEO fields (V175).
@@ -456,15 +454,6 @@ export function buildFormFromItem(item) {
       subtitle: c.subtitle || '',
       titleEn: c.titleEn || '',
       subtitleEn: c.subtitleEn || '',
-    })),
-    // Bảng "Mua tại BigBike.vn" — dòng {icon, label, value} song ngữ, full-replace.
-    purchaseLines: (item.purchaseLines || []).map((p) => ({
-      _key: generateId(),
-      icon: p.icon || 'shield-check',
-      label: p.label || '',
-      value: p.value || '',
-      labelEn: p.labelEn || '',
-      valueEn: p.valueEn || '',
     })),
     // Dải tin cậy trên tên sản phẩm (V233) — badge {content, contentEn}.
     trustBadges: (item.trustBadges || []).map((b) => ({
@@ -784,19 +773,6 @@ export function toPayload(form) {
       sortOrder: i,
     }))
 
-  // Bảng "Mua tại BigBike.vn" — full-replace, tối đa 12 dòng; dòng không có nhãn bị bỏ.
-  payload.purchaseLines = form.purchaseLines
-    .filter((p) => (p.label || '').trim())
-    .slice(0, 12)
-    .map((p, i) => ({
-      icon: (p.icon || '').trim() || 'shield-check',
-      label: p.label.trim(),
-      value: (p.value || '').trim() || undefined,
-      labelEn: (p.labelEn || '').trim() || undefined,
-      valueEn: (p.valueEn || '').trim() || undefined,
-      sortOrder: i,
-    }))
-
   // Dải tin cậy trên tên sản phẩm (V233) — full-replace; badge content blank bị bỏ.
   payload.trustBadges = form.trustBadges
     .filter((b) => (b.content || '').trim())
@@ -902,7 +878,6 @@ export const SECTION_DEFS = [
   { id: 'section-spec-stats',     key: 'specStats',     icon: 'Gauge',      labelKey: 'products.detail.sectionSpecStats',      required: false },
   { id: 'section-faqs',           key: 'faqs',          icon: 'HelpCircle', labelKey: 'products.detail.sectionFaqs',           required: false },
   { id: 'section-commitments',    key: 'commitments',   icon: 'ShieldCheck',labelKey: 'products.detail.sectionCommitments',    required: false },
-  { id: 'section-purchase-lines', key: 'purchaseLines', icon: 'Package',    labelKey: 'products.detail.sectionPurchaseLines', required: false },
   { id: 'section-trust-badges',   key: 'trustBadges',   icon: 'BadgeCheck', labelKey: 'products.detail.sectionTrustBadges',    required: false },
   { id: 'section-variants',       key: 'variants',      icon: 'Layers',     labelKey: 'products.detail.variantSectionTitle',   required: false },
   { id: 'section-related',        key: 'related',       icon: 'Link2',      labelKey: 'products.detail.sectionRelated',        required: false },
@@ -913,7 +888,7 @@ export const SECTION_DEFS = [
 // groups below), with SEO on its own tab so the SEO-role workflow stays separate.
 // Keys must match SECTION_DEFS keys; drives the per-tab error badge + findTabForErrors.
 export const TAB_SECTIONS = {
-  product: ['basic', 'description', 'pricing', 'media', 'variants', 'gallery', 'videos', 'specs', 'specStats', 'faqs', 'commitments', 'purchaseLines', 'trustBadges', 'related', 'accessories'],
+  product: ['basic', 'description', 'pricing', 'media', 'variants', 'gallery', 'videos', 'specs', 'specStats', 'faqs', 'commitments', 'trustBadges', 'related', 'accessories'],
   seo:     ['seo'],
 }
 
@@ -927,7 +902,7 @@ export const TAB_SECTIONS = {
 export const PRODUCT_GROUPS = {
   buyArea: ['basic', 'media', 'gallery', 'trustBadges', 'pricing', 'variants', 'commitments', 'specStats'],
   body:    ['description', 'related', 'specs', 'faqs', 'videos'],
-  closing: ['purchaseLines', 'accessories'],
+  closing: ['accessories'],
 }
 
 // First group (top-down) containing any failing section — used to auto-expand the
@@ -937,6 +912,42 @@ export function findGroupForErrors(sectionErrors) {
     if (keys.some((k) => sectionErrors[k])) return group
   }
   return null
+}
+
+// Phát hiện biến thể lệch bộ thuộc tính. Mọi biến thể của một sản phẩm nên khai
+// CÙNG tập thuộc tính: web gộp tất cả thuộc tính của mọi biến thể lại rồi bắt khách
+// chọn đủ, nên biến thể thiếu — hoặc DƯ so với phần còn lại — dễ thành hàng không
+// bán được. Tính theo tên thuộc tính có cả tên LẪN giá trị (khớp cách web bỏ qua
+// giá trị trống). Trả về null khi mọi biến thể đồng nhất (hoặc chưa khai gì).
+export function computeAttrSetWarning(items, t) {
+  const sets = items.map((v) =>
+    new Set(
+      (v.options ?? [])
+        .filter((o) => (o.name ?? '').trim() && (o.value ?? '').trim())
+        .map((o) => o.name.trim()),
+    ),
+  )
+  const union = new Set()
+  sets.forEach((s) => s.forEach((n) => union.add(n)))
+  if (union.size === 0) return null
+
+  const offenders = []
+  items.forEach((v, idx) => {
+    const s = sets[idx]
+    if (s.size === 0) return // biến thể chưa khai thuộc tính nào (đang nhập) — bỏ qua
+    const missing = [...union].filter((n) => !s.has(n))
+    if (missing.length > 0) {
+      offenders.push({
+        index: idx + 1,
+        name:
+          (v.name ?? '').trim() ||
+          t('products.detail.variant.defaultLabel', { index: idx + 1 }),
+        missing: missing.join(', '),
+      })
+    }
+  })
+  if (offenders.length === 0) return null
+  return { attrs: [...union].join(', '), offenders }
 }
 
 // Field-prefix groups by section key — single source of truth used by both the
@@ -953,7 +964,6 @@ export const SECTION_FIELD_PREFIXES = {
   specStats:     ['specStats'],
   faqs:          ['faqs'],
   commitments:   ['commitments'],
-  purchaseLines: ['purchaseLines'],
   trustBadges:   ['trustBadges'],
   variants:      ['variants'],
   related:       ['relatedProductIds'],
@@ -991,8 +1001,6 @@ export function publishBadgeClass(status) {
 // Backend caps related products at 24 (UpsertProductRequest.relatedProductIds @Size(max = 24),
 // docs/engineering/API_CONTRACT.md §"Product related products" / DATA_CONTRACT.md §V135).
 export const RELATED_PRODUCTS_MAX = 24
-
-export const PURCHASE_LINE_MAX = 12
 
 export const SPEC_STAT_MAX = 4
 

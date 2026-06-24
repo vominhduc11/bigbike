@@ -325,9 +325,6 @@ export type Product = {
   positiveNotes?: ProductHighlight[];
   /** Nhược điểm (schema.org negativeNotes). Detail-only; empty in list. */
   negativeNotes?: ProductHighlight[];
-  /** Dòng tự thêm cho khối "Mua tại BigBike.vn" — admin nhập tự do, không giới hạn số dòng.
-   *  Đã resolve theo ngôn ngữ; rỗng → không render dòng nào. Detail-only. */
-  purchaseLines?: Array<{ icon: string; label: string; value: string }> | null;
   /** "Thương hiệu [nước]". Detail-only. */
   originBrandCountry?: string | null;
   /** Bảng size dạng HTML (rich-text). Detail-only. */

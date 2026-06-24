@@ -209,7 +209,6 @@ final class CatalogReadSupport {
                 null,                       // installationGuide — detail only
                 List.of(),                  // faqs — detail only
                 List.of(),                  // commitments — detail only
-                List.of(),                  // purchaseLines — detail only
                 List.of(),                  // specStats — detail only
                 List.of(),                  // trustBadges — detail only
                 List.of(),                  // positiveNotes — detail only

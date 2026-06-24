@@ -2,7 +2,6 @@ import type { CSSProperties, ReactNode } from "react";
 import { Tr } from "@/components/i18n/Tr";
 import { TrustLivePrice, TrustLiveStock } from "@/components/catalog/ProductTrustLive";
 import type { Product } from "@/lib/contracts/public";
-import { safeArray, safeText } from "@/lib/utils/format";
 
 type TrustItem = { key: string; labelKey?: string; label?: string; value: ReactNode };
 
@@ -16,10 +15,9 @@ type BuildTrustItemsArgs = {
 
 /**
  * Dựng danh sách ô của khối "Mua tại BigBike.vn" (#11): Giá/Kho THỜI GIAN THỰC ở đầu
- * (cùng nguồn nút mua, có giảm giá + tắt-bán thủ công), giữa là các dòng admin tự thêm
- * theo từng sản phẩm (purchaseLines — nhãn raw, không qua i18n), Liên hệ (Hotline + Zalo)
- * và Địa chỉ từ site settings ở cuối (rỗng trong preview). Mỗi item có `labelKey` (i18n)
- * HOẶC `label` (raw).
+ * (cùng nguồn nút mua, có giảm giá + tắt-bán thủ công), Liên hệ (Hotline + Zalo) và Địa chỉ
+ * từ site settings ở cuối (rỗng trong preview). Mỗi item có `labelKey` (i18n) HOẶC `label` (raw).
+ * (V276) Đã gỡ các dòng admin tự thêm (purchaseLines) — khối giờ thuần tự động.
  */
 export function buildTrustItems({ product, previewMode, hotline, zaloDisplay, contactAddress }: BuildTrustItemsArgs): TrustItem[] {
   const retailPrice = product.price?.retailPrice ?? null;
@@ -30,13 +28,6 @@ export function buildTrustItems({ product, previewMode, hotline, zaloDisplay, co
   if (product.stockState) {
     trustItems.push({ key: "stock", labelKey: "trustStock", value: <TrustLiveStock product={product} previewMode={previewMode} /> });
   }
-  // Dòng admin tự thêm (không giới hạn). Nhãn + giá trị là text admin nhập → render THẲNG, không i18n.
-  safeArray(product.purchaseLines).forEach((line, index) => {
-    const label = safeText(line?.label, "");
-    const value = safeText(line?.value, "");
-    if (!label && !value) return;
-    trustItems.push({ key: `pl-${index}`, label, value });
-  });
   // Liên hệ = Hotline + Zalo gộp một ô (mẫu "J. TRUST BLOCK"). Zalo lùi về rỗng khi chưa cấu hình.
   const contactValue = [hotline, zaloDisplay].filter(Boolean).join(" · ");
   if (contactValue) {

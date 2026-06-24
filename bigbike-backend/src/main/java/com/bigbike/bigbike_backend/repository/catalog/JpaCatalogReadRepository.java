@@ -8,7 +8,6 @@ import com.bigbike.bigbike_backend.domain.catalog.GalleryMedia;
 import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
 import com.bigbike.bigbike_backend.domain.catalog.ProductCommitment;
-import com.bigbike.bigbike_backend.domain.catalog.ProductPurchaseLine;
 import com.bigbike.bigbike_backend.domain.catalog.TrustBadge;
 import com.bigbike.bigbike_backend.domain.catalog.ProductFaq;
 import com.bigbike.bigbike_backend.domain.catalog.ProductHighlight;
@@ -27,7 +26,6 @@ import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantGall
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductSpecificationEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductSpecStatEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductCommitmentEntity;
-import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductPurchaseLineEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductTrustBadgeEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductFaqEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
@@ -84,7 +82,6 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     private static final Comparator<ProductSpecificationEntity> SPEC_ORDER = Comparator.comparingInt(ProductSpecificationEntity::getSortOrder);
     private static final Comparator<ProductFaqEntity> FAQ_ORDER = Comparator.comparingInt(ProductFaqEntity::getSortOrder);
     private static final Comparator<ProductCommitmentEntity> COMMITMENT_ORDER = Comparator.comparingInt(ProductCommitmentEntity::getSortOrder);
-    private static final Comparator<ProductPurchaseLineEntity> PURCHASE_LINE_ORDER = Comparator.comparingInt(ProductPurchaseLineEntity::getSortOrder);
     private static final Comparator<ProductSpecStatEntity> SPEC_STAT_ORDER = Comparator.comparingInt(ProductSpecStatEntity::getSortOrder);
     private static final Comparator<ProductTrustBadgeEntity> TRUST_BADGE_ORDER = Comparator.comparingInt(ProductTrustBadgeEntity::getSortOrder);
     private static final Comparator<ProductVariantEntity> VARIANT_ORDER = Comparator.comparingInt(ProductVariantEntity::getSortOrder);
@@ -196,7 +193,6 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 null,                       // installationGuide — detail only
                 List.of(),                  // faqs — detail only
                 List.of(),                  // commitments — detail only
-                List.of(),                  // purchaseLines — detail only
                 List.of(),                  // specStats — detail only
                 List.of(),                  // trustBadges — detail only
                 List.of(),                  // positiveNotes — detail only
@@ -497,7 +493,6 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 pick(entity.getInstallationGuide(), entity.getInstallationGuideEn(), locale),
                 toFaqs(entity, publicView, locale),
                 toCommitments(entity, publicView, locale),
-                toPurchaseLines(entity, publicView, locale),
                 toSpecStats(entity, publicView, locale),
                 toTrustBadges(entity, publicView, locale),
                 toHighlights(entity, ProductHighlightEntity.KIND_PRO, publicView, locale),
@@ -785,25 +780,6 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 .toList();
     }
 
-    /**
-     * Per-product "Mua tại BigBike.vn" lines (V249) resolved for the requested locale.
-     * On admin reads the raw English values ride along in the {@code *En} fields.
-     */
-    private List<ProductPurchaseLine> toPurchaseLines(ProductEntity entity, boolean publicView, String locale) {
-        if (entity.getPurchaseLines() == null) {
-            return List.of();
-        }
-        return entity.getPurchaseLines().stream()
-                .sorted(PURCHASE_LINE_ORDER)
-                .map(item -> new ProductPurchaseLine(
-                        item.getIcon(),
-                        pick(item.getLabel(), item.getLabelEn(), locale),
-                        pick(item.getValue(), item.getValueEn(), locale),
-                        publicView ? null : item.getLabelEn(),
-                        publicView ? null : item.getValueEn()
-                ))
-                .toList();
-    }
 
     /**
      * Per-product trust badges (V233) resolved for the requested locale. On admin

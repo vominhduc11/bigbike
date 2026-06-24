@@ -232,6 +232,7 @@
     },
     "contact": {
       "headline": "Buy genuine <brand>{productName}</brand> at <site>{siteName}</site>",
+      "buyNow": "Buy now",
       "zaloLink": "Chat on Zalo"
     },
     "reviews": {

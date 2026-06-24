@@ -42,8 +42,6 @@ public record Product(
         List<ProductFaq> faqs,
         /** Per-product commitment rows rendered under the buy buttons (V232). Detail-only; empty in list. */
         List<ProductCommitment> commitments,
-        /** Per-product "Mua tại BigBike.vn" lines (V249). Detail-only; empty in list. {@code *En} chỉ có trên admin reads. */
-        List<ProductPurchaseLine> purchaseLines,
         /** "Specs Dashboard" stat boxes under the buy area (V235), max 4. Detail-only; empty in list. {@code *En} chỉ có trên admin reads. */
         List<ProductSpecStat> specStats,
         /** Per-product trust badges rendered on the trust row above the title (V233). Detail-only; empty in list. {@code contentEn} chỉ có trên admin reads. */

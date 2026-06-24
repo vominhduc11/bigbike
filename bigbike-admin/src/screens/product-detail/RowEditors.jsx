@@ -14,7 +14,7 @@ import AiHtmlBrief from '../../components/AiHtmlBrief'
 import { SortableList, DragHandle } from '../../components/Sortable'
 import { parseSpecStatsFromHtml, mergeSpecStatsIntoHtml } from '../../lib/specStatsBlock'
 import { parseTrustBadgesFromHtml, mergeTrustBadgesIntoHtml } from '../../lib/trustBadgesBlock'
-import { PURCHASE_LINE_MAX, SPEC_STAT_MAX } from './constants'
+import { SPEC_STAT_MAX } from './constants'
 
 // Bộ icon dựng sẵn cho khối cam kết (V232) — key khớp COMMITMENT_ICON_MAP bên web.
 // labelKey trỏ tới i18n products.detail.commitments.icons.*; mặc định 'shield-check'.
@@ -112,120 +112,6 @@ export function CommitmentEditor({ items, onChange, disabled, contentLang = 'vi'
         footer={
           <Button variant="outline" size="sm" onClick={addItem} disabled={disabled}>
             + {t('products.detail.commitments.addRow')}
-          </Button>
-        }
-      />
-    </div>
-  )
-}
-
-// Loại dòng dựng sẵn cho khối "Mua tại BigBike.vn": chọn 1 loại → tự điền NHÃN + biểu tượng,
-// và GỢI Ý giá trị (chỉ điền khi ô giá trị đang trống — không đè chữ admin đã gõ). 3 loại đầu
-// (Bảo hành / Giao hàng / Đổi size) khớp mẫu "J. TRUST BLOCK" + dữ liệu backfill V258.
-const PURCHASE_LINE_PRESETS = [
-  { icon: 'shield-check', Icon: ShieldCheck, label: 'Bảo hành', labelEn: 'Warranty', value: '12 tháng tại BigBike', valueEn: '12 months at BigBike' },
-  { icon: 'truck', Icon: Truck, label: 'Giao hàng', labelEn: 'Shipping', value: 'Toàn quốc · COD · Đồng kiểm khi nhận', valueEn: 'Nationwide · COD · check on delivery' },
-  { icon: 'refresh-cw', Icon: RefreshCw, label: 'Đổi size', labelEn: 'Size exchange', value: 'Miễn phí đổi trong 30 ngày nếu không vừa', valueEn: 'Free size exchange within 30 days' },
-  { icon: 'badge-check', Icon: BadgeCheck, label: 'Chính hãng', labelEn: 'Genuine', value: '', valueEn: '' },
-  { icon: 'credit-card', Icon: CreditCard, label: 'Thanh toán', labelEn: 'Payment', value: '', valueEn: '' },
-  { icon: 'headphones', Icon: Headphones, label: 'Hỗ trợ / Tư vấn', labelEn: 'Support', value: '', valueEn: '' },
-  { icon: 'map-pin', Icon: MapPin, label: 'Cửa hàng', labelEn: 'Store', value: '', valueEn: '' },
-  { icon: 'wrench', Icon: Wrench, label: 'Lắp đặt', labelEn: 'Installation', value: '', valueEn: '' },
-  { icon: 'gift', Icon: Gift, label: 'Quà tặng', labelEn: 'Gift', value: '', valueEn: '' },
-  { icon: 'award', Icon: Award, label: 'Chất lượng', labelEn: 'Quality', value: '', valueEn: '' },
-]
-
-// Trình soạn bảng "Mua tại BigBike.vn" dưới khu mua hàng: mỗi dòng = LOẠI DÒNG (dropdown tự điền
-// nhãn + gợi ý giá trị) + nhãn (label) + giá trị (value), song ngữ (theo contentLang). Thêm/bớt/đảo
-// dòng tùy ý, tối đa 12 dòng. Mirror CommitmentEditor.
-export function PurchaseLineEditor({ items, onChange, disabled, contentLang = 'vi' }) {
-  const { t } = useTranslation()
-  const isEn = contentLang === 'en'
-  const fLabel = isEn ? 'labelEn' : 'label'
-  const fValue = isEn ? 'valueEn' : 'value'
-  function updateItem(index, field, value) {
-    onChange(items.map((item, i) => (i === index ? { ...item, [field]: value } : item)))
-  }
-  // Chọn loại dòng: đặt biểu tượng + nhãn theo loại; điền gợi ý giá trị CHỈ khi đang trống.
-  function applyPreset(index, presetIcon) {
-    const preset = PURCHASE_LINE_PRESETS.find((p) => p.icon === presetIcon)
-    if (!preset) return
-    onChange(items.map((item, i) => {
-      if (i !== index) return item
-      const next = { ...item, icon: preset.icon, [fLabel]: isEn ? preset.labelEn : preset.label }
-      const presetValue = isEn ? preset.valueEn : preset.value
-      if (presetValue && !String(item[fValue] || '').trim()) next[fValue] = presetValue
-      return next
-    }))
-  }
-  function addItem() {
-    onChange([...items, { _key: generateId(), icon: 'shield-check', label: '', value: '', labelEn: '', valueEn: '' }])
-  }
-  function removeItem(index) {
-    onChange(items.filter((_, i) => i !== index))
-  }
-
-  return (
-    <div className="list-editor">
-      {items.length === 0 && (
-        <p className="list-editor-empty">{t('products.detail.purchaseLines.empty')}</p>
-      )}
-      <SortableList
-        items={items}
-        getId={(it) => it._key}
-        onReorder={(next) => onChange(next)}
-        disabled={disabled}
-        className="list-editor"
-        renderItem={(item, sortable, index) => (
-        <div ref={sortable.setNodeRef} style={sortable.style} className="list-editor-row list-editor-row--stack">
-          <DragHandle handleProps={sortable.handleProps} disabled={disabled} label={t('products.detail.dragToReorder')} />
-          <div className="flex flex-1 flex-col gap-2">
-            {/* Loại dòng: chọn → tự điền nhãn + biểu tượng, gợi ý giá trị (nếu trống). Biểu tượng dùng chung mọi ngôn ngữ. */}
-            <Select value={item.icon || 'shield-check'} onValueChange={(v) => applyPreset(index, v)} disabled={disabled}>
-              <SelectTrigger className="w-full sm:w-56" aria-label={t('products.detail.purchaseLines.typeLabel')}>
-                <SelectValue placeholder={t('products.detail.purchaseLines.typeLabel')} />
-              </SelectTrigger>
-              <SelectContent>
-                {PURCHASE_LINE_PRESETS.map((opt) => (
-                  <SelectItem key={opt.icon} value={opt.icon}>
-                    <span className="flex items-center gap-2">
-                      <opt.Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-                      {isEn ? opt.labelEn : opt.label}
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Input
-              placeholder={t('products.detail.purchaseLines.labelPlaceholder')}
-              value={item[fLabel] || ''}
-              onChange={(e) => updateItem(index, fLabel, e.target.value)}
-              disabled={disabled}
-              maxLength={120}
-            />
-            <Input
-              placeholder={t('products.detail.purchaseLines.valuePlaceholder')}
-              value={item[fValue] || ''}
-              onChange={(e) => updateItem(index, fValue, e.target.value)}
-              disabled={disabled}
-              maxLength={200}
-            />
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-destructive hover:text-destructive"
-            onClick={() => removeItem(index)}
-            disabled={disabled}
-            aria-label={t('products.detail.purchaseLines.removeRow')}
-          >
-            ✕
-          </Button>
-        </div>
-        )}
-        footer={
-          <Button variant="outline" size="sm" onClick={addItem} disabled={disabled || items.length >= PURCHASE_LINE_MAX}>
-            + {t('products.detail.purchaseLines.addRow')}
           </Button>
         }
       />

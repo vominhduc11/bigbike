@@ -658,11 +658,6 @@ export async function previewArticle(input, lang) {
   return payload?.data ?? null
 }
 
-export async function fetchContentCategories() {
-  const payload = await requestJson('/admin/content/reference/categories')
-  return (payload?.data ?? []).map((c) => ({ id: String(c.id ?? ''), slug: String(c.slug ?? ''), name: String(c.name ?? '') }))
-}
-
 export async function fetchRedirects(query) {
   try {
     const payload = await requestJson('/admin/redirects', { query: buildRedirectQuery(query) })

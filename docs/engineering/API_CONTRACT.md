@@ -209,7 +209,7 @@ Status: `CONFIRMED_FROM_CODE` — `ContentController.listArticles` (`featured` q
 - `homeExperience=true` → returns **only** articles admin đã chọn vào carousel "Góc trải nghiệm cùng BigBike" trên trang chủ.
 - `homeExperience=false` or param omitted → no filtering (default list behaviour, unchanged).
 
-Combinable với các param khác (`category`, `featured`, `q`, paging). **Storefront fallback:** trang chủ gọi `?homeExperience=true&size=3`; nếu rỗng (admin chưa chọn bài nào) thì fall back về `?category=reviews&size=3&sort=publishedAt:desc` — hành vi cũ. Logic fallback nằm ở web (`app/page.tsx`), không ở backend.
+Combinable với các param khác (`category`, `featured`, `q`, paging). **Storefront fallback:** trang chủ gọi `?homeExperience=true&size=3`; nếu rỗng (admin chưa chọn bài nào) thì fall back về `?size=3&sort=publishedAt:desc` — 3 bài viết mới nhất (sau V275 chỉ còn 1 nhóm "Tin tức"). Logic fallback nằm ở web (`app/page.tsx`), không ở backend.
 
 Status: `CONFIRMED_FROM_CODE` — `ContentController.listArticles` (`homeExperience` query param), `ArticleJpaRepository.findPublishedArticleIds`.
 
@@ -386,7 +386,7 @@ renders; the heavy detail-only payload is served exclusively by
 | **Note (V261):** `stockQuantity` is **always `null`** on the public API (product & variant) — availability is boolean. The storefront shows only "Còn hàng / Hết hàng" from `stockState`; the old "Chỉ còn N sản phẩm" low-stock message was removed. | | |
 | `description`, `contentBottom`, `promotionContent`, `installationGuide`, `suitabilityAdvisory` | ❌ `null` | ✅ present |
 | `originBrandCountry`, `sizeGuide`, `specificationsHtml` | ❌ `null` | ✅ present |
-| `gallery`, `videos`, `specifications`, `specStats`, `faqs`, `commitments`, `purchaseLines`, `positiveNotes`, `negativeNotes` | ❌ `[]` | ✅ present |
+| `gallery`, `videos`, `specifications`, `specStats`, `faqs`, `commitments`, `positiveNotes`, `negativeNotes` | ❌ `[]` | ✅ present |
 | `videos[].description` | — | ✅ present (detail) |
 | `seo` | ❌ `null` | ✅ present |
 | `variants` | ✅ present as **stubs** | ✅ full |
@@ -616,7 +616,7 @@ field bổ sung cho template trang sản phẩm chuẩn SEO/AEO:
   (`AdminCatalogMutationService.applyHighlights`). Trên product detail response (public/admin) trả
   mảng `{ content, contentEn? }` đọc từ bảng (`JpaCatalogReadRepository.toHighlights`) — cũng là nguồn
   rich result schema.org `positiveNotes`/`negativeNotes` (json-ld).
-- **`purchaseLines`** — `List<PurchaseLineRequest>` (presence-flag / **full-replace**, tối đa **12** dòng) — **(V249)** các dòng tự do của khối **"Mua tại BigBike.vn"** theo từng sản phẩm (mirror `commitments`/V232). Mỗi dòng `{ icon, label, value, labelEn?, valueEn?, sortOrder? }`: `icon` (key web cố định, trống → `shield-check`), `label` (bắt buộc — dòng label trống bị bỏ), `value` (tuỳ chọn), `labelEn`/`valueEn` (bản tiếng Anh tuỳ chọn). **Detail-only** (`[]` trong list). Public read chỉ trả `{ icon, label, value }`; admin read thêm `{ labelEn, valueEn }`. **Thay thế** 4 field cũ `warrantyMonths`/`warrantyScope`/`pdpShippingLine`/`pdpReturnLine` (đã gỡ khỏi domain/API/admin/web, V249 backfill dữ liệu cũ sang các dòng này). Trên bigbike-web, khối còn **tự động** chèn dòng **Giá + Tồn kho** (đầu khối, realtime) và **Hotline + Địa chỉ** (cuối khối) ngoài các dòng `purchaseLines` admin nhập.
+- **`purchaseLines`** — **GỠ HẲN ở V276** (2026-06-24). Field `purchaseLines` (các dòng tự do của khối "Mua tại BigBike.vn" theo từng SP, V249) đã gỡ khỏi request/response/domain; bảng `product_purchase_lines` bị drop (`V276__drop_product_purchase_lines.sql`). Khối "Mua tại BigBike.vn" trên bigbike-web vẫn còn nhưng **chỉ** gồm các ô tự động: **Giá + Tồn kho** (realtime) và **Hotline + Địa chỉ** (từ site settings) — không còn dòng admin nhập tay.
 - **`originBrandCountry`** — `String` ≤ 120 ký tự (presence-flag) — "thương hiệu [nước]".
   (Trường `originManufactureCountry` / cột `origin_manufacture_country` đã gỡ ở V241 — không còn hiển thị trên web.)
 - **`weightGrams`** — **đã gỡ** (quyết định chủ shop). Field dẫn xuất này không còn trên

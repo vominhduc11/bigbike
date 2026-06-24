@@ -6,7 +6,6 @@ import { AlertCircle, Check, Eye, Info, Loader2, Lock, Save, Search, Trash2, X }
 import {
   createContent,
   deleteContent,
-  fetchContentCategories,
   fetchContentDetail,
 
   mapValidationErrors,
@@ -36,13 +35,11 @@ import {
   buildFormFromItem,
   clearFormFromStorage,
   computeSectionErrorsFromMap,
-  findOptionById,
   findTabForErrors,
   getAutosaveKey,
   loadFormFromStorage,
   mutationPath,
   normalizeContentType,
-  prependSelectedOption,
   publishBadgeClass,
   saveFormToStorage,
   TAB_SECTIONS,
@@ -112,23 +109,6 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
     queryFn: () => fetchContentDetail(normalizedType, contentId),
     enabled: !isCreate,
   })
-
-  // P1-002: Fetch reference data for dropdowns
-  const { data: categories = [] } = useQuery({
-    queryKey: ['content-reference', 'categories'],
-    queryFn: fetchContentCategories,
-    staleTime: 5 * 60 * 1000,
-  })
-
-  const loadedItem = fetchResult?.item ?? null
-  const selectedCategoryRef = findOptionById(
-    [loadedItem?.category, ...(Array.isArray(loadedItem?.categories) ? loadedItem.categories : [])].filter(Boolean),
-    form.categoryId,
-  )
-  const categoryOptions = prependSelectedOption(categories, selectedCategoryRef)
-  const selectedCategoryLabel =
-    findOptionById(categoryOptions, form.categoryId)?.name ||
-    (form.categoryId ? form.categoryId : undefined)
 
   useEffect(() => {
     if (!fetchResult) return
@@ -551,23 +531,8 @@ export function ContentDetailScreen({ contentType, contentId, isCreate = false, 
                     </Field>
                   )}
 
-                  {isArticle && (
-                    <Field label={t('content.detail.category', { defaultValue: 'Danh mục' })}>
-                      {/* Radix Select emits a spurious onValueChange('') while its async option
-                          list settles on load, which would wipe a pre-selected category. Ignore
-                          empty fires — this dropdown has no "clear" item, so '' is never a real pick. */}
-                      <Select value={form.categoryId} onValueChange={(val) => { if (val) updateField('categoryId', val) }} disabled={isReadOnly}>
-                        <SelectTrigger>
-                          <SelectValue placeholder={t('content.detail.categoryPlaceholder', { defaultValue: 'Chọn danh mục...' })}>
-                            {selectedCategoryLabel}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {categoryOptions.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </Field>
-                  )}
+                  {/* Ô "Danh mục" đã gỡ: sau khi gộp nhóm bài viết còn 1 "Tin tức" (V275),
+                      backend tự gán mọi bài vào nhóm này nên không cần cho admin chọn. */}
 
                   {isArticle && (
                     <Field full label={t('content.detail.excerpt')} hint={isEnLang ? t('content.detail.enFieldHint') : undefined}>

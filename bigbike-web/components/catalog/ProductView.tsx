@@ -441,7 +441,6 @@ export function ProductView({ product, settings, previewMode = false }: ProductV
           productName={name}
           siteName={siteName}
           address={contactAddress || undefined}
-          hotline={hotline || undefined}
           zaloUrl={zaloUrl || undefined}
         />
       </div>

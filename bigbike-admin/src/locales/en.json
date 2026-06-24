@@ -448,7 +448,6 @@
       "sectionFaqs": "Frequently asked questions",
       "sectionSpecStats": "Highlight stat boxes (under buy area)",
       "sectionCommitments": "Commitments (under buy buttons)",
-      "sectionPurchaseLines": "Buy at BigBike.vn",
       "sectionTrustBadges": "Trust row (above product title)",
       "sectionRelated": "Related products",
       "relatedHint": "Search and add products to display in the \"Related products\" block at the bottom of the detail page. Leave empty to hide the block entirely.",
@@ -684,16 +683,6 @@
           "award": "Quality"
         }
       },
-      "purchaseLines": {
-        "empty": "No rows yet. Click \"+ Add row\" to start.",
-        "hint": "This table appears under the buy area. Price, Stock, Contact (Hotline + Zalo) and Address show automatically — here you add your own rows. Pick a \"Row type\" to quick-fill the label + suggested content (e.g. Warranty, Shipping, Size exchange).",
-        "typeLabel": "Row type",
-        "labelPlaceholder": "Label (e.g. Warranty) *",
-        "valuePlaceholder": "Value (e.g. 24 months)",
-        "addRow": "Add row",
-        "removeRow": "Remove row",
-        "unit": "rows"
-      },
       "trustBadges": {
         "hint": "Short labels shown RIGHT ABOVE the product title (e.g. \"Genuine\", \"2-yr warranty\", \"Free shipping\"). Empty → the trust row is hidden. Entered per product.",
         "placeholder": "e.g. Genuine",
@@ -817,7 +806,9 @@
         "filterEmpty": "No variants match “{{filter}}”.",
         "addVariant": "Add variant",
         "changeColorConfirm": "This variant currently has its own image and gallery. Changing color will remove them. Continue?",
-        "changeColorTitle": "Change variant color"
+        "changeColorTitle": "Change variant color",
+        "attrSetErrorField": "Missing attribute: {{missing}}. All variants must share the same attribute set.",
+        "attrSetErrorToast": "Variants don't share the same attribute set yet. Please make them consistent before saving."
       },
       "matrix": {
         "defaultColor": "Color",

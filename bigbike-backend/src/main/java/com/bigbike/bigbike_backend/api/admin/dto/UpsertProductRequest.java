@@ -76,9 +76,9 @@ public class UpsertProductRequest {
     private String installationGuide;
     private boolean installationGuidePresent = false;
 
-    // pdp_shipping_line / pdp_return_line (V247) gỡ khỏi DTO ở V249 — nội dung này giờ là
-    // các dòng per-product trong khối "Mua tại BigBike.vn" (purchaseLines). warranty_months /
-    // warranty_scope (V175) gỡ hẳn ở V266 cùng module bảo hành.
+    // pdp_shipping_line / pdp_return_line (V247) gỡ khỏi DTO ở V249; warranty_months /
+    // warranty_scope (V175) gỡ hẳn ở V266 cùng module bảo hành. Khối "Mua tại BigBike.vn"
+    // từng có field purchaseLines (V249) cũng đã gỡ hẳn ở V276 — khối giờ thuần tự động trên web.
 
     @Size(max = 120, message = "Origin brand country is too long.")
     private String originBrandCountry;
@@ -156,10 +156,6 @@ public class UpsertProductRequest {
     @Valid
     @Size(max = 12, message = "Commitments may not have more than 12 items.")
     private List<CommitmentRequest> commitments;
-
-    @Valid
-    @Size(max = 12, message = "Purchase lines may not have more than 12 items.")
-    private List<PurchaseLineRequest> purchaseLines;
 
     @Valid
     @Size(max = 12, message = "Trust badges may not have more than 12 items.")

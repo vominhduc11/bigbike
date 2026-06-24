@@ -129,10 +129,16 @@ public class ContentRequestValidator {
         }
     }
 
+    /** Slug nhóm bài viết mặc định. Sau V275 chỉ còn 1 nhóm "Tin tức"; form admin đã bỏ ô danh mục. */
+    private static final String DEFAULT_CATEGORY_SLUG = "tin-tuc";
+
     public ContentCategoryEntity resolveCategory(String categoryIdRaw, List<ApiErrorDetail> errors) {
         String categoryId = AdminMutationValidators.trimToNull(categoryIdRaw);
         if (categoryId == null) {
-            return null;
+            // Không gửi categoryId (form bỏ ô danh mục) → tự gán nhóm "Tin tức" để bài không bị mất nhóm.
+            return contentCategoryJpaRepository == null
+                    ? null
+                    : contentCategoryJpaRepository.findBySlug(DEFAULT_CATEGORY_SLUG).orElse(null);
         }
         ContentCategoryEntity category = contentCategoryJpaRepository.findById(categoryId).orElse(null);
         if (category == null) {

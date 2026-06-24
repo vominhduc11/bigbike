@@ -64,10 +64,10 @@ import {
   computeSectionErrorsFromMap,
   findTabForErrors,
   findGroupForErrors,
+  computeAttrSetWarning,
   PRODUCT_GROUPS,
   publishBadgeClass,
   RELATED_PRODUCTS_MAX,
-  PURCHASE_LINE_MAX,
   SPEC_STAT_MAX,
   VARIANTS_FILTER_THRESHOLD,
 } from './product-detail/constants'
@@ -89,7 +89,6 @@ import {
 
 import {
   CommitmentEditor,
-  PurchaseLineEditor,
   SpecStatEditor,
   TrustBadgesEditor,
 } from './product-detail/RowEditors'
@@ -648,7 +647,21 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
     const schema = createProductSchema(t, isCreate)
     const result = schema.safeParse(formToSave)
     const clientErrors = zodErrors(result)
+
+    // Chặn lưu khi các biến thể không cùng bộ thuộc tính: web gộp tất cả thuộc tính
+    // của mọi biến thể rồi bắt khách chọn đủ, nên biến thể lệch sẽ không bán được.
+    // Gắn lỗi theo từng biến thể lệch (khoá variants.<idx>.options) để tự chuyển tab
+    // + bung đúng thẻ, kèm thông báo.
+    const attrWarn = computeAttrSetWarning(formToSave.variants ?? [], t)
+    if (attrWarn) {
+      for (const o of attrWarn.offenders) {
+        clientErrors[`variants.${o.index - 1}.options`] =
+          t('products.detail.variant.attrSetErrorField', { missing: o.missing })
+      }
+    }
+
     if (Object.keys(clientErrors).length > 0) {
+      if (attrWarn) toast.error(t('products.detail.variant.attrSetErrorToast'))
       setValidationErrors(clientErrors)
       // Switch to the first tab containing an error so the user sees the field
       // we're about to focus. computeSectionErrorsFromMap reuses the same
@@ -1567,29 +1580,6 @@ export function ProductDetailScreen({ productId, isCreate = false, navigate, can
                 onToggle={() => toggleGroup('closing')}
                 errorCount={groupCounts.closing}
               >
-              {/* ── Card: Bảng "Mua tại BigBike.vn" (dưới khu mua hàng) ── */}
-              <SectionCard
-                title={t('products.detail.sectionPurchaseLines', { defaultValue: 'Mua tại BigBike.vn' })}
-                badge={
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5">
-                      {form.purchaseLines.length} {t('products.detail.purchaseLines.unit', { defaultValue: 'dòng' })}
-                    </span>
-                    <RoleBadge role="content" />
-                  </div>
-                }
-              >
-                <p className="text-xs text-muted-foreground mb-2">
-                  {t('products.detail.purchaseLines.hint', { defaultValue: 'Bảng hiển thị dưới khu mua hàng. Giá, Tồn kho, Hotline và Địa chỉ tự động hiện sẵn — ở đây bạn thêm các dòng riêng (vd Bảo hành, Giao hàng, Đổi trả).' })}
-                </p>
-                <PurchaseLineEditor
-                  items={form.purchaseLines}
-                  onChange={(next) => updateField('purchaseLines', next)}
-                  disabled={isReadOnly}
-                  contentLang={contentLang}
-                />
-              </SectionCard>
-
               {/* ── Card: Phụ kiện (sản phẩm bán kèm) ── */}
               <SectionCard
                 title={t('products.detail.sectionAccessories')}

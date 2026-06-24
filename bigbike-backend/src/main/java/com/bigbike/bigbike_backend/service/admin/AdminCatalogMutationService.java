@@ -585,9 +585,9 @@ public class AdminCatalogMutationService {
             entity.setInstallationGuide(AdminMutationValidators.trimToNull(request.getInstallationGuide()));
         }
 
-        // Shipping / return (pdp_shipping_line, pdp_return_line) gỡ khỏi tầng ứng dụng ở V249 —
-        // nội dung này giờ là các dòng per-product trong khối "Mua tại BigBike.vn" (purchaseLines).
-        // Cột DB giữ dormant. warranty_months / warranty_scope gỡ hẳn ở V266 cùng module bảo hành.
+        // Shipping / return (pdp_shipping_line, pdp_return_line) gỡ khỏi tầng ứng dụng ở V249;
+        // cột DB giữ dormant. warranty_months / warranty_scope gỡ hẳn ở V266 cùng module bảo hành.
+        // Khối "Mua tại BigBike.vn" từng có field purchaseLines (V249) cũng đã gỡ hẳn ở V276.
         if (create || request.isOriginBrandCountryPresent()) {
             entity.setOriginBrandCountry(AdminMutationValidators.trimToNull(request.getOriginBrandCountry()));
         }
@@ -693,12 +693,6 @@ public class AdminCatalogMutationService {
             applyCommitments(entity, request.getCommitments());
         } else if (create) {
             entity.setCommitments(new ArrayList<>());
-        }
-
-        if (request.getPurchaseLines() != null) {
-            applyPurchaseLines(entity, request.getPurchaseLines());
-        } else if (create) {
-            entity.setPurchaseLines(new ArrayList<>());
         }
 
         if (request.getTrustBadges() != null) {

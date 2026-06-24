@@ -505,7 +505,6 @@
       "sectionFaqs": "Câu hỏi thường gặp",
       "sectionSpecStats": "Ô số liệu nổi bật (dưới khu vực mua hàng)",
       "sectionCommitments": "Cam kết (dưới nút mua hàng)",
-      "sectionPurchaseLines": "Mua tại BigBike.vn",
       "sectionTrustBadges": "Dải tin cậy (trên tên sản phẩm)",
       "sectionRelated": "Sản phẩm liên quan",
       "relatedHint": "Tìm và thêm sản phẩm để hiển thị ở khối \"Sản phẩm liên quan\" cuối trang chi tiết. Để trống thì khối này được ẩn hoàn toàn.",
@@ -684,16 +683,6 @@
           "award": "Chất lượng"
         }
       },
-      "purchaseLines": {
-        "empty": "Chưa có dòng nào. Nhấn \"+ Thêm dòng\" để bắt đầu.",
-        "hint": "Bảng hiển thị dưới khu mua hàng. Giá, Tồn kho, Liên hệ (Hotline + Zalo) và Địa chỉ tự động hiện sẵn — ở đây bạn thêm các dòng riêng. Chọn \"Loại dòng\" để tự điền nhanh nhãn + gợi ý nội dung (vd Bảo hành, Giao hàng, Đổi size).",
-        "typeLabel": "Loại dòng",
-        "labelPlaceholder": "Nhãn (vd: Bảo hành) *",
-        "valuePlaceholder": "Giá trị (vd: 24 tháng)",
-        "addRow": "Thêm dòng",
-        "removeRow": "Xoá dòng",
-        "unit": "dòng"
-      },
       "trustBadges": {
         "hint": "Các nhãn ngắn hiển thị NGAY TRÊN tên sản phẩm (vd: \"Chính hãng\", \"BH 2 năm\", \"Freeship\"). Để trống → web ẩn dải tin cậy. Mỗi sản phẩm tự nhập riêng.",
         "placeholder": "vd: Chính hãng",
@@ -817,7 +806,9 @@
         "filterEmpty": "Không có biến thể nào khớp với “{{filter}}”.",
         "addVariant": "Thêm biến thể",
         "changeColorConfirm": "Biến thể này đang có ảnh và gallery riêng. Đổi màu sẽ xoá toàn bộ ảnh hiện tại. Tiếp tục?",
-        "changeColorTitle": "Đổi màu biến thể"
+        "changeColorTitle": "Đổi màu biến thể",
+        "attrSetErrorField": "Thiếu thuộc tính: {{missing}}. Mọi biến thể phải cùng bộ thuộc tính.",
+        "attrSetErrorToast": "Các biến thể chưa cùng bộ thuộc tính. Vui lòng sửa cho đồng nhất trước khi lưu."
       },
       "matrix": {
         "defaultColor": "Màu sắc",

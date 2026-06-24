@@ -264,7 +264,6 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 null,           // installationGuide
                 List.of(),      // faqs
                 List.of(),      // commitments
-                List.of(),      // purchaseLines
                 List.of(),      // specStats
                 List.of(),      // trustBadges
                 List.of(),      // positiveNotes
@@ -329,7 +328,6 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 null,           // installationGuide
                 List.of(),      // faqs
                 List.of(),      // commitments
-                List.of(),      // purchaseLines
                 List.of(),      // specStats
                 List.of(),      // trustBadges
                 List.of(),      // positiveNotes
@@ -394,7 +392,6 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 null,           // installationGuide
                 List.of(),      // faqs
                 List.of(),      // commitments
-                List.of(),      // purchaseLines
                 List.of(),      // specStats
                 List.of(),      // trustBadges
                 List.of(),      // positiveNotes

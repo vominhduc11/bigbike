@@ -558,6 +558,7 @@ function VariantCard({
               onChange={(opts) => updateField('options', opts)}
               disabled={disabled}
             />
+            {fieldErrors.options && <small className="field-error">{fieldErrors.options}</small>}
           </div>
 
           <div className="form-field form-field-wide">
@@ -578,6 +579,7 @@ function VariantCard({
                 onChange={(next) => updateField('gallery', next)}
                 disabled={disabled}
                 validationErrors={fieldErrors}
+                allowVideo={false}
               />
             )}
           </div>

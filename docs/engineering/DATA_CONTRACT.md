@@ -382,53 +382,24 @@ Status: `CONFIRMED_FROM_CODE` — `ProductCommitmentEntity`, `ProductCommitment`
 domain record, `CommitmentRequest`, `AdminCatalogMutationService.applyCommitments`,
 migration `V232`.
 
-### Product "Mua tại BigBike.vn" rows — `product_purchase_lines` (V249)
+### ~~Product "Mua tại BigBike.vn" rows — `product_purchase_lines` (V249)~~ — GỠ HẲN ở V276
 
-Per-product list of free-form rows rendered inside the **"Mua tại BigBike.vn"**
-trust block on the PDP. Each product owns its own rows (admin tự thêm/bớt dòng),
-mirroring `product_commitments` (V232) với cột song ngữ inline. **Thay thế** 4 field
-scalar cũ `warranty_months` / `warranty_scope` / `pdp_shipping_line` /
-`pdp_return_line` (`warranty_months`/`warranty_scope` đã **DROP ở V266** cùng module bảo
-hành; `pdp_shipping_line`/`pdp_return_line` còn dormant — xem bảng "Cột scalar trên
-`products`"): domain field tương ứng đã gỡ khỏi API/admin/web, dữ liệu cũ được V249
-backfill sang bảng này. Child table của `products`.
+**Đã gỡ (2026-06-24, quyết định chủ shop):** module "dòng tự thêm" của khối **"Mua tại
+BigBike.vn"** (bảng `product_purchase_lines`, từng cho admin nhập tay các dòng Bảo hành /
+Giao hàng / Đổi size theo từng SP) đã bị **gỡ hoàn toàn**: editor admin, field
+`purchaseLines` trên domain/API/DTO, mapper read và bảng DB (`V276__drop_product_purchase_lines.sql`
+drop bảng + index). Lý do: nội dung 3 dòng này gần như giống nhau ở mọi SP nên không cần
+quản theo từng SP.
 
-| Column | Type | Null | Notes |
-|---|---|---|---|
-| `id` | `BIGINT` identity | NO | Primary key. |
-| `product_id` | `VARCHAR(64)` | NO | FK → `products.id`, `ON DELETE CASCADE`. |
-| `sort_order` | `INTEGER` | NO | Display order; assigned by the admin editor. |
-| `icon` | `VARCHAR(40)` | NO | Icon key từ bộ web cố định; trống khi ghi → `shield-check`. |
-| `label` | `VARCHAR(200)` | NO | Nhãn dòng (tiếng Việt / canonical). Dòng có `label` trống bị bỏ khi ghi. |
-| `value` | `VARCHAR(300)` | YES | Giá trị/diễn giải dòng (tuỳ chọn). |
-| `label_en` | `VARCHAR(200)` | YES | Nhãn tiếng Anh tuỳ chọn; null → fallback `label`. |
-| `value_en` | `VARCHAR(300)` | YES | Giá trị tiếng Anh tuỳ chọn; null → fallback `value`. |
+**Vẫn giữ:** khối "Mua tại BigBike.vn" trên PDP web — nhưng nay chỉ còn các ô **tự động**:
+Giá + Tồn kho (realtime, cùng nguồn nút mua) và Liên hệ (`hotline` + `zalo_display`) + Địa
+chỉ (`contact_address`) từ `site_settings`. Không còn dòng admin nhập tay xen giữa.
 
-DTO upsert nhận tối đa **12** dòng (`@Size(max = 12)`), **full-replace** (presence-flag).
-Dòng có `label` trống bị loại khi ghi; `icon` trống → `shield-check`. Trả về trên
-product detail (public + admin) dưới dạng mảng `purchaseLines` của domain `Product`;
-**public read chỉ `{ icon, label, value }`**, admin read thêm `{ labelEn, valueEn }`.
-**Detail-only** — omitted (`[]`) trên product *list* responses.
+Cột scalar legacy `pdp_shipping_line`/`pdp_return_line` trên `products` vẫn dormant (đã
+ngừng dùng từ V249, xem bảng "Cột scalar trên `products`"); `warranty_months`/`warranty_scope`
+đã DROP ở V266.
 
-`V249` còn **backfill**: với mọi sản phẩm có dữ liệu cũ, tạo các dòng từ Bảo hành
-(`warranty_months` → "N tháng" / "N months", fallback `warranty_scope`), Giao hàng
-(`pdp_shipping_line`) và Đổi trả (`pdp_return_line`), giữ nguyên thứ tự. Lúc V249, cột
-scalar gốc được giữ dormant (không drop); riêng `warranty_months`/`warranty_scope` về
-sau đã bị **DROP ở V266** khi gỡ module bảo hành.
-
-`V258` **backfill mặc định chung**: vì chỉ ~2/1.232 SP có dữ liệu cũ nên đa số SP để
-trống → trust block PDP thiếu Bảo hành/Giao hàng/Đổi size. V258 chèn 3 dòng tiêu chuẩn
-cho **mọi SP chưa có dòng nào** (không đụng SP đã có): Bảo hành "12 tháng tại BigBike"
-(sort 0), Giao hàng "Toàn quốc · COD · Đồng kiểm khi nhận" (sort 1), Đổi size "Miễn phí
-đổi trong 30 ngày nếu không vừa" (sort 2). Admin sửa riêng từng SP sau qua editor (chọn
-"Loại dòng" để điền nhanh nhãn + gợi ý giá trị). Trên web, trust block ghép thêm 2 ô auto
-từ `site_settings`: **Liên hệ** (`hotline` + `zalo_display`, nhãn i18n `trustContact`) và
-**Địa chỉ** (`contact_address`) — ô tự ẩn khi setting trống / ở chế độ preview.
-
-Status: `CONFIRMED_FROM_CODE` — `ProductPurchaseLineEntity`, `ProductPurchaseLine`
-domain record, `PurchaseLineRequest`, `UpsertProductRequest` (`purchaseLines`),
-`AdminCatalogMutationService.applyPurchaseLines`, `JpaCatalogReadRepository.toPurchaseLines`,
-migration `V252__create_product_purchase_lines.sql`.
+Status: `REMOVED` — migration `V276__drop_product_purchase_lines.sql`.
 
 ### Product "Specs Dashboard" stat boxes — `product_spec_stats` (V235)
 
@@ -846,9 +817,25 @@ Migration `V272__add_article_home_experience.sql` thêm 1 cột boolean vào b�
 |---|---|---|---|---|
 | `home_experience` | `BOOLEAN NOT NULL` | `false` | top-level `homeExperience` | Admin chọn tay bài vào carousel "Góc trải nghiệm cùng BigBike" trên trang chủ — điều khiển query param `homeExperience=true` của `GET /api/v1/articles`. |
 
-Trang chủ hiển thị tối đa 3 bài có `home_experience = true` (mới nhất trước). Khi **không** bài nào được chọn, web fall back về 3 bài mới nhất thuộc category `reviews` (logic ở `app/page.tsx`, xem [API_CONTRACT.md](API_CONTRACT.md) §"Article list — homeExperience (V272)").
+Trang chủ hiển thị tối đa 3 bài có `home_experience = true` (mới nhất trước). Khi **không** bài nào được chọn, web fall back về 3 bài viết mới nhất bất kỳ (logic ở `app/page.tsx`, xem [API_CONTRACT.md](API_CONTRACT.md) §"Article list — homeExperience (V272)"). Trước V275 fallback lấy theo category `reviews`; sau khi gộp nhóm còn 1 "Tin tức" thì lấy bài mới nhất bất kỳ.
 
 Status: `CONFIRMED_FROM_CODE` — `ArticleEntity.homeExperience`, migration `V272__add_article_home_experience.sql`. Xem [API_CONTRACT.md](API_CONTRACT.md) §"Article payload — featured + seo.noIndex (V222)".
+
+### Content categories gộp về 1 nhóm "Tin tức" (V275)
+
+Owner decision 2026-06-24: bỏ phân biệt nhóm bài viết. Migration `V275__merge_content_categories_into_news.sql`:
+
+1. Dồn `articles.category_id` của mọi bài về nhóm `tin-tuc` ("Tin tức", id `wp-blog-cat-361`).
+2. Dựng lại `article_category_map` để mỗi bài chỉ map tới `tin-tuc`.
+3. `DELETE` mọi `content_categories` còn lại (Reviews `wp-blog-cat-365`, các nhóm WP rác, `blog`, `trai-nghiem`…).
+
+Sau migration **chỉ còn 1 content category**. Hệ quả:
+- Trang `/tin-tuc`: sidebar lọc theo `articleCount > 0` nên tự rút còn 1 nhóm — không cần đổi code filter.
+- Khối "Góc trải nghiệm" trang chủ: fallback chuyển từ `category=reviews` → 3 bài mới nhất bất kỳ.
+- **Admin form bài viết bỏ ô "Danh mục".** Backend `ContentRequestValidator.resolveCategory` mặc định gán nhóm `tin-tuc` khi upsert không gửi `categoryId` (trước đây null = không nhóm) → bài luôn thuộc "Tin tức". Endpoint `/admin/content/reference/categories` thành orphan (không còn FE gọi).
+- **Một chiều:** không khôi phục được bài nào từng là Reviews vs Tin tức.
+
+Status: `CONFIRMED_FROM_CODE` — migration `V275__merge_content_categories_into_news.sql`.
 
 ### Page bilingual content — REMOVED (2026-06-24)
 

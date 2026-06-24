@@ -123,15 +123,6 @@ export function createProductSchema(t, isCreate = false) {
         content: z.string().max(120, 'Nhãn tin cậy tối đa 120 ký tự.').optional(),
         contentEn: z.string().max(120).optional(),
       })).optional(),
-      // Bảng "Mua tại BigBike.vn" — dòng {icon, label, value} song ngữ; chỉ kiểm tra độ dài.
-      purchaseLines: z.array(z.object({
-        _key: z.string().optional(),
-        icon: z.string().max(40).optional(),
-        label: z.string().max(120, 'Nhãn tối đa 120 ký tự.').optional(),
-        value: z.string().max(200, 'Giá trị tối đa 200 ký tự.').optional(),
-        labelEn: z.string().max(120).optional(),
-        valueEn: z.string().max(200).optional(),
-      })).max(12, 'Tối đa 12 dòng.').optional(),
       variants: z.array(z.object({
         name: z.string(),
         // PRODUCT_RULE_SKU_001 — required per-row when the variant is real (has a

@@ -1,16 +1,32 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { MapPin, MessageCircle, Phone } from "lucide-react";
-import { telHref, zaloHref } from "@/lib/utils/format";
+import { MapPin, MessageCircle, ShoppingCart } from "lucide-react";
+import { zaloHref } from "@/lib/utils/format";
 
 type ProductContactCtaProps = {
   productName: string;
   siteName: string;
   address?: string;
-  hotline?: string;
   zaloUrl?: string;
 };
+
+/** Cuộn mượt tới khu chọn phân loại + nút thêm giỏ ở đầu trang (.variations_form),
+ *  bám mép dưới header dính. "Mua ngay" ở dải chân trang chỉ đưa khách trở lại khu
+ *  mua hàng — nơi khách chọn size/màu rồi thêm vào giỏ — chứ KHÔNG tự thêm giỏ, vì
+ *  ở vị trí này khách thường chưa chọn phân loại. */
+function scrollToBuyBox() {
+  const target =
+    document.querySelector<HTMLElement>(".variations_form") ??
+    document.getElementById("pdp-overview");
+  if (!target) return;
+  const header =
+    document.querySelector<HTMLElement>("header.headroom") ??
+    document.querySelector<HTMLElement>(".bb-site-header");
+  const offset = (header?.offsetHeight ?? 80) + 12;
+  const y = target.getBoundingClientRect().top + window.scrollY - offset;
+  window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+}
 
 /** Pull a human-readable phone number out of a raw Zalo value (URL or number).
  * Returns the raw digits when grouping is unknown, "" when there are no digits
@@ -25,13 +41,16 @@ function zaloDisplayNumber(value: string): string {
 
 /**
  * Local-SEO contact band at the foot of the product detail page: a light card
- * laid out in two columns — shop name + address on the left, call / Zalo action
- * buttons on the right (stacked on mobile). White surface with a red top accent
- * per the brand design system; the action buttons reuse the exact PDP purchase
- * tokens (red `bg-brand` for call, Zalo-blue outline for Zalo) so the band reads
- * as a real store-contact block instead of a cramped centred caption. All shop
- * details come from system settings so they stay editable in one place and
- * consistent with the footer / contact page and the LocalBusiness structured data.
+ * laid out in two columns — shop name + address on the left, a "Mua ngay" primary
+ * CTA + Zalo consult button on the right (stacked on mobile). White surface with a
+ * red top accent per the brand design system; the action buttons reuse the exact
+ * PDP purchase tokens (red `bg-brand` for buy, Zalo-blue outline for Zalo) so the
+ * band reads as a real store block instead of a cramped centred caption. "Mua ngay"
+ * scrolls back up to the buy box (variant picker + add-to-cart) rather than adding
+ * to cart directly, since at this point in the page the shopper usually hasn't
+ * picked a size/colour yet. Address/Zalo come from system settings so they stay
+ * editable in one place and consistent with the footer / contact page and the
+ * LocalBusiness structured data.
  *
  * Width/horizontal gutter are NOT set here — the band must render inside the PDP
  * `.container` so it shares the exact same rail (max-width steps + 15px gutter) as
@@ -42,11 +61,9 @@ export function ProductContactCta({
   productName,
   siteName,
   address,
-  hotline,
   zaloUrl,
 }: ProductContactCtaProps) {
   const t = useTranslations("Product.contact");
-  if (!address && !hotline && !zaloUrl) return null;
 
   const zaloNumber = zaloUrl ? zaloDisplayNumber(zaloUrl) : "";
 
@@ -71,30 +88,27 @@ export function ProductContactCta({
           )}
         </div>
 
-        {(hotline || zaloUrl) && (
-          <div className="flex shrink-0 flex-wrap items-center gap-4 max-md:w-full max-md:flex-col">
-            {hotline && (
-              <a
-                href={telHref(hotline)}
-                className="inline-flex items-center justify-center gap-2.5 !bg-brand px-7 py-3.5 font-cta text-ui-20 max-md:text-ui-18 font-bold !text-white transition-colors hover:!bg-brand-active max-md:w-full"
-              >
-                <Phone className="size-5" aria-hidden="true" />
-                {hotline}
-              </a>
-            )}
-            {zaloUrl && (
-              <a
-                href={zaloHref(zaloUrl)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2.5 border-2 !border-zalo !bg-white px-7 py-3.5 font-cta text-ui-20 max-md:text-ui-18 font-bold !text-zalo transition-colors hover:!bg-zalo-soft max-md:w-full"
-              >
-                <MessageCircle className="size-5" aria-hidden="true" />
-                {zaloNumber || t("zaloLink")}
-              </a>
-            )}
-          </div>
-        )}
+        <div className="flex shrink-0 flex-wrap items-center gap-4 max-md:w-full max-md:flex-col">
+          <button
+            type="button"
+            onClick={scrollToBuyBox}
+            className="inline-flex items-center justify-center gap-2.5 !bg-brand px-7 py-3.5 font-cta text-ui-20 max-md:text-ui-18 font-bold !text-white transition-colors hover:!bg-brand-active max-md:w-full"
+          >
+            <ShoppingCart className="size-5" aria-hidden="true" />
+            {t("buyNow")}
+          </button>
+          {zaloUrl && (
+            <a
+              href={zaloHref(zaloUrl)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2.5 border-2 !border-zalo !bg-white px-7 py-3.5 font-cta text-ui-20 max-md:text-ui-18 font-bold !text-zalo transition-colors hover:!bg-zalo-soft max-md:w-full"
+            >
+              <MessageCircle className="size-5" aria-hidden="true" />
+              {zaloNumber || t("zaloLink")}
+            </a>
+          )}
+        </div>
       </div>
     </section>
   );

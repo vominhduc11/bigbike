@@ -232,6 +232,7 @@
     },
     "contact": {
       "headline": "Mua <brand>{productName}</brand> chính hãng tại <site>{siteName}</site>",
+      "buyNow": "Mua ngay",
       "zaloLink": "Tư vấn qua Zalo"
     },
     "reviews": {

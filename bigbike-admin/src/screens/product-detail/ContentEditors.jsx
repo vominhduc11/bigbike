@@ -213,7 +213,7 @@ export function GalleryCard({ item, onUpdate, onRemove, disabled, urlError, sort
   )
 }
 
-export function GalleryEditor({ items, onChange, disabled, validationErrors = {} }) {
+export function GalleryEditor({ items, onChange, disabled, validationErrors = {}, allowVideo = true }) {
   const { t } = useTranslation()
 
   function updateItem(index, field, value) {
@@ -256,7 +256,7 @@ export function GalleryEditor({ items, onChange, disabled, validationErrors = {}
           </button>
         )}
       />
-      {!disabled && (
+      {!disabled && allowVideo && (
         <div className="flex flex-wrap gap-2">
           <Button
             variant="outline"
